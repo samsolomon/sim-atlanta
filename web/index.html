@@ -25,6 +25,7 @@
           </div>
         </div>
       </div>
+      <button id="toggle3d" class="toggle3d" type="button">Explore downtown in 3D</button>
       <ul class="legend">
         <li><span class="sw sw-city"></span><b>City rail</b> subway, light rail, streetcar</li>
         <li><span class="sw sw-inter"></span><b>Intercity</b> Amtrak</li>
@@ -34,9 +35,16 @@
       </ul>
     </section>
 
-    <aside id="card" hidden aria-live="polite"></aside>
+    <section id="view3d" hidden aria-label="Downtown Atlanta in 3D">
+      <div id="view3d-canvas"></div>
+      <div class="rot" role="group" aria-label="Rotate view">
+        <button id="rot-left" type="button" aria-label="Rotate left" title="Rotate left (Q)">⟲</button>
+        <button id="rot-right" type="button" aria-label="Rotate right" title="Rotate right (E)">⟳</button>
+      </div>
+      <p class="attrib3d">Unofficial · Buildings &amp; track © OpenStreetMap contributors, Overture Maps · MARTA data · Tunnel depths are schematic</p>
+    </section>
 
-    <footer id="note">Unofficial. Not affiliated with MARTA, Amtrak, Norfolk Southern or CSX. Never stand on or near tracks.</footer>
+    <aside id="card" hidden aria-live="polite"></aside>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

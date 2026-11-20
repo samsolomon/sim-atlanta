@@ -3,10 +3,12 @@
 //!   cargo run --release -- fetch [--force]   download inputs into data/raw/
 //!   cargo run --release -- build             write web/public/data/ga/*
 //!   cargo run --release -- all               both
+//!   cargo run --release -- scene             downtown 3D scene (needs pipeline/scripts/extract_overture.py first)
 
 mod freight;
 mod geo;
 mod gtfs;
+mod scene;
 
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
@@ -219,10 +221,11 @@ fn main() -> Result<()> {
     match args.get(1).map(String::as_str) {
         Some("fetch") => fetch(force),
         Some("build") => build(),
+        Some("scene") => scene::build(&root()),
         Some("all") | None => {
             fetch(force)?;
             build()
         }
-        Some(other) => anyhow::bail!("unknown command {other}; use fetch | build | all"),
+        Some(other) => anyhow::bail!("unknown command {other}; use fetch | build | scene | all"),
     }
 }

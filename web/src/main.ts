@@ -7,26 +7,14 @@ import { addTrainLayer, trainFeatures } from './map/trains';
 import type { CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
 import { Schedule } from './sched/engine';
 import { LiveMarta } from './live/marta';
+import { clock } from './core/clock';
+import { TrainSource } from './core/trains';
+import type { Diorama } from './scene3d/view';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
 
-// ---- simulated clock ------------------------------------------------------
-// ?t=2026-11-20T14:00:00-05:00 pins the start time; ?speed=30 plays faster.
 const params = new URLSearchParams(location.search);
-const clock = {
-  baseSim: params.get('t') ? new Date(params.get('t')!).getTime() : Date.now(),
-  baseReal: performance.now(),
-  speed: Number(params.get('speed') ?? 1),
-  offsetMin: 0,
-  now() {
-    return new Date(this.baseSim + (performance.now() - this.baseReal) * this.speed + this.offsetMin * 60_000);
-  },
-  rebase() {
-    this.baseSim = this.now().getTime() - this.offsetMin * 60_000;
-    this.baseReal = performance.now();
-  },
-};
 
 // Start the map (basemap tiles) immediately; freight and crossings are handed to
 // MapLibre as URLs so they load and parse on its worker threads, off the main thread.
@@ -39,7 +27,7 @@ const map = new maplibregl.Map({
     [-88.6, 28.4],
     [-77.8, 37.0],
   ],
-  attributionControl: { compact: true, customAttribution: 'Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
+  attributionControl: { compact: true, customAttribution: 'Unofficial · Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
   hash: true,
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
@@ -61,7 +49,7 @@ document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 
 function renderTrainCard() {
   if (!selectedTrain) return;
-  const t = currentTrains.find((x) => x.id === selectedTrain);
+  const t = source.find(selectedTrain);
   if (!t) return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType)),
@@ -76,25 +64,17 @@ const [rf, tf, vts, meta] = await Promise.all([
 ]);
 const schedule = new Schedule(rf, tf, vts);
 if (import.meta.env.DEV) Object.assign(window, { __map: map, __schedule: schedule });
-let currentTrains: ReturnType<Schedule['trainsAt']> = [];
-
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);
+const source = new TrainSource(schedule, live);
 const liveStatus = document.getElementById('live-status')!;
-const isRealTime = () => clock.offsetMin === 0 && clock.speed === 1 && !params.has('t');
-const isMartaRail = (routeId: string) => schedule.routes.get(routeId)?.mode === 'heavy_rail' && routeId.startsWith('marta:');
-function trainsNow(now: Date) {
-  const scheduled = schedule.trainsAt(now);
-  if (!isRealTime() || !live.available) return scheduled;
-  return scheduled.filter((t) => !isMartaRail(t.routeId)).concat(live.trains());
-}
 function updateLiveStatus() {
-  const on = isRealTime() && live.available;
+  const on = source.liveActive;
   liveStatus.className = on ? 'live-status on' : 'live-status';
   liveStatus.textContent = on
     ? `MARTA rail live · ${live.count} trains`
-    : !isRealTime()
+    : !clock.isRealTime()
       ? 'Timetable view (time-shifted)'
       : live.error
         ? 'MARTA live unavailable · showing timetable'
@@ -117,7 +97,7 @@ onReady(() => {
   // MapLibre's hit-testing; find the nearest train on screen ourselves.
   const nearestTrain = (pt: maplibregl.Point, maxPx = 22) => {
     let best: { id: string; d: number } | null = null;
-    for (const t of currentTrains) {
+    for (const t of source.current) {
       const p = map.project([t.lon, t.lat]);
       const d = Math.hypot(p.x - pt.x, p.y - pt.y);
       if (d <= maxPx && (!best || d < best.d)) best = { id: t.id, d };
@@ -159,8 +139,9 @@ onReady(() => {
     if (ts - last > 33) {
       last = ts;
       const now = clock.now();
-      currentTrains = trainsNow(now);
-      trainsSource(map)?.setData(trainFeatures(currentTrains, schedule.routes));
+      const trains = source.update(now);
+      if (diorama) diorama.update(trains);
+      else trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
       updateClock(now);
       if (selectedTrain && ts - lastCard > 1000) {
         lastCard = ts;
@@ -182,7 +163,7 @@ function updateClock(now: Date) {
   updateLiveStatus();
   clockEl.textContent = timeFmt.format(now);
   clockEl.dateTime = now.toISOString();
-  const shifted = clock.offsetMin !== 0 || clock.speed !== 1 || params.has('t');
+  const shifted = !clock.isRealTime();
   clockNote.textContent = shifted ? 'time-shifted' : 'now';
   clockEl.parentElement!.classList.toggle('shifted', shifted);
 }
@@ -191,10 +172,7 @@ scrub.addEventListener('input', () => {
   clock.offsetMin = Number(scrub.value);
 });
 document.getElementById('now')!.addEventListener('click', () => {
-  params.delete('t');
-  clock.baseSim = Date.now();
-  clock.baseReal = performance.now();
-  clock.offsetMin = 0;
+  clock.reset();
   scrub.value = '0';
   setSpeed(1);
 });
@@ -206,3 +184,56 @@ function setSpeed(s: number) {
 }
 speedButtons.forEach((b) => b.addEventListener('click', () => setSpeed(Number(b.dataset.speed))));
 setSpeed(clock.speed);
+
+// ---- 3D diorama (downtown) -----------------------------------------------------
+// Three.js loads only when the 3D view opens. ?view=3d opens it directly (the URL hash
+// belongs to MapLibre's map position).
+let diorama: Diorama | null = null;
+const view3d = document.getElementById('view3d')!;
+const toggle3d = document.getElementById('toggle3d') as HTMLButtonElement;
+
+async function open3d() {
+  if (diorama) return;
+  toggle3d.disabled = true;
+  toggle3d.textContent = 'Loading 3D…';
+  view3d.hidden = false;
+  document.body.classList.add('in3d');
+  const { createDiorama } = await import('./scene3d/view');
+  diorama = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+  diorama.onPick = (id) => {
+    if (!id) return hideCard();
+    selectedTrain = id;
+    renderTrainCard();
+  };
+  if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
+  toggle3d.disabled = false;
+  toggle3d.textContent = 'Back to map';
+  setViewParam('3d');
+}
+
+function close3d() {
+  diorama?.dispose();
+  diorama = null;
+  view3d.hidden = true;
+  document.body.classList.remove('in3d');
+  toggle3d.textContent = 'Explore downtown in 3D';
+  setViewParam(null);
+  map.resize();
+}
+
+function setViewParam(v: string | null) {
+  const u = new URL(location.href);
+  if (v) u.searchParams.set('view', v);
+  else u.searchParams.delete('view');
+  history.replaceState(null, '', u);
+}
+
+toggle3d.addEventListener('click', () => (diorama ? close3d() : void open3d()));
+document.getElementById('rot-left')!.addEventListener('click', () => diorama?.rotate(-1));
+document.getElementById('rot-right')!.addEventListener('click', () => diorama?.rotate(1));
+document.addEventListener('keydown', (e) => {
+  if (!diorama || e.target instanceof HTMLInputElement) return;
+  if (e.key === 'q' || e.key === '[') diorama.rotate(-1);
+  if (e.key === 'e' || e.key === ']') diorama.rotate(1);
+});
+if (params.get('view') === '3d') void open3d();

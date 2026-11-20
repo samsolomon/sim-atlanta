@@ -31,8 +31,8 @@ export interface LiveTrain {
   destination: string;
   lat: number;
   lon: number;
-  /** When MARTA recorded this position (ms since epoch). */
-  at: number;
+  /** When MARTA recorded this position (ms since epoch); null if MARTA didn't say. */
+  at: number | null;
   nextStation?: string;
   nextInSec?: number;
 }
@@ -75,7 +75,7 @@ export function normalize(rows: MartaRow[], fetched: number): LiveFeed {
     const lat = Number(list[0].LATITUDE);
     const lon = Number(list[0].LONGITUDE);
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat === 0) continue;
-    const at = Math.max(...list.map((r) => parseEastern(r.EVENT_TIME) ?? 0));
+    const times = list.map((r) => parseEastern(r.EVENT_TIME)).filter((x): x is number => x != null);
     const next = list
       .filter((r) => r.IS_REALTIME === 'true')
       .sort((a, b) => Number(a.WAITING_SECONDS) - Number(b.WAITING_SECONDS))[0];
@@ -86,7 +86,8 @@ export function normalize(rows: MartaRow[], fetched: number): LiveFeed {
       destination: list[0].DESTINATION,
       lat,
       lon,
-      at: at || fetched,
+      // Never substitute fetch time: that would make stale positions look fresh.
+      at: times.length ? Math.max(...times) : null,
       nextStation: next?.STATION,
       nextInSec: next ? Number(next.WAITING_SECONDS) : undefined,
     });

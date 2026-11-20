@@ -202,8 +202,8 @@ GTFS route shapes are flat 2D lines, so a 3D scene can't tell from them where MA
 underground. Overture's transportation theme can, through its rail flags. In the downtown box
 it has 59 rail segments:
 
-- **12 subway tunnel segments** at level −1 or −3. Five Points really does stack its
-  platforms on two underground levels.
+- **12 subway tunnel segments** at level −1 or −3. (At Five Points itself the two lines sit
+  on −1 and −2; see below.)
 - **4 subway bridge segments** at level 3.
 - Standard-gauge track flagged `is_freight`, tram (streetcar) track, and abandoned or
   disused spurs.
@@ -233,3 +233,109 @@ Its main points:
   about 17.
 - **Honesty details:** a live fix that can't be snapped to track should show in 2D but not as
   an on-track 3D model. Freshness should follow the observation time, not the fetch time.
+
+## 3D slice, step 1: do the route shapes line up with the subway data?
+
+This was the riskiest assumption in the 3D plan. Train positions live on GTFS route shapes;
+tunnel and viaduct levels live on Overture's rail segments. If the two didn't line up, the
+level matching would pick the wrong track at Five Points, where two subway corridors cross on
+different levels.
+
+The matching rule:
+- `class = subway` segments only. Freight track runs alongside and has no level.
+- Within 15 m.
+- Bearing within 30° of the route, so the crossing corridor is never picked.
+- The level read *at that point* along the segment. Some Overture segments carry ten or more
+  `between` ranges, e.g. `-3` for 0–16%, `1` for 17–20%, and so on.
+
+Result: **every downtown sample on every MARTA path matched (100%), with a median offset of
+about 1 m.** At Five Points itself, the east–west line (Blue/Green) is on level −1 and the
+north–south line (Red/Gold) is on level −2 below it. I first wrote this the wrong way round
+from a quick read of the spans, and caught it only when the 3D depth tint looked "wrong". The
+east–west line reaches level −3 elsewhere downtown. The elevated runs are a ~770 m viaduct on
+the east–west line **east** of downtown (toward King Memorial) and a ~810 m one on the
+north–south line to the **southwest** (toward West End). I first wrote "a viaduct over the
+Gulch", which was wrong; a review caught it. The hand-written fallback table wasn't needed.
+
+One cleanup: short 70–130 m gaps between tunnel ranges come back as "level 0, no flags",
+which would pop trains to the surface between tunnels. Gaps of 150 m or less between two
+underground spans take the shallower depth.
+
+Overture levels are stacking order, not depth, so heights are schematic:
+−1 → −10 m, −2 → −16 m, −3 → −22 m, any bridge → +7 m.
+
+## 3D slice, step 2: a miniature downtown that runs live
+
+The downtown diorama is now a Three.js view inside the same app. It loads only when you
+press "Explore downtown in 3D" (or open `?view=3d`), as a separate ~124 KB gzipped chunk.
+
+**Data.** `pipeline/scripts/extract_overture.py` pulls downtown from Overture's S3 bucket with
+DuckDB: 2,280 buildings, 73 rail segments and 7,940 road segments in under a minute. A new
+`railprep scene` command (Rust) bakes:
+
+- **Buildings:** footprints triangulated with `earcutr` (holes kept), then extruded.
+  1,871 heights are measured, 165 come from floor counts × 3.5 m, and 211 fall back to 6 m.
+- **Roads and static freight/streetcar track:** flat ribbons.
+- **An elevation profile per MARTA path:** one value every 10 m (schematic).
+- **Size:** 960 KB gzipped in total, assuming the host compresses `.bin` files (not verified until deploy). Footways and service alleys were dropped first; they
+  were 1.7 MB of road geometry that adds nothing at diorama scale.
+
+**Rendering.**
+- An orthographic camera with a fixed 38° tilt, rotatable in 90° steps.
+- About 10 draw calls and ~137k triangles. The CPU side of each frame takes well under a
+  millisecond on a laptop. GPU time and real phones are not measured yet.
+- Trains are two `InstancedMesh`es of boxes, one for surface cars and one for cars underground.
+- Each car is placed by sampling the train's path at `s − i·(carLength + gap)`, so a six-car
+  train bends round curves and dips into a portal one car at a time.
+- Underground track and cars draw in a translucent "cutaway" pass with no depth test, tinted
+  darker the deeper they are.
+
+**Things that went wrong on the way**, all visible in the first screenshot:
+
+![First attempt](log/2026-11-20-06-3d-first-attempt.png)
+
+1. **Hollow buildings.** Overture rings come in both windings, so back-face culling removed
+   roofs and walls at random. The fix was a double-sided material.
+2. **Track that vanished.** Ribbon winding depends on travel direction, so half the MARTA
+   track faced downward and was culled from above. Same fix.
+3. **Invisible trains.** A real MARTA car is 3 m wide, about 3 px at this zoom. Like Mini
+   Tokyo 3D, trains are now drawn up to 3× wide/tall when zoomed out and true size up close.
+   Length stays true, because length is what positions the cars.
+4. **I had the Five Points levels backwards.** The depth tint showed the east–west line
+   *above* the north–south line, the opposite of what I'd written in this log. The data
+   was right (east–west −1, north–south −2) and my reading was wrong.
+5. **Taps that did nothing,** for two reasons. A synthetic pointer made `setPointerCapture`
+   throw before the tap start was recorded. And `InstancedMesh` raycasting culls against a
+   cached bounding sphere computed when there were zero cars, so it needs recomputing every
+   time the trains move.
+
+![Tunnels as a cutaway](log/2026-11-20-07-3d-tunnels-cutaway.png)
+
+**The headline test passed.** At 4:32 pm on a Friday, live Blue Line train #108 was "arriving"
+at Five Points on the east–west level. A Red/Gold train crossed on the deeper level below it.
+Tapping the train opened its live card ("reported 26 s ago by MARTA").
+
+![Live at Five Points](log/2026-11-20-09-3d-five-points-live-card.png)
+
+Also in this step:
+- The live feed now polls every 30 s: one open tab uses ~2,900 of the free tier's 100k
+  Worker requests a day.
+- Trains expire by when MARTA *observed* them, and the Worker reports a missing observation
+  time as `null` instead of quietly substituting the fetch time.
+- Live fixes that can't be snapped to track are left out of the 3D view.
+
+**Review fixes before calling it done:**
+- **Trains popped up at the scene edges.** Profiles end at the scene boundary and returned 0
+  beyond it, while cars draw a little past the edge. Profiles now hold their end value.
+- **A level-0 "tunnel" is a covered cut at street level,** not a −6 m dip, so it's at grade.
+- **A ~120 m "bridge" between two tunnels on Red/Gold** (a span over something inside the cut)
+  would have surfaced trains for a block. Short positive spans between tunnels now stay
+  underground at the shallower depth.
+- **Removed the disclaimer footer** at Sam's request; it added noise. "Unofficial" now leads
+  the small attribution line instead.
+
+Known limitations in this slice:
+- Scheduled vs live, and tunnel depth, are both shown as lightness, and there's no key in 3D yet.
+- No nose taper on lead cars.
+- Underground trains draw on top of towers by design (the cutaway). A fade near the
+  selected train is an option if it reads as confusing.

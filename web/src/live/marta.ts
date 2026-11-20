@@ -12,7 +12,8 @@ interface LiveTrain {
   destination: string;
   lat: number;
   lon: number;
-  at: number;
+  /** When MARTA observed this position (ms); null if MARTA didn't say. */
+  at: number | null;
   nextStation?: string;
   nextInSec?: number;
 }
@@ -31,7 +32,8 @@ interface Tracked {
   glideStart: number; // performance.now()
 }
 
-const POLL_MS = 15_000;
+/** 30 s keeps one open tab at ~2,900 Worker requests/day on the free tier (100k/day). */
+const POLL_MS = 30_000;
 const GLIDE_MS = 8_000;
 /** A fix further than this from every candidate path is drawn where reported, unsnapped. */
 const MAX_SNAP_M = 250;
@@ -88,6 +90,8 @@ export class LiveMarta {
     const now = performance.now();
     const seen = new Set<string>();
     for (const t of feed.trains) {
+      // Expire by when MARTA observed the train, not when we fetched it.
+      if (t.at != null && feed.fetched - t.at > STALE_MS) continue;
       seen.add(t.id);
       const routeId = `marta:route:${t.line}`;
       const prev = this.tracked.get(t.id);
@@ -134,8 +138,9 @@ export class LiveMarta {
       out.push({
         id: t.raw.id,
         routeId: t.routeId,
+        // Empty when the fix couldn't be snapped to track: 2D draws it as reported, 3D omits it.
         pathId: t.pathId ?? '',
-        s: { value: s, tier: 'live', source: 'marta-rail-rt', asOf: new Date(t.raw.at).toISOString() },
+        s: { value: s, tier: 'live', source: 'marta-rail-rt', asOf: t.raw.at != null ? new Date(t.raw.at).toISOString() : '' },
         heading: pt.heading,
         lon: pt.lon,
         lat: pt.lat,
@@ -144,7 +149,7 @@ export class LiveMarta {
         headsign: t.raw.destination,
         nextStopName: t.raw.nextStation,
         nextInSec: t.raw.nextInSec,
-        observedAt: t.raw.at,
+        observedAt: t.raw.at ?? undefined,
         label: t.raw.id.split(':').pop(),
       });
     }

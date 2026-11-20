@@ -21,7 +21,8 @@ Atlanta and Georgia. Every fact on the map says how we know it: **live**, **sche
 
 ```sh
 pnpm install
-pnpm data           # fetch + build data (≈1.2 MB gzipped); re-run to refresh
+python3 -m venv .venv && .venv/bin/pip install duckdb   # once, for the Overture extract
+pnpm data           # fetch + build map data and the downtown 3D scene; re-run to refresh
 pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item trains-marta-api
 pnpm build          # the worker serves web/dist
 pnpm dev:worker     # live API on :8787
@@ -33,6 +34,8 @@ These URL options are handy for reviewing:
 - `?t=2026-11-20T14:00:00-05:00` pins the clock to a moment.
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
+- `?view=3d` opens the downtown 3D diorama directly. Drag to pan, scroll or pinch to zoom,
+  Q/E or the buttons to rotate, and tap a train for its card.
 
 Live MARTA appears only when the clock shows the real present. A time-shifted or
 sped-up view always uses the timetable.
@@ -47,5 +50,6 @@ pnpm deploy
 
 ## Not yet
 
-- The zoom-in diorama.
+- Diorama polish: trees, terrain, buses, time-of-day lighting, MARTA CQ400 car models (see
+  docs/art-backlog.md), a ride-along camera, and growing out to I-285.
 - Freight positions. No free source exists; see docs/data-model.md.

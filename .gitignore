@@ -8,3 +8,5 @@ web/public/data/ga/*
 .env*
 .dev.vars
 .wrangler/
+.venv/
+web/public/data/scene/

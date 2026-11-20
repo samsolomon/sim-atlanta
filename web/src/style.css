@@ -57,6 +57,17 @@ button:focus-visible { outline: 2px solid var(--sched); outline-offset: 1px; }
 .tr-live { background: #1f5fd1; }
 .tr-sched { background: #fff; margin-left: 8px; }
 
+.toggle3d { width: 100%; padding: 7px 10px; font-weight: 600; background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.toggle3d:hover { background: #343c48; }
+
+#view3d { position: fixed; inset: 0; z-index: 1; background: #e9e6df; }
+#view3d-canvas { position: absolute; inset: 0; }
+#view3d-canvas canvas { display: block; }
+.rot { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+.rot button { font-size: 18px; width: 38px; height: 38px; padding: 0; box-shadow: var(--shadow); }
+.attrib3d { position: absolute; right: 10px; bottom: 8px; margin: 0; font-size: 11px; color: var(--ink-2); background: rgba(255, 255, 255, 0.8); padding: 3px 8px; border-radius: 6px; }
+body.in3d .legend { display: none; }
+
 #card {
   position: fixed; left: 12px; bottom: 40px; width: min(340px, calc(100vw - 24px));
   background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -81,15 +92,10 @@ button:focus-visible { outline: 2px solid var(--sched); outline-offset: 1px; }
 .chip.inferred { color: #b07d00; border-style: dashed; }
 .chip.illustrative { color: #7048e8; border-style: dotted; }
 
-#note {
-  position: fixed; left: 12px; bottom: 10px; font-size: 11px; color: var(--ink-2);
-  background: rgba(255, 255, 255, 0.85); padding: 3px 8px; border-radius: 6px; z-index: 1;
-  max-width: calc(100vw - 24px);
-}
 
 @media (max-width: 600px) {
   #panel { padding: 10px 12px; gap: 8px; width: calc(100vw - 72px); }
   .legend { display: none; }
-  #note { display: none; }
+  .rot { top: auto; bottom: 36px; }
   #card { bottom: 12px; }
 }

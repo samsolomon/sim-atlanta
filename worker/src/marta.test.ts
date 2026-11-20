@@ -42,4 +42,9 @@ describe('normalize', () => {
     expect(t409).toMatchObject({ line: 'RED', nextStation: 'FIVE POINTS STATION', nextInSec: 60, lat: 33.7539 });
     expect(feed.trains[0].line).toBe('BLUE');
   });
+
+  it('reports a missing observation time as null, not the fetch time', () => {
+    const feed = normalize([row({ EVENT_TIME: '' })], 123);
+    expect(feed.trains[0].at).toBeNull();
+  });
 });
