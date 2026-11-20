@@ -339,3 +339,115 @@ Known limitations in this slice:
 - No nose taper on lead cars.
 - Underground trains draw on top of towers by design (the cutaway). A fade near the
   selected train is an option if it reads as confusing.
+
+## 2026-11-20 · Finding the look: colour isn't style
+
+**First attempt: six "looks" on the same scene** (`?look=` / the `L` key in 3D): architect's
+model, golden hour, night with procedural lit windows, toy town, pixel and the baseline.
+Screenshots in `docs/log/looks/`. Sam's verdict: *these are colour treatments, not artwork.*
+Correct. The references (the isometric pixel city, the low-poly train video) are made of
+**detail and form**: modelled trains, trees, curbs, rooftop clutter, a ground with depth.
+Recolouring grey boxes can't get there. (The looks code stays, since shadows and night
+windows will be useful.)
+
+**Second attempt: one small block, modelled properly.** Instead of styling all of downtown,
+pick one 850 × 500 m patch and give it real detail: the **MARTA east portal** by Georgia
+State, where the east–west line climbs out of its tunnel beside the freight main and
+crosses the Downtown Connector on a viaduct.
+
+- `pipeline/scripts/vignette.py` crops the Overture extract to the patch (64 buildings,
+  streets with overpass flags, freight and subway track) → `vignette.json` (66 KB).
+- `web/vignette.html` + `src/vignette/` build everything in the browser:
+  - **A diorama board**: heightfield top, the cut edges showing topsoil → **Georgia red clay**
+    → rock, on a walnut plinth.
+  - **The Downtown Connector sunk into a trench** (it really runs below street level here);
+    overpass streets keep their level and get concrete fascias.
+  - **MARTA**: ballast, concrete ties, rails, third rail; an open cut with a portal
+    headwall; a box-girder viaduct on piers over the highway. Elevations come from the same
+    baked profile the main 3D view uses (−10 m → +7 m).
+  - **Freight**: wooden ties, rusty rails, through-girder bridges over the trench.
+  - **Buildings**: brick / stone / glass by height, with storefront glass at street level,
+    punched, ribbon or curtain-wall windows (shader), parapets, rooftop HVAC and stair
+    penthouses, white, gravel and green roofs.
+  - **~1,500 trees** along streets and through open ground. It's November, so some oaks
+    and maples are turning.
+  - **A MARTA train after the CQ400**: stainless body, window band, line-colour stripe, and
+    cab ends whose destination sign and light bar glow in the line colour (from the art
+    backlog).
+  - **Traffic**: instanced cars looping along lanes of the real streets and the Connector.
+  - **Studio lighting**: soft shadows, GTAO ambient occlusion, a narrow-FOV camera and a
+    **tilt-shift blur**. That last one does most of the "miniature" work.
+
+Trains and traffic here run on an illustrative loop; this is a look study, not live data.
+
+![Board](log/vignette/board.jpg)
+![Viaduct](log/vignette/viaduct.jpg)
+![Trackside](log/vignette/side.jpg)
+![Portal](log/vignette/portal.jpg)
+
+**Lessons:** a small patch you can afford to detail beats a big one you can only colour.
+Most of the miniature feel came from three cheap things: tilt-shift, trees and visible cut
+edges on the board.
+
+## 2026-11-20 · Atlanta's clock: real traffic, sun and seasons
+
+**Traffic from free federal data** (`pipeline/scripts/vignette_traffic.py` → `traffic.json`):
+- **How busy each road is:** FHWA's national road inventory (HPMS) gives daily volume,
+  truck volume, lanes and speed limit per segment. The Connector here carries 307k–372k
+  vehicles a day on 12–13 lanes, about 9% of them trucks; Boulevard has 17,300 and Auburn
+  Ave 4,400. 80 of 159 drivable runs matched by distance and bearing; the rest (alleys,
+  service roads) get class defaults.
+- **The shape of the day:** FHWA's 2023 hourly counts from Georgia station 000009, on the
+  Connector just north of the board. On weekdays, 5.8% of the day's traffic passes in the
+  7 am hour and 1.0% in the 3 am hour. Weekends are nearly as busy, just later.
+- **The model:** vehicles per lane per hour = daily volume × the hour's share ÷ directions
+  ÷ lanes; a curve slows traffic as a lane nears capacity; how many cars are on the lane =
+  flow ÷ speed. Cars hold evenly spread slots and switch on or off only as they leave the
+  board, so traffic thickens without popping. Trucks appear in proportion to each road's
+  truck share. Labelled "typical for this hour", not live.
+- **Caveat:** counts flatten when the Connector jams, because a jam lowers throughput.
+  Live speeds from Georgia 511 (key pending) would show the real crawl.
+
+**Sun and seasons:**
+- Sun position is computed from the date, time and Atlanta's latitude. It drives the light
+  colour, shadows and sky: golden at 4:55 pm in November, blue hour after 5:30.
+- At night: lit windows (about a third of offices, most shopfronts), street lamps with
+  pools of light, glowing head and tail lights, and lit MARTA windows.
+- **Trees by date:** about a quarter evergreen (loblolly pines as stacked cones, magnolias).
+  The rest turn by species (maple red, sweetgum burgundy, oak russet, poplar gold), each
+  on its own few-week schedule, drop their leaves to bare branches by mid-December, and
+  leaf out light green in early April.
+
+![4:55 pm](log/vignette/day-1655.jpg)
+![November](log/vignette/season-nov.jpg)
+![January](log/vignette/season-jan.jpg)
+
+Not yet: live weather (Open-Meteo, so it needs no key). The published artifact can't call
+outside services, so live weather will only work in the real app; the artifact would need a
+weather picker.
+
+## 2026-11-20 · Weather, real trees, smoother trains
+
+- **Wobbly trains fixed.** The GTFS route shape is rounded to about 1 m with uneven point
+  spacing, so cars twitched at every vertex. The alignment is now resampled every 2 m and
+  smoothed (±24 m moving average, twice), elevation too. The largest heading change is now
+  0.11° per half-metre of travel, and the largest height change 5 cm.
+- **Weather** from Open-Meteo (free, no key): WMO code, cloud cover, rain, visibility and
+  temperature, refreshed every 10 minutes. Clouds flatten the sun and soften shadows; rain
+  draws shader-animated streaks (one draw call) and darkens wet surfaces; fog is relative to
+  camera distance so the far side fades and the foreground stays crisp; storms flash.
+  The published artifact can't call outside services, so it has a weather picker instead.
+- **Real trees** from the Meta + WRI 1 m canopy height map (CC BY 4.0),
+  `pipeline/scripts/vignette_trees.py`: crowns as local maxima ≥ 4 m tall, at least 5 m
+  apart, with crown radius from the surrounding canopy area; roofs masked out. This patch
+  has only **76 trees and about 4% canopy**: it really is highway, campus and parking. The
+  imagery is probably about 2018, and small street trees are likely under-counted.
+
+![Rain](log/vignette/wx-rain.jpg)
+![Fog](log/vignette/wx-fog.jpg)
+![Real trees](log/vignette/trees-real.jpg)
+![Old random scatter, for comparison](log/vignette/trees-scatter.jpg)
+
+**Next truth gap:** the ground. Everything not a building or road is drawn as grass, but
+downtown is mostly parking lots and plazas. Overture's land use and land cover layers (or
+OSM `amenity=parking` / `landuse`) would fix that.

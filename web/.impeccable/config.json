@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "/Users/samsolomon/orca/workspaces/train-map/seahorse/web/vignette.html"
+        ],
+        "createdAt": "2026-11-20T23:30:23.431Z",
+        "reason": "Claude: the beige is the diorama's studio-table backdrop, a deliberate scene colour that main.ts overrides by time of day (dusk orange, night navy); not a UI surface"
+      }
+    ]
+  }
+}

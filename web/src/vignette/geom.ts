@@ -1,0 +1,150 @@
+/** Small geometry toolkit for the vignette: polylines, ribbons and vertex-coloured boxes merged into one mesh. */
+import * as THREE from 'three';
+
+export type P2 = [number, number];
+
+/** A polyline in scene metres with cumulative length, sampled by distance. */
+export class Line {
+  readonly cum: number[] = [0];
+  constructor(readonly pts: P2[]) {
+    for (let i = 1; i < pts.length; i++) this.cum.push(this.cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  get length() {
+    return this.cum[this.cum.length - 1];
+  }
+  /** Point, unit direction and left normal at distance s (clamped). */
+  at(s: number) {
+    const c = this.cum;
+    s = Math.min(Math.max(s, 0), this.length);
+    let lo = 0;
+    let hi = c.length - 1;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (c[m] <= s) lo = m;
+      else hi = m;
+    }
+    const i = Math.min(lo, this.pts.length - 2);
+    const a = this.pts[i];
+    const b = this.pts[i + 1];
+    const seg = c[i + 1] - c[i] || 1;
+    const f = (s - c[i]) / seg;
+    const dx = (b[0] - a[0]) / seg;
+    const dz = (b[1] - a[1]) / seg;
+    return { x: a[0] + (b[0] - a[0]) * f, z: a[1] + (b[1] - a[1]) * f, dx, dz, nx: dz, nz: -dx };
+  }
+  /** Same line shifted sideways by `d` metres (positive = right of travel), resampled every `step`. */
+  offset(d: number, step = 3): Line {
+    const out: P2[] = [];
+    for (let s = 0; s <= this.length + 1e-6; s += step) {
+      const p = this.at(s);
+      out.push([p.x - p.nx * d, p.z - p.nz * d]);
+    }
+    const e = this.at(this.length);
+    out.push([e.x - e.nx * d, e.z - e.nz * d]);
+    return new Line(out);
+  }
+}
+
+export function segDist(px: number, pz: number, a: P2, b: P2) {
+  const dx = b[0] - a[0];
+  const dz = b[1] - a[1];
+  const l2 = dx * dx + dz * dz || 1;
+  const t = Math.min(1, Math.max(0, ((px - a[0]) * dx + (pz - a[1]) * dz) / l2));
+  return Math.hypot(px - a[0] - t * dx, pz - a[1] - t * dz);
+}
+
+export function pointInRing(x: number, z: number, ring: P2[]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, zi] = ring[i];
+    const [xj, zj] = ring[j];
+    if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** Deterministic PRNG so the diorama is the same every load. */
+export function rng(seed: number) {
+  let s = seed >>> 0 || 1;
+  return () => {
+    s ^= s << 13;
+    s ^= s >>> 17;
+    s ^= s << 5;
+    return (s >>> 0) / 4294967296;
+  };
+}
+
+export function hashStr(s: string) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/** Accumulates triangles with per-vertex colour (non-indexed, so flat shading is free). */
+export class Builder {
+  pos: number[] = [];
+  col: number[] = [];
+  private c = new THREE.Color();
+
+  tri(a: number[], b: number[], c: number[], color: THREE.ColorRepresentation) {
+    this.c.set(color);
+    this.pos.push(...a, ...b, ...c);
+    for (let i = 0; i < 3; i++) this.col.push(this.c.r, this.c.g, this.c.b);
+  }
+  quad(a: number[], b: number[], c: number[], d: number[], color: THREE.ColorRepresentation) {
+    this.tri(a, b, c, color);
+    this.tri(a, c, d, color);
+  }
+  /** Ribbon along a polyline: y(s, x, z) gives the height; width may vary. */
+  ribbon(line: Line, width: number, y: (s: number, x: number, z: number) => number, color: THREE.ColorRepresentation, step = 2, from = 0, to = line.length) {
+    let prev: number[][] | null = null;
+    for (let s = from; ; s = Math.min(s + step, to)) {
+      const p = line.at(s);
+      const h = width / 2;
+      const L = [p.x + p.nx * h, 0, p.z + p.nz * h];
+      const R = [p.x - p.nx * h, 0, p.z - p.nz * h];
+      L[1] = y(s, L[0], L[2]);
+      R[1] = y(s, R[0], R[2]);
+      if (prev) this.quad(prev[0], prev[1], R, L, color);
+      prev = [L, R];
+      if (s >= to) break;
+    }
+  }
+  /** Vertical wall along a polyline offset `d` to the side, from yBot(s) to yTop(s). */
+  wall(line: Line, d: number, yBot: (s: number) => number, yTop: (s: number) => number, color: THREE.ColorRepresentation, step = 3, from = 0, to = line.length) {
+    let prev: number[][] | null = null;
+    for (let s = from; ; s = Math.min(s + step, to)) {
+      const p = line.at(s);
+      const x = p.x - p.nx * d;
+      const z = p.z - p.nz * d;
+      const cur = [
+        [x, yBot(s), z],
+        [x, yTop(s), z],
+      ];
+      if (prev) this.quad(prev[0], cur[0], cur[1], prev[1], color);
+      prev = cur;
+      if (s >= to) break;
+    }
+  }
+  /** Axis-aligned box in local frame, then transformed by `m`. */
+  box(w: number, h: number, l: number, x: number, y: number, z: number, color: THREE.ColorRepresentation, m?: THREE.Matrix4) {
+    const g = new THREE.BoxGeometry(w, h, l).toNonIndexed();
+    g.translate(x, y, z);
+    if (m) g.applyMatrix4(m);
+    this.addGeometry(g, color);
+  }
+  addGeometry(g: THREE.BufferGeometry, color: THREE.ColorRepresentation) {
+    const gg = g.index ? g.toNonIndexed() : g;
+    const p = gg.attributes.position.array;
+    this.c.set(color);
+    for (let i = 0; i < p.length; i++) this.pos.push(p[i]);
+    for (let i = 0; i < p.length / 3; i++) this.col.push(this.c.r, this.c.g, this.c.b);
+  }
+  geometry() {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
+    g.computeVertexNormals();
+    return g;
+  }
+}

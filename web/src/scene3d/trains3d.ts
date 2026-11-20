@@ -38,6 +38,7 @@ export class Trains3D {
       MAX_CARS,
     );
     this.surface.renderOrder = 3;
+    this.surface.castShadow = true;
     this.under.renderOrder = 11;
     for (const m of [this.surface, this.under]) {
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -99,6 +100,14 @@ export class Trains3D {
       // Raycasting culls against a cached bounding sphere; refresh it as trains move.
       m.computeBoundingSphere();
     }
+  }
+
+  /** Night look: surface cars ignore lighting so they read as lit carriages. */
+  setGlow(on: boolean) {
+    const want = on ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial;
+    if (this.surface.material instanceof want) return;
+    (this.surface.material as THREE.Material).dispose();
+    this.surface.material = new want();
   }
 
   counts() {

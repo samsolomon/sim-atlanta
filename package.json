@@ -9,6 +9,7 @@
     "build": "pnpm --filter web build",
     "deploy": "pnpm --filter worker deploy",
     "test": "cargo test --manifest-path pipeline/Cargo.toml && pnpm --filter web test && pnpm --filter worker test",
-    "data:scene": ".venv/bin/python pipeline/scripts/extract_overture.py && cargo run --release --manifest-path pipeline/Cargo.toml -- scene"
+    "data:scene": ".venv/bin/python pipeline/scripts/extract_overture.py && cargo run --release --manifest-path pipeline/Cargo.toml -- scene",
+    "data:vignette": ".venv/bin/python pipeline/scripts/vignette.py && .venv/bin/python pipeline/scripts/vignette_traffic.py && .venv/bin/python pipeline/scripts/vignette_trees.py"
   }
 }

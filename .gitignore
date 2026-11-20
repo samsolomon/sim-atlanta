@@ -10,3 +10,4 @@ web/public/data/ga/*
 .wrangler/
 .venv/
 web/public/data/scene/
+web/.impeccable/hook.cache.json

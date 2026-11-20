@@ -8,6 +8,7 @@ import type { Schedule } from '../sched/engine';
 import { buildRails } from './rails';
 import { loadScene, makeProjector } from './scene-data';
 import { Trains3D } from './trains3d';
+import { LOOKS, lookById, makeBuildingUniforms, patchBuildingMaterial, setBuildingUniforms, skyTexture, type Look } from './looks';
 import type { TrainState } from '../model/types';
 
 const TILT = THREE.MathUtils.degToRad(38); // camera elevation above the horizon
@@ -21,6 +22,11 @@ export interface Diorama {
   dispose(): void;
   /** Called with a train id (or null) when the user taps the scene. */
   onPick: (id: string | null) => void;
+  /** Switch visual style by id; returns the active look. */
+  setLook(id: string): Look;
+  cycleLook(): Look;
+  /** Exact camera for repeatable shots: azimuth in degrees. */
+  setView(v: { x: number; z: number; zoom: number; azimuth: number }): void;
   stats(): { drawCalls: number; triangles: number; frameMs: number; surfaceCars: number; undergroundCars: number };
 }
 
@@ -28,40 +34,99 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
   const { manifest, geoms } = await loadScene('/data/scene/downtown');
   const project = makeProjector(manifest.origin);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-  renderer.setClearColor(0xe9e6df);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+  const dpr = Math.min(window.devicePixelRatio, 1.5);
+  renderer.setPixelRatio(dpr);
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xf4f1ea, 0x8a8478, 1.6));
-  const sun = new THREE.DirectionalLight(0xfff3dd, 1.6);
-  sun.position.set(-600, 900, 400); // from the southwest, mid-afternoon-ish
-  scene.add(sun);
+  const hemi = new THREE.HemisphereLight();
+  const sun = new THREE.DirectionalLight();
+  const b = manifest.bounds;
+  const centre = new THREE.Vector3((b.minX + b.maxX) / 2, 0, (b.minZ + b.maxZ) / 2);
+  sun.target.position.copy(centre);
+  const sc = sun.shadow.camera;
+  sc.left = -2200;
+  sc.right = 2200;
+  sc.top = 2200;
+  sc.bottom = -2200;
+  sc.near = 10;
+  sc.far = 8000;
+  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.bias = -0.0004;
+  scene.add(hemi, sun, sun.target);
 
   // Ground slab
-  const b = manifest.bounds;
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(b.maxX - b.minX + 400, b.maxZ - b.minZ + 400),
-    new THREE.MeshLambertMaterial({ color: 0xe2ddd2 }),
-  );
+  const groundMat = new THREE.MeshLambertMaterial();
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(b.maxX - b.minX + 400, b.maxZ - b.minZ + 400), groundMat);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set((b.minX + b.maxX) / 2, -0.05, (b.minZ + b.maxZ) / 2);
+  ground.position.set(centre.x, -0.05, centre.z);
   ground.renderOrder = 0;
+  ground.receiveShadow = true;
   scene.add(ground);
 
   // Double-sided: Overture rings come in both windings, so some roofs/walls would otherwise be culled.
-  const cityMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
-  const roads = new THREE.Mesh(geoms.roads, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const bu = makeBuildingUniforms();
+  const lambertCity = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide });
+  const toonCity = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  patchBuildingMaterial(lambertCity, bu);
+  patchBuildingMaterial(toonCity, bu);
+  const roadMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const trackMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const roads = new THREE.Mesh(geoms.roads, roadMat);
   roads.renderOrder = 1;
-  const track = new THREE.Mesh(geoms.track, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  roads.receiveShadow = true;
+  const track = new THREE.Mesh(geoms.track, trackMat);
   track.renderOrder = 1;
-  const buildings = new THREE.Mesh(geoms.buildings, cityMat);
+  track.receiveShadow = true;
+  const buildings = new THREE.Mesh<THREE.BufferGeometry, THREE.Material>(geoms.buildings, lambertCity);
   buildings.renderOrder = 4;
+  buildings.castShadow = true;
+  buildings.receiveShadow = true;
   scene.add(roads, track, buildings, buildRails(rf, manifest, project));
+  let edges: THREE.LineSegments | null = null;
 
   const trains = new Trains3D(schedule, manifest, project);
   scene.add(trains.group);
+
+  let look: Look = LOOKS[0];
+  let pixel = 1;
+  function applyLook(l: Look) {
+    look = l;
+    (scene.background as THREE.Texture | null)?.dispose?.();
+    scene.background = skyTexture(l.sky[0], l.sky[1]);
+    scene.fog = l.fog ? new THREE.Fog(l.fog.color, l.fog.near, l.fog.far) : null;
+    hemi.color.set(l.hemi.sky);
+    hemi.groundColor.set(l.hemi.ground);
+    hemi.intensity = l.hemi.intensity;
+    sun.color.set(l.sun.color);
+    sun.intensity = l.sun.intensity;
+    sun.position.copy(centre).add(new THREE.Vector3(...l.sun.dir).normalize().multiplyScalar(4000));
+    sun.castShadow = l.sun.shadows;
+    renderer.shadowMap.enabled = l.sun.shadows;
+    groundMat.color.set(l.ground);
+    roadMat.color.set(l.roads);
+    trackMat.color.set(l.track);
+    setBuildingUniforms(bu, l);
+    buildings.material = l.buildings.toon ? toonCity : lambertCity;
+    for (const m of [lambertCity, toonCity, groundMat, roadMat, trackMat]) m.needsUpdate = true;
+    if (l.edges) {
+      if (!edges) {
+        edges = new THREE.LineSegments(new THREE.EdgesGeometry(geoms.buildings, 35), new THREE.LineBasicMaterial({ transparent: true }));
+        edges.renderOrder = 5;
+        scene.add(edges);
+      }
+      (edges.material as THREE.LineBasicMaterial).color.set(l.edges.color);
+      (edges.material as THREE.LineBasicMaterial).opacity = l.edges.opacity;
+      edges.visible = true;
+    } else if (edges) edges.visible = false;
+    trains.setGlow(!!l.trainsGlow);
+    pixel = l.pixel ?? 1;
+    renderer.domElement.style.imageRendering = pixel > 1 ? 'pixelated' : '';
+    renderer.toneMappingExposure = l.exposure ?? 1;
+    resize();
+  }
 
   // ---- camera: orthographic, fixed tilt, 90° rotation steps -------------------------
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -5000, 10000);
@@ -85,6 +150,7 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
   function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
+    renderer.setPixelRatio(pixel > 1 ? 1 / pixel : dpr);
     renderer.setSize(w, h, false);
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
@@ -97,7 +163,7 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);
-  resize();
+  applyLook(lookById(new URLSearchParams(location.search).get('look')));
 
   // ---- input: drag to pan, wheel/pinch to zoom, tap to pick ------------------------
   const el = renderer.domElement;
@@ -174,6 +240,20 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
       target.set(x, 0, z);
       clampTarget();
       if (z0) zoom = THREE.MathUtils.clamp(z0, 0.6, 14);
+      placeCamera();
+    },
+    setLook(id) {
+      applyLook(lookById(id));
+      return look;
+    },
+    cycleLook() {
+      applyLook(LOOKS[(LOOKS.indexOf(look) + 1) % LOOKS.length]);
+      return look;
+    },
+    setView({ x, z, zoom: zz, azimuth: az }) {
+      target.set(x, 0, z);
+      zoom = zz;
+      azimuth = azimuthGoal = THREE.MathUtils.degToRad(az);
       placeCamera();
     },
     stats: () => ({ drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, frameMs, ...trains.counts() }),

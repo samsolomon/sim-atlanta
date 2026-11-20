@@ -21,8 +21,9 @@ Atlanta and Georgia. Every fact on the map says how we know it: **live**, **sche
 
 ```sh
 pnpm install
-python3 -m venv .venv && .venv/bin/pip install duckdb   # once, for the Overture extract
+python3 -m venv .venv && .venv/bin/pip install duckdb rasterio pyproj scipy pillow   # once
 pnpm data           # fetch + build map data and the downtown 3D scene; re-run to refresh
+pnpm data:vignette  # the East Portal look-study diorama (Overture, FHWA traffic, Meta/WRI trees)
 pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item trains-marta-api
 pnpm build          # the worker serves web/dist
 pnpm dev:worker     # live API on :8787
@@ -35,7 +36,10 @@ These URL options are handy for reviewing:
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
 - `?view=3d` opens the downtown 3D diorama directly. Drag to pan, scroll or pinch to zoom,
-  Q/E or the buttons to rotate, and tap a train for its card.
+  Q/E or the buttons to rotate, and tap a train for its card. `L` cycles colour looks.
+- `/vignette.html` is the East Portal look study: a detailed low-poly diorama whose light,
+  season, weather and traffic follow Atlanta's clock. Options: `?at=<ISO time>`,
+  `?speed=600`, `?weather=rain|fog|storm|overcast|clear` (default live), `?clean`, `?scatter`.
 
 Live MARTA appears only when the clock shows the real present. A time-shifted or
 sped-up view always uses the timetable.

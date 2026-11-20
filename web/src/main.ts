@@ -205,6 +205,8 @@ async function open3d() {
     selectedTrain = id;
     renderTrainCard();
   };
+  const cam = params.get('cam')?.split(',').map(Number); // x,z,zoom,azimuthDeg for repeatable shots
+  if (cam?.length === 4 && cam.every(Number.isFinite)) diorama.setView({ x: cam[0], z: cam[1], zoom: cam[2], azimuth: cam[3] });
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   toggle3d.disabled = false;
   toggle3d.textContent = 'Back to map';
@@ -235,5 +237,11 @@ document.addEventListener('keydown', (e) => {
   if (!diorama || e.target instanceof HTMLInputElement) return;
   if (e.key === 'q' || e.key === '[') diorama.rotate(-1);
   if (e.key === 'e' || e.key === ']') diorama.rotate(1);
+  if (e.key === 'l') {
+    const l = diorama.cycleLook();
+    const u = new URL(location.href);
+    u.searchParams.set('look', l.id);
+    history.replaceState(null, '', u);
+  }
 });
 if (params.get('view') === '3d') void open3d();
