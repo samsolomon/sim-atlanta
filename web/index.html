@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Railwatch Georgia</title>
+    <meta name="description" content="Where trains are, or are likely to be, around Atlanta and Georgia right now." />
+  </head>
+  <body>
+    <div id="map" role="application" aria-label="Rail map"></div>
+
+    <section id="panel" aria-label="Controls">
+      <header>
+        <h1>Railwatch <span>Georgia</span></h1>
+        <p class="clock"><time id="clock">--:--</time> <span id="clock-note">now</span></p>
+      </header>
+      <p id="live-status" class="live-status" role="status">Connecting to MARTA live…</p>
+      <div class="scrub">
+        <input id="scrub" type="range" min="-720" max="720" step="5" value="0" aria-label="Shift time (minutes)" />
+        <div class="scrub-row">
+          <button id="now" type="button">Now</button>
+          <div class="speed" role="group" aria-label="Playback speed">
+            <button type="button" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="30" aria-pressed="false">30×</button>
+          </div>
+        </div>
+      </div>
+      <ul class="legend">
+        <li><span class="sw sw-city"></span><b>City rail</b> subway, light rail, streetcar</li>
+        <li><span class="sw sw-inter"></span><b>Intercity</b> Amtrak</li>
+        <li><span class="sw sw-rep"></span><b>Freight</b> thicker = more trains/day (reported)</li>
+        <li><span class="sw sw-inf"></span><b>Inferred</b> traffic from nearby track</li>
+        <li><span class="tr tr-live"></span><b>Live</b> train <span class="tr tr-sched"></span><b>Scheduled</b> (timetable)</li>
+      </ul>
+    </section>
+
+    <aside id="card" hidden aria-live="polite"></aside>
+
+    <footer id="note">Unofficial. Not affiliated with MARTA, Amtrak, Norfolk Southern or CSX. Never stand on or near tracks.</footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

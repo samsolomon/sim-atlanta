@@ -1,0 +1,10 @@
+node_modules/
+dist/
+target/
+data/raw/
+web/public/data/ga/*
+!web/public/data/ga/.gitkeep
+.DS_Store
+.env*
+.dev.vars
+.wrangler/
