@@ -1,5 +1,5 @@
 /**
- * Railwatch edge worker.
+ * sim-atlanta edge worker.
  *   GET /api/marta/rail  → normalized live MARTA rail positions (cached ~10 s at the edge)
  *   GET /api/weather     → current Atlanta conditions from Open-Meteo (cached 10 min at the edge)
  *   everything else      → static site (web/dist) via the ASSETS binding
@@ -70,7 +70,7 @@ async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<
   let response: Response;
   try {
     const [upstream, routes] = await Promise.all([
-      fetch(BUS_URL, { headers: { 'User-Agent': 'Railwatch/1.0', Accept: '*/*' } }),
+      fetch(BUS_URL, { headers: { 'User-Agent': 'sim-atlanta/1.0', Accept: '*/*' } }),
       env.ASSETS?.fetch(new Request(new URL('/data/ga/bus-routes.json', req.url)))
         .then(r => r.ok ? r.json<BusRoutes>() : {}).catch(() => ({})),
     ]);

@@ -37,7 +37,7 @@ def unproject(x, z):
 
 
 def get(url, params):
-    req = urllib.request.Request(url + "?" + urllib.parse.urlencode(params), headers={"User-Agent": "railwatch-pipeline"})
+    req = urllib.request.Request(url + "?" + urllib.parse.urlencode(params), headers={"User-Agent": "sim-atlanta-pipeline"})
     with urllib.request.urlopen(req, timeout=120) as r:
         return json.load(r)
 

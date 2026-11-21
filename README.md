@@ -1,4 +1,4 @@
-# Railwatch
+# sim-atlanta
 
 A free, fast map of where trains are, or are likely to be, right now. It starts with
 Atlanta and Georgia. Every fact on the map says how we know it: **live**, **scheduled**,
@@ -63,7 +63,7 @@ See [the response contract](docs/data-model.md#live-buses).
 
 Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
 custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
-before `pnpm deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
 `pnpm data` includes `data:city`: City requires `scene/downtown/vignette.json`,
 `trees.json` and the retained `scene.json` profiles. In an existing checkout with Map
 data, run `pnpm data:city` once before building this milestone. Missing City data makes
@@ -78,7 +78,7 @@ vignette, and deploying it removes a previously published art map.
 ```sh
 npx wrangler login                       # once
 cd worker && npx wrangler secret put MARTA_API_KEY
-pnpm deploy
+pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
 ```
 
 ## Not yet

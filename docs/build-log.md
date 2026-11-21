@@ -917,3 +917,11 @@ pass. This change needs a web rebuild, with no data bake or server changes.
 ![High-tier close view after held-rotation checks](log/ui/2026-11-21-city-held-rotation.png)
 
 Held-rotation review (Claude, one round): no findings.
+
+## 2026-11-21 · Merge readiness
+
+Integrated main's project rename and deploy-command fix. The sole conflict was the README
+deploy paragraph: it now retains City's data requirements and uses `pnpm run deploy`.
+The combined branch passes all 48 tests, the production build and an Orca high-tier render
+check. Claude's focused integration review found no issues. City remains optional; the A16
+gate still controls making it the default and starting M2b.
