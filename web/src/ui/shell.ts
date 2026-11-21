@@ -1,10 +1,10 @@
 /**
- * The app's shared chrome, the same over Map and City: one frosted bar across the top
- * (after monaco.com's nav), holding
- *   - left: menu (Key, Models, About) and the name
- *   - centre: the view switch, Map · City
- *   - right: status: weather icon, temperature, place, time, live dot; tap for live data
- *     and truth tiers
+ * The app's shared chrome, the same over Map and City, all in one glass (frosted blur with a
+ * Liquid Glass-style lit edge):
+ *   - status widget (top right): place, temperature + weather icon, condition, date and time;
+ *     tap for live data and truth tiers
+ *   - menu button (top left): Key, Models, About
+ *   - view switch (bottom centre): Map · City
  *   - first-run hint, and keyboard movement (WASD / arrows, +/−, M / C)
  * Plain DOM; no framework. The host page supplies where the camera is looking and the live
  * feed state; the shell owns weather and neighbourhood lookups.
@@ -54,13 +54,25 @@ const typing = (t: EventTarget | null) =>
 export function createShell(o: ShellOptions) {
   let view = o.view;
 
-  // ---- the bar: one frosted strip across the top (menu + name · view switch · status) -----
-  const bar = el('header', { class: 'bar glass' });
-  const left = el('div', { class: 'bar-l' });
-  const menuBtn = el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Menu', 'aria-expanded': 'false', 'aria-controls': 'menu' }, `<span class="ic">${ICON.list}</span>`);
-  left.append(menuBtn, el('a', { class: 'wordmark', href: '/about' }, 'sim<span>·</span>atlanta'));
+  // ---- status widget (top right), menu button (top left), view switch (bottom centre) -----
+  const statusBtn = el('button', { type: 'button', class: 'widget glass', 'aria-expanded': 'false', 'aria-controls': 'status-more', 'aria-label': 'Atlanta right now' });
+  const place = el('span', { class: 'w-place' }, 'Atlanta');
+  const dot = el('span', { class: 'status-dot', 'aria-hidden': 'true' });
+  const temp = el('span', { class: 'w-temp' });
+  const wxIcon = el('span', { class: 'ic w-icon', 'aria-hidden': 'true' });
+  const cond = el('span', { class: 'w-cond' });
+  const time = el('span', { class: 'w-time' });
+  const top = el('span', { class: 'w-top' });
+  top.append(place, dot);
+  const mid = el('span', { class: 'w-mid' });
+  mid.append(temp, wxIcon);
+  const low = el('span', { class: 'w-low' });
+  low.append(cond, time);
+  statusBtn.append(top, mid, low);
 
-  const sw = el('div', { class: 'switch', role: 'group', 'aria-label': 'View' });
+  const menuBtn = el('button', { type: 'button', class: 'menu-btn glass', 'aria-label': 'Menu', 'aria-expanded': 'false', 'aria-controls': 'menu' }, `<span class="ic">${ICON.list}</span>`);
+
+  const sw = el('div', { class: 'switch glass', role: 'group', 'aria-label': 'View' });
   const btns = (['map', 'city'] as View[]).map((v) => {
     const b = el(
       'button',
@@ -71,19 +83,9 @@ export function createShell(o: ShellOptions) {
     return b;
   });
   sw.append(...btns);
+  const chrome = [statusBtn, menuBtn, sw];
 
-  const statusBtn = el('button', { type: 'button', class: 'status-btn', 'aria-expanded': 'false', 'aria-controls': 'status-more', 'aria-label': 'Atlanta right now' });
-  const wxIcon = el('span', { class: 'ic wx', 'aria-hidden': 'true' });
-  const temp = el('span', { class: 'temp' });
-  const place = el('span', { class: 'place' }, 'Atlanta');
-  const time = el('span', { class: 'time' });
-  const dot = el('span', { class: 'status-dot', 'aria-hidden': 'true' });
-  statusBtn.append(wxIcon, temp, place, time, dot);
-  const right = el('div', { class: 'bar-r' });
-  right.append(statusBtn);
-  bar.append(left, sw, right);
-
-  // ---- drop-downs under the bar ----------------------------------------------------------
+  // ---- drop-downs ----------------------------------------------------------
   const menu = el('nav', { class: 'drop drop-l glass', id: 'menu', hidden: '', 'aria-label': 'Site' });
   menu.innerHTML = `
     <p class="drop-title">A little model of Atlanta</p>
@@ -123,7 +125,7 @@ export function createShell(o: ShellOptions) {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (!bar.contains(t) && !menu.contains(t) && !more.contains(t)) closeDrops();
+    if (!chrome.some((c) => c.contains(t)) && !menu.contains(t) && !more.contains(t)) closeDrops();
   });
 
   let weather: Weather | null = null;
@@ -178,13 +180,14 @@ export function createShell(o: ShellOptions) {
         wxIcon.dataset.svg = svg;
       }
       wxIcon.hidden = false;
-      wxIcon.title = cap(weather.label);
       temp.textContent = weather.tempF != null ? `${Math.round(weather.tempF)}°` : '';
+      cond.textContent = cap(weather.label);
     } else {
       wxIcon.hidden = true;
       temp.textContent = '';
+      cond.textContent = '';
     }
-    time.textContent = s.realTime ? timeFmt.format(now) : `${timeFmt.format(now)} · timetable`;
+    time.textContent = `${dateFmt.format(now)} · ${timeFmt.format(now)}${s.realTime ? '' : ' · timetable'}`;
     statusBtn.setAttribute('aria-label', `${place.textContent}, ${weather ? `${weather.label}, ` : ''}${dateFmt.format(now)} ${timeFmt.format(now)}${liveOn ? ', live' : ''}`);
     if (!more.hidden) renderMore();
   }
@@ -243,7 +246,7 @@ export function createShell(o: ShellOptions) {
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, dismiss, { once: true, passive: true });
   }
 
-  document.body.append(bar, menu, more, note, key, ...(hint ? [hint] : []));
+  document.body.append(...chrome, menu, more, note, key, ...(hint ? [hint] : []));
 
   // ---- keyboard ---------------------------------------------------------------------------
   const held = new Set<string>();

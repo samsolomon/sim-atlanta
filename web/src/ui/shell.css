@@ -1,63 +1,87 @@
-/* Shared chrome over Map and City: one frosted bar across the top, after monaco.com's nav. */
+/* Shared chrome over Map and City: a status widget, a menu button and a view switch in glass. */
 [hidden] { display: none !important; }
+/* Glass: Monaco's frosted blur plus a Liquid Glass-style lit edge (bright at the top-left and
+   bottom-right, fading between) and a soft specular sheen across the top. */
 .glass {
-  background: var(--glass-solid);
+  isolation: isolate; /* every glass element is position: fixed (or a <dialog>), which anchors the pseudo-elements */
   color: var(--ink);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background: rgba(251, 249, 244, 0.94);
+  border: 0;
+  box-shadow:
+    0 0 0 0.5px rgba(60, 45, 30, 0.14),
+    0 12px 32px rgba(60, 45, 30, 0.16),
+    0 2px 6px rgba(60, 45, 30, 0.08),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0.5px rgba(255, 255, 255, 0.35);
 }
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .glass {
-    background: var(--glass);
-    -webkit-backdrop-filter: blur(24px) saturate(1.3);
-    backdrop-filter: blur(24px) saturate(1.3);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(246, 242, 233, 0.34));
+    -webkit-backdrop-filter: blur(20px) saturate(1.7) brightness(1.06);
+    backdrop-filter: blur(20px) saturate(1.7) brightness(1.06);
   }
+}
+.glass::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 1;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.55) 18%, rgba(255, 255, 255, 0.08) 42%,
+    rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.5) 85%, rgba(255, 255, 255, 0.9) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.glass::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 60%);
 }
 
 .ic { display: inline-grid; width: 18px; height: 18px; flex: none; }
 .ic svg { width: 100%; height: 100%; display: block; }
-.bar button, .drop button, .drop a, .key button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-:is(.bar, .drop, .key) :is(button, a):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+:is(.widget, .menu-btn, .switch, .drop, .key) :is(button, a), .widget, .menu-btn { font: inherit; color: inherit; background-color: transparent; border: 0; cursor: pointer; }
+.widget, .menu-btn { background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(246, 242, 233, 0.34)); }
+:is(.switch, .drop, .key) :is(button, a):focus-visible, .widget:focus-visible, .menu-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-/* ---- the bar ---- */
-.bar {
-  position: fixed; z-index: 5; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-  width: min(980px, calc(100vw - 28px)); height: 60px; border-radius: 16px;
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 0 10px;
-  font-size: 14px;
+/* ---- status widget (top right) ---- */
+.widget {
+  position: fixed; z-index: 5; top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right));
+  display: grid; gap: 2px; text-align: left; padding: 11px 16px 12px; border-radius: 22px;
+  min-width: 196px; max-width: min(300px, calc(100vw - 90px));
+  font-variant-numeric: tabular-nums;
 }
-.bar-l { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.bar-r { display: flex; justify-content: flex-end; min-width: 0; }
-.icon-btn { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; }
-.icon-btn:hover, .status-btn:hover { background: rgba(42, 39, 34, 0.06); }
-.wordmark { font-weight: 650; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; white-space: nowrap; font-size: 15px; }
-.wordmark span { color: var(--ink-2); margin: 0 1px; }
-
-.switch { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: rgba(42, 39, 34, 0.06); }
-.switch button { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; border-radius: 9px; font-weight: 600; color: var(--ink-2); }
-.switch button[aria-pressed='true'] { background: var(--ink); color: var(--paper); }
-.switch button:not([aria-pressed='true']):hover { color: var(--ink); }
-
-.status-btn {
-  display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px; border-radius: 10px;
-  min-width: 0; white-space: nowrap; font-variant-numeric: tabular-nums;
-}
-.status-btn .wx { width: 20px; height: 20px; }
-.status-btn .temp { font-weight: 650; }
-.status-btn .place { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.status-btn .time { color: var(--ink-2); }
-.status-btn .place::before, .status-btn .time::before { content: '·'; color: var(--ink-2); margin-right: 8px; font-weight: 400; }
-.status-btn .temp:empty + .place::before { content: none; }
+.w-top { display: flex; align-items: center; gap: 7px; }
+.w-place { font-weight: 650; font-size: 14.5px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-mid { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.w-temp { font-size: 34px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.05; }
+.w-temp:empty { display: none; }
+.w-icon { width: 30px; height: 30px; color: var(--ink); }
+.w-low { display: grid; font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+.w-cond { color: var(--ink); font-weight: 550; }
+.w-cond:empty { display: none; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #a8a296; flex: none; }
 .status-dot.on { background: var(--live); box-shadow: 0 0 0 3px rgba(47, 158, 68, 0.18); }
 
+/* ---- menu button (top left) ---- */
+.menu-btn {
+  position: fixed; z-index: 5; top: max(14px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left));
+  width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center;
+}
+.menu-btn .ic { width: 20px; height: 20px; }
+
+/* ---- view switch (bottom centre) ---- */
+.switch {
+  position: fixed; z-index: 5; left: 50%; transform: translateX(-50%); bottom: max(20px, calc(env(safe-area-inset-bottom) + 10px));
+  display: flex; gap: 2px; padding: 4px; border-radius: 999px;
+}
+.switch button { position: relative; z-index: 2; display: flex; align-items: center; gap: 7px; height: 42px; padding: 0 18px; border-radius: 999px; font-weight: 600; color: var(--ink-2); }
+.switch button[aria-pressed='true'] { background: var(--ink); color: var(--paper); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+.switch button:not([aria-pressed='true']):hover { color: var(--ink); background: rgba(42, 39, 34, 0.06); }
+.widget > *, .menu-btn > *, .drop > *, .key > * { position: relative; z-index: 2; }
+
 /* ---- drop-downs and note ---- */
 .drop {
-  position: fixed; z-index: 6; top: calc(max(14px, env(safe-area-inset-top)) + 68px);
-  border-radius: 14px; padding: 8px; font-size: 13px; line-height: 1.4;
+  position: fixed; z-index: 6; border-radius: 18px; padding: 8px; font-size: 13px; line-height: 1.4;
 }
-.drop-l { left: max(14px, calc(50vw - 490px)); min-width: 210px; display: grid; }
-.drop-r { right: max(14px, calc(50vw - 490px)); width: min(360px, calc(100vw - 28px)); padding: 10px 14px 12px; }
+.drop-l { top: calc(max(14px, env(safe-area-inset-top)) + 54px); left: max(14px, env(safe-area-inset-left)); min-width: 210px; display: grid; }
+.drop-r { top: calc(max(14px, env(safe-area-inset-top)) + 118px); right: max(14px, env(safe-area-inset-right)); width: min(340px, calc(100vw - 28px)); padding: 12px 16px 14px; }
 .drop-title { margin: 4px 10px 6px; font-weight: 650; }
 .drop-r .drop-title { margin: 0 0 8px; }
 .drop-l :is(a, button) { display: block; text-align: left; padding: 9px 10px; border-radius: 8px; text-decoration: none; min-height: 36px; }
@@ -65,13 +89,13 @@
 .drop-r ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; color: var(--ink-2); font-size: 12.5px; }
 .drop-r b { color: var(--ink); font-weight: 600; margin-right: 4px; }
 .bar-note {
-  position: fixed; z-index: 4; top: calc(max(14px, env(safe-area-inset-top)) + 70px); left: 50%; transform: translateX(-50%);
+  position: fixed; z-index: 4; top: max(18px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
   margin: 0; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; color: var(--ink-2); white-space: nowrap;
 }
 
 /* ---- first-run hint ---- */
 .hint {
-  position: fixed; z-index: 5; left: 50%; transform: translateX(-50%); bottom: max(22px, calc(env(safe-area-inset-bottom) + 12px));
+  position: fixed; z-index: 5; left: 50%; transform: translateX(-50%); bottom: max(82px, calc(env(safe-area-inset-bottom) + 72px));
   margin: 0; padding: 8px 16px; border-radius: 999px; color: var(--ink-2); white-space: nowrap; font-size: 13px;
   transition: opacity 0.5s ease;
 }
@@ -98,17 +122,12 @@
 
 @media (prefers-reduced-motion: reduce) { .hint { transition: none; } }
 
-/* Narrow: drop the wordmark text and the place name (it's in the drop-down). */
-@media (max-width: 720px) {
-  .bar { height: 56px; gap: 6px; padding: 0 6px; }
-  .wordmark { display: none; }
-  .switch button { padding: 0 10px; }
-  .status-btn .place { display: none; }
-  .status-btn .time::before { content: none; }
-  .drop-l { left: 14px; }
-  .drop-r { right: 14px; }
+/* Narrow: tighter widget; icon-only switch on the smallest phones. */
+@media (max-width: 520px) {
+  .widget { min-width: 0; padding: 9px 13px 10px; border-radius: 18px; }
+  .w-temp { font-size: 28px; }
+  .w-icon { width: 26px; height: 26px; }
 }
-@media (max-width: 420px) {
+@media (max-width: 380px) {
   .switch button span:last-child { display: none; }
-  .switch button { padding: 0 12px; }
 }
