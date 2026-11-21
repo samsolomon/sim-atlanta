@@ -206,6 +206,7 @@ export class World {
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     g.computeVertexNormals();
     const top = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
+    top.userData.lit = true;
     top.receiveShadow = true;
     this.group.add(top);
 
@@ -277,7 +278,7 @@ export class World {
         for (const off of [-6.2, 6.2]) marks.ribbon(line.offset(off, 2), 0.18, y(0.24), PAL.lineWhite, 3);
       } else if (w >= 9) {
         for (const off of [-0.18, 0.18]) marks.ribbon(line.offset(off, 2), 0.14, y(0.24), PAL.lineYellow, 3);
-        for (const off of [-w / 4, w / 4]) dashes(marks, line.offset(off, 2), y(0.24), PAL.lineWhite, 3, 9);
+        // Lane dashes come from the traffic model's lanes (traffic.ts), so cars sit between them.
       }
       // Overpass decks: concrete fascia where the street crosses the sunken highway.
       if (r.bridge) {
@@ -298,6 +299,7 @@ export class World {
     const mk = (bld: Builder, offset: number) => {
       const m = new THREE.Mesh(bld.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -offset, polygonOffsetUnits: -offset * 4 }));
       m.receiveShadow = true;
+      m.userData.lit = true;
       this.group.add(m);
     };
     mk(side, 1);
@@ -403,6 +405,7 @@ export class World {
     }
     const mk = (bld: Builder, off: number) => {
       const mesh = new THREE.Mesh(bld.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off * 4 }));
+      mesh.userData.lit = true;
       mesh.receiveShadow = true;
       this.group.add(mesh);
     };
@@ -817,11 +820,14 @@ export class World {
     const r = rng(311);
     const spots: { x: number; z: number; y: number; ang: number }[] = [];
     for (const rd of this.data.roads) {
-      if (!DRIVABLE.has(rd.cls) || rd.cls === 'service' || rd.cls === 'motorway') continue;
+      if (!DRIVABLE.has(rd.cls) || rd.cls === 'service') continue;
+      // The Connector has tall lights every ~50 m along both shoulders; streets every 28 m, alternating sides.
+      const hwy = rd.cls === 'motorway' && rd.sub !== 'link';
+      if (rd.cls === 'motorway' && !hwy) continue;
       const line = new Line(rd.pts);
       const w = (WIDTH[rd.cls] ?? 7) / 2 + 1.2;
       let side = 1;
-      for (let s = 8 + r() * 10; s < line.length; s += 28) {
+      for (let s = 8 + r() * 10; s < line.length; s += hwy ? 50 : 28) {
         const p = line.at(s);
         const x = p.x + p.nx * w * side;
         const z = p.z + p.nz * w * side;
@@ -834,37 +840,81 @@ export class World {
     const m = new THREE.Matrix4();
     const post = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.16, 7, 5).translate(0, 3.5, 0), new THREE.MeshLambertMaterial({ color: '#4a4f55' }), spots.length);
     this.lampHeads = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.25, 1.4), new THREE.MeshBasicMaterial({ color: '#8a8f94' }), spots.length);
-    const tex = (() => {
-      const c = document.createElement('canvas');
-      c.width = c.height = 64;
-      const g = c.getContext('2d')!;
-      const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-      grad.addColorStop(0, 'rgba(255,214,150,0.9)');
-      grad.addColorStop(0.5, 'rgba(255,190,120,0.35)');
-      grad.addColorStop(1, 'rgba(255,180,110,0)');
-      g.fillStyle = grad;
-      g.fillRect(0, 0, 64, 64);
-      return new THREE.CanvasTexture(c);
-    })();
-    this.lampPools = new THREE.InstancedMesh(
-      new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6 }),
-      spots.length,
-    );
     spots.forEach((sp, i) => {
       m.makeTranslation(sp.x, sp.y, sp.z);
       post.setMatrixAt(i, m);
       m.makeRotationY(sp.ang).setPosition(sp.x, sp.y + 7, sp.z);
       this.lampHeads!.setMatrixAt(i, m);
-      m.makeTranslation(sp.x, sp.y + 0.35, sp.z);
-      this.lampPools!.setMatrixAt(i, m);
     });
     post.castShadow = true;
-    this.lampPools.renderOrder = 5;
-    this.group.add(post, this.lampHeads, this.lampPools);
+    this.group.add(post, this.lampHeads);
+    this.bakeLightMap(spots);
   }
+
+  /**
+   * Night light on the ground: warm pools from every street lamp (and a glow under lit
+   * storefronts) painted into a texture over the board, added to the ground, street and
+   * lot materials in proportion to the night factor.
+   */
+  private bakeLightMap(spots: { x: number; z: number }[]) {
+    const b = this.b;
+    const PX = 1.0; // metres per texel
+    const c = document.createElement('canvas');
+    c.width = Math.ceil((b.maxX - b.minX) / PX);
+    c.height = Math.ceil((b.maxZ - b.minZ) / PX);
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = 'lighter';
+    const pool = (x: number, z: number, r: number, rgb: string, a: number) => {
+      const px = (x - b.minX) / PX;
+      const pz = (z - b.minZ) / PX;
+      const grad = g.createRadialGradient(px, pz, 0, px, pz, r / PX);
+      grad.addColorStop(0, `rgba(${rgb},${a})`);
+      grad.addColorStop(0.35, `rgba(${rgb},${a * 0.55})`);
+      grad.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = grad;
+      g.fillRect(px - r / PX, pz - r / PX, (2 * r) / PX, (2 * r) / PX);
+    };
+    for (const sp of spots) pool(sp.x, sp.z, 17, '255,196,128', 0.85); // ~3000 K LED/sodium mix
+    // Shopfront spill along building edges at street level.
+    for (const bd of this.data.buildings) {
+      const ring = bd.rings[0];
+      for (let i = 0; i < ring.length; i += 2) pool(ring[i][0], ring[i][1], 6, '255,214,160', 0.18);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.lightMap = tex;
+    const uniforms = {
+      uLightMap: { value: tex },
+      uLmBounds: { value: new THREE.Vector4(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ) },
+      uNight: this.night,
+    };
+    this.group.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.userData.lit) return;
+      const mat = mesh.material as THREE.MeshLambertMaterial;
+      mat.onBeforeCompile = (sh) => {
+        Object.assign(sh.uniforms, uniforms);
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vLmPos;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvLmPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform sampler2D uLightMap;\nuniform vec4 uLmBounds;\nuniform float uNight;\nvarying vec3 vLmPos;')
+          .replace(
+            '#include <opaque_fragment>',
+            `vec2 lmUv = (vLmPos.xz - uLmBounds.xy) / uLmBounds.zw;
+            vec3 lm = texture2D(uLightMap, vec2(lmUv.x, 1.0 - lmUv.y)).rgb;
+            outgoingLight += diffuseColor.rgb * lm * uNight * 2.2;
+            #include <opaque_fragment>`,
+          );
+      };
+      mat.customProgramCacheKey = () => 'lightmapped';
+      mat.needsUpdate = true;
+    });
+  }
+  private lightMap?: THREE.Texture;
   private lampHeads?: THREE.InstancedMesh;
-  private lampPools?: THREE.InstancedMesh;
 
   private wetMats?: THREE.MeshLambertMaterial[];
   private wet = -1;
@@ -886,7 +936,6 @@ export class World {
   setNight(n: number) {
     this.night.value = n;
     if (this.lampHeads) (this.lampHeads.material as THREE.MeshBasicMaterial).color.set('#8a8f94').lerp(new THREE.Color('#ffe2a8'), n);
-    if (this.lampPools) (this.lampPools.material as THREE.MeshBasicMaterial).opacity = n * 0.85;
   }
 
   private addTree(x: number, z: number, r: () => number, scale: number, y = this.ground(x, z)) {
@@ -973,6 +1022,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
         '#include <color_fragment>',
         /* glsl */ `#include <color_fragment>
         float litWin = 0.0;
+        float litLevel = 1.0;
         if (vStyle > -0.5) {
           vec3 fN = normalize(cross(dFdx(vWPos), dFdy(vWPos)));
           vec3 tng = normalize(vec3(-fN.z, 0.0, fN.x));
@@ -1005,6 +1055,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
           float cellH = hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
           litWin = win * (y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
+          litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
           diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4));
         }`,
@@ -1012,7 +1063,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
-        totalEmissiveRadiance += vec3(1.0, 0.74, 0.42) * litWin * uNight * 0.75;`,
+        totalEmissiveRadiance += vec3(1.0, 0.72, 0.4) * litWin * uNight * litLevel;`,
       );
   };
 }

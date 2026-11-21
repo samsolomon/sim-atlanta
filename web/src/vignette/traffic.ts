@@ -16,7 +16,7 @@
  *   trucks in proportion to each road's truck AADT.
  */
 import * as THREE from 'three';
-import { Line, rng, type P2 } from './geom';
+import { Builder, Line, rng, type P2 } from './geom';
 import { FLEET, LENGTH, PAINT, vehicleGeometry, vehicleMaterial, type VehicleType } from './vehicles';
 import type { World } from './world';
 
@@ -78,6 +78,7 @@ interface Veh {
   vf: number; // this driver's factor on each road's free speed
   len: number;
   inst: number;
+  prev: Seg | null; // the segment before `seg`, for placing a car that straddles both
   next: Seg | null; // the connector or lane after `seg`
   after: Seg | null; // the lane after a connector
   trailer?: { inst: number; x: number; z: number };
@@ -107,11 +108,41 @@ export class Traffic {
   private obj = new THREE.Object3D();
   private hidden = new THREE.Matrix4().makeScale(0, 0, 0);
 
+  private beams: THREE.InstancedMesh;
+  private beamMat: THREE.MeshBasicMaterial;
+
   constructor(
     private world: World,
     private data: TrafficData,
   ) {
     this.buildNetwork();
+    this.group.add(this.markings());
+    // Headlight beams: a soft wedge of light on the road ahead of each moving vehicle at night.
+    const c = document.createElement('canvas');
+    c.width = 64;
+    c.height = 128;
+    const g = c.getContext('2d')!;
+    for (let y = 0; y < 128; y++) {
+      const t = y / 127; // 0 at the car, 1 at the far end
+      const half = 10 + t * 22;
+      const a = (1 - t) ** 1.6 * 0.9;
+      const grad = g.createLinearGradient(32 - half, 0, 32 + half, 0);
+      grad.addColorStop(0, 'rgba(255,240,205,0)');
+      grad.addColorStop(0.5, `rgba(255,240,205,${a})`);
+      grad.addColorStop(1, 'rgba(255,240,205,0)');
+      g.fillStyle = grad;
+      g.fillRect(0, y, 64, 1);
+    }
+    this.beamMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, polygonOffset: true, polygonOffsetFactor: -8 });
+    const beamGeo = new THREE.PlaneGeometry(4.2, 16).rotateX(-Math.PI / 2).translate(0, 0, 8);
+    // Texture v=1 (row 0) sits at the far end; flip so the bright end is at the car.
+    const uv = beamGeo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+    this.beams = new THREE.InstancedMesh(beamGeo, this.beamMat, MAX_VEH);
+    this.beams.count = 0;
+    this.beams.frustumCulled = false;
+    this.beams.renderOrder = 6;
+    this.group.add(this.beams);
     const caps: Partial<Record<VehicleType, number>> = { sedan: 520, hatch: 260, suv: 420, pickup: 180, van: 140, box: 90, tractor: 90, trailer: 90 };
     const col = new THREE.Color();
     for (const [t, n] of Object.entries(caps) as [VehicleType, number][]) {
@@ -261,6 +292,26 @@ export class Traffic {
     }
   }
 
+  /** White dashes between same-direction lanes of city streets (the highway draws its own). */
+  private markings() {
+    const b = new Builder();
+    for (const e of this.edges) {
+      if (e.hwy || e.lanes.length < 2) continue;
+      for (let k = 0; k < e.lanes.length - 1; k++) {
+        // Halfway between lane k and k+1, measured on the untrimmed centreline.
+        const a = e.lanes[k].line.at(e.lanes[k].line.length / 2);
+        const c = e.lanes[k + 1].line.at(e.lanes[k + 1].line.length / 2);
+        const m = e.line.at(e.line.length / 2);
+        const off = (((a.x + c.x) / 2 - m.x) * -m.nx + ((a.z + c.z) / 2 - m.z) * -m.nz);
+        const line = e.line.offset(off, 2);
+        for (let s = 4; s + 3 < line.length - 4; s += 9) b.ribbon(line, 0.16, (_t, x, z) => e.yOf(x, z) + 0.05, '#eeeae0', 3, s, s + 3);
+      }
+    }
+    const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -12 }));
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
   private connector(a: Seg, b: Seg): Seg {
     const k = `${this.edges.indexOf(a.edge!)}:${a.lane}>${this.edges.indexOf(b.edge!)}:${b.lane}`;
     let c = this.conns.get(k);
@@ -370,6 +421,7 @@ export class Traffic {
       v0: 0,
       len: type === 'tractor' ? len : LENGTH[type],
       inst,
+      prev: null,
       next: null,
       after: null,
       amax: heavy ? 0.9 : 1.6,
@@ -483,6 +535,7 @@ export class Traffic {
           this.retire(v, i);
           break;
         }
+        v.prev = v.seg;
         v.seg = nxt;
         v.s = over;
         if (nxt.edge) v.v0 = nxt.edge.vFree * v.vf; // new road, new speed limit
@@ -504,21 +557,51 @@ export class Traffic {
     return (seg.y0 ?? 0) * (1 - t) + (seg.y1 ?? 0) * t;
   }
 
+  /** Point `back` metres behind the vehicle's front bumper, on this or the previous segment. */
+  private pointAt(v: Veh, back: number) {
+    let s = v.s - back;
+    let seg = v.seg;
+    if (s < 0 && v.prev) {
+      seg = v.prev;
+      s += seg.line.length;
+    }
+    const p = seg.line.at(Math.max(0, s));
+    const x = s < 0 ? p.x + p.dx * s : p.x;
+    const z = s < 0 ? p.z + p.dz * s : p.z;
+    return { x, z, y: this.yAt(seg, Math.max(0, s), x, z) };
+  }
+
   private draw() {
     const w = this.world;
     let hwyV = 0;
     let hwyN = 0;
+    const nightOn = this.night.value > 0.05;
+    let nb = 0;
     for (const v of this.vehicles) {
-      const centre = v.s - LENGTH[v.type] / 2;
-      const p = v.seg.line.at(Math.max(0, centre));
-      const y = this.yAt(v.seg, v.s, p.x, p.z);
+      // Place by front and rear axles (each looked up across the previous segment too),
+      // so the body pivots through turns instead of snapping at segment joins.
+      const L = LENGTH[v.type];
+      const f = this.pointAt(v, L * 0.18);
+      const r = this.pointAt(v, L * 0.82);
+      let hx = f.x - r.x;
+      let hz = f.z - r.z;
+      const hl = Math.hypot(hx, hz) || 1;
+      hx /= hl;
+      hz /= hl;
+      const p = { x: (f.x + r.x) / 2, z: (f.z + r.z) / 2, dx: hx, dz: hz };
+      const y = (f.y + r.y) / 2;
       const m = this.meshes.get(v.type)!.mesh;
       if (!w.inBounds(p.x, p.z, 1)) m.setMatrixAt(v.inst, this.hidden);
       else {
         this.obj.position.set(p.x, y, p.z);
-        this.obj.rotation.set(0, Math.atan2(p.dx, p.dz), 0);
+        this.obj.rotation.set(0, Math.atan2(hx, hz), 0);
         this.obj.updateMatrix();
         m.setMatrixAt(v.inst, this.obj.matrix);
+        if (nightOn && nb < MAX_VEH) {
+          this.obj.position.set(f.x + hx * (L * 0.18), y + 0.3, f.z + hz * (L * 0.18));
+          this.obj.updateMatrix();
+          this.beams.setMatrixAt(nb++, this.obj.matrix);
+        }
       }
       if (v.seg.edge?.hwy) {
         hwyV += v.v;
@@ -549,6 +632,9 @@ export class Traffic {
       }
     }
     for (const { mesh } of this.meshes.values()) mesh.instanceMatrix.needsUpdate = true;
+    this.beams.count = nb;
+    this.beams.instanceMatrix.needsUpdate = true;
+    this.beamMat.opacity = Math.min(1, this.night.value) * 0.55;
     this.stats.vehicles = this.vehicles.length;
     this.stats.connectorMph = hwyN ? hwyV / hwyN / 0.447 : 0;
   }

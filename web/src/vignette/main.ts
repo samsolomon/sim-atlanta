@@ -9,14 +9,14 @@ import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { HorizontalTiltShiftShader } from 'three/examples/jsm/shaders/HorizontalTiltShiftShader.js';
-import { VerticalTiltShiftShader } from 'three/examples/jsm/shaders/VerticalTiltShiftShader.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { RoutesFile } from '../model/types';
 import { elevationAt, makeProjector, type SceneManifest } from '../scene3d/scene-data';
 import { Line, type P2 } from './geom';
 import { SimClock, leafState, local, sunPosition } from './time';
 import { ParkedCars, Traffic, type TrafficData } from './traffic';
 import { fetchLive, PRESETS, Rain, type Weather, type WeatherKind } from './weather';
+import { tiltShiftShader } from './tiltshift';
 import { Train } from './train';
 import { World, type Alignment, type VData } from './world';
 
@@ -137,25 +137,41 @@ async function main() {
   gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
   gtao.blendIntensity = 0.9;
   composer.addPass(gtao);
-  const hts = new ShaderPass(HorizontalTiltShiftShader);
-  const vts = new ShaderPass(VerticalTiltShiftShader);
+  // Bloom only at night (strength follows the night factor), so lamps and windows glow.
+  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0, 0.55, 0.82);
+  composer.addPass(bloom);
+  const hts = new ShaderPass(tiltShiftShader([1, 0]));
+  const vts = new ShaderPass(tiltShiftShader([0, 1]));
   composer.addPass(hts);
   composer.addPass(vts);
   composer.addPass(new OutputPass());
-  let tilt = Number(params.get('tilt') ?? 2.2);
+  let tilt = Number(params.get('tilt') ?? 1.6);
 
   function resize() {
     const w = el.clientWidth;
     const h = el.clientHeight;
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
+    bloom.resolution.set(w / 2, h / 2);
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();
-    hts.uniforms.h.value = tilt / w;
-    vts.uniforms.v.value = tilt / h;
-    hts.uniforms.r.value = vts.uniforms.r.value = 0.5;
+    for (const p of [hts, vts]) {
+      p.uniforms.uTexel.value.set(1 / w, 1 / h);
+      p.uniforms.uStrength.value = tilt;
+      p.enabled = tilt > 0.01;
+    }
   }
   new ResizeObserver(resize).observe(el);
+
+  // Double-click (or double-tap) a spot to glide the camera's focus there.
+  const ray = new THREE.Raycaster();
+  let glideTo: THREE.Vector3 | null = null;
+  renderer.domElement.addEventListener('dblclick', (ev) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1), camera);
+    const hit = ray.intersectObject(world.group, true)[0];
+    if (hit) glideTo = hit.point.clone();
+  });
   resize();
 
   // ---- loop -----------------------------------------------------------------------------
@@ -222,6 +238,8 @@ async function main() {
     const night = 1 - sm(-5, 4, el);
     world.setNight(night);
     traffic.night.value = night;
+    bloom.strength = 0.55 * night;
+    bloom.enabled = night > 0.02;
     east.night.value = west.night.value = night;
     world.setSeason(doy);
 
@@ -287,6 +305,12 @@ async function main() {
     east.place(Math.min(ph * SPEED, runLen), 1);
     const pw = (t + period / 2) % period;
     west.place(al.line.length - Math.min(pw * SPEED, runLen), -1);
+    if (glideTo) {
+      const step = glideTo.clone().sub(controls.target).multiplyScalar(0.12);
+      controls.target.add(step);
+      camera.position.add(step);
+      if (step.length() < 0.05) glideTo = null;
+    }
     controls.update();
     composer.render();
     requestAnimationFrame(frame);

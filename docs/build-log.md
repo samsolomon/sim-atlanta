@@ -514,3 +514,31 @@ destination sign still glow.
 
 ![Train on the viaduct](log/vignette/trainside-v2.jpg)
 ![CQ400-style cab](log/vignette/train-v2.jpg)
+
+## 2026-11-20 · Sam's feedback pass: lanes, turns, night, focus
+
+Sam's notes after driving around: cars "drive in the middle of the lanes", are "a little
+jumpy in intersections", night needs "more realistic lighting", and the tilt-shift blur is
+"a little strong… hard to see what I'm trying to look at".
+
+- **Lanes:** the painted dashes came from a road-class rule while the cars' lanes came from
+  HPMS lane counts, so cars sat on the dashes. The traffic model now draws the dashes
+  between its own lanes.
+- **Turns:** a car's heading came from one point on its path, and a car straddling a lane
+  and a turn path snapped onto the turn. Cars are now placed by their front and rear axles,
+  looked up across the previous path segment too, so the body pivots through the turn.
+- **Night:** the lamps' additive white discs are replaced by a baked **light map**: warm
+  (~3000 K) pools from every street lamp and a faint shopfront spill, added to the ground,
+  street and lot materials in proportion to darkness. The Connector gets high-mast lights
+  every 50 m. Headlight beams lie on the road ahead of moving cars. Bloom (night only)
+  makes lamps, windows and headlights glow; window brightness varies per window.
+- **Tilt-shift:** three.js's shader ramps blur linearly from one focus line. A custom pass
+  keeps a sharp band (±16% of the screen) and ramps softly to the edges, at a lower default
+  strength. Double-click glides the camera's focus to that spot.
+- A side note on GPU hashing: `fract(sin(dot(p, k)) * 43758.5)` with world coordinates in
+  the hundreds turns into noise, which showed up as speckled walls. Hash the window cell
+  index instead.
+
+![Night street](log/vignette/night-street.jpg)
+![Night viaduct](log/vignette/night-viaduct.jpg)
+![Lanes](log/vignette/day-lanes.jpg)
