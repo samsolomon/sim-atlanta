@@ -75,6 +75,7 @@ interface Veh {
   s: number;
   v: number;
   v0: number;
+  vf: number; // this driver's factor on each road's free speed
   len: number;
   inst: number;
   next: Seg | null; // the connector or lane after `seg`
@@ -365,13 +366,15 @@ export class Traffic {
       seg,
       s: 0,
       v: e.vFree * 0.85,
-      v0: e.vFree * (0.88 + this.rand() * 0.22) * (heavy ? 0.92 : 1),
+      vf: (0.88 + this.rand() * 0.22) * (heavy ? 0.92 : 1),
+      v0: 0,
       len: type === 'tractor' ? len : LENGTH[type],
       inst,
       next: null,
       after: null,
       amax: heavy ? 0.9 : 1.6,
     };
+    v.v0 = e.vFree * v.vf;
     if (type === 'tractor') {
       const p = seg.line.at(0);
       v.trailer = { inst: this.alloc('trailer'), x: p.x - p.dx * 14, z: p.z - p.dz * 14 };
@@ -482,6 +485,7 @@ export class Traffic {
         }
         v.seg = nxt;
         v.s = over;
+        if (nxt.edge) v.v0 = nxt.edge.vFree * v.vf; // new road, new speed limit
         nxt.vehicles.push(v);
         this.plan(v);
       }
