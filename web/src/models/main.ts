@@ -8,6 +8,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type MartaLine } from '../vignette/cq400';
 import { gradeShader } from '../vignette/grade';
 import { BUS_LENGTH, busGeometry, busMaterial } from '../vignette/xcelsior';
+import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
 import { inkShader } from '../vignette/ink';
 
 const el = document.getElementById('stage')!;
@@ -55,22 +56,45 @@ scene.add(track);
 const night = { value: 0 };
 const role = { value: 1 };
 let line: MartaLine = 'gold';
-let vehicle: 'train' | 'bus' = new URLSearchParams(location.search).get('v') === 'bus' ? 'bus' : 'train';
+const vehicles = {
+  cq400: 'Stadler CQ400',
+  xn40: 'New Flyer Xcelsior XN40',
+  cm44ac: 'GE/Wabtec CM44AC',
+} as const;
+type Vehicle = keyof typeof vehicles;
+const requested = new URLSearchParams(location.search).get('v');
+const aliases: Record<string, Vehicle> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400' };
+let vehicle: Vehicle = requested && Object.hasOwn(vehicles, requested)
+  ? requested as Vehicle : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
 let cars: THREE.Mesh[] = [];
 function build() {
   for (const c of cars) {
     scene.remove(c);
     c.geometry.dispose();
+    const materials = Array.isArray(c.material) ? c.material : [c.material];
+    for (const material of materials) material.dispose();
   }
-  track.visible = vehicle === 'train';
-  document.getElementById('lines')!.style.display = vehicle === 'train' ? '' : 'none';
-  document.getElementById('roles')!.style.display = vehicle === 'train' ? '' : 'none';
-  document.getElementById('title')!.textContent = vehicle === 'train' ? 'Model Lab · MARTA CQ400' : 'Model Lab · MARTA bus';
+  track.visible = vehicle !== 'xn40';
+  document.getElementById('lines')!.style.display = vehicle === 'cq400' ? '' : 'none';
+  document.getElementById('roles')!.style.display = vehicle === 'cq400' ? '' : 'none';
+  document.getElementById('title')!.textContent = vehicles[vehicle];
+  document.title = vehicles[vehicle] + ' · Model Lab';
+  if (vehicle === 'cm44ac') {
+    document.getElementById('blurb')!.textContent = 'CSX 7257, seen at Georgia State, is a modernized GE AC4400CW. This scale study pairs the six-axle locomotive with an illustrative boxcar.';
+    cars = (['locomotive', 'boxcar'] as const).map(unit => {
+      const mesh = new THREE.Mesh(freightGeometry(unit), new THREE.MeshLambertMaterial({ vertexColors: true }));
+      mesh.position.set(0, .125, (unit === 'locomotive' ? 1 : -1) * (FREIGHT_LENGTH[unit] / 2 + .15));
+      mesh.castShadow = mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    });
+    return;
+  }
   document.getElementById('blurb')!.textContent =
-    vehicle === 'train'
+    vehicle === 'cq400'
       ? 'One cab car and one middle car of a 4-car set. Drop a reference photo to overlay it and line up the view.'
-      : 'New Flyer Xcelsior 40-foot (most of MARTA’s fleet), built to New Flyer’s published dimensions. Current MARTA livery, matched from photos, minus the wordmark.';
-  if (vehicle === 'bus') {
+      : 'MARTA’s 40-foot compressed-natural-gas bus. The roof enclosures hold its fuel tanks. The body and wheelbase follow New Flyer’s published dimensions.';
+  if (vehicle === 'xn40') {
     const bus = new THREE.Mesh(busGeometry(), busMaterial(night));
     bus.position.z = 0;
     bus.castShadow = bus.receiveShadow = true;
@@ -89,7 +113,6 @@ function build() {
     scene.add(c);
   }
 }
-build();
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.5, 400);
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -186,14 +209,21 @@ const BUS_VIEWS: Record<string, { pos: [number, number, number]; target: [number
   'Top': { pos: [0.01, 34, 0], target: [0, 0, 0], fov: 30 },
 };
 const baseViews = { ...VIEWS };
-function setVehicle(v: 'train' | 'bus') {
+function setVehicle(v: Vehicle) {
   vehicle = v;
-  Object.assign(VIEWS, v === 'bus' ? BUS_VIEWS : baseViews);
+  Object.assign(VIEWS, v === 'xn40' ? BUS_VIEWS : baseViews);
+  if (v === 'cm44ac') VIEWS['¾ front'] = { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 };
   build();
-  view(v === 'bus' ? '¾ front' : '¾ front');
+  view('¾ front');
 }
-mk('vehicles', 'CQ400 train', () => setVehicle('train'), vehicle === 'train');
-mk('vehicles', 'Bus', () => setVehicle('bus'), vehicle === 'bus');
+for (const id of Object.keys(vehicles) as Vehicle[]) {
+  mk('vehicles', vehicles[id], () => {
+    const url = new URL(location.href);
+    url.searchParams.set('v', id);
+    history.replaceState(null, '', url);
+    setVehicle(id);
+  }, vehicle === id);
+}
 setVehicle(vehicle);
 void BUS_LENGTH;
 const nightBtn = document.getElementById('night')!;
