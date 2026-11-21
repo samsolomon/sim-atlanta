@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 
 // In dev, /api/* goes to the Cloudflare Worker running under wrangler dev.
 export default defineConfig(({ command }) => {
-  const input: Record<string, string> = { main: 'index.html', vignette: 'vignette.html' };
+  const input: Record<string, string> = { main: 'index.html', vignette: 'vignette.html', models: 'models.html' };
   if (existsSync(new URL('./public/art/layers.json', import.meta.url))) {
     input.artmap = 'artmap.html';
   } else if (command === 'build') {

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Model Lab</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #e9e5dc; font: 14px/1.4 system-ui, -apple-system, sans-serif; color: #2a2722; }
+      #stage { position: fixed; inset: 0; }
+      #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+      #ref { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 0.45; display: none; }
+      .panel { position: fixed; left: max(16px, env(safe-area-inset-left)); top: max(16px, env(safe-area-inset-top)); background: rgba(251, 249, 244, .94); border: 1px solid #ddd6c8; border-radius: 8px; padding: 12px 14px; display: grid; gap: 9px; max-width: 330px; box-shadow: 0 6px 24px rgba(60, 45, 30, .1); }
+      .panel h1 { margin: 0; font-size: 17px; }
+      .panel p { margin: 0; color: #6b665c; font-size: 12.5px; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+      .row b { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: #6b665c; width: 100%; }
+      button, label.btn { font: 500 12.5px system-ui, sans-serif; background: #fff; border: 1px solid #ddd6c8; border-radius: 999px; padding: 5px 10px; cursor: pointer; color: #2a2722; }
+      button[aria-pressed="true"] { background: #2a2722; color: #fbf9f4; border-color: #2a2722; }
+      input[type=range] { width: 120px; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <img id="ref" alt="Reference photo overlay" />
+    <aside class="panel">
+      <h1>Model Lab · MARTA CQ400</h1>
+      <p>One cab car and one middle car of a 4-car set. Drop a reference photo to overlay it and line up the view.</p>
+      <div class="row" id="lines"><b>Line colour</b></div>
+      <div class="row" id="roles"><b>Cab end</b></div>
+      <div class="row" id="views"><b>View</b></div>
+      <div class="row"><b>Light</b><button id="night" type="button">Night</button><button id="ink" type="button" aria-pressed="true">Ink</button></div>
+      <div class="row"><b>Reference</b><label class="btn" for="file">Load photo…</label><input id="file" type="file" accept="image/*" hidden /><input id="opacity" type="range" min="0" max="1" step="0.05" value="0.45" aria-label="Overlay opacity" /></div>
+    </aside>
+    <script type="module" src="/src/models/main.ts"></script>
+  </body>
+</html>
