@@ -26,6 +26,8 @@ const sun = new THREE.DirectionalLight('#fff3df', 2.6);
 sun.position.set(-18, 30, 22);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0005; // without these the models shade themselves in fine stripes (shadow acne)
+sun.shadow.normalBias = 0.05;
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 scene.add(hemi, sun);
 const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 48), new THREE.MeshLambertMaterial({ color: '#d9d3c6' }));

@@ -212,7 +212,6 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
     yTop -= r.h + GAP;
     return row;
   });
-  const streakBottom = rows[0].y0;
   // Cross-section path from the side's upper band, round the roof edge, across the roof strip and
   // up the CNG pod's side to its flat top. Each point: x (unsigned), y, height h for the lean.
   const POD_X = (W - 0.5) / 2 + 0.06; // pod side face (extrude half-depth + bevel thickness)
@@ -231,8 +230,8 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
     for (const [x, y] of pts) rp.push([x, y, y]);
   }
   for (let i = 0; i < 3; i++) {
-    // Side part: the third slash stops at the streak's bottom edge and flows into it.
-    const yb = i === 2 ? streakBottom : UY0;
+    // Side part: every slash runs down to the window head; the streak branches off the third.
+    const yb = UY0;
     decal(both, [[zAt(slashD(i, UY1)), UY1], [zAt(slashD(i, UY1) + SW), UY1], [zAt(slashD(i, yb) + SW), yb], [zAt(slashD(i, yb)), yb]], liv.blue, 0.008);
     // Roof part: segment by segment along the path, keeping the same lean.
     for (const sd of both) {
