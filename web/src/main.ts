@@ -255,8 +255,8 @@ async function openCity() {
     console.error(err);
     view3d.hidden = true;
     document.body.classList.remove('in3d');
+    shell.setView('map'); // closes City, which clears the note, so set the note after
     shell.setNote('City view couldn’t load here, so this is the map');
-    shell.setView('map');
     return;
   }
   diorama.onPick = (id) => {
