@@ -59,7 +59,7 @@ See [the response contract](docs/data-model.md#live-buses).
 
 Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
 custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
-before `pnpm deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
 
 The optional East Portal art map uses a separate static bake. To include or retain
 `/artmap.html` in a deployment, copy the Studio's complete `web/public/art/`
@@ -70,7 +70,7 @@ vignette, and deploying it removes a previously published art map.
 ```sh
 npx wrangler login                       # once
 cd worker && npx wrangler secret put MARTA_API_KEY
-pnpm deploy
+pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
 ```
 
 ## Not yet
