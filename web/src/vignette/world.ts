@@ -16,6 +16,7 @@ export interface VBuilding {
 }
 export interface VRoad {
   cls: string;
+  sub?: string | null;
   name: string | null;
   bridge: boolean;
   tunnel: boolean;
@@ -27,11 +28,20 @@ export interface VRail {
   flags: string[];
   pts: P2[];
 }
+export interface VGround {
+  kind: string;
+  sub: string | null;
+  name: string | null;
+  rings: P2[][];
+}
 export interface VData {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   buildings: VBuilding[];
   roads: VRoad[];
   rail: VRail[];
+  ground?: VGround[];
+  points?: Record<string, P2[]>;
+  lines?: Record<string, P2[][]>;
 }
 
 /** The MARTA alignment through the vignette: centreline + elevation (m) by distance. */
@@ -250,7 +260,7 @@ export class World {
     for (const r of roads) {
       const pts = clip(r);
       if (pts.length < 2) continue;
-      const w = WIDTH[r.cls] ?? 0;
+      const w = r.sub === 'parking_aisle' ? 6.4 : WIDTH[r.cls] ?? 0;
       if (!w || r.tunnel) continue;
       const line = new Line(pts);
       const hwy = r.cls === 'motorway';
@@ -296,6 +306,154 @@ export class World {
     const dm = new THREE.Mesh(decks.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true }));
     dm.castShadow = dm.receiveShadow = true;
     this.group.add(dm);
+  }
+
+  // ---- ground cover -------------------------------------------------------------------
+
+  /** Parking stalls found by buildGround, for parked cars: centre and heading. */
+  readonly stalls: { x: number; y: number; z: number; ang: number }[] = [];
+
+  /**
+   * Paint real ground cover over the lawn: parking lots (asphalt, stall lines), plazas,
+   * sports pitches, construction sites, platforms, and zebra crossings.
+   */
+  buildGround() {
+    const fill = new Builder();
+    const marks = new Builder();
+    const b = this.b;
+    const STYLE: Record<string, { color: string; lift: number } | undefined> = {
+      parking: { color: '#6e7075', lift: 0.1 },
+      pedestrian: { color: '#d6cdbd', lift: 0.12 },
+      platform: { color: '#cfc9bd', lift: 0.3 },
+      pitch: { color: '#5f9a4a', lift: 0.08 },
+      construction: { color: '#a8865e', lift: 0.06 },
+      meadow: { color: '#a5b46e', lift: 0.04 },
+      garden: { color: '#6f9a52', lift: 0.05 },
+      brownfield: { color: '#a99a7c', lift: 0.05 },
+    };
+    const order = ['meadow', 'garden', 'brownfield', 'construction', 'pitch', 'pedestrian', 'parking', 'platform'];
+    const ground = [...(this.data.ground ?? [])].filter((g) => STYLE[g.kind]).sort((a, c) => order.indexOf(a.kind) - order.indexOf(c.kind));
+    const blocks = this.data.buildings.map((bd) => bd.rings[0]);
+    for (const g of ground) {
+      const st = STYLE[g.kind]!;
+      const outer = clipRing(g.rings[0], b);
+      if (outer.length < 3) continue;
+      const holes = g.rings.slice(1).map((h) => clipRing(h, b)).filter((h) => h.length >= 3);
+      const contour = outer.map((p) => new THREE.Vector2(p[0], p[1]));
+      const hv = holes.map((h) => h.map((p) => new THREE.Vector2(p[0], p[1])));
+      const all = [...contour, ...hv.flat()];
+      const y = (v: THREE.Vector2) => Math.max(this.ground(v.x, v.y), -0.5) + st.lift;
+      for (const t of THREE.ShapeUtils.triangulateShape(contour, hv)) {
+        const [a, c, d] = [all[t[0]], all[t[1]], all[t[2]]];
+        fill.tri([a.x, y(a), a.y], [c.x, y(c), c.y], [d.x, y(d), d.y], st.color);
+      }
+      if (g.kind === 'parking') this.layoutStalls(outer, blocks, marks, st.lift);
+      if (g.kind === 'pitch') {
+        // Touchline: the polygon outline inset 1.5 m.
+        const ring = new Line([...outer, outer[0]]);
+        marks.ribbon(ring.offset(-1.5, 1), 0.15, (_s, x, z) => this.ground(x, z) + st.lift + 0.03, '#f2f0ea', 1);
+      }
+    }
+    // Unmapped lots, inferred from parking aisles that aren't inside a mapped lot: pave
+    // a stall's depth either side of the aisle and stripe stalls along it.
+    const lots = ground.filter((g) => g.kind === 'parking').map((g) => g.rings[0]);
+    const streets = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'service');
+    const nearStreet = (x: number, z: number, d: number) => streets.some((r) => r.pts.some((p, i) => i > 0 && segDist(x, z, r.pts[i - 1], p) < d + (WIDTH[r.cls] ?? 7) / 2));
+    const clearSpot = (x: number, z: number) => this.inBounds(x, z, 2) && !blocks.some((r) => pointInRing(x, z, r) || edgeDist(x, z, r) < 1) && !nearStreet(x, z, 1.5) && this.ground(x, z) > -0.5;
+    for (const r of this.data.roads) {
+      if (r.sub !== 'parking_aisle' || r.pts.length < 2) continue;
+      const line = new Line(r.pts);
+      const mid = line.at(line.length / 2);
+      if (lots.some((ring) => pointInRing(mid.x, mid.z, ring))) continue;
+      for (let s = 1.3; s < line.length - 1.3; s += 2.6)
+        for (const side of [-1, 1]) {
+          const p = line.at(s);
+          const off = 3.2 + 2.7;
+          const x = p.x + p.nx * off * side;
+          const z = p.z + p.nz * off * side;
+          const back = [p.x + p.nx * (off + 2.4) * side, p.z + p.nz * (off + 2.4) * side];
+          if (!clearSpot(x, z) || !clearSpot(back[0], back[1])) continue;
+          const y = this.ground(x, z) + 0.1;
+          const ang = Math.atan2(p.nx * side, p.nz * side);
+          const m = new THREE.Matrix4().makeRotationY(ang).setPosition(x, y, z);
+          fill.box(2.62, 0.02, 5.6, 0, 0, 0, '#6e7075', m);
+          marks.box(0.12, 0.02, 5.4, 1.3, 0.03, 0, '#e9e6de', m);
+          this.stalls.push({ x, y, z, ang: ang + Math.PI });
+        }
+    }
+
+    // Zebra crossings: stripes parallel to the road, spanning its width.
+    const drivable = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'motorway');
+    for (const [x, z] of this.data.points?.crossing ?? []) {
+      if (!this.inBounds(x, z, 2)) continue;
+      let best: { d: number; r: VRoad; a: P2; c: P2 } | null = null;
+      for (const r of drivable)
+        for (let i = 1; i < r.pts.length; i++) {
+          const d = segDist(x, z, r.pts[i - 1], r.pts[i]);
+          if (!best || d < best.d) best = { d, r, a: r.pts[i - 1], c: r.pts[i] };
+        }
+      if (!best || best.d > 3) continue;
+      const w = WIDTH[best.r.cls] ?? 7;
+      const len = Math.hypot(best.c[0] - best.a[0], best.c[1] - best.a[1]) || 1;
+      const dx = (best.c[0] - best.a[0]) / len;
+      const dz = (best.c[1] - best.a[1]) / len;
+      const yy = (best.r.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z)) + 0.25;
+      const m = new THREE.Matrix4().makeRotationY(Math.atan2(dx, dz)).setPosition(x, yy, z);
+      for (let o = -w / 2 + 0.6; o <= w / 2 - 0.4; o += 1.1) marks.box(0.55, 0.02, 3.2, o, 0, 0, '#f2f0ea', m);
+    }
+    const mk = (bld: Builder, off: number) => {
+      const mesh = new THREE.Mesh(bld.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off * 4 }));
+      mesh.receiveShadow = true;
+      this.group.add(mesh);
+    };
+    mk(fill, 1.5);
+    mk(marks, 3.5);
+  }
+
+  /** Rows of 2.6 m × 5.4 m stalls either side of 6.5 m aisles, along the lot's longest edge. */
+  private layoutStalls(ring: P2[], blocks: P2[][], marks: Builder, lift: number) {
+    let best = 0;
+    let ang = 0;
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i];
+      const c = ring[(i + 1) % ring.length];
+      const l = Math.hypot(c[0] - a[0], c[1] - a[1]);
+      if (l > best) {
+        best = l;
+        ang = Math.atan2(c[1] - a[1], c[0] - a[0]);
+      }
+    }
+    const ux = Math.cos(ang);
+    const uz = Math.sin(ang);
+    const vx = -uz;
+    const vz = ux;
+    // Lot extent in the (u, v) frame.
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    for (const [x, z] of ring) {
+      const u = x * ux + z * uz;
+      const v = x * vx + z * vz;
+      u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v);
+    }
+    const ok = (x: number, z: number) => pointInRing(x, z, ring) && edgeDist(x, z, ring) > 1.2 && !blocks.some((r) => pointInRing(x, z, r)) && this.inBounds(x, z, 1);
+    const SW = 2.6;
+    const SL = 5.4;
+    const module = SL * 2 + 6.5;
+    for (let v = v0 + 2 + SL / 2; v < v1 - SL / 2; v += module) {
+      for (const side of [0, 1]) {
+        const vc = v + side * (SL + 6.5); // two facing rows around each aisle
+        if (vc > v1 - 1) continue;
+        for (let u = u0 + 2; u < u1 - 2; u += SW) {
+          const x = u * ux + vc * vx;
+          const z = u * uz + vc * vz;
+          if (!ok(x, z) || !ok(x + vx * (SL / 2 - 0.4), z + vz * (SL / 2 - 0.4)) || !ok(x - vx * (SL / 2 - 0.4), z - vz * (SL / 2 - 0.4))) continue;
+          const y = this.ground(x, z) + lift;
+          this.stalls.push({ x, y, z, ang: Math.atan2(vx, vz) + (side ? Math.PI : 0) });
+          // Divider line on one side of each stall.
+          const m = new THREE.Matrix4().makeRotationY(Math.atan2(vx, vz)).setPosition(x - ux * (SW / 2), y + 0.03, z - uz * (SW / 2));
+          marks.box(0.12, 0.02, SL, 0, 0, 0, '#e9e6de', m);
+        }
+      }
+    }
   }
 
   // ---- rail ---------------------------------------------------------------------------
@@ -737,6 +895,34 @@ export class World {
 }
 
 export const PORTAL_E = -5.5; // track elevation where the cut is covered over (train roof ≈ 4 m)
+
+/** Clip a ring to the board rectangle (Sutherland–Hodgman). */
+function clipRing(ring: P2[], b: { minX: number; maxX: number; minZ: number; maxZ: number }): P2[] {
+  let pts = ring;
+  const edges: [(p: P2) => boolean, (a: P2, c: P2) => P2][] = [
+    [(p) => p[0] >= b.minX, (a, c) => lerpAt(a, c, (b.minX - a[0]) / (c[0] - a[0]))],
+    [(p) => p[0] <= b.maxX, (a, c) => lerpAt(a, c, (b.maxX - a[0]) / (c[0] - a[0]))],
+    [(p) => p[1] >= b.minZ, (a, c) => lerpAt(a, c, (b.minZ - a[1]) / (c[1] - a[1]))],
+    [(p) => p[1] <= b.maxZ, (a, c) => lerpAt(a, c, (b.maxZ - a[1]) / (c[1] - a[1]))],
+  ];
+  for (const [inside, cut] of edges) {
+    const out: P2[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      const c = pts[(i + 1) % pts.length];
+      const ia = inside(a);
+      const ic = inside(c);
+      if (ia) out.push(a);
+      if (ia !== ic) out.push(cut(a, c));
+    }
+    pts = out;
+    if (pts.length < 3) return [];
+  }
+  return pts;
+}
+function lerpAt(a: P2, c: P2, t: number): P2 {
+  return [a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t];
+}
 
 function smooth(a: number, b: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));

@@ -244,3 +244,43 @@ function bitrev(k: number, n: number) {
   for (let i = 0; i < bits; i++) if (k & (1 << i)) r |= 1 << (bits - 1 - i);
   return r / (1 << bits);
 }
+
+/**
+ * Cars in surface lots. Occupancy is a rule of thumb for downtown commuter lots (illustrative):
+ * full on weekday working hours, a third in the evening, a few overnight; half on weekend days.
+ */
+export function lotOccupancy(hour: number, weekend: boolean) {
+  const bump = (c: number, w: number) => Math.exp(-(((hour - c) / w) ** 2));
+  if (weekend) return 0.12 + 0.4 * bump(14, 4.5) + 0.15 * bump(20, 2.5);
+  return 0.1 + 0.78 * Math.min(1, bump(12.5, 4.2) * 1.25) + 0.12 * bump(19.5, 2);
+}
+
+export class ParkedCars {
+  readonly mesh: THREE.InstancedMesh;
+  private prio: number[];
+  private last = -1;
+  constructor(private stalls: { x: number; y: number; z: number; ang: number }[]) {
+    const r = rng(404);
+    this.mesh = new THREE.InstancedMesh(vehicle('car'), vehicleMaterial({ value: 0 }), Math.max(1, stalls.length));
+    this.mesh.castShadow = this.mesh.receiveShadow = true;
+    const c = new THREE.Color();
+    this.prio = stalls.map(() => r());
+    stalls.forEach((_, i) => this.mesh.setColorAt(i, c.set(CAR_COLORS[Math.floor(r() * CAR_COLORS.length)])));
+    this.update(12, false);
+  }
+  update(hour: number, weekend: boolean) {
+    const occ = lotOccupancy(hour, weekend);
+    if (Math.abs(occ - this.last) < 0.005) return;
+    this.last = occ;
+    const m = new THREE.Matrix4();
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    this.stalls.forEach((st, i) => {
+      if (this.prio[i] > occ) return this.mesh.setMatrixAt(i, zero);
+      // Nose in, with a little slop.
+      const j = (this.prio[i] * 1000) % 1;
+      m.makeRotationY(st.ang + (j - 0.5) * 0.08).setPosition(st.x + (j - 0.5) * 0.3, st.y, st.z);
+      this.mesh.setMatrixAt(i, m);
+    });
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}

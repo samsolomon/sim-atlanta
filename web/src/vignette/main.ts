@@ -15,7 +15,7 @@ import type { RoutesFile } from '../model/types';
 import { elevationAt, makeProjector, type SceneManifest } from '../scene3d/scene-data';
 import { Line, type P2 } from './geom';
 import { SimClock, leafState, local, sunPosition } from './time';
-import { Traffic, type TrafficData } from './traffic';
+import { ParkedCars, Traffic, type TrafficData } from './traffic';
 import { fetchLive, PRESETS, Rain, type Weather, type WeatherKind } from './weather';
 import { Train } from './train';
 import { World, type Alignment, type VData } from './world';
@@ -42,6 +42,7 @@ async function main() {
   if (trees?.trees?.length && !params.has('scatter')) world.realTrees = trees.trees;
   world.buildBoard();
   world.buildStreets();
+  world.buildGround();
   world.buildMarta();
   world.buildFreight();
   world.buildBuildings();
@@ -102,6 +103,8 @@ async function main() {
   scene.add(east.group, west.group);
   const traffic = new Traffic(world, td);
   scene.add(traffic.group);
+  const parked = new ParkedCars(world.stalls);
+  scene.add(parked.mesh);
   const clock = new SimClock(params.get('at'), Number(params.get('speed') ?? 1));
   const runLen = al.line.length + east.length;
   const SPEED = 16; // m/s, about 36 mph
@@ -277,6 +280,7 @@ async function main() {
     const loc = local(now);
     environment(now, loc.doy);
     traffic.update(paused ? 0 : dt, loc.hour, loc.weekend, snapTraffic);
+    parked.update(loc.hour, loc.weekend);
     snapTraffic = false;
     readout(now);
     const ph = t % period;

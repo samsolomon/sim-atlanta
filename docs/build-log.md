@@ -451,3 +451,24 @@ weather picker.
 **Next truth gap:** the ground. Everything not a building or road is drawn as grass, but
 downtown is mostly parking lots and plazas. Overture's land use and land cover layers (or
 OSM `amenity=parking` / `landuse`) would fix that.
+
+## 2026-11-20 · The ground is mostly parking
+
+Everything that wasn't a building or a road used to be lawn. Overture's base theme knows
+better: in this block there are **18 mapped parking lots**, 7 plazas, 5 sports pitches,
+2 construction sites, **130 crosswalks** and **10 traffic signals**. Downtown-wide, the
+infrastructure layer has 164 parking areas covering about 380,000 m².
+
+- Lots are drawn as asphalt with **stalls laid out by rule** (2.6 × 5.4 m stalls either
+  side of 6.5 m aisles, along the lot's longest edge) and filled with parked cars.
+- **Occupancy follows a rule of thumb** for downtown commuter lots (illustrative): nearly
+  full in weekday working hours, about a third in the evening, a few overnight, about
+  half on weekend afternoons.
+- **Unmapped lots are inferred:** Overture labels 220 service roads downtown as
+  `parking_aisle`. Where an aisle isn't inside a mapped lot, stalls are paved and striped
+  along both sides of it.
+- Plazas get paving, pitches turf with touchlines, construction sites dirt, and every
+  mapped crossing gets zebra stripes laid across the road it sits on.
+
+![Lots and crossings](log/vignette/ground-lots.jpg)
+![Board](log/vignette/ground-board.jpg)
