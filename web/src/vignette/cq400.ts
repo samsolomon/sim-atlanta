@@ -186,7 +186,8 @@ function addNose(k: Kit, zb: number, line: string) {
     const ax = Math.abs(x);
     if (Math.abs(u) > 0.94) return C.body; // grey wraps round the corners
     // Grey under the bumper panels too, so no dark mask can show at the curved corner.
-    if (y < 1.32 && ax > 0.7) return C.body;
+    // (Kept well inside the panel's edges so the grid's stair-steps never show.)
+    if (y < 1.22 && ax > 0.92) return C.body;
     return C.mask;
   };
   // Front surface.
