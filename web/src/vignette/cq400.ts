@@ -183,9 +183,9 @@ function addNose(k: Kit, zb: number, line: string) {
   const at = (x: number, y: number, lift = 0) => [x, y, zb + noseDepth(x, y) + lift];
   const region = (x: number, y: number, u: number) => {
     const ax = Math.abs(x);
-    void ax;
-    void y;
     if (Math.abs(u) > 0.94) return C.body; // grey wraps round the corners
+    // Grey under the bumper panels too, so no dark mask can show at the curved corner.
+    if (y < 1.32 && ax > 0.7) return C.body;
     return C.mask;
   };
   // Front surface.
@@ -302,7 +302,7 @@ function addNose(k: Kit, zb: number, line: string) {
   // Bumper blocks: clean grey rectangles on the surface, each with a dark vent.
   for (const s2 of [-1, 1]) {
     const xo = 1.54; // out to (and under) the grey corner wrap, so there's no notch
-    face(s2 > 0 ? 0.74 : -xo, s2 > 0 ? xo : -0.74, Y_BOT + 0.005, 1.32, C.body, 0, 0.008, 6, 4);
+    face(s2 > 0 ? 0.74 : -xo, s2 > 0 ? xo : -0.74, Y_BOT + 0.005, 1.32, C.body, 0, 0.016, 10, 4);
     face(s2 > 0 ? 0.94 : -1.4, s2 > 0 ? 1.4 : -0.94, 0.97, 1.2, C.vent, 0, 0.02, 4, 2);
   }
   // Vent slats on the bumpers, and the lit bar where the wordmark sits (no logo).

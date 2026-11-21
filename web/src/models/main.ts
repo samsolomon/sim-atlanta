@@ -178,4 +178,4 @@ document.getElementById('file')!.addEventListener('change', (e) => {
   ref.style.display = 'block';
 });
 document.getElementById('opacity')!.addEventListener('input', (e) => (ref.style.opacity = (e.target as HTMLInputElement).value));
-Object.assign(window, { __lab: { view, setNight, role, scene, camera } });
+Object.assign(window, { __lab: { view, setNight, role, scene, camera, controls } });
