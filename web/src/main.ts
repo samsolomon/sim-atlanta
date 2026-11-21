@@ -3,7 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
 import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
 import { SkyLayer } from './map/sky-layer';
-import { atmosphere, type AtmosphereOverride } from './core/atmosphere';
+import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
@@ -80,6 +80,7 @@ const source = new TrainSource(schedule, live);
 live.start();
 
 let updateAtmosphere = () => {}; // set once the map has loaded
+let atmRealTime = true; // the clock state the atmosphere was last computed for
 // Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;
 // the centre stays sharp. A DOM layer over the map, under the glass. Map view only.
 const fogEl = Object.assign(document.createElement('div'), { id: 'fog' });
@@ -89,7 +90,9 @@ function setFog(f: number, dark: number) {
   fogEl.style.setProperty('--fog-rgb', dark > 0.55 ? '40, 47, 58' : '244, 245, 244');
   fogEl.hidden = f < 0.02;
 }
-const onReady = (fn: () => void) => (map.loaded() ? fn() : map.once('load', fn));
+// Always after this module finishes evaluating, so `shell` (declared below) exists even if the
+// map loaded while the data files were downloading.
+const onReady = (fn: () => void) => (map.loaded() ? queueMicrotask(fn) : map.once('load', fn));
 onReady(() => {
   // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
   document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
@@ -115,13 +118,22 @@ onReady(() => {
   let override: AtmosphereOverride | null = null;
   let pinned: Palette | null = PALETTES[params.get('palette') ?? ''] ?? null;
   let onScreen: Palette = PALETTES[DEFAULT_PALETTE];
+  let lastWx = 1;
+  // Atlanta's weather only applies near Atlanta and zoomed in: scale it into the palette and fog
+  // by the same strength the sky layer uses.
+  const paintFor = (atm: Atmosphere) => {
+    const wx = (lastWx = sky.weatherStrength());
+    const local = { ...atm, cloud: atm.cloud * wx, rain: atm.rain * wx, snow: atm.snow * wx, fog: atm.fog * wx };
+    setFog(local.fog, atm.dark);
+    onScreen = pinned ?? paletteFor(local);
+    applyPalette(map, onScreen);
+  };
   updateAtmosphere = () => {
     const w = clock.isRealTime() ? shell.weather() : null; // live weather only at the present
     const atm = atmosphere(clock.now(), w, override ?? {});
+    atmRealTime = clock.isRealTime();
     sky.set(atm);
-    setFog(atm.fog * sky.weatherStrength(), atm.dark);
-    onScreen = pinned ?? paletteFor(atm);
-    applyPalette(map, onScreen);
+    paintFor(atm);
     shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
   };
   updateAtmosphere();
@@ -129,7 +141,8 @@ onReady(() => {
   map.on('moveend', () => {
     if (!sky.atm) return; // weather strength depends on zoom and place
     sky.set(sky.atm);
-    setFog(sky.atm.fog * sky.weatherStrength(), sky.atm.dark);
+    if (Math.abs(sky.weatherStrength() - lastWx) > 0.05) paintFor(sky.atm);
+    else setFog(sky.atm.fog * sky.weatherStrength(), sky.atm.dark);
   });
   if (params.has('tune'))
     void import('./map/tune').then(({ mountTuner }) =>
@@ -247,6 +260,8 @@ const scrub = document.getElementById('scrub') as HTMLInputElement;
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: meta.timezone, weekday: 'short', hour: 'numeric', minute: '2-digit' });
 
 function updateClock(now: Date) {
+  // Live weather belongs only to the real present: recompute as soon as the clock leaves or returns.
+  if (clock.isRealTime() !== atmRealTime) updateAtmosphere();
   clockEl.textContent = timeFmt.format(now);
   clockEl.dateTime = now.toISOString();
   const shifted = !clock.isRealTime();
