@@ -546,10 +546,12 @@ export class World {
         ties.push(tm.clone());
         const g = this.ground(p.x, p.z);
         if (g < -1 && Math.round(s / 0.8) % 3 === 0) {
-          // Through-girder bridge over the highway.
+          // Deck-girder bridge over the highway: a slim steel deck with a low railing,
+          // light enough that parallel tracks don't merge into one slab.
           const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, 0, p.z);
-          for (const d of [-2.6, 2.6]) b.box(0.35, 2.2, 2.45, d, 0.9, 0, PAL.girder, rot);
-          b.box(5.6, 0.6, 2.45, 0, -0.1, 0, PAL.girder, rot);
+          b.box(4.6, 0.35, 2.45, 0, 0.0, 0, '#8d969c', rot); // deck
+          b.box(3.2, 0.9, 2.45, 0, -0.6, 0, '#6f787e', rot); // girder below the deck
+          for (const d of [-2.25, 2.25]) b.box(0.08, 0.7, 2.45, d, 0.55, 0, '#a7afb4', rot); // railing
         }
       }
     }

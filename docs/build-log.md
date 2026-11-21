@@ -575,3 +575,29 @@ The full run took **54.29 seconds** on the M5 Ultra. Its 18 overlapping windows 
 The experiment leaves an art decision. At a distance the two baked boards read almost alike. Up close, the redraw softens the geometry fastest exactly where a railway map needs precision. Keeping the aligned Blender base in the viewer makes that trade easy to inspect. [Factory settings, licences and build instructions](../pipeline/scripts/art/README.md)
 
 ![Art-map viewer with the six-car train on the east viaduct and road vehicles in the trench](log/art/sprite-viewer.jpg)
+
+## 2026-11-20 · Ink, lighter bridges and the first real buses
+
+After the art spike (PR #5), Sam compared full-resolution crops and preferred the live 3D
+over both the Blender illustration and the SDXL redraw, which invented a red freight train
+out of the board's clay edge. So the lessons go back into the 3D:
+
+- **Ink outlines**, "outline once, after compositing": one screen-space pass reads the scene's
+  depth and colour, draws silhouettes where depth jumps (using a second difference, so smooth
+  slopes like roofs and lawns stay clean) and creases where colour steps, and fades with
+  distance. On by default; `?ink=0` or `__v.setInk(false)` turns it off. One gotcha:
+  EffectComposer gives each ping-pong target its own cloned depth texture, so the pass must
+  read the *current read buffer's* depth, or every other frame uses stale depth.
+- **Freight bridges** over the Connector were tall solid girder walls on each of the parallel
+  tracks, which merged into one dark slab. They're now a slim deck with a girder underneath
+  and a low railing, so you can see the individual tracks cross.
+- **Real MARTA buses** from `/api/marta/bus` (PR #2's Worker endpoint): fixes on the board
+  are snapped to the nearest street within 25 m, turned to the street direction nearest the
+  reported bearing, kept in the right-hand lane, and glide between 30-second reports. They
+  show only when the clock is the real present, and the readout says how many are live and
+  how fresh they are. On the first try: 3 buses (routes 20, 42, 55) near Decatur St.
+
+![Ink on](log/vignette/ink-on.jpg)
+![Ink off](log/vignette/ink-off.jpg)
+![Lighter freight bridges](log/vignette/girders.jpg)
+![A live MARTA bus at night](log/vignette/live-bus.jpg)

@@ -14,8 +14,10 @@ import type { RoutesFile } from '../model/types';
 import { elevationAt, makeProjector, type SceneManifest } from '../scene3d/scene-data';
 import { Line, type P2 } from './geom';
 import { SimClock, leafState, local, sunPosition } from './time';
+import { DioramaBuses } from './buses';
 import { ParkedCars, Traffic, type TrafficData } from './traffic';
 import { fetchLive, PRESETS, Rain, type Weather, type WeatherKind } from './weather';
+import { inkShader } from './ink';
 import { tiltShiftShader } from './tiltshift';
 import { Train } from './train';
 import { World, type Alignment, type VData } from './world';
@@ -103,6 +105,8 @@ async function main() {
   scene.add(east.group, west.group);
   const traffic = new Traffic(world, td);
   scene.add(traffic.group);
+  const buses = new DioramaBuses(world, manifest.origin);
+  scene.add(buses.mesh);
   const parked = new ParkedCars(world.stalls);
   scene.add(parked.group);
   const clock = new SimClock(params.get('at'), Number(params.get('speed') ?? 1));
@@ -131,8 +135,14 @@ async function main() {
   }
 
   // ---- post: ambient occlusion + tilt-shift ---------------------------------------------
-  const composer = new EffectComposer(renderer);
+  // The scene renders into a target with a depth texture, which the ink pass reads.
+  const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+  sceneTarget.depthTexture = new THREE.DepthTexture(1, 1);
+  const composer = new EffectComposer(renderer, sceneTarget);
   composer.addPass(new RenderPass(scene, camera));
+  const ink = new ShaderPass(inkShader());
+  let inkOn = params.get('ink') !== '0';
+  composer.addPass(ink);
   const gtao = new GTAOPass(scene, camera, 1, 1);
   gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
   gtao.blendIntensity = 0.9;
@@ -155,6 +165,8 @@ async function main() {
     bloom.resolution.set(w / 2, h / 2);
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();
+    ink.uniforms.uTexel.value.set(1 / (w * renderer.getPixelRatio()), 1 / (h * renderer.getPixelRatio()));
+    ink.uniforms.uWidth.value = Math.max(1, renderer.getPixelRatio()) * 1.25;
     for (const p of [hts, vts]) {
       p.uniforms.uTexel.value.set(1 / w, 1 / h);
       p.uniforms.uStrength.value = tilt;
@@ -241,6 +253,7 @@ async function main() {
     bloom.strength = 0.55 * night;
     bloom.enabled = night > 0.02;
     east.night.value = west.night.value = night;
+    buses.night.value = night;
     world.setSeason(doy);
 
     // Weather on top of the sun: clouds flatten light, rain wets surfaces, fog hazes distance.
@@ -284,10 +297,13 @@ async function main() {
     const light = sunEl > 6 ? 'daylight' : sunEl > -6 ? (local(now).hour < 12 ? 'dawn' : 'dusk') : 'night';
     const wlabel = weather.tempF != null ? `${weather.label}, ${Math.round(weather.tempF)}°F` : weather.label;
     const text = `${loc.weekday} ${date}, ${time} · ${light} · ${wlabel} · ${leaves}|Connector: ~${Math.round(s.connectorFlow).toLocaleString()} vehicles per lane per hour at ${Math.round(s.connectorMph)} mph`;
-    if (text === lastText) return;
-    lastText = text;
+    const key = text + JSON.stringify(buses.summary()) + clock.isLive();
+    if (key === lastText) return;
+    lastText = key;
     const [a, c2] = text.split('|');
-    out.innerHTML = `<b>${a}</b><span>${c2}</span><small>Traffic is typical for this hour (FHWA road counts), not live. Trains are illustrative.</small>`;
+    const bs = buses.summary();
+    const busLine = !clock.isLive() ? '<span>MARTA buses: live only at the present time</span>' : bs.unavailable && !bs.count ? '<span>MARTA buses: live feed unavailable here</span>' : `<span>MARTA buses: ${bs.count} live on this block${bs.freshest != null ? `, reported ${bs.freshest}s ago` : ''}</span>`;
+    out.innerHTML = `<b>${a}</b><span>${c2}</span>${busLine}<small>Traffic is typical for this hour (FHWA road counts), not live. Trains are illustrative.</small>`;
   }
   let last = performance.now();
   const frame = (ts: number) => {
@@ -299,6 +315,7 @@ async function main() {
     environment(now, loc.doy);
     traffic.update(paused ? 0 : dt, loc.hour, loc.weekend, snapTraffic);
     parked.update(loc.hour, loc.weekend);
+    buses.update(clock.isLive());
     snapTraffic = false;
     readout(now);
     const ph = t % period;
@@ -312,6 +329,12 @@ async function main() {
       if (step.length() < 0.05) glideTo = null;
     }
     controls.update();
+    // EffectComposer ping-pongs targets; point the ink pass at whichever holds the scene depth.
+    // RenderPass draws into the composer's current read buffer (its depth texture is a clone per target).
+    ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    ink.uniforms.uNear.value = camera.near;
+    ink.uniforms.uFar.value = camera.far;
+    ink.uniforms.uStrength.value = inkOn ? 0.85 : 0;
     composer.render();
     requestAnimationFrame(frame);
   };
@@ -337,6 +360,7 @@ async function main() {
         resize();
       },
       ao: (on: boolean) => (gtao.enabled = on),
+      setInk: (on: boolean) => (inkOn = on),
       camera,
       controls,
       scene,

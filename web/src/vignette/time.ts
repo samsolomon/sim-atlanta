@@ -18,6 +18,10 @@ export class SimClock {
     this.base = d.getTime();
     this.real = performance.now();
   }
+  /** True when the clock shows the real present at 1×, the only time live data applies. */
+  isLive() {
+    return this.speed === 1 && Math.abs(this.now().getTime() - Date.now()) < 5000;
+  }
   setSpeed(s: number) {
     this.set(this.now());
     this.speed = s;
