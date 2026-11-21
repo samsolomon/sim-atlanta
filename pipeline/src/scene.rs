@@ -311,6 +311,87 @@ pub fn clean_profile(z: &mut [f64], max_gap: usize, ramp: usize) {
     }
 }
 
+/// Track checked against dated aerial imagery and found open to the sky, where the generic
+/// rules above would bury it: Overture leaves these spans untagged (level 0) between two
+/// tunnels, and `clean_profile` fills such short gaps. A sample within `MATCH_M` of one of
+/// these centrelines, running the same way, is pinned at `depth` (a schematic open cut).
+pub struct OpenCut {
+    pub name: &'static str,
+    /// Schematic track height (m): shallower than the renderer's portal threshold (−5.5 m).
+    pub depth: f64,
+    /// One lon/lat polyline per track, copied from the cited OSM ways.
+    pub tracks: &'static [&'static [(f64, f64)]],
+}
+
+/// Evidence for each entry is in docs/data-model.md ("Open-air MARTA track downtown").
+pub const VERIFIED_OPEN: &[OpenCut] = &[OpenCut {
+    // MARTA Blue/Green trench through the Gulch, between Five Points and the Ted Turner Dr
+    // viaduct. OSM ways 702258823 and 702258824 (no tunnel tag since 2019); open walled
+    // trench with a footbridge in USGS NAIP 2023-10-08 (0.6 m) and Vantor WV02 2026-02-02
+    // (0.5 m, Esri World Imagery). Centennial Yards plans to deck over the Gulch: re-check.
+    name: "Gulch trench (Blue/Green, west of Five Points)",
+    depth: -4.0,
+    tracks: &[
+        &[(-84.3936768, 33.7550708), (-84.3934314, 33.7549158), (-84.3932352, 33.7547891), (-84.3930011, 33.7546431), (-84.3928507, 33.7545547), (-84.3927156, 33.7544750)],
+        &[(-84.3936248, 33.7551215), (-84.3923693, 33.7543988)],
+    ],
+}, OpenCut {
+    // MARTA Blue/Green open cut east of Five Points, between Peachtree St and Pryor St beside
+    // a surface car park. OSM ways 702258817 and 702258818 (no tunnel tag since 2019; the
+    // adjacent Interline Connector way 1453238814 is tagged cutting=yes); rails visible in
+    // USGS NAIP 2023-10-08 and Vantor WV02 2026-02-02.
+    name: "Five Points east cut (Blue/Green)",
+    depth: -4.0,
+    tracks: &[
+        &[(-84.3898253, 33.7527189), (-84.3897680, 33.7526675), (-84.3896381, 33.7525537), (-84.3895058, 33.7524458), (-84.3894068, 33.7523656), (-84.3893297, 33.7523072), (-84.3892660, 33.7522617), (-84.3892106, 33.7522256), (-84.3891639, 33.7521954), (-84.3890871, 33.7521465), (-84.3890070, 33.7520993)],
+        &[(-84.3889251, 33.7521287), (-84.3890107, 33.7521858), (-84.3890995, 33.7522436), (-84.3891726, 33.7522951), (-84.3892774, 33.7523697), (-84.3893392, 33.7524162), (-84.3893985, 33.7524626), (-84.3895000, 33.7525435), (-84.3897153, 33.7527279), (-84.3897679, 33.7527728)],
+    ],
+}];
+
+const MATCH_M: f64 = 12.0;
+
+/// Pinned depth for a path sample at local `p` heading `bearing` (radians, atan2(dn, de)).
+pub fn open_cut_depth(p: (f64, f64), bearing: f64) -> Option<f64> {
+    for cut in VERIFIED_OPEN {
+        for track in cut.tracks {
+            let pts: Vec<(f64, f64)> = track.iter().map(|&(lon, lat)| project(lon, lat)).collect();
+            for w in pts.windows(2) {
+                let (a, b) = (w[0], w[1]);
+                let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+                let l2 = dx * dx + dy * dy;
+                if l2 == 0.0 {
+                    continue;
+                }
+                // Only alongside the span: a point beyond either end is tunnel, not trench.
+                let t = ((p.0 - a.0) * dx + (p.1 - a.1) * dy) / l2;
+                let d = ((a.0 + t * dx - p.0).powi(2) + (a.1 + t * dy - p.1).powi(2)).sqrt();
+                let mut da = (bearing - dy.atan2(dx)).rem_euclid(std::f64::consts::PI);
+                da = da.min(std::f64::consts::PI - da);
+                if (0.0..=1.0).contains(&t) && d <= MATCH_M && da <= 30f64.to_radians() {
+                    return Some(cut.depth);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// `clean_profile`, but samples with `pin[i] = Some(z)` are set to `z` first (so they never
+/// count as a gap to fill) and again after the ramp (so smoothing can't bury them).
+pub fn clean_profile_pinned(z: &mut [f64], pin: &[Option<f64>], max_gap: usize, ramp: usize) {
+    for (v, p) in z.iter_mut().zip(pin) {
+        if let Some(p) = p {
+            *v = *p;
+        }
+    }
+    clean_profile(z, max_gap, ramp);
+    for (v, p) in z.iter_mut().zip(pin) {
+        if let Some(p) = p {
+            *v = *p;
+        }
+    }
+}
+
 // ---------- build ------------------------------------------------------------------------
 
 fn load(p: &Path) -> Result<Value> {
@@ -412,7 +493,7 @@ pub fn build(root: &Path) -> Result<()> {
         .collect();
     let step = 10.0;
     let mut profiles = serde_json::Map::new();
-    let (mut total, mut matched) = (0usize, 0usize);
+    let (mut total, mut matched, mut pinned) = (0usize, 0usize, 0usize);
     for p in routes["paths"].as_array().into_iter().flatten() {
         if !heavy.iter().any(|h| p["routeId"] == h.as_str()) {
             continue;
@@ -421,7 +502,7 @@ pub fn build(root: &Path) -> Result<()> {
         let cum: Vec<f64> = p["cum"].as_array().into_iter().flatten().filter_map(Value::as_f64).collect();
         let pts: Vec<(f64, f64)> = coords.chunks(2).map(|c| project(c[0], c[1])).collect();
         let len = *cum.last().unwrap_or(&0.0);
-        let (mut s0, mut z) = (None::<f64>, Vec::new());
+        let (mut s0, mut z, mut pin) = (None::<f64>, Vec::new(), Vec::new());
         let mut j = 0;
         let mut s = 0.0;
         while s <= len {
@@ -434,19 +515,22 @@ pub fn build(root: &Path) -> Result<()> {
             let q = (a.0 + f * (b.0 - a.0), a.1 + f * (b.1 - a.1));
             if inside(q) {
                 total += 1;
-                let h = match_height(&subway, q, (b.1 - a.1).atan2(b.0 - a.0));
+                let bearing = (b.1 - a.1).atan2(b.0 - a.0);
+                let h = match_height(&subway, q, bearing);
                 if h.is_some() {
                     matched += 1;
                 }
                 s0.get_or_insert(s);
                 z.push(h.unwrap_or(0.0));
+                pin.push(open_cut_depth(q, bearing));
             } else if s0.is_some() {
                 break; // left the scene (paths cross it once)
             }
             s += step;
         }
         if let Some(s0) = s0 {
-            clean_profile(&mut z, 15, 15);
+            pinned += pin.iter().filter(|p| p.is_some()).count();
+            clean_profile_pinned(&mut z, &pin, 15, 15);
             profiles.insert(
                 p["id"].as_str().unwrap_or("").to_string(),
                 json!({"s0": s0, "step": step, "z": z.iter().map(|v| (v * 10.0).round() / 10.0).collect::<Vec<_>>()}),
@@ -454,6 +538,7 @@ pub fn build(root: &Path) -> Result<()> {
         }
     }
     println!("  profiles: {} paths, {:.0}% of {} samples matched a subway segment", profiles.len(), 100.0 * matched as f64 / total.max(1) as f64, total);
+    println!("  verified open cuts: {pinned} samples pinned");
 
     let manifest = json!({
         "name": "Downtown Atlanta",
@@ -531,6 +616,39 @@ mod tests {
         let mut z = vec![-16.0, -16.0, 7.0, 7.0, -10.0, -10.0, 7.0, 7.0, 7.0, 7.0, 7.0];
         clean_profile(&mut z, 3, 1);
         assert_eq!(z, vec![-16.0, -16.0, -10.0, -10.0, -10.0, -10.0, 7.0, 7.0, 7.0, 7.0, 7.0]);
+    }
+
+    #[test]
+    fn verified_open_cut_survives_gap_fill_and_ramp() {
+        // 30 samples: tunnel (-22), a 10-sample unflagged gap, tunnel (-10). Unpinned, the
+        // gap is filled; pinned, it stays at the open-cut depth through the ramp.
+        let mut z: Vec<f64> = (0..30).map(|i| if i < 10 { -22.0 } else if i < 20 { 0.0 } else { -10.0 }).collect();
+        let pin: Vec<Option<f64>> = (0..30).map(|i| (10..20).contains(&i).then_some(-4.0)).collect();
+        let mut plain = z.clone();
+        clean_profile(&mut plain, 15, 15);
+        assert!(plain[10..20].iter().all(|&v| v < -5.5), "{plain:?}");
+        clean_profile_pinned(&mut z, &pin, 15, 15);
+        assert!(z[10..20].iter().all(|&v| v == -4.0), "{z:?}");
+        assert!(z[0] < -5.5 && z[29] < -5.5);
+    }
+
+    #[test]
+    fn gulch_trench_matches_only_alongside_its_ways() {
+        let along = |lon0: f64, lat0: f64, lon1: f64, lat1: f64, f: f64| {
+            let (a, b) = (project(lon0, lat0), project(lon1, lat1));
+            ((a.0 + f * (b.0 - a.0), a.1 + f * (b.1 - a.1)), (b.1 - a.1).atan2(b.0 - a.0))
+        };
+        // Middle of way 702258824, either direction of travel.
+        let (mid, brg) = along(-84.3936248, 33.7551215, -84.3923693, 33.7543988, 0.5);
+        assert_eq!(open_cut_depth(mid, brg), Some(-4.0));
+        assert_eq!(open_cut_depth(mid, brg + std::f64::consts::PI), Some(-4.0));
+        // A crossing line (Red/Gold runs roughly north-south) never matches.
+        assert_eq!(open_cut_depth(mid, brg + std::f64::consts::FRAC_PI_2), None);
+        // 60 m beyond the west end is the tunnel toward Dome/GWCC.
+        let (west, brg) = along(-84.3923693, 33.7543988, -84.3936248, 33.7551215, 1.0 + 60.0 / 141.0);
+        assert_eq!(open_cut_depth(west, brg), None);
+        // Five Points station itself stays underground.
+        assert_eq!(open_cut_depth(project(ORIGIN.0, ORIGIN.1), brg), None);
     }
 
     #[test]

@@ -96,11 +96,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   const world = new World(vd, null, { terrain: 'flat', clumps: low ? 4 : 8, lightMapMax: 2048 });
   if (trees?.trees?.length) world.realTrees = trees.trees;
+  let marta: Alignment[] = [];
   try {
-    await build('board', () => world.buildBoard());
+    await build('board', () => {
+      marta = martaAlignments(rf, manifest, b);
+      world.setOpenCuts(marta); // the flat board leaves a slot over each open cut
+      world.buildBoard();
+    });
     await build('streets', () => world.buildStreets());
     await build('ground', () => world.buildGround());
-    await build('rail', () => { for (const al of martaAlignments(rf, manifest, b)) world.buildMarta(al); world.buildFreight(); world.buildTram(); });
+    await build('rail', () => { for (const al of marta) world.buildMarta(al); world.buildFreight(); world.buildTram(); });
     await build('buildings', () => world.buildBuildings());
     await build('trees', () => world.buildTrees());
     await build('lights', () => world.buildLights());
