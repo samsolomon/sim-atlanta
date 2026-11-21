@@ -32,7 +32,7 @@ export function gradeShader() {
           vec3 g = (c - 0.5) * 1.12 + 0.5;                       // contrast
           g = mix(vec3(l), g, 1.14);                              // saturation
           g += mix(vec3(-0.035, -0.01, 0.05), vec3(0.03, 0.012, -0.03), smoothstep(0.15, 0.85, l)); // cool shade, warm light
-          float vig = smoothstep(1.15, 0.35, length(vUv - 0.5) * 1.4);
+          float vig = 1.0 - smoothstep(0.35, 1.15, length(vUv - 0.5) * 1.4); // edges must be ordered in GLSL
           g *= mix(0.86, 1.0, vig);
           float n = hash(floor(vUv * uRes) + fract(uTime) * 917.0) - 0.5;
           g += n * uGrain * (1.0 - 0.5 * l);                     // grain, stronger in shadows
