@@ -5,6 +5,7 @@ import { GroundGrid } from './grid';
 
 import { GroundSurface, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
+import { roadWidth, type TerrainCity } from './transport-data';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -15,7 +16,7 @@ export interface DowntownTerrainOptions {
 }
 
 // Paint the ground to avoid spanning a depression with a flat road polygon.
-function groundMap(data: VData, quality: TerrainQuality) {
+function groundMap(data: TerrainCity, quality: TerrainQuality) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = quality === 'low' ? 2048 : 4096;
   const ctx = canvas.getContext('2d')!;
@@ -36,15 +37,23 @@ function groundMap(data: VData, quality: TerrainQuality) {
     ctx.fillStyle = covers[g.kind];
     ctx.fill('evenodd');
   }
-  const widths: Record<string, number> = { motorway: 14, trunk: 14, primary: 13, secondary: 11,
-    tertiary: 9, residential: 7, service: 4, pedestrian: 4, footway: 2 };
-  for (const r of data.roads) {
-    if (r.bridge || r.tunnel) continue;
+  const groundRoads = [
+    ...data.roads.filter(r => !r.bridge && !r.tunnel),
+    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? []),
+  ];
+  for (const r of groundRoads) {
     ctx.beginPath();
     trace(r.pts);
-    ctx.lineWidth = widths[r.cls] ?? 4;
+    ctx.lineWidth = roadWidth(r);
     ctx.strokeStyle = r.cls === 'footway' || r.cls === 'pedestrian' ? '#e7dfca' : '#84827c';
     ctx.stroke();
+    if (r.cls === 'motorway' && r.sub !== 'link') {
+      ctx.lineWidth = 0.55;
+      ctx.strokeStyle = '#d7d2bf';
+      ctx.setLineDash([4, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -58,7 +67,7 @@ function checkBounds(grid: GroundGrid, city: VData) {
   }
 }
 
-function makeBoard(mesh: GroundSurface, city: VData, quality: TerrainQuality, contours: Contours) {
+function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuality, contours: Contours) {
   const { vertical, bounds: b, stepM } = mesh.grid.manifest;
   const geometry = mesh.geometry;
   const material = new THREE.MeshLambertMaterial({ map: groundMap(city, quality) });
@@ -155,7 +164,7 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
 
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
-export function createDowntownTerrain(grid: GroundGrid, city: VData, trees: Tree[], options: DowntownTerrainOptions) {
+export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   const mesh = new GroundSurface(grid, options.quality, options.openings);
   const groundAt = (x: number, z: number) => mesh.sampleScene(x, z);
