@@ -99,3 +99,6 @@ body.in3d .legend { display: none; }
   .rot { top: auto; bottom: 36px; }
   #card { bottom: 12px; }
 }
+
+.sw-bus { display: inline-block; width: 8px; height: 8px; margin: 0 5px; border-radius: 50%; background: #227971; }
+.in3d .bus-legend { display: none; }

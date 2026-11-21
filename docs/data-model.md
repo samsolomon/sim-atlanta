@@ -98,3 +98,20 @@ a solid train is live, an outlined one is scheduled.
 
 `VehicleType` holds length, an `art` key, and "can carry" text. Liveries are generic
 look-alikes (MARTA-ish silver car, generic freight locomotive), no operator logos.
+
+## Live buses
+
+`GET /api/marta/bus` returns a full snapshot with `source: "marta-bus-rt"`,
+`fetched` (epoch milliseconds), and `buses`. Each bus has a vehicle-descriptor ID
+(`marta:bus:<vehicle_id>`) and `at` (vehicle observation time in epoch milliseconds,
+or null). The wire format carries `lon` and `lat` rounded to five decimal places,
+optional `bearing` in whole degrees clockwise from north, and optional `speed`
+in whole metres per second. Each attribute inherits the feed source and the
+vehicle timestamp. The client expands those into individual live-tier values.
+
+The Worker uses `data/ga/bus-routes.json` to translate the feed's raw GTFS
+route ID into `marta:route:<public short name>` (for example, `marta:route:1`).
+It omits the assignment when the static edition has no matching bus route. The 2D
+map draws teal GPS dots for fixes up to three minutes old, at the real clock only.
+The endpoint retains older and undated fixes so other consumers can apply their
+own freshness rules.

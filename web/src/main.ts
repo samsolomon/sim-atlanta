@@ -1,11 +1,12 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
-import { crossingCard, freightCard, trainCard } from './map/card';
-import { addStaticLayers, trainsSource } from './map/layers';
+import { busCard, crossingCard, freightCard, trainCard } from './map/card';
+import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
-import type { CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
+import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
 import { Schedule } from './sched/engine';
+import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
@@ -35,6 +36,7 @@ map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAc
 
 // ---- card -------------------------------------------------------------------
 const card = document.getElementById('card')!;
+let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
 function showCard(html: string) {
   card.innerHTML = `<button class="close" type="button" aria-label="Close">×</button>${html}`;
@@ -43,6 +45,7 @@ function showCard(html: string) {
 }
 function hideCard() {
   card.hidden = true;
+  selectedBus = null;
   selectedTrain = null;
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
@@ -62,6 +65,7 @@ const [rf, tf, vts, meta] = await Promise.all([
   get<VehicleType[]>('vehicle-types.json'),
   get<Meta>('meta.json'),
 ]);
+const buses = new LiveBuses();
 const schedule = new Schedule(rf, tf, vts);
 if (import.meta.env.DEV) Object.assign(window, { __map: map, __schedule: schedule });
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
@@ -91,7 +95,44 @@ onReady(() => {
   map.addLayer = ((layer: Parameters<typeof addLayer>[0], before?: string) => addLayer(layer, before ?? firstLabel)) as typeof map.addLayer;
   addStaticLayers(map, rf, `${DATA}/freight.geojson`, `${DATA}/crossings.geojson`);
   map.addLayer = addLayer;
+  map.addSource('buses', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'buses', type: 'circle', source: 'buses',
+    paint: {
+      'circle-color': MODE_COLOR.bus, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2.5, 14, 5],
+    },
+  });
   addTrainLayer(map);
+  const busLegend = document.querySelector<HTMLElement>('.bus-legend')!;
+  const busStatus = document.getElementById('bus-status')!;
+  let visibleBuses = new Map<string, LiveBus>();
+  let lastBusTick = -Infinity;
+  let busesEnabled: boolean | undefined;
+  function updateBuses(ts: number) {
+    const enabled = clock.isRealTime() && !document.body.classList.contains('in3d') && !document.hidden;
+    if (enabled === busesEnabled && (!enabled || ts - lastBusTick < 1000)) return;
+    busesEnabled = enabled;
+    busLegend.hidden = !enabled;
+    busStatus.textContent = buses.unavailable ? 'feed unavailable' : 'live position';
+    lastBusTick = ts;
+    if (enabled) void buses.poll();
+    const fresh = enabled ? buses.current() : [];
+    if (fresh.length !== visibleBuses.size || fresh.some(b => visibleBuses.get(b.id) !== b)) {
+      visibleBuses = new Map(fresh.map(b => [b.id, b]));
+      map.getSource<maplibregl.GeoJSONSource>('buses')!.setData({
+        type: 'FeatureCollection',
+        features: fresh.map(({ id, position: { value } }) => ({
+          type: 'Feature', properties: { id }, geometry: { type: 'Point', coordinates: [value.lon, value.lat] },
+        })),
+      });
+    }
+    if (selectedBus) {
+      const bus = visibleBuses.get(selectedBus);
+      if (bus) showCard(busCard(bus, buses.observationNow()));
+      else hideCard();
+    }
+  }
 
     // Train icons ignore placement (so they can overlap), which also keeps them out of
   // MapLibre's hit-testing; find the nearest train on screen ourselves.
@@ -107,11 +148,13 @@ onReady(() => {
   map.on('mousemove', (e) => {
     const hit =
       nearestTrain(e.point) !== null ||
-      map.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: ['crossings', 'freight-hit'] }).length > 0;
+      map.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: ['buses', 'crossings', 'freight-hit'] }).length > 0;
     map.getCanvas().style.cursor = hit ? 'pointer' : '';
   });
   map.on('click', (e) => {
-    const train = nearestTrain(e.point);
+    const directBus = map.queryRenderedFeatures(e.point, { layers: ['buses'] })[0];
+    const train = directBus ? nearestTrain(e.point, 5) : nearestTrain(e.point);
+    selectedBus = null;
     if (train) {
       selectedTrain = train;
       return renderTrainCard();
@@ -120,10 +163,15 @@ onReady(() => {
       [e.point.x - 6, e.point.y - 6],
       [e.point.x + 6, e.point.y + 6],
     ];
-    const f = map.queryRenderedFeatures(box, { layers: ['crossings', 'freight-hit'] })[0];
+    const f = directBus ?? map.queryRenderedFeatures(box, { layers: ['buses', 'crossings', 'freight-hit'] })[0];
     if (!f) return hideCard();
     selectedTrain = null;
-    if (f.layer.id === 'crossings') {
+    if (f.layer.id === 'buses') {
+      const bus = visibleBuses.get(f.properties.id);
+      if (!bus || !clock.isRealTime()) return hideCard();
+      selectedBus = bus.id;
+      showCard(busCard(bus, buses.observationNow()));
+    } else if (f.layer.id === 'crossings') {
       showCard(crossingCard(f.properties as unknown as CrossingProps));
     } else {
       const p = { ...f.properties } as Record<string, unknown>;
@@ -138,6 +186,7 @@ onReady(() => {
   const frame = (ts: number) => {
     if (ts - last > 33) {
       last = ts;
+      updateBuses(ts);
       const now = clock.now();
       const trains = source.update(now);
       if (diorama) diorama.update(trains);
@@ -178,6 +227,7 @@ document.getElementById('now')!.addEventListener('click', () => {
 });
 const speedButtons = [...document.querySelectorAll<HTMLButtonElement>('.speed button')];
 function setSpeed(s: number) {
+  if (clock.speed !== 1 && s === 1) clock.pinned = true;
   clock.rebase();
   clock.speed = s;
   speedButtons.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.speed) === s)));

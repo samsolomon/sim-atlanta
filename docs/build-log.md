@@ -542,3 +542,20 @@ jumpy in intersections", night needs "more realistic lighting", and the tilt-shi
 ![Night street](log/vignette/night-street.jpg)
 ![Night viaduct](log/vignette/night-viaduct.jpg)
 ![Lanes](log/vignette/day-lanes.jpg)
+
+## 2026-11-20 — Live MARTA buses reach the map
+
+At 7:28 p.m. Eastern, MARTA sent 163 bus positions in 13,319 bytes. Every
+vehicle had an observation time and matched one of the 81 published bus routes,
+but one fix was already over three minutes old and only 98 included speed.
+The teal dots use the GPS coordinates directly. Tapping a bus shows its route
+and the age of its position. Moving the clock away from the present clears them.
+
+Repeating the source and observation time on each attribute turned those 13 KB
+into 73,327 bytes of JSON. Sending the source once and the timestamp once per
+bus brought the same snapshot down to 19,528 bytes. Local decoding and
+normalization averaged 0.33 ms over 100 runs. The static short-name lookup is
+1,081 bytes. Two consecutive local Worker requests with different query strings
+returned the identical cached snapshot.
+
+![MARTA buses across Atlanta, with a live Route A position selected](log/2026-11-20-live-buses.png)

@@ -8,6 +8,9 @@
  */
 import { MARTA_RAIL_URL, normalize, type MartaRow } from './marta';
 
+import { BUS_URL, normalizeBuses } from './bus';
+import type { BusRoutes } from '../../web/src/model/types';
+
 export interface Env {
   MARTA_API_KEY: string;
   ASSETS?: Fetcher;
@@ -48,9 +51,41 @@ async function martaRail(req: Request, env: Env, ctx: ExecutionContext): Promise
   return res;
 }
 
+// Give every client a current server clock, including when the snapshot came
+// from the edge cache. The tab controls its own 30-second polling cadence.
+function serveBusSnapshot(snapshot: Response) {
+  const response = new Response(snapshot.body, snapshot);
+  response.headers.set('Date', new Date().toUTCString());
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
+
+async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  if (req.method !== 'GET') return new Response(null, { status: 405, headers: { Allow: 'GET' } });
+  const key = new Request(new URL('/api/marta/bus', req.url));
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  if (hit) return serveBusSnapshot(hit);
+  let response: Response;
+  try {
+    const [upstream, routes] = await Promise.all([
+      fetch(BUS_URL, { headers: { 'User-Agent': 'Railwatch/1.0', Accept: '*/*' } }),
+      env.ASSETS?.fetch(new Request(new URL('/data/ga/bus-routes.json', req.url)))
+        .then(r => r.ok ? r.json<BusRoutes>() : {}).catch(() => ({})),
+    ]);
+    if (!upstream.ok) throw new Error('feed unavailable');
+    response = json(normalizeBuses(await upstream.arrayBuffer(), routes ?? {}, Date.now()), 200, 30);
+  } catch {
+    response = json({ error: 'MARTA bus feed unavailable' }, 503, 30);
+  }
+  ctx.waitUntil(cache.put(key, response.clone()));
+  return serveBusSnapshot(response);
+}
+
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
+    if (url.pathname === '/api/marta/bus') return martaBus(req, env, ctx);
     if (url.pathname === '/api/marta/rail') return martaRail(req, env, ctx);
     if (url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404, 60);
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response('not found', { status: 404 });

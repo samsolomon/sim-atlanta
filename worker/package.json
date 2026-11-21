@@ -12,5 +12,8 @@
     "typescript": "^5.9.3",
     "vitest": "^3.2.7",
     "wrangler": "^4.166.0"
+  },
+  "dependencies": {
+    "pbf": "^4.0.2"
   }
 }
