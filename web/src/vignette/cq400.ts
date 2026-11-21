@@ -151,8 +151,7 @@ function noseDepth(x: number, y: number) {
   // with only a small round-over where it meets the roof.
   const rake = 0.1 + (NOSE_LEN - 0.3) * t + 0.15 * Math.pow(t, 6);
   const plan = 1 - 0.12 * Math.pow(ax, 2.0) - 0.18 * Math.pow(ax, 8); // slightly rounded corners
-  const chin = y < 1.0 ? (1.0 - y) * 0.6 : 0; // a slight tuck under the bumper line
-  return Math.max(0.02, (NOSE_LEN - rake - chin) * plan);
+  return Math.max(0.02, (NOSE_LEN - rake) * plan);
 }
 
 /** The chevron light's path on the face: down each mask edge, then in to meet below the screen. */
@@ -164,8 +163,10 @@ function chevronPath(): [number, number][] {
     const f = i / 10;
     side.push([x0 * (1 - f), 1.98 - 0.16 * f]); // in and slightly down to the centre
   }
-  const left = side.map(([x, y]) => [-x, y] as [number, number]).reverse();
-  return [...left, ...side.slice(1)];
+  // Left half runs top → point; right half point → top, sharing the point.
+  const left = side.map(([x, y]) => [-x, y] as [number, number]);
+  const right = [...side].reverse();
+  return [...left, ...right.slice(1)];
 }
 
 function addNose(k: Kit, zb: number, line: string) {
@@ -266,19 +267,30 @@ function addNose(k: Kit, zb: number, line: string) {
   // Destination display across the top of the mask.
   face(-1.12, 1.12, 3.3, 3.5, '#ffb84a', 7, 0.035, 12, 3);
   // The line-colour chevron: one continuous lit band.
+  // One continuous ribbon with shared (mitred) corners, so the halves meet cleanly at the point.
   const path = chevronPath();
-  for (let i = 1; i < path.length; i++) {
-    const [xa, ya] = path[i - 1];
-    const [xb, yb] = path[i];
-    // Thin up the sides, thickening along the lower arms toward the point.
-    const cx = Math.abs((xa + xb) / 2) / (W / 2 - 0.18);
-    const hw = (ya + yb) / 2 > 2.0 ? 0.038 : 0.038 + 0.075 * Math.pow(1 - cx, 1.3);
-    const dx = xb - xa;
-    const dy = yb - ya;
+  const width = (x: number, y: number) => {
+    const cx = Math.abs(x) / (W / 2 - 0.18);
+    return y > 2.0 ? 0.038 : 0.038 + 0.075 * Math.pow(1 - cx, 1.3); // thicker toward the point
+  };
+  const edgePts: [number[], number[]][] = path.map(([x, y], i) => {
+    const [xp, yp] = path[Math.max(0, i - 1)];
+    const [xn, yn] = path[Math.min(path.length - 1, i + 1)];
+    let dx = xn - xp;
+    let dy = yn - yp;
     const l = Math.hypot(dx, dy) || 1;
-    const nx = (-dy / l) * hw;
-    const ny = (dx / l) * hw;
-    k.quad(at(xa - nx, ya - ny, 0.018), at(xb - nx, yb - ny, 0.018), at(xb + nx, yb + ny, 0.018), at(xa + nx, ya + ny, 0.018), line, 5);
+    dx /= l;
+    dy /= l;
+    const w = width(x, y);
+    return [at(x + dy * w, y - dx * w, 0.018), at(x - dy * w, y + dx * w, 0.018)];
+  });
+  for (let i = 1; i < edgePts.length; i++) {
+    const [a, d] = edgePts[i - 1];
+    const [b, c] = edgePts[i];
+    // Keep every quad facing forward (+z), whichever way the path runs.
+    const nz = (b[0] - a[0]) * (d[1] - a[1]) - (b[1] - a[1]) * (d[0] - a[0]);
+    if (nz >= 0) k.quad(a, b, c, d, line, 5);
+    else k.quad(a, d, c, b, line, 5);
   }
   // Small red tail lights at each end of the destination display, and under each corner cluster.
   for (const s2 of [-1, 1]) {
@@ -289,12 +301,12 @@ function addNose(k: Kit, zb: number, line: string) {
   for (const s2 of [-1, 1]) face(s2 > 0 ? 1.26 : -1.38, s2 > 0 ? 1.38 : -1.26, 1.52, 1.8, '#ffffff', 8, 0.02, 1, 3);
   // Bumper blocks: clean grey rectangles on the surface, each with a dark vent.
   for (const s2 of [-1, 1]) {
-    const xo = halfWidth(1.0) * 0.96;
+    const xo = 1.54; // out to (and under) the grey corner wrap, so there's no notch
     face(s2 > 0 ? 0.74 : -xo, s2 > 0 ? xo : -0.74, Y_BOT + 0.005, 1.32, C.body, 0, 0.008, 6, 4);
-    face(s2 > 0 ? 0.94 : -1.4, s2 > 0 ? 1.4 : -0.94, 0.97, 1.2, C.vent, 0, 0.012, 4, 2);
+    face(s2 > 0 ? 0.94 : -1.4, s2 > 0 ? 1.4 : -0.94, 0.97, 1.2, C.vent, 0, 0.02, 4, 2);
   }
   // Vent slats on the bumpers, and the lit bar where the wordmark sits (no logo).
-  for (const s2 of [-1, 1]) for (let v = 0; v < 3; v++) face(s2 > 0 ? 0.96 : -1.38, s2 > 0 ? 1.38 : -0.96, 1.01 + v * 0.06, 1.03 + v * 0.06, C.bodyShade, 0, 0.016, 4, 1);
+  for (const s2 of [-1, 1]) for (let v = 0; v < 3; v++) face(s2 > 0 ? 0.97 : -1.37, s2 > 0 ? 1.37 : -0.97, 1.01 + v * 0.06, 1.03 + v * 0.06, C.bodyShade, 0, 0.03, 4, 1);
   face(-0.4, 0.4, 1.02, 1.16, '#ffffff', 6, 0.016, 4, 1);
   // Coupler below the nose (the one part that really does stick out).
   const zf = zb + noseDepth(0, Y_BOT);
