@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RoutesFile } from '../model/types';
-import { elevationAt, makeProjector, type SceneManifest } from '../core/scene-data';
+import { elevationAt, makeProjector, railBedY, railSpanAt, type SceneManifest } from '../core/scene-data';
 import { alignment } from '../vignette/alignment';
 import { PORTAL_E } from '../vignette/world';
 
@@ -96,5 +96,86 @@ describe.skipIf(!has)('downtown scene data', () => {
       expect(near.length, `${id}: unexpected open run near Five Points`).toBeLessThanOrEqual(cuts.length);
     }
     for (const [name, n] of checked) expect(n, name).toBeGreaterThanOrEqual(6);
+  });
+
+  describe('observed rail cover (manifest.rail)', () => {
+    const rail = manifest?.rail;
+    const route = (id: string) => routes.paths.find((p) => p.id === id)!.routeId;
+    const ew = () => Object.keys(rail!.paths).filter((id) => ['marta:route:BLUE', 'marta:route:GREEN'].includes(route(id)));
+    /** Scene x/z of a path at s (linear between GTFS vertices). */
+    const at = (id: string, s: number): [number, number] => {
+      const p = routes.paths.find((q) => q.id === id)!;
+      const project = makeProjector(manifest.origin);
+      let j = p.cum.findIndex((c) => c >= s);
+      if (j <= 0) j = 1;
+      const t = (s - p.cum[j - 1]) / (p.cum[j] - p.cum[j - 1] || 1);
+      const [ax, az] = project(p.coords[2 * j - 2], p.coords[2 * j - 1]);
+      const [bx, bz] = project(p.coords[2 * j], p.coords[2 * j + 1]);
+      return [ax + (bx - ax) * t, az + (bz - az) * t];
+    };
+
+    it('is version 1, track-bed datum, with sorted non-overlapping spans inside each profile', () => {
+      expect(rail?.version).toBe(1);
+      expect(rail!.datum).toBe('track-bed');
+      for (const [id, spans] of Object.entries(rail!.paths)) {
+        const prof = manifest.profiles[id];
+        const hi = prof.s0 + prof.step * (prof.z.length - 1);
+        spans.forEach((sp, i) => {
+          expect(sp.s1, id).toBeGreaterThan(sp.s0);
+          expect(sp.s0, id).toBeGreaterThanOrEqual(prof.s0);
+          expect(sp.s1, id).toBeLessThanOrEqual(hi + 0.1);
+          if (i) expect(sp.s0, id).toBeGreaterThanOrEqual(spans[i - 1].s1);
+          expect(rail!.evidence[sp.ev], sp.ev).toBeDefined();
+          expect(sp.height).toBe('schematic');
+          // Viaducts never follow the ground under them; open cuts sit on the DEM floor.
+          if (sp.form === 'viaduct') expect(sp.base, id).toBe('anchors');
+          if (sp.form === 'cut') expect([sp.base, sp.rel], id).toEqual(['ground', 0]);
+        });
+      }
+    });
+
+    it('gives both directions and both lines the same observations, mirrored', () => {
+      const ids = ew();
+      const len = (id: string, ev: string) => rail!.paths[id].filter((sp) => sp.ev === ev).map((sp) => sp.s1 - sp.s0)[0];
+      for (const ev of ['gulch-trench', 'five-points-east-cut', 'gsu-west-open', 'gsu-canopy', 'gsu-floyd']) {
+        const lens = ids.map((id) => len(id, ev)).filter((v) => v !== undefined);
+        expect(lens.length, ev).toBeGreaterThanOrEqual(6);
+        expect(Math.max(...lens) - Math.min(...lens), ev).toBeLessThan(15);
+      }
+      // Order along the path flips with direction.
+      const east = rail!.paths['marta:path:155177'].map((sp) => sp.ev);
+      const west = rail!.paths['marta:path:155188'].map((sp) => sp.ev);
+      expect(west).toEqual([...east].reverse());
+      expect(east).toEqual(['gulch-trench', 'five-points-east-cut', 'gsu-west-open', 'gsu-canopy', 'gsu-floyd', 'connector-viaduct']);
+    });
+
+    it('keeps the schematic bed continuous across every Georgia State seam, both directions', () => {
+      // Any smooth bare-earth stand-in: a slope east with some relief.
+      const ground = (x: number, z: number) => -0.03 * x + 0.01 * z + 2 * Math.sin(x / 40);
+      for (const id of ew()) {
+        const spans = rail!.paths[id];
+        for (let i = 1; i < spans.length; i++) {
+          const [a, b] = [spans[i - 1], spans[i]];
+          if (Math.abs(a.s1 - b.s0) > 0.01 || !a.ev.startsWith('gsu') && !b.ev.startsWith('gsu') && b.ev !== 'connector-viaduct') continue;
+          const yA = railBedY(a, a.s1 - 0.01, ground(...at(id, a.s1 - 0.01)), ground);
+          const yB = railBedY(b, b.s0 + 0.01, ground(...at(id, b.s0 + 0.01)), ground);
+          expect(Math.abs(yA - yB), `${id} ${a.ev}|${b.ev}`).toBeLessThan(0.25);
+        }
+      }
+    });
+
+    it('falls back to the legacy profile where nothing was observed', () => {
+      // Five Points station itself (scene origin) is not covered by any span.
+      for (const id of ew()) {
+        const p = routes.paths.find((q) => q.id === id)!;
+        const project = makeProjector(manifest.origin);
+        let best = { d: Infinity, s: 0 };
+        for (let i = 0; i < p.cum.length; i++) {
+          const [x, z] = project(p.coords[2 * i], p.coords[2 * i + 1]);
+          if (Math.hypot(x, z) < best.d) best = { d: Math.hypot(x, z), s: p.cum[i] };
+        }
+        if (best.d < 30) expect(railSpanAt(rail, id, best.s), id).toBeNull();
+      }
+    });
   });
 });

@@ -69,10 +69,61 @@ viewed only, not redistributed). MARTA's SEC District roof page was also used
 | Vine City station's open cut, about −84.4064 to −84.4047 | Open, **off the board** | OSM ways 702268369 and 702268371 are untagged, and the trench is visible in NAIP 2023. Its x coordinate is about −1,300 to −1,140 m, west of the City board's edge at −1,000. | Not drawn. |
 | **Five Points east cut**, between Peachtree St and Pryor St, about −84.3898 to −84.3889 | **Open cut** (pinned) | OSM ways 702258817 and 702258818 are untagged, and the Interline Connector way 1453238814 beside them is `cutting=yes`. Rails are visible in NAIP 2023 and WV02 2026. | Same method as the Gulch trench. |
 
-Gaps still unverified: the 100–115 m untagged spans near Georgia State (about −84.3875 to −84.3865
-and −84.3852 to −84.3843) stay filled as tunnel until someone checks them the same way. Centennial Yards plans
-to build a platform over the Gulch tracks, so re-check the Gulch trench against new imagery
-before trusting this entry after 2026.
+| Georgia State west approach, from the tunnel mouth at the Washington St bridge to the canopies, about −84.38746 to −84.38694 | **Open**, at grade beside the CSX/NS tracks | OSM ways 78090747 and 78090742 have `level=2` and no tunnel tag. Two open tracks show in Esri 15 cm imagery (2022-09-27) and WV02 (2026-02-02). | ≈ 62 m on the paths, ±10 m |
+| Georgia State side-platform canopies, −84.38694 to −84.38633 | **Roofed** (not a tunnel mouth) | White canopy roofs over the side platforms (OSM 539937961 and 539937962) in 2022, NAIP 2023 and 2026. The tracks between the canopies may be partly visible; the imagery can't resolve it. | ≈ 73 m, ±15 m |
+| Georgia State station under the Floyd Building ("Twin Towers"), −84.38633 to −84.38526 | **Covered** by a building | OSM ways 702258821 and 702258822 are `tunnel=building_passage`. In imagery the track emerges at the east face. | ≈ 131 m, ±15 m |
+| From the Georgia State east face over the Downtown Connector and on east | **Open**, elevated structure | OSM ways 905944412–905944415, then the layer-3 viaduct (78090750, 78380741). The structure is continuous in imagery; the untagged "gap" at about −84.38515 to −84.38427 is only a seam between OSM ways. A narrow skywalk (539939605) crosses it. There is no public deck or clearance record: FHWA NBI GA 2024/2025 holds highway-carrying structures only, and GDOT GIS has none. | Height is schematic |
+
+**Correction (2026-11-21):** an earlier version of this section said the Georgia State gaps
+"stay filled as tunnel". They don't. The legacy profile ramps from −10 m at the Washington St
+portal to +7 m by −84.3859, so a flat-board consumer of the profile alone draws the track
+rising through the canopies and the Floyd Building. The `rail` spans below carry the observed
+cover. Centennial Yards plans to build a platform over the Gulch tracks, so re-check the Gulch
+trench against new imagery before trusting this entry after 2026.
+
+### Rail cover and terrain-relative height (`scene.json` → `rail`, version 1)
+
+The legacy `profiles` stay unchanged. The optional `rail` key adds observed spans for each path.
+The types and lookups (`railSpanAt`, `railBedY`) live in `web/src/core/scene-data.ts`, and the
+fixtures and evidence live in `RAIL_FIXES` and `RAIL_EVIDENCE` in `pipeline/src/scene.rs`.
+
+- **Spans** are half-open `[s0, s1)` in metres along each GTFS path. Each direction and each
+  Blue/Green path is projected separately from lon/lat edges, so nothing depends on a path id.
+  Spans are sorted and don't overlap. A gap, or s outside every span, means **unknown**: fall
+  back to the legacy profile against `PORTAL_E`.
+- **Cover** (`open`, `covered` or `roofed`) describes only the sky, and it's independent of
+  height. `roofed` is a station canopy or roof, not a tunnel mouth.
+- **Form**: `tunnel`, `cut`, `grade`, `station` or `viaduct`.
+- **Height** is the **track bed**, the same level as the legacy `z`. Rails and cars add their
+  own +0.55 m once. Every height is `schematic` for now.
+  - `base: ground` puts the bed at local bare earth + `rel`. Open cuts have `rel` 0, because the
+    DEM already samples the cut floor.
+  - `base: anchors` hangs the bed from identified anchor points (each with its own s, x, z,
+    description and `rel`). The height is piecewise-linear between anchors and flat beyond the
+    ends. Viaducts always use anchors, so a track never follows the DEM down into the freeway.
+- **Georgia State chain.** The canopy, Floyd Building and Connector viaduct spans share three
+  anchors:
+  - the canopies' west end, at rel 0;
+  - the station's east face, at rel +7;
+  - the Connector's east bank (USGS 3DEP 314.1 m), at rel +7.
+
+  This keeps the bed continuous through the seams in both directions. The +7 m is a placeholder
+  clearance, not a measurement.
+- **Example**, the scheduled Blue trip eastbound to Indian Creek that leaves Five Points at 14:11
+  on Nov 20 (`marta:path:155177`; Five Points at s = 7,367.8 m):
+
+  | Span | s0–s1 |
+  |---|---|
+  | Gulch trench | 7,116.6–7,246.7 |
+  | Five Points east cut | 7,560.9–7,663.2 |
+  | Georgia State open | 7,834.7–7,896.3 |
+  | Georgia State canopy (roofed) | 7,896.3–7,969.2 |
+  | Floyd Building (covered) | 7,969.2–8,100.3 |
+  | Connector viaduct (open) | 8,100.3–8,900.0, the profile's end |
+
+  The anchors are at s = 7,896.3, 8,100.3 and 8,364.0.
+
+![USGS NAIP 2023: Georgia State, with the canopies west of the Floyd towers and the structure toward the Connector](log/rail/2026-11-21-naip-2023-georgia-state.jpg)
 
 ## Freight traffic
 
