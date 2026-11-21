@@ -29,7 +29,7 @@ transport.dispose();
 
 The function is synchronous. Give both modules the same downtown extract, grid and triangle-surface sampler. The ground texture paints ordinary roads and the at-grade portions of partially bridged ways. The transport module supplies the raised decks, open freight track and embedded tram rails. The City renderer can use this group in place of its former street, freight and tram geometry. Attach the MARTA owner's group separately.
 
-The builder draws each mapped structural span as a chord between its endpoint ground proxies. Each side meets the local cross-slope within one deck width of its end. A bridge over a slot keeps its chord. A missing grid endpoint omits that span. Ground track samples the rendered triangles every 2 m and at every source vertex, with gaps where sampled ground is missing. The source crop clips centrelines to the board rectangle. The 5 m DEM and road widths limit fidelity at embankments and narrow openings.
+The builder draws each mapped structural span as a chord between its endpoint ground proxies. Each side meets the local cross-slope within one deck width of its end. A bridge over a slot keeps its chord. At a board edge, the deck holds the height of its in-board support. If both ends lie on the edge or an interior support has missing ground, the builder omits the span. Ground track samples the rendered triangles every 2 m and at every source vertex, with gaps where sampled ground is missing. The source crop clips centrelines to the board rectangle. The 5 m DEM and road widths limit fidelity at embankments and narrow openings.
 
 ## Reproducing the data and view
 
@@ -42,8 +42,10 @@ pnpm test
 pnpm dev
 ```
 
-Open `/terrain-transport.html` or `/terrain-transport.html?at=streetcar` in Orca on the dev server. Both use the low-detail board. An older cached City extract needs the updater before attaching transport. Stage the new static JSON with the City bundle and rebuild the web distribution for release.
+Open `/terrain-transport.html` or `/terrain-transport.html?at=streetcar` in Orca on the dev server. Use `?at=edge` to see the clipped road deck at the east boundary. All three views use the low-detail board. An older cached City extract needs the updater before attaching transport. Stage the new static JSON with the City bundle and rebuild the web distribution for release.
 
 The extractor splits Overture's November 18, 2026 road and rail features by their flag and level intervals along the full WGS84 ellipsoidal length, then intersects the resulting pieces with the board. Tunnels, disused rail and abandoned rail are omitted. Positive levels and bridge flags identify supported geometry. Roads without either bridge or tunnel tagging already appear on the board. The supplement keeps 175 road approaches, 238 road or pedestrian deck runs, 41 ground freight or standard-gauge runs, 10 rail spans and four embedded tram runs. Some standard-gauge sidings have no published service flag. The model assigns no train movements to them. [Overture linear referencing](https://docs.overturemaps.org/guides/transportation/linear-referencing/) · [Terrain source and vertical reference](downtown-ground.md)
 
 The extra JSON section takes 66,265 bytes, 17,658 bytes gzip-compressed on its own. With the group toggled on and off in Orca, the colour pass adds two draws and 37,388 triangles downtown. One directional shadow pass adds one draw and 24,820 triangles. Together they add three draws and 62,208 submitted triangles. These counts cover the static transport group across the board. City's postprocessing, trains and frame rate are separate measurements.
+
+Eleven road and pedestrian decks reach the board boundary. At the eastern motorway ramp, the interior endpoint samples 298.76 m while bare earth under the clipped end reads 291.18 m. The model carries the interior support height to the edge. [Orca edge check](log/ui/2026-11-21-transport-edge.jpg)

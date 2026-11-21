@@ -40,14 +40,15 @@ async function show() {
   document.body.append(renderer.domElement);
   const camera = new THREE.PerspectiveCamera(37, 1, 0.5, 6500);
   const controls = new OrbitControls(camera, renderer.domElement);
-  const tram = new URLSearchParams(location.search).get('at') === 'streetcar';
-  const [x, z] = tram ? [630.87, -61.59] : [766, 533];
+  const at = new URLSearchParams(location.search).get('at');
+  const tram = at === 'streetcar', edge = at === 'edge';
+  const [x, z] = tram ? [630.87, -61.59] : edge ? [970, -794] : [766, 533];
   const y = area.groundAt(x, z) ?? 0;
   controls.target.set(x, y, z);
   sun.target.position.copy(controls.target);
   sun.position.set(x - 220, y + 280, z - 210);
   scene.add(sun.target);
-  camera.position.set(x + (tram ? -49 : -75), y + (tram ? 38 : 67), z + (tram ? 3 : 132));
+  camera.position.set(x + (tram ? -49 : edge ? 42 : -75), y + (tram ? 38 : edge ? 34 : 67), z + (tram ? 3 : edge ? 64 : 132));
   controls.update();
   area.setSeason(320);
 
@@ -66,7 +67,7 @@ async function show() {
   const base = { ...renderer.info.render };
   transport.group.visible = true;
   render();
-  document.getElementById('place')!.textContent = tram ? 'Atlanta Streetcar' : 'Downtown Connector';
+  document.getElementById('place')!.textContent = tram ? 'Atlanta Streetcar' : edge ? 'East board edge' : 'Downtown Connector';
   document.getElementById('status')!.textContent = `Transport · ${full.calls - base.calls} draws · ${(full.triangles - base.triangles).toLocaleString('en-US')} triangles`;
   controls.addEventListener('change', render);
   window.addEventListener('resize', resize);
