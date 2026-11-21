@@ -30,12 +30,6 @@ const REF_HALF = 40;
 /** Distance (m) over which an unobserved bed is blended into an observed neighbour. */
 const BLEND = 60;
 
-interface Sampled {
-  bed: Float64Array;
-  rim: Float64Array;
-}
-const sampled = new WeakMap<Alignment, Sampled>();
-
 export function terrainAlignment(legacy: Legacy, pathId: string, manifest: SceneManifest, grid: GroundGrid): Alignment {
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const ground = (x: number, z: number): number | null => {
@@ -112,7 +106,6 @@ export function terrainAlignment(legacy: Legacy, pathId: string, manifest: Scene
     coverAt,
     formAt,
   };
-  sampled.set(al, { bed, rim });
   return al;
 }
 
@@ -147,11 +140,6 @@ export function terrainOpenings(alignments: Alignment[]): OpenSlot[] {
     }
   }
   return slots;
-}
-
-/** For tests: the 2 m samples behind an alignment from terrainAlignment. */
-export function terrainSamples(al: Alignment) {
-  return sampled.get(al);
 }
 
 function fillHoles(a: Float64Array, valid: Uint8Array) {
