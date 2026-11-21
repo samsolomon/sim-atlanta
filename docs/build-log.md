@@ -925,3 +925,23 @@ deploy paragraph: it now retains City's data requirements and uses `pnpm run dep
 The combined branch passes all 48 tests, the production build and an Orca high-tier render
 check. Claude's focused integration review found no issues. City remains optional; the A16
 gate still controls making it the default and starting M2b.
+
+## 2026-11-21 · Softer shading costs fewer pixels
+
+On this Mac, City draws a 1446×876 Orca viewport into a 2892×1752 canvas. The soft
+contact shadows around buildings also covered all five million pixels. Turning just
+that effect off briefly took the opening view from 23.5 to 37.4 fps. Keeping it on and
+rendering it at 1446×876 leaves the ink, façades and final image at display resolution.
+
+At the same opening pose on high tier, alternating the two shading resolutions gave
+22.3–23.5 fps before and 31.9–33.7 fps after. The 95th-percentile frame interval fell
+from 83–84 ms to about 50 ms. These were 4.4-second foreground Orca samples on the
+Nov 21 afternoon timetable. The scene still drew 63 calls and 2.80 million triangles.
+
+Holding E for three seconds from the closer downtown pose gave a smaller gain. Two
+samples at each resolution measured 20.1–22.3 fps before and 24.4–26.6 fps after.
+The 95th-percentile interval stayed around 84 ms, so some turns still hitch. The
+browser resize check confirmed a 2256-pixel canvas with 1128-pixel contact shading
+at the narrower width. This is a desktop measurement. Shipping needs a web rebuild.
+
+![High-tier downtown close-up with contact shading rendered at CSS resolution](log/ui/2026-11-21-city-contact-shading.png)

@@ -245,10 +245,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const h = container.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h);
-    composer.setSize(w, h);
-    bloom.resolution.set(w / 2, h / 2);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    composer.setSize(w, h);
+    // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
+    gtao?.setSize(w, h);
+    bloom.resolution.set(w / 2, h / 2);
     const pr = renderer.getPixelRatio();
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
