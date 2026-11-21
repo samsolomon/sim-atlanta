@@ -81,6 +81,7 @@ live.start();
 
 let updateAtmosphere = () => {}; // set once the map has loaded
 let atmRealTime = true; // the clock state the atmosphere was last computed for
+let atmAt = 0; // the simulated time it was computed for
 // Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;
 // the centre stays sharp. A DOM layer over the map, under the glass. Map view only.
 const fogEl = Object.assign(document.createElement('div'), { id: 'fog' });
@@ -132,6 +133,7 @@ onReady(() => {
     const w = clock.isRealTime() ? shell.weather() : null; // live weather only at the present
     const atm = atmosphere(clock.now(), w, override ?? {});
     atmRealTime = clock.isRealTime();
+    atmAt = clock.now().getTime();
     sky.set(atm);
     paintFor(atm);
     shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
@@ -261,7 +263,8 @@ const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: meta.timezone, week
 
 function updateClock(now: Date) {
   // Live weather belongs only to the real present: recompute as soon as the clock leaves or returns.
-  if (clock.isRealTime() !== atmRealTime) updateAtmosphere();
+  // A sped-up or scrubbed clock moves the sun too: recompute every 5 simulated minutes.
+  if (clock.isRealTime() !== atmRealTime || Math.abs(now.getTime() - atmAt) > 5 * 60_000) updateAtmosphere();
   clockEl.textContent = timeFmt.format(now);
   clockEl.dateTime = now.toISOString();
   const shifted = !clock.isRealTime();

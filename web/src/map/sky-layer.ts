@@ -54,11 +54,11 @@ void main() {
   float s = clamp(dot(uv - 0.5, uSun) * 1.6, -1.0, 1.0);
   vec3 warm = mix(vec3(1.0, 0.94, 0.80), vec3(1.0, 0.70, 0.42), uLow);
   float flatL = 1.0 - uCloud * 0.75;
-  over(warm, max(s, 0.0) * (0.12 + 0.14 * uLow) * uDay * flatL);
-  over(vec3(0.20, 0.18, 0.26), max(-s, 0.0) * (0.08 + 0.06 * uLow) * uDay * flatL);
-  over(vec3(0.10, 0.14, 0.26), 0.10 * uDark);
+  over(warm, max(s, 0.0) * (0.06 + 0.08 * uLow) * uDay * flatL);
+  over(vec3(0.20, 0.18, 0.26), max(-s, 0.0) * (0.05 + 0.04 * uLow) * uDay * flatL);
+  over(vec3(0.10, 0.14, 0.26), 0.06 * uDark);
   float g = length((uv - uGlow) * vec2(uRes.x / uRes.y, 1.0)) / max(uGlowR, 1e-3);
-  over(vec3(1.0, 0.72, 0.38), 0.16 * uDark * exp(-g * g));
+  over(vec3(1.0, 0.72, 0.38), 0.08 * uDark * exp(-g * g));
 
   // ---- weather (fades with zoom and distance from Atlanta: uWx)
   vec2 wind = vec2(0.9, 0.35) * t * 0.012; // km/s, exaggerated so it reads
@@ -95,9 +95,9 @@ void main() {
 
   // ---- grain
   float n = hash(px + fract(t * 0.7) * 91.0) - 0.5;
-  over(n > 0.0 ? vec3(1.0) : vec3(0.0), abs(n) * 0.05);
+  over(n > 0.0 ? vec3(1.0) : vec3(0.0), abs(n) * 0.03);
 
-  gl_FragColor = vec4(col * alpha, alpha); // premultiplied
+  gl_FragColor = vec4(col, alpha); // over() already accumulates premultiplied colour
 }`;
 
 export class SkyLayer implements CustomLayerInterface {
