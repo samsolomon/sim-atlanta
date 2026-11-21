@@ -43,7 +43,7 @@ it('grounds scenery, omits decks, forwards wet/season/night and releases its own
   }
   expect(materialBases).toEqual(new Set([-6, 0])); // footprint-edge low is between its corners
   expect(roofHeights).toEqual(new Set([9, 20]));
-  expect(area.board.userData.lit).toBe(true);
+  expect(area.board.userData.lit).toBeUndefined(); // Control passes the target explicitly to buildLights
   const trunks: THREE.InstancedMesh[] = [];
   area.scenery.traverse(o => {
     if (o instanceof THREE.InstancedMesh && o.geometry.type === 'CylinderGeometry') trunks.push(o);
