@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Builder, Line } from '../vignette/geom';
+import { Builder, Line, type P2 } from '../vignette/geom';
 import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
@@ -51,9 +51,14 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
     const line = new Line(run.pts);
     if (!line.length) return;
     const bridge = run.kind === 'bridge';
-    const h0 = bridge ? grid.sample(...run.pts[0]) : null;
-    const h1 = bridge ? grid.sample(...run.pts[run.pts.length - 1]) : null;
-    if (bridge && (h0 === null || h1 === null)) return;
+    const onEdge = ([x, z]: P2) => x === bounds.minX || x === bounds.maxX || z === bounds.minZ || z === bounds.maxZ;
+    const start = run.pts[0], end = run.pts[run.pts.length - 1];
+    const startCut = onEdge(start), endCut = onEdge(end);
+    const startHeight = bridge && !startCut ? grid.sample(...start) : null;
+    const endHeight = bridge && !endCut ? grid.sample(...end) : null;
+    if (bridge && ((startCut && endCut) || (!startCut && startHeight === null) || (!endCut && endHeight === null))) return;
+    // A board cut can pass through mid-air. Carry the in-board support to that edge.
+    const h0 = startHeight ?? endHeight, h1 = endHeight ?? startHeight;
     const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
     const width = use === 'road' ? roadWidth(run) : 4.2;
     // Keep original corners as well as intermediate terrain samples. A structural
@@ -95,7 +100,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
             const end = s < line.length / 2 ? 0 : 1;
             const blend = Math.max(0, 1 - Math.min(s, line.length - s) / seam);
             const ref = end ? h1! : h0!;
-            if (ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
+            if (!(end ? endCut : startCut) && ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
           }
           section.push([x, y + lift, z]);
         }

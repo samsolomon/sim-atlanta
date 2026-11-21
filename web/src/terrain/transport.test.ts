@@ -79,3 +79,14 @@ it('follows the board on open track, breaks at a void, and keeps the supported s
   expect(surfaceY(t.group, 743.7095, 532.1742)! + zero).toBeCloseTo(312.3, 1);
   t.dispose();
 });
+
+it('carries a bridge clipped by the east edge out from its in-board support', () => {
+  const [x, z] = [928.86, -786.12];
+  const t = createSurfaceTransport({ ...city, terrainTransport: { version: 1, rail: [], roads: [
+    { cls: 'motorway', sub: 'link', kind: 'bridge', pts: [[x, z], [941.85, -789.51], [953.99, -792.35], [963.06, -794.16], [971.98, -795.33], [983.75, -795.83], [996.25, -794.82], [1000, -793.96]] },
+  ] } }, grid, groundAt);
+  const top = surfaceY(t.group, 996.25, -794.82)!;
+  expect(top).toBeCloseTo(groundAt(x, z)! + .12, 1);
+  expect(top - groundAt(996.25, -794.82)!).toBeGreaterThan(3);
+  t.dispose();
+});
