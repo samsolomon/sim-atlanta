@@ -34,7 +34,7 @@ export class DioramaBuses {
   private obj = new THREE.Object3D();
   readonly night = { value: 0 };
   /** Where buses are this frame, for traffic to avoid. */
-  readonly positions: { x: number; z: number; len: number }[] = [];
+  readonly positions: { x: number; y: number; z: number; len: number }[] = [];
 
   constructor(
     private world: World,
@@ -107,8 +107,9 @@ export class DioramaBuses {
       const p = this.lerp(s, now);
       // On an overpass, stay on the deck (streets on bridges never dip into the trench).
       const g = this.world.ground(p.x, p.z);
-      this.obj.position.set(p.x, (s.bridge ? Math.max(0, g) : g) + 0.2, p.z);
-      this.positions.push({ x: p.x, z: p.z, len: 12.2 });
+      const y = (s.bridge ? Math.max(0, g) : g) + 0.2;
+      this.obj.position.set(p.x, y, p.z);
+      this.positions.push({ x: p.x, y, z: p.z, len: 12.2 });
       this.obj.rotation.set(0, p.a, 0);
       this.obj.updateMatrix();
       this.mesh.setMatrixAt(i++, this.obj.matrix);

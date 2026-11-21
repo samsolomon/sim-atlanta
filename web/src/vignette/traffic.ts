@@ -109,7 +109,7 @@ export class Traffic {
   private share = 0.05;
   private obj = new THREE.Object3D();
   /** Things the simulation must not drive through (live buses): centre, heading, length. */
-  obstacles: { x: number; z: number; len: number }[] = [];
+  obstacles: { x: number; y: number; z: number; len: number }[] = [];
   private hidden = new THREE.Matrix4().makeScale(0, 0, 0);
 
   private beams: THREE.InstancedMesh;
@@ -485,7 +485,9 @@ export class Traffic {
     // Live buses on this lane ahead.
     if (this.obstacles.length) {
       const p = v.seg.line.at(v.s);
+      const vy = this.yAt(v.seg, v.s, p.x, p.z);
       for (const ob of this.obstacles) {
+        if (Math.abs(ob.y - vy) > 3) continue; // a bus on an overpass isn't in this lane
         const rx = ob.x - p.x;
         const rz = ob.z - p.z;
         const along = rx * p.dx + rz * p.dz;
@@ -648,7 +650,7 @@ export class Traffic {
         this.obj.updateMatrix();
         m.setMatrixAt(v.inst, this.obj.matrix);
         if (nightOn && nb < MAX_VEH) {
-          this.obj.position.set(f.x + hx * (L * 0.18), y + 0.3, f.z + hz * (L * 0.18));
+          this.obj.position.set(f.x + hx * (L * 0.18) - hz * v.lat, y + 0.3, f.z + hz * (L * 0.18) + hx * v.lat);
           this.obj.updateMatrix();
           this.beams.setMatrixAt(nb++, this.obj.matrix);
         }
