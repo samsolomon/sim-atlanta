@@ -136,7 +136,12 @@ export class SkyLayer implements CustomLayerInterface {
   }
 
   onRemove() {
+    this.stopAnimation();
+  }
+
+  stopAnimation() {
     clearInterval(this.timer);
+    this.timer = 0;
   }
 
   /** New atmosphere: repaint, and keep animating while there's weather to move. */

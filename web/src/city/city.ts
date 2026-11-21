@@ -60,22 +60,23 @@ export function pickQuality(): Quality {
 
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
-export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), loading: {
+export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), options: {
   signal?: AbortSignal;
   progress?: (label: string) => void;
+  beforeFrame?: (timestamp: number) => void;
 } = {}): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
   const [vd, manifest, trees] = await Promise.all([
-    fetch(`${DATA}/scene/downtown/vignette.json`, { signal: loading.signal }).then((r) => {
+    fetch(`${DATA}/scene/downtown/vignette.json`, { signal: options.signal }).then((r) => {
       if (!r.ok) throw new Error(`city data ${r.status}`);
       return r.json();
     }) as Promise<VData>,
-    fetch(`${DATA}/scene/downtown/scene.json`, { signal: loading.signal }).then((r) => {
+    fetch(`${DATA}/scene/downtown/scene.json`, { signal: options.signal }).then((r) => {
       if (!r.ok) throw new Error(`city profiles ${r.status}`);
       return r.json();
     }) as Promise<SceneManifest>,
-    fetch(`${DATA}/scene/downtown/trees.json`, { signal: loading.signal }).then((r) => {
+    fetch(`${DATA}/scene/downtown/trees.json`, { signal: options.signal }).then((r) => {
       if (!r.ok) throw new Error(`city trees ${r.status}`);
       return r.json();
     }),
@@ -86,10 +87,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const t0 = performance.now();
   const stages: Record<string, number> = {};
   const build = async (name: string, fn: () => void) => {
-    loading.progress?.(`Building ${name}…`);
+    options.progress?.(`Building ${name}…`);
     // Let the loading plate paint and a Map click cancel between construction stages.
     await new Promise((resolve) => setTimeout(resolve, 0));
-    loading.signal?.throwIfAborted();
+    options.signal?.throwIfAborted();
     const start = performance.now();
     fn();
     stages[name] = Math.round(performance.now() - start);
@@ -109,7 +110,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     throw err;
   }
   const buildMs = Object.values(stages).reduce((sum, ms) => sum + ms, 0);
-  loading.progress?.('Drawing downtown…');
+  options.progress?.('Drawing downtown…');
 
   // ---- renderer -------------------------------------------------------------------------
   let renderer: THREE.WebGLRenderer;
@@ -364,6 +365,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let lastFrame = performance.now();
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
+    options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
     if (glideTo) {

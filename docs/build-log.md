@@ -945,3 +945,26 @@ browser resize check confirmed a 2256-pixel canvas with 1128-pixel contact shadi
 at the narrower width. This is a desktop measurement. Shipping needs a web rebuild.
 
 ![High-tier downtown close-up with contact shading rendered at CSS resolution](log/ui/2026-11-21-city-contact-shading.png)
+
+## 2026-11-21 · Drawing the turn we just asked for
+
+City and the keyboard both had animation-frame callbacks. During a close-up turn the
+renderer usually ran first, so it drew the previous camera angle. In a 4.5-second held-E
+sample in Orca, the camera update waited a median **16.5 ms**, and **82.3 ms at the
+95th percentile**, before the renderer submitted a draw with that angle.
+
+City now advances the held keys before drawing. Both callbacks use the browser's frame
+timestamp, so the second one sees zero elapsed time. At the same close-up pose on high
+tier (1446×876, DPR 2), the update-to-draw delay measured **0.1 ms median and 0.2 ms
+at the 95th percentile**. These measurements end at draw submission. The 95th-percentile
+interval between frames was still **83 ms**. In a separate held turn, JavaScript spent
+1.7 ms at the 95th percentile submitting the scene, and the WebGL GPU timer measured
+19.3 ms at the 95th percentile. Neither measures the browser's final presentation.
+
+Rain revealed a second cost. The weather timer could repaint the covered 2D Map about
+30 times a second. City now suspends that timer, and Map picks up the latest weather on
+return. Orca checks covered direct entry, switching, cancellation and failed loading.
+The high-tier check also covered quick taps, repeat, opposing keys, simultaneous pan
+and rotation, and release on blur. This change ships with a web rebuild.
+
+![Close-up downtown view after a keyboard turn in Orca](log/ui/2026-11-21-city-turn.png)

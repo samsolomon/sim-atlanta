@@ -249,3 +249,11 @@ the camera boundary. Keep an immediate 1° tap and stop on keyup or window blur.
 - **Product review:** retain the user's high tier and camera pose during verification.
   Check held input, quick taps, simultaneous WASD, release, blur and typing guards.
   Report measured frame rate separately: smoother input does not make rendering faster.
+
+## Close-up camera response (2026-11-21)
+
+Sample held movement before City updates its shadow target, controls and renderer. Use
+the shared animation-frame timestamp to apply movement once, even when Map's keyboard
+callback also runs. Keep the immediate tap and the 50 ms movement cap. While City
+covers Map, suspend its animated weather and retain the latest shared atmosphere so
+a switch back, cancelled load or WebGL failure restores the correct Map weather.
