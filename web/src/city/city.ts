@@ -174,7 +174,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   sc.bottom = -SH;
   sc.near = 100;
   sc.far = 4000;
-  sun.shadow.mapSize.set(low ? 2048 : 4096, low ? 2048 : 4096);
+  sun.shadow.mapSize.set(low ? 1024 : 4096, low ? 1024 : 4096);
   sun.shadow.bias = -0.0016;
   sun.shadow.normalBias = 1.2;
   scene.add(hemi, sun, sun.target);
