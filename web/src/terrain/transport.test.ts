@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { expect, it } from 'vitest';
+import { elevationAt, type SceneManifest } from '../core/scene-data';
 import { GroundGrid } from './grid';
 import { createSurfaceTransport } from './transport';
 import type { TerrainCity } from './transport-data';
@@ -43,6 +44,23 @@ it('puts both mapped decks over the freeway and below the schematic layer-3 Blue
   transport.dispose();
   expect(transport.group.parent).toBeNull();
   expect(transport.group.children).toHaveLength(0);
+});
+
+const sceneData = new URL('../../public/data/scene/downtown/scene.json', import.meta.url);
+const vignetteData = new URL('vignette.json', sceneData);
+it.skipIf(!existsSync(sceneData) || !existsSync(vignetteData))('preserves the crossing order with the staged City and rail profile', () => {
+  const bake: TerrainCity = JSON.parse(readFileSync(vignetteData, 'utf8'));
+  const scene: SceneManifest = JSON.parse(readFileSync(sceneData, 'utf8'));
+  const profile = scene.profiles['marta:path:155177'];
+  expect(profile).toBeDefined();
+  const blue = groundAt(820, 555)! + elevationAt(profile, 8284.4);
+  const transport = createSurfaceTransport(bake, grid, groundAt);
+  for (const [x, z] of [[743.7095, 532.1742], [835.7977, 453.6815]]) {
+    const top = surfaceY(transport.group, x, z)!;
+    expect(top).toBeGreaterThan(groundAt(x, z)!);
+    expect(blue).toBeGreaterThan(top);
+  }
+  transport.dispose();
 });
 
 it('follows the board on open track, breaks at a void, and keeps the supported span over it', () => {
