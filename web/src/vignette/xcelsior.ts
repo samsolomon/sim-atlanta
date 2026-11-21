@@ -44,8 +44,8 @@ export interface BusLivery {
 export const DEFAULT_LIVERY: BusLivery = {
   body: '#fbfbf9',
   blue: '#3790dd',
-  gold: '#f3aa2a',
-  orange: '#e8622c',
+  gold: '#f6bb2a',
+  orange: '#f08424',
   grey: '#c4c9ce',
   greyOnGlass: '#69717a',
 };
@@ -187,43 +187,93 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
     pane([-1], za + (i ? 0.04 : 0), za + (midB - midA) / 3 - (i < 2 ? 0.04 : 0));
   }
 
-  // ---- livery: blue slashes, roofline streak, gold/orange dashes, grey rear band ------------
+  // ---- livery: blue slashes, roofline streak, yellow/orange dashes, grey rear band ------------
   const UY0 = HEAD + 0.05; // upper white band, window head to the roof edge
   const UY1 = H - 0.06;
   const zAt = (d: number) => ZF - d; // distance back from the front face → z
+  const bandH = UY1 - UY0;
   const SLANT = 0.85; // how far each slash leans back over the band's height
-  for (let i = 0; i < 3; i++) {
-    const d0 = 3.35 + i * 0.58;
-    const w = 0.4;
-    decal(both, [[zAt(d0), UY1], [zAt(d0 + w), UY1], [zAt(d0 + w + SLANT), UY0], [zAt(d0 + SLANT), UY0]], liv.blue, 0.008);
+  const lean = SLANT / bandH; // dz per metre of height, shared by every slanted edge
+  // A slash's leading edge at "unrolled height" h (h runs on up over the roof edge and the CNG pod).
+  const SL = [3.35, 3.93, 4.51];
+  const SW = 0.4;
+  const slashD = (i: number, h: number) => SL[i] + (UY1 - h) * lean;
+  // The stack along the roofline (blue streak, yellow, orange), centred in the upper band.
+  const stack = [
+    { h: 0.1, color: liv.blue, end: 8.1 },
+    { h: 0.06, color: liv.gold, end: 7.5 },
+    { h: 0.045, color: liv.orange, end: 7.05 },
+  ];
+  const GAP = 0.035;
+  const stackH = stack.reduce((t, r) => t + r.h, 0) + GAP * (stack.length - 1);
+  let yTop = UY0 + (bandH + stackH) / 2;
+  const rows = stack.map((r) => {
+    const row = { ...r, y1: yTop, y0: yTop - r.h };
+    yTop -= r.h + GAP;
+    return row;
+  });
+  const streakBottom = rows[0].y0;
+  // Cross-section path from the side's upper band, round the roof edge, across the roof strip and
+  // up the CNG pod's side to its flat top. Each point: x (unsigned), y, height h for the lean.
+  const POD_X = (W - 0.5) / 2 + 0.06; // pod side face (extrude half-depth + bevel thickness)
+  const rp: [number, number, number][] = [];
+  {
+    const pts: [number, number][] = [
+      [W / 2 + 0.008, UY1],
+      [W / 2 + 0.002, H - 0.02],
+      [W / 2 - 0.06, H + 0.012],
+      [POD_X + 0.012, H + 0.012],
+      [POD_X + 0.012, H_CNG - 0.06],
+      [POD_X - 0.03, H_CNG + 0.012],
+    ];
+    // Lean by true height (not distance along the surface), so from the side each slash reads as
+    // one straight band running up onto the pod; across the flat roof strip it just bridges.
+    for (const [x, y] of pts) rp.push([x, y, y]);
   }
-  // The third slash runs out into a streak that tapers to a point toward the rear.
-  const sy0 = UY0 + 0.14;
-  const sy1 = UY0 + 0.27;
-  decal(both, [[zAt(5.0), sy1], [zAt(8.7), sy1 - 0.03], [zAt(6.6), sy0], [zAt(5.0), sy0]], liv.blue, 0.008);
-  // Gold and orange dashes under the streak, with slanted ends.
-  decal(both, [[zAt(5.85), UY0 + 0.11], [zAt(7.2), UY0 + 0.11], [zAt(7.15), UY0 + 0.065], [zAt(5.8), UY0 + 0.065]], liv.gold, 0.009);
-  decal(both, [[zAt(5.95), UY0 + 0.04], [zAt(6.8), UY0 + 0.04], [zAt(6.77), UY0 + 0.015], [zAt(5.92), UY0 + 0.015]], liv.orange, 0.009);
-  // Grey slanted band from the roof near the rear down to the tail, lighter on body, darker over glass.
-  const gTop = L - 3.3; // distance from the front where it meets the roof edge
-  const gBot = L - 0.35; // where it reaches the skirt
-  const gW = 0.75;
+  for (let i = 0; i < 3; i++) {
+    // Side part: the third slash stops at the streak's bottom edge and flows into it.
+    const yb = i === 2 ? streakBottom : UY0;
+    decal(both, [[zAt(slashD(i, UY1)), UY1], [zAt(slashD(i, UY1) + SW), UY1], [zAt(slashD(i, yb) + SW), yb], [zAt(slashD(i, yb)), yb]], liv.blue, 0.008);
+    // Roof part: segment by segment along the path, keeping the same lean.
+    for (const sd of both) {
+      for (let j = 1; j < rp.length; j++) {
+        const [xa, ya, ha] = rp[j - 1];
+        const [xb, yb2, hb] = rp[j];
+        const A = [sd * xa, ya, zAt(slashD(i, ha))];
+        const B = [sd * xa, ya, zAt(slashD(i, ha) + SW)];
+        const Cc = [sd * xb, yb2, zAt(slashD(i, hb) + SW)];
+        const D = [sd * xb, yb2, zAt(slashD(i, hb))];
+        k.geo(quad(A, B, Cc, D), liv.blue);
+      }
+    }
+  }
+  // Streak, yellow and orange: horizontal runs with ends at the slashes' lean. The streak starts
+  // inside the third slash (same colour, so it reads as one shape); the others start a gap behind it.
+  rows.forEach((r, j) => {
+    const start = (y: number) => (j === 0 ? slashD(2, y) : slashD(2, y) + SW + 0.1);
+    const stop = (y: number) => r.end + (r.y1 - y) * lean;
+    decal(both, [[zAt(start(r.y1)), r.y1], [zAt(stop(r.y1)), r.y1], [zAt(stop(r.y0)), r.y0], [zAt(start(r.y0)), r.y0]], r.color, 0.009);
+  });
+  // Grey slanted band, constant width, from the roof edge down to the rear corner; lighter on the
+  // body, darker over the glass.
+  const gW = 1.2;
   const gy0 = Y0 + 0.15;
   const gy1 = H - 0.06;
-  const gd = (y: number) => gTop + ((gy1 - y) / (gy1 - gy0)) * (gBot - gTop); // leading edge at height y
+  const gLean = 1.0;
+  const gd = (y: number) => L - 0.15 - gW - (y - gy0) * gLean; // leading edge at height y
   const gSlice = (ya: number, yb: number, color: string, lift: number) => {
     const za = (y: number, e: number) => zAt(Math.min(gd(y) + e, L - 0.12));
     decal(both, [[za(yb, 0), yb], [za(yb, gW), yb], [za(ya, gW), ya], [za(ya, 0), ya]], color, lift);
   };
   // (k.side panels are 2 cm boxes, so their faces sit at lift + 0.01: glass 0.021, grille slats 0.022.)
   gSlice(gy0, gy1, liv.grey, 0.023); // over the grille too, as the lettering is
-  // Over the window band it reads as grey-on-glass, clipped where the band ends (d = L − 1.1).
+  // Over the window band it reads as grey-on-glass, clipped where the band ends.
   const dBand = ZF - BAND_R;
   const wy0 = BELT - 0.05;
   const wy1 = HEAD + 0.05;
   const lead = (y: number) => gd(y);
   const trail = (y: number) => Math.min(gd(y) + gW, dBand);
-  const yc = gy1 - ((dBand - gW - gTop) / (gBot - gTop)) * (gy1 - gy0); // trailing edge meets the band's end
+  const yc = gy0 + (L - 0.15 - dBand) / gLean; // trailing edge meets the band's end
   const glassSlice = (ya: number, yb: number) =>
     decal(both, [[zAt(lead(yb)), yb], [zAt(trail(yb)), yb], [zAt(trail(ya)), ya], [zAt(lead(ya)), ya]], liv.greyOnGlass, 0.025);
   if (yc > wy0 && yc < wy1) {
