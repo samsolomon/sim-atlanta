@@ -102,7 +102,7 @@ function panes(g: T.BufferGeometry) {
 }
 
 function routes(world: World) {
-  const { line, elev } = world.marta;
+  const { line, elev } = world.marta!; // export runs on East Portal, which always has one
   const train = [];
   for (let s = 0; s <= line.length; s += 2) {
     const p = line.at(s);

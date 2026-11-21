@@ -15,7 +15,7 @@ import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
-import type { Diorama } from './scene3d/view';
+import type { CityView } from './city/city';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -136,6 +136,8 @@ onReady(() => {
     atmAt = clock.now().getTime();
     sky.set(atm);
     paintFor(atm);
+    lastAtm = atm;
+    diorama?.setAtmosphere(atm, clock.now());
     shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
   };
   updateAtmosphere();
@@ -241,8 +243,7 @@ onReady(() => {
       updateBuses(ts);
       const now = clock.now();
       const trains = source.update(now);
-      if (diorama) diorama.update(trains);
-      else trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
+      if (!diorama) trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
       updateClock(now);
       shell.tick(now);
       if (selectedTrain && ts - lastCard > 1000) {
@@ -292,13 +293,15 @@ setSpeed(clock.speed);
 
 // ---- views: Map (MapLibre) and City (3D, loaded on demand) -------------------------------
 // ?view=city opens City directly (?view=3d still works). The URL hash belongs to MapLibre.
-// Until the diorama-style City lands, City is the downtown 3D from scene3d/.
-let diorama: Diorama | null = null;
+// City is the downtown diorama (city/city.ts), in the same atmosphere as the Map.
+let diorama: CityView | null = null;
+let lastAtm: Atmosphere | null = null;
 const view3d = document.getElementById('view3d')!;
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, scene3d's origin
 const CITY_BOUNDS = { minX: -1331, maxX: 1350, minZ: -2124, maxZ: 1546 };
 
 let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
+let opening = params.get('view') === 'city' || params.get('view') === '3d';
 async function openCity() {
   if (diorama) return;
   const load = ++cityLoad;
@@ -311,8 +314,8 @@ async function openCity() {
   const z = Math.min(CITY_BOUNDS.maxZ, Math.max(CITY_BOUNDS.minZ, mz));
   shell.setNote(Math.hypot(x - mx, z - mz) > 200 ? 'City view covers downtown for now' : null);
   try {
-    const { createDiorama } = await import('./scene3d/view');
-    const d = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+    const { createCity } = await import('./city/city');
+    const d = await createCity(document.getElementById('view3d-canvas')!, rf);
     if (load !== cityLoad) {
       d.dispose(); // the user went back to Map (or reopened City) while this was loading
       return;
@@ -327,14 +330,10 @@ async function openCity() {
     shell.setNote('City view couldn’t load here, so this is the map');
     return;
   }
-  diorama.onPick = (id) => {
-    if (!id) return hideCard();
-    selectedTrain = id;
-    renderTrainCard();
-  };
-  diorama.lookAt(x, z);
-  const cam = params.get('cam')?.split(',').map(Number); // x,z,zoom,azimuthDeg for repeatable shots
-  if (cam?.length === 4 && cam.every(Number.isFinite)) diorama.setView({ x: cam[0], z: cam[1], zoom: cam[2], azimuth: cam[3] });
+  if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
+  // Opening on City frames downtown; arriving from the Map keeps the place you were looking at.
+  if (!opening) diorama.lookAt(x, z);
+  opening = false;
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
 }
@@ -380,7 +379,7 @@ const shell = createShell({
     else map.panBy([-dx, -dy], { duration: 0 });
   },
   zoom(dir) {
-    if (diorama) return; // City zoom stays on wheel/pinch for now
+    if (diorama) return diorama.zoom(dir);
     map.zoomTo(map.getZoom() + dir, { duration: 200 });
   },
   rotate(dir) {
@@ -398,14 +397,5 @@ const shell = createShell({
 // Hidden time controls (kept for later): ?controls=1 shows them.
 document.getElementById('timectl')!.hidden = params.get('controls') !== '1';
 
-document.addEventListener('keydown', (e) => {
-  if (!diorama || e.target instanceof HTMLInputElement) return;
-  if (e.key === 'l') {
-    const l = diorama.cycleLook();
-    const u = new URL(location.href);
-    u.searchParams.set('look', l.id);
-    history.replaceState(null, '', u);
-  }
-});
 const startView = params.get('view');
 if (startView === 'city' || startView === '3d') shell.setView('city');

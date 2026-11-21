@@ -18,7 +18,11 @@ K = math.cos(math.radians(LAT0))
 
 # East portal: the east-west line leaves the tunnel, runs beside the freight main and
 # crosses the Downtown Connector on a viaduct. Scene metres.
-VIGNETTES = {"vignette-east": {"x": (300.0, 1150.0), "z": (120.0, 620.0)}}
+# Downtown: the City view's board. Five Points, the Gulch, Peachtree Center and the Connector.
+VIGNETTES = {
+    "vignette-east": {"x": (300.0, 1150.0), "z": (120.0, 620.0)},
+    "downtown": {"x": (-1000.0, 1000.0), "z": (-1300.0, 700.0)},
+}
 
 
 def project(lon, lat):
