@@ -315,7 +315,13 @@ export class World {
     const skirt = new THREE.Mesh(sk.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     this.group.add(skirt);
 
-    // Walnut plinth with a little lip.
+    this.buildPlinth(bottom);
+  }
+
+  /** Walnut plinth with a little lip, under either board surface. */
+  buildPlinth(bottom: number) {
+    const b = this.b;
+    const W = b.maxX - b.minX, D = b.maxZ - b.minZ;
     const pl = new THREE.Mesh(new THREE.BoxGeometry(W + 16, 6, D + 16), new THREE.MeshLambertMaterial({ color: PAL.walnut }));
     pl.position.set((b.minX + b.maxX) / 2, bottom - 3, (b.minZ + b.maxZ) / 2);
     pl.receiveShadow = true;
@@ -1011,7 +1017,7 @@ export class World {
   }
 
   /** Street lights: posts with glowing heads and soft pools of light on the pavement at night. */
-  buildLights() {
+  buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null) {
     const r = rng(311);
     const spots: { x: number; z: number; y: number; ang: number }[] = [];
     for (const rd of this.data.roads) {
@@ -1029,7 +1035,9 @@ export class World {
         side = -side;
         if (!this.inBounds(x, z, 3)) continue;
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
-        spots.push({ x, z, y: rd.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z), ang: Math.atan2(-p.nx * side, -p.nz * side) });
+        const y = groundAt ? groundAt(x, z) : rd.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z);
+        if (y === null) continue;
+        spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side) });
       }
     }
     const m = new THREE.Matrix4();
@@ -1043,7 +1051,7 @@ export class World {
     });
     post.castShadow = true;
     this.group.add(post, this.lampHeads);
-    this.bakeLightMap(spots);
+    this.bakeLightMap(spots, board);
   }
 
   /**
@@ -1051,7 +1059,7 @@ export class World {
    * storefronts) painted into a texture over the board, added to the ground, street and
    * lot materials in proportion to the night factor.
    */
-  private bakeLightMap(spots: { x: number; z: number }[]) {
+  private bakeLightMap(spots: { x: number; z: number }[], board?: THREE.Mesh) {
     const b = this.b;
     const PX = Math.max(1, Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / this.opts.lightMapMax); // metres per texel
     const c = document.createElement('canvas');
@@ -1085,11 +1093,14 @@ export class World {
       uLmBounds: { value: new THREE.Vector4(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ) },
       uNight: this.night,
     };
-    this.group.traverse((o) => {
+    const lightSurface = (o: THREE.Object3D) => {
       const mesh = o as THREE.Mesh;
-      if (!mesh.userData.lit) return;
+      if (!mesh.userData.lit && mesh !== board) return;
       const mat = mesh.material as THREE.MeshLambertMaterial;
-      mat.onBeforeCompile = (sh) => {
+      const compile = mat.onBeforeCompile.bind(mat);
+      const key = mat.customProgramCacheKey();
+      mat.onBeforeCompile = (sh, renderer) => {
+        compile(sh, renderer);
         Object.assign(sh.uniforms, uniforms);
         sh.vertexShader = sh.vertexShader
           .replace('#include <common>', '#include <common>\nvarying vec3 vLmPos;')
@@ -1104,9 +1115,11 @@ export class World {
             #include <opaque_fragment>`,
           );
       };
-      mat.customProgramCacheKey = () => 'lightmapped';
+      mat.customProgramCacheKey = () => key + ':lightmapped';
       mat.needsUpdate = true;
-    });
+    };
+    this.group.traverse(lightSurface);
+    if (board) lightSurface(board);
   }
   private lightMap?: THREE.Texture;
   private lampHeads?: THREE.InstancedMesh;
