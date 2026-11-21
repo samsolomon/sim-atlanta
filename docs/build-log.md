@@ -1270,7 +1270,7 @@ with no gaps. Railroads report train counts at a dozen grade-separated FRA cross
 those land on the route in order: 6 trains a day east of Georgia State, 13 under downtown, 14 at
 Ivan Allen Blvd. They are averages for different stretches, not one number for the route.
 
-What surprised me is how much of it is hidden: four covered stretches add up to about 600 m. A
+What surprised me is how much of it is hidden: four covered stretches add up to 736 m. A
 branch that looked important on the map, the Circle Connection through the Gulch, has no
 reported traffic at all. Its count is inferred.
 

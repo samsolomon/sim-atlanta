@@ -13,8 +13,8 @@ Points east cut with MARTA. It passes under Five Points and through the Gulch, t
 north edge alongside the NS lines toward the Western & Atlantic corridor. **It does continue through
 the Gulch.**
 
-Baked geometry is the shipped `scene/downtown/vignette.json` (the `rail` index, with cover from
-`terrainTransport`). Stable ids are Overture `2026-11-18.0` GERS segment ids. The chain is
+Baked geometry is the shipped `scene/downtown/vignette.json`: the `rail` index, plus the
+`terrainTransport.rail` pieces for open ground and bridges. Stable ids are Overture `2026-11-18.0` GERS segment ids. The chain is
 endpoint-exact, with no gaps. Run in this order, westbound: **47 → 35 → 30 (reversed) → 8 (reversed)**.
 
 | Run | Overture id (prefix) | Source endpoints (lon, lat), as stored |
@@ -29,8 +29,12 @@ north of z ≈ −718.
 
 ## Ordered intervals
 
-`s` is metres westbound from the east board edge at scene (1000, 556). The kind comes from the
-shipped `terrainTransport` pieces, sampled every 2 m.
+`s` is metres westbound from the east board edge at scene (1000, 556), sampled every 2 m. An
+`open` or `bridge` sample lies within 2.5 m of a `terrainTransport.rail` piece of that `kind`. A
+`covered` sample lies on the baked run with no piece nearby, because the bake
+(`pipeline/scripts/terrain_transport.py`) leaves out tunnel-flagged stretches entirely. Since the run
+itself is continuous there, a missing piece means covered track, not missing geometry. The four
+covered stretches total **736 m**.
 
 | s (m) | Kind | Scene x, z | What's there |
 |---|---|---|---|
@@ -53,8 +57,8 @@ shipped `terrainTransport` pieces, sampled every 2 m.
 **Cover is from OSM and Overture tags, not imagery.** `covered` means a `tunnel` flag on the source
 segment. I have not imagery-checked these freight intervals the way I checked MARTA's (dated
 imagery, in `docs/data-model.md`). Their edges are good to about ±10 m along the track. The
-`is_tunnel` and `is_bridge` flags on a whole baked run are lumped together, so use `terrainTransport`
-`kind` for cover, never the run's flags.
+`is_tunnel` and `is_bridge` flags on a whole baked run are lumped together, so derive cover from
+where the `terrainTransport` pieces are present or absent along the run, never from the run's flags.
 
 ## Traffic (FRA crossing inventory, via NARN)
 
