@@ -23,7 +23,8 @@ Atlanta and Georgia. Every fact on the map says how we know it: **live**, **sche
 pnpm install
 python3 -m venv .venv && .venv/bin/pip install duckdb rasterio pyproj scipy pillow   # once
 pnpm data           # fetch + build map data and the downtown 3D scene; re-run to refresh
-pnpm data:vignette  # the East Portal look-study diorama (Overture, FHWA traffic, Meta/WRI trees)
+pnpm data:vignette  # East Portal diorama: refreshes the Overture roads/land-use/infrastructure/building
+                    # extracts, then crops them and adds FHWA traffic + Meta/WRI trees (re-run after pulling)
 pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item trains-marta-api
 pnpm build          # the worker serves web/dist
 pnpm dev:worker     # live API on :8787

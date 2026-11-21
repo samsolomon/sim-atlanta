@@ -290,8 +290,14 @@ export class Traffic {
   /** Where a vehicle goes after lane `seg`: weighted by volume, mildly preferring straight. */
   private route(seg: Seg): { conn: Seg; lane: Seg } | null {
     const e = seg.edge!;
-    const outs = e.to.out.filter((o) => !(o.to === e.from && e.to.out.length > 1));
-    if (!outs.length) return null;
+    let outs = e.to.out.filter((o) => o.to !== e.from);
+    if (!outs.length) {
+      // Only the way back. At the board's edge that means the car leaves; inside the board
+      // (a dead-end street) it turns around.
+      if (!this.world.inBounds(e.to.x, e.to.z, 25)) return null;
+      outs = e.to.out;
+      if (!outs.length) return null;
+    }
     const ws = outs.map((o) => {
       const turn = Math.abs(Math.atan2(Math.sin(o.bearingStart - e.bearing), Math.cos(o.bearingStart - e.bearing)));
       const straight = turn < 0.5 ? 1.6 : turn < 2.2 ? 0.8 : 0.15;
