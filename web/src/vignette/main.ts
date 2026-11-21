@@ -364,6 +364,7 @@ async function main() {
       weather: () => ({ mode: weatherMode, liveOk, ...weather }),
       now: () => clock.now(),
       traffic,
+      buses,
       pause: (p = true) => (paused = p),
       setTilt: (x: number) => {
         tilt = x;
