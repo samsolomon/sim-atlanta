@@ -167,3 +167,77 @@ export function applyPalette(map: MlMap, P: Palette) {
     map.setPaintProperty('station-labels', 'text-halo-color', P.halo);
   }
 }
+
+// ---- continuous palette from the atmosphere -------------------------------------------------
+// Time of day blends between keyframe palettes by sun elevation; weather then transforms
+// whatever that gives (an overcast dusk is dusk, greyed), so the two layers compose.
+
+type RGB = [number, number, number];
+const toLin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const toSrgb = (c: number) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
+function hexToLin(h: string): RGB {
+  const n = parseInt(h.slice(1), 16);
+  return [toLin(((n >> 16) & 255) / 255), toLin(((n >> 8) & 255) / 255), toLin((n & 255) / 255)];
+}
+function linToHex(c: RGB): string {
+  return `#${c.map((v) => Math.round(Math.min(1, Math.max(0, toSrgb(v))) * 255).toString(16).padStart(2, '0')).join('')}`;
+}
+const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const luma = (c: RGB) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+
+/** Sun-elevation keyframes (degrees) → palettes. */
+const KEYS: [number, string][] = [
+  [-12, 'night'],
+  [-4, 'dusk'],
+  [3, 'golden'],
+  [14, 'light'],
+];
+
+const GROUNDISH: (keyof Palette)[] = ['ground', 'resi', 'park', 'wood', 'building', 'street', 'major'];
+
+export interface Sky {
+  sunElev: number;
+  dark: number;
+  cloud: number;
+  rain: number;
+  snow: number;
+  fog: number;
+}
+
+export function paletteFor(a: Sky): Palette {
+  // 1. time of day: find the keyframe segment the sun is in
+  const e = Math.min(KEYS[KEYS.length - 1][0], Math.max(KEYS[0][0], a.sunElev));
+  let i = 0;
+  while (i < KEYS.length - 2 && e > KEYS[i + 1][0]) i++;
+  const t = (e - KEYS[i][0]) / (KEYS[i + 1][0] - KEYS[i][0]);
+  const tt = t * t * (3 - 2 * t);
+  const A = PALETTES[KEYS[i][1]];
+  const B = PALETTES[KEYS[i + 1][1]];
+  const out = { ...A } as Palette;
+  const lin: Partial<Record<keyof Palette, RGB>> = {};
+  for (const k of Object.keys(A) as (keyof Palette)[]) {
+    if (k === 'inkOpacity') continue;
+    lin[k] = mix(hexToLin(A[k] as string), hexToLin(B[k] as string), tt);
+  }
+  out.inkOpacity = A.inkOpacity + (B.inkOpacity - A.inkOpacity) * tt;
+
+  // 2. weather on top
+  const haze = mix(hexToLin('#eef0ef'), hexToLin('#2b323c'), a.dark);
+  const snowCol = mix(hexToLin('#f6f8fa'), hexToLin('#3b4553'), a.dark);
+  const cool = hexToLin('#8fa3b5');
+  const ground = lin.ground!;
+  for (const k of Object.keys(lin) as (keyof Palette)[]) {
+    let c = lin[k]!;
+    const grey: RGB = [luma(c), luma(c), luma(c)];
+    // Flat light. Capped so cloud + rain + fog don't stack into mud; an ordinary overcast day
+    // (Atlanta has plenty) should still look pleasant.
+    c = mix(c, grey, Math.min(0.4, a.cloud * 0.22 + a.rain * 0.18 + a.fog * 0.12));
+    c = mix(c, ground, a.cloud * 0.05); // slightly lower contrast under cloud
+    c = mix(c, cool, a.rain * 0.12); // wet, cool
+    if (GROUNDISH.includes(k)) c = mix(c, snowCol, a.snow * 0.55);
+    c = mix(c, haze, a.fog * 0.22); // a little wash; the edge blur does the rest
+    out[k] = linToHex(c) as never;
+  }
+  out.inkOpacity *= 1 - a.fog * 0.4;
+  return out;
+}

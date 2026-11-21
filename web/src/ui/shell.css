@@ -1,5 +1,28 @@
 /* Shared chrome over Map and City: a status widget, a menu button and a view switch in glass. */
 [hidden] { display: none !important; }
+:root {
+  --glass-a: rgba(255, 255, 255, 0.36);
+  --glass-b: rgba(246, 242, 233, 0.22);
+  --rim: 1;
+  --hairline: rgba(60, 45, 30, 0.14);
+}
+/* Dark glass after dusk, as in an OS night mode: light text on smoked glass, a dimmer rim. */
+:root[data-theme='dark'] {
+  --ink: #eef0f3;
+  --ink-2: #aab2be;
+  --paper: #1c2129;
+  --line: rgba(255, 255, 255, 0.14);
+  --glass-a: rgba(40, 46, 58, 0.5);
+  --glass-b: rgba(22, 26, 34, 0.42);
+  --glass-solid: rgba(28, 33, 42, 0.95);
+  --rim: 0.45;
+  --hairline: rgba(0, 0, 0, 0.45);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme='dark'] .glass::after { background: radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 60%); }
+:root[data-theme='dark'] :is(.drop-l :is(a, button), .switch button:not([aria-pressed='true'])):hover { background: rgba(255, 255, 255, 0.08); }
+.glass, .glass * { transition: color 0.6s ease, background-color 0.6s ease; }
+
 /* Glass: Monaco's frosted blur plus a Liquid Glass-style lit edge (bright at the top-left and
    bottom-right, fading between) and a soft specular sheen across the top. */
 .glass {
@@ -8,7 +31,7 @@
   background: rgba(251, 249, 244, 0.94);
   border: 0;
   box-shadow:
-    0 0 0 0.5px rgba(60, 45, 30, 0.14),
+    0 0 0 0.5px var(--hairline),
     0 12px 32px rgba(60, 45, 30, 0.16),
     0 2px 6px rgba(60, 45, 30, 0.08),
     inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
@@ -16,7 +39,7 @@
 }
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .glass {
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.36), rgba(246, 242, 233, 0.22));
+    background: linear-gradient(160deg, var(--glass-a), var(--glass-b));
     -webkit-backdrop-filter: blur(20px) saturate(1.15) brightness(1.05);
     backdrop-filter: blur(20px) saturate(1.15) brightness(1.05);
   }
@@ -24,8 +47,8 @@
 .glass::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 1;
   background: linear-gradient(135deg,
-    rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.55) 18%, rgba(255, 255, 255, 0.08) 42%,
-    rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.5) 85%, rgba(255, 255, 255, 0.9) 100%);
+    rgba(255, 255, 255, var(--rim)) 0%, rgba(255, 255, 255, calc(var(--rim) * 0.55)) 18%, rgba(255, 255, 255, 0.08) 42%,
+    rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, calc(var(--rim) * 0.5)) 85%, rgba(255, 255, 255, calc(var(--rim) * 0.9)) 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
@@ -37,7 +60,7 @@
 .ic { display: inline-grid; width: 18px; height: 18px; flex: none; }
 .ic svg { width: 100%; height: 100%; display: block; }
 :is(.widget, .menu-btn, .switch, .drop, .key) :is(button, a), .widget, .menu-btn { font: inherit; color: inherit; background-color: transparent; border: 0; cursor: pointer; }
-.widget, .menu-btn { background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.36), rgba(246, 242, 233, 0.22)); }
+.widget, .menu-btn { background-image: linear-gradient(160deg, var(--glass-a), var(--glass-b)); }
 :is(.switch, .drop, .key) :is(button, a):focus-visible, .widget:focus-visible, .menu-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* ---- status widget (top right) ---- */
@@ -131,3 +154,10 @@
 @media (max-width: 380px) {
   .switch button span:last-child { display: none; }
 }
+
+/* Truth-tier chips on dark glass: the same hues, lifted for contrast. */
+:root[data-theme='dark'] .chip.live { color: #6fd58a; }
+:root[data-theme='dark'] .chip.scheduled { color: #8cb8f2; }
+:root[data-theme='dark'] .chip.reported { color: #ff9a6a; }
+:root[data-theme='dark'] .chip.inferred { color: #e6c05a; }
+:root[data-theme='dark'] .chip.illustrative { color: #bba6ff; }

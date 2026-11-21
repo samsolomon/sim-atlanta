@@ -35,6 +35,8 @@ export interface ShellOptions {
   zoom(dir: 1 | -1): void;
   rotate?(dir: 1 | -1): void;
   live(): LiveState;
+  /** Called when fresh weather arrives (or is lost). */
+  onWeather?(w: Weather | null): void;
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
@@ -135,6 +137,7 @@ export function createShell(o: ShellOptions) {
     weather = w; // null → the bar simply omits weather; never a stale or guessed condition
     weatherAt = w ? Date.now() : 0;
     lastTick = 0;
+    o.onWeather?.(w);
   }
   void pollWeather();
   setInterval(() => void pollWeather(), 10 * 60_000);
@@ -304,6 +307,11 @@ export function createShell(o: ShellOptions) {
 
   return {
     tick,
+    weather: () => weather,
+    /** Light or dark glass, following the sky (dark from about dusk). */
+    setTheme(theme: 'light' | 'dark') {
+      if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme;
+    },
     setView: (v: View) => setView(v),
     /** A one-line note under the status card; null hides it. */
     setNote(text: string | null) {

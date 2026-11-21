@@ -1,7 +1,9 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
-import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle } from './map/basestyle';
+import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
+import { SkyLayer } from './map/sky-layer';
+import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
@@ -24,7 +26,7 @@ const params = new URLSearchParams(location.search);
 // MapLibre as URLs so they load and parse on its worker threads, off the main thread.
 const map = new maplibregl.Map({
   container: 'map',
-  style: await dioramaBaseStyle(),
+  style: await dioramaBaseStyle(paletteFor(atmosphere(clock.now(), null))), // start in the right light; weather follows
   center: [-84.39, 33.76],
   zoom: 10.3,
   maxBounds: [
@@ -34,6 +36,7 @@ const map = new maplibregl.Map({
   attributionControl: { compact: true, customAttribution: 'Unofficial · Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
   hash: true,
   keyboard: false, // the shell handles WASD / arrows / +/− for both views
+  pixelRatio: Math.min(devicePixelRatio, 2), // phones report ~2.8: 2× looks the same and draws half the pixels
 });
 
 // ---- card -------------------------------------------------------------------
@@ -76,7 +79,21 @@ const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
 live.start();
 
-const onReady = (fn: () => void) => (map.loaded() ? fn() : map.once('load', fn));
+let updateAtmosphere = () => {}; // set once the map has loaded
+let atmRealTime = true; // the clock state the atmosphere was last computed for
+let atmAt = 0; // the simulated time it was computed for
+// Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;
+// the centre stays sharp. A DOM layer over the map, under the glass. Map view only.
+const fogEl = Object.assign(document.createElement('div'), { id: 'fog' });
+document.body.append(fogEl);
+function setFog(f: number, dark: number) {
+  fogEl.style.setProperty('--fog', f.toFixed(3));
+  fogEl.style.setProperty('--fog-rgb', dark > 0.55 ? '40, 47, 58' : '244, 245, 244');
+  fogEl.hidden = f < 0.02;
+}
+// Always after this module finishes evaluating, so `shell` (declared below) exists even if the
+// map loaded while the data files were downloading.
+const onReady = (fn: () => void) => (map.loaded() ? queueMicrotask(fn) : map.once('load', fn));
 onReady(() => {
   // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
   document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
@@ -95,10 +112,54 @@ onReady(() => {
     },
   });
   addTrainLayer(map);
-  // ?palette=night etc. picks a preset; ?tune opens the palette panel.
-  const paletteName = params.get('palette') ?? DEFAULT_PALETTE;
-  applyPalette(map, PALETTES[paletteName] ?? PALETTES[DEFAULT_PALETTE]);
-  if (params.has('tune')) void import('./map/tune').then(({ mountTuner }) => mountTuner(map, PALETTES[paletteName] ? paletteName : DEFAULT_PALETTE));
+  // ---- atmosphere: time of day + Atlanta's weather → basemap palette, sky layer, glass theme.
+  // ?palette=<preset> pins a static palette; ?tune opens the playground.
+  const sky = new SkyLayer();
+  map.addLayer(sky, 'freight-unknown'); // above the basemap's fills, below our rail and labels
+  let override: AtmosphereOverride | null = null;
+  let pinned: Palette | null = PALETTES[params.get('palette') ?? ''] ?? null;
+  let onScreen: Palette = PALETTES[DEFAULT_PALETTE];
+  let lastWx = 1;
+  // Atlanta's weather only applies near Atlanta and zoomed in: scale it into the palette and fog
+  // by the same strength the sky layer uses.
+  const paintFor = (atm: Atmosphere) => {
+    const wx = (lastWx = sky.weatherStrength());
+    const local = { ...atm, cloud: atm.cloud * wx, rain: atm.rain * wx, snow: atm.snow * wx, fog: atm.fog * wx };
+    setFog(local.fog, atm.dark);
+    onScreen = pinned ?? paletteFor(local);
+    applyPalette(map, onScreen);
+  };
+  updateAtmosphere = () => {
+    const w = clock.isRealTime() ? shell.weather() : null; // live weather only at the present
+    const atm = atmosphere(clock.now(), w, override ?? {});
+    atmRealTime = clock.isRealTime();
+    atmAt = clock.now().getTime();
+    sky.set(atm);
+    paintFor(atm);
+    shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
+  };
+  updateAtmosphere();
+  setInterval(updateAtmosphere, 60_000);
+  map.on('moveend', () => {
+    if (!sky.atm) return; // weather strength depends on zoom and place
+    sky.set(sky.atm);
+    if (Math.abs(sky.weatherStrength() - lastWx) > 0.05) paintFor(sky.atm);
+    else setFog(sky.atm.fog * sky.weatherStrength(), sky.atm.dark);
+  });
+  if (params.has('tune'))
+    void import('./map/tune').then(({ mountTuner }) =>
+      mountTuner({
+        setOverride(o) {
+          override = o;
+          updateAtmosphere();
+        },
+        setPalette(p) {
+          pinned = p;
+          updateAtmosphere();
+        },
+        current: () => onScreen,
+      }),
+    );
   let visibleBuses = new Map<string, LiveBus>();
   let lastBusTick = -Infinity;
   let busesEnabled: boolean | undefined;
@@ -201,6 +262,9 @@ const scrub = document.getElementById('scrub') as HTMLInputElement;
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: meta.timezone, weekday: 'short', hour: 'numeric', minute: '2-digit' });
 
 function updateClock(now: Date) {
+  // Live weather belongs only to the real present: recompute as soon as the clock leaves or returns.
+  // A sped-up or scrubbed clock moves the sun too: recompute every 5 simulated minutes.
+  if (clock.isRealTime() !== atmRealTime || Math.abs(now.getTime() - atmAt) > 5 * 60_000) updateAtmosphere();
   clockEl.textContent = timeFmt.format(now);
   clockEl.dateTime = now.toISOString();
   const shifted = !clock.isRealTime();
@@ -322,6 +386,7 @@ const shell = createShell({
   rotate(dir) {
     diorama?.rotate(dir);
   },
+  onWeather: () => updateAtmosphere(),
   live: () => ({
     realTime: clock.isRealTime(),
     rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',

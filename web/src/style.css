@@ -75,3 +75,17 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .t-grid label { display: flex; align-items: center; gap: 7px; }
 .t-grid input { width: 26px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
 .t-range { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+.tuner details summary { cursor: pointer; color: var(--ink-2); margin-bottom: 6px; }
+.t-live { display: flex; align-items: center; gap: 5px; font-weight: 600; }
+.t-range output { min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.tuner header span { display: flex; gap: 4px; }
+
+/* ---- fog: edge blur + haze over the Map (see setFog in main.ts) ---- */
+#fog {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; --fog: 0;
+  -webkit-backdrop-filter: blur(calc(var(--fog) * 7px)); backdrop-filter: blur(calc(var(--fog) * 7px));
+  background: radial-gradient(ellipse 70% 62% at 50% 50%, rgba(var(--fog-rgb), 0) 30%, rgba(var(--fog-rgb), calc(var(--fog) * 0.55)) 100%);
+  -webkit-mask-image: radial-gradient(ellipse 72% 64% at 50% 50%, transparent calc(55% - var(--fog) * 25%), #000 100%);
+  mask-image: radial-gradient(ellipse 72% 64% at 50% 50%, transparent calc(55% - var(--fog) * 25%), #000 100%);
+}
+body.in3d #fog { display: none; }
