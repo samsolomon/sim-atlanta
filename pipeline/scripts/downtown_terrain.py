@@ -113,7 +113,7 @@ def compare_spacing(src, grid):
         valid = errors[np.isfinite(errors)]
         if valid.size:
             print(f"{step:2d} m section: {valid.size} comparisons, mean |error| {valid.mean():.2f} m,"
-                  f" max {valid.max():.2f} m; grid {len(gzip.compress(coarse.tobytes(), mtime=0)):,} B gzip")
+                  f" max {valid.max():.2f} m; grid {len(gzip.compress(coarse.tobytes(), compresslevel=9, mtime=0)):,} B gzip")
 
 
 def bake(source, out):
@@ -156,7 +156,7 @@ def bake(source, out):
         compare_spacing(src, grid)
     for name in ("ground.i16", "ground.json"):
         data = (out / name).read_bytes()
-        print(f"{name}: {len(data):,} bytes, {len(gzip.compress(data, mtime=0)):,} gzip -9")
+        print(f"{name}: {len(data):,} bytes, {len(gzip.compress(data, compresslevel=9, mtime=0)):,} gzip -9")
 
 
 if __name__ == "__main__":

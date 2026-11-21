@@ -27,6 +27,10 @@ class GroundTest(unittest.TestCase):
         grid = np.frombuffer(data, dtype="<i2").reshape(m["rows"], m["cols"])
         self.assertEqual(np.count_nonzero(grid == m["noData"]), m["noDataCount"])
         self.assertAlmostEqual(interpolate(grid, 0, 0), m["vertical"]["sceneZeroNavd88M"])
+        # Independent native-pixel reads on opposite sides of the Connector bank.
+        # These catch a transposed or north/south-reversed grid with a valid checksum.
+        self.assertAlmostEqual(interpolate(grid, 740, 555), 303.9)
+        self.assertAlmostEqual(interpolate(grid, 820, 555), 314.1)
         b = m["bounds"]
         self.assertEqual(b["minX"] + (m["cols"] - 1) * m["stepM"], b["maxX"])
         self.assertEqual(b["minZ"] + (m["rows"] - 1) * m["stepM"], b["maxZ"])
