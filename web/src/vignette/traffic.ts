@@ -83,6 +83,8 @@ interface Veh {
   after: Seg | null; // the lane after a connector
   trailer?: { inst: number; x: number; z: number };
   amax: number;
+  lat: number; // sideways offset (m) left over from a lane change, eased to 0
+  laneCooldown: number;
 }
 
 const CYCLE = 84; // s: 38 green + 4 amber per axis
@@ -106,6 +108,8 @@ export class Traffic {
   private time = 0;
   private share = 0.05;
   private obj = new THREE.Object3D();
+  /** Things the simulation must not drive through (live buses): centre, heading, length. */
+  obstacles: { x: number; y: number; z: number; len: number }[] = [];
   private hidden = new THREE.Matrix4().makeScale(0, 0, 0);
 
   private beams: THREE.InstancedMesh;
@@ -135,9 +139,7 @@ export class Traffic {
     }
     this.beamMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, polygonOffset: true, polygonOffsetFactor: -8 });
     const beamGeo = new THREE.PlaneGeometry(4.2, 16).rotateX(-Math.PI / 2).translate(0, 0, 8);
-    // Texture v=1 (row 0) sits at the far end; flip so the bright end is at the car.
-    const uv = beamGeo.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+    // After rotateX(−90°) the texture's top row (the bright, narrow end) sits at the car.
     this.beams = new THREE.InstancedMesh(beamGeo, this.beamMat, MAX_VEH);
     this.beams.count = 0;
     this.beams.frustumCulled = false;
@@ -425,6 +427,8 @@ export class Traffic {
       next: null,
       after: null,
       amax: heavy ? 0.9 : 1.6,
+      lat: 0,
+      laneCooldown: 0,
     };
     v.v0 = e.vFree * v.vf;
     if (type === 'tractor') {
@@ -478,6 +482,25 @@ export class Traffic {
         }
       }
     }
+    // Live buses on this lane ahead.
+    if (this.obstacles.length) {
+      const p = v.seg.line.at(v.s);
+      const vy = this.yAt(v.seg, v.s, p.x, p.z);
+      for (const ob of this.obstacles) {
+        if (Math.abs(ob.y - vy) > 3) continue; // a bus on an overpass isn't in this lane
+        const rx = ob.x - p.x;
+        const rz = ob.z - p.z;
+        const along = rx * p.dx + rz * p.dz;
+        const lat = Math.abs(rx * p.dz - rz * p.dx);
+        if (along > 0 && along < 90 && lat < 2.0) {
+          const g = along - ob.len / 2 - 1;
+          if (g < gap) {
+            gap = g;
+            lv = 0;
+          }
+        }
+      }
+    }
     if (gap < Infinity) return { gap, dv: v.v - lv };
     let dist = v.seg.line.length - v.s;
     // Red, or amber with room to stop, at the end of this lane.
@@ -524,6 +547,34 @@ export class Traffic {
       const a = Math.max(-8, v.amax * (1 - (v.v / v0) ** 4 - (gap === Infinity ? 0 : (sStar / Math.max(0.1, gap)) ** 2)));
       v.v = Math.max(0, v.v + a * dt);
       v.s += v.v * dt;
+    }
+    // Lane changes: a vehicle held up on a multi-lane road moves over when the next lane
+    // has a safe gap (a simple MOBIL-style rule), then slides across smoothly.
+    for (const v of this.vehicles) {
+      v.lat *= Math.max(0, 1 - dt * 1.4);
+      v.laneCooldown = Math.max(0, v.laneCooldown - dt);
+      const e = v.seg.edge;
+      if (!e || e.lanes.length < 2 || v.laneCooldown > 0) continue;
+      const here = this.leader(v);
+      if (here.gap > 30 || v.v > v.v0 * 0.8) continue;
+      for (const k of [v.seg.lane - 1, v.seg.lane + 1]) {
+        const lane = e.lanes[k];
+        if (!lane) continue;
+        const s2 = (v.s / v.seg.line.length) * lane.line.length;
+        const blocked = lane.vehicles.some((o) => o.s > s2 - v.len - 6 && o.s - o.len < s2 + 8);
+        if (blocked) continue;
+        const from = v.seg.line.at(v.s);
+        const to = lane.line.at(s2);
+        // Remember where it was, sideways, so the body slides over instead of jumping.
+        v.lat = (from.x - to.x) * -to.nx + (from.z - to.z) * -to.nz;
+        v.seg.vehicles.splice(v.seg.vehicles.indexOf(v), 1);
+        v.seg = lane;
+        v.s = s2;
+        lane.vehicles.push(v);
+        this.plan(v);
+        v.laneCooldown = 4;
+        break;
+      }
     }
     for (let i = this.vehicles.length - 1; i >= 0; i--) {
       const v = this.vehicles[i];
@@ -588,7 +639,8 @@ export class Traffic {
       const hl = Math.hypot(hx, hz) || 1;
       hx /= hl;
       hz /= hl;
-      const p = { x: (f.x + r.x) / 2, z: (f.z + r.z) / 2, dx: hx, dz: hz };
+      // Lane-change slide: offset sideways (Line.offset convention: positive = right).
+      const p = { x: (f.x + r.x) / 2 - hz * v.lat, z: (f.z + r.z) / 2 + hx * v.lat, dx: hx, dz: hz };
       const y = (f.y + r.y) / 2;
       const m = this.meshes.get(v.type)!.mesh;
       if (!w.inBounds(p.x, p.z, 1)) m.setMatrixAt(v.inst, this.hidden);
@@ -598,7 +650,7 @@ export class Traffic {
         this.obj.updateMatrix();
         m.setMatrixAt(v.inst, this.obj.matrix);
         if (nightOn && nb < MAX_VEH) {
-          this.obj.position.set(f.x + hx * (L * 0.18), y + 0.3, f.z + hz * (L * 0.18));
+          this.obj.position.set(f.x + hx * (L * 0.18) - hz * v.lat, y + 0.3, f.z + hz * (L * 0.18) + hx * v.lat);
           this.obj.updateMatrix();
           this.beams.setMatrixAt(nb++, this.obj.matrix);
         }

@@ -575,3 +575,52 @@ The full run took **54.29 seconds** on the M5 Ultra. Its 18 overlapping windows 
 The experiment leaves an art decision. At a distance the two baked boards read almost alike. Up close, the redraw softens the geometry fastest exactly where a railway map needs precision. Keeping the aligned Blender base in the viewer makes that trade easy to inspect. [Factory settings, licences and build instructions](../pipeline/scripts/art/README.md)
 
 ![Art-map viewer with the six-car train on the east viaduct and road vehicles in the trench](log/art/sprite-viewer.jpg)
+
+## 2026-11-20 · Ink, lighter bridges and the first real buses
+
+After the art spike (PR #5), Sam compared full-resolution crops and preferred the live 3D
+over both the Blender illustration and the SDXL redraw, which invented a red freight train
+out of the board's clay edge. So the lessons go back into the 3D:
+
+- **Ink outlines**, "outline once, after compositing": one screen-space pass reads the scene's
+  depth and colour, draws silhouettes where depth jumps (using a second difference, so smooth
+  slopes like roofs and lawns stay clean) and creases where colour steps, and fades with
+  distance. On by default; `?ink=0` or `__v.setInk(false)` turns it off. One gotcha:
+  EffectComposer gives each ping-pong target its own cloned depth texture, so the pass must
+  read the *current read buffer's* depth, or every other frame uses stale depth.
+- **Freight bridges** over the Connector were tall solid girder walls on each of the parallel
+  tracks, which merged into one dark slab. They're now a slim deck with a girder underneath
+  and a low railing, so you can see the individual tracks cross.
+- **Real MARTA buses** from `/api/marta/bus` (PR #2's Worker endpoint): fixes on the board
+  are snapped to the nearest street within 25 m, turned to the street direction nearest the
+  reported bearing, kept in the right-hand lane, and glide between 30-second reports. They
+  show only when the clock is the real present, and the readout says how many are live and
+  how fresh they are. On the first try: 3 buses (routes 20, 42, 55) near Decatur St.
+
+![Ink on](log/vignette/ink-on.jpg)
+![Ink off](log/vignette/ink-off.jpg)
+![Lighter freight bridges](log/vignette/girders.jpg)
+![A live MARTA bus at night](log/vignette/live-bus.jpg)
+
+**Same day, Sam's next notes:** the headlights "look backwards" and cars "just go through
+that bus".
+- The headlight-beam texture was flipped one time too many, so the beam was brightest at its
+  far end. Now it starts bright at the bumper and fades ahead.
+- Live buses are now **obstacles** for the simulation: cars on the same lane brake and queue
+  behind them. On multi-lane roads, a held-up car **changes lanes** when the next lane has a
+  safe gap (a simple MOBIL-style rule), sliding across over about two seconds instead of
+  jumping.
+- Review catch: a bus snapped to the Decatur St bridge was drawn below the deck. Buses on
+  overpasses now keep the bridge height, like the rest of the traffic.
+
+![Cars queued behind a live bus on the Decatur St bridge, headlights fixed](log/vignette/beams.jpg)
+
+**Speckled, shimmering windows** (Sam, with a screenshot): the facade shader worked out each
+wall's direction from screen-space derivatives of world position. At city-scale coordinates
+(hundreds of metres) those derivatives are noisy, so neighbouring pixels disagreed about
+which window they were in, and whether it was lit. That gave salt-and-pepper speckle that
+shimmered as the camera moved, by day as well as night. Fixes: use the wall's real per-face
+normal, swap the `sin`-based hash for a precision-safe one (Dave Hoskins' `hash12`), and fade
+the window pattern to its average where windows get smaller than about 2 px.
+
+![Windows at night, after the fix](log/vignette/windows-night.jpg)

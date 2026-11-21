@@ -546,10 +546,12 @@ export class World {
         ties.push(tm.clone());
         const g = this.ground(p.x, p.z);
         if (g < -1 && Math.round(s / 0.8) % 3 === 0) {
-          // Through-girder bridge over the highway.
+          // Deck-girder bridge over the highway: a slim steel deck with a low railing,
+          // light enough that parallel tracks don't merge into one slab.
           const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, 0, p.z);
-          for (const d of [-2.6, 2.6]) b.box(0.35, 2.2, 2.45, d, 0.9, 0, PAL.girder, rot);
-          b.box(5.6, 0.6, 2.45, 0, -0.1, 0, PAL.girder, rot);
+          b.box(4.6, 0.35, 2.45, 0, 0.0, 0, '#8d969c', rot); // deck
+          b.box(3.2, 0.9, 2.45, 0, -0.6, 0, '#6f787e', rot); // girder below the deck
+          for (const d of [-2.25, 2.25]) b.box(0.08, 0.7, 2.45, d, 0.55, 0, '#a7afb4', rot); // railing
         }
       }
     }
@@ -1014,18 +1016,20 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = night;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aStyle;\nattribute float aBase;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;')
-      .replace('#include <project_vertex>', '#include <project_vertex>\nvStyle = aStyle; vBase = aBase;\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      .replace('#include <common>', '#include <common>\nattribute float aStyle;\nattribute float aBase;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nvarying vec3 vWN;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvStyle = aStyle; vBase = aBase;\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nfloat hh(vec2 p){return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453);}')
+      .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nvarying vec3 vWN;\nfloat hh(vec2 p){vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z);}')
       .replace(
         '#include <color_fragment>',
         /* glsl */ `#include <color_fragment>
         float litWin = 0.0;
         float litLevel = 1.0;
         if (vStyle > -0.5) {
-          vec3 fN = normalize(cross(dFdx(vWPos), dFdy(vWPos)));
-          vec3 tng = normalize(vec3(-fN.z, 0.0, fN.x));
+          // The wall's real (per-face) normal: exact, unlike screen-space derivatives, which are
+          // noisy at city-scale coordinates and made windows speckle and shimmer.
+          vec3 fN = normalize(vWN);
+          vec3 tng = normalize(vec3(-fN.z, 0.0, fN.x) + vec3(1e-5, 0.0, 0.0));
           float u = dot(vWPos, tng);
           float y = vWPos.y - vBase;
           vec3 glass = vec3(0.24, 0.30, 0.38);
@@ -1051,6 +1055,10 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
             win = step(0.2, f) * (0.85 + 0.15 * step(0.08, g));
             glass = mix(vec3(0.42, 0.55, 0.66), vec3(0.62, 0.72, 0.80), clamp(y / 140.0, 0.0, 1.0));
           }
+          // Where windows shrink below ~2 px, fade the pattern to its average so walls don't shimmer.
+          vec2 fw = fwidth(vec2(u / 2.6, y / 3.4));
+          float clarity = 1.0 - smoothstep(0.25, 0.6, max(fw.x, fw.y));
+          win = mix(0.4, win, clarity);
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
           float cellH = hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
