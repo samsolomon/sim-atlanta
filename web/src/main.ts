@@ -104,13 +104,17 @@ onReady(() => {
     },
   });
   addTrainLayer(map);
+  const busLegend = document.querySelector<HTMLElement>('.bus-legend')!;
+  const busStatus = document.getElementById('bus-status')!;
   let visibleBuses = new Map<string, LiveBus>();
   let lastBusTick = -Infinity;
-  let busesEnabled = false;
+  let busesEnabled: boolean | undefined;
   function updateBuses(ts: number) {
     const enabled = clock.isRealTime() && !document.body.classList.contains('in3d') && !document.hidden;
     if (enabled === busesEnabled && (!enabled || ts - lastBusTick < 1000)) return;
     busesEnabled = enabled;
+    busLegend.hidden = !enabled;
+    busStatus.textContent = buses.unavailable ? 'feed unavailable' : 'live position';
     lastBusTick = ts;
     if (enabled) void buses.poll();
     const fresh = enabled ? buses.current() : [];

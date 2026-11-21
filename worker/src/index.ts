@@ -68,13 +68,13 @@ async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<
   if (hit) return serveBusSnapshot(hit);
   let response: Response;
   try {
-    const [upstream, labels] = await Promise.all([
+    const [upstream, routes] = await Promise.all([
       fetch(BUS_URL, { headers: { 'User-Agent': 'Railwatch/1.0', Accept: '*/*' } }),
-      env.ASSETS?.fetch(new Request(new URL('/data/ga/bus-routes.json', req.url))),
+      env.ASSETS?.fetch(new Request(new URL('/data/ga/bus-routes.json', req.url)))
+        .then(r => r.ok ? r.json<BusRoutes>() : {}).catch(() => ({})),
     ]);
-    if (!upstream.ok || !labels?.ok) throw new Error('feed unavailable');
-    const routes: BusRoutes = await labels.json();
-    response = json(normalizeBuses(await upstream.arrayBuffer(), routes, Date.now()), 200, 30);
+    if (!upstream.ok) throw new Error('feed unavailable');
+    response = json(normalizeBuses(await upstream.arrayBuffer(), routes ?? {}, Date.now()), 200, 30);
   } catch {
     response = json({ error: 'MARTA bus feed unavailable' }, 503, 30);
   }

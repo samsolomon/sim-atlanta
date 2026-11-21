@@ -49,7 +49,8 @@ sped-up view always uses the timetable.
 The 2D map polls the keyless `GET /api/marta/bus` endpoint at most once per
 30 seconds while visible at the real clock. An always-open map adds up to 2,880
 Worker requests per day. The Worker caches each bus snapshot for 30 seconds
-per edge location. For deployment, run `pnpm data` to generate the bus route
+per edge location. For local route labels, run `pnpm build` after `pnpm data`
+before starting the dev Worker. For deployment, run `pnpm data` to generate the bus route
 index, then `pnpm --filter worker run deploy` to rebuild static assets and deploy the Worker together.
 See [the response contract](docs/data-model.md#live-buses).
 

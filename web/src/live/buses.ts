@@ -6,6 +6,7 @@ const MAX_AGE_MS = 180_000;
 export class LiveBuses {
   private buses: LiveBus[] = [];
   private nextPoll = 0;
+  unavailable = false;
   private pending = false;
   private serverOffset = 0;
 
@@ -19,7 +20,7 @@ export class LiveBuses {
     this.pending = true;
     try {
       const response = await fetch('/api/marta/bus');
-      if (!response.ok) return;
+      if (!response.ok) throw new Error('MARTA bus feed unavailable');
       const feed: BusFeed = await response.json();
       const served = Date.parse(response.headers.get('Date') ?? '');
       this.serverOffset = (Number.isFinite(served) ? Math.max(served, feed.fetched) : feed.fetched) - performance.now();
@@ -33,7 +34,9 @@ export class LiveBuses {
           speed: fix.speed === undefined ? undefined : sourced(fix.speed),
         };
       });
+      this.unavailable = false;
     } catch {
+      this.unavailable = true;
       // Keep showing the previous observations until their individual fixes expire.
     } finally {
       this.pending = false;
