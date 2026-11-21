@@ -30,6 +30,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
+import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { CityTrains } from './trains';
 import { Snow } from './snow';
 
@@ -128,11 +129,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   let marta: Alignment[] = [];
   try {
-    await build('alignments', () => { marta = martaAlignments(rf, manifest, b); });
+    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid); });
     if (grid) {
       const ground = grid;
       await build('terrain', () => {
-        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality });
+        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: terrainOpenings(marta) });
         world.buildPlinth(terrain.bottomY);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt); });
@@ -537,7 +538,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
  * (and lines sharing track) are near-identical centrelines, so a path that runs within a few
  * metres of one already kept is skipped. Tunnels aren't drawn; buildMarta shows open track only.
  */
-function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds']): Alignment[] {
+function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds'], grid?: GroundGrid): Alignment[] {
   const kept: Alignment[] = [];
   // Keep through services first. A short-turn shape ending at Five Points would
   // otherwise claim half a corridor and be drawn again under the full alignment.
@@ -546,7 +547,7 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
     return length(b) - length(a);
   });
   for (const id of ids) {
-    let al: Alignment;
+    let al: ReturnType<typeof alignment>;
     try {
       al = alignment(rf, manifest, b, id);
     } catch {
@@ -561,7 +562,7 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
       total++;
       if (kept.some((k) => distToLine(k.line, p.x, p.z) < 6)) near++;
     }
-    if (total && near / total < 0.9) kept.push(al);
+    if (total && near / total < 0.9) kept.push(grid ? terrainAlignment(al, id, manifest, grid) : al);
   }
   return kept;
 }
