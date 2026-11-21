@@ -36,6 +36,7 @@ const map = new maplibregl.Map({
   attributionControl: { compact: true, customAttribution: 'Unofficial · Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
   hash: true,
   keyboard: false, // the shell handles WASD / arrows / +/− for both views
+  pixelRatio: Math.min(devicePixelRatio, 2), // phones report ~2.8: 2× looks the same and draws half the pixels
 });
 
 // ---- card -------------------------------------------------------------------

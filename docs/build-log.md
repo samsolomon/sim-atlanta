@@ -770,3 +770,39 @@ grey 3D until the diorama-style downtown replaces it.
 
 ![Map view with the glass widget](log/ui/shell-map.jpg)
 ![City on the Galaxy A16, portrait](log/ui/shell-a16-city.jpg)
+
+## 2026-11-21 · Weather and time of day on the Map
+
+Time of day and weather aren't modes; a rainy dusk is both. So there's one atmosphere state
+(sun elevation and azimuth from the clock, cloud/rain/snow/fog from Open-Meteo) and the Map
+reads it in layers:
+
+- **Time of day** blends the basemap continuously between four keyframe palettes by sun
+  elevation (night −12°, dusk −4°, golden +3°, day +14°), in linear RGB with smoothstep, so
+  there are no hard switches. A WebGL sky layer adds a warm wash on the sun's side and soft
+  shade opposite; at 8 AM it sits bottom-right, at 4 PM bottom-left. At night: cool moonlight
+  and a warm glow over downtown.
+- **Weather** transforms whatever time of day gives. Cloud greys and flattens it (capped, so
+  cloud + rain + fog can't stack into mud: Atlanta is overcast a lot, and that has to look
+  pleasant), with cloud shadows anchored to the ground. Rain is fine slanted streaks plus a
+  cool, wet tint; snow is drifting flakes and a paler ground.
+- **Fog was the lesson.** As a colour wash it just made the map look faded. What reads as fog
+  is the diorama's trick: a real blur toward the edges with a cloudy haze in it, and a sharp
+  centre. That's a `backdrop-filter` layer over the map with a radial mask.
+- Every effect is drawn above the basemap's fills and below our rail, stations and labels, and
+  Atlanta's weather fades out as you zoom out to the state or pan away from the metro.
+- After dusk the glass goes dark, like an OS night mode, and truth-tier chips get lifted
+  colours for contrast.
+
+**On the A16** the first cut cost almost half the frame rate: 58 → 34 fps on an ordinary
+overcast day. Two fixes got it back above where it started. The shader only computes noise when
+there's cloud or fog to draw (3 octaves, not 4). And the map's pixel ratio is capped at 2: the
+phone reports 2.81, which meant 1.97× as many pixels for no visible gain. Clear day 74 fps,
+overcast 65, rain with fog 40. Clouds don't drift on phones, to avoid constant repaints.
+
+`?tune` is the playground: a Live switch, a time slider and cloud/rain/snow/fog sliders that
+combine freely, plus the palette presets and pickers.
+
+![Dusk with rain](log/ui/atm-duskrain.jpg)
+![Night with snow](log/ui/atm-nightsnow.jpg)
+![Morning fog: sharp centre, blurred edges](log/ui/fog2.jpg)

@@ -154,3 +154,10 @@
 @media (max-width: 380px) {
   .switch button span:last-child { display: none; }
 }
+
+/* Truth-tier chips on dark glass: the same hues, lifted for contrast. */
+:root[data-theme='dark'] .chip.live { color: #6fd58a; }
+:root[data-theme='dark'] .chip.scheduled { color: #8cb8f2; }
+:root[data-theme='dark'] .chip.reported { color: #ff9a6a; }
+:root[data-theme='dark'] .chip.inferred { color: #e6c05a; }
+:root[data-theme='dark'] .chip.illustrative { color: #bba6ff; }

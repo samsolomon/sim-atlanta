@@ -39,7 +39,7 @@ float noise(vec2 p) {
   vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
 }
-float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v / 0.875; }
 
 vec3 col = vec3(0.0); float alpha = 0.0;
 void over(vec3 c, float a) { a = clamp(a, 0.0, 1.0); col = c * a + col * (1.0 - a); alpha = a + alpha * (1.0 - a); }
@@ -54,21 +54,25 @@ void main() {
   float s = clamp(dot(uv - 0.5, uSun) * 1.6, -1.0, 1.0);
   vec3 warm = mix(vec3(1.0, 0.94, 0.80), vec3(1.0, 0.70, 0.42), uLow);
   float flatL = 1.0 - uCloud * 0.75;
-  over(warm, max(s, 0.0) * (0.07 + 0.10 * uLow) * uDay * flatL);
-  over(vec3(0.20, 0.18, 0.26), max(-s, 0.0) * (0.05 + 0.05 * uLow) * uDay * flatL);
+  over(warm, max(s, 0.0) * (0.12 + 0.14 * uLow) * uDay * flatL);
+  over(vec3(0.20, 0.18, 0.26), max(-s, 0.0) * (0.08 + 0.06 * uLow) * uDay * flatL);
   over(vec3(0.10, 0.14, 0.26), 0.10 * uDark);
   float g = length((uv - uGlow) * vec2(uRes.x / uRes.y, 1.0)) / max(uGlowR, 1e-3);
   over(vec3(1.0, 0.72, 0.38), 0.16 * uDark * exp(-g * g));
 
   // ---- weather (fades with zoom and distance from Atlanta: uWx)
   vec2 wind = vec2(0.9, 0.35) * t * 0.012; // km/s, exaggerated so it reads
-  float cl = fbm(km * 0.22 + wind);
-  over(mix(vec3(0.16, 0.17, 0.2), vec3(0.0), uDark), uCloud * uWx * 0.13 * smoothstep(0.42, 0.78, cl));
-
-  vec3 haze = mix(vec3(0.94, 0.95, 0.95), vec3(0.16, 0.19, 0.24), uDark);
-  vec2 e = abs(uv - 0.5) * 2.0;
-  float edge = smoothstep(0.35, 1.25, max(e.x, e.y) + 0.3 * fbm(km * 0.5 + wind * 0.5));
-  over(haze, uFog * uWx * (0.06 + 0.18 * edge)); // the DOM fog overlay adds the edge blur
+  // Noise is the expensive part: only pay for it when there's cloud or fog to draw.
+  if (uCloud * uWx > 0.02) {
+    float cl = fbm(km * 0.22 + wind);
+    over(mix(vec3(0.16, 0.17, 0.2), vec3(0.0), uDark), uCloud * uWx * 0.09 * smoothstep(0.42, 0.78, cl));
+  }
+  if (uFog * uWx > 0.02) {
+    vec3 haze = mix(vec3(0.94, 0.95, 0.95), vec3(0.16, 0.19, 0.24), uDark);
+    vec2 e = abs(uv - 0.5) * 2.0;
+    float edge = smoothstep(0.35, 1.25, max(e.x, e.y) + 0.3 * noise(km * 0.5 + wind * 0.5));
+    over(haze, uFog * uWx * (0.06 + 0.18 * edge)); // the DOM fog overlay adds the edge blur
+  }
 
   if (uRain > 0.0) {
     vec2 q = vec2(px.x + px.y * 0.22, px.y - t * 900.0);
@@ -107,6 +111,8 @@ export class SkyLayer implements CustomLayerInterface {
   private loc: Record<string, WebGLUniformLocation | null> = {};
   private timer = 0;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  /** Phones: clouds and fog hold still (no constant repaints); rain and snow still fall. */
+  private phone = matchMedia('(pointer: coarse)').matches;
 
   onAdd(map: MlMap, gl: WebGLRenderingContext) {
     this.map = map;
@@ -137,8 +143,8 @@ export class SkyLayer implements CustomLayerInterface {
   set(a: Atmosphere) {
     this.atm = a;
     const wx = this.weatherStrength();
-    const moving = !this.reduced.matches && wx > 0.02 && (a.rain > 0.02 || a.snow > 0.02 || a.cloud > 0.05 || a.fog > 0.05);
     const fast = a.rain > 0.02 || a.snow > 0.02;
+    const moving = !this.reduced.matches && wx > 0.02 && (fast || (!this.phone && (a.cloud > 0.05 || a.fog > 0.05)));
     clearInterval(this.timer);
     this.timer = moving ? window.setInterval(() => this.map.triggerRepaint(), fast ? 33 : 120) : 0;
     this.map.triggerRepaint();

@@ -229,8 +229,10 @@ export function paletteFor(a: Sky): Palette {
   for (const k of Object.keys(lin) as (keyof Palette)[]) {
     let c = lin[k]!;
     const grey: RGB = [luma(c), luma(c), luma(c)];
-    c = mix(c, grey, Math.min(1, a.cloud * 0.35 + a.rain * 0.2 + a.fog * 0.2)); // flat light
-    c = mix(c, ground, a.cloud * 0.1); // lower contrast under cloud
+    // Flat light. Capped so cloud + rain + fog don't stack into mud; an ordinary overcast day
+    // (Atlanta has plenty) should still look pleasant.
+    c = mix(c, grey, Math.min(0.4, a.cloud * 0.22 + a.rain * 0.18 + a.fog * 0.12));
+    c = mix(c, ground, a.cloud * 0.05); // slightly lower contrast under cloud
     c = mix(c, cool, a.rain * 0.12); // wet, cool
     if (GROUNDISH.includes(k)) c = mix(c, snowCol, a.snow * 0.55);
     c = mix(c, haze, a.fog * 0.22); // a little wash; the edge blur does the rest
