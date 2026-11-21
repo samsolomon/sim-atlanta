@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>About · Atlanta, in miniature</title>
+    <meta name="description" content="How the little model of Atlanta works, where its data comes from, and who made it." />
+    <link rel="stylesheet" href="/src/ui/tokens.css" />
+    <style>
+      html, body { margin: 0; background: var(--paper-2); color: var(--ink); }
+      body { font-size: 16px; line-height: 1.6; }
+      main { max-width: 680px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 22px 64px; }
+      nav { display: flex; gap: 18px; font-size: 14px; margin-bottom: 36px; }
+      nav a { color: var(--ink-2); text-decoration: none; }
+      nav a:hover { color: var(--ink); text-decoration: underline; }
+      h1 { font-size: clamp(30px, 6vw, 42px); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 14px; }
+      .lede { font-size: 19px; color: var(--ink-2); margin: 0 0 40px; }
+      h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 44px 0 12px; }
+      p { margin: 0 0 14px; }
+      a { color: var(--ink); }
+      dl { display: grid; grid-template-columns: max-content 1fr; gap: 10px 18px; margin: 0; }
+      dt { font-weight: 650; }
+      dd { margin: 0; color: var(--ink-2); }
+      ul { margin: 0; padding-left: 18px; }
+      li { margin: 0 0 8px; }
+      li b { color: var(--ink); }
+      .tier { display: inline-block; font-size: 12px; font-weight: 650; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; margin-right: 6px; }
+      .t-live { color: #1f6b33; }
+      .t-sched { color: #245c99; }
+      .t-rep { color: #a8380a; }
+      .t-inf { color: #7d5600; border-style: dashed; }
+      .t-ill { color: #5f3bd0; border-style: dotted; }
+      footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+      @media (max-width: 520px) { dl { grid-template-columns: 1fr; gap: 2px 0; } dd { margin-bottom: 10px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav aria-label="Site"><a href="/">← Back to Atlanta</a><a href="/models">Models</a></nav>
+
+      <h1>A little model of Atlanta</h1>
+      <p class="lede">A miniature city you can watch: MARTA trains and buses where they really are, traffic as it usually runs at this hour, and the sky Atlanta has right now.</p>
+
+      <h2>What you're looking at</h2>
+      <p>The <b>City</b> view is a hand-built model of downtown, drawn like a tabletop diorama. The <b>Map</b> view zooms out to the region's rail: subway, streetcar, Amtrak and the freight lines that cross the state. Both show the same moment, Atlanta time.</p>
+      <p>Nothing here is for planning a trip. It's a window, not a timetable.</p>
+
+      <h2>How true is it?</h2>
+      <p>Every moving thing carries a label for how much we actually know about it:</p>
+      <ul>
+        <li><span class="tier t-live">live</span>MARTA reported this train or bus's position in the last few minutes.</li>
+        <li><span class="tier t-sched">scheduled</span>Where the published timetable says a train should be, used when there's no live report.</li>
+        <li><span class="tier t-rep">reported</span>Published counts, such as how many freight trains use a line each day.</li>
+        <li><span class="tier t-inf">inferred</span>Worked out from nearby data, such as traffic on a freight branch from the lines it joins.</li>
+        <li><span class="tier t-ill">illustrative</span>Drawn to look right, not measured: freight train movements, car traffic, and what the trains look like.</li>
+      </ul>
+      <p>Live data only appears when the clock shows the real present.</p>
+
+      <h2>Credits</h2>
+      <dl>
+        <dt>MARTA</dt><dd>Live rail and bus positions, and the rail timetable (GTFS).</dd>
+        <dt>Amtrak</dt><dd>Intercity timetable (GTFS).</dd>
+        <dt>FRA &amp; BTS</dt><dd>The national rail network and grade crossings.</dd>
+        <dt>Overture Maps</dt><dd>Building footprints and heights, streets and track for the City view.</dd>
+        <dt>OpenStreetMap</dt><dd>© OpenStreetMap contributors, via Overture and the OpenFreeMap basemap.</dd>
+        <dt>OpenFreeMap</dt><dd>Basemap tiles (OpenMapTiles schema).</dd>
+        <dt>Open-Meteo</dt><dd>Current Atlanta weather.</dd>
+        <dt>Meta &amp; WRI</dt><dd>1 m tree canopy height, for where the trees stand.</dd>
+        <dt>FHWA</dt><dd>HPMS road volumes and TMAS hourly counts, for how busy the roads usually are.</dd>
+        <dt>City of Atlanta</dt><dd>Neighbourhood boundaries, for the place name in the corner.</dd>
+      </dl>
+      <p style="margin-top: 16px">This is an unofficial project, not affiliated with MARTA, Amtrak or the City of Atlanta. Vehicles use real livery colours but no operator logos.</p>
+
+      <h2>Colophon</h2>
+      <p>Built with Three.js and MapLibre GL, and served from a Cloudflare Worker that caches every live feed, so a busy day doesn't cost anything extra. The art direction follows a low-poly, ink-lined railway diorama: leaf-clump trees, thin silhouette ink, a colour grade with film grain, and tilt-shift. Trains and buses are modelled in code from published dimensions and reference photos, in the <a href="/models">model lab</a>.</p>
+
+      <footer>Atlanta, in miniature · free to use, no ads, no tracking.</footer>
+    </main>
+  </body>
+</html>

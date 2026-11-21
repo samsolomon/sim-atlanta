@@ -27,6 +27,10 @@ export interface Diorama {
   cycleLook(): Look;
   /** Exact camera for repeatable shots: azimuth in degrees. */
   setView(v: { x: number; z: number; zoom: number; azimuth: number }): void;
+  /** Where the camera is looking, in scene metres. */
+  target(): { x: number; z: number };
+  /** Pan by a screen offset in CSS pixels (keyboard movement). */
+  pan(dxPx: number, dyPx: number): void;
   stats(): { drawCalls: number; triangles: number; frameMs: number; surfaceCars: number; undergroundCars: number };
 }
 
@@ -175,6 +179,16 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
     target.x = THREE.MathUtils.clamp(target.x, b.minX, b.maxX);
     target.z = THREE.MathUtils.clamp(target.z, b.minZ, b.maxZ);
   };
+  // Pan on the ground plane: screen dx/dy (CSS px, content follows the pointer) → world metres.
+  function panPx(dxPx: number, dyPx: number) {
+    const mpp = VIEW_HEIGHT / zoom / el.clientHeight;
+    const dx = dxPx * mpp;
+    const dy = (dyPx * mpp) / Math.sin(TILT);
+    target.x -= dx * Math.cos(azimuth) + dy * Math.sin(azimuth);
+    target.z -= -dx * Math.sin(azimuth) + dy * Math.cos(azimuth);
+    clampTarget();
+    placeCamera();
+  }
   el.addEventListener('pointerdown', (e) => {
     try {
       el.setPointerCapture(e.pointerId);
@@ -200,14 +214,7 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
       placeCamera();
       return;
     }
-    // Pan on the ground plane: screen dx/dy → world metres.
-    const mpp = VIEW_HEIGHT / zoom / el.clientHeight;
-    const dx = (e.clientX - prev.x) * mpp;
-    const dy = ((e.clientY - prev.y) * mpp) / Math.sin(TILT);
-    target.x -= dx * Math.cos(azimuth) + dy * Math.sin(azimuth);
-    target.z -= -dx * Math.sin(azimuth) + dy * Math.cos(azimuth);
-    clampTarget();
-    placeCamera();
+    panPx(e.clientX - prev.x, e.clientY - prev.y);
   });
   const end = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
@@ -256,6 +263,8 @@ export async function createDiorama(container: HTMLElement, rf: RoutesFile, sche
       azimuth = azimuthGoal = THREE.MathUtils.degToRad(az);
       placeCamera();
     },
+    target: () => ({ x: target.x, z: target.z }),
+    pan: (dx, dy) => panPx(dx, dy),
     stats: () => ({ drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, frameMs, ...trains.counts() }),
     dispose() {
       running = false;

@@ -1,0 +1,25 @@
+/* Shared look for every page: the diorama's warm paper and ink, plus the service colours. */
+:root {
+  --paper: #fbf9f4;
+  --paper-2: #e9e5dc;
+  --paper-3: #f3efe6;
+  --ink: #2a2722;
+  --ink-2: #6b665c;
+  --line: #ddd6c8;
+  --glass: rgba(251, 249, 244, 0.82);
+  --glass-solid: rgba(251, 249, 244, 0.96);
+  --shadow: 0 6px 24px rgba(60, 45, 30, 0.12);
+  --radius: 14px;
+
+  /* Service colours (kind of service, not agency): see docs/data-model.md */
+  --city-rail: #1f5fd1;
+  --intercity: #7b3fe4;
+  --freight: #c2410c;
+  --freight-lo: #f59f00;
+  --bus: #227971;
+  --sched: #2b6cb0;
+  --live: #2f9e44;
+
+  color-scheme: light;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

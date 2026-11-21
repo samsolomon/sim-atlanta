@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@phosphor-icons/core": "^2.1.1",
     "maplibre-gl": "^5.24.1",
     "three": "^0.180.0"
   },

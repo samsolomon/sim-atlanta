@@ -1,6 +1,9 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
+import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle } from './map/basestyle';
+import { createShell, type View } from './ui/shell';
+import { lonLatToScene, sceneToLonLat } from './core/places';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
@@ -21,7 +24,7 @@ const params = new URLSearchParams(location.search);
 // MapLibre as URLs so they load and parse on its worker threads, off the main thread.
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://tiles.openfreemap.org/styles/positron',
+  style: await dioramaBaseStyle(),
   center: [-84.39, 33.76],
   zoom: 10.3,
   maxBounds: [
@@ -30,9 +33,8 @@ const map = new maplibregl.Map({
   ],
   attributionControl: { compact: true, customAttribution: 'Unofficial · Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
   hash: true,
+  keyboard: false, // the shell handles WASD / arrows / +/− for both views
 });
-map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false } }), 'top-right');
 
 // ---- card -------------------------------------------------------------------
 const card = document.getElementById('card')!;
@@ -72,23 +74,12 @@ if (import.meta.env.DEV) Object.assign(window, { __map: map, __schedule: schedul
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
-const liveStatus = document.getElementById('live-status')!;
-function updateLiveStatus() {
-  const on = source.liveActive;
-  liveStatus.className = on ? 'live-status on' : 'live-status';
-  liveStatus.textContent = on
-    ? `MARTA rail live · ${live.count} trains`
-    : !clock.isRealTime()
-      ? 'Timetable view (time-shifted)'
-      : live.error
-        ? 'MARTA live unavailable · showing timetable'
-        : 'Connecting to MARTA live…';
-}
-live.onUpdate = updateLiveStatus;
 live.start();
 
 const onReady = (fn: () => void) => (map.loaded() ? fn() : map.once('load', fn));
 onReady(() => {
+  // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
+  document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
   // Put our layers under the basemap's labels so place names stay readable.
   const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
   const addLayer = map.addLayer.bind(map);
@@ -99,22 +90,22 @@ onReady(() => {
   map.addLayer({
     id: 'buses', type: 'circle', source: 'buses',
     paint: {
-      'circle-color': MODE_COLOR.bus, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1,
+      'circle-color': MODE_COLOR.bus, 'circle-stroke-color': '#fbf9f4', 'circle-stroke-width': 1,
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2.5, 14, 5],
     },
   });
   addTrainLayer(map);
-  const busLegend = document.querySelector<HTMLElement>('.bus-legend')!;
-  const busStatus = document.getElementById('bus-status')!;
+  // ?palette=night etc. picks a preset; ?tune opens the palette panel.
+  const paletteName = params.get('palette') ?? DEFAULT_PALETTE;
+  applyPalette(map, PALETTES[paletteName] ?? PALETTES[DEFAULT_PALETTE]);
+  if (params.has('tune')) void import('./map/tune').then(({ mountTuner }) => mountTuner(map, PALETTES[paletteName] ? paletteName : DEFAULT_PALETTE));
   let visibleBuses = new Map<string, LiveBus>();
   let lastBusTick = -Infinity;
   let busesEnabled: boolean | undefined;
   function updateBuses(ts: number) {
-    const enabled = clock.isRealTime() && !document.body.classList.contains('in3d') && !document.hidden;
+    const enabled = clock.isRealTime() && !document.hidden; // keep polling under City too, for the status card
     if (enabled === busesEnabled && (!enabled || ts - lastBusTick < 1000)) return;
     busesEnabled = enabled;
-    busLegend.hidden = !enabled;
-    busStatus.textContent = buses.unavailable ? 'feed unavailable' : 'live position';
     lastBusTick = ts;
     if (enabled) void buses.poll();
     const fresh = enabled ? buses.current() : [];
@@ -192,6 +183,7 @@ onReady(() => {
       if (diorama) diorama.update(trains);
       else trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
       updateClock(now);
+      shell.tick(now);
       if (selectedTrain && ts - lastCard > 1000) {
         lastCard = ts;
         renderTrainCard();
@@ -209,7 +201,6 @@ const scrub = document.getElementById('scrub') as HTMLInputElement;
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: meta.timezone, weekday: 'short', hour: 'numeric', minute: '2-digit' });
 
 function updateClock(now: Date) {
-  updateLiveStatus();
   clockEl.textContent = timeFmt.format(now);
   clockEl.dateTime = now.toISOString();
   const shifted = !clock.isRealTime();
@@ -235,40 +226,69 @@ function setSpeed(s: number) {
 speedButtons.forEach((b) => b.addEventListener('click', () => setSpeed(Number(b.dataset.speed))));
 setSpeed(clock.speed);
 
-// ---- 3D diorama (downtown) -----------------------------------------------------
-// Three.js loads only when the 3D view opens. ?view=3d opens it directly (the URL hash
-// belongs to MapLibre's map position).
+// ---- views: Map (MapLibre) and City (3D, loaded on demand) -------------------------------
+// ?view=city opens City directly (?view=3d still works). The URL hash belongs to MapLibre.
+// Until the diorama-style City lands, City is the downtown 3D from scene3d/.
 let diorama: Diorama | null = null;
 const view3d = document.getElementById('view3d')!;
-const toggle3d = document.getElementById('toggle3d') as HTMLButtonElement;
+const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, scene3d's origin
+const CITY_BOUNDS = { minX: -1331, maxX: 1350, minZ: -2124, maxZ: 1546 };
 
-async function open3d() {
+let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
+async function openCity() {
   if (diorama) return;
-  toggle3d.disabled = true;
-  toggle3d.textContent = 'Loading 3D…';
+  const load = ++cityLoad;
   view3d.hidden = false;
   document.body.classList.add('in3d');
-  const { createDiorama } = await import('./scene3d/view');
-  diorama = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+  // Open where the map was looking, clamped into the area City covers.
+  const c = map.getCenter();
+  const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
+  const x = Math.min(CITY_BOUNDS.maxX, Math.max(CITY_BOUNDS.minX, mx));
+  const z = Math.min(CITY_BOUNDS.maxZ, Math.max(CITY_BOUNDS.minZ, mz));
+  shell.setNote(Math.hypot(x - mx, z - mz) > 200 ? 'City view covers downtown for now' : null);
+  try {
+    const { createDiorama } = await import('./scene3d/view');
+    const d = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+    if (load !== cityLoad) {
+      d.dispose(); // the user went back to Map (or reopened City) while this was loading
+      return;
+    }
+    diorama = d;
+  } catch (err) {
+    if (load !== cityLoad) return;
+    console.error(err);
+    view3d.hidden = true;
+    document.body.classList.remove('in3d');
+    shell.setView('map'); // closes City, which clears the note, so set the note after
+    shell.setNote('City view couldn’t load here, so this is the map');
+    return;
+  }
   diorama.onPick = (id) => {
     if (!id) return hideCard();
     selectedTrain = id;
     renderTrainCard();
   };
+  diorama.lookAt(x, z);
   const cam = params.get('cam')?.split(',').map(Number); // x,z,zoom,azimuthDeg for repeatable shots
   if (cam?.length === 4 && cam.every(Number.isFinite)) diorama.setView({ x: cam[0], z: cam[1], zoom: cam[2], azimuth: cam[3] });
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
-  toggle3d.disabled = false;
-  toggle3d.textContent = 'Back to map';
-  setViewParam('3d');
+  setViewParam('city');
 }
 
-function close3d() {
+function closeCity() {
+  cityLoad++;
+  if (diorama) {
+    // Hand the place back to the map.
+    const t = diorama.target();
+    const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
+    map.jumpTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 13.5) });
+  }
   diorama?.dispose();
   diorama = null;
+  if (import.meta.env.DEV) Object.assign(window, { __diorama: null });
   view3d.hidden = true;
   document.body.classList.remove('in3d');
-  toggle3d.textContent = 'Explore downtown in 3D';
+  shell.setNote(null);
   setViewParam(null);
   map.resize();
 }
@@ -280,13 +300,41 @@ function setViewParam(v: string | null) {
   history.replaceState(null, '', u);
 }
 
-toggle3d.addEventListener('click', () => (diorama ? close3d() : void open3d()));
-document.getElementById('rot-left')!.addEventListener('click', () => diorama?.rotate(-1));
-document.getElementById('rot-right')!.addEventListener('click', () => diorama?.rotate(1));
+const shell = createShell({
+  view: 'map',
+  onView: (v: View) => (v === 'city' ? void openCity() : closeCity()),
+  center() {
+    if (diorama) {
+      const t = diorama.target();
+      return sceneToLonLat(CITY_ORIGIN, t.x, t.z);
+    }
+    const c = map.getCenter();
+    return [c.lng, c.lat];
+  },
+  pan(dx, dy) {
+    if (diorama) diorama.pan(dx, dy);
+    else map.panBy([-dx, -dy], { duration: 0 });
+  },
+  zoom(dir) {
+    if (diorama) return; // City zoom stays on wheel/pinch for now
+    map.zoomTo(map.getZoom() + dir, { duration: 200 });
+  },
+  rotate(dir) {
+    diorama?.rotate(dir);
+  },
+  live: () => ({
+    realTime: clock.isRealTime(),
+    rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',
+    trains: live.count,
+    buses: buses.unavailable ? null : buses.current().length,
+  }),
+});
+
+// Hidden time controls (kept for later): ?controls=1 shows them.
+document.getElementById('timectl')!.hidden = params.get('controls') !== '1';
+
 document.addEventListener('keydown', (e) => {
   if (!diorama || e.target instanceof HTMLInputElement) return;
-  if (e.key === 'q' || e.key === '[') diorama.rotate(-1);
-  if (e.key === 'e' || e.key === ']') diorama.rotate(1);
   if (e.key === 'l') {
     const l = diorama.cycleLook();
     const u = new URL(location.href);
@@ -294,4 +342,5 @@ document.addEventListener('keydown', (e) => {
     history.replaceState(null, '', u);
   }
 });
-if (params.get('view') === '3d') void open3d();
+const startView = params.get('view');
+if (startView === 'city' || startView === '3d') shell.setView('city');
