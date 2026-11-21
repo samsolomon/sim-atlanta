@@ -5,7 +5,7 @@ import type { RoutesFile, TimetableFile, VehicleType } from '../model/types';
 import { Schedule } from '../sched/engine';
 import { alignment } from '../vignette/alignment';
 import { Line, type P2 } from '../vignette/geom';
-import { World, type VData } from '../vignette/world';
+import { World, trackInDaylight, type Alignment, type VData } from '../vignette/world';
 import type { GroundGrid } from './grid';
 
 const mid = Date.parse('2026-11-20T14:12:49-05:00');
@@ -47,30 +47,43 @@ export async function connectorCrossing(grid: GroundGrid, city: VData) {
   if (bank === null) throw new Error('Missing east bank elevation');
   // City’s existing structural heights use a local zero. Anchor that zero once at the east
   // bank. Sampling the DEM along the deck would bend it into the freeway trench.
-  const datum = bank;
+  const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
+  const bankY = bank - sceneZero;
   class CrossingWorld extends World {
+    constructor(data: VData, private readonly datum: number) {
+      super(data, null, { terrain: 'flat', clumps: 4, lightMapMax: 256 });
+    }
     override ground(x: number, z: number) {
       const h = grid.sample(x, z);
       if (h === null) throw new Error('Missing ground under the crossing');
-      return h - datum;
+      return h - this.datum;
     }
   }
   const data = { bounds, buildings: [],
     roads: city.roads.filter(r => r.bridge || r.cls === 'motorway').map(r => ({ ...r, pts: sampleWay(r.pts) })),
     rail: city.rail.filter(r => r.cls === 'standard_gauge' && r.flags.includes('is_bridge')).map(r => ({ ...r, pts: sampleWay(r.pts) })),
   };
-  const world = new CrossingWorld(data, null, { terrain: 'flat', clumps: 4, lightMapMax: 256 });
-  const al = alignment(routes, manifest, city.bounds, trip.pathId);
-  world.buildStreets();
-  world.buildFreight();
-  world.buildMarta(al);
+  const lowerBridges = new CrossingWorld(data, bank);
+  lowerBridges.buildStreets();
+  lowerBridges.buildFreight();
+  lowerBridges.group.position.y = bankY;
+
+  const legacy = alignment(routes, manifest, city.bounds, trip.pathId);
+  const al: Alignment = {
+    line: legacy.line,
+    elev: s => bankY + legacy.elev(s),
+    referenceY: () => bankY,
+    openToSky: s => trackInDaylight(legacy, s),
+  };
+  const rail = new CrossingWorld(data, sceneZero);
+  rail.buildMarta(al);
   const trains = new CityTrains([al], manifest, bounds, new Map(routes.routes.map(r => [r.id, r.color])), []);
-  world.group.add(trains.group);
-  world.group.position.y = datum - grid.manifest.vertical.sceneZeroNavd88M;
+  const group = new THREE.Group();
+  group.add(lowerBridges.group, rail.group, trains.group);
   function pose(seconds: number) {
     const state = schedule.trainsAt(new Date(mid + seconds * 1000)).filter(t => t.id === tripId);
     trains.update(state, 0);
   }
   pose(0);
-  return { group: world.group, pose };
+  return { group, pose };
 }

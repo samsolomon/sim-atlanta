@@ -30,6 +30,14 @@ describe('City train placement', () => {
     expect(forward.y).toBeCloseTo(0);
   });
 
+  it('uses known cover independently of elevation and retains the relative profile for unknown spans', () => {
+    const al = { line: crossTown.line, elev: () => -15, referenceY: () => -22,
+      openToSky: (s: number) => s < 50 ? false : s < 100 ? true : undefined };
+    expect(carInDaylight(al, 25)).toBe(false); // roofed even though it is 7 m above the local reference
+    expect(carInDaylight(al, 75)).toBe(true); // exposed even though scene y is below −5.5
+    expect(carInDaylight(al, 150)).toBe(true); // unclassified but the old profile is +7
+  });
+
   it('keeps the last end in the open cut until the whole car is covered', () => {
     expect(carInDaylight(crossTown, 96)).toBe(true);
     expect(carInDaylight(crossTown, 103)).toBe(false);

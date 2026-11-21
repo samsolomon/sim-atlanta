@@ -3,7 +3,7 @@ import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { TrainState } from '../model/types';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { PlacementIndex } from '../vignette/spatial';
-import { PORTAL_E, type Alignment, type VData } from '../vignette/world';
+import { trackInDaylight, type Alignment, type VData } from '../vignette/world';
 
 type Segment = { al: Alignment; i: number };
 const SNAP = 18;
@@ -45,7 +45,7 @@ export class CityTracks {
  * board edge occlude/clip the covered part of the car throughout the transition. */
 export function carInDaylight(al: Alignment, s: number) {
   return [s, s - CAR_LENGTH / 2, s + CAR_LENGTH / 2].some(t =>
-    t >= 0 && t <= al.line.length && al.elev(t) >= PORTAL_E);
+    t >= 0 && t <= al.line.length && trackInDaylight(al, t));
 }
 
 export class CityTrains {

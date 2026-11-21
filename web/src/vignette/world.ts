@@ -62,6 +62,18 @@ export const EAST_PORTAL: WorldOptions = { terrain: 'trench', clumps: 10, lightM
 export interface Alignment {
   line: Line;
   elev: (s: number) => number;
+  /** Known exposure at this distance. Unclassified or older data uses the schematic profile. */
+  openToSky?: (s: number) => boolean | undefined;
+  /** Local vertical reference of the schematic rail profile, in scene metres. Defaults to zero. */
+  referenceY?: (s: number) => number;
+}
+
+function profileHeight(m: Alignment, s: number) {
+  return m.elev(s) - (m.referenceY?.(s) ?? 0);
+}
+
+export function trackInDaylight(m: Alignment, s: number) {
+  return m.openToSky?.(s) ?? (profileHeight(m, s) >= PORTAL_E);
 }
 
 export const PAL = {
@@ -537,7 +549,7 @@ export class World {
     let open: number | null = null;
     for (let s = 0; s <= m.line.length; s += 1) {
       const p = m.line.at(s);
-      const ok = this.inBounds(p.x, p.z, -2) && m.elev(s) >= PORTAL_E;
+      const ok = this.inBounds(p.x, p.z, -2) && trackInDaylight(m, s);
       if (ok && open == null) open = s;
       if (!ok && open != null) {
         if (s - open > 4) runs.push([open, s]);
@@ -559,7 +571,7 @@ export class World {
       for (const [sv, s1] of this.openRuns(m)) {
         let a: number | null = null;
         for (let s = sv; s <= s1; s += 1) {
-          const below = m.elev(s) < CUT_E;
+          const below = profileHeight(m, s) < CUT_E;
           if (below && a == null) a = s;
           if ((!below || s + 1 > s1) && a != null) {
             this.cuts.push({ line: m.line, s0: a, s1: s });
@@ -628,25 +640,27 @@ export class World {
       }
       // Open-cut retaining walls, and a portal headwall wherever the cut becomes a tunnel.
       const portal = (s: number, flip: boolean) => {
-        const e = ey(s);
+        const e = profileHeight(m, s);
+        const rim = m.referenceY?.(s) ?? 0;
         const p = m.line.at(s);
-        const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz) + (flip ? Math.PI : 0)).setPosition(p.x, 0, p.z);
+        const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz) + (flip ? Math.PI : 0)).setPosition(p.x, rim, p.z);
         b.box(12, -e + 1.2, 1.2, 0, (e + 1.2) / 2 + 0.1, -0.6, PAL.concrete, rot);
         b.box(12.6, 0.5, 1.6, 0, 1.0, -0.6, PAL.concreteDark, rot);
         b.box(9.6, -e - 0.5, 0.2, 0, e + (-e - 0.5) / 2, 0.05, '#1c1d22', rot); // dark mouth
       };
       for (let s = sv; s < s1; s += 2) {
         const e = ey(s);
-        if (e < -0.4) for (const d of [-5.2, 5.2]) b.wall(m.line, d, () => e - 0.2, () => 0.6, PAL.concrete, 2, s, Math.min(s + 2, s1));
+        const rim = m.referenceY?.(s) ?? 0;
+        if (e - rim < CUT_E) for (const d of [-5.2, 5.2]) b.wall(m.line, d, () => e - 0.2, () => rim + 0.6, PAL.concrete, 2, s, Math.min(s + 2, s1));
         // A flat board has a slot, not sculpted ground, over the cut: give it a floor.
-        if (this.cuts.length && e < CUT_E) {
+        if (this.cuts.length && e - rim < CUT_E) {
           b.ribbon(m.line, CUT_HALF * 2 + 0.6, () => e - 0.05, PAL.concreteDark, 2, s, Math.min(s + 2, s1));
           // Coping along the wall tops hides the slot's 1 m stepped edge.
-          for (const cl of coping) b.ribbon(cl, 1.8, () => 0.62, PAL.concrete, 2, s, Math.min(s + 2, s1));
+          for (const cl of coping) b.ribbon(cl, 1.8, () => rim + 0.62, PAL.concrete, 2, s, Math.min(s + 2, s1));
         }
       }
-      if (ey(sv) < PORTAL_E + 1) portal(sv, false);
-      if (ey(s1) < PORTAL_E + 1 && s1 < m.line.length) portal(s1, true);
+      if (profileHeight(m, sv) < PORTAL_E + 1) portal(sv, false);
+      if (profileHeight(m, s1) < PORTAL_E + 1 && s1 < m.line.length) portal(s1, true);
       // Viaduct: box-girder deck, parapets and piers wherever the track is well above ground.
       for (let s = sv; s < s1; s += 2) {
         const p = m.line.at(s);
