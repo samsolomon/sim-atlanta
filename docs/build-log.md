@@ -948,18 +948,19 @@ leaf-off) through Esri.
 
 Two bugs had buried both open cuts. The first was in the profile builder. It fills untagged
 gaps of 150 m or less between tunnels, a rule I wrote on day one because most gaps are mapping
-seams. These two weren't. Even unfilled, its 150 m moving average would have pulled the gap to
-about −8 m, below the −5.5 m portal threshold. The fix is an explicit `VERIFIED_OPEN` table
+seams. These two weren't. Even unfilled, its 150 m moving average blends a short gap with the
+deep tunnels on either side, so its depth comes out of the smoothing, not the survey. The fix is an explicit `VERIFIED_OPEN` table
 in `scene.rs`. It is keyed by the OSM ways' geometry, not by feed-generated path ids, and it pins
 those samples at a schematic −4 m before and after the cleanup. Regenerating `scene.json` without
-the change reproduced the old file byte for byte. With it, only 249 samples on the 10 Blue/Green
-paths through the two cuts moved. East Portal's ramp didn't change.
+the change reproduced the old file byte for byte. With it, 249 samples are pinned, and 529
+samples changed on 12 Blue/Green paths. All of them sit in or next to the two cuts, where the
+ramps were re-smoothed. Nothing else moved, East Portal's ramp included.
 
 The second bug was in City. Its flat board had never carved the ground for MARTA, so the first
 render showed two portal headwalls with lawn between them. The board now leaves a slot over
 every below-grade open stretch: 1 m sub-cells merged into row runs near a cut, then a concrete
-floor and wall-top coping. The ground mesh grows from 60,000 to 64,914 vertices, and the board
-stage takes about 20 ms more in Node (17→45 ms). Browser timings swung between 90 and 320 ms
+floor and wall-top coping. The ground mesh grows from 60,000 to 64,914 vertices, and in Node the
+board stage takes about 20–30 ms more (16–36 ms without cuts, 40–56 ms with them). Browser timings swung between 90 and 320 ms
 from run to run, so I'm not quoting them.
 
 A contract test runs the real `alignment()` smoothing and the portal threshold on every
