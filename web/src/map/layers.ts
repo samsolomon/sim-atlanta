@@ -117,7 +117,7 @@ export function addStaticLayers(map: MlMap, rf: RoutesFile, freightUrl: string, 
     type: 'line',
     source: 'transit',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#ffffff', 'line-width': width(4.5) },
+    paint: { 'line-color': '#2a2722', 'line-opacity': 0.55, 'line-width': width(4.2) }, // ink outline, as in the diorama
   });
   map.addLayer({
     id: 'transit',

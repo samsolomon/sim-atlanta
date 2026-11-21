@@ -1,6 +1,7 @@
 /**
  * Railwatch edge worker.
  *   GET /api/marta/rail  → normalized live MARTA rail positions (cached ~10 s at the edge)
+ *   GET /api/weather     → current Atlanta conditions from Open-Meteo (cached 10 min at the edge)
  *   everything else      → static site (web/dist) via the ASSETS binding
  *
  * The MARTA key is a Worker secret (MARTA_API_KEY). It only ever appears in the
@@ -82,11 +83,37 @@ async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<
   return serveBusSnapshot(response);
 }
 
+// Open-Meteo's current conditions for downtown Atlanta. One upstream call per edge location
+// every 10 minutes, however many visitors; phones that can't reach Open-Meteo directly in time
+// still get the weather.
+const WEATHER_URL =
+  'https://api.open-meteo.com/v1/forecast?latitude=33.755&longitude=-84.38&current=weather_code,cloud_cover,precipitation,visibility,temperature_2m&temperature_unit=fahrenheit&timezone=America%2FNew_York';
+
+async function weather(req: Request, ctx: ExecutionContext): Promise<Response> {
+  const key = new Request(new URL('/api/weather', req.url));
+  const cache = caches.default;
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  let response: Response;
+  try {
+    const r = await fetch(WEATHER_URL, { headers: { accept: 'application/json' } });
+    if (!r.ok) throw new Error(`open-meteo ${r.status}`);
+    const body = await r.json<{ current?: unknown }>();
+    if (!body.current) throw new Error('no current conditions');
+    response = json({ current: body.current }, 200, 600);
+  } catch {
+    response = json({ error: 'weather unavailable' }, 503, 120);
+  }
+  ctx.waitUntil(cache.put(key, response.clone()));
+  return response;
+}
+
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.pathname === '/api/marta/bus') return martaBus(req, env, ctx);
     if (url.pathname === '/api/marta/rail') return martaRail(req, env, ctx);
+    if (url.pathname === '/api/weather') return weather(req, ctx);
     if (url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404, 60);
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response('not found', { status: 404 });
   },
