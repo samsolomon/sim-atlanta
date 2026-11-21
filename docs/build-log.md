@@ -1256,3 +1256,25 @@ At 2:12:10 p.m. Eastern on November 20, the flat-board City renderer placed six 
 [Flat-board station passage](log/ui/2026-11-21-georgia-state-before-cover.jpg) · [Same passage on terrain](log/ui/2026-11-21-georgia-state-after-cover.jpg) · [East cut](log/ui/2026-11-21-city-terrain-east-cut.jpg) · [Connector crossing](log/ui/2026-11-21-city-terrain-connector.jpg)
 
 On the Galaxy A16 the low-tier production build drew the opening view at **51.26 fps** over three consecutive eight-second foreground windows (49.43, 52.37 and 51.98 fps). The board, rail, lights and surface transport took 1.13 seconds to construct. The ready frame appeared 3.44 seconds after navigation on local USB. The viewport and draw buffer were 384 × 692. The timetable ran at normal speed from 2:11:58 p.m. The flat-board fallback still opened when we tested with an older manifest, and current City and East Portal both rendered in Orca. [A16 opening frame](log/ui/2026-11-21-city-terrain-a16.jpg)
+
+## 2026-11-21 · The freight line that runs under Five Points
+
+For an illustrative freight train in City, I traced one continuous freight route through the
+board, starting from the bridges over the Downtown Connector by Georgia State. It's the CSXT
+Atlanta Terminal Subdivision. It enters from Hulsey Yard and crosses the Connector. It shares the
+Five Points east cut with MARTA, then dives under Five Points. It surfaces in the Gulch and leaves
+at the north edge beside Norfolk Southern.
+
+The shipped bake already holds it as four Overture segments. They join end to end, giving 2,630 m
+with no gaps. Railroads report train counts at a dozen grade-separated FRA crossings along it, and
+those land on the route in order: 6 trains a day east of Georgia State, 13 under downtown, 14 at
+Ivan Allen Blvd. They are averages for different stretches, not one number for the route.
+
+What surprised me is how much of it is hidden: four covered stretches add up to about 600 m. A
+branch that looked important on the map, the Circle Connection through the Gulch, has no
+reported traffic at all. Its count is inferred.
+
+The cover for this route comes from OSM and Overture tunnel tags. Unlike MARTA's cuts, I haven't
+checked it against imagery yet.
+
+![CSXT through the City board](log/rail/2026-11-21-freight-route.jpg)
