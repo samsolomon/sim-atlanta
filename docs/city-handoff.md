@@ -111,7 +111,7 @@ Sam released the connected SM-S166V for this test. The shipped low-tier opening 
 29.0 and 29.5 fps on the first two visits, 33.8 fps on a warm reload, and 37.6 fps in its
 following 24 seconds. A temporary 1024 px shadow map kept shadows visible and averaged
 36.1 fps. A fresh-origin repeat with the candidate first averaged 34.1 fps. All six
-1024 px windows exceeded 30 fps. The 1024 px setting is a tested low-tier candidate;
-production still uses 2048 px.
+1024 px windows exceeded 30 fps. City now uses 1024 px on low tier, clearing the
+static opening gate on this device. Re-measure as moving vehicles are added.
 See the [build log](build-log.md#2026-11-21--the-first-half-minute-on-the-galaxy-a16)
 for conditions, timings and screenshots.

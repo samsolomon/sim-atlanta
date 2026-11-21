@@ -1011,3 +1011,7 @@ The 1024 px setting cleared 30 fps in all six measured windows across its two vi
 Both diagnostic changes were confined to the local test server.
 
 [Shipped opening](log/ui/2026-11-21-city-a16-low.png) · [1024 px shadow comparison](log/ui/2026-11-21-city-a16-shadow-1024.png)
+
+City now uses the tested 1024 px shadow map on low tier. The six A16 samples ranged
+from 32.28 to 38.00 fps, clearing the 30 fps gate for the static opening. This change
+ships with a web rebuild.

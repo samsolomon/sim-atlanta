@@ -136,7 +136,7 @@ A downtown diorama in the vignette's style. It is built by generalising the vign
 |---|---|---|
 | DPR | 1 | ≤ 2 |
 | GTAO | off | on |
-| Shadow map | 2048 | 4096 |
+| Shadow map | 1024 | 4096 |
 | Tree canopy | 4 clumps | 10 clumps |
 | Light map | ≤ 2048 | ≤ 2048 |
 | Traffic | sparse | full |
