@@ -25,3 +25,44 @@ From the repository root with the environment and tile described in the [bake in
 .venv/bin/python -B pipeline/scripts/georgia_state_ground.py data/raw/terrain/USGS_1M_16_x74y374_GA_Statewide_2018_B18_DRRA.tif
 git diff --exit-code -- pipeline/prototypes/downtown-ground/georgia-state-section.csv
 ```
+
+## Board module for City
+
+Import `createDowntownTerrain` from `web/src/terrain/model.ts`. The module returns a Three group with one board and a separately toggleable scenery group. Build it once per City mount or quality change. The texture paints the available at-grade roads and selected land-cover polygons on the mesh. Road ways tagged `bridge` or `tunnel` are omitted as whole ways, consistent with the current City extract. The surface module draws no rail or elevated decks.
+
+```ts
+const area = createDowntownTerrain(grid, cityData, treeRows, {
+  quality,                  // 'low' | 'high'
+  contours: { value: 0 },   // optional, mutable 0–1 uniform
+  openings: verifiedSlots,  // optional, defaults to an intact board
+});
+scene.add(area.group);
+area.setSeason(dayOfYear);
+area.setNight(nightFactor);
+area.setWet(wetFactor);
+// area.bounds and area.bottomY locate the perimeter and bottom of the skirt.
+// On unmount:
+area.dispose();
+```
+
+**Ground queries.** `grid.sample(x,z)` gives absolute bilinear NAVD88 metres, including the original DEM at a structural opening. `area.groundAt(x,z)` gives scene y on the actual drawn triangle. It returns null outside the inclusive board, in a cut opening or in an omitted no-data cell. To compare a mesh reading with the fixture, add `grid.manifest.vertical.sceneZeroNavd88M`. The extent is shared across tiers. On this board the skirt bottom is scene y = −44.6 m. Control can place its plinth top at that height.
+
+**Structural openings.** Supply independent `OpenSlot` segments, each with `start` and `end` as `[x, bedSceneY, z]` and `halfWidthM` in metres. Each segment has square ends and a linearly interpolated bed height. The module subtracts the union of these bounded strips from intersecting triangles only where terrain rises above the bed. Even a 2 m strip can pass through a 5 m source cell without dropping a whole cell. The caller supplies the verified footprint, end positions and relative datum, and draws the rail bed, walls, cover or deck. Changing the slot set requires rebuilding this static mesh.
+
+**Scenery.** Trees use the exact triangle beneath their trunk. Building foundation tests sample all footprint rings at intervals up to 2.5 m and seat each building at the lowest sample rounded down to the metre. The extra wall extends into uphill ground. Buildings with an unknown perimeter sample and trees without ground are omitted. Facade floors use the same base shift as their building. Ground and structure foundations retain distinct provenance. The lowest-perimeter rule is an illustrative placement choice on sloping sites. Land-cover polygons can also span areas whose physical street level differs from bare earth. Centerline flags alone cannot resolve all levels of a plaza.
+
+**Low versus high.** High uses two triangles per valid 5 m source cell. Low considers 10 m blocks. A block can merge if the five omitted nodes each differ by at most 0.20 m from the candidate coarse triangles at those nodes. A stitched fan retains shared midpoints alongside a detailed neighbour. Blocks with a void or an odd boundary subdivide. In both modes, a 5 m cell touching a void contributes no face. The threshold is a decimation test on source nodes, not a survey accuracy specification.
+
+| Geometry before user-supplied slots | Low | High |
+|---|---:|---:|
+| Top vertices | 98,390 | 160,801 |
+| Top triangles | 195,700 | 320,000 |
+| Top position, normal, UV and index bytes | 5,496,880 | 8,985,632 |
+| Perimeter skirt triangles | 2,156 | 3,200 |
+| Ground colour texture | 2048 × 2048 | 4096 × 4096 |
+| Top, skirt and scenery triangles, including instance multiplicity | 508,701 | 763,069 |
+| Static terrain manifest and grid, gzip | 122.4 KiB | 122.4 KiB |
+
+The last geometry count includes all submitted instance slots before camera culling, including hidden seasonal canopy instances. It describes the isolated board, scenery and input dataset used here. Rendering time depends on camera, lighting, passes, instancing and device. Both tiers use the same on-disk DEM payload. Low cuts top-mesh triangles by 38.8% and texture texel count by 75%. For QA, both Orca views used a target at (615, ground, 485), an eye offset of (+235, +153, −92) m, 36° perspective, contours enabled and summer foliage. [Low detail](log/ui/2026-11-21-georgia-state-low.jpg) · [High detail](log/ui/2026-11-21-georgia-state-high.jpg)
+
+**Measured acceptance.** The two rendered anchor heights were 312.05 and 303.77 m NAVD88 on both tiers (8.28 m drop), compared with 312.02 and 303.86 m bilinear (8.16 m drop), and 312.01 and 303.76 m native (8.25 m drop). The 5 m mesh puts each point on a planar triangle while the CSV interpolates the four surrounding nodes. In an isolated Orca scene on both tiers, forwarding season, night and wet state, calling `dispose()` and drawing the empty scene took Three's renderer counters from 63 geometries and one texture to zero of each. This includes the canvas texture and instanced mesh buffers. The shared renderer owner handles the post-slot full City and device timing checks.
