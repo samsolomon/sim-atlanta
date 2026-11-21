@@ -6,6 +6,7 @@ import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
+import { mapMetresPerPixel, mapZoomForScale } from './core/camera';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
@@ -303,6 +304,7 @@ const cityProgress = document.getElementById('city-progress')!;
 let cityAbort: AbortController | null = null;
 
 let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
+let cityTilt = 57; // retain the user's City tilt while Map remains flat
 let opening = params.get('view') === 'city' || params.get('view') === '3d';
 async function openCity() {
   if (diorama) return;
@@ -313,9 +315,6 @@ async function openCity() {
   cityLoading.hidden = false;
   cityProgress.textContent = 'Loading buildings, streets and trees…';
   document.body.classList.add('in3d');
-  // Open where the map was looking, clamped into the area City covers.
-  const c = map.getCenter();
-  const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
   shell.setNote(null);
   try {
     const { createCity } = await import('./city/city');
@@ -340,7 +339,14 @@ async function openCity() {
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
   // Opening on City frames downtown; arriving from the Map keeps the place you were looking at.
   if (!opening) {
-    diorama.lookAt(mx, mz);
+    // Read the current Map camera after loading: keyboard movement may have continued.
+    const c = map.getCenter();
+    const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
+    diorama.lookAt(mx, mz, {
+      bearing: map.getBearing(),
+      metresPerPixel: mapMetresPerPixel(c.lat, map.getZoom()),
+      tilt: cityTilt,
+    });
     const target = diorama.target();
     shell.setNote(Math.hypot(target.x - mx, target.z - mz) > 1 ? 'City view covers downtown for now' : null);
   }
@@ -357,10 +363,13 @@ function closeCity() {
   opening = false;
   cityLoading.hidden = true;
   if (diorama) {
-    // Hand the place back to the map.
+    // Keep the same centre, direction and horizontal scale; only the tilt changes.
     const t = diorama.target();
+    const camera = diorama.camera();
+    cityTilt = camera.tilt;
     const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
-    map.jumpTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 13.5) });
+    map.jumpTo({ center: [lon, lat], bearing: camera.bearing, pitch: 0,
+      zoom: mapZoomForScale(lat, camera.metresPerPixel) });
   }
   diorama?.dispose();
   diorama = null;
@@ -391,7 +400,8 @@ const shell = createShell({
     return [c.lng, c.lat];
   },
   pan(dx, dy) {
-    if (diorama) diorama.pan(dx, dy);
+    // The shell sends a content-drag offset; both cameras move in the opposite direction.
+    if (diorama) diorama.pan(-dx, -dy);
     else map.panBy([-dx, -dy], { duration: 0 });
   },
   zoom(dir) {

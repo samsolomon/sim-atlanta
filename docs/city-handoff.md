@@ -98,3 +98,9 @@ and screenshots are in the latest build-log entry. Coordinate/profile helpers no
 Check the western MARTA source/profile assumptions before claiming surface track by GWCC:
 the supplied profiles currently keep that portion underground. Eastern viaduct geometry and
 East Portal were checked in Orca. No new data output was introduced by this continuation.
+
+Sam's navigation follow-up fixes screen-relative WASD/arrow movement and quick taps.
+Map ↔ City now preserves centre, direction and approximate ground scale, with City tilt
+remembered and Map flat. City coverage/distance limits still apply. Verified in Orca on
+high tier; see the paired navigation screenshots and measurements in the build log.
+Sam prefers the high-tier preview. Keep `?q=high` when reopening it for him.

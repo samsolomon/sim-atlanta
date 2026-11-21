@@ -291,9 +291,12 @@ export function createShell(o: ShellOptions) {
     if (k === 'escape') return closeDrops();
     if (MOVE[k]) {
       e.preventDefault();
+      const fresh = !held.has(k);
       held.add(k);
+      // A short tap can end before the next animation frame, especially on a busy scene.
+      if (fresh) o.pan(MOVE[k][0] * 9.6, MOVE[k][1] * 9.6);
       if (!raf) {
-        lastT = performance.now() - 16; // the first frame moves too, so a tap always nudges
+        lastT = performance.now();
         raf = requestAnimationFrame(step);
       }
     } else if (k === '+' || k === '=') o.zoom(1);

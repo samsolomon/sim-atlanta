@@ -221,3 +221,21 @@ A downtown diorama in the vignette's style. It is built by generalising the vign
 - **Sequence:** finish framing, surface rail and edge checks; measure desktop high/low;
   request Sam's A16 go-ahead; finish loading/target states and retire unused scene code.
   M2b and the City default remain behind the measured A16 gate. No new server work.
+
+## Navigation follow-up (2026-11-21)
+
+Sam chose to preserve viewing direction and approximate zoom between Map and City.
+The implementation shares centre, clockwise bearing from north, and ground metres per
+CSS pixel at the centre. City remains tilted and Map stays flat. Direct City entry retains
+the opening composition; switching uses the active camera's heading and scale. Remember
+the City's chosen tilt across a round trip, and clamp scale to its existing camera limits.
+
+- **Architect review:** preserve scale in CSS pixels, independent of quality/DPR; convert
+  Map zoom at the actual (possibly clamped) centre latitude. Read Map's camera when City
+  finishes loading, since the user may pan or zoom during the load. Cancel any camera glide
+  before applying an explicit camera handoff or keyboard move.
+- **Product review:** preserve orientation before adding transition motion. Keep the existing
+  cancellable loading state and downtown coverage note. A short key tap must move immediately,
+  even when a frame is delayed. Verify screen-relative keys after rotation, both switch
+  directions, zoomed views, and downtown-boundary clamping in Orca. A tilt/fade animation is
+  a later refinement once this spatial continuity feels right.

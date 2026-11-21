@@ -864,3 +864,32 @@ animation-frame samples measured **18.1 fps high** (render DPR 2, 63 draw calls,
 triangles across all passes) and **32.4 fps low** (render DPR 1, 32 draw calls, 1,268,831
 triangles). These are desktop results only; high-tier rendering still needs optimization,
 and the A16 gate remains pending. Claude's second and final review reported no new findings.
+
+## 2026-11-21 · Keep your bearings
+
+Sam's first navigation check exposed a sign mismatch: the shell describes a content drag,
+while City's camera API describes camera movement. The adapter now reverses that offset,
+so A/D move left/right and W/S move forward/back relative to the viewing direction. A second
+surprise was that a quick key tap could finish between animation frames and move nothing.
+Each fresh press now nudges immediately, then held keys continue at the existing speed.
+Keyboard movement also cancels any place-search glide.
+
+Map and City now exchange their centre, clockwise bearing and horizontal ground scale in
+CSS pixels. Map stays flat; City remembers its tilt. The conversion uses MapLibre's actual
+Mercator scale at the current latitude, so a high-DPI canvas does not change the framing.
+City still clamps to its downtown coverage and camera-distance limits. This makes the
+remaining perspective change easier to read without adding a transition animation yet.
+
+In Orca at high quality, the opening view survived a round-trip at **28°**, **2.44085 m/px**,
+and target **(−40, −260) m**, with sub-millimetre numerical drift. Two more round-trips at
+**−70° and 118°**, zoom **16**, retained their centre and a custom **40°** City tilt. All
+**24** WASD/arrow direction checks passed across four quarter-turn headings, and an actual
+Orca A keypress moved the camera left. A Map view outside downtown clamped to the northwest
+board corner and showed the coverage note. The full suite passes **48 tests** (16 Rust,
+27 web, 5 Worker), including four comparisons against MapLibre's own Mercator conversion;
+the production build passes. This follow-up needs a web rebuild, with no new data bake.
+
+![Map at the same heading and ground scale](log/ui/2026-11-21-navigation-map.png)
+![City after returning from Map, high tier](log/ui/2026-11-21-navigation-city.png)
+
+Navigation follow-up review (Claude, one round): no findings.

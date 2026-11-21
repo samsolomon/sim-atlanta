@@ -15,6 +15,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
+import type { GroundCamera } from '../core/camera';
 import type { RoutesFile } from '../model/types';
 import type { SceneManifest } from '../core/scene-data';
 import { alignment } from '../vignette/alignment';
@@ -32,8 +33,9 @@ export type Quality = 'low' | 'high';
 export interface CityView {
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
-  lookAt(x: number, z: number): void;
+  lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
   target(): { x: number; z: number };
+  camera(): GroundCamera & { tilt: number };
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
   pan(dxPx: number, dyPx: number): void;
   /** Turn the view a step (Q/E). */
@@ -387,6 +389,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
+    glideTo = null;
     // Metres per pixel at the target, from the camera distance and vertical field of view.
     const dist = camera.position.distanceTo(controls.target);
     const mpp = (2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / Math.max(1, container.clientHeight);
@@ -403,7 +406,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   return {
     bounds: b,
     quality,
-    lookAt(x, z) {
+    lookAt(x, z, view) {
+      glideTo = null;
+      if (view) {
+        const dist = view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+        const tilt = THREE.MathUtils.clamp(view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()),
+          THREE.MathUtils.radToDeg(controls.minPolarAngle), THREE.MathUtils.radToDeg(controls.maxPolarAngle));
+        setView(-view.bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance),
+          THREE.MathUtils.clamp(x, b.minX, b.maxX), THREE.MathUtils.clamp(z, b.minZ, b.maxZ));
+        return;
+      }
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
       controls.target.set(x, 0, z);
       clampTarget();
@@ -411,14 +423,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
+    camera: () => ({
+      bearing: -THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()),
+      tilt: THREE.MathUtils.radToDeg(controls.getPolarAngle()),
+      metresPerPixel: 2 * camera.position.distanceTo(controls.target) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.max(1, container.clientHeight),
+    }),
     pan: panPx,
     rotate(dir) {
+      glideTo = null;
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
       off.applyAxisAngle(new THREE.Vector3(0, 1, 0), dir * THREE.MathUtils.degToRad(3));
       camera.position.copy(controls.target).add(off);
       controls.update();
     },
     zoom(dir) {
+      glideTo = null;
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
       const d = THREE.MathUtils.clamp(off.length() * (dir > 0 ? 0.8 : 1.25), controls.minDistance, controls.maxDistance);
       camera.position.copy(controls.target).add(off.setLength(d));
