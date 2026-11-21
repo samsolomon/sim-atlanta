@@ -93,8 +93,8 @@ and screenshots are in the latest build-log entry. Coordinate/profile helpers no
 `stats()` now counts the full post chain and reports construction stages.
 
 **Sam's latest instruction: keep the A16 untouched.** Do not use adb until Sam releases it.
-`/` still opens Map. The CPU construction improvement is measured; steady-state desktop fps
-needs an unthrottled foreground Orca tab. The A16 gate and M2b have not been attempted.
+`/` still opens Map. The CPU construction improvement is measured; foreground desktop samples at 1446×876 measured 18.1 fps high (render DPR 2) and
+32.4 fps low (render DPR 1). Background tabs throttle to about 1 fps. The A16 gate and M2b have not been attempted.
 Check the western MARTA source/profile assumptions before claiming surface track by GWCC:
 the supplied profiles currently keep that portion underground. Eastern viaduct geometry and
 East Portal were checked in Orca. No new data output was introduced by this continuation.

@@ -857,3 +857,10 @@ Final warm high-tier construction also measured 704 ms; the slower 2.4–2.7 s r
 under concurrent load. The full suite passes: 16 Rust, 23 web and 5 Worker tests.
 
 ![Synthetic night and snow preview, low tier](log/ui/2026-11-21-city-snow-preview.png)
+
+The final desktop check resolved the throttling: selecting the tab was insufficient; the
+worktree itself had to be foregrounded. With one City tab at **1446×876 CSS pixels**, five-second
+animation-frame samples measured **18.1 fps high** (render DPR 2, 63 draw calls, 2,795,709
+triangles across all passes) and **32.4 fps low** (render DPR 1, 32 draw calls, 1,268,831
+triangles). These are desktop results only; high-tier rendering still needs optimization,
+and the A16 gate remains pending. Claude's second and final review reported no new findings.
