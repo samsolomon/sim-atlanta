@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
-import { dioramaBaseStyle } from './map/basestyle';
+import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle } from './map/basestyle';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
@@ -95,6 +95,10 @@ onReady(() => {
     },
   });
   addTrainLayer(map);
+  // ?palette=night etc. picks a preset; ?tune opens the palette panel.
+  const paletteName = params.get('palette') ?? DEFAULT_PALETTE;
+  applyPalette(map, PALETTES[paletteName] ?? PALETTES[DEFAULT_PALETTE]);
+  if (params.has('tune')) void import('./map/tune').then(({ mountTuner }) => mountTuner(map, PALETTES[paletteName] ? paletteName : DEFAULT_PALETTE));
   let visibleBuses = new Map<string, LiveBus>();
   let lastBusTick = -Infinity;
   let busesEnabled: boolean | undefined;
