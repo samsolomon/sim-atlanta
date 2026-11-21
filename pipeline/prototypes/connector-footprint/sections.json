@@ -1,0 +1,25 @@
+{
+  "originXZ": [760, 545],
+  "alongXZ": [0.8, -0.6],
+  "acrossXZ": [0.6, 0.8],
+  "directions": {
+    "northbound": { "travelSign": 1, "lanes": 7 },
+    "southbound": { "travelSign": -1, "lanes": 7 }
+  },
+  "sections": [
+    {
+      "label": "A",
+      "description": "South of the MARTA deck",
+      "alongM": -76,
+      "northbound": { "insideM": -10.4, "outsideM": 14.6 },
+      "southbound": { "insideM": -16, "outsideM": -40.8 }
+    },
+    {
+      "label": "B",
+      "description": "Between freight and Decatur Street",
+      "alongM": 77,
+      "northbound": { "insideM": -3.2, "outsideM": 21.8 },
+      "southbound": { "insideM": -9.2, "outsideM": -33.6 }
+    }
+  ]
+}
