@@ -119,6 +119,14 @@ A downtown diorama in the vignette's style. It is built by generalising the vign
   - `MAX` goes to about 120.
 - **Freight:** illustrative freight trains through the Gulch on the Overture freight tracks, reusing the freight consist from the vignette. They are labelled `illustrative` in the card and the status sheet.
 - **Traffic:** cars in City v1 run only on the Connector and major arterials (filtered by road class, with volumes from HPMS). That network is simulated in full, with no camera-region level-of-detail. Caps are raised to fit; the phone tier halves volumes.
+  - When M2b reaches road traffic, revisit the Connector beneath the Georgia State rail approach.
+    Sam’s highway-level reference shows how much of the opening beneath the freight bridge is
+    occupied by pavement. Check the lane counts in each direction, median, shoulders and ramp
+    merges against dated aerial imagery or roadway records before setting the widths. Compare
+    the result from highway level as well as from the City camera.
+  - For illustrative traffic, check that vehicles stay in their lanes, flow in the correct
+    direction through merges, and form groups with gaps. Use the photo for appearance and
+    reported traffic counts for typical volume. Keep the road footprint at both quality levels.
 
 **Loading:** `/` loads only the shell first. City (Three.js plus city data) and Map (MapLibre) are both dynamic `import()`s, loaded for whichever view is open. A simple paper-coloured loading plate shows the status card immediately.
 
