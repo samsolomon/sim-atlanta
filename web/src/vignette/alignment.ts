@@ -4,7 +4,8 @@ import { Line, type P2 } from './geom';
 import type { Alignment, VData } from './world';
 
 /** A MARTA path through a board in scene metres, smoothed, with its baked elevation profile. */
-export function alignment(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds'], pathId: string): Alignment {
+export function alignment(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds'], pathId: string):
+  Alignment & { pathMetresAt(s: number): number } {
   const path = rf.paths.find((p) => p.id === pathId);
   if (!path) throw new Error(`missing ${pathId}`);
   const project = makeProjector(manifest.origin);
@@ -21,17 +22,23 @@ export function alignment(rf: RoutesFile, manifest: SceneManifest, b: VData['bou
   // The GTFS shape is rounded to ~1 m with uneven spacing; resample every 2 m and smooth
   // (a ±24 m moving average, twice) so cars don't twitch at every vertex.
   const raw = new Line(pts);
+  if (!raw.length) throw new Error(`No track length on board for ${pathId}`);
   const s0 = sAt[0];
   const STEP = 2;
-  const n = Math.floor(raw.length / STEP) + 1;
+  const n = Math.ceil(raw.length / STEP) + 1;
   let xs = new Float64Array(n);
   let zs = new Float64Array(n);
   let es = new Float64Array(n);
+  const pathMetres = new Float64Array(n);
   for (let i = 0; i < n; i++) {
-    const p = raw.at(i * STEP);
+    const distance = Math.min(i * STEP, raw.length);
+    const p = raw.at(distance);
+    const vertex = raw.vertexAt(distance);
+    const j = Math.min(Math.floor(vertex), sAt.length - 2);
+    pathMetres[i] = sAt[j] + (sAt[j + 1] - sAt[j]) * (vertex - j);
     xs[i] = p.x;
     zs[i] = p.z;
-    es[i] = elevationAt(prof, s0 + i * STEP);
+    es[i] = elevationAt(prof, s0 + distance);
   }
   const smooth = (a: Float64Array, half: number) => {
     const out = new Float64Array(a.length);
@@ -54,6 +61,13 @@ export function alignment(rf: RoutesFile, manifest: SceneManifest, b: VData['bou
   const scale = (n - 1) / line.length;
   return {
     line,
+    // Rail cover is indexed on the full GTFS shape. Smoothing shortens bends
+    // unevenly, so retain the source distance at each rendered vertex.
+    pathMetresAt(s: number) {
+      const vertex = line.vertexAt(s);
+      const i = Math.min(Math.floor(vertex), n - 2);
+      return pathMetres[i] + (pathMetres[i + 1] - pathMetres[i]) * (vertex - i);
+    },
     elev: (s: number) => {
       const f = Math.min(Math.max(s * scale, 0), n - 1);
       const i = Math.floor(f);

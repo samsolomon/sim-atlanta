@@ -23,7 +23,7 @@ Atlanta and Georgia. Every fact on the map says how we know it: **live**, **sche
 pnpm install
 python3 -m venv .venv && .venv/bin/pip install duckdb rasterio pyproj scipy pillow   # once
 pnpm data           # fetch + build Map data, downtown rail profiles and City data; re-run to refresh
-pnpm data:city      # refresh only the City board, traffic network and tree canopy
+pnpm data:city      # refresh the City board, traffic network, tree canopy and baked ground grid
 pnpm data:vignette  # East Portal diorama: refreshes the Overture roads/land-use/infrastructure/building
                     # extracts, then crops them and adds FHWA traffic + Meta/WRI trees (re-run after pulling)
 pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item trains-marta-api
@@ -37,6 +37,7 @@ These URL options are handy for reviewing:
 - `?t=2026-11-20T14:00:00-05:00` pins the clock to a moment.
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
+- In local development, `/terrain-preview.html?at=cut` opens the downtown ground study. Run `pnpm data:city` first, or `pnpm data:terrain` if the downtown board and trees are already present. [Terrain measurements and camera stops](docs/downtown-ground.md)
 - `?view=city` (`?view=3d` also works) opens the static downtown diorama. Drag to orbit,
   right-drag or WASD/arrows to pan, scroll/pinch or +/− to zoom, Q/E to rotate,
   and double-click to glide to a place. `?q=low|high` overrides the device quality tier.

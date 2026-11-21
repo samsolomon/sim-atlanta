@@ -3,7 +3,7 @@ import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { TrainState } from '../model/types';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { PlacementIndex } from '../vignette/spatial';
-import { PORTAL_E, type Alignment, type VData } from '../vignette/world';
+import { trackInDaylight, type Alignment, type VData } from '../vignette/world';
 
 type Segment = { al: Alignment; i: number };
 const SNAP = 18;
@@ -45,7 +45,7 @@ export class CityTracks {
  * board edge occlude/clip the covered part of the car throughout the transition. */
 export function carInDaylight(al: Alignment, s: number) {
   return [s, s - CAR_LENGTH / 2, s + CAR_LENGTH / 2].some(t =>
-    t >= 0 && t <= al.line.length && al.elev(t) >= PORTAL_E);
+    t >= 0 && t <= al.line.length && trackInDaylight(al, t));
 }
 
 export class CityTrains {
@@ -56,6 +56,7 @@ export class CityTrains {
   private geometries = new Map<string, THREE.BufferGeometry>();
   private pools = new Map<string, { material: THREE.Material; meshes: THREE.Mesh[]; count: number }>();
   private direction = new THREE.Vector3();
+  private orientation = new THREE.Matrix4();
   surfaceCars = 0;
 
   constructor(alignments: Alignment[], private manifest: SceneManifest, private bounds: VData['bounds'],
@@ -119,7 +120,9 @@ export class CityTrains {
         const car = this.car(color, role);
         car.position.set(cx, al.elev(sc) + 0.55, cz);
         const q = al.line.at(sc + dir * 4);
-        car.lookAt(this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off));
+        this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off);
+        // Both points are in track-local coordinates, including in terrain-anchored groups.
+        car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
         if (i >= units / 2) car.rotateY(Math.PI);
         this.surfaceCars++;
       }

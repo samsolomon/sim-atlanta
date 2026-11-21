@@ -328,6 +328,7 @@ async function openCity() {
       return;
     }
     diorama = d;
+    document.getElementById('city-ground-source')!.textContent = d.measuredGround ? 'USGS terrain' : 'Flat board';
   } catch (err) {
     if (load !== cityLoad) return;
     console.error(err);

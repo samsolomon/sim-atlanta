@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Downtown terrain · sim-atlanta</title>
+  <link rel="stylesheet" href="/src/ui/tokens.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #e8e4d9;
+      color: var(--ink);
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #stage {
+      position: fixed;
+      inset: 0;
+    }
+
+    .card {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: min(344px, calc(100% - 40px));
+      background: var(--glass-solid);
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      font: 500 27px/1.1 Georgia, serif;
+      margin: 0 0 5px;
+    }
+
+    .source, footer {
+      font-size: 12px;
+      color: #585247;
+    }
+
+    .source {
+      margin: 0;
+    }
+
+    fieldset {
+      border: 0;
+      margin: 15px 0 0;
+      padding: 0;
+    }
+
+    .views {
+      display: flex;
+      gap: 4px;
+    }
+
+    button {
+      flex: 1;
+      font: inherit;
+      font-size: 13px;
+      padding: 8px 4px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button[aria-pressed="true"] {
+      background: #384c45;
+      border-color: #384c45;
+      color: white;
+    }
+
+    label {
+      font-size: 13px;
+      display: block;
+      margin-top: 12px;
+    }
+
+    input {
+      accent-color: #384c45;
+      vertical-align: middle;
+    }
+
+    #reading {
+      font-size: 14px;
+      line-height: 1.45;
+      margin: 13px 0 0;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 14px;
+      left: 20px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--glass-solid);
+    }
+  </style>
+</head>
+<body>
+  <div id="stage" aria-label="Orbitable three-dimensional terrain model"></div>
+  <section class="card">
+    <h1>Downtown terrain</h1>
+    <p class="source">Inferred ground · USGS 2018–2019 · 2 m contours</p>
+    <fieldset disabled aria-label="Terrain views">
+      <div class="views">
+        <button data-view="downtown" aria-pressed="false">Five Points</button>
+        <button data-view="cut" aria-pressed="false">East cut</button>
+        <button data-view="crossing" aria-pressed="false">Rail crossing</button>
+        <button data-view="connector" aria-pressed="false">Connector</button>
+      </div>
+      <label><input id="scenery" type="checkbox" checked> Show illustrative buildings and trees</label>
+    </fieldset>
+    <button type="button" id="replay" style="margin-top:12px" hidden disabled>Replay crossing</button>
+    <p id="reading" role="status">Loading downtown ground…</p>
+  </section>
+  <footer>Drag to orbit · Scroll to zoom · Shift-drag to pan</footer>
+  <script type="module" src="/src/terrain/preview.ts"></script>
+</body>
+</html>

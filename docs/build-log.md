@@ -1106,3 +1106,153 @@ a re-check date.
 Sam also asked whether City should have an underground view, since tunnels hide most trains.
 It's in the art backlog's Cutaway section. Deploying this needs `pnpm data:scene` (or
 `pnpm data`) and a web rebuild.
+## 2026-11-21 — What the ground can tell us at Five Points
+
+The ground on the Blue/Green alignment about 200 m east of Five Points sits roughly eight metres below both sides of the corridor. A 5 m grid keeps that depression in a downtown board that takes 122.4 KiB gzipped, including its vertical reference. The surprise came farther east. Follow those heights across the Downtown Connector and the train would descend toward the freeway because the public bare-earth DEM removes bridge decks. At Five Points the grid gives us 323.8 m NAVD88 at the scene origin, while the station's stacked tracks remain a separate measurement. The pipeline prototype includes 18 GTFS ground checks and a 101-point test across the cut. [Terrain findings and reproduction](downtown-ground.md) · [Ground map and sections](log/2026-11-21-downtown-ground.png)
+
+## 2026-11-21 — A static terrain pass before the trains
+
+A camera at street-block scale makes the east cut easier to read than the skyline view. Two-metre contours climb both banks, about eight metres above the sampled alignment. Across the Connector, the same drawing follows the freeway floor at 303.9 m NAVD88 and climbs to 314.1 m on the eastern bank. We can now orbit either section in the desktop terrain preview, then bring the City buildings and trees back for context. The JavaScript decoder matches all 54 centre and flank readings in the pipeline CSV. The City data build copies the checked terrain assets without downloading the 318 MB source tile. [East cut in Orca](log/ui/2026-11-21-ground-preview-cut.jpg) · [Connector in Orca](log/ui/2026-11-21-ground-preview-connector.jpg)
+
+## 2026-11-21 — A train stays level over the Downtown Connector
+
+In the local terrain preview, the Blue Line crosses a freeway floor that sits about
+10 m below the east bank. The 5 m USGS ground grid shapes the freeway and sets the
+foot of each schematic pier. For this study we anchored the structural model once at
+the east bank (314.1 m NAVD88), then used City's existing rail profile 7 m above that
+anchor. The mapped order puts MARTA above the street and freight bridges. Their
+clearances, the railhead elevation and the pier locations remain schematic.
+
+[Replay the crossing on the local City server](http://localhost:5317/terrain-preview.html?at=crossing).
+It opens on a scheduled Blue train at 2:12:49 p.m. Eastern on November 20. Replay
+covers 28 seconds around that moment. The first render tipped the cars toward the sky:
+the cars were aiming at a world-space target computed in track-local coordinates.
+After the fix, the Orca replay measured zero pitch on the level span as the cars
+crossed the freeway. A regression test translates the train group down 9.7 m and
+checks the cab still points horizontally east.
+
+The Galaxy A16 averaged 54.4 fps across three foreground eight-second windows during
+the replay (54.0, 54.1 and 55.1 fps, 384 × 692 CSS pixels, render DPR 2). This is a
+standalone crossing scene. Full City with its weather and post-processing needs a
+separate measurement when the terrain reaches that renderer.
+
+![Eastbound Blue Line train above the Downtown Connector](log/ui/2026-11-21-connector-crossing.jpg)
+
+## 2026-11-21 — Ground through Georgia State, measured on the triangles
+
+We sampled the eastbound Blue Line at 184 locations from Five Points through Georgia State and onto the Connector crossing. Over the 55 path metres between the west approach and freeway floor, the native 1 m DEM drops from 312.01 to 303.76 m NAVD88 (8.25 m). The 5 m grid interpolates 312.02 to 303.86 m (8.16 m). On the actual terrain triangles, both low and high detail give 312.05 to 303.77 m (8.28 m). Trees now use those same triangles and a street painted across a bank follows the slope. Rail beds and bridge decks still need structural heights.
+
+Before clipping any rail slots, low detail used 98,390 vertices and 195,700 triangles on top of the board, versus 160,801 and 320,000 at high detail. Position, normal, UV and index buffers were 5,496,880 and 8,985,632 bytes respectively. The ground texture was 2048² versus 4096², with the same 122.4 KiB gzipped terrain payload. The two isolated desktop Orca views each went from 63 allocated geometries and one texture to zero after a season/night/wet change, disposal and an empty-scene draw. Control owns measurement with the open slots, trains and full City renderer. [Low detail in Orca](log/ui/2026-11-21-georgia-state-low.jpg) · [High detail in Orca](log/ui/2026-11-21-georgia-state-high.jpg) · [Section, costs and City interface](georgia-state-ground.md)
+
+### 2026-11-21 — Putting freight across the Connector
+
+The first freight span crosses the western freeway carriageway at 304.1 m of bare-earth elevation. The schematic deck passes overhead at 312.3 m. The surprising part was the length of the bridge. Overture marks only 10.8% of one railway feature as a bridge. Applying the flag to the whole railway lifted its approach too. Splitting the original way before cropping gives us six freight spans here, with the freeway still visible below. Downtown's transport adds two colour-pass draws and one more with directional shadows. The steep banks still show where a ground endpoint is a poor proxy for a surveyed abutment. [Connector](log/ui/2026-11-21-transport-connector.jpg) · [Embedded streetcar rails](log/ui/2026-11-21-transport-streetcar.jpg) · [Measurements and City attachment](terrain-transport.md)
+
+## 2026-11-21 — Road, freight and Blue Line in the same crossing replay
+
+At 2:12:49 p.m. Eastern on November 20, the scheduled eastbound Blue Line crosses the Downtown Connector. The replay now uses the same terrain triangles for the scenery and the lower surface transport. Overture's bridge limits split the elevated sections from their ground approaches. This replaces the earlier study's single bank height for every lower bridge. At one western carriageway, the ground reads 304.08 m NAVD88 and the model places the freight deck at 312.30 m. The scheduled train crosses on a separate MARTA structure about 25 m away in plan. The deck heights are illustrative. [Combined crossing in Orca](log/ui/2026-11-21-connector-scoped-crossing.jpg)
+
+
+## 2026-11-21 · Cover is not depth: a rail contract for terrain
+
+Real ground is coming to City: USGS 1 m bare earth, baked by the terrain agent. With it, a single
+height number per 10 m of track stops being enough. The track's cover (sky, a street, a station
+roof, a building) and its height relative to the ground are separate facts. Our old profile
+blended them: deeper than −5.5 m meant "tunnel".
+
+**Georgia State was the first fixture, and the old notes were wrong.** I had written that its
+two untagged gaps "stay filled as tunnel". In fact the profile ramps from −10 m at the
+Washington St portal to +7 m by −84.3859, so a flat-board renderer would draw the line climbing
+through the platform canopies and straight through the Floyd "Twin Towers". Imagery from
+2022-09-27 (Esri, 15 cm), 2023 (NAIP) and 2026-02-02 (WV02), together with OSM, gives four
+honest stretches, eastbound:
+
+- about 62 m open at grade beside the CSX/NS tracks;
+- 73 m under the side-platform canopies (roofed, not a tunnel). The tracks between the two
+  canopy roofs may be partly visible from above; none of the three images resolves it;
+- 131 m under the Floyd Building (OSM `tunnel=building_passage`);
+- then open, elevated structure, continuous into the layer-3 viaduct over the Connector. The
+  second "gap" was only a seam between OSM ways.
+
+**The contract.** `scene.json` gains an optional `rail` key and keeps `profiles` byte-identical.
+Each path carries sorted, half-open spans in path metres, each with:
+
+- cover: `open`, `covered` or `roofed`;
+- form;
+- a height base: local ground + rel, or hung from identified anchors;
+- `height: schematic`;
+- an evidence id with sources and edge precision.
+
+Gaps mean unknown, so the old profile still applies there. The bake projects 6 lon/lat fixtures
+onto all 12 Blue/Green paths in both directions. Span lengths agree within 15 m across paths, and
+the westbound order is the exact reverse of the eastbound.
+
+**A seam the coordinating agent caught.** Bedding the Floyd Building span on local ground while
+hanging the viaduct from the east face + 7 m would make a car jump up to 7 m at the seam. The
+canopy, building and viaduct spans now share one anchor chain:
+
+- canopy west end, +0 m;
+- station east face, +7 m;
+- Connector east bank, +7 m.
+
+A contract test samples ±1 cm either side of every seam with a synthetic ground surface, in both
+directions. It measured a 2.65 m step with the old layout and passes with the chain. The 7 m
+clearance remains a placeholder: no public record gives the MARTA deck height over the
+freeway.
+
+**What's still uncertain, with sources.** Edges are ±10–15 m along the path. They come from:
+
+- OSM ways 702258813/816 (the tunnel ends at the Washington St bridge, 9245544);
+- 78090747/742 (open, `level=2`);
+- 539937961/962 (platforms);
+- 702258821/822 (`building_passage`);
+- 905944412–415 and 78090750/78380741 (structure and viaduct).
+
+The imagery checks were Esri World Imagery 15 cm (Vantor, 2022-09-27) and WV02 (2026-02-02),
+viewed only, and USGS NAIP `m_3308413_se_16_060_20231008` (2023-10-08, public domain, in
+`docs/log/rail/`). In NAIP, tall-building lean hides the track under the towers, so the
+building-cover edges rest on OSM and the 2026 imagery. Platform level relative to the bare-earth
+surface inside the Floyd Building is unknown: the bed ramps from 0 to +7 m across the station
+schematically. The deck clearance over the Connector is unknown; I checked FHWA NBI Georgia
+2024/2025 and GDOT's public GIS.
+
+![NAIP 2023: Georgia State](log/rail/2026-11-21-naip-2023-georgia-state.jpg)
+
+The integrated City release uses both `pnpm data:scene` and `pnpm data:city` (or the full
+`pnpm data`), followed by a web build and Worker deployment.
+
+## 2026-11-21 — The frame we saved before changing Georgia State
+
+Freeze Friday, November 20 at 2:12:29 p.m. Eastern. The timetable puts the centre of an eastbound Blue Line train at 8,108 m along its route, about eight metres beyond the Floyd building’s east face. Map gives us the train’s position. Switch to City without moving the camera target and the question changes. Which cars should a person above the station actually see? The baseline City frame uses the flat board and the old elevation profile. In the 2023 aerial photograph, you can follow the open approach up to the white station canopies, then lose the tracks under the building. How much of the track between those canopies is visible remains uncertain.
+
+[Map at the scheduled passage](log/ui/2026-11-21-georgia-state-map.jpg) · [City before the rail-cover change](log/ui/2026-11-21-georgia-state-before-cover.jpg) · [2023 USGS aerial photograph](log/rail/2026-11-21-naip-2023-georgia-state.jpg)
+
+To recreate the pair, [open the paused Map](http://localhost:5317/?q=high&t=2026-11-20T14%3A12%3A29-05%3A00&speed=0#17.8/33.7497/-84.38526/-22), then select City. Both captures face 22° west of north. City tilts 57° and the view is centred on the building’s east face. The scheduled time and the camera are fixed for a later comparison with the terrain and rail-cover renderer.
+
+Farther east, review caught another place where the ground could mislead us. Eleven road or pedestrian bridge runs meet the edge of the board. At one motorway ramp, the board cuts across the span where the ground lies 7.58 m below the support inside the scene. Making that crop point a support bent the deck down toward the freeway. The model now carries the in-board support height to the edge. [Ramp after the fix](log/ui/2026-11-21-transport-edge.jpg)
+
+Two photographs by Bill Mahan for the *Atlanta Journal-Constitution* put a train back into the Georgia State reference material. On October 7, 1979 he photographed a train crossing the Downtown Connector on the east approach. On October 31 he photographed a train passing through the station with the skyline behind it. Georgia State University Library holds both prints. They document the railway in its opening year. Sam identified the dusk frame from @city_surreal as another angle looking into Georgia State Station. The illuminated entrance and the line of warm windows along the train give us a reference for how the approach reads after sunset. [October 7 approach photograph](https://dlg.usg.edu/record/gsu_planatl_10448) · [October 31 station photograph](https://dlg.usg.edu/record/gsu_planatl_10513)
+
+Sam also shared *Waning Winter* by @br3nn3nfoto, taken during a rare Atlanta snowfall. The Georgia Capitol dome puts the sweeping rail curve in context. A red steel girder crosses below the MARTA deck, and the highway is visible beneath both. Snow picks out the edges of the deck and the curve of the car roofs. That makes the frame a useful check on the winter scene and on how the three levels read from a distance. The station is outside the frame. The two photographer-credited screenshots are kept with the local source references under `data/raw/photo-references/`.
+
+Looking along the Downtown Connector in *Fast Lanes* by @4cn.shon, the order is easy to see. MARTA crosses at the top of the frame, two CSX locomotives occupy the red girder bridge below, and traffic fills several lanes beneath both trains. Sam pointed out that our preview reads as two skinny roads. We put the roadway footprint and traffic behaviour into the M2b traffic pass. The highway-level photograph gives us a repeatable visual comparison for that work. Local reference: `data/raw/photo-references/connector-fast-lanes.png`.
+
+Rail Accuracy checked the photograph against the mapped bridges. OpenStreetMap assigns layer 1 to the Atlanta Terminal Subdivision freight crossing and layer 3 to the MARTA viaduct above it. These layer numbers describe the order of the decks. Their clearances remain unmeasured. [Freight bridge](https://www.openstreetmap.org/way/539939597) · [MARTA viaduct](https://www.openstreetmap.org/way/78090750)
+
+For the post, the October 7 archive title identifies the Connector crossing. The catalog coordinates point to Georgia at large, and the clipping text on the back concerns energy policy. The October 31 print has a caption on the back that explicitly names Georgia State Station. Both records credit Bill Mahan and carry the rights label *In Copyright – Educational Use Permitted*. [October 7 catalog record](https://dlg.usg.edu/record/gsu_planatl_10448) · [October 31 catalog record](https://dlg.usg.edu/record/gsu_planatl_10513)
+
+### 2026-11-21 — One set of downtown buildings, from daylight to dusk
+
+Downtown's foundations span 39 whole-metre elevations. Each elevation used to require its own facade mesh and rooftop-equipment batch. Building the walls and roofs at their individual foundations brings those 78 batches down to two. Every wall still carries the elevation of its own ground floor, so the illuminated windows and shopfronts start at the right height on a slope.
+
+In an Orca desktop view of the whole low-detail board, terrain, buildings and trees fell from 79 colour-pass draws and 508,434 submitted triangles to eight draws and 461,457 triangles at the same camera and season. Low detail keeps up to three rooftop units and three leaf clumps per canopy. The 195,700 ground triangles still resolve the 8.28 m descent into the Connector. Road markings, crossings, striped parking lots and mapped parks and facilities use the existing 2048² ground texture. In the integrated City dusk view, the street lights warm that same pavement beneath the lit facades. These counts cover the terrain and scenery layer. City's lights, transport, shadows and post-processing have their own costs. [Full City at noon](log/ui/2026-11-21-terrain-city-day.jpg) · [Full City at dusk](log/ui/2026-11-21-terrain-city-night.jpg)
+
+At street-block range the first zebra stripes blended together on the low-detail texture. One texel covers 0.98 m. Giving stripe width and spacing a minimum in texels separated the crossing marks while keeping the same board memory and draw count. Parking dividers still soften at grazing angles. [Low-detail street markings near Five Points](log/ui/2026-11-21-terrain-city-paint.jpg)
+
+## 2026-11-21 — The train disappears under the Floyd building
+
+At 2:12:10 p.m. Eastern on November 20, the flat-board City renderer placed six cars beside Georgia State’s platform. In the same scheduled passage on the measured board, all six are under cover. At 2:12:29 four cars are visible as the train emerges at the Floyd building’s east face. Twenty seconds later all six are on the Connector viaduct. We held the Map centre, zoom, bearing, City tilt and timetable instant from the earlier photograph comparison. In Orca we also checked the train in the open Five Points east cut and followed it across the lower bridges. The shapes of the hills come from the USGS grid. The track-bed height through the station and over the freeway remains schematic.
+
+[Flat-board station passage](log/ui/2026-11-21-georgia-state-before-cover.jpg) · [Same passage on terrain](log/ui/2026-11-21-georgia-state-after-cover.jpg) · [East cut](log/ui/2026-11-21-city-terrain-east-cut.jpg) · [Connector crossing](log/ui/2026-11-21-city-terrain-connector.jpg)
+
+On the Galaxy A16 the low-tier production build drew the opening view at **51.26 fps** over three consecutive eight-second foreground windows (49.43, 52.37 and 51.98 fps). The board, rail, lights and surface transport took 1.13 seconds to construct. The ready frame appeared 3.44 seconds after navigation on local USB. The viewport and draw buffer were 384 × 692. The timetable ran at normal speed from 2:11:58 p.m. The flat-board fallback still opened when we tested with an older manifest, and current City and East Portal both rendered in Orca. [A16 opening frame](log/ui/2026-11-21-city-terrain-a16.jpg)

@@ -3,8 +3,8 @@
  * vignette (ink lines, colour grade, tilt-shift) and built by the same engine (`vignette/world`).
  * Loaded on demand from the main app, so the Map never pays for Three.js.
  *
- * The board is about ten times East Portal's area, so it is built lighter: a flat board, MARTA
- * drawn only where it is open to the sky, and quality tiers decided once from the device.
+ * Downtown terrain, transport and train geometry share one vertical reference. Older scene
+ * bakes use the flat board. Quality is selected once when the view opens.
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -26,12 +26,18 @@ import { local } from '../vignette/time';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
+import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import { createDowntownTerrain } from '../terrain/model';
+import { createSurfaceTransport } from '../terrain/transport';
+import type { TerrainCity } from '../terrain/transport-data';
+import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { CityTrains } from './trains';
 import { Snow } from './snow';
 
 export type Quality = 'low' | 'high';
 
 export interface CityView {
+  measuredGround: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
@@ -69,20 +75,30 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
+  async function asset(name: string) {
+    const r = await fetch(`${DATA}/scene/downtown/${name}`, { signal: options.signal });
+    if (!r.ok) throw new Error(`City ${name} (${r.status})`);
+    return r;
+  }
   const [vd, manifest, trees] = await Promise.all([
-    fetch(`${DATA}/scene/downtown/vignette.json`, { signal: options.signal }).then((r) => {
-      if (!r.ok) throw new Error(`city data ${r.status}`);
-      return r.json();
-    }) as Promise<VData>,
-    fetch(`${DATA}/scene/downtown/scene.json`, { signal: options.signal }).then((r) => {
-      if (!r.ok) throw new Error(`city profiles ${r.status}`);
-      return r.json();
-    }) as Promise<SceneManifest>,
-    fetch(`${DATA}/scene/downtown/trees.json`, { signal: options.signal }).then((r) => {
-      if (!r.ok) throw new Error(`city trees ${r.status}`);
-      return r.json();
-    }),
+    asset('vignette.json').then(r => r.json() as Promise<TerrainCity>),
+    asset('scene.json').then(r => r.json() as Promise<SceneManifest>),
+    asset('trees.json').then(r => r.json() as Promise<{ trees: [number, number, number, number][] }>),
   ]);
+  let grid: GroundGrid | undefined;
+  if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
+    try {
+      const [spec, bytes] = await Promise.all([
+        asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
+        asset('ground.i16').then(r => r.arrayBuffer()),
+      ]);
+      grid = new GroundGrid(spec, bytes);
+    } catch {
+      options.signal?.throwIfAborted();
+      // Older or partially refreshed caches can still render the legacy profiles.
+      console.warn('City ground grid unavailable. Using the flat board.');
+    }
+  }
   const b = vd.bounds;
 
   // ---- the board ----------------------------------------------------------------------
@@ -97,23 +113,50 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     fn();
     stages[name] = Math.round(performance.now() - start);
   };
-  const world = new World(vd, null, { terrain: 'flat', clumps: low ? 4 : 8, lightMapMax: 2048 });
-  if (trees?.trees?.length) world.realTrees = trees.trees;
+  const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: 2048 };
+  let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
+  let transport: ReturnType<typeof createSurfaceTransport> | undefined;
+  // Elevated roads get their own structural geometry. Place lamps on ground roads.
+  const groundRoads = grid ? [...vd.roads.filter(r => !r.bridge && !r.tunnel),
+    ...vd.terrainTransport!.roads.filter(r => r.kind === 'ground').map(r =>
+      ({ ...r, name: null, bridge: false, tunnel: false }))] : vd.roads;
+  class DowntownWorld extends World {
+    override ground(x: number, z: number) {
+      if (!grid) return super.ground(x, z);
+      const h = grid.sample(x, z);
+      return h === null ? 0 : h - grid.manifest.vertical.sceneZeroNavd88M;
+    }
+  }
+  const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
+  const disposeBoard = () => {
+    terrain?.dispose();
+    transport?.dispose();
+    world.dispose();
+    world.group.removeFromParent();
+  };
   let marta: Alignment[] = [];
   try {
-    await build('board', () => {
-      marta = martaAlignments(rf, manifest, b);
-      world.setOpenCuts(marta); // the flat board leaves a slot over each open cut
-      world.buildBoard();
-    });
-    await build('streets', () => world.buildStreets());
-    await build('ground', () => world.buildGround());
-    await build('rail', () => { for (const al of marta) world.buildMarta(al); world.buildFreight(); world.buildTram(); });
-    await build('buildings', () => world.buildBuildings());
-    await build('trees', () => world.buildTrees());
-    await build('lights', () => world.buildLights());
+    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid); });
+    if (grid) {
+      const ground = grid;
+      await build('terrain', () => {
+        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: terrainOpenings(marta) });
+        world.buildPlinth(terrain.bottomY);
+      });
+      await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt); });
+    } else {
+      if (trees.trees.length) world.realTrees = trees.trees;
+      await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
+      await build('streets', () => world.buildStreets());
+      await build('ground', () => world.buildGround());
+      await build('freight and tram', () => { world.buildFreight(); world.buildTram(); });
+      await build('buildings', () => world.buildBuildings());
+      await build('trees', () => world.buildTrees());
+    }
+    await build('MARTA', () => { for (const al of marta) world.buildMarta(al); });
+    await build('lights', () => world.buildLights(terrain?.board, terrain?.groundAt));
   } catch (err) {
-    world.dispose();
+    disposeBoard();
     throw err;
   }
   const buildMs = Object.values(stages).reduce((sum, ms) => sum + ms, 0);
@@ -124,7 +167,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   try {
     renderer = new THREE.WebGLRenderer({ antialias: !low, powerPreference: 'high-performance' });
   } catch (err) {
-    world.dispose();
+    disposeBoard();
     throw err;
   }
   renderer.info.autoReset = false;
@@ -144,6 +187,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
   scene.add(world.group);
+  if (terrain && transport) scene.add(terrain.group, transport.group);
   // Trim content to the board, retaining the ground, cut edge and walnut lip.
   const edges = [
     new THREE.Plane(new THREE.Vector3(1, 0, 0), -b.minX),
@@ -151,7 +195,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     new THREE.Plane(new THREE.Vector3(0, 0, 1), -b.minZ),
     new THREE.Plane(new THREE.Vector3(0, 0, -1), b.maxZ),
   ];
-  for (const child of world.group.children.slice(3)) child.traverse((o) => {
+  const clipped = world.group.children.slice(terrain ? 1 : 3);
+  if (terrain && transport) clipped.push(terrain.scenery, transport.group);
+  for (const child of clipped) child.traverse((o) => {
     const material = (o as THREE.Mesh).material;
     for (const mat of Array.isArray(material) ? material : material ? [material] : []) {
       mat.clippingPlanes = edges;
@@ -168,7 +214,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const tableMat = new THREE.MeshLambertMaterial({ color: '#d8d2c6' });
   const table = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), tableMat);
   table.rotation.x = -Math.PI / 2;
-  table.position.set(cx, -24.05, cz);
+  table.position.set(cx, (terrain?.bottomY ?? -18) - 6.05, cz);
   table.receiveShadow = true;
   scene.add(table);
 
@@ -207,20 +253,24 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     const dx = THREE.MathUtils.clamp(t.x, b.minX, b.maxX) - t.x;
     const dz = THREE.MathUtils.clamp(t.z, b.minZ, b.maxZ) - t.z;
-    if (dx || dz) {
+    const dy = grid ? world.ground(t.x + dx, t.z + dz) - t.y : 0;
+    if (dx || dy || dz) {
       t.x += dx;
+      t.y += dy;
       t.z += dz;
       camera.position.x += dx;
+      camera.position.y += dy;
       camera.position.z += dz;
     }
   };
   controls.addEventListener('change', clampTarget);
 
   function setView(azDeg: number, polarDeg: number, dist: number, tx = controls.target.x, tz = controls.target.z) {
-    controls.target.set(tx, 0, tz);
+    const ty = world.ground(tx, tz);
+    controls.target.set(tx, ty, tz);
     const az = THREE.MathUtils.degToRad(azDeg);
     const po = THREE.MathUtils.degToRad(polarDeg);
-    camera.position.set(tx + dist * Math.sin(po) * Math.sin(az), dist * Math.cos(po), tz + dist * Math.sin(po) * Math.cos(az));
+    camera.position.set(tx + dist * Math.sin(po) * Math.sin(az), ty + dist * Math.cos(po), tz + dist * Math.sin(po) * Math.cos(az));
     controls.update();
   }
   // Opening view: downtown at a glance from the southwest — the Gulch in front, Five Points,
@@ -276,7 +326,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   ro.observe(container);
   resize();
 
-  // Double-click glides to the spot on the ground plane (no raycast through the big meshes).
+  // Double-click glides to the board surface, ignoring trains, trees and buildings.
   let glideTo: THREE.Vector3 | null = null;
   const ndc = new THREE.Vector2();
   const ray = new THREE.Raycaster();
@@ -286,7 +336,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
-    if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
+    if (terrain) {
+      const surface = ray.intersectObject(terrain.board, false)[0];
+      if (surface) {
+        glideTo = surface.point;
+        glideTo.y = world.ground(glideTo.x, glideTo.z);
+      }
+    } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
 
@@ -336,6 +392,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     tableMat.color.copy(pal.tableNight).lerp(pal.tableDay, day);
     const night = atm.dark;
     world.setNight(night);
+    terrain?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
 
@@ -352,6 +409,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     bg.lerp(day > 0.5 ? pal.greyBg : pal.greyBgNight, cl * 0.75);
     bg.lerp(pal.snowBg, wx.snow * day * 0.4);
     world.setWet(wx.rain);
+    terrain?.setWet(wx.rain);
     const dist = camera.position.distanceTo(controls.target);
     const f = Math.max(wx.fog, wx.rain * 0.5);
     const fog = scene.fog as THREE.Fog;
@@ -419,6 +477,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);
   console.info('City build stages (ms)', stages);
   return {
+    measuredGround: !!terrain,
     bounds: b,
     quality,
     lookAt(x, z, view) {
@@ -432,7 +491,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         return;
       }
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      controls.target.set(x, 0, z);
+      controls.target.set(x, world.ground(x, z), z);
       clampTarget();
       camera.position.copy(controls.target).add(off);
       controls.update();
@@ -460,7 +519,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     setAtmosphere(a, now) {
       atm = a;
-      world.setSeason(local(now).doy);
+      (terrain ?? world).setSeason(local(now).doy);
     },
     stats: () => ({ surfaceCars: trains.surfaceCars, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
@@ -469,8 +528,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();
-      world.dispose();
-      scene.remove(world.group);
+      disposeBoard();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         m.geometry?.dispose();
@@ -491,10 +549,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
  * (and lines sharing track) are near-identical centrelines, so a path that runs within a few
  * metres of one already kept is skipped. Tunnels aren't drawn; buildMarta shows open track only.
  */
-function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds']): Alignment[] {
+function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds'], grid?: GroundGrid): Alignment[] {
   const kept: Alignment[] = [];
-  for (const id of Object.keys(manifest.profiles)) {
-    let al: Alignment;
+  // Keep through services first. A short-turn shape ending at Five Points would
+  // otherwise claim half a corridor and be drawn again under the full alignment.
+  const ids = Object.keys(manifest.profiles).sort((a, b) => {
+    const length = (id: string) => manifest.profiles[id].z.length * manifest.profiles[id].step;
+    return length(b) - length(a);
+  });
+  for (const id of ids) {
+    let al: ReturnType<typeof alignment>;
     try {
       al = alignment(rf, manifest, b, id);
     } catch {
@@ -509,7 +573,7 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
       total++;
       if (kept.some((k) => distToLine(k.line, p.x, p.z) < 6)) near++;
     }
-    if (total && near / total < 0.9) kept.push(al);
+    if (total && near / total < 0.9) kept.push(grid ? terrainAlignment(al, id, manifest, grid) : al);
   }
   return kept;
 }

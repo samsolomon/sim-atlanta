@@ -392,6 +392,152 @@ pub fn clean_profile_pinned(z: &mut [f64], pin: &[Option<f64>], max_gap: usize, 
     }
 }
 
+// ---------- observed rail cover and terrain-relative height -----------------------------
+
+/// A sourced observation along the Blue/Green corridor, located by lon/lat so it does not
+/// depend on feed-generated path ids. The bake projects it onto every path that runs through
+/// it, in each direction. See docs/data-model.md ("Rail cover and height") for the evidence.
+pub struct RailFix {
+    pub ev: &'static str,
+    pub cover: &'static str, // open | covered | roofed
+    pub form: &'static str,  // tunnel | cut | grade | station | viaduct
+    /// Observed edges, lon/lat. `to_open`: the stretch continues past the end of the profile.
+    pub from: (f64, f64),
+    pub to: (f64, f64),
+    pub to_open: bool,
+    /// ground | anchors (see RailSpan in web/src/core/scene-data.ts)
+    pub base: &'static str,
+    pub rel: f64,
+    /// Identified locations: lon, lat, bed height above ground there (schematic), description.
+    pub anchors: &'static [(f64, f64, f64, &'static str)],
+}
+
+pub struct RailEv {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub checked: &'static str,
+    pub sources: &'static [&'static str],
+    pub precision_m: f64,
+    pub note: &'static str,
+}
+
+/// Shared by the Georgia State station roof, the Floyd Building and the Connector viaduct, so
+/// the schematic bed is continuous through their seams: on the station floor at the canopies'
+/// west end, 7 m above local ground at the station's east face, and 7 m above the Connector's
+/// east bank. The 7 m is a placeholder clearance, not a measurement.
+const GSU_CHAIN: &[(f64, f64, f64, &str)] = &[
+    (-84.38694, 33.75089, 0.0, "west end of the Georgia State platform canopies"),
+    (-84.38526, 33.74970, 7.0, "east face of Georgia State station (Floyd Building)"),
+    (-84.38270, 33.74882, 7.0, "Downtown Connector east bank (USGS 3DEP 314.1 m NAVD88 point)"),
+];
+
+pub const RAIL_FIXES: &[RailFix] = &[
+    RailFix { ev: "gulch-trench", cover: "open", form: "cut", from: (-84.39365, 33.75510), to: (-84.39250, 33.75443), to_open: false, base: "ground", rel: 0.0, anchors: &[] },
+    RailFix { ev: "five-points-east-cut", cover: "open", form: "cut", from: (-84.38980, 33.75274), to: (-84.38897, 33.75212), to_open: false, base: "ground", rel: 0.0, anchors: &[] },
+    RailFix { ev: "gsu-west-open", cover: "open", form: "grade", from: (-84.38746, 33.75124), to: (-84.38694, 33.75089), to_open: false, base: "ground", rel: 0.0, anchors: &[] },
+    RailFix { ev: "gsu-canopy", cover: "roofed", form: "station", from: (-84.38694, 33.75089), to: (-84.38633, 33.75047), to_open: false, base: "anchors", rel: 0.0, anchors: GSU_CHAIN },
+    RailFix { ev: "gsu-floyd", cover: "covered", form: "station", from: (-84.38633, 33.75047), to: (-84.38526, 33.74970), to_open: false, base: "anchors", rel: 0.0, anchors: GSU_CHAIN },
+    RailFix { ev: "connector-viaduct", cover: "open", form: "viaduct", from: (-84.38526, 33.74970), to: (-84.37545, 33.74998), to_open: true, base: "anchors", rel: 7.0, anchors: GSU_CHAIN },
+];
+
+pub const RAIL_EVIDENCE: &[RailEv] = &[
+    RailEv { id: "gulch-trench", name: "Gulch trench, west of Five Points", checked: "2026-11-21", sources: &["osm:way/702258823", "osm:way/702258824", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "Walled open trench with a footbridge. Centennial Yards plans to deck the Gulch: re-check." },
+    RailEv { id: "five-points-east-cut", name: "Open cut east of Five Points (Peachtree St to Pryor St)", checked: "2026-11-21", sources: &["osm:way/702258817", "osm:way/702258818", "osm:way/1453238814", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-wv02-2026-02-02", "fhwa-nbi-2025:121-5175", "fhwa-nbi-2025:121-0417"], precision_m: 15.0, note: "Rails visible; Pryor St and Central Ave bridges cross its ends." },
+    RailEv { id: "gsu-west-open", name: "Georgia State west approach, open at grade", checked: "2026-11-21", sources: &["osm:way/702258813", "osm:way/78090747", "osm:way/78090742", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 10.0, note: "From the tunnel mouth at the Washington St bridge to the platform canopies, beside the CSX/NS tracks." },
+    RailEv { id: "gsu-canopy", name: "Georgia State side-platform canopies", checked: "2026-11-21", sources: &["osm:way/539937961", "osm:way/539937962", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "Two canopy roofs over the side platforms; the tracks between them may be partly visible from above, but the imagery cannot resolve it. Not a tunnel mouth." },
+    RailEv { id: "gsu-floyd", name: "Georgia State station under the Floyd Building", checked: "2026-11-21", sources: &["osm:way/702258821", "osm:way/702258822", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "OSM tunnel=building_passage; the east end of the platforms and both tracks run under the towers." },
+    RailEv { id: "connector-viaduct", name: "East Line structure from Georgia State over the Downtown Connector", checked: "2026-11-21", sources: &["osm:way/905944412", "osm:way/905944413", "osm:way/905944414", "osm:way/905944415", "osm:way/78090750", "osm:way/78380741", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "Open elevated structure continuous in imagery from the station's east face into the layer-3 viaduct; a narrow skywalk (osm:way/539939605) is ignored for cover. No public deck or clearance record (FHWA NBI GA 2024/2025, GDOT GIS checked); deck height is schematic." },
+];
+
+/// Nearest point on a projected path within `max_d` metres, heading within 35° of `heading`
+/// (either way along the path). Returns (s, east, north).
+fn locate(pts: &[(f64, f64)], cum: &[f64], p: (f64, f64), heading: Option<f64>, max_d: f64) -> Option<(f64, f64, f64)> {
+    let mut best: Option<(f64, f64, f64, f64)> = None;
+    for i in 0..pts.len().saturating_sub(1) {
+        let (a, b) = (pts[i], pts[i + 1]);
+        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+        let l2 = dx * dx + dy * dy;
+        if l2 == 0.0 {
+            continue;
+        }
+        if let Some(h) = heading {
+            let mut da = (h - dy.atan2(dx)).rem_euclid(std::f64::consts::PI);
+            da = da.min(std::f64::consts::PI - da);
+            if da > 35f64.to_radians() {
+                continue;
+            }
+        }
+        let t = (((p.0 - a.0) * dx + (p.1 - a.1) * dy) / l2).clamp(0.0, 1.0);
+        let q = (a.0 + t * dx, a.1 + t * dy);
+        let d = ((q.0 - p.0).powi(2) + (q.1 - p.1).powi(2)).sqrt();
+        if d <= max_d && best.is_none_or(|bb| d < bb.0) {
+            best = Some((d, cum[i] + t * (cum[i + 1] - cum[i]), q.0, q.1));
+        }
+    }
+    best.map(|b| (b.1, b.2, b.3))
+}
+
+/// Spans for one path within its profile range [lo, hi], sorted and non-overlapping.
+pub fn rail_spans(pts: &[(f64, f64)], cum: &[f64], lo: f64, hi: f64) -> Vec<Value> {
+    let r1 = |v: f64| (v * 10.0).round() / 10.0;
+    let mut spans: Vec<(f64, f64, Value)> = vec![];
+    for f in RAIL_FIXES {
+        let (a, b) = (project(f.from.0, f.from.1), project(f.to.0, f.to.1));
+        let heading = (b.1 - a.1).atan2(b.0 - a.0);
+        // An open-ended stretch's far point is only a direction hint, so don't filter on it.
+        let Some((sa, _, _)) = locate(pts, cum, a, (!f.to_open).then_some(heading), 20.0) else { continue };
+        let sb = if f.to_open {
+            // Past the scene: whichever profile end lies toward `to`.
+            let Some((sn, _, _)) = locate(pts, cum, b, None, f64::INFINITY) else { continue };
+            if sn > sa { hi } else { lo }
+        } else {
+            let Some((sb, _, _)) = locate(pts, cum, b, Some(heading), 20.0) else { continue };
+            // Same corridor, not a crossing line: path distance close to the straight distance.
+            let straight = ((b.0 - a.0).powi(2) + (b.1 - a.1).powi(2)).sqrt();
+            if (sb - sa).abs() < 0.7 * straight || (sb - sa).abs() > 1.6 * straight + 20.0 {
+                continue;
+            }
+            sb
+        };
+        let (s0, s1) = (sa.min(sb).max(lo), sa.max(sb).min(hi));
+        if s1 - s0 < 1.0 {
+            continue;
+        }
+        let mut anchors: Vec<(f64, Value)> = f
+            .anchors
+            .iter()
+            .filter_map(|&(lon, lat, rel, at)| {
+                let (s, e, n) = locate(pts, cum, project(lon, lat), None, 25.0)?;
+                Some((s, json!({"s": r1(s), "x": r1(e), "z": r1(-n), "at": at, "rel": rel})))
+            })
+            .collect();
+        anchors.sort_by(|x, y| x.0.total_cmp(&y.0));
+        let mut span = json!({"s0": r1(s0), "s1": r1(s1), "cover": f.cover, "form": f.form, "base": f.base, "rel": f.rel, "height": "schematic", "ev": f.ev});
+        if f.base == "anchors" {
+            span["anchors"] = Value::Array(anchors.into_iter().map(|a| a.1).collect());
+        }
+        spans.push((s0, s1, span));
+    }
+    spans.sort_by(|x, y| x.0.total_cmp(&y.0));
+    // Adjacent observations share an edge; projection noise must not make them overlap.
+    for i in 1..spans.len() {
+        let prev_end = spans[i - 1].1;
+        if spans[i].0 < prev_end {
+            spans[i].0 = prev_end;
+            spans[i].2["s0"] = json!(r1(prev_end));
+        }
+    }
+    spans.into_iter().filter(|s| s.1 - s.0 >= 1.0).map(|s| s.2).collect()
+}
+
+pub fn rail_evidence() -> Value {
+    let mut m = serde_json::Map::new();
+    for e in RAIL_EVIDENCE {
+        m.insert(e.id.into(), json!({"name": e.name, "checked": e.checked, "sources": e.sources, "precisionM": e.precision_m, "note": e.note}));
+    }
+    Value::Object(m)
+}
+
 // ---------- build ------------------------------------------------------------------------
 
 fn load(p: &Path) -> Result<Value> {
@@ -493,6 +639,7 @@ pub fn build(root: &Path) -> Result<()> {
         .collect();
     let step = 10.0;
     let mut profiles = serde_json::Map::new();
+    let mut rail_paths = serde_json::Map::new();
     let (mut total, mut matched, mut pinned) = (0usize, 0usize, 0usize);
     for p in routes["paths"].as_array().into_iter().flatten() {
         if !heavy.iter().any(|h| p["routeId"] == h.as_str()) {
@@ -531,6 +678,10 @@ pub fn build(root: &Path) -> Result<()> {
         if let Some(s0) = s0 {
             pinned += pin.iter().filter(|p| p.is_some()).count();
             clean_profile_pinned(&mut z, &pin, 15, 15);
+            let spans = rail_spans(&pts, &cum, s0, s0 + step * (z.len().max(1) - 1) as f64);
+            if !spans.is_empty() {
+                rail_paths.insert(p["id"].as_str().unwrap_or("").to_string(), Value::Array(spans));
+            }
             profiles.insert(
                 p["id"].as_str().unwrap_or("").to_string(),
                 json!({"s0": s0, "step": step, "z": z.iter().map(|v| (v * 10.0).round() / 10.0).collect::<Vec<_>>()}),
@@ -539,6 +690,7 @@ pub fn build(root: &Path) -> Result<()> {
     }
     println!("  profiles: {} paths, {:.0}% of {} samples matched a subway segment", profiles.len(), 100.0 * matched as f64 / total.max(1) as f64, total);
     println!("  verified open cuts: {pinned} samples pinned");
+    println!("  rail cover: {} paths with observed spans", rail_paths.len());
 
     let manifest = json!({
         "name": "Downtown Atlanta",
@@ -552,6 +704,7 @@ pub fn build(root: &Path) -> Result<()> {
         },
         "buildingHeights": height_src,
         "profiles": profiles,
+        "rail": {"version": 1, "datum": "track-bed", "paths": rail_paths, "evidence": rail_evidence()},
         "notes": "Rail elevations are schematic: Overture levels are stacking order, not depth.",
         "sources": [
             {"name": "Overture Maps buildings & transportation", "release": release, "license": "ODbL (OpenStreetMap-derived), CDLA-Permissive-2.0", "attribution": "© OpenStreetMap contributors, Overture Maps Foundation"},
@@ -649,6 +802,67 @@ mod tests {
         assert_eq!(open_cut_depth(west, brg), None);
         // Five Points station itself stays underground.
         assert_eq!(open_cut_depth(project(ORIGIN.0, ORIGIN.1), brg), None);
+    }
+
+    /// A synthetic path through every fixture edge, west to east, as (projected pts, cum).
+    fn corridor(reverse: bool) -> (Vec<(f64, f64)>, Vec<f64>) {
+        let mut ll: Vec<(f64, f64)> = vec![(-84.3960, 33.7563)];
+        for f in RAIL_FIXES {
+            ll.push(f.from);
+            if !f.to_open {
+                ll.push(f.to);
+            }
+        }
+        ll.push((-84.38270, 33.74882));
+        ll.push((-84.3780, 33.7492));
+        ll.dedup();
+        if reverse {
+            ll.reverse();
+        }
+        let pts: Vec<(f64, f64)> = ll.iter().map(|&(lon, lat)| project(lon, lat)).collect();
+        let mut cum = vec![0.0];
+        for w in pts.windows(2) {
+            cum.push(cum.last().unwrap() + ((w[1].0 - w[0].0).powi(2) + (w[1].1 - w[0].1).powi(2)).sqrt());
+        }
+        (pts, cum)
+    }
+
+    #[test]
+    fn rail_spans_mirror_by_direction_and_share_the_gsu_anchor_chain() {
+        let summary = |rev: bool| {
+            let (pts, cum) = corridor(rev);
+            let hi = *cum.last().unwrap();
+            let spans = rail_spans(&pts, &cum, 0.0, hi);
+            for w in spans.windows(2) {
+                assert!(w[1]["s0"].as_f64() >= w[0]["s1"].as_f64(), "overlap {w:?}");
+            }
+            spans.iter().map(|s| (s["ev"].as_str().unwrap().to_string(), (s["s1"].as_f64().unwrap() - s["s0"].as_f64().unwrap()).round())).collect::<Vec<_>>()
+        };
+        let (east, mut west) = (summary(false), summary(true));
+        assert_eq!(east.len(), RAIL_FIXES.len(), "{east:?}");
+        west.reverse();
+        for (e, w) in east.iter().zip(&west) {
+            assert_eq!(e.0, w.0);
+            if e.0 != "connector-viaduct" {
+                assert!((e.1 - w.1).abs() <= 1.0, "{e:?} vs {w:?}"); // the open end runs to each path's own end
+            }
+        }
+        // Station roof, building and viaduct hang from the same three anchors.
+        let (pts, cum) = corridor(false);
+        let spans = rail_spans(&pts, &cum, 0.0, *cum.last().unwrap());
+        let chain = |ev: &str| spans.iter().find(|s| s["ev"] == ev).unwrap()["anchors"].clone();
+        assert_eq!(chain("gsu-canopy").as_array().unwrap().len(), 3);
+        assert_eq!(chain("gsu-canopy"), chain("gsu-floyd"));
+        assert_eq!(chain("gsu-floyd"), chain("connector-viaduct"));
+    }
+
+    #[test]
+    fn rail_spans_skip_a_crossing_line() {
+        // North-south through Five Points (Red/Gold's corridor): no east-west observation applies.
+        let ll = [(-84.3916, 33.7480), (-84.3916, 33.7600)];
+        let pts: Vec<(f64, f64)> = ll.iter().map(|&(lon, lat)| project(lon, lat)).collect();
+        let len = ((pts[1].0 - pts[0].0).powi(2) + (pts[1].1 - pts[0].1).powi(2)).sqrt();
+        assert!(rail_spans(&pts, &[0.0, len], 0.0, len).is_empty());
     }
 
     #[test]

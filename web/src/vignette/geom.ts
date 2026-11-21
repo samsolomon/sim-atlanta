@@ -12,8 +12,8 @@ export class Line {
   get length() {
     return this.cum[this.cum.length - 1];
   }
-  /** Point, unit direction and left normal at distance s (clamped). */
-  at(s: number) {
+  /** Fractional vertex index for looking up attributes sampled on this polyline. */
+  vertexAt(s: number) {
     const c = this.cum;
     s = Math.min(Math.max(s, 0), this.length);
     let lo = 0;
@@ -24,10 +24,16 @@ export class Line {
       else hi = m;
     }
     const i = Math.min(lo, this.pts.length - 2);
+    return i + (s - c[i]) / (c[i + 1] - c[i] || 1);
+  }
+  /** Point, unit direction and left normal at distance s (clamped). */
+  at(s: number) {
+    const vertex = this.vertexAt(s);
+    const i = Math.min(Math.floor(vertex), this.pts.length - 2);
+    const f = vertex - i;
     const a = this.pts[i];
     const b = this.pts[i + 1];
-    const seg = c[i + 1] - c[i] || 1;
-    const f = (s - c[i]) / seg;
+    const seg = this.cum[i + 1] - this.cum[i] || 1;
     const dx = (b[0] - a[0]) / seg;
     const dz = (b[1] - a[1]) / seg;
     return { x: a[0] + (b[0] - a[0]) * f, z: a[1] + (b[1] - a[1]) * f, dx, dz, nx: dz, nz: -dx };
