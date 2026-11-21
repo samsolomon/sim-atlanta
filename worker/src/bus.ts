@@ -41,10 +41,10 @@ export function normalizeBuses(bytes: ArrayBuffer, routes: BusRoutes, fetched: n
     if (!id || lat == null || lon == null || !(Math.abs(lat) <= 90 && Math.abs(lon) <= 180) || (lat === 0 && lon === 0)) return;
     const at = fix.at ?? null;
     if (buses.has(id) && (buses.get(id)!.at ?? -1) >= (at ?? -1)) return;
-    const route = `marta:route:${fix.route}`;
+    const name = fix.route && Object.hasOwn(routes, fix.route) ? routes[fix.route] : undefined;
     buses.set(id, {
       id: `marta:bus:${id}`, at, lon: Number(lon.toFixed(5)), lat: Number(lat.toFixed(5)),
-      routeId: Object.hasOwn(routes, route) ? route : undefined,
+      routeId: name ? `marta:route:${name}` : undefined,
       bearing: fix.bearing != null && fix.bearing >= 0 && fix.bearing < 360 ? Math.round(fix.bearing) % 360 : undefined,
       speed: fix.speed != null && Number.isFinite(fix.speed) && fix.speed >= 0 ? Math.round(fix.speed) : undefined,
     });

@@ -217,4 +217,4 @@ export interface BusFeed {
   buses: BusFix[];
 }
 
-export type BusRoutes = Record<Id, string>; // canonical route ID → published short name
+export type BusRoutes = Record<Id, string>; // raw GTFS route_id → stable public short name

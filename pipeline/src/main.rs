@@ -125,7 +125,7 @@ fn build() -> Result<()> {
     let mut bus_routes = std::collections::BTreeMap::new();
     gtfs::Archive::open(&raw.join("marta_gtfs.zip"))?.each("routes.txt", |r| {
         if r.get("route_type") == "3" {
-            bus_routes.insert(format!("marta:route:{}", r.get("route_id")), r.get("route_short_name").to_owned());
+            bus_routes.insert(r.get("route_id").to_owned(), r.get("route_short_name").to_owned());
         }
     })?;
     write_json(&out, "bus-routes.json", &bus_routes)?;

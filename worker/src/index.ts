@@ -51,12 +51,21 @@ async function martaRail(req: Request, env: Env, ctx: ExecutionContext): Promise
   return res;
 }
 
+// Give every client a current server clock, including when the snapshot came
+// from the edge cache. The tab controls its own 30-second polling cadence.
+function serveBusSnapshot(snapshot: Response) {
+  const response = new Response(snapshot.body, snapshot);
+  response.headers.set('Date', new Date().toUTCString());
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
+
 async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   if (req.method !== 'GET') return new Response(null, { status: 405, headers: { Allow: 'GET' } });
   const key = new Request(new URL('/api/marta/bus', req.url));
   const cache = caches.default;
   const hit = await cache.match(key);
-  if (hit) return hit;
+  if (hit) return serveBusSnapshot(hit);
   let response: Response;
   try {
     const [upstream, labels] = await Promise.all([
@@ -70,7 +79,7 @@ async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<
     response = json({ error: 'MARTA bus feed unavailable' }, 503, 30);
   }
   ctx.waitUntil(cache.put(key, response.clone()));
-  return response;
+  return serveBusSnapshot(response);
 }
 
 export default {

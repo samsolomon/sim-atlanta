@@ -22,12 +22,12 @@ function encodedFix(at?: number) {
 }
 
 it('decodes the vehicle ID, observed position, matched static route and explicit zero values', () => {
-  const [bus] = normalizeBuses(encodedFix(1700000000), { 'marta:route:29130': '1' }, 99).buses;
+  const [bus] = normalizeBuses(encodedFix(1700000000), { '29130': '1' }, 99).buses;
   expect(bus).toEqual({
     id: 'marta:bus:2303', at: 1700000000000,
     lat: 33.75, lon: -84.375,
     bearing: 0, speed: 0,
-    routeId: 'marta:route:29130',
+    routeId: 'marta:route:1',
   });
 });
 

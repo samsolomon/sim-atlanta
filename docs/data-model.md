@@ -109,9 +109,9 @@ optional `bearing` in whole degrees clockwise from north, and optional `speed`
 in whole metres per second. Each attribute inherits the feed source and the
 vehicle timestamp. The client expands those into individual live-tier values.
 
-The route assignment joins on `marta:route:<route_id>` from the same static GTFS
-edition. Resolve its public short name through `data/ga/bus-routes.json`. The
-Worker omits the assignment when that edition has no matching bus route. The 2D
+The Worker uses `data/ga/bus-routes.json` to translate the feed's raw GTFS
+route ID into `marta:route:<public short name>` (for example, `marta:route:1`).
+It omits the assignment when the static edition has no matching bus route. The 2D
 map draws teal GPS dots for fixes up to three minutes old, at the real clock only.
 The endpoint retains older and undated fixes so other consumers can apply their
 own freshness rules.

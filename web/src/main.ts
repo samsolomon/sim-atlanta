@@ -4,7 +4,7 @@ import './style.css';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
-import type { BusRoutes, LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
+import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
 import { Schedule } from './sched/engine';
 import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
@@ -65,8 +65,6 @@ const [rf, tf, vts, meta] = await Promise.all([
   get<VehicleType[]>('vehicle-types.json'),
   get<Meta>('meta.json'),
 ]);
-let busRoutes: BusRoutes = {};
-void get<BusRoutes>('bus-routes.json').then(routes => { busRoutes = routes; }).catch(() => {});
 const buses = new LiveBuses();
 const schedule = new Schedule(rf, tf, vts);
 if (import.meta.env.DEV) Object.assign(window, { __map: map, __schedule: schedule });
@@ -115,7 +113,7 @@ onReady(() => {
     busesEnabled = enabled;
     lastBusTick = ts;
     if (enabled) void buses.poll();
-    const fresh = enabled ? buses.current(Date.now()) : [];
+    const fresh = enabled ? buses.current() : [];
     if (fresh.length !== visibleBuses.size || fresh.some(b => visibleBuses.get(b.id) !== b)) {
       visibleBuses = new Map(fresh.map(b => [b.id, b]));
       map.getSource<maplibregl.GeoJSONSource>('buses')!.setData({
@@ -127,7 +125,7 @@ onReady(() => {
     }
     if (selectedBus) {
       const bus = visibleBuses.get(selectedBus);
-      if (bus) showCard(busCard(bus, busRoutes));
+      if (bus) showCard(busCard(bus, buses.observationNow()));
       else hideCard();
     }
   }
@@ -168,7 +166,7 @@ onReady(() => {
       const bus = visibleBuses.get(f.properties.id);
       if (!bus || !clock.isRealTime()) return hideCard();
       selectedBus = bus.id;
-      showCard(busCard(bus, busRoutes));
+      showCard(busCard(bus, buses.observationNow()));
     } else if (f.layer.id === 'crossings') {
       showCard(crossingCard(f.properties as unknown as CrossingProps));
     } else {

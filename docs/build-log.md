@@ -462,9 +462,9 @@ and the age of its position. Moving the clock away from the present clears them.
 
 Repeating the source and observation time on each attribute turned those 13 KB
 into 73,327 bytes of JSON. Sending the source once and the timestamp once per
-bus brought the same snapshot down to 19,981 bytes. Local decoding and
-normalization averaged 0.86 ms over 100 runs. The static short-name lookup is
-2,053 bytes. Two consecutive local Worker requests with different query strings
+bus brought the same snapshot down to 19,528 bytes. Local decoding and
+normalization averaged 0.33 ms over 100 runs. The static short-name lookup is
+1,081 bytes. Two consecutive local Worker requests with different query strings
 returned the identical cached snapshot.
 
 ![MARTA buses across Atlanta, with a live Route A position selected](log/2026-11-20-live-buses.png)

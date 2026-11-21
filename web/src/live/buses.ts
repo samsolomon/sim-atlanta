@@ -7,6 +7,11 @@ export class LiveBuses {
   private buses: LiveBus[] = [];
   private nextPoll = 0;
   private pending = false;
+  private serverOffset = 0;
+
+  observationNow() {
+    return performance.now() + this.serverOffset;
+  }
 
   async poll() {
     if (this.pending || performance.now() < this.nextPoll) return;
@@ -16,6 +21,8 @@ export class LiveBuses {
       const response = await fetch('/api/marta/bus');
       if (!response.ok) return;
       const feed: BusFeed = await response.json();
+      const served = Date.parse(response.headers.get('Date') ?? '');
+      this.serverOffset = (Number.isFinite(served) ? Math.max(served, feed.fetched) : feed.fetched) - performance.now();
       this.buses = feed.buses.map(fix => {
         const asOf = fix.at === null ? '' : new Date(fix.at).toISOString();
         const sourced = <T>(value: T): Sourced<T> => ({ value, tier: 'live', source: feed.source, asOf });
@@ -33,7 +40,8 @@ export class LiveBuses {
     }
   }
 
-  current(now: number): LiveBus[] {
+  current(): LiveBus[] {
+    const now = this.observationNow();
     return this.buses.filter(bus => bus.at !== null && bus.at <= now && now - bus.at <= MAX_AGE_MS);
   }
 }

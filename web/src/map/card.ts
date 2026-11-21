@@ -1,4 +1,4 @@
-import type { BusRoutes, LiveBus, CrossingProps, Route, Stop, Tier, TrackArcProps, TrainState, VehicleType } from '../model/types';
+import type { LiveBus, CrossingProps, Route, Stop, Tier, TrackArcProps, TrainState, VehicleType } from '../model/types';
 import { MODE_COLOR, routeColor } from './layers';
 
 const esc = (s: unknown) =>
@@ -22,8 +22,8 @@ const OWNERS: Record<string, string> = { NS: 'Norfolk Southern', CSXT: 'CSX', GF
 /** "RED SOUTHBOUND TO AIRPORT STATION" → "Airport"; "Lakewood-Ft Mcpherson Station" → "Lakewood-Ft Mcpherson". */
 const place = (s: string) => titleCase(s.replace(/^.*\bto\s+/i, '').replace(/\s+station\b.*$/i, ''));
 
-const ago = (ms: number) => {
-  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+const ago = (ms: number, now = Date.now()) => {
+  const s = Math.max(0, Math.round((now - ms) / 1000));
   return s < 90 ? `${s} s ago` : `${Math.round(s / 60)} min ago`;
 };
 
@@ -102,9 +102,9 @@ export function freightCard(p: TrackArcProps) {
     <p class="tip">No free live feed exists for freight trains, so this shows how busy the line usually is.</p>`;
 }
 
-export function busCard(bus: LiveBus, routes: BusRoutes) {
-  const name = bus.routeId && routes[bus.routeId.value];
+export function busCard(bus: LiveBus, now: number) {
+  const name = bus.routeId?.value.slice('marta:route:'.length);
   return `<h2><span class="dot" style="background:${MODE_COLOR.bus}"></span>MARTA bus ${esc(bus.id.slice('marta:bus:'.length))}</h2>
     <p class="sub">${name ? 'Route ' + esc(name) : 'Route unavailable'}</p>
-    <dl><dt>Position</dt><dd>${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at)} ${chip(bus.position.tier)}</dd></dl>`;
+    <dl><dt>Position</dt><dd>${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd></dl>`;
 }
