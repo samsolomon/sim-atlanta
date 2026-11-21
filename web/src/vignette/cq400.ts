@@ -1,12 +1,12 @@
 /**
  * MARTA CQ400 (Stadler, 4-car sets with open gangways), modelled from reference photos.
  *
- * - Champagne-silver body with a softly rounded roof.
- * - Cab car: a raked, wraparound nose lofted from the body section; a dark windscreen band
- *   that wraps into the cab side windows; a destination display above it; line-colour LED
- *   strips down both front corners and in a V under the windscreen; vertical white lights at
- *   the lower corners; and a glowing bar where the operator's wordmark would be (white when
- *   leading, red at the tail; we show no logos).
+ * - Matte light-grey body with a softly rounded roof.
+ * - Cab car: a raked, rounded nose lofted from the body section, its face one dark mask framed
+ *   by the grey sides; a wide driver's pane and an offset end door with its own window; a
+ *   destination display across the top; a flush line-colour light down both mask edges that
+ *   turns in under the windows; corner light clusters (white leading, red tail); grey bumper
+ *   blocks with vents; and a lit bar where the operator's wordmark sits (we show no logos).
  * - Sides: dark windows with rounded corners, three door pairs with line-colour indicator bars,
  *   and the floor-height stripe: a teal/gold/orange chevron at each nose, then a band that runs
  *   blue → gold → orange along the set.
@@ -19,6 +19,7 @@
  *   0 fixed colour   1 headlight (lit when leading)   2 tail light (lit at the tail)
  *   3 glass (warm interior glow at night)   5 line-colour LED (always lit)
  *   6 name-bar (white leading, red tail, dark in the middle of a train)   7 destination display
+ *   8 corner light cluster (white leading, red tail)
  */
 import * as THREE from 'three';
 
@@ -32,9 +33,14 @@ export const LINE_COLORS = { red: '#d1282f', gold: '#e0b129', blue: '#1474c4', g
 export type MartaLine = keyof typeof LINE_COLORS;
 
 const C = {
-  body: '#d8d1c2', // champagne silver
-  bodyShade: '#c6bfae',
-  roof: '#bdb7aa',
+  body: '#c3c7ca', // matte light grey (reads warmer in sun)
+  bodyShade: '#b2b6ba',
+  roof: '#aeb2b6',
+  mask: '#15181d', // the dark front mask
+  frontGlass: '#36404d',
+  seam: '#2e333b',
+  vent: '#121418',
+  coupler: '#b8392d',
   glass: '#1d232b',
   frame: '#2b3038',
   under: '#34373d',
@@ -42,7 +48,7 @@ const C = {
   wheel: '#55585e',
   gangway: '#3b3e44',
   hvac: '#a9adb2',
-  door: '#cfc8b8',
+  door: '#bfc3c6',
   teal: '#1fa79b',
   gold: '#efbd2f',
   orange: '#ec8a2b',
@@ -133,73 +139,77 @@ function addNose(k: Kit, zb: number, line: string) {
     const { dz, sx } = noseShape(y, x);
     return [x * sx, y, zb + dz];
   });
-  // Loft: body end → nose ring (the cab shell, body colour).
+  // Loft: body end → nose ring. This is the grey shell that wraps round the cab corners.
   for (let i = 0; i < SECTION.length; i++) {
     const j = (i + 1) % SECTION.length;
     const a = [SECTION[i][0], SECTION[i][1], zb];
     const b = [SECTION[j][0], SECTION[j][1], zb];
     k.quad(a, b, ring[j], ring[i], C.body, 0);
   }
-  // Front face in three horizontal bands: lower nose (body), windscreen (glass), roof cap (body).
-  const bandY = [FLOOR - 0.25, 1.95, 3.32, ROOF + 0.01];
-  const kinds: [string, number][] = [
-    [C.body, 0],
-    [C.glass, 3],
-    [C.body, 0],
-  ];
-  for (let bI = 0; bI < 3; bI++) {
-    const poly = clipY(SECTION, bandY[bI], bandY[bI + 1]);
-    if (poly.length < 3) continue;
-    const v2 = poly.map(([x, y]) => new THREE.Vector2(x, y));
-    const tris = THREE.ShapeUtils.triangulateShape(v2, []);
-    const at = (p: [number, number]) => {
-      const { dz, sx } = noseShape(p[1], p[0]);
-      return [p[0] * sx, p[1], zb + dz + 0.002 * bI];
-    };
-    for (const t of tris) k.tri(at(poly[t[0]]), at(poly[t[1]]), at(poly[t[2]]), kinds[bI][0], kinds[bI][1]);
-  }
-  // Windscreen wraps round the corners into the cab side windows.
-  for (const s of [-1, 1]) k.box(0.04, 1.05, 1.3, s * (W / 2 + 0.005), 2.62, zb - 0.55, C.glass, 3);
-  // Destination display above the windscreen.
-  const dz = (y: number) => zb + noseShape(y, 0).dz + 0.02;
-  k.box(1.25, 0.2, 0.05, 0, 3.47, dz(3.47) - 0.02, '#ffb84a', 7);
-  // Line-colour LEDs down both front corners, following the nose outline.
-  for (const s of [-1, 1]) {
-    let prev: number[] | null = null;
-    for (let y = 3.55; y >= 1.55; y -= 0.1) {
-      const x = s * (W / 2 - 0.08) * noseShape(y, W / 2).sx;
-      const z = zb + noseShape(y, W / 2 - 0.08).dz + 0.03;
-      if (prev) {
-        const len = Math.hypot(x - prev[0], y - prev[1], z - prev[2]);
-        const g = new THREE.BoxGeometry(0.07, 0.07, len);
-        const m = new THREE.Matrix4().lookAt(new THREE.Vector3(...prev), new THREE.Vector3(x, y, z), new THREE.Vector3(0, 1, 0));
-        m.setPosition((x + prev[0]) / 2, (y + prev[1]) / 2, (z + prev[2]) / 2);
-        k.geo(g, line, 5, m);
+  // The front face: one dark mask from the bumpers to the roof curve.
+  const poly = clipY(SECTION, FLOOR - 0.25, ROOF + 0.01);
+  const v2 = poly.map(([x, y]) => new THREE.Vector2(x, y));
+  const at = (p: [number, number], lift = 0) => {
+    const { dz, sx } = noseShape(p[1], p[0]);
+    return [p[0] * sx, p[1], zb + dz + lift];
+  };
+  for (const t of THREE.ShapeUtils.triangulateShape(v2, [])) k.tri(at(poly[t[0]]), at(poly[t[1]]), at(poly[t[2]]), C.mask, 0);
+
+  /** A flush panel on the raked, rounded front between x0..x1, y0..y1 (follows the surface). */
+  const face = (x0: number, x1: number, y0: number, y1: number, color: string, kind: number, lift = 0.012, nx = 6, ny = 3) => {
+    for (let i = 0; i < nx; i++)
+      for (let j = 0; j < ny; j++) {
+        const xa = x0 + ((x1 - x0) * i) / nx;
+        const xb = x0 + ((x1 - x0) * (i + 1)) / nx;
+        const ya = y0 + ((y1 - y0) * j) / ny;
+        const yb = y0 + ((y1 - y0) * (j + 1)) / ny;
+        k.quad(at([xa, ya], lift), at([xb, ya], lift), at([xb, yb], lift), at([xa, yb], lift), color, kind);
       }
-      prev = [x, y, z];
-    }
-    // The V under the windscreen: an angled strip from each corner toward the centre.
-    const x0 = s * 1.32;
-    const x1 = s * 0.42;
-    const y0 = 1.9;
-    const y1 = 1.68;
-    const len = Math.hypot(x1 - x0, y1 - y0);
-    const g = new THREE.BoxGeometry(len, 0.07, 0.06);
-    const m = new THREE.Matrix4().makeRotationZ(Math.atan2(y1 - y0, x1 - x0)).setPosition((x0 + x1) / 2, (y0 + y1) / 2, dz((y0 + y1) / 2) + 0.01);
-    k.geo(g, line, 5, m);
-    // Vertical white headlight / red tail light strips at the lower corners.
-    k.box(0.07, 0.42, 0.05, s * 1.22, 1.55, dz(1.55) - 0.03, '#ffffff', 1);
-    k.box(0.07, 0.42, 0.05, s * 1.12, 1.55, dz(1.55) - 0.02, '#ffffff', 2);
+  };
+  // Cab side windows, just behind the nose on each side.
+  for (const s2 of [-1, 1]) {
+    k.box(0.03, 1.12, 1.15, s2 * (W / 2 + 0.006), 2.62, zb - 0.85, C.frame, 0);
+    k.box(0.04, 1.0, 1.02, s2 * (W / 2 + 0.01), 2.62, zb - 0.85, C.glass, 3);
   }
-  // Black lower panel across the nose, carrying the name bar (where the wordmark sits on the
-  // real train; we show no logo, just light).
-  k.box(W * 0.78, 0.36, 0.05, 0, 1.08, dz(1.08) + 0.005, C.frame, 0);
-  k.box(0.7, 0.15, 0.05, 0, 1.08, dz(1.08) + 0.03, '#ffffff', 6);
-  // Windscreen centre divider.
-  for (let y = 2.0; y < 3.28; y += 0.16) k.box(0.06, 0.17, 0.05, 0, y + 0.08, dz(y + 0.08) + 0.012, C.bodyShade, 0);
-  // Anticlimber and coupler.
-  k.box(W - 0.6, 0.3, 0.35, 0, FLOOR - 0.35, zb + NOSE_LEN - 0.55, C.under, 0);
-  k.box(0.32, 0.26, 0.45, 0, 0.82, zb + NOSE_LEN - 0.2, C.bogie, 0);
+  // Windows: the driver's wide pane on the left, the end door (offset right) with its own window.
+  // Glass reads a touch lighter and bluer than the mask, with a thin frame, as in photos.
+  face(-1.4, 0.2, 2.02, 3.2, C.seam, 0, 0.008);
+  face(0.32, 1.34, 2.02, 3.2, C.seam, 0, 0.008);
+  face(-1.36, 0.16, 2.06, 3.16, C.frontGlass, 3, 0.014);
+  face(0.36, 1.3, 2.06, 3.16, C.frontGlass, 3, 0.014);
+  // (The end door's seams are left out at diorama scale; the two panes and the light carry it.)
+  // Destination display across the top of the mask.
+  face(-1.15, 1.15, 3.3, 3.5, '#ffb84a', 7, 0.015, 8, 1);
+  // Line-colour light: down both outer edges of the mask, then in under the windows.
+  for (const s of [-1, 1]) {
+    const xo = s * (W / 2 - 0.13);
+    face(Math.min(xo, xo - s * 0.08), Math.max(xo, xo - s * 0.08), 1.86, 3.5, line, 5, 0.018, 1, 10);
+  }
+  // Under the driver's pane (long, dipping slightly toward the centre) and under the door window.
+  for (let i = 0; i < 6; i++) {
+    const xa = -1.45 + (i * 1.5) / 6;
+    const xb = -1.45 + ((i + 1) * 1.5) / 6;
+    const ya = 1.94 - (i / 6) * 0.06;
+    const yb = 1.94 - ((i + 1) / 6) * 0.06;
+    k.quad(at([xa, ya - 0.04], 0.018), at([xb, yb - 0.04], 0.018), at([xb, yb + 0.04], 0.018), at([xa, ya + 0.04], 0.018), line, 5);
+  }
+  face(0.42, 1.18, 1.86, 1.94, line, 5, 0.018, 4, 1);
+  // Light clusters at the lower outer corners: white when leading, red at the tail.
+  for (const s of [-1, 1]) face(s > 0 ? 1.3 : -1.42, s > 0 ? 1.42 : -1.3, 1.32, 1.8, '#ffffff', 8, 0.02, 1, 3);
+  // Lower front: grey bumper blocks wrapping the corners, each with a dark vent; the name panel
+  // between them (where the wordmark sits; we show only a lit bar); the coupler below.
+  const zf = (y: number) => zb + noseShape(y, 0).dz;
+  for (const s of [-1, 1]) {
+    const cx = s * 1.18;
+    // Flush-ish: the grey wraps the corner and stands only a little proud of the mask.
+    k.box(0.9, 0.5, 0.3, cx, FLOOR - 0.12, zf(FLOOR) - 0.13, C.body, 0);
+    k.box(0.48, 0.24, 0.04, cx, FLOOR - 0.12, zf(FLOOR) + 0.03, C.vent, 0);
+    for (let v = 0; v < 4; v++) k.box(0.48, 0.022, 0.045, cx, FLOOR - 0.21 + v * 0.06, zf(FLOOR) + 0.04, C.mask, 0);
+  }
+  k.box(1.25, 0.42, 0.3, 0, FLOOR - 0.1, zf(FLOOR) - 0.14, C.mask, 0);
+  k.box(0.78, 0.14, 0.04, 0, FLOOR - 0.06, zf(FLOOR) + 0.02, '#ffffff', 6);
+  k.box(0.42, 0.3, 0.55, 0, 0.72, zf(FLOOR) + 0.1, C.coupler, 0);
+  k.box(0.3, 0.16, 0.3, 0, 0.62, zf(FLOOR) + 0.42, '#8a8f94', 0);
 }
 
 /** Clip a polygon to the horizontal band y0 ≤ y ≤ y1. */
@@ -225,9 +235,9 @@ function stripe(k: Kit, z0: number, z1: number, color: string) {
   for (const s of [-1, 1]) k.box(0.03, 0.15, z1 - z0, s * (W / 2 + 0.01), 1.36, (z0 + z1) / 2, color, 0);
 }
 
-/** The teal/gold/orange chevron that leads into the stripe behind each nose. */
+/** The short blue/yellow/orange chevrons on the rounded cab end, leading into the long stripe. */
 function chevron(k: Kit, zStart: number, dir: 1 | -1) {
-  const cols = [C.teal, C.gold, C.orange];
+  const cols = [C.blue, C.gold, C.orange]; // from the nose: blue, yellow, orange
   for (let i = 0; i < 3; i++) {
     for (const s of [-1, 1]) {
       const zc = zStart - dir * (0.25 + i * 0.36);
@@ -352,7 +362,8 @@ export function cq400Material(line: string, role: { value: number }, night: { va
         if (vKind > 0.5 && vKind < 1.5) diffuseColor.rgb = mix(vec3(0.35), vec3(1.0, 0.97, 0.88), lead);
         else if (vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = mix(vec3(0.25, 0.08, 0.08), vec3(1.0, 0.12, 0.1), tail);
         else if (vKind > 4.5 && vKind < 5.5) diffuseColor.rgb = uLine;
-        else if (vKind > 5.5 && vKind < 6.5) diffuseColor.rgb = lead > 0.5 ? vec3(1.0) : tail > 0.5 ? vec3(1.0, 0.1, 0.08) : vec3(0.18);`,
+        else if (vKind > 5.5 && vKind < 6.5) diffuseColor.rgb = lead > 0.5 ? vec3(1.0) : tail > 0.5 ? vec3(1.0, 0.1, 0.08) : vec3(0.18);
+        else if (vKind > 7.5) diffuseColor.rgb = lead > 0.5 ? vec3(1.0, 0.97, 0.9) : tail > 0.5 ? vec3(1.0, 0.1, 0.08) : vec3(0.22);`,
       )
       .replace(
         '#include <emissivemap_fragment>',
@@ -363,7 +374,8 @@ export function cq400Material(line: string, role: { value: number }, night: { va
         if (vKind > 2.5 && vKind < 3.5) totalEmissiveRadiance += vec3(1.0, 0.93, 0.78) * uNight * 0.7;
         if (vKind > 4.5 && vKind < 5.5) totalEmissiveRadiance += uLine * (0.8 + 1.4 * uNight);
         if (vKind > 5.5 && vKind < 6.5) totalEmissiveRadiance += diffuseColor.rgb * max(lead, tail) * glow;
-        if (vKind > 6.5) totalEmissiveRadiance += diffuseColor.rgb * step(0.5, abs(uRole)) * (0.5 + uNight);`,
+        if (vKind > 6.5 && vKind < 7.5) totalEmissiveRadiance += diffuseColor.rgb * step(0.5, abs(uRole)) * (0.5 + uNight);
+        if (vKind > 7.5) totalEmissiveRadiance += diffuseColor.rgb * max(lead, tail) * glow;`,
       );
   };
   m.customProgramCacheKey = () => 'cq400';
