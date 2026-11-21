@@ -367,15 +367,6 @@ export interface CarSpec {
   u1: number;
 }
 
-/**
- * Stripe colour along the set. Photos show blue behind each nose shading to gold and orange
- * further back; we make the set symmetric (blue at both ends, orange in the middle) because
- * either end can lead.
- */
-function stripeColor(u: number) {
-  const d = Math.min(u, 1 - u) * 2; // 0 at the set's ends, 1 in the middle
-  return d < 0.55 ? C.blue : d < 0.8 ? C.gold : C.orange;
-}
 
 export function cq400Geometry(spec: CarSpec, line: string) {
   const k = new Kit();
@@ -432,13 +423,20 @@ export function cq400Geometry(spec: CarSpec, line: string) {
   const chevFront = noseStart + 1.15;
   const zB = spec.cab ? chevFront - 0.25 - 3 * 0.36 + 0.02 : h - 0.2;
   if (spec.cab) chevron(k, chevFront, 1);
-  const segs = 6;
-  for (let i = 0; i < segs; i++) {
-    const a = zA + ((zB - zA) * i) / segs;
-    const b = zA + ((zB - zA) * (i + 1)) / segs;
-    const u = spec.u1 + (spec.u0 - spec.u1) * ((i + 0.5) / segs); // +z is toward the front of the set
-    stripe(k, a, b, stripeColor(u));
+  // Each car: blue, then yellow, then orange, starting from the end that faces the cab
+  // (+z here; cars in the rear half of a set are turned round). All segments slant the same way.
+  const bands: [number, string][] = [
+    [0.42, C.blue],
+    [0.26, C.gold],
+    [0.32, C.orange],
+  ];
+  let zHi = zB;
+  for (const [frac, color] of bands) {
+    const zLo = zHi - (zB - zA) * frac;
+    stripe(k, zLo, zHi, color);
+    zHi = zLo;
   }
+
   // Underframe skirt, equipment and bogies.
   k.box(W - 0.4, 0.5, L - 5.5, 0, FLOOR - 0.45, -0.4, C.under, 0);
   const wheel = new THREE.CylinderGeometry(0.42, 0.42, 0.13, 12).rotateZ(Math.PI / 2);
@@ -506,7 +504,7 @@ export function cq400Consist(sets: 1 | 2) {
     const last = sI === sets - 1;
     cars.push({ spec: { cab: true, u0: 0, u1: 0.25 }, flip: false, litEnd: first });
     cars.push({ spec: { cab: false, u0: 0.25, u1: 0.5 }, flip: false, litEnd: false });
-    cars.push({ spec: { cab: false, u0: 0.5, u1: 0.75 }, flip: false, litEnd: false });
+    cars.push({ spec: { cab: false, u0: 0.5, u1: 0.75 }, flip: true, litEnd: false }); // faces the rear cab
     // The rear cab is the same car turned around: its stripe runs the other way along the set.
     cars.push({ spec: { cab: true, u0: 0, u1: 0.25 }, flip: true, litEnd: last });
   }
