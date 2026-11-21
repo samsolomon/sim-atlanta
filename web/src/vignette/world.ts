@@ -743,7 +743,7 @@ export class World {
 
   // ---- buildings ----------------------------------------------------------------------
 
-  buildBuildings() {
+  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8) {
     const b = new Builder();
     const style: number[] = [];
     const base: number[] = [];
@@ -753,6 +753,8 @@ export class World {
     for (const bd of this.data.buildings) {
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
+      const originY = foundationY ? foundationY(bd) : 0;
+      if (originY === null) continue;
       const h = bd.h ?? (bd.floors ? bd.floors * 3.6 : 8);
       const r = rng(hashStr(bd.id));
       // Massing class decides the material: brick low-rise, stone/concrete mid-rise, glass towers.
@@ -760,9 +762,10 @@ export class World {
       const kind = h < 16 ? 0 : h < 42 ? (r() < 0.45 ? 0 : 1) : 2;
       const tall = h >= 16;
       const wallCol = pick(r, kind === 0 && tall ? ['#c9b49a', '#b98a6a', '#d8c9b0', '#a9583f', '#e0d6c4'] : kind === 0 ? ['#a9583f', '#b86a4b', '#9a4c39', '#c98f6b', '#d7c3a2'] : kind === 1 ? ['#d9cdb5', '#cfc5b4', '#c1b6a3', '#e1d8c6', '#b9b0a3'] : ['#8fa4b6', '#9fb0bd', '#7f93a4', '#a8b8c2']);
-      let gmin = Infinity;
-      for (const p of outer) gmin = Math.min(gmin, this.ground(p[0], p[1]));
-      const y0 = Math.min(0, gmin) - 0.5;
+      let foot = originY;
+      if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
+      const y0 = foot - 0.5;
+      const roofY = originY + h;
       const before = b.pos.length / 3;
       // Walls (run to h + parapet), roof slightly below the parapet top.
       const parapet = h > 6 ? 1.1 : 0;
@@ -770,7 +773,7 @@ export class World {
         for (let i = 0; i < ring.length; i++) {
           const a = ring[i];
           const c = ring[(i + 1) % ring.length];
-          b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], h + parapet, c[1]], [a[0], h + parapet, a[1]], wallCol);
+          b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
       const wallVerts = b.pos.length / 3 - before;
       const contour = outer.map((p) => new THREE.Vector2(p[0], p[1]));
@@ -779,11 +782,11 @@ export class World {
       const all = [...contour, ...holes.flat()];
       // Roofs: white membrane, gravel, tar and the odd green roof.
       const roofCol = pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
-      for (const t of tris) b.tri([all[t[0]].x, h, all[t[0]].y], [all[t[1]].x, h, all[t[1]].y], [all[t[2]].x, h, all[t[2]].y], roofCol);
+      for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
         style.push(kind);
-        base.push(y0 < -1 ? y0 + 0.5 : 0);
+        base.push(foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
       }
       for (let i = 0; i < roofVerts; i++) {
         style.push(-1);
@@ -794,7 +797,7 @@ export class World {
       const xs = outer.map((p) => p[0]);
       const zs = outer.map((p) => p[1]);
       const [x0, x1, z0, z1] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
-      const n = Math.min(8, Math.floor(area / 220));
+      const n = Math.min(maxRoofUnits, Math.floor(area / 220));
       let placed = 0;
       for (let k = 0; k < n * 6 && placed < n; k++) {
         const x = x0 + r() * (x1 - x0);
@@ -803,7 +806,7 @@ export class World {
         const big = placed === 0 && h > 20 && area > 600;
         const [w, hh, l] = big ? [6 + r() * 3, 3.5, 5 + r() * 3] : [1.6 + r() * 2.4, 1 + r() * 0.8, 1.6 + r() * 3];
         m4.makeRotationY(Math.atan2(outer[1][1] - outer[0][1], outer[1][0] - outer[0][0]));
-        m4.scale(new THREE.Vector3(w, hh, l)).setPosition(x, h + hh / 2, z);
+        m4.scale(new THREE.Vector3(w, hh, l)).setPosition(x, roofY + hh / 2, z);
         clutter.push(m4.clone());
         clutterCol.push(new THREE.Color(big ? wallCol : r() < 0.7 ? PAL.hvac : '#8f9498'));
         placed++;

@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
-import { World, type VBuilding, type VData } from '../vignette/world';
+import { World, type VData } from '../vignette/world';
 import { GroundGrid } from './grid';
 
 import { GroundSurface, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
-import { roadWidth, type TerrainCity } from './transport-data';
+import type { TerrainCity } from './transport-data';
+import { groundMap } from './ground-map';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -13,52 +14,6 @@ export interface DowntownTerrainOptions {
   quality: TerrainQuality;
   contours?: Contours;
   openings?: readonly OpenSlot[];
-}
-
-// Paint the ground to avoid spanning a depression with a flat road polygon.
-function groundMap(data: TerrainCity, quality: TerrainQuality) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = quality === 'low' ? 2048 : 4096;
-  const ctx = canvas.getContext('2d')!;
-  const b = data.bounds;
-  ctx.scale(canvas.width / (b.maxX - b.minX), canvas.height / (b.maxZ - b.minZ));
-  ctx.translate(-b.minX, -b.minZ);
-  ctx.fillStyle = '#cec9ac';
-  ctx.fillRect(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ);
-  function trace(points: P2[]) {
-    points.forEach(([x, z], i) => i === 0 ? ctx.moveTo(x, z) : ctx.lineTo(x, z));
-  }
-  const covers: Record<string, string> = { parking: '#a9a59a', pedestrian: '#e3d6bf', grass: '#b7c298',
-    garden: '#aabe91', park: '#adbe90', pitch: '#93ad88', construction: '#cfb295' };
-  for (const g of data.ground ?? []) {
-    if (!covers[g.kind]) continue;
-    ctx.beginPath();
-    for (const ring of g.rings) { trace(ring); ctx.closePath(); }
-    ctx.fillStyle = covers[g.kind];
-    ctx.fill('evenodd');
-  }
-  const groundRoads = [
-    ...data.roads.filter(r => !r.bridge && !r.tunnel),
-    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? []),
-  ];
-  for (const r of groundRoads) {
-    ctx.beginPath();
-    trace(r.pts);
-    ctx.lineWidth = roadWidth(r);
-    ctx.strokeStyle = r.cls === 'footway' || r.cls === 'pedestrian' ? '#e7dfca' : '#84827c';
-    ctx.stroke();
-    if (r.cls === 'motorway' && r.sub !== 'link') {
-      ctx.lineWidth = 0.55;
-      ctx.strokeStyle = '#d7d2bf';
-      ctx.setLineDash([4, 8]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
-  return texture;
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -85,6 +40,7 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.48, 0.55, 0.50), contour * uContours);`);
   };
   const surface = new THREE.Mesh(geometry, material);
+  surface.userData.lit = true;
   surface.receiveShadow = true;
   const sides = new Builder();
   const bottom = mesh.minY - stepM;
@@ -127,39 +83,16 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
 
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null) {
-  const group = new THREE.Group();
-  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 4 : 8, lightMapMax: 2048 };
-  const worlds: World[] = [];
-  const layers = new Map<number, VBuilding[]>();
-  for (const building of city.buildings) {
-    const base = foundation(building.rings, sceneY, step / 2);
-    if (base === null) continue;
-    if (!layers.has(base)) layers.set(base, []);
-    layers.get(base)!.push(building);
-  }
-  for (const [base, buildings] of layers) {
-    const world = new World({ ...city, buildings }, null, options);
-    world.buildBuildings();
-    // The shared facade shader evaluates storeys in world y relative to aBase.
-    world.group.traverse(obj => {
-      if (!(obj instanceof THREE.Mesh)) return;
-      const attr = obj.geometry.getAttribute('aBase');
-      if (attr) for (let i = 0; i < attr.count; i++) attr.setX(i, attr.getX(i) + base);
-    });
-    world.group.position.y = base;
-    group.add(world.group);
-    worlds.push(world);
-  }
-  class TerrainTrees extends World {
+  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: 2048 };
+  class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
-  const grove = new TerrainTrees(city, null, options);
-  grove.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
-  grove.buildTrees();
-  grove.setSeason(180);
-  group.add(grove.group);
-  worlds.push(grove);
-  return { group, grove, worlds };
+  const world = new TerrainScenery(city, null, options);
+  world.buildBuildings(bd => foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8);
+  world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
+  world.buildTrees();
+  world.setSeason(180);
+  return world;
 }
 
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
@@ -175,11 +108,11 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   return {
     group, board, scenery: scenery.group, bounds: grid.manifest.bounds,
     bottomY: mesh.minY - grid.manifest.stepM, groundAt,
-    setSeason(dayOfYear: number) { scenery.grove.setSeason(dayOfYear); },
-    setNight(factor: number) { for (const world of scenery.worlds) world.setNight(factor); },
+    setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
+    setNight(factor: number) { scenery.setNight(factor); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
-      for (const world of scenery.worlds) world.setWet(factor);
+      scenery.setWet(factor);
     },
     dispose() {
       group.removeFromParent();
@@ -187,7 +120,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }
       });
-      for (const world of scenery.worlds) world.dispose();
+      scenery.dispose();
       group.clear();
     },
   };
