@@ -960,6 +960,10 @@ at the 95th percentile**. These measurements end at draw submission. The 95th-pe
 interval between frames was still **83 ms**. In a separate held turn, JavaScript spent
 1.7 ms at the 95th percentile submitting the scene, and the WebGL GPU timer measured
 19.3 ms at the 95th percentile. Neither measures the browser's final presentation.
+In two alternating pairs of 3.2-second turns, even drawing just the final fullscreen
+triangle gave 84 ms at the 95th percentile, against 83–84 ms for the full scene.
+A separate 5.5-second run in the same focused Orca tab, drawing a moving square on
+a plain 2D canvas, measured 35.8 fps and a 49.5 ms 95th-percentile interval.
 
 Rain revealed a second cost. The weather timer could repaint the covered 2D Map about
 30 times a second. City now suspends that timer, and Map picks up the latest weather on
