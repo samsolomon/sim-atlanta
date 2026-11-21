@@ -244,9 +244,7 @@ onReady(() => {
     if (ts - last > 33) {
       last = ts;
       updateBuses(ts);
-      const now = clock.now();
-      const trains = source.update(now);
-      if (!diorama) trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
+      if (!diorama) trainsSource(map)?.setData(trainFeatures(source.update(), schedule.routes));
       if (selectedTrain && ts - lastCard > 1000) {
         lastCard = ts;
         renderTrainCard();
@@ -322,6 +320,7 @@ async function openCity() {
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
+      trains: () => source.update(),
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
     });
     if (load !== cityLoad) {

@@ -16,7 +16,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
-import type { RoutesFile } from '../model/types';
+import type { RoutesFile, TrainState } from '../model/types';
 import type { SceneManifest } from '../core/scene-data';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
@@ -26,6 +26,7 @@ import { local } from '../vignette/time';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
+import { CityTrains } from './trains';
 import { Snow } from './snow';
 
 export type Quality = 'low' | 'high';
@@ -45,7 +46,7 @@ export interface CityView {
   /** Sun, darkness and weather from the shared atmosphere; the date sets the season. */
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
-  stats(): { fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
+  stats(): { surfaceCars: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
 
@@ -63,8 +64,9 @@ const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), options: {
   signal?: AbortSignal;
   progress?: (label: string) => void;
+  trains: () => TrainState[];
   beforeFrame?: (timestamp: number) => void;
-} = {}): Promise<CityView> {
+}): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
   const [vd, manifest, trees] = await Promise.all([
@@ -97,11 +99,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   const world = new World(vd, null, { terrain: 'flat', clumps: low ? 4 : 8, lightMapMax: 2048 });
   if (trees?.trees?.length) world.realTrees = trees.trees;
+  let marta: Alignment[] = [];
   try {
     await build('board', () => world.buildBoard());
     await build('streets', () => world.buildStreets());
     await build('ground', () => world.buildGround());
-    await build('rail', () => { for (const al of martaAlignments(rf, manifest, b)) world.buildMarta(al); world.buildFreight(); world.buildTram(); });
+    await build('rail', () => { marta = martaAlignments(rf, manifest, b); for (const al of marta) world.buildMarta(al); world.buildFreight(); world.buildTram(); });
     await build('buildings', () => world.buildBuildings());
     await build('trees', () => world.buildTrees());
     await build('lights', () => world.buildLights());
@@ -151,6 +154,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mat.clipShadows = true;
     }
   });
+  const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
+  const trains = new CityTrains(marta, manifest, b, colors, edges);
+  scene.add(trains.group);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -375,6 +381,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (step.length() < 0.05) glideTo = null;
     }
     controls.update();
+    trains.update(options.trains(), atm.dark);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
@@ -451,7 +458,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       atm = a;
       world.setSeason(local(now).doy);
     },
-    stats: () => ({ fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    stats: () => ({ surfaceCars: trains.surfaceCars, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();

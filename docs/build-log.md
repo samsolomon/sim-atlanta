@@ -1015,3 +1015,39 @@ Both diagnostic changes were confined to the local test server.
 City now uses the tested 1024 px shadow map on low tier. The six A16 samples ranged
 from 32.28 to 38.00 fps, clearing the 30 fps gate for the static opening. This change
 ships with a web rebuild.
+
+## 2026-11-21 — A Blue Line train through Five Points
+
+At 2:10:35 p.m. on the Friday timetable, an eastbound Blue Line train is in daylight in
+the Gulch. At 2:11 it reaches Five Points underground. Twenty-five seconds later its cars
+are visible again in the open cut between Peachtree and Pryor. We replayed the same trip
+in Orca on high quality, combining the City motion branch with the rail accuracy agent’s
+two corrected cuts. The building on the south side of the Gulch hides most of the
+western cut from a low angle. Looking back from the north makes the passage legible.
+
+![Scheduled Blue train in the western open cut at 2:10:35](log/ui/2026-11-21-city-blue-west-cut.jpg)
+![The same train emerging in the eastern cut at 2:11:25](log/ui/2026-11-21-city-blue-east-cut.jpg)
+
+The Map and City read the same train positions. In City each car takes the direction and
+height of the rendered track beneath it. A car stays in the scene until both ends have
+passed under cover, so the front can disappear while the tail is still in daylight.
+The timetable and live feed both use illustrative car counts and the CQ400-style model.
+In Orca the real clock supplied 19 live heavy-rail positions across the system. Scrubbing
+ten minutes back switched the City source to scheduled positions, and Now restored live
+positions. The first check happened to have no cars in daylight on the downtown board.
+
+Marlin’s ground-grid sample near the east cut was 311.15 m above NAVD88, compared with
+319.52 m fifty metres north and 319.09 m fifty metres south. That supports a depression
+there. It does not measure a railhead or the cover underneath Five Points. The trains
+use the same schematic profile as the rendered rails.
+
+On the Galaxy A16, the production build with motion and the previously shipped profiles
+averaged 34.0 fps as the train moved east from Georgia State. With the two cuts included,
+the Five Points replay at 2× averaged 31.9 fps (33.8, 33.3 and 28.8 across three
+eight-second windows). The Georgia State run at 1× averaged 35.9 fps (36.1, 36.2 and
+35.4). Both combined runs used a foreground 384 × 692 low-tier canvas at the opening
+camera pose, with 4.5 seconds to warm up after the board appeared.
+
+A repeat of the cut replay with temporary timing probes averaged 33.2 fps. Across the
+three windows, looking up positions took at most 1.2 ms at the 95th percentile and placing
+the cars took at most 0.7 ms. Between zero and eight cars were eligible to draw.
