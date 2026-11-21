@@ -16,7 +16,7 @@ export function inkShader() {
       uNear: { value: 20 },
       uFar: { value: 12000 },
       uStrength: { value: 0.75 },
-      uInk: { value: new THREE.Color('#2a2430') },
+      uInk: { value: new THREE.Color('#1c1820') },
       uWidth: { value: 1.0 },
     },
     vertexShader: /* glsl */ `
@@ -50,7 +50,8 @@ export function inkShader() {
         float edgeC = smoothstep(0.035, 0.11, max(abs(cl - cr), abs(cu - cd)));
         // Fade lines out with distance so the far side doesn't fill with noise.
         float fade = 1.0 - smoothstep(1400.0, 4200.0, d);
-        float line = clamp(max(edgeD, edgeC * 0.7), 0.0, 1.0) * fade * uStrength;
+        // Mostly silhouettes (depth); colour creases only faintly, so shapes stay clean inside.
+        float line = clamp(max(edgeD, edgeC * 0.22), 0.0, 1.0) * fade * uStrength;
         gl_FragColor = vec4(mix(col.rgb, uInk, line), col.a);
       }`,
   };

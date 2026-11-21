@@ -624,3 +624,30 @@ normal, swap the `sin`-based hash for a precision-safe one (Dave Hoskins' `hash1
 the window pattern to its average where windows get smaller than about 2 px.
 
 ![Windows at night, after the fix](log/vignette/windows-night.jpg)
+
+## 2026-11-20 · Adapting to a reference: a low-poly ravine railway
+
+Sam found a much closer reference: a real-time low-poly railway through an autumn ravine
+(a train-driving toy with its own Hour, Ink, Flora and Forest panels). Stills, pulled
+from the video with ffmpeg because I can't watch video directly, show what gives it its look:
+- **Foliage as clusters of small faceted leaf clumps,** each tinted slightly differently,
+  plus tall tiered conifers. Our trees were one or two big gem-like blobs.
+- **Thin dark ink, mostly on silhouettes**, not inside shapes.
+- **Punchy light**: warm sun, cool blue-grey shade, saturated colour.
+- **Film grain** over everything, so it never looks digitally clean.
+- A perspective chase camera with a painted sky (parked for later: Sam wants more pieces
+  in place before the ride-along camera).
+
+What changed:
+- **Trees:** each deciduous canopy is now ten dodecahedron clumps on a rounded crown,
+  lighter on top and darker underneath, with per-clump hue, saturation and lightness
+  jitter. Leaf drop removes clumps one by one. Loblolly pines have four narrowing tiers.
+- **Ink:** silhouettes only, with colour creases at a fifth of the weight, a darker ink and
+  1 px lines.
+- **Grade and grain pass** (last, in display space): +12% contrast, +14% saturation, cool
+  shadows and warm highlights, a soft vignette, and fine animated grain that's stronger in
+  shadow. `?grade=0` turns it off.
+
+![Reference](log/vignette/reference-ravine.jpg)
+![Our trees after the pass](log/vignette/style-trees.jpg)
+![Viaduct after the pass](log/vignette/style-viaduct.jpg)
