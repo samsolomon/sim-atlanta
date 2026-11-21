@@ -6,6 +6,8 @@ export interface TransportRun {
   cls: string;
   sub?: string;
   pts: P2[];
+  /** Distances at these endpoints on the illustrative westbound freight route. */
+  freightS?: [number, number];
 }
 
 export type TerrainCity = VData & {

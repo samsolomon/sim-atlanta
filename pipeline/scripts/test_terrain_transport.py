@@ -1,6 +1,6 @@
 import unittest
 
-from terrain_transport import bake
+from terrain_transport import FREIGHT_MAIN, bake
 from vignette import project
 
 
@@ -29,6 +29,23 @@ class SurfaceWaysTest(unittest.TestCase):
         self.assertEqual([r["cls"] for r in t["rail"]], ["standard_gauge"] * 2)
         self.assertLess(t["rail"][0]["pts"][-1][0], 0)
         self.assertGreater(t["rail"][1]["pts"][0][0], 0)
+
+    def test_freight_distance_keeps_covered_gaps_and_ignores_parallel_tracks(self):
+        tracks = []
+        for i, (source_id, reverse) in enumerate(FREIGHT_MAIN):
+            points = [[-84.3916 + .001*j, 33.7539] for j in (i, i + 1)]
+            flags = [{"values": ["is_tunnel"], "between": [.25, .75]}] if i == 1 else []
+            tracks.append({"properties": {"id": source_id, "class": "standard_gauge", "rail_flags": flags},
+                           "geometry": {"type": "LineString", "coordinates": points[::-1] if reverse else points}})
+        tracks.append({**tracks[0], "properties": {"class": "standard_gauge", "id": "other-main"}})
+        bounds = {"minX": -10, "maxX": 400, "minZ": -10, "maxZ": 10}
+        runs = bake([], tracks, bounds)["rail"]
+        self.assertEqual(runs[0]["freightS"][0], 0)
+        self.assertGreater(runs[2]["freightS"][0] - runs[1]["freightS"][1], 40)
+        self.assertGreater(runs[3]["freightS"][0], runs[3]["freightS"][1])
+        self.assertNotIn("freightS", runs[-1])
+        incomplete = bake([], tracks[1:], bounds)
+        self.assertFalse(any("freightS" in run for run in incomplete["rail"]))
 
 
 if __name__ == "__main__":
