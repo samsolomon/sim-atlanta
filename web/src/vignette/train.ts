@@ -22,43 +22,94 @@ const C = {
   head: '#fff6d8',
 };
 
-/** One car; `cab` adds a driving end facing +z. */
+/** Extrude a cross-section (x across, y up) along z from z0 to z1. */
+function section(b: Builder, pts: [number, number][], z0: number, z1: number, color: string) {
+  const sh = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
+  const g = new THREE.ExtrudeGeometry(sh, { depth: z1 - z0, bevelEnabled: false });
+  g.translate(0, 0, z0);
+  b.addGeometry(g, color);
+}
+/** Extrude a side profile (z along, y up) across the width, centred. */
+function profile(b: Builder, pts: [number, number][], w: number, color: string) {
+  const sh = new THREE.Shape(pts.map(([z, y]) => new THREE.Vector2(z, y)));
+  const g = new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: false });
+  g.translate(0, 0, -w / 2);
+  g.rotateY(-Math.PI / 2);
+  b.addGeometry(g, color);
+}
+
+/**
+ * One car, after MARTA's CQ400: a stainless body with a rounded roof, individual windows
+ * between three door pairs a side, bogies with side frames, underfloor equipment and roof
+ * HVAC. `cab` gives a raked driving end facing +z with a big windscreen, headlights and a
+ * destination sign and light bar that glow in the line colour.
+ */
 function carGeometry(line: string, cab: boolean): THREE.BufferGeometry {
   const b = new Builder();
   const L = CAR;
-  // Body: slightly narrower at the roof for a rounded read.
-  b.box(W, 2.3, L, 0, 2.15, 0, C.steel);
-  b.box(W - 0.5, 0.35, L - 0.4, 0, 3.45, 0, C.steelShade);
-  b.box(W - 1.3, 0.12, L - 0.8, 0, 3.66, 0, C.steel);
-  // Window band and stripe, each a hair proud of the body.
-  b.box(W + 0.04, 0.85, L - 1.6, 0, 2.55, 0, C.glass);
-  b.box(W + 0.05, 0.16, L - 0.2, 0, 1.75, 0, line);
-  // Doors: three pairs a side.
-  for (const z of [-7.2, 0, 7.2]) b.box(W + 0.06, 2.05, 2.6, 0, 2.0, z, C.door);
-  for (const z of [-7.2, 0, 7.2]) b.box(W + 0.07, 0.75, 2.2, 0, 2.6, z, C.glass);
-  // Underframe, bogies and wheels.
-  b.box(W - 0.6, 0.5, L - 2, 0, 0.95, 0, C.under);
-  const wheel = new THREE.CylinderGeometry(0.42, 0.42, 0.16, 8).rotateZ(Math.PI / 2);
-  for (const bz of [-7.6, 7.6]) {
-    b.box(2.5, 0.55, 2.9, 0, 0.62, bz, C.bogie);
-    for (const wz of [-1.05, 1.05])
-      for (const wx of [-0.72, 0.72]) {
-        const g = wheel.clone();
-        g.translate(wx, 0.45, bz + wz);
-        b.addGeometry(g, C.bogie);
-      }
-  }
-  // Roof equipment
-  b.box(2.0, 0.35, 3.2, 0, 3.85, -5.5, C.roofBox);
-  b.box(2.0, 0.35, 3.2, 0, 3.85, 5.5, C.roofBox);
+  const h = L / 2;
+  const nose = cab ? 1.4 : 0; // length taken by the raked cab
+  // Body cross-section: vertical sides, chamfered cant rail, low arched roof.
+  const xs: [number, number][] = [
+    [-W / 2, 1.05], [W / 2, 1.05], [W / 2, 3.2], [W / 2 - 0.25, 3.55], [W / 2 - 0.8, 3.72], [-W / 2 + 0.8, 3.72], [-W / 2 + 0.25, 3.55], [-W / 2, 3.2],
+  ];
+  section(b, xs, -h, h - nose, C.steel);
   if (cab) {
-    const z = L / 2;
-    b.box(W - 0.1, 1.1, 0.2, 0, 2.65, z + 0.05, C.glass); // windscreen
-    b.box(1.6, 0.26, 0.12, 0, 3.32, z + 0.12, line); // lit destination sign
-    b.box(W - 0.3, 0.1, 0.12, 0, 1.95, z + 0.13, line); // CQ400 light bar
-    for (const x of [-1.1, 1.1]) b.box(0.42, 0.2, 0.12, x, 1.45, z + 0.13, C.head);
-    b.box(W - 0.2, 0.45, 0.4, 0, 0.95, z - 0.1, C.under); // anticlimber
+    // Raked nose: side profile from the body end to a sloped windscreen.
+    profile(b, [[h - nose - 0.01, 1.05], [h, 1.05], [h, 1.95], [h - 0.35, 3.1], [h - 0.9, 3.55], [h - nose - 0.01, 3.72]], W - 0.02, C.steel);
+    profile(b, [[h - 0.02, 2.05], [h - 0.36, 3.05], [h - 0.86, 3.47], [h - 0.95, 3.4], [h - 0.47, 2.9], [h - 0.15, 2.05]], W - 0.5, C.glass); // windscreen
+    b.box(1.5, 0.22, 0.1, 0, 3.22, h - 0.55, line); // destination sign (tilted look via placement)
+    b.box(W - 0.4, 0.1, 0.08, 0, 1.92, h + 0.02, line); // CQ400 light bar
+    for (const x of [-1.15, 1.15]) b.box(0.4, 0.18, 0.08, x, 1.5, h + 0.02, C.head);
+    b.box(W - 0.4, 0.5, 0.35, 0, 0.95, h - 0.05, C.under); // anticlimber / coupler housing
+    b.box(0.35, 0.3, 0.5, 0, 0.85, h + 0.2, C.bogie); // coupler
+  } else {
+    // Gangway bellows at this end (the next car brings its own).
+    b.box(2.0, 2.4, 0.5, 0, 2.2, h + 0.25, C.bogie);
   }
+  b.box(2.0, 2.4, 0.5, 0, 2.2, -h - 0.25, C.bogie);
+  // Sides: doors, windows, stripe.
+  const doors = [-7.0, 0, 7.0];
+  for (const side of [-1, 1]) {
+    const x = side * (W / 2 + 0.02);
+    b.box(0.05, 0.14, L - 0.4 - nose, x, 1.62, -nose / 2, line); // line-colour stripe at floor level
+    for (const dz of doors) {
+      b.box(0.06, 2.1, 2.5, x, 2.12, dz, C.door);
+      b.box(0.08, 0.9, 0.85, x, 2.55, dz - 0.62, C.glass);
+      b.box(0.08, 0.9, 0.85, x, 2.55, dz + 0.62, C.glass);
+      b.box(0.09, 2.1, 0.06, x, 2.12, dz, C.under); // door seam
+    }
+    // Two windows in each bay between doors, one at each end bay.
+    const bays: [number, number][] = [[-h + 0.6, -8.25], [-5.75, -1.25], [1.25, 5.75], [8.25, h - nose - 0.6]];
+    for (const [z0, z1] of bays) {
+      const n = z1 - z0 > 3.5 ? 2 : 1;
+      const wlen = (z1 - z0 - 0.3 * (n + 1)) / n;
+      for (let i = 0; i < n; i++) b.box(0.07, 0.95, wlen, x, 2.6, z0 + 0.3 + wlen / 2 + i * (wlen + 0.3), C.glass);
+    }
+  }
+  // Underframe: equipment cases between the bogies.
+  b.box(W - 0.7, 0.55, 9.5, 0, 0.78, 0, C.under);
+  for (const z of [-3.2, 3.2]) b.box(W - 0.4, 0.45, 2.2, 0, 0.75, z, '#4a4e55');
+  // Bogies: frame, side frames, wheels, axle boxes.
+  const wheel = new THREE.CylinderGeometry(0.43, 0.43, 0.14, 10).rotateZ(Math.PI / 2);
+  for (const bz of [-7.7, 7.7]) {
+    b.box(2.2, 0.35, 2.6, 0, 0.82, bz, C.bogie);
+    for (const sx of [-1, 1]) {
+      b.box(0.18, 0.42, 2.9, sx * 1.02, 0.55, bz, C.bogie);
+      for (const wz of [-1.1, 1.1]) {
+        const g = wheel.clone();
+        g.translate(sx * 0.74, 0.43, bz + wz);
+        b.addGeometry(g, '#55585e');
+        b.box(0.26, 0.3, 0.36, sx * 1.1, 0.48, bz + wz, '#4a4e55'); // axle box
+      }
+    }
+  }
+  // Roof: two HVAC pods and a cable trough.
+  for (const z of [-5.6, 5.6]) {
+    b.box(2.1, 0.38, 3.4, 0, 3.9, z, C.roofBox);
+    b.box(1.6, 0.05, 2.6, 0, 4.1, z, '#7c8288');
+  }
+  b.box(0.3, 0.12, L - 4 - nose, 0.9, 3.78, -nose / 2, '#a6abb0');
   return b.geometry();
 }
 

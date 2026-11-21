@@ -104,7 +104,7 @@ async function main() {
   const traffic = new Traffic(world, td);
   scene.add(traffic.group);
   const parked = new ParkedCars(world.stalls);
-  scene.add(parked.mesh);
+  scene.add(parked.group);
   const clock = new SimClock(params.get('at'), Number(params.get('speed') ?? 1));
   const runLen = al.line.length + east.length;
   const SPEED = 16; // m/s, about 36 mph
@@ -306,6 +306,7 @@ async function main() {
       setWeather,
       weather: () => ({ mode: weatherMode, liveOk, ...weather }),
       now: () => clock.now(),
+      traffic,
       pause: (p = true) => (paused = p),
       setTilt: (x: number) => {
         tilt = x;

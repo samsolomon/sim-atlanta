@@ -260,16 +260,16 @@ export class World {
     for (const r of roads) {
       const pts = clip(r);
       if (pts.length < 2) continue;
-      const w = r.sub === 'parking_aisle' ? 6.4 : WIDTH[r.cls] ?? 0;
+      const w = r.sub === 'parking_aisle' ? 6.4 : r.cls === 'motorway' && r.sub === 'link' ? 6.5 : WIDTH[r.cls] ?? 0;
       if (!w || r.tunnel) continue;
       const line = new Line(pts);
-      const hwy = r.cls === 'motorway';
+      const hwy = r.cls === 'motorway' && r.sub !== 'link';
       const y = (lift: number) => (_s: number, x: number, z: number) => (r.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z)) + lift;
       if (!DRIVABLE.has(r.cls)) {
         side.ribbon(line, w, y(0.16), r.cls === 'pedestrian' ? '#e2dccf' : PAL.sidewalk, 2);
         continue;
       }
-      if (!hwy && r.cls !== 'service') side.ribbon(line, w + 6, y(0.14), PAL.sidewalk, 2);
+      if (r.cls !== 'motorway' && r.cls !== 'service') side.ribbon(line, w + 6, y(0.14), PAL.sidewalk, 2);
       road.ribbon(line, w, y(0.2), hwy ? PAL.asphaltHwy : PAL.asphalt, 2);
       // Lane markings
       if (hwy) {

@@ -472,3 +472,45 @@ infrastructure layer has 164 parking areas covering about 380,000 m².
 
 ![Lots and crossings](log/vignette/ground-lots.jpg)
 ![Board](log/vignette/ground-board.jpg)
+
+## 2026-11-20 · Cars that drive the street network, and better models
+
+**Traffic is now a simulation on the real streets** instead of cars looping along each road:
+- **The network:** Overture road runs join into a graph at shared vertices. In this block
+  that's 68 intersections, 110 directed road edges and 28 board-edge entries, with 8 of
+  the 10 mapped traffic signals matched to an intersection.
+- **How many:** vehicles enter at the board edges at the hourly rate the federal counts
+  give for that road.
+- **Where they go:** at each intersection a vehicle picks an outgoing road weighted by that
+  road's volume, with a mild preference for going straight. Nobody can know a given car's
+  turn, but the mix matches the real volumes.
+- **How they move:** the Intelligent Driver Model keeps gaps and speeds; turns curve along
+  Bézier paths; vehicles stop on red and amber (signal timing is a guess, 84 s cycles);
+  merging vehicles yield to whoever is closer to the merge.
+- **Result:** about 55 vehicles flowing at 52 mph at 3 am, about 250 at 27–32 mph at 1 pm,
+  and stop-and-go at 17–22 mph in the 8 am peak, which is what the Connector actually does.
+
+**Bugs with lessons:**
+- **Ramps matched the main line's HPMS record** because they run side by side, so they
+  poured a whole highway's traffic into every merge. Ramps now get one lane and ramp-scale
+  volume.
+- **Some main-line segments matched ramp records instead**, so one direction of the
+  Connector was nearly empty. Main-line segments under 150k a day fall back to the
+  Connector's median.
+- **Lane-index mapping** sent the ramp into the busiest left lane. Vehicles now continue
+  into the geometrically nearest lane, or the emptier of the two nearest at a merge.
+- **Turn paths capped speed even on straight-through joins**, making a bottleneck at the
+  peak flow. Only real turns slow down now.
+
+**Vehicle kit:** each model is a side profile extruded across its width, so hoods,
+windscreens and roofs slope: sedans, hatchbacks, SUVs, pickups (with beds), vans, box
+trucks, and **articulated semis** whose trailers swing behind the tractor through turns.
+Trucks follow each road's truck share. Parked cars use the same kit.
+
+**Train:** a CQ400-style car with a rounded roof, a raked cab and big windscreen,
+individual windows between three door pairs a side, bogie side frames and axle boxes,
+underfloor equipment, roof HVAC pods and gangway bellows. The line-colour light bar and
+destination sign still glow.
+
+![Train on the viaduct](log/vignette/trainside-v2.jpg)
+![CQ400-style cab](log/vignette/train-v2.jpg)
