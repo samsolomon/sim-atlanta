@@ -7,6 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type MartaLine } from '../vignette/cq400';
 import { gradeShader } from '../vignette/grade';
+import { BUS_LENGTH, busGeometry, busMaterial } from '../vignette/xcelsior';
 import { inkShader } from '../vignette/ink';
 
 const el = document.getElementById('stage')!;
@@ -25,6 +26,8 @@ const sun = new THREE.DirectionalLight('#fff3df', 2.6);
 sun.position.set(-18, 30, 22);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0005; // without these the models shade themselves in fine stripes (shadow acne)
+sun.shadow.normalBias = 0.05;
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 scene.add(hemi, sun);
 const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 48), new THREE.MeshLambertMaterial({ color: '#d9d3c6' }));
@@ -52,11 +55,28 @@ scene.add(track);
 const night = { value: 0 };
 const role = { value: 1 };
 let line: MartaLine = 'gold';
+let vehicle: 'train' | 'bus' = new URLSearchParams(location.search).get('v') === 'bus' ? 'bus' : 'train';
 let cars: THREE.Mesh[] = [];
 function build() {
   for (const c of cars) {
     scene.remove(c);
     c.geometry.dispose();
+  }
+  track.visible = vehicle === 'train';
+  document.getElementById('lines')!.style.display = vehicle === 'train' ? '' : 'none';
+  document.getElementById('roles')!.style.display = vehicle === 'train' ? '' : 'none';
+  document.getElementById('title')!.textContent = vehicle === 'train' ? 'Model Lab · MARTA CQ400' : 'Model Lab · MARTA bus';
+  document.getElementById('blurb')!.textContent =
+    vehicle === 'train'
+      ? 'One cab car and one middle car of a 4-car set. Drop a reference photo to overlay it and line up the view.'
+      : 'New Flyer Xcelsior 40-foot (most of MARTA’s fleet), built to New Flyer’s published dimensions. Current MARTA livery, matched from photos, minus the wordmark.';
+  if (vehicle === 'bus') {
+    const bus = new THREE.Mesh(busGeometry(), busMaterial(night));
+    bus.position.z = 0;
+    bus.castShadow = bus.receiveShadow = true;
+    cars = [bus];
+    scene.add(bus);
+    return;
   }
   const color = LINE_COLORS[line];
   const cab = new THREE.Mesh(cq400Geometry({ cab: true, u0: 0, u1: 0.25 }, color), cq400Material(color, role, night));
@@ -158,7 +178,24 @@ mk('roles', 'Leading', () => (role.value = 1), true);
 mk('roles', 'Tail', () => (role.value = -1));
 mk('roles', 'Coupled', () => (role.value = 0));
 for (const v of Object.keys(VIEWS)) mk('views', v, () => view(v));
-view('¾ front');
+const BUS_VIEWS: Record<string, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
+  'Front': { pos: [0, 1.8, 30], target: [0, 1.6, 6], fov: 13 },
+  '¾ front': { pos: [-12, 4.0, 19], target: [0, 1.5, 1.5], fov: 30 },
+  'Side': { pos: [-34, 1.7, 0], target: [0, 1.7, 0], fov: 26 },
+  'Rear': { pos: [0, 1.8, -30], target: [0, 1.6, -6], fov: 13 },
+  'Top': { pos: [0.01, 34, 0], target: [0, 0, 0], fov: 30 },
+};
+const baseViews = { ...VIEWS };
+function setVehicle(v: 'train' | 'bus') {
+  vehicle = v;
+  Object.assign(VIEWS, v === 'bus' ? BUS_VIEWS : baseViews);
+  build();
+  view(v === 'bus' ? '¾ front' : '¾ front');
+}
+mk('vehicles', 'CQ400 train', () => setVehicle('train'), vehicle === 'train');
+mk('vehicles', 'Bus', () => setVehicle('bus'), vehicle === 'bus');
+setVehicle(vehicle);
+void BUS_LENGTH;
 const nightBtn = document.getElementById('night')!;
 nightBtn.addEventListener('click', () => {
   const on = nightBtn.getAttribute('aria-pressed') !== 'true';

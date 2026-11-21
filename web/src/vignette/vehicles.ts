@@ -8,9 +8,9 @@
  */
 import * as THREE from 'three';
 
-export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' | 'tractor' | 'trailer' | 'bus';
+export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' | 'tractor' | 'trailer';
 
-export const LENGTH: Record<VehicleType, number> = { sedan: 4.7, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6, bus: 12.2 };
+export const LENGTH: Record<VehicleType, number> = { sedan: 4.7, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6 };
 
 class Kit {
   pos: number[] = [];
@@ -153,20 +153,6 @@ export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
       k.box(2.0, 0.3, 14.0, 0, 1.15, 0, '#2a2b2f', 4);
       k.wheels([-5.2, -6.4], 2.1, 0.52, 0.34);
       for (const x of [-1.0, 1.0]) k.box(0.3, 0.2, 0.05, x, 1.35, -7.23, '#fff', 2);
-      return k.geometry();
-    }
-    case 'bus': {
-      const k = new Kit();
-      // Generic city bus: white body, a dark window band, a blue skirt and an orange stripe.
-      k.prism([[-6.1, 0.35], [6.1, 0.35], [6.1, 2.9], [5.9, 3.15], [-6.1, 3.15]], 2.55, '#fff', 0);
-      k.box(2.59, 1.05, 11.2, 0, 2.2, -0.2, GLASS, 3);
-      k.box(2.57, 1.5, 0.08, 0, 2.05, 6.12, GLASS, 3); // windscreen
-      k.box(2.59, 0.5, 12.15, 0, 0.62, 0, '#1f5fd1', 4);
-      k.box(2.6, 0.14, 12.1, 0, 1.55, 0, '#f08a24', 4);
-      k.box(2.0, 0.4, 3.0, 0, 3.3, -2.0, '#d9dcdf', 4); // roof AC
-      k.box(1.6, 0.24, 0.06, 0, 2.95, 6.13, '#ffb84a', 1); // destination sign
-      k.wheels([3.9, -3.3], 2.2, 0.5, 0.34);
-      k.lights(6.11, -6.11, 0.85, 2.0, 1.0);
       return k.geometry();
     }
   }

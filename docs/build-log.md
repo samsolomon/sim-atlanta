@@ -693,3 +693,42 @@ which fleet a train is or how long it is, so lengths are typical for the line.
 ![CQ400 in the model lab](log/vignette/cq400-lab-1.jpg)
 ![Tail end at night](log/vignette/cq400-lab-3.jpg)
 ![8-car Blue Line train on the viaduct](log/vignette/cq-viaduct.jpg)
+
+## 2026-11-21 · The MARTA bus, built to spec
+
+The first bus was eyeballed from photos, and it showed: the wheels weren't even round. So the
+second pass started from numbers instead. New Flyer publishes the Xcelsior 40-foot's
+dimensions and a side elevation in its brochure: 12.24 m over the body (12.50 m over
+bumpers), 2.6 m wide, 3.38 m over the CNG roof tanks, a 7.2 m wheelbase and 305/70R22.5
+tyres (about 1 m across). Those set the body, the axle positions and the overhangs (about
+2.2 m at the front and 2.9 m at the back). Photos then filled in what the drawing doesn't say.
+
+- **Wheels:** arches are cut into the extruded side profile, so they are actually round.
+  Tyres are an open tread band with ring sidewalls, so a dished steel rim with a dark hub can
+  sit inside them. Duals at the rear.
+- **The window line came from photos, not the drawing.** The brochure suggested a 1.42 m
+  belt. In photos of MARTA's buses the windows are one continuous dark band, roughly
+  1.2–2.3 m off the ground, which leaves the tall white strip that carries the livery.
+- **Livery:** white, with three blue slashes that run up over the roof edge onto the CNG
+  housing. The third flows into a long blue line, with yellow and orange dashes beneath it,
+  their ends cut at the same angle. The giant slanted "marta" lettering at the rear becomes
+  a plain light-grey band, darker where it crosses the glass. No wordmark, no fleet numbers.
+
+Bugs with lessons:
+- **A stray half-drum hid half of each wheel.** The wheel-well lining was a half-cylinder
+  rotated the wrong way, so it filled the back half of the arch instead of the top, and its
+  end caps covered the wheel. Now it's an open half-tube along the arch roof.
+- **Decals under panels:** the side panels are thin 2 cm boxes, so their outer faces sit
+  1 cm proud of their nominal offset. The grey band was drawn "above" the grille and the
+  glass but actually sat under both, until its offset accounted for the box thickness.
+- **Stripes that bent at the roof edge:** leaning the slashes by distance along the surface
+  made them kink horizontally across the flat roof strip. Leaning them by true height keeps
+  each slash a straight band when seen from the side.
+- **Fine stripes all over the roof** were shadow acne: the model lab's sun had no shadow
+  bias. The diorama already had one.
+
+The live MARTA buses in the diorama now use this model. They were the only users of the old
+generic bus, which is gone.
+
+![The Xcelsior in the model lab](log/vignette/marta-bus-lab.jpg)
+![A live MARTA bus on the East Portal block](log/vignette/marta-bus-diorama.jpg)

@@ -9,7 +9,7 @@ import { LiveBuses } from '../live/buses';
 import type { LiveBus } from '../model/types';
 import { makeProjector } from '../scene3d/scene-data';
 import { segDist, type P2 } from './geom';
-import { vehicleGeometry, vehicleMaterial } from './vehicles';
+import { BUS_LENGTH, busGeometry, busMaterial } from './xcelsior';
 import type { World } from './world';
 
 const MAX = 24;
@@ -41,12 +41,11 @@ export class DioramaBuses {
     origin: { lon: number; lat: number },
   ) {
     this.project = makeProjector(origin);
-    this.mesh = new THREE.InstancedMesh(vehicleGeometry('bus'), vehicleMaterial(this.night), MAX);
+    // MARTA's New Flyer Xcelsior in the current livery (modelled in the lab, /models.html?v=bus).
+    this.mesh = new THREE.InstancedMesh(busGeometry(), busMaterial(this.night), MAX);
     this.mesh.count = 0;
     this.mesh.castShadow = this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
-    const white = new THREE.Color('#f4f4f2');
-    for (let i = 0; i < MAX; i++) this.mesh.setColorAt(i, white);
   }
 
   /** Snap a fix onto the nearest street, facing the street direction nearest its bearing. */
@@ -109,7 +108,7 @@ export class DioramaBuses {
       const g = this.world.ground(p.x, p.z);
       const y = (s.bridge ? Math.max(0, g) : g) + 0.2;
       this.obj.position.set(p.x, y, p.z);
-      this.positions.push({ x: p.x, y, z: p.z, len: 12.2 });
+      this.positions.push({ x: p.x, y, z: p.z, len: BUS_LENGTH });
       this.obj.rotation.set(0, p.a, 0);
       this.obj.updateMatrix();
       this.mesh.setMatrixAt(i++, this.obj.matrix);
