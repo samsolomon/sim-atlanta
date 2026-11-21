@@ -75,6 +75,10 @@ uses the timetable.
   and `.env*` are gitignored.
 - **Art direction.** Landmarks should look real and functional, and stylisation rules make
   everything else feel good. Recolouring the same boxes is a colour treatment, not artwork.
+  The chosen style (2026-11-20) follows a low-poly, ink-lined railway reference: leaf-clump
+  tree canopies, thin silhouette ink, a colour grade and film grain, and tilt-shift. Vehicles
+  are modelled in code from reference photos in the model lab (`/models.html`), with real
+  livery colours but no operator logos.
 - **Build log.** After a meaningful step (a new data source, a visual milestone, a bug with a
   lesson), append a dated entry to `docs/build-log.md` with concrete numbers and what
   surprised you, and save a screenshot to `docs/log/`. Write it blog-ready.

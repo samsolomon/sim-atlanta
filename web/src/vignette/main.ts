@@ -20,14 +20,14 @@ import { fetchLive, PRESETS, Rain, type Weather, type WeatherKind } from './weat
 import { gradeShader } from './grade';
 import { inkShader } from './ink';
 import { tiltShiftShader } from './tiltshift';
+import { LINE_COLORS } from './cq400';
 import { Train } from './train';
 import { World, type Alignment, type VData } from './world';
 
 const params = new URLSearchParams(location.search);
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 const DATA = params.get('data') ?? `${BASE}/data`;
-const MARTA_BLUE = '#0b6fd1';
-const MARTA_GREEN = '#2fa84f';
+
 
 async function main() {
   const [vd, manifest, rf, td] = await Promise.all([
@@ -101,8 +101,9 @@ async function main() {
     new THREE.Plane(new THREE.Vector3(0, 0, 1), -b.minZ),
     new THREE.Plane(new THREE.Vector3(0, 0, -1), b.maxZ),
   ];
-  const east = new Train(al, 2.1, MARTA_BLUE, clip, b);
-  const west = new Train(al, -2.1, MARTA_GREEN, clip, b);
+  // Blue Line trains run 8 cars (two CQ400 sets); Green Line trains one 4-car set.
+  const east = new Train(al, 2.1, LINE_COLORS.blue, clip, b, 2);
+  const west = new Train(al, -2.1, LINE_COLORS.green, clip, b, 1);
   scene.add(east.group, west.group);
   const traffic = new Traffic(world, td);
   scene.add(traffic.group);
