@@ -79,6 +79,15 @@ const source = new TrainSource(schedule, live);
 live.start();
 
 let updateAtmosphere = () => {}; // set once the map has loaded
+// Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;
+// the centre stays sharp. A DOM layer over the map, under the glass. Map view only.
+const fogEl = Object.assign(document.createElement('div'), { id: 'fog' });
+document.body.append(fogEl);
+function setFog(f: number, dark: number) {
+  fogEl.style.setProperty('--fog', f.toFixed(3));
+  fogEl.style.setProperty('--fog-rgb', dark > 0.55 ? '40, 47, 58' : '244, 245, 244');
+  fogEl.hidden = f < 0.02;
+}
 const onReady = (fn: () => void) => (map.loaded() ? fn() : map.once('load', fn));
 onReady(() => {
   // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
@@ -109,13 +118,18 @@ onReady(() => {
     const w = clock.isRealTime() ? shell.weather() : null; // live weather only at the present
     const atm = atmosphere(clock.now(), w, override ?? {});
     sky.set(atm);
+    setFog(atm.fog * sky.weatherStrength(), atm.dark);
     onScreen = pinned ?? paletteFor(atm);
     applyPalette(map, onScreen);
     shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
   };
   updateAtmosphere();
   setInterval(updateAtmosphere, 60_000);
-  map.on('moveend', () => sky.atm && sky.set(sky.atm)); // weather strength depends on zoom and place
+  map.on('moveend', () => {
+    if (!sky.atm) return; // weather strength depends on zoom and place
+    sky.set(sky.atm);
+    setFog(sky.atm.fog * sky.weatherStrength(), sky.atm.dark);
+  });
   if (params.has('tune'))
     void import('./map/tune').then(({ mountTuner }) =>
       mountTuner({

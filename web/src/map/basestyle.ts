@@ -233,7 +233,7 @@ export function paletteFor(a: Sky): Palette {
     c = mix(c, ground, a.cloud * 0.1); // lower contrast under cloud
     c = mix(c, cool, a.rain * 0.12); // wet, cool
     if (GROUNDISH.includes(k)) c = mix(c, snowCol, a.snow * 0.55);
-    c = mix(c, haze, a.fog * 0.45); // fog washes everything toward the haze
+    c = mix(c, haze, a.fog * 0.22); // a little wash; the edge blur does the rest
     out[k] = linToHex(c) as never;
   }
   out.inkOpacity *= 1 - a.fog * 0.4;

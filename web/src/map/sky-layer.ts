@@ -68,7 +68,7 @@ void main() {
   vec3 haze = mix(vec3(0.94, 0.95, 0.95), vec3(0.16, 0.19, 0.24), uDark);
   vec2 e = abs(uv - 0.5) * 2.0;
   float edge = smoothstep(0.35, 1.25, max(e.x, e.y) + 0.3 * fbm(km * 0.5 + wind * 0.5));
-  over(haze, uFog * uWx * (0.16 + 0.32 * edge));
+  over(haze, uFog * uWx * (0.06 + 0.18 * edge)); // the DOM fog overlay adds the edge blur
 
   if (uRain > 0.0) {
     vec2 q = vec2(px.x + px.y * 0.22, px.y - t * 900.0);
@@ -145,7 +145,7 @@ export class SkyLayer implements CustomLayerInterface {
   }
 
   /** How much Atlanta's weather applies here: fades out zoomed out or far from the metro. */
-  private weatherStrength() {
+  weatherStrength() {
     if (!this.map) return 0;
     const z = this.map.getZoom();
     const c = this.map.getCenter();
