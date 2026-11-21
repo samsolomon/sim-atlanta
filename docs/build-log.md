@@ -732,3 +732,41 @@ generic bus, which is gone.
 
 ![The Xcelsior in the model lab](log/vignette/marta-bus-lab.jpg)
 ![A live MARTA bus on the East Portal block](log/vignette/marta-bus-diorama.jpg)
+
+## 2026-11-21 · One shell over Map and City
+
+Until today the site was three products that didn't know about each other: a grey dashboard
+over a 2D map, a grey 3D downtown behind a button, and the East Portal diorama on its own
+page. The direction now is "just a little model of Atlanta": City first, Map one tap away, and
+both working back from the diorama's look.
+
+- **Glass instead of panels.** The dashboard panel is gone. What's left is a status widget
+  (neighbourhood, temperature with a weather icon, condition, date and time, and a live dot),
+  a menu button and a Map · City switch. All three are frosted glass with a Liquid Glass-style
+  lit edge: the rim is bright at two corners and fades between. On cream paper a white rim
+  vanishes, so a 0.5 px dark hairline sits outside it to make the highlight read.
+- **The glass picked up colour.** With `saturate(1.7)` in the backdrop filter, an orange
+  freight line under the widget turned the whole card peach on the phone. 1.15 keeps the glass
+  neutral.
+- **The basemap is recoloured, not replaced.** OpenFreeMap's positron style is fetched at load
+  and repainted to the diorama palette (cream land, sage parks, soft water, thin brown roads),
+  so tile and glyph URLs stay current. Rail lines get a thin ink outline, as in the diorama.
+- **The streetcar was pure #0000FF** in MARTA's GTFS. Next to the Blue Line (#0075B2) it read
+  as a different hue entirely; it's now a softer cornflower, #5a86d6.
+- **Neighbourhoods:** 248 City of Atlanta neighbourhood polygons (315 KB) name the place under
+  the middle of the view; outside the city it says "Metro Atlanta" or "Georgia".
+- **Weather now goes through the worker.** On the A16 the direct call to Open-Meteo timed out
+  and the diorama said "live weather unavailable here". `/api/weather` makes one upstream call
+  per edge location every 10 minutes, whoever's asking.
+- **Keyboard:** WASD and the arrows move the camera in both views, `M`/`C` switch, `+`/`−`
+  zoom. A key tap always nudges, because the first frame now counts from the key press (in a
+  throttled tab that painted twice a second, the first frame's zero-length step was the only
+  one).
+- Phosphor icons (MIT), imported as raw SVG so only the 14 used ship. The system font, no web
+  font. The time slider and 1×/30× are hidden, not deleted: `?controls=1`.
+
+On the A16 in portrait, the Map runs at 58 fps with the glass over it. City is still the old
+grey 3D until the diorama-style downtown replaces it.
+
+![Map view with the glass widget](log/ui/shell-map.jpg)
+![City on the Galaxy A16, portrait](log/ui/shell-a16-city.jpg)

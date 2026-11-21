@@ -230,7 +230,8 @@ export function createShell(o: ShellOptions) {
     }
   })();
   if (!seen) {
-    hint = el('p', { class: 'hint glass', role: 'note' }, 'Drag to look around · WASD to move');
+    const touch = matchMedia('(pointer: coarse)').matches;
+    hint = el('p', { class: 'hint glass', role: 'note' }, touch ? 'Drag to look around · pinch to zoom' : 'Drag to look around · WASD to move');
     const dismiss = () => {
       if (!hint) return;
       hint.classList.add('gone');

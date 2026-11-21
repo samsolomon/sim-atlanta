@@ -58,4 +58,5 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 @media (max-width: 600px) {
   #card { bottom: 14px; }
+  .attrib3d { bottom: 84px; left: 10px; right: 10px; text-align: center; }
 }
