@@ -222,23 +222,19 @@ function addNose(k: Kit, zb: number, line: string) {
         k.quad(at(xa, ya, lift), at(xb, ya, lift), at(xb, yb, lift), at(xa, yb, lift), color, kind);
       }
   };
-  // The nose's grey side panel: a slanted window following the rake, and a seam where the
-  // nose meets the body.
+  // The nose's grey side panel: one triangular window. Its back edge is vertical, its bottom
+  // flat, and its long edge follows the rake of the nose.
   for (const s2 of [-1, 1]) {
     const x = s2 * (W / 2 + 0.012);
     const front = (y: number) => zb + noseDepth(s2 * (W / 2 - 0.02), y) - 0.22;
-    const NY = 6;
-    for (let j = 0; j < NY; j++) {
-      const ya = 2.18 + (0.86 * j) / NY;
-      const yb = 2.18 + (0.86 * (j + 1)) / NY;
-      for (const [inset, color, kind] of [[0, C.frame, 0], [0.05, C.glass, 3]] as [number, string, number][]) {
-        const fa = front(ya) - inset;
-        const fb = front(yb) - inset;
-        const xx = x + s2 * inset * 0.1;
-        k.quad([xx, ya + inset * 0.6, fa - 0.78 + inset * 2], [xx, ya + inset * 0.6, fa], [xx, yb - inset * 0.6, fb], [xx, yb - inset * 0.6, fb - 0.78 + inset * 2], color, kind);
-      }
+    const y0 = 2.18;
+    const y1 = 3.04;
+    const back = front(y1) - 0.05;
+    for (const [inset, color, kind, dx] of [[0, C.frame, 0, 0], [0.05, C.glass, 3, 0.004]] as [number, string, number, number][]) {
+      const xx = x + s2 * dx;
+      k.tri([xx, y0 + inset, back + inset], [xx, y0 + inset, front(y0) - inset * 2.2], [xx, y1 - inset * 2.2, back + inset], color, kind);
+      k.tri([xx, y0 + inset, back + inset], [xx, y1 - inset * 2.2, back + inset], [xx, y0 + inset, front(y0) - inset * 2.2], color, kind);
     }
-    k.box(0.03, 2.3, 0.035, x, 2.3, zb - 0.02, C.seam, 0);
   }
   // The cab's one side window, centred in the grey section between the nose and first door.
   for (const s2 of [-1, 1]) {
@@ -313,8 +309,15 @@ function clipY(poly: [number, number][], y0: number, y1: number): [number, numbe
 
 /** Floor-height stripe segment on both sides from z0 to z1. */
 function stripe(k: Kit, z0: number, z1: number, color: string) {
-  for (const s of [-1, 1]) k.box(0.03, 0.15, z1 - z0, s * (W / 2 + 0.01), 1.36, (z0 + z1) / 2, color, 0);
+  // Same slanted ends as the chevrons, so the stripe and chevrons read as one piece.
+  for (const s of [-1, 1]) {
+    const g = new THREE.BoxGeometry(0.03, 0.15, z1 - z0);
+    g.applyMatrix4(new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, STRIPE_SKEW, 1, 0, 0, 0, 0, 1));
+    g.translate(s * (W / 2 + 0.01), 1.36, (z0 + z1) / 2);
+    k.geo(g, color, 0);
+  }
 }
+const STRIPE_SKEW = 0.9;
 
 /** The short blue/yellow/orange chevrons on the rounded cab end, leading into the long stripe. */
 function chevron(k: Kit, zStart: number, dir: 1 | -1) {
@@ -324,7 +327,7 @@ function chevron(k: Kit, zStart: number, dir: 1 | -1) {
       const zc = zStart - dir * (0.25 + i * 0.36);
       // A parallelogram: skew the box so its ends slant like the real chevron.
       const g = new THREE.BoxGeometry(0.03, 0.15, 0.34);
-      const skew = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, dir * 0.9, 1, 0, 0, 0, 0, 1);
+      const skew = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, 0, 0, 0, dir * STRIPE_SKEW, 1, 0, 0, 0, 0, 1);
       g.applyMatrix4(skew);
       g.translate(s * (W / 2 + 0.012), 1.36, zc);
       k.geo(g, cols[i], 0);
@@ -399,8 +402,11 @@ export function cq400Geometry(spec: CarSpec, line: string) {
   }
   // Stripe: chevron behind the nose, then the colour band along the car.
   const zA = -h + 0.2;
-  const zB = spec.cab ? noseStart - 1.4 : h - 0.2;
-  if (spec.cab) chevron(k, noseStart - 0.1, 1);
+  // On a cab car the three short chevrons sit forward on the nose's grey side panel and the
+  // long stripe runs up to meet them.
+  const chevFront = noseStart + 1.15;
+  const zB = spec.cab ? chevFront - 0.25 - 3 * 0.36 + 0.02 : h - 0.2;
+  if (spec.cab) chevron(k, chevFront, 1);
   const segs = 6;
   for (let i = 0; i < segs; i++) {
     const a = zA + ((zB - zA) * i) / segs;
