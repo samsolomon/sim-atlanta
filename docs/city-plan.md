@@ -117,7 +117,7 @@ A downtown diorama in the vignette's style. It is built by generalising the vign
 - **Buses:**
   - `DioramaBuses` snaps only when a new fix arrives, using a spatial grid over street segments; today it rescans every road every frame.
   - `MAX` goes to about 120.
-- **Freight:** illustrative freight trains through the Gulch on the Overture freight tracks, reusing the freight consist from the vignette. They are labelled `illustrative` in the card and the status sheet.
+- **Freight:** trace a continuous mapped freight route from the Georgia State crossing before animating it. Use the rendered freight track to place both trucks of each vehicle, including at the change from bare earth to bridge. The model lab supplies a generic diesel and boxcar. The position, time, consist and paint are illustrative. Identify freight in the City attribution and status sheet. Older bakes without a verified route can still open City and show passenger rail.
 - **Traffic:** cars in City v1 run only on the Connector and major arterials (filtered by road class, with volumes from HPMS). That network is simulated in full, with no camera-region level-of-detail. Caps are raised to fit; the phone tier halves volumes.
   - When M2b reaches road traffic, revisit the Connector beneath the Georgia State rail approach.
     Sam’s highway-level reference shows how much of the opening beneath the freight bridge is
