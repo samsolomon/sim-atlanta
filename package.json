@@ -12,7 +12,8 @@
     "data:scene": ".venv/bin/python pipeline/scripts/extract_overture.py && cargo run --release --manifest-path pipeline/Cargo.toml -- scene",
     "data:vignette": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py && .venv/bin/python pipeline/scripts/vignette_traffic.py && .venv/bin/python pipeline/scripts/vignette_trees.py",
     "review": "node scripts/review.mjs",
-    "data:city": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py downtown && .venv/bin/python pipeline/scripts/vignette_traffic.py downtown && .venv/bin/python pipeline/scripts/vignette_trees.py downtown",
-    "data:places": ".venv/bin/python pipeline/scripts/neighborhoods.py"
+    "data:city": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py downtown && .venv/bin/python pipeline/scripts/vignette_traffic.py downtown && .venv/bin/python pipeline/scripts/vignette_trees.py downtown && pnpm data:terrain",
+    "data:places": ".venv/bin/python pipeline/scripts/neighborhoods.py",
+    "data:terrain": "node scripts/stage-city-terrain.mjs"
   }
 }
