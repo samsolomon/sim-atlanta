@@ -42,8 +42,10 @@ const C = {
   glass: '#1d242c',
   frame: '#20252c',
   tyre: '#1a1b1e',
-  rim: '#b9bdc1',
-  hub: '#7d8187',
+  rim: '#8f959b',
+  rimLip: '#b4b9be',
+  hubRing: '#5d6268',
+  hub: '#222428',
   well: '#15171a',
   roofCap: '#e6e9eb',
   bumper: '#2b2e34',
@@ -125,14 +127,14 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   body.translate(0, 0, -(W - 2 * BEV) / 2);
   body.rotateY(-Math.PI / 2);
   k.geo(body, liv.body);
-  // Dark wheel wells filling the arches, just inside the side skins.
+  // Dark wheel wells: an open half-tube lining the top of each arch, just inside the arch wall.
   for (const zc of [AXLE_R, AXLE_F]) {
-    const well = new THREE.CylinderGeometry(ARCH_R + 0.02, ARCH_R + 0.02, W - 0.06, 24, 1, false, 0, Math.PI);
-    well.rotateZ(Math.PI / 2);
-    well.rotateX(-Math.PI / 2);
+    const well = new THREE.CylinderGeometry(ARCH_R - 0.015, ARCH_R - 0.015, W - 0.04, 28, 1, true, 0, Math.PI);
+    well.rotateZ(Math.PI / 2); // axis across the bus; theta 0..PI is now the upper half
     well.translate(0, ARCH_Y, zc);
     k.geo(well, C.well);
-    k.box(W - 0.06, ARCH_Y - Y0 + 0.02, 2 * ARCH_R + 0.04, 0, (ARCH_Y + Y0) / 2, zc, C.well);
+    // The straight lower lips of the arch (from ARCH_Y down to the skirt).
+    for (const dz of [-1, 1]) k.box(W - 0.1, ARCH_Y - Y0, 0.01, 0, (ARCH_Y + Y0) / 2, zc + dz * (ARCH_R - 0.02), C.well);
   }
 
   // ---- livery: lower skirt band and two accent lines -------------------------------------
@@ -249,23 +251,39 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   k.box(W - 0.1, 0.26, 0.14, 0, Y0 + 0.14, ZR - 0.06, C.bumper);
 
   // ---- wheels: round tyres with rims; duals at the rear --------------------------------------
+  // Tyres: an open tread band with ring sidewalls, so the dished rim can sit inside it.
   const tyre = (x: number, z: number, width: number) => {
-    const t = new THREE.CylinderGeometry(TYRE_R, TYRE_R, width, 28).rotateZ(Math.PI / 2);
+    const t = new THREE.CylinderGeometry(TYRE_R, TYRE_R, width, 32, 1, true).rotateZ(Math.PI / 2);
     t.translate(x, TYRE_R, z);
     k.geo(t, C.tyre);
+    for (const f of [-1, 1]) {
+      const wall = new THREE.RingGeometry(0.29, TYRE_R, 32, 1).rotateY(Math.PI / 2);
+      wall.translate(x + (f * width) / 2, TYRE_R, z);
+      k.geo(wall, C.tyre);
+    }
+    const back = new THREE.CircleGeometry(0.3, 24).rotateY(Math.PI / 2); // closes the wheel's middle
+    back.translate(x, TYRE_R, z);
+    k.geo(back, C.well);
+  };
+  // Steel disc wheels: a grey dished face, a lighter lip, a dark hub centre with lug ring.
+  const disc = (r: number, w: number, x: number, z: number, color: string, seg = 28) => {
+    const g = new THREE.CylinderGeometry(r, r, w, seg).rotateZ(Math.PI / 2);
+    g.translate(x, TYRE_R, z);
+    k.geo(g, color);
   };
   for (const s of both) {
-    const xo = s * (W / 2 - 0.2);
+    const xo = s * (W / 2 - 0.2); // outer tyre centre; its face is at xo + s*0.15
     tyre(xo, AXLE_F, 0.3);
     tyre(xo, AXLE_R, 0.3);
     tyre(s * (W / 2 - 0.52), AXLE_R, 0.3); // inner dual
     for (const z of [AXLE_F, AXLE_R]) {
-      const rim = new THREE.CylinderGeometry(0.29, 0.29, 0.31, 24).rotateZ(Math.PI / 2);
-      rim.translate(xo + s * 0.004, TYRE_R, z);
-      k.geo(rim, C.rim);
-      const hub = new THREE.CylinderGeometry(0.12, 0.12, 0.33, 12).rotateZ(Math.PI / 2);
-      hub.translate(xo + s * 0.008, TYRE_R, z);
-      k.geo(hub, C.hub);
+      const face = xo + s * 0.15;
+      const lip = new THREE.RingGeometry(0.245, 0.3, 28, 1).rotateY(Math.PI / 2); // bright rim lip
+      lip.translate(face - s * 0.002, TYRE_R, z);
+      k.geo(lip, C.rimLip);
+      disc(0.25, 0.02, face - s * 0.035, z, C.rim); // dished steel face, set back
+      disc(0.15, 0.03, face - s * 0.025, z, C.hubRing, 20); // lug-nut ring
+      disc(0.1, 0.04, face - s * 0.01, z, C.hub, 16); // dark hub centre
     }
   }
   return k.geometry();
