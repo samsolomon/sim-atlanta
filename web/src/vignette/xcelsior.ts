@@ -169,7 +169,7 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   win([1], DOOR_R[0] - 0.05, DOOR_R[1] + 1.75);
   win([1], DOOR_R[1] + 1.85, DOOR_R[1] + 3.45);
   win([1], DOOR_R[1] + 3.55, DOOR_F[0] - 0.15);
-  win([1], DOOR_F[0] - 0.05, ZF - 0.3, BELT + 0.05, HEAD);
+  win([1], DOOR_F[0] + 0.05, ZF - 0.3); // driver's window: same belt line, its own pillar
   // Rear quarter: a short window high above the engine bay.
   win(both, ZR + 0.5, AXLE_R - 0.85, BELT + 0.25, HEAD - 0.05);
   // Doors: glazed leaves in a dark frame, nearly full height from the low floor.
