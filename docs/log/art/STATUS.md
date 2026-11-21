@@ -7,3 +7,5 @@ The Studio has fetched both GTFS feeds, the Georgia crossing inventory and three
 **Browser baseline** — At 1 p.m. on 20 November under clear skies, Chrome drew the viaduct above the Connector and the cut edge of red clay. The Studio matches the Air on 64 buildings, 384 road runs, 13 rail runs, 76 trees, 68 traffic nodes, 110 edges, 28 entries and 8 signals. [Studio screenshot](studio-baseline.jpg)
 
 **First Blender render** — [Full board](blender-board.jpg). The 12-sample Cycles render took 192 seconds on Metal for 4,352 × 2,560 pixels. The viaduct stands clear of the Connector on its piers. The 32-colour finish and 69 pyramid tiles retain individual windows, trees and lane dashes.
+
+**First AI redraw** — [Viaduct crop](first-redraw.jpg). SDXL and Pixel Art XL took 9.06 seconds for the first 1024 px window on MPS. At strength 0.38 the bridge still meets the same streets, but the model turns lane dashes into blocks and adds a dark canopy to a small roof. The layer is illustrative.
