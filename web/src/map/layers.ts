@@ -17,7 +17,10 @@ export const MODE_COLOR: Record<Mode, string> = {
 };
 export const modeColor = (r: Route) => MODE_COLOR[r.mode] ?? '#495057';
 /** The agency's line colour (for cards and close-zoom tint); falls back to the mode colour. */
-export const routeColor = (r: Route) => (r.mode === 'intercity' ? modeColor(r) : r.color);
+/** Feed colours that don't sit well on the map: the streetcar's GTFS colour is pure #0000FF,
+ *  a harsh hue next to the Blue Line (#0075B2); a softer cornflower keeps it blue but its own. */
+const COLOR_FIX: Record<string, string> = { 'marta:route:STREETCAR': '#5a86d6' };
+export const routeColor = (r: Route) => (r.mode === 'intercity' ? modeColor(r) : (COLOR_FIX[r.id] ?? r.color));
 /** Zoom at which city rail switches from the mode colour to the agency's line colours. */
 export const AGENCY_TINT_ZOOM = 12.5;
 

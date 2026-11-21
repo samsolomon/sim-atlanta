@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "web/about.html"
+        ],
+        "createdAt": "2026-11-21T16:35:17.417Z",
+        "reason": "Deliberate: the warm paper background is the diorama's palette from the chosen art style (AGENTS.md art direction; Sam asked Map/City/About to work back from the vignette look)"
+      }
+    ]
+  }
+}

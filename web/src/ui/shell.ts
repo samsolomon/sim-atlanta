@@ -1,8 +1,10 @@
 /**
- * The app's shared chrome, the same over Map and City:
- *   - status card (top right): place · weather · date and time, tap for live data and truth tiers
- *   - menu (top left): Models, About, Key
- *   - view switch (bottom centre): Map · City
+ * The app's shared chrome, the same over Map and City: one frosted bar across the top
+ * (after monaco.com's nav), holding
+ *   - left: menu (Key, Models, About) and the name
+ *   - centre: the view switch, Map · City
+ *   - right: status: weather icon, temperature, place, time, live dot; tap for live data
+ *     and truth tiers
  *   - first-run hint, and keyboard movement (WASD / arrows, +/−, M / C)
  * Plain DOM; no framework. The host page supplies where the camera is looking and the live
  * feed state; the shell owns weather and neighbourhood lookups.
@@ -11,6 +13,8 @@ import './tokens.css';
 import './shell.css';
 import { fetchLive, type Weather } from '../core/weather';
 import { loadPlaces, placeAt } from '../core/places';
+import { sunPosition } from '../vignette/time';
+import { ICON, weatherIcon } from './icons';
 
 export type View = 'map' | 'city';
 
@@ -31,11 +35,11 @@ export interface ShellOptions {
   zoom(dir: 1 | -1): void;
   rotate?(dir: 1 | -1): void;
   live(): LiveState;
-  /** Optional note under the status card (e.g. "City view covers downtown for now"). */
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+const longDate = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'long', day: 'numeric' });
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -50,35 +54,91 @@ const typing = (t: EventTarget | null) =>
 export function createShell(o: ShellOptions) {
   let view = o.view;
 
-  // ---- status card ----------------------------------------------------------------------
-  const status = el('section', { class: 'status glass', 'aria-label': 'Atlanta right now' });
-  const statusBtn = el('button', { type: 'button', class: 'status-main', 'aria-expanded': 'false', 'aria-controls': 'status-more' });
-  const place = el('span', { class: 'status-place' }, 'Atlanta');
+  // ---- the bar: one frosted strip across the top (menu + name · view switch · status) -----
+  const bar = el('header', { class: 'bar glass' });
+  const left = el('div', { class: 'bar-l' });
+  const menuBtn = el('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Menu', 'aria-expanded': 'false', 'aria-controls': 'menu' }, `<span class="ic">${ICON.list}</span>`);
+  left.append(menuBtn, el('a', { class: 'wordmark', href: '/about' }, 'sim<span>·</span>atlanta'));
+
+  const sw = el('div', { class: 'switch', role: 'group', 'aria-label': 'View' });
+  const btns = (['map', 'city'] as View[]).map((v) => {
+    const b = el(
+      'button',
+      { type: 'button', 'data-view': v, title: v === 'map' ? 'Map (M)' : 'City (C)' },
+      `<span class="ic">${v === 'map' ? ICON.mapTrifold : ICON.buildings}</span><span>${v === 'map' ? 'Map' : 'City'}</span>`,
+    );
+    b.addEventListener('click', () => setView(v, true));
+    return b;
+  });
+  sw.append(...btns);
+
+  const statusBtn = el('button', { type: 'button', class: 'status-btn', 'aria-expanded': 'false', 'aria-controls': 'status-more', 'aria-label': 'Atlanta right now' });
+  const wxIcon = el('span', { class: 'ic wx', 'aria-hidden': 'true' });
+  const temp = el('span', { class: 'temp' });
+  const place = el('span', { class: 'place' }, 'Atlanta');
+  const time = el('span', { class: 'time' });
   const dot = el('span', { class: 'status-dot', 'aria-hidden': 'true' });
-  const line = el('span', { class: 'status-line' });
-  statusBtn.append(el('span', { class: 'status-top' }), line);
-  statusBtn.firstElementChild!.append(place, dot);
-  const more = el('div', { class: 'status-more', id: 'status-more', hidden: '' });
-  const note = el('p', { class: 'status-note', hidden: '' });
-  status.append(statusBtn, more, note);
+  statusBtn.append(wxIcon, temp, place, time, dot);
+  const right = el('div', { class: 'bar-r' });
+  right.append(statusBtn);
+  bar.append(left, sw, right);
+
+  // ---- drop-downs under the bar ----------------------------------------------------------
+  const menu = el('nav', { class: 'drop drop-l glass', id: 'menu', hidden: '', 'aria-label': 'Site' });
+  menu.innerHTML = `
+    <p class="drop-title">A little model of Atlanta</p>
+    <button type="button" data-act="key">Key</button>
+    <a href="/models">Models</a>
+    <a href="/about">About &amp; credits</a>`;
+  const more = el('section', { class: 'drop drop-r glass', id: 'status-more', hidden: '', 'aria-label': 'Live data' });
+  const note = el('p', { class: 'bar-note glass', hidden: '' });
+
+  const closeDrops = (except?: HTMLElement) => {
+    if (except !== menu) {
+      menu.hidden = true;
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (except !== more) {
+      more.hidden = true;
+      statusBtn.setAttribute('aria-expanded', 'false');
+    }
+  };
+  menuBtn.addEventListener('click', () => {
+    const open = menu.hidden;
+    closeDrops(menu);
+    menu.hidden = !open;
+    menuBtn.setAttribute('aria-expanded', String(open));
+    if (open) (menu.querySelector('button, a') as HTMLElement)?.focus();
+  });
   statusBtn.addEventListener('click', () => {
     const open = more.hidden;
+    closeDrops(more);
     more.hidden = !open;
     statusBtn.setAttribute('aria-expanded', String(open));
     if (open) renderMore();
+  });
+  menu.querySelector('[data-act=key]')!.addEventListener('click', () => {
+    closeDrops();
+    key.showModal();
+  });
+  document.addEventListener('click', (e) => {
+    const t = e.target as Node;
+    if (!bar.contains(t) && !menu.contains(t) && !more.contains(t)) closeDrops();
   });
 
   let weather: Weather | null = null;
   let weatherAt = 0;
   async function pollWeather() {
     const w = await fetchLive();
-    weather = w; // null → the card simply omits weather; never a stale or guessed condition
+    weather = w; // null → the bar simply omits weather; never a stale or guessed condition
     weatherAt = w ? Date.now() : 0;
+    lastTick = 0;
   }
   void pollWeather();
   setInterval(() => void pollWeather(), 10 * 60_000);
   void loadPlaces();
 
+  let now = new Date();
   function renderMore() {
     const s = o.live();
     const rail = !s.realTime
@@ -90,13 +150,16 @@ export function createShell(o: ShellOptions) {
           : '<b>Trains</b> MARTA live feed unavailable, showing the timetable';
     const bus = !s.realTime ? '<b>Buses</b> shown only at the present time' : s.buses == null ? '<b>Buses</b> live feed unavailable' : `<b>Buses</b> ${s.buses} MARTA buses, live positions`;
     const wx = weather
-      ? `<b>Weather</b> Open-Meteo, ${Math.max(0, Math.round((Date.now() - weatherAt) / 60000))} min ago`
+      ? `<b>Weather</b> ${cap(weather.label)}${weather.tempF != null ? `, ${Math.round(weather.tempF)}°F` : ''} · Open-Meteo, ${Math.max(0, Math.round((Date.now() - weatherAt) / 60000))} min ago`
       : '<b>Weather</b> unavailable right now';
-    more.innerHTML = `<ul><li>${rail}</li><li>${bus}</li><li><b>Freight</b> where trains run is reported; when is illustrative</li><li>${wx}</li></ul>`;
+    more.innerHTML = `
+      <p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>
+      <ul><li>${rail}</li><li>${bus}</li><li><b>Freight</b> where trains run is reported; when is illustrative</li><li>${wx}</li></ul>`;
   }
 
   let lastTick = 0;
-  function tick(now: Date) {
+  function tick(t0: Date) {
+    now = t0;
     const t = performance.now();
     if (t - lastTick < 500) return;
     lastTick = t;
@@ -107,41 +170,30 @@ export function createShell(o: ShellOptions) {
     const liveOn = s.realTime && s.rail === 'live';
     dot.className = `status-dot ${liveOn ? 'on' : ''}`;
     dot.title = liveOn ? 'Live' : s.realTime ? 'Timetable' : 'Timetable · not live';
-    const parts: string[] = [];
-    if (weather) parts.push(`${cap(weather.label)}${weather.tempF != null ? ` ${Math.round(weather.tempF)}°` : ''}`);
-    parts.push(dateFmt.format(now), timeFmt.format(now));
-    if (!s.realTime) parts.push('Timetable · not live');
-    line.textContent = parts.join(' · ');
+    if (weather) {
+      const night = sunPosition(now).elevation < -2;
+      const svg = weatherIcon(weather, night);
+      if (wxIcon.dataset.svg !== svg) {
+        wxIcon.innerHTML = svg;
+        wxIcon.dataset.svg = svg;
+      }
+      wxIcon.hidden = false;
+      wxIcon.title = cap(weather.label);
+      temp.textContent = weather.tempF != null ? `${Math.round(weather.tempF)}°` : '';
+    } else {
+      wxIcon.hidden = true;
+      temp.textContent = '';
+    }
+    time.textContent = s.realTime ? timeFmt.format(now) : `${timeFmt.format(now)} · timetable`;
+    statusBtn.setAttribute('aria-label', `${place.textContent}, ${weather ? `${weather.label}, ` : ''}${dateFmt.format(now)} ${timeFmt.format(now)}${liveOn ? ', live' : ''}`);
     if (!more.hidden) renderMore();
   }
-  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  // ---- menu ------------------------------------------------------------------------------
-  const menuBtn = el('button', { type: 'button', class: 'menu-btn glass', 'aria-label': 'Menu', 'aria-expanded': 'false', 'aria-controls': 'menu' }, '<span></span><span></span><span></span>');
-  const menu = el('nav', { class: 'menu glass', id: 'menu', hidden: '', 'aria-label': 'Site' });
-  menu.innerHTML = `
-    <p class="menu-title">A little model of Atlanta</p>
-    <button type="button" data-act="key">Key</button>
-    <a href="/models">Models</a>
-    <a href="/about">About &amp; credits</a>`;
-  const setMenu = (open: boolean) => {
-    menu.hidden = !open;
-    menuBtn.setAttribute('aria-expanded', String(open));
-    if (open) (menu.querySelector('button, a') as HTMLElement)?.focus();
-  };
-  menuBtn.addEventListener('click', () => setMenu(menu.hidden));
-  menu.querySelector('[data-act=key]')!.addEventListener('click', () => {
-    setMenu(false);
-    key.showModal();
-  });
-  document.addEventListener('click', (e) => {
-    if (!menu.hidden && !menu.contains(e.target as Node) && !menuBtn.contains(e.target as Node)) setMenu(false);
-  });
+  const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
   // ---- key (legend) ----------------------------------------------------------------------
   const key = el('dialog', { class: 'key glass', 'aria-label': 'Key' });
   key.innerHTML = `
-    <form method="dialog"><button class="key-close" aria-label="Close">×</button></form>
+    <form method="dialog"><button class="key-close icon-btn" aria-label="Close"><span class="ic">${ICON.x}</span></button></form>
     <h2>Key</h2>
     <p class="key-lede">Colour shows the kind of service, not the operator.</p>
     <ul class="legend">
@@ -155,14 +207,7 @@ export function createShell(o: ShellOptions) {
     <p class="key-foot">Live means MARTA reported it in the last few minutes. Scheduled is where the timetable says a train should be. Freight movements are illustrative.</p>`;
   key.addEventListener('click', (e) => e.target === key && key.close());
 
-  // ---- view switch ------------------------------------------------------------------------
-  const sw = el('div', { class: 'switch glass', role: 'group', 'aria-label': 'View' });
-  const btns = (['map', 'city'] as View[]).map((v) => {
-    const b = el('button', { type: 'button', 'data-view': v, title: v === 'map' ? 'Map (M)' : 'City (C)' }, v === 'map' ? 'Map' : 'City');
-    b.addEventListener('click', () => setView(v, true));
-    return b;
-  });
-  sw.append(...btns);
+  // ---- view switch state -----------------------------------------------------------------
   function setView(v: View, fromUser = false) {
     btns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     if (v === view && !fromUser) return;
@@ -198,7 +243,7 @@ export function createShell(o: ShellOptions) {
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, dismiss, { once: true, passive: true });
   }
 
-  document.body.append(status, menuBtn, menu, key, sw, ...(hint ? [hint] : []));
+  document.body.append(bar, menu, more, note, key, ...(hint ? [hint] : []));
 
   // ---- keyboard ---------------------------------------------------------------------------
   const held = new Set<string>();
@@ -232,7 +277,7 @@ export function createShell(o: ShellOptions) {
   addEventListener('keydown', (e) => {
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey || key.open) return;
     const k = e.key.toLowerCase();
-    if (k === 'escape') return setMenu(false);
+    if (k === 'escape') return closeDrops();
     if (MOVE[k]) {
       e.preventDefault();
       held.add(k);

@@ -13,7 +13,7 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 /* ---- hidden time controls (?controls=1) ---- */
 .timectl {
-  position: fixed; left: max(12px, env(safe-area-inset-left)); bottom: 84px; z-index: 4;
+  position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 4;
   width: min(280px, calc(100vw - 24px)); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 6px;
 }
 .timectl[hidden] { display: none; }
@@ -33,7 +33,7 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 /* ---- vehicle / place card ---- */
 #card {
-  position: fixed; left: max(12px, env(safe-area-inset-left)); bottom: 84px; width: min(340px, calc(100vw - 24px));
+  position: fixed; left: max(14px, env(safe-area-inset-left)); bottom: max(20px, env(safe-area-inset-bottom)); width: min(340px, calc(100vw - 28px));
   border-radius: var(--radius); padding: 14px 16px; z-index: 6; font-size: 14px;
 }
 #card[hidden] { display: none; }
@@ -57,5 +57,5 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .chip.illustrative { color: #7048e8; border-style: dotted; }
 
 @media (max-width: 600px) {
-  #card { bottom: 80px; }
+  #card { bottom: 14px; }
 }
