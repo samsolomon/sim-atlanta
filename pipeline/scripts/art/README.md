@@ -1,6 +1,6 @@
 # East Portal art factory
 
-Run from the repository root on an Apple Silicon Mac with Blender 5.3 and Chrome. The source is the Railwatch vignette built from MARTA GTFS, Overture, FHWA and the Meta/WRI canopy map. All colours, simulated vehicles, facade panes and shadows are illustrative.
+Run from the repository root on an Apple Silicon Mac with Blender 5.3 and Chrome. The source is the sim-atlanta vignette built from MARTA GTFS, Overture, FHWA and the Meta/WRI canopy map. All colours, simulated vehicles, facade panes and shadows are illustrative.
 
 ## Blender and sprite sheets
 

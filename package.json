@@ -1,5 +1,5 @@
 {
-  "name": "train-map",
+  "name": "sim-atlanta",
   "private": true,
   "scripts": {
     "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places",
