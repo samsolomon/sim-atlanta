@@ -6,6 +6,7 @@ import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
+import { mapMetresPerPixel, mapZoomForScale } from './core/camera';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
@@ -15,7 +16,7 @@ import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
-import type { Diorama } from './scene3d/view';
+import type { CityView } from './city/city';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -79,7 +80,18 @@ const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
 live.start();
 
-let updateAtmosphere = () => {}; // set once the map has loaded
+let override: AtmosphereOverride | null = null;
+let paintMapAtmosphere: ((atm: Atmosphere) => void) | null = null;
+const updateAtmosphere = () => {
+  const w = clock.isRealTime() ? shell.weather() : null;
+  const atm = atmosphere(clock.now(), w, override ?? {});
+  atmRealTime = clock.isRealTime();
+  atmAt = clock.now().getTime();
+  lastAtm = atm;
+  diorama?.setAtmosphere(atm, clock.now());
+  shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
+  paintMapAtmosphere?.(atm);
+};
 let atmRealTime = true; // the clock state the atmosphere was last computed for
 let atmAt = 0; // the simulated time it was computed for
 // Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;
@@ -116,7 +128,6 @@ onReady(() => {
   // ?palette=<preset> pins a static palette; ?tune opens the playground.
   const sky = new SkyLayer();
   map.addLayer(sky, 'freight-unknown'); // above the basemap's fills, below our rail and labels
-  let override: AtmosphereOverride | null = null;
   let pinned: Palette | null = PALETTES[params.get('palette') ?? ''] ?? null;
   let onScreen: Palette = PALETTES[DEFAULT_PALETTE];
   let lastWx = 1;
@@ -129,17 +140,11 @@ onReady(() => {
     onScreen = pinned ?? paletteFor(local);
     applyPalette(map, onScreen);
   };
-  updateAtmosphere = () => {
-    const w = clock.isRealTime() ? shell.weather() : null; // live weather only at the present
-    const atm = atmosphere(clock.now(), w, override ?? {});
-    atmRealTime = clock.isRealTime();
-    atmAt = clock.now().getTime();
+  paintMapAtmosphere = (atm) => {
     sky.set(atm);
     paintFor(atm);
-    shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
   };
   updateAtmosphere();
-  setInterval(updateAtmosphere, 60_000);
   map.on('moveend', () => {
     if (!sky.atm) return; // weather strength depends on zoom and place
     sky.set(sky.atm);
@@ -241,10 +246,7 @@ onReady(() => {
       updateBuses(ts);
       const now = clock.now();
       const trains = source.update(now);
-      if (diorama) diorama.update(trains);
-      else trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
-      updateClock(now);
-      shell.tick(now);
+      if (!diorama) trainsSource(map)?.setData(trainFeatures(trains, schedule.routes));
       if (selectedTrain && ts - lastCard > 1000) {
         lastCard = ts;
         renderTrainCard();
@@ -292,27 +294,34 @@ setSpeed(clock.speed);
 
 // ---- views: Map (MapLibre) and City (3D, loaded on demand) -------------------------------
 // ?view=city opens City directly (?view=3d still works). The URL hash belongs to MapLibre.
-// Until the diorama-style City lands, City is the downtown 3D from scene3d/.
-let diorama: Diorama | null = null;
+// City is the downtown diorama (city/city.ts), in the same atmosphere as the Map.
+let diorama: CityView | null = null;
+let lastAtm: Atmosphere | null = null;
 const view3d = document.getElementById('view3d')!;
-const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, scene3d's origin
-const CITY_BOUNDS = { minX: -1331, maxX: 1350, minZ: -2124, maxZ: 1546 };
+const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
+const cityLoading = document.getElementById('city-loading')!;
+const cityProgress = document.getElementById('city-progress')!;
+let cityAbort: AbortController | null = null;
 
 let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
+let cityTilt = 57; // retain the user's City tilt while Map remains flat
+let opening = params.get('view') === 'city' || params.get('view') === '3d';
 async function openCity() {
   if (diorama) return;
   const load = ++cityLoad;
+  cityAbort?.abort();
+  const abort = cityAbort = new AbortController();
   view3d.hidden = false;
+  cityLoading.hidden = false;
+  cityProgress.textContent = 'Loading buildings, streets and trees…';
   document.body.classList.add('in3d');
-  // Open where the map was looking, clamped into the area City covers.
-  const c = map.getCenter();
-  const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
-  const x = Math.min(CITY_BOUNDS.maxX, Math.max(CITY_BOUNDS.minX, mx));
-  const z = Math.min(CITY_BOUNDS.maxZ, Math.max(CITY_BOUNDS.minZ, mz));
-  shell.setNote(Math.hypot(x - mx, z - mz) > 200 ? 'City view covers downtown for now' : null);
+  shell.setNote(null);
   try {
-    const { createDiorama } = await import('./scene3d/view');
-    const d = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+    const { createCity } = await import('./city/city');
+    const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
+      signal: abort.signal,
+      progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
+    });
     if (load !== cityLoad) {
       d.dispose(); // the user went back to Map (or reopened City) while this was loading
       return;
@@ -327,25 +336,40 @@ async function openCity() {
     shell.setNote('City view couldn’t load here, so this is the map');
     return;
   }
-  diorama.onPick = (id) => {
-    if (!id) return hideCard();
-    selectedTrain = id;
-    renderTrainCard();
-  };
-  diorama.lookAt(x, z);
-  const cam = params.get('cam')?.split(',').map(Number); // x,z,zoom,azimuthDeg for repeatable shots
-  if (cam?.length === 4 && cam.every(Number.isFinite)) diorama.setView({ x: cam[0], z: cam[1], zoom: cam[2], azimuth: cam[3] });
+  if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
+  // Opening on City frames downtown; arriving from the Map keeps the place you were looking at.
+  if (!opening) {
+    // Read the current Map camera after loading: keyboard movement may have continued.
+    const c = map.getCenter();
+    const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
+    diorama.lookAt(mx, mz, {
+      bearing: map.getBearing(),
+      metresPerPixel: mapMetresPerPixel(c.lat, map.getZoom()),
+      tilt: cityTilt,
+    });
+    const target = diorama.target();
+    shell.setNote(Math.hypot(target.x - mx, target.z - mz) > 1 ? 'City view covers downtown for now' : null);
+  }
+  opening = false;
+  cityLoading.hidden = true;
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
 }
 
 function closeCity() {
   cityLoad++;
+  cityAbort?.abort();
+  cityAbort = null;
+  opening = false;
+  cityLoading.hidden = true;
   if (diorama) {
-    // Hand the place back to the map.
+    // Keep the same centre, direction and horizontal scale; only the tilt changes.
     const t = diorama.target();
+    const camera = diorama.camera();
+    cityTilt = camera.tilt;
     const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
-    map.jumpTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 13.5) });
+    map.jumpTo({ center: [lon, lat], bearing: camera.bearing, pitch: 0,
+      zoom: mapZoomForScale(lat, camera.metresPerPixel) });
   }
   diorama?.dispose();
   diorama = null;
@@ -376,15 +400,16 @@ const shell = createShell({
     return [c.lng, c.lat];
   },
   pan(dx, dy) {
-    if (diorama) diorama.pan(dx, dy);
+    // The shell sends a content-drag offset; both cameras move in the opposite direction.
+    if (diorama) diorama.pan(-dx, -dy);
     else map.panBy([-dx, -dy], { duration: 0 });
   },
   zoom(dir) {
-    if (diorama) return; // City zoom stays on wheel/pinch for now
+    if (diorama) return diorama.zoom(dir);
     map.zoomTo(map.getZoom() + dir, { duration: 200 });
   },
-  rotate(dir) {
-    diorama?.rotate(dir);
+  rotate(degrees) {
+    diorama?.rotate(degrees);
   },
   onWeather: () => updateAtmosphere(),
   live: () => ({
@@ -395,17 +420,19 @@ const shell = createShell({
   }),
 });
 
+// City and its status card must keep time even while remote Map tiles are unavailable.
+updateAtmosphere();
+updateClock(clock.now());
+shell.tick(clock.now());
+setInterval(updateAtmosphere, 60_000);
+setInterval(() => {
+  const now = clock.now();
+  updateClock(now);
+  shell.tick(now);
+}, 500);
+
 // Hidden time controls (kept for later): ?controls=1 shows them.
 document.getElementById('timectl')!.hidden = params.get('controls') !== '1';
 
-document.addEventListener('keydown', (e) => {
-  if (!diorama || e.target instanceof HTMLInputElement) return;
-  if (e.key === 'l') {
-    const l = diorama.cycleLook();
-    const u = new URL(location.href);
-    u.searchParams.set('look', l.id);
-    history.replaceState(null, '', u);
-  }
-});
 const startView = params.get('view');
 if (startView === 'city' || startView === '3d') shell.setView('city');

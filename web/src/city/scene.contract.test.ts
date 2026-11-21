@@ -3,39 +3,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RoutesFile } from '../model/types';
-import { decodeMesh, elevationAt, makeProjector, type SceneManifest } from './scene-data';
+import { elevationAt, makeProjector, type SceneManifest } from '../core/scene-data';
 
 const dir = resolve(__dirname, '../../public/data/scene/downtown');
 const has = existsSync(resolve(dir, 'scene.json'));
 
 describe.skipIf(!has)('downtown scene data', () => {
-  const manifest: SceneManifest = JSON.parse(readFileSync(resolve(dir, 'scene.json'), 'utf8'));
-  const routes: RoutesFile = JSON.parse(readFileSync(resolve(dir, '../../ga/routes.json'), 'utf8'));
-  const buf = (f: string) => {
-    const b = readFileSync(resolve(dir, f));
-    return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
-  };
-
-  it('mesh files have exactly the byte length the manifest implies', () => {
-    for (const ref of Object.values(manifest.meshes)) {
-      const n = ref.vertices;
-      const expected = n * 12 + Math.ceil((n * 3) / 4) * 4 + ref.indices * 4;
-      expect(readFileSync(resolve(dir, ref.file)).byteLength).toBe(expected);
-      const g = decodeMesh(buf(ref.file), ref);
-      expect(g.index!.count).toBe(ref.indices);
-      const maxIndex = (g.index!.array as Uint32Array).reduce((m, v) => (v > m ? v : m), 0);
-      expect(maxIndex).toBeLessThan(n);
-    }
-  });
-
-  it('the skyline includes the tallest downtown towers', () => {
-    const g = decodeMesh(buf(manifest.meshes.buildings.file), manifest.meshes.buildings);
-    const ys = g.attributes.position.array as Float32Array;
-    let max = 0;
-    for (let i = 1; i < ys.length; i += 3) max = Math.max(max, ys[i]);
-    expect(max).toBeCloseTo(311.8, 0); // Bank of America Plaza
-  });
-
+  const manifest: SceneManifest = !has ? null! : JSON.parse(readFileSync(resolve(dir, 'scene.json'), 'utf8'));
+  const routes: RoutesFile = !has ? null! : JSON.parse(readFileSync(resolve(dir, '../../ga/routes.json'), 'utf8'));
   it('profiles reference real heavy-rail paths and Five Points sits below ground', () => {
     const paths = new Map(routes.paths.map((p) => [p.id, p]));
     const project = makeProjector(manifest.origin);

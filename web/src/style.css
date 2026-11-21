@@ -29,6 +29,10 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #view3d { position: fixed; inset: 0; z-index: 1; background: var(--paper-2); }
 #view3d-canvas { position: absolute; inset: 0; }
 #view3d-canvas canvas { display: block; }
+#city-loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: var(--paper-2); color: var(--ink); }
+#city-loading[hidden] { display: none; }
+#city-loading p { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
+#city-progress { color: var(--ink-2); font-size: 14px; }
 .attrib3d { position: absolute; right: 10px; bottom: 8px; margin: 0; font-size: 11px; color: var(--ink-2); background: rgba(251, 249, 244, 0.75); padding: 3px 8px; border-radius: 6px; }
 
 /* ---- vehicle / place card ---- */

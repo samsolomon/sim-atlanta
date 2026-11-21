@@ -22,7 +22,8 @@ Atlanta and Georgia. Every fact on the map says how we know it: **live**, **sche
 ```sh
 pnpm install
 python3 -m venv .venv && .venv/bin/pip install duckdb rasterio pyproj scipy pillow   # once
-pnpm data           # fetch + build map data and the downtown 3D scene; re-run to refresh
+pnpm data           # fetch + build Map data, downtown rail profiles and City data; re-run to refresh
+pnpm data:city      # refresh only the City board, traffic network and tree canopy
 pnpm data:vignette  # East Portal diorama: refreshes the Overture roads/land-use/infrastructure/building
                     # extracts, then crops them and adds FHWA traffic + Meta/WRI trees (re-run after pulling)
 pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item trains-marta-api
@@ -36,8 +37,11 @@ These URL options are handy for reviewing:
 - `?t=2026-11-20T14:00:00-05:00` pins the clock to a moment.
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
-- `?view=3d` opens the downtown 3D diorama directly. Drag to pan, scroll or pinch to zoom,
-  Q/E or the buttons to rotate, and tap a train for its card. `L` cycles colour looks.
+- `?view=city` (`?view=3d` also works) opens the static downtown diorama. Drag to orbit,
+  right-drag or WASD/arrows to pan, scroll/pinch or +/− to zoom, Q/E to rotate,
+  and double-click to glide to a place. `?q=low|high` overrides the device quality tier.
+  Map remains the default until City passes the Galaxy A16 ≥30 fps gate. Moving City
+  trains, buses, freight and traffic are M2b; train cards currently belong to Map.
 - `/vignette.html` is the East Portal look study: a detailed low-poly diorama whose light,
   season, weather and traffic follow Atlanta's clock. Options: `?at=<ISO time>`,
   `?speed=600`, `?weather=rain|fog|storm|overcast|clear` (default live), `?clean`, `?scatter`.
@@ -60,6 +64,10 @@ See [the response contract](docs/data-model.md#live-buses).
 Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
 custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
 before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+`pnpm data` includes `data:city`: City requires `scene/downtown/vignette.json`,
+`trees.json` and the retained `scene.json` profiles. In an existing checkout with Map
+data, run `pnpm data:city` once before building this milestone. Missing City data makes
+the app fall back to Map. Vite omits the three retired downtown `.bin` meshes.
 
 The optional East Portal art map uses a separate static bake. To include or retain
 `/artmap.html` in a deployment, copy the Studio's complete `web/public/art/`
@@ -75,6 +83,6 @@ pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
 
 ## Not yet
 
-- Diorama polish: trees, terrain, buses, time-of-day lighting, MARTA CQ400 car models (see
-  docs/art-backlog.md), a ride-along camera, and growing out to I-285.
+- City's phone performance gate, moving vehicles, real terrain, a ride-along camera,
+  and growing out to I-285 (see docs/city-plan.md and docs/art-backlog.md).
 - Freight positions. No free source exists; see docs/data-model.md.

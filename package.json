@@ -2,7 +2,7 @@
   "name": "sim-atlanta",
   "private": true,
   "scripts": {
-    "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places",
+    "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places && pnpm data:city",
     "dev": "pnpm --filter web dev",
     "dev:worker": "pnpm --filter worker dev",
     "secrets:local": "umask 077 && printf 'MARTA_API_KEY=%s\\n' \"$(op read 'op://Personal/trains-marta-api/credential')\" > worker/.dev.vars",
@@ -12,6 +12,7 @@
     "data:scene": ".venv/bin/python pipeline/scripts/extract_overture.py && cargo run --release --manifest-path pipeline/Cargo.toml -- scene",
     "data:vignette": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py && .venv/bin/python pipeline/scripts/vignette_traffic.py && .venv/bin/python pipeline/scripts/vignette_trees.py",
     "review": "node scripts/review.mjs",
+    "data:city": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py downtown && .venv/bin/python pipeline/scripts/vignette_traffic.py downtown && .venv/bin/python pipeline/scripts/vignette_trees.py downtown",
     "data:places": ".venv/bin/python pipeline/scripts/neighborhoods.py"
   }
 }

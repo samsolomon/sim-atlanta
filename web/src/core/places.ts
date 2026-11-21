@@ -62,7 +62,7 @@ export function placeAt(lon: number, lat: number): string | null {
   return km < 45 ? 'Metro Atlanta' : 'Georgia';
 }
 
-// Scene metres (x east, z −north) ↔ lon/lat around an origin, matching scene3d/scene-data.ts.
+// Scene metres (x east, z −north) ↔ lon/lat around an origin, matching core/scene-data.ts.
 const R = 6_371_008.8;
 const DEG = Math.PI / 180;
 export function sceneToLonLat(origin: { lon: number; lat: number }, x: number, z: number): [number, number] {

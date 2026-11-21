@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { LiveBuses } from '../live/buses';
 import type { LiveBus } from '../model/types';
-import { makeProjector } from '../scene3d/scene-data';
+import { makeProjector } from '../core/scene-data';
 import { segDist, type P2 } from './geom';
 import { BUS_LENGTH, busGeometry, busMaterial } from './xcelsior';
 import type { World } from './world';

@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
+import { PlacementIndex } from './spatial';
 
 export interface VBuilding {
   id: string;
@@ -43,6 +44,19 @@ export interface VData {
   points?: Record<string, P2[]>;
   lines?: Record<string, P2[][]>;
 }
+
+/**
+ * How a board is built. East Portal is a small sculpted board (`trench` terrain, dense trees);
+ * the City board is ~10× larger, so it is flat with a coarse grid and lighter trees.
+ */
+export interface WorldOptions {
+  terrain: 'trench' | 'flat';
+  /** Leaf clumps per deciduous canopy (10 on desktop, fewer on phones). */
+  clumps: number;
+  /** Largest side of the night light map in texels. */
+  lightMapMax: number;
+}
+export const EAST_PORTAL: WorldOptions = { terrain: 'trench', clumps: 10, lightMapMax: 4096 };
 
 /** The MARTA alignment through the vignette: centreline + elevation (m) by distance. */
 export interface Alignment {
@@ -86,23 +100,31 @@ export class World {
   /** 0 by day → 1 at night: lit windows. */
   readonly night = { value: 0 };
   readonly b: VData['bounds'];
-  private gridStep = 2.5;
+  private gridStep: number;
   private nx: number;
   private nz: number;
   private hf: Float32Array;
+  private blocks = new PlacementIndex<P2[]>();
   readonly trees: { x: number; y: number; z: number; s: number; c: number; th?: number }[] = [];
   /** Real trees from a canopy height map: [x, z, height m, crown radius m]. */
   realTrees: [number, number, number, number][] | null = null;
 
+  readonly opts: WorldOptions;
   constructor(
     readonly data: VData,
-    readonly marta: Alignment,
+    /** The sculpted MARTA alignment (East Portal); City lays MARTA track separately. */
+    readonly marta: Alignment | null,
+    opts: WorldOptions = EAST_PORTAL,
   ) {
+    this.opts = opts;
+    for (const bd of data.buildings) this.blocks.add(bd.rings[0], bd.rings[0], 2.5);
     this.b = data.bounds;
+    // A flat board needs no fine heightfield: a coarse grid keeps the ground mesh small.
+    this.gridStep = opts.terrain === 'flat' ? 20 : 2.5;
     this.nx = Math.round((this.b.maxX - this.b.minX) / this.gridStep) + 1;
     this.nz = Math.round((this.b.maxZ - this.b.minZ) / this.gridStep) + 1;
     this.hf = new Float32Array(this.nx * this.nz);
-    this.computeHeights();
+    if (opts.terrain === 'trench') this.computeHeights();
   }
 
   // ---- terrain ------------------------------------------------------------------------
@@ -122,7 +144,7 @@ export class World {
         }
       return best;
     };
-    const m = this.marta;
+    const m = this.marta!;
     for (let j = 0; j < this.nz; j++)
       for (let i = 0; i < this.nx; i++) {
         const x = b.minX + i * st;
@@ -335,7 +357,6 @@ export class World {
     };
     const order = ['meadow', 'garden', 'brownfield', 'construction', 'pitch', 'pedestrian', 'parking', 'platform'];
     const ground = [...(this.data.ground ?? [])].filter((g) => STYLE[g.kind]).sort((a, c) => order.indexOf(a.kind) - order.indexOf(c.kind));
-    const blocks = this.data.buildings.map((bd) => bd.rings[0]);
     for (const g of ground) {
       const st = STYLE[g.kind]!;
       const outer = clipRing(g.rings[0], b);
@@ -349,7 +370,7 @@ export class World {
         const [a, c, d] = [all[t[0]], all[t[1]], all[t[2]]];
         fill.tri([a.x, y(a), a.y], [c.x, y(c), c.y], [d.x, y(d), d.y], st.color);
       }
-      if (g.kind === 'parking') this.layoutStalls(outer, blocks, marks, st.lift);
+      if (g.kind === 'parking') this.layoutStalls(outer, marks, st.lift);
       if (g.kind === 'pitch') {
         // Touchline: the polygon outline inset 1.5 m.
         const ring = new Line([...outer, outer[0]]);
@@ -360,8 +381,13 @@ export class World {
     // a stall's depth either side of the aisle and stripe stalls along it.
     const lots = ground.filter((g) => g.kind === 'parking').map((g) => g.rings[0]);
     const streets = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'service');
-    const nearStreet = (x: number, z: number, d: number) => streets.some((r) => r.pts.some((p, i) => i > 0 && segDist(x, z, r.pts[i - 1], p) < d + (WIDTH[r.cls] ?? 7) / 2));
-    const clearSpot = (x: number, z: number) => this.inBounds(x, z, 2) && !blocks.some((r) => pointInRing(x, z, r) || edgeDist(x, z, r) < 1) && !nearStreet(x, z, 1.5) && this.ground(x, z) > -0.5;
+    const streetIndex = new PlacementIndex<{ a: P2; b: P2; width: number }>();
+    for (const r of streets) for (let i = 1; i < r.pts.length; i++) {
+      const seg = { a: r.pts[i - 1], b: r.pts[i], width: (WIDTH[r.cls] ?? 7) / 2 };
+      streetIndex.add(seg, [seg.a, seg.b], seg.width + 1.5);
+    }
+    const nearStreet = (x: number, z: number) => streetIndex.at(x, z).some((s) => segDist(x, z, s.a, s.b) < 1.5 + s.width);
+    const clearSpot = (x: number, z: number) => this.inBounds(x, z, 2) && !this.blocks.at(x, z).some((r) => pointInRing(x, z, r) || edgeDist(x, z, r) < 1) && !nearStreet(x, z) && this.ground(x, z) > -0.5;
     for (const r of this.data.roads) {
       if (r.sub !== 'parking_aisle' || r.pts.length < 2) continue;
       const line = new Line(r.pts);
@@ -386,14 +412,18 @@ export class World {
 
     // Zebra crossings: stripes parallel to the road, spanning its width.
     const drivable = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'motorway');
+    const crossingIndex = new PlacementIndex<{ r: VRoad; a: P2; c: P2 }>();
+    for (const r of drivable) for (let i = 1; i < r.pts.length; i++) {
+      const seg = { r, a: r.pts[i - 1], c: r.pts[i] };
+      crossingIndex.add(seg, [seg.a, seg.c], 3);
+    }
     for (const [x, z] of this.data.points?.crossing ?? []) {
       if (!this.inBounds(x, z, 2)) continue;
       let best: { d: number; r: VRoad; a: P2; c: P2 } | null = null;
-      for (const r of drivable)
-        for (let i = 1; i < r.pts.length; i++) {
-          const d = segDist(x, z, r.pts[i - 1], r.pts[i]);
-          if (!best || d < best.d) best = { d, r, a: r.pts[i - 1], c: r.pts[i] };
-        }
+      for (const seg of crossingIndex.at(x, z)) {
+        const d = segDist(x, z, seg.a, seg.c);
+        if (!best || d < best.d) best = { d, ...seg };
+      }
       if (!best || best.d > 3) continue;
       const w = WIDTH[best.r.cls] ?? 7;
       const len = Math.hypot(best.c[0] - best.a[0], best.c[1] - best.a[1]) || 1;
@@ -414,7 +444,7 @@ export class World {
   }
 
   /** Rows of 2.6 m × 5.4 m stalls either side of 6.5 m aisles, along the lot's longest edge. */
-  private layoutStalls(ring: P2[], blocks: P2[][], marks: Builder, lift: number) {
+  private layoutStalls(ring: P2[], marks: Builder, lift: number) {
     let best = 0;
     let ang = 0;
     for (let i = 0; i < ring.length; i++) {
@@ -437,7 +467,7 @@ export class World {
       const v = x * vx + z * vz;
       u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v);
     }
-    const ok = (x: number, z: number) => pointInRing(x, z, ring) && edgeDist(x, z, ring) > 1.2 && !blocks.some((r) => pointInRing(x, z, r)) && this.inBounds(x, z, 1);
+    const ok = (x: number, z: number) => pointInRing(x, z, ring) && edgeDist(x, z, ring) > 1.2 && !this.blocks.at(x, z).some((r) => pointInRing(x, z, r)) && this.inBounds(x, z, 1);
     const SW = 2.6;
     const SL = 5.4;
     const module = SL * 2 + 6.5;
@@ -461,65 +491,72 @@ export class World {
 
   // ---- rail ---------------------------------------------------------------------------
 
-  /** Both MARTA tracks: ballast, ties, rails, third rail, open-cut walls, portal and viaduct. */
-  buildMarta() {
-    const m = this.marta;
+  /**
+   * Both MARTA tracks along an alignment: ballast, ties, rails, third rail, open-cut walls,
+   * tunnel portals and viaduct. Only the open parts are drawn (deeper than the portal is tunnel),
+   * so one alignment can surface, dive and surface again across a big board.
+   */
+  buildMarta(m: Alignment | null = this.marta) {
+    if (!m) return;
     const b = new Builder();
-    const inB = (s: number) => {
+    // Open runs: inside the board and shallow enough to be daylight.
+    const runs: [number, number][] = [];
+    let open: number | null = null;
+    for (let s = 0; s <= m.line.length; s += 1) {
       const p = m.line.at(s);
-      return this.inBounds(p.x, p.z, -2);
-    };
-    let s0 = 0;
-    while (s0 < m.line.length && !inB(s0)) s0 += 2;
-    let s1 = m.line.length;
-    while (s1 > s0 && !inB(s1)) s1 -= 2;
-    // Visible from where the trackbed is shallow enough to be open.
-    let sv = s0;
-    while (sv < s1 && m.elev(sv) < PORTAL_E) sv += 1;
+      const ok = this.inBounds(p.x, p.z, -2) && m.elev(s) >= PORTAL_E;
+      if (ok && open == null) open = s;
+      if (!ok && open != null) {
+        if (s - open > 4) runs.push([open, s]);
+        open = null;
+      }
+    }
+    if (open != null && m.line.length - open > 4) runs.push([open, m.line.length]);
+    if (!runs.length) return;
     const ey = (s: number) => m.elev(s);
-    const deckTop = (s: number) => ey(s) + 0.05;
     const tieM = new THREE.Matrix4();
     const ties: THREE.Matrix4[] = [];
-    for (const off of [-2.1, 2.1]) {
-      const tl = m.line.offset(off, 2);
-      b.ribbon(tl, 3.6, (s) => ey(s) + 0.25, PAL.ballast, 2, sv, s1);
-      for (const r of [-0.72, 0.72]) b.ribbon(tl.offset(r, 2), 0.12, (s) => ey(s) + 0.55, PAL.rail, 2, sv, s1);
-      b.ribbon(tl.offset(off > 0 ? 1.35 : -1.35, 2), 0.18, (s) => ey(s) + 0.6, '#b9b2a6', 2, sv, s1); // third rail cover
-      for (let s = sv; s < s1; s += 0.9) {
-        const p = tl.at(s);
-        tieM.makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, ey(s) + 0.42, p.z);
-        ties.push(tieM.clone());
-      }
-    }
-    // Open cut retaining walls, and the portal headwall where the cut becomes a tunnel.
-    let portalDone = false;
-    for (let s = sv; s < s1; s += 2) {
-      const e = ey(s);
-      if (e < -0.4) {
-        for (const d of [-5.2, 5.2]) b.wall(m.line, d, () => e - 0.2, () => 0.6, PAL.concrete, 2, s, Math.min(s + 2, s1));
-        if (!portalDone) {
-          const p = m.line.at(s);
-          const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, 0, p.z);
-          b.box(12, -e + 1.2, 1.2, 0, (e + 1.2) / 2 + 0.1, -0.6, PAL.concrete, rot);
-          b.box(12.6, 0.5, 1.6, 0, 1.0, -0.6, PAL.concreteDark, rot);
-          b.box(9.6, -e - 0.5, 0.2, 0, e + (-e - 0.5) / 2, 0.05, '#1c1d22', rot); // dark mouth
-          portalDone = true;
+    for (const [sv, s1] of runs) {
+      for (const off of [-2.1, 2.1]) {
+        const tl = m.line.offset(off, 2);
+        b.ribbon(tl, 3.6, (s) => ey(s) + 0.25, PAL.ballast, 2, sv, s1);
+        for (const r of [-0.72, 0.72]) b.ribbon(tl.offset(r, 2), 0.12, (s) => ey(s) + 0.55, PAL.rail, 2, sv, s1);
+        b.ribbon(tl.offset(off > 0 ? 1.35 : -1.35, 2), 0.18, (s) => ey(s) + 0.6, '#b9b2a6', 2, sv, s1); // third rail cover
+        for (let s = sv; s < s1; s += 0.9) {
+          const p = tl.at(s);
+          tieM.makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, ey(s) + 0.42, p.z);
+          ties.push(tieM.clone());
         }
       }
-    }
-    // Viaduct: box-girder deck, parapets and piers wherever the track is well above ground.
-    for (let s = sv; s < s1; s += 2) {
-      const p = m.line.at(s);
-      const e = ey(s);
-      const g = this.ground(p.x, p.z);
-      if (e - g < 2.2) continue;
-      const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, 0, p.z);
-      b.box(10.4, 1.6, 2.02, 0, e - 0.75, 0, PAL.concrete, rot);
-      for (const d of [-5.05, 5.05]) b.box(0.3, 1.1, 2.02, d, e + 0.55, 0, PAL.concreteDark, rot);
-      if (Math.round(s) % 26 === 0 || Math.round(s) % 26 === 1) {
-        const hgt = e - 1.55 - g;
-        b.box(2.2, hgt, 2.6, 0, g + hgt / 2, 0, PAL.concrete, rot);
-        b.box(8, 1.0, 2.8, 0, e - 2.0, 0, PAL.concreteDark, rot); // pier cap
+      // Open-cut retaining walls, and a portal headwall wherever the cut becomes a tunnel.
+      const portal = (s: number, flip: boolean) => {
+        const e = ey(s);
+        const p = m.line.at(s);
+        const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz) + (flip ? Math.PI : 0)).setPosition(p.x, 0, p.z);
+        b.box(12, -e + 1.2, 1.2, 0, (e + 1.2) / 2 + 0.1, -0.6, PAL.concrete, rot);
+        b.box(12.6, 0.5, 1.6, 0, 1.0, -0.6, PAL.concreteDark, rot);
+        b.box(9.6, -e - 0.5, 0.2, 0, e + (-e - 0.5) / 2, 0.05, '#1c1d22', rot); // dark mouth
+      };
+      for (let s = sv; s < s1; s += 2) {
+        const e = ey(s);
+        if (e < -0.4) for (const d of [-5.2, 5.2]) b.wall(m.line, d, () => e - 0.2, () => 0.6, PAL.concrete, 2, s, Math.min(s + 2, s1));
+      }
+      if (ey(sv) < PORTAL_E + 1) portal(sv, false);
+      if (ey(s1) < PORTAL_E + 1 && s1 < m.line.length) portal(s1, true);
+      // Viaduct: box-girder deck, parapets and piers wherever the track is well above ground.
+      for (let s = sv; s < s1; s += 2) {
+        const p = m.line.at(s);
+        const e = ey(s);
+        const g = this.ground(p.x, p.z);
+        if (e - g < 2.2) continue;
+        const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, 0, p.z);
+        b.box(10.4, 1.6, 2.02, 0, e - 0.75, 0, PAL.concrete, rot);
+        for (const d of [-5.05, 5.05]) b.box(0.3, 1.1, 2.02, d, e + 0.55, 0, PAL.concreteDark, rot);
+        if (Math.round(s) % 26 === 0 || Math.round(s) % 26 === 1) {
+          const hgt = e - 1.55 - g;
+          b.box(2.2, hgt, 2.6, 0, g + hgt / 2, 0, PAL.concrete, rot);
+          b.box(8, 1.0, 2.8, 0, e - 2.0, 0, PAL.concreteDark, rot); // pier cap
+        }
       }
     }
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
@@ -558,6 +595,26 @@ export class World {
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     mesh.castShadow = mesh.receiveShadow = true;
     this.group.add(mesh, instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties));
+  }
+
+  /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
+  buildTram() {
+    const b = new Builder();
+    for (const r of this.data.rail) {
+      if (r.cls !== 'tram' || r.flags.includes('is_tunnel') || r.pts.length < 2) continue;
+      const line = new Line(r.pts);
+      for (const off of [-0.7175, 0.7175]) {
+        const rail = line.offset(off, 1);
+        b.ribbon(rail, 0.24, (_s, x, z) => this.ground(x, z) + 0.27, '#393c40', 1);
+        b.ribbon(rail, 0.09, (_s, x, z) => this.ground(x, z) + 0.29, '#b6b5ae', 1);
+      }
+    }
+    const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({
+      vertexColors: true, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16,
+    }));
+    mesh.receiveShadow = true;
+    this.group.add(mesh);
   }
 
   // ---- buildings ----------------------------------------------------------------------
@@ -645,19 +702,18 @@ export class World {
 
   buildTrees() {
     const r = rng(20261120);
-    const blocks = this.data.buildings.map((bd) => bd.rings[0]);
     const drivable = this.data.roads.filter((x) => DRIVABLE.has(x.cls) || x.cls === 'pedestrian' || x.cls === 'footway');
     const rails = this.data.rail.map((x) => x.pts);
     const clearOf = (x: number, z: number) => {
       if (!this.inBounds(x, z, 3)) return false;
       if (this.ground(x, z) < -0.6) return false;
-      for (const ring of blocks) if (pointInRing(x, z, ring) || edgeDist(x, z, ring) < 2.5) return false;
+      for (const ring of this.blocks.at(x, z)) if (pointInRing(x, z, ring) || edgeDist(x, z, ring) < 2.5) return false;
       for (const rd of drivable) {
         const w = (WIDTH[rd.cls] ?? 4) / 2 + (rd.cls === 'footway' ? 0.8 : 1.5);
         for (let i = 1; i < rd.pts.length; i++) if (segDist(x, z, rd.pts[i - 1], rd.pts[i]) < w) return false;
       }
       for (const pts of rails) for (let i = 1; i < pts.length; i++) if (segDist(x, z, pts[i - 1], pts[i]) < 7) return false;
-      for (let s = 0; s < this.marta.line.length; s += 6) {
+      for (let s = 0; this.marta && s < this.marta.line.length; s += 6) {
         const p = this.marta.line.at(s);
         if (Math.hypot(p.x - x, p.z - z) < 9) return false;
       }
@@ -667,7 +723,7 @@ export class World {
       // Trees where Atlanta's trees really are, sized from the canopy height map.
       for (const [x, z, h, cr] of this.realTrees) {
         if (!this.inBounds(x, z, 1)) continue;
-        if (blocks.some((ring) => pointInRing(x, z, ring))) continue;
+        if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const sz = Math.min(4.5, Math.max(0.7, cr / 2.3));
         const y = this.ground(x, z);
         this.trees.push({ x, y, z, s: sz, c: r(), th: Math.max(1.2, h - 4.2 * sz) });
@@ -704,7 +760,7 @@ export class World {
     const n = this.trees.length;
     const leafMat = new THREE.MeshLambertMaterial({ flatShading: true });
     // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
-    this.canopy = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), leafMat, n * CLUMPS);
+    this.canopy = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), leafMat, n * this.opts.clumps);
     // Pines: two stacked five-sided cones.
     const pine = new THREE.ConeGeometry(1, 1.6, 7);
     pine.translate(0, 0.8, 0);
@@ -753,6 +809,7 @@ export class World {
     this.seasonDoy = doy;
     const canopy = this.canopy;
     const pines = this.pines;
+    const clumps = this.opts.clumps;
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const c = new THREE.Color();
@@ -783,7 +840,7 @@ export class World {
           pines.setColorAt(kp, c.set('#355f3c').offsetHSL((r() - 0.5) * 0.02, 0, (f - 0.5) * 0.12 + (t.c - 0.1) * 0.2));
           kp++;
         }
-        for (let i = 0; i < CLUMPS; i++) canopy.setMatrixAt(k++, zero);
+        for (let i = 0; i < clumps; i++) canopy.setMatrixAt(k++, zero);
         return;
       }
       let canopyLeft = 1;
@@ -804,10 +861,10 @@ export class World {
       const cx = t.x;
       const cy = t.y + trunkH + R * 0.85;
       const cz = t.z;
-      const showing = Math.round(CLUMPS * canopyLeft);
-      for (let i = 0; i < CLUMPS; i++) {
+      const showing = Math.round(clumps * canopyLeft);
+      for (let i = 0; i < clumps; i++) {
         // Even-ish spread on an ellipsoid shell, plus one clump in the middle.
-        const u = (i + 0.5) / CLUMPS;
+        const u = (i + 0.5) / clumps;
         const phi = Math.acos(1 - 1.6 * u);
         const th = i * 2.399 + t.c * 6.3;
         const rad = i === 0 ? 0 : 0.48 + r() * 0.16;
@@ -853,7 +910,7 @@ export class World {
         const z = p.z + p.nz * w * side;
         side = -side;
         if (!this.inBounds(x, z, 3)) continue;
-        if (this.data.buildings.some((bd) => pointInRing(x, z, bd.rings[0]))) continue;
+        if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         spots.push({ x, z, y: rd.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z), ang: Math.atan2(-p.nx * side, -p.nz * side) });
       }
     }
@@ -878,7 +935,7 @@ export class World {
    */
   private bakeLightMap(spots: { x: number; z: number }[]) {
     const b = this.b;
-    const PX = 1.0; // metres per texel
+    const PX = Math.max(1, Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / this.opts.lightMapMax); // metres per texel
     const c = document.createElement('canvas');
     c.width = Math.ceil((b.maxX - b.minX) / PX);
     c.height = Math.ceil((b.maxZ - b.minZ) / PX);
@@ -936,6 +993,18 @@ export class World {
   private lightMap?: THREE.Texture;
   private lampHeads?: THREE.InstancedMesh;
 
+  dispose() {
+    const materials = new Set<THREE.Material>();
+    this.group.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      mesh.geometry?.dispose();
+      if (mesh instanceof THREE.InstancedMesh) mesh.dispose();
+      for (const mat of Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []) materials.add(mat);
+    });
+    for (const mat of materials) mat.dispose();
+    this.lightMap?.dispose();
+  }
+
   private wetMats?: THREE.MeshLambertMaterial[];
   private wet = -1;
   /** Rain darkens every surface a little (wet asphalt, roofs and grass). */
@@ -964,7 +1033,6 @@ export class World {
 }
 
 export const PORTAL_E = -5.5;
-const CLUMPS = 10; // leaf clumps per deciduous canopy
 const PINE_TIERS = 4; // track elevation where the cut is covered over (train roof ≈ 4 m)
 
 /** Clip a ring to the board rectangle (Sutherland–Hodgman). */

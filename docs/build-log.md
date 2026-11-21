@@ -806,3 +806,122 @@ combine freely, plus the palette presets and pickers.
 ![Dusk with rain](log/ui/atm-duskrain.jpg)
 ![Night with snow](log/ui/atm-nightsnow.jpg)
 ![Morning fog: sharp centre, blurred edges](log/ui/fog2.jpg)
+
+## 2026-11-21 · Downtown fits on the table
+
+City now opens far enough back to read the Gulch, Five Points and the Peachtree Center
+skyline together. The southwest camera moved from 3,000 to 5,500 scene metres; tilt-shift
+strength dropped from 1.6 to 0.65 so the towers stay legible. Four Overture streetcar runs
+now have embedded rails, and the city's buildings and streets stop cleanly at the walnut
+board. A high-DPI bug had been making the canvas twice as large as its CSS container,
+showing only its upper-left quarter; explicitly sizing both fixed that crop.
+
+The surprise was startup, not polygons. A timed desktop load spent **33,481 ms** on ground
+placement out of **35,984 ms** of construction. Parking stalls checked every building;
+crosswalks checked every street. A conservative 64 m spatial grid now narrows those searches,
+while the exact intersection tests still make the decisions. A fresh low-tier run built in
+**730 ms** (ground 363 ms, streets 162 ms, rail 139 ms); high-tier runs under concurrent
+browser/build load ranged around **2.4–2.7 s**. Those are CPU construction measurements,
+not first-paint times or phone results. The broad-phase tests compare exact hits against
+brute-force searches, including negative coordinates and cell boundaries.
+
+The loading plate reports each build stage and yields between stages, so returning to Map
+cancels the load. A held data request followed by Map left **zero canvases** behind; a forced
+404 returned to Map with the recovery note. Switching views preserved the target at
+**−84.392033, 33.756238**. The clock and neighbourhood widget now update independently of
+remote basemap tiles. City has snow flurries as well as rain, and fog softens the edges.
+
+The old `scene3d` renderer is gone. Shared rail profiles remain in `scene.json`; builds omit
+its three unused binary meshes, saving **3.2 MB** of deployed static assets. No data rebuild
+is needed for this refinement if the M2a City JSON already exists; a web rebuild is required.
+A fresh checkout still needs the data commands. East Portal was checked in Orca after the
+shared-world changes and still renders its viaduct, train and traffic.
+
+Performance is deliberately **not signed off**. Orca's desktop animation callbacks were
+throttled to about 1–2 fps, even with the City renderer disposed; that is not a useful GPU
+benchmark. Sam asked us to leave the Galaxy A16 untouched. The ≥30 fps low-tier phone gate,
+City as the default, and M2b motion remain pending. The baked western MARTA profiles also
+stay below the daylight threshold by Dome/GWCC; the handoff's expected open track there
+needs a source/profile audit, not guessed surface rails.
+
+![Downtown framed from the southwest](log/ui/2026-11-21-city-framed.png)
+![Cancellable City loading plate](log/ui/2026-11-21-city-loading.png)
+![East Portal after the shared-engine changes](log/ui/2026-11-21-city-east-portal-check.png)
+
+Claude's first review caught the fresh-checkout deployment hole: `pnpm data` did not build
+City's new JSON. It now includes `data:city`, and the README calls out both fresh and existing
+checkout instructions. The portal-at-board-edge concern did not reproduce in either supplied
+board: all threshold crossings were inside the board (east x≈376–379, z≈289–291; south
+x≈−373…−366, z≈554–564). It remains a possible case if future board bounds cut a shallow ramp.
+Final warm high-tier construction also measured 704 ms; the slower 2.4–2.7 s runs above were
+under concurrent load. The full suite passes: 16 Rust, 23 web and 5 Worker tests.
+
+![Synthetic night and snow preview, low tier](log/ui/2026-11-21-city-snow-preview.png)
+
+The final desktop check resolved the throttling: selecting the tab was insufficient; the
+worktree itself had to be foregrounded. With one City tab at **1446×876 CSS pixels**, five-second
+animation-frame samples measured **18.1 fps high** (render DPR 2, 63 draw calls, 2,795,709
+triangles across all passes) and **32.4 fps low** (render DPR 1, 32 draw calls, 1,268,831
+triangles). These are desktop results only; high-tier rendering still needs optimization,
+and the A16 gate remains pending. Claude's second and final review reported no new findings.
+
+## 2026-11-21 · Keep your bearings
+
+Sam's first navigation check exposed a sign mismatch: the shell describes a content drag,
+while City's camera API describes camera movement. The adapter now reverses that offset,
+so A/D move left/right and W/S move forward/back relative to the viewing direction. A second
+surprise was that a quick key tap could finish between animation frames and move nothing.
+Each fresh press now nudges immediately, then held keys continue at the existing speed.
+Keyboard movement also cancels any place-search glide.
+
+Map and City now exchange their centre, clockwise bearing and horizontal ground scale in
+CSS pixels. Map stays flat; City remembers its tilt. The conversion uses MapLibre's actual
+Mercator scale at the current latitude, so a high-DPI canvas does not change the framing.
+City still clamps to its downtown coverage and camera-distance limits. This makes the
+remaining perspective change easier to read without adding a transition animation yet.
+
+In Orca at high quality, the opening view survived a round-trip at **28°**, **2.44085 m/px**,
+and target **(−40, −260) m**, with sub-millimetre numerical drift. Two more round-trips at
+**−70° and 118°**, zoom **16**, retained their centre and a custom **40°** City tilt. All
+**24** WASD/arrow direction checks passed across four quarter-turn headings, and an actual
+Orca A keypress moved the camera left. A Map view outside downtown clamped to the northwest
+board corner and showed the coverage note. The full suite passes **48 tests** (16 Rust,
+27 web, 5 Worker), including four comparisons against MapLibre's own Mercator conversion;
+the production build passes. This follow-up needs a web rebuild, with no new data bake.
+
+![Map at the same heading and ground scale](log/ui/2026-11-21-navigation-map.png)
+![City after returning from Map, high tier](log/ui/2026-11-21-navigation-city.png)
+
+Navigation follow-up review (Claude, one round): no findings.
+
+## 2026-11-21 · Rotation cadence and rendering are separate
+
+Sam noticed Q/E felt choppy even after the direction fix. Held rotation was still driven
+by OS keyboard repeat, applying a 3° jump each time. It now shares the WASD animation-frame
+loop at 60°/s, with a 1° immediate tap and a 50 ms frame-delta cap. Auto-repeat adds no extra
+step; opposing keys cancel, and releasing either resumes the other. Releasing the last key
+or leaving the window stops the motion.
+
+At Sam's closer camera pose, two six-second foreground Orca samples on high tier measured
+**22.5 and 24.8 fps**, with **34 ms median** intervals and **83/67 ms p95** intervals. The
+viewport was 1446×876 at DPR 2, with 63 draw calls and 2,795,709 triangles across all passes.
+A separate system snapshot showed 66% CPU idle. These observations confirm uneven frame
+delivery, but do not isolate GPU time, browser overhead or competing system work. No render
+quality change was made, and the small difference between samples is not an optimization gain.
+
+The Orca held-key check delivered 31 updates and 57.5° over about one second. Taps, repeat
+suppression, keyup, blur, opposite keys, typing guards and simultaneous pan/turn all passed.
+The original camera pose and high tier were restored. All 48 tests and the production build
+pass. This change needs a web rebuild, with no data bake or server changes.
+
+![High-tier close view after held-rotation checks](log/ui/2026-11-21-city-held-rotation.png)
+
+Held-rotation review (Claude, one round): no findings.
+
+## 2026-11-21 · Merge readiness
+
+Integrated main's project rename and deploy-command fix. The sole conflict was the README
+deploy paragraph: it now retains City's data requirements and uses `pnpm run deploy`.
+The combined branch passes all 48 tests, the production build and an Orca high-tier render
+check. Claude's focused integration review found no issues. City remains optional; the A16
+gate still controls making it the default and starting M2b.

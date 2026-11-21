@@ -7,18 +7,19 @@
     vignette. Weekday and weekend, as the share of daily volume in each hour.
 
 Each Overture road run in vignette.json gets the nearest HPMS segment with a similar bearing.
-Output: web/public/data/scene/vignette-east/traffic.json
+Output: web/public/data/scene/<name>/traffic.json
 
-    python3 pipeline/scripts/vignette_traffic.py
+    python3 pipeline/scripts/vignette_traffic.py [vignette-east|downtown]
 """
 import json
 import math
 import os
+import sys
 import urllib.parse
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-VDIR = os.path.join(ROOT, "web", "public", "data", "scene", "vignette-east")
+SCENES = os.path.join(ROOT, "web", "public", "data", "scene")
 LON0, LAT0 = -84.3916, 33.7539
 R = 6_371_008.8
 K = math.cos(math.radians(LAT0))
@@ -111,7 +112,8 @@ def hourly_profile():
     return prof
 
 
-def main():
+def main(name="vignette-east"):
+    VDIR = os.path.join(SCENES, name)
     vd = json.load(open(os.path.join(VDIR, "vignette.json")))
     segs = hpms_segments(vd["bounds"])
     print(f"HPMS segments: {len(segs)}")
@@ -156,4 +158,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else "vignette-east")
