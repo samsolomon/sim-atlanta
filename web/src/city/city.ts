@@ -37,6 +37,7 @@ import { Snow } from './snow';
 export type Quality = 'low' | 'high';
 
 export interface CityView {
+  measuredGround: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
@@ -86,11 +87,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   ]);
   let grid: GroundGrid | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
-    const [spec, bytes] = await Promise.all([
-      asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
-      asset('ground.i16').then(r => r.arrayBuffer()),
-    ]);
-    grid = new GroundGrid(spec, bytes);
+    try {
+      const [spec, bytes] = await Promise.all([
+        asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
+        asset('ground.i16').then(r => r.arrayBuffer()),
+      ]);
+      grid = new GroundGrid(spec, bytes);
+    } catch {
+      options.signal?.throwIfAborted();
+      // Older or partially refreshed caches can still render the legacy profiles.
+      console.warn('City ground grid unavailable. Using the flat board.');
+    }
   }
   const b = vd.bounds;
 
@@ -467,6 +474,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);
   console.info('City build stages (ms)', stages);
   return {
+    measuredGround: !!terrain,
     bounds: b,
     quality,
     lookAt(x, z, view) {

@@ -37,6 +37,7 @@ The builder draws each mapped structural span as a chord between its endpoint gr
 
 ```sh
 .venv/bin/python pipeline/scripts/terrain_transport.py
+pnpm data:terrain
 .venv/bin/python pipeline/scripts/test_terrain_transport.py
 pnpm test
 pnpm dev

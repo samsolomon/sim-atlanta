@@ -1218,8 +1218,8 @@ schematically. The deck clearance over the Connector is unknown; I checked FHWA 
 
 ![NAIP 2023: Georgia State](log/rail/2026-11-21-naip-2023-georgia-state.jpg)
 
-Needs `pnpm data:scene` (Rust scene bake only); no web rebuild is needed until a consumer reads
-`rail`.
+The integrated City release uses both `pnpm data:scene` and `pnpm data:city` (or the full
+`pnpm data`), followed by a web build and Worker deployment.
 
 ## 2026-11-21 — The frame we saved before changing Georgia State
 
