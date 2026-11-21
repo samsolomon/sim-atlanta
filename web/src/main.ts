@@ -1,7 +1,9 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
-import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle } from './map/basestyle';
+import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
+import { SkyLayer } from './map/sky-layer';
+import { atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { busCard, crossingCard, freightCard, trainCard } from './map/card';
@@ -24,7 +26,7 @@ const params = new URLSearchParams(location.search);
 // MapLibre as URLs so they load and parse on its worker threads, off the main thread.
 const map = new maplibregl.Map({
   container: 'map',
-  style: await dioramaBaseStyle(),
+  style: await dioramaBaseStyle(paletteFor(atmosphere(clock.now(), null))), // start in the right light; weather follows
   center: [-84.39, 33.76],
   zoom: 10.3,
   maxBounds: [
@@ -76,6 +78,7 @@ const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
 live.start();
 
+let updateAtmosphere = () => {}; // set once the map has loaded
 const onReady = (fn: () => void) => (map.loaded() ? fn() : map.once('load', fn));
 onReady(() => {
   // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
@@ -95,10 +98,38 @@ onReady(() => {
     },
   });
   addTrainLayer(map);
-  // ?palette=night etc. picks a preset; ?tune opens the palette panel.
-  const paletteName = params.get('palette') ?? DEFAULT_PALETTE;
-  applyPalette(map, PALETTES[paletteName] ?? PALETTES[DEFAULT_PALETTE]);
-  if (params.has('tune')) void import('./map/tune').then(({ mountTuner }) => mountTuner(map, PALETTES[paletteName] ? paletteName : DEFAULT_PALETTE));
+  // ---- atmosphere: time of day + Atlanta's weather → basemap palette, sky layer, glass theme.
+  // ?palette=<preset> pins a static palette; ?tune opens the playground.
+  const sky = new SkyLayer();
+  map.addLayer(sky, 'freight-unknown'); // above the basemap's fills, below our rail and labels
+  let override: AtmosphereOverride | null = null;
+  let pinned: Palette | null = PALETTES[params.get('palette') ?? ''] ?? null;
+  let onScreen: Palette = PALETTES[DEFAULT_PALETTE];
+  updateAtmosphere = () => {
+    const w = clock.isRealTime() ? shell.weather() : null; // live weather only at the present
+    const atm = atmosphere(clock.now(), w, override ?? {});
+    sky.set(atm);
+    onScreen = pinned ?? paletteFor(atm);
+    applyPalette(map, onScreen);
+    shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
+  };
+  updateAtmosphere();
+  setInterval(updateAtmosphere, 60_000);
+  map.on('moveend', () => sky.atm && sky.set(sky.atm)); // weather strength depends on zoom and place
+  if (params.has('tune'))
+    void import('./map/tune').then(({ mountTuner }) =>
+      mountTuner({
+        setOverride(o) {
+          override = o;
+          updateAtmosphere();
+        },
+        setPalette(p) {
+          pinned = p;
+          updateAtmosphere();
+        },
+        current: () => onScreen,
+      }),
+    );
   let visibleBuses = new Map<string, LiveBus>();
   let lastBusTick = -Infinity;
   let busesEnabled: boolean | undefined;
@@ -322,6 +353,7 @@ const shell = createShell({
   rotate(dir) {
     diorama?.rotate(dir);
   },
+  onWeather: () => updateAtmosphere(),
   live: () => ({
     realTime: clock.isRealTime(),
     rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',
