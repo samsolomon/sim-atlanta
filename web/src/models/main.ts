@@ -77,7 +77,7 @@ controls.enableDamping = true;
 const VIEWS: Record<string, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
   '¾ front': { pos: [-11, 4.2, 36], target: [0, 2.0, 18], fov: 28 },
-  'Side': { pos: [-46, 2.4, 2], target: [0, 2.0, 2], fov: 32 },
+  'Side': { pos: [-30, 2.6, 16], target: [0, 2.0, 16], fov: 32 },
   'Rear': { pos: [0, 2.3, -60], target: [0, 2.0, -22], fov: 20 },
   'Top': { pos: [0.01, 60, 2], target: [0, 0, 2], fov: 40 },
 };

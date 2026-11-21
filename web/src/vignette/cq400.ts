@@ -122,40 +122,95 @@ class Kit {
 }
 
 /**
- * The cab nose, lofted from the body section at z = zb to the tip at z = zb + LEN.
- * Higher points rake back (windscreen slope) and the sides tuck in (wraparound corners).
+ * The cab nose as one continuous surface: z = zb + F(x, y) over the body section. It is rounded
+ * in plan (the corners sweep back), nearly upright below the windscreen and raked toward the
+ * roof. The dark mask, the windscreen, the lights and the grey corner wraps all lie on this one
+ * surface, so nothing floats or sticks out. Simplified for diorama scale: one shield-shaped
+ * windscreen (no end door) and one continuous line-colour chevron.
  */
-const NOSE_LEN = 1.75;
-function noseShape(y: number, x: number) {
-  const t = Math.min(1, Math.max(0, (y - 1.85) / (ROOF - 1.85))); // 0 below the windscreen → 1 at roof
-  const rake = 0.05 + t * 0.35 + t * t * 1.15 + (y < 1.05 ? (1.05 - y) * 0.4 : 0); // anticlimber tucks under too
-  const ax = Math.abs(x) / (W / 2);
-  const tuck = 1 - 0.32 * ax * ax * (0.6 + 0.4 * t); // rounder plan-view corners, more so up top
-  return { dz: (NOSE_LEN - rake) * tuck, sx: 0.97 - 0.05 * t };
+const NOSE_LEN = 2.5;
+const CAB_WIN_BACK = 1.55; // cab side window centre, measured back from where the nose starts
+const Y_BOT = FLOOR - 0.25;
+
+/** Half-width of the body section at height y. */
+function halfWidth(y: number) {
+  const right = SECTION.filter(([x]) => x > 0).sort((p, q) => p[1] - q[1]);
+  if (y <= right[0][1]) return right[0][0];
+  for (let i = 1; i < right.length; i++) {
+    const [x0, y0] = right[i - 1];
+    const [x1, y1] = right[i];
+    if (y <= y1) return x0 + ((x1 - x0) * (y - y0)) / (y1 - y0 || 1);
+  }
+  return right[right.length - 1][0];
+}
+
+function noseDepth(x: number, y: number) {
+  const ax = Math.min(1, Math.abs(x) / (W / 2));
+  const t = Math.min(1, Math.max(0, (y - 1.55) / (ROOF - 1.55)));
+  // Upright low, then a long curve that rolls back into the roof (circular-ish profile).
+  const rake = 0.12 + (NOSE_LEN - 0.2) * (1 - Math.sqrt(Math.max(0, 1 - t * t)));
+  const plan = 1 - 0.42 * Math.pow(ax, 2.0) - 0.3 * Math.pow(ax, 6); // rounded corners
+  const chin = y < 1.0 ? (1.0 - y) * 0.6 : 0; // a slight tuck under the bumper line
+  return Math.max(0.02, (NOSE_LEN - rake - chin) * plan);
+}
+
+/** The chevron light's path on the face: down each mask edge, then in to meet below the screen. */
+function chevronPath(): [number, number][] {
+  const side: [number, number][] = [];
+  for (let y = 3.46; y >= 1.98; y -= 0.08) side.push([W / 2 - 0.18 - (3.46 - y) * 0.02, y]);
+  const x0 = side[side.length - 1][0];
+  for (let i = 1; i <= 10; i++) {
+    const f = i / 10;
+    side.push([x0 * (1 - f), 1.98 - 0.16 * f]); // in and slightly down to the centre
+  }
+  const left = side.map(([x, y]) => [-x, y] as [number, number]).reverse();
+  return [...left, ...side.slice(1)];
 }
 
 function addNose(k: Kit, zb: number, line: string) {
-  const ring = SECTION.map(([x, y]) => {
-    const { dz, sx } = noseShape(y, x);
-    return [x * sx, y, zb + dz];
-  });
-  // Loft: body end → nose ring. This is the grey shell that wraps round the cab corners.
-  for (let i = 0; i < SECTION.length; i++) {
-    const j = (i + 1) % SECTION.length;
-    const a = [SECTION[i][0], SECTION[i][1], zb];
-    const b = [SECTION[j][0], SECTION[j][1], zb];
-    k.quad(a, b, ring[j], ring[i], C.body, 0);
-  }
-  // The front face: one dark mask from the bumpers to the roof curve.
-  const poly = clipY(SECTION, FLOOR - 0.25, ROOF + 0.01);
-  const v2 = poly.map(([x, y]) => new THREE.Vector2(x, y));
-  const at = (p: [number, number], lift = 0) => {
-    const { dz, sx } = noseShape(p[1], p[0]);
-    return [p[0] * sx, p[1], zb + dz + lift];
+  const NU = 28;
+  const NV = 24;
+  const pt = (u: number, v: number) => {
+    const y = Y_BOT + (ROOF - Y_BOT) * v;
+    const x = u * halfWidth(y);
+    return [x, y, zb + noseDepth(x, y)];
   };
-  for (const t of THREE.ShapeUtils.triangulateShape(v2, [])) k.tri(at(poly[t[0]]), at(poly[t[1]]), at(poly[t[2]]), C.mask, 0);
+  const at = (x: number, y: number, lift = 0) => [x, y, zb + noseDepth(x, y) + lift];
+  const region = (x: number, y: number, u: number) => {
+    const ax = Math.abs(x);
+    if (Math.abs(u) > 0.94) return C.body; // grey wraps round the corners
+    if (y < 1.32 && ax > 0.74) {
+      // Bumper blocks: grey, part of the same surface, each with a dark vent.
+      if (y > 0.97 && y < 1.2 && ax > 0.94 && ax < 1.4) return C.vent;
+      return C.body;
+    }
+    return C.mask;
+  };
+  // Front surface.
+  for (let i = 0; i < NU; i++)
+    for (let j = 0; j < NV; j++) {
+      const u0 = -1 + (2 * i) / NU;
+      const u1 = -1 + (2 * (i + 1)) / NU;
+      const a = pt(u0, j / NV);
+      const b = pt(u1, j / NV);
+      const c = pt(u1, (j + 1) / NV);
+      const d = pt(u0, (j + 1) / NV);
+      k.quad(a, b, c, d, region((a[0] + b[0] + c[0] + d[0]) / 4, (a[1] + d[1]) / 2, (u0 + u1) / 2), 0);
+    }
+  // Shell walls: from the body end (z = zb) out to the front surface, all round the outline.
+  const wall = (p: number[], q: number[], color: string) => k.quad([p[0], p[1], zb], [q[0], q[1], zb], q, p, color, 0);
+  for (let j = 0; j < NV; j++) {
+    wall(pt(1, j / NV), pt(1, (j + 1) / NV), C.body);
+    wall(pt(-1, (j + 1) / NV), pt(-1, j / NV), C.body);
+  }
+  for (let i = 0; i < NU; i++) {
+    const u0 = -1 + (2 * i) / NU;
+    const u1 = -1 + (2 * (i + 1)) / NU;
+    wall(pt(u1, 1), pt(u0, 1), C.body);
+    wall(pt(u0, 0), pt(u1, 0), C.under);
+  }
 
-  /** A flush panel on the raked, rounded front between x0..x1, y0..y1 (follows the surface). */
+  /** A flush panel on the front surface between x0..x1, y0..y1. */
   const face = (x0: number, x1: number, y0: number, y1: number, color: string, kind: number, lift = 0.012, nx = 6, ny = 3) => {
     for (let i = 0; i < nx; i++)
       for (let j = 0; j < ny; j++) {
@@ -163,53 +218,60 @@ function addNose(k: Kit, zb: number, line: string) {
         const xb = x0 + ((x1 - x0) * (i + 1)) / nx;
         const ya = y0 + ((y1 - y0) * j) / ny;
         const yb = y0 + ((y1 - y0) * (j + 1)) / ny;
-        k.quad(at([xa, ya], lift), at([xb, ya], lift), at([xb, yb], lift), at([xa, yb], lift), color, kind);
+        k.quad(at(xa, ya, lift), at(xb, ya, lift), at(xb, yb, lift), at(xa, yb, lift), color, kind);
       }
   };
-  // Cab side windows, just behind the nose on each side.
+  // The cab's one side window, centred in the grey section between the nose and first door.
   for (const s2 of [-1, 1]) {
-    k.box(0.03, 1.12, 1.15, s2 * (W / 2 + 0.006), 2.62, zb - 0.85, C.frame, 0);
-    k.box(0.04, 1.0, 1.02, s2 * (W / 2 + 0.01), 2.62, zb - 0.85, C.glass, 3);
+    k.box(0.03, 1.16, 1.2, s2 * (W / 2 + 0.006), 2.6, zb - CAB_WIN_BACK, C.frame, 0);
+    k.box(0.04, 1.04, 1.06, s2 * (W / 2 + 0.01), 2.6, zb - CAB_WIN_BACK, C.glass, 3);
   }
-  // Windows: the driver's wide pane on the left, the end door (offset right) with its own window.
-  // Glass reads a touch lighter and bluer than the mask, with a thin frame, as in photos.
-  face(-1.4, 0.2, 2.02, 3.2, C.seam, 0, 0.008);
-  face(0.32, 1.34, 2.02, 3.2, C.seam, 0, 0.008);
-  face(-1.36, 0.16, 2.06, 3.16, C.frontGlass, 3, 0.014);
-  face(0.36, 1.3, 2.06, 3.16, C.frontGlass, 3, 0.014);
-  // (The end door's seams are left out at diorama scale; the two panes and the light carry it.)
+  // One shield-shaped windscreen: full width at the top, tapering toward the chevron's point.
+  const shield = (lift: number, inset: number, color: string, kind: number) => {
+    const NX = 14;
+    const NY = 8;
+    for (let j = 0; j < NY; j++)
+      for (let i = 0; i < NX; i++) {
+        const v0 = j / NY;
+        const v1 = (j + 1) / NY;
+        const P = (u: number, v: number) => {
+          const y = 2.12 + inset + (3.18 - inset - (2.12 + inset)) * v;
+          const half = (W / 2 - 0.34 - inset) * (0.62 + 0.38 * v);
+          // The bottom edge dips toward the centre, echoing the chevron.
+          const yy = y - (1 - v) * (1 - Math.abs(u)) * 0.12;
+          return at(u * half, yy, lift);
+        };
+        const u0 = -1 + (2 * i) / NX;
+        const u1 = -1 + (2 * (i + 1)) / NX;
+        k.quad(P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1), color, kind);
+      }
+  };
+  shield(0.008, -0.04, C.seam, 0);
+  shield(0.014, 0, C.frontGlass, 3);
   // Destination display across the top of the mask.
-  face(-1.15, 1.15, 3.3, 3.5, '#ffb84a', 7, 0.015, 8, 1);
-  // Line-colour light: down both outer edges of the mask, then in under the windows.
-  for (const s of [-1, 1]) {
-    const xo = s * (W / 2 - 0.13);
-    face(Math.min(xo, xo - s * 0.08), Math.max(xo, xo - s * 0.08), 1.86, 3.5, line, 5, 0.018, 1, 10);
+  face(-1.12, 1.12, 3.3, 3.5, '#ffb84a', 7, 0.035, 12, 3);
+  // The line-colour chevron: one continuous lit band.
+  const path = chevronPath();
+  const hw = 0.045;
+  for (let i = 1; i < path.length; i++) {
+    const [xa, ya] = path[i - 1];
+    const [xb, yb] = path[i];
+    const dx = xb - xa;
+    const dy = yb - ya;
+    const l = Math.hypot(dx, dy) || 1;
+    const nx = (-dy / l) * hw;
+    const ny = (dx / l) * hw;
+    k.quad(at(xa - nx, ya - ny, 0.018), at(xb - nx, yb - ny, 0.018), at(xb + nx, yb + ny, 0.018), at(xa + nx, ya + ny, 0.018), line, 5);
   }
-  // Under the driver's pane (long, dipping slightly toward the centre) and under the door window.
-  for (let i = 0; i < 6; i++) {
-    const xa = -1.45 + (i * 1.5) / 6;
-    const xb = -1.45 + ((i + 1) * 1.5) / 6;
-    const ya = 1.94 - (i / 6) * 0.06;
-    const yb = 1.94 - ((i + 1) / 6) * 0.06;
-    k.quad(at([xa, ya - 0.04], 0.018), at([xb, yb - 0.04], 0.018), at([xb, yb + 0.04], 0.018), at([xa, ya + 0.04], 0.018), line, 5);
-  }
-  face(0.42, 1.18, 1.86, 1.94, line, 5, 0.018, 4, 1);
   // Light clusters at the lower outer corners: white when leading, red at the tail.
-  for (const s of [-1, 1]) face(s > 0 ? 1.3 : -1.42, s > 0 ? 1.42 : -1.3, 1.32, 1.8, '#ffffff', 8, 0.02, 1, 3);
-  // Lower front: grey bumper blocks wrapping the corners, each with a dark vent; the name panel
-  // between them (where the wordmark sits; we show only a lit bar); the coupler below.
-  const zf = (y: number) => zb + noseShape(y, 0).dz;
-  for (const s of [-1, 1]) {
-    const cx = s * 1.18;
-    // Flush-ish: the grey wraps the corner and stands only a little proud of the mask.
-    k.box(0.9, 0.5, 0.3, cx, FLOOR - 0.12, zf(FLOOR) - 0.13, C.body, 0);
-    k.box(0.48, 0.24, 0.04, cx, FLOOR - 0.12, zf(FLOOR) + 0.03, C.vent, 0);
-    for (let v = 0; v < 4; v++) k.box(0.48, 0.022, 0.045, cx, FLOOR - 0.21 + v * 0.06, zf(FLOOR) + 0.04, C.mask, 0);
-  }
-  k.box(1.25, 0.42, 0.3, 0, FLOOR - 0.1, zf(FLOOR) - 0.14, C.mask, 0);
-  k.box(0.78, 0.14, 0.04, 0, FLOOR - 0.06, zf(FLOOR) + 0.02, '#ffffff', 6);
-  k.box(0.42, 0.3, 0.55, 0, 0.72, zf(FLOOR) + 0.1, C.coupler, 0);
-  k.box(0.3, 0.16, 0.3, 0, 0.62, zf(FLOOR) + 0.42, '#8a8f94', 0);
+  for (const s2 of [-1, 1]) face(s2 > 0 ? 1.26 : -1.38, s2 > 0 ? 1.38 : -1.26, 1.38, 1.8, '#ffffff', 8, 0.02, 1, 4);
+  // Vent slats on the bumpers, and the lit bar where the wordmark sits (no logo).
+  for (const s2 of [-1, 1]) for (let v = 0; v < 3; v++) face(s2 > 0 ? 0.96 : -1.38, s2 > 0 ? 1.38 : -0.96, 1.01 + v * 0.06, 1.03 + v * 0.06, C.bodyShade, 0, 0.016, 4, 1);
+  face(-0.4, 0.4, 1.02, 1.16, '#ffffff', 6, 0.016, 4, 1);
+  // Coupler below the nose (the one part that really does stick out).
+  const zf = zb + noseDepth(0, Y_BOT);
+  k.box(0.42, 0.3, 0.55, 0, 0.72, zf + 0.05, C.coupler, 0);
+  k.box(0.3, 0.16, 0.3, 0, 0.62, zf + 0.37, '#8a8f94', 0);
 }
 
 /** Clip a polygon to the horizontal band y0 ≤ y ≤ y1. */
@@ -285,7 +347,7 @@ export function cq400Geometry(spec: CarSpec, line: string) {
     k.box(1.4, 0.04, 2.4, 0, ROOF + 0.36, z - (spec.cab ? 0.6 : 0), '#7d8287', 0);
   }
   // Doors (three pairs a side) with line-colour indicator bars above.
-  const doors = spec.cab ? [-7.6, -0.6, 6.0] : [-7.2, 0, 7.2];
+  const doors = spec.cab ? [-8.4, -1.6, 5.2] : [-7.2, 0, 7.2];
   for (const s of [-1, 1]) {
     const x = s * (W / 2 + 0.006);
     for (const dz of doors) {
@@ -296,7 +358,10 @@ export function cq400Geometry(spec: CarSpec, line: string) {
       k.box(0.04, 0.06, 1.05, s * (W / 2 + 0.02), 3.24, dz, line, 5); // indicator bar
     }
     // Windows: dark, with a frame, in the bays between doors (3 per bay, fewer at the ends).
+    // On a cab car the bay between the last door and the nose is plain grey with only the
+    // cab's own side window (drawn with the nose), so it gets no passenger windows.
     const edges = [-h + 0.8, ...doors.flatMap((d) => [d - 1.0, d + 1.0]), noseStart - (spec.cab ? 0.9 : 0.8)];
+    if (spec.cab) edges.splice(edges.length - 2, 2);
     for (let b = 0; b < edges.length; b += 2) {
       const z0 = edges[b];
       const z1 = edges[b + 1];
