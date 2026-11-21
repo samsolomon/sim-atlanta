@@ -20,7 +20,7 @@ curl -fL --retry 3 -o "data/raw/terrain/$tile" \
 git diff --exit-code -- pipeline/prototypes/downtown-ground
 ```
 
-The optional `--out DIR` writes the same files to a scratch directory. The prototype is opt-in and lives outside the web asset tree. Its bake and inspection cost visitors zero upstream requests.
+The optional `--out DIR` writes the same files to a scratch directory. The reference bake is opt-in. The City data build stages the binary and manifest from this checked-in copy. Visitors make zero upstream elevation requests.
 
 ## Reference and binary layout
 
@@ -68,8 +68,14 @@ To choose a spacing, the bake also samples the 100 m north–south section at x 
 
 The 5 m spacing retains more of the banks for about 84 kB more compressed than the 10 m option. Even the 5 m section differs from the native DEM by nearly 1.5 m on a steep edge. These are resampling differences on this section. Field accuracy at an individual rail or structure remains unknown. The reference bake used NumPy 2.0.2, Rasterio 1.4.3 and pyproj 3.6.1.
 
+## Desktop terrain preview
+
+Run `pnpm data:city` to prepare the downtown assets. If the board and trees are already baked, `pnpm data:terrain` stages just the checked-in grid and manifest, verifies the binary checksum and needs no GeoTIFF or Python environment. Run `pnpm dev` and open `/terrain-preview.html?at=cut` on that server. The other camera stops are `?at=downtown` and `?at=connector`. The preview is a development entry point. Only the staged assets are included in a subsequent production build.
+
+The drawing uses true vertical scale. Two-metre contours follow the triangulated 5 m mesh. The teal points and line identify the sampled section. The readout uses the same bilinear interpolation as the pipeline. The near views open with scenery hidden. Enable the checkbox to see which blocks enclose the cut. Buildings use City's existing facade geometry placed at the lowest sampled footprint vertex, rounded down to whole metres, and trees use their individual ground samples. These foundations are illustrative. At-grade road and land-cover polygons are painted onto the terrain. Rail profiles, tunnel cover and bridge decks belong to the separate rail/structure work. Scenery comes from Overture Maps (including © OpenStreetMap contributors) and the Meta/WRI high-resolution canopy map. [Five Points](log/ui/2026-11-21-ground-preview-downtown.jpg) · [East cut](log/ui/2026-11-21-ground-preview-cut.jpg) · [Downtown Connector](log/ui/2026-11-21-ground-preview-connector.jpg)
+
 ## Handoff before motion
 
-1. **City terrain.** Use the binary and manifest as static build assets when City adopts the grid. Check the x/z registration and a few decoded elevations against the CSV. For scene y, use `H_NAVD88 − 323.8` uniformly for the terrain and any independently surveyed structure. Sample building foundations, trees and at-grade streets from the same ground function. Mesh resolution can be chosen independently of the sampling grid. Keep enough ground vertices at the cut and Connector banks to retain their relief.
+1. **City terrain.** The City data build now stages both static assets at `data/scene/downtown/`. The renderer owner can reuse `web/src/terrain/grid.ts` and its reference data tests. Check the x/z registration and a few decoded elevations against the CSV. For scene y, use `H_NAVD88 − 323.8` uniformly for the terrain and any independently surveyed structure. Sample building foundations, trees and at-grade streets from the same ground function. Mesh resolution can be chosen independently of the sampling grid. Keep enough ground vertices at the cut and Connector banks to retain their relief.
 2. **MARTA accuracy.** Join the horizontal path to the terrain to ask “what ground is here?” Supply rail height, bridge clearance, covered/open state and portal extent from the rail investigation. The current scene manifest's height numbers come from schematic Overture stacking rules. Adding those numbers to every terrain sample would propagate the freeway dip into the viaduct and local surface rises into a tunnel. Draw track or animate trains through a section once the rail owner has resolved its vertical reference and visibility.
-3. **Provenance and rollout.** Label a displayed interpolated elevation as `inferred` from the USGS 2018–2019 bare-earth DEM. Train position keeps its own source and clock tier. To ship City integration later, add the bake or a verified copy of the two assets to the City data build, rebuild `web/dist` and redeploy the static assets together. No Worker endpoint or visitor-side elevation service is needed.
+3. **Provenance and rollout.** Label a displayed interpolated elevation as `inferred` from the USGS 2018–2019 bare-earth DEM. Train position keeps its own source and clock tier. To ship integrated City rendering, run `pnpm data:city` (or `pnpm data:terrain` on a populated board), rebuild `web/dist` and redeploy the assets together. No Worker endpoint or visitor-side elevation service is needed.
