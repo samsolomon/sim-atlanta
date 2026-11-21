@@ -13,6 +13,7 @@ export const MODE_COLOR: Record<Mode, string> = {
   streetcar: '#3b82e6',
   intercity: '#7b3fe4',
   freight: '#c2410c',
+  bus: '#227971',
 };
 export const modeColor = (r: Route) => MODE_COLOR[r.mode] ?? '#495057';
 /** The agency's line colour (for cards and close-zoom tint); falls back to the mode colour. */

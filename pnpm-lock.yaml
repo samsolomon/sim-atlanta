@@ -37,6 +37,10 @@ importers:
         version: 3.2.7(@types/node@22.20.5)
 
   worker:
+    dependencies:
+      pbf:
+        specifier: ^4.0.2
+        version: 4.0.2
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20260702.1
