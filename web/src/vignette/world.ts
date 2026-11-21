@@ -64,6 +64,10 @@ export interface Alignment {
   elev: (s: number) => number;
   /** Known exposure at this distance. Unclassified or older data uses the schematic profile. */
   openToSky?: (s: number) => boolean | undefined;
+  /** Observed cover at this distance, if any. A station roof is not a tunnel mouth: no portal. */
+  coverAt?: (s: number) => 'open' | 'covered' | 'roofed' | undefined;
+  /** Observed structure at this distance, if any (terrain alignments). */
+  formAt?: (s: number) => 'tunnel' | 'cut' | 'grade' | 'station' | 'viaduct' | undefined;
   /** Local vertical reference of the schematic rail profile, in scene metres. Defaults to zero. */
   referenceY?: (s: number) => number;
 }
@@ -71,6 +75,33 @@ export interface Alignment {
 function profileHeight(m: Alignment, s: number) {
   return m.elev(s) - (m.referenceY?.(s) ?? 0);
 }
+
+/**
+ * Whether an open run [sv, s1] gets a tunnel portal at each end: only where the track is deep
+ * below its surroundings and the next stretch isn't a station roof (track under a canopy
+ * continues under a roof, not into a tunnel mouth). The far end of the line never gets one.
+ */
+export function portalEnds(m: Alignment, sv: number, s1: number): [boolean, boolean] {
+  if (m.coverAt) {
+    // Terrain alignment: a mouth wherever open track continues into hidden track that is a
+    // tunnel (observed covered tunnel/cut, or unobserved legacy tunnel). Station roofs and
+    // buildings are not tunnel mouths, and depth relative to the 5 m DEM is not a reliable test.
+    const mouth = (s: number) => {
+      if (s < 0 || s > m.line.length || trackInDaylight(m, s)) return false;
+      const cover = m.coverAt!(s);
+      const form = m.formAt?.(s);
+      return cover !== 'roofed' && form !== 'station' && form !== 'viaduct';
+    };
+    return [mouth(sv - 1), s1 < m.line.length && mouth(s1 + 1)];
+  }
+  return [
+    profileHeight(m, sv) < PORTAL_E + 1,
+    profileHeight(m, s1) < PORTAL_E + 1 && s1 < m.line.length,
+  ];
+}
+
+/** Portal headwall depth below the rim: terrain portals get at least a full tunnel mouth. */
+const PORTAL_MIN_DEPTH = 6;
 
 export function trackInDaylight(m: Alignment, s: number) {
   return m.openToSky?.(s) ?? (profileHeight(m, s) >= PORTAL_E);
@@ -622,7 +653,9 @@ export class World {
     const b = new Builder();
     const runs = this.openRuns(m);
     if (!runs.length) return;
-    const coping = this.cuts.length ? [m.line.offset(-CUT_HALF, 2), m.line.offset(CUT_HALF, 2)] : [];
+    // Terrain boards (referenceY) subtract a slot from the ground over each cut, like the flat board.
+    const slotted = this.cuts.length > 0 || m.referenceY != null;
+    const coping = slotted ? [m.line.offset(-CUT_HALF, 2), m.line.offset(CUT_HALF, 2)] : [];
     const ey = (s: number) => m.elev(s);
     const tieM = new THREE.Matrix4();
     const ties: THREE.Matrix4[] = [];
@@ -640,7 +673,7 @@ export class World {
       }
       // Open-cut retaining walls, and a portal headwall wherever the cut becomes a tunnel.
       const portal = (s: number, flip: boolean) => {
-        const e = profileHeight(m, s);
+        const e = m.coverAt ? Math.min(profileHeight(m, s), -PORTAL_MIN_DEPTH) : profileHeight(m, s);
         const rim = m.referenceY?.(s) ?? 0;
         const p = m.line.at(s);
         const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz) + (flip ? Math.PI : 0)).setPosition(p.x, rim, p.z);
@@ -653,14 +686,15 @@ export class World {
         const rim = m.referenceY?.(s) ?? 0;
         if (e - rim < CUT_E) for (const d of [-5.2, 5.2]) b.wall(m.line, d, () => e - 0.2, () => rim + 0.6, PAL.concrete, 2, s, Math.min(s + 2, s1));
         // A flat board has a slot, not sculpted ground, over the cut: give it a floor.
-        if (this.cuts.length && e - rim < CUT_E) {
+        if (slotted && e - rim < CUT_E) {
           b.ribbon(m.line, CUT_HALF * 2 + 0.6, () => e - 0.05, PAL.concreteDark, 2, s, Math.min(s + 2, s1));
           // Coping along the wall tops hides the slot's 1 m stepped edge.
           for (const cl of coping) b.ribbon(cl, 1.8, () => rim + 0.62, PAL.concrete, 2, s, Math.min(s + 2, s1));
         }
       }
-      if (profileHeight(m, sv) < PORTAL_E + 1) portal(sv, false);
-      if (profileHeight(m, s1) < PORTAL_E + 1 && s1 < m.line.length) portal(s1, true);
+      const [atStart, atEnd] = portalEnds(m, sv, s1);
+      if (atStart) portal(sv, false);
+      if (atEnd) portal(s1, true);
       // Viaduct: box-girder deck, parapets and piers wherever the track is well above ground.
       for (let s = sv; s < s1; s += 2) {
         const p = m.line.at(s);
@@ -1152,9 +1186,9 @@ export class World {
 
 export const PORTAL_E = -5.5;
 /** Flat board: track below this is in an open cut, so the board leaves a slot over it. */
-const CUT_E = -0.4;
+export const CUT_E = -0.4;
 /** Half-width of that slot: the cut's retaining walls (buildMarta) stand at ±5.2 m. */
-const CUT_HALF = 5.2;
+export const CUT_HALF = 5.2;
 const CUT_CELL = 10;
 const cutKey = (i: number, j: number) => (i + 4096) * 8192 + (j + 4096);
 const PINE_TIERS = 4; // track elevation where the cut is covered over (train roof ≈ 4 m)
