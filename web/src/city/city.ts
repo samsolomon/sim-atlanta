@@ -156,7 +156,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       await build('buildings', () => world.buildBuildings());
       await build('trees', () => world.buildTrees());
     }
-    await build('MARTA', () => { for (const al of marta) world.buildMarta(al); });
+    await build('MARTA', () => { for (const al of marta) world.buildMarta(al, transport?.clearOfFreight); });
     await build('lights', () => world.buildLights(terrain?.board, terrain?.groundAt));
   } catch (err) {
     disposeBoard();

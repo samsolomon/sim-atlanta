@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { Builder, Line, type P2 } from '../vignette/geom';
+import { Builder, Line, segDist, type P2 } from '../vignette/geom';
+import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
@@ -11,6 +12,7 @@ export interface FreightTreadPoint {
 }
 export interface SurfaceTransport {
   freightTreads: FreightTreadPoint[][];
+  clearOfFreight(x: number, z: number): boolean;
   group: THREE.Group;
   structuralTier: 'illustrative';
   dispose(): void;
@@ -51,6 +53,18 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
   const bounds = city.bounds;
   const freightTreads: FreightTreadPoint[][] = [];
+  // A 3.2 m locomotive, the 2.2 × 2.6 m column on its diagonal and a small margin.
+  const pierClearanceM = 3.8;
+  const freightSegments = new PlacementIndex<[P2, P2]>();
+  for (const run of data.rail) {
+    if (run.cls !== 'standard_gauge') continue;
+    for (let i = 1; i < run.pts.length; i++) {
+      const segment: [P2, P2] = [run.pts[i - 1], run.pts[i]];
+      freightSegments.add(segment, segment, pierClearanceM);
+    }
+  }
+  const clearOfFreight = (x: number, z: number) =>
+    freightSegments.at(x, z).every(([a, b]) => segDist(x, z, a, b) >= pierClearanceM);
 
   // West to east: intact rail approaches beyond Piedmont, between Jesse Hill and
   // the freeway, and east of the freeway. Bare earth inside the highway and the
@@ -206,7 +220,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
     group.add(mesh);
     meshes.push(mesh);
   }
-  return { group, freightTreads, structuralTier: 'illustrative', dispose() {
+  return { group, freightTreads, clearOfFreight, structuralTier: 'illustrative', dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
     map.dispose();

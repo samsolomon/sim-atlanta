@@ -50,3 +50,15 @@ describe('flat board open cuts', () => {
     expect(covered(trench, 0, 0)).toBe(true); // East Portal sculpts its cut into the heightfield instead
   });
 });
+
+it('keeps a viaduct pier off the lower freight track and places its column beside it', () => {
+  const w = new World(data, null, { terrain: 'flat', clumps: 1, lightMapMax: 256 });
+  w.buildMarta({ line: new Line([[0, 0], [0, 80]]), elev: () => 8 }, x => x < -2);
+  const pos = (w.group.children[0] as THREE.Mesh).geometry.attributes.position;
+  const columnBaseX: number[] = [];
+  for (let i = 0; i < pos.count; i++) {
+    if (Math.abs(pos.getY(i)) < .001) columnBaseX.push(pos.getX(i));
+  }
+  expect(columnBaseX.length).toBeGreaterThan(0);
+  expect(Math.max(...columnBaseX)).toBeLessThan(-2);
+});
