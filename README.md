@@ -57,6 +57,12 @@ See [the response contract](docs/data-model.md#live-buses).
 
 ## Deploy (Cloudflare free tier)
 
+The optional East Portal art map uses a separate static bake. To include or retain
+`/artmap.html` in a deployment, copy the Studio's complete `web/public/art/`
+directory before building. A checkout without the bake ships only the map and
+vignette, and deploying it removes a previously published art map.
+[Art factory instructions](pipeline/scripts/art/README.md)
+
 ```sh
 npx wrangler login                       # once
 cd worker && npx wrangler secret put MARTA_API_KEY
