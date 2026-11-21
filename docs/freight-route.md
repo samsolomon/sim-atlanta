@@ -60,6 +60,27 @@ imagery, in `docs/data-model.md`). Their edges are good to about ±10 m along th
 `is_tunnel` and `is_bridge` flags on a whole baked run are lumped together, so derive cover from
 where the `terrainTransport` pieces are present or absent along the run, never from the run's flags.
 
+## Five Points east cut: one trench, separate tracks
+
+From s 854 to 962, the freight runs in the **same walled trench** as MARTA, on its **own track**.
+It is not on MARTA's track, which is third-rail electrified.
+
+- **OSM:** four parallel tracks run through the cut: MARTA East Line ways 702258817 and 702258818,
+  the MARTA Interline Connector (way 1453238814, `cutting=yes`), and CSX way 54032236
+  (`railway=rail`, `usage=main`, no tunnel tag). The CSX line lies 5.4 m (median; 4.5–7.4 m) from
+  MARTA's north-east track. That's one track spacing.
+- **Imagery** (Esri World Imagery 15 cm, Vantor 2022-09-27): a single trench with several parallel
+  tracks between a retaining wall on the south-west side and a vegetated bank by the car park on the
+  north-east side. The mapped CSX centreline falls on that north-east edge. Whether the freight track
+  is inside the wall or a couple of metres onto the bank can't be resolved, so treat its lateral
+  position as ±3 m.
+- **Structures:** FRA lists Pryor St (340311N) and Central Ave (279974G) as rail-under, with CSX
+  under both. The FHWA NBI 2025 record for Central Ave (121-0417) says it crosses
+  "GA RR- CSX RR- MARTA", and Pryor St (121-5175) crosses "CSX RR".
+- **For City:** the MARTA slot alone leaves only about 4 m of freight track drawn. Showing this
+  honestly needs the opening widened about 6 m north-east, which makes it one wider trench, not
+  two slots. Otherwise, mark the freight hidden across this stretch.
+
 ## Traffic (FRA crossing inventory, via NARN)
 
 Each count belongs to the crossing where the railroad reported it. They are averages, not live
