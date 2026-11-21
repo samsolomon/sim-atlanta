@@ -121,6 +121,14 @@ fn build() -> Result<()> {
         &raw.join("marta_gtfs.zip"),
         &gtfs::FeedSpec { feed: "marta", source: "marta-gtfs", operator: "MARTA", keep: marta_keep },
     )?;
+    // Bus GPS points need a route label, independently of the rail timetable.
+    let mut bus_routes = std::collections::BTreeMap::new();
+    gtfs::Archive::open(&raw.join("marta_gtfs.zip"))?.each("routes.txt", |r| {
+        if r.get("route_type") == "3" {
+            bus_routes.insert(format!("marta:route:{}", r.get("route_id")), r.get("route_short_name").to_owned());
+        }
+    })?;
+    write_json(&out, "bus-routes.json", &bus_routes)?;
     let amtrak = gtfs::load(
         &raw.join("amtrak_gtfs.zip"),
         &gtfs::FeedSpec { feed: "amtrak", source: "amtrak-gtfs", operator: "Amtrak", keep: amtrak_keep },
@@ -190,6 +198,7 @@ fn build() -> Result<()> {
             "timezone": "America/New_York",
             "sources": [
                 {"id": "marta-gtfs", "name": "MARTA GTFS schedule", "url": MARTA_GTFS, "license": "MARTA developer terms; unofficial use, no MARTA marks", "retrieved": marta.feed_version},
+                {"id": "marta-bus-rt", "name": "MARTA bus vehicle positions", "url": "https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/vehicle/vehiclepositions.pb", "license": "MARTA developer terms; unofficial use, no MARTA marks", "retrieved": today},
                 {"id": "amtrak-gtfs", "name": "Amtrak GTFS schedule", "url": AMTRAK_GTFS, "license": "No stated license (contact DL_DTGTFSsupport@Amtrak.com before public launch)", "retrieved": amtrak.feed_version},
                 {"id": "fra-crossings", "name": "FRA Highway-Rail Crossing Inventory (Form 71)", "url": "https://data.transportation.gov/d/m2f8-22s6", "license": "US public domain", "retrieved": today},
                 {"id": "narn-lines", "name": "North American Rail Network Lines (BTS/FRA)", "url": "https://geodata.bts.gov/datasets/usdot::north-american-rail-network-lines", "license": "US public domain", "retrieved": today},

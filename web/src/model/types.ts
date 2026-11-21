@@ -26,7 +26,7 @@ export interface Sourced<T> {
 /** IDs are "<feed>:<kind>:<stable name>", e.g. "marta:route:RED", "fra:crossing:718065F". */
 export type Id = string;
 
-export type Mode = 'heavy_rail' | 'light_rail' | 'streetcar' | 'intercity' | 'freight';
+export type Mode = 'heavy_rail' | 'light_rail' | 'streetcar' | 'intercity' | 'freight' | 'bus';
 
 export interface Source {
   id: SourceId;
@@ -188,3 +188,33 @@ export interface TrainState {
   observedAt?: number;
   label?: string;
 }
+
+/** MARTA VehiclePositions. Sourced fields share the vehicle observation time.
+ * An empty asOf and null at mean the vehicle omitted its timestamp. */
+export interface LiveBus {
+  id: Id;
+  at: number | null;
+  position: Sourced<{ lon: number; lat: number }>;
+  routeId?: Sourced<Id>;
+  bearing?: Sourced<number>; // degrees clockwise from north
+  speed?: Sourced<number>; // metres/second
+}
+
+/** Compact wire representation; fields inherit the vehicle's observation time. */
+export interface BusFix {
+  id: Id;
+  at: number | null;
+  lon: number;
+  lat: number;
+  routeId?: Id;
+  bearing?: number;
+  speed?: number;
+}
+
+export interface BusFeed {
+  source: 'marta-bus-rt';
+  fetched: number;
+  buses: BusFix[];
+}
+
+export type BusRoutes = Record<Id, string>; // canonical route ID → published short name

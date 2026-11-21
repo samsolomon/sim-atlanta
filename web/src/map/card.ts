@@ -1,5 +1,5 @@
-import type { CrossingProps, Route, Stop, Tier, TrackArcProps, TrainState, VehicleType } from '../model/types';
-import { routeColor } from './layers';
+import type { BusRoutes, LiveBus, CrossingProps, Route, Stop, Tier, TrackArcProps, TrainState, VehicleType } from '../model/types';
+import { MODE_COLOR, routeColor } from './layers';
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -100,4 +100,11 @@ export function freightCard(p: TrackArcProps) {
       ${rights ? `<dt>Also runs here</dt><dd>${esc(rights)}</dd>` : ''}
     </dl>
     <p class="tip">No free live feed exists for freight trains, so this shows how busy the line usually is.</p>`;
+}
+
+export function busCard(bus: LiveBus, routes: BusRoutes) {
+  const name = bus.routeId && routes[bus.routeId.value];
+  return `<h2><span class="dot" style="background:${MODE_COLOR.bus}"></span>MARTA bus ${esc(bus.id.slice('marta:bus:'.length))}</h2>
+    <p class="sub">${name ? 'Route ' + esc(name) : 'Route unavailable'}</p>
+    <dl><dt>Position</dt><dd>${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at)} ${chip(bus.position.tier)}</dd></dl>`;
 }

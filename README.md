@@ -57,3 +57,12 @@ pnpm deploy
 - Diorama polish: trees, terrain, buses, time-of-day lighting, MARTA CQ400 car models (see
   docs/art-backlog.md), a ride-along camera, and growing out to I-285.
 - Freight positions. No free source exists; see docs/data-model.md.
+
+### Live MARTA buses
+
+The 2D map polls the keyless `GET /api/marta/bus` endpoint at most once per
+30 seconds while visible at the real clock. An always-open map adds up to 2,880
+Worker requests per day. The Worker caches each bus snapshot for 30 seconds
+per edge location. For deployment, run `pnpm data` to generate the bus route
+index, then `pnpm deploy` to rebuild static assets and deploy the Worker together.
+See [the response contract](docs/data-model.md#live-buses).

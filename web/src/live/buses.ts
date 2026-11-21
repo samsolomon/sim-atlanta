@@ -1,0 +1,39 @@
+import type { BusFeed, LiveBus, Sourced } from '../model/types';
+
+const POLL_MS = 30_000;
+const MAX_AGE_MS = 180_000;
+
+export class LiveBuses {
+  private buses: LiveBus[] = [];
+  private nextPoll = 0;
+  private pending = false;
+
+  async poll() {
+    if (this.pending || performance.now() < this.nextPoll) return;
+    this.nextPoll = performance.now() + POLL_MS;
+    this.pending = true;
+    try {
+      const response = await fetch('/api/marta/bus');
+      if (!response.ok) return;
+      const feed: BusFeed = await response.json();
+      this.buses = feed.buses.map(fix => {
+        const asOf = fix.at === null ? '' : new Date(fix.at).toISOString();
+        const sourced = <T>(value: T): Sourced<T> => ({ value, tier: 'live', source: feed.source, asOf });
+        return {
+          id: fix.id, at: fix.at, position: sourced({ lon: fix.lon, lat: fix.lat }),
+          routeId: fix.routeId === undefined ? undefined : sourced(fix.routeId),
+          bearing: fix.bearing === undefined ? undefined : sourced(fix.bearing),
+          speed: fix.speed === undefined ? undefined : sourced(fix.speed),
+        };
+      });
+    } catch {
+      // Keep showing the previous observations until their individual fixes expire.
+    } finally {
+      this.pending = false;
+    }
+  }
+
+  current(now: number): LiveBus[] {
+    return this.buses.filter(bus => bus.at !== null && bus.at <= now && now - bus.at <= MAX_AGE_MS);
+  }
+}
