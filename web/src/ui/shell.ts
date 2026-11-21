@@ -161,7 +161,7 @@ export function createShell(o: ShellOptions) {
       : '<b>Weather</b> unavailable right now';
     more.innerHTML = `
       <p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>
-      <ul><li>${rail}</li><li>${bus}</li><li><b>Freight</b> where trains run is reported; when is illustrative</li><li>${wx}</li></ul>`;
+      <ul><li>${rail}${view === 'city' ? '. Trains are hidden underground. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> where trains run is reported; when is illustrative</li><li>${wx}</li></ul>`;
   }
 
   let lastTick = 0;
