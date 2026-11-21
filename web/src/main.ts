@@ -230,8 +230,10 @@ const view3d = document.getElementById('view3d')!;
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, scene3d's origin
 const CITY_BOUNDS = { minX: -1331, maxX: 1350, minZ: -2124, maxZ: 1546 };
 
+let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
 async function openCity() {
   if (diorama) return;
+  const load = ++cityLoad;
   view3d.hidden = false;
   document.body.classList.add('in3d');
   // Open where the map was looking, clamped into the area City covers.
@@ -242,8 +244,14 @@ async function openCity() {
   shell.setNote(Math.hypot(x - mx, z - mz) > 200 ? 'City view covers downtown for now' : null);
   try {
     const { createDiorama } = await import('./scene3d/view');
-    diorama = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+    const d = await createDiorama(document.getElementById('view3d-canvas')!, rf, schedule);
+    if (load !== cityLoad) {
+      d.dispose(); // the user went back to Map (or reopened City) while this was loading
+      return;
+    }
+    diorama = d;
   } catch (err) {
+    if (load !== cityLoad) return;
     console.error(err);
     view3d.hidden = true;
     document.body.classList.remove('in3d');
@@ -264,6 +272,7 @@ async function openCity() {
 }
 
 function closeCity() {
+  cityLoad++;
   if (diorama) {
     // Hand the place back to the map.
     const t = diorama.target();
@@ -272,6 +281,7 @@ function closeCity() {
   }
   diorama?.dispose();
   diorama = null;
+  if (import.meta.env.DEV) Object.assign(window, { __diorama: null });
   view3d.hidden = true;
   document.body.classList.remove('in3d');
   shell.setNote(null);

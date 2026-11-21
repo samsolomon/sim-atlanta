@@ -151,7 +151,9 @@ export function createShell(o: ShellOptions) {
           ? '<b>Trains</b> connecting to MARTA…'
           : '<b>Trains</b> MARTA live feed unavailable, showing the timetable';
     const bus = !s.realTime ? '<b>Buses</b> shown only at the present time' : s.buses == null ? '<b>Buses</b> live feed unavailable' : `<b>Buses</b> ${s.buses} MARTA buses, live positions`;
-    const wx = weather
+    const wx = !s.realTime
+      ? '<b>Weather</b> shown only at the present time'
+      : weather
       ? `<b>Weather</b> ${cap(weather.label)}${weather.tempF != null ? `, ${Math.round(weather.tempF)}°F` : ''} · Open-Meteo, ${Math.max(0, Math.round((Date.now() - weatherAt) / 60000))} min ago`
       : '<b>Weather</b> unavailable right now';
     more.innerHTML = `
@@ -172,23 +174,25 @@ export function createShell(o: ShellOptions) {
     const liveOn = s.realTime && s.rail === 'live';
     dot.className = `status-dot ${liveOn ? 'on' : ''}`;
     dot.title = liveOn ? 'Live' : s.realTime ? 'Timetable' : 'Timetable · not live';
-    if (weather) {
+    // Weather is live data: show it only when the clock is the real present.
+    const wxNow = s.realTime ? weather : null;
+    if (wxNow) {
       const night = sunPosition(now).elevation < -2;
-      const svg = weatherIcon(weather, night);
+      const svg = weatherIcon(wxNow, night);
       if (wxIcon.dataset.svg !== svg) {
         wxIcon.innerHTML = svg;
         wxIcon.dataset.svg = svg;
       }
       wxIcon.hidden = false;
-      temp.textContent = weather.tempF != null ? `${Math.round(weather.tempF)}°` : '';
-      cond.textContent = cap(weather.label);
+      temp.textContent = wxNow.tempF != null ? `${Math.round(wxNow.tempF)}°` : '';
+      cond.textContent = cap(wxNow.label);
     } else {
       wxIcon.hidden = true;
       temp.textContent = '';
       cond.textContent = '';
     }
     time.textContent = `${dateFmt.format(now)} · ${timeFmt.format(now)}${s.realTime ? '' : ' · timetable'}`;
-    statusBtn.setAttribute('aria-label', `${place.textContent}, ${weather ? `${weather.label}, ` : ''}${dateFmt.format(now)} ${timeFmt.format(now)}${liveOn ? ', live' : ''}`);
+    statusBtn.setAttribute('aria-label', `${place.textContent}, ${wxNow ? `${wxNow.label}, ` : ''}${dateFmt.format(now)} ${timeFmt.format(now)}${liveOn ? ', live' : ''}`);
     if (!more.hidden) renderMore();
   }
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
