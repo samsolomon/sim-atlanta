@@ -995,15 +995,19 @@ local server and cannot predict a public-network download time.
 | Diagnostic, shadows off | 38.37 | 44.00 | 44.37 | 42.25 |
 | Shipped 2048 px shadows, warm reload | 28.13 | 36.02 | 37.34 | 33.83 |
 | Diagnostic, 1024 px shadows | 34.87 | 35.37 | 38.00 | 36.08 |
+| Diagnostic, 1024 px shadows, fresh origin | 32.28 | 35.27 | 34.75 | 34.10 |
+| Shipped 2048 px shadows, fresh origin | 28.84 | 34.25 | 34.23 | 32.43 |
 
 The warm production reload reached **37.60 fps** over a further uninterrupted 24 seconds,
 with a 55.6 ms 95th-percentile interval. On the first visit, scene construction took
 2.44 seconds, including 1.28 seconds for ground, and the first ready frame arrived at
 6.64 seconds. Startup and sustained rendering tell different stories on this phone.
 
-Halving the shadow-map dimensions preserved visible building shadows. All three windows
-in that diagnostic exceeded 30 fps, including its first one. It ran later on a warmed
-device. A fresh-launch repeat with the 1024 px setting is the next check before signing
-off the opening gate. Both diagnostic changes were confined to the local test server.
+Halving the shadow-map dimensions preserved visible building shadows. To check the
+order effect, we returned the phone to Home and repeated the comparison with the
+1024 px variant first. Each page used a fresh browser origin to avoid reusing the
+previous origin's asset cache. Chrome and the phone were already warm.
+The 1024 px setting cleared 30 fps in all six measured windows across its two visits.
+Both diagnostic changes were confined to the local test server.
 
 [Shipped opening](log/ui/2026-11-21-city-a16-low.png) · [1024 px shadow comparison](log/ui/2026-11-21-city-a16-shadow-1024.png)
