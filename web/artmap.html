@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#e4dfcf" />
+    <title>East Portal · Railwatch</title>
+  </head>
+  <body>
+    <header>
+      <div>
+        <span>RAILWATCH / ATLANTA</span>
+        <h1>East Portal</h1>
+      </div>
+      <nav aria-label="Map controls">
+        <label
+          >Base
+          <select id="style">
+            <option value="blender">Blender illustration</option>
+          </select></label
+        >
+        <label
+          >Sprites
+          <select id="light">
+            <option value="day">Day</option>
+            <option value="night">Night</option>
+          </select></label
+        >
+        <button id="motion">Pause</button
+        ><button id="out" aria-label="Zoom out">−</button
+        ><button id="in" aria-label="Zoom in">+</button
+        ><button id="fit">Fit</button>
+      </nav>
+    </header>
+    <main>
+      <canvas
+        tabindex="0"
+        aria-label="East Portal illustrated map. Drag or use arrow keys to pan, plus and minus to zoom."
+      ></canvas>
+      <p id="status" role="status">Loading the East Portal…</p>
+    </main>
+    <footer>
+      <strong>Illustrative</strong
+      ><span
+        >Painted terrain and simulated train and road traffic. AI may invent
+        details.</span
+      >
+      <details>
+        <summary>Sources</summary>
+        Overture Maps · MARTA GTFS · FHWA · Meta/WRI canopy (CC BY 4.0).
+        November 2026.
+      </details>
+    </footer>
+    <script type="module" src="/src/artmap/viewer.ts"></script>
+  </body>
+</html>

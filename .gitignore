@@ -11,3 +11,5 @@ web/public/data/ga/*
 .venv/
 web/public/data/scene/
 web/.impeccable/hook.cache.json
+web/public/art/
+pipeline/scripts/art/__pycache__/

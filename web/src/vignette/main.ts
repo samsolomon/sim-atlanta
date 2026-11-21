@@ -345,6 +345,10 @@ async function main() {
       west,
     },
   });
+  if (import.meta.env.DEV && params.get('export') === 'glb') {
+    const { installCapture } = await import('../artmap/capture');
+    installCapture(world, east, traffic, scene);
+  }
   document.body.classList.add('ready');
 }
 
