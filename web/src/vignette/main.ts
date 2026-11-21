@@ -316,6 +316,7 @@ async function main() {
     traffic.update(paused ? 0 : dt, loc.hour, loc.weekend, snapTraffic);
     parked.update(loc.hour, loc.weekend);
     buses.update(clock.isLive());
+    traffic.obstacles = buses.positions;
     snapTraffic = false;
     readout(now);
     const ph = t % period;

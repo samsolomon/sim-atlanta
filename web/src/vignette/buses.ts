@@ -21,6 +21,7 @@ interface Shown {
   route: string;
   from: { x: number; z: number; a: number };
   to: { x: number; z: number; a: number };
+  bridge: boolean;
   t0: number;
   at: number;
 }
@@ -32,6 +33,8 @@ export class DioramaBuses {
   private project: (lon: number, lat: number) => [number, number];
   private obj = new THREE.Object3D();
   readonly night = { value: 0 };
+  /** Where buses are this frame, for traffic to avoid. */
+  readonly positions: { x: number; z: number; len: number }[] = [];
 
   constructor(
     private world: World,
@@ -47,15 +50,15 @@ export class DioramaBuses {
   }
 
   /** Snap a fix onto the nearest street, facing the street direction nearest its bearing. */
-  private snap(b: LiveBus): { x: number; z: number; a: number } | null {
+  private snap(b: LiveBus): { x: number; z: number; a: number; bridge: boolean } | null {
     const [x, z] = this.project(b.position.value.lon, b.position.value.lat);
     if (!this.world.inBounds(x, z, 4)) return null;
-    let best: { d: number; a: P2; c: P2 } | null = null;
+    let best: { d: number; a: P2; c: P2; bridge: boolean } | null = null;
     for (const r of this.world.data.roads) {
       if (!STREETS.has(r.cls)) continue;
       for (let i = 1; i < r.pts.length; i++) {
         const d = segDist(x, z, r.pts[i - 1], r.pts[i]);
-        if (!best || d < best.d) best = { d, a: r.pts[i - 1], c: r.pts[i] };
+        if (!best || d < best.d) best = { d, a: r.pts[i - 1], c: r.pts[i], bridge: r.bridge };
       }
     }
     if (!best || best.d > 25) return null;
@@ -72,13 +75,14 @@ export class DioramaBuses {
     // Keep to the right-hand lane: offset 2.5 m right of travel.
     const px = ax + (cx - ax) * t - Math.cos(a) * 2.5;
     const pz = az + (cz - az) * t + Math.sin(a) * 2.5;
-    return { x: px, z: pz, a };
+    return { x: px, z: pz, a, bridge: best.bridge };
   }
 
   /** Call every frame. `live` is false when the clock isn't the real present. */
   update(live: boolean) {
     if (!live) {
       this.mesh.count = 0;
+      this.positions.length = 0;
       return;
     }
     void this.feed.poll();
@@ -89,18 +93,22 @@ export class DioramaBuses {
       if (!p) continue;
       seen.add(b.id);
       const prev = this.shown.get(b.id);
-      if (!prev) this.shown.set(b.id, { id: b.id, route: b.routeId?.value ?? '', from: p, to: p, t0: now, at: b.at ?? 0 });
+      if (!prev) this.shown.set(b.id, { id: b.id, route: b.routeId?.value ?? '', from: p, to: p, bridge: p.bridge, t0: now, at: b.at ?? 0 });
       else if ((b.at ?? 0) !== prev.at) {
         const cur = this.lerp(prev, now);
-        this.shown.set(b.id, { ...prev, from: cur, to: p, t0: now, at: b.at ?? 0 });
+        this.shown.set(b.id, { ...prev, from: cur, to: p, bridge: p.bridge, t0: now, at: b.at ?? 0 });
       }
     }
     for (const id of [...this.shown.keys()]) if (!seen.has(id)) this.shown.delete(id);
     let i = 0;
+    this.positions.length = 0;
     for (const s of this.shown.values()) {
       if (i >= MAX) break;
       const p = this.lerp(s, now);
-      this.obj.position.set(p.x, this.world.ground(p.x, p.z) + 0.2, p.z);
+      // On an overpass, stay on the deck (streets on bridges never dip into the trench).
+      const g = this.world.ground(p.x, p.z);
+      this.obj.position.set(p.x, (s.bridge ? Math.max(0, g) : g) + 0.2, p.z);
+      this.positions.push({ x: p.x, z: p.z, len: 12.2 });
       this.obj.rotation.set(0, p.a, 0);
       this.obj.updateMatrix();
       this.mesh.setMatrixAt(i++, this.obj.matrix);

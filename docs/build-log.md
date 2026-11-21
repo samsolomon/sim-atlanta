@@ -601,3 +601,16 @@ out of the board's clay edge. So the lessons go back into the 3D:
 ![Ink off](log/vignette/ink-off.jpg)
 ![Lighter freight bridges](log/vignette/girders.jpg)
 ![A live MARTA bus at night](log/vignette/live-bus.jpg)
+
+**Same day, Sam's next notes:** the headlights "look backwards" and cars "just go through
+that bus".
+- The headlight-beam texture was flipped one time too many, so the beam was brightest at its
+  far end. Now it starts bright at the bumper and fades ahead.
+- Live buses are now **obstacles** for the simulation: cars on the same lane brake and queue
+  behind them. On multi-lane roads, a held-up car **changes lanes** when the next lane has a
+  safe gap (a simple MOBIL-style rule), sliding across over about two seconds instead of
+  jumping.
+- Review catch: a bus snapped to the Decatur St bridge was drawn below the deck. Buses on
+  overpasses now keep the bridge height, like the rest of the traffic.
+
+![Cars queued behind a live bus on the Decatur St bridge, headlights fixed](log/vignette/beams.jpg)
