@@ -16,7 +16,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
-import type { RoutesFile } from '../model/types';
+import type { RoutesFile, TrainState } from '../model/types';
 import type { SceneManifest } from '../core/scene-data';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
@@ -26,6 +26,7 @@ import { local } from '../vignette/time';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
+import { CityTrains } from './trains';
 import { Snow } from './snow';
 
 export type Quality = 'low' | 'high';
@@ -45,7 +46,7 @@ export interface CityView {
   /** Sun, darkness and weather from the shared atmosphere; the date sets the season. */
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
-  stats(): { fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
+  stats(): { surfaceCars: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
 
@@ -60,22 +61,24 @@ export function pickQuality(): Quality {
 
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
-export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), loading: {
+export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), options: {
   signal?: AbortSignal;
   progress?: (label: string) => void;
-} = {}): Promise<CityView> {
+  trains: () => TrainState[];
+  beforeFrame?: (timestamp: number) => void;
+}): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
   const [vd, manifest, trees] = await Promise.all([
-    fetch(`${DATA}/scene/downtown/vignette.json`, { signal: loading.signal }).then((r) => {
+    fetch(`${DATA}/scene/downtown/vignette.json`, { signal: options.signal }).then((r) => {
       if (!r.ok) throw new Error(`city data ${r.status}`);
       return r.json();
     }) as Promise<VData>,
-    fetch(`${DATA}/scene/downtown/scene.json`, { signal: loading.signal }).then((r) => {
+    fetch(`${DATA}/scene/downtown/scene.json`, { signal: options.signal }).then((r) => {
       if (!r.ok) throw new Error(`city profiles ${r.status}`);
       return r.json();
     }) as Promise<SceneManifest>,
-    fetch(`${DATA}/scene/downtown/trees.json`, { signal: loading.signal }).then((r) => {
+    fetch(`${DATA}/scene/downtown/trees.json`, { signal: options.signal }).then((r) => {
       if (!r.ok) throw new Error(`city trees ${r.status}`);
       return r.json();
     }),
@@ -86,10 +89,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const t0 = performance.now();
   const stages: Record<string, number> = {};
   const build = async (name: string, fn: () => void) => {
-    loading.progress?.(`Building ${name}…`);
+    options.progress?.(`Building ${name}…`);
     // Let the loading plate paint and a Map click cancel between construction stages.
     await new Promise((resolve) => setTimeout(resolve, 0));
-    loading.signal?.throwIfAborted();
+    options.signal?.throwIfAborted();
     const start = performance.now();
     fn();
     stages[name] = Math.round(performance.now() - start);
@@ -114,7 +117,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     throw err;
   }
   const buildMs = Object.values(stages).reduce((sum, ms) => sum + ms, 0);
-  loading.progress?.('Drawing downtown…');
+  options.progress?.('Drawing downtown…');
 
   // ---- renderer -------------------------------------------------------------------------
   let renderer: THREE.WebGLRenderer;
@@ -155,6 +158,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mat.clipShadows = true;
     }
   });
+  const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
+  const trains = new CityTrains(marta, manifest, b, colors, edges);
+  scene.add(trains.group);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -178,7 +184,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   sc.bottom = -SH;
   sc.near = 100;
   sc.far = 4000;
-  sun.shadow.mapSize.set(low ? 2048 : 4096, low ? 2048 : 4096);
+  sun.shadow.mapSize.set(low ? 1024 : 4096, low ? 1024 : 4096);
   sun.shadow.bias = -0.0016;
   sun.shadow.normalBias = 1.2;
   scene.add(hemi, sun, sun.target);
@@ -250,10 +256,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const h = container.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h);
-    composer.setSize(w, h);
-    bloom.resolution.set(w / 2, h / 2);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    composer.setSize(w, h);
+    // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
+    gtao?.setSize(w, h);
+    bloom.resolution.set(w / 2, h / 2);
     const pr = renderer.getPixelRatio();
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
@@ -367,6 +375,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let lastFrame = performance.now();
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
+    options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
     if (glideTo) {
@@ -376,6 +385,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (step.length() < 0.05) glideTo = null;
     }
     controls.update();
+    trains.update(options.trains(), atm.dark);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
@@ -452,7 +462,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       atm = a;
       world.setSeason(local(now).doy);
     },
-    stats: () => ({ fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    stats: () => ({ surfaceCars: trains.surfaceCars, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();

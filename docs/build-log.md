@@ -926,6 +926,132 @@ The combined branch passes all 48 tests, the production build and an Orca high-t
 check. Claude's focused integration review found no issues. City remains optional; the A16
 gate still controls making it the default and starting M2b.
 
+## 2026-11-21 · Softer shading costs fewer pixels
+
+On this Mac, City draws a 1446×876 Orca viewport into a 2892×1752 canvas. The soft
+contact shadows around buildings also covered all five million pixels. Turning just
+that effect off briefly took the opening view from 23.5 to 37.4 fps. Keeping it on and
+rendering it at 1446×876 leaves the ink, façades and final image at display resolution.
+
+At the same opening pose on high tier, alternating the two shading resolutions gave
+22.3–23.5 fps before and 31.9–33.7 fps after. The 95th-percentile frame interval fell
+from 83–84 ms to about 50 ms. These were 4.4-second foreground Orca samples on the
+Nov 21 afternoon timetable. The scene still drew 63 calls and 2.80 million triangles.
+
+Holding E for three seconds from the closer downtown pose gave a smaller gain. Two
+samples at each resolution measured 20.1–22.3 fps before and 24.4–26.6 fps after.
+The 95th-percentile interval stayed around 84 ms, so some turns still hitch. The
+browser resize check confirmed a 2256-pixel canvas with 1128-pixel contact shading
+at the narrower width. This is a desktop measurement. Shipping needs a web rebuild.
+
+![High-tier downtown close-up with contact shading rendered at CSS resolution](log/ui/2026-11-21-city-contact-shading.png)
+
+## 2026-11-21 · Drawing the turn we just asked for
+
+City and the keyboard both had animation-frame callbacks. During a close-up turn the
+renderer usually ran first, so it drew the previous camera angle. In a 4.5-second held-E
+sample in Orca, the camera update waited a median **16.5 ms**, and **82.3 ms at the
+95th percentile**, before the renderer submitted a draw with that angle.
+
+City now advances the held keys before drawing. Both callbacks use the browser's frame
+timestamp, so the second one sees zero elapsed time. At the same close-up pose on high
+tier (1446×876, DPR 2), the update-to-draw delay measured **0.1 ms median and 0.2 ms
+at the 95th percentile**. These measurements end at draw submission. The 95th-percentile
+interval between frames was still **83 ms**. In a separate held turn, JavaScript spent
+1.7 ms at the 95th percentile submitting the scene, and the WebGL GPU timer measured
+19.3 ms at the 95th percentile. Neither measures the browser's final presentation.
+In two alternating pairs of 3.2-second turns, even drawing just the final fullscreen
+triangle gave 84 ms at the 95th percentile, against 83–84 ms for the full scene.
+A separate 5.5-second run in the same focused Orca tab, drawing a moving square on
+a plain 2D canvas, measured 35.8 fps and a 49.5 ms 95th-percentile interval.
+
+Rain revealed a second cost. The weather timer could repaint the covered 2D Map about
+30 times a second. City now suspends that timer, and Map picks up the latest weather on
+return. Orca checks covered direct entry, switching, cancellation and failed loading.
+The high-tier check also covered quick taps, repeat, opposing keys, simultaneous pan
+and rotation, and release on blur. This change ships with a web rebuild.
+
+![Close-up downtown view after a keyboard turn in Orca](log/ui/2026-11-21-city-turn.png)
+
+## 2026-11-21 · The first half-minute on the Galaxy A16
+
+The A16 can sustain the low-tier opening, but the first two visits fell just short of
+30 fps. We ran the shipped City build (`1586558`) on a physical Galaxy A16 5G
+(SM-S166V, Android 16) in mobile Chrome, in portrait with the real clock and overcast
+Atlanta weather. At the untouched opening camera, a 384×692 CSS viewport used a
+384×692 drawing buffer. The phone's device pixel ratio was 2.8125.
+
+The phone loaded the release assets over USB from a local server. A page timing probe
+waited for the City loading plate to clear and a further 4.5 seconds, then counted
+animation-frame intervals in three consecutive eight-second windows. Combined fps is
+total frames divided by elapsed time. The page stayed visible and focused throughout
+the samples. These are browser frame callbacks; readiness includes loading from the
+local server and cannot predict a public-network download time.
+
+| Configuration, in test order | Window 1 (fps) | Window 2 | Window 3 | Combined fps |
+| --- | ---: | ---: | ---: | ---: |
+| Shipped 2048 px shadows, first visit | 25.00 | 29.37 | 32.62 | 29.00 |
+| Shipped 2048 px shadows, second visit | 25.12 | 29.58 | 33.86 | 29.53 |
+| Diagnostic, shadows off | 38.37 | 44.00 | 44.37 | 42.25 |
+| Shipped 2048 px shadows, warm reload | 28.13 | 36.02 | 37.34 | 33.83 |
+| Diagnostic, 1024 px shadows | 34.87 | 35.37 | 38.00 | 36.08 |
+| Diagnostic, 1024 px shadows, fresh origin | 32.28 | 35.27 | 34.75 | 34.10 |
+| Shipped 2048 px shadows, fresh origin | 28.84 | 34.25 | 34.23 | 32.43 |
+
+The warm production reload reached **37.60 fps** over a further uninterrupted 24 seconds,
+with a 55.6 ms 95th-percentile interval. On the first visit, scene construction took
+2.44 seconds, including 1.28 seconds for ground, and the first ready frame arrived at
+6.64 seconds. Startup and sustained rendering tell different stories on this phone.
+
+Halving the shadow-map dimensions preserved visible building shadows. To check the
+order effect, we returned the phone to Home and repeated the comparison with the
+1024 px variant first. Each page used a fresh browser origin to avoid reusing the
+previous origin's asset cache. Chrome and the phone were already warm.
+The 1024 px setting cleared 30 fps in all six measured windows across its two visits.
+Both diagnostic changes were confined to the local test server.
+
+[Shipped opening](log/ui/2026-11-21-city-a16-low.png) · [1024 px shadow comparison](log/ui/2026-11-21-city-a16-shadow-1024.png)
+
+City now uses the tested 1024 px shadow map on low tier. The six A16 samples ranged
+from 32.28 to 38.00 fps, clearing the 30 fps gate for the static opening. This change
+ships with a web rebuild.
+
+## 2026-11-21 — A Blue Line train through Five Points
+
+At 2:10:35 p.m. on the Friday timetable, an eastbound Blue Line train is in daylight in
+the Gulch. At 2:11 it reaches Five Points underground. Twenty-five seconds later its cars
+are visible again in the open cut between Peachtree and Pryor. We replayed the same trip
+in Orca on high quality, combining the City motion branch with the rail accuracy agent’s
+two corrected cuts. The building on the south side of the Gulch hides most of the
+western cut from a low angle. Looking back from the north makes the passage legible.
+
+![Scheduled Blue train in the western open cut at 2:10:35](log/ui/2026-11-21-city-blue-west-cut.jpg)
+![The same train emerging in the eastern cut at 2:11:25](log/ui/2026-11-21-city-blue-east-cut.jpg)
+
+The Map and City read the same train positions. In City each car takes the direction and
+height of the rendered track beneath it. A car stays in the scene until both ends have
+passed under cover, so the front can disappear while the tail is still in daylight.
+The timetable and live feed both use illustrative car counts and the CQ400-style model.
+In Orca the real clock supplied 19 live heavy-rail positions across the system. Scrubbing
+ten minutes back switched the City source to scheduled positions, and Now restored live
+positions. The first check happened to have no cars in daylight on the downtown board.
+
+Marlin’s ground-grid sample near the east cut was 311.15 m above NAVD88, compared with
+319.52 m fifty metres north and 319.09 m fifty metres south. That supports a depression
+there. It does not measure a railhead or the cover underneath Five Points. The trains
+use the same schematic profile as the rendered rails.
+
+On the Galaxy A16, the production build with motion and the previously shipped profiles
+averaged 34.0 fps as the train moved east from Georgia State. With the two cuts included,
+the Five Points replay at 2× averaged 31.9 fps (33.8, 33.3 and 28.8 across three
+eight-second windows). The Georgia State run at 1× averaged 35.9 fps (36.1, 36.2 and
+35.4). Both combined runs used a foreground 384 × 692 low-tier canvas at the opening
+camera pose, with 4.5 seconds to warm up after the board appeared.
+
+A repeat of the cut replay with temporary timing probes averaged 33.2 fps. Across the
+three windows, looking up positions took at most 1.2 ms at the 95th percentile and placing
+the cars took at most 0.7 ms. Between zero and eight cars were eligible to draw.
+
 ## 2026-11-21 · Where MARTA actually sees the sky downtown
 
 The City handoff expected MARTA track to surface "by the Dome/GWCC". It doesn't. Before I
