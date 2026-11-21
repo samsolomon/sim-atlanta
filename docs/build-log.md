@@ -1106,3 +1106,54 @@ a re-check date.
 Sam also asked whether City should have an underground view, since tunnels hide most trains.
 It's in the art backlog's Cutaway section. Deploying this needs `pnpm data:scene` (or
 `pnpm data`) and a web rebuild.
+
+## 2026-11-21 · Cover is not depth: a rail contract for terrain
+
+Real ground is coming to City: USGS 1 m bare earth, baked by the terrain agent. With it, a single
+height number per 10 m of track stops being enough. The track's cover (sky, a street, a station
+roof, a building) and its height relative to the ground are separate facts. Our old profile
+blended them: deeper than −5.5 m meant "tunnel".
+
+**Georgia State was the first fixture, and the old notes were wrong.** I had written that its
+two untagged gaps "stay filled as tunnel". In fact the profile ramps from −10 m at the
+Washington St portal to +7 m by −84.3859, so a flat-board renderer would draw the line climbing
+through the platform canopies and straight through the Floyd "Twin Towers". Imagery from
+2022-09-27 (Esri, 15 cm), 2023 (NAIP) and 2026-02-02 (WV02), together with OSM, gives four
+honest stretches, eastbound:
+
+- about 62 m open at grade beside the CSX/NS tracks;
+- 73 m under the side-platform canopies (roofed, not a tunnel);
+- 131 m under the Floyd Building (OSM `tunnel=building_passage`);
+- then open, elevated structure, continuous into the layer-3 viaduct over the Connector. The
+  second "gap" was only a seam between OSM ways.
+
+**The contract.** `scene.json` gains an optional `rail` key and keeps `profiles` byte-identical.
+Each path carries sorted, half-open spans in path metres, each with:
+
+- cover: `open`, `covered` or `roofed`;
+- form;
+- a height base: local ground + rel, or hung from identified anchors;
+- `height: schematic`;
+- an evidence id with sources and edge precision.
+
+Gaps mean unknown, so the old profile still applies there. The bake projects 6 lon/lat fixtures
+onto all 12 Blue/Green paths in both directions. Span lengths agree within 15 m across paths, and
+the westbound order is the exact reverse of the eastbound.
+
+**A seam the coordinating agent caught.** Bedding the Floyd Building span on local ground while
+hanging the viaduct from the east face + 7 m would make a car jump up to 7 m at the seam. The
+canopy, building and viaduct spans now share one anchor chain:
+
+- canopy west end, +0 m;
+- station east face, +7 m;
+- Connector east bank, +7 m.
+
+A contract test samples ±1 cm either side of every seam with a synthetic ground surface, in both
+directions. It measured a 2.65 m step with the old layout and passes with the chain. The 7 m
+clearance remains a placeholder: no public record gives the MARTA deck height over the
+freeway.
+
+![NAIP 2023: Georgia State](log/rail/2026-11-21-naip-2023-georgia-state.jpg)
+
+Needs `pnpm data:scene` (Rust scene bake only); no web rebuild is needed until a consumer reads
+`rail`.
