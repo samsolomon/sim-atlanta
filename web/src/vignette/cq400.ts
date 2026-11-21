@@ -20,6 +20,7 @@
  *   3 glass (warm interior glow at night)   5 line-colour LED (always lit)
  *   6 name-bar (white leading, red tail, dark in the middle of a train)   7 destination display
  *   8 corner light cluster (white leading, red tail)
+ *   9 cab chevron light (line colour; dark on a cab coupled inside a train)
  */
 import * as THREE from 'three';
 
@@ -289,8 +290,8 @@ function addNose(k: Kit, zb: number, line: string) {
     const [b, c] = edgePts[i];
     // Keep every quad facing forward (+z), whichever way the path runs.
     const nz = (b[0] - a[0]) * (d[1] - a[1]) - (b[1] - a[1]) * (d[0] - a[0]);
-    if (nz >= 0) k.quad(a, b, c, d, line, 5);
-    else k.quad(a, d, c, b, line, 5);
+    if (nz >= 0) k.quad(a, b, c, d, line, 9);
+    else k.quad(a, d, c, b, line, 9);
   }
   // Small red tail lights at each end of the destination display, and under each corner cluster.
   for (const s2 of [-1, 1]) {
@@ -477,7 +478,9 @@ export function cq400Material(line: string, role: { value: number }, night: { va
         else if (vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = mix(vec3(0.25, 0.08, 0.08), vec3(1.0, 0.12, 0.1), tail);
         else if (vKind > 4.5 && vKind < 5.5) diffuseColor.rgb = uLine;
         else if (vKind > 5.5 && vKind < 6.5) diffuseColor.rgb = lead > 0.5 ? vec3(1.0) : tail > 0.5 ? vec3(1.0, 0.1, 0.08) : vec3(0.18);
-        else if (vKind > 7.5) diffuseColor.rgb = lead > 0.5 ? vec3(1.0, 0.97, 0.9) : tail > 0.5 ? vec3(1.0, 0.1, 0.08) : vec3(0.22);`,
+        else if (vKind > 7.5 && vKind < 8.5) diffuseColor.rgb = lead > 0.5 ? vec3(1.0, 0.97, 0.9) : tail > 0.5 ? vec3(1.0, 0.1, 0.08) : vec3(0.22);
+        else if (vKind > 8.5) diffuseColor.rgb = uLine * mix(0.25, 1.0, step(0.5, abs(uRole)));
+        else if (vKind > 6.5 && vKind < 7.5) diffuseColor.rgb *= mix(0.15, 1.0, step(0.5, abs(uRole)));`,
       )
       .replace(
         '#include <emissivemap_fragment>',
@@ -489,7 +492,8 @@ export function cq400Material(line: string, role: { value: number }, night: { va
         if (vKind > 4.5 && vKind < 5.5) totalEmissiveRadiance += uLine * (0.8 + 1.4 * uNight);
         if (vKind > 5.5 && vKind < 6.5) totalEmissiveRadiance += diffuseColor.rgb * max(lead, tail) * glow;
         if (vKind > 6.5 && vKind < 7.5) totalEmissiveRadiance += diffuseColor.rgb * step(0.5, abs(uRole)) * (0.5 + uNight);
-        if (vKind > 7.5) totalEmissiveRadiance += diffuseColor.rgb * max(lead, tail) * glow;`,
+        if (vKind > 7.5 && vKind < 8.5) totalEmissiveRadiance += diffuseColor.rgb * max(lead, tail) * glow;
+        if (vKind > 8.5) totalEmissiveRadiance += uLine * (0.8 + 1.4 * uNight) * step(0.5, abs(uRole));`,
       );
   };
   m.customProgramCacheKey = () => 'cq400';
