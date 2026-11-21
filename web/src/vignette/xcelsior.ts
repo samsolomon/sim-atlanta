@@ -7,8 +7,8 @@
  *   step height 356 mm · front door behind the windscreen, rear door ahead of the rear axle.
  *
  * Faces +z; origin at the centre of the footprint on the ground. Facing +z the right-hand
- * (curb) side is −x, so the doors are on −x. Livery is a parameter (`BusLivery`) until reference
- * photos confirm MARTA's scheme. No logos.
+ * (curb) side is −x, so the doors are on −x. Livery is a parameter (`BusLivery`), from reference
+ * photos of MARTA's scheme. No logos.
  *
  * Per-vertex `aKind` (read by `busMaterial`): 0 fixed, 1 headlight, 2 tail light, 3 glass,
  * 7 destination sign.
@@ -32,15 +32,27 @@ const BEV = 0.08; // edge rounding
 
 export interface BusLivery {
   body: string;
-  skirt: string;
-  accent: string;
-  accent2: string;
+  blue: string; // the three slashes and the streak along the roofline
+  gold: string;
+  orange: string;
+  grey: string; // the big slanted rear lettering, reduced to a plain band
+  greyOnGlass: string;
 }
-export const DEFAULT_LIVERY: BusLivery = { body: '#eef0f1', skirt: '#1f4f9c', accent: '#f08a24', accent2: '#f6c33b' };
+/** MARTA's current bus livery (from Sam's photos): white, three blue slashes over the window
+ *  band that run out into a streak with gold and orange dashes, and a grey slanted band where
+ *  the big rear lettering sits. No wordmark. */
+export const DEFAULT_LIVERY: BusLivery = {
+  body: '#fbfbf9',
+  blue: '#3790dd',
+  gold: '#f3aa2a',
+  orange: '#e8622c',
+  grey: '#c4c9ce',
+  greyOnGlass: '#69717a',
+};
 
 const C = {
-  glass: '#1d242c',
-  frame: '#20252c',
+  glass: '#28303a',
+  frame: '#0f1114',
   tyre: '#1a1b1e',
   rim: '#8f959b',
   rimLip: '#b4b9be',
@@ -137,41 +149,91 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
     for (const dz of [-1, 1]) k.box(W - 0.1, ARCH_Y - Y0, 0.01, 0, (ARCH_Y + Y0) / 2, zc + dz * (ARCH_R - 0.02), C.well);
   }
 
-  // ---- livery: lower skirt band and two accent lines -------------------------------------
   const both = [-1, 1];
-  const skirtTop = 0.95;
-  const runs: [number, number][] = [
-    [ZR + 0.15, AXLE_R - ARCH_R - 0.08],
-    [AXLE_R + ARCH_R + 0.08, AXLE_F - ARCH_R - 0.08],
-    [AXLE_F + ARCH_R + 0.08, ZF - 0.2],
-  ];
-  for (const [z0, z1] of runs) k.side(both, z0, z1, Y0 + 0.08, skirtTop - 0.05, liv.skirt);
-  k.side(both, ZR + 0.15, ZF - 0.2, skirtTop + 0.04, skirtTop + 0.12, liv.accent);
-  k.side(both, ZR + 0.15, ZF - 0.2, skirtTop + 0.17, skirtTop + 0.24, liv.accent2);
-  k.box(W - 0.2, skirtTop - Y0 - 0.13, 0.02, 0, (Y0 + skirtTop) / 2 + 0.02, ZR - 0.006, liv.skirt);
-
-  // ---- side windows (belt 1.42 m, head 2.62 m), doors on the curb side (−x) ------------------
-  const BELT = 1.42;
-  const HEAD = 2.62;
-  const win = (sides: number[], z0: number, z1: number, y0 = BELT, y1 = HEAD) => {
-    k.side(sides, z0 - 0.06, z1 + 0.06, y0 - 0.06, y1 + 0.06, C.frame, 0, 0.007);
-    k.side(sides, z0, z1, y0, y1, C.glass, 3, 0.011);
+  /** A side quad at x = ±(W/2 + lift), corners as [z, y] (front-at-top order is fine: DoubleSide). */
+  const decal = (sides: number[], pts: [number, number][], color: string, lift: number, kind = 0) => {
+    for (const sd of sides) {
+      const x = sd * (W / 2 + lift);
+      const [p0, p1, p2, p3] = pts.map(([z, y]) => [x, y, z]);
+      k.geo(quad(p0, p1, p2, p3), color, kind);
+    }
   };
+
+  // ---- window band (belt 1.2 m, head 2.32 m, read from the side photos) ----------------------
+  // One continuous dark band from the driver's window back to ~1.1 m short of the tail, with
+  // panes split by thin mullions; the doors (curb side, −x) are full-height dark leaves.
+  const BELT = 1.2;
+  const HEAD = 2.32;
+  const BAND_R = ZR + 1.1;
   const DOOR_R: [number, number] = [AXLE_R + 1.55, AXLE_R + 2.75];
   const DOOR_F: [number, number] = [ZF - 1.28, ZF - 0.22];
-  // Curb side: rear-quarter window, rear door, three windows, front door.
-  win([-1], AXLE_R - 0.25, DOOR_R[0] - 0.15);
-  win([-1], DOOR_R[1] + 0.15, DOOR_R[1] + 1.75);
-  win([-1], DOOR_R[1] + 1.85, DOOR_R[1] + 3.45);
-  win([-1], DOOR_R[1] + 3.55, DOOR_F[0] - 0.15);
-  // Street side: the same bays, with windows where the doors would be, and the driver's window.
-  win([1], AXLE_R - 0.25, DOOR_R[0] - 0.15);
-  win([1], DOOR_R[0] - 0.05, DOOR_R[1] + 1.75);
-  win([1], DOOR_R[1] + 1.85, DOOR_R[1] + 3.45);
-  win([1], DOOR_R[1] + 3.55, DOOR_F[0] - 0.15);
-  win([1], DOOR_F[0] + 0.05, ZF - 0.3); // driver's window: same belt line, its own pillar
-  // Rear quarter: a short window high above the engine bay.
-  win(both, ZR + 0.5, AXLE_R - 0.85, BELT + 0.25, HEAD - 0.05);
+  k.side(both, BAND_R, ZF - 0.22, BELT - 0.05, HEAD + 0.05, C.frame, 0, 0.007);
+  const pane = (sides: number[], z0: number, z1: number) => k.side(sides, z0, z1, BELT, HEAD, C.glass, 3, 0.011);
+  // Street side (+x): driver's window, then five even bays back to the band's end.
+  pane([1], DOOR_F[0] + 0.04, ZF - 0.3);
+  const bays = 5;
+  const bz0 = BAND_R + 0.06;
+  const bz1 = DOOR_F[0] - 0.04;
+  for (let i = 0; i < bays; i++) {
+    const za = bz0 + ((bz1 - bz0) * i) / bays;
+    pane([1], za + (i ? 0.04 : 0), za + (bz1 - bz0) / bays - 0.04);
+  }
+  // Curb side (−x): panes between the doors.
+  pane([-1], bz0, DOOR_R[0] - 0.12);
+  const midA = DOOR_R[1] + 0.12;
+  const midB = DOOR_F[0] - 0.12;
+  for (let i = 0; i < 3; i++) {
+    const za = midA + ((midB - midA) * i) / 3;
+    pane([-1], za + (i ? 0.04 : 0), za + (midB - midA) / 3 - (i < 2 ? 0.04 : 0));
+  }
+
+  // ---- livery: blue slashes, roofline streak, gold/orange dashes, grey rear band ------------
+  const UY0 = HEAD + 0.05; // upper white band, window head to the roof edge
+  const UY1 = H - 0.06;
+  const zAt = (d: number) => ZF - d; // distance back from the front face → z
+  const SLANT = 0.85; // how far each slash leans back over the band's height
+  for (let i = 0; i < 3; i++) {
+    const d0 = 3.35 + i * 0.58;
+    const w = 0.4;
+    decal(both, [[zAt(d0), UY1], [zAt(d0 + w), UY1], [zAt(d0 + w + SLANT), UY0], [zAt(d0 + SLANT), UY0]], liv.blue, 0.008);
+  }
+  // The third slash runs out into a streak that tapers to a point toward the rear.
+  const sy0 = UY0 + 0.14;
+  const sy1 = UY0 + 0.27;
+  decal(both, [[zAt(5.0), sy1], [zAt(8.7), sy1 - 0.03], [zAt(6.6), sy0], [zAt(5.0), sy0]], liv.blue, 0.008);
+  // Gold and orange dashes under the streak, with slanted ends.
+  decal(both, [[zAt(5.85), UY0 + 0.11], [zAt(7.2), UY0 + 0.11], [zAt(7.15), UY0 + 0.065], [zAt(5.8), UY0 + 0.065]], liv.gold, 0.009);
+  decal(both, [[zAt(5.95), UY0 + 0.04], [zAt(6.8), UY0 + 0.04], [zAt(6.77), UY0 + 0.015], [zAt(5.92), UY0 + 0.015]], liv.orange, 0.009);
+  // Grey slanted band from the roof near the rear down to the tail, lighter on body, darker over glass.
+  const gTop = L - 3.3; // distance from the front where it meets the roof edge
+  const gBot = L - 0.35; // where it reaches the skirt
+  const gW = 0.75;
+  const gy0 = Y0 + 0.15;
+  const gy1 = H - 0.06;
+  const gd = (y: number) => gTop + ((gy1 - y) / (gy1 - gy0)) * (gBot - gTop); // leading edge at height y
+  const gSlice = (ya: number, yb: number, color: string, lift: number) => {
+    const za = (y: number, e: number) => zAt(Math.min(gd(y) + e, L - 0.12));
+    decal(both, [[za(yb, 0), yb], [za(yb, gW), yb], [za(ya, gW), ya], [za(ya, 0), ya]], color, lift);
+  };
+  // (k.side panels are 2 cm boxes, so their faces sit at lift + 0.01: glass 0.021, grille slats 0.022.)
+  gSlice(gy0, gy1, liv.grey, 0.023); // over the grille too, as the lettering is
+  // Over the window band it reads as grey-on-glass, clipped where the band ends (d = L − 1.1).
+  const dBand = ZF - BAND_R;
+  const wy0 = BELT - 0.05;
+  const wy1 = HEAD + 0.05;
+  const lead = (y: number) => gd(y);
+  const trail = (y: number) => Math.min(gd(y) + gW, dBand);
+  const yc = gy1 - ((dBand - gW - gTop) / (gBot - gTop)) * (gy1 - gy0); // trailing edge meets the band's end
+  const glassSlice = (ya: number, yb: number) =>
+    decal(both, [[zAt(lead(yb)), yb], [zAt(trail(yb)), yb], [zAt(trail(ya)), ya], [zAt(lead(ya)), ya]], liv.greyOnGlass, 0.025);
+  if (yc > wy0 && yc < wy1) {
+    glassSlice(wy0, yc);
+    glassSlice(yc, wy1);
+  } else glassSlice(wy0, wy1);
+  // Engine-bay grille low on the rear quarter of each side.
+  k.side(both, ZR + 0.2, ZR + 1.5, 0.48, 1.08, '#6a6f75', 0, 0.01);
+  for (let y = 0.52; y < 1.05; y += 0.06) k.side(both, ZR + 0.23, ZR + 1.47, y, y + 0.025, '#3c4046', 0, 0.012);
+
   // Doors: glazed leaves in a dark frame, nearly full height from the low floor.
   for (const [z0, z1] of [DOOR_R, DOOR_F]) {
     k.side([-1], z0 - 0.04, z1 + 0.04, Y0 + 0.08, HEAD + 0.12, C.frame, 0, 0.009);

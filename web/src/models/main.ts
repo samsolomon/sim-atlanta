@@ -67,7 +67,7 @@ function build() {
   document.getElementById('blurb')!.textContent =
     vehicle === 'train'
       ? 'One cab car and one middle car of a 4-car set. Drop a reference photo to overlay it and line up the view.'
-      : 'New Flyer Xcelsior 40-foot (most of MARTA’s fleet), built to New Flyer’s published dimensions. Livery is a placeholder until we match photos.';
+      : 'New Flyer Xcelsior 40-foot (most of MARTA’s fleet), built to New Flyer’s published dimensions. Current MARTA livery, matched from photos, minus the wordmark.';
   if (vehicle === 'bus') {
     const bus = new THREE.Mesh(busGeometry(), busMaterial(night));
     bus.position.z = 0;
