@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
+import { PlacementIndex } from './spatial';
 
 export interface VBuilding {
   id: string;
@@ -103,6 +104,7 @@ export class World {
   private nx: number;
   private nz: number;
   private hf: Float32Array;
+  private blocks = new PlacementIndex<P2[]>();
   readonly trees: { x: number; y: number; z: number; s: number; c: number; th?: number }[] = [];
   /** Real trees from a canopy height map: [x, z, height m, crown radius m]. */
   realTrees: [number, number, number, number][] | null = null;
@@ -115,6 +117,7 @@ export class World {
     opts: WorldOptions = EAST_PORTAL,
   ) {
     this.opts = opts;
+    for (const bd of data.buildings) this.blocks.add(bd.rings[0], bd.rings[0], 2.5);
     this.b = data.bounds;
     // A flat board needs no fine heightfield: a coarse grid keeps the ground mesh small.
     this.gridStep = opts.terrain === 'flat' ? 20 : 2.5;
@@ -354,7 +357,6 @@ export class World {
     };
     const order = ['meadow', 'garden', 'brownfield', 'construction', 'pitch', 'pedestrian', 'parking', 'platform'];
     const ground = [...(this.data.ground ?? [])].filter((g) => STYLE[g.kind]).sort((a, c) => order.indexOf(a.kind) - order.indexOf(c.kind));
-    const blocks = this.data.buildings.map((bd) => bd.rings[0]);
     for (const g of ground) {
       const st = STYLE[g.kind]!;
       const outer = clipRing(g.rings[0], b);
@@ -368,7 +370,7 @@ export class World {
         const [a, c, d] = [all[t[0]], all[t[1]], all[t[2]]];
         fill.tri([a.x, y(a), a.y], [c.x, y(c), c.y], [d.x, y(d), d.y], st.color);
       }
-      if (g.kind === 'parking') this.layoutStalls(outer, blocks, marks, st.lift);
+      if (g.kind === 'parking') this.layoutStalls(outer, marks, st.lift);
       if (g.kind === 'pitch') {
         // Touchline: the polygon outline inset 1.5 m.
         const ring = new Line([...outer, outer[0]]);
@@ -379,8 +381,13 @@ export class World {
     // a stall's depth either side of the aisle and stripe stalls along it.
     const lots = ground.filter((g) => g.kind === 'parking').map((g) => g.rings[0]);
     const streets = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'service');
-    const nearStreet = (x: number, z: number, d: number) => streets.some((r) => r.pts.some((p, i) => i > 0 && segDist(x, z, r.pts[i - 1], p) < d + (WIDTH[r.cls] ?? 7) / 2));
-    const clearSpot = (x: number, z: number) => this.inBounds(x, z, 2) && !blocks.some((r) => pointInRing(x, z, r) || edgeDist(x, z, r) < 1) && !nearStreet(x, z, 1.5) && this.ground(x, z) > -0.5;
+    const streetIndex = new PlacementIndex<{ a: P2; b: P2; width: number }>();
+    for (const r of streets) for (let i = 1; i < r.pts.length; i++) {
+      const seg = { a: r.pts[i - 1], b: r.pts[i], width: (WIDTH[r.cls] ?? 7) / 2 };
+      streetIndex.add(seg, [seg.a, seg.b], seg.width + 1.5);
+    }
+    const nearStreet = (x: number, z: number) => streetIndex.at(x, z).some((s) => segDist(x, z, s.a, s.b) < 1.5 + s.width);
+    const clearSpot = (x: number, z: number) => this.inBounds(x, z, 2) && !this.blocks.at(x, z).some((r) => pointInRing(x, z, r) || edgeDist(x, z, r) < 1) && !nearStreet(x, z) && this.ground(x, z) > -0.5;
     for (const r of this.data.roads) {
       if (r.sub !== 'parking_aisle' || r.pts.length < 2) continue;
       const line = new Line(r.pts);
@@ -405,14 +412,18 @@ export class World {
 
     // Zebra crossings: stripes parallel to the road, spanning its width.
     const drivable = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'motorway');
+    const crossingIndex = new PlacementIndex<{ r: VRoad; a: P2; c: P2 }>();
+    for (const r of drivable) for (let i = 1; i < r.pts.length; i++) {
+      const seg = { r, a: r.pts[i - 1], c: r.pts[i] };
+      crossingIndex.add(seg, [seg.a, seg.c], 3);
+    }
     for (const [x, z] of this.data.points?.crossing ?? []) {
       if (!this.inBounds(x, z, 2)) continue;
       let best: { d: number; r: VRoad; a: P2; c: P2 } | null = null;
-      for (const r of drivable)
-        for (let i = 1; i < r.pts.length; i++) {
-          const d = segDist(x, z, r.pts[i - 1], r.pts[i]);
-          if (!best || d < best.d) best = { d, r, a: r.pts[i - 1], c: r.pts[i] };
-        }
+      for (const seg of crossingIndex.at(x, z)) {
+        const d = segDist(x, z, seg.a, seg.c);
+        if (!best || d < best.d) best = { d, ...seg };
+      }
       if (!best || best.d > 3) continue;
       const w = WIDTH[best.r.cls] ?? 7;
       const len = Math.hypot(best.c[0] - best.a[0], best.c[1] - best.a[1]) || 1;
@@ -433,7 +444,7 @@ export class World {
   }
 
   /** Rows of 2.6 m × 5.4 m stalls either side of 6.5 m aisles, along the lot's longest edge. */
-  private layoutStalls(ring: P2[], blocks: P2[][], marks: Builder, lift: number) {
+  private layoutStalls(ring: P2[], marks: Builder, lift: number) {
     let best = 0;
     let ang = 0;
     for (let i = 0; i < ring.length; i++) {
@@ -456,7 +467,7 @@ export class World {
       const v = x * vx + z * vz;
       u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v);
     }
-    const ok = (x: number, z: number) => pointInRing(x, z, ring) && edgeDist(x, z, ring) > 1.2 && !blocks.some((r) => pointInRing(x, z, r)) && this.inBounds(x, z, 1);
+    const ok = (x: number, z: number) => pointInRing(x, z, ring) && edgeDist(x, z, ring) > 1.2 && !this.blocks.at(x, z).some((r) => pointInRing(x, z, r)) && this.inBounds(x, z, 1);
     const SW = 2.6;
     const SL = 5.4;
     const module = SL * 2 + 6.5;
@@ -586,6 +597,26 @@ export class World {
     this.group.add(mesh, instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties));
   }
 
+  /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
+  buildTram() {
+    const b = new Builder();
+    for (const r of this.data.rail) {
+      if (r.cls !== 'tram' || r.flags.includes('is_tunnel') || r.pts.length < 2) continue;
+      const line = new Line(r.pts);
+      for (const off of [-0.7175, 0.7175]) {
+        const rail = line.offset(off, 1);
+        b.ribbon(rail, 0.24, (_s, x, z) => this.ground(x, z) + 0.27, '#393c40', 1);
+        b.ribbon(rail, 0.09, (_s, x, z) => this.ground(x, z) + 0.29, '#b6b5ae', 1);
+      }
+    }
+    const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({
+      vertexColors: true, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16,
+    }));
+    mesh.receiveShadow = true;
+    this.group.add(mesh);
+  }
+
   // ---- buildings ----------------------------------------------------------------------
 
   buildBuildings() {
@@ -671,13 +702,12 @@ export class World {
 
   buildTrees() {
     const r = rng(20261120);
-    const blocks = this.data.buildings.map((bd) => bd.rings[0]);
     const drivable = this.data.roads.filter((x) => DRIVABLE.has(x.cls) || x.cls === 'pedestrian' || x.cls === 'footway');
     const rails = this.data.rail.map((x) => x.pts);
     const clearOf = (x: number, z: number) => {
       if (!this.inBounds(x, z, 3)) return false;
       if (this.ground(x, z) < -0.6) return false;
-      for (const ring of blocks) if (pointInRing(x, z, ring) || edgeDist(x, z, ring) < 2.5) return false;
+      for (const ring of this.blocks.at(x, z)) if (pointInRing(x, z, ring) || edgeDist(x, z, ring) < 2.5) return false;
       for (const rd of drivable) {
         const w = (WIDTH[rd.cls] ?? 4) / 2 + (rd.cls === 'footway' ? 0.8 : 1.5);
         for (let i = 1; i < rd.pts.length; i++) if (segDist(x, z, rd.pts[i - 1], rd.pts[i]) < w) return false;
@@ -693,7 +723,7 @@ export class World {
       // Trees where Atlanta's trees really are, sized from the canopy height map.
       for (const [x, z, h, cr] of this.realTrees) {
         if (!this.inBounds(x, z, 1)) continue;
-        if (blocks.some((ring) => pointInRing(x, z, ring))) continue;
+        if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const sz = Math.min(4.5, Math.max(0.7, cr / 2.3));
         const y = this.ground(x, z);
         this.trees.push({ x, y, z, s: sz, c: r(), th: Math.max(1.2, h - 4.2 * sz) });
@@ -880,7 +910,7 @@ export class World {
         const z = p.z + p.nz * w * side;
         side = -side;
         if (!this.inBounds(x, z, 3)) continue;
-        if (this.data.buildings.some((bd) => pointInRing(x, z, bd.rings[0]))) continue;
+        if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         spots.push({ x, z, y: rd.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z), ang: Math.atan2(-p.nx * side, -p.nz * side) });
       }
     }
@@ -962,6 +992,18 @@ export class World {
   }
   private lightMap?: THREE.Texture;
   private lampHeads?: THREE.InstancedMesh;
+
+  dispose() {
+    const materials = new Set<THREE.Material>();
+    this.group.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      mesh.geometry?.dispose();
+      if (mesh instanceof THREE.InstancedMesh) mesh.dispose();
+      for (const mat of Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []) materials.add(mat);
+    });
+    for (const mat of materials) mat.dispose();
+    this.lightMap?.dispose();
+  }
 
   private wetMats?: THREE.MeshLambertMaterial[];
   private wet = -1;

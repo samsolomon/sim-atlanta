@@ -83,3 +83,18 @@ PR #10 fixes `pnpm run deploy`. Sam has given standing approval to keep deployin
 - `web/public/data/` is gitignored. Run `pnpm data:city`, which needs `.venv` and network access for the canopy tile.
 - The `stats()` draw-call count reads only the last pass (it says 1). Use `renderer.info` with `autoReset` off for real numbers.
 - Full plan: `docs/city-plan.md` (Milestone 2).
+
+## Codex continuation (2026-11-21)
+
+Framing/edge/streetcar, indexed placement, loading/cancellation, target bounds, independent
+status clock, snow/fog and retirement of `scene3d` are implemented. The detailed measurements
+and screenshots are in the latest build-log entry. Coordinate/profile helpers now live in
+`web/src/core/scene-data.ts`; the obsolete binaries are excluded from `web/dist` by Vite.
+`stats()` now counts the full post chain and reports construction stages.
+
+**Sam's latest instruction: keep the A16 untouched.** Do not use adb until Sam releases it.
+`/` still opens Map. The CPU construction improvement is measured; steady-state desktop fps
+needs an unthrottled foreground Orca tab. The A16 gate and M2b have not been attempted.
+Check the western MARTA source/profile assumptions before claiming surface track by GWCC:
+the supplied profiles currently keep that portion underground. Eastern viaduct geometry and
+East Portal were checked in Orca. No new data output was introduced by this continuation.

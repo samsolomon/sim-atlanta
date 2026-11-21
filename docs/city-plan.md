@@ -208,3 +208,16 @@ A downtown diorama in the vignette's style. It is built by generalising the vign
 - **Not folded in:**
   - portrait layout details (Sam: phone last);
   - a search box for finding a train (out of scope; the follow camera comes later).
+
+## M2a takeover review (2026-11-21)
+- **Significant, architecture:** `main.ts` still clamps Map targets to the retired scene's
+  larger bounds. Use the loaded City board's bounds for both clamping and the coverage note.
+  Count all render passes before assessing desktop performance; the current counter only
+  measures the last fullscreen triangle. Record build time and steady-state fps separately.
+- **Significant, product:** the opening crop cuts off the skyline and the tilt-shift blurs
+  its identifying forms. Widen the southwest framing and keep the skyline readable.
+  A loading plate must remain cancellable by switching to Map; late loads must dispose
+  without attaching a second canvas. Reduced motion must also disable the double-click glide.
+- **Sequence:** finish framing, surface rail and edge checks; measure desktop high/low;
+  request Sam's A16 go-ahead; finish loading/target states and retire unused scene code.
+  M2b and the City default remain behind the measured A16 gate. No new server work.

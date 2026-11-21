@@ -2,7 +2,7 @@
   "name": "train-map",
   "private": true,
   "scripts": {
-    "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places",
+    "data": "cargo run --release --manifest-path pipeline/Cargo.toml -- all && pnpm data:scene && pnpm data:places && pnpm data:city",
     "dev": "pnpm --filter web dev",
     "dev:worker": "pnpm --filter worker dev",
     "secrets:local": "umask 077 && printf 'MARTA_API_KEY=%s\\n' \"$(op read 'op://Personal/trains-marta-api/credential')\" > worker/.dev.vars",

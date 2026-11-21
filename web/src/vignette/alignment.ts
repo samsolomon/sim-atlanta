@@ -1,5 +1,5 @@
 import type { RoutesFile } from '../model/types';
-import { elevationAt, makeProjector, type SceneManifest } from '../scene3d/scene-data';
+import { elevationAt, makeProjector, type SceneManifest } from '../core/scene-data';
 import { Line, type P2 } from './geom';
 import type { Alignment, VData } from './world';
 

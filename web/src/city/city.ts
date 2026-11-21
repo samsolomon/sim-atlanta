@@ -16,7 +16,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { Atmosphere } from '../core/atmosphere';
 import type { RoutesFile } from '../model/types';
-import type { SceneManifest } from '../scene3d/scene-data';
+import type { SceneManifest } from '../core/scene-data';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -25,10 +25,12 @@ import { local } from '../vignette/time';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
+import { Snow } from './snow';
 
 export type Quality = 'low' | 'high';
 
 export interface CityView {
+  bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number): void;
   target(): { x: number; z: number };
@@ -41,7 +43,7 @@ export interface CityView {
   /** Sun, darkness and weather from the shared atmosphere; the date sets the season. */
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
-  stats(): { fps: number; drawCalls: number; triangles: number };
+  stats(): { fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
 
@@ -56,37 +58,71 @@ export function pickQuality(): Quality {
 
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
-export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality()): Promise<CityView> {
+export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), loading: {
+  signal?: AbortSignal;
+  progress?: (label: string) => void;
+} = {}): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
   const [vd, manifest, trees] = await Promise.all([
-    fetch(`${DATA}/scene/downtown/vignette.json`).then((r) => {
+    fetch(`${DATA}/scene/downtown/vignette.json`, { signal: loading.signal }).then((r) => {
       if (!r.ok) throw new Error(`city data ${r.status}`);
       return r.json();
     }) as Promise<VData>,
-    fetch(`${DATA}/scene/downtown/scene.json`).then((r) => r.json()) as Promise<SceneManifest>,
-    fetch(`${DATA}/scene/downtown/trees.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    fetch(`${DATA}/scene/downtown/scene.json`, { signal: loading.signal }).then((r) => {
+      if (!r.ok) throw new Error(`city profiles ${r.status}`);
+      return r.json();
+    }) as Promise<SceneManifest>,
+    fetch(`${DATA}/scene/downtown/trees.json`, { signal: loading.signal }).then((r) => {
+      if (!r.ok) throw new Error(`city trees ${r.status}`);
+      return r.json();
+    }),
   ]);
   const b = vd.bounds;
 
   // ---- the board ----------------------------------------------------------------------
   const t0 = performance.now();
+  const stages: Record<string, number> = {};
+  const build = async (name: string, fn: () => void) => {
+    loading.progress?.(`Building ${name}…`);
+    // Let the loading plate paint and a Map click cancel between construction stages.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    loading.signal?.throwIfAborted();
+    const start = performance.now();
+    fn();
+    stages[name] = Math.round(performance.now() - start);
+  };
   const world = new World(vd, null, { terrain: 'flat', clumps: low ? 4 : 8, lightMapMax: 2048 });
   if (trees?.trees?.length) world.realTrees = trees.trees;
-  world.buildBoard();
-  world.buildStreets();
-  world.buildGround();
-  for (const al of martaAlignments(rf, manifest, b)) world.buildMarta(al);
-  world.buildFreight();
-  world.buildBuildings();
-  world.buildTrees();
-  world.buildLights();
-  const buildMs = performance.now() - t0;
+  try {
+    await build('board', () => world.buildBoard());
+    await build('streets', () => world.buildStreets());
+    await build('ground', () => world.buildGround());
+    await build('rail', () => { for (const al of martaAlignments(rf, manifest, b)) world.buildMarta(al); world.buildFreight(); world.buildTram(); });
+    await build('buildings', () => world.buildBuildings());
+    await build('trees', () => world.buildTrees());
+    await build('lights', () => world.buildLights());
+  } catch (err) {
+    world.dispose();
+    throw err;
+  }
+  const buildMs = Object.values(stages).reduce((sum, ms) => sum + ms, 0);
+  loading.progress?.('Drawing downtown…');
 
   // ---- renderer -------------------------------------------------------------------------
-  const renderer = new THREE.WebGLRenderer({ antialias: !low, powerPreference: 'high-performance' });
+  let renderer: THREE.WebGLRenderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: !low, powerPreference: 'high-performance' });
+  } catch (err) {
+    world.dispose();
+    throw err;
+  }
+  renderer.info.autoReset = false;
+  renderer.localClippingEnabled = true;
   renderer.setPixelRatio(low ? 1 : Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.type = low ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -98,6 +134,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
   scene.add(world.group);
+  // Trim content to the board, retaining the ground, cut edge and walnut lip.
+  const edges = [
+    new THREE.Plane(new THREE.Vector3(1, 0, 0), -b.minX),
+    new THREE.Plane(new THREE.Vector3(-1, 0, 0), b.maxX),
+    new THREE.Plane(new THREE.Vector3(0, 0, 1), -b.minZ),
+    new THREE.Plane(new THREE.Vector3(0, 0, -1), b.maxZ),
+  ];
+  for (const child of world.group.children.slice(3)) child.traverse((o) => {
+    const material = (o as THREE.Mesh).material;
+    for (const mat of Array.isArray(material) ? material : material ? [material] : []) {
+      mat.clippingPlanes = edges;
+      mat.clipShadows = true;
+    }
+  });
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -126,8 +176,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   sun.shadow.normalBias = 1.2;
   scene.add(hemi, sun, sun.target);
 
-  const rain = new Rain(low ? 4000 : 9000, 900, 320);
-  scene.add(rain.mesh);
+  const rain = new Rain(low ? 4000 : 9000, 2400, 450);
+  const snow = new Snow(low ? 2500 : 6000);
+  scene.add(rain.mesh, snow.mesh);
 
   // ---- camera ---------------------------------------------------------------------------
   const camera = new THREE.PerspectiveCamera(22, 1, 20, 20000);
@@ -161,7 +212,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   // Opening view: downtown at a glance from the southwest — the Gulch in front, Five Points,
   // and the Peachtree Center towers behind.
-  setView(-38, 54, 3000, -60, -260);
+  setView(-28, 57, 5500, -40, -260);
 
   // ---- post: ink, ambient occlusion, bloom, tilt-shift, grade ------------------------------
   const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
@@ -185,13 +236,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   composer.addPass(new OutputPass());
   const grade = new ShaderPass(gradeShader());
   composer.addPass(grade);
-  const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 1.6);
+  const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
   function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
     if (!w || !h) return;
-    renderer.setSize(w, h, false);
+    renderer.setSize(w, h);
     composer.setSize(w, h);
     bloom.resolution.set(w / 2, h / 2);
     camera.aspect = w / h;
@@ -240,16 +291,25 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     return k * k * (3 - 2 * k);
   };
   let atm: Atmosphere = { sunElev: 40, sunAz: 180, dark: 0, cloud: 0, rain: 0, snow: 0, fog: 0 };
-  const wx = { cloud: 0, rain: 0, fog: 0 }; // eased toward the atmosphere's weather
+  const wx = { cloud: 0, rain: 0, snow: 0, fog: 0 }; // eased toward the atmosphere's weather
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const shadowTarget = new THREE.Vector3(Infinity, 0, Infinity);
+  let shadowElev = Infinity;
+  let shadowAz = Infinity;
 
-  function environment() {
+  function environment(dt: number) {
     const el = atm.sunElev;
     const day = sm(-6, 10, el);
     const gold = (1 - sm(3, 28, el)) * sm(-3, 2, el);
     const elDir = Math.max(el, 4) * (Math.PI / 180);
     const az = atm.sunAz * (Math.PI / 180);
     const t = controls.target;
+    if (t.distanceToSquared(shadowTarget) > 1 || Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1) {
+      renderer.shadowMap.needsUpdate = true;
+      shadowTarget.copy(t);
+      shadowElev = el;
+      shadowAz = atm.sunAz;
+    }
     sun.position.set(t.x + Math.sin(az) * Math.cos(elDir) * 2000, Math.sin(elDir) * 2000, t.z - Math.cos(az) * Math.cos(elDir) * 2000);
     sun.target.position.set(t.x, 0, t.z);
     sun.intensity = 2.9 * sm(-1, 7, el);
@@ -264,9 +324,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
 
-    const ease = 0.03;
+    const ease = 1 - Math.exp(-dt * 2);
     wx.cloud += (atm.cloud - wx.cloud) * ease;
     wx.rain += (atm.rain - wx.rain) * ease;
+    wx.snow += (atm.snow - wx.snow) * ease;
     wx.fog += (atm.fog - wx.fog) * ease;
     const cl = wx.cloud;
     sun.intensity *= 1 - 0.85 * cl;
@@ -274,6 +335,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hemi.color.lerp(pal.greySky, cl * 0.6 * day);
     hemi.intensity += 0.25 * cl * day;
     bg.lerp(day > 0.5 ? pal.greyBg : pal.greyBgNight, cl * 0.75);
+    bg.lerp(pal.snowBg, wx.snow * day * 0.4);
     world.setWet(wx.rain);
     const dist = camera.position.distanceTo(controls.target);
     const f = Math.max(wx.fog, wx.rain * 0.5);
@@ -282,6 +344,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     fog.near = dist * (1.5 - 0.65 * f);
     fog.far = dist * (3.0 - 1.25 * f);
     rain.update(reduceMotion ? 0 : performance.now() / 1000, controls.target, reduceMotion ? 0 : wx.rain);
+    snow.update(performance.now() / 1000, controls.target, reduceMotion ? 0 : wx.snow, renderer.getPixelRatio());
+    // Keep the centre readable while fog softens the edges, matching the Map atmosphere.
+    for (const pass of [hts, vts]) {
+      pass.uniforms.uStrength.value = tilt + wx.fog * 4;
+      pass.enabled = tilt + wx.fog * 4 > 0.01;
+    }
   }
 
   // ---- loop -----------------------------------------------------------------------------
@@ -289,11 +357,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let frames = 0;
   let fpsT = performance.now();
   let fps = 0;
+  let lastFrame = performance.now();
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
-    environment();
+    environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
+    lastFrame = ts;
     if (glideTo) {
-      const step = glideTo.clone().sub(controls.target).multiplyScalar(0.12);
+      const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : 0.12);
       controls.target.add(step);
       camera.position.add(step);
       if (step.length() < 0.05) glideTo = null;
@@ -305,6 +375,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ink.uniforms.uStrength.value = 0.9;
     grade.uniforms.uAmount.value = 1;
     grade.uniforms.uTime.value = ts / 1000;
+    renderer.info.reset();
     composer.render();
     frames++;
     if (ts - fpsT > 1000) {
@@ -327,8 +398,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     clampTarget();
   };
 
-  console.info(`City: built in ${Math.round(buildMs)} ms, quality ${quality}`);
+  console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);
+  console.info('City build stages (ms)', stages);
   return {
+    bounds: b,
     quality,
     lookAt(x, z) {
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
@@ -355,18 +428,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       atm = a;
       world.setSeason(local(now).doy);
     },
-    stats: () => ({ fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
+    stats: () => ({ fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
+      sun.shadow.dispose();
+      world.dispose();
+      scene.remove(world.group);
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         m.geometry?.dispose();
         const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
         for (const mat of mats) mat.dispose();
       });
+      for (const pass of composer.passes) pass.dispose();
       composer.dispose();
       sceneTarget.dispose();
       renderer.dispose();

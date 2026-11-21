@@ -806,3 +806,54 @@ combine freely, plus the palette presets and pickers.
 ![Dusk with rain](log/ui/atm-duskrain.jpg)
 ![Night with snow](log/ui/atm-nightsnow.jpg)
 ![Morning fog: sharp centre, blurred edges](log/ui/fog2.jpg)
+
+## 2026-11-21 · Downtown fits on the table
+
+City now opens far enough back to read the Gulch, Five Points and the Peachtree Center
+skyline together. The southwest camera moved from 3,000 to 5,500 scene metres; tilt-shift
+strength dropped from 1.6 to 0.65 so the towers stay legible. Four Overture streetcar runs
+now have embedded rails, and the city's buildings and streets stop cleanly at the walnut
+board. A high-DPI bug had been making the canvas twice as large as its CSS container,
+showing only its upper-left quarter; explicitly sizing both fixed that crop.
+
+The surprise was startup, not polygons. A timed desktop load spent **33,481 ms** on ground
+placement out of **35,984 ms** of construction. Parking stalls checked every building;
+crosswalks checked every street. A conservative 64 m spatial grid now narrows those searches,
+while the exact intersection tests still make the decisions. A fresh low-tier run built in
+**730 ms** (ground 363 ms, streets 162 ms, rail 139 ms); high-tier runs under concurrent
+browser/build load ranged around **2.4–2.7 s**. Those are CPU construction measurements,
+not first-paint times or phone results. The broad-phase tests compare exact hits against
+brute-force searches, including negative coordinates and cell boundaries.
+
+The loading plate reports each build stage and yields between stages, so returning to Map
+cancels the load. A held data request followed by Map left **zero canvases** behind; a forced
+404 returned to Map with the recovery note. Switching views preserved the target at
+**−84.392033, 33.756238**. The clock and neighbourhood widget now update independently of
+remote basemap tiles. City has snow flurries as well as rain, and fog softens the edges.
+
+The old `scene3d` renderer is gone. Shared rail profiles remain in `scene.json`; builds omit
+its three unused binary meshes, saving **3.2 MB** of deployed static assets. No data rebuild
+is needed for this refinement if the M2a City JSON already exists; a web rebuild is required.
+A fresh checkout still needs the data commands. East Portal was checked in Orca after the
+shared-world changes and still renders its viaduct, train and traffic.
+
+Performance is deliberately **not signed off**. Orca's desktop animation callbacks were
+throttled to about 1–2 fps, even with the City renderer disposed; that is not a useful GPU
+benchmark. Sam asked us to leave the Galaxy A16 untouched. The ≥30 fps low-tier phone gate,
+City as the default, and M2b motion remain pending. The baked western MARTA profiles also
+stay below the daylight threshold by Dome/GWCC; the handoff's expected open track there
+needs a source/profile audit, not guessed surface rails.
+
+![Downtown framed from the southwest](log/ui/2026-11-21-city-framed.png)
+![Cancellable City loading plate](log/ui/2026-11-21-city-loading.png)
+![East Portal after the shared-engine changes](log/ui/2026-11-21-city-east-portal-check.png)
+
+Claude's first review caught the fresh-checkout deployment hole: `pnpm data` did not build
+City's new JSON. It now includes `data:city`, and the README calls out both fresh and existing
+checkout instructions. The portal-at-board-edge concern did not reproduce in either supplied
+board: all threshold crossings were inside the board (east x≈376–379, z≈289–291; south
+x≈−373…−366, z≈554–564). It remains a possible case if future board bounds cut a shallow ramp.
+Final warm high-tier construction also measured 704 ms; the slower 2.4–2.7 s runs above were
+under concurrent load. The full suite passes: 16 Rust, 23 web and 5 Worker tests.
+
+![Synthetic night and snow preview, low tier](log/ui/2026-11-21-city-snow-preview.png)

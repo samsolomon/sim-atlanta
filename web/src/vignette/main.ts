@@ -11,7 +11,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { RoutesFile } from '../model/types';
-import type { SceneManifest } from '../scene3d/scene-data';
+import type { SceneManifest } from '../core/scene-data';
 import { alignment } from './alignment';
 import { SimClock, leafState, local, sunPosition } from './time';
 import { DioramaBuses } from './buses';
