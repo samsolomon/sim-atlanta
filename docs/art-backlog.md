@@ -24,3 +24,9 @@ Ideas to use when we get to the detailed modelling. They're not scheduled yet.
 - Underground trains drawing over buildings is fine for now. Revisit it in the polished
   version: fade buildings near the selected train, use a ground-cut stencil, or use a
   sectional "slice" view.
+- **Underground view for City (Sam, 2026-11-21).** Most downtown MARTA track is underground,
+  so with only open track drawn, City hides most of the trains. Trains are the most compelling
+  part, so add a toggle (or a hold-key) that fades the board and buildings and draws tunnel track
+  and trains as a tinted cutaway at their schematic depths. The retired `scene3d` did this
+  (depth-tinted, no depth test). Label the depths schematic, and keep each train's position tier
+  (live or scheduled). Not built yet; consider it with M2b motion.

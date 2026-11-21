@@ -40,6 +40,40 @@ dropping trains into a diorama later.
 - The basemap's own railway lines are decoration only. Snapping GTFS paths onto NARN
   arcs is a later problem.
 
+## Rail elevation profiles (downtown)
+
+`railprep scene` gives every MARTA heavy-rail path through downtown a height profile, with one
+value every 10 m. Heights come from Overture's subway `level_rules` and `rail_flags`, which
+derive from OSM `layer` and `tunnel`. They are **schematic stacking order, not depth**: −1 → −10 m,
+−2 → −16 m, −3 → −22 m, and any bridge → +7 m. City and East Portal draw track only where the
+smoothed profile is at or above `PORTAL_E` (−5.5 m), so anything deeper counts as tunnel.
+
+`clean_profile` fills untagged gaps of 150 m or less between two tunnels, because most of them are
+mapping seams. Some are real open cuts, though. `VERIFIED_OPEN` in `pipeline/src/scene.rs` pins the
+ones checked against dated imagery at a schematic −4 m, so they survive the fill and the ramp. On a
+flat board, City cuts a slot in the ground over each below-grade open stretch and gives it a floor.
+
+### Open-air MARTA track downtown (checked 2026-11-21)
+
+Primary evidence: OSM way tags and history (api.openstreetmap.org); USGS NAIP orthoimagery
+`m_3308413_se_16_060_20231008` (2023-10-08, 0.6 m, public domain, via TNM
+`USGSNAIPImagery`); Esri World Imagery, Vantor WorldView-2, 2026-02-02 (0.5 m, leaf-off,
+viewed only, not redistributed). MARTA's SEC District roof page was also used
+(itsmarta.com/gwccroof.aspx).
+
+| Stretch | Status | Evidence | Precision |
+|---|---|---|---|
+| Five Points station (Blue/Green on the upper level) | Underground | OSM `tunnel=yes`, `location=underground` platform | — |
+| **Gulch trench**, between Five Points and the Ted Turner Dr viaduct, about −84.3937 to −84.3924 | **Open cut** (pinned) | OSM ways 702258823 and 702258824 have had no tunnel tag since 2019. NAIP 2023 and WV02 2026 both show a walled trench with a footbridge across it. | The ends match the OSM ways to a few metres. The two tracks are 111 m and 141 m long. City's drawn run is 117–128 m, and its ends fall within 7–23 m of the surveyed ends after smoothing. |
+| Ted Turner Dr → SEC District (Dome/GWCC) → Northside Dr, about 1 km | Covered | OSM way 702268368 is `tunnel=yes`, `layer=-3`. Imagery shows the line under the Gulch deck, the plaza and the Centennial Olympic Park Dr bridge. MARTA says the station "sits underneath the Centennial Olympic Park Drive bridge overpass" and has its own roof. The open slot visible beside the station carries the NS freight tracks, not MARTA. | The station is roofed and isn't open to the sky. |
+| Vine City station's open cut, about −84.4064 to −84.4047 | Open, **off the board** | OSM ways 702268369 and 702268371 are untagged, and the trench is visible in NAIP 2023. Its x coordinate is about −1,300 to −1,140 m, west of the City board's edge at −1,000. | Not drawn. |
+| **Five Points east cut**, between Peachtree St and Pryor St, about −84.3898 to −84.3889 | **Open cut** (pinned) | OSM ways 702258817 and 702258818 are untagged, and the Interline Connector way 1453238814 beside them is `cutting=yes`. Rails are visible in NAIP 2023 and WV02 2026. | Same method as the Gulch trench. |
+
+Gaps still unverified: the 100–115 m untagged spans near Georgia State (about −84.3875 to −84.3865
+and −84.3852 to −84.3843) stay filled as tunnel until someone checks them the same way. Centennial Yards plans
+to build a platform over the Gulch tracks, so re-check the Gulch trench against new imagery
+before trusting this entry after 2026.
+
 ## Freight traffic
 
 FRA crossings carry railroad-reported daily train counts but no link to a track arc.

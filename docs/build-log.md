@@ -1051,3 +1051,58 @@ camera pose, with 4.5 seconds to warm up after the board appeared.
 A repeat of the cut replay with temporary timing probes averaged 33.2 fps. Across the
 three windows, looking up positions took at most 1.2 ms at the 95th percentile and placing
 the cars took at most 0.7 ms. Between zero and eight cars were eligible to draw.
+
+## 2026-11-21 · Where MARTA actually sees the sky downtown
+
+The City handoff expected MARTA track to surface "by the Dome/GWCC". It doesn't. Before I
+changed any geometry, I checked each stretch of the Blue/Green line from Vine City to Georgia
+State against three primary sources: OSM way tags and edit history, USGS NAIP imagery
+(2023-10-08, 0.6 m, public domain) and Vantor WorldView-2 imagery (2026-02-02, 0.5 m,
+leaf-off) through Esri.
+
+- **SEC District (Dome/GWCC) is covered.** MARTA's roof-replacement page says the station
+  "sits underneath the Centennial Olympic Park Drive bridge overpass", and debris from the
+  bridge was falling onto the station's own roof. The open slot you can see beside it in the
+  imagery holds the Norfolk Southern freight tracks. MARTA tunnels under them at OSM layer −3.
+- **The Gulch trench is open.** Just west of Five Points, OSM has left two short ways (111 m and
+  141 m) without a tunnel tag since 2019. The leaf-off 2026 image shows a walled trench with a
+  footbridge across it, and its ends sit within a few metres of the OSM ways.
+- **So is a cut east of Five Points.** It runs beside a car park between Peachtree St and Pryor St,
+  and the rails are visible in both images.
+- **Vine City's open cut is real but off the board.** It sits at x ≈ −1,300 to −1,140 m, and
+  the board's edge is at −1,000.
+
+Two bugs had buried both open cuts. The first was in the profile builder. It fills untagged
+gaps of 150 m or less between tunnels, a rule I wrote on day one because most gaps are mapping
+seams. These two weren't. Even unfilled, its 150 m moving average blends a short gap with the
+deep tunnels on either side, so its depth comes out of the smoothing, not the survey. The fix is an explicit `VERIFIED_OPEN` table
+in `scene.rs`. It is keyed by the OSM ways' geometry, not by feed-generated path ids, and it pins
+those samples at a schematic −4 m before and after the cleanup. Regenerating `scene.json` without
+the change reproduced the old file byte for byte. With it, 249 samples are pinned, and 529
+samples changed on 12 Blue/Green paths. All of them sit in or next to the two cuts, where the
+ramps were re-smoothed. Nothing else moved, East Portal's ramp included.
+
+The second bug was in City. Its flat board had never carved the ground for MARTA, so the first
+render showed two portal headwalls with lawn between them. The board now leaves a slot over
+every below-grade open stretch: 1 m sub-cells merged into row runs near a cut, then a concrete
+floor and wall-top coping. The ground mesh grows from 60,000 to 64,914 vertices, and in Node the
+board stage takes about 20–30 ms more (16–36 ms without cuts, 40–56 ms with them). Browser timings swung between 90 and 320 ms
+from run to run, so I'm not quoting them.
+
+A contract test runs the real `alignment()` smoothing and the portal threshold on every
+Blue/Green path. It requires exactly these open runs near Five Points, each ending within 25 m of
+the surveyed ends. With the fix the ends land 7–23 m away, and the old profiles fail the test.
+
+What surprised me: the honest answer to "where's the open track by the Dome?" was "the trench
+you'd walk past in the Gulch", and the evidence that settled it was the bare February trees, not
+the leafy 2023 summer image. Centennial Yards plans to deck over the Gulch, so this entry carries
+a re-check date.
+
+![City: the Gulch trench between Five Points and Ted Turner Dr](log/rail/2026-11-21-city-gulch-trench.jpg)
+![USGS NAIP 2023: the same trench, walled, with a footbridge](log/rail/2026-11-21-naip-2023-gulch-trench.jpg)
+![City: the open cut east of Five Points beside the car park](log/rail/2026-11-21-city-five-points-east-cut.jpg)
+![USGS NAIP 2023: rails visible in the east cut](log/rail/2026-11-21-naip-2023-five-points-east-cut.jpg)
+
+Sam also asked whether City should have an underground view, since tunnels hide most trains.
+It's in the art backlog's Cutaway section. Deploying this needs `pnpm data:scene` (or
+`pnpm data`) and a web rebuild.

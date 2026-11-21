@@ -105,6 +105,12 @@ export class World {
   private nz: number;
   private hf: Float32Array;
   private blocks = new PlacementIndex<P2[]>();
+  /** Flat board only: open-cut MARTA runs (below grade, open to the sky) to leave out of the ground. */
+  private cuts: { line: Line; s0: number; s1: number }[] = [];
+  /** The cuts' centrelines sampled every metre, bucketed on a 10 m grid. */
+  private cutGrid = new Map<number, P2[]>();
+  /** Each cut's two ends with outward unit tangents: the slot stops square at the portal. */
+  private cutEnds: [number, number, number, number][] = [];
   readonly trees: { x: number; y: number; z: number; s: number; c: number; th?: number }[] = [];
   /** Real trees from a canopy height map: [x, z, height m, crown radius m]. */
   realTrees: [number, number, number, number][] | null = null;
@@ -214,8 +220,42 @@ export class World {
       pos.push(x, h, z);
       col.push(c.r, c.g, c.b);
     };
+    // Cells near an open cut (flat board) are drawn as 1 m sub-quads, leaving out the slot.
+    const sub = (i: number, j: number) => {
+      const n = Math.round(st);
+      const x0 = b.minX + i * st;
+      const z0 = b.minZ + j * st;
+      const ss = st / n;
+      const quad = (xa: number, xb: number, za: number, zb: number) => {
+        for (const [x, z] of [[xa, za], [xa, zb], [xb, za], [xb, za], [xa, zb], [xb, zb]]) {
+          c.copy(grass);
+          const n2 = Math.sin(x * 0.37 + z * 0.11) * Math.sin(z * 0.29 - x * 0.07);
+          c.lerp(dirt, Math.max(0, n2) * 0.18);
+          pos.push(x, 0, z);
+          col.push(c.r, c.g, c.b);
+        }
+      };
+      // One quad per run of kept sub-cells in each row.
+      for (let v = 0; v < n; v++) {
+        const za = z0 + v * ss;
+        let run = -1;
+        for (let u = 0; u <= n; u++) {
+          const keep = u < n && !this.inCut(x0 + (u + 0.5) * ss, za + ss / 2);
+          if (keep && run < 0) run = u;
+          if (!keep && run >= 0) {
+            quad(x0 + run * ss, x0 + u * ss, za, za + ss);
+            run = -1;
+          }
+        }
+      }
+    };
+    const nearCut = (i: number, j: number) => this.nearCutPts(b.minX + (i + 0.5) * st, b.minZ + (j + 0.5) * st, st / 2 + CUT_HALF);
     for (let j = 0; j < nz - 1; j++)
       for (let i = 0; i < nx - 1; i++) {
+        if (nearCut(i, j)) {
+          sub(i, j);
+          continue;
+        }
         vtx(i, j);
         vtx(i, j + 1);
         vtx(i + 1, j);
@@ -491,15 +531,8 @@ export class World {
 
   // ---- rail ---------------------------------------------------------------------------
 
-  /**
-   * Both MARTA tracks along an alignment: ballast, ties, rails, third rail, open-cut walls,
-   * tunnel portals and viaduct. Only the open parts are drawn (deeper than the portal is tunnel),
-   * so one alignment can surface, dive and surface again across a big board.
-   */
-  buildMarta(m: Alignment | null = this.marta) {
-    if (!m) return;
-    const b = new Builder();
-    // Open runs: inside the board and shallow enough to be daylight.
+  /** Stretches of an alignment inside the board and shallow enough to be daylight. */
+  private openRuns(m: Alignment) {
     const runs: [number, number][] = [];
     let open: number | null = null;
     for (let s = 0; s <= m.line.length; s += 1) {
@@ -512,7 +545,72 @@ export class World {
       }
     }
     if (open != null && m.line.length - open > 4) runs.push([open, m.line.length]);
+    return runs;
+  }
+
+  /**
+   * A flat board has no heightfield to sculpt, so an open cut would sit under the ground mesh.
+   * Call before `buildBoard` with every alignment `buildMarta` will draw: the board then leaves
+   * a slot over each below-grade open stretch, and `buildMarta` lays the cut's floor.
+   */
+  setOpenCuts(als: Alignment[]) {
+    if (this.opts.terrain !== 'flat') return;
+    for (const m of als)
+      for (const [sv, s1] of this.openRuns(m)) {
+        let a: number | null = null;
+        for (let s = sv; s <= s1; s += 1) {
+          const below = m.elev(s) < CUT_E;
+          if (below && a == null) a = s;
+          if ((!below || s + 1 > s1) && a != null) {
+            this.cuts.push({ line: m.line, s0: a, s1: s });
+            const p0 = m.line.at(a);
+            const p1 = m.line.at(s);
+            this.cutEnds.push([p0.x, p0.z, -p0.dx, -p0.dz], [p1.x, p1.z, p1.dx, p1.dz]);
+            for (let t = a; t <= s; t += 1) {
+              const p = m.line.at(t);
+              const k = cutKey(Math.floor(p.x / CUT_CELL), Math.floor(p.z / CUT_CELL));
+              const bucket = this.cutGrid.get(k);
+              if (bucket) bucket.push([p.x, p.z]);
+              else this.cutGrid.set(k, [[p.x, p.z]]);
+            }
+            a = null;
+          }
+        }
+      }
+  }
+
+  /** Is (x, z) within `r` of an open-cut centreline sample (`round`: Euclidean, else a square)? */
+  private nearCutPts(x: number, z: number, r: number, round = false) {
+    if (!this.cutGrid.size) return false;
+    for (let j = Math.floor((z - r) / CUT_CELL); j <= Math.floor((z + r) / CUT_CELL); j++)
+      for (let i = Math.floor((x - r) / CUT_CELL); i <= Math.floor((x + r) / CUT_CELL); i++) {
+        const bucket = this.cutGrid.get(cutKey(i, j));
+        if (!bucket) continue;
+        for (const [px, pz] of bucket) {
+          if (round ? Math.hypot(px - x, pz - z) < r : Math.abs(px - x) < r && Math.abs(pz - z) < r) return true;
+        }
+      }
+    return false;
+  }
+
+  /** Inside an open-cut slot (flat board): within the walls of a below-grade open stretch. */
+  private inCut(x: number, z: number) {
+    if (!this.nearCutPts(x, z, CUT_HALF, true)) return false;
+    // Not beyond either end of the cut (that's ground over the tunnel).
+    return !this.cutEnds.some(([ex, ez, tx, tz]) => Math.hypot(ex - x, ez - z) < CUT_HALF * 1.5 && (x - ex) * tx + (z - ez) * tz > 0);
+  }
+
+  /**
+   * Both MARTA tracks along an alignment: ballast, ties, rails, third rail, open-cut walls,
+   * tunnel portals and viaduct. Only the open parts are drawn (deeper than the portal is tunnel),
+   * so one alignment can surface, dive and surface again across a big board.
+   */
+  buildMarta(m: Alignment | null = this.marta) {
+    if (!m) return;
+    const b = new Builder();
+    const runs = this.openRuns(m);
     if (!runs.length) return;
+    const coping = this.cuts.length ? [m.line.offset(-CUT_HALF, 2), m.line.offset(CUT_HALF, 2)] : [];
     const ey = (s: number) => m.elev(s);
     const tieM = new THREE.Matrix4();
     const ties: THREE.Matrix4[] = [];
@@ -540,6 +638,12 @@ export class World {
       for (let s = sv; s < s1; s += 2) {
         const e = ey(s);
         if (e < -0.4) for (const d of [-5.2, 5.2]) b.wall(m.line, d, () => e - 0.2, () => 0.6, PAL.concrete, 2, s, Math.min(s + 2, s1));
+        // A flat board has a slot, not sculpted ground, over the cut: give it a floor.
+        if (this.cuts.length && e < CUT_E) {
+          b.ribbon(m.line, CUT_HALF * 2 + 0.6, () => e - 0.05, PAL.concreteDark, 2, s, Math.min(s + 2, s1));
+          // Coping along the wall tops hides the slot's 1 m stepped edge.
+          for (const cl of coping) b.ribbon(cl, 1.8, () => 0.62, PAL.concrete, 2, s, Math.min(s + 2, s1));
+        }
       }
       if (ey(sv) < PORTAL_E + 1) portal(sv, false);
       if (ey(s1) < PORTAL_E + 1 && s1 < m.line.length) portal(s1, true);
@@ -1033,6 +1137,12 @@ export class World {
 }
 
 export const PORTAL_E = -5.5;
+/** Flat board: track below this is in an open cut, so the board leaves a slot over it. */
+const CUT_E = -0.4;
+/** Half-width of that slot: the cut's retaining walls (buildMarta) stand at ±5.2 m. */
+const CUT_HALF = 5.2;
+const CUT_CELL = 10;
+const cutKey = (i: number, j: number) => (i + 4096) * 8192 + (j + 4096);
 const PINE_TIERS = 4; // track elevation where the cut is covered over (train roof ≈ 4 m)
 
 /** Clip a ring to the board rectangle (Sutherland–Hodgman). */
