@@ -1015,3 +1015,7 @@ Both diagnostic changes were confined to the local test server.
 City now uses the tested 1024 px shadow map on low tier. The six A16 samples ranged
 from 32.28 to 38.00 fps, clearing the 30 fps gate for the static opening. This change
 ships with a web rebuild.
+
+## 2026-11-21 — What the ground can tell us at Five Points
+
+The ground on the Blue/Green alignment about 200 m east of Five Points sits roughly eight metres below both sides of the corridor. A 5 m grid keeps that depression in a downtown board that takes 122.4 KiB gzipped, including its vertical reference. The surprise came farther east. Follow those heights across the Downtown Connector and the train would descend toward the freeway because the public bare-earth DEM removes bridge decks. At Five Points the grid gives us 323.8 m NAVD88 at the scene origin, while the station's stacked tracks remain a separate measurement. The pipeline prototype includes 18 GTFS ground checks and a 101-point test across the cut. [Terrain findings and reproduction](downtown-ground.md) · [Ground map and sections](log/2026-11-21-downtown-ground.png)
