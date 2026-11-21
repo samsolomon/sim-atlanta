@@ -1,21 +1,34 @@
 /**
- * MARTA bus: a New Flyer Xcelsior 40-foot (most of MARTA's fleet; CNG with roof tanks), built in
- * code like the CQ400. 12.2 m long, 2.6 m wide, about 3.4 m to the top of the tank fairing.
- * Faces +z; origin at the centre of the footprint on the ground. In three.js, facing +z, the
- * right-hand (curb) side is −x, so both doors are on −x.
+ * MARTA bus: a New Flyer Xcelsior 40-foot (most of MARTA's fleet; CNG with roof enclosures),
+ * built in code to the manufacturer's published dimensions (New Flyer Xcelsior family
+ * brochure, 2021) and proportions traced from its side-elevation drawing:
+ *   12.24 m over body (12.50 m over bumpers) · 2.6 m wide · 3.38 m over the CNG roof enclosures
+ *   wheelbase 7.2 m · front overhang ≈ 2.2 m · 305/70R22.5 tyres (≈ 1.0 m diameter)
+ *   step height 356 mm · front door behind the windscreen, rear door ahead of the rear axle.
  *
- * Livery colours are parameters (`BusLivery`) until reference photos confirm MARTA's scheme;
- * the default is a placeholder. No logos.
+ * Faces +z; origin at the centre of the footprint on the ground. Facing +z the right-hand
+ * (curb) side is −x, so the doors are on −x. Livery is a parameter (`BusLivery`) until reference
+ * photos confirm MARTA's scheme. No logos.
  *
  * Per-vertex `aKind` (read by `busMaterial`): 0 fixed, 1 headlight, 2 tail light, 3 glass,
  * 7 destination sign.
  */
 import * as THREE from 'three';
 
-export const BUS_LENGTH = 12.2;
-const W = 2.59;
-const H = 3.18; // roof
-const FLOOR = 0.42;
+export const BUS_LENGTH = 12.5; // over bumpers
+const L = 12.24; // over body
+const W = 2.6;
+const H = 3.02; // roof (body)
+const H_CNG = 3.38; // over roof enclosures
+const Y0 = 0.3; // underside of the body (ground clearance)
+const ZF = L / 2; // front face
+const ZR = -L / 2; // rear face
+const AXLE_F = ZF - 2.2;
+const AXLE_R = AXLE_F - 7.2;
+const TYRE_R = 0.5;
+const ARCH_R = 0.6;
+const ARCH_Y = 0.46; // arch centre height
+const BEV = 0.08; // edge rounding
 
 export interface BusLivery {
   body: string;
@@ -25,7 +38,18 @@ export interface BusLivery {
 }
 export const DEFAULT_LIVERY: BusLivery = { body: '#eef0f1', skirt: '#1f4f9c', accent: '#f08a24', accent2: '#f6c33b' };
 
-const C = { glass: '#1f262e', frame: '#2a2f36', tyre: '#1b1c1f', hub: '#a9adb2', under: '#2c2f34', roofCap: '#e3e6e8', bumper: '#2d3036', mirror: '#2a2d33' };
+const C = {
+  glass: '#1d242c',
+  frame: '#20252c',
+  tyre: '#1a1b1e',
+  rim: '#b9bdc1',
+  hub: '#7d8187',
+  well: '#15171a',
+  roofCap: '#e6e9eb',
+  bumper: '#2b2e34',
+  mirror: '#24272c',
+  grille: '#2f3238',
+};
 
 class Kit {
   pos: number[] = [];
@@ -42,19 +66,15 @@ class Kit {
       this.kind.push(kind);
     }
   }
-  box(w: number, h: number, l: number, x: number, y: number, z: number, color: string, kind = 0) {
+  box(w: number, h: number, l: number, x: number, y: number, z: number, color: string, kind = 0, rot?: THREE.Euler) {
     const g = new THREE.BoxGeometry(w, h, l);
+    if (rot) g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(rot));
     g.translate(x, y, z);
     this.geo(g, color, kind);
   }
-  /** Side profile (z along, y up) extruded across width w, centred on x0. */
-  profile(pts: [number, number][], w: number, color: string, kind = 0, x0 = 0) {
-    const sh = new THREE.Shape(pts.map(([z, y]) => new THREE.Vector2(z, y)));
-    const g = new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: false });
-    g.translate(0, 0, -w / 2);
-    g.rotateY(-Math.PI / 2);
-    g.translate(x0, 0, 0);
-    this.geo(g, color, kind);
+  /** A side-on panel at x = ±(W/2 + lift), from z0..z1 and y0..y1, on each listed side. */
+  side(sides: number[], z0: number, z1: number, y0: number, y1: number, color: string, kind = 0, lift = 0.006) {
+    for (const s of sides) this.box(0.02, y1 - y0, z1 - z0, s * (W / 2 + lift), (y0 + y1) / 2, (z0 + z1) / 2, color, kind);
   }
   geometry() {
     const g = new THREE.BufferGeometry();
@@ -66,110 +86,200 @@ class Kit {
   }
 }
 
+/** The body's side profile (z along, y up), with semicircular wheel arches cut into the bottom. */
+function bodyProfile() {
+  const s = new THREE.Shape();
+  // The bevel grows the outline by BEV, so trace the profile inset by BEV.
+  const b = BEV;
+  s.moveTo(ZR + b, Y0 + b);
+  for (const zc of [AXLE_R, AXLE_F]) {
+    const r = ARCH_R + b;
+    s.lineTo(zc - r, Y0 + b);
+    s.lineTo(zc - r, ARCH_Y);
+    s.absarc(zc, ARCH_Y, r, Math.PI, 0, true);
+    s.lineTo(zc + r, Y0 + b);
+  }
+  s.lineTo(ZF - 0.12 - b, Y0 + b);
+  // Front: a slight lower bulge, then the windscreen leaning back gently into the roof.
+  s.lineTo(ZF - b, 0.75);
+  s.lineTo(ZF - b, 1.12);
+  s.lineTo(ZF - 0.07 - b, 2.75);
+  s.quadraticCurveTo(ZF - 0.1 - b, H - b, ZF - 0.42 - b, H - b);
+  s.lineTo(ZR + 0.3 + b, H - b);
+  s.quadraticCurveTo(ZR + b, H - b, ZR + b, H - 0.3);
+  s.lineTo(ZR + b, Y0 + b);
+  return s;
+}
+
 export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   const k = new Kit();
-  const h = BUS_LENGTH / 2;
-  // Body: a slab with a slightly rounded front top and a squared rear.
-  k.profile(
-    [
-      [-h, FLOOR - 0.12],
-      [h - 0.05, FLOOR - 0.12],
-      [h, FLOOR + 0.2],
-      [h, H - 0.35],
-      [h - 0.12, H - 0.1],
-      [h - 0.4, H],
-      [-h + 0.15, H],
-      [-h, H - 0.15],
-    ],
-    W,
-    liv.body,
-  );
-  // Lower skirt colour band along both sides and the rear.
-  for (const s of [-1, 1]) k.box(0.02, 0.62, BUS_LENGTH - 0.3, s * (W / 2 + 0.005), FLOOR + 0.22, -0.1, liv.skirt);
-  k.box(W - 0.1, 0.62, 0.02, 0, FLOOR + 0.22, -h - 0.005, liv.skirt);
-  // Accent sweep above the skirt (two colours), rising toward the rear.
-  for (const s of [-1, 1]) {
-    for (const [dy, color] of [
-      [0, liv.accent],
-      [0.11, liv.accent2],
-    ] as [number, string][]) {
-      const g = new THREE.BoxGeometry(0.03, 0.09, BUS_LENGTH - 1.2);
-      g.applyMatrix4(new THREE.Matrix4().makeRotationX(0.03));
-      g.translate(s * (W / 2 + 0.008), FLOOR + 0.6 + dy, -0.4);
-      k.geo(g, color);
+  // ---- body shell: profile extruded across the width with rounded edges ------------------
+  const body = new THREE.ExtrudeGeometry(bodyProfile(), {
+    depth: W - 2 * BEV,
+    bevelEnabled: true,
+    bevelThickness: BEV,
+    bevelSize: BEV,
+    bevelSegments: 3,
+    curveSegments: 20,
+  });
+  body.translate(0, 0, -(W - 2 * BEV) / 2);
+  body.rotateY(-Math.PI / 2);
+  k.geo(body, liv.body);
+  // Dark wheel wells filling the arches, just inside the side skins.
+  for (const zc of [AXLE_R, AXLE_F]) {
+    const well = new THREE.CylinderGeometry(ARCH_R + 0.02, ARCH_R + 0.02, W - 0.06, 24, 1, false, 0, Math.PI);
+    well.rotateZ(Math.PI / 2);
+    well.rotateX(-Math.PI / 2);
+    well.translate(0, ARCH_Y, zc);
+    k.geo(well, C.well);
+    k.box(W - 0.06, ARCH_Y - Y0 + 0.02, 2 * ARCH_R + 0.04, 0, (ARCH_Y + Y0) / 2, zc, C.well);
+  }
+
+  // ---- livery: lower skirt band and two accent lines -------------------------------------
+  const both = [-1, 1];
+  const skirtTop = 0.95;
+  const runs: [number, number][] = [
+    [ZR + 0.15, AXLE_R - ARCH_R - 0.08],
+    [AXLE_R + ARCH_R + 0.08, AXLE_F - ARCH_R - 0.08],
+    [AXLE_F + ARCH_R + 0.08, ZF - 0.2],
+  ];
+  for (const [z0, z1] of runs) k.side(both, z0, z1, Y0 + 0.08, skirtTop - 0.05, liv.skirt);
+  k.side(both, ZR + 0.15, ZF - 0.2, skirtTop + 0.04, skirtTop + 0.12, liv.accent);
+  k.side(both, ZR + 0.15, ZF - 0.2, skirtTop + 0.17, skirtTop + 0.24, liv.accent2);
+  k.box(W - 0.2, skirtTop - Y0 - 0.13, 0.02, 0, (Y0 + skirtTop) / 2 + 0.02, ZR - 0.006, liv.skirt);
+
+  // ---- side windows (belt 1.42 m, head 2.62 m), doors on the curb side (−x) ------------------
+  const BELT = 1.42;
+  const HEAD = 2.62;
+  const win = (sides: number[], z0: number, z1: number, y0 = BELT, y1 = HEAD) => {
+    k.side(sides, z0 - 0.06, z1 + 0.06, y0 - 0.06, y1 + 0.06, C.frame, 0, 0.007);
+    k.side(sides, z0, z1, y0, y1, C.glass, 3, 0.011);
+  };
+  const DOOR_R: [number, number] = [AXLE_R + 1.55, AXLE_R + 2.75];
+  const DOOR_F: [number, number] = [ZF - 1.28, ZF - 0.22];
+  // Curb side: rear-quarter window, rear door, three windows, front door.
+  win([-1], AXLE_R - 0.25, DOOR_R[0] - 0.15);
+  win([-1], DOOR_R[1] + 0.15, DOOR_R[1] + 1.75);
+  win([-1], DOOR_R[1] + 1.85, DOOR_R[1] + 3.45);
+  win([-1], DOOR_R[1] + 3.55, DOOR_F[0] - 0.15);
+  // Street side: the same bays, with windows where the doors would be, and the driver's window.
+  win([1], AXLE_R - 0.25, DOOR_R[0] - 0.15);
+  win([1], DOOR_R[0] - 0.05, DOOR_R[1] + 1.75);
+  win([1], DOOR_R[1] + 1.85, DOOR_R[1] + 3.45);
+  win([1], DOOR_R[1] + 3.55, DOOR_F[0] - 0.15);
+  win([1], DOOR_F[0] - 0.05, ZF - 0.3, BELT + 0.05, HEAD);
+  // Rear quarter: a short window high above the engine bay.
+  win(both, ZR + 0.5, AXLE_R - 0.85, BELT + 0.25, HEAD - 0.05);
+  // Doors: glazed leaves in a dark frame, nearly full height from the low floor.
+  for (const [z0, z1] of [DOOR_R, DOOR_F]) {
+    k.side([-1], z0 - 0.04, z1 + 0.04, Y0 + 0.08, HEAD + 0.12, C.frame, 0, 0.009);
+    const mid = (z0 + z1) / 2;
+    k.side([-1], z0 + 0.05, mid - 0.03, Y0 + 0.4, HEAD + 0.02, C.glass, 3, 0.013);
+    k.side([-1], mid + 0.03, z1 - 0.05, Y0 + 0.4, HEAD + 0.02, C.glass, 3, 0.013);
+  }
+
+  // ---- front: big curved windscreen, sign, swept headlights, bumper, mirrors -----------------
+  const fz = (y: number) => (y < 1.12 ? ZF : ZF - ((y - 1.12) / (2.75 - 1.12)) * 0.07); // front face at height y
+  const windscreen = (inset: number, lift: number, color: string, kind: number) => {
+    const N = 10;
+    const ya = 1.2 + inset;
+    const yb = 2.66 - inset;
+    // Slight wrap: the outer columns curve back toward the sides.
+    const wrap = (x: number) => 0 * x; // flat: the body's rounded corners already give the wrap
+    const P = (x: number, y: number) => [x, y, fz(y) + lift + wrap(x)];
+    for (let i = 0; i < N; i++) {
+      const xa = -W / 2 + 0.16 + inset + ((W - 0.32 - 2 * inset) * i) / N;
+      const xb = -W / 2 + 0.16 + inset + ((W - 0.32 - 2 * inset) * (i + 1)) / N;
+      k.geo(quad(P(xa, ya), P(xb, ya), P(xb, yb), P(xa, yb)), color, kind);
     }
+  };
+  windscreen(-0.06, 0.02, C.frame, 0);
+  windscreen(0, 0.03, C.glass, 3);
+  // Destination sign band above the windscreen.
+  k.box(W - 0.42, 0.24, 0.03, 0, 2.86, fz(2.86) + 0.012, C.frame);
+  k.box(W - 0.62, 0.15, 0.03, 0, 2.86, fz(2.86) + 0.02, '#ffb84a', 7);
+  // Headlights: swept lenses at the lower corners, angled up toward the sides.
+  for (const s of both) {
+    k.box(0.5, 0.14, 0.04, s * 0.88, 0.86, ZF + 0.012, C.frame, 0, new THREE.Euler(0, 0, s * 0.18));
+    k.box(0.42, 0.09, 0.04, s * 0.88, 0.86, ZF + 0.022, '#ffffff', 1, new THREE.Euler(0, 0, s * 0.18));
   }
-  // Windscreen: the Xcelsior's tall single pane in a black surround, destination sign above.
-  k.box(W - 0.06, H - 0.3 - (FLOOR + 0.85), 0.04, 0, (H - 0.3 + FLOOR + 0.85) / 2, h + 0.015, C.frame);
-  k.box(W - 0.24, H - 0.8 - (FLOOR + 0.95), 0.04, 0, (H - 0.8 + FLOOR + 0.95) / 2, h + 0.03, C.glass, 3);
-  k.box(W - 0.5, 0.3, 0.04, 0, H - 0.55, h + 0.03, '#ffb84a', 7);
-  // Front: dark bumper, headlight clusters, bike rack.
-  k.box(W - 0.05, 0.36, 0.18, 0, FLOOR + 0.02, h + 0.04, C.bumper);
-  for (const s of [-1, 1]) {
-    k.box(0.42, 0.16, 0.05, s * 0.95, FLOOR + 0.42, h + 0.015, '#ffffff', 1);
-    k.box(0.18, 0.1, 0.05, s * 0.6, FLOOR + 0.42, h + 0.015, '#f2a230', 0); // turn signal
+  // A soft "smile" crease across the lower front.
+  k.box(1.1, 0.04, 0.02, 0, 0.66, ZF + 0.008, C.grille);
+  // Bumper (12.5 m over bumpers → 0.13 m proud of the body).
+  k.box(W - 0.1, 0.3, 0.16, 0, Y0 + 0.16, ZF + 0.06, C.bumper);
+  // Folded bike rack.
+  k.box(1.5, 0.05, 0.45, 0, Y0 + 0.36, ZF + 0.32, C.frame);
+  // Mirrors on arms reaching forward from the top corners.
+  for (const s of both) {
+    k.box(0.05, 0.05, 0.55, s * (W / 2 - 0.05), H - 0.12, ZF + 0.12, C.mirror, 0, new THREE.Euler(0.5, 0, 0));
+    k.box(0.12, 0.42, 0.18, s * (W / 2 - 0.02), H - 0.6, ZF + 0.42, C.mirror);
   }
-  k.box(1.6, 0.06, 0.55, 0, FLOOR + 0.12, h + 0.45, C.frame); // folded bike rack
-  for (const s of [-1, 1]) k.box(0.05, 0.6, 0.05, s * 0.75, FLOOR + 0.4, h + 0.42, C.frame);
-  // Mirrors.
-  for (const s of [-1, 1]) {
-    k.box(0.06, 0.06, 0.45, s * (W / 2 + 0.2), H - 0.65, h - 0.2, C.mirror);
-    k.box(0.12, 0.42, 0.16, s * (W / 2 + 0.38), H - 0.85, h - 0.02, C.mirror);
+
+  // ---- roof: CNG enclosure (front two-thirds) and the sculpted rear engine cap ---------------
+  const roofPiece = (shape: THREE.Shape, width: number) => {
+    const g = new THREE.ExtrudeGeometry(shape, { depth: width, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.04, bevelSegments: 2, curveSegments: 8 });
+    g.translate(0, 0, -width / 2);
+    g.rotateY(-Math.PI / 2);
+    k.geo(g, C.roofCap);
+  };
+  const enclosure = new THREE.Shape();
+  enclosure.moveTo(AXLE_R + 0.9, H - 0.01);
+  enclosure.lineTo(ZF - 1.0, H - 0.01);
+  enclosure.quadraticCurveTo(ZF - 1.05, H_CNG - 0.05, ZF - 1.6, H_CNG - 0.04);
+  enclosure.lineTo(AXLE_R + 1.6, H_CNG - 0.04);
+  enclosure.quadraticCurveTo(AXLE_R + 1.0, H_CNG - 0.05, AXLE_R + 0.9, H - 0.01);
+  roofPiece(enclosure, W - 0.5);
+  const cap = new THREE.Shape();
+  cap.moveTo(ZR + 0.25, H - 0.01);
+  cap.lineTo(AXLE_R + 0.2, H - 0.01);
+  cap.quadraticCurveTo(AXLE_R - 0.2, H + 0.26, AXLE_R - 0.8, H + 0.26);
+  cap.lineTo(ZR + 0.5, H + 0.26);
+  cap.quadraticCurveTo(ZR + 0.25, H + 0.24, ZR + 0.25, H - 0.01);
+  roofPiece(cap, W - 0.4);
+
+  // ---- rear: engine door, tail lights, route sign, bumper ------------------------------------
+  k.box(W - 0.6, 0.9, 0.02, 0, 1.05, ZR - 0.006, C.grille);
+  for (let i = 0; i < 5; i++) k.box(W - 0.8, 0.03, 0.02, 0, 0.75 + i * 0.15, ZR - 0.012, '#4a4e55');
+  for (const s of both) {
+    k.box(0.16, 0.62, 0.03, s * (W / 2 - 0.16), 1.05, ZR - 0.01, '#ffffff', 2);
+    k.box(0.16, 0.12, 0.03, s * (W / 2 - 0.16), 1.45, ZR - 0.01, '#f2a230', 0);
   }
-  // Side windows: a continuous dark band with pillars, both sides; driver's window at the front.
-  for (const s of [-1, 1]) {
-    const x = s * (W / 2 + 0.012);
-    k.box(0.02, 1.0, BUS_LENGTH - 1.8, x, FLOOR + 1.62, -0.55, C.frame);
-    for (let z = -h + 0.6; z < h - 1.6; z += 1.45) k.box(0.03, 0.9, 1.3, x + s * 0.005, FLOOR + 1.64, z + 0.65, C.glass, 3);
-    k.box(0.03, 1.05, 1.0, x + s * 0.005, FLOOR + 1.66, h - 0.9, C.glass, 3);
-  }
-  // Doors on the curb side (−x): front (behind the windscreen) and rear (behind the front axle
-  // halfway point), glazed.
-  for (const zc of [h - 1.15, -0.55]) {
-    k.box(0.03, 2.25, 1.2, -(W / 2 + 0.02), FLOOR + 1.12, zc, C.frame);
-    for (const dz of [-0.29, 0.29]) k.box(0.035, 1.9, 0.5, -(W / 2 + 0.03), FLOOR + 1.15, zc + dz, C.glass, 3);
-  }
-  // Roof: CNG tank fairing over the front two-thirds, rear HVAC/engine cap.
-  k.profile(
-    [
-      [-2.6, H],
-      [h - 1.6, H],
-      [h - 2.0, H + 0.36],
-      [-2.2, H + 0.36],
-    ],
-    W - 0.35,
-    C.roofCap,
-  );
-  k.box(W - 0.5, 0.28, 2.0, 0, H + 0.14, -h + 1.4, C.roofCap);
-  // Rear: engine grille and tail lights.
-  k.box(W - 0.5, 0.6, 0.04, 0, FLOOR + 0.95, -h - 0.02, C.under);
-  for (const s of [-1, 1]) k.box(0.22, 0.5, 0.05, s * 1.05, FLOOR + 0.95, -h - 0.025, '#ffffff', 2);
-  k.box(W - 0.6, 0.32, 0.04, 0, H - 0.45, -h - 0.02, '#ffb84a', 7); // rear route sign
-  // Wheels: front axle and rear axle (wheelbase ~7.2 m), dual rear.
-  const wheel = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14).rotateZ(Math.PI / 2);
-  const hub = new THREE.CylinderGeometry(0.24, 0.24, 0.32, 10).rotateZ(Math.PI / 2);
-  for (const [z, dual] of [
-    [h - 2.6, false],
-    [h - 2.6 - 7.2, true],
-  ] as [number, boolean][]) {
-    for (const s of [-1, 1]) {
-      // A dark wheel arch on the body side, and the tyre's outer face just proud of it.
-      k.box(0.03, 1.12, 1.4, s * (W / 2 + 0.013), 0.56, z, C.under);
-      const x = s * (W / 2 - (dual ? 0.12 : 0.1));
-      const g = wheel.clone();
-      g.translate(x, 0.5, z);
-      k.geo(g, C.tyre);
-      const hb = hub.clone();
-      hb.translate(x + s * 0.02, 0.5, z);
-      k.geo(hb, C.hub);
+  k.box(W - 0.8, 0.22, 0.03, 0, 2.5, ZR - 0.01, C.frame);
+  k.box(W - 1.0, 0.13, 0.03, 0, 2.5, ZR - 0.018, '#ffb84a', 7);
+  k.box(W - 0.1, 0.26, 0.14, 0, Y0 + 0.14, ZR - 0.06, C.bumper);
+
+  // ---- wheels: round tyres with rims; duals at the rear --------------------------------------
+  const tyre = (x: number, z: number, width: number) => {
+    const t = new THREE.CylinderGeometry(TYRE_R, TYRE_R, width, 28).rotateZ(Math.PI / 2);
+    t.translate(x, TYRE_R, z);
+    k.geo(t, C.tyre);
+  };
+  for (const s of both) {
+    const xo = s * (W / 2 - 0.2);
+    tyre(xo, AXLE_F, 0.3);
+    tyre(xo, AXLE_R, 0.3);
+    tyre(s * (W / 2 - 0.52), AXLE_R, 0.3); // inner dual
+    for (const z of [AXLE_F, AXLE_R]) {
+      const rim = new THREE.CylinderGeometry(0.29, 0.29, 0.31, 24).rotateZ(Math.PI / 2);
+      rim.translate(xo + s * 0.004, TYRE_R, z);
+      k.geo(rim, C.rim);
+      const hub = new THREE.CylinderGeometry(0.12, 0.12, 0.33, 12).rotateZ(Math.PI / 2);
+      hub.translate(xo + s * 0.008, TYRE_R, z);
+      k.geo(hub, C.hub);
     }
   }
   return k.geometry();
 }
 
-/** Material: lights glow by `night`; head lights always on, tails red. */
+function quad(a: number[], b: number[], c: number[], d: number[]) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c, ...a, ...c, ...d], 3));
+  return g;
+}
+
+/** Material: lights glow by `night`; headlights always on, tail lights red. */
 export function busMaterial(night: { value: number }) {
-  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = night;
     sh.vertexShader = sh.vertexShader

@@ -67,10 +67,10 @@ function build() {
   document.getElementById('blurb')!.textContent =
     vehicle === 'train'
       ? 'One cab car and one middle car of a 4-car set. Drop a reference photo to overlay it and line up the view.'
-      : 'New Flyer Xcelsior 40-foot (most of MARTA’s fleet). Livery is a placeholder until we match photos. Drop a reference photo to overlay it.';
+      : 'New Flyer Xcelsior 40-foot (most of MARTA’s fleet), built to New Flyer’s published dimensions. Livery is a placeholder until we match photos.';
   if (vehicle === 'bus') {
     const bus = new THREE.Mesh(busGeometry(), busMaterial(night));
-    bus.position.z = 6;
+    bus.position.z = 0;
     bus.castShadow = bus.receiveShadow = true;
     cars = [bus];
     scene.add(bus);
@@ -177,11 +177,11 @@ mk('roles', 'Tail', () => (role.value = -1));
 mk('roles', 'Coupled', () => (role.value = 0));
 for (const v of Object.keys(VIEWS)) mk('views', v, () => view(v));
 const BUS_VIEWS: Record<string, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
-  'Front': { pos: [0, 1.9, 36], target: [0, 1.6, 12], fov: 16 },
-  '¾ front': { pos: [11, 4.0, 24], target: [0, 1.6, 7], fov: 30 },
-  'Side': { pos: [-26, 1.9, 6], target: [0, 1.7, 6], fov: 32 },
-  'Rear': { pos: [0, 1.9, -26], target: [0, 1.6, 0], fov: 18 },
-  'Top': { pos: [0.01, 34, 6], target: [0, 0, 6], fov: 40 },
+  'Front': { pos: [0, 1.8, 30], target: [0, 1.6, 6], fov: 13 },
+  '¾ front': { pos: [-12, 4.0, 19], target: [0, 1.5, 1.5], fov: 30 },
+  'Side': { pos: [-34, 1.7, 0], target: [0, 1.7, 0], fov: 26 },
+  'Rear': { pos: [0, 1.8, -30], target: [0, 1.6, -6], fov: 13 },
+  'Top': { pos: [0.01, 34, 0], target: [0, 0, 0], fov: 30 },
 };
 const baseViews = { ...VIEWS };
 function setVehicle(v: 'train' | 'bus') {
