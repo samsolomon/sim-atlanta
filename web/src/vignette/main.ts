@@ -17,6 +17,7 @@ import { SimClock, leafState, local, sunPosition } from './time';
 import { DioramaBuses } from './buses';
 import { ParkedCars, Traffic, type TrafficData } from './traffic';
 import { fetchLive, PRESETS, Rain, type Weather, type WeatherKind } from './weather';
+import { gradeShader } from './grade';
 import { inkShader } from './ink';
 import { tiltShiftShader } from './tiltshift';
 import { Train } from './train';
@@ -155,6 +156,10 @@ async function main() {
   composer.addPass(hts);
   composer.addPass(vts);
   composer.addPass(new OutputPass());
+  // Grade and grain last, in display space.
+  const grade = new ShaderPass(gradeShader());
+  let gradeOn = params.get('grade') !== '0';
+  composer.addPass(grade);
   let tilt = Number(params.get('tilt') ?? 1.6);
 
   function resize() {
@@ -166,7 +171,8 @@ async function main() {
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();
     ink.uniforms.uTexel.value.set(1 / (w * renderer.getPixelRatio()), 1 / (h * renderer.getPixelRatio()));
-    ink.uniforms.uWidth.value = Math.max(1, renderer.getPixelRatio()) * 1.25;
+    ink.uniforms.uWidth.value = Math.max(1, renderer.getPixelRatio());
+    grade.uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
     for (const p of [hts, vts]) {
       p.uniforms.uTexel.value.set(1 / w, 1 / h);
       p.uniforms.uStrength.value = tilt;
@@ -335,7 +341,9 @@ async function main() {
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
-    ink.uniforms.uStrength.value = inkOn ? 0.85 : 0;
+    ink.uniforms.uStrength.value = inkOn ? 0.9 : 0;
+    grade.uniforms.uAmount.value = gradeOn ? 1 : 0;
+    grade.uniforms.uTime.value = ts / 1000;
     composer.render();
     requestAnimationFrame(frame);
   };
@@ -362,6 +370,7 @@ async function main() {
       },
       ao: (on: boolean) => (gtao.enabled = on),
       setInk: (on: boolean) => (inkOn = on),
+      setGrade: (on: boolean) => (gradeOn = on),
       camera,
       controls,
       scene,

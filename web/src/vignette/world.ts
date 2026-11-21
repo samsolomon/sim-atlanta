@@ -703,11 +703,12 @@ export class World {
     }
     const n = this.trees.length;
     const leafMat = new THREE.MeshLambertMaterial({ flatShading: true });
-    this.canopy = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), leafMat, n * 2);
+    // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
+    this.canopy = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), leafMat, n * CLUMPS);
     // Pines: two stacked five-sided cones.
-    const pine = new THREE.ConeGeometry(1, 1.6, 6);
+    const pine = new THREE.ConeGeometry(1, 1.6, 7);
     pine.translate(0, 0.8, 0);
-    this.pines = new THREE.InstancedMesh(pine, leafMat, n * 2);
+    this.pines = new THREE.InstancedMesh(pine, leafMat, n * PINE_TIERS);
     this.trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.24, 1, 5).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: '#6b4f3a' }), n);
     // Bare-branch crowns, hidden inside the canopy until the leaves drop.
     const br = new Builder();
@@ -763,26 +764,30 @@ export class World {
     const brown = new THREE.Color('#8a6a48');
     let k = 0;
     let kp = 0;
+    const tint = new THREE.Color();
+    const v = new THREE.Vector3();
+    const sc3 = new THREE.Vector3();
     this.trees.forEach((t) => {
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
+      const r = rng(Math.floor(t.c * 1e9) + 7);
       if (kind === 'pine') {
-        // Loblolly: tall bare trunk, tufted crown.
-        for (const [dy, sc] of [
-          [trunkH + t.s * 0.6, 1.25],
-          [trunkH + t.s * 1.7, 0.9],
-        ]) {
-          m.compose(new THREE.Vector3(t.x, t.y + dy, t.z), q.identity(), new THREE.Vector3(1.6 * t.s * sc, 1.9 * t.s * sc, 1.6 * t.s * sc));
+        // Loblolly pine: tall bare trunk, a crown of stacked tiers narrowing to the top.
+        for (let i = 0; i < PINE_TIERS; i++) {
+          const f = i / (PINE_TIERS - 1);
+          const w = (1.55 - f * 1.05) * t.s;
+          const h = (1.5 - f * 0.4) * t.s;
+          q.setFromEuler(new THREE.Euler((r() - 0.5) * 0.12, r() * 6.3, (r() - 0.5) * 0.12));
+          m.compose(v.set(t.x, t.y + trunkH + i * 1.05 * t.s, t.z), q, sc3.set(w, h, w));
           pines.setMatrixAt(kp, m);
-          pines.setColorAt(kp, c.set('#3f6b45').offsetHSL(0, 0, (t.c - 0.1) * 0.3));
+          pines.setColorAt(kp, c.set('#355f3c').offsetHSL((r() - 0.5) * 0.02, 0, (f - 0.5) * 0.12 + (t.c - 0.1) * 0.2));
           kp++;
         }
-        canopy.setMatrixAt(k++, zero);
-        canopy.setMatrixAt(k++, zero);
+        for (let i = 0; i < CLUMPS; i++) canopy.setMatrixAt(k++, zero);
         return;
       }
-      let scale = 1;
-      if (kind === 'magnolia') c.set('#3d6a44');
+      let canopyLeft = 1;
+      if (kind === 'magnolia') c.set('#2f5c3a');
       else {
         const offset = (t.c * 997) % 1 * 28 - 14;
         const st = leafState(doy, offset);
@@ -792,21 +797,34 @@ export class World {
         else if (st.stage === 'spring') c.set(spring).lerp(new THREE.Color(green), st.t);
         else if (st.stage === 'turning') c.set(green).lerp(new THREE.Color(species), Math.min(1, st.t * 1.3));
         else if (st.stage === 'dropping') c.set(species).lerp(brown, st.t * 0.6);
-        scale = st.canopy;
+        canopyLeft = st.canopy;
       }
-      for (const [dx, dy, dz, sc] of [
-        [0, trunkH + t.s * 1.7, 0, 1],
-        [t.s * 0.7, trunkH + t.s * 1.1, t.s * 0.4, 0.72],
-      ]) {
-        if (scale < 0.05) {
+      // A rounded crown of clumps: top clumps catch the sun, lower ones sit in shade.
+      const R = 2.3 * t.s;
+      const cx = t.x;
+      const cy = t.y + trunkH + R * 0.85;
+      const cz = t.z;
+      const showing = Math.round(CLUMPS * canopyLeft);
+      for (let i = 0; i < CLUMPS; i++) {
+        // Even-ish spread on an ellipsoid shell, plus one clump in the middle.
+        const u = (i + 0.5) / CLUMPS;
+        const phi = Math.acos(1 - 1.6 * u);
+        const th = i * 2.399 + t.c * 6.3;
+        const rad = i === 0 ? 0 : 0.48 + r() * 0.16;
+        const ox = Math.sin(phi) * Math.cos(th) * rad * R;
+        const oy = (Math.cos(phi) * 0.75 - 0.05) * rad * R;
+        const oz = Math.sin(phi) * Math.sin(th) * rad * R;
+        if (i >= showing) {
           canopy.setMatrixAt(k++, zero);
           continue;
         }
-        q.setFromEuler(new THREE.Euler(t.c * 3, t.c * 7, 0));
-        const s = (0.55 + 0.45 * scale) * sc;
-        m.compose(new THREE.Vector3(t.x + dx, t.y + dy - (1 - scale) * t.s * 0.4, t.z + dz), q, new THREE.Vector3(2.4 * t.s * s, 2.1 * t.s * s, 2.4 * t.s * s));
+        const size = R * (i === 0 ? 0.7 : 0.5 + r() * 0.14);
+        q.setFromEuler(new THREE.Euler(r() * 6.3, r() * 6.3, r() * 6.3));
+        m.compose(v.set(cx + ox, cy + oy - (1 - canopyLeft) * R * 0.3, cz + oz), q, sc3.set(size, size * 0.85, size));
         canopy.setMatrixAt(k, m);
-        canopy.setColorAt(k, c.clone().offsetHSL(0, 0, (sc - 1) * 0.15));
+        const height = oy / R; // −0.5 (underside) … +0.75 (top)
+        tint.copy(c).offsetHSL((r() - 0.5) * 0.03, (r() - 0.5) * 0.08, height * 0.09 + (r() - 0.5) * 0.06);
+        canopy.setColorAt(k, tint);
         k++;
       }
     });
@@ -945,7 +963,9 @@ export class World {
   }
 }
 
-export const PORTAL_E = -5.5; // track elevation where the cut is covered over (train roof ≈ 4 m)
+export const PORTAL_E = -5.5;
+const CLUMPS = 10; // leaf clumps per deciduous canopy
+const PINE_TIERS = 4; // track elevation where the cut is covered over (train roof ≈ 4 m)
 
 /** Clip a ring to the board rectangle (Sutherland–Hodgman). */
 function clipRing(ring: P2[], b: { minX: number; maxX: number; minZ: number; maxZ: number }): P2[] {
