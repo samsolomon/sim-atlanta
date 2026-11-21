@@ -104,3 +104,12 @@ Map ↔ City now preserves centre, direction and approximate ground scale, with 
 remembered and Map flat. City coverage/distance limits still apply. Verified in Orca on
 high tier; see the paired navigation screenshots and measurements in the build log.
 Sam prefers the high-tier preview. Keep `?q=high` when reopening it for him.
+
+## Galaxy A16 measurement (2026-11-21)
+
+Sam released the connected SM-S166V for this test. The shipped low-tier opening averaged
+29.0 and 29.5 fps on the first two visits, 33.8 fps on a warm reload, and 37.6 fps in its
+following 24 seconds. A temporary 1024 px shadow map kept shadows visible and averaged
+36.1 fps. Repeat that candidate from a fresh launch before signing off the opening gate.
+See the [build log](build-log.md#2026-11-21--the-first-half-minute-on-the-galaxy-a16)
+for conditions, timings and screenshots.

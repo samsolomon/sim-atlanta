@@ -972,3 +972,38 @@ The high-tier check also covered quick taps, repeat, opposing keys, simultaneous
 and rotation, and release on blur. This change ships with a web rebuild.
 
 ![Close-up downtown view after a keyboard turn in Orca](log/ui/2026-11-21-city-turn.png)
+
+## 2026-11-21 · The first half-minute on the Galaxy A16
+
+The A16 can sustain the low-tier opening, but the first two visits fell just short of
+30 fps. We ran the shipped City build (`1586558`) on a physical Galaxy A16 5G
+(SM-S166V, Android 16) in mobile Chrome, in portrait with the real clock and overcast
+Atlanta weather. At the untouched opening camera, a 384×692 CSS viewport used a
+384×692 drawing buffer. The phone's device pixel ratio was 2.8125.
+
+The phone loaded the release assets over USB from a local server. A page timing probe
+waited for the City loading plate to clear and a further 4.5 seconds, then counted
+animation-frame intervals in three consecutive eight-second windows. Combined fps is
+total frames divided by elapsed time. The page stayed visible and focused throughout
+the samples. These are browser frame callbacks; readiness includes loading from the
+local server and cannot predict a public-network download time.
+
+| Configuration, in test order | Window 1 (fps) | Window 2 | Window 3 | Combined fps |
+| --- | ---: | ---: | ---: | ---: |
+| Shipped 2048 px shadows, first visit | 25.00 | 29.37 | 32.62 | 29.00 |
+| Shipped 2048 px shadows, second visit | 25.12 | 29.58 | 33.86 | 29.53 |
+| Diagnostic, shadows off | 38.37 | 44.00 | 44.37 | 42.25 |
+| Shipped 2048 px shadows, warm reload | 28.13 | 36.02 | 37.34 | 33.83 |
+| Diagnostic, 1024 px shadows | 34.87 | 35.37 | 38.00 | 36.08 |
+
+The warm production reload reached **37.60 fps** over a further uninterrupted 24 seconds,
+with a 55.6 ms 95th-percentile interval. On the first visit, scene construction took
+2.44 seconds, including 1.28 seconds for ground, and the first ready frame arrived at
+6.64 seconds. Startup and sustained rendering tell different stories on this phone.
+
+Halving the shadow-map dimensions preserved visible building shadows. All three windows
+in that diagnostic exceeded 30 fps, including its first one. It ran later on a warmed
+device. A fresh-launch repeat with the 1024 px setting is the next check before signing
+off the opening gate. Both diagnostic changes were confined to the local test server.
+
+[Shipped opening](log/ui/2026-11-21-city-a16-low.png) · [1024 px shadow comparison](log/ui/2026-11-21-city-a16-shadow-1024.png)
