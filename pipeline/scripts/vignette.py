@@ -73,7 +73,7 @@ def main(name):
             if not (bx[0] < cx < bx[1] and bz[0] < cz < bz[1]):
                 continue
             p = f["properties"]
-            out["buildings"].append({"id": p["id"], "h": p.get("height"), "floors": p.get("num_floors"), "rings": rings})
+            out["buildings"].append({"id": p["id"], "h": p.get("height"), "floors": p.get("num_floors"), "cls": p.get("class"), "name": p.get("name"), "rings": rings})
 
     r = json.load(open(os.path.join(RAW, "overture_downtown_roads.geojson")))
     for f in r["features"]:
@@ -83,7 +83,7 @@ def main(name):
         levels = {lr.get("value") for lr in (p.get("level_rules") or [])}
         for l in lines(f["geometry"]):
             for run in clip_line([project(*c) for c in l], (bx, bz), 40):
-                out["roads"].append({"cls": cls, "name": p.get("name"), "bridge": "is_bridge" in flags or any((v or 0) > 0 for v in levels), "tunnel": "is_tunnel" in flags, "pts": run})
+                out["roads"].append({"cls": cls, "sub": p.get("subclass"), "name": p.get("name"), "bridge": "is_bridge" in flags or any((v or 0) > 0 for v in levels), "tunnel": "is_tunnel" in flags, "pts": run})
 
     rl = json.load(open(os.path.join(RAW, "overture_downtown_rail.geojson")))
     for f in rl["features"]:
@@ -93,6 +93,42 @@ def main(name):
             for run in clip_line([project(*c) for c in l], (bx, bz), 40):
                 out["rail"].append({"cls": p.get("class"), "name": p.get("name"), "flags": sorted(flags), "pts": run})
 
+    # Ground cover and street furniture (Overture base theme).
+    def overlaps(rings, pad=0):
+        xs = [q[0] for q in rings[0]]
+        zs = [q[1] for q in rings[0]]
+        return max(xs) > bx[0] - pad and min(xs) < bx[1] + pad and max(zs) > bz[0] - pad and min(zs) < bz[1] + pad
+
+    out["ground"] = []
+    lu = json.load(open(os.path.join(RAW, "overture_downtown_landuse.geojson")))
+    for f in lu["features"]:
+        p = f["properties"]
+        for poly in polys(f["geometry"]):
+            rings = [[project(*c) for c in ring[:-1]] for ring in poly]
+            if len(rings[0]) >= 3 and overlaps(rings):
+                out["ground"].append({"kind": p.get("class"), "sub": p.get("subtype"), "name": p.get("name"), "rings": rings})
+    out["points"] = {}
+    out["lines"] = {}
+    inf = json.load(open(os.path.join(RAW, "overture_downtown_infra.geojson")))
+    for f in inf["features"]:
+        p = f["properties"]
+        cls = p.get("class")
+        g = f["geometry"]
+        if g["type"] == "Point":
+            x, z = project(*g["coordinates"])
+            if bx[0] - 5 < x < bx[1] + 5 and bz[0] - 5 < z < bz[1] + 5:
+                out["points"].setdefault(cls, []).append([x, z])
+        elif g["type"] in ("Polygon", "MultiPolygon"):
+            for poly in polys(g):
+                rings = [[project(*c) for c in ring[:-1]] for ring in poly]
+                if len(rings[0]) >= 3 and overlaps(rings):
+                    # Parking areas and platforms go with the ground cover.
+                    out["ground"].append({"kind": cls, "sub": p.get("subtype"), "name": p.get("name"), "rings": rings})
+        else:
+            for l in lines(g):
+                for run in clip_line([project(*c) for c in l], (bx, bz), 5):
+                    out["lines"].setdefault(cls, []).append(run)
+
     dest = os.path.join(ROOT, "web", "public", "data", "scene", name)
     os.makedirs(dest, exist_ok=True)
     with open(os.path.join(dest, "vignette.json"), "w") as fh:
@@ -101,6 +137,8 @@ def main(name):
 
     print(f"{name}: {len(out['buildings'])} buildings, {len(out['roads'])} road runs {dict(Counter(x['cls'] for x in out['roads']))}, "
           f"{len(out['rail'])} rail runs {dict(Counter(x['cls'] for x in out['rail']))}")
+    print("  ground:", dict(Counter(g["kind"] for g in out["ground"])))
+    print("  points:", {k: len(v) for k, v in out["points"].items()}, " lines:", {k: len(v) for k, v in out["lines"].items()})
 
 
 if __name__ == "__main__":

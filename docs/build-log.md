@@ -452,6 +452,97 @@ weather picker.
 downtown is mostly parking lots and plazas. Overture's land use and land cover layers (or
 OSM `amenity=parking` / `landuse`) would fix that.
 
+## 2026-11-20 · The ground is mostly parking
+
+Everything that wasn't a building or a road used to be lawn. Overture's base theme knows
+better: in this block there are **18 mapped parking lots**, 7 plazas, 5 sports pitches,
+2 construction sites, **130 crosswalks** and **10 traffic signals**. Downtown-wide, the
+infrastructure layer has 164 parking areas covering about 380,000 m².
+
+- Lots are drawn as asphalt with **stalls laid out by rule** (2.6 × 5.4 m stalls either
+  side of 6.5 m aisles, along the lot's longest edge) and filled with parked cars.
+- **Occupancy follows a rule of thumb** for downtown commuter lots (illustrative): nearly
+  full in weekday working hours, about a third in the evening, a few overnight, about
+  half on weekend afternoons.
+- **Unmapped lots are inferred:** Overture labels 220 service roads downtown as
+  `parking_aisle`. Where an aisle isn't inside a mapped lot, stalls are paved and striped
+  along both sides of it.
+- Plazas get paving, pitches turf with touchlines, construction sites dirt, and every
+  mapped crossing gets zebra stripes laid across the road it sits on.
+
+![Lots and crossings](log/vignette/ground-lots.jpg)
+![Board](log/vignette/ground-board.jpg)
+
+## 2026-11-20 · Cars that drive the street network, and better models
+
+**Traffic is now a simulation on the real streets** instead of cars looping along each road:
+- **The network:** Overture road runs join into a graph at shared vertices. In this block
+  that's 68 intersections, 110 directed road edges and 28 board-edge entries, with 8 of
+  the 10 mapped traffic signals matched to an intersection.
+- **How many:** vehicles enter at the board edges at the hourly rate the federal counts
+  give for that road.
+- **Where they go:** at each intersection a vehicle picks an outgoing road weighted by that
+  road's volume, with a mild preference for going straight. Nobody can know a given car's
+  turn, but the mix matches the real volumes.
+- **How they move:** the Intelligent Driver Model keeps gaps and speeds; turns curve along
+  Bézier paths; vehicles stop on red and amber (signal timing is a guess, 84 s cycles);
+  merging vehicles yield to whoever is closer to the merge.
+- **Result:** about 55 vehicles flowing at 52 mph at 3 am, about 250 at 27–32 mph at 1 pm,
+  and stop-and-go at 17–22 mph in the 8 am peak, which is what the Connector actually does.
+
+**Bugs with lessons:**
+- **Ramps matched the main line's HPMS record** because they run side by side, so they
+  poured a whole highway's traffic into every merge. Ramps now get one lane and ramp-scale
+  volume.
+- **Some main-line segments matched ramp records instead**, so one direction of the
+  Connector was nearly empty. Main-line segments under 150k a day fall back to the
+  Connector's median.
+- **Lane-index mapping** sent the ramp into the busiest left lane. Vehicles now continue
+  into the geometrically nearest lane, or the emptier of the two nearest at a merge.
+- **Turn paths capped speed even on straight-through joins**, making a bottleneck at the
+  peak flow. Only real turns slow down now.
+
+**Vehicle kit:** each model is a side profile extruded across its width, so hoods,
+windscreens and roofs slope: sedans, hatchbacks, SUVs, pickups (with beds), vans, box
+trucks, and **articulated semis** whose trailers swing behind the tractor through turns.
+Trucks follow each road's truck share. Parked cars use the same kit.
+
+**Train:** a CQ400-style car with a rounded roof, a raked cab and big windscreen,
+individual windows between three door pairs a side, bogie side frames and axle boxes,
+underfloor equipment, roof HVAC pods and gangway bellows. The line-colour light bar and
+destination sign still glow.
+
+![Train on the viaduct](log/vignette/trainside-v2.jpg)
+![CQ400-style cab](log/vignette/train-v2.jpg)
+
+## 2026-11-20 · Sam's feedback pass: lanes, turns, night, focus
+
+Sam's notes after driving around: cars "drive in the middle of the lanes", are "a little
+jumpy in intersections", night needs "more realistic lighting", and the tilt-shift blur is
+"a little strong… hard to see what I'm trying to look at".
+
+- **Lanes:** the painted dashes came from a road-class rule while the cars' lanes came from
+  HPMS lane counts, so cars sat on the dashes. The traffic model now draws the dashes
+  between its own lanes.
+- **Turns:** a car's heading came from one point on its path, and a car straddling a lane
+  and a turn path snapped onto the turn. Cars are now placed by their front and rear axles,
+  looked up across the previous path segment too, so the body pivots through the turn.
+- **Night:** the lamps' additive white discs are replaced by a baked **light map**: warm
+  (~3000 K) pools from every street lamp and a faint shopfront spill, added to the ground,
+  street and lot materials in proportion to darkness. The Connector gets high-mast lights
+  every 50 m. Headlight beams lie on the road ahead of moving cars. Bloom (night only)
+  makes lamps, windows and headlights glow; window brightness varies per window.
+- **Tilt-shift:** three.js's shader ramps blur linearly from one focus line. A custom pass
+  keeps a sharp band (±16% of the screen) and ramps softly to the edges, at a lower default
+  strength. Double-click glides the camera's focus to that spot.
+- A side note on GPU hashing: `fract(sin(dot(p, k)) * 43758.5)` with world coordinates in
+  the hundreds turns into noise, which showed up as speckled walls. Hash the window cell
+  index instead.
+
+![Night street](log/vignette/night-street.jpg)
+![Night viaduct](log/vignette/night-viaduct.jpg)
+![Lanes](log/vignette/day-lanes.jpg)
+
 ## 2026-11-20 — Live MARTA buses reach the map
 
 At 7:28 p.m. Eastern, MARTA sent 163 bus positions in 13,319 bytes. Every

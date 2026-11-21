@@ -16,6 +16,7 @@ export interface VBuilding {
 }
 export interface VRoad {
   cls: string;
+  sub?: string | null;
   name: string | null;
   bridge: boolean;
   tunnel: boolean;
@@ -27,11 +28,20 @@ export interface VRail {
   flags: string[];
   pts: P2[];
 }
+export interface VGround {
+  kind: string;
+  sub: string | null;
+  name: string | null;
+  rings: P2[][];
+}
 export interface VData {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   buildings: VBuilding[];
   roads: VRoad[];
   rail: VRail[];
+  ground?: VGround[];
+  points?: Record<string, P2[]>;
+  lines?: Record<string, P2[][]>;
 }
 
 /** The MARTA alignment through the vignette: centreline + elevation (m) by distance. */
@@ -196,6 +206,7 @@ export class World {
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     g.computeVertexNormals();
     const top = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true }));
+    top.userData.lit = true;
     top.receiveShadow = true;
     this.group.add(top);
 
@@ -250,16 +261,16 @@ export class World {
     for (const r of roads) {
       const pts = clip(r);
       if (pts.length < 2) continue;
-      const w = WIDTH[r.cls] ?? 0;
+      const w = r.sub === 'parking_aisle' ? 6.4 : r.cls === 'motorway' && r.sub === 'link' ? 6.5 : WIDTH[r.cls] ?? 0;
       if (!w || r.tunnel) continue;
       const line = new Line(pts);
-      const hwy = r.cls === 'motorway';
+      const hwy = r.cls === 'motorway' && r.sub !== 'link';
       const y = (lift: number) => (_s: number, x: number, z: number) => (r.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z)) + lift;
       if (!DRIVABLE.has(r.cls)) {
         side.ribbon(line, w, y(0.16), r.cls === 'pedestrian' ? '#e2dccf' : PAL.sidewalk, 2);
         continue;
       }
-      if (!hwy && r.cls !== 'service') side.ribbon(line, w + 6, y(0.14), PAL.sidewalk, 2);
+      if (r.cls !== 'motorway' && r.cls !== 'service') side.ribbon(line, w + 6, y(0.14), PAL.sidewalk, 2);
       road.ribbon(line, w, y(0.2), hwy ? PAL.asphaltHwy : PAL.asphalt, 2);
       // Lane markings
       if (hwy) {
@@ -267,7 +278,7 @@ export class World {
         for (const off of [-6.2, 6.2]) marks.ribbon(line.offset(off, 2), 0.18, y(0.24), PAL.lineWhite, 3);
       } else if (w >= 9) {
         for (const off of [-0.18, 0.18]) marks.ribbon(line.offset(off, 2), 0.14, y(0.24), PAL.lineYellow, 3);
-        for (const off of [-w / 4, w / 4]) dashes(marks, line.offset(off, 2), y(0.24), PAL.lineWhite, 3, 9);
+        // Lane dashes come from the traffic model's lanes (traffic.ts), so cars sit between them.
       }
       // Overpass decks: concrete fascia where the street crosses the sunken highway.
       if (r.bridge) {
@@ -288,6 +299,7 @@ export class World {
     const mk = (bld: Builder, offset: number) => {
       const m = new THREE.Mesh(bld.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -offset, polygonOffsetUnits: -offset * 4 }));
       m.receiveShadow = true;
+      m.userData.lit = true;
       this.group.add(m);
     };
     mk(side, 1);
@@ -296,6 +308,155 @@ export class World {
     const dm = new THREE.Mesh(decks.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true }));
     dm.castShadow = dm.receiveShadow = true;
     this.group.add(dm);
+  }
+
+  // ---- ground cover -------------------------------------------------------------------
+
+  /** Parking stalls found by buildGround, for parked cars: centre and heading. */
+  readonly stalls: { x: number; y: number; z: number; ang: number }[] = [];
+
+  /**
+   * Paint real ground cover over the lawn: parking lots (asphalt, stall lines), plazas,
+   * sports pitches, construction sites, platforms, and zebra crossings.
+   */
+  buildGround() {
+    const fill = new Builder();
+    const marks = new Builder();
+    const b = this.b;
+    const STYLE: Record<string, { color: string; lift: number } | undefined> = {
+      parking: { color: '#6e7075', lift: 0.1 },
+      pedestrian: { color: '#d6cdbd', lift: 0.12 },
+      platform: { color: '#cfc9bd', lift: 0.3 },
+      pitch: { color: '#5f9a4a', lift: 0.08 },
+      construction: { color: '#a8865e', lift: 0.06 },
+      meadow: { color: '#a5b46e', lift: 0.04 },
+      garden: { color: '#6f9a52', lift: 0.05 },
+      brownfield: { color: '#a99a7c', lift: 0.05 },
+    };
+    const order = ['meadow', 'garden', 'brownfield', 'construction', 'pitch', 'pedestrian', 'parking', 'platform'];
+    const ground = [...(this.data.ground ?? [])].filter((g) => STYLE[g.kind]).sort((a, c) => order.indexOf(a.kind) - order.indexOf(c.kind));
+    const blocks = this.data.buildings.map((bd) => bd.rings[0]);
+    for (const g of ground) {
+      const st = STYLE[g.kind]!;
+      const outer = clipRing(g.rings[0], b);
+      if (outer.length < 3) continue;
+      const holes = g.rings.slice(1).map((h) => clipRing(h, b)).filter((h) => h.length >= 3);
+      const contour = outer.map((p) => new THREE.Vector2(p[0], p[1]));
+      const hv = holes.map((h) => h.map((p) => new THREE.Vector2(p[0], p[1])));
+      const all = [...contour, ...hv.flat()];
+      const y = (v: THREE.Vector2) => Math.max(this.ground(v.x, v.y), -0.5) + st.lift;
+      for (const t of THREE.ShapeUtils.triangulateShape(contour, hv)) {
+        const [a, c, d] = [all[t[0]], all[t[1]], all[t[2]]];
+        fill.tri([a.x, y(a), a.y], [c.x, y(c), c.y], [d.x, y(d), d.y], st.color);
+      }
+      if (g.kind === 'parking') this.layoutStalls(outer, blocks, marks, st.lift);
+      if (g.kind === 'pitch') {
+        // Touchline: the polygon outline inset 1.5 m.
+        const ring = new Line([...outer, outer[0]]);
+        marks.ribbon(ring.offset(-1.5, 1), 0.15, (_s, x, z) => this.ground(x, z) + st.lift + 0.03, '#f2f0ea', 1);
+      }
+    }
+    // Unmapped lots, inferred from parking aisles that aren't inside a mapped lot: pave
+    // a stall's depth either side of the aisle and stripe stalls along it.
+    const lots = ground.filter((g) => g.kind === 'parking').map((g) => g.rings[0]);
+    const streets = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'service');
+    const nearStreet = (x: number, z: number, d: number) => streets.some((r) => r.pts.some((p, i) => i > 0 && segDist(x, z, r.pts[i - 1], p) < d + (WIDTH[r.cls] ?? 7) / 2));
+    const clearSpot = (x: number, z: number) => this.inBounds(x, z, 2) && !blocks.some((r) => pointInRing(x, z, r) || edgeDist(x, z, r) < 1) && !nearStreet(x, z, 1.5) && this.ground(x, z) > -0.5;
+    for (const r of this.data.roads) {
+      if (r.sub !== 'parking_aisle' || r.pts.length < 2) continue;
+      const line = new Line(r.pts);
+      const mid = line.at(line.length / 2);
+      if (lots.some((ring) => pointInRing(mid.x, mid.z, ring))) continue;
+      for (let s = 1.3; s < line.length - 1.3; s += 2.6)
+        for (const side of [-1, 1]) {
+          const p = line.at(s);
+          const off = 3.2 + 2.7;
+          const x = p.x + p.nx * off * side;
+          const z = p.z + p.nz * off * side;
+          const back = [p.x + p.nx * (off + 2.4) * side, p.z + p.nz * (off + 2.4) * side];
+          if (!clearSpot(x, z) || !clearSpot(back[0], back[1])) continue;
+          const y = this.ground(x, z) + 0.1;
+          const ang = Math.atan2(p.nx * side, p.nz * side);
+          const m = new THREE.Matrix4().makeRotationY(ang).setPosition(x, y, z);
+          fill.box(2.62, 0.02, 5.6, 0, 0, 0, '#6e7075', m);
+          marks.box(0.12, 0.02, 5.4, 1.3, 0.03, 0, '#e9e6de', m);
+          this.stalls.push({ x, y, z, ang: ang + Math.PI });
+        }
+    }
+
+    // Zebra crossings: stripes parallel to the road, spanning its width.
+    const drivable = this.data.roads.filter((r) => DRIVABLE.has(r.cls) && r.cls !== 'motorway');
+    for (const [x, z] of this.data.points?.crossing ?? []) {
+      if (!this.inBounds(x, z, 2)) continue;
+      let best: { d: number; r: VRoad; a: P2; c: P2 } | null = null;
+      for (const r of drivable)
+        for (let i = 1; i < r.pts.length; i++) {
+          const d = segDist(x, z, r.pts[i - 1], r.pts[i]);
+          if (!best || d < best.d) best = { d, r, a: r.pts[i - 1], c: r.pts[i] };
+        }
+      if (!best || best.d > 3) continue;
+      const w = WIDTH[best.r.cls] ?? 7;
+      const len = Math.hypot(best.c[0] - best.a[0], best.c[1] - best.a[1]) || 1;
+      const dx = (best.c[0] - best.a[0]) / len;
+      const dz = (best.c[1] - best.a[1]) / len;
+      const yy = (best.r.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z)) + 0.25;
+      const m = new THREE.Matrix4().makeRotationY(Math.atan2(dx, dz)).setPosition(x, yy, z);
+      for (let o = -w / 2 + 0.6; o <= w / 2 - 0.4; o += 1.1) marks.box(0.55, 0.02, 3.2, o, 0, 0, '#f2f0ea', m);
+    }
+    const mk = (bld: Builder, off: number) => {
+      const mesh = new THREE.Mesh(bld.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off * 4 }));
+      mesh.userData.lit = true;
+      mesh.receiveShadow = true;
+      this.group.add(mesh);
+    };
+    mk(fill, 1.5);
+    mk(marks, 3.5);
+  }
+
+  /** Rows of 2.6 m × 5.4 m stalls either side of 6.5 m aisles, along the lot's longest edge. */
+  private layoutStalls(ring: P2[], blocks: P2[][], marks: Builder, lift: number) {
+    let best = 0;
+    let ang = 0;
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i];
+      const c = ring[(i + 1) % ring.length];
+      const l = Math.hypot(c[0] - a[0], c[1] - a[1]);
+      if (l > best) {
+        best = l;
+        ang = Math.atan2(c[1] - a[1], c[0] - a[0]);
+      }
+    }
+    const ux = Math.cos(ang);
+    const uz = Math.sin(ang);
+    const vx = -uz;
+    const vz = ux;
+    // Lot extent in the (u, v) frame.
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    for (const [x, z] of ring) {
+      const u = x * ux + z * uz;
+      const v = x * vx + z * vz;
+      u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v);
+    }
+    const ok = (x: number, z: number) => pointInRing(x, z, ring) && edgeDist(x, z, ring) > 1.2 && !blocks.some((r) => pointInRing(x, z, r)) && this.inBounds(x, z, 1);
+    const SW = 2.6;
+    const SL = 5.4;
+    const module = SL * 2 + 6.5;
+    for (let v = v0 + 2 + SL / 2; v < v1 - SL / 2; v += module) {
+      for (const side of [0, 1]) {
+        const vc = v + side * (SL + 6.5); // two facing rows around each aisle
+        if (vc > v1 - 1) continue;
+        for (let u = u0 + 2; u < u1 - 2; u += SW) {
+          const x = u * ux + vc * vx;
+          const z = u * uz + vc * vz;
+          if (!ok(x, z) || !ok(x + vx * (SL / 2 - 0.4), z + vz * (SL / 2 - 0.4)) || !ok(x - vx * (SL / 2 - 0.4), z - vz * (SL / 2 - 0.4))) continue;
+          const y = this.ground(x, z) + lift;
+          this.stalls.push({ x, y, z, ang: Math.atan2(vx, vz) + (side ? Math.PI : 0) });
+          // Divider line on one side of each stall.
+          const m = new THREE.Matrix4().makeRotationY(Math.atan2(vx, vz)).setPosition(x - ux * (SW / 2), y + 0.03, z - uz * (SW / 2));
+          marks.box(0.12, 0.02, SL, 0, 0, 0, '#e9e6de', m);
+        }
+      }
+    }
   }
 
   // ---- rail ---------------------------------------------------------------------------
@@ -659,11 +820,14 @@ export class World {
     const r = rng(311);
     const spots: { x: number; z: number; y: number; ang: number }[] = [];
     for (const rd of this.data.roads) {
-      if (!DRIVABLE.has(rd.cls) || rd.cls === 'service' || rd.cls === 'motorway') continue;
+      if (!DRIVABLE.has(rd.cls) || rd.cls === 'service') continue;
+      // The Connector has tall lights every ~50 m along both shoulders; streets every 28 m, alternating sides.
+      const hwy = rd.cls === 'motorway' && rd.sub !== 'link';
+      if (rd.cls === 'motorway' && !hwy) continue;
       const line = new Line(rd.pts);
       const w = (WIDTH[rd.cls] ?? 7) / 2 + 1.2;
       let side = 1;
-      for (let s = 8 + r() * 10; s < line.length; s += 28) {
+      for (let s = 8 + r() * 10; s < line.length; s += hwy ? 50 : 28) {
         const p = line.at(s);
         const x = p.x + p.nx * w * side;
         const z = p.z + p.nz * w * side;
@@ -676,37 +840,81 @@ export class World {
     const m = new THREE.Matrix4();
     const post = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.16, 7, 5).translate(0, 3.5, 0), new THREE.MeshLambertMaterial({ color: '#4a4f55' }), spots.length);
     this.lampHeads = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.25, 1.4), new THREE.MeshBasicMaterial({ color: '#8a8f94' }), spots.length);
-    const tex = (() => {
-      const c = document.createElement('canvas');
-      c.width = c.height = 64;
-      const g = c.getContext('2d')!;
-      const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-      grad.addColorStop(0, 'rgba(255,214,150,0.9)');
-      grad.addColorStop(0.5, 'rgba(255,190,120,0.35)');
-      grad.addColorStop(1, 'rgba(255,180,110,0)');
-      g.fillStyle = grad;
-      g.fillRect(0, 0, 64, 64);
-      return new THREE.CanvasTexture(c);
-    })();
-    this.lampPools = new THREE.InstancedMesh(
-      new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6 }),
-      spots.length,
-    );
     spots.forEach((sp, i) => {
       m.makeTranslation(sp.x, sp.y, sp.z);
       post.setMatrixAt(i, m);
       m.makeRotationY(sp.ang).setPosition(sp.x, sp.y + 7, sp.z);
       this.lampHeads!.setMatrixAt(i, m);
-      m.makeTranslation(sp.x, sp.y + 0.35, sp.z);
-      this.lampPools!.setMatrixAt(i, m);
     });
     post.castShadow = true;
-    this.lampPools.renderOrder = 5;
-    this.group.add(post, this.lampHeads, this.lampPools);
+    this.group.add(post, this.lampHeads);
+    this.bakeLightMap(spots);
   }
+
+  /**
+   * Night light on the ground: warm pools from every street lamp (and a glow under lit
+   * storefronts) painted into a texture over the board, added to the ground, street and
+   * lot materials in proportion to the night factor.
+   */
+  private bakeLightMap(spots: { x: number; z: number }[]) {
+    const b = this.b;
+    const PX = 1.0; // metres per texel
+    const c = document.createElement('canvas');
+    c.width = Math.ceil((b.maxX - b.minX) / PX);
+    c.height = Math.ceil((b.maxZ - b.minZ) / PX);
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = 'lighter';
+    const pool = (x: number, z: number, r: number, rgb: string, a: number) => {
+      const px = (x - b.minX) / PX;
+      const pz = (z - b.minZ) / PX;
+      const grad = g.createRadialGradient(px, pz, 0, px, pz, r / PX);
+      grad.addColorStop(0, `rgba(${rgb},${a})`);
+      grad.addColorStop(0.35, `rgba(${rgb},${a * 0.55})`);
+      grad.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = grad;
+      g.fillRect(px - r / PX, pz - r / PX, (2 * r) / PX, (2 * r) / PX);
+    };
+    for (const sp of spots) pool(sp.x, sp.z, 17, '255,196,128', 0.85); // ~3000 K LED/sodium mix
+    // Shopfront spill along building edges at street level.
+    for (const bd of this.data.buildings) {
+      const ring = bd.rings[0];
+      for (let i = 0; i < ring.length; i += 2) pool(ring[i][0], ring[i][1], 6, '255,214,160', 0.18);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.lightMap = tex;
+    const uniforms = {
+      uLightMap: { value: tex },
+      uLmBounds: { value: new THREE.Vector4(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ) },
+      uNight: this.night,
+    };
+    this.group.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.userData.lit) return;
+      const mat = mesh.material as THREE.MeshLambertMaterial;
+      mat.onBeforeCompile = (sh) => {
+        Object.assign(sh.uniforms, uniforms);
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vLmPos;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvLmPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform sampler2D uLightMap;\nuniform vec4 uLmBounds;\nuniform float uNight;\nvarying vec3 vLmPos;')
+          .replace(
+            '#include <opaque_fragment>',
+            `vec2 lmUv = (vLmPos.xz - uLmBounds.xy) / uLmBounds.zw;
+            vec3 lm = texture2D(uLightMap, vec2(lmUv.x, 1.0 - lmUv.y)).rgb;
+            outgoingLight += diffuseColor.rgb * lm * uNight * 2.2;
+            #include <opaque_fragment>`,
+          );
+      };
+      mat.customProgramCacheKey = () => 'lightmapped';
+      mat.needsUpdate = true;
+    });
+  }
+  private lightMap?: THREE.Texture;
   private lampHeads?: THREE.InstancedMesh;
-  private lampPools?: THREE.InstancedMesh;
 
   private wetMats?: THREE.MeshLambertMaterial[];
   private wet = -1;
@@ -728,7 +936,6 @@ export class World {
   setNight(n: number) {
     this.night.value = n;
     if (this.lampHeads) (this.lampHeads.material as THREE.MeshBasicMaterial).color.set('#8a8f94').lerp(new THREE.Color('#ffe2a8'), n);
-    if (this.lampPools) (this.lampPools.material as THREE.MeshBasicMaterial).opacity = n * 0.85;
   }
 
   private addTree(x: number, z: number, r: () => number, scale: number, y = this.ground(x, z)) {
@@ -737,6 +944,34 @@ export class World {
 }
 
 export const PORTAL_E = -5.5; // track elevation where the cut is covered over (train roof ≈ 4 m)
+
+/** Clip a ring to the board rectangle (Sutherland–Hodgman). */
+function clipRing(ring: P2[], b: { minX: number; maxX: number; minZ: number; maxZ: number }): P2[] {
+  let pts = ring;
+  const edges: [(p: P2) => boolean, (a: P2, c: P2) => P2][] = [
+    [(p) => p[0] >= b.minX, (a, c) => lerpAt(a, c, (b.minX - a[0]) / (c[0] - a[0]))],
+    [(p) => p[0] <= b.maxX, (a, c) => lerpAt(a, c, (b.maxX - a[0]) / (c[0] - a[0]))],
+    [(p) => p[1] >= b.minZ, (a, c) => lerpAt(a, c, (b.minZ - a[1]) / (c[1] - a[1]))],
+    [(p) => p[1] <= b.maxZ, (a, c) => lerpAt(a, c, (b.maxZ - a[1]) / (c[1] - a[1]))],
+  ];
+  for (const [inside, cut] of edges) {
+    const out: P2[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      const c = pts[(i + 1) % pts.length];
+      const ia = inside(a);
+      const ic = inside(c);
+      if (ia) out.push(a);
+      if (ia !== ic) out.push(cut(a, c));
+    }
+    pts = out;
+    if (pts.length < 3) return [];
+  }
+  return pts;
+}
+function lerpAt(a: P2, c: P2, t: number): P2 {
+  return [a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t];
+}
 
 function smooth(a: number, b: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -787,6 +1022,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
         '#include <color_fragment>',
         /* glsl */ `#include <color_fragment>
         float litWin = 0.0;
+        float litLevel = 1.0;
         if (vStyle > -0.5) {
           vec3 fN = normalize(cross(dFdx(vWPos), dFdy(vWPos)));
           vec3 tng = normalize(vec3(-fN.z, 0.0, fN.x));
@@ -819,6 +1055,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
           float cellH = hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
           litWin = win * (y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
+          litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
           diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4));
         }`,
@@ -826,7 +1063,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
-        totalEmissiveRadiance += vec3(1.0, 0.74, 0.42) * litWin * uNight * 0.75;`,
+        totalEmissiveRadiance += vec3(1.0, 0.72, 0.4) * litWin * uNight * litLevel;`,
       );
   };
 }
