@@ -21,7 +21,9 @@ function visibleSections(runs: FreightTreadPoint[][]) {
       sections.push([...run]);
     }
   }
-  return sections;
+  // A sliver left by a terrain opening cannot establish even one vehicle’s two truck positions.
+  const minSupport = Math.min(...Object.values(FREIGHT_TRUCK_SPACING));
+  return sections.filter(section => section[section.length - 1].s - section[0].s >= minSupport);
 }
 
 /** Sample the drawn tread between trucks. Just outside an opening, extrapolate so the
