@@ -56,6 +56,7 @@ export class CityTrains {
   private geometries = new Map<string, THREE.BufferGeometry>();
   private pools = new Map<string, { material: THREE.Material; meshes: THREE.Mesh[]; count: number }>();
   private direction = new THREE.Vector3();
+  private orientation = new THREE.Matrix4();
   surfaceCars = 0;
 
   constructor(alignments: Alignment[], private manifest: SceneManifest, private bounds: VData['bounds'],
@@ -119,7 +120,9 @@ export class CityTrains {
         const car = this.car(color, role);
         car.position.set(cx, al.elev(sc) + 0.55, cz);
         const q = al.line.at(sc + dir * 4);
-        car.lookAt(this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off));
+        this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off);
+        // Both points are in track-local coordinates, including in terrain-anchored groups.
+        car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
         if (i >= units / 2) car.rotateY(Math.PI);
         this.surfaceCars++;
       }

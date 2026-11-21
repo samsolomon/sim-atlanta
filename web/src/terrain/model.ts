@@ -43,7 +43,7 @@ function groundMap(data: VData) {
   return texture;
 }
 
-export function terrainModel(grid: GroundGrid, city: VData) {
+export function terrainModel(grid: GroundGrid, city: VData, contours: { value: number }) {
   const { cols, rows, bounds: b, stepM, vertical } = grid.manifest;
   for (const key of ['minX', 'maxX', 'minZ', 'maxZ'] as const) {
     if (city.bounds[key] !== b[key]) throw new Error('City and ground extents differ');
@@ -76,15 +76,16 @@ export function terrainModel(grid: GroundGrid, city: VData) {
   const material = new THREE.MeshLambertMaterial({ map: groundMap(city) });
   // Draw true 2 m contours on the interpolated triangle surface, antialiased in screen space.
   material.onBeforeCompile = shader => {
+    shader.uniforms.uContours = contours;
     shader.vertexShader = 'varying float vGroundM;\n' + shader.vertexShader.replace(
       '#include <begin_vertex>', `#include <begin_vertex>\n vGroundM = position.y + ${vertical.sceneZeroNavd88M.toFixed(4)};`);
-    shader.fragmentShader = 'varying float vGroundM;\n' + shader.fragmentShader.replace(
+    shader.fragmentShader = 'uniform float uContours; varying float vGroundM;\n' + shader.fragmentShader.replace(
       '#include <map_fragment>', `#include <map_fragment>
        float widthM = max(fwidth(vGroundM), 0.0001);
        float distM = abs(fract(vGroundM / 2.0 + 0.5) - 0.5) * 2.0;
        float contour = (1.0 - smoothstep(0.25, 1.5, distM / widthM))
          * smoothstep(0.0001, 0.01, widthM) * (1.0 - smoothstep(0.3, 1.0, widthM));
-       diffuseColor.rgb *= mix(vec3(1.0), vec3(0.48, 0.55, 0.50), contour);`);
+       diffuseColor.rgb *= mix(vec3(1.0), vec3(0.48, 0.55, 0.50), contour * uContours);`);
   };
   const surface = new THREE.Mesh(geometry, material);
   surface.receiveShadow = true;

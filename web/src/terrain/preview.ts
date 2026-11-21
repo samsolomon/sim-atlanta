@@ -18,6 +18,7 @@ async function asset(name: string) {
 const views = {
   downtown: { x: 0, z: 0, eye: [-590, 550, 840], section: [[0, 0]] },
   cut: { x: 198.77, z: 154.56, eye: [115, 80, 60], section: [[198.77, 104.56], [198.77, 204.56]] },
+  crossing: { x: 750, z: 555, eye: [-72, 73, 191], section: [[750, 555]] },
   connector: { x: 740, z: 555, eye: [-90, 150, 195], section: [[610, 555], [865, 555]] },
 };
 type Stop = keyof typeof views;
@@ -48,7 +49,8 @@ async function main() {
   light.shadow.mapSize.set(2048, 2048);
   light.shadow.normalBias = 0.35;
   scene.add(light, light.target, new THREE.HemisphereLight('#fff9ec', '#9eacac', 1.55));
-  scene.add(terrainModel(grid, city));
+  const contours = { value: 1 };
+  scene.add(terrainModel(grid, city, contours));
   const scenery = cityScenery(grid, city, trees.trees);
   scene.add(scenery);
   const section = new THREE.Group();
@@ -62,7 +64,47 @@ async function main() {
     return h;
   }
   const draw = () => canvas.render(scene, camera);
+  const replay = document.querySelector<HTMLButtonElement>('#replay')!;
+  let crossing: Awaited<ReturnType<typeof import('./crossing').connectorCrossing>> | undefined;
+  let loading: Promise<void> | undefined;
+  let active: Stop = 'downtown';
+  let frame = 0;
+  replay.onclick = () => {
+    cancelAnimationFrame(frame);
+    const start = performance.now();
+    const advance = (ts: number) => {
+      const seconds = Math.min(14, (ts - start) / 1000 - 14);
+      crossing!.pose(seconds);
+      draw();
+      if (seconds < 14) frame = requestAnimationFrame(advance);
+    };
+    frame = requestAnimationFrame(advance);
+  };
   function focus(stop: Stop) {
+    active = stop;
+    cancelAnimationFrame(frame);
+    const isCrossing = stop === 'crossing';
+    section.visible = !isCrossing;
+    contours.value = isCrossing ? 0 : 1;
+    replay.hidden = !isCrossing;
+    document.querySelector('.source')!.textContent = 'Inferred ground · USGS 2018–2019' + (isCrossing ? '' : ' · 2 m contours');
+    if (crossing) crossing.group.visible = isCrossing;
+    if (isCrossing) {
+      replay.disabled = true;
+      reading.textContent = 'Loading the rail crossing…';
+      loading ??= import('./crossing').then(mod => mod.connectorCrossing(grid, city)).then(layer => {
+        crossing = layer;
+        crossing.group.visible = active === 'crossing';
+        scene.add(crossing.group);
+      }).catch(err => { loading = undefined; throw err; });
+      void loading.then(() => {
+        if (active !== 'crossing') return;
+        crossing!.pose(0);
+        replay.disabled = false;
+        reading.textContent = 'Scheduled Blue Line · Nov 20, 2026, 2:12 p.m. The freeway floor is about 10 m below the east bank. Bridge heights and piers are schematic.';
+        draw();
+      }).catch(err => { if (active === 'crossing') reading.textContent = 'Crossing unavailable. ' + err.message; });
+    }
     const { x, z, eye, section: ends } = views[stop];
     const y = height(x, z) - m.vertical.sceneZeroNavd88M;
     orbit.target.set(x, y, z);
@@ -84,8 +126,8 @@ async function main() {
       mark.position.set(px, height(px, pz) - m.vertical.sceneZeroNavd88M + 0.8, pz);
       section.add(mark);
     }
-    for (const b of controlsPanel.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.view === stop));
-    scenery.visible = sceneryToggle.checked = stop === 'downtown';
+    for (const b of controlsPanel.querySelectorAll<HTMLButtonElement>('button[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === stop));
+    scenery.visible = sceneryToggle.checked = stop === 'downtown' || isCrossing;
     const h = height(x, z);
     if (stop === 'downtown') reading.textContent = `Five Points ground is ${h.toFixed(1)} m NAVD88, the model’s vertical origin.`;
     if (stop === 'cut') reading.textContent = `The centre of the section is ${h.toFixed(1)} m NAVD88. Ground rises ${(height(x, z - 50) - h).toFixed(1)} m to the north and ${(height(x, z + 50) - h).toFixed(1)} m to the south.`;
@@ -105,10 +147,10 @@ async function main() {
   addEventListener('resize', resize);
   orbit.addEventListener('change', draw);
   sceneryToggle.onchange = () => { scenery.visible = sceneryToggle.checked; draw(); };
-  for (const b of controlsPanel.querySelectorAll('button')) b.onclick = () => focus(b.dataset.view as Stop);
+  for (const b of controlsPanel.querySelectorAll<HTMLButtonElement>('button[data-view]')) b.onclick = () => focus(b.dataset.view as Stop);
   controlsPanel.disabled = false;
   resize();
   const stop = new URLSearchParams(location.search).get('at');
-  focus(stop === 'cut' || stop === 'connector' ? stop : 'downtown');
+  focus(stop === 'cut' || stop === 'connector' || stop === 'crossing' ? stop : 'downtown');
 }
 main().catch(e => { controlsPanel.disabled = true; reading.textContent = `Terrain preview unavailable. ${e.message}. Check the City assets from pnpm data:city.`; });

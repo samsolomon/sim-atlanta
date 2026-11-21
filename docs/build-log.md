@@ -1113,3 +1113,27 @@ The ground on the Blue/Green alignment about 200 m east of Five Points sits roug
 ## 2026-11-21 — A static terrain pass before the trains
 
 A camera at street-block scale makes the east cut easier to read than the skyline view. Two-metre contours climb both banks, about eight metres above the sampled alignment. Across the Connector, the same drawing follows the freeway floor at 303.9 m NAVD88 and climbs to 314.1 m on the eastern bank. We can now orbit either section in the desktop terrain preview, then bring the City buildings and trees back for context. The JavaScript decoder matches all 54 centre and flank readings in the pipeline CSV. The City data build copies the checked terrain assets without downloading the 318 MB source tile. [East cut in Orca](log/ui/2026-11-21-ground-preview-cut.jpg) · [Connector in Orca](log/ui/2026-11-21-ground-preview-connector.jpg)
+
+## 2026-11-21 — A train stays level over the Downtown Connector
+
+In the local terrain preview, the Blue Line crosses a freeway floor that sits about
+10 m below the east bank. The 5 m USGS ground grid shapes the freeway and sets the
+foot of each schematic pier. For this study we anchored the structural model once at
+the east bank (314.1 m NAVD88), then used City's existing rail profile 7 m above that
+anchor. The mapped order puts MARTA above the street and freight bridges. Their
+clearances, the railhead elevation and the pier locations remain schematic.
+
+[Replay the crossing on the local City server](http://localhost:5317/terrain-preview.html?at=crossing).
+It opens on a scheduled Blue train at 2:12:49 p.m. Eastern on November 20. Replay
+covers 28 seconds around that moment. The first render tipped the cars toward the sky:
+the cars were aiming at a world-space target computed in track-local coordinates.
+After the fix, the Orca replay measured zero pitch on the level span as the cars
+crossed the freeway. A regression test translates the train group down 9.7 m and
+checks the cab still points horizontally east.
+
+The Galaxy A16 averaged 54.4 fps across three foreground eight-second windows during
+the replay (54.0, 54.1 and 55.1 fps, 384 × 692 CSS pixels, render DPR 2). This is a
+standalone crossing scene. Full City with its weather and post-processing needs a
+separate measurement when the terrain reaches that renderer.
+
+![Eastbound Blue Line train above the Downtown Connector](log/ui/2026-11-21-connector-crossing.jpg)
