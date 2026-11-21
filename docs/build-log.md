@@ -1122,7 +1122,8 @@ through the platform canopies and straight through the Floyd "Twin Towers". Imag
 honest stretches, eastbound:
 
 - about 62 m open at grade beside the CSX/NS tracks;
-- 73 m under the side-platform canopies (roofed, not a tunnel);
+- 73 m under the side-platform canopies (roofed, not a tunnel). The tracks between the two
+  canopy roofs may be partly visible from above; none of the three images resolves it;
 - 131 m under the Floyd Building (OSM `tunnel=building_passage`);
 - then open, elevated structure, continuous into the layer-3 viaduct over the Connector. The
   second "gap" was only a seam between OSM ways.
@@ -1152,6 +1153,22 @@ A contract test samples ±1 cm either side of every seam with a synthetic ground
 directions. It measured a 2.65 m step with the old layout and passes with the chain. The 7 m
 clearance remains a placeholder: no public record gives the MARTA deck height over the
 freeway.
+
+**What's still uncertain, with sources.** Edges are ±10–15 m along the path. They come from:
+
+- OSM ways 702258813/816 (the tunnel ends at the Washington St bridge, 9245544);
+- 78090747/742 (open, `level=2`);
+- 539937961/962 (platforms);
+- 702258821/822 (`building_passage`);
+- 905944412–415 and 78090750/78380741 (structure and viaduct).
+
+The imagery checks were Esri World Imagery 15 cm (Vantor, 2022-09-27) and WV02 (2026-02-02),
+viewed only, and USGS NAIP `m_3308413_se_16_060_20231008` (2023-10-08, public domain, in
+`docs/log/rail/`). In NAIP, tall-building lean hides the track under the towers, so the
+building-cover edges rest on OSM and the 2026 imagery. Platform level relative to the bare-earth
+surface inside the Floyd Building is unknown: the bed ramps from 0 to +7 m across the station
+schematically. The deck clearance over the Connector is unknown; I checked FHWA NBI Georgia
+2024/2025 and GDOT's public GIS.
 
 ![NAIP 2023: Georgia State](log/rail/2026-11-21-naip-2023-georgia-state.jpg)
 
