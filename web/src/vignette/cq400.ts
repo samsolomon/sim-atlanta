@@ -40,7 +40,7 @@ const C = {
   frontGlass: '#36404d',
   seam: '#2e333b',
   vent: '#121418',
-  coupler: '#b8392d',
+  coupler: '#3a3d42',
   glass: '#1d232b',
   frame: '#2b3038',
   under: '#34373d',
@@ -128,8 +128,8 @@ class Kit {
  * surface, so nothing floats or sticks out. Simplified for diorama scale: one shield-shaped
  * windscreen (no end door) and one continuous line-colour chevron.
  */
-const NOSE_LEN = 2.5;
-const CAB_WIN_BACK = 1.55; // cab side window centre, measured back from where the nose starts
+const NOSE_LEN = 2.1;
+const CAB_WIN_BACK = 1.35; // cab side window centre, measured back from where the nose starts
 const Y_BOT = FLOOR - 0.25;
 
 /** Half-width of the body section at height y. */
@@ -146,10 +146,11 @@ function halfWidth(y: number) {
 
 function noseDepth(x: number, y: number) {
   const ax = Math.min(1, Math.abs(x) / (W / 2));
-  const t = Math.min(1, Math.max(0, (y - 1.55) / (ROOF - 1.55)));
-  // Upright low, then a long curve that rolls back into the roof (circular-ish profile).
-  const rake = 0.12 + (NOSE_LEN - 0.2) * (1 - Math.sqrt(Math.max(0, 1 - t * t)));
-  const plan = 1 - 0.42 * Math.pow(ax, 2.0) - 0.3 * Math.pow(ax, 6); // rounded corners
+  const t = Math.min(1, Math.max(0, (y - 1.5) / (ROOF - 1.5)));
+  // Profile photos: upright up to the light line, then a straight rake back to the roof,
+  // with only a small round-over where it meets the roof.
+  const rake = 0.1 + (NOSE_LEN - 0.3) * t + 0.15 * Math.pow(t, 6);
+  const plan = 1 - 0.12 * Math.pow(ax, 2.0) - 0.18 * Math.pow(ax, 8); // slightly rounded corners
   const chin = y < 1.0 ? (1.0 - y) * 0.6 : 0; // a slight tuck under the bumper line
   return Math.max(0.02, (NOSE_LEN - rake - chin) * plan);
 }
@@ -221,6 +222,24 @@ function addNose(k: Kit, zb: number, line: string) {
         k.quad(at(xa, ya, lift), at(xb, ya, lift), at(xb, yb, lift), at(xa, yb, lift), color, kind);
       }
   };
+  // The nose's grey side panel: a slanted window following the rake, and a seam where the
+  // nose meets the body.
+  for (const s2 of [-1, 1]) {
+    const x = s2 * (W / 2 + 0.012);
+    const front = (y: number) => zb + noseDepth(s2 * (W / 2 - 0.02), y) - 0.22;
+    const NY = 6;
+    for (let j = 0; j < NY; j++) {
+      const ya = 2.18 + (0.86 * j) / NY;
+      const yb = 2.18 + (0.86 * (j + 1)) / NY;
+      for (const [inset, color, kind] of [[0, C.frame, 0], [0.05, C.glass, 3]] as [number, string, number][]) {
+        const fa = front(ya) - inset;
+        const fb = front(yb) - inset;
+        const xx = x + s2 * inset * 0.1;
+        k.quad([xx, ya + inset * 0.6, fa - 0.78 + inset * 2], [xx, ya + inset * 0.6, fa], [xx, yb - inset * 0.6, fb], [xx, yb - inset * 0.6, fb - 0.78 + inset * 2], color, kind);
+      }
+    }
+    k.box(0.03, 2.3, 0.035, x, 2.3, zb - 0.02, C.seam, 0);
+  }
   // The cab's one side window, centred in the grey section between the nose and first door.
   for (const s2 of [-1, 1]) {
     k.box(0.03, 1.16, 1.2, s2 * (W / 2 + 0.006), 2.6, zb - CAB_WIN_BACK, C.frame, 0);
@@ -342,9 +361,10 @@ export function cq400Geometry(spec: CarSpec, line: string) {
   if (!spec.cab) k.box(W - 0.35, 2.6, CAR_GAP / 2 + 0.05, 0, 2.3, h + CAR_GAP / 4, C.gangway, 0);
   // Roof: a darker cap strip and two HVAC pods.
   k.box(W - 1.9, 0.04, noseStart + h - 1.2, 0, ROOF + 0.01, (noseStart - h) / 2, C.roof, 0);
-  for (const z of [-6.2, 5.0]) {
-    k.box(1.9, 0.34, 3.2, 0, ROOF + 0.17, z - (spec.cab ? 0.6 : 0), C.hvac, 0);
-    k.box(1.4, 0.04, 2.4, 0, ROOF + 0.36, z - (spec.cab ? 0.6 : 0), '#7d8287', 0);
+  // Roof equipment sits under smooth, low fairings: only slight bumps show.
+  for (const z of [-6.2, 4.6]) {
+    k.box(1.7, 0.09, 3.4, 0, ROOF + 0.045, z - (spec.cab ? 0.6 : 0), C.roof, 0);
+    k.box(1.3, 0.05, 2.8, 0, ROOF + 0.11, z - (spec.cab ? 0.6 : 0), C.roof, 0);
   }
   // Doors (three pairs a side) with line-colour indicator bars above.
   const doors = spec.cab ? [-8.4, -1.6, 5.2] : [-7.2, 0, 7.2];
