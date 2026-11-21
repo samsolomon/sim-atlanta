@@ -40,7 +40,6 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
        diffuseColor.rgb *= mix(vec3(1.0), vec3(0.48, 0.55, 0.50), contour * uContours);`);
   };
   const surface = new THREE.Mesh(geometry, material);
-  surface.userData.lit = true;
   surface.receiveShadow = true;
   const sides = new Builder();
   const bottom = mesh.minY - stepM;
