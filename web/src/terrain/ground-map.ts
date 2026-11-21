@@ -21,7 +21,7 @@ function trace(ctx: CanvasRenderingContext2D, pts: P2[]) {
 
 // Same illustrative 2.6 × 5.4 m stalls and 6.5 m aisles as the flat City's lots.
 // The clip includes interior holes and keeps the paint inside the mapped pavement.
-function stripeLot(ctx: CanvasRenderingContext2D, ring: P2[]) {
+function stripeLot(ctx: CanvasRenderingContext2D, ring: P2[], lineWidth: number) {
   if (ring.length < 3) return;
   let longest = 0, angle = 0;
   for (let i = 0; i < ring.length; i++) {
@@ -46,7 +46,7 @@ function stripeLot(ctx: CanvasRenderingContext2D, ring: P2[]) {
       if (v + 17.3 <= v1) { ctx.moveTo(u, v + 11.9); ctx.lineTo(u, v + 17.3); }
     }
   }
-  ctx.lineWidth = 0.33;
+  ctx.lineWidth = lineWidth;
   ctx.strokeStyle = '#cdc9bb';
   ctx.stroke();
   ctx.restore();
@@ -62,6 +62,11 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   ctx.translate(-b.minX, -b.minZ);
   ctx.fillStyle = '#b5bd97';
   ctx.fillRect(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ);
+  // At low detail a texel spans 0.98 m. Keep the illustrative stripes legible
+  // without allocating a second texture or changing the 2.6 m parking spacing.
+  const texelM = (b.maxX - b.minX) / canvas.width;
+  const stallLine = Math.max(.33, .8 * texelM);
+  const zebraPattern = [Math.max(.65, 1.45 * texelM), Math.max(.75, 1.25 * texelM)];
   const covers = (data.ground ?? []).filter(g => g.kind in landColors)
     .sort((a,b) => landOrder.indexOf(a.kind) - landOrder.indexOf(b.kind));
   for (const g of covers) {
@@ -69,7 +74,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
     for (const ring of g.rings) { trace(ctx, ring); ctx.closePath(); }
     ctx.fillStyle = landColors[g.kind];
     ctx.fill('evenodd');
-    if (g.kind === 'parking' && g.rings.length) stripeLot(ctx, g.rings[0]);
+    if (g.kind === 'parking' && g.rings.length) stripeLot(ctx, g.rings[0], stallLine);
     if (g.kind === 'pitch') { ctx.lineWidth = .45; ctx.strokeStyle = '#e9e7db'; ctx.stroke(); }
   }
 
@@ -96,7 +101,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
       stroke(r, .4, '#d8bd79');
     }
   }
-  ctx.setLineDash([.65, .75]);
+  ctx.setLineDash(zebraPattern);
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
   ctx.setLineDash([]);
 
@@ -111,7 +116,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
         index.add({ a, b, road: r }, [a, b], 3);
       }
     }
-    ctx.setLineDash([.65, .75]);
+    ctx.setLineDash(zebraPattern);
     for (const [x, z] of data.points.crossing) {
       let best: Segment | undefined, dist = 3;
       for (const seg of index.at(x, z)) {
