@@ -6,7 +6,7 @@ The two freeway carriageways follow the 5 m USGS terrain. Six separate mapped st
 
 ## Crossing check
 
-Local x points east and z points south from Five Points. Heights below are metres NAVD88. The freeway figures are bilinear grid samples. The deck values are the tops of schematic meshes sampled with downward rays. The MARTA figure comes from Control's existing crossing study using the east bank at (820, 555), 314.1 m, plus the existing 7 m profile offset.
+Local x points east and z points south from Five Points. Heights in this original static study are metres NAVD88. The freeway figures are bilinear grid samples. The deck values are the tops of schematic meshes sampled with downward rays. The MARTA figure comes from Control's existing crossing study using the east bank at (820, 555), 314.1 m, plus the existing 7 m profile offset.
 
 | Location | x, z (m) | Ground | Modelled top |
 | --- | --- | ---: | ---: |
@@ -15,6 +15,15 @@ Local x points east and z points south from Five Points. Heights below are metre
 | Blue Line at the freight comparison easting, s = 8284.4 m on marta:path:155177 | 743.71, 557.07 | — | 321.1 |
 
 The Blue Line and freight check points are 24.9 m apart in plan. The rows establish the modelled order at these crossings. Subtracting their heights does not measure physical clearance. Roadway width, deck height and thickness, rail detailing and freeway lane guides are illustrative. The DEM resolves the broad freeway depression. At steep banks it can give adjacent bridge endpoints visibly different elevations. Surveyed abutments, railheads and tunnel cover require independent evidence.
+
+
+### Moving freight in City
+
+The City bake now tags visible pieces of one continuous freight main with `freightS`, the westbound distances in metres at the first and last vertex. Values can descend if the source geometry faces east. Four ordered Overture feature IDs identify the main track. Covered sections count toward route distance. An incomplete or disconnected route omits the field. Older bakes continue to draw the static track.
+
+With this route present, the six freight tracks on the Georgia State embankment use intact approach samples at (444.07, 321.30), (647.51, 473.99) and (866.02, 541.33) as a schematic minimum grade through the Piedmont, Jesse Hill and Connector bridges. This puts the main near 314 m NAVD88 across the freeway. The older static study sampled the freeway slopes at the ends of its bridge. Road decks still use their own spans. Retained approach faces and deck clearances remain illustrative.
+
+The two trucks under each unit sample the centre of the drawn freight tread, including the triangle diagonal between sections. A missing tread or a mapped cover gap interrupts the visible train. Short fragments that cannot support two trucks are omitted. To regenerate the versioned transport data, run `pnpm data:city` or refresh `pipeline/scripts/terrain_transport.py` against the matching downtown Overture extracts, then rebuild and deploy the web app.
 
 ## Attaching to City
 

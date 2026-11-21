@@ -90,3 +90,19 @@ it('carries a bridge clipped by the east edge out from its in-board support', ()
   expect(top - groundAt(996.25, -794.82)!).toBeGreaterThan(3);
   t.dispose();
 });
+
+it('keeps the illustrative main line level from the intact east bank across the Connector', () => {
+  const rail = [
+    { cls: 'standard_gauge', kind: 'ground' as const, pts: [[866.02,541.33], [838.06,536.6]], freightS: [135,163.35] },
+    { cls: 'standard_gauge', kind: 'bridge' as const, pts: [[838.06,536.6], [725.07,508.42]], freightS: [163.35,280.03] },
+  ] as NonNullable<TerrainCity['terrainTransport']>['rail'];
+  const layer = createSurfaceTransport({ ...city, terrainTransport: { version: 1, roads: [], rail } }, grid, groundAt);
+  const points = layer.freightTreads.flat();
+  for (const s of [158, 175, 220, 275]) {
+    const p = points.reduce((a, b) => Math.abs(a.s - s) < Math.abs(b.s - s) ? a : b);
+    expect(p.position.y + zero).toBeGreaterThan(314);
+    expect(p.position.y + zero).toBeLessThan(315);
+    expect(surfaceY(layer.group, p.position.x, p.position.z)).toBeCloseTo(p.position.y, 1);
+  }
+  layer.dispose();
+});
