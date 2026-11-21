@@ -158,7 +158,7 @@ function noseDepth(x: number, y: number) {
 /** The chevron light's path on the face: down each mask edge, then in to meet below the screen. */
 function chevronPath(): [number, number][] {
   const side: [number, number][] = [];
-  for (let y = 3.46; y >= 1.98; y -= 0.08) side.push([W / 2 - 0.18 - (3.46 - y) * 0.02, y]);
+  for (let y = 3.28; y >= 1.98; y -= 0.08) side.push([W / 2 - 0.18 - (3.28 - y) * 0.02, y]);
   const x0 = side[side.length - 1][0];
   for (let i = 1; i <= 10; i++) {
     const f = i / 10;
@@ -170,21 +170,21 @@ function chevronPath(): [number, number][] {
 
 function addNose(k: Kit, zb: number, line: string) {
   const NU = 28;
-  const NV = 24;
-  const pt = (u: number, v: number) => {
-    const y = Y_BOT + (ROOF - Y_BOT) * v;
+  // Rows: uniform, plus every body-section vertex height, so the nose meets the body's
+  // chamfers exactly (otherwise its edge steps across them and the seam looks ragged).
+  const vs = [...new Set([...Array.from({ length: 25 }, (_, j) => j / 24), ...SECTION.map(([, y]) => (y - Y_BOT) / (ROOF - Y_BOT))].map((v) => Math.round(Math.min(1, Math.max(0, v)) * 1e5) / 1e5))].sort((a, b) => a - b);
+  const NV = vs.length - 1;
+  const pt = (u: number, vi: number) => {
+    const y = Y_BOT + (ROOF - Y_BOT) * vi;
     const x = u * halfWidth(y);
     return [x, y, zb + noseDepth(x, y)];
   };
   const at = (x: number, y: number, lift = 0) => [x, y, zb + noseDepth(x, y) + lift];
   const region = (x: number, y: number, u: number) => {
     const ax = Math.abs(x);
+    void ax;
+    void y;
     if (Math.abs(u) > 0.94) return C.body; // grey wraps round the corners
-    if (y < 1.32 && ax > 0.74) {
-      // Bumper blocks: grey, part of the same surface, each with a dark vent.
-      if (y > 0.97 && y < 1.2 && ax > 0.94 && ax < 1.4) return C.vent;
-      return C.body;
-    }
     return C.mask;
   };
   // Front surface.
@@ -192,17 +192,17 @@ function addNose(k: Kit, zb: number, line: string) {
     for (let j = 0; j < NV; j++) {
       const u0 = -1 + (2 * i) / NU;
       const u1 = -1 + (2 * (i + 1)) / NU;
-      const a = pt(u0, j / NV);
-      const b = pt(u1, j / NV);
-      const c = pt(u1, (j + 1) / NV);
-      const d = pt(u0, (j + 1) / NV);
+      const a = pt(u0, vs[j]);
+      const b = pt(u1, vs[j]);
+      const c = pt(u1, vs[j + 1]);
+      const d = pt(u0, vs[j + 1]);
       k.quad(a, b, c, d, region((a[0] + b[0] + c[0] + d[0]) / 4, (a[1] + d[1]) / 2, (u0 + u1) / 2), 0);
     }
   // Shell walls: from the body end (z = zb) out to the front surface, all round the outline.
   const wall = (p: number[], q: number[], color: string) => k.quad([p[0], p[1], zb], [q[0], q[1], zb], q, p, color, 0);
   for (let j = 0; j < NV; j++) {
-    wall(pt(1, j / NV), pt(1, (j + 1) / NV), C.body);
-    wall(pt(-1, (j + 1) / NV), pt(-1, j / NV), C.body);
+    wall(pt(1, vs[j]), pt(1, vs[j + 1]), C.body);
+    wall(pt(-1, vs[j + 1]), pt(-1, vs[j]), C.body);
   }
   for (let i = 0; i < NU; i++) {
     const u0 = -1 + (2 * i) / NU;
@@ -227,9 +227,9 @@ function addNose(k: Kit, zb: number, line: string) {
   for (const s2 of [-1, 1]) {
     const x = s2 * (W / 2 + 0.012);
     const front = (y: number) => zb + noseDepth(s2 * (W / 2 - 0.02), y) - 0.22;
-    const y0 = 2.18;
-    const y1 = 3.04;
-    const back = front(y1) - 0.05;
+    const y0 = 2.05;
+    const y1 = 3.14;
+    const back = zb + 0.08; // reaches back close to where the nose meets the body
     for (const [inset, color, kind, dx] of [[0, C.frame, 0, 0], [0.05, C.glass, 3, 0.004]] as [number, string, number, number][]) {
       const xx = x + s2 * dx;
       k.tri([xx, y0 + inset, back + inset], [xx, y0 + inset, front(y0) - inset * 2.2], [xx, y1 - inset * 2.2, back + inset], color, kind);
@@ -267,10 +267,12 @@ function addNose(k: Kit, zb: number, line: string) {
   face(-1.12, 1.12, 3.3, 3.5, '#ffb84a', 7, 0.035, 12, 3);
   // The line-colour chevron: one continuous lit band.
   const path = chevronPath();
-  const hw = 0.045;
   for (let i = 1; i < path.length; i++) {
     const [xa, ya] = path[i - 1];
     const [xb, yb] = path[i];
+    // Thin up the sides, thickening along the lower arms toward the point.
+    const cx = Math.abs((xa + xb) / 2) / (W / 2 - 0.18);
+    const hw = (ya + yb) / 2 > 2.0 ? 0.038 : 0.038 + 0.075 * Math.pow(1 - cx, 1.3);
     const dx = xb - xa;
     const dy = yb - ya;
     const l = Math.hypot(dx, dy) || 1;
@@ -278,8 +280,19 @@ function addNose(k: Kit, zb: number, line: string) {
     const ny = (dx / l) * hw;
     k.quad(at(xa - nx, ya - ny, 0.018), at(xb - nx, yb - ny, 0.018), at(xb + nx, yb + ny, 0.018), at(xa + nx, ya + ny, 0.018), line, 5);
   }
+  // Small red tail lights at each end of the destination display, and under each corner cluster.
+  for (const s2 of [-1, 1]) {
+    face(s2 > 0 ? 1.15 : -1.27, s2 > 0 ? 1.27 : -1.15, 3.32, 3.48, '#ffffff', 2, 0.03, 1, 1);
+    face(s2 > 0 ? 1.26 : -1.38, s2 > 0 ? 1.38 : -1.26, 1.36, 1.5, '#ffffff', 2, 0.022, 1, 1);
+  }
   // Light clusters at the lower outer corners: white when leading, red at the tail.
-  for (const s2 of [-1, 1]) face(s2 > 0 ? 1.26 : -1.38, s2 > 0 ? 1.38 : -1.26, 1.38, 1.8, '#ffffff', 8, 0.02, 1, 4);
+  for (const s2 of [-1, 1]) face(s2 > 0 ? 1.26 : -1.38, s2 > 0 ? 1.38 : -1.26, 1.52, 1.8, '#ffffff', 8, 0.02, 1, 3);
+  // Bumper blocks: clean grey rectangles on the surface, each with a dark vent.
+  for (const s2 of [-1, 1]) {
+    const xo = halfWidth(1.0) * 0.96;
+    face(s2 > 0 ? 0.74 : -xo, s2 > 0 ? xo : -0.74, Y_BOT + 0.005, 1.32, C.body, 0, 0.008, 6, 4);
+    face(s2 > 0 ? 0.94 : -1.4, s2 > 0 ? 1.4 : -0.94, 0.97, 1.2, C.vent, 0, 0.012, 4, 2);
+  }
   // Vent slats on the bumpers, and the lit bar where the wordmark sits (no logo).
   for (const s2 of [-1, 1]) for (let v = 0; v < 3; v++) face(s2 > 0 ? 0.96 : -1.38, s2 > 0 ? 1.38 : -0.96, 1.01 + v * 0.06, 1.03 + v * 0.06, C.bodyShade, 0, 0.016, 4, 1);
   face(-0.4, 0.4, 1.02, 1.16, '#ffffff', 6, 0.016, 4, 1);
