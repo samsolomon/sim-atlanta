@@ -614,3 +614,13 @@ that bus".
   overpasses now keep the bridge height, like the rest of the traffic.
 
 ![Cars queued behind a live bus on the Decatur St bridge, headlights fixed](log/vignette/beams.jpg)
+
+**Speckled, shimmering windows** (Sam, with a screenshot): the facade shader worked out each
+wall's direction from screen-space derivatives of world position. At city-scale coordinates
+(hundreds of metres) those derivatives are noisy, so neighbouring pixels disagreed about
+which window they were in, and whether it was lit. That gave salt-and-pepper speckle that
+shimmered as the camera moved, by day as well as night. Fixes: use the wall's real per-face
+normal, swap the `sin`-based hash for a precision-safe one (Dave Hoskins' `hash12`), and fade
+the window pattern to its average where windows get smaller than about 2 px.
+
+![Windows at night, after the fix](log/vignette/windows-night.jpg)
