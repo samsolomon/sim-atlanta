@@ -539,7 +539,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
  */
 function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds']): Alignment[] {
   const kept: Alignment[] = [];
-  for (const id of Object.keys(manifest.profiles)) {
+  // Keep through services first. A short-turn shape ending at Five Points would
+  // otherwise claim half a corridor and be drawn again under the full alignment.
+  const ids = Object.keys(manifest.profiles).sort((a, b) => {
+    const length = (id: string) => manifest.profiles[id].z.length * manifest.profiles[id].step;
+    return length(b) - length(a);
+  });
+  for (const id of ids) {
     let al: Alignment;
     try {
       al = alignment(rf, manifest, b, id);
