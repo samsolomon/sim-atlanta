@@ -1,6 +1,12 @@
 name = "railwatch"
 main = "src/index.ts"
+account_id = "4cd222e62e362ee4a0d18233878c4e66" # "Solomon" account, which holds the solomon.io zone
 compatibility_date = "2026-10-01"
+
+# Served at https://atlanta.solomon.io (solomon.io is on Cloudflare in the same account).
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "atlanta.solomon.io", custom_domain = true }]
 
 # The static site is served from web/dist; only /api/* runs the Worker first.
 [assets]

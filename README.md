@@ -57,6 +57,10 @@ See [the response contract](docs/data-model.md#live-buses).
 
 ## Deploy (Cloudflare free tier)
 
+Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
+custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
+before `pnpm deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+
 The optional East Portal art map uses a separate static bake. To include or retain
 `/artmap.html` in a deployment, copy the Studio's complete `web/public/art/`
 directory before building. A checkout without the bake ships only the map and
