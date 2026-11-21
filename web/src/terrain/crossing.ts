@@ -4,9 +4,10 @@ import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { RoutesFile, TimetableFile, VehicleType } from '../model/types';
 import { Schedule } from '../sched/engine';
 import { alignment } from '../vignette/alignment';
-import { Line, type P2 } from '../vignette/geom';
-import { World, trackInDaylight, type Alignment, type VData } from '../vignette/world';
+import { World, trackInDaylight, type Alignment } from '../vignette/world';
 import type { GroundGrid } from './grid';
+import { createSurfaceTransport } from './transport';
+import type { TerrainCity } from './transport-data';
 
 const mid = Date.parse('2026-11-20T14:12:49-05:00');
 const bounds = { minX: 420, maxX: 985, minZ: 300, maxZ: 680 };
@@ -17,19 +18,7 @@ async function json<T>(url: string): Promise<T> {
   return r.json();
 }
 
-// World clips at vertices. Sample sparse bridge ways so spans crossing the edge survive.
-function sampleWay(points: P2[]): P2[] {
-  const line = new Line(points);
-  if (!line.length) return points;
-  const samples: P2[] = [];
-  for (let s = 0; s < line.length; s += 5) {
-    const p = line.at(s);
-    samples.push([p.x, p.z]);
-  }
-  return [...samples, points[points.length - 1]];
-}
-
-export async function connectorCrossing(grid: GroundGrid, city: VData) {
+export async function connectorCrossing(grid: GroundGrid, city: TerrainCity, groundAt: (x: number, z: number) => number | null) {
   const [routes, table, vehicles, manifest] = await Promise.all([
     json<RoutesFile>('/data/ga/routes.json'), json<TimetableFile>('/data/ga/timetable.json'),
     json<VehicleType[]>('/data/ga/vehicle-types.json'), json<SceneManifest>('/data/scene/downtown/scene.json'),
@@ -50,24 +39,12 @@ export async function connectorCrossing(grid: GroundGrid, city: VData) {
   const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const bankY = bank - sceneZero;
   class CrossingWorld extends World {
-    constructor(data: VData, private readonly datum: number) {
-      super(data, null, { terrain: 'flat', clumps: 4, lightMapMax: 256 });
-    }
     override ground(x: number, z: number) {
       const h = grid.sample(x, z);
       if (h === null) throw new Error('Missing ground under the crossing');
-      return h - this.datum;
+      return h - sceneZero;
     }
   }
-  const data = { bounds, buildings: [],
-    roads: city.roads.filter(r => r.bridge || r.cls === 'motorway').map(r => ({ ...r, pts: sampleWay(r.pts) })),
-    rail: city.rail.filter(r => r.cls === 'standard_gauge' && r.flags.includes('is_bridge')).map(r => ({ ...r, pts: sampleWay(r.pts) })),
-  };
-  const lowerBridges = new CrossingWorld(data, bank);
-  lowerBridges.buildStreets();
-  lowerBridges.buildFreight();
-  lowerBridges.group.position.y = bankY;
-
   const legacy = alignment(routes, manifest, city.bounds, trip.pathId);
   const al: Alignment = {
     line: legacy.line,
@@ -75,11 +52,12 @@ export async function connectorCrossing(grid: GroundGrid, city: VData) {
     referenceY: () => bankY,
     openToSky: s => trackInDaylight(legacy, s),
   };
-  const rail = new CrossingWorld(data, sceneZero);
+  const rail = new CrossingWorld({ ...city, bounds }, null, { terrain: 'flat', clumps: 4, lightMapMax: 256 });
   rail.buildMarta(al);
   const trains = new CityTrains([al], manifest, bounds, new Map(routes.routes.map(r => [r.id, r.color])), []);
   const group = new THREE.Group();
-  group.add(lowerBridges.group, rail.group, trains.group);
+  const transport = createSurfaceTransport(city, grid, groundAt);
+  group.add(transport.group, rail.group, trains.group);
   function pose(seconds: number) {
     const state = schedule.trainsAt(new Date(mid + seconds * 1000)).filter(t => t.id === tripId);
     trains.update(state, 0);

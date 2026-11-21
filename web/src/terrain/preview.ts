@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import type { VData } from '../vignette/world';
+import type { TerrainCity } from './transport-data';
 import { GroundGrid, type GroundManifest } from './grid';
-import { terrainModel, cityScenery } from './model';
+import { createDowntownTerrain } from './model';
 
 const data = './data/scene/downtown/';
 const reading = document.querySelector<HTMLElement>('#reading')!;
@@ -24,7 +24,7 @@ const views = {
 type Stop = keyof typeof views;
 
 async function main() {
-  const [m, binary, city, trees]: [GroundManifest, ArrayBuffer, VData, { trees: [number, number, number, number][] }] =
+  const [m, binary, city, trees]: [GroundManifest, ArrayBuffer, TerrainCity, { trees: [number, number, number, number][] }] =
     await Promise.all([asset('ground.json').then(r => r.json()), asset('ground.i16').then(r => r.arrayBuffer()),
       asset('vignette.json').then(r => r.json()), asset('trees.json').then(r => r.json())]);
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', binary));
@@ -50,9 +50,11 @@ async function main() {
   light.shadow.normalBias = 0.35;
   scene.add(light, light.target, new THREE.HemisphereLight('#fff9ec', '#9eacac', 1.55));
   const contours = { value: 1 };
-  scene.add(terrainModel(grid, city, contours));
-  const scenery = cityScenery(grid, city, trees.trees);
-  scene.add(scenery);
+  const terrain = createDowntownTerrain(grid, city, trees.trees, {
+    quality: new URLSearchParams(location.search).get('q') === 'low' ? 'low' : 'high', contours,
+  });
+  scene.add(terrain.group);
+  const scenery = terrain.scenery;
   const section = new THREE.Group();
   scene.add(section);
   const ink = new THREE.MeshBasicMaterial({ color: '#1b5862' });
@@ -92,7 +94,7 @@ async function main() {
     if (isCrossing) {
       replay.disabled = true;
       reading.textContent = 'Loading the rail crossing…';
-      loading ??= import('./crossing').then(mod => mod.connectorCrossing(grid, city)).then(layer => {
+      loading ??= import('./crossing').then(mod => mod.connectorCrossing(grid, city, terrain.groundAt)).then(layer => {
         crossing = layer;
         crossing.group.visible = active === 'crossing';
         scene.add(crossing.group);
