@@ -338,7 +338,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const hit = new THREE.Vector3();
     if (terrain) {
       const surface = ray.intersectObject(terrain.board, false)[0];
-      if (surface) glideTo = surface.point;
+      if (surface) {
+        glideTo = surface.point;
+        glideTo.y = world.ground(glideTo.x, glideTo.z);
+      }
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
