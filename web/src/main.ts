@@ -408,8 +408,8 @@ const shell = createShell({
     if (diorama) return diorama.zoom(dir);
     map.zoomTo(map.getZoom() + dir, { duration: 200 });
   },
-  rotate(dir) {
-    diorama?.rotate(dir);
+  rotate(degrees) {
+    diorama?.rotate(degrees);
   },
   onWeather: () => updateAtmosphere(),
   live: () => ({

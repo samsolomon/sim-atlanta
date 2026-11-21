@@ -893,3 +893,27 @@ the production build passes. This follow-up needs a web rebuild, with no new dat
 ![City after returning from Map, high tier](log/ui/2026-11-21-navigation-city.png)
 
 Navigation follow-up review (Claude, one round): no findings.
+
+## 2026-11-21 · Rotation cadence and rendering are separate
+
+Sam noticed Q/E felt choppy even after the direction fix. Held rotation was still driven
+by OS keyboard repeat, applying a 3° jump each time. It now shares the WASD animation-frame
+loop at 60°/s, with a 1° immediate tap and a 50 ms frame-delta cap. Auto-repeat adds no extra
+step; opposing keys cancel, and releasing either resumes the other. Releasing the last key
+or leaving the window stops the motion.
+
+At Sam's closer camera pose, two six-second foreground Orca samples on high tier measured
+**22.5 and 24.8 fps**, with **34 ms median** intervals and **83/67 ms p95** intervals. The
+viewport was 1446×876 at DPR 2, with 63 draw calls and 2,795,709 triangles across all passes.
+A separate system snapshot showed 66% CPU idle. These observations confirm uneven frame
+delivery, but do not isolate GPU time, browser overhead or competing system work. No render
+quality change was made, and the small difference between samples is not an optimization gain.
+
+The Orca held-key check delivered 31 updates and 57.5° over about one second. Taps, repeat
+suppression, keyup, blur, opposite keys, typing guards and simultaneous pan/turn all passed.
+The original camera pose and high tier were restored. All 48 tests and the production build
+pass. This change needs a web rebuild, with no data bake or server changes.
+
+![High-tier close view after held-rotation checks](log/ui/2026-11-21-city-held-rotation.png)
+
+Held-rotation review (Claude, one round): no findings.

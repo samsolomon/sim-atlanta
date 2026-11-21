@@ -38,8 +38,8 @@ export interface CityView {
   camera(): GroundCamera & { tilt: number };
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
   pan(dxPx: number, dyPx: number): void;
-  /** Turn the view a step (Q/E). */
-  rotate(dir: 1 | -1): void;
+  /** Turn the view by degrees (Q/E). */
+  rotate(degrees: number): void;
   /** Zoom a step in (+1) or out (−1). */
   zoom(dir: 1 | -1): void;
   /** Sun, darkness and weather from the shared atmosphere; the date sets the season. */
@@ -429,10 +429,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       metresPerPixel: 2 * camera.position.distanceTo(controls.target) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.max(1, container.clientHeight),
     }),
     pan: panPx,
-    rotate(dir) {
+    rotate(degrees) {
       glideTo = null;
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), dir * THREE.MathUtils.degToRad(3));
+      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
       camera.position.copy(controls.target).add(off);
       controls.update();
     },

@@ -33,7 +33,7 @@ export interface ShellOptions {
   /** Move by a screen offset in CSS px (content moves opposite to the camera). */
   pan(dxPx: number, dyPx: number): void;
   zoom(dir: 1 | -1): void;
-  rotate?(dir: 1 | -1): void;
+  rotate?(degrees: number): void;
   live(): LiveState;
   /** Called when fresh weather arrives (or is lost). */
   onWeather?(w: Weather | null): void;
@@ -269,6 +269,7 @@ export function createShell(o: ShellOptions) {
     lastT = t;
     let dx = 0;
     let dy = 0;
+    const turn = Number(held.has('e')) - Number(held.has('q'));
     for (const k of held) {
       const m = MOVE[k];
       if (m) {
@@ -276,9 +277,10 @@ export function createShell(o: ShellOptions) {
         dy += m[1];
       }
     }
-    if (dx || dy) {
+    if (held.size) {
       const v = 0.6 * dt; // ~600 px/s
-      o.pan(dx * v, dy * v);
+      if (dx || dy) o.pan(dx * v, dy * v);
+      if (turn) o.rotate?.(turn * 0.06 * dt); // 60°/s, independent of OS key repeat
       raf = requestAnimationFrame(step);
     } else {
       raf = 0;
@@ -289,12 +291,15 @@ export function createShell(o: ShellOptions) {
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey || key.open) return;
     const k = e.key.toLowerCase();
     if (k === 'escape') return closeDrops();
-    if (MOVE[k]) {
+    if (MOVE[k] || ((k === 'q' || k === 'e') && o.rotate)) {
       e.preventDefault();
       const fresh = !held.has(k);
       held.add(k);
       // A short tap can end before the next animation frame, especially on a busy scene.
-      if (fresh) o.pan(MOVE[k][0] * 9.6, MOVE[k][1] * 9.6);
+      if (fresh) {
+        if (MOVE[k]) o.pan(MOVE[k][0] * 9.6, MOVE[k][1] * 9.6);
+        else o.rotate?.(k === 'q' ? -1 : 1);
+      }
       if (!raf) {
         lastT = performance.now();
         raf = requestAnimationFrame(step);
@@ -303,7 +308,6 @@ export function createShell(o: ShellOptions) {
     else if (k === '-' || k === '_') o.zoom(-1);
     else if (k === 'm') setView('map', true);
     else if (k === 'c') setView('city', true);
-    else if ((k === 'q' || k === 'e') && o.rotate) o.rotate(k === 'q' ? -1 : 1);
   });
   addEventListener('keyup', (e) => held.delete(e.key.toLowerCase()));
   addEventListener('blur', () => held.clear());

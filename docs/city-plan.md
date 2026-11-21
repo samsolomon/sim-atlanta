@@ -239,3 +239,13 @@ the City's chosen tilt across a round trip, and clamp scale to its existing came
   even when a frame is delayed. Verify screen-relative keys after rotation, both switch
   directions, zoomed views, and downtown-boundary clamping in Orca. A tilt/fade animation is
   a later refinement once this spatial continuity feels right.
+
+## Held rotation follow-up (2026-11-21)
+
+Drive held Q/E from the shell's existing animation-frame loop at 60°/s; use degrees at
+the camera boundary. Keep an immediate 1° tap and stop on keyup or window blur.
+- **Architect review:** key auto-repeat must not add rotation or start another loop;
+  opposing keys cancel. Keep the existing 50 ms delta cap to avoid jumps after stalls.
+- **Product review:** retain the user's high tier and camera pose during verification.
+  Check held input, quick taps, simultaneous WASD, release, blur and typing guards.
+  Report measured frame rate separately: smoother input does not make rendering faster.
