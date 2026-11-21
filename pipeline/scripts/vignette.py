@@ -97,6 +97,10 @@ def main(name):
             for run in clip_line([project(*c) for c in l], (bx, bz), 40):
                 out["rail"].append({"cls": p.get("class"), "name": p.get("name"), "flags": sorted(flags), "pts": run})
 
+    if name == "downtown":
+        from terrain_transport import bake
+        out["terrainTransport"] = bake(r["features"], rl["features"], out["bounds"])
+
     # Ground cover and street furniture (Overture base theme).
     def overlaps(rings, pad=0):
         xs = [q[0] for q in rings[0]]

@@ -17,11 +17,15 @@ it('grounds scenery, omits decks, forwards wet/season/night and releases its own
   const view = new DataView(bytes);
   for (let i = 0; i < 81; i++) view.setInt16(2 * i, i % 9 === 4 ? 2940 : 3000, true);
   const grid = new GroundGrid(m, bytes);
-  const road: VRoad = { cls: 'motorway', name: null, bridge: false, tunnel: false, pts: [[5, 0], [5, 40]] };
+  const road: VRoad = { cls: 'secondary', name: null, bridge: false, tunnel: false, pts: [[5, 0], [5, 40]] };
   const city: VData = { bounds, rail: [], roads: [road, { ...road, bridge: true }, { ...road, tunnel: true }],
     buildings: [{ id: 'cut', h: 15, floors: null, rings: [[[5, 5], [35, 5], [35, 15], [5, 15]]] }] };
-  const area = createDowntownTerrain(grid, city, [[20, 30, 12, 3]], { quality: 'low' });
-  expect(stroke).toHaveBeenCalledTimes(1); // only the at-grade road
+  const area = createDowntownTerrain(grid, { ...city,
+    terrainTransport: { version: 1, roads: [
+      { cls: 'secondary', kind: 'ground', pts: [[5, 0], [5, 10]] },
+      { cls: 'secondary', kind: 'bridge', pts: [[5, 10], [5, 30]] },
+    ], rail: [] } }, [[20, 30, 12, 3]], { quality: 'low' });
+  expect(stroke).toHaveBeenCalledTimes(2); // whole at-grade road and the scoped approach
   expect(area.bottomY).toBe(-11);
   expect(area.bounds).toEqual(bounds);
   expect(area.groundAt(20, 30)).toBe(-6);
