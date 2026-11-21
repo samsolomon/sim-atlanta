@@ -651,3 +651,45 @@ What changed:
 ![Reference](log/vignette/reference-ravine.jpg)
 ![Our trees after the pass](log/vignette/style-trees.jpg)
 ![Viaduct after the pass](log/vignette/style-viaduct.jpg)
+
+## 2026-11-21 · Modelling the CQ400 from photos
+
+MARTA's new Stadler CQ400s start rolling out next year, so the diorama skips the old fleet
+and models only the new train. The method: a **model lab** (`/models.html`) that shows the
+model large in studio light, switches line colour, lead, tail or coupled lighting, and day
+or night, and can lay a reference photo over the view. Sam critiqued it round by round from
+photos; I adjusted the code. No Blender; the model is built in TypeScript
+(`web/src/vignette/cq400.ts`).
+
+What the photos taught, in roughly the order Sam caught it:
+- **Matte grey, not champagne.** It only looks warm in sun.
+- **The front is one dark mask** framed by grey that wraps the corners. The line colour is a
+  **flush light**, not a raised rail: down both mask edges and in to a V under the
+  windscreen, thicker toward the point. Simplified to one shield windscreen (no end door).
+- **The nose is a straight rake,** upright at the bottom, not a rounded bullet. Its grey
+  side panel has a triangular window, then one rectangular cab window, then the first door.
+- **Bumpers are flush grey corners with vents,** not stuck-on boxes. The coupler is dark,
+  since the "red" in photos is the tail sign reflecting.
+- **Tail lights:** a red bar where the wordmark sits (we show no logos, only light), small
+  red lights at the ends of the destination display and red under each corner cluster.
+- **The livery:** short blue, yellow and orange chevrons on the nose side, then **every car**
+  carries blue, yellow and orange from the end facing the cab, all slanting the same way.
+- **Smooth roof:** only slight bumps over the roof equipment.
+
+Bugs with lessons:
+- **Floating features:** the mask was a flat fill between outline points while the lights
+  sat on the curved surface, so they floated off it. The nose is now one continuous surface
+  `z = F(x, y)`, and every feature is placed on that same function.
+- **Ragged seams:** the nose surface wasn't sampled at the body section's chamfer heights,
+  so its edge stepped across them. Sampling now includes those exact heights.
+- **The chevron's notch at the point:** the two halves of its path never shared the centre
+  point (one half was appended backwards). It's now one mitred ribbon, with each quad's
+  winding fixed to face forward.
+
+Consists: CQ400s run as fixed 4-car sets with open gangways. Green Line trains are drawn as one
+set (4 cars) and Blue Line as two (8), with the inner cabs dark. MARTA's live feed doesn't say
+which fleet a train is or how long it is, so lengths are typical for the line.
+
+![CQ400 in the model lab](log/vignette/cq400-lab-1.jpg)
+![Tail end at night](log/vignette/cq400-lab-3.jpg)
+![8-car Blue Line train on the viaduct](log/vignette/cq-viaduct.jpg)
