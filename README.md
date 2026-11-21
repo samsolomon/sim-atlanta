@@ -57,6 +57,10 @@ See [the response contract](docs/data-model.md#live-buses).
 
 ## Deploy (Cloudflare free tier)
 
+Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
+custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
+before `pnpm deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+
 ```sh
 npx wrangler login                       # once
 cd worker && npx wrangler secret put MARTA_API_KEY
