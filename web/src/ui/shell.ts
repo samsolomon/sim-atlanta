@@ -264,8 +264,11 @@ export function createShell(o: ShellOptions) {
   };
   let raf = 0;
   let lastT = 0;
-  const step = (t: number) => {
-    const dt = Math.min(50, Math.max(0, t - lastT));
+  // City also calls this before drawing. Both RAF callbacks receive the same
+  // timestamp, so a held key moves the camera once whichever callback runs first.
+  const advanceMovement = (t: number) => {
+    if (!held.size || t <= lastT) return;
+    const dt = Math.min(50, t - lastT);
     lastT = t;
     let dx = 0;
     let dy = 0;
@@ -277,15 +280,13 @@ export function createShell(o: ShellOptions) {
         dy += m[1];
       }
     }
-    if (held.size) {
-      const v = 0.6 * dt; // ~600 px/s
-      if (dx || dy) o.pan(dx * v, dy * v);
-      if (turn) o.rotate?.(turn * 0.06 * dt); // 60°/s, independent of OS key repeat
-      raf = requestAnimationFrame(step);
-    } else {
-      raf = 0;
-      lastT = 0;
-    }
+    const v = 0.6 * dt; // ~600 px/s
+    if (dx || dy) o.pan(dx * v, dy * v);
+    if (turn) o.rotate?.(turn * 0.06 * dt); // 60°/s, independent of OS key repeat
+  };
+  const step = (t: number) => {
+    advanceMovement(t);
+    raf = held.size ? requestAnimationFrame(step) : 0;
   };
   addEventListener('keydown', (e) => {
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey || key.open) return;
@@ -294,6 +295,7 @@ export function createShell(o: ShellOptions) {
     if (MOVE[k] || ((k === 'q' || k === 'e') && o.rotate)) {
       e.preventDefault();
       const fresh = !held.has(k);
+      if (!held.size) lastT = performance.now();
       held.add(k);
       // A short tap can end before the next animation frame, especially on a busy scene.
       if (fresh) {
@@ -301,7 +303,6 @@ export function createShell(o: ShellOptions) {
         else o.rotate?.(k === 'q' ? -1 : 1);
       }
       if (!raf) {
-        lastT = performance.now();
         raf = requestAnimationFrame(step);
       }
     } else if (k === '+' || k === '=') o.zoom(1);
@@ -314,6 +315,7 @@ export function createShell(o: ShellOptions) {
 
   return {
     tick,
+    advanceMovement,
     weather: () => weather,
     /** Light or dark glass, following the sky (dark from about dusk). */
     setTheme(theme: 'light' | 'dark') {

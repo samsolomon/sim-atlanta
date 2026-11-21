@@ -90,7 +90,7 @@ const updateAtmosphere = () => {
   lastAtm = atm;
   diorama?.setAtmosphere(atm, clock.now());
   shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
-  paintMapAtmosphere?.(atm);
+  if (view3d.hidden) paintMapAtmosphere?.(atm);
 };
 let atmRealTime = true; // the clock state the atmosphere was last computed for
 let atmAt = 0; // the simulated time it was computed for
@@ -106,6 +106,7 @@ function setFog(f: number, dark: number) {
 // Always after this module finishes evaluating, so `shell` (declared below) exists even if the
 // map loaded while the data files were downloading.
 const onReady = (fn: () => void) => (map.loaded() ? queueMicrotask(fn) : map.once('load', fn));
+const sky = new SkyLayer();
 onReady(() => {
   // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
   document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
@@ -126,7 +127,6 @@ onReady(() => {
   addTrainLayer(map);
   // ---- atmosphere: time of day + Atlanta's weather → basemap palette, sky layer, glass theme.
   // ?palette=<preset> pins a static palette; ?tune opens the playground.
-  const sky = new SkyLayer();
   map.addLayer(sky, 'freight-unknown'); // above the basemap's fills, below our rail and labels
   let pinned: Palette | null = PALETTES[params.get('palette') ?? ''] ?? null;
   let onScreen: Palette = PALETTES[DEFAULT_PALETTE];
@@ -146,7 +146,7 @@ onReady(() => {
   };
   updateAtmosphere();
   map.on('moveend', () => {
-    if (!sky.atm) return; // weather strength depends on zoom and place
+    if (!view3d.hidden || !sky.atm) return; // weather strength depends on zoom and place
     sky.set(sky.atm);
     if (Math.abs(sky.weatherStrength() - lastWx) > 0.05) paintFor(sky.atm);
     else setFog(sky.atm.fog * sky.weatherStrength(), sky.atm.dark);
@@ -312,6 +312,7 @@ async function openCity() {
   cityAbort?.abort();
   const abort = cityAbort = new AbortController();
   view3d.hidden = false;
+  sky.stopAnimation();
   cityLoading.hidden = false;
   cityProgress.textContent = 'Loading buildings, streets and trees…';
   document.body.classList.add('in3d');
@@ -320,6 +321,7 @@ async function openCity() {
     const { createCity } = await import('./city/city');
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
       signal: abort.signal,
+      beforeFrame: shell.advanceMovement,
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
     });
     if (load !== cityLoad) {
@@ -375,6 +377,7 @@ function closeCity() {
   diorama = null;
   if (import.meta.env.DEV) Object.assign(window, { __diorama: null });
   view3d.hidden = true;
+  if (lastAtm) paintMapAtmosphere?.(lastAtm);
   document.body.classList.remove('in3d');
   shell.setNote(null);
   setViewParam(null);
