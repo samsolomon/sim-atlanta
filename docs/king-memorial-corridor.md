@@ -252,6 +252,7 @@ built or changed.**
   easing curve's momentary halt.
 - **Deck and platform heights under the canopy** are estimated.
 - **Columns, posts and stair towers** are illustrative.
+- **The station has no lighting at night.** It reads as an unlit silhouette; the trains' windows are lit. ![Night](log/ui/king-memorial/city-station-night.jpg)
 - **City draws both tracks about 2.2 m north of the real axis**, as at Georgia State.
 - **Green terminators** (155214 arriving, 155221 departing): their trips end and begin at the King
   Memorial stop, and the schedule never advances them past it. So no position falls on the 799 m
