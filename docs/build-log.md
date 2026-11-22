@@ -1461,6 +1461,25 @@ We brought the City track about two metres sideways onto the mapped passage and 
 
 On the physical Galaxy A16, the default low-tier opening averaged 51 fps. A moving dusk arrival averaged 60 fps in the closer station view, compared with 67 fps at the same camera on the previous release. Each measurement combines three foreground eight-second samples. [A16 at the station](log/ui/georgia-state-station/a16-dusk.jpg)
 
+### 2026-11-22: Four tracks, two islands, and a timetable that won't say which track
+
+Avondale is the second test case for the shared platform model. It has two island platforms and
+four tracks:
+- the Blue Line's two main tracks outside;
+- two centre tracks between the islands, which lead to the yard.
+
+The timetable says which platform a train calls at, since each island has its own GTFS stop id.
+It never says which of that island's two tracks the train uses.
+
+So the fixture keeps three things apart:
+- the physical edges (tracks facing platforms);
+- the scheduled platform;
+- the track, which is a candidate set with a "usually the main" that is only inferred.
+
+The Green Line turnbacks that OSM still maps on the centre tracks are absent from the current
+feed and from MARTA's station page. They are kept as reported history, not as service.
+[Layout and sources](avondale-layout.md)
+
 ### 2026-11-22 — Which side faces the platform?
 
 An eastbound Blue train at Georgia State has its south platform on the right. At Avondale the timetable can name the south island but still leave the door side open. From the main track the island is on the left. From the centre track it is on the right. City now models one physical slab with a boarding edge for each track it serves. At Georgia State the refactor reproduced all 2,664 triangles of the brick platforms, canopies, lit entrances and fittings. The timetable puts the eastbound train at the stop at 14:12:00 and gives it zero seconds of dwell. [Georgia State in Orca](log/ui/2026-11-22-platform-primitive.jpg) · [Platform model and schedule semantics](data-model.md#station-platforms-and-boarding-edges)
