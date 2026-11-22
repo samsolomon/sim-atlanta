@@ -34,6 +34,10 @@ it('keeps both inner courts and the rail corridor open while carrying the southe
   const underside = ray(x, terrain + 0.1, z, 1).point.y;
   expect(underside - model.group.position.y).toBeCloseTo(18.6, 3);
   expect(underside - terrain).toBeGreaterThan(5);
+  // A's slightly skew west wall enters the same x band 180 m north of the bridge.
+  const wall = new Raycaster(new Vector3(-556, model.group.position.y + 14, -700), new Vector3(1,0,0))
+    .intersectObject(model.group)[0];
+  expect(wall.point.x).toBeCloseTo(-554.25, 1);
 });
 
 it('preserves fallback for an absent campus, missing courtyard or no-data on the source outline', () => {

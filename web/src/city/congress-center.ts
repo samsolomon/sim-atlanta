@@ -140,7 +140,8 @@ export function createCongressCenter(buildings: VBuilding[], grid: GroundGrid) {
   // Low roofs around the halls follow the complete parent outline and both courtyards.
   region([minX, -961, minZ, maxZ], bottom, 7.5, '#c4bfb3', sand);
   region([-961, -580, minZ, maxZ], bottom, 21, '#b5b0a3', sand);
-  region([-580, -554, minZ, maxZ], 18.6, 21, '#c8c7bd', sand, true);
+  region([-580, -554, minZ, -540], bottom, 21, '#c4bcab', sand);
+  region([-580, -554, -540, maxZ], 18.6, 21, '#c8c7bd', sand, true);
   region([-554, maxX, minZ, maxZ], bottom, 21, '#c4bcab', sand);
 
   // C1–C4 share a long hall roof. BC closes only the north end of the dock court.
