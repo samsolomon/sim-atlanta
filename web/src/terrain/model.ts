@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
-import { World, type VData } from '../vignette/world';
+import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { GroundGrid } from './grid';
 
-import { GroundSurface, type TerrainQuality } from './surface';
+import { GroundSurface, type JoiningEdge, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { groundMap } from './ground-map';
@@ -12,6 +12,9 @@ type Tree = [number, number, number, number];
 type Contours = { value: number };
 export interface DowntownTerrainOptions {
   quality: TerrainQuality;
+  join?: JoiningEdge;
+  bottomY?: number;
+  finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   contours?: Contours;
   openings?: readonly OpenSlot[];
 }
@@ -22,8 +25,9 @@ function checkBounds(grid: GroundGrid, city: VData) {
   }
 }
 
-function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuality, contours: Contours) {
-  const { vertical, bounds: b, stepM } = mesh.grid.manifest;
+function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuality, contours: Contours,
+  join?: JoiningEdge, bottom = mesh.minY - mesh.grid.manifest.stepM) {
+  const { vertical, bounds: b } = mesh.grid.manifest;
   const geometry = mesh.geometry;
   const material = new THREE.MeshLambertMaterial({ map: groundMap(city, quality) });
   // Draw true 2 m contours on the interpolated triangle surface, antialiased in screen space.
@@ -42,7 +46,7 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
   const surface = new THREE.Mesh(geometry, material);
   surface.receiveShadow = true;
   const sides = new Builder();
-  const bottom = mesh.minY - stepM;
+  const shared = new Builder();
   const pos = geometry.getAttribute('position'), idx = geometry.index!;
   // Only skirt actual perimeter edges, including partial cells adjacent to an opening.
   const flags = new Uint8Array(pos.count);
@@ -52,7 +56,10 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
   }
   function edge(a: number, b: number) {
     if (!(flags[a] & flags[b])) return;
-    sides.quad([pos.getX(a), bottom, pos.getZ(a)], [pos.getX(b), bottom, pos.getZ(b)],
+    const alongJoin = join && pos.getX(a) === join.x && pos.getX(b) === join.x &&
+      Math.min(pos.getZ(a), pos.getZ(b)) >= join.minZ && Math.max(pos.getZ(a), pos.getZ(b)) <= join.maxZ;
+    const wall = alongJoin ? shared : sides;
+    wall.quad([pos.getX(a), bottom, pos.getZ(a)], [pos.getX(b), bottom, pos.getZ(b)],
       [pos.getX(b), pos.getY(b), pos.getZ(b)], [pos.getX(a), pos.getY(a), pos.getZ(a)], '#b59676');
   }
   for (let i = 0; i < idx.count; i += 3) {
@@ -60,6 +67,11 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
     if (flags[a] || flags[b] || flags[c]) { edge(a, b); edge(b, c); edge(c, a); }
   }
   surface.add(new THREE.Mesh(sides.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+  if (shared.pos.length) {
+    const wall = new THREE.Mesh(shared.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+    wall.name = 'joining edge';
+    surface.add(wall);
+  }
   return surface;
 }
 
@@ -81,13 +93,13 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
 }
 
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null) {
+  sceneY: (x: number, z: number) => number | null, finishFor?: DowntownTerrainOptions['finishFor']) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
   const world = new TerrainScenery(city, null, options);
-  world.buildBuildings(bd => foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8);
+  world.buildBuildings(bd => foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
   world.buildTrees();
   world.setSeason(180);
@@ -98,15 +110,16 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
-  const mesh = new GroundSurface(grid, options.quality, options.openings);
+  const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const groundAt = (x: number, z: number) => mesh.sampleScene(x, z);
-  const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 });
-  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt);
+  const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
+  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt, options.finishFor);
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
     group, board, scenery: scenery.group, bounds: grid.manifest.bounds,
-    bottomY: mesh.minY - grid.manifest.stepM, groundAt,
+    bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
+    openJoin() { const wall = board.getObjectByName('joining edge'); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
     setNight(factor: number) { scenery.setNight(factor); },
     setWet(factor: number) {

@@ -21,6 +21,11 @@ export interface VBuilding {
   floors: number | null;
   rings: P2[][];
 }
+export interface BuildingFinish {
+  wall: string;
+  roof: string;
+  drawFace?: (builder: Builder, a: P2, b: P2, base: number, top: number) => boolean;
+}
 export interface VRoad {
   cls: string;
   sub?: string | null;
@@ -369,6 +374,7 @@ export class World {
     pl.position.set((b.minX + b.maxX) / 2, bottom - 3, (b.minZ + b.maxZ) / 2);
     pl.receiveShadow = true;
     this.group.add(pl);
+    return pl;
   }
 
   // ---- streets ------------------------------------------------------------------------
@@ -801,7 +807,7 @@ export class World {
 
   // ---- buildings ----------------------------------------------------------------------
 
-  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8) {
+  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
     const b = new Builder();
     const shopLights = new Builder();
     const style: number[] = [];
@@ -820,7 +826,8 @@ export class World {
       // Mid-rises mix brick, stone with punched windows, and ribbon-window offices.
       const kind = h < 16 ? 0 : h < 42 ? (r() < 0.45 ? 0 : 1) : 2;
       const tall = h >= 16;
-      const wallCol = pick(r, kind === 0 && tall ? ['#c9b49a', '#b98a6a', '#d8c9b0', '#a9583f', '#e0d6c4'] : kind === 0 ? ['#a9583f', '#b86a4b', '#9a4c39', '#c98f6b', '#d7c3a2'] : kind === 1 ? ['#d9cdb5', '#cfc5b4', '#c1b6a3', '#e1d8c6', '#b9b0a3'] : ['#8fa4b6', '#9fb0bd', '#7f93a4', '#a8b8c2']);
+      const finish = finishFor?.(bd);
+      const wallCol = finish?.wall ?? pick(r, kind === 0 && tall ? ['#c9b49a', '#b98a6a', '#d8c9b0', '#a9583f', '#e0d6c4'] : kind === 0 ? ['#a9583f', '#b86a4b', '#9a4c39', '#c98f6b', '#d7c3a2'] : kind === 1 ? ['#d9cdb5', '#cfc5b4', '#c1b6a3', '#e1d8c6', '#b9b0a3'] : ['#8fa4b6', '#9fb0bd', '#7f93a4', '#a8b8c2']);
       let foot = originY;
       if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
       const y0 = foot - 0.5;
@@ -841,11 +848,13 @@ export class World {
           const a = ring[i];
           const c = ring[(i + 1) % ring.length];
           const first = b.pos.length / 3;
-          if (shop && appendWoodruffWall(shop, a, c, originY, roofY + parapet, b, shopLights)) {
+          if (finish?.drawFace?.(b, a, c, foot, roofY + parapet) ||
+              (shop && appendWoodruffWall(shop, a, c, originY, roofY + parapet, b, shopLights))) {
             for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
             continue;
           }
-          style.push(kind, kind, kind, kind, kind, kind);
+          const wallKind = finish ? 0 : kind;
+          style.push(wallKind, wallKind, wallKind, wallKind, wallKind, wallKind);
           b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
       const wallVerts = b.pos.length / 3 - before;
@@ -854,7 +863,7 @@ export class World {
       const tris = THREE.ShapeUtils.triangulateShape(contour, holes);
       const all = [...contour, ...holes.flat()];
       // Roofs: white membrane, gravel, tar and the odd green roof.
-      const roofCol = pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
+      const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {

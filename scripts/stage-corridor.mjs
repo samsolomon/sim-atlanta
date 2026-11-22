@@ -15,4 +15,5 @@ await mkdir(dest, { recursive: true });
 await writeFile(new URL('ground.i16', dest), grid);
 await writeFile(new URL('ground.json', dest), metadata);
 await writeFile(new URL('corridor.json', dest), await readFile(new URL('corridor.json', source)));
-console.log(`Staged ${m.cols} × ${m.rows} corridor terrain nodes and corridor.json`);
+await writeFile(new URL('context.json', dest), await readFile(new URL('context.json', source)));
+console.log(`Staged ${m.cols} × ${m.rows} corridor terrain nodes, context and corridor.json`);

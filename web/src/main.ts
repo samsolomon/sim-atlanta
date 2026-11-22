@@ -380,6 +380,7 @@ async function openCity() {
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
+      areaNote: text => shell.setNote(text),
       trains: () => source.update(),
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
