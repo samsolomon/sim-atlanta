@@ -1060,7 +1060,8 @@ export class World {
   }
 
   /** Street lights: posts with glowing heads and soft pools of light on the pavement at night. */
-  buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null) {
+  buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
+    inTravelLane?: (x: number, z: number) => boolean) {
     const r = rng(311);
     const spots: { x: number; z: number; y: number; ang: number }[] = [];
     for (const rd of this.data.roads) {
@@ -1076,7 +1077,7 @@ export class World {
         const x = p.x + p.nx * w * side;
         const z = p.z + p.nz * w * side;
         side = -side;
-        if (!this.inBounds(x, z, 3)) continue;
+        if (!this.inBounds(x, z, 3) || inTravelLane?.(x, z)) continue;
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const y = groundAt ? groundAt(x, z) : rd.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z);
         if (y === null) continue;

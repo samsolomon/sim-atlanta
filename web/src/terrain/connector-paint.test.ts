@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import type { P2 } from '../vignette/geom';
 import { connectorLanes, connectorPoint } from './connector-lanes';
-import { paintConnector } from './connector-paint';
+import { inConnectorLanes, paintConnector } from './connector-paint';
 
 const city = { name: 'downtown', roads: [], buildings: [], rail: [],
   bounds: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 } };
@@ -60,4 +60,13 @@ it('skips East Portal and legacy unnamed scenes before accessing the canvas', ()
   const { ctx, strokes, fills, stops } = recording();
   for (const name of ['east-portal', undefined]) paintConnector(ctx, { ...city, name } as typeof city, 1);
   expect([strokes, fills, stops]).toEqual([[], [], []]);
+});
+
+it('clears the old shoulder posts from both carriageways and retains the median', () => {
+  expect(inConnectorLanes(750.4, 555.9)).toBe(true);
+  expect(inConnectorLanes(797, 501.3)).toBe(true);
+  expect(inConnectorLanes(...connectorPoint(-76, -13.2))).toBe(false);
+  expect(inConnectorLanes(...connectorPoint(0, -8))).toBe(false);
+  expect(inConnectorLanes(...connectorPoint(0, -8), 1.8)).toBe(true);
+  expect(inConnectorLanes(0, 0)).toBe(false);
 });

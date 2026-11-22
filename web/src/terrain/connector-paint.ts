@@ -1,4 +1,4 @@
-import type { P2 } from '../vignette/geom';
+import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import { PAL } from '../vignette/world';
 import footprint from '../../../pipeline/prototypes/connector-footprint/sections.json';
 import { connectorLanes, connectorPoint, type ConnectorDirection } from './connector-lanes';
@@ -36,6 +36,18 @@ function carriageway(direction: ConnectorDirection) {
     ];
   }
   return { stripe, lanes };
+}
+
+// Lamps and viaduct columns must clear both mainline and feeder lanes.
+// The space between a diverging feeder and mainline is open.
+const travelBands = (['southbound', 'northbound'] as const).flatMap(direction => {
+  const { stripe, lanes } = carriageway(direction);
+  return [[...stripe(0), ...stripe(5).reverse()], [...stripe(5, true), ...stripe(lanes, true).reverse()]];
+});
+
+export function inConnectorLanes(x: number, z: number, margin = 0) {
+  return travelBands.some(ring => pointInRing(x, z, ring) || (margin > 0 && ring.some((a, i) =>
+    segDist(x, z, a, ring[(i + 1) % ring.length]) < margin)));
 }
 
 /** Overlay on the existing downtown ground texture, once during the terrain bake. */
