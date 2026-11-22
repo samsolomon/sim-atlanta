@@ -88,6 +88,30 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
   .in3d:has(.hint) .attrib3d { bottom: max(125px, calc(env(safe-area-inset-bottom) + 115px)); }
 }
 
+/* The optional replay panel and view switch share the last row on narrow screens. */
+@media (max-width: 600px) {
+  body:has(#timectl:not([hidden])) {
+    --dock-bottom: max(24px, calc(env(safe-area-inset-bottom) + 10px));
+    display: grid; height: 100dvh; grid-template-columns: auto minmax(0, 280px); justify-content: center;
+    align-content: end; align-items: end; gap: 8px;
+    padding: 0 max(10px, env(safe-area-inset-right)) var(--dock-bottom) max(10px, env(safe-area-inset-left));
+  }
+  body:has(#timectl:not([hidden])) .switch {
+    position: relative; inset: auto; transform: none; grid-area: 2 / 1;
+  }
+  body:has(#timectl:not([hidden])) .switch button { min-width: 44px; height: 44px; justify-content: center; padding: 0 10px; }
+  #timectl:not([hidden]) { position: relative; inset: auto; width: auto; grid-area: 2 / 2; padding: 6px 8px; gap: 2px; }
+  #timectl input { margin: 0; height: 26px; }
+  #timectl button { min-width: 44px; min-height: 44px; padding: 4px 8px; }
+  body:has(#timectl:not([hidden])) .hint,
+  body:not(.in3d):has(#timectl:not([hidden])) #card {
+    position: relative; inset: auto; transform: none; grid-area: 1 / 1 / 2 / 3; justify-self: center;
+  }
+  body:not(.in3d):has(#timectl:not([hidden])) #card { max-height: calc(100dvh - 220px); overflow-y: auto; }
+  .in3d:has(#timectl:not([hidden])) .attrib3d { bottom: calc(var(--dock-bottom) + 116px); }
+  .in3d:has(#timectl:not([hidden])):has(.hint) .attrib3d { bottom: calc(var(--dock-bottom) + 156px); }
+}
+
 /* ---- ?tune palette panel (design tool) ---- */
 .tuner {
   position: fixed; z-index: 7; left: 14px; top: 74px; width: 300px; max-height: calc(100vh - 170px); overflow: auto;
