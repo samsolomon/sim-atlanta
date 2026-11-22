@@ -23,6 +23,7 @@ import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
 import { inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
+import type { TrafficData } from '../vignette/traffic';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
@@ -32,6 +33,8 @@ import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
+import { ConnectorTraffic } from './connector-traffic';
+import { connectorRoadHeight } from './connector-road-height';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -43,6 +46,7 @@ export type Quality = 'low' | 'high';
 export interface CityView {
   measuredGround: boolean;
   hasFreight: boolean;
+  hasTraffic: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
@@ -59,7 +63,7 @@ export interface CityView {
   quality: Quality;
   /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
   buses: Pick<CityBuses, 'occupies' | 'summary'>;
-  stats(): { freightCars: number; surfaceCars: number; buses: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
+  stats(): { roadVehicles: number; freightCars: number; surfaceCars: number; buses: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
 
@@ -90,10 +94,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!r.ok) throw new Error(`City ${name} (${r.status})`);
     return r;
   }
-  const [vd, manifest, trees] = await Promise.all([
+  const [vd, manifest, trees, trafficData] = await Promise.all([
     asset('vignette.json').then(r => r.json() as Promise<TerrainCity>),
     asset('scene.json').then(r => r.json() as Promise<SceneManifest>),
     asset('trees.json').then(r => r.json() as Promise<{ trees: [number, number, number, number][] }>),
+    asset('traffic.json').then(r => r.json() as Promise<Pick<TrafficData, 'hourly'>>).catch(() => {
+      options.signal?.throwIfAborted();
+      return null;
+    }),
   ]);
   let grid: GroundGrid | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
@@ -237,6 +245,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   });
   (buses.mesh.material as THREE.Material).clippingPlanes = edges;
   scene.add(buses.mesh);
+  const hourly = trafficData?.hourly;
+  const traffic = terrain && Array.isArray(hourly?.weekday) && Array.isArray(hourly?.weekend)
+    ? new ConnectorTraffic({ city: vd, quality, hourly, clippingPlanes: edges,
+        busOccupies: buses.occupies.bind(buses),
+        roadHeight: connectorRoadHeight(vd, terrain.groundAt, transport?.deckAt) })
+    : undefined;
+  if (traffic) scene.add(traffic.group);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -476,7 +491,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
     trains.update(options.trains(), atm.dark);
-    freight?.update(options.clockMs());
+    const sceneTime = options.clockMs();
+    freight?.update(sceneTime);
+    traffic?.update(sceneTime, atm.dark);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
@@ -513,6 +530,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     measuredGround: !!terrain,
     hasFreight: !!freight,
     buses,
+    hasTraffic: !!traffic?.group.children.length,
     bounds: b,
     quality,
     lookAt(x, z, view) {
@@ -556,7 +574,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       atm = a;
       (terrain ?? world).setSeason(local(now).doy);
     },
-    stats: () => ({ freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    stats: () => ({ roadVehicles: traffic?.visibleCars ?? 0, freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();
@@ -565,6 +583,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       sun.shadow.dispose();
       freight?.dispose();
       buses.dispose();
+      traffic?.dispose();
       disposeBoard();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;

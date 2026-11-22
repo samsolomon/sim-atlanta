@@ -23,6 +23,7 @@ export interface LiveState {
   rail: 'live' | 'connecting' | 'down';
   trains: number;
   cityFreight: boolean;
+  cityTraffic: boolean;
   buses: number | null; // null: bus feed unavailable or not shown
 }
 
@@ -158,6 +159,8 @@ export function createShell(o: ShellOptions) {
     const freight = view === 'city'
       ? s.cityFreight ? 'Train positions, timing and consists are illustrative.' : 'No freight simulation available in this scene.'
       : 'Track traffic comes from reported or inferred daily counts.';
+    const traffic = view === 'city' && s.cityTraffic
+      ? '<li><b>Connector traffic</b> Illustrative vehicles follow a typical hourly pattern.</li>' : '';
     const wx = !s.realTime
       ? '<b>Weather</b> shown only at the present time'
       : weather
@@ -165,7 +168,7 @@ export function createShell(o: ShellOptions) {
       : '<b>Weather</b> unavailable right now';
     more.innerHTML = `
       <p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>
-      <ul><li>${rail}${view === 'city' ? '. MARTA visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> ${freight}</li><li>${wx}</li></ul>`;
+      <ul><li>${rail}${view === 'city' ? '. MARTA visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> ${freight}</li>${traffic}<li>${wx}</li></ul>`;
   }
 
   let lastTick = 0;
