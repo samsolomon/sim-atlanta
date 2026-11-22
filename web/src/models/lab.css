@@ -58,3 +58,5 @@ input[type=range] { width: 108px; accent-color: var(--ink); }
   .settings { gap: 9px; padding-top: 10px; }
   .settings button, .file-button { min-height: 34px; }
 }
+
+.platform-report { margin: 6px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.35; }

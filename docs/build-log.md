@@ -1604,6 +1604,22 @@ At the normal City opening, downtown’s second distinctive roof fits into about
 
 The Corey Tower was already on the board. Its base clears the southern edge by 68.5 m, but City drew its whole 91.4 m height as a round office block. Lidar puts the shaft radius near 5.3 m at the foot and about 4 m at the rim. There’s one bright face. The sign company calls its 25 × 80 ft display north-facing. In the returns, the two edges point the panel about 40° east of north, straight into the curve. The Georgia State tracks swing from nearly edge-on west of the stack to a clear view of the letters on the eastern approach. Cross to the south and the tall white shaft is blank. [Connector daylight](log/ui/corey-tower/connector-day.jpg) · [Eastern tracks at dusk](log/ui/corey-tower/east-rail-dusk.jpg) · [Reverse view](log/ui/corey-tower/reverse-day.jpg) · [Photo references, dimensions and camera positions](corey-tower.md)
 
+### 2026-11-22: A platform to check the train against
+
+The Model Lab can now stop the CQ400 at an island or at two side platforms. Both layouts are built
+from the same platform primitive City uses, at the car's own floor height, with a pale zone on the
+platform beside each of the train's six door pairs.
+
+The edge sits 75 mm from the car side, just inside the federal 3-inch level-boarding limit for
+rapid rail. The panel reports the gap and the step, so a change to the car model that pushed a
+door off its zone, or the body into the platform, would show at a glance. Tests fail on the same
+conditions.
+
+The layouts are illustrative. Only the 4.86 m side-platform track spacing comes from a surveyed
+station (Georgia State). [Notes](model-lab-platforms.md)
+
+![The CQ400 at an illustrative island platform](log/ui/model-lab/2026-11-22-platform-island-side.jpg)
+
 ### 2026-11-22 — Two garages on Decatur Street
 
 From the Connector, the broad roof beside Grady belongs to Butler. The deck across Decatur, next to the Georgia State rail approach, is Pete Hackney. At street level, Hackney’s lighter concrete piers frame five rows of dark openings. Across the street, Butler has wider-spaced floor bands and a storefront on Jesse Hill. Look down from the tracks and two ramp slots cut through Hackney’s roof while Butler’s pale parking surface stretches almost a block. The City opening gained 17,480 submitted triangles and stayed at 141 draws in the matched study. [Labeled view from the board edge](log/ui/parking-decks/edge-key.jpg) · [On Decatur before](log/ui/parking-decks/decatur-before.jpg) · [On Decatur after](log/ui/parking-decks/decatur-after.jpg) · [Photographs, measurements and cameras](parking-decks.md)

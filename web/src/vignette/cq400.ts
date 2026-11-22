@@ -29,6 +29,8 @@ export const CAR_GAP = 0.9; // gangway between cars
 export const CAR_WIDTH = 3.2;
 const W = CAR_WIDTH;
 const FLOOR = 1.12;
+/** Car floor above the railhead (the model's origin), metres. */
+export const CAR_FLOOR = FLOOR;
 const ROOF = 3.78;
 
 export const LINE_COLORS = { red: '#d1282f', gold: '#e0b129', blue: '#1474c4', green: '#13a44f' } as const;
@@ -363,6 +365,9 @@ function chevron(k: Kit, zStart: number, dir: 1 | -1) {
   }
 }
 
+/** Door-pair centres along each car (metres from the car's middle, +z toward a cab), both sides; 1.62 m wide. */
+export const CQ400_DOORS = { cab: [-8.4, -1.6, 5.2], middle: [-7.2, 0, 7.2], width: 1.62 } as const;
+
 export interface CarSpec {
   cab: boolean; // a driving end at +z
   /** Position of this car's middle in the set (0 front … 1 rear), for the stripe colours. */
@@ -389,7 +394,7 @@ export function cq400Geometry(spec: CarSpec, line: string) {
     k.box(1.3, 0.05, 2.8, 0, ROOF + 0.11, z - (spec.cab ? 0.6 : 0), C.roof, 0);
   }
   // Doors (three pairs a side) with line-colour indicator bars above.
-  const doors = spec.cab ? [-8.4, -1.6, 5.2] : [-7.2, 0, 7.2];
+  const doors = spec.cab ? CQ400_DOORS.cab : CQ400_DOORS.middle;
   for (const s of [-1, 1]) {
     const x = s * (W / 2 + 0.006);
     for (const dz of doors) {
