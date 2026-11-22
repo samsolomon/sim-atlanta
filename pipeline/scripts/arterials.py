@@ -235,6 +235,8 @@ def main(refresh=False):
         reason = None
         if s.get("F_SYSTEM") not in (3, 4):
             reason = f"f_system-{s.get('F_SYSTEM')}"
+        elif s.get("FACILITY_TYPE") not in (1, 2):
+            reason = "facility-type"
         elif not hpms_name(s):
             reason = "hpms-unnamed"  # no RouteName and no sourced route-number crosswalk
         elif hpms_name(s) != norm(oprops.get("name") or road.get("name")):
