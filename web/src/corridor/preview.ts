@@ -120,14 +120,16 @@ async function main() {
     post.position.set(c.x, y(c.groundNavd88M) + h / 2, c.z);
     scene.add(post);
   }
-  // Platforms as OSM draws them (lines), at the canopy's level only as a reference: their height is unknown.
+  // Platform plan only (OSM lines), drawn on the ground in grey dashes: their height is unknown.
   const project = makeProjector({ lon: -84.3916, lat: 33.7539 }); // ground.json horizontal origin (Five Points)
   for (const p of corridor.station.platforms) {
     const pts = p.ring.map(([lon, lat]) => {
       const [x, z] = project(lon, lat);
-      return new THREE.Vector3(x, (strip.grid.sample(x, z) ?? zero) - zero + 0.5, z);
+      return new THREE.Vector3(x, (strip.grid.sample(x, z) ?? zero) - zero + 0.05, z);
     });
-    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: '#7a5bb5' })));
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: '#6b665c', dashSize: 3, gapSize: 2 }));
+    line.computeLineDistances();
+    scene.add(line);
   }
 
   const facts = document.querySelector('#facts')!;

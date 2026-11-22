@@ -87,8 +87,8 @@ The downtown board ends at x = 1000 (about −84.3808). King Memorial station (O
 In total: 1,120 m measured, 190 m under the roof, and 55 m unknown.
 
 **Preview** (`/corridor.html`, dev only). It shows the two ground meshes joined at the x = 1000
-seam, the measured guideway (blue), the canopy roof (purple) and red marks where nothing was
-measured:
+seam, the measured guideway (blue), the canopy roof (purple), red marks where nothing was measured, and the
+OSM platform plans as grey dashes on the ground, because their height is unknown:
 
 ![Overview](log/ui/king-memorial/preview-overview.jpg)
 ![King Memorial](log/ui/king-memorial/preview-king-memorial.jpg)
