@@ -50,6 +50,7 @@ import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createWestin } from './westin';
 import { createStadium } from './stadium';
+import { createCapitol } from './capitol';
 import { createCongressCenter } from './congress-center';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -179,6 +180,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
   let westin: ReturnType<typeof createWestin> = null;
+  let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
     await build('alignments', () => {
@@ -203,7 +205,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         });
         const remaining = westin?.buildings ?? buildings;
         const stadium = createStadium(remaining, ground);
-        const exhibitionSite = stadium?.buildings ?? remaining;
+        const afterStadium = stadium?.buildings ?? remaining;
+        capitol = createCapitol(afterStadium, (x, z) => {
+          const h = ground.sample(x, z);
+          return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
+        });
+        const exhibitionSite = capitol?.buildings ?? afterStadium;
         const congressCenter = createCongressCenter(exhibitionSite, ground);
         const city = { ...vd, buildings: congressCenter?.buildings ?? exhibitionSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
@@ -212,6 +219,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
         if (stadium) world.group.add(stadium.group);
+        if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
@@ -512,6 +520,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     platforms?.setNight(night);
     floyd?.setNight(night);
     westin?.setNight(night);
+    capitol?.setNight(night);
     terrain?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
