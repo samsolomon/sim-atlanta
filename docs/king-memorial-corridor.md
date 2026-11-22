@@ -205,3 +205,54 @@ Three ways forward:
 pnpm data:corridor   # evidence pack and profile, then stage for /corridor.html
 pnpm dev             # open http://localhost:5173/corridor.html
 ```
+
+## Milestone 2: King Memorial in City (opt-in, `?east=king-memorial`)
+
+Marlin's east board mounts when the camera nears the seam (#79). Its mount then calls
+`attachEastRail` in `city.ts` (Rail's hook). That fetches `scene/king-memorial/corridor.json` and
+dynamically imports `web/src/city/east-rail.ts`. **Without the flag, nothing here is fetched,
+built or changed.**
+
+| Piece | How | Tier |
+|---|---|---|
+| Guideway east of x 1000 | The measured `GSU_CHAIN` anchors (#80), drawn as a deck on City's drawn tracks, with piers every 26 m clear of the mapped crossings | Bed **measured**; deck depth and piers **illustrative** |
+| Rail spans | `extendRail` copies the manifest and splits `connector-viaduct` into measured viaduct → `king-memorial-canopy` (`roofed`, `schematic`) → measured viaduct, per path and direction | — |
+| Deck and bed under the canopy (s 8945–9135) | Interpolated between the measured anchors either side | **Estimated**: not measured (the lidar sees only the roof) |
+| Canopy roof | Lidar roof height per 5 m, plan from lidar laterals (−8.8 to +13.0 m from the GTFS line), with the raised centre section | **Measured** |
+| Platforms | Two side platforms, s 8951–9129 (OSM length). Lips fitted to City's drawn tracks with the 75 mm level-boarding gap; outer edges just inside the roof; floor at car-floor level on the estimated bed | Plan **inferred**; height **estimated** |
+| Station columns, roof posts, stair towers | At the OSM subway entrances toward Decatur St SE (nodes 11877267661 and 11877267665); the photos show columns and open stair towers | **Illustrative** |
+| Trains | `martaAlignments` rebuilt on the joined bounds with a composite ground sampler, then swapped into `CityTrains` (`setTracks`). Trains get their own copy of the board clip planes; only that copy's east plane moves to x 1800. Georgia State's `visibleInStation` carries over, and cars stay visible under the open-sided King Memorial canopy. Follow uses the joined bounds and rail. | Scheduled (timetable) |
+
+**Downtown is unchanged west of the seam.**
+- A test rebuilds 155177 both ways. On observed spans, line and bed match within 1 cm.
+- On legacy schematic stretches the bed differs by up to 4 cm. `alignment()` indexes the legacy
+  profile by one ratio over the whole smoothed line, and a longer line shifts it slightly.
+
+**Reproducible frames** (Fri 2026-11-20, `?view=city&east=king-memorial&q=high&speed=0`):
+- **The trip:** pattern 4 on path 155177, Blue to Indian Creek. It departs Georgia State at 14:00:00,
+  crosses the seam (x 1000, s 8542) at 14:01:01, and stops at King Memorial at 14:02:00.
+- **The seam crossing,** at 14:01:01:
+  `__city.lookAt(1060, 520, { bearing: 330, metresPerPixel: 0.18, tilt: 66 })`.
+
+  ![Seam](log/ui/king-memorial/city-seam-140101.jpg)
+- **Approach, stop and departure** (14:01:45, 14:02:00, 14:02:15), plus the Decatur St view.
+  - Platform view: `lookAt(1480, 445, { bearing: 330, metresPerPixel: 0.09, tilt: 62 })`.
+  - Decatur St pedestrian view: `lookAt(1455, 440, { bearing: 200, metresPerPixel: 0.035, tilt: 82 })`.
+
+  ![Station](log/ui/king-memorial/city-station-approach-stop-depart.jpg)
+- **Follow across the seam:** `&follow=1&controls=1`, starting at 14:00:50. Tap the train at the
+  Connector, choose **Follow train**, then **1×**. The card keeps the same Blue Line trip,
+  "Scheduled · not live". Following stays active across x 1000 and into the station, and the next
+  stop advances to Inman Park–Reynoldstown.
+
+  ![Follow](log/ui/king-memorial/city-follow-across-seam.jpg)
+
+**Evidence gaps:**
+- **Zero dwell:** the timetable gives arrival = departure at King Memorial, so the "stop" is the
+  easing curve's momentary halt.
+- **Deck and platform heights under the canopy** are estimated.
+- **Columns, posts and stair towers** are illustrative.
+- **City draws both tracks about 2.2 m north of the real axis**, as at Georgia State.
+- **Green terminators** (155214 arriving, 155221 departing): their trips end and begin at the King
+  Memorial stop, and the schedule never advances them past it. So no position falls on the 799 m
+  chord. I have not checked a terminating train visually.

@@ -1720,3 +1720,14 @@ under a viaduct can drop 10 m in a few metres across the Connector.
 ### 2026-11-22 — Around the corner at Marchon
 
 From Grant Street, Marchon reads as apartments over shops. Around the corner on Oakland Avenue, the nearest four-story wing meets the sidewalk with paired windows in dark masonry. The March 2025 street photograph gave City a second ground-floor treatment for the same building family. Three mapped apartment masses now share one facade layout, with palette, balcony spacing and ground-floor use chosen for each elevation. The five-story courtyard block and both four-story wings keep their recorded floor counts. City can reuse this style for identified four-to-six-story apartments and add another when a nearby example calls for one. In the matched desktop view, City gained 13,856 triangles and stayed at 67 draw calls. [Matched Oakland view before](log/ui/king-memorial-board/oakland-before.jpg) · [After](log/ui/king-memorial-board/oakland-after.jpg) · [Street photograph, courtyard evidence and camera](log/ui/king-memorial-board/README.md#marchon-from-oakland-avenue)
+
+### 2026-11-22: The first train to leave the board
+
+At 2:01:01 p.m. on the Friday timetable, the 1:50 Blue Line train to Indian Creek crosses x = 1000,
+the edge City had stopped at since the first downtown diorama. It keeps going on the measured
+viaduct, past the Hulsey yard tracks, and stops under King Memorial's canopy at 2:02.
+
+Only the roof under the canopy is measured; the deck and platform heights there are estimated, and
+the study says so. The follow camera stays with the train across the seam.
+
+![The Blue Line crossing into the King Memorial area](log/ui/king-memorial/city-seam-140101.jpg)
