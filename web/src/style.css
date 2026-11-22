@@ -80,7 +80,7 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
     top: max(76px, calc(env(safe-area-inset-top) + 68px)); bottom: auto;
     max-height: calc(100dvh - 190px); overflow-y: auto;
   }
-  .in3d #card.following-trip dl, .in3d #card.following-trip .tip { display: none; }
+  .in3d #card.following-trip dl > :not(.position-report), .in3d #card.following-trip .tip { display: none; }
   #train-follow button { min-height: 44px; }
   .in3d #card h2 { padding-right: 34px; }
   .in3d #card .close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
