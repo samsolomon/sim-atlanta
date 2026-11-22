@@ -56,6 +56,7 @@ import { createCoreyTower } from './corey';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createGrady } from './grady';
+import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -188,6 +189,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let floyd: ReturnType<typeof createFloyd> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
   let westin: ReturnType<typeof createWestin> = null;
+  let arena: ReturnType<typeof createStateFarmArena> = null;
   let grady: ReturnType<typeof createGrady> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
@@ -225,7 +227,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         });
         const exhibitionSite = capitol?.buildings ?? afterStadium;
         const congressCenter = createCongressCenter(exhibitionSite, ground);
-        const hospitalSite = congressCenter?.buildings ?? exhibitionSite;
+        const arenaSite = congressCenter?.buildings ?? exhibitionSite;
+        arena = createStateFarmArena(arenaSite, groundAt);
+        const hospitalSite = arena?.buildings ?? arenaSite;
         grady = createGrady(hospitalSite, ground);
         const city = { ...vd, buildings: grady?.buildings ?? hospitalSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
@@ -238,6 +242,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (stadium) world.group.add(stadium.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
+        if (arena) world.group.add(arena.group);
         if (grady) world.group.add(grady.group);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
@@ -543,6 +548,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     westin?.setNight(night);
     peachtree?.setNight(night);
     capitol?.setNight(night);
+    arena?.setNight(night);
     grady?.setNight(night);
     terrain?.setNight(night);
     bloom.strength = 0.55 * night;
