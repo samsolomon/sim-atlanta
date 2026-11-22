@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Builder, pointInRing, rng, segDist, type P2 } from './geom';
 import { appendParkedSedan } from './parked-sedan';
+import { appendSteelDeck, campusSteelDecks, upperSurface } from './steel-parking-deck';
 import type { VBuilding } from './world';
 
 interface Deck {
@@ -72,6 +73,13 @@ const decks = new Map<string, Deck>([
   ],
 ]);
 
+const rectangle = (u: number, v: number, w: number, d: number): P2[] => [
+  [u - w / 2, v - d / 2],
+  [u + w / 2, v - d / 2],
+  [u + w / 2, v + d / 2],
+  [u - w / 2, v + d / 2],
+];
+
 type EdgeFace = (start: number, end: number, low: number, high: number, colour: string, inset?: number) => void;
 
 // Piedmont encloses its ten levels behind five taller structural bays. The
@@ -100,11 +108,11 @@ function piedmontWall(
     face(start, start + 0.64, foot, crown, '#c7bba3');
     if (!brick) {
       const mid = start + width / 2;
-      face(mid - .22, mid, low, crown, '#c6c8b9', .10);
-      face(mid, mid + .16, low, crown, '#828984', .12);
+      face(mid - 0.22, mid, low, crown, '#c6c8b9', 0.1);
+      face(mid, mid + 0.16, low, crown, '#828984', 0.12);
       for (let level = 1; level < 10; level++) {
         const y = base + (level * pitch) / 2;
-        face(start + 0.64, end, y - .55, y + .12, '#6e756e', .16);
+        face(start + 0.64, end, y - 0.55, y + 0.12, '#6e756e', 0.16);
       }
     }
   }
@@ -117,15 +125,11 @@ function piedmontWall(
 /** Append to the ordinary building batch, using the caller's foundation. Height corrections are documented in docs/campus-decks.md. */
 export function appendParkingDeck(b: Builder, building: VBuilding, foot: number, base: number, bakedRoof: number) {
   const deck = decks.get(building.id);
-  if (!deck || building.cls !== 'parking' || !(bakedRoof > base + 5) || building.rings.length !== 1) return false;
+  const steel = campusSteelDecks.get(building.id);
+  if ((!deck && !steel) || building.cls !== 'parking' || !(bakedRoof > base + 5) || building.rings.length !== 1)
+    return false;
   const outer = building.rings[0];
   if (outer.length < 3) return false;
-  const roof = deck.elevationAboveFoundation === undefined ? bakedRoof : base + deck.elevationAboveFoundation;
-  const area = THREE.ShapeUtils.area(outer.map(([x, z]) => new THREE.Vector2(x, z)));
-  const pitch = (roof - base) / (deck.levels - 1);
-  const rail = 1.1,
-    slab = 0.36;
-  const crown = roof + rail;
   const axis = (41 * Math.PI) / 180,
     c = Math.cos(axis),
     s = Math.sin(axis);
@@ -138,6 +142,25 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
   const uv = (x: number, z: number): P2 => [(x - cx) * c + (z - cz) * s, -(x - cx) * s + (z - cz) * c];
   const world = (u: number, v: number): P2 => [cx + c * u - s * v, cz + s * u + c * v];
   const pos = (p: P2, y: number) => [p[0], y, p[1]];
+  const local = outer.map(([x, z]) => uv(x, z));
+  if (steel) {
+    const exclusions = appendSteelDeck(b, steel, local, world, foot, base, bakedRoof);
+    const start = b.pos.length;
+    appendStalls(b, steel.occupancy, false, local, exclusions, world, bakedRoof, c, s);
+    // Apply the same grade to stripes, tire contacts and sedan bodywork.
+    for (let i = start; i < b.pos.length; i += 3) {
+      const [u, v] = uv(b.pos[i], b.pos[i + 2]);
+      b.pos[i + 1] += upperSurface(steel, u >= 0, v);
+    }
+    return true;
+  }
+  if (!deck) return false;
+  const roof = deck.elevationAboveFoundation === undefined ? bakedRoof : base + deck.elevationAboveFoundation;
+  const area = THREE.ShapeUtils.area(outer.map(([x, z]) => new THREE.Vector2(x, z)));
+  const pitch = (roof - base) / (deck.levels - 1);
+  const rail = 1.1,
+    slab = 0.36;
+  const crown = roof + rail;
   const innerSign = Math.sign(area);
   for (let i = 0; i < outer.length; i++) {
     const [x, z] = outer[i],
@@ -199,13 +222,6 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
     }
   }
 
-  const local = outer.map(([x, z]) => uv(x, z));
-  const rectangle = (u: number, v: number, w: number, d: number): P2[] => [
-    [u - w / 2, v - d / 2],
-    [u + w / 2, v - d / 2],
-    [u + w / 2, v + d / 2],
-    [u - w / 2, v + d / 2],
-  ];
   // Two ramp openings are visible in the Hackney aerial. Their low ends disappear
   // beneath the roof. Butler has uninterrupted pale pavement across its top level.
   const holes = (deck.rampCenters ?? [])
@@ -239,10 +255,26 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
     b.quad(top[0], top[1], top[2], top[3], '#ccc8b8');
   }
 
+  appendStalls(b, deck.occupancy, deck.acrossRows ?? false, local, exclusions, world, roof, c, s);
+  return true;
+}
+
+function appendStalls(
+  b: Builder,
+  occupancy: number,
+  acrossRows: boolean,
+  local: P2[],
+  exclusions: P2[][],
+  world: (u: number, v: number) => P2,
+  roof: number,
+  c: number,
+  s: number
+) {
+  const pos = (p: P2, y: number) => [p[0], y, p[1]];
   // Draw parking lines and a few illustrative parked cars directly into this batch.
   // Keep their entire rectangles clear of parapets and ramp openings.
-  const rowPoint = ([u, v]: P2): P2 => (deck.acrossRows ? [v, -u] : [u, v]);
-  const pavement = (u: number, v: number) => (deck.acrossRows ? world(-v, u) : world(u, v));
+  const rowPoint = ([u, v]: P2): P2 => (acrossRows ? [v, -u] : [u, v]);
+  const pavement = (u: number, v: number) => (acrossRows ? world(-v, u) : world(u, v));
   const perimeter = local.map(rowPoint);
   const keepClear = exclusions.map((box) => {
     const points = box.map(rowPoint);
@@ -272,18 +304,17 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
           continue;
         const mark = rectangle(center, v - 1.25, 5.1, 0.14).map(([x, z]) => pos(pavement(x, z), roof + 0.035));
         b.quad(mark[0], mark[1], mark[2], mark[3], '#dfdccc');
-        if (random() > deck.occupancy) continue;
+        if (random() > occupancy) continue;
         const paint = ['#a0abad', '#d4c9b6', '#a66f59', '#667a88'][Math.floor(random() * 4)];
         appendParkedSedan(
           b,
           pavement(center, v),
           roof,
-          side * (deck.acrossRows ? -s : c),
-          side * (deck.acrossRows ? c : s),
+          side * (acrossRows ? -s : c),
+          side * (acrossRows ? c : s),
           paint
         );
       }
     }
   }
-  return true;
 }

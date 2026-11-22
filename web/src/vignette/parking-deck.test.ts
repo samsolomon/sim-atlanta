@@ -240,3 +240,125 @@ it('leaves the adjoining Correll Pavilion in the ordinary building batch', () =>
   const correll = { ...piedmont, id: 'c99d5a4d-78c0-4dee-a9ad-d5122fea8f8b' };
   expect(Math.max(...build([correll]).geometry.getAttribute('aStyle').array)).toBeGreaterThanOrEqual(0);
 });
+
+const steelDecks: (VBuilding & { name: string })[] = [
+  {
+    id: 'bdaf3eb3-d438-414b-8fb3-4ca8fff3b752',
+    h: 14.6,
+    floors: 5,
+    cls: 'parking',
+    name: 'S Deck',
+    rings: [
+      [
+        [743.01, 277.41],
+        [780.32, 234.29],
+        [752.64, 210.6],
+        [715.57, 253.48],
+      ],
+    ],
+  },
+  {
+    id: '1ac40424-9462-48ad-b897-d260ca57dd38',
+    h: 18.4,
+    floors: 7,
+    cls: 'parking',
+    name: 'K Deck',
+    rings: [
+      [
+        [728.16, 282.45],
+        [726.21, 284.87],
+        [704.14, 266.31],
+        [651.66, 326.17],
+        [655.09, 328.97],
+        [657.02, 327.43],
+        [679.25, 346.71],
+        [732.26, 285.98],
+      ],
+    ],
+  },
+  {
+    id: '99b12a07-cc31-4357-bbd6-28e528f5e8a8',
+    h: 18.2,
+    floors: 7,
+    cls: 'parking',
+    name: 'N Deck',
+    rings: [
+      [
+        [694.67, 256.92],
+        [672.51, 238.14],
+        [619.9, 298.17],
+        [623.66, 301.66],
+        [625.88, 299.44],
+        [648.22, 319.0],
+        [700.8, 258.86],
+        [696.42, 255.15],
+      ],
+    ],
+  },
+];
+
+it.each(steelDecks)('keeps $name inside its own footprint and seats all four tires on the surveyed grades', (deck) => {
+  const mesh = build([deck]);
+  const g = mesh.geometry,
+    pos = g.getAttribute('position'),
+    colour = g.getAttribute('color');
+  const ring = deck.rings[0],
+    tire = new Color('#242528');
+  const axis = (41 * Math.PI) / 180,
+    c = Math.cos(axis),
+    s = Math.sin(axis);
+  const cx = (Math.min(...ring.map((p) => p[0])) + Math.max(...ring.map((p) => p[0]))) / 2;
+  const cz = (Math.min(...ring.map((p) => p[1])) + Math.max(...ring.map((p) => p[1]))) / 2;
+  const top = -17 + deck.h!;
+  const split = deck.name === 'S Deck';
+  const pavement = (u: number, v: number) => {
+    if (split) return top + (u < 0 ? 0.022 * (v - 28) : -1.23 - 0.022 * (28 + v));
+    const upper = top - ((deck.name === 'K Deck' ? 1.27 : 1.33) * Math.max(0, Math.min(30, Math.abs(v)) - 3)) / 27;
+    const ramp = Math.abs(u) < 15 && u * v > 0 && Math.abs(v) > 3 && Math.abs(v) < 30;
+    return upper - (ramp ? ((deck.name === 'K Deck' ? 2.62 : 2.66) * (30 - Math.abs(v))) / 27 : 0);
+  };
+  // Test both sides of the central split at two stations, including both lower ramps.
+  for (const u of [-8, 8])
+    for (const v of [-17, 17]) {
+      const origin = new Vector3(cx + c * u - s * v, 30, cz + s * u + c * v);
+      const hit = new Raycaster(origin, new Vector3(0, -1, 0)).intersectObject(mesh)[0];
+      expect(hit.point.y).toBeCloseTo(pavement(u, v), 2);
+    }
+  const contacts = new Set<string>();
+  let tireVertices = 0;
+  const pavementColour = new Color('#b0afab');
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i),
+      z = pos.getZ(i),
+      y = pos.getY(i);
+    if (
+      !pointInRing(x, z, ring) &&
+      Math.min(...ring.map((p, j) => segDist(x, z, p, ring[(j + 1) % ring.length]))) > 0.02
+    )
+      throw new Error(deck.name + ' extends past its surveyed perimeter');
+    if (
+      Math.abs(colour.getX(i) - tire.r) + Math.abs(colour.getY(i) - tire.g) + Math.abs(colour.getZ(i) - tire.b) >
+      1e-5
+    )
+      continue;
+    tireVertices++;
+    const u = (x - cx) * c + (z - cz) * s,
+      v = -(x - cx) * s + (z - cz) * c;
+    const above = y - pavement(u, v);
+    if (above < -0.001) throw new Error('Sunken tire');
+    const key = x + ',' + z;
+    if (above < 0.001 && !contacts.has(key)) {
+      const hits = new Raycaster(new Vector3(x, y + 0.5, z), new Vector3(0, -1, 0)).intersectObject(mesh);
+      // Find the actual upper parking pavement under the contact patch. A tire
+      // over either lower circulation ramp cannot satisfy this check.
+      const pavementHit = hits.find(({ face }) => face && Math.abs(colour.getX(face.a) - pavementColour.r) < 1e-6);
+      expect(pavementHit?.point.y).toBeCloseTo(y, 3);
+      contacts.add(key);
+    }
+  }
+  const cars = contacts.size / 8;
+  expect(cars).toBe(tireVertices / 72);
+  expect(Number.isInteger(cars)).toBe(true);
+  expect(cars).toBeGreaterThanOrEqual(1);
+  expect(cars).toBeLessThanOrEqual(split ? 4 : deck.name === 'K Deck' ? 4 : 10);
+});
