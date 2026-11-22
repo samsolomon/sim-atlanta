@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-11-21T16:35:17.417Z",
         "reason": "Deliberate: the warm paper background is the diorama's palette from the chosen art style (AGENTS.md art direction; Sam asked Map/City/About to work back from the vignette look)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "web/corridor.html"
+        ],
+        "createdAt": "2026-11-22T23:44:53.313Z",
+        "reason": "project palette: dev-only corridor preview reuses terrain-preview.html's established #e8e4d9 board background (Claude, matching existing repo page)"
       }
     ]
   }

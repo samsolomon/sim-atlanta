@@ -88,6 +88,11 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
       expect(Math.abs(p.outer)).toBeGreaterThan(Math.abs(p.lip) + 3);
     }
     expect(rail.mesh.geometry.attributes.position.count).toBeGreaterThan(1000);
+    // The OSM station building is drawn on its footprint, from the ground to under the platforms.
+    expect(rail.building).toBeDefined();
+    expect(rail.building!.ring).toHaveLength(26);
+    expect(rail.building!.top).toBeLessThan(rail.floor(9040) - 0.8);
+    expect(rail.building!.top - rail.building!.base).toBeGreaterThan(8);
     // The drawn roof is the measured roof wherever the lidar saw it.
     for (const r of rail.roofDrawn) {
       const m = pack.guideway.reduce((a, b) => (Math.abs(b.s - r.s) < Math.abs(a.s - r.s) ? b : a));
