@@ -80,6 +80,68 @@ function bicycleAndRider() {
   return b.geometry();
 }
 
+const joints = {
+  walkingLeg: { x: .096, y: .783, z: 0, swing: .43 },
+  walkingArm: { x: .216, y: 1.31, z: 0, swing: -.40 },
+  cyclingLeg: { x: .133, y: 1, z: -.16, swing: .23 },
+};
+type Joint = keyof typeof joints;
+
+function poseLimb(limb: THREE.Object3D, joint: Joint, side: number, stride: number) {
+  const pivot = joints[joint];
+  limb.position.set(side * pivot.x, pivot.y, pivot.z);
+  limb.rotation.x = side * stride * pivot.swing;
+  limb.updateMatrix();
+}
+
+/** One full-size City figure at the origin, facing +Z. Phase 0..1 is one full cycle. */
+export function createFigurePreview(kind: 'walker' | 'cyclist') {
+  const group = new THREE.Group();
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Map<string, THREE.MeshLambertMaterial>();
+  function part(geometry: THREE.BufferGeometry, color = chalk) {
+    geometries.add(geometry);
+    let material = materials.get(color);
+    if (!material) {
+      material = new THREE.MeshLambertMaterial({ color, vertexColors: true });
+      materials.set(color, material);
+    }
+    const mesh = new THREE.Mesh(geometry, material);
+    group.add(mesh);
+    return mesh;
+  }
+
+  const limbs: { mesh: THREE.Mesh; joint: Joint; side: number }[] = [];
+  function pair(geometry: THREE.BufferGeometry, joint: Joint, color = chalk) {
+    for (const side of [-1, 1]) limbs.push({ mesh: part(geometry, color), joint, side });
+  }
+  if (kind === 'walker') {
+    part(jacket(), jackets[0]);
+    part(head(), faces[0]);
+    pair(sleeve(), 'walkingArm', jackets[0]);
+    pair(leg(false), 'walkingLeg');
+  } else {
+    part(bicycleAndRider());
+    pair(leg(true), 'cyclingLeg');
+  }
+
+  function setPhase(cycle: number) {
+    const stride = Math.sin((cycle % 1) * 2 * Math.PI);
+    for (const { mesh, joint, side } of limbs) poseLimb(mesh, joint, side, stride);
+  }
+  setPhase(0);
+  return {
+    group, setPhase,
+    dispose() {
+      group.removeFromParent();
+      for (const geometry of geometries) geometry.dispose();
+      for (const material of materials.values()) material.dispose();
+      geometries.clear();
+      materials.clear();
+    },
+  };
+}
+
 // At overview scale a person covers only a few pixels. Keep the coat, head
 // and base silhouette in one inexpensive draw, reserving limbs for close views.
 function distantFigure(rider: boolean) {
@@ -140,10 +202,8 @@ export class StreetFigures {
     this.distantRiders = batch(distantFigure(true), riders);
   }
 
-  private joint(batch: THREE.InstancedMesh, index: number, x: number, y: number, z: number, swing: number) {
-    this.limb.position.set(x, y, z);
-    this.limb.rotation.x = swing;
-    this.limb.updateMatrix();
+  private joint(batch: THREE.InstancedMesh, index: number, joint: Joint, side: number, stride: number) {
+    poseLimb(this.limb, joint, side, stride);
     batch.setMatrixAt(index, this.matrix.multiplyMatrices(this.root.matrix, this.limb.matrix));
   }
 
@@ -179,7 +239,7 @@ export class StreetFigures {
         this.cycles.setMatrixAt(rider, this.root.matrix);
         for (let i = 0; i < 2; i++) {
           const side = i * 2 - 1;
-          this.joint(this.pedals, rider * 2 + i, side * .133, 1.00, -.16, p.stride * side * .23);
+          this.joint(this.pedals, rider * 2 + i, 'cyclingLeg', side, p.stride);
         }
         rider++;
       } else {
@@ -190,9 +250,9 @@ export class StreetFigures {
         this.arms.setColorAt(walker * 2, this.tint);
         this.arms.setColorAt(walker * 2 + 1, this.tint);
         for (let i = 0; i < 2; i++) {
-          const side = i * 2 - 1, swing = side * p.stride;
-          this.joint(this.legs, walker * 2 + i, side * .096, .783, 0, swing * .43);
-          this.joint(this.arms, walker * 2 + i, side * .216, 1.31, 0, -swing * .40);
+          const side = i * 2 - 1;
+          this.joint(this.legs, walker * 2 + i, 'walkingLeg', side, p.stride);
+          this.joint(this.arms, walker * 2 + i, 'walkingArm', side, p.stride);
         }
         walker++;
       }
