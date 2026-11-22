@@ -1460,3 +1460,22 @@ In the old dusk view, six Blue Line cars headed for what looked like a solid off
 We brought the City track about two metres sideways onto the mapped passage and kept the timetable distances on their original vertices. That lets the train run along the brick platform, pass between the jambs and disappear behind the lit entrance bays. The opening uses the same track bed and ceiling height as the towers. The 12-metre view into each end and the lighting are artistic estimates. [Daylight arrival](log/ui/georgia-state-station/day-platform.jpg) · [Dusk entrance](log/ui/georgia-state-station/dusk-entrance.jpg)
 
 On the physical Galaxy A16, the default low-tier opening averaged 51 fps. A moving dusk arrival averaged 60 fps in the closer station view, compared with 67 fps at the same camera on the previous release. Each measurement combines three foreground eight-second samples. [A16 at the station](log/ui/georgia-state-station/a16-dusk.jpg)
+
+### 2026-11-22: Four tracks, two islands, and a timetable that won't say which track
+
+Avondale is the second test case for the shared platform model. It has two island platforms and
+four tracks:
+- the Blue Line's two main tracks outside;
+- two centre tracks between the islands, which lead to the yard.
+
+The timetable says which platform a train calls at, since each island has its own GTFS stop id.
+It never says which of that island's two tracks the train uses.
+
+So the fixture keeps three things apart:
+- the physical edges (tracks facing platforms);
+- the scheduled platform;
+- the track, which is a candidate set with a "usually the main" that is only inferred.
+
+The Green Line turnbacks that OSM still maps on the centre tracks are absent from the current
+feed and from MARTA's station page. They are kept as reported history, not as service.
+[Layout and sources](avondale-layout.md)
