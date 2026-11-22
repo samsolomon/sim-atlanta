@@ -11,6 +11,7 @@ import { gradeShader } from '../vignette/grade';
 import { busGeometry, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
 import { inkShader } from '../vignette/ink';
+import { figureLooks } from '../city/figure-looks';
 import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
 
@@ -64,6 +65,13 @@ let cars: THREE.Mesh[] = [];
 let figure: ReturnType<typeof createFigurePreview> | undefined;
 const play = document.querySelector<HTMLButtonElement>('#play')!;
 const phase = document.querySelector<HTMLInputElement>('#phase')!;
+const lookByModel = { walker: 0, cyclist: 0 };
+const nextLook = document.querySelector<HTMLButtonElement>('#next-look')!;
+nextLook.addEventListener('click', () => {
+  if (model !== 'walker' && model !== 'cyclist') return;
+  lookByModel[model] = (lookByModel[model] + 1) % figureLooks.length;
+  figure?.setLook(lookByModel[model]);
+});
 let cycle = 0;
 let playing = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 function setPlaying(next: boolean) {
@@ -97,18 +105,19 @@ function build() {
   document.getElementById('lines')!.hidden = model !== 'cq400';
   document.getElementById('roles')!.hidden = model !== 'cq400';
   document.getElementById('motion')!.hidden = !person;
+  nextLook.hidden = !person;
   document.getElementById('title')!.textContent = models[model];
   document.title = models[model] + ' · Model Lab · Sim Atlanta';
   if (model === 'walker' || model === 'cyclist') {
-    figure = createFigurePreview(model);
+    figure = createFigurePreview(model, lookByModel[model]);
     figure.group.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
     scene.add(figure.group);
     cycle = .125;
     phase.value = String(Math.round(cycle * 100));
     figure.setPhase(cycle);
     document.getElementById('blurb')!.textContent = model === 'walker'
-      ? 'An illustrative downtown pedestrian with a daypack and a swinging stride.'
-      : 'An illustrative rider from the Westside Beltline Connector, with a helmet and an orange bicycle.';
+      ? 'An illustrative downtown pedestrian with a swinging stride.'
+      : 'An illustrative rider from the Westside Beltline Connector, on a city bicycle.';
     return;
   }
   if (model === 'cm44ac') {

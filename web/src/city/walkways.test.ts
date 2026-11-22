@@ -42,7 +42,7 @@ describe('mapped outdoor footways', () => {
   });
   it('replays both directions from scene time and turns inside the supported interval', () => {
     const p: Traveller = { way: { line: new Line([[10, 0], [110, 0]]), from: 2, to: 98, trail: false },
-      rider: false, size: 1, tint: 0, phase: 0, speed: 1 };
+      rider: false, size: 1, look: 0, phase: 0, speed: 1 };
     const first = travellerAt(p, 3);
     const returning = travellerAt(p, 192 - 3);
     expect(first.x).toBe(returning.x);
