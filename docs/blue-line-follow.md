@@ -12,6 +12,6 @@ The camera holds a bearing of −148°, a 26° tilt and a 300 m distance from it
 
 **Stop following** leaves the camera where it is. Dragging, wheeling or using the City navigation keys returns camera control to the viewer. Escape, closing the card, another selection, or switching to Map clears follow. Follow also ends if the train leaves the board or its identity, path or position source changes. If City has no drawn car and no recorded cover at the source position, the card says “Train out of view.”
 
-With reduced motion enabled, **Follow train** frames the trip once. The card continues tracking its status while the camera stays still. **Recenter** frames the current position on demand.
+With reduced motion enabled, **Follow train** frames the trip once. The card continues tracking its status while the camera stays still. **Recenter** frames the current position on demand. During follow, the narrow card keeps the destination, source tier and controls above the train. Stopping restores the detailed card. [Night view at 360 × 560](log/ui/2026-11-22-follow-night-narrow.jpg)
 
 The preview is enabled with `?follow=1`. It uses the existing train source, drawn cars, ground sampler and rail cover bake. Shipping it requires a web rebuild and redeploy. The camera adds no data fetch or upstream service.

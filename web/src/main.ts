@@ -52,6 +52,7 @@ const recenter = followPanel.querySelector<HTMLButtonElement>('[data-recenter]')
 const followStatus = followPanel.querySelector<HTMLElement>('.follow-status')!;
 function updateFollowPanel() {
   if (!follow) return;
+  card.classList.toggle('following-trip', follow.active);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const note = {
     idle: '', drawn: 'Following train',
@@ -83,11 +84,13 @@ let selectedTrain: string | null = null;
 function showCard(html: string, canFollow = false) {
   followPanel.hidden = !canFollow;
   if (canFollow) updateFollowPanel();
+  else card.classList.remove('following-trip');
   if (lastCardHTML !== html) cardContent.innerHTML = lastCardHTML = html;
   card.hidden = false;
 }
 function hideCard() {
   follow?.stop();
+  card.classList.remove('following-trip');
   followPanel.hidden = true;
   card.hidden = true;
   selectedBus = null;
