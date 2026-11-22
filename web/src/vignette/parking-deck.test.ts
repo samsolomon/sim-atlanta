@@ -1,0 +1,170 @@
+import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
+import { expect, it } from 'vitest';
+import { World, type VBuilding, type VData } from './world';
+import { Builder, pointInRing, segDist, type P2 } from './geom';
+
+import { appendParkedSedan } from './parked-sedan';
+import { vehicleGeometry } from './vehicles';
+
+const butler: VBuilding = {
+  id: '72f23ef4-84a0-4567-9af7-4478de81418f',
+  cls: 'parking',
+  floors: 3,
+  h: 12.5,
+  rings: [
+    [
+      [859.01, 347.76],
+      [782.73, 281.53],
+      [773.2, 273.26],
+      [696.53, 360.78],
+      [769.89, 425.64],
+      [773.24, 421.82],
+      [777.64, 425.71],
+      [787.66, 421.87],
+      [790.24, 418.95],
+      [792.55, 420.7],
+      [803.28, 411.6],
+      [827.77, 383.55],
+      [853.1, 354.53],
+    ],
+  ],
+};
+const hackney: VBuilding = {
+  id: '8f620b71-89f0-439f-8edd-d03cee0fe93f',
+  cls: 'parking',
+  floors: 6,
+  h: 16.0156,
+  rings: [
+    [
+      [712.47, 485.67],
+      [723.37, 495.25],
+      [762.59, 450.7],
+      [686.91, 384.06],
+      [686.29, 384.77],
+      [680.57, 379.73],
+      [676.34, 384.52],
+      [678.8, 386.69],
+      [637.74, 433.33],
+      [635.46, 431.31],
+      [624.51, 443.76],
+      [630.98, 449.45],
+      [634.95, 444.94],
+      [636.76, 446.54],
+      [662.18, 468.92],
+      [665.33, 465.34],
+      [676.83, 475.47],
+      [683.9, 467.45],
+      [709.03, 489.58],
+    ],
+  ],
+};
+
+const bounds = { minX: 600, maxX: 880, minZ: 250, maxZ: 510 };
+function build(buildings: VBuilding[], ground: VData['ground'] = []) {
+  const w = new World({ bounds, buildings, ground, roads: [], rail: [] }, null, {
+    terrain: 'flat',
+    clumps: 1,
+    lightMapMax: 256,
+  });
+  w.buildBuildings(() => -17);
+  return w.group.children[0] as Mesh<BufferGeometry>;
+}
+
+it.each([butler, hackney])('keeps the surveyed footprint, base and roof of $id in the shared batch', (building) => {
+  const g = build([building]).geometry;
+  expect(new Set(g.getAttribute('aStyle').array)).toEqual(new Set([-1]));
+  const ring = building.rings[0];
+  const pos = g.getAttribute('position');
+  expect(pos.count / 3).toBeLessThan(19000);
+  g.computeBoundingBox();
+  expect(g.boundingBox!.min.y).toBeCloseTo(-17.5);
+  expect(g.boundingBox!.max.y).toBeCloseTo(-17 + building.h! + 1.42);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i),
+      z = pos.getZ(i);
+    if (pointInRing(x, z, ring)) continue;
+    // Adjacent face normals can diverge at a kink. The outer silhouette stays on the ring.
+    const distance = Math.min(...ring.map((p, j) => segDist(x, z, p, ring[(j + 1) % ring.length])));
+    if (distance > 0.02) throw new Error(`Deck crosses the footprint by ${distance} m at ${x}, ${z}`);
+  }
+});
+
+it('sets the parking interior back behind the concrete slab edge', () => {
+  const mesh = build([butler]);
+  const [start, end] = butler.rings[0];
+  const along = new Vector3(end[0] - start[0], 0, end[1] - start[1]).normalize();
+  const normal = new Vector3(-along.z, 0, along.x);
+  const wall = new Vector3(start[0], 0, start[1]).addScaledVector(along, 4);
+  if (pointInRing(wall.x + normal.x, wall.z + normal.z, butler.rings[0])) normal.negate();
+  function depth(h: number) {
+    const eye = wall.clone().addScaledVector(normal, 5);
+    eye.y = -17 + h;
+    return new Raycaster(eye, normal.clone().negate()).intersectObject(mesh)[0].distance;
+  }
+  expect(depth(0.7)).toBeCloseTo(5);
+  expect(depth(2)).toBeCloseTo(6.2);
+  expect(depth(butler.h! + 1.05)).toBeCloseTo(5);
+});
+
+it('leaves the sloping approaches open through the Hackney roof', () => {
+  const mesh = build([hackney]);
+  const ring = hackney.rings[0];
+  const xs = ring.map(([x]) => x),
+    zs = ring.map(([, z]) => z);
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
+    cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+  const axis = (41 * Math.PI) / 180;
+  const pitch = hackney.h! / 5;
+  for (const u of [-16, 24]) {
+    for (const v of [-7, 0, 7]) {
+      const origin = new Vector3(
+        cx + Math.cos(axis) * u - Math.sin(axis) * v,
+        30,
+        cz + Math.sin(axis) * u + Math.cos(axis) * v
+      );
+      const hit = new Raycaster(origin, new Vector3(0, -1, 0)).intersectObject(mesh)[0];
+      expect(hit.point.y).toBeCloseTo(-17 + hackney.h! - (pitch * (10.5 - v)) / 21, 3);
+    }
+  }
+});
+
+it('preserves the ordinary facade on unverified buildings and keeps surface lots out of the building batch', () => {
+  for (const b of [
+    { ...butler, cls: 'hospital' },
+    { ...butler, id: 'other-deck' },
+  ]) {
+    expect(Math.max(...build([b]).geometry.getAttribute('aStyle').array)).toBeGreaterThanOrEqual(0);
+  }
+  const rings: P2[][] = butler.rings;
+  expect(build([], [{ kind: 'parking', name: null, sub: null, rings }]).geometry.getAttribute('position').count).toBe(
+    0
+  );
+});
+
+it('places four tires on the pavement and matches the road sedan shell at sill and roof', () => {
+  const parked = new Builder();
+  const pavement = 6.5;
+  appendParkedSedan(parked, [0, 0], pavement, 1, 0, '#fff');
+  const contacts = new Set<string>();
+  const shell: number[] = [];
+  for (let i = 0; i < parked.pos.length; i += 3) {
+    const [x, y, z] = parked.pos.slice(i, i + 3);
+    expect(y).toBeGreaterThanOrEqual(pavement);
+    if (y === pavement) {
+      expect(Math.abs(z)).toBeGreaterThan(0.7);
+      expect(Math.abs(Math.abs(x) - 1.457)).toBeLessThan(0.15);
+      contacts.add([Math.sign(x), Math.sign(z)].join(','));
+    }
+    if (parked.col[i] === 1) shell.push(y - pavement);
+  }
+  const moving = vehicleGeometry('sedan');
+  const pos = moving.getAttribute('position'),
+    kind = moving.getAttribute('aKind');
+  const roadShell = Array.from({ length: pos.count }, (_, i) => i)
+    .filter((i) => kind.getX(i) === 0)
+    .map((i) => pos.getY(i));
+  expect(contacts.size).toBe(4);
+  expect(Math.min(...shell)).toBeCloseTo(Math.min(...roadShell));
+  expect(Math.max(...shell)).toBeCloseTo(Math.max(...roadShell));
+  moving.dispose();
+});

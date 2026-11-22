@@ -12,6 +12,9 @@ export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' |
 
 export const LENGTH: Record<VehicleType, number> = { sedan: 4.7, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6 };
 
+// Shared by the moving road sedan and the lower-detail sedan baked into parking decks.
+export const SEDAN = { length: LENGTH.sedan, width: 1.8, sill: 0.32, roof: 1.42, tireRadius: 0.33 };
+
 class Kit {
   pos: number[] = [];
   col: number[] = [];
@@ -83,9 +86,10 @@ export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
   switch (t) {
     case 'sedan':
       return car(
-        4.7,
-        [[-2.35, 0.32], [2.35, 0.32], [2.35, 0.72], [2.15, 0.84], [0.95, 0.94], [0.2, 1.42], [-1.15, 1.42], [-1.9, 0.98], [-2.3, 0.92], [-2.35, 0.72]],
+        SEDAN.length,
+        [[-2.35, SEDAN.sill], [2.35, SEDAN.sill], [2.35, 0.72], [2.15, 0.84], [0.95, 0.94], [0.2, SEDAN.roof], [-1.15, SEDAN.roof], [-1.9, 0.98], [-2.3, 0.92], [-2.35, 0.72]],
         [[0.92, 0.97], [0.2, 1.38], [-1.12, 1.38], [-1.84, 1.0]],
+        SEDAN.width, SEDAN.tireRadius,
       );
     case 'hatch':
       return car(
