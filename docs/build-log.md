@@ -1525,3 +1525,7 @@ Sam also chose the public name **Sim Atlanta**. The city menu, About page and br
 ### 2026-11-22 — Thirteen exhibit spaces under one map outline
 
 The Congress Center appears in the bake as one 597 m footprint with one height. The floor plans put twelve numbered exhibit halls and the BC connector inside it, all within our board. From the tracks, the easiest way to read the campus is through its gaps. The railway passes between A and B and under their southern lobby; a 10,827 m² loading court runs between B and C. The new roof tiers follow the two original courtyard holes. Building C’s mapped footprint clears the west edge of the miniature by 10.9 m. [Across the tracks before](log/ui/congress-center/tracks-before.jpg) · [After](log/ui/congress-center/tracks-after.jpg) · [Daylight cameras and sources](georgia-world-congress-center.md)
+
+### 2026-11-22 — Finding a train in the portrait opening
+
+At 390 × 844, the Friday 2:12:45 p.m. timetable put a six-car Blue Line train on the curve east of Georgia State. I could pick it out car by car at 0.60 m per pixel. At the opening’s 2.53 m per pixel, I could see downtown but could not find the same train. At 2:20 the curve was empty, and the twin tracks still led from the freeway crossing to the Floyd towers. [Compare both openings and the empty approach](log/ui/phone-opening/README.md)
