@@ -49,6 +49,7 @@ import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createWestin } from './westin';
+import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -201,16 +202,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
-        const afterWestin = westin?.buildings ?? buildings;
-        capitol = createCapitol(afterWestin, (x, z) => {
+        const remaining = westin?.buildings ?? buildings;
+        const stadium = createStadium(remaining, ground);
+        const afterStadium = stadium?.buildings ?? remaining;
+        capitol = createCapitol(afterStadium, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
-        const city = { ...vd, buildings: capitol?.buildings ?? afterWestin };
+        const city = { ...vd, buildings: capitol?.buildings ?? afterStadium };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
+        if (stadium) world.group.add(stadium.group);
         if (capitol) world.group.add(capitol.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
