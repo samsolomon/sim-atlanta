@@ -1,4 +1,4 @@
-import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
+import { Color, Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { expect, it } from 'vitest';
 import { World, type VBuilding, type VData } from './world';
 import { Builder, pointInRing, segDist, type P2 } from './geom';
@@ -167,4 +167,76 @@ it('places four tires on the pavement and matches the road sedan shell at sill a
   expect(Math.min(...shell)).toBeCloseTo(Math.min(...roadShell));
   expect(Math.max(...shell)).toBeCloseTo(Math.max(...roadShell));
   moving.dispose();
+});
+
+const piedmont: VBuilding = {
+  id: '725df320-8835-4d58-8bac-b2deca3b5fdc',
+  h: 18.792861938476562,
+  floors: null,
+  cls: 'parking',
+  rings: [
+    [
+      [801.7, 146.79],
+      [840.58, 102.03],
+      [781.34, 50.07],
+      [742.46, 94.83],
+    ],
+  ],
+};
+const mDeck: VBuilding = {
+  id: '1cb420c3-3cc0-4bad-9909-235620d77f61',
+  h: 25.7,
+  floors: null,
+  cls: 'parking',
+  rings: [
+    [
+      [690.46, 121.41],
+      [744.82, 58.22],
+      [704.39, 23.41],
+      [681.95, 49.18],
+      [650.04, 85.83],
+    ],
+  ],
+};
+
+it.each([
+  { building: piedmont, height: 28, carsMin: 7, carsMax: 40, finish: '#a5866c' },
+  { building: mDeck, height: 22, carsMin: 1, carsMax: 10, finish: '#677f83' },
+])('uses the measured roof and verified finish on $building.id', ({ building, height, carsMin, carsMax, finish }) => {
+  const mesh = build([building]),
+    g = mesh.geometry;
+  const positions = g.getAttribute('position'),
+    colours = g.getAttribute('color');
+  const roof = -17 + height,
+    tire = new Color('#242528'),
+    facade = new Color(finish);
+  const contacts = new Set<string>();
+  let hasFinish = false;
+  for (let i = 0; i < positions.count; i++) {
+    const r = colours.getX(i),
+      green = colours.getY(i),
+      b = colours.getZ(i);
+    hasFinish ||= Math.abs(r - facade.r) + Math.abs(green - facade.g) + Math.abs(b - facade.b) < 1e-5;
+    if (Math.abs(r - tire.r) + Math.abs(green - tire.g) + Math.abs(b - tire.b) < 1e-5 && positions.getY(i) === roof) {
+      contacts.add(positions.getX(i) + ',' + positions.getZ(i));
+    }
+  }
+  // Each parked sedan has two outer sidewall points on the pavement at each of four tires.
+  expect(contacts.size / 8).toBeGreaterThanOrEqual(carsMin);
+  expect(contacts.size / 8).toBeLessThanOrEqual(carsMax);
+  expect(hasFinish).toBe(true);
+  const ring = building.rings[0];
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i),
+      z = positions.getZ(i);
+    if (!pointInRing(x, z, ring)) {
+      const distance = Math.min(...ring.map((v, j) => segDist(x, z, v, ring[(j + 1) % ring.length])));
+      if (distance > 0.02) throw new Error('Campus deck crosses its source footprint');
+    }
+  }
+});
+
+it('leaves the adjoining Correll Pavilion in the ordinary building batch', () => {
+  const correll = { ...piedmont, id: 'c99d5a4d-78c0-4dee-a9ad-d5122fea8f8b' };
+  expect(Math.max(...build([correll]).geometry.getAttribute('aStyle').array)).toBeGreaterThanOrEqual(0);
 });
