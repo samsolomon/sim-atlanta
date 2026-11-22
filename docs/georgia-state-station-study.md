@@ -135,5 +135,20 @@ errors are structural, not about track height:
 3. **Defer:** the deck clearance, and the steel freight-girder material. Both are lower impact.
    The clearance needs GDOT GeoPI plan sheets or a MARTA records request.
 
-Decision for Control: approve items 1 and 2 as the next City chunk (data override plus the canopy
-rule), or keep the station schematic and spend the time on the deck clearance instead.
+Sam approved the station and Floyd work on November 22. Rail Accuracy owns the platform footprints and cover boundaries. Marlin owns the two towers, their base and the opening through it. City owns the platforms, lights and train rendering. All three use the same rendered track bed. The current generic extrusion closes the track, so the replacement needs a real opening through the base.
+
+For a train entering Floyd, check a car straddling the opening and another fully inside. From the side, a car beside the open platform should stay visible and selectable. Check the same arrival at dusk, in daylight and on the phone. Older scene data without the observed station spans uses its existing rail profile.
+
+Gman197002’s platform photograph shows red-brown paving, a pale warning strip, a light ceiling with square recessed fixtures and daylight visible between supports. Use those for the canopy interior. Sam’s R1 above supplies the approach silhouette and the warm light at the east end. Column spacing, roof thickness and fixture spacing are illustrative. [Platform photograph on Wikimedia Commons](https://commons.wikimedia.org/wiki/File:MARTA_Georgia_State_Station.JPG)
+
+## The modeled arrival
+
+City now eases the timetable shape onto the mapped station axis over 40 metres at each end. A train can still be picked and followed beside either canopy or through the first lit bays of the hall. The rendered boarding edge clears the body of the 3.2-metre car. The underlying track cover and timetable keep their original meanings.
+
+| View | Reproduce with the cameras above |
+|---|---|
+| [Daytime eastbound under the canopy](log/ui/georgia-state-station/day-platform.jpg) | 14:11:43, target (463, 358), bearing 52°, scale 0.065 m/px, tilt 65° |
+| [Westbound approaching at dusk](log/ui/georgia-state-station/dusk-approach.jpg) | 17:41:20, same camera as R1 |
+| [Westbound entering the east opening](log/ui/georgia-state-station/dusk-entrance.jpg) | 17:41:28, target (587, 466), bearing 310°, scale 0.06 m/px, tilt 69° |
+
+The 12 metres of lit interior at each end, fixture locations and office lighting are illustrative. The mapped platform ends and wall intersections set the horizontal position. Track-bed and soffit heights are estimates.

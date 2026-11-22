@@ -64,6 +64,8 @@ export interface Alignment {
   elev: (s: number) => number;
   /** Known exposure at this distance. Unclassified or older data uses the schematic profile. */
   openToSky?: (s: number) => boolean | undefined;
+  /** Track in sight beneath a modeled platform roof or through a station entrance. */
+  visibleInStation?: (s: number) => boolean;
   /** Observed cover at this distance, if any. A station roof is not a tunnel mouth: no portal. */
   coverAt?: (s: number) => 'open' | 'covered' | 'roofed' | undefined;
   /** Observed structure at this distance, if any (terrain alignments). */
@@ -105,6 +107,10 @@ const PORTAL_MIN_DEPTH = 6;
 
 export function trackInDaylight(m: Alignment, s: number) {
   return m.openToSky?.(s) ?? (profileHeight(m, s) >= PORTAL_E);
+}
+
+export function trackVisible(m: Alignment, s: number) {
+  return trackInDaylight(m, s) || m.visibleInStation?.(s) === true;
 }
 
 export const PAL = {
@@ -586,7 +592,7 @@ export class World {
     let open: number | null = null;
     for (let s = 0; s <= m.line.length; s += 1) {
       const p = m.line.at(s);
-      const ok = this.inBounds(p.x, p.z, -2) && trackInDaylight(m, s);
+      const ok = this.inBounds(p.x, p.z, -2) && trackVisible(m, s);
       if (ok && open == null) open = s;
       if (!ok && open != null) {
         if (s - open > 4) runs.push([open, s]);

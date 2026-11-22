@@ -78,7 +78,9 @@ uses the timetable.
   The chosen style (2026-11-20) follows a low-poly, ink-lined railway reference: leaf-clump
   tree canopies, thin silhouette ink, a colour grade and film grain, and tilt-shift. Vehicles
   are modelled in code from reference photos in the model lab (`/models.html`), with real
-  livery colours but no operator logos.
+  livery colours but no operator logos. Before hand-modeling each building, open a fresh Orca
+  browser tab and look up photographs of that building. Compare the approach view with another
+  angle, record the source links, and identify which dimensions are estimates.
 - **Build log.** After a meaningful step (a new data source, a visual milestone, a bug with a
   lesson), append a dated entry to `docs/build-log.md` with concrete numbers and what
   surprised you, and save a screenshot to `docs/log/`. Write it blog-ready.

@@ -18,7 +18,7 @@ import type { GroundGrid } from '../terrain/grid';
 import type { OpenSlot } from '../terrain/openings';
 import { railBedY, railSpanAt, type RailCover, type RailForm, type SceneManifest } from '../core/scene-data';
 import type { alignment } from '../vignette/alignment';
-import { CUT_E, CUT_HALF, PORTAL_E, trackInDaylight, type Alignment } from '../vignette/world';
+import { CUT_E, CUT_HALF, PORTAL_E, trackVisible, type Alignment } from '../vignette/world';
 
 type Legacy = ReturnType<typeof alignment>;
 
@@ -119,7 +119,7 @@ export function terrainOpenings(alignments: Alignment[]): OpenSlot[] {
   const PIECE = 8;
   for (const al of alignments) {
     const len = al.line.length;
-    const below = (s: number) => trackInDaylight(al, s) && (al.referenceY?.(s) ?? 0) - al.elev(s) > -CUT_E;
+    const below = (s: number) => trackVisible(al, s) && (al.referenceY?.(s) ?? 0) - al.elev(s) > -CUT_E;
     let start: number | null = null;
     const emit = (a: number, b: number) => {
       for (let s = a; s < b - 0.01; s += PIECE) {
