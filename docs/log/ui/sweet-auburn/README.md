@@ -12,9 +12,9 @@ The west edge matches all 161 downtown nodes and the south edge matches all 161 
 
 ## Streets and buildings
 
-The archived OpenStreetMap response contributes 179 clipped building footprints, 693 road/path runs and 56 ground-cover polygons. The 24 mapped above-ground bridge runs use City’s existing schematic road-deck treatment. The aerial is a 2023 USDA NAIP mosaic in the same square at one pixel per scene metre. Seventy-nine representative crown centers were selected on the October 8 image (USGS 41283), and two smaller street trees were placed from the March 2025 photographs. The remaining canopy is incomplete. Crown spread, height and seasonal color are illustrative. [2023 NAIP mosaic](https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage?bbox=-9393225.849060316%2C3995467.3441738295%2C-9392262.57692487%2C3996430.6284357114&bboxSR=3857&imageSR=3857&size=800%2C800&format=jpg&adjustAspectRatio=false&mosaicRule=%7B%22where%22%3A%22Year%3D2023%22%7D&f=image) · [Source image metadata](https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/41283) · [OpenStreetMap attribution and ODbL](https://www.openstreetmap.org/copyright)
+The archived OpenStreetMap response contributes 179 clipped building footprints, 693 road/path runs and 56 ground-cover polygons. The 24 mapped above-ground bridge runs use City’s existing schematic road-deck treatment. The aerial is a 2023 USDA NAIP mosaic in the same square at one pixel per scene metre. Seventy-seven representative crown centers were selected on the October 8 image (USGS 41283), and two smaller street trees were placed from the March 2025 photographs. Two ambiguous centers falling inside building footprints were excluded. The remaining canopy is incomplete. Crown spread, height and seasonal color are illustrative. [2023 NAIP mosaic](https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage?bbox=-9393225.849060316%2C3995467.3441738295%2C-9392262.57692487%2C3996430.6284357114&bboxSR=3857&imageSR=3857&size=800%2C800&format=jpg&adjustAspectRatio=false&mosaicRule=%7B%22where%22%3A%22Year%3D2023%22%7D&f=image) · [Source image metadata](https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/41283) · [OpenStreetMap attribution and ODbL](https://www.openstreetmap.org/copyright)
 
-At Edgewood and Hilliard the March 2025 photographs show a low brick commercial row with dark display windows. Behind it the mapped Brushworks Lofts footprint has two recorded levels. The preview gives that conversion a brick tint, retains one mapped envelope along the storefronts, and uses a schematic 5.3 m height for that envelope. Its bay pattern is illustrative. No tenant signs are reconstructed. Elsewhere only one building has a usable explicit OSM height and eight have floor counts. The generic fallback is 8 m. Many landmarks, individual storefronts, ramps, internal building details and streetcar track are unresolved. Road-deck elevations are illustrative. The preview introduces no rail or vehicle alignment. [Edgewood photograph, March 2025](https://www.google.com/maps/@?api=1&map_action=pano&pano=DftBSfMwzSngHTDlKVYJlw&heading=155&pitch=7&fov=88) · [Hilliard photograph, March 2025](https://www.google.com/maps/@?api=1&map_action=pano&pano=C2fwVDuivFd-uADvqZrLtQ&heading=158&pitch=8&fov=88) · [City street-eye study](edgewood-street-eye.jpg) · [Normal orbit](edgewood-high.jpg)
+At Edgewood and Hilliard the March 2025 photographs show a low brick commercial row with dark display windows. Behind it the mapped Brushworks Lofts footprint has two recorded levels. The preview gives that conversion a brick tint, retains one mapped envelope along the storefronts, and uses a schematic 5.3 m height for that envelope. Its bay pattern is illustrative. No tenant signs are reconstructed. Elsewhere only one building has a usable explicit OSM height and eight have floor counts. The generic fallback is 8 m. Many landmarks, individual storefronts, ramps, internal building details and streetcar track are unresolved. Road-deck elevations are illustrative. The preview introduces no rail or vehicle alignment. [Edgewood photograph, March 2025](https://www.google.com/maps/@?api=1&map_action=pano&pano=DftBSfMwzSngHTDlKVYJlw&heading=155&pitch=7&fov=88) · [Hilliard photograph, March 2025](https://www.google.com/maps/@?api=1&map_action=pano&pano=C2fwVDuivFd-uADvqZrLtQ&heading=158&pitch=8&fov=88) · [City street-eye study](edgewood-street-eye.jpg) · [Normal orbit](edgewood-high.jpg) · [Hilliard side of the corner](edgewood-hilliard.jpg)
 
 ## Rebuild and preview
 
@@ -22,19 +22,18 @@ Starting with normal downtown data and the repository Python environment, run th
 
 ```sh
 .venv/bin/python pipeline/scripts/sweet_auburn.py data/raw/terrain/USGS_1M_16_x74y374_GA_Statewide_2018_B18_DRRA.tif
-node scripts/stage-corridor.mjs
-node scripts/stage-sweet-auburn.mjs
+pnpm data:sweet-auburn
 pnpm dev
 ```
 
-Open `/?view=city&east=king-memorial&north=sweet-auburn&q=high&t=2026-11-20T10:15:00-05:00&speed=0`. Approach either edge. With the King flag alone the camera stops at King’s original footprint. For release, stage both packs before `pnpm build`. The northern stage uses the committed bake.
+Open `/?view=city&east=king-memorial&north=sweet-auburn&q=high&t=2026-11-20T10:15:00-05:00&speed=0`. Approach either edge. With the King flag alone the camera stops at King’s original footprint. For release, run `pnpm data:sweet-auburn` before `pnpm build`. That opt-in stage copies King and Sweet Auburn together. The northern stage uses the committed bake.
 
 | North asset | Raw bytes | Gzip −9 bytes |
 | --- | ---: | ---: |
 | Ground manifest | 1,646 | 864 |
 | Elevation grid | 51,842 | 20,041 |
-| Neighborhood | 167,909 | 35,914 |
-| **Total** | **221,397** | **56,819** |
+| Neighborhood | 167,871 | 35,904 |
+| **Total** | **221,359** | **56,809** |
 
 Production desktop Orca loaded seven downtown scene assets and zero extension assets or extension-specific JS chunks at opening on both tiers with both flags. Default City, the north flag alone and King alone also opened with those seven scene requests. Approaching King fetched its three existing files. Approaching the new square fetched the three files above once plus its lazy JS chunk (1.51 kB gzip in this build). The section uses static assets throughout.
 
