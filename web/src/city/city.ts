@@ -57,12 +57,14 @@ import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
 import { createCentralLibrary } from './central-library';
 import { createPeachtree191 } from './peachtree-191';
+import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createEquitable } from './equitable';
 import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
@@ -175,6 +177,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: ReturnType<typeof createDowntownTerrain> | undefined;
+  let eastRail: { dispose(): void } | undefined;
+  // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
+  let trainBounds = b;
+  let trainRail = manifest.rail;
   let north: typeof east;
   let eastPlinth: THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshLambertMaterial> | undefined;
   let downtownPlinth: THREE.Mesh | undefined;
@@ -194,6 +200,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
   const disposeBoard = () => {
     eastController.abort();
+    eastRail?.dispose();
     north?.dispose();
     east?.dispose();
     terrain?.dispose();
@@ -212,9 +219,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let flatiron: ReturnType<typeof createFlatiron> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
+  let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
@@ -243,8 +252,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         westin = createWestin(buildings, groundAt);
         peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
         const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
-        truist = createTruistPlaza(remaining, groundAt);
-        const librarySite = truist?.buildings ?? remaining;
+        twelve = createTwelveCentennial(remaining, ground);
+        const afterTwelve = twelve?.buildings ?? remaining;
+        truist = createTruistPlaza(afterTwelve, groundAt);
+        const librarySite = truist?.buildings ?? afterTwelve;
         library = createCentralLibrary(librarySite, groundAt);
         flatiron = createFlatiron(library?.buildings ?? librarySite, groundAt);
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
@@ -270,11 +281,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         arena = createStateFarmArena(arenaSite, groundAt);
         const hospitalSite = arena?.buildings ?? arenaSite;
         grady = createGrady(hospitalSite, ground);
-        const city = { ...vd, buildings: grady?.buildings ?? hospitalSite,
+        const afterGrady = grady?.buildings ?? hospitalSite;
+        equitable = createEquitable(afterGrady, ground);
+        const city = { ...vd, buildings: equitable?.buildings ?? afterGrady,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
+        if (twelve) world.group.add(twelve.group);
         if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
         if (peachtree) world.group.add(peachtree.group);
@@ -289,6 +303,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
@@ -364,7 +379,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   });
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
-  const trains = new CityTrains(marta, manifest, b, colors, edges, cut);
+  // Trains clip to their own copy of the board edges, so the east area can open them alone.
+  const trainEdges = edges.map(p => p.clone());
+  const trains = new CityTrains(marta, manifest, b, colors, trainEdges, cut);
   const scenery = scene.children.slice();
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
@@ -514,6 +531,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       area.openJoin();
       downtown.openJoin();
       east = area;
+      void attachEastRail(area).catch(err => console.warn('MARTA east of the board unavailable', err));
       const next = pendingNorthTarget ?? controls.target;
       approachNorth(next.x, next.z);
       options.areaNote?.(null);
@@ -532,6 +550,35 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         console.warn('King Memorial board unavailable', err);
       }
     }).finally(() => { eastLoading = false; pendingEastTarget = undefined; });
+  }
+  // MARTA through the east area (track, station, trains). Rail owns this; the area mount calls it.
+  async function attachEastRail(area: { groundAt(x: number, z: number): number | null }) {
+    if (!grid || eastRail) return;
+    const ground = grid;
+    const mod = await import('./east-rail');
+    const r = await fetch(`${DATA}/scene/king-memorial/corridor.json`, { signal: eastController.signal });
+    if (!r.ok) throw new Error(`corridor.json (${r.status})`);
+    const pack = await r.json();
+    if (eastController.signal.aborted) return;
+    const extended = mod.extendRail(manifest, rf);
+    const union = { ...b, maxX: eastBounds.maxX };
+    const rebuilt = martaAlignments(rf, extended, union, stationSite, mod.joinedGround(ground, area.groundAt));
+    if (rebuilt.station && floyd) rebuilt.station.alignment.visibleInStation = rebuilt.station.visibleInStation;
+    const tracks = cut ? rebuilt.tracks.map(maskCut) : rebuilt.tracks;
+    for (const t of tracks) {
+      const inStation = t.visibleInStation;
+      // Cars stay visible under the open-sided King Memorial canopy, like Georgia State's.
+      t.visibleInStation = s => !!inStation?.(s) || (t.coverAt?.(s) === 'roofed' && t.formAt?.(s) === 'station' && t.line.at(s).x > b.maxX);
+    }
+    const rail = mod.buildEastRail(extended, rf, pack, area.groundAt, ground.manifest.vertical.sceneZeroNavd88M, b.maxX);
+    scene.add(rail.mesh);
+    scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
+    trains.setTracks(tracks, union);
+    trainBounds = union;
+    trainRail = extended.rail;
+    trainEdges[1].constant = eastBounds.maxX;
+    eastRail = rail;
+    renderer.shadowMap.needsUpdate = true;
   }
   const targetY = (x: number, z: number) => north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
@@ -688,6 +735,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.setNight(night);
     platforms?.setNight(night);
     floyd?.setNight(night);
+    twelve?.setNight(night);
     truist?.setNight(night);
     westin?.setNight(night);
     peachtree?.setNight(night);
@@ -699,6 +747,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    equitable?.setNight(night);
     grady?.setNight(night);
     terrain?.setNight(night);
     east?.setNight(night);
@@ -761,7 +810,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     trains.update(states, atm.dark);
-    const focus = options.follow?.frame(states, trains.group.children, project, b, manifest.rail, ts, !!motionPreference?.matches);
+    const focus = options.follow?.frame(states, trains.group.children, project, trainBounds, trainRail, ts, !!motionPreference?.matches);
     if (focus) {
       glideTo = null;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);

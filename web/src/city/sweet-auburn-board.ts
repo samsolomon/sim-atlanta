@@ -3,6 +3,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import type { TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
+import { irwinHouseFinish } from './irwin-houses';
 import { edgewoodFinish } from './edgewood-block';
 import { northBounds, northSouthJoin, northWestJoin } from './board-footprint';
 
@@ -45,7 +46,7 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees)) throw new Error('Missing Sweet Auburn context');
   const area = createDowntownTerrain(grid, context, context.trees, {
     quality, bottomY, join: [northWestJoin, northSouthJoin],
-    finishFor: edgewoodFinish,
+    finishFor: b => edgewoodFinish(b) ?? irwinHouseFinish(b),
   });
   try {
     const roads = context.roads.filter(r => r.bridge && !r.tunnel).map(r => ({
