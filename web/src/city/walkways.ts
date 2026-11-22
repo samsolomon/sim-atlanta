@@ -27,10 +27,10 @@ export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean
     }
   }
   const { minX, maxX, minZ, maxZ } = city.bounds;
-  function usable(x: number, z: number) {
+  function usable(x: number, z: number, y = ground(x, z)) {
     return x > minX + 1 && x < maxX - 1 && z > minZ + 1 && z < maxZ - 1
-      && ground(x, z) !== null
-      && !buildings.at(x, z).some(r => pointInRing(x, z, r[0]) && !r.slice(1).some(h => pointInRing(x, z, h)))
+      && y !== null
+      && !buildings.at(x, z).some(r => pointInRing(x, z, r[0]) && !r.some((h, i) => i > 0 && pointInRing(x, z, h)))
       && !lanes.at(x, z).some(l => segDist(x, z, l.a, l.b) < l.half + .3);
   }
 
@@ -52,10 +52,19 @@ export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean
     // Work only on complete on-board trail pieces. The bridge requires its own deck alignment.
     if (trail && r.pts.some(([x, z]) => x < minX || x > maxX || z < minZ || z > maxZ)) return;
     const line = new Line(r.pts);
+    if (line.length - 4 < (trail ? 22 : 30)) return;
     let start: number | undefined;
+    let previousHeight: number | null = null;
     for (let s = 2; s <= line.length - 2; s += 3) {
       const p = line.at(s);
-      const clear = [-.55, 0, .55].every(d => usable(p.x + p.nx * d, p.z + p.nz * d));
+      const height = ground(p.x, p.z);
+      // Sharp DEM steps can occur where downtown streets cross real structures.
+      // Keep a walking section on one side of a rise steeper than one in four.
+      const gradeOK = height !== null && (previousHeight === null || Math.abs(height - previousHeight) <= 3 * .25);
+      previousHeight = height;
+      const clear = gradeOK && usable(p.x, p.z, height)
+        && usable(p.x + p.nx * .55, p.z + p.nz * .55)
+        && usable(p.x - p.nx * .55, p.z - p.nz * .55);
       if (clear && start === undefined) start = s;
       if (start !== undefined && (!clear || s + 3 > line.length - 2)) {
         keep({ line, from: start, to: clear ? s : s - 3, trail });

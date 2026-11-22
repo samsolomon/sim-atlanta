@@ -35,6 +35,11 @@ describe('mapped outdoor footways', () => {
       expect(p.way.to < 114 || p.way.from > 126).toBe(true);
     }
   });
+  it('turns back before a bare-earth height step in a mapped sidewalk', () => {
+    const people = cityTravellers({ ...city, roads: [sidewalk] }, x => x < 83 ? 0 : 4, true);
+    expect(people.length).toBeGreaterThan(0);
+    expect(people.every(p => p.way.to < 83 || p.way.from > 83)).toBe(true);
+  });
   it('replays both directions from scene time and turns inside the supported interval', () => {
     const p: Traveller = { way: { line: new Line([[10, 0], [110, 0]]), from: 2, to: 98, trail: false },
       rider: false, size: 1, tint: 0, phase: 0, speed: 1 };
