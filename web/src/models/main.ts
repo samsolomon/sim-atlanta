@@ -1,4 +1,5 @@
-/** Model lab: inspect vehicle models against reference photos (front, side, three-quarter, rear). */
+/** Inspect City's models and their poses against a reference photo. */
+import './lab.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -7,9 +8,10 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type MartaLine } from '../vignette/cq400';
 import { gradeShader } from '../vignette/grade';
-import { BUS_LENGTH, busGeometry, busMaterial } from '../vignette/xcelsior';
+import { busGeometry, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
 import { inkShader } from '../vignette/ink';
+import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
 
 const el = document.getElementById('stage')!;
@@ -32,7 +34,9 @@ sun.shadow.bias = -0.0005; // without these the models shade themselves in fine 
 sun.shadow.normalBias = 0.05;
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 scene.add(hemi, sun);
-const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 48), new THREE.MeshLambertMaterial({ color: '#d9d3c6' }));
+const floorMaterial = new THREE.MeshLambertMaterial({ color: '#d9d3c6' });
+const figureShadow = new THREE.ShadowMaterial({ opacity: .22, depthWrite: false });
+const ground = new THREE.Mesh<THREE.CircleGeometry, THREE.Material>(new THREE.CircleGeometry(60, 48), floorMaterial);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
@@ -44,17 +48,35 @@ scene.add(track);
 const night = { value: 0 };
 const role = { value: 1 };
 let line: MartaLine = 'gold';
-const vehicles = {
+const models = {
   cq400: 'Stadler CQ400',
   xn40: 'New Flyer Xcelsior XN40',
   cm44ac: 'GE/Wabtec CM44AC',
+  walker: 'Walker',
+  cyclist: 'Cyclist and bicycle',
 } as const;
-type Vehicle = keyof typeof vehicles;
+type Model = keyof typeof models;
 const requested = new URLSearchParams(location.search).get('v');
-const aliases: Record<string, Vehicle> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400' };
-let vehicle: Vehicle = requested && Object.hasOwn(vehicles, requested)
-  ? requested as Vehicle : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
+const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400' };
+let model: Model = requested && Object.hasOwn(models, requested)
+  ? requested as Model : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
 let cars: THREE.Mesh[] = [];
+let figure: ReturnType<typeof createFigurePreview> | undefined;
+const play = document.querySelector<HTMLButtonElement>('#play')!;
+const phase = document.querySelector<HTMLInputElement>('#phase')!;
+let cycle = 0;
+let playing = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+function setPlaying(next: boolean) {
+  playing = next;
+  play.textContent = playing ? 'Pause' : 'Play';
+}
+setPlaying(playing);
+play.addEventListener('click', () => setPlaying(!playing));
+phase.addEventListener('input', () => {
+  setPlaying(false);
+  cycle = phase.valueAsNumber / 100;
+  figure?.setPhase(cycle);
+});
 function build() {
   for (const c of cars) {
     scene.remove(c);
@@ -62,12 +84,34 @@ function build() {
     const materials = Array.isArray(c.material) ? c.material : [c.material];
     for (const material of materials) material.dispose();
   }
-  track.visible = vehicle !== 'xn40';
-  document.getElementById('lines')!.style.display = vehicle === 'cq400' ? '' : 'none';
-  document.getElementById('roles')!.style.display = vehicle === 'cq400' ? '' : 'none';
-  document.getElementById('title')!.textContent = vehicles[vehicle];
-  document.title = vehicles[vehicle] + ' · Model Lab · Sim Atlanta';
-  if (vehicle === 'cm44ac') {
+  cars = [];
+  figure?.dispose();
+  figure = undefined;
+  const person = model === 'walker' || model === 'cyclist';
+  ground.material = person ? figureShadow : floorMaterial;
+  const extent = person ? 6 : 40;
+  Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
+  sun.shadow.camera.updateProjectionMatrix();
+  sun.shadow.normalBias = person ? .015 : .05;
+  track.visible = model === 'cq400' || model === 'cm44ac';
+  document.getElementById('lines')!.hidden = model !== 'cq400';
+  document.getElementById('roles')!.hidden = model !== 'cq400';
+  document.getElementById('motion')!.hidden = !person;
+  document.getElementById('title')!.textContent = models[model];
+  document.title = models[model] + ' · Model Lab · Sim Atlanta';
+  if (model === 'walker' || model === 'cyclist') {
+    figure = createFigurePreview(model);
+    figure.group.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
+    scene.add(figure.group);
+    cycle = .125;
+    phase.value = String(Math.round(cycle * 100));
+    figure.setPhase(cycle);
+    document.getElementById('blurb')!.textContent = model === 'walker'
+      ? 'An illustrative downtown pedestrian with a daypack and a swinging stride.'
+      : 'An illustrative rider from the Westside Beltline Connector, with a helmet and an orange bicycle.';
+    return;
+  }
+  if (model === 'cm44ac') {
     document.getElementById('blurb')!.textContent = 'CSX 7257, seen at Georgia State, is a modernized GE AC4400CW. This scale study pairs the six-axle locomotive with an illustrative boxcar.';
     cars = (['locomotive', 'boxcar'] as const).map(unit => {
       const mesh = new THREE.Mesh(freightGeometry(unit), new THREE.MeshLambertMaterial({ vertexColors: true }));
@@ -79,10 +123,10 @@ function build() {
     return;
   }
   document.getElementById('blurb')!.textContent =
-    vehicle === 'cq400'
-      ? 'One cab car and one middle car of a 4-car set. Drop a reference photo to overlay it and line up the view.'
+    model === 'cq400'
+      ? 'One cab car and one middle car of a four-car MARTA set.'
       : 'MARTA’s 40-foot compressed-natural-gas bus. The roof enclosures hold its fuel tanks. The body and wheelbase follow New Flyer’s published dimensions.';
-  if (vehicle === 'xn40') {
+  if (model === 'xn40') {
     const bus = new THREE.Mesh(busGeometry(), busMaterial(night));
     bus.position.z = 0;
     bus.castShadow = bus.receiveShadow = true;
@@ -102,10 +146,11 @@ function build() {
   }
 }
 
-const camera = new THREE.PerspectiveCamera(30, 1, 0.5, 400);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 400);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-const VIEWS: Record<string, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
+type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number };
+const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
   '¾ front': { pos: [-11, 4.2, 36], target: [0, 2.0, 18], fov: 28 },
   'Side': { pos: [-30, 2.6, 16], target: [0, 2.0, 16], fov: 32 },
@@ -113,7 +158,8 @@ const VIEWS: Record<string, { pos: [number, number, number]; target: [number, nu
   'Top': { pos: [0.01, 60, 2], target: [0, 0, 2], fov: 40 },
 };
 function view(name: string) {
-  const v = VIEWS[name];
+  const v = presets[name];
+  if (!v) return;
   camera.position.set(...v.pos);
   controls.target.set(...v.target);
   camera.fov = v.fov;
@@ -156,10 +202,17 @@ function setNight(on: boolean) {
   hemi.color.set(on ? '#5d6fa8' : '#eef2f8');
   sun.intensity = on ? 0.15 : 2.6;
   bg.set(on ? '#1f2535' : '#e9e5dc');
-  (ground.material as THREE.MeshLambertMaterial).color.set(on ? '#2a3040' : '#d9d3c6');
+  floorMaterial.color.set(on ? '#2a3040' : '#d9d3c6');
 }
 
+let lastFrame = 0;
 const frame = (t: number) => {
+  if (figure && playing) {
+    cycle = (cycle + Math.min(t - lastFrame, 100) / (model === 'walker' ? 1200 : 1000)) % 1;
+    figure.setPhase(cycle);
+    phase.value = String(Math.round(cycle * 100));
+  }
+  lastFrame = t;
   controls.update();
   ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
   ink.uniforms.uNear.value = camera.near;
@@ -188,32 +241,56 @@ for (const l of Object.keys(LINE_COLORS) as MartaLine[]) mk('lines', l[0].toUppe
 mk('roles', 'Leading', () => (role.value = 1), true);
 mk('roles', 'Tail', () => (role.value = -1));
 mk('roles', 'Coupled', () => (role.value = 0));
-for (const v of Object.keys(VIEWS)) mk('views', v, () => view(v));
-const BUS_VIEWS: Record<string, { pos: [number, number, number]; target: [number, number, number]; fov: number }> = {
+for (const v of Object.keys(TRAIN_VIEWS)) mk('views', v, () => view(v));
+const BUS_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 1.8, 30], target: [0, 1.6, 6], fov: 13 },
   '¾ front': { pos: [-12, 4.0, 19], target: [0, 1.5, 1.5], fov: 30 },
   'Side': { pos: [-34, 1.7, 0], target: [0, 1.7, 0], fov: 26 },
   'Rear': { pos: [0, 1.8, -30], target: [0, 1.6, -6], fov: 13 },
   'Top': { pos: [0.01, 34, 0], target: [0, 0, 0], fov: 30 },
 };
-const baseViews = { ...VIEWS };
-function setVehicle(v: Vehicle) {
-  vehicle = v;
-  Object.assign(VIEWS, v === 'xn40' ? BUS_VIEWS : baseViews);
-  if (v === 'cm44ac') VIEWS['¾ front'] = { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 };
+const FIGURE_VIEWS: Record<string, ViewPreset> = {
+  Front: { pos: [0, 1.03, 4.5], target: [0, .88, 0], fov: 30 },
+  '¾ front': { pos: [-3.3, 1.7, 3.4], target: [0, .87, 0], fov: 30 },
+  Side: { pos: [-4.7, 1.05, 0], target: [0, .87, 0], fov: 30 },
+  Rear: { pos: [0, 1.14, -4.5], target: [0, .87, 0], fov: 30 },
+  Top: { pos: [0, 5.0, .01], target: [0, 0, 0], fov: 32 },
+};
+const FREIGHT_VIEWS = { ...TRAIN_VIEWS, '¾ front': { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 } } satisfies Record<string, ViewPreset>;
+let presets: Record<string, ViewPreset>;
+const modelSelect = document.querySelector<HTMLSelectElement>('#model-select')!;
+function setModel(id: Model) {
+  model = id;
+  presets = { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS }[id];
+  modelSelect.value = id;
+  document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
+    button.setAttribute('aria-pressed', String(button.dataset.model === id)));
   build();
   view('¾ front');
 }
-for (const id of Object.keys(vehicles) as Vehicle[]) {
-  mk('vehicles', vehicles[id], () => {
-    const url = new URL(location.href);
-    url.searchParams.set('v', id);
-    history.replaceState(null, '', url);
-    setVehicle(id);
-  }, vehicle === id);
+function selectModel(id: Model) {
+  const url = new URL(location.href);
+  url.searchParams.set('v', id);
+  history.replaceState(null, '', url);
+  setModel(id);
 }
-setVehicle(vehicle);
-void BUS_LENGTH;
+for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac']], ['people', ['walker', 'cyclist']]] as const) {
+  const list = document.getElementById(group)!;
+  const options = document.createElement('optgroup');
+  options.label = list.querySelector('h2')!.textContent!;
+  for (const id of ids) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.model = id;
+    button.textContent = models[id];
+    button.addEventListener('click', () => selectModel(id));
+    list.append(button);
+    options.append(new Option(models[id], id));
+  }
+  modelSelect.append(options);
+}
+modelSelect.addEventListener('change', () => selectModel(modelSelect.value as Model));
+setModel(model);
 const nightBtn = document.getElementById('night')!;
 nightBtn.addEventListener('click', () => {
   const on = nightBtn.getAttribute('aria-pressed') !== 'true';
@@ -226,11 +303,18 @@ inkBtn.addEventListener('click', () => {
   inkBtn.setAttribute('aria-pressed', String(inkOn));
 });
 const ref = document.getElementById('ref') as HTMLImageElement;
-document.getElementById('file')!.addEventListener('change', (e) => {
-  const f = (e.target as HTMLInputElement).files?.[0];
-  if (!f) return;
-  ref.src = URL.createObjectURL(f);
-  ref.style.display = 'block';
-});
-document.getElementById('opacity')!.addEventListener('input', (e) => (ref.style.opacity = (e.target as HTMLInputElement).value));
+const file = document.querySelector<HTMLInputElement>('#file')!;
+const opacity = document.querySelector<HTMLInputElement>('#opacity')!;
+const clearPhoto = document.getElementById('clear-photo')!;
+function setPhoto(photo?: File) {
+  if (ref.hasAttribute('src')) URL.revokeObjectURL(ref.src);
+  if (photo) ref.src = URL.createObjectURL(photo);
+  else ref.removeAttribute('src');
+  ref.hidden = !photo;
+  opacity.disabled = !photo;
+  clearPhoto.hidden = !photo;
+}
+file.addEventListener('change', () => { if (file.files?.[0]) setPhoto(file.files[0]); });
+clearPhoto.addEventListener('click', () => { setPhoto(); file.value = ''; });
+opacity.addEventListener('input', () => { ref.style.opacity = opacity.value; });
 Object.assign(window, { __lab: { view, setNight, role, scene, camera, controls } });
