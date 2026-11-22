@@ -1,0 +1,144 @@
+--- a/web/src/city/city.ts
++++ b/web/src/city/city.ts
+@@ -32,6 +32,8 @@
+ import { createSurfaceTransport } from '../terrain/transport';
+ import type { TerrainCity } from '../terrain/transport-data';
+ import { terrainAlignment, terrainOpenings } from './terrain-rail';
++import { prepareEastCut } from './east-cut';
++import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
+ import { CityFreight } from './freight';
+ import { CityTrains } from './trains';
+ import { Snow } from './snow';
+@@ -103,6 +105,7 @@
+       console.warn('City ground grid unavailable. Using the flat board.');
+     }
+   }
++  const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
+   const b = vd.bounds;
+
+   // ---- the board ----------------------------------------------------------------------
+@@ -140,14 +143,15 @@
+   };
+   let marta: Alignment[] = [];
+   try {
+-    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid); });
++    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid);
++      if (cut) marta = marta.map(maskCut); });
+     if (grid) {
+       const ground = grid;
+       await build('terrain', () => {
+-        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: terrainOpenings(marta) });
++        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+         world.buildPlinth(terrain.bottomY);
+       });
+-      await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt); });
++      await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
+     } else {
+       if (trees.trees.length) world.realTrees = trees.trees;
+       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
+@@ -197,6 +201,7 @@
+   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
+   scene.add(world.group);
+   if (terrain && transport) scene.add(terrain.group, transport.group);
++  if (cut && grid) scene.add(cutFloor(grid));
+   // Trim content to the board, retaining the ground, cut edge and walnut lip.
+   const edges = [
+     new THREE.Plane(new THREE.Vector3(1, 0, 0), -b.minX),
+@@ -214,7 +219,7 @@
+     }
+   });
+   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
+-  const trains = new CityTrains(marta, manifest, b, colors, edges);
++  const trains = new CityTrains(marta, manifest, b, colors, edges, cut);
+   scene.add(trains.group);
+   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
+   if (freight) scene.add(freight.group);
+--- a/web/src/terrain/transport.ts
++++ b/web/src/terrain/transport.ts
+@@ -44,7 +44,8 @@
+ }
+
+ /** Attach beside the terrain group. All heights use the board's shared scene zero. */
+-export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, groundAt: GroundAt): SurfaceTransport {
++export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terrainGround: GroundAt,
++  cut?: { freight: TransportRun; treadY: number }): SurfaceTransport {
+   const data = city.terrainTransport;
+   if (data?.version !== 1) throw new Error('Missing scoped terrain transport. Run pnpm data:city.');
+   const group = new THREE.Group();
+@@ -87,6 +88,8 @@
+
+   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram') {
+     if (run.pts.length < 2) return;
++    // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
++    const groundAt: GroundAt = cut && run === cut.freight ? () => cut.treadY - .13 : terrainGround;
+     const line = new Line(run.pts);
+     if (!line.length) return;
+     const bridge = run.kind === 'bridge';
+--- a/web/src/city/trains.ts
++++ b/web/src/city/trains.ts
+@@ -4,6 +4,8 @@
+ import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
+ import { PlacementIndex } from '../vignette/spatial';
+ import { trackInDaylight, type Alignment, type VData } from '../vignette/world';
++
++import type { prepareEastCut, ServiceTrack } from './east-cut';
+
+ type Segment = { al: Alignment; i: number };
+ const SNAP = 18;
+@@ -60,16 +62,17 @@
+   surfaceCars = 0;
+
+   constructor(alignments: Alignment[], private manifest: SceneManifest, private bounds: VData['bounds'],
+-    private colors: Map<string, string>, private clip: THREE.Plane[]) {
++    private colors: Map<string, string>, private clip: THREE.Plane[],
++    private cut?: ReturnType<typeof prepareEastCut>) {
+     this.tracks = new CityTracks(alignments);
+     this.project = makeProjector(manifest.origin);
+   }
+
+-  private car(color: string, role: number) {
+-    const key = color + role;
++  private car(color: string, role: number, placement?: NonNullable<ReturnType<ServiceTrack['car']>>) {
++    const key = color + role + (placement?.clipped ? placement.name + placement.clipped : '');
+     let pool = this.pools.get(key);
+     if (!pool) {
+-      pool = { material: cq400Material(color, { value: role }, this.night, this.clip), meshes: [], count: 0 };
++      pool = { material: cq400Material(color, { value: role }, this.night, placement?.plane ? [...this.clip, placement.plane] : this.clip), meshes: [], count: 0 };
+       this.pools.set(key, pool);
+     }
+     const slot = pool.count++;
+@@ -105,18 +108,30 @@
+       const pad = units * pitch / 2;
+       if (x < b.minX - pad || x > b.maxX + pad || z < b.minZ - pad || z > b.maxZ + pad) continue;
+       const track = this.tracks.locate(x, z, t.heading);
+-      if (!track) continue;
+-      const { al, s, dir } = track;
++      const mapped = this.cut?.paths.get(t.pathId);
+       for (let i = 0; i < units; i++) {
+         // The Map symbol is centred on the source position. Both ends can straddle a portal.
+-        const sc = s + dir * ((units - 1) / 2 - i) * pitch;
++        const offset = ((units - 1) / 2 - i) * pitch;
++        const role = i === 0 ? 1 : i === units - 1 ? -1 : 0;
++        const placement = mapped?.routeId === t.routeId ? mapped.car(t.s.value, offset) : undefined;
++        if (placement) {
++          const car = this.car(color, role, placement);
++          car.position.set(placement.x, this.cut!.treadY, placement.z);
++          this.direction.set(placement.x + placement.dx, this.cut!.treadY, placement.z + placement.dz);
++          car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
++          if (i >= units / 2) car.rotateY(Math.PI);
++          this.surfaceCars++;
++          continue;
++        }
++        if (!track) continue;
++        const { al, s, dir } = track;
++        const sc = s + dir * offset;
+         if (!carInDaylight(al, sc)) continue;
+         const p = al.line.at(sc);
+         const off = dir * 2.1;
+         const cx = p.x - p.nx * off, cz = p.z - p.nz * off;
+         if (cx < b.minX - CAR_LENGTH / 2 || cx > b.maxX + CAR_LENGTH / 2 ||
+             cz < b.minZ - CAR_LENGTH / 2 || cz > b.maxZ + CAR_LENGTH / 2) continue;
+-        const role = i === 0 ? 1 : i === units - 1 ? -1 : 0;
+         const car = this.car(color, role);
+         car.position.set(cx, al.elev(sc) + 0.55, cz);
+         const q = al.line.at(sc + dir * 4);

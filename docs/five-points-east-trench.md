@@ -51,3 +51,33 @@ node pipeline/prototypes/five-points-east-cut/serve.mjs
 ```
 
 In Orca open `http://127.0.0.1:5370/?q=high&t=2026-11-20T14:15:31-05:00&speed=0&cut=current#19.1/33.75251/-84.38940/-148` and select City. Repeat with `cut=mapped`. The development-only `window.eastCutStudy` reports the local freight tread intervals and sampled GTFS axis for each view. Obtain the 1 m source from the [terrain reproduction guide](downtown-ground.md#reproduce-the-bake).
+
+## Vehicle attachment on the integration branch
+
+The route relations on ER identify Blue and Green eastbound service. On EL they identify the westbound returns. The ways also carry a preferred forward direction. The Interline X has its own shorter open interval and no mapped revenue-route relation at this block. The ten scheduled shapes share nearly the same centreline, including the two Blue short turns. The route membership and direction together supply the track assignment for normal service. These records cannot establish the track used during an operational diversion. The freight movement remains illustrative. [ER route memberships](https://api.openstreetmap.org/api/0.6/way/702258817/relations.json) · [EL route memberships](https://api.openstreetmap.org/api/0.6/way/702258818/relations.json) · [Interline memberships](https://api.openstreetmap.org/api/0.6/way/1453238814/relations.json)
+
+| Mapped track | Blue and Green OSM relation IDs | Staged GTFS shapes | Example entry → exit, GTFS metres |
+| --- | --- | --- | --- |
+| ER, eastbound | Blue 239510; Green 304604, 12300720, 12300722 | 155177, 155181, 155214, 155215, 155216 | 155177 · 7560.64 → 7662.91 |
+| EL, westbound | Blue 4439527; Green 4439530, 12300721, 12300723 | 155185, 155188, 155221, 155222, 155223 | 155185 · 16497.60 → 16603.64 |
+
+Each directional GTFS polyline crosses the two end stations of its assigned open way. The loader verifies ordered intersections, lateral proximity and agreement with the cut observation within 15 m. It interpolates increasing GTFS metres between those endpoints to distance along the curved track. Car spacing stays in physical metres. A car straddling a mouth continues on its tangent, clipped against the track's own transverse plane. In the four five-car fixtures the centre car straddles the mouth, two cars are fully exposed and two are covered. [Eastbound at Pryor](log/rail/2026-11-21-mapped-ER-west.jpg) · [Eastbound at Central](log/rail/2026-11-21-mapped-ER-east.jpg) · [Westbound at Pryor](log/rail/2026-11-21-mapped-EL-west.jpg) · [Westbound at Central](log/rail/2026-11-21-mapped-EL-east.jpg)
+
+The regular timetable frame at **14:11:25 Eastern** shows an eastbound train on the southern ER. At **14:15:31**, the freight loop uses the northeast CSX tread. Both images use City stock at the same camera as the study. The five-car portal fixtures above are labelled synthetic. The illustrative bed remains **311.1 m NAVD88**, with passenger and freight stock on the same modelled tread lift of **0.13 m**. A common plane supplies visual continuity. Relative rail grade and the depth of cover remain unknown. [Timetable frame](log/rail/2026-11-21-mapped-timetable.jpg) · [Freight frame](log/rail/2026-11-21-mapped-freight.jpg)
+
+**Fallback fixture.** With the cut observation removed for shape 155177 from the attachment input alone, the selector returned zero bound paths. The ordinary terrain, tracks and scheduled poses took over. The unmodified terrain at the same freight timestamp supported **4.01 m** of tread (961.72 to 957.71 m), too short to animate a locomotive here. Restoring the observation returned all ten paths and **106.23 m** of freight tread (961.72 to 855.49 m). The selector also declines incomplete way references, unknown intersecting services, non-monotonic local mapping, missing ground samples and an absent or ambiguous CSX run. [Same-camera fallback](log/rail/2026-11-21-mapped-missing-ER.jpg) · [Binding and fallback tests](../web/src/city/east-cut.test.ts)
+
+### Integration and verification
+
+Control can apply the three call-site changes together after the bus and traffic integration. City computes one optional attachment for the block. The terrain opening, static rails, passenger meshes and the single matching CSX transport run all use that decision. The joint bed affects that freight draw only. The reviewed patch targets City at 944c802 and contains the production changes for the owners. The local launcher holds the fixed camera, test consists and diagnostic counters. On a later City revision, reconcile the patch against the three named files and run the attached checks on the actual integration tree. [Complete attachment patch](../pipeline/prototypes/five-points-east-cut/attach.patch) · [Branch-local verification and preview](../pipeline/prototypes/five-points-east-cut/serve-attached.mjs)
+
+With web dependencies installed and downtown assets staged, run from the repository root:
+
+```sh
+node pipeline/prototypes/five-points-east-cut/serve-attached.mjs --verify
+node pipeline/prototypes/five-points-east-cut/serve-attached.mjs
+```
+
+Open `http://127.0.0.1:5372/?q=high&t=2026-11-20T14:11:25-05:00&speed=0#19.1/33.75251/-84.38940/-148` in Orca and select **City**. For the labelled fixtures, insert `&railQA=ER-west` before the hash. The other three values are `ER-east`, `EL-west` and `EL-east`. Use `t=2026-11-20T14:15:31-05:00` for freight and `railQA=missing-ER` for the old-support comparison.
+
+The attachment reads the existing scene files and embeds the four small mapped polylines in the City bundle. This reference build added about **2.97 kB gzip** to the City chunk (20.22 versus 17.25 kB). A normal web rebuild and deployment by Control activate the integrated code. Existing complete bakes need no new elevation download or per-visitor service. A bake missing route/terrain transport evidence uses the fallback until refreshed. The standalone branch leaves deployment and the final device check with Control.
