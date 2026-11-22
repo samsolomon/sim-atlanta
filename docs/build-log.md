@@ -1627,3 +1627,25 @@ From the Connector, the broad roof beside Grady belongs to Butler. The deck acro
 ### 2026-11-22 — A roof to stand on
 
 The first cars on Butler looked half-buried from across the Connector. At roof level the reason was visible. The body floated 13 cm above the pavement, and the whole car stood only 1.06 m tall. The parking decks now use the moving sedan’s 32 cm sill and 1.42 m roof. A flat patch on each of four tires meets the concrete. Step outside Butler’s 1.10 m parapet and the wheels disappear behind it while the upper glass still shows. All 174 parked cars fit in the existing building draw. With the finished decks, the City opening submits 2.26% more triangles than the two original extrusions and stays at 141 draws. [Old stance](log/ui/parking-decks/cars-close-before.jpg) · [Same aisle with tires](log/ui/parking-decks/cars-close-after.jpg) · [From outside the parapet](log/ui/parking-decks/cars-parapet-after.jpg) · [Connector view](log/ui/parking-decks/connector-after.jpg)
+
+### 2026-11-22: Measuring the viaduct instead of guessing it
+
+The first extension east of the board runs 512 m along the MARTA viaduct to King Memorial. We had
+no published deck heights, so the plan was to draw ground only and leave the guideway as an
+unknown.
+
+Then the USGS lidar turned out to be the same April 2019 flight as our terrain model: its ground
+returns match the bare-earth grid to a 1 cm median. Its returns off the top of the structure give
+the guideway itself, in 5 m steps:
+- 316 m beside the Floyd Building;
+- 15.5 m above the Downtown Connector's lanes;
+- a 325.5 m crest over the CSX yard;
+- under King Memorial's roof, where the lidar can't see the deck and the study says so.
+
+The measurement also showed our old 7 m placeholder running up to 3.9 m low east of the Connector.
+
+The new ground strip shares the downtown grid's edge column node for node. It costs 9.9 KB
+gzipped, against 1.44 MB for all of downtown.
+[Study](king-memorial-corridor.md)
+
+![Guideway, roof and ground along the corridor](log/ui/king-memorial/profile.svg)

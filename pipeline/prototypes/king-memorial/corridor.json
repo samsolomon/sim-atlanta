@@ -1,0 +1,3587 @@
+{
+ "version": 1,
+ "note": "Prototype evidence for the King Memorial corridor; heights are NAVD88 metres, measured or null.",
+ "referencePath": "marta:path:155177",
+ "bins": 5.0,
+ "sRange": [
+  8090.0,
+  9455.0
+ ],
+ "sources": {
+  "lidar": {
+   "ept": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018",
+   "flightGpsTime": [
+    239944453.22743127,
+    239945875.03512627
+   ],
+   "points": 370772,
+   "datumCheck": "class-2 ground vs the pinned 1 m DEM: median +0.01 m (p10 -0.04, p90 +0.06)"
+  },
+  "osm": {
+   "bbox": [
+    -84.386,
+    33.748,
+    -84.372,
+    33.752
+   ],
+   "fetched": null
+  },
+  "gtfs": "web/public/data/ga/routes.json (staged MARTA GTFS)"
+ },
+ "coverage": [
+  {
+   "path": "155177",
+   "boardEdgeS": 8541.6,
+   "profileS": [
+    5950.0,
+    8900.0
+   ],
+   "nearestToStationS": 9053.6,
+   "nearestToStationM": 1.0,
+   "eastmostX": 15093.6
+  },
+  {
+   "path": "155181",
+   "boardEdgeS": 1281.6,
+   "profileS": [
+    0.0,
+    1640.0
+   ],
+   "nearestToStationS": 1793.6,
+   "nearestToStationM": 1.0,
+   "eastmostX": 15093.6
+  },
+  {
+   "path": "155185",
+   "boardEdgeS": 15622.4,
+   "profileS": [
+    15270.0,
+    16840.0
+   ],
+   "nearestToStationS": 15110.5,
+   "nearestToStationM": 1.0,
+   "eastmostX": 15170.3
+  },
+  {
+   "path": "155188",
+   "boardEdgeS": 15545.4,
+   "profileS": [
+    15190.0,
+    18140.0
+   ],
+   "nearestToStationS": 15033.5,
+   "nearestToStationM": 1.0,
+   "eastmostX": 15093.6
+  },
+  {
+   "path": "155214",
+   "boardEdgeS": 5974.6,
+   "profileS": [
+    3380.0,
+    6330.0
+   ],
+   "nearestToStationS": 6486.6,
+   "nearestToStationM": 0.3,
+   "eastmostX": 2192.0
+  },
+  {
+   "path": "155215",
+   "boardEdgeS": 5974.6,
+   "profileS": [
+    3380.0,
+    6330.0
+   ],
+   "nearestToStationS": 6486.6,
+   "nearestToStationM": 0.3,
+   "eastmostX": 5047.8
+  },
+  {
+   "path": "155216",
+   "boardEdgeS": 5974.6,
+   "profileS": [
+    3380.0,
+    6330.0
+   ],
+   "nearestToStationS": 6486.6,
+   "nearestToStationM": 0.3,
+   "eastmostX": 5047.8
+  },
+  {
+   "path": "155221",
+   "boardEdgeS": 1253.4,
+   "profileS": [
+    900.0,
+    3850.0
+   ],
+   "nearestToStationS": 742.3,
+   "nearestToStationM": 0.3,
+   "eastmostX": 2192.0
+  },
+  {
+   "path": "155222",
+   "boardEdgeS": 4383.4,
+   "profileS": [
+    4030.0,
+    6980.0
+   ],
+   "nearestToStationS": 3872.3,
+   "nearestToStationM": 0.3,
+   "eastmostX": 5047.8
+  },
+  {
+   "path": "155223",
+   "boardEdgeS": 4383.4,
+   "profileS": [
+    4030.0,
+    6980.0
+   ],
+   "nearestToStationS": 3872.3,
+   "nearestToStationM": 0.3,
+   "eastmostX": 5047.8
+  }
+ ],
+ "cityProfileEndS": 8900.0,
+ "guideway": [
+  {
+   "s": 8092.5,
+   "ground": 307.46,
+   "top": null,
+   "roof": null,
+   "n": 31,
+   "status": "unresolved",
+   "x": 579.9,
+   "z": 462.02
+  },
+  {
+   "s": 8097.5,
+   "ground": 307.32,
+   "top": null,
+   "roof": null,
+   "n": 50,
+   "status": "unresolved",
+   "x": 583.75,
+   "z": 465.35
+  },
+  {
+   "s": 8102.5,
+   "ground": 307.45,
+   "top": null,
+   "roof": null,
+   "n": 80,
+   "status": "unresolved",
+   "x": 587.6,
+   "z": 468.69
+  },
+  {
+   "s": 8107.5,
+   "ground": 307.66,
+   "top": null,
+   "roof": null,
+   "n": 80,
+   "status": "unresolved",
+   "x": 591.46,
+   "z": 472.02
+  },
+  {
+   "s": 8112.5,
+   "ground": 307.76,
+   "top": null,
+   "roof": null,
+   "n": 97,
+   "status": "unresolved",
+   "x": 595.31,
+   "z": 475.36
+  },
+  {
+   "s": 8117.5,
+   "ground": 307.82,
+   "top": null,
+   "roof": null,
+   "n": 89,
+   "status": "unresolved",
+   "x": 599.08,
+   "z": 478.42
+  },
+  {
+   "s": 8122.5,
+   "ground": 308.27,
+   "top": null,
+   "roof": null,
+   "n": 135,
+   "status": "unresolved",
+   "x": 602.78,
+   "z": 481.2
+  },
+  {
+   "s": 8127.5,
+   "ground": 308.8,
+   "top": null,
+   "roof": null,
+   "n": 264,
+   "status": "unresolved",
+   "x": 606.65,
+   "z": 484.32
+  },
+  {
+   "s": 8132.5,
+   "ground": 309.49,
+   "top": 316.36,
+   "roof": null,
+   "n": 529,
+   "status": "measured",
+   "x": 610.7,
+   "z": 487.8
+  },
+  {
+   "s": 8137.5,
+   "ground": 309.94,
+   "top": 316.39,
+   "roof": null,
+   "n": 436,
+   "status": "measured",
+   "x": 614.34,
+   "z": 490.93
+  },
+  {
+   "s": 8142.5,
+   "ground": 310.12,
+   "top": 316.36,
+   "roof": null,
+   "n": 352,
+   "status": "measured",
+   "x": 617.98,
+   "z": 494.05
+  },
+  {
+   "s": 8147.5,
+   "ground": 310.37,
+   "top": 316.37,
+   "roof": null,
+   "n": 299,
+   "status": "measured",
+   "x": 622.02,
+   "z": 497.53
+  },
+  {
+   "s": 8152.5,
+   "ground": 310.41,
+   "top": 316.62,
+   "roof": null,
+   "n": 267,
+   "status": "measured",
+   "x": 625.84,
+   "z": 500.81
+  },
+  {
+   "s": 8157.5,
+   "ground": 310.32,
+   "top": 316.69,
+   "roof": null,
+   "n": 260,
+   "status": "measured",
+   "x": 629.44,
+   "z": 503.9
+  },
+  {
+   "s": 8162.5,
+   "ground": 310.34,
+   "top": 316.85,
+   "roof": null,
+   "n": 285,
+   "status": "measured",
+   "x": 633.75,
+   "z": 506.77
+  },
+  {
+   "s": 8167.5,
+   "ground": 310.36,
+   "top": 316.9,
+   "roof": null,
+   "n": 238,
+   "status": "measured",
+   "x": 638.28,
+   "z": 509.55
+  },
+  {
+   "s": 8172.5,
+   "ground": 310.35,
+   "top": 317.12,
+   "roof": null,
+   "n": 223,
+   "status": "measured",
+   "x": 641.98,
+   "z": 512.33
+  },
+  {
+   "s": 8177.5,
+   "ground": 308.23,
+   "top": 317.33,
+   "roof": null,
+   "n": 269,
+   "status": "measured",
+   "x": 645.77,
+   "z": 515.11
+  },
+  {
+   "s": 8182.5,
+   "ground": 313.64,
+   "top": 317.39,
+   "roof": null,
+   "n": 265,
+   "status": "measured",
+   "x": 650.39,
+   "z": 517.89
+  },
+  {
+   "s": 8187.5,
+   "ground": 313.74,
+   "top": 317.69,
+   "roof": null,
+   "n": 343,
+   "status": "measured",
+   "x": 654.79,
+   "z": 520.39
+  },
+  {
+   "s": 8192.5,
+   "ground": 313.81,
+   "top": null,
+   "roof": null,
+   "n": 315,
+   "status": "gap",
+   "x": 658.95,
+   "z": 522.62
+  },
+  {
+   "s": 8197.5,
+   "ground": 313.81,
+   "top": 317.94,
+   "roof": null,
+   "n": 365,
+   "status": "measured",
+   "x": 663.34,
+   "z": 525.12
+  },
+  {
+   "s": 8202.5,
+   "ground": 313.72,
+   "top": 318.06,
+   "roof": null,
+   "n": 230,
+   "status": "measured",
+   "x": 667.96,
+   "z": 527.9
+  },
+  {
+   "s": 8207.5,
+   "ground": 313.78,
+   "top": 318.09,
+   "roof": null,
+   "n": 249,
+   "status": "measured",
+   "x": 672.12,
+   "z": 530.4
+  },
+  {
+   "s": 8212.5,
+   "ground": 308.33,
+   "top": 318.53,
+   "roof": null,
+   "n": 268,
+   "status": "measured",
+   "x": 676.28,
+   "z": 532.83
+  },
+  {
+   "s": 8217.5,
+   "ground": 307.81,
+   "top": 318.52,
+   "roof": null,
+   "n": 284,
+   "status": "measured",
+   "x": 680.9,
+   "z": 534.92
+  },
+  {
+   "s": 8222.5,
+   "ground": 307.02,
+   "top": 318.72,
+   "roof": null,
+   "n": 289,
+   "status": "measured",
+   "x": 685.53,
+   "z": 537.0
+  },
+  {
+   "s": 8227.5,
+   "ground": 303.98,
+   "top": 318.82,
+   "roof": null,
+   "n": 282,
+   "status": "measured",
+   "x": 690.15,
+   "z": 539.09
+  },
+  {
+   "s": 8232.5,
+   "ground": 304.05,
+   "top": 318.99,
+   "roof": null,
+   "n": 249,
+   "status": "measured",
+   "x": 694.77,
+   "z": 540.96
+  },
+  {
+   "s": 8237.5,
+   "ground": 304.98,
+   "top": 319.23,
+   "roof": null,
+   "n": 300,
+   "status": "measured",
+   "x": 699.39,
+   "z": 542.84
+  },
+  {
+   "s": 8242.5,
+   "ground": 304.27,
+   "top": 319.3,
+   "roof": null,
+   "n": 287,
+   "status": "measured",
+   "x": 704.02,
+   "z": 544.93
+  },
+  {
+   "s": 8247.5,
+   "ground": 304.38,
+   "top": 319.5,
+   "roof": null,
+   "n": 306,
+   "status": "measured",
+   "x": 708.64,
+   "z": 546.59
+  },
+  {
+   "s": 8252.5,
+   "ground": 303.88,
+   "top": 319.68,
+   "roof": null,
+   "n": 248,
+   "status": "measured",
+   "x": 713.26,
+   "z": 547.82
+  },
+  {
+   "s": 8257.5,
+   "ground": 304.36,
+   "top": 319.87,
+   "roof": null,
+   "n": 263,
+   "status": "measured",
+   "x": 717.88,
+   "z": 549.65
+  },
+  {
+   "s": 8262.5,
+   "ground": 304.25,
+   "top": 319.88,
+   "roof": null,
+   "n": 277,
+   "status": "measured",
+   "x": 722.56,
+   "z": 551.65
+  },
+  {
+   "s": 8267.5,
+   "ground": 304.26,
+   "top": 320.17,
+   "roof": null,
+   "n": 286,
+   "status": "measured",
+   "x": 727.69,
+   "z": 552.89
+  },
+  {
+   "s": 8272.5,
+   "ground": 304.4,
+   "top": 320.4,
+   "roof": null,
+   "n": 336,
+   "status": "measured",
+   "x": 732.68,
+   "z": 554.12
+  },
+  {
+   "s": 8277.5,
+   "ground": 304.47,
+   "top": 320.38,
+   "roof": null,
+   "n": 320,
+   "status": "measured",
+   "x": 737.3,
+   "z": 555.36
+  },
+  {
+   "s": 8282.5,
+   "ground": 304.54,
+   "top": 320.56,
+   "roof": null,
+   "n": 298,
+   "status": "measured",
+   "x": 741.92,
+   "z": 556.59
+  },
+  {
+   "s": 8287.5,
+   "ground": 304.58,
+   "top": 320.7,
+   "roof": null,
+   "n": 287,
+   "status": "measured",
+   "x": 746.54,
+   "z": 557.83
+  },
+  {
+   "s": 8292.5,
+   "ground": 304.53,
+   "top": 320.81,
+   "roof": null,
+   "n": 267,
+   "status": "measured",
+   "x": 751.57,
+   "z": 558.69
+  },
+  {
+   "s": 8297.5,
+   "ground": 304.6,
+   "top": 320.97,
+   "roof": null,
+   "n": 253,
+   "status": "measured",
+   "x": 756.71,
+   "z": 559.43
+  },
+  {
+   "s": 8302.5,
+   "ground": 304.87,
+   "top": 321.14,
+   "roof": null,
+   "n": 242,
+   "status": "measured",
+   "x": 761.34,
+   "z": 560.67
+  },
+  {
+   "s": 8307.5,
+   "ground": 305.12,
+   "top": 321.3,
+   "roof": null,
+   "n": 300,
+   "status": "measured",
+   "x": 766.13,
+   "z": 561.74
+  },
+  {
+   "s": 8312.5,
+   "ground": 305.25,
+   "top": 321.58,
+   "roof": null,
+   "n": 298,
+   "status": "measured",
+   "x": 771.33,
+   "z": 562.44
+  },
+  {
+   "s": 8317.5,
+   "ground": 305.2,
+   "top": 321.73,
+   "roof": null,
+   "n": 274,
+   "status": "measured",
+   "x": 776.53,
+   "z": 562.65
+  },
+  {
+   "s": 8322.5,
+   "ground": 304.77,
+   "top": 321.95,
+   "roof": null,
+   "n": 237,
+   "status": "measured",
+   "x": 781.67,
+   "z": 562.71
+  },
+  {
+   "s": 8327.5,
+   "ground": 306.41,
+   "top": 321.92,
+   "roof": null,
+   "n": 268,
+   "status": "measured",
+   "x": 786.3,
+   "z": 563.33
+  },
+  {
+   "s": 8332.5,
+   "ground": 306.44,
+   "top": 322.15,
+   "roof": null,
+   "n": 289,
+   "status": "measured",
+   "x": 791.09,
+   "z": 563.97
+  },
+  {
+   "s": 8337.5,
+   "ground": 314.07,
+   "top": 322.19,
+   "roof": null,
+   "n": 255,
+   "status": "measured",
+   "x": 796.29,
+   "z": 564.66
+  },
+  {
+   "s": 8342.5,
+   "ground": 314.11,
+   "top": 322.39,
+   "roof": null,
+   "n": 258,
+   "status": "measured",
+   "x": 801.49,
+   "z": 564.87
+  },
+  {
+   "s": 8347.5,
+   "ground": 314.22,
+   "top": 322.55,
+   "roof": null,
+   "n": 255,
+   "status": "measured",
+   "x": 806.64,
+   "z": 564.87
+  },
+  {
+   "s": 8352.5,
+   "ground": 314.22,
+   "top": 322.74,
+   "roof": null,
+   "n": 221,
+   "status": "measured",
+   "x": 811.26,
+   "z": 564.87
+  },
+  {
+   "s": 8357.5,
+   "ground": 314.11,
+   "top": 322.92,
+   "roof": null,
+   "n": 234,
+   "status": "measured",
+   "x": 816.05,
+   "z": 564.87
+  },
+  {
+   "s": 8362.5,
+   "ground": 314.31,
+   "top": 322.98,
+   "roof": null,
+   "n": 248,
+   "status": "measured",
+   "x": 821.25,
+   "z": 564.87
+  },
+  {
+   "s": 8367.5,
+   "ground": 314.35,
+   "top": 323.23,
+   "roof": null,
+   "n": 239,
+   "status": "measured",
+   "x": 826.05,
+   "z": 564.44
+  },
+  {
+   "s": 8372.5,
+   "ground": 314.32,
+   "top": 323.31,
+   "roof": null,
+   "n": 231,
+   "status": "measured",
+   "x": 830.67,
+   "z": 563.82
+  },
+  {
+   "s": 8377.5,
+   "ground": 314.14,
+   "top": 323.43,
+   "roof": null,
+   "n": 276,
+   "status": "measured",
+   "x": 835.82,
+   "z": 563.76
+  },
+  {
+   "s": 8382.5,
+   "ground": 314.0,
+   "top": 323.59,
+   "roof": null,
+   "n": 263,
+   "status": "measured",
+   "x": 841.02,
+   "z": 563.76
+  },
+  {
+   "s": 8387.5,
+   "ground": 314.18,
+   "top": 323.81,
+   "roof": null,
+   "n": 285,
+   "status": "measured",
+   "x": 846.22,
+   "z": 563.76
+  },
+  {
+   "s": 8392.5,
+   "ground": 314.01,
+   "top": 323.84,
+   "roof": null,
+   "n": 232,
+   "status": "measured",
+   "x": 851.01,
+   "z": 563.33
+  },
+  {
+   "s": 8397.5,
+   "ground": 314.0,
+   "top": 323.98,
+   "roof": null,
+   "n": 236,
+   "status": "measured",
+   "x": 855.64,
+   "z": 562.71
+  },
+  {
+   "s": 8402.5,
+   "ground": 313.99,
+   "top": 324.13,
+   "roof": null,
+   "n": 243,
+   "status": "measured",
+   "x": 860.64,
+   "z": 562.42
+  },
+  {
+   "s": 8407.5,
+   "ground": 313.96,
+   "top": 324.41,
+   "roof": null,
+   "n": 228,
+   "status": "measured",
+   "x": 865.68,
+   "z": 562.17
+  },
+  {
+   "s": 8412.5,
+   "ground": 314.12,
+   "top": 324.51,
+   "roof": null,
+   "n": 261,
+   "status": "measured",
+   "x": 870.72,
+   "z": 561.91
+  },
+  {
+   "s": 8417.5,
+   "ground": 314.29,
+   "top": 324.51,
+   "roof": null,
+   "n": 245,
+   "status": "measured",
+   "x": 875.76,
+   "z": 561.66
+  },
+  {
+   "s": 8422.5,
+   "ground": 314.08,
+   "top": 324.68,
+   "roof": null,
+   "n": 262,
+   "status": "measured",
+   "x": 880.83,
+   "z": 561.35
+  },
+  {
+   "s": 8427.5,
+   "ground": 314.04,
+   "top": 324.85,
+   "roof": null,
+   "n": 248,
+   "status": "measured",
+   "x": 885.91,
+   "z": 560.98
+  },
+  {
+   "s": 8432.5,
+   "ground": 314.06,
+   "top": 324.86,
+   "roof": null,
+   "n": 232,
+   "status": "measured",
+   "x": 891.0,
+   "z": 560.61
+  },
+  {
+   "s": 8437.5,
+   "ground": 314.11,
+   "top": 325.04,
+   "roof": null,
+   "n": 242,
+   "status": "measured",
+   "x": 896.08,
+   "z": 560.24
+  },
+  {
+   "s": 8442.5,
+   "ground": 314.08,
+   "top": 325.04,
+   "roof": null,
+   "n": 248,
+   "status": "measured",
+   "x": 901.17,
+   "z": 559.87
+  },
+  {
+   "s": 8447.5,
+   "ground": 314.05,
+   "top": 325.11,
+   "roof": null,
+   "n": 250,
+   "status": "measured",
+   "x": 906.25,
+   "z": 559.5
+  },
+  {
+   "s": 8452.5,
+   "ground": 314.01,
+   "top": 325.14,
+   "roof": null,
+   "n": 210,
+   "status": "measured",
+   "x": 911.25,
+   "z": 559.13
+  },
+  {
+   "s": 8457.5,
+   "ground": 314.04,
+   "top": 325.25,
+   "roof": null,
+   "n": 255,
+   "status": "measured",
+   "x": 916.18,
+   "z": 558.77
+  },
+  {
+   "s": 8462.5,
+   "ground": 313.91,
+   "top": 325.31,
+   "roof": null,
+   "n": 208,
+   "status": "measured",
+   "x": 921.1,
+   "z": 558.41
+  },
+  {
+   "s": 8467.5,
+   "ground": 313.86,
+   "top": 325.33,
+   "roof": null,
+   "n": 275,
+   "status": "measured",
+   "x": 926.02,
+   "z": 558.06
+  },
+  {
+   "s": 8472.5,
+   "ground": 313.9,
+   "top": 325.42,
+   "roof": null,
+   "n": 227,
+   "status": "measured",
+   "x": 930.94,
+   "z": 557.7
+  },
+  {
+   "s": 8477.5,
+   "ground": 313.95,
+   "top": 325.39,
+   "roof": null,
+   "n": 255,
+   "status": "measured",
+   "x": 935.86,
+   "z": 557.34
+  },
+  {
+   "s": 8482.5,
+   "ground": 313.95,
+   "top": 325.36,
+   "roof": null,
+   "n": 247,
+   "status": "measured",
+   "x": 940.78,
+   "z": 557.03
+  },
+  {
+   "s": 8487.5,
+   "ground": 314.05,
+   "top": 325.36,
+   "roof": null,
+   "n": 252,
+   "status": "measured",
+   "x": 945.71,
+   "z": 556.85
+  },
+  {
+   "s": 8492.5,
+   "ground": 314.07,
+   "top": 325.36,
+   "roof": null,
+   "n": 277,
+   "status": "measured",
+   "x": 950.64,
+   "z": 556.66
+  },
+  {
+   "s": 8497.5,
+   "ground": 314.03,
+   "top": 325.53,
+   "roof": null,
+   "n": 271,
+   "status": "measured",
+   "x": 955.57,
+   "z": 556.48
+  },
+  {
+   "s": 8502.5,
+   "ground": 313.22,
+   "top": 325.45,
+   "roof": null,
+   "n": 275,
+   "status": "measured",
+   "x": 960.51,
+   "z": 556.29
+  },
+  {
+   "s": 8507.5,
+   "ground": 313.96,
+   "top": 325.46,
+   "roof": null,
+   "n": 256,
+   "status": "measured",
+   "x": 965.44,
+   "z": 556.11
+  },
+  {
+   "s": 8512.5,
+   "ground": 313.93,
+   "top": 325.4,
+   "roof": null,
+   "n": 292,
+   "status": "measured",
+   "x": 970.41,
+   "z": 555.86
+  },
+  {
+   "s": 8517.5,
+   "ground": 312.85,
+   "top": 325.44,
+   "roof": null,
+   "n": 282,
+   "status": "measured",
+   "x": 975.5,
+   "z": 555.49
+  },
+  {
+   "s": 8522.5,
+   "ground": 313.05,
+   "top": 325.5,
+   "roof": null,
+   "n": 273,
+   "status": "measured",
+   "x": 980.58,
+   "z": 555.12
+  },
+  {
+   "s": 8527.5,
+   "ground": 313.02,
+   "top": 325.43,
+   "roof": null,
+   "n": 288,
+   "status": "measured",
+   "x": 985.67,
+   "z": 554.75
+  },
+  {
+   "s": 8532.5,
+   "ground": 313.23,
+   "top": 325.42,
+   "roof": null,
+   "n": 251,
+   "status": "measured",
+   "x": 990.75,
+   "z": 554.38
+  },
+  {
+   "s": 8537.5,
+   "ground": 313.35,
+   "top": 325.45,
+   "roof": null,
+   "n": 251,
+   "status": "measured",
+   "x": 995.84,
+   "z": 554.01
+  },
+  {
+   "s": 8542.5,
+   "ground": 313.45,
+   "top": 325.41,
+   "roof": null,
+   "n": 255,
+   "status": "measured",
+   "x": 1000.87,
+   "z": 553.64
+  },
+  {
+   "s": 8547.5,
+   "ground": 313.56,
+   "top": 325.42,
+   "roof": null,
+   "n": 260,
+   "status": "measured",
+   "x": 1005.79,
+   "z": 553.29
+  },
+  {
+   "s": 8552.5,
+   "ground": 314.03,
+   "top": 325.4,
+   "roof": null,
+   "n": 236,
+   "status": "measured",
+   "x": 1010.71,
+   "z": 552.93
+  },
+  {
+   "s": 8557.5,
+   "ground": 314.04,
+   "top": 325.48,
+   "roof": null,
+   "n": 246,
+   "status": "measured",
+   "x": 1015.64,
+   "z": 552.57
+  },
+  {
+   "s": 8562.5,
+   "ground": 314.06,
+   "top": 325.47,
+   "roof": null,
+   "n": 243,
+   "status": "measured",
+   "x": 1020.56,
+   "z": 552.21
+  },
+  {
+   "s": 8567.5,
+   "ground": 314.03,
+   "top": 325.45,
+   "roof": null,
+   "n": 236,
+   "status": "measured",
+   "x": 1025.48,
+   "z": 551.85
+  },
+  {
+   "s": 8572.5,
+   "ground": 314.07,
+   "top": 325.48,
+   "roof": null,
+   "n": 253,
+   "status": "measured",
+   "x": 1030.4,
+   "z": 551.53
+  },
+  {
+   "s": 8577.5,
+   "ground": 314.07,
+   "top": 325.47,
+   "roof": null,
+   "n": 278,
+   "status": "measured",
+   "x": 1035.35,
+   "z": 551.53
+  },
+  {
+   "s": 8582.5,
+   "ground": 314.06,
+   "top": 325.48,
+   "roof": null,
+   "n": 275,
+   "status": "measured",
+   "x": 1040.31,
+   "z": 551.53
+  },
+  {
+   "s": 8587.5,
+   "ground": 314.06,
+   "top": 325.47,
+   "roof": null,
+   "n": 303,
+   "status": "measured",
+   "x": 1045.33,
+   "z": 551.32
+  },
+  {
+   "s": 8592.5,
+   "ground": 314.06,
+   "top": 325.5,
+   "roof": null,
+   "n": 257,
+   "status": "measured",
+   "x": 1050.53,
+   "z": 550.62
+  },
+  {
+   "s": 8597.5,
+   "ground": 314.08,
+   "top": 325.45,
+   "roof": null,
+   "n": 246,
+   "status": "measured",
+   "x": 1055.73,
+   "z": 550.42
+  },
+  {
+   "s": 8602.5,
+   "ground": 314.05,
+   "top": 325.3,
+   "roof": null,
+   "n": 232,
+   "status": "measured",
+   "x": 1060.88,
+   "z": 550.35
+  },
+  {
+   "s": 8607.5,
+   "ground": 314.07,
+   "top": 325.23,
+   "roof": null,
+   "n": 217,
+   "status": "measured",
+   "x": 1065.5,
+   "z": 549.74
+  },
+  {
+   "s": 8612.5,
+   "ground": 314.03,
+   "top": 325.28,
+   "roof": null,
+   "n": 237,
+   "status": "measured",
+   "x": 1070.3,
+   "z": 549.3
+  },
+  {
+   "s": 8617.5,
+   "ground": 314.05,
+   "top": 325.32,
+   "roof": null,
+   "n": 274,
+   "status": "measured",
+   "x": 1075.5,
+   "z": 549.3
+  },
+  {
+   "s": 8622.5,
+   "ground": 314.07,
+   "top": 325.27,
+   "roof": null,
+   "n": 240,
+   "status": "measured",
+   "x": 1080.65,
+   "z": 548.87
+  },
+  {
+   "s": 8627.5,
+   "ground": 314.08,
+   "top": 325.31,
+   "roof": null,
+   "n": 274,
+   "status": "measured",
+   "x": 1085.79,
+   "z": 548.25
+  },
+  {
+   "s": 8632.5,
+   "ground": 314.08,
+   "top": 325.19,
+   "roof": null,
+   "n": 253,
+   "status": "measured",
+   "x": 1090.46,
+   "z": 548.19
+  },
+  {
+   "s": 8637.5,
+   "ground": null,
+   "top": 325.22,
+   "roof": null,
+   "n": 291,
+   "status": "measured",
+   "x": 1095.14,
+   "z": 548.12
+  },
+  {
+   "s": 8642.5,
+   "ground": null,
+   "top": 325.12,
+   "roof": null,
+   "n": 311,
+   "status": "measured",
+   "x": 1100.34,
+   "z": 547.43
+  },
+  {
+   "s": 8647.5,
+   "ground": 308.32,
+   "top": 325.09,
+   "roof": null,
+   "n": 347,
+   "status": "measured",
+   "x": 1105.54,
+   "z": 546.73
+  },
+  {
+   "s": 8652.5,
+   "ground": 308.56,
+   "top": 325.11,
+   "roof": null,
+   "n": 339,
+   "status": "measured",
+   "x": 1110.74,
+   "z": 546.04
+  },
+  {
+   "s": 8657.5,
+   "ground": 308.71,
+   "top": 325.12,
+   "roof": null,
+   "n": 279,
+   "status": "measured",
+   "x": 1115.42,
+   "z": 545.47
+  },
+  {
+   "s": 8662.5,
+   "ground": 308.84,
+   "top": 325.2,
+   "roof": null,
+   "n": 337,
+   "status": "measured",
+   "x": 1120.05,
+   "z": 544.91
+  },
+  {
+   "s": 8667.5,
+   "ground": 308.81,
+   "top": 325.08,
+   "roof": null,
+   "n": 349,
+   "status": "measured",
+   "x": 1125.19,
+   "z": 544.23
+  },
+  {
+   "s": 8672.5,
+   "ground": 314.9,
+   "top": 325.08,
+   "roof": null,
+   "n": 285,
+   "status": "measured",
+   "x": 1130.39,
+   "z": 543.74
+  },
+  {
+   "s": 8677.5,
+   "ground": 314.04,
+   "top": 325.01,
+   "roof": null,
+   "n": 281,
+   "status": "measured",
+   "x": 1135.59,
+   "z": 543.74
+  },
+  {
+   "s": 8682.5,
+   "ground": 314.06,
+   "top": 324.92,
+   "roof": null,
+   "n": 244,
+   "status": "measured",
+   "x": 1140.38,
+   "z": 543.31
+  },
+  {
+   "s": 8687.5,
+   "ground": 314.06,
+   "top": 324.93,
+   "roof": null,
+   "n": 291,
+   "status": "measured",
+   "x": 1145.01,
+   "z": 542.69
+  },
+  {
+   "s": 8692.5,
+   "ground": 314.06,
+   "top": 324.92,
+   "roof": null,
+   "n": 280,
+   "status": "measured",
+   "x": 1150.15,
+   "z": 541.38
+  },
+  {
+   "s": 8697.5,
+   "ground": 314.03,
+   "top": 324.91,
+   "roof": null,
+   "n": 272,
+   "status": "measured",
+   "x": 1155.18,
+   "z": 540.22
+  },
+  {
+   "s": 8702.5,
+   "ground": 314.04,
+   "top": 324.86,
+   "roof": null,
+   "n": 244,
+   "status": "measured",
+   "x": 1159.8,
+   "z": 539.61
+  },
+  {
+   "s": 8707.5,
+   "ground": 314.0,
+   "top": 324.86,
+   "roof": null,
+   "n": 290,
+   "status": "measured",
+   "x": 1164.68,
+   "z": 538.99
+  },
+  {
+   "s": 8712.5,
+   "ground": 314.01,
+   "top": 324.88,
+   "roof": null,
+   "n": 313,
+   "status": "measured",
+   "x": 1169.81,
+   "z": 538.37
+  },
+  {
+   "s": 8717.5,
+   "ground": 314.0,
+   "top": 324.91,
+   "roof": null,
+   "n": 281,
+   "status": "measured",
+   "x": 1174.59,
+   "z": 537.41
+  },
+  {
+   "s": 8722.5,
+   "ground": 314.0,
+   "top": 324.87,
+   "roof": null,
+   "n": 274,
+   "status": "measured",
+   "x": 1179.21,
+   "z": 536.29
+  },
+  {
+   "s": 8727.5,
+   "ground": 313.91,
+   "top": 324.8,
+   "roof": null,
+   "n": 348,
+   "status": "measured",
+   "x": 1184.24,
+   "z": 535.47
+  },
+  {
+   "s": 8732.5,
+   "ground": 313.93,
+   "top": 324.78,
+   "roof": null,
+   "n": 298,
+   "status": "measured",
+   "x": 1189.38,
+   "z": 534.72
+  },
+  {
+   "s": 8737.5,
+   "ground": 313.87,
+   "top": 324.73,
+   "roof": null,
+   "n": 296,
+   "status": "measured",
+   "x": 1194.01,
+   "z": 533.49
+  },
+  {
+   "s": 8742.5,
+   "ground": 313.83,
+   "top": 324.72,
+   "roof": null,
+   "n": 334,
+   "status": "measured",
+   "x": 1198.78,
+   "z": 532.25
+  },
+  {
+   "s": 8747.5,
+   "ground": 312.69,
+   "top": 324.68,
+   "roof": null,
+   "n": 341,
+   "status": "measured",
+   "x": 1203.92,
+   "z": 531.02
+  },
+  {
+   "s": 8752.5,
+   "ground": 312.48,
+   "top": 324.69,
+   "roof": null,
+   "n": 288,
+   "status": "measured",
+   "x": 1208.8,
+   "z": 530.09
+  },
+  {
+   "s": 8757.5,
+   "ground": 313.87,
+   "top": 324.84,
+   "roof": null,
+   "n": 293,
+   "status": "measured",
+   "x": 1213.42,
+   "z": 529.47
+  },
+  {
+   "s": 8762.5,
+   "ground": 313.67,
+   "top": 324.75,
+   "roof": null,
+   "n": 353,
+   "status": "measured",
+   "x": 1218.45,
+   "z": 528.32
+  },
+  {
+   "s": 8767.5,
+   "ground": 313.79,
+   "top": 324.75,
+   "roof": null,
+   "n": 359,
+   "status": "measured",
+   "x": 1223.59,
+   "z": 526.94
+  },
+  {
+   "s": 8772.5,
+   "ground": 313.77,
+   "top": 324.78,
+   "roof": null,
+   "n": 302,
+   "status": "measured",
+   "x": 1228.21,
+   "z": 525.71
+  },
+  {
+   "s": 8777.5,
+   "ground": 313.67,
+   "top": 324.74,
+   "roof": null,
+   "n": 360,
+   "status": "measured",
+   "x": 1233.01,
+   "z": 524.42
+  },
+  {
+   "s": 8782.5,
+   "ground": 313.62,
+   "top": 324.73,
+   "roof": null,
+   "n": 358,
+   "status": "measured",
+   "x": 1238.21,
+   "z": 523.03
+  },
+  {
+   "s": 8787.5,
+   "ground": 311.12,
+   "top": 324.73,
+   "roof": null,
+   "n": 345,
+   "status": "measured",
+   "x": 1243.01,
+   "z": 521.75
+  },
+  {
+   "s": 8792.5,
+   "ground": 311.04,
+   "top": 324.72,
+   "roof": null,
+   "n": 307,
+   "status": "measured",
+   "x": 1247.63,
+   "z": 520.52
+  },
+  {
+   "s": 8797.5,
+   "ground": 313.68,
+   "top": 324.62,
+   "roof": null,
+   "n": 322,
+   "status": "measured",
+   "x": 1252.25,
+   "z": 519.28
+  },
+  {
+   "s": 8802.5,
+   "ground": 313.79,
+   "top": 324.65,
+   "roof": null,
+   "n": 348,
+   "status": "measured",
+   "x": 1256.93,
+   "z": 518.03
+  },
+  {
+   "s": 8807.5,
+   "ground": 313.84,
+   "top": 324.69,
+   "roof": null,
+   "n": 400,
+   "status": "measured",
+   "x": 1262.13,
+   "z": 516.64
+  },
+  {
+   "s": 8812.5,
+   "ground": 313.85,
+   "top": 324.67,
+   "roof": null,
+   "n": 390,
+   "status": "measured",
+   "x": 1267.04,
+   "z": 514.9
+  },
+  {
+   "s": 8817.5,
+   "ground": 313.32,
+   "top": 324.51,
+   "roof": null,
+   "n": 354,
+   "status": "measured",
+   "x": 1271.67,
+   "z": 512.82
+  },
+  {
+   "s": 8822.5,
+   "ground": 313.69,
+   "top": 324.51,
+   "roof": null,
+   "n": 394,
+   "status": "measured",
+   "x": 1276.29,
+   "z": 511.5
+  },
+  {
+   "s": 8827.5,
+   "ground": 313.75,
+   "top": 324.43,
+   "roof": null,
+   "n": 415,
+   "status": "measured",
+   "x": 1280.91,
+   "z": 510.26
+  },
+  {
+   "s": 8832.5,
+   "ground": 313.6,
+   "top": 324.52,
+   "roof": null,
+   "n": 384,
+   "status": "measured",
+   "x": 1285.53,
+   "z": 509.03
+  },
+  {
+   "s": 8837.5,
+   "ground": 313.77,
+   "top": 324.61,
+   "roof": null,
+   "n": 371,
+   "status": "measured",
+   "x": 1290.16,
+   "z": 507.61
+  },
+  {
+   "s": 8842.5,
+   "ground": 313.29,
+   "top": 324.4,
+   "roof": null,
+   "n": 374,
+   "status": "measured",
+   "x": 1294.78,
+   "z": 505.75
+  },
+  {
+   "s": 8847.5,
+   "ground": 313.42,
+   "top": 324.42,
+   "roof": null,
+   "n": 429,
+   "status": "measured",
+   "x": 1299.4,
+   "z": 503.9
+  },
+  {
+   "s": 8852.5,
+   "ground": 313.03,
+   "top": 324.33,
+   "roof": null,
+   "n": 455,
+   "status": "measured",
+   "x": 1304.02,
+   "z": 502.05
+  },
+  {
+   "s": 8857.5,
+   "ground": 313.07,
+   "top": 324.41,
+   "roof": null,
+   "n": 524,
+   "status": "measured",
+   "x": 1309.05,
+   "z": 500.52
+  },
+  {
+   "s": 8862.5,
+   "ground": 313.68,
+   "top": 324.32,
+   "roof": null,
+   "n": 488,
+   "status": "measured",
+   "x": 1314.19,
+   "z": 499.08
+  },
+  {
+   "s": 8867.5,
+   "ground": 313.48,
+   "top": 324.23,
+   "roof": null,
+   "n": 571,
+   "status": "measured",
+   "x": 1318.82,
+   "z": 497.23
+  },
+  {
+   "s": 8872.5,
+   "ground": 313.43,
+   "top": 324.4,
+   "roof": null,
+   "n": 637,
+   "status": "measured",
+   "x": 1323.44,
+   "z": 495.3
+  },
+  {
+   "s": 8877.5,
+   "ground": 313.25,
+   "top": 324.35,
+   "roof": null,
+   "n": 721,
+   "status": "measured",
+   "x": 1328.06,
+   "z": 493.22
+  },
+  {
+   "s": 8882.5,
+   "ground": 313.08,
+   "top": 324.28,
+   "roof": null,
+   "n": 924,
+   "status": "measured",
+   "x": 1332.68,
+   "z": 491.73
+  },
+  {
+   "s": 8887.5,
+   "ground": 313.39,
+   "top": 324.34,
+   "roof": null,
+   "n": 877,
+   "status": "measured",
+   "x": 1337.31,
+   "z": 490.49
+  },
+  {
+   "s": 8892.5,
+   "ground": 313.49,
+   "top": 324.35,
+   "roof": null,
+   "n": 860,
+   "status": "measured",
+   "x": 1341.93,
+   "z": 488.49
+  },
+  {
+   "s": 8897.5,
+   "ground": 312.9,
+   "top": 324.33,
+   "roof": null,
+   "n": 732,
+   "status": "measured",
+   "x": 1346.55,
+   "z": 486.53
+  },
+  {
+   "s": 8902.5,
+   "ground": 312.76,
+   "top": 324.34,
+   "roof": null,
+   "n": 659,
+   "status": "measured",
+   "x": 1351.17,
+   "z": 484.87
+  },
+  {
+   "s": 8907.5,
+   "ground": 312.61,
+   "top": 324.23,
+   "roof": null,
+   "n": 600,
+   "status": "measured",
+   "x": 1355.8,
+   "z": 483.16
+  },
+  {
+   "s": 8912.5,
+   "ground": 312.77,
+   "top": 324.12,
+   "roof": null,
+   "n": 609,
+   "status": "measured",
+   "x": 1360.42,
+   "z": 481.37
+  },
+  {
+   "s": 8917.5,
+   "ground": 311.87,
+   "top": 324.14,
+   "roof": null,
+   "n": 250,
+   "status": "measured",
+   "x": 1365.04,
+   "z": 479.57
+  },
+  {
+   "s": 8922.5,
+   "ground": null,
+   "top": 324.08,
+   "roof": null,
+   "n": 145,
+   "status": "measured",
+   "x": 1369.66,
+   "z": 477.78
+  },
+  {
+   "s": 8927.5,
+   "ground": 307.64,
+   "top": 324.05,
+   "roof": null,
+   "n": 203,
+   "status": "measured",
+   "x": 1374.29,
+   "z": 475.99
+  },
+  {
+   "s": 8932.5,
+   "ground": 307.63,
+   "top": 324.17,
+   "roof": null,
+   "n": 210,
+   "status": "measured",
+   "x": 1378.91,
+   "z": 474.19
+  },
+  {
+   "s": 8937.5,
+   "ground": 307.59,
+   "top": null,
+   "roof": null,
+   "n": 271,
+   "status": "gap",
+   "x": 1383.55,
+   "z": 472.41
+  },
+  {
+   "s": 8942.5,
+   "ground": 307.61,
+   "top": 324.13,
+   "roof": null,
+   "n": 102,
+   "status": "measured",
+   "x": 1388.33,
+   "z": 470.68
+  },
+  {
+   "s": 8947.5,
+   "ground": 307.78,
+   "top": null,
+   "roof": 330.84,
+   "n": 104,
+   "status": "under roof",
+   "x": 1393.11,
+   "z": 468.96
+  },
+  {
+   "s": 8952.5,
+   "ground": 307.79,
+   "top": null,
+   "roof": 330.84,
+   "n": 97,
+   "status": "under roof",
+   "x": 1397.89,
+   "z": 467.23
+  },
+  {
+   "s": 8957.5,
+   "ground": 308.57,
+   "top": null,
+   "roof": 330.76,
+   "n": 99,
+   "status": "under roof",
+   "x": 1402.67,
+   "z": 465.5
+  },
+  {
+   "s": 8962.5,
+   "ground": 308.62,
+   "top": null,
+   "roof": 330.72,
+   "n": 91,
+   "status": "under roof",
+   "x": 1407.46,
+   "z": 463.78
+  },
+  {
+   "s": 8967.5,
+   "ground": 313.34,
+   "top": null,
+   "roof": 330.72,
+   "n": 89,
+   "status": "under roof",
+   "x": 1412.19,
+   "z": 462.03
+  },
+  {
+   "s": 8972.5,
+   "ground": 313.59,
+   "top": null,
+   "roof": 330.8,
+   "n": 97,
+   "status": "under roof",
+   "x": 1416.81,
+   "z": 460.24
+  },
+  {
+   "s": 8977.5,
+   "ground": 308.36,
+   "top": null,
+   "roof": 330.67,
+   "n": 91,
+   "status": "under roof",
+   "x": 1421.44,
+   "z": 458.45
+  },
+  {
+   "s": 8982.5,
+   "ground": 308.64,
+   "top": null,
+   "roof": 330.71,
+   "n": 86,
+   "status": "under roof",
+   "x": 1426.06,
+   "z": 456.65
+  },
+  {
+   "s": 8987.5,
+   "ground": 308.81,
+   "top": null,
+   "roof": 330.68,
+   "n": 88,
+   "status": "under roof",
+   "x": 1430.68,
+   "z": 454.86
+  },
+  {
+   "s": 8992.5,
+   "ground": 308.62,
+   "top": null,
+   "roof": 330.62,
+   "n": 88,
+   "status": "under roof",
+   "x": 1435.3,
+   "z": 453.07
+  },
+  {
+   "s": 8997.5,
+   "ground": 308.95,
+   "top": null,
+   "roof": 330.73,
+   "n": 84,
+   "status": "under roof",
+   "x": 1439.93,
+   "z": 451.27
+  },
+  {
+   "s": 9002.5,
+   "ground": 308.71,
+   "top": null,
+   "roof": 330.64,
+   "n": 86,
+   "status": "under roof",
+   "x": 1444.55,
+   "z": 449.48
+  },
+  {
+   "s": 9007.5,
+   "ground": 308.84,
+   "top": null,
+   "roof": 330.63,
+   "n": 91,
+   "status": "under roof",
+   "x": 1449.17,
+   "z": 447.69
+  },
+  {
+   "s": 9012.5,
+   "ground": 308.99,
+   "top": null,
+   "roof": 330.61,
+   "n": 93,
+   "status": "under roof",
+   "x": 1453.79,
+   "z": 445.89
+  },
+  {
+   "s": 9017.5,
+   "ground": 309.03,
+   "top": null,
+   "roof": 330.59,
+   "n": 92,
+   "status": "under roof",
+   "x": 1458.42,
+   "z": 444.1
+  },
+  {
+   "s": 9022.5,
+   "ground": 309.17,
+   "top": null,
+   "roof": 330.58,
+   "n": 96,
+   "status": "under roof",
+   "x": 1463.04,
+   "z": 442.31
+  },
+  {
+   "s": 9027.5,
+   "ground": 313.77,
+   "top": null,
+   "roof": 332.96,
+   "n": 100,
+   "status": "under roof",
+   "x": 1467.66,
+   "z": 440.51
+  },
+  {
+   "s": 9032.5,
+   "ground": 309.25,
+   "top": null,
+   "roof": 332.93,
+   "n": 99,
+   "status": "under roof",
+   "x": 1472.42,
+   "z": 438.83
+  },
+  {
+   "s": 9037.5,
+   "ground": 309.07,
+   "top": null,
+   "roof": 332.92,
+   "n": 97,
+   "status": "under roof",
+   "x": 1477.2,
+   "z": 437.16
+  },
+  {
+   "s": 9042.5,
+   "ground": 309.08,
+   "top": null,
+   "roof": 332.9,
+   "n": 95,
+   "status": "under roof",
+   "x": 1481.98,
+   "z": 435.5
+  },
+  {
+   "s": 9047.5,
+   "ground": 309.09,
+   "top": null,
+   "roof": 332.83,
+   "n": 100,
+   "status": "under roof",
+   "x": 1486.75,
+   "z": 433.83
+  },
+  {
+   "s": 9052.5,
+   "ground": 309.18,
+   "top": null,
+   "roof": 333.44,
+   "n": 93,
+   "status": "under roof",
+   "x": 1491.53,
+   "z": 432.16
+  },
+  {
+   "s": 9057.5,
+   "ground": 309.27,
+   "top": null,
+   "roof": 332.81,
+   "n": 93,
+   "status": "under roof",
+   "x": 1496.31,
+   "z": 430.49
+  },
+  {
+   "s": 9062.5,
+   "ground": 309.35,
+   "top": null,
+   "roof": 332.79,
+   "n": 92,
+   "status": "under roof",
+   "x": 1500.94,
+   "z": 428.71
+  },
+  {
+   "s": 9067.5,
+   "ground": 309.46,
+   "top": null,
+   "roof": 332.79,
+   "n": 93,
+   "status": "under roof",
+   "x": 1505.57,
+   "z": 426.92
+  },
+  {
+   "s": 9072.5,
+   "ground": 309.65,
+   "top": null,
+   "roof": 332.77,
+   "n": 87,
+   "status": "under roof",
+   "x": 1510.19,
+   "z": 425.12
+  },
+  {
+   "s": 9077.5,
+   "ground": 309.66,
+   "top": null,
+   "roof": 332.73,
+   "n": 89,
+   "status": "under roof",
+   "x": 1514.81,
+   "z": 423.33
+  },
+  {
+   "s": 9082.5,
+   "ground": 309.8,
+   "top": null,
+   "roof": 330.31,
+   "n": 88,
+   "status": "under roof",
+   "x": 1519.43,
+   "z": 421.54
+  },
+  {
+   "s": 9087.5,
+   "ground": 309.87,
+   "top": null,
+   "roof": 330.31,
+   "n": 84,
+   "status": "under roof",
+   "x": 1524.06,
+   "z": 419.74
+  },
+  {
+   "s": 9092.5,
+   "ground": 313.67,
+   "top": null,
+   "roof": 330.3,
+   "n": 90,
+   "status": "under roof",
+   "x": 1528.79,
+   "z": 418.04
+  },
+  {
+   "s": 9097.5,
+   "ground": 313.66,
+   "top": null,
+   "roof": 330.28,
+   "n": 95,
+   "status": "under roof",
+   "x": 1533.56,
+   "z": 416.37
+  },
+  {
+   "s": 9102.5,
+   "ground": 313.68,
+   "top": null,
+   "roof": 330.26,
+   "n": 93,
+   "status": "under roof",
+   "x": 1538.34,
+   "z": 414.7
+  },
+  {
+   "s": 9107.5,
+   "ground": 311.37,
+   "top": null,
+   "roof": 330.24,
+   "n": 99,
+   "status": "under roof",
+   "x": 1543.12,
+   "z": 413.03
+  },
+  {
+   "s": 9112.5,
+   "ground": 310.35,
+   "top": null,
+   "roof": 330.2,
+   "n": 96,
+   "status": "under roof",
+   "x": 1547.89,
+   "z": 411.37
+  },
+  {
+   "s": 9117.5,
+   "ground": 310.33,
+   "top": null,
+   "roof": 330.21,
+   "n": 97,
+   "status": "under roof",
+   "x": 1552.67,
+   "z": 409.7
+  },
+  {
+   "s": 9122.5,
+   "ground": 310.36,
+   "top": null,
+   "roof": 330.19,
+   "n": 96,
+   "status": "under roof",
+   "x": 1557.34,
+   "z": 407.9
+  },
+  {
+   "s": 9127.5,
+   "ground": 310.73,
+   "top": null,
+   "roof": 330.17,
+   "n": 98,
+   "status": "under roof",
+   "x": 1561.96,
+   "z": 406.05
+  },
+  {
+   "s": 9132.5,
+   "ground": 310.9,
+   "top": null,
+   "roof": 330.15,
+   "n": 105,
+   "status": "under roof",
+   "x": 1566.58,
+   "z": 404.19
+  },
+  {
+   "s": 9137.5,
+   "ground": 311.06,
+   "top": 323.38,
+   "roof": null,
+   "n": 135,
+   "status": "measured",
+   "x": 1571.21,
+   "z": 402.34
+  },
+  {
+   "s": 9142.5,
+   "ground": 313.51,
+   "top": 323.27,
+   "roof": null,
+   "n": 126,
+   "status": "measured",
+   "x": 1575.83,
+   "z": 400.49
+  },
+  {
+   "s": 9147.5,
+   "ground": 313.49,
+   "top": 323.3,
+   "roof": null,
+   "n": 136,
+   "status": "measured",
+   "x": 1580.45,
+   "z": 398.63
+  },
+  {
+   "s": 9152.5,
+   "ground": 311.26,
+   "top": 323.3,
+   "roof": null,
+   "n": 123,
+   "status": "measured",
+   "x": 1585.07,
+   "z": 396.82
+  },
+  {
+   "s": 9157.5,
+   "ground": 311.37,
+   "top": 323.29,
+   "roof": null,
+   "n": 119,
+   "status": "measured",
+   "x": 1589.7,
+   "z": 395.03
+  },
+  {
+   "s": 9162.5,
+   "ground": 313.4,
+   "top": 323.3,
+   "roof": null,
+   "n": 103,
+   "status": "measured",
+   "x": 1594.32,
+   "z": 393.24
+  },
+  {
+   "s": 9167.5,
+   "ground": 312.26,
+   "top": 323.33,
+   "roof": null,
+   "n": 134,
+   "status": "measured",
+   "x": 1598.94,
+   "z": 391.44
+  },
+  {
+   "s": 9172.5,
+   "ground": 313.14,
+   "top": 323.34,
+   "roof": null,
+   "n": 114,
+   "status": "measured",
+   "x": 1603.56,
+   "z": 389.65
+  },
+  {
+   "s": 9177.5,
+   "ground": 312.21,
+   "top": 323.41,
+   "roof": null,
+   "n": 129,
+   "status": "measured",
+   "x": 1608.19,
+   "z": 387.86
+  },
+  {
+   "s": 9182.5,
+   "ground": 312.44,
+   "top": 323.23,
+   "roof": null,
+   "n": 129,
+   "status": "measured",
+   "x": 1612.89,
+   "z": 386.12
+  },
+  {
+   "s": 9187.5,
+   "ground": 312.62,
+   "top": 323.32,
+   "roof": null,
+   "n": 125,
+   "status": "measured",
+   "x": 1617.66,
+   "z": 384.46
+  },
+  {
+   "s": 9192.5,
+   "ground": 312.83,
+   "top": 323.31,
+   "roof": null,
+   "n": 129,
+   "status": "measured",
+   "x": 1622.44,
+   "z": 382.79
+  },
+  {
+   "s": 9197.5,
+   "ground": 313.16,
+   "top": 323.35,
+   "roof": null,
+   "n": 108,
+   "status": "measured",
+   "x": 1627.22,
+   "z": 381.12
+  },
+  {
+   "s": 9202.5,
+   "ground": 313.22,
+   "top": 323.18,
+   "roof": null,
+   "n": 107,
+   "status": "measured",
+   "x": 1631.99,
+   "z": 379.45
+  },
+  {
+   "s": 9207.5,
+   "ground": 313.33,
+   "top": 323.13,
+   "roof": null,
+   "n": 110,
+   "status": "measured",
+   "x": 1636.77,
+   "z": 377.79
+  },
+  {
+   "s": 9212.5,
+   "ground": 313.49,
+   "top": 323.25,
+   "roof": null,
+   "n": 100,
+   "status": "measured",
+   "x": 1641.47,
+   "z": 376.05
+  },
+  {
+   "s": 9217.5,
+   "ground": 313.63,
+   "top": 323.19,
+   "roof": null,
+   "n": 105,
+   "status": "measured",
+   "x": 1646.09,
+   "z": 374.26
+  },
+  {
+   "s": 9222.5,
+   "ground": 313.75,
+   "top": 323.07,
+   "roof": null,
+   "n": 106,
+   "status": "measured",
+   "x": 1650.71,
+   "z": 372.47
+  },
+  {
+   "s": 9227.5,
+   "ground": 313.91,
+   "top": 323.13,
+   "roof": null,
+   "n": 91,
+   "status": "measured",
+   "x": 1655.34,
+   "z": 370.67
+  },
+  {
+   "s": 9232.5,
+   "ground": 314.07,
+   "top": 323.03,
+   "roof": null,
+   "n": 93,
+   "status": "measured",
+   "x": 1659.96,
+   "z": 368.88
+  },
+  {
+   "s": 9237.5,
+   "ground": 314.23,
+   "top": 322.94,
+   "roof": null,
+   "n": 90,
+   "status": "measured",
+   "x": 1664.58,
+   "z": 367.09
+  },
+  {
+   "s": 9242.5,
+   "ground": 314.41,
+   "top": 322.93,
+   "roof": null,
+   "n": 98,
+   "status": "measured",
+   "x": 1669.25,
+   "z": 365.28
+  },
+  {
+   "s": 9247.5,
+   "ground": 314.61,
+   "top": 322.94,
+   "roof": null,
+   "n": 103,
+   "status": "measured",
+   "x": 1674.03,
+   "z": 363.42
+  },
+  {
+   "s": 9252.5,
+   "ground": 314.83,
+   "top": 322.93,
+   "roof": null,
+   "n": 121,
+   "status": "measured",
+   "x": 1678.8,
+   "z": 361.57
+  },
+  {
+   "s": 9257.5,
+   "ground": 314.98,
+   "top": 322.92,
+   "roof": null,
+   "n": 135,
+   "status": "measured",
+   "x": 1683.58,
+   "z": 359.72
+  },
+  {
+   "s": 9262.5,
+   "ground": 315.09,
+   "top": 322.84,
+   "roof": null,
+   "n": 137,
+   "status": "measured",
+   "x": 1688.36,
+   "z": 357.86
+  },
+  {
+   "s": 9267.5,
+   "ground": 315.3,
+   "top": 322.81,
+   "roof": null,
+   "n": 137,
+   "status": "measured",
+   "x": 1693.13,
+   "z": 356.01
+  },
+  {
+   "s": 9272.5,
+   "ground": 315.48,
+   "top": 322.91,
+   "roof": null,
+   "n": 117,
+   "status": "measured",
+   "x": 1697.86,
+   "z": 354.21
+  },
+  {
+   "s": 9277.5,
+   "ground": 315.63,
+   "top": 322.83,
+   "roof": null,
+   "n": 111,
+   "status": "measured",
+   "x": 1702.49,
+   "z": 352.54
+  },
+  {
+   "s": 9282.5,
+   "ground": 315.71,
+   "top": 322.75,
+   "roof": null,
+   "n": 105,
+   "status": "measured",
+   "x": 1707.11,
+   "z": 350.88
+  },
+  {
+   "s": 9287.5,
+   "ground": 315.8,
+   "top": 322.89,
+   "roof": null,
+   "n": 99,
+   "status": "measured",
+   "x": 1711.73,
+   "z": 349.21
+  },
+  {
+   "s": 9292.5,
+   "ground": 315.83,
+   "top": 322.93,
+   "roof": null,
+   "n": 101,
+   "status": "measured",
+   "x": 1716.36,
+   "z": 347.54
+  },
+  {
+   "s": 9297.5,
+   "ground": 315.84,
+   "top": 322.95,
+   "roof": null,
+   "n": 94,
+   "status": "measured",
+   "x": 1720.98,
+   "z": 345.87
+  },
+  {
+   "s": 9302.5,
+   "ground": 315.82,
+   "top": 322.9,
+   "roof": null,
+   "n": 95,
+   "status": "measured",
+   "x": 1725.6,
+   "z": 344.17
+  },
+  {
+   "s": 9307.5,
+   "ground": 315.76,
+   "top": 322.87,
+   "roof": null,
+   "n": 93,
+   "status": "measured",
+   "x": 1730.22,
+   "z": 342.37
+  },
+  {
+   "s": 9312.5,
+   "ground": 315.69,
+   "top": 322.78,
+   "roof": null,
+   "n": 97,
+   "status": "measured",
+   "x": 1734.85,
+   "z": 340.58
+  },
+  {
+   "s": 9317.5,
+   "ground": 315.58,
+   "top": 322.84,
+   "roof": null,
+   "n": 100,
+   "status": "measured",
+   "x": 1739.47,
+   "z": 338.79
+  },
+  {
+   "s": 9322.5,
+   "ground": 315.44,
+   "top": 322.91,
+   "roof": null,
+   "n": 115,
+   "status": "measured",
+   "x": 1744.09,
+   "z": 336.99
+  },
+  {
+   "s": 9327.5,
+   "ground": 315.31,
+   "top": 322.78,
+   "roof": null,
+   "n": 105,
+   "status": "measured",
+   "x": 1748.71,
+   "z": 335.2
+  },
+  {
+   "s": 9332.5,
+   "ground": 315.16,
+   "top": 322.67,
+   "roof": null,
+   "n": 116,
+   "status": "measured",
+   "x": 1753.35,
+   "z": 333.4
+  },
+  {
+   "s": 9337.5,
+   "ground": 315.06,
+   "top": 322.74,
+   "roof": null,
+   "n": 122,
+   "status": "measured",
+   "x": 1758.13,
+   "z": 331.55
+  },
+  {
+   "s": 9342.5,
+   "ground": 314.92,
+   "top": 322.77,
+   "roof": null,
+   "n": 126,
+   "status": "measured",
+   "x": 1762.9,
+   "z": 329.69
+  },
+  {
+   "s": 9347.5,
+   "ground": 314.8,
+   "top": 322.7,
+   "roof": null,
+   "n": 133,
+   "status": "measured",
+   "x": 1767.68,
+   "z": 327.84
+  },
+  {
+   "s": 9352.5,
+   "ground": 314.7,
+   "top": 322.54,
+   "roof": null,
+   "n": 135,
+   "status": "measured",
+   "x": 1772.46,
+   "z": 325.99
+  },
+  {
+   "s": 9357.5,
+   "ground": 314.6,
+   "top": 322.63,
+   "roof": null,
+   "n": 136,
+   "status": "measured",
+   "x": 1777.23,
+   "z": 324.13
+  },
+  {
+   "s": 9362.5,
+   "ground": 314.52,
+   "top": 322.57,
+   "roof": null,
+   "n": 130,
+   "status": "measured",
+   "x": 1782.0,
+   "z": 322.3
+  },
+  {
+   "s": 9367.5,
+   "ground": 314.44,
+   "top": 322.49,
+   "roof": null,
+   "n": 126,
+   "status": "measured",
+   "x": 1786.62,
+   "z": 320.69
+  },
+  {
+   "s": 9372.5,
+   "ground": 314.38,
+   "top": 322.47,
+   "roof": null,
+   "n": 131,
+   "status": "measured",
+   "x": 1791.24,
+   "z": 319.08
+  },
+  {
+   "s": 9377.5,
+   "ground": 314.31,
+   "top": 322.4,
+   "roof": null,
+   "n": 133,
+   "status": "measured",
+   "x": 1795.86,
+   "z": 317.46
+  },
+  {
+   "s": 9382.5,
+   "ground": 314.27,
+   "top": 322.37,
+   "roof": null,
+   "n": 140,
+   "status": "measured",
+   "x": 1800.49,
+   "z": 315.85
+  },
+  {
+   "s": 9387.5,
+   "ground": 314.24,
+   "top": 322.34,
+   "roof": null,
+   "n": 141,
+   "status": "measured",
+   "x": 1805.11,
+   "z": 314.23
+  },
+  {
+   "s": 9392.5,
+   "ground": 314.22,
+   "top": 322.5,
+   "roof": null,
+   "n": 141,
+   "status": "measured",
+   "x": 1809.73,
+   "z": 312.62
+  },
+  {
+   "s": 9397.5,
+   "ground": 314.23,
+   "top": 322.45,
+   "roof": null,
+   "n": 118,
+   "status": "measured",
+   "x": 1814.35,
+   "z": 310.84
+  },
+  {
+   "s": 9402.5,
+   "ground": 314.18,
+   "top": 322.42,
+   "roof": null,
+   "n": 111,
+   "status": "measured",
+   "x": 1818.98,
+   "z": 309.05
+  },
+  {
+   "s": 9407.5,
+   "ground": 314.18,
+   "top": 322.37,
+   "roof": null,
+   "n": 95,
+   "status": "measured",
+   "x": 1823.6,
+   "z": 307.26
+  },
+  {
+   "s": 9412.5,
+   "ground": 314.14,
+   "top": 322.38,
+   "roof": null,
+   "n": 99,
+   "status": "measured",
+   "x": 1828.22,
+   "z": 305.46
+  },
+  {
+   "s": 9417.5,
+   "ground": 314.13,
+   "top": 322.35,
+   "roof": null,
+   "n": 97,
+   "status": "measured",
+   "x": 1832.84,
+   "z": 303.67
+  },
+  {
+   "s": 9422.5,
+   "ground": 314.05,
+   "top": 322.34,
+   "roof": null,
+   "n": 96,
+   "status": "measured",
+   "x": 1837.47,
+   "z": 301.88
+  },
+  {
+   "s": 9427.5,
+   "ground": 313.99,
+   "top": 322.27,
+   "roof": null,
+   "n": 102,
+   "status": "measured",
+   "x": 1842.2,
+   "z": 300.0
+  },
+  {
+   "s": 9432.5,
+   "ground": 313.93,
+   "top": 322.25,
+   "roof": null,
+   "n": 102,
+   "status": "measured",
+   "x": 1846.98,
+   "z": 298.08
+  },
+  {
+   "s": 9437.5,
+   "ground": 313.92,
+   "top": 322.23,
+   "roof": null,
+   "n": 102,
+   "status": "measured",
+   "x": 1851.76,
+   "z": 296.16
+  },
+  {
+   "s": 9442.5,
+   "ground": 313.84,
+   "top": 322.16,
+   "roof": null,
+   "n": 114,
+   "status": "measured",
+   "x": 1856.55,
+   "z": 294.25
+  },
+  {
+   "s": 9447.5,
+   "ground": 313.87,
+   "top": 322.29,
+   "roof": null,
+   "n": 110,
+   "status": "measured",
+   "x": 1861.33,
+   "z": 292.33
+  },
+  {
+   "s": 9452.5,
+   "ground": 313.81,
+   "top": null,
+   "roof": null,
+   "n": 11,
+   "status": "gap",
+   "x": 1866.11,
+   "z": 290.41
+  }
+ ],
+ "summary": {
+  "measuredM": 1120.0,
+  "underRoofM": 190.0,
+  "unknownM": 55.0
+ },
+ "crossings": [
+  {
+   "s": 8061.9,
+   "osm": "osm:way/1041280318",
+   "version": 1,
+   "kind": "footway",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 307.46,
+   "x": 556.9,
+   "z": 442.1,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 8096.0,
+   "osm": "osm:way/755543604",
+   "version": 7,
+   "kind": "footway",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 307.32,
+   "x": 582.6,
+   "z": 464.35,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 8104.5,
+   "osm": "osm:way/278887740",
+   "version": 12,
+   "kind": "residential",
+   "name": "Jesse Hill Junior Drive Southeast",
+   "tags": {},
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 307.45,
+   "x": 589.14,
+   "z": 470.02,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 8125.7,
+   "osm": "osm:way/539939605",
+   "version": 2,
+   "kind": "footway",
+   "name": null,
+   "tags": {
+    "bridge": "yes",
+    "layer": "2"
+   },
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 308.8,
+   "x": 605.2,
+   "z": 483.07,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 8226.0,
+   "osm": "osm:way/9236952",
+   "version": 13,
+   "kind": "motorway_link",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 318.82,
+   "groundNavd88M": 303.98,
+   "x": 688.76,
+   "z": 538.46,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8257.0,
+   "osm": "osm:way/316454382",
+   "version": 12,
+   "kind": "motorway",
+   "name": "Downtown Connector",
+   "tags": {},
+   "guidewayTopNavd88M": 319.87,
+   "groundNavd88M": 304.36,
+   "x": 717.42,
+   "z": 549.44,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8299.3,
+   "osm": "osm:way/119686423",
+   "version": 23,
+   "kind": "motorway",
+   "name": "Downtown Connector",
+   "tags": {},
+   "guidewayTopNavd88M": 320.97,
+   "groundNavd88M": 304.6,
+   "x": 758.38,
+   "z": 559.88,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8336.6,
+   "osm": "osm:way/9235923",
+   "version": 10,
+   "kind": "motorway_link",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 322.19,
+   "groundNavd88M": 314.07,
+   "x": 795.36,
+   "z": 564.54,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8385.3,
+   "osm": "osm:way/539939595",
+   "version": 3,
+   "kind": "rail",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 323.81,
+   "groundNavd88M": 314.18,
+   "x": 843.93,
+   "z": 563.76,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8400.6,
+   "osm": "osm:way/539939602",
+   "version": 3,
+   "kind": "rail",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 324.13,
+   "groundNavd88M": 313.99,
+   "x": 858.72,
+   "z": 562.52,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8417.6,
+   "osm": "osm:way/539939596",
+   "version": 3,
+   "kind": "rail",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 324.51,
+   "groundNavd88M": 314.29,
+   "x": 875.87,
+   "z": 561.66,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8458.6,
+   "osm": "osm:way/905879528",
+   "version": 3,
+   "kind": "rail",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 325.25,
+   "groundNavd88M": 314.04,
+   "x": 917.26,
+   "z": 558.69,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8484.2,
+   "osm": "osm:way/973262182",
+   "version": 2,
+   "kind": "rail",
+   "name": "Atlanta Terminal Subdivision",
+   "tags": {},
+   "guidewayTopNavd88M": 325.36,
+   "groundNavd88M": 313.95,
+   "x": 942.46,
+   "z": 556.97,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8519.3,
+   "osm": "osm:way/973262183",
+   "version": 2,
+   "kind": "rail",
+   "name": "Atlanta Terminal Subdivision",
+   "tags": {},
+   "guidewayTopNavd88M": 325.44,
+   "groundNavd88M": 312.85,
+   "x": 977.33,
+   "z": 555.36,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8648.4,
+   "osm": "osm:way/1388420288",
+   "version": 1,
+   "kind": "footway",
+   "name": null,
+   "tags": {
+    "tunnel": "yes",
+    "layer": "-1"
+   },
+   "guidewayTopNavd88M": 325.09,
+   "groundNavd88M": 308.32,
+   "x": 1106.48,
+   "z": 546.61,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8655.2,
+   "osm": "osm:way/367768991",
+   "version": 7,
+   "kind": "tertiary",
+   "name": "Hill Street Southeast",
+   "tags": {
+    "tunnel": "yes",
+    "layer": "-1"
+   },
+   "guidewayTopNavd88M": 325.12,
+   "groundNavd88M": 308.71,
+   "x": 1113.3,
+   "z": 545.72,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8664.4,
+   "osm": "osm:way/863050901",
+   "version": 1,
+   "kind": "footway",
+   "name": null,
+   "tags": {
+    "tunnel": "yes",
+    "layer": "-1"
+   },
+   "guidewayTopNavd88M": 325.2,
+   "groundNavd88M": 308.84,
+   "x": 1121.96,
+   "z": 544.66,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8928.5,
+   "osm": "osm:way/863050897",
+   "version": 3,
+   "kind": "footway",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 324.05,
+   "groundNavd88M": 307.64,
+   "x": 1375.21,
+   "z": 475.63,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8934.8,
+   "osm": "osm:way/9262397",
+   "version": 11,
+   "kind": "tertiary",
+   "name": "Grant Street Southeast",
+   "tags": {},
+   "guidewayTopNavd88M": 324.17,
+   "groundNavd88M": 307.63,
+   "x": 1381.03,
+   "z": 473.37,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8942.5,
+   "osm": "osm:way/741758627",
+   "version": 3,
+   "kind": "footway",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 324.13,
+   "groundNavd88M": 307.61,
+   "x": 1388.33,
+   "z": 470.68,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  },
+  {
+   "s": 8977.9,
+   "osm": "osm:way/1279442785",
+   "version": 1,
+   "kind": "service",
+   "name": null,
+   "tags": {
+    "layer": "-1"
+   },
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 308.36,
+   "x": 1421.81,
+   "z": 458.3,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 8991.8,
+   "osm": "osm:way/1279442789",
+   "version": 2,
+   "kind": "footway",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 308.62,
+   "x": 1434.66,
+   "z": 453.32,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 9094.1,
+   "osm": "osm:way/1279442782",
+   "version": 1,
+   "kind": "service",
+   "name": null,
+   "tags": {
+    "layer": "-1"
+   },
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 313.67,
+   "x": 1530.32,
+   "z": 417.5,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 9116.5,
+   "osm": "osm:way/1279442783",
+   "version": 1,
+   "kind": "service",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": null,
+   "groundNavd88M": 310.33,
+   "x": 1551.72,
+   "z": 410.03,
+   "vertical": "guideway not measured here"
+  },
+  {
+   "s": 9240.3,
+   "osm": "osm:way/857688290",
+   "version": 1,
+   "kind": "footway",
+   "name": null,
+   "tags": {},
+   "guidewayTopNavd88M": 322.93,
+   "groundNavd88M": 314.41,
+   "x": 1667.17,
+   "z": 366.08,
+   "vertical": "guideway top measured; deck depth and clearance unknown"
+  }
+ ],
+ "station": {
+  "platforms": [
+   {
+    "osm": "osm:way/319512574",
+    "version": 4,
+    "tags": {
+     "covered": "yes",
+     "level": "3",
+     "layer": "3"
+    },
+    "ring": [
+     [
+      -84.3764628,
+      33.7496277
+     ],
+     [
+      -84.3746608,
+      33.7501878
+     ]
+    ],
+    "s": [
+     8951.3,
+     9128.8
+    ],
+    "lateral": [
+     7.77,
+     7.89
+    ]
+   },
+   {
+    "osm": "osm:way/319512585",
+    "version": 4,
+    "tags": {
+     "covered": "yes",
+     "level": "3",
+     "layer": "3"
+    },
+    "ring": [
+     [
+      -84.3747208,
+      33.7503034
+     ],
+     [
+      -84.3765229,
+      33.7497432
+     ]
+    ],
+    "s": [
+     8950.5,
+     9128.4
+    ],
+    "lateral": [
+     -6.23,
+     -6.07
+    ]
+   }
+  ],
+  "stops": [
+   {
+    "osm": "osm:node/493182803",
+    "tags": {
+     "name": "King Memorial",
+     "railway": "stop",
+     "public_transport": "stop_position",
+     "railway:ref": "E2"
+    }
+   },
+   {
+    "osm": "osm:node/3259302133",
+    "tags": {
+     "name": "King Memorial",
+     "railway": "stop",
+     "public_transport": "stop_position",
+     "railway:ref": "E2"
+    }
+   },
+   {
+    "osm": "osm:node/4172458489",
+    "tags": {
+     "name": "King Memorial",
+     "railway": "station",
+     "public_transport": "station",
+     "railway:ref": "E2"
+    }
+   }
+  ]
+ },
+ "tracks": [
+  {
+   "osm": "osm:way/78090745",
+   "version": 11,
+   "name": "King Memorial Crossover",
+   "track": null,
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9161.1,
+    9224.9
+   ],
+   "lateralMedian": 1.58
+  },
+  {
+   "osm": "osm:way/78380740",
+   "version": 10,
+   "name": "King Memorial Crossover",
+   "track": null,
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9161.2,
+    9224.9
+   ],
+   "lateralMedian": 1.58
+  },
+  {
+   "osm": "osm:way/702258822",
+   "version": 12,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "level": "2"
+   },
+   "s": [
+    8090.2,
+    8090.2
+   ],
+   "lateralMedian": -0.76
+  },
+  {
+   "osm": "osm:way/905944413",
+   "version": 9,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "1"
+   },
+   "s": [
+    8090.2,
+    8114.0
+   ],
+   "lateralMedian": -0.29
+  },
+  {
+   "osm": "osm:way/905944414",
+   "version": 9,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {},
+   "s": [
+    8114.0,
+    8213.6
+   ],
+   "lateralMedian": -0.12
+  },
+  {
+   "osm": "osm:way/78090750",
+   "version": 16,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    8213.6,
+    8911.2
+   ],
+   "lateralMedian": -0.51
+  },
+  {
+   "osm": "osm:way/1499497057",
+   "version": 1,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    8911.2,
+    9052.8
+   ],
+   "lateralMedian": -0.32
+  },
+  {
+   "osm": "osm:way/905946825",
+   "version": 9,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9052.8,
+    9161.2
+   ],
+   "lateralMedian": -0.79
+  },
+  {
+   "osm": "osm:way/905879532",
+   "version": 10,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9161.2,
+    9224.9
+   ],
+   "lateralMedian": -0.68
+  },
+  {
+   "osm": "osm:way/1499497058",
+   "version": 1,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9224.9,
+    9342.0
+   ],
+   "lateralMedian": -0.63
+  },
+  {
+   "osm": "osm:way/905879533",
+   "version": 10,
+   "name": "MARTA East Line",
+   "track": "EL",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9342.0,
+    9406.3
+   ],
+   "lateralMedian": -0.64
+  },
+  {
+   "osm": "osm:way/702258821",
+   "version": 11,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {
+    "level": "2"
+   },
+   "s": [
+    8090.2,
+    8090.2
+   ],
+   "lateralMedian": 4.1
+  },
+  {
+   "osm": "osm:way/905944412",
+   "version": 8,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {
+    "bridge": "yes",
+    "layer": "1"
+   },
+   "s": [
+    8090.2,
+    8114.0
+   ],
+   "lateralMedian": 3.98
+  },
+  {
+   "osm": "osm:way/905944415",
+   "version": 8,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {},
+   "s": [
+    8114.0,
+    8213.4
+   ],
+   "lateralMedian": 4.19
+  },
+  {
+   "osm": "osm:way/78380741",
+   "version": 14,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    8213.4,
+    9053.0
+   ],
+   "lateralMedian": 3.84
+  },
+  {
+   "osm": "osm:way/905946826",
+   "version": 8,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9053.0,
+    9161.1
+   ],
+   "lateralMedian": 4.14
+  },
+  {
+   "osm": "osm:way/905879531",
+   "version": 9,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9161.1,
+    9224.9
+   ],
+   "lateralMedian": 3.76
+  },
+  {
+   "osm": "osm:way/905879530",
+   "version": 8,
+   "name": "MARTA East Line",
+   "track": "ER",
+   "tags": {
+    "bridge": "yes",
+    "layer": "3",
+    "level": "3"
+   },
+   "s": [
+    9224.9,
+    9427.3
+   ],
+   "lateralMedian": 3.8
+  }
+ ]
+}

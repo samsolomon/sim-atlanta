@@ -1,4 +1,5 @@
-"""Bake USGS bare-earth heights on the downtown City board. See docs/downtown-ground.md."""
+"""Bake USGS bare-earth heights on a City board box (downtown by default). See docs/downtown-ground.md
+and, for the King Memorial corridor strip, docs/king-memorial-corridor.md."""
 import argparse
 import csv
 import gzip
@@ -116,20 +117,60 @@ def compare_spacing(src, grid):
                   f" max {valid.max():.2f} m; grid {len(gzip.compress(coarse.tobytes(), compresslevel=9, mtime=0)):,} B gzip")
 
 
-def bake(source, out):
-    sha = hashlib.sha256()
-    with source.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            sha.update(chunk)
-    if sha.hexdigest() != TILE_SHA256:
-        raise ValueError(f"USGS tile checksum mismatch: {source}")
+def use_box(name):
+    global BOX, X0, X1, Z0, Z1
+    BOX = VIGNETTES[name]
+    X0, X1 = BOX["x"]
+    Z0, Z1 = BOX["z"]
+
+
+def verify_shared_edge(grid, reference):
+    """A ranged read cannot check the tile's SHA-256. Instead, the strip must reproduce the
+    SHA-pinned downtown bake node for node wherever the two lattices share nodes."""
+    ref = json.loads((reference / "ground.json").read_text())
+    ref_grid = np.frombuffer((reference / "ground.i16").read_bytes(), dtype="<i2").reshape(ref["rows"], ref["cols"])
+    b = ref["bounds"]
+    xs = np.arange(X0, X1 + 1, STEP)
+    zs = np.arange(Z0, Z1 + 1, STEP)
+    cols = [i for i, x in enumerate(xs) if b["minX"] <= x <= b["maxX"]]
+    rows = [j for j, z in enumerate(zs) if b["minZ"] <= z <= b["maxZ"]]
+    if not cols or not rows:
+        raise ValueError("Strip shares no lattice nodes with the reference bake")
+    mine = grid[np.ix_(rows, cols)]
+    theirs = ref_grid[np.ix_([int((zs[j] - b["minZ"]) / STEP) for j in rows], [int((xs[i] - b["minX"]) / STEP) for i in cols])]
+    if not np.array_equal(mine, theirs):
+        raise ValueError(f"Shared nodes differ from the reference bake: {int(np.count_nonzero(mine != theirs))} of {mine.size}")
+    print(f"Shared nodes match the reference bake: {mine.size}")
+    return mine.size
+
+
+def bake(source, out, box="downtown", reference=None):
+    use_box(box)
+    remote = str(source).startswith("https://")
+    if remote:
+        # Ranged HTTP read of the same pinned tile (see verify_shared_edge for the check).
+        if not str(source).endswith(f"{TILE}.tif") or reference is None:
+            raise ValueError("A remote source must be the pinned tile and needs --reference")
+        source = f"/vsicurl/{source}"
+    else:
+        sha = hashlib.sha256()
+        with Path(source).open("rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                sha.update(chunk)
+        if sha.hexdigest() != TILE_SHA256:
+            raise ValueError(f"USGS tile checksum mismatch: {source}")
 
     x, z = np.meshgrid(np.arange(X0, X1 + 1, STEP), np.arange(Z0, Z1 + 1, STEP))
     with rasterio.open(source) as src:
         grid = pack(read_ground(src, x, z))
-        origin_height = interpolate(grid, 0, 0)
-        if origin_height is None:
-            raise ValueError("Unknown Five Points height for scene y origin")
+        shared = verify_shared_edge(grid, reference) if reference is not None else 0
+        if box == "downtown":
+            origin_height = interpolate(grid, 0, 0)
+            if origin_height is None:
+                raise ValueError("Unknown Five Points height for scene y origin")
+        else:
+            # Scene y is downtown's (Five Points); heights stay absolute NAVD88 in the grid.
+            origin_height = json.loads((reference / "ground.json").read_text())["vertical"]["sceneZeroNavd88M"]
         binary = grid.tobytes()
         manifest = {
             "version": 1, "file": "ground.i16", "sha256": hashlib.sha256(binary).hexdigest(),
@@ -149,11 +190,16 @@ def bake(source, out):
             "noData": NODATA, "noDataCount": int(np.count_nonzero(grid == NODATA)),
             "sampling": "nearest native pixel at node; bilinear between valid nodes",
         }
+        if box != "downtown":
+            manifest["box"] = box
+            manifest["read"] = ("ranged HTTP read of the pinned tile; tile SHA-256 not checked, shared nodes "
+                                f"verified against the downtown bake ({shared})") if remote else "local pinned tile"
         out.mkdir(parents=True, exist_ok=True)
         (out / "ground.i16").write_bytes(binary)
         (out / "ground.json").write_text(json.dumps(manifest, indent=2) + "\n")
-        write_probes(out, src, grid)
-        compare_spacing(src, grid)
+        if box == "downtown":
+            write_probes(out, src, grid)
+            compare_spacing(src, grid)
     for name in ("ground.i16", "ground.json"):
         data = (out / name).read_bytes()
         print(f"{name}: {len(data):,} bytes, {len(gzip.compress(data, compresslevel=9, mtime=0)):,} gzip -9")
@@ -161,7 +207,13 @@ def bake(source, out):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", type=Path, help="Pinned USGS 1 m GeoTIFF")
-    parser.add_argument("--out", type=Path, default=Path(ROOT) / "pipeline/prototypes/downtown-ground")
+    parser.add_argument("source", help="Pinned USGS 1 m GeoTIFF path, or its https URL with --reference")
+    parser.add_argument("--box", default="downtown", choices=sorted(VIGNETTES))
+    parser.add_argument("--reference", type=Path, help="Downtown bake to verify shared nodes and take scene zero from")
+    parser.add_argument("--out", type=Path)
     args = parser.parse_args()
-    bake(args.source, args.out)
+    out = args.out or Path(ROOT) / ("pipeline/prototypes/downtown-ground" if args.box == "downtown"
+                                    else f"pipeline/prototypes/{args.box}/ground")
+    if args.box != "downtown" and args.reference is None:
+        args.reference = Path(ROOT) / "pipeline/prototypes/downtown-ground"
+    bake(args.source, out, args.box, args.reference)
