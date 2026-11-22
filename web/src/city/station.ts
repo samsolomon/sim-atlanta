@@ -6,7 +6,7 @@ import { ENTRY_DEPTH, type StationTrack } from './station-track';
 /** Static batches for the structure, softly lit finishes and ceiling fixtures.
  * Heights above the bed, finish colours and fixture spacing are illustrative. */
 export function createGeorgiaState(track: StationTrack, site: GeorgiaStateScene,
-  face?: { soffitY: number; clearWidthM: number }) {
+  face: { soffitY: number; clearWidthM: number }) {
   const body = new Builder();
   const interior = new Builder();
   const lamps = new Builder();
@@ -43,40 +43,38 @@ export function createGeorgiaState(track: StationTrack, site: GeorgiaStateScene,
   }
   // The first visible bays of the hall give depth to the view from the viaduct.
   // Keep the full width of both tracks clear through the east face.
-  if (face) {
-    const eastSoffit = face.soffitY;
-    const halfWidth = face.clearWidthM / 2;
-    const entrance = at(track.length);
-    const head = eastSoffit - track.point(track.length).bedY;
-    // R1 shows a broad wash of light across the concrete lintel above the two tracks.
-    interior.box(face.clearWidthM + .65, 1.5, .30, 0, head + .8, .18, '#ccbc9c', entrance);
-    body.box(face.clearWidthM + .95, .18, .55, 0, head + 1.62, .20, '#9b978b', entrance);
-    for (const side of [-1, 1]) {
-      lamps.box(.75, .18, .28, side * halfWidth * .65, head + 1.46, .46, '#ffebc1', entrance);
-      interior.box(.40, head - floor, .40, side * (halfWidth + .15),
-        (floor + head) / 2, .1, '#b4a990', entrance);
-    }
-    function entranceBays(start: number, end: number, back: number) {
-      for (const p of site.platforms) {
-        const side = p.side === 'north' ? 1 : -1;
-        platform(start, end, side, Math.abs(p.outer) - lip, false);
-      }
-      for (let d = start + 2; d < end; d += 4) {
-        const pose = at(d);
-        const ceiling = eastSoffit - track.point(d).bedY;
-        interior.box(halfWidth * 2 - .12, .09, 4.03, 0, ceiling - .05, 0, '#d6bea0', pose);
-        for (const side of [-1, 1]) {
-          interior.box(.19, ceiling - floor, 4.02, side * (halfWidth - .15),
-            (floor + ceiling) / 2, 0, '#ad9176', pose);
-          lamps.box(.95, .10, 1.05, side * 4.9, ceiling - .14, 0, '#ffebc1', pose);
-        }
-      }
-      const h = eastSoffit - track.point(back).bedY;
-      body.box(halfWidth * 2, h + .5, .20, 0, h / 2, 0, '#24232a', at(back));
-    }
-    entranceBays(track.canopyLength, track.canopyLength + ENTRY_DEPTH, track.canopyLength + ENTRY_DEPTH);
-    entranceBays(track.length - ENTRY_DEPTH, track.length, track.length - ENTRY_DEPTH);
+  const eastSoffit = face.soffitY;
+  const halfWidth = face.clearWidthM / 2;
+  const entrance = at(track.length);
+  const head = eastSoffit - track.point(track.length).bedY;
+  // R1 shows a broad wash of light across the concrete lintel above the two tracks.
+  interior.box(face.clearWidthM + .65, 1.5, .30, 0, head + .8, .18, '#ccbc9c', entrance);
+  body.box(face.clearWidthM + .95, .18, .55, 0, head + 1.62, .20, '#9b978b', entrance);
+  for (const side of [-1, 1]) {
+    lamps.box(.75, .18, .28, side * halfWidth * .65, head + 1.46, .46, '#ffebc1', entrance);
+    interior.box(.40, head - floor, .40, side * (halfWidth + .15),
+      (floor + head) / 2, .1, '#b4a990', entrance);
   }
+  function entranceBays(start: number, end: number, back: number) {
+    for (const p of site.platforms) {
+      const side = p.side === 'north' ? 1 : -1;
+      platform(start, end, side, Math.abs(p.outer) - lip, false);
+    }
+    for (let d = start + 2; d < end; d += 4) {
+      const pose = at(d);
+      const ceiling = eastSoffit - track.point(d).bedY;
+      interior.box(halfWidth * 2 - .12, .09, 4.03, 0, ceiling - .05, 0, '#d6bea0', pose);
+      for (const side of [-1, 1]) {
+        interior.box(.19, ceiling - floor, 4.02, side * (halfWidth - .15),
+          (floor + ceiling) / 2, 0, '#ad9176', pose);
+        lamps.box(.95, .10, 1.05, side * 4.9, ceiling - .14, 0, '#ffebc1', pose);
+      }
+    }
+    const h = eastSoffit - track.point(back).bedY;
+    body.box(halfWidth * 2, h + .5, .20, 0, h / 2, 0, '#24232a', at(back));
+  }
+  entranceBays(track.canopyLength, track.canopyLength + ENTRY_DEPTH, track.canopyLength + ENTRY_DEPTH);
+  entranceBays(track.length - ENTRY_DEPTH, track.length, track.length - ENTRY_DEPTH);
   const group = new THREE.Group();
   group.name = 'Georgia State platforms';
   const structure = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true }));

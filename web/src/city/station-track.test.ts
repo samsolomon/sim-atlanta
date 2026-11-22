@@ -3,12 +3,35 @@ import type { RailSpan } from '../core/scene-data';
 import { Line } from '../vignette/geom';
 import { trackInDaylight, trackVisible, type Alignment } from '../vignette/world';
 import { carInDaylight } from './trains';
-import { stationTrack } from './station-track';
+import { registerStationLine, stationTrack } from './station-track';
+import { georgiaStateScene } from './georgia-state-geometry';
 
 const run = (s0: number, s1: number, ev: string, cover: RailSpan['cover']): RailSpan =>
   ({ s0, s1, ev, cover, form: 'station', base: 'ground', height: 'schematic', rel: 0 });
 
 describe('Georgia State station drawing', () => {
+  it('fits the mapped wall and preserves timetable distances through the approach blend', () => {
+    const site = georgiaStateScene({ lon: -84.3916, lat: 33.7539 });
+    const u = [-150, -100, site.westTip, 0, site.faces.se.u, 135, 180];
+    const points = u.map(d => site.fromFrame(d, -2.3));
+    const line = new Line(points);
+    const legacy = { line, elev: (s: number) => s / 80, pathMetresAt: (s: number) => 2 * s + 1000 };
+    const metres = line.cum.map(legacy.pathMetresAt);
+    const spans = [run(metres[2], metres[3], 'gsu-canopy', 'roofed'),
+      run(metres[3], metres[4], 'gsu-floyd', 'covered')];
+    const adjusted = registerStationLine(legacy, site, spans)!;
+    for (const i of [2, 3, 4]) expect(site.toFrame(...adjusted.line.pts[i]).v).toBeCloseTo(0, 4);
+    expect(adjusted.line.pts[0]).toEqual(points[0]);
+    expect(adjusted.line.pts.at(-1)).toEqual(points.at(-1));
+    expect(site.toFrame(...adjusted.line.pts[5]).v).toBeGreaterThan(-2.3);
+    for (let i = 0; i < u.length; i++) {
+      expect(adjusted.pathMetresAt(adjusted.line.cum[i])).toBeCloseTo(metres[i]);
+      expect(adjusted.elev(adjusted.line.cum[i])).toBeCloseTo(legacy.elev(line.cum[i]));
+    }
+    const old = { ...spans[1], s1: spans[1].s1 + 20 };
+    expect(registerStationLine(legacy, site, [spans[0], old])).toBeUndefined();
+  });
+
   for (const eastbound of [true, false]) {
     it('keeps a car beside the canopy until its tail enters the hall, using the ' +
       (eastbound ? 'eastbound' : 'westbound') + ' shape', () => {

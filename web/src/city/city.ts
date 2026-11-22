@@ -179,12 +179,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   try {
     await build('alignments', () => {
       ({ tracks: marta, station } = martaAlignments(rf, manifest, b, stationSite, grid));
+      const ground = grid;
+      if (station && ground) {
+        floyd = createFloyd(vd.buildings, station.passage, (x, z) => {
+          const y = ground.sample(x, z);
+          return y == null ? null : y - ground.manifest.vertical.sceneZeroNavd88M;
+        });
+        if (floyd) station.alignment.visibleInStation = station.visibleInStation;
+      }
       if (cut) marta = marta.map(maskCut);
     });
     if (grid) {
       const ground = grid;
       await build('terrain', () => {
-        if (station) floyd = createFloyd(vd.buildings, station.passage, world.ground.bind(world));
         const city = floyd ? { ...vd, buildings: floyd.buildings } : vd;
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
@@ -205,8 +212,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const pierAllowed = lower ? (x: number, z: number) =>
         lower.clearOfFreight(x, z) && !inConnectorLanes(x, z, 1.8) : undefined;
       for (const al of marta) world.buildMarta(al, pierAllowed);
-      if (station) {
-        platforms = createGeorgiaState(station, stationSite, floyd?.eastFace);
+      if (station && floyd) {
+        platforms = createGeorgiaState(station, stationSite, floyd.eastFace);
         world.group.add(platforms.group);
       }
     });
@@ -700,7 +707,6 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
     const track = grid ? terrainAlignment(al, id, manifest, grid) : al;
     if (registered) {
       station = stationTrack(track, al.pathMetresAt, manifest.rail?.paths[id]);
-      if (station) track.visibleInStation = station.visibleInStation;
     }
     kept.push(track);
   }

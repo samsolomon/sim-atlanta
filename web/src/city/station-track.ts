@@ -40,7 +40,7 @@ export function stationTrack(al: Alignment, pathMetresAt: (s: number) => number,
   const passage = [];
   for (let d = canopyLength; d < length; d += 2) passage.push(point(d));
   passage.push(point(length));
-  return { point, passage, canopyLength, length, visibleInStation(s: number) {
+  return { alignment: al, point, passage, canopyLength, length, visibleInStation(s: number) {
     const d = sign * (s - start);
     return (d >= 0 && d < canopyLength + ENTRY_DEPTH) || (d >= length - ENTRY_DEPTH && d < length);
   } };
