@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Mesh, MeshPhongMaterial, Raycaster, Vector3 } from 'three';
 import type { VBuilding } from '../vignette/world';
 import { createWestin } from './westin';
+import { skylineReflection } from './skyline-reflection';
 
 const hotel: VBuilding = { id: '16cab934-34dc-4dca-8eb2-3ce9dc57d877', h: 219.7, floors: null,
   rings: [[[252.35,-637.58],[242.48,-637.69],[233.53,-594.59],[264.64,-594.43],
@@ -52,4 +53,17 @@ describe('Westin Peachtree Plaza', () => {
     expect(releaseDay).toHaveBeenCalledOnce();
     expect(releaseNight).toHaveBeenCalledOnce();
   });
+});
+
+it('places a mapped tower in the reflected direction and respects its ground elevation', () => {
+  const tower: VBuilding = { ...hotel, h: 30, rings: [[[20,-6],[24,-6],[24,6],[20,6]]] };
+  const empty = skylineReflection([], 0, 0, 40, () => 0).image;
+  const low = skylineReflection([tower], 0, 0, 40, () => 0).image;
+  const raised = skylineReflection([tower], 0, 0, 40, () => 20).image;
+  // The middle column faces +X. The opposite side is across the panorama seam.
+  const horizon = (empty.height / 2 * empty.width + empty.width / 2) * 4;
+  const opposite = empty.height / 2 * empty.width * 4;
+  expect(low.data[horizon]).toBe(empty.data[horizon]);
+  expect(raised.data[horizon]).not.toBe(empty.data[horizon]);
+  expect(raised.data[opposite]).toBe(empty.data[opposite]);
 });
