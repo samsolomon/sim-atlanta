@@ -3,7 +3,8 @@ import { segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
-import { roadWidth, type TerrainCity } from './transport-data';
+import { dividedIvanAllen, roadWidth, type TerrainCity } from './transport-data';
+import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePaths } from './westside-path';
 import { paintConnector } from './connector-paint';
 
 const landColors: Record<string, string> = {
@@ -14,7 +15,7 @@ const landColors: Record<string, string> = {
 const landOrder = Object.keys(landColors);
 const paths = new Set(['footway', 'pedestrian', 'steps', 'cycleway', 'path']);
 const streets = new Set(['residential', 'unclassified', 'tertiary', 'secondary', 'primary', 'trunk']);
-type PaintRoad = { cls: string; sub?: string | null; pts: P2[] };
+type PaintRoad = { name?: string | null; cls: string; sub?: string | null; pts: P2[] };
 
 function trace(ctx: CanvasRenderingContext2D, pts: P2[]) {
   pts.forEach(([x, z], i) => i === 0 ? ctx.moveTo(x, z) : ctx.lineTo(x, z));
@@ -89,15 +90,24 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   }
   // Sidewalks go down first so a casing can't cut across the next intersection.
   for (const r of roads) if (streets.has(r.cls)) stroke(r, roadWidth(r) + 5, PAL.sidewalk);
+  const sidepaths = westsidePaths(data);
+  for (const r of roads) if (sidepaths.has(r)) paintMangumVerge(ctx, r.pts);
   const crosswalks = roads.filter(r => r.sub === 'crosswalk');
   for (const r of roads) {
     if (r.sub === 'crosswalk') continue;
+    if (sidepaths.has(r)) {
+      stroke(r, pathWidth, pathConcrete);
+      paintPathPanels(ctx, r.pts, texelM);
+      continue;
+    }
     const w = roadWidth(r);
     stroke(r, w, paths.has(r.cls) ? PAL.sidewalk : r.cls === 'motorway' ? PAL.asphaltHwy : PAL.asphalt);
   }
   for (const r of roads) {
     if (r.cls === 'motorway' && r.sub !== 'link') {
       ctx.setLineDash([4, 8]); stroke(r, .55, PAL.lineWhite); ctx.setLineDash([]);
+    } else if (dividedIvanAllen(r)) {
+      ctx.setLineDash([3, 6]); stroke(r, .24, PAL.lineWhite); ctx.setLineDash([]);
     } else if (streets.has(r.cls) && roadWidth(r) >= 9) {
       stroke(r, .4, '#d8bd79');
     }

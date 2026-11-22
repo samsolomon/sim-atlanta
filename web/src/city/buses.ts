@@ -35,7 +35,7 @@ const BUS_WIDTH = 2.6;
  * the flat board's own roads, bridges included.
  */
 export function busRuns(vd: TerrainCity, measured: boolean): TransportRun[] {
-  const asRun = (r: VData['roads'][number]): TransportRun => ({ kind: r.bridge ? 'bridge' : 'ground', cls: r.cls, pts: r.pts });
+  const asRun = (r: VData['roads'][number]): TransportRun => ({ kind: r.bridge ? 'bridge' : 'ground', cls: r.cls, name: measured ? r.name : null, pts: r.pts });
   return measured && vd.terrainTransport
     ? [...vd.roads.filter((r) => !r.bridge && !r.tunnel).map(asRun), ...vd.terrainTransport.roads]
     : vd.roads.filter((r) => !r.tunnel).map(asRun);

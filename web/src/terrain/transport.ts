@@ -4,6 +4,7 @@ import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
+import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
 type GroundAt = (x: number, z: number) => number | null;
 export interface FreightTreadPoint {
@@ -69,6 +70,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   group.userData.structuralHeightTier = 'illustrative';
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
   const bounds = city.bounds;
+  const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
@@ -129,7 +131,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // A board cut can pass through mid-air. Carry the in-board support to that edge.
     const h0 = startHeight ?? endHeight, h1 = endHeight ?? startHeight;
     const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
-    const width = use === 'road' ? roadWidth(run) : 4.2;
+    const sidepath = sidepaths.has(run);
+    const width = sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
     // Keep original corners as well as intermediate terrain samples. A structural
     // tread follows a single chord between its two DEM endpoint proxies.
     const stations = [0];
@@ -229,7 +232,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }
     } else {
       const walkway = ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls);
-      strip(width / 2, -width / 2, .12, walkway ? PAL.sidewalk : PAL.asphalt, walkway ? .4 : .95);
+      strip(width / 2, -width / 2, .12, sidepath ? pathConcrete : walkway ? PAL.sidewalk : PAL.asphalt, walkway ? .4 : .95);
       if (roadTop.length) roadTreads.set(run, roadTop);
       if (!walkway && width >= 9) strip(.1, -.1, .15, PAL.lineYellow);
     }

@@ -1,4 +1,8 @@
-# A planted verge on the Westside Beltline Connector
+# Westside Beltline Connector at Mangum Street
+
+**Current revision.** The path now reads as a shared concrete sidewalk with a planted strip next to traffic. [Walking and overview comparisons, local photographs and integration notes](path/README.md)
+
+## Earlier planting-only draft
 
 **Keep this as a one-section study for inspection.** The little breaks in the grass give the path a readable edge beside the cyclist. From overhead the detail disappears. At the closest camera the clumps still read as separate silhouettes, so this example alone is a poor basis for planting the whole corridor.
 

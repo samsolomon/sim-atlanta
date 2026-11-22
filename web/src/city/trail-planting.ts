@@ -26,15 +26,15 @@ export function createTrailPlanting(people: Traveller[], ground: GroundAt, low: 
     for (let i = 0; i < 3; i++) colors.push(color.r, color.g, color.b);
   }
   const shades = ['#89904f', '#a49c62', '#7d8447', '#aba16b'];
-  // Short drifts with open turf between them, as on the Connector verge.
+  // Short drifts with open turf between them, on the street side of the path.
   const tufts: number[] = [];
   for (let s = way.from + 2; s < way.to - 1; s += 2.5 + random() * 3.4) {
     const count = 2 + Math.floor(random() * 4);
     for (let i = 0; i < count && s < way.to - 1; i++, s += .4 + random() * .65) tufts.push(s);
   }
   for (const s of tufts) {
-    const p = way.line.at(s), offset = 2.1 + random() * 1.25;
-    const x = p.x - p.nx * offset, z = p.z - p.nz * offset;
+    const p = way.line.at(s), offset = 2.05 + random() * .65;
+    const x = p.x + p.nx * offset, z = p.z + p.nz * offset;
     const height = .41 + random() * .46, rotation = random() * Math.PI;
     const clump = { phase: s * .19, tips: [] as { index: number; weight: number }[] };
     for (let blade = 0; blade < 7; blade++) {
@@ -67,8 +67,8 @@ export function createTrailPlanting(people: Traveller[], ground: GroundAt, low: 
   // Broken patches of earth along the grass side of the paving. Sample all
   // three corners on the actual board, including where the verge slopes.
   for (let s = way.from + 1; s < way.to - 1; s += 1.2 + random() * 1.9) {
-    const p = way.line.at(s), offset = 1.34 + random() * .5, length = .20 + random() * .46;
-    const x = p.x - p.nx * offset, z = p.z - p.nz * offset;
+    const p = way.line.at(s), offset = 1.68 + random() * .28, length = .20 + random() * .46;
+    const x = p.x + p.nx * offset, z = p.z + p.nz * offset;
     const corners: Vertex[] = [];
     for (const [along, across] of [[-length, 0], [0, .13 + random() * .1], [length, -.02]]) {
       const cx = x + along * p.dx - across * p.nx, cz = z + along * p.dz - across * p.nz;
