@@ -34,6 +34,8 @@ it('picks the exposed end of a portal car and skips the clipped end, hidden stoc
   roof.position.y = 10;
   roof.updateMatrixWorld();
   expect(pick(10,[roof])).toBeNull();
+  roof.material.clippingPlanes = [new THREE.Plane(new THREE.Vector3(1,0,0), -20)];
+  expect(pick(10,[roof])).toEqual({ kind:'train', id:'train' });
   car.visible = false;
   expect(pick(10)).toBeNull();
 });

@@ -31,18 +31,23 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
   }
   function railCar(car: THREE.Object3D, length: number, vehicle: VehicleSelection) {
     if (!car.visible) return;
-    a.set(0, 2, -length / 2).applyMatrix4(car.matrixWorld);
-    b.set(0, 2, length / 2).applyMatrix4(car.matrixWorld);
     const material = (car as THREE.Mesh<THREE.BufferGeometry, THREE.Material>).material;
-    consider(vehicle, material.clippingPlanes ?? edges);
+    // The roof can be visible above a wall while the body is hidden.
+    for (const height of [2, vehicle.kind === 'freight' ? 4 : 3.4]) {
+      a.set(0, height, -length / 2).applyMatrix4(car.matrixWorld);
+      b.set(0, height, length / 2).applyMatrix4(car.matrixWorld);
+      consider(vehicle, material.clippingPlanes ?? edges);
+    }
   }
   for (const car of trains.children) railCar(car, CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
   for (const car of freight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight' });
   for (const bus of buses) {
     const dx = Math.sin(bus.a) * BUS_LENGTH / 2, dz = Math.cos(bus.a) * BUS_LENGTH / 2;
-    a.set(bus.x - dx, bus.y + 1.7, bus.z - dz);
-    b.set(bus.x + dx, bus.y + 1.7, bus.z + dz);
-    consider({ kind: 'bus', id: bus.id }, edges);
+    for (const height of [1.7, 3]) {
+      a.set(bus.x - dx, bus.y + height, bus.z - dz);
+      b.set(bus.x + dx, bus.y + height, bus.z + dz);
+      consider({ kind: 'bus', id: bus.id }, edges);
+    }
   }
   hits.sort((one,two) => one.distance - two.distance ||
     camera.position.distanceToSquared(one.point) - camera.position.distanceToSquared(two.point));
@@ -50,7 +55,12 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
   for (const hit of hits) {
     ray.set(camera.position, a.copy(hit.point).sub(camera.position).normalize());
     ray.far = camera.position.distanceTo(hit.point) - 1; // allow the near face of the vehicle
-    if (!ray.intersectObjects(scenery, true).length) return hit.vehicle;
+    const occluded = ray.intersectObjects(scenery, true).some(({ object, point, face }) => {
+      const materials = (object as THREE.Mesh).material;
+      const material = Array.isArray(materials) ? materials[face?.materialIndex ?? 0] : materials;
+      return material?.visible && !material.clippingPlanes?.some(plane => plane.distanceToPoint(point) < 0);
+    });
+    if (!occluded) return hit.vehicle;
   }
   return null;
 }
