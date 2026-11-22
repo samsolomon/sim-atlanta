@@ -1335,6 +1335,13 @@ A sample of the live feed this evening explains the design:
 In Orca at 7:55 pm in a drizzle, bus 4691 sat in its right-hand lane at a downtown intersection,
 at 60 fps on the high tier.
 
+Control's device and Orca gate ran on the PR build (5b16705):
+
+- **Galaxy A16**, standalone bus build at the real present in drizzle: an average of 52.46 fps over
+  three 8-second foreground windows (52.80, 52.42, 52.17) at 384 × 692.
+- **Direct City entry in Orca:** one initial bus request, and two real buses drawn.
+- **Timetable (time-shifted) City:** zero bus requests and zero buses.
+
 ![A live MARTA bus in City at night](log/ui/2026-11-21-city-live-bus-night.jpg)
 
 ### 2026-11-21 — Four tracks between Pryor and Central
