@@ -97,6 +97,44 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
     [0, depth],
   ];
   slab(outline, 6.75, roof, stone, '#aaa9a1');
+  // Miter the full cornice around the corners and the recessed central bays.
+  // In the upward photograph the broad soffit reads as a separate shadow
+  // below the bead, bracketed fascia and thin bright coping.
+  const ringAt = (y: number, projection: number) =>
+    outline.map(([u, v], i) => {
+      const prev = outline[(i + outline.length - 1) % outline.length],
+        next = outline[(i + 1) % outline.length];
+      const nu = Math.sign(v - prev[1]) + Math.sign(next[1] - v);
+      const nv = -Math.sign(u - prev[0]) - Math.sign(next[0] - u);
+      return at(u + nu * projection, v + nv * projection, y);
+    });
+  const cornice: [number, number, string][] = [
+    [cap - 0.81, 0, shade],
+    [cap - 0.81, 0.48, shade],
+    [cap - 0.68, 0.61, stone],
+    [cap - 0.65, 0.97, '#a59b88'],
+    [cap - 0.39, 0.98, stone],
+    [cap - 0.35, 0.71, shade],
+    [cap + 0.04, 0.72, '#c7bfad'],
+    [cap + 0.04, 1.32, '#9c927f'],
+    [cap + 0.19, 1.47, stone],
+    [cap + 0.31, 1.47, trim],
+    [cap + 0.35, 1.27, stone],
+    [roof + 0.13, 1.27, stone],
+    [roof + 0.21, 1.54, trim],
+    [roof + 0.42, 1.54, trim],
+    [roof + 0.42, -0.14, stone],
+    [roof, -0.14, shade],
+  ];
+  let previous = ringAt(cornice[0][0], cornice[0][1]);
+  for (const [height, projection, finish] of cornice.slice(1)) {
+    const next = ringAt(height, projection);
+    for (let i = 0; i < outline.length; i++) {
+      const j = (i + 1) % outline.length;
+      masonry.quad(previous[i], previous[j], next[j], next[i], finish);
+    }
+    previous = next;
+  }
   const glass = ['#78868b', '#929b9a', '#aeb1aa', '#7d898c', '#a6a8a1'];
   const elevation = (
     span: number,
@@ -134,10 +172,12 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
         ];
         let prev = pier(base, 0.32, 0.37);
         for (const [y, rad, d] of [
-          [cap - 1.35, 0.32, 0.37],
-          [cap - 0.78, 0.48, 0.52],
-          [cap - 0.5, 0.54, 0.54],
-          [cap - 0.32, 0.36, 0.34],
+          [cap - 1.95, 0.32, 0.37],
+          [cap - 1.75, 0.43, 0.55],
+          [cap - 1.58, 0.4, 0.53],
+          [cap - 1.2, 0.6, 0.78],
+          [cap - 0.92, 0.73, 0.94],
+          [cap - 0.66, 0.69, 0.95],
         ]) {
           const next = pier(y, rad, d);
           for (let j = 0; j < 2; j++) masonry.quad(prev[j], prev[j + 1], next[j + 1], next[j], j ? stone : trim);
@@ -147,7 +187,7 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
       for (let floor = 0; floor < 14; floor++) {
         const y = lo + floor * pitch,
           sill = y + 0.63,
-          head = y + pitch - 0.37;
+          head = y + pitch - (floor === 13 ? 1.62 : 0.37);
         const d = facade + 0.045;
         const seed = hashStr(side + '/' + bay + '/' + floor);
         quad(left, right, sill, head, d, glass[seed % glass.length], seed % 7 === 0 ? rooms : masonry);
@@ -160,26 +200,51 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
           for (let j = 0; j < count; j++) {
             const cx = left + ((right - left) * (j + 0.5)) / count,
               radius = (right - left) / count / 2;
+            // A blind carved arch sits above a straight window head. Its
+            // faceted inset and leaf forms read in raking light below the eave.
+            const arch = (i: number, outer: boolean) => {
+              const angle = (i * Math.PI) / 8;
+              return point(
+                cx + (radius + (outer ? 0.13 : 0)) * Math.cos(angle),
+                head + 0.16 + (0.76 + (outer ? 0.19 : 0)) * Math.sin(angle),
+                facade + (outer ? 0.38 : 0.19)
+              );
+            };
             for (let k = 0; k < 8; k++) {
-              const arch = (i: number, outer: boolean) => {
-                const angle = (i * Math.PI) / 8;
-                return point(
-                  cx + (radius + (outer ? 0.09 : 0)) * Math.cos(angle),
-                  head - 0.4 + (0.65 + (outer ? 0.14 : 0)) * Math.sin(angle),
-                  facade + (outer ? 0.22 : 0.14)
-                );
-              };
+              masonry.tri(point(cx, head + 0.16, facade + 0.16), arch(k, false), arch(k + 1, false), '#c9c3b5');
               masonry.quad(arch(k, false), arch(k + 1, false), arch(k + 1, true), arch(k, true), trim);
+            }
+            for (const sign of [-1, 1]) {
+              const stem = point(cx, head + 0.22, facade + 0.22),
+                crest = point(cx + sign * radius * 0.28, head + 0.49, facade + 0.39);
+              const leaf = point(cx + sign * radius * 0.65, head + 0.57, facade + 0.2);
+              masonry.tri(stem, crest, leaf, trim);
+              masonry.tri(crest, point(cx + sign * radius * 0.22, head + 0.73, facade + 0.2), leaf, stone);
             }
           }
         }
       }
-      course(l, r, cap - 0.45, cap - 0.27, facade + 0.04, facade + 0.58, shade);
-      course(l, r, cap - 0.27, cap - 0.02, facade + 0.58, facade + 0.83, stone);
-      quad(l, r, cap - 0.02, roof + 0.36, facade + 0.83, trim);
-      course(l, r, roof + 0.36, roof + 0.36, facade + 0.83, facade - 0.08, stone);
-      // One corbel per pier under the projecting fascia.
-      quad(l + 0.12, l + 0.48, cap - 0.05, roof + 0.07, facade + 0.88, shade);
+      // Small modillions recur along the upper fascia between pier capitals.
+      // Their noses project over the bevel, with dark space between each pair.
+      for (const t of [l + width * 0.25, l + width * 0.75]) {
+        const section = (h: number, half: number, out: number) => [
+          point(t - half, h, facade + 0.64),
+          point(t - half, h, facade + out),
+          point(t + half, h, facade + out),
+          point(t + half, h, facade + 0.64),
+        ];
+        let prev = section(cap - 0.56, 0.105, 0.82);
+        masonry.quad(prev[0], prev[1], prev[2], prev[3], shade);
+        for (const [h, half, out] of [
+          [cap - 0.38, 0.19, 1.02],
+          [cap - 0.17, 0.235, 1.24],
+          [cap + 0.04, 0.22, 1.29],
+        ]) {
+          const next = section(h, half, out);
+          for (let j = 0; j < 3; j++) masonry.quad(prev[j], prev[j + 1], next[j + 1], next[j], j === 1 ? trim : stone);
+          prev = next;
+        }
+      }
     }
     // Two-story shopfronts sit between paneled piers, with a curved fanlight
     // and brass-framed entrance at the middle of the Forsyth frontage.

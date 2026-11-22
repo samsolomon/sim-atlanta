@@ -38,6 +38,20 @@ it('splits the lidar roof levels on the Healey parcel and preserves its neighbor
   expect(roofAt(190.34, -243.1)).toBeCloseTo(10.95, 1);
   expect(roofAt(172.33, -228.46)).toBeCloseTo(11.05, 1);
   expect(roofAt(180.96, -236.38)).toBeCloseTo(6.75, 1);
+  // Probe the coping outside the shaft, then shoot upward into a corbel
+  // and the open soffit beside it on the Forsyth face.
+  const underEave = (u: number, v: number, y: number, direction: number) => {
+    const eye = new Vector3(
+      178.21 - (47.52 / 62.56) * u + (40.69 / 62.56) * v,
+      y,
+      -269.57 + (40.69 / 62.56) * u + (47.52 / 62.56) * v
+    );
+    return new Raycaster(eye, new Vector3(0, direction, 0)).intersectObjects(model.group.children)[0]?.point.y;
+  };
+  const bay = 62.56 / 18;
+  expect(underEave(bay * 1.5, -1.4, 80, -1)).toBeCloseTo(64.02, 2);
+  expect(underEave(bay * 1.25, -1.12, 61, 1)).toBeLessThan(62.75);
+  expect(underEave(bay * 1.5, -1.12, 61, 1)).toBeCloseTo(62.94, 2);
   expect(roofAt(122, -240)).toBeUndefined();
   model.setNight(1);
   expect((model.group.children[1] as Mesh).material).toMatchObject({ emissiveIntensity: 0.33 });

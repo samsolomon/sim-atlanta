@@ -6,6 +6,20 @@ The 1914 tower runs along Forsyth between Poplar and Walton. From the park, its 
 
 The reference photograph in the comparison shows the east elevation, photographed by Eoghanacht, November 20, 2007, released into the public domain. Both City panels use the same camera and crop. In the full park frames the Flatiron stands in the foreground. [Previous park view](park-before.jpg) · [Revised park view](park-after.jpg)
 
+## The cornice from below
+
+![Upward photograph and matched east cornices, followed by the east elevation and the ordinary Woodruff Park view](cornice-comparison.jpg)
+
+Look above the straight heads of the top-floor windows. The upward photograph shows shallow carved arches there, flared capitals at the pier heads, and a finer row of brackets beneath the top lip. The revised cornice returns around the corners and follows the setbacks in the long elevation. A projecting coping casts a shadow over the brackets. City estimates a 1.54 m coping projection, compared with 0.83 m in the first model. The 1.29 m noses of the brackets and the paired leaf forms simplify the observed relief. The change adds 6,536 submitted triangles to the first model at the same 75 park draw calls.
+
+The top photograph is a cropped and resized detail of Marc Merlin’s February 27, 2016 cylindrical panorama. The photograph and the cornice comparison plate are licensed CC BY-SA 4.0. Eoghanacht’s public-domain east photograph is cropped in the lower row. Each pair of City crops uses one camera and clock. [Merlin’s original panorama](https://commons.wikimedia.org/wiki/File:Vertical_panorama_of_the_Healey_Building_in_cylindrical_perspective.jpg) · [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) · [Eoghanacht’s original](https://commons.wikimedia.org/wiki/File:Healey-Bldg-Atlanta-01.jpg)
+
+| Cornice check, Nov 20 at 10:15 EST | First model | Revised cornice |
+| --- | --- | --- |
+| Woodruff Park at ordinary zoom, same orbit as below | [Park](park-first.jpg) | [Park](park-after.jpg) |
+| Upper east elevation · (218, 40, −183) → (169, 60, −235), 22° vertical FOV | [Roofline](roofline-first.jpg) | [Roofline](roofline-after.jpg) |
+| Looking up from Forsyth · (142, 0.4, −262) → (156, 60, −246), 23° vertical FOV | [Underside](underside-first.jpg) | [Underside](underside-after.jpg) |
+
 ## Reading the roof heights
 
 City already recorded **16 floors and 62.7 m** for the named ten-vertex parcel, ID `eeb07e5a-dbed-4900-9314-e478769493ca`. Its generic facade took the glass style used for buildings at least 42 m tall. The old silhouette also carried that height across the low roofs toward Broad. The historic plan called for twin towers joined by a rotunda. Only the Forsyth tower was built. [City landmark designation](https://www.atlantaga.gov/government/departments/city-planning/historic-preservation/property-district-information/healey-building)
@@ -27,7 +41,7 @@ The Atlanta History Center catalogs the Healey in L. E. Wallace Jr.’s 1948 nig
 
 ## Matched City cameras
 
-Orca desktop at 1446 × 876, high quality, clock paused. Both versions include the revised Flatiron from commit `ee3da9b`. The orbit specifies City target x/z, bearing, metres per pixel and tilt. Street views give eye → target in City x/y/z metres with a 0.10 m near plane.
+Orca desktop at 1296 × 726, high quality, clock paused. Both versions include the revised Flatiron from commit `ee3da9b`. The orbit specifies City target x/z, bearing, metres per pixel and tilt. Street views give eye → target in City x/y/z metres with a 0.10 m near plane.
 
 | Camera | Date, local time and settings | Before | After |
 | --- | --- | --- | --- |
@@ -36,4 +50,4 @@ Orca desktop at 1446 × 876, high quality, clock paused. Both versions include t
 | Entrance across Forsyth | Jun 12, 2026, 18:10 EDT · (139.2, 0.35, −250.75) → (154.7, 6.8, −249.3), 64° vertical FOV | [Entrance](entrance-before.jpg) | [Entrance](entrance-after.jpg) |
 | Walton approach | Jun 12, 18:10 EDT · (118.5, 0.20, −231.6) → (150, 23, −239), 76° vertical FOV | [Corner](walton-before.jpg) | [Corner](walton-after.jpg) |
 
-The matched park daylight frame rises from 2,066,857 submitted triangles at 71 draws to 2,086,761 at 75 draws. The difference is 19,904 triangles (0.96%), including shadow passes. Rebuild the web bundle with the existing City data.
+The matched park daylight frame rises from 2,066,857 submitted triangles at 71 draws to 2,093,297 at 75 draws. The difference is 26,440 triangles (1.28%), including shadow passes. Rebuild the web bundle with the existing City data.
