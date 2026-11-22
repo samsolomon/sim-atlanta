@@ -26,7 +26,7 @@ The City view must be built for phone performance from the start.
 
 ## Approach: one app with two views, sharing one shell
 `/` becomes the app:
-- **City** is the default view.
+- **City** is the default view. Show the downtown loading plate before fetching the shared timetable, and offer Map during loading. Start MapLibre on the first Map visit so City never waits for the basemap style.
 - **Map** is one tap away.
 - Both share the same shell: status card, view switch, menu and train/bus card.
 - `/vignette` stays as is: it is the future Street level and a preview of it.
@@ -70,7 +70,7 @@ Decisions from Sam:
 - **Live MARTA feed down or stale:** the card's dot turns grey, it reads "Timetable", and the expanded sheet says why.
 - **Clock pinned with `?t=`:** the card reads "Timetable · not live" with the pinned time.
 - **City loading:** a paper plate with the status card already visible, plus a quiet progress line while data streams in.
-- **City failure** (WebGL missing, or data fails to load): drop to Map with a one-line note.
+- **City failure:** a failed City renderer or scene falls back to Map with a short note. If MapLibre also cannot obtain a graphics context, show the local MARTA rail routes as a static geographic overview. Preserve explicit Map links, geographic bookmarks, and palette tools.
 - **First run:** a small hint, "Drag to look around · WASD to move", that fades after the first interaction and is remembered in `localStorage`.
 
 **Layout and accessibility:**
