@@ -11,6 +11,7 @@ const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
   brownfield: '#a99a7c', construction: '#b49a76', pedestrian: '#d6cdbd', plaza: '#d6cdbd',
   loading_apron: '#b2a89a', track: '#b98c77', pitch: '#78a467', playground: '#bba486', parking: '#76787c', fountain: '#91b4bc',
+  swimming_pool: '#73c7cb',
 };
 const landOrder = Object.keys(landColors);
 const paths = new Set(['footway', 'pedestrian', 'steps', 'cycleway', 'path']);
@@ -79,6 +80,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
     ctx.fillStyle = landColors[g.kind];
     ctx.fill('evenodd');
     if (g.kind === 'parking' && g.rings.length) stripeLot(ctx, g.rings[0], stallLine);
+    if (g.kind === 'swimming_pool') { ctx.lineWidth = .45; ctx.strokeStyle = '#dbd9c9'; ctx.stroke(); }
     if (g.kind === 'pitch') { ctx.lineWidth = .45; ctx.strokeStyle = '#e9e7db'; ctx.stroke(); }
   }
 
