@@ -46,3 +46,8 @@ it('splits the lidar roof levels on the Healey parcel and preserves its neighbor
   expect(createHealey([neighbor], () => 0)).toBeNull();
   expect(createHealey([site], () => null)).toBeNull();
 });
+
+it('leaves a moved parcel to the generic renderer when the surveyed tower would miss it', () => {
+  const shifted: VBuilding = { ...site, rings: site.rings.map((ring) => ring.map(([x, z]) => [x + 80, z])) };
+  expect(createHealey([shifted], () => 0)).toBeNull();
+});

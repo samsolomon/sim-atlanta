@@ -1,5 +1,5 @@
 import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } from 'three';
-import { Builder, hashStr, type P2 } from '../vignette/geom';
+import { Builder, hashStr, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 
 const id = 'eeb07e5a-dbed-4900-9314-e478769493ca';
@@ -22,8 +22,26 @@ const at = (u: number, v: number, y: number) => [origin[0] + dx * u + dz * v, y,
 export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: number) => number | null) {
   const lot = buildings.find((b) => b.id === id);
   if (!lot || lot.rings.length !== 1 || lot.rings[0].length < 3) return null;
-  const ring = lot.rings[0],
-    grades = ring.map(([x, z]) => groundAt(x, z));
+  const ring = lot.rings[0];
+  // Keep the fixed survey in its parcel after a rebake. The probes sit
+  // inside the tower corners and the rear roofs to allow minor outline edits.
+  const survey: P2[] = [
+    [1, 1],
+    [length - 1, 1],
+    [length - 1, depth - 1],
+    [1, depth - 1],
+    [2, 35],
+    [31, 34],
+    [60, 33],
+  ];
+  if (
+    !survey.every(([u, v]) => {
+      const [x, , z] = at(u, v, 0);
+      return pointInRing(x, z, ring);
+    })
+  )
+    return null;
+  const grades = ring.map(([x, z]) => groundAt(x, z));
   if (grades.some((h) => h === null || !Number.isFinite(h))) return null;
   const masonry = new Builder(),
     rooms = new Builder();
