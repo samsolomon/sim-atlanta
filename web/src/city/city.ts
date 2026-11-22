@@ -59,6 +59,7 @@ import { createPeachtree191 } from './peachtree-191';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
+import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createGrady } from './grady';
@@ -209,6 +210,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
   let grady: ReturnType<typeof createGrady> = null;
+  let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
@@ -248,11 +250,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
         const afterStadium = stadium?.buildings ?? stadiumSite;
-        capitol = createCapitol(afterStadium, (x, z) => {
+        centennial = createCentennialTower(afterStadium, ground);
+        const afterCentennial = centennial?.buildings ?? afterStadium;
+        capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
-        const exhibitionSite = capitol?.buildings ?? afterStadium;
+        const exhibitionSite = capitol?.buildings ?? afterCentennial;
         const congressCenter = createCongressCenter(exhibitionSite, ground);
         const arenaSite = congressCenter?.buildings ?? exhibitionSite;
         arena = createStateFarmArena(arenaSite, groundAt);
@@ -272,6 +276,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
+        if (centennial) world.group.add(centennial.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
@@ -630,6 +635,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     flatiron?.setNight(night);
     healey?.setNight(night);
     georgiaPacific?.setNight(night);
+    centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
     grady?.setNight(night);
