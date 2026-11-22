@@ -65,3 +65,24 @@ it('leaves a moved parcel to the generic renderer when the surveyed tower would 
   const shifted: VBuilding = { ...site, rings: site.rings.map((ring) => ring.map(([x, z]) => [x + 80, z])) };
   expect(createHealey([shifted], () => 0)).toBeNull();
 });
+
+it('raises the Forsyth display sills above the local sidewalk while keeping the shaft level', () => {
+  // The western frontage is 1.35 m higher than the lowest rear corner.
+  const model = createHealey([site], (x, z) =>
+    ((x - 178.21) * 40.69) / 62.56 + ((z + 269.57) * 47.52) / 62.56 < 5 ? 1.35 : 0
+  )!;
+  const u = 4,
+    v = -2;
+  const normal = new Vector3(40.69 / 62.56, 0, 47.52 / 62.56);
+  const hit = (y: number) =>
+    new Raycaster(
+      new Vector3(
+        178.21 - (47.52 / 62.56) * u + (40.69 / 62.56) * v,
+        y,
+        -269.57 + (40.69 / 62.56) * u + (47.52 / 62.56) * v
+      ),
+      normal
+    ).intersectObjects(model.group.children)[0]?.distance;
+  expect(hit(1.5)).toBeCloseTo(1.98, 2); // stone below the display sill
+  expect(hit(2.1)).toBeCloseTo(1.88, 2); // glazing just above it
+});

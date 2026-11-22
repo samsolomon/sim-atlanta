@@ -51,3 +51,7 @@ Orca desktop at 1296 × 726, high quality, clock paused. Both versions include t
 | Walton approach | Jun 12, 18:10 EDT · (118.5, 0.20, −231.6) → (150, 23, −239), 76° vertical FOV | [Corner](walton-before.jpg) | [Corner](walton-after.jpg) |
 
 The matched park daylight frame rises from 2,066,857 submitted triangles at 71 draws to 2,093,297 at 75 draws. The difference is 26,440 triangles (1.28%), including shadow passes. Rebuild the web bundle with the existing City data.
+
+At Forsyth and Poplar the baked sidewalk is about 1.3 m above the lowest parcel corner. The first model carried the floor of the display glazing below the pavement. Each shop now takes its threshold from the sidewalk at the middle of its bay, with a level sill and a vertical adjustment that tapers to zero at the continuous upper belt. The grade check used (168.02, 1.04, −275.32) → (170.61, 2.85, −263.07), 61° vertical FOV, June 12 at 18:10 EDT. [Before the sill adjustment](poplar-first.jpg) · [Same shopfronts above the curb](poplar-after.jpg)
+
+The park comparisons isolate the Healey on the earlier Woodruff streetscape. The release view includes the six Peachtree shopfronts from #77 across the park. [Release view with both landmarks and the new shopfronts](park-release.jpg)

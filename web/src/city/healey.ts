@@ -43,6 +43,7 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
     return null;
   const grades = ring.map(([x, z]) => groundAt(x, z));
   if (grades.some((h) => h === null || !Number.isFinite(h))) return null;
+  const datum = Math.min(...(grades as number[]));
   const masonry = new Builder(),
     rooms = new Builder();
   const wall = (a: number[], b: number[], low: number, high: number, color: string) =>
@@ -139,11 +140,15 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
   const elevation = (
     span: number,
     bays: number,
-    point: (t: number, y: number, offset: number) => number[],
+    frame: (t: number, y: number, offset: number) => number[],
     side: number
   ) => {
     const long = bays === 18,
       width = span / bays;
+    // Each shop has a level threshold on the sloping sidewalk. Taper its
+    // vertical adjustment to zero at the continuous second-story belt.
+    let curbRise = 0;
+    const point = (t: number, y: number, offset: number) => frame(t, y + curbRise * Math.max(0, 1 - y / base), offset);
     const quad = (l: number, r: number, lo: number, hi: number, d: number, c: string, batch = masonry) =>
       batch.quad(point(l, lo, d), point(r, lo, d), point(r, hi, d), point(l, hi, d), c);
     const course = (l: number, r: number, y: number, y2: number, inner: number, outer: number, c: string) =>
@@ -257,6 +262,9 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
         door = side === 0 && i === 4;
       const a = l + 0.51,
         b = r - 0.51;
+      const [sx, , sz] = frame(mid, 0, 0);
+      const curb = groundAt(sx, sz);
+      curbRise = curb !== null && Number.isFinite(curb) ? curb - datum : 0;
       // The base wall follows the street line even below the inset shaft.
       quad(l, r, -0.45, base, 0.02, stone);
       quad(a, b, 0.62, 4.6, 0.12, door ? '#4f5859' : '#657376', door ? rooms : masonry);
@@ -372,7 +380,7 @@ export function createHealey(buildings: VBuilding[], groundAt: (x: number, z: nu
   windows.receiveShadow = true;
   const group = new Group();
   group.name = 'Healey Building';
-  group.position.y = Math.min(...(grades as number[]));
+  group.position.y = datum;
   group.add(solid, windows);
   return {
     group,
