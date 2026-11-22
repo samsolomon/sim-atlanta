@@ -160,7 +160,7 @@ export function createShell(o: ShellOptions) {
       ? s.cityFreight ? 'Train positions, timing and consists are illustrative.' : 'No freight simulation available in this scene.'
       : 'Track traffic comes from reported or inferred daily counts.';
     const traffic = view === 'city' && s.cityTraffic
-      ? '<li><b>Connector traffic</b> Illustrative vehicles follow a typical hourly pattern.</li>' : '';
+      ? '<li><b>Road traffic</b> Illustrative vehicles follow a typical hourly pattern.</li>' : '';
     const wx = !s.realTime
       ? '<b>Weather</b> shown only at the present time'
       : weather

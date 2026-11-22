@@ -50,6 +50,7 @@ def main() -> None:
             WHERE subtype = 'rail' AND {where}""",
         "roads": f"""
             SELECT id, class, subclass, to_json(road_flags) AS road_flags, to_json(level_rules) AS level_rules,
+                   to_json(access_restrictions) AS access_restrictions,
                    names.primary AS name, ST_AsGeoJSON(geometry) AS g
             FROM read_parquet('{theme('transportation', 'segment')}', hive_partitioning=1)
             WHERE subtype = 'road' AND {where}""",

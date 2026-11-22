@@ -108,13 +108,14 @@ it('yields to observed buses and suppresses cars without a supported road surfac
   layer.dispose();
 });
 
-it('resolves the road carrying a vehicle across scoped ground, bridge, tunnel and crossing-deck intervals', async () => {
-  const { connectorRoadHeight } = await import('./connector-road-height');
-  const road = { cls: 'motorway', name: '', bridge: true, tunnel: true, pts: [[0,0],[120,0]] } as TerrainCity['roads'][number];
-  const roadHeight = connectorRoadHeight({ ...city, terrainTransport: { version: 1, rail: [], roads: [
-    { cls: 'motorway', kind: 'bridge', pts: [[20,-15],[20,15]] },
-    { cls: 'motorway', kind: 'ground', pts: [[0,0],[40,0]] },
-    { cls: 'motorway', kind: 'bridge', pts: [[75,0],[120,0]] },
+it.each(['motorway', 'primary', 'secondary'])('resolves only the carrying %s road across ground, bridge and tunnel intervals', async cls => {
+  const { cityRoadHeight } = await import('./road-height');
+  const road = { cls, name: '', bridge: true, tunnel: true, pts: [[0,0],[120,0]] } as TerrainCity['roads'][number];
+  const roadHeight = cityRoadHeight({ ...city, terrainTransport: { version: 1, rail: [], roads: [
+    { cls: 'footway', kind: 'bridge', pts: [[0,0],[120,0]] },
+    { cls, kind: 'bridge', pts: [[20,-15],[20,15]] },
+    { cls, kind: 'ground', pts: [[0,0],[40,0]] },
+    { cls, kind: 'bridge', pts: [[75,0],[120,0]] },
   ] } }, () => 2, () => 12);
   expect(roadHeight(20,3.5,road)).toBe(2);
   expect(roadHeight(60,3.5,road)).toBeNull();
