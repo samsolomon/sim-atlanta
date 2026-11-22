@@ -62,7 +62,7 @@ The reference axis is eastbound, toward Kensington and Indian Creek, at a bearin
 
 **Blue through service.**
 - In the staged MARTA GTFS (service 2026-08-22 to 2026-12-11), every call at Avondale is a Blue
-  through trip: eastbound at 908438 and westbound at 908691. No trip starts or ends there. A test
+  through trip: 646 eastbound at 908438 and 632 westbound at 908691. No trip starts or ends there. A test
   enforces this against the staged timetable.
 - The usual track is the main. Wikipedia says the centre tracks "are not normally used for
   through service", and OSM tags the mains `usage=main` and the centre tracks `service=yard`.

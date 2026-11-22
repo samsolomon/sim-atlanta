@@ -81,7 +81,7 @@ describe.skipIf(!staged)('Avondale against the staged MARTA timetable', () => {
 
   it('calls only Blue through trains, eastbound at 908438 and westbound at 908691', () => {
     const seen = new Map<string, number>();
-    for (const [, pi] of tt.trips) {
+    for (const [pi] of tt.trips) {
       const p = tt.patterns[pi];
       p.stops.forEach((stop, i) => {
         if (!platforms.has(stop)) return;
