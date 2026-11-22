@@ -34,7 +34,32 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #early-map { justify-self: center; margin-top: 10px; padding: 12px; color: var(--ink); }
 #city-loading p { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
 #city-progress { color: var(--ink-2); font-size: 14px; }
-.attrib3d { position: absolute; right: 10px; bottom: 8px; margin: 0; font-size: 11px; color: var(--ink); background: var(--glass-solid); padding: 3px 8px; border-radius: 6px; }
+#view3d { --info-bottom: max(12px, env(safe-area-inset-bottom)); --info-right: max(12px, env(safe-area-inset-right)); }
+body:has(#timectl:not([hidden])) #view3d { --info-bottom: var(--above-playback, 138px); }
+#city-loading:not([hidden]) ~ .city-info-toggle { display: none; }
+.city-source { margin-top: 12px; font-size: 12px; color: var(--ink-2); }
+.city-source a, #city-info a { color: inherit; }
+.city-info-toggle {
+  position: absolute; bottom: var(--info-bottom); right: var(--info-right);
+  width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 50%; background: transparent;
+}
+.city-info-toggle span {
+  width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--glass-solid); box-shadow: 0 1px 4px #0003;
+  font: bold 19px/1 Georgia, serif;
+}
+#city-info {
+  position: fixed; inset: auto var(--info-right) calc(var(--info-bottom) + 46px) auto;
+  margin: 0; padding: 14px 16px; width: min(290px, calc(100vw - 24px));
+  max-height: calc(100dvh - var(--info-bottom) - 60px); overflow-y: auto;
+  border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 3px 14px #0002;
+  color: var(--ink); background: var(--glass-solid); font-size: 13px; line-height: 1.45;
+}
+#city-info p { margin: 8px 0; }
+@media (min-width: 601px) {
+  body:has(#card:not([hidden])) #city-info { max-width: calc(100vw - 380px); }
+}
 
 /* ---- vehicle / place card ---- */
 #card {
@@ -85,8 +110,6 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
   #train-follow button { min-height: 44px; }
   .in3d #card h2 { padding-right: 34px; }
   .in3d #card .close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
-  .attrib3d { bottom: max(84px, calc(env(safe-area-inset-bottom) + 74px)); left: 10px; right: 10px; text-align: center; }
-  .in3d:has(.hint) .attrib3d { bottom: max(125px, calc(env(safe-area-inset-bottom) + 115px)); }
 }
 
 /* The optional replay panel and view switch share the last row on narrow screens. */
@@ -111,9 +134,8 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
     position: relative; inset: auto; transform: none; grid-area: 1 / 1 / 2 / 3; justify-self: center;
   }
   body:not(.in3d):has(#timectl:not([hidden])) #card { max-height: calc(100dvh - 220px); overflow-y: auto; }
+  .in3d:has(#timectl:not([hidden])):has(.hint) #view3d { --info-bottom: calc(var(--above-playback) + 40px); }
   .in3d:has(#timectl:not([hidden])) #card { max-height: calc(100dvh - var(--card-top) - var(--above-playback)); }
-  .in3d:has(#timectl:not([hidden])) .attrib3d { bottom: var(--above-playback); }
-  .in3d:has(#timectl:not([hidden])):has(.hint) .attrib3d { bottom: calc(var(--above-playback) + 40px); }
 }
 
 /* ---- ?tune palette panel (design tool) ---- */

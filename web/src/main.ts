@@ -434,6 +434,7 @@ async function openCity() {
 }
 
 function closeCity() {
+  document.getElementById('city-info')!.hidePopover?.();
   hideCard();
   cityLoad++;
   cityAbort?.abort();
