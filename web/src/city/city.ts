@@ -33,6 +33,8 @@ import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
+import { prepareEastCut } from './east-cut';
+import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic } from './connector-traffic';
 import { connectorRoadHeight } from './connector-road-height';
 import { CityFreight } from './freight';
@@ -117,6 +119,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       console.warn('City ground grid unavailable. Using the flat board.');
     }
   }
+  const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
   const b = vd.bounds;
 
   // ---- the board ----------------------------------------------------------------------
@@ -154,14 +157,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   let marta: Alignment[] = [];
   try {
-    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid); });
+    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid);
+      if (cut) marta = marta.map(maskCut); });
     if (grid) {
       const ground = grid;
       await build('terrain', () => {
-        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: terrainOpenings(marta) });
+        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
       });
-      await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt); });
+      await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
@@ -211,6 +215,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
   scene.add(world.group);
   if (terrain && transport) scene.add(terrain.group, transport.group);
+  if (cut && grid) scene.add(cutFloor(grid));
   // Trim content to the board, retaining the ground, cut edge and walnut lip.
   const edges = [
     new THREE.Plane(new THREE.Vector3(1, 0, 0), -b.minX),
@@ -228,7 +233,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   });
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
-  const trains = new CityTrains(marta, manifest, b, colors, edges);
+  const trains = new CityTrains(marta, manifest, b, colors, edges, cut);
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
   if (freight) scene.add(freight.group);

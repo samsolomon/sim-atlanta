@@ -117,3 +117,11 @@ following 24 seconds. A temporary 1024 px shadow map kept shadows visible and av
 static opening gate on this device. Re-measure as moving vehicles are added.
 See the [build log](build-log.md#2026-11-21--the-first-half-minute-on-the-galaxy-a16)
 for conditions, timings and screenshots.
+
+## M2b handoff, November 21
+
+City now runs passenger trains against the measured downtown terrain, illustrated freight along supported track, live MARTA buses on the streets at the real present, and typical road traffic on the Downtown Connector. At Georgia State you can see MARTA above CSX above the freeway in one frame. The freeway widens to 24–25 m per carriageway through the measured crossing. [Road-level replay](log/ui/2026-11-21-connector-traffic-road-view.jpg) · [Traffic assumptions](connector-traffic.md)
+
+The four-track opening east of Five Points lies between Pryor Street SW and Shirley Clarke Franklin Boulevard SW (Central Avenue in the bridge records). Ten scheduled Blue and Green shapes use the two mapped directional passenger tracks. The Interline has its own shorter opening and CSX has 106 m of drawable tread. The common rail bed is illustrative. [City replay](log/ui/2026-11-21-five-points-mapped-city.jpg) · [Evidence and camera settings](five-points-east-trench.md)
+
+Map remains the landing view. Use high tier for Sam's desktop preview. The next traffic scope is major arterials, followed by vehicle selection and its per-attribute source labels. Repeat the low-tier device measurement as the moving street network grows. [Milestone 2](city-plan.md)

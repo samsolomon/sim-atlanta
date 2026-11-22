@@ -5,6 +5,8 @@ import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/c
 import { PlacementIndex } from '../vignette/spatial';
 import { trackInDaylight, type Alignment, type VData } from '../vignette/world';
 
+import type { prepareEastCut, ServiceTrack } from './east-cut';
+
 type Segment = { al: Alignment; i: number };
 const SNAP = 18;
 
@@ -60,16 +62,17 @@ export class CityTrains {
   surfaceCars = 0;
 
   constructor(alignments: Alignment[], private manifest: SceneManifest, private bounds: VData['bounds'],
-    private colors: Map<string, string>, private clip: THREE.Plane[]) {
+    private colors: Map<string, string>, private clip: THREE.Plane[],
+    private cut?: ReturnType<typeof prepareEastCut>) {
     this.tracks = new CityTracks(alignments);
     this.project = makeProjector(manifest.origin);
   }
 
-  private car(color: string, role: number) {
-    const key = color + role;
+  private car(color: string, role: number, placement?: NonNullable<ReturnType<ServiceTrack['car']>>) {
+    const key = color + role + (placement?.clipped ? placement.name + placement.clipped : '');
     let pool = this.pools.get(key);
     if (!pool) {
-      pool = { material: cq400Material(color, { value: role }, this.night, this.clip), meshes: [], count: 0 };
+      pool = { material: cq400Material(color, { value: role }, this.night, placement?.plane ? [...this.clip, placement.plane] : this.clip), meshes: [], count: 0 };
       this.pools.set(key, pool);
     }
     const slot = pool.count++;
@@ -105,18 +108,30 @@ export class CityTrains {
       const pad = units * pitch / 2;
       if (x < b.minX - pad || x > b.maxX + pad || z < b.minZ - pad || z > b.maxZ + pad) continue;
       const track = this.tracks.locate(x, z, t.heading);
-      if (!track) continue;
-      const { al, s, dir } = track;
+      const mapped = this.cut?.paths.get(t.pathId);
       for (let i = 0; i < units; i++) {
         // The Map symbol is centred on the source position. Both ends can straddle a portal.
-        const sc = s + dir * ((units - 1) / 2 - i) * pitch;
+        const offset = ((units - 1) / 2 - i) * pitch;
+        const role = i === 0 ? 1 : i === units - 1 ? -1 : 0;
+        const placement = mapped?.routeId === t.routeId ? mapped.car(t.s.value, offset) : undefined;
+        if (placement) {
+          const car = this.car(color, role, placement);
+          car.position.set(placement.x, this.cut!.treadY, placement.z);
+          this.direction.set(placement.x + placement.dx, this.cut!.treadY, placement.z + placement.dz);
+          car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
+          if (i >= units / 2) car.rotateY(Math.PI);
+          this.surfaceCars++;
+          continue;
+        }
+        if (!track) continue;
+        const { al, s, dir } = track;
+        const sc = s + dir * offset;
         if (!carInDaylight(al, sc)) continue;
         const p = al.line.at(sc);
         const off = dir * 2.1;
         const cx = p.x - p.nx * off, cz = p.z - p.nz * off;
         if (cx < b.minX - CAR_LENGTH / 2 || cx > b.maxX + CAR_LENGTH / 2 ||
             cz < b.minZ - CAR_LENGTH / 2 || cz > b.maxZ + CAR_LENGTH / 2) continue;
-        const role = i === 0 ? 1 : i === units - 1 ? -1 : 0;
         const car = this.car(color, role);
         car.position.set(cx, al.elev(sc) + 0.55, cz);
         const q = al.line.at(sc + dir * 4);
