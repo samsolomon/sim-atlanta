@@ -5,6 +5,9 @@
 glance. Choose **None** in the Platform control to return to the plain lab track. City is
 unchanged.
 
+**Release:** this is web code only. It needs a rebuild of `web/dist` (`pnpm build`) and a worker
+deploy; there's no data regeneration and no per-visitor server cost.
+
 The geometry is in `web/src/models/platform-scene.ts`, and the tests are in
 `platform-scene.test.ts`.
 
