@@ -24,7 +24,7 @@ export interface VBuilding {
 export interface BuildingFinish {
   wall: string;
   roof: string;
-  drawFace?: (builder: Builder, a: P2, b: P2, base: number, top: number) => boolean;
+  drawFace?: (builder: Builder, a: P2, b: P2, base: number, top: number, litGlass: Builder) => boolean;
 }
 export interface VRoad {
   cls: string;
@@ -848,7 +848,7 @@ export class World {
           const a = ring[i];
           const c = ring[(i + 1) % ring.length];
           const first = b.pos.length / 3;
-          if (finish?.drawFace?.(b, a, c, foot, roofY + parapet) ||
+          if (finish?.drawFace?.(b, a, c, foot, roofY + parapet, shopLights) ||
               (shop && appendWoodruffWall(shop, a, c, originY, roofY + parapet, b, shopLights))) {
             for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
             continue;
