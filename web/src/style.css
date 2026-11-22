@@ -77,7 +77,8 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 @media (max-width: 600px) {
   #card { bottom: 14px; }
   .in3d #card {
-    top: max(76px, calc(env(safe-area-inset-top) + 68px)); bottom: auto;
+    --card-top: max(76px, calc(env(safe-area-inset-top) + 68px));
+    top: var(--card-top); bottom: auto;
     max-height: calc(100dvh - 190px); overflow-y: auto;
   }
   .in3d #card.following-trip dl > :not(.position-report), .in3d #card.following-trip .tip { display: none; }
@@ -92,7 +93,9 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 @media (max-width: 600px) {
   body:has(#timectl:not([hidden])) {
     --dock-bottom: max(24px, calc(env(safe-area-inset-bottom) + 10px));
-    display: grid; height: 100dvh; grid-template-columns: auto minmax(0, 280px); justify-content: center;
+    --above-playback: calc(var(--dock-bottom) + 116px);
+    display: grid; height: 100dvh; max-width: 470px; margin-inline: auto;
+    grid-template-columns: max-content minmax(0, 1fr);
     align-content: end; align-items: end; gap: 8px;
     padding: 0 max(10px, env(safe-area-inset-right)) var(--dock-bottom) max(10px, env(safe-area-inset-left));
   }
@@ -108,8 +111,9 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
     position: relative; inset: auto; transform: none; grid-area: 1 / 1 / 2 / 3; justify-self: center;
   }
   body:not(.in3d):has(#timectl:not([hidden])) #card { max-height: calc(100dvh - 220px); overflow-y: auto; }
-  .in3d:has(#timectl:not([hidden])) .attrib3d { bottom: calc(var(--dock-bottom) + 116px); }
-  .in3d:has(#timectl:not([hidden])):has(.hint) .attrib3d { bottom: calc(var(--dock-bottom) + 156px); }
+  .in3d:has(#timectl:not([hidden])) #card { max-height: calc(100dvh - var(--card-top) - var(--above-playback)); }
+  .in3d:has(#timectl:not([hidden])) .attrib3d { bottom: var(--above-playback); }
+  .in3d:has(#timectl:not([hidden])):has(.hint) .attrib3d { bottom: calc(var(--above-playback) + 40px); }
 }
 
 /* ---- ?tune palette panel (design tool) ---- */
