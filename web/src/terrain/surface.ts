@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { slotPlanes, subtractSlot, type OpenSlot } from './openings';
 
-export interface JoiningEdge { x: number; minZ: number; maxZ: number }
+export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
+export type TerrainJoins = JoiningEdge | JoiningEdge[];
+export const joinList = (join?: TerrainJoins): JoiningEdge[] => Array.isArray(join) ? join : join ? [join] : [];
 
 export type TerrainQuality = 'low' | 'high';
 
@@ -14,7 +16,7 @@ export class GroundSurface {
   private readonly starts: Uint32Array;
   private readonly blockCols: number;
 
-  constructor(readonly grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [], join?: JoiningEdge) {
+  constructor(readonly grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [], join?: TerrainJoins) {
     const { rows, cols, stepM, bounds, vertical } = grid.manifest;
     const blockCols = this.blockCols = Math.ceil((cols - 1) / 2);
     const blockRows = Math.ceil((rows - 1) / 2);
@@ -29,10 +31,13 @@ export class GroundSurface {
     }
     if (!Number.isFinite(minY)) throw new Error('Ground grid is empty');
     this.minY = minY;
+    const joins = joinList(join);
     for (let k = 0; k < detail.length; k++) {
       const x = 2 * (k % blockCols), z = 2 * Math.floor(k / blockCols);
-      const onJoin = join && (bounds.minX + x * stepM === join.x || bounds.minX + (x + 2) * stepM === join.x)
-        && bounds.minZ + z * stepM < join.maxZ && bounds.minZ + (z + 2) * stepM > join.minZ;
+      const bx = bounds.minX + x * stepM, bz = bounds.minZ + z * stepM, size = 2 * stepM;
+      const onJoin = joins.some(edge => 'x' in edge
+        ? (bx === edge.x || bx + size === edge.x) && bz < edge.maxZ && bz + size > edge.minZ
+        : (bz === edge.z || bz + size === edge.z) && bx < edge.maxX && bx + size > edge.minX);
       if (quality === 'high' || onJoin || x + 2 >= cols || z + 2 >= rows) {
         detail[k] = 1;
         continue;
