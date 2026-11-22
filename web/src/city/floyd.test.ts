@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { Mesh, Raycaster, Vector3 } from 'three';
 import type { VBuilding } from '../vignette/world';
 import { createFloyd } from './floyd';
+import { georgiaStateScene } from './georgia-state-geometry';
 
 // Rail Accuracy's two mapped face midpoints in City metres. The model must also
 // tolerate their translation onto City's smoothed line without moving the towers.
-const west = { x: 488.95, z: 386.55, bedY: -12 };
-const east = { x: 577, z: 461.75, bedY: -9 };
+const station = georgiaStateScene({ lon: -84.3916, lat: 33.7539 });
+const sample = (u: number, bedY: number) => {
+  const [x, z] = station.fromFrame(u, 0);
+  return { x, z, bedY };
+};
+const west = sample(station.faces.nw.u, -12);
+const east = sample(station.faces.se.u, -9);
 const delta = new Vector3(east.x - west.x, 0, east.z - west.z);
 const length = delta.length(), along = delta.clone().normalize();
 const right = new Vector3(-along.z, 0, along.x);
@@ -26,7 +32,7 @@ describe('Floyd tower replacement', () => {
       new Raycaster(position, direction, 0, far).intersectObject(model.group, true)[0];
     // Cast through the actual triangles at train and platform heights. A wall drawn
     // across either end or a tower body sunk down to ground interrupts these rays.
-    for (const lateral of [-8.78, -2.43, 2.43, 8.4]) {
+    for (const lateral of [...station.faces.se.opening, -2.43, 2.43]) {
       for (const y of [east.bedY + 1.2, east.bedY + 4.2]) {
         const start = origin.clone().addScaledVector(right, lateral).addScaledVector(along, -1);
         start.y = y;
