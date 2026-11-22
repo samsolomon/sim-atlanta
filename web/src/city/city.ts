@@ -38,7 +38,7 @@ import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic } from './connector-traffic';
 import { StreetFigures } from './street-figures';
-import { cityTravellers } from './walkways';
+import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
@@ -178,6 +178,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.dispose();
     world.group.removeFromParent();
   };
+  let travellers: Traveller[] = [];
   let marta: Alignment[] = [];
   const stationSite = georgiaStateScene(manifest.origin);
   let station: StationTrack | undefined;
@@ -225,6 +226,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
       });
+      await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
@@ -328,7 +330,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     : undefined;
   if (traffic) scene.add(traffic.group);
   if (arterials) scene.add(arterials.group);
-  const travellers = terrain ? cityTravellers(vd, terrain.groundAt, low) : [];
   const figures = terrain && travellers.length ? new StreetFigures(travellers, terrain.groundAt, low) : undefined;
   if (figures) scene.add(figures.group);
   const cx = (b.minX + b.maxX) / 2;

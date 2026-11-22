@@ -118,6 +118,7 @@ export class StreetFigures {
   private readonly bounds = new THREE.Sphere(new THREE.Vector3(), 1.5);
   private readonly tint = new THREE.Color();
   private tick = NaN;
+  private viewportHeight = 0;
 
   constructor(private readonly people: Traveller[], private readonly ground: (x: number, z: number) => number | null,
     private readonly low: boolean) {
@@ -151,7 +152,8 @@ export class StreetFigures {
     const tick = Math.floor(ms / step);
     camera.updateMatrixWorld();
     this.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    if (this.tick === tick && this.projection.equals(this.previousProjection)) return;
+    if (this.tick === tick && viewportHeight === this.viewportHeight && this.projection.equals(this.previousProjection)) return;
+    this.viewportHeight = viewportHeight;
     this.previousProjection.copy(this.projection);
     this.frustum.setFromProjectionMatrix(this.projection);
     const focalPixels = viewportHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
