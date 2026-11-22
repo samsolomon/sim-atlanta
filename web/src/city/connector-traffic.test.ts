@@ -1,17 +1,34 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { connectorTrafficRoutes } from './connector-traffic-routes';
 import { ConnectorTraffic, CONNECTOR_TRAFFIC_CAP } from './connector-traffic';
 import { connectorLanes } from '../terrain/connector-lanes';
 import type { TerrainCity } from '../terrain/transport-data';
+import type { P2 } from '../vignette/geom';
 
-const city: TerrainCity = JSON.parse(readFileSync(new URL('../../public/data/scene/downtown/vignette.json', import.meta.url), 'utf8'));
-const routes = connectorTrafficRoutes(city);
+const stagedFile = new URL('../../public/data/scene/downtown/vignette.json', import.meta.url);
+const staged: TerrainCity | undefined = existsSync(stagedFile)
+  ? JSON.parse(readFileSync(stagedFile, 'utf8')) : undefined;
+const road = (pts: P2[], sub: string | null = null) => ({
+  cls: 'motorway', name: 'Downtown Connector', bridge: false, tunnel: false, sub, pts,
+});
+const city: TerrainCity = {
+  bounds: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
+  buildings: [], rail: [],
+  roads: [
+    road([[442,735],[741.07,570.95]]), road([[522,701],[741.07,570.95]], 'link'),
+    road([[741.07,570.95],[1030,304]]),
+    road([[1022,267],[692.96,562.76]]), road([[692.96,562.76],[422,712]]),
+    road([[692.96,562.76],[409,695.5]], 'link'),
+  ],
+};
 const hourly = { weekday: Array(24).fill(1/24), weekend: Array(24).fill(1/24) };
 const noon = Date.parse('2026-11-20T17:00:00Z');
 
-describe('directed motorway chains on the staged City board', () => {
+describe.skipIf(!staged)('directed motorway chains on the staged City board', () => {
+  const city = staged!;
+  const routes = staged ? connectorTrafficRoutes(staged) : [];
   it('uses the median and outside positions from the painter in travel order through both sections', () => {
     for (const dir of ['northbound', 'southbound'] as const) {
       const crossing = routes.filter(r => r.crossing && r.direction === dir);
