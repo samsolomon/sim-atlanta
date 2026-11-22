@@ -68,6 +68,12 @@ export class CityTrains {
     this.project = makeProjector(manifest.origin);
   }
 
+  /** Replace the drawn track and the area trains may appear in, e.g. when an adjacent board joins. */
+  setTracks(alignments: Alignment[], bounds: VData['bounds']) {
+    this.tracks = new CityTracks(alignments);
+    this.bounds = bounds;
+  }
+
   private car(trainId: string, color: string, role: number, placement?: NonNullable<ReturnType<ServiceTrack['car']>>) {
     const key = color + role + (placement?.clipped ? placement.name + placement.clipped : '');
     let pool = this.pools.get(key);

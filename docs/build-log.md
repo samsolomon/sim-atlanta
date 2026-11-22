@@ -1736,3 +1736,14 @@ The ground north of King Memorial extends for 800 m through Edgewood and Auburn 
 ### 2026-11-22 — The two faces of Centennial Tower
 
 From the Gulch, 101 Marietta looks like a flat-roofed glass tower with a silver V folded into its face. The other long wall has a second V, and the two spans differ by nearly 13 m. The 2018 lidar puts the roof deck at 457.8 m NAVD88, about 135 m above the sidewalk. That brought the 164 m generic tower down into the surrounding skyline. A night photograph from Centennial Olympic Park supplied the warm red fins and pale roof edge. The daylight opening gained six draw calls and 16,232 triangles. [Opening and Gulch comparison](log/ui/centennial-tower/comparison.jpg) · [Park and rail views, night photographs and survey notes](log/ui/centennial-tower/README.md)
+
+### 2026-11-22: The first train to leave the board
+
+At 2:01:01 p.m. on the Friday timetable, the 1:50 Blue Line train to Indian Creek crosses x = 1000,
+the edge City had stopped at since the first downtown diorama. It keeps going on the measured
+viaduct, past the Hulsey yard tracks, and stops under King Memorial's canopy at 2:02.
+
+Only the roof under the canopy is measured; the deck and platform heights there are estimated, and
+the study says so. The follow camera stays with the train across the seam.
+
+![The Blue Line crossing into the King Memorial area](log/ui/king-memorial/city-seam-140101.jpg)

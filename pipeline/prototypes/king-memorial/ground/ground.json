@@ -48,5 +48,5 @@
   "noDataCount": 0,
   "sampling": "nearest native pixel at node; bilinear between valid nodes",
   "box": "king-memorial",
-  "read": "ranged HTTP read of the pinned tile; tile SHA-256 not checked, shared nodes verified against the downtown bake (73)"
+  "read": "local pinned tile"
 }

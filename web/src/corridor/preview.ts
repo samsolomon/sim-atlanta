@@ -101,6 +101,17 @@ async function main() {
       scene.add(tube);
     }
   }
+  // Under the canopy the deck was not seen: an estimate between the measured ends, dashed.
+  const roofed = corridor.guideway.filter(b => b.status === 'under roof');
+  const lastBefore = [...corridor.guideway].reverse().find(b => b.top !== null && b.s < roofed[0]?.s);
+  const firstAfter = corridor.guideway.find(b => b.top !== null && b.s > (roofed.at(-1)?.s ?? Infinity));
+  if (roofed.length && lastBefore && firstAfter) {
+    const t = (b: Bin) => (b.s - lastBefore.s) / (firstAfter.s - lastBefore.s);
+    const est = [lastBefore, ...roofed, firstAfter].map(b => new THREE.Vector3(b.x, y(lastBefore.top! + t(b) * (firstAfter.top! - lastBefore.top!)), b.z));
+    const dashed = new THREE.Line(new THREE.BufferGeometry().setFromPoints(est), new THREE.LineDashedMaterial({ color: '#1474c4', dashSize: 4, gapSize: 3 }));
+    dashed.computeLineDistances();
+    scene.add(dashed);
+  }
   // Unmeasured bins: a red mark on the ground, so a gap reads as unknown rather than absent.
   const unknownMat = new THREE.MeshBasicMaterial({ color: '#c0392b' });
   for (const b of corridor.guideway) {

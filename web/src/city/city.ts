@@ -175,6 +175,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: ReturnType<typeof createDowntownTerrain> | undefined;
+  let eastRail: { dispose(): void } | undefined;
+  // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
+  let trainBounds = b;
+  let trainRail = manifest.rail;
   let north: typeof east;
   let eastPlinth: THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshLambertMaterial> | undefined;
   let downtownPlinth: THREE.Mesh | undefined;
@@ -194,6 +198,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
   const disposeBoard = () => {
     eastController.abort();
+    eastRail?.dispose();
     north?.dispose();
     east?.dispose();
     terrain?.dispose();
@@ -364,7 +369,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   });
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
-  const trains = new CityTrains(marta, manifest, b, colors, edges, cut);
+  // Trains clip to their own copy of the board edges, so the east area can open them alone.
+  const trainEdges = edges.map(p => p.clone());
+  const trains = new CityTrains(marta, manifest, b, colors, trainEdges, cut);
   const scenery = scene.children.slice();
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
@@ -514,6 +521,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       area.openJoin();
       downtown.openJoin();
       east = area;
+      void attachEastRail(area).catch(err => console.warn('MARTA east of the board unavailable', err));
       const next = pendingNorthTarget ?? controls.target;
       approachNorth(next.x, next.z);
       options.areaNote?.(null);
@@ -532,6 +540,35 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         console.warn('King Memorial board unavailable', err);
       }
     }).finally(() => { eastLoading = false; pendingEastTarget = undefined; });
+  }
+  // MARTA through the east area (track, station, trains). Rail owns this; the area mount calls it.
+  async function attachEastRail(area: { groundAt(x: number, z: number): number | null }) {
+    if (!grid || eastRail) return;
+    const ground = grid;
+    const mod = await import('./east-rail');
+    const r = await fetch(`${DATA}/scene/king-memorial/corridor.json`, { signal: eastController.signal });
+    if (!r.ok) throw new Error(`corridor.json (${r.status})`);
+    const pack = await r.json();
+    if (eastController.signal.aborted) return;
+    const extended = mod.extendRail(manifest, rf);
+    const union = { ...b, maxX: eastBounds.maxX };
+    const rebuilt = martaAlignments(rf, extended, union, stationSite, mod.joinedGround(ground, area.groundAt));
+    if (rebuilt.station && floyd) rebuilt.station.alignment.visibleInStation = rebuilt.station.visibleInStation;
+    const tracks = cut ? rebuilt.tracks.map(maskCut) : rebuilt.tracks;
+    for (const t of tracks) {
+      const inStation = t.visibleInStation;
+      // Cars stay visible under the open-sided King Memorial canopy, like Georgia State's.
+      t.visibleInStation = s => !!inStation?.(s) || (t.coverAt?.(s) === 'roofed' && t.formAt?.(s) === 'station' && t.line.at(s).x > b.maxX);
+    }
+    const rail = mod.buildEastRail(extended, rf, pack, area.groundAt, ground.manifest.vertical.sceneZeroNavd88M, b.maxX);
+    scene.add(rail.mesh);
+    scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
+    trains.setTracks(tracks, union);
+    trainBounds = union;
+    trainRail = extended.rail;
+    trainEdges[1].constant = eastBounds.maxX;
+    eastRail = rail;
+    renderer.shadowMap.needsUpdate = true;
   }
   const targetY = (x: number, z: number) => north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
@@ -761,7 +798,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     trains.update(states, atm.dark);
-    const focus = options.follow?.frame(states, trains.group.children, project, b, manifest.rail, ts, !!motionPreference?.matches);
+    const focus = options.follow?.frame(states, trains.group.children, project, trainBounds, trainRail, ts, !!motionPreference?.matches);
     if (focus) {
       glideTo = null;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
