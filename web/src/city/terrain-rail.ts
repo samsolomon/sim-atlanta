@@ -64,7 +64,7 @@ export function terrainAlignment(legacy: Legacy, pathId: string, manifest: Scene
     if (span && valid[i]) {
       const p = line.at(s);
       const here = under[i];
-      bed[i] = railBedY(span, legacy.pathMetresAt(s), here, (x, z) => ground(x, z) ?? here);
+      bed[i] = railBedY(span, legacy.pathMetresAt(s), here, (x, z) => ground(x, z) ?? here, zero);
       if (span.form === 'viaduct') rim[i] = here;
       else {
         // The street level around the track: the higher bank, or the ground itself.

@@ -1699,3 +1699,16 @@ Five narrow footprints on Peachtree contain six street elevations. The giveaway 
 ### 2026-11-22 — The narrow tower on Forsyth
 
 The Healey parcel already had the right sixteen stories. City had given them to the low roofs behind the tower, too. The Forsyth edge measures 62.56 m long, but the tall slab runs only about 19 m back from the street. Its roof sits around 385.2 m above sea level. The rotunda roof behind it sits around 332.9 m. With that space open again, the Woodruff Park view picks out the narrow masonry tower, ten paired bays and the lift house with two stacks rising between the lower buildings. From below, the stonework continues above the straight window heads in a row of shallow carved arches. Small brackets cast separate shadows beneath the larger coping. [Photographs and matched cornice views](log/ui/healey/cornice-comparison.jpg) · [Photograph and matched models](log/ui/healey/comparison.jpg) · [Street views, point-cloud measurements and night comparison](log/ui/healey/README.md)
+
+### 2026-11-22: Replacing the 7 m placeholder with the measured viaduct
+
+City had hung the viaduct east of Georgia State from a guess: 7 m above the ground at the station
+face and at the Connector's east bank, then flat beyond. The lidar profile showed the guess was
+nearly right at the station, 0.8 m low over the Connector, and 3.9 m low by the board edge, where
+the real structure keeps climbing over the CSX yard.
+
+Eight measured anchors now replace the guess, and they fit the 5 m lidar profile within 0.25 m.
+They carry absolute NAVD88 heights rather than "metres above the ground here", because the ground
+under a viaduct can drop 10 m in a few metres across the Connector.
+
+![Before / after: the Connector (top) and the board edge (bottom)](log/ui/king-memorial/measured-anchors-before-after.jpg)

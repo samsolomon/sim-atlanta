@@ -127,8 +127,15 @@ under the line; it is **not** a clearance.
      and 0.8 m low at s 8257.
    - Past the last anchor (s 8364), City holds flat at 321.5 m while the real guideway climbs. City
      is 3.9 m low at the board edge (s 8542) and 2.9 m low at s 8892.
-   - Replacing the placeholder with measured anchors is a separate change to `pipeline/src/scene.rs`.
-     It is not part of this prototype.
+   - **Corrected** in a follow-up PR (`samsolomon/gsu-measured-anchors`). East of the Floyd face,
+     `GSU_CHAIN` now carries eight lidar anchors with absolute NAVD88 beds (`navd88`; the bed is
+     0.55 m below the guideway top). They fit every measured bin within 0.25 m (RMS 0.10 m).
+   - City uses the absolute bed whenever it has the ground grid's scene zero, so the ground under
+     the viaduct no longer moves it.
+   - The 42 m from the Floyd face stays schematic.
+   - There is no anchor under the King Memorial canopy, so City's bed there is an estimate.
+
+![Before / after at the Connector (top) and the board edge (bottom)](log/ui/king-memorial/measured-anchors-before-after.jpg)
 2. **Deck under the station canopy (190 m): unknown.** The values either side are 324.13 (s 8942)
    and 323.38 (s 9137). They are not joined.
 3. **40 m beside the Floyd SE face, including the Jesse Hill Jr Dr crossing: unresolved.**

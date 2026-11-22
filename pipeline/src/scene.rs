@@ -408,8 +408,32 @@ pub struct RailFix {
     /// ground | anchors (see RailSpan in web/src/core/scene-data.ts)
     pub base: &'static str,
     pub rel: f64,
-    /// Identified locations: lon, lat, bed height above ground there (schematic), description.
-    pub anchors: &'static [(f64, f64, f64, &'static str)],
+    /// Identified locations along the stretch, shared by every path through it.
+    pub anchors: &'static [Anchor],
+    /// schematic | measured: whether the stretch's heights come from a measurement.
+    pub height: &'static str,
+}
+
+/// A located track-bed height. `rel` is the bed above the ground there. `navd88`, when present,
+/// is a measured absolute bed (NAVD88 m), and consumers with a ground grid prefer it. Its `rel`
+/// is then only a fallback, computed against the same 1 m DEM nodes.
+pub struct Anchor {
+    pub lon: f64,
+    pub lat: f64,
+    pub rel: f64,
+    pub navd88: Option<f64>,
+    pub at: &'static str,
+}
+
+const fn schematic(lon: f64, lat: f64, rel: f64, at: &'static str) -> Anchor {
+    Anchor { lon, lat, rel, navd88: None, at }
+}
+
+/// A lidar-measured guideway top (USGS 3DEP EPT GA_Statewide_B2_2018, April 2019, NAVD88). The
+/// bed is 0.55 m below it, which puts City's rails on the measured surface. See
+/// docs/king-memorial-corridor.md.
+const fn measured(lon: f64, lat: f64, top: f64, rel: f64, at: &'static str) -> Anchor {
+    Anchor { lon, lat, rel, navd88: Some(top - 0.55), at }
 }
 
 pub struct RailEv {
@@ -421,23 +445,34 @@ pub struct RailEv {
     pub note: &'static str,
 }
 
-/// Shared by the Georgia State station roof, the Floyd Building and the Connector viaduct, so
-/// the schematic bed is continuous through their seams: on the station floor at the canopies'
-/// west end, 7 m above local ground at the station's east face, and 7 m above the Connector's
-/// east bank. The 7 m is a placeholder clearance, not a measurement.
-const GSU_CHAIN: &[(f64, f64, f64, &str)] = &[
-    (-84.386895, 33.750839, 0.0, "west end of the Georgia State platform canopies"),
-    (-84.385359, 33.749748, 7.0, "east face of Georgia State station (Floyd Building)"),
-    (-84.38270, 33.74882, 7.0, "Downtown Connector east bank (USGS 3DEP 314.1 m NAVD88 point)"),
+/// Shared by the Georgia State station roof, the Floyd Building and the Connector viaduct, so the
+/// bed is continuous through their seams.
+/// - Schematic: the canopies' west end, on the station floor, and the station's east face, 7 m
+///   above local ground (a placeholder, within 0.13 m of the measured top 42 m further east).
+/// - Measured: east of the Floyd Building, from the lidar guideway top. Eight anchors simplify the
+///   5 m profile to within 0.25 m (RMS 0.10 m).
+/// - No anchor under the King Memorial canopy (s 8945–9135 on 155177), where the deck was not
+///   seen. Interpolation there is an estimate.
+const GSU_CHAIN: &[Anchor] = &[
+    schematic(-84.386895, 33.750839, 0.0, "west end of the Georgia State platform canopies"),
+    schematic(-84.385359, 33.749748, 7.0, "east face of Georgia State station (Floyd Building)"),
+    measured(-84.384994, 33.749513, 316.38, 6.61, "guideway top east of the Floyd Building (lidar)"),
+    measured(-84.384696, 33.749318, 316.90, 6.35, "guideway top west of the Downtown Connector (lidar)"),
+    measured(-84.382236, 33.748844, 324.41, 9.73, "guideway top over the CSX tracks (lidar)"),
+    measured(-84.381637, 33.748878, 325.31, 10.82, "guideway top over the Atlanta Terminal Subdivision (lidar)"),
+    measured(-84.380237, 33.748948, 325.47, 11.28, "guideway crest east of the board edge (lidar)"),
+    measured(-84.376685, 33.749636, 324.11, 15.96, "guideway top at Grant St, King Memorial west end (lidar)"),
+    measured(-84.374605, 33.750282, 323.32, 11.72, "guideway top east of the King Memorial canopy (lidar)"),
+    measured(-84.372225, 33.751030, 322.48, 7.65, "guideway top beyond the King Memorial Crossover (lidar)"),
 ];
 
 pub const RAIL_FIXES: &[RailFix] = &[
-    RailFix { ev: "gulch-trench", cover: "open", form: "cut", from: (-84.39365, 33.75510), to: (-84.39250, 33.75443), to_open: false, base: "ground", rel: 0.0, anchors: &[] },
-    RailFix { ev: "five-points-east-cut", cover: "open", form: "cut", from: (-84.38980, 33.75274), to: (-84.38897, 33.75212), to_open: false, base: "ground", rel: 0.0, anchors: &[] },
-    RailFix { ev: "gsu-west-open", cover: "open", form: "grade", from: (-84.38746, 33.75124), to: (-84.386895, 33.750839), to_open: false, base: "ground", rel: 0.0, anchors: &[] },
-    RailFix { ev: "gsu-canopy", cover: "roofed", form: "station", from: (-84.386895, 33.750839), to: (-84.386311, 33.750424), to_open: false, base: "anchors", rel: 0.0, anchors: GSU_CHAIN },
-    RailFix { ev: "gsu-floyd", cover: "covered", form: "station", from: (-84.386311, 33.750424), to: (-84.385359, 33.749748), to_open: false, base: "anchors", rel: 0.0, anchors: GSU_CHAIN },
-    RailFix { ev: "connector-viaduct", cover: "open", form: "viaduct", from: (-84.385359, 33.749748), to: (-84.37545, 33.74998), to_open: true, base: "anchors", rel: 7.0, anchors: GSU_CHAIN },
+    RailFix { ev: "gulch-trench", cover: "open", form: "cut", from: (-84.39365, 33.75510), to: (-84.39250, 33.75443), to_open: false, base: "ground", rel: 0.0, anchors: &[], height: "schematic" },
+    RailFix { ev: "five-points-east-cut", cover: "open", form: "cut", from: (-84.38980, 33.75274), to: (-84.38897, 33.75212), to_open: false, base: "ground", rel: 0.0, anchors: &[], height: "schematic" },
+    RailFix { ev: "gsu-west-open", cover: "open", form: "grade", from: (-84.38746, 33.75124), to: (-84.386895, 33.750839), to_open: false, base: "ground", rel: 0.0, anchors: &[], height: "schematic" },
+    RailFix { ev: "gsu-canopy", cover: "roofed", form: "station", from: (-84.386895, 33.750839), to: (-84.386311, 33.750424), to_open: false, base: "anchors", rel: 0.0, anchors: GSU_CHAIN, height: "schematic" },
+    RailFix { ev: "gsu-floyd", cover: "covered", form: "station", from: (-84.386311, 33.750424), to: (-84.385359, 33.749748), to_open: false, base: "anchors", rel: 0.0, anchors: GSU_CHAIN, height: "schematic" },
+    RailFix { ev: "connector-viaduct", cover: "open", form: "viaduct", from: (-84.385359, 33.749748), to: (-84.37545, 33.74998), to_open: true, base: "anchors", rel: 7.0, anchors: GSU_CHAIN, height: "measured" },
 ];
 
 pub const RAIL_EVIDENCE: &[RailEv] = &[
@@ -446,7 +481,7 @@ pub const RAIL_EVIDENCE: &[RailEv] = &[
     RailEv { id: "gsu-west-open", name: "Georgia State west approach, open at grade", checked: "2026-11-21", sources: &["osm:way/702258813", "osm:way/78090747", "osm:way/78090742", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 10.0, note: "From the tunnel mouth at the Washington St bridge to the platform canopies, beside the CSX/NS tracks." },
     RailEv { id: "gsu-canopy", name: "Georgia State side-platform canopies", checked: "2026-11-22", sources: &["osm:way/539937961", "osm:way/539937962", "osm:way/287320828", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 5.0, note: "Two canopy roofs over the side platforms, from the platforms' west tips (the farther tip, 961 and 962 differ by 0.5 m along track) to the Floyd Building's NW face. Canopy roofs start at the tips in NAIP 2023 and Esri. See docs/georgia-state-geometry.md." },
     RailEv { id: "gsu-floyd", name: "Georgia State station under the Floyd Building", checked: "2026-11-22", sources: &["osm:way/702258821", "osm:way/702258822", "osm:way/287320828", "osm:way/537007595", "osm:way/537007597", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 4.0, note: "OSM tunnel=building_passage between the Floyd Building's NW and SE faces (115.7 m along track); the east 116 m of the platforms and both tracks run under the base and both towers. Face positions: OSM outline, whose tower SW corners match the facade bases in NAIP 2023. Roof edges in imagery lean about 10 m and must not be used." },
-    RailEv { id: "connector-viaduct", name: "East Line structure from Georgia State over the Downtown Connector", checked: "2026-11-21", sources: &["osm:way/905944412", "osm:way/905944413", "osm:way/905944414", "osm:way/905944415", "osm:way/78090750", "osm:way/78380741", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "Open elevated structure continuous in imagery from the station's east face into the layer-3 viaduct; a narrow skywalk (osm:way/539939605) is ignored for cover. No public deck or clearance record (FHWA NBI GA 2024/2025, GDOT GIS checked); deck height is schematic." },
+    RailEv { id: "connector-viaduct", name: "East Line structure from Georgia State over the Downtown Connector", checked: "2026-11-22", sources: &["osm:way/905944412", "osm:way/905944413", "osm:way/905944414", "osm:way/905944415", "osm:way/78090750", "osm:way/78380741", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02", "usgs-3dep-ept:GA_Statewide_B2_2018"], precision_m: 15.0, note: "Open elevated structure continuous in imagery from the station's east face into the layer-3 viaduct; a narrow skywalk (osm:way/539939605) is ignored for cover. Heights: lidar guideway top (bed 0.55 m below it), measured east of s 8132 on 155177; the 42 m from the Floyd face is a schematic +7 m; under the King Memorial canopy the deck was not seen and the bed is an estimate. Deck depth and clearances are unknown. See docs/king-memorial-corridor.md." },
 ];
 
 /// Nearest point on a projected path within `max_d` metres, heading within 35° of `heading`
@@ -506,13 +541,17 @@ pub fn rail_spans(pts: &[(f64, f64)], cum: &[f64], lo: f64, hi: f64) -> Vec<Valu
         let mut anchors: Vec<(f64, Value)> = f
             .anchors
             .iter()
-            .filter_map(|&(lon, lat, rel, at)| {
-                let (s, e, n) = locate(pts, cum, project(lon, lat), None, 25.0)?;
-                Some((s, json!({"s": r1(s), "x": r1(e), "z": r1(-n), "at": at, "rel": rel})))
+            .filter_map(|a| {
+                let (s, e, n) = locate(pts, cum, project(a.lon, a.lat), None, 25.0)?;
+                let mut v = json!({"s": r1(s), "x": r1(e), "z": r1(-n), "at": a.at, "rel": a.rel});
+                if let Some(h) = a.navd88 {
+                    v["navd88"] = json!((h * 100.0).round() / 100.0);
+                }
+                Some((s, v))
             })
             .collect();
         anchors.sort_by(|x, y| x.0.total_cmp(&y.0));
-        let mut span = json!({"s0": r1(s0), "s1": r1(s1), "cover": f.cover, "form": f.form, "base": f.base, "rel": f.rel, "height": "schematic", "ev": f.ev});
+        let mut span = json!({"s0": r1(s0), "s1": r1(s1), "cover": f.cover, "form": f.form, "base": f.base, "rel": f.rel, "height": f.height, "ev": f.ev});
         if f.base == "anchors" {
             span["anchors"] = Value::Array(anchors.into_iter().map(|a| a.1).collect());
         }
@@ -815,6 +854,10 @@ mod tests {
         }
         ll.push((-84.38270, 33.74882));
         ll.push((-84.3780, 33.7492));
+        // On to King Memorial and the crossover, through the measured anchors.
+        ll.push((-84.376685, 33.749636));
+        ll.push((-84.374605, 33.750282));
+        ll.push((-84.371, 33.75142));
         ll.dedup();
         if reverse {
             ll.reverse();
@@ -851,7 +894,15 @@ mod tests {
         let (pts, cum) = corridor(false);
         let spans = rail_spans(&pts, &cum, 0.0, *cum.last().unwrap());
         let chain = |ev: &str| spans.iter().find(|s| s["ev"] == ev).unwrap()["anchors"].clone();
-        assert_eq!(chain("gsu-canopy").as_array().unwrap().len(), 3);
+        let anchors = chain("gsu-canopy");
+        let anchors = anchors.as_array().unwrap();
+        assert_eq!(anchors.len(), GSU_CHAIN.len());
+        // Two schematic anchors at Georgia State, then measured absolute beds east of the Floyd face.
+        assert!(anchors[..2].iter().all(|a| a.get("navd88").is_none()));
+        assert!(anchors[2..].iter().all(|a| a["navd88"].as_f64().unwrap() > 300.0));
+        assert!(anchors.windows(2).all(|w| w[0]["s"].as_f64() < w[1]["s"].as_f64()));
+        assert_eq!(spans.iter().find(|s| s["ev"] == "connector-viaduct").unwrap()["height"], "measured");
+        assert_eq!(spans.iter().find(|s| s["ev"] == "gsu-floyd").unwrap()["height"], "schematic");
         assert_eq!(chain("gsu-canopy"), chain("gsu-floyd"));
         assert_eq!(chain("gsu-floyd"), chain("connector-viaduct"));
     }
