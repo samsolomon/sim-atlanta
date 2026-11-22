@@ -33,7 +33,7 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #city-loading[hidden] { display: none; }
 #city-loading p { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
 #city-progress { color: var(--ink-2); font-size: 14px; }
-.attrib3d { position: absolute; right: 10px; bottom: 8px; margin: 0; font-size: 11px; color: var(--ink-2); background: rgba(251, 249, 244, 0.75); padding: 3px 8px; border-radius: 6px; }
+.attrib3d { position: absolute; right: 10px; bottom: 8px; margin: 0; font-size: 11px; color: var(--ink); background: var(--glass-solid); padding: 3px 8px; border-radius: 6px; }
 
 /* ---- vehicle / place card ---- */
 #card {
@@ -62,7 +62,8 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 @media (max-width: 600px) {
   #card { bottom: 14px; }
-  .attrib3d { bottom: 84px; left: 10px; right: 10px; text-align: center; }
+  .attrib3d { bottom: max(84px, calc(env(safe-area-inset-bottom) + 74px)); left: 10px; right: 10px; text-align: center; }
+  .in3d:has(.hint) .attrib3d { bottom: max(125px, calc(env(safe-area-inset-bottom) + 115px)); }
 }
 
 /* ---- ?tune palette panel (design tool) ---- */

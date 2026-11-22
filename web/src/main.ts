@@ -317,6 +317,7 @@ async function openCity() {
   sky.stopAnimation();
   cityLoading.hidden = false;
   document.getElementById('city-freight-attrib')!.hidden = true;
+  document.getElementById('city-traffic-attrib')!.hidden = true;
   cityProgress.textContent = 'Loading buildings, streets and trees…';
   document.body.classList.add('in3d');
   shell.setNote(null);
@@ -338,6 +339,7 @@ async function openCity() {
     diorama = d;
     if (import.meta.env.DEV) Object.assign(window, { __city: d });
     document.getElementById('city-freight-attrib')!.hidden = !d.hasFreight;
+    document.getElementById('city-traffic-attrib')!.hidden = !d.hasTraffic;
     document.getElementById('city-ground-source')!.textContent = d.measuredGround ? 'USGS terrain' : 'Flat board';
   } catch (err) {
     if (load !== cityLoad) return;
@@ -430,6 +432,7 @@ const shell = createShell({
     rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',
     trains: live.count,
     cityFreight: diorama?.hasFreight ?? false,
+    cityTraffic: diorama?.hasTraffic ?? false,
     buses: buses.unavailable ? null : buses.current().length,
   }),
 });
