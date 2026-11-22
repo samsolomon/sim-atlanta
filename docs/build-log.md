@@ -1565,3 +1565,7 @@ its bottom below the ground. A test now fails if any track face lies within 2 cm
 plane.
 
 ![Before: stripes where the ballast meets the ground. After: a solid bed](log/ui/model-lab/2026-11-22-railbed-zfight-before-after.jpg)
+
+### 2026-11-22 — Walking to Georgia State
+
+At 2:12:45 on the Friday timetable, two jacketed walkers pass one another on a sidewalk near Georgia State. Across town a helmeted rider pedals past a walker on the Westside Beltline Connector. The bake has nine pieces bearing that trail name, including a 242 m bridge. Three complete ground sections support seven illustrative walkers and seven cyclists. From the 390 px City opening, 103 visible walkers fit in a single draw. Zooming in reveals swinging arms, backpacks, handlebars and wheels. [Georgia State, the trail and the opening camera](log/ui/street-life/README.md)
