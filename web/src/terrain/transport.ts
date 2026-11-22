@@ -60,7 +60,8 @@ function freightTexture() {
 }
 
 /** Attach beside the terrain group. All heights use the board's shared scene zero. */
-export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, groundAt: GroundAt): SurfaceTransport {
+export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terrainGround: GroundAt,
+  cut?: { freight: TransportRun; treadY: number }): SurfaceTransport {
   const data = city.terrainTransport;
   if (data?.version !== 1) throw new Error('Missing scoped terrain transport. Run pnpm data:city.');
   const group = new THREE.Group();
@@ -114,6 +115,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
 
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram') {
     if (run.pts.length < 2) return;
+    // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
+    const groundAt: GroundAt = cut && run === cut.freight ? () => cut.treadY - .13 : terrainGround;
     const line = new Line(run.pts);
     if (!line.length) return;
     const bridge = run.kind === 'bridge';

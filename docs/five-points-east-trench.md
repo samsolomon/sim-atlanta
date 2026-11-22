@@ -37,13 +37,13 @@ At station 55 the smoothed GTFS axis is **3.91 m** from the CSX centre across th
 
 The prototype uses each mapped way's own exposure interval, replacing the local two-track drawing and opening with four strips on an explicitly schematic support plane at **311.1 m NAVD88**. That number is the rounded median of the five EL ground samples. The prototype sets rail treads 0.13 m above the plane. Its modelled rail-to-rail elevation difference is zero. The plane, tread lift and margins are display choices. The production freight renderer and its illustrative clock are reused.
 
-At **14:15:31 Eastern on 20 November 2026**, the original terrain supplies just **4.01 m** of drawn freight tread (westbound freight route metres 957.71–961.72). The standalone study supplies **106.23 m** (855.49–961.72), making **102.22 m** drawable again. The 4 m original remnant cannot place both locomotive trucks. Both images use the same high-detail board, paused time, centre, zoom, bearing and 26° camera tilt. They show the freight movement in context. The comparison does not remap scheduled passenger vehicles. [Current City](log/rail/2026-11-21-east-trench-current.jpg) · [Mapped-track prototype](log/rail/2026-11-21-east-trench-mapped.jpg)
+At **14:15:31 Eastern on 20 November 2026**, the original terrain supplies just **4.01 m** of drawn freight tread (westbound freight route metres 957.71–961.72). The standalone study supplies **106.23 m** (855.49–961.72), making **102.22 m** drawable again. The 4 m original remnant cannot place both locomotive trucks. Both images use the same high-detail board, paused time, centre, zoom, bearing and 26° camera tilt. They show the freight movement in context. The original study compared freight support. The integrated passenger checks are described below. [Current City](log/rail/2026-11-21-east-trench-current.jpg) · [Mapped-track prototype](log/rail/2026-11-21-east-trench-mapped.jpg)
 
 **Production recommendation.** Have the rail and renderer owners ship a shared track-by-track alignment and cover lookup for the static track, terrain openings, freight trucks and passenger poses together. Preserve GTFS path metres for timetable progress. Map them monotonically to the appropriate directional East Line track and test a whole consist straddling both cover boundaries for each service track. Keep the Interline distinct. If a source way, cover interval or mapping is absent, use the current rendering and freight suppression for this block. Keep any shared grade labelled illustrative until a track profile with a known datum is available.
 
 ## Reproduction
 
-From the repository root with the pinned native DEM and downtown assets staged, run the following. The analysis uses NumPy, rasterio, pyproj and matplotlib. The Vite launcher applies the study to the development response in memory. Production entry points and data are untouched.
+From the repository root with the pinned native DEM and downtown assets staged, run the following. The analysis uses NumPy, rasterio, pyproj and matplotlib. The Vite launcher provides the comparison camera and test consists on localhost.
 
 ```sh
 .venv/bin/python pipeline/prototypes/five-points-east-cut/study.py
@@ -51,3 +51,26 @@ node pipeline/prototypes/five-points-east-cut/serve.mjs
 ```
 
 In Orca open `http://127.0.0.1:5370/?q=high&t=2026-11-20T14:15:31-05:00&speed=0&cut=current#19.1/33.75251/-84.38940/-148` and select City. Repeat with `cut=mapped`. The development-only `window.eastCutStudy` reports the local freight tread intervals and sampled GTFS axis for each view. Obtain the 1 m source from the [terrain reproduction guide](downtown-ground.md#reproduce-the-bake).
+
+## Vehicle placement
+
+The route relations on ER identify Blue and Green eastbound service. On EL they identify the westbound returns. The ways also carry a preferred forward direction. The Interline X has its own shorter open interval and no mapped revenue-route relation at this block. The ten scheduled shapes share nearly the same centreline, including the two Blue short turns. The route membership and direction together supply the track assignment for normal service. These records cannot establish the track used during an operational diversion. The freight movement remains illustrative. [ER route memberships](https://api.openstreetmap.org/api/0.6/way/702258817/relations.json) · [EL route memberships](https://api.openstreetmap.org/api/0.6/way/702258818/relations.json) · [Interline memberships](https://api.openstreetmap.org/api/0.6/way/1453238814/relations.json)
+
+| Mapped track | Blue and Green OSM relation IDs | Staged GTFS shapes | Example entry → exit, GTFS metres |
+| --- | --- | --- | --- |
+| ER, eastbound | Blue 239510; Green 304604, 12300720, 12300722 | 155177, 155181, 155214, 155215, 155216 | 155177 · 7560.64 → 7662.91 |
+| EL, westbound | Blue 4439527; Green 4439530, 12300721, 12300723 | 155185, 155188, 155221, 155222, 155223 | 155185 · 16497.60 → 16603.64 |
+
+Each directional GTFS polyline crosses the two end stations of its assigned open way. The loader verifies ordered intersections, lateral proximity and agreement with the cut observation within 15 m. It interpolates increasing GTFS metres between those endpoints to distance along the curved track. Car spacing stays in physical metres. A car straddling a mouth continues on its tangent, clipped against the track's own transverse plane. In the four five-car fixtures the centre car straddles the mouth, two cars are fully exposed and two are covered. [Eastbound at Pryor](log/rail/2026-11-21-mapped-ER-west.jpg) · [Eastbound at Central](log/rail/2026-11-21-mapped-ER-east.jpg) · [Westbound at Pryor](log/rail/2026-11-21-mapped-EL-west.jpg) · [Westbound at Central](log/rail/2026-11-21-mapped-EL-east.jpg)
+
+The regular timetable frame at **14:11:25 Eastern** shows an eastbound train on the southern ER. At **14:15:31**, the freight loop uses the northeast CSX tread. Both images use City stock at the same camera as the study. The five-car portal fixtures above are labelled synthetic. The illustrative bed remains **311.1 m NAVD88**, with passenger and freight stock on the same modelled tread lift of **0.13 m**. A common plane supplies visual continuity. Relative rail grade and the depth of cover remain unknown. [Timetable frame](log/rail/2026-11-21-mapped-timetable.jpg) · [Freight frame](log/rail/2026-11-21-mapped-freight.jpg)
+
+**Fallback fixture.** With the cut observation removed for shape 155177 from the attachment input alone, the selector returned zero bound paths. The ordinary terrain, tracks and scheduled poses took over. The unmodified terrain at the same freight timestamp supported **4.01 m** of tread (961.72 to 957.71 m), too short to animate a locomotive here. Restoring the observation returned all ten paths and **106.23 m** of freight tread (961.72 to 855.49 m). The selector also declines incomplete way references, unknown intersecting services, non-monotonic local mapping, missing ground samples and an absent or ambiguous CSX run. [Same-camera fallback](log/rail/2026-11-21-mapped-missing-ER.jpg) · [Binding and fallback tests](../web/src/city/east-cut.test.ts)
+
+### Integration and verification
+
+City uses the same source checks for the terrain opening, static rails, passenger stock and matching CSX freight run. With the downtown data staged, `pnpm test` exercises both service directions at both mouths and the older-bake fallback. [Passenger and freight integration tests](../web/src/city/east-cut-attached.test.ts)
+
+Start the local launcher from the reproduction instructions above. Open `http://127.0.0.1:5370/?q=high&t=2026-11-20T14:11:25-05:00&speed=0#19.1/33.75251/-84.38940/-148` in Orca and select **City**. For the labelled five-car fixtures, add `&railQA=ER-west`, `ER-east`, `EL-west` or `EL-east` before the hash. Use `t=2026-11-20T14:15:31-05:00` for freight. With `railQA=missing-ER` the launcher omits one required observation to exercise the fallback.
+
+The four mapped polylines are bundled into City. Existing complete downtown bakes contain the transport and GTFS evidence the selector needs. To update the street names in the evidence manifest, run `cargo run --release --manifest-path pipeline/Cargo.toml -- scene` with the raw downtown extracts staged, then rebuild the web bundle and deploy the Worker with the regenerated downtown scene.json.

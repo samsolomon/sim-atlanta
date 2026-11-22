@@ -336,7 +336,7 @@ pub const VERIFIED_OPEN: &[OpenCut] = &[OpenCut {
         &[(-84.3936248, 33.7551215), (-84.3923693, 33.7543988)],
     ],
 }, OpenCut {
-    // MARTA Blue/Green open cut east of Five Points, between Peachtree St and Pryor St beside
+    // MARTA Blue/Green open cut east of Five Points, between Pryor St SW and Shirley Clarke Franklin Blvd SW beside
     // a surface car park. OSM ways 702258817 and 702258818 (no tunnel tag since 2019; the
     // adjacent Interline Connector way 1453238814 is tagged cutting=yes); rails visible in
     // USGS NAIP 2023-10-08 and Vantor WV02 2026-02-02.
@@ -442,7 +442,7 @@ pub const RAIL_FIXES: &[RailFix] = &[
 
 pub const RAIL_EVIDENCE: &[RailEv] = &[
     RailEv { id: "gulch-trench", name: "Gulch trench, west of Five Points", checked: "2026-11-21", sources: &["osm:way/702258823", "osm:way/702258824", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "Walled open trench with a footbridge. Centennial Yards plans to deck the Gulch: re-check." },
-    RailEv { id: "five-points-east-cut", name: "Open cut east of Five Points (Peachtree St to Pryor St)", checked: "2026-11-21", sources: &["osm:way/702258817", "osm:way/702258818", "osm:way/1453238814", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-wv02-2026-02-02", "fhwa-nbi-2025:121-5175", "fhwa-nbi-2025:121-0417"], precision_m: 15.0, note: "Rails visible; Pryor St and Central Ave bridges cross its ends." },
+    RailEv { id: "five-points-east-cut", name: "Open cut east of Five Points (Pryor St SW to Shirley Clarke Franklin Blvd SW)", checked: "2026-11-21", sources: &["osm:way/702258817", "osm:way/702258818", "osm:way/1453238814", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-wv02-2026-02-02", "fhwa-nbi-2025:121-5175", "fhwa-nbi-2025:121-0417"], precision_m: 15.0, note: "Rails visible; Pryor St SW and Shirley Clarke Franklin Blvd SW (Central Ave in bridge records) cross its ends." },
     RailEv { id: "gsu-west-open", name: "Georgia State west approach, open at grade", checked: "2026-11-21", sources: &["osm:way/702258813", "osm:way/78090747", "osm:way/78090742", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 10.0, note: "From the tunnel mouth at the Washington St bridge to the platform canopies, beside the CSX/NS tracks." },
     RailEv { id: "gsu-canopy", name: "Georgia State side-platform canopies", checked: "2026-11-21", sources: &["osm:way/539937961", "osm:way/539937962", "usgs-naip:m_3308413_se_16_060_20231008", "esri-world-imagery:vantor-2022-09-27-15cm", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "Two canopy roofs over the side platforms; the tracks between them may be partly visible from above, but the imagery cannot resolve it. Not a tunnel mouth." },
     RailEv { id: "gsu-floyd", name: "Georgia State station under the Floyd Building", checked: "2026-11-21", sources: &["osm:way/702258821", "osm:way/702258822", "esri-world-imagery:vantor-wv02-2026-02-02"], precision_m: 15.0, note: "OSM tunnel=building_passage; the east end of the platforms and both tracks run under the towers." },
