@@ -10,30 +10,36 @@ const TOP = 219.7;
 const CROWN = 210;
 const BAYS = 64, FLOORS = 64, PIXELS = 4;
 
-/** A fixed miniature of reflective panes. Mipmaps average out the floor bands at skyline scale. */
+/** Repeating silver glazing. The sun and camera determine the highlight on the curved shaft. */
 function facade() {
   const width = BAYS * PIXELS, height = FLOORS * PIXELS;
   const day = new Uint8Array(width * height * 4);
   const night = new Uint8Array(day.length);
   const random = rng(1976);
   for (let bay = 0; bay < BAYS; bay++) {
-    const angle = 2 * Math.PI * bay / BAYS;
-    const sky = 0.42 + 0.31 * Math.cos(angle * 2 - 0.9) + 0.2 * Math.cos(angle * 3 + 0.55);
-    const reflectedRoof = 6 + Math.floor(12 * (1 + Math.sin(Math.floor(bay / 3) * 2.1)));
     for (let floor = 0; floor < FLOORS; floor++) {
       const crown = floor >= FLOORS - 3;
-      const reflected = floor < reflectedRoof;
-      const glow = random() < (crown ? 0.73 : 0.22) ? 0.56 + 0.4 * random() : 0;
-      const shade = (crown ? 0.51 : 1) * (reflected ? 0.71 : 1) * (0.95 + random() * 0.08);
+      const room = random() < (crown ? 0.68 : 0.16) ? 0.42 + 0.34 * random() : 0;
       for (let row = 0; row < PIXELS; row++) {
         for (let col = 0; col < PIXELS; col++) {
           const i = 4 * ((floor * PIXELS + row) * width + bay * PIXELS + col);
-          const tone = shade * (row === 0 ? 0.79 : col === 0 ? 0.9 : 1);
-          day[i] = (59 + 118 * sky) * tone;
-          day[i + 1] = (81 + 107 * sky) * tone;
-          day[i + 2] = (103 + 103 * sky) * tone;
-          const lit = (row && col ? glow : 0);
-          night[i] = 245 * lit; night[i + 1] = 201 * lit; night[i + 2] = 143 * lit;
+          const pane = (crown ? 0.49 : 1) * (row === 0 ? 0.87 : col === 0 ? 0.90 : 1);
+          day[i] = 158 * pane;
+          day[i + 1] = 173 * pane;
+          day[i + 2] = 183 * pane;
+
+          if (floor === FLOORS - 1 && (row >= 2 || (row === 1 && col === 1))) {
+            // Warm points along the rim, with amber spill between adjacent fixtures.
+            const bulb = col === 1 || col === 2;
+            night[i] = bulb ? 255 : 196;
+            night[i + 1] = bulb ? 214 : 104;
+            night[i + 2] = bulb ? 150 : 37;
+          } else {
+            const lit = row && col ? room * 0.76 : 0;
+            night[i] = 245 * lit;
+            night[i + 1] = 187 * lit;
+            night[i + 2] = 123 * lit;
+          }
           day[i + 3] = night[i + 3] = 255;
         }
       }
@@ -51,7 +57,7 @@ function facade() {
   }
   const map = texture(day), emissiveMap = texture(night);
   const glass = new THREE.MeshPhongMaterial({ map, emissiveMap, emissive: 0xffffff, emissiveIntensity: 0,
-    specular: 0x687889, shininess: 38 });
+    specular: 0xbac3c9, shininess: 30 });
   glass.addEventListener('dispose', () => { map.dispose(); emissiveMap.dispose(); });
   return glass;
 }
@@ -104,8 +110,16 @@ export function createWestin(buildings: VBuilding[], groundAt: (x: number, z: nu
   }
   drum(X, Z, RADIUS + 0.22, PODIUM, PODIUM + 1.0, 64, '#a3a5a2');
   for (const ledge of [CROWN, 213.2, 216.3]) drum(X, Z, RADIUS + 0.18, ledge, ledge + 0.35, 64, '#677480');
-  drum(X, Z, RADIUS + 0.24, TOP - 0.85, TOP, 64, '#b6b9b6');
+  drum(X, Z, RADIUS + 0.24, TOP - 0.35, TOP, 64, '#b6b9b6');
   drum(X, Z, 14, TOP, TOP + 0.35, 48, '#858d91');
+  // The broadcast mast rises approximately 34 m above the roof (Fybush rooftop visit).
+  drum(X, Z, 1.3, TOP + 0.35, TOP + 1.6, 12, '#727b7f');
+  drum(X, Z, 0.58, TOP + 1.6, TOP + 23, 10, '#90989b');
+  drum(X, Z, 0.36, TOP + 23, TOP + 34.5, 8, '#969d9f');
+  for (const h of [24, 27, 30, 33]) {
+    b.box(1.45, 0.24, 0.24, X + 0.65, TOP + h, Z, '#7e8587');
+    b.box(0.25, 1.3, 0.25, X + 1.30, TOP + h, Z, '#979d9e');
+  }
   // The small northeast lobe on the mapped part is the external elevator shaft.
   drum(296.65, -627.2, 3.6, PODIUM, TOP - 0.35, 24, '#708596');
   drum(296.65, -627.2, 3.72, TOP - 0.35, TOP + 0.25, 24, '#bbbfbd');
@@ -114,12 +128,12 @@ export function createWestin(buildings: VBuilding[], groundAt: (x: number, z: nu
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(RADIUS, RADIUS, TOP - PODIUM, 64, 1, true), glass);
   shaft.name = 'Westin guest tower and Sun Dial';
   shaft.position.set(X, (TOP + PODIUM) / 2, Z);
-  shaft.castShadow = trim.castShadow = trim.receiveShadow = true;
+  shaft.receiveShadow = shaft.castShadow = trim.castShadow = trim.receiveShadow = true;
   const group = new THREE.Group();
   group.name = 'Westin Peachtree Plaza';
   group.position.y = ground;
   group.add(trim, shaft);
   return { group, buildings: buildings.filter(b => b !== base),
-    setNight(dark: number) { glass.emissiveIntensity = Math.min(1, Math.max(0, dark)); },
+    setNight(dark: number) { glass.emissiveIntensity = 4 * THREE.MathUtils.clamp(dark, 0, 1); },
   };
 }
