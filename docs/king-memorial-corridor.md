@@ -23,16 +23,21 @@ The downtown board ends at x = 1000 (about −84.3808). King Memorial station (O
 | 155177 Blue eastbound | 8541.6 | 5950–8900 | 9053.6 |
 | 155181 Blue eastbound | 1281.6 | 0–1640 | 1793.6 |
 | 155185 Blue westbound | 15622.4 | 15270–16840 | 15110.5 |
-| 155214 Green eastbound, terminating at King Memorial | 5974.6 | 3380–6330 | 6430 (shape ends mid-platform at x 1439) |
+| 155214 Green eastbound, terminating at King Memorial | 5974.6 | 3380–6330 | 6486.6 |
 
 `corridor.json` lists all ten through paths.
 
 **Coverage findings:**
 - City's baked profile and the `connector-viaduct` span end at s 8900 on 155177, **154 m short of
   the station**.
-- 305 Green trips a day terminate at King Memorial: path 155214 arrives and 155221 departs. Their
-  shapes end and begin mid-platform. These trains must turn back on the OSM
-  *King Memorial Crossover* (ways 78090745 and 78380740, layer 3), 110–170 m east of the platforms.
+- 305 Green trips a day terminate at King Memorial: path 155214 arrives and 155221 departs.
+  - Their trips end and begin at the King Memorial stop.
+  - Their shapes do not stop there: each carries a single straight 799 m chord from mid-platform
+    (x 1439) to x 2192, east of the crossover. The chord cuts across Hulsey yard, so it is a shape
+    artefact, not track. City should not draw a train along it.
+  - The turnback move itself is unscheduled. It uses the OSM *King Memorial Crossover* (ways
+    78090745 and 78380740, layer 3), 110–170 m east of the platforms, or track beyond it; GTFS
+    doesn't say which.
 
 ## Evidence and method
 
