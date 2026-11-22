@@ -1525,3 +1525,26 @@ Sam also chose the public name **Sim Atlanta**. The city menu, About page and br
 ### 2026-11-22 — Thirteen exhibit spaces under one map outline
 
 The Congress Center appears in the bake as one 597 m footprint with one height. The floor plans put twelve numbered exhibit halls and the BC connector inside it, all within our board. From the tracks, the easiest way to read the campus is through its gaps. The railway passes between A and B and under their southern lobby; a 10,827 m² loading court runs between B and C. The new roof tiers follow the two original courtyard holes. Building C’s mapped footprint clears the west edge of the miniature by 10.9 m. [Across the tracks before](log/ui/congress-center/tracks-before.jpg) · [After](log/ui/congress-center/tracks-after.jpg) · [Daylight cameras and sources](georgia-world-congress-center.md)
+
+### 2026-11-22: The gold dome, by the numbers
+
+The Georgia State Capitol had been a 29 m beige extrusion. Seen from a Blue Line train, it was the
+one downtown landmark that should catch the light, and it didn't.
+
+The Historic American Buildings Survey drew the building in 1995–96: 52 public-domain sheets at
+1:128. The dome section puts the top of Miss Freedom's torch at 259'-7" (79.1 m) above the lowest
+grade, and the dome crown at 195'-9" (59.7 m).
+
+One small trap: the height labels sit in the sheet's margin, not beside the features they mark.
+Scaling the drawing put every label on a distinct feature. The 10.1 m rise from spring to crown
+then matched a hemisphere almost exactly the size of the gold dome OSM had already mapped (19.8 m).
+
+The model was placed from the footprint, not from aerial photos:
+- the crossing of the cross plan lands 0.6 m from OSM's dome part, while the dome in the aerial
+  imagery sits 15 m away;
+- the portico faces Washington St, and a test fails if it's flipped;
+- about 3,500 triangles in all.
+
+At dusk the gilding is floodlit.
+
+![The Capitol from the train side](log/ui/capitol/2026-11-22-capitol-train-after.jpg)
