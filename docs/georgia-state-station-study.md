@@ -25,10 +25,11 @@ screenshots stay outside git. Each is credited and described here; the City fram
 
 ## Reproducible cameras
 
-1. Run `pnpm dev`. Open `http://localhost:5173/?q=high&t=<TIME>&speed=0#17.6/33.7497/-84.3852/0`
-   and select **City**.
+1. Run `pnpm dev`. Open `http://localhost:5173/?view=city&q=high&t=<TIME>&speed=0`. City opens
+   directly, with the clock paused at that instant.
 2. Once it has loaded, run `__city.lookAt(x, z, { bearing, metresPerPixel, tilt })` in the console.
-   `__city` exists in dev builds only.
+   `__city` exists in dev builds only. The dusk frame was re-checked this way on main 50e83cf and
+   reproduced identically.
 
 Bearings are degrees clockwise from north, as in MapLibre. All times are on Fri 2026-11-20.
 
@@ -41,13 +42,13 @@ Bearings are degrees clockwise from north, as in MapLibre. All times are on Fri 
 | `gss-station-plan` | 14:12:29−05:00 | 560, 440 | 0 | 0.20 | 10 (clamped to 20) | plan / NAIP 2023 |
 | `gss-overhead-eastbound` / `-westbound` | 14:12:45 / 17:41:20 | 660, 520 / 670, 525 | 0 | 0.06 / 0.07 | 8 | direction check |
 
-Screenshots are in `docs/log/georgia-state-study/2026-11-22-gss-*.jpg`. They were captured in the
-Orca desktop browser. The frame rates shown there come from a background tab and are not
+Screenshots are in `docs/log/ui/georgia-state-study/2026-11-22-gss-*.jpg`. They were captured in the
+Orca desktop browser on main 022c307; City's rendering of this area hasn't changed since. The frame rates shown there come from a background tab and are not
 measurements.
 
 ## Comparison
 
-![City, dusk approach, R1 camera](log/georgia-state-study/2026-11-22-gss-dusk-approach.jpg)
+![City, dusk approach, R1 camera](log/ui/georgia-state-study/2026-11-22-gss-dusk-approach.jpg)
 
 **R1 (dusk):**
 - **Matches:** two tracks on one deck, single-column piers, and the 17:41 westbound Blue Line to
@@ -55,9 +56,10 @@ measurements.
 - **Missing:**
   - There is no station structure at the end of the viaduct. R1's lit enclosure, the station's east
     end, becomes an unlit gap under a low block in City.
-  - The skyline doesn't read, because the Floyd building in front is drawn at 25 m.
+  - The skyline framing differs, because the Floyd building in front is drawn as a 25 m block
+    rather than 20-storey towers.
 
-![City, the curve east of the station, R2 camera](log/georgia-state-study/2026-11-22-gss-winter-curve.jpg)
+![City, the curve east of the station, R2 camera](log/ui/georgia-state-study/2026-11-22-gss-winter-curve.jpg)
 
 **R2 (*Waning Winter*):**
 - **Matches:** the curve on structure, freight crossing beneath the MARTA deck, and the freeway
@@ -68,7 +70,7 @@ measurements.
   - The Floyd tower that frames R2 is far too low in City.
   - Snow can't be pinned: weather follows the atmosphere for that date.
 
-![City, freeway-level stack, R3 camera](log/georgia-state-study/2026-11-22-gss-fast-lanes-stack.jpg)
+![City, freeway-level stack, R3 camera](log/ui/georgia-state-study/2026-11-22-gss-fast-lanes-stack.jpg)
 
 **R3 (*Fast Lanes*) and A1:**
 - **Matches:** the three levels are present and ordered correctly. Measured on the rendered data
@@ -81,10 +83,12 @@ measurements.
 - **Why they look stacked:** R3's telephoto compresses that gap. In City's low camera the farther,
   lower freight bridge can look level with MARTA. Both effects are perspective, not geometry.
 
-![City, crossing over the Connector, A1 view](log/georgia-state-study/2026-11-22-gss-connector-crossing.jpg)
-![City, station plan view](log/georgia-state-study/2026-11-22-gss-station-plan.jpg)
+![City, crossing over the Connector, A1 view](log/ui/georgia-state-study/2026-11-22-gss-connector-crossing.jpg)
+![City, station plan view](log/ui/georgia-state-study/2026-11-22-gss-station-plan.jpg)
 
-**Direction check (a concern raised by R1, resolved):**
+**Direction check (a concern raised by R1, resolved):** the test builds the real `CityTrains`
+renderer for this train and asserts its drawn cars sit on the north track. It fails if the side
+sign is reversed.
 - From the R1 camera, the westbound train first appeared to be on the south track. I checked this
   directly.
 - The scheduled train `marta:trip:7-62400-20261120` (Blue westbound, path 155188) is at x 677,
@@ -95,8 +99,8 @@ measurements.
 - So this isn't a defect. The first impression came from the oblique camera. The test pins this
   check.
 
-![Overhead, eastbound on the south track](log/georgia-state-study/2026-11-22-gss-overhead-eastbound.jpg)
-![Overhead, westbound on the north track](log/georgia-state-study/2026-11-22-gss-overhead-westbound.jpg)
+![Overhead, eastbound on the south track](log/ui/georgia-state-study/2026-11-22-gss-overhead-eastbound.jpg)
+![Overhead, westbound on the north track](log/ui/georgia-state-study/2026-11-22-gss-overhead-westbound.jpg)
 
 ## Supported against schematic
 
@@ -105,7 +109,7 @@ measurements.
 | Track plan and both directions | GTFS shape, smoothed. Right-hand offsets of ±2.1 m. | OSM ways, GTFS, the direction check above | **Supported** |
 | Cover: open west approach → canopies (roofed) → Floyd building (covered) → open structure | `rail` spans of 62 / 73 / 131 m, then the viaduct | OSM; Esri imagery 2022-09-27 and 2026-02-02; NAIP 2023 | **Supported**, edges ±10–15 m |
 | Track under the canopies | Hidden: `roofed` counts as not visible, and no canopy geometry is drawn | Canopies are visible in all imagery; R1 shows a lit station end | **Gap**: visibility between the canopies is unresolved |
-| Floyd building (the "Twin Towers") | One block, **25.2 m** (OSM height, `floors: 2`) | The State of Georgia calls it a **20-storey** building (team.georgia.gov); R2 shows a tall tan tower | **Wrong**: the drawn height is roughly a third of the real one |
+| Floyd building (the "Twin Towers") | One block, **25.2 m** (OSM height, `floors: 2`) | **Verified:** Georgia DCA, *Modern Downtown Atlanta*, printed page 82, documents two red-brick-veneer 20-storey towers joined by a flat-roofed base adjoining the rail station ([PDF](https://dca.georgia.gov/document/document/modern-downtown-atlanta/download)). The State of Georgia (team.georgia.gov) also says 20 storeys, opened 1980. R2 shows a tower. **Not found:** a published height in metres | **Wrong**: 20 storeys can't fit in 25 m; the real height is unmeasured |
 | MARTA bed through the station | Ramps 0 → +7 m between the anchors | No survey or plan found | **Schematic** |
 | MARTA deck over the Connector | +7 m above the bank anchors, box girder, piers every 26 m | No public clearance record (FHWA NBI 2024/2025, GDOT GIS checked) | **Schematic** |
 | Freight grade and bridges | Interpolated between banks, concrete treads | OSM bridges (layer 1); FRA `RR Over` at Piedmont Ave and Jesse Hill Jr Dr; R2/R3 show red steel girders | Order **supported**; heights schematic; material **wrong** |
@@ -118,8 +122,10 @@ measurements.
 reference reads the station by its structure (R1's lit end, R2's tower), and the two biggest visible
 errors are structural, not about track height:
 
-1. **Floyd building:** replace the 25 m single block with two towers at about 20 storeys. That's
-   roughly 70 m, schematic until a measured height turns up. Use the two tower footprints visible in
+1. **Floyd building:** replace the 25 m single block with two 20-storey towers on a flat-roofed
+   base, as Georgia DCA documents. The storey count
+   is verified; any metre height derived from it (for example, storeys × a typical floor height)
+   is an estimate and must be labelled schematic until a measured height turns up. Use the two tower footprints visible in
    imagery, with the station and tracks passing beneath, as OSM `tunnel=building_passage` records.
    It's a data fix (an override of the building height), with no renderer change.
 2. **Station canopies and enclosure:** draw the two side-platform canopies from OSM platform areas

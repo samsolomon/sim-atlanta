@@ -1395,14 +1395,15 @@ and camera. The track plan, cover and three-level stack hold up:
 
 Two things are wrong, and both are structures:
 
-- **The Floyd building, the station's "Twin Towers", is drawn 25 m tall.** The state calls it a
-  20-storey building.
+- **The Floyd building, the station's "Twin Towers", is drawn as a 25 m block.** The state calls
+  it a 20-storey building. No published height in metres turned up, so any metre figure would be
+  an estimate.
 - **The station itself is missing.** The canopies aren't drawn, and the track under them is hidden.
 
 The study recommends modelling those before refining track heights. Details:
 [georgia-state-station-study.md](georgia-state-station-study.md)
 
-![City's dusk approach at Georgia State](log/georgia-state-study/2026-11-22-gss-dusk-approach.jpg)
+![City's dusk approach at Georgia State](log/ui/georgia-state-study/2026-11-22-gss-dusk-approach.jpg)
 
 ### 2026-11-22 — City gets the front door
 

@@ -14,7 +14,7 @@ import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { alignment } from '../vignette/alignment';
 import { terrainAlignment } from './terrain-rail';
-import { CityTracks } from './trains';
+import { CityTrains } from './trains';
 
 const data = resolve(__dirname, '../../public/data');
 const files = ['scene/downtown/vignette.json', 'scene/downtown/scene.json', 'scene/downtown/ground.json', 'scene/downtown/ground.i16', 'ga/routes.json', 'ga/timetable.json', 'ga/vehicle-types.json'];
@@ -67,23 +67,34 @@ describe.skipIf(!staged)('Georgia State station study', () => {
     transport.dispose();
   });
 
-  it('runs right-handed on the approach: the 17:41 westbound sits on the north track', () => {
+  it('runs right-handed on the approach: City draws the 17:41 westbound on the north track', () => {
     const sched = new Schedule(rf, J('ga/timetable.json'), J('ga/vehicle-types.json'));
     const project = makeProjector(manifest.origin);
-    const tracks = new CityTracks([EAST, WEST].map((id) => alignment(rf, manifest, vd.bounds, id)));
-    const train = sched.trainsAt(new Date('2026-11-20T17:41:20-05:00')).find((t) => t.pathId === WEST && (() => {
+    const train = sched.trainsAt(new Date('2026-11-20T17:41:20-05:00')).find((t) => {
       const [x, z] = project(t.lon, t.lat);
-      return x > 600 && x < 800 && z > 400 && z < 650;
-    })())!;
+      return t.pathId === WEST && x > 600 && x < 800 && z > 400 && z < 650;
+    })!;
     expect(train, 'Blue westbound to H E Holmes on the Georgia State viaduct').toBeDefined();
-    const [x, z] = project(train.lon, train.lat);
-    const at = tracks.locate(x, z, train.heading)!;
-    const p = at.al.line.at(at.s);
-    const off = at.dir * 2.1; // CityTrains' track offset
-    const cx = p.x - p.nx * off, cz = p.z - p.nz * off;
-    // Right of westbound travel (heading ≈ 300°) is north: smaller z than the centreline.
-    expect(train.heading).toBeGreaterThan(270);
-    expect(cz).toBeLessThan(p.z);
-    void cx;
+    expect(train.heading).toBeGreaterThan(270); // west-north-west
+    // The real renderer: one terrain alignment for the corridor, as City keeps one per corridor.
+    const al = terrainAlignment(alignment(rf, manifest, vd.bounds, EAST), EAST, manifest, grid);
+    const trains = new CityTrains([al], manifest, vd.bounds, new Map([[train.routeId, '#0075B2']]), []);
+    trains.update([train], 0);
+    const cars = trains.group.children.filter((m) => m.visible && m.userData.trainId === train.id);
+    expect(cars.length).toBeGreaterThan(0);
+    for (const car of cars) {
+      // Signed offset from the centreline: right of westbound travel is north (negative z side).
+      let best = { d: Infinity, s: 0 };
+      for (let s = 0; s <= al.line.length; s += 0.5) {
+        const p = al.line.at(s);
+        const d = Math.hypot(p.x - car.position.x, p.z - car.position.z);
+        if (d < best.d) best = { d, s };
+      }
+      const p = al.line.at(best.s);
+      // The corridor line runs east-south-east, so its left normal (nx, nz) points north-north-east.
+      const left = (car.position.x - p.x) * p.nx + (car.position.z - p.z) * p.nz;
+      expect(p.nz, 'left of the line is north').toBeLessThan(0);
+      expect(left, 'car centre on the north track').toBeGreaterThan(1);
+    }
   });
 });
