@@ -5,6 +5,7 @@
  * detailed buildings and trees.
  */
 import * as THREE from 'three';
+import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
@@ -802,6 +803,7 @@ export class World {
 
   buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8) {
     const b = new Builder();
+    const shopLights = new Builder();
     const style: number[] = [];
     const base: number[] = [];
     const clutter: THREE.Matrix4[] = [];
@@ -833,10 +835,17 @@ export class World {
       }
       // Walls (run to h + parapet), roof slightly below the parapet top.
       const parapet = h > 6 ? 1.1 : 0;
+      const shop = woodruffLot(bd);
       for (const ring of bd.rings)
         for (let i = 0; i < ring.length; i++) {
           const a = ring[i];
           const c = ring[(i + 1) % ring.length];
+          const first = b.pos.length / 3;
+          if (shop && appendWoodruffWall(shop, a, c, originY, roofY + parapet, b, shopLights)) {
+            for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
+            continue;
+          }
+          style.push(kind, kind, kind, kind, kind, kind);
           b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
       const wallVerts = b.pos.length / 3 - before;
@@ -849,7 +858,6 @@ export class World {
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
-        style.push(kind);
         base.push(foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
       }
       for (let i = 0; i < roofVerts; i++) {
@@ -875,6 +883,14 @@ export class World {
         clutterCol.push(new THREE.Color(big ? wallCol : r() < 0.7 ? PAL.hvac : '#8f9498'));
         placed++;
       }
+    }
+    // Painted shop glass shares the building draw. Only this glass receives the
+    // subdued interior light when the City's existing night uniform comes up.
+    for (let i = 0; i < shopLights.pos.length; i += 3) {
+      b.pos.push(shopLights.pos[i], shopLights.pos[i+1], shopLights.pos[i+2]);
+      b.col.push(shopLights.col[i], shopLights.col[i+1], shopLights.col[i+2]);
+      style.push(-2);
+      base.push(0);
     }
     const g = b.geometry();
     g.setAttribute('aStyle', new THREE.Float32BufferAttribute(style, 1));
@@ -1316,8 +1332,8 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
       .replace(
         '#include <color_fragment>',
         /* glsl */ `#include <color_fragment>
-        float litWin = 0.0;
-        float litLevel = 1.0;
+        float litWin = vStyle < -1.5 ? 1.0 : 0.0;
+        float litLevel = 0.46;
         if (vStyle > -0.5) {
           // The wall's real (per-face) normal: exact, unlike screen-space derivatives, which are
           // noisy at city-scale coordinates and made windows speckle and shimmer.

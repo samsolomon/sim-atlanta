@@ -1691,3 +1691,7 @@ gzipped, against 1.44 MB for all of downtown.
 [Study](king-memorial-corridor.md)
 
 ![Guideway, roof and ground along the corridor](log/ui/king-memorial/profile.svg)
+
+### 2026-11-22 — Six shop doors across from Woodruff Park
+
+Five narrow footprints on Peachtree contain six street elevations. The giveaway is at Poplar, where the white shop turns the corner but its neighbor’s four red arches stop at a higher, darker cornice. A 2025 leasing plan puts two doors inside that single baked lot. Down the row, a shop with two tall arches faces the same park as a shop with a black canvas awning and two broad bands of glass. The model gives all six recessed glass in the existing building draw. At the daylight opening that adds 5,972 submitted triangles, about 0.27%. [Full block before and after](log/ui/woodruff-shopfronts/row-day.jpg) · [Wider park view](log/ui/woodruff-shopfronts/district-day.jpg) · [Night, sources and camera settings](log/ui/woodruff-shopfronts/README.md)
