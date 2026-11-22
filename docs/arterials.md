@@ -62,6 +62,8 @@ A drawn run is included only when every test passes. Otherwise it appears in
 Per-direction `aadt` and `lanes` are already directional, so count them once:
 - a two-way road splits AADT and lanes in half (`two-way-split`);
 - a one-way road gets all of both (`one-way`).
+- A lane count is published only where HPMS supports it for that direction. A missing
+  `THROUGH_LANES`, or one lane shared by two directions, leaves `lanes` without that key.
 
 **Joining runs:** `from`/`to` are endpoint ids (0.5 m snap). The selector drops any run whose
 baked endpoints are more than 0.5 m from the current drawn road, so an older or skewed bake
