@@ -3,16 +3,16 @@
  * LiveBuses feed (main.ts already polls /api/marta/bus once for Map and City, so City adds no
  * requests). Each new reported fix is snapped once to the nearest rendered street, through a
  * spatial index, then the bus glides there. Buses sit on the drawn surface: at-grade streets are
- * painted onto the terrain (groundAt); street bridges use the same tread as
- * createSurfaceTransport (deckAt). Stale fixes expire in LiveBuses; off the real present, or with
+ * painted onto the terrain (groundAt); street bridges sample the drawn tread triangles through
+ * createSurfaceTransport's deckAt. Stale fixes expire in LiveBuses; off the real present, or with
  * no feed, City shows no buses at all rather than guessing.
  */
 import * as THREE from 'three';
-import type { GroundGrid } from '../terrain/grid';
-import { roadWidth, type TransportRun } from '../terrain/transport-data';
+import { roadWidth, type TerrainCity, type TransportRun } from '../terrain/transport-data';
+import type { VData } from '../vignette/world';
 import type { LiveBus } from '../model/types';
 import { makeProjector } from '../core/scene-data';
-import { Line, segDist, type P2 } from '../vignette/geom';
+import { segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { BUS_LENGTH, busGeometry, busMaterial } from '../vignette/xcelsior';
 
@@ -27,60 +27,18 @@ const GLIDE_MS = 8000;
 const MAX_GLIDE_M = 150;
 const MAX = 64;
 const BUS_WIDTH = 2.6;
-/** Bridge treads sit this far above their chord (createSurfaceTransport's road `lift`). */
-const TREAD_LIFT = 0.12;
 
 /**
- * Drawn tread height of a road *bridge* run at (x, z), mirroring createSurfaceTransport's
- * strip(): a straight chord between native-DEM heights at the two ends (a board-cut end takes
- * the other end's height), blended within one road width of each abutment to the terrain
- * triangles beside it, plus the tread lift. Null off the run, for an unsupported bridge, or for
- * a ground run (those are painted on the terrain: use groundAt).
+ * Every street a bus can be drawn on. Ordinary at-grade streets come from `vd.roads`;
+ * `terrainTransport.roads` holds only the scoped mixed-way intervals and the street bridges,
+ * so the index needs both (City's groundRoads uses the same split). Without measured ground,
+ * the flat board's own roads, bridges included.
  */
-export function makeDeckAt(grid: GroundGrid, groundAt: GroundAt, bounds: Bounds) {
-  const zero = grid.manifest.vertical.sceneZeroNavd88M;
-  const lines = new WeakMap<TransportRun, Line>();
-  const onEdge = ([x, z]: P2) => x === bounds.minX || x === bounds.maxX || z === bounds.minZ || z === bounds.maxZ;
-  const clampX = (x: number) => Math.min(Math.max(x, bounds.minX), bounds.maxX);
-  const clampZ = (z: number) => Math.min(Math.max(z, bounds.minZ), bounds.maxZ);
-  return function deckAt(x: number, z: number, part: TransportRun): number | null {
-    if (part.kind !== 'bridge' || part.pts.length < 2) return null;
-    let line = lines.get(part);
-    if (!line) lines.set(part, (line = new Line(part.pts)));
-    if (!line.length) return null;
-    const start = part.pts[0], end = part.pts[part.pts.length - 1];
-    const startCut = onEdge(start), endCut = onEdge(end);
-    const startH = startCut ? null : grid.sample(...start);
-    const endH = endCut ? null : grid.sample(...end);
-    if ((startCut && endCut) || (!startCut && startH === null) || (!endCut && endH === null)) return null;
-    const h0 = startH ?? endH!, h1 = endH ?? startH!;
-    // Nearest station on the run and the signed offset across it.
-    let best = { d: Infinity, s: 0 };
-    for (let i = 1; i < line.pts.length; i++) {
-      const [ax, az] = line.pts[i - 1], [bx, bz] = line.pts[i];
-      const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1;
-      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
-      const d = Math.hypot(ax + dx * t - x, az + dz * t - z);
-      if (d < best.d) best = { d, s: line.cum[i - 1] + t * Math.sqrt(l2) };
-    }
-    const width = roadWidth(part);
-    if (best.d > width / 2 + 0.5) return null;
-    const p = line.at(best.s);
-    const off = (x - p.x) * p.nx + (z - p.z) * p.nz; // + = left
-    const seam = Math.min(width, line.length / 2);
-    const chord = h0 + (h1 - h0) * (best.s / line.length) - zero;
-    const blend = Math.max(0, 1 - Math.min(best.s, line.length - best.s) / seam);
-    const near = best.s < line.length / 2 ? 0 : 1;
-    const corner = (o: number) => {
-      if (!blend || (near ? endCut : startCut)) return chord;
-      const q = line!.at(near ? line!.length : 0);
-      const g = groundAt(clampX(q.x + o * q.nx), clampZ(q.z + o * q.nz));
-      return g === null ? chord : chord + blend * (g - ((near ? h1 : h0) - zero));
-    };
-    const yl = corner(width / 2), yr = corner(-width / 2);
-    const f = Math.max(0, Math.min(1, (width / 2 - off) / width)); // 0 at the left edge
-    return yl + (yr - yl) * f + TREAD_LIFT;
-  };
+export function busRuns(vd: TerrainCity, measured: boolean): TransportRun[] {
+  const asRun = (r: VData['roads'][number]): TransportRun => ({ kind: r.bridge ? 'bridge' : 'ground', cls: r.cls, pts: r.pts });
+  return measured && vd.terrainTransport
+    ? [...vd.roads.filter((r) => !r.bridge && !r.tunnel).map(asRun), ...vd.terrainTransport.roads]
+    : vd.roads.filter((r) => !r.tunnel).map(asRun);
 }
 
 interface Snap {

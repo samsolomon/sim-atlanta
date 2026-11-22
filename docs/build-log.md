@@ -1307,6 +1307,36 @@ From above, the crossing looked ready. From 2.2 m above the northbound pavement,
 
 The low-quality opening view on a physical Galaxy A16 averaged **50.18 fps** across three consecutive eight-second foreground windows (52.42, 48.25 and 49.86 fps) at 384 × 692. Both quality tiers use the same lane coordinates, painted into the existing ground texture when City opens.
 
+## 2026-11-21 · Live buses in City
+
+City now shows real MARTA buses, only at the real present and tagged `live`. They come from the
+same 30 s cached feed the Map uses, through one shared `LiveBuses`. A new heartbeat runs outside
+MapLibre's readiness, so City gets buses even when basemap tiles never load. It polls no more
+often than before (once per 30 s; a fake-timer test checks this).
+
+A sample of the live feed this evening explains the design:
+
+- **Few buses are on the board.** Only 3–7 of about 150 fresh fixes fell inside it. Each new report
+  is snapped once, through a spatial index; reports that can't be snapped (off the board, or away
+  from a bus street) are cached by id and report time. That stops the frame loop re-snapping about
+  144 rejected fixes every frame.
+- **The first index accepted no fixes.** It used only the scoped terrain intervals. Ordinary
+  at-grade streets come from `vd.roads`, and adding them accepted all three on-board fixes in
+  Control's sample: route 49 on Courtland St NE at 18.0 m, route 20 on Decatur St SE at 2.7 m, and
+  route A on MLK Jr Dr SW at 1.8 m. A test on the shipped data now fails without them.
+- **Heights:** buses stand on the drawn surface. At-grade streets are painted onto the terrain,
+  and street bridges use transport's exact tread sampler. An analytic deck I wrote first was off
+  by up to 0.73 m at twisted abutments.
+- **Crossings:** where a street passes under a bridge, the reported bearing picks the right level.
+- **Glides:** a bus glides only along the same street, for under 150 m. A report that turned a
+  corner is placed on its new street, never driven through a block.
+- **Car traffic:** illustrative cars can ask `occupies()` to keep clear of buses, level by level.
+
+In Orca at 7:55 pm in a drizzle, bus 4691 sat in its right-hand lane at a downtown intersection,
+at 60 fps on the high tier.
+
+![A live MARTA bus in City at night](log/ui/2026-11-21-city-live-bus-night.jpg)
+
 ### 2026-11-21 — Four tracks between Pryor and Central
 
 The freight track east of Five Points had almost disappeared in City. Near the middle of the opening, the passenger track drawn from the timetable geometry sits about 1.8 m from the mapped CSX centre. The two mapped centrelines are 5.4 m apart. Plotting all four ways also corrected the name of the block: Pryor Street to Shirley Clarke Franklin Boulevard, called Central Avenue in the bridge records. The Interline goes under cover about 10 m earlier than freight at the eastern end. A local four-track study recovered 102 m of drawable freight tread using the same City camera and clock. Its common bed is illustrative. The lidar resolves two banks around a trench but puts the CSX trace on a slope, where even a three-metre sideways shift changes the ground sample substantially. [Current City](log/rail/2026-11-21-east-trench-current.jpg) · [Mapped-track study](log/rail/2026-11-21-east-trench-mapped.jpg) · [Measurements and source dates](five-points-east-trench.md)

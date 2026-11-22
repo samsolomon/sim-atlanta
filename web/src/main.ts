@@ -72,6 +72,10 @@ const [rf, tf, vts, meta] = await Promise.all([
   get<Meta>('meta.json'),
 ]);
 const buses = new LiveBuses();
+// The shared bus heartbeat runs independently of the basemap, so City still gets live buses when
+// map tiles are slow or blocked. LiveBuses throttles to one request per 30 s (and one in flight),
+// so the Map's own per-frame poll below adds no extra requests.
+buses.heartbeat(() => clock.isRealTime() && !document.hidden);
 const schedule = new Schedule(rf, tf, vts);
 if (import.meta.env.DEV) Object.assign(window, { __map: map, __schedule: schedule });
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
@@ -332,6 +336,7 @@ async function openCity() {
       return;
     }
     diorama = d;
+    if (import.meta.env.DEV) Object.assign(window, { __city: d });
     document.getElementById('city-freight-attrib')!.hidden = !d.hasFreight;
     document.getElementById('city-ground-source')!.textContent = d.measuredGround ? 'USGS terrain' : 'Flat board';
   } catch (err) {

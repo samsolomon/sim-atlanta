@@ -27,3 +27,27 @@ it('expires individual cached fixes using server time even when the phone clock 
   await live.poll();
   expect(fetch).toHaveBeenCalledTimes(1);
 });
+
+it('heartbeat polls on its own (no map), once per 30 s, and only while active', async () => {
+  vi.useFakeTimers();
+  try {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ source: 'marta-bus-rt', fetched: Date.now(), buses: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    const feed = new LiveBuses();
+    let active = true;
+    const stop = feed.heartbeat(() => active);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await feed.poll(); // another caller (the Map's frame loop) adds no request
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(11_000);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    active = false; // shifted clock or hidden page
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    stop();
+  } finally {
+    vi.useRealTimers();
+  }
+});

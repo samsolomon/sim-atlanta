@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { LiveBus } from '../model/types';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import type { TransportRun } from '../terrain/transport-data';
-import { CityBuses, makeDeckAt } from './buses';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { makeProjector } from '../core/scene-data';
+import type { TerrainCity } from '../terrain/transport-data';
+import { BUS_STREETS, CityBuses, busRuns } from './buses';
 
 // A 5 × 5 grid, 100 m apart, flat at 300 m except a 10 m dip under the bridge's midpoint.
 const gm: GroundManifest = { version: 1, rows: 5, cols: 5, stepM: 100, bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 }, scaleM: 0.1, offsetM: 0, noData: -32768, encoding: 'signed int16 little-endian', vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 300 }, sha256: '' };
@@ -16,7 +20,9 @@ const street: TransportRun = { kind: 'ground', cls: 'secondary', pts: [[-190, 0]
 const cross: TransportRun = { kind: 'ground', cls: 'secondary', pts: [[-50, -190], [-50, 190]] };
 const bridge: TransportRun = { kind: 'bridge', cls: 'primary', pts: [[100, -100], [100, 100]] };
 const freeway: TransportRun = { kind: 'ground', cls: 'motorway', pts: [[-190, 150], [190, 150]] };
-const deckAt = makeDeckAt(grid, groundAt, bounds);
+// Stand-in for transport.deckAt: the bridge's flat abutment chord at scene zero, plus the tread lift.
+const deckAt = (x: number, z: number, part: TransportRun) =>
+  part === bridge && Math.abs(x - 100) <= 7 && Math.abs(z) <= 100 ? 0.12 : null;
 const R = 6_371_008.8, DEG = Math.PI / 180;
 let t = 1_000;
 const fix = (id: string, x: number, z: number, at = t, bearing?: number): LiveBus => {
@@ -26,15 +32,6 @@ const fix = (id: string, x: number, z: number, at = t, bearing?: number): LiveBu
 };
 const make = () => new CityBuses({ runs: [street, cross, bridge, freeway], groundAt, deckAt, origin: { lon: 0, lat: 0 }, bounds,
   geometry: new THREE.BoxGeometry(), material: new THREE.MeshBasicMaterial() });
-
-describe('makeDeckAt', () => {
-  it('follows the abutment chord over a DEM dip, plus the tread lift', () => {
-    expect(groundAt(100, 0)).toBeCloseTo(-10);
-    expect(deckAt(100, 0, bridge)).toBeCloseTo(0.12);
-    expect(deckAt(100, 0, street)).toBeNull(); // ground runs are painted on the terrain
-    expect(deckAt(140, 0, bridge)).toBeNull(); // off the run
-  });
-});
 
 describe('CityBuses', () => {
   it('snaps each report once, caches unsnappable reports, and shows none off the real present', () => {
@@ -110,5 +107,27 @@ describe('CityBuses', () => {
     expect(b.occupies(p.x + 30, p.y, p.z, 4.5, Math.PI / 2)).toBe(false); // well behind
     expect(b.occupies(p.x, p.y + 7, p.z, 4.5, 0)).toBe(false); // on a deck overhead
     expect(b.occupies(p.x, p.y, p.z + 6, 4.5, Math.PI / 2)).toBe(false); // next lane over
+  });
+});
+
+const vjson = resolve(__dirname, '../../public/data/scene/downtown/vignette.json');
+const sjson = resolve(__dirname, '../../public/data/scene/downtown/scene.json');
+describe.skipIf(!existsSync(vjson) || !existsSync(sjson))('CityBuses on the shipped downtown streets', () => {
+  it('indexes ordinary at-grade streets as well as the scoped intervals (live regression: Decatur St, MLK Jr Dr, Courtland St)', () => {
+    const vd: TerrainCity = JSON.parse(readFileSync(vjson, 'utf8'));
+    const origin = JSON.parse(readFileSync(sjson, 'utf8')).origin;
+    const runs = busRuns(vd, true);
+    expect(runs.length).toBeGreaterThan((vd.terrainTransport?.roads.length ?? 0) + 100);
+    const b = new CityBuses({ runs, groundAt: () => 0, deckAt: () => 0, origin, bounds: vd.bounds, geometry: new THREE.BoxGeometry(), material: new THREE.MeshBasicMaterial() });
+    const unproject = (x: number, z: number) => ({ lon: origin.lon + x / (DEG * R * Math.cos(origin.lat * DEG)), lat: origin.lat - z / (DEG * R) });
+    expect(makeProjector(origin)(unproject(10, 20).lon, unproject(10, 20).lat)[0]).toBeCloseTo(10);
+    for (const name of ['Decatur Street', 'Martin Luther King Jr', 'Courtland Street']) {
+      const road = vd.roads.find((r) => r.name?.includes(name) && BUS_STREETS.has(r.cls) && !r.bridge && !r.tunnel && r.pts.every(([x, z]) => Math.abs(x) < 900 && z > -1200 && z < 600))!;
+      expect(road, name).toBeDefined();
+      const [x, z] = road.pts[Math.floor(road.pts.length / 2)];
+      const { lon, lat } = unproject(x + 6, z);
+      const bus: LiveBus = { id: name, at: 1, position: { value: { lon, lat }, tier: 'live', source: 'test', asOf: '' } };
+      expect(b.snap(bus), name).not.toBeNull();
+    }
   });
 });
