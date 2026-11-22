@@ -51,6 +51,7 @@ import { createFloyd } from './floyd';
 import { createWestin } from './westin';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createCongressCenter } from './congress-center';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -209,13 +210,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
-        const city = { ...vd, buildings: capitol?.buildings ?? afterStadium };
+        const exhibitionSite = capitol?.buildings ?? afterStadium;
+        const congressCenter = createCongressCenter(exhibitionSite, ground);
+        const city = { ...vd, buildings: congressCenter?.buildings ?? exhibitionSite,
+          ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
         if (stadium) world.group.add(stadium.group);
         if (capitol) world.group.add(capitol.group);
+        if (congressCenter) world.group.add(congressCenter.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
