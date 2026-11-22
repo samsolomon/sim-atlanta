@@ -25,6 +25,9 @@ export interface BuildingFinish {
   wall: string;
   roof: string;
   plainWalls?: boolean;
+  fallbackHeight?: number;
+  /** Supplies roof fixtures in place of the generic rooftop equipment. */
+  dressRoof?: (builder: Builder, outer: P2[], roof: number) => void;
   drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
 }
 export interface VRoad {
@@ -821,13 +824,13 @@ export class World {
       if (!outer || outer.length < 3) continue;
       const originY = foundationY ? foundationY(bd) : 0;
       if (originY === null) continue;
-      const h = bd.h ?? (bd.floors ? bd.floors * 3.6 : 8);
+      const finish = finishFor?.(bd);
+      const h = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
       const r = rng(hashStr(bd.id));
       // Massing class decides the material: brick low-rise, stone/concrete mid-rise, glass towers.
       // Mid-rises mix brick, stone with punched windows, and ribbon-window offices.
       const kind = h < 16 ? 0 : h < 42 ? (r() < 0.45 ? 0 : 1) : 2;
       const tall = h >= 16;
-      const finish = finishFor?.(bd);
       const wallCol = finish?.wall ?? pick(r, kind === 0 && tall ? ['#c9b49a', '#b98a6a', '#d8c9b0', '#a9583f', '#e0d6c4'] : kind === 0 ? ['#a9583f', '#b86a4b', '#9a4c39', '#c98f6b', '#d7c3a2'] : kind === 1 ? ['#d9cdb5', '#cfc5b4', '#c1b6a3', '#e1d8c6', '#b9b0a3'] : ['#8fa4b6', '#9fb0bd', '#7f93a4', '#a8b8c2']);
       let foot = originY;
       if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
@@ -872,6 +875,7 @@ export class World {
       // Roofs: white membrane, gravel, tar and the odd green roof.
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
+      finish?.dressRoof?.(b, outer, roofY);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
         base.push(foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
@@ -880,6 +884,7 @@ export class World {
         style.push(-1);
         base.push(0);
       }
+      if (finish?.dressRoof) continue;
       // Rooftop clutter: HVAC units, vents and a stair/elevator penthouse on bigger roofs.
       const area = ringArea(outer);
       const xs = outer.map((p) => p[0]);

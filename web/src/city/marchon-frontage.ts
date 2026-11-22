@@ -1,3 +1,4 @@
+import { dressMarchonDeck } from './marchon-parking';
 import { segDist, type P2 } from '../vignette/geom';
 import type { BuildingFinish, VBuilding } from '../vignette/world';
 import { apartmentFinish, type ApartmentPalette, type ApartmentLayout } from './apartment-facade';
@@ -29,7 +30,7 @@ export function marchonFinishes(buildings: VBuilding[]) {
   }
   return (building: VBuilding): BuildingFinish | undefined => {
     if (building.id === 'osm:way:897345399') return { wall: '#8c8276', roof: '#b2aea5' };
-    if (building.id === garage) return { wall: '#a6a69e', roof: '#acafa8', plainWalls: true };
+    if (building.id === garage) return { wall: '#a6a69e', roof: '#9c9e99', plainWalls: true, fallbackHeight: 11, dressRoof: dressMarchonDeck };
     if (building.id === main) return apartmentFinish(building, chalk, mainLayout);
     const wing = wings.indexOf(building.id);
     if (wing >= 0) return apartmentFinish(building, wingTints[wing], (a, b) =>

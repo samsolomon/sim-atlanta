@@ -34,7 +34,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
-import { boardPoint, eastBounds, eastJoin, nearEast } from './board-footprint';
+import { boardPoint, eastBounds, eastJoin, nearEast, nearNorth, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
 import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic } from './connector-traffic';
@@ -52,6 +52,7 @@ import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createGeorgiaPacific } from './georgia-pacific';
+import { createTwoPeachtree } from './two-peachtree';
 import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
 import { createCentralLibrary } from './central-library';
@@ -59,6 +60,7 @@ import { createPeachtree191 } from './peachtree-191';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
+import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createGrady } from './grady';
@@ -154,6 +156,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const previewEast = new URLSearchParams(location.search).get('east') === 'king-memorial' && !!grid;
+  const previewNorth = previewEast && new URLSearchParams(location.search).get('north') === 'sweet-auburn';
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
   const b = vd.bounds;
 
@@ -176,6 +179,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
   let trainRail = manifest.rail;
+  let north: typeof east;
+  let eastPlinth: THREE.Mesh<THREE.ExtrudeGeometry, THREE.MeshLambertMaterial> | undefined;
   let downtownPlinth: THREE.Mesh | undefined;
   const eastController = new AbortController();
   let transport: ReturnType<typeof createSurfaceTransport> | undefined;
@@ -194,6 +199,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const disposeBoard = () => {
     eastController.abort();
     eastRail?.dispose();
+    north?.dispose();
     east?.dispose();
     terrain?.dispose();
     transport?.dispose();
@@ -206,6 +212,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
+  let twoPeachtree: ReturnType<typeof createTwoPeachtree> = null;
   let healey: ReturnType<typeof createHealey> = null;
   let flatiron: ReturnType<typeof createFlatiron> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
@@ -214,6 +221,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
   let grady: ReturnType<typeof createGrady> = null;
+  let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
@@ -247,17 +255,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
         healey = createHealey(towerSite, groundAt);
         const afterHealey = healey?.buildings ?? towerSite;
-        georgiaPacific = createGeorgiaPacific(afterHealey, groundAt);
-        const stackSite = georgiaPacific?.buildings ?? afterHealey;
+        twoPeachtree = createTwoPeachtree(afterHealey, ground);
+        const afterTwoPeachtree = twoPeachtree?.buildings ?? afterHealey;
+        georgiaPacific = createGeorgiaPacific(afterTwoPeachtree, groundAt);
+        const stackSite = georgiaPacific?.buildings ?? afterTwoPeachtree;
         const stack = createCoreyTower(stackSite, ground);
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
         const afterStadium = stadium?.buildings ?? stadiumSite;
-        capitol = createCapitol(afterStadium, (x, z) => {
+        centennial = createCentennialTower(afterStadium, ground);
+        const afterCentennial = centennial?.buildings ?? afterStadium;
+        capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
-        const exhibitionSite = capitol?.buildings ?? afterStadium;
+        const exhibitionSite = capitol?.buildings ?? afterCentennial;
         const congressCenter = createCongressCenter(exhibitionSite, ground);
         const arenaSite = congressCenter?.buildings ?? exhibitionSite;
         arena = createStateFarmArena(arenaSite, groundAt);
@@ -265,7 +277,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         grady = createGrady(hospitalSite, ground);
         const city = { ...vd, buildings: grady?.buildings ?? hospitalSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (truist) world.group.add(truist.group);
@@ -274,9 +286,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (library) world.group.add(library.group);
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
+        if (twoPeachtree) world.group.add(twoPeachtree.group);
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
+        if (centennial) world.group.add(centennial.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
@@ -435,9 +449,57 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let eastLoading = false;
   let eastFailed = false;
   let pendingEastTarget: { x: number; z: number } | undefined;
+  let northLoading = false, northFailed = false;
+  let pendingNorthTarget: { x: number; z: number } | undefined;
+  function approachNorth(x: number, z: number) {
+    if (!previewNorth || north || !east || !terrain || !grid) return;
+    if (!nearNorth(x, z)) {
+      if (northFailed) options.areaNote?.(null);
+      northFailed = false;
+      return;
+    }
+    if (northLoading || northFailed || eastController.signal.aborted) return;
+    northLoading = true;
+    const downtown = terrain, king = east, westGrid = grid, signal = eastController.signal;
+    void Promise.all([import('./sweet-auburn-board'), import('./king-memorial-board')]).then(async ([{ loadNorth }, { joinedPlinth }]) => {
+      signal.throwIfAborted();
+      const area = await loadNorth(DATA, westGrid, king.grid, quality, downtown.bottomY, signal);
+      if (signal.aborted) { area.dispose(); return; }
+      const plinth = joinedPlinth(b, downtown.bottomY, northBounds.minZ);
+      scene.add(plinth, area.group);
+      scenery.push(area.group);
+      area.setSeason(local(new Date(options.clockMs())).doy);
+      if (eastPlinth) {
+        eastPlinth.removeFromParent();
+        eastPlinth.geometry.dispose();
+        eastPlinth.material.dispose();
+        eastPlinth = undefined;
+      }
+      north = area;
+      downtown.openJoin(1);
+      king.openJoin(1);
+      area.openJoin();
+      area.openJoin(1);
+      renderer.shadowMap.needsUpdate = true;
+      options.areaNote?.(null);
+      if (pendingNorthTarget) {
+        const { x, z } = pendingNorthTarget;
+        const offset = camera.position.clone().sub(controls.target);
+        controls.target.set(x, area.groundAt(x,z) ?? 0, z);
+        camera.position.copy(controls.target).add(offset);
+        controls.update();
+      }
+    }).catch(err => {
+      if (!signal.aborted) {
+        northFailed = true;
+        options.areaNote?.('Sweet Auburn could not load. Downtown and King Memorial are available.');
+        console.warn('Sweet Auburn board unavailable', err);
+      }
+    }).finally(() => { northLoading = false; pendingNorthTarget = undefined; });
+  }
   function approachEast(x: number, z: number) {
     if (!previewEast || east || !terrain || !grid) return;
-    if (!nearEast(x, z)) {
+    if (!nearEast(x, z) && !(previewNorth && nearNorth(x, z))) {
       if (eastFailed) options.areaNote?.(null);
       eastFailed = false;
       pendingEastTarget = undefined;
@@ -449,9 +511,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const westGrid = grid;
     void import('./king-memorial-board').then(async ({ loadEast, joinedPlinth }) => {
       eastController.signal.throwIfAborted();
-      const area = await loadEast(DATA, westGrid, quality, downtown.bottomY, eastController.signal);
+      const area = await loadEast(DATA, westGrid, quality, downtown.bottomY, eastController.signal, previewNorth ? northSouthJoin : undefined);
       if (eastController.signal.aborted) { area.dispose(); return; }
-      const plinth = joinedPlinth(b, downtown.bottomY);
+      const plinth = eastPlinth = joinedPlinth(b, downtown.bottomY);
       scene.add(plinth, area.group);
       scenery.push(area.group);
       area.setSeason(local(new Date(options.clockMs())).doy);
@@ -460,6 +522,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       downtown.openJoin();
       east = area;
       void attachEastRail(area).catch(err => console.warn('MARTA east of the board unavailable', err));
+      const next = pendingNorthTarget ?? controls.target;
+      approachNorth(next.x, next.z);
       options.areaNote?.(null);
       renderer.shadowMap.needsUpdate = true;
       if (pendingEastTarget) {
@@ -506,11 +570,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     eastRail = rail;
     renderer.shadowMap.needsUpdate = true;
   }
-  const targetY = (x: number, z: number) => east?.groundAt(x, z) ?? world.ground(x, z);
+  const targetY = (x: number, z: number) => north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
     const t = controls.target;
     approachEast(t.x, t.z);
-    const point = boardPoint(b, !!east, t.x, t.z);
+    approachNorth(t.x, t.z);
+    const point = boardPoint(b, !!east, t.x, t.z, !!north);
     const dx = point.x - t.x, dz = point.z - t.z;
     const dy = grid ? targetY(point.x, point.z) - t.y : 0;
     if (dx || dy || dz) {
@@ -596,7 +661,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
     if (terrain) {
-      const surface = ray.intersectObjects(east ? [terrain.board, east.board] : [terrain.board], false)[0];
+      const surface = ray.intersectObjects(east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
       if (surface) {
         glideTo = surface.point;
         glideTo.y = targetY(glideTo.x, glideTo.z);
@@ -604,7 +669,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
-  const manualCamera = () => { pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
+  const manualCamera = () => { pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
@@ -666,12 +731,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     library?.setNight(night);
     flatiron?.setNight(night);
     healey?.setNight(night);
+    twoPeachtree?.setNight(night);
     georgiaPacific?.setNight(night);
+    centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
     grady?.setNight(night);
     terrain?.setNight(night);
     east?.setNight(night);
+    north?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
 
@@ -690,6 +758,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.setWet(wx.rain);
     terrain?.setWet(wx.rain);
     east?.setWet(wx.rain);
+    north?.setWet(wx.rain);
     const dist = camera.position.distanceTo(controls.target);
     const f = Math.max(wx.fog, wx.rain * 0.5);
     const fog = scene.fog as THREE.Fog;
@@ -783,8 +852,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = null;
       pendingEastTarget = previewEast && !east && x > b.maxX && x <= eastBounds.maxX &&
         z >= eastBounds.minZ && z <= eastBounds.maxZ ? { x, z } : undefined;
+      pendingNorthTarget = previewNorth && !north && x > b.maxX && x <= northBounds.maxX &&
+        z >= northBounds.minZ && z < northBounds.maxZ ? { x, z } : undefined;
       approachEast(x, z);
-      const point = boardPoint(b, !!east, x, z);
+      approachNorth(x, z);
+      const point = boardPoint(b, !!east, x, z, !!north);
       if (view) {
         const dist = view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
         const tilt = THREE.MathUtils.clamp(view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()),
@@ -827,6 +899,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const day = local(now).doy;
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
+      north?.setSeason(day);
     },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0), arterialCars: arterials?.visibleCars ?? 0, freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
