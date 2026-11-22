@@ -38,11 +38,10 @@ These URL options are handy for reviewing:
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
 - In local development, `/terrain-preview.html?at=cut` opens the downtown ground study. Run `pnpm data:city` first, or `pnpm data:terrain` if the downtown board and trees are already present. [Terrain measurements and camera stops](docs/downtown-ground.md)
-- `?view=city` (`?view=3d` also works) opens the static downtown diorama. Drag to orbit,
-  right-drag or WASD/arrows to pan, scroll/pinch or +/− to zoom, Q/E to rotate,
-  and double-click to glide to a place. `?q=low|high` overrides the device quality tier.
-  Map remains the default until City passes the Galaxy A16 ≥30 fps gate. Moving City
-  trains, buses, freight and traffic are M2b; train cards currently belong to Map.
+- `/` opens the moving downtown City. Use `?view=map` for Map or a saved Map camera
+  hash. City also accepts `?view=city` and `?view=3d`. Drag to orbit, use WASD to
+  move and Q/E to rotate, or tap a train or bus for its source. Phones open on the
+  low tier. Use `?q=high` or `?q=low` to override the device tier.
 - `/vignette.html` is the East Portal look study: a detailed low-poly diorama whose light,
   season, weather and traffic follow Atlanta's clock. Options: `?at=<ISO time>`,
   `?speed=600`, `?weather=rain|fog|storm|overcast|clear` (default live), `?clean`, `?scatter`.

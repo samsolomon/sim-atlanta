@@ -29,8 +29,9 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #view3d { position: fixed; inset: 0; z-index: 1; background: var(--paper-2); }
 #view3d-canvas { position: absolute; inset: 0; }
 #view3d-canvas canvas { display: block; }
-#city-loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: var(--paper-2); color: var(--ink); }
+#city-loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: var(--paper); color: var(--ink); }
 #city-loading[hidden] { display: none; }
+#early-map { justify-self: center; margin-top: 10px; padding: 12px; color: var(--ink); }
 #city-loading p { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
 #city-progress { color: var(--ink-2); font-size: 14px; }
 .attrib3d { position: absolute; right: 10px; bottom: 8px; margin: 0; font-size: 11px; color: var(--ink); background: var(--glass-solid); padding: 3px 8px; border-radius: 6px; }
@@ -115,3 +116,10 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
   mask-image: radial-gradient(ellipse 72% 64% at 50% 50%, transparent calc(55% - var(--fog) * 25%), #000 100%);
 }
 body.in3d #fog { display: none; }
+
+#map:has(.rail-overview) { background: var(--paper); }
+body:has(.rail-overview):not(.in3d) .hint { display: none; }
+.rail-overview { position: absolute; inset: 85px 16px 100px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+.rail-overview svg { width: 100%; flex: 1; min-height: 0; }
+.rail-overview text { fill: var(--ink); font-size: 1200px; }
+.rail-overview figcaption { margin-top: 8px; font-size: 14px; }

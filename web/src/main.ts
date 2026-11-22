@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import './style.css';
+import { initialView } from './core/initial-view';
+import { showRailOverview } from './map/overview';
 import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
 import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
@@ -24,22 +25,32 @@ const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.js
 
 const params = new URLSearchParams(location.search);
 
-// Start the map (basemap tiles) immediately; freight and crossings are handed to
-// MapLibre as URLs so they load and parse on its worker threads, off the main thread.
-const map = new maplibregl.Map({
-  container: 'map',
-  style: await dioramaBaseStyle(paletteFor(atmosphere(clock.now(), null))), // start in the right light; weather follows
-  center: [-84.39, 33.76],
-  zoom: 10.3,
-  maxBounds: [
-    [-88.6, 28.4],
-    [-77.8, 37.0],
-  ],
-  attributionControl: { compact: true, customAttribution: 'Unofficial · Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
-  hash: true,
-  keyboard: false, // the shell handles WASD / arrows / +/− for both views
-  pixelRatio: Math.min(devicePixelRatio, 2), // phones report ~2.8: 2× looks the same and draws half the pixels
-});
+const landing = initialView(location.search, location.hash);
+let map: maplibregl.Map | null = null;
+const mapCentre: [number, number] = [-84.39, 33.76];
+
+function openMap() {
+  if (map) return map;
+  const container = document.getElementById('map')!;
+  container.replaceChildren();
+  try {
+    map = new maplibregl.Map({
+      container, center: mapCentre, zoom: 10.3, maxBounds: [[-88.6, 28.4], [-77.8, 37.0]],
+      attributionControl: { compact: true, customAttribution: 'Unofficial · Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN' },
+      hash: true, keyboard: false, pixelRatio: Math.min(devicePixelRatio, 2),
+    });
+  } catch {
+    // MapLibre and City both need WebGL. Keep a geographic rail map on the page
+    // even when the device cannot allocate a context for either renderer.
+    showRailOverview(container, rf);
+    return null;
+  }
+  const instance = map;
+  if (import.meta.env.DEV) Object.assign(window, { __map: instance });
+  instance.once('load', () => addMapLayers(instance));
+  void dioramaBaseStyle(paletteFor(atmosphere(clock.now(), null))).then(style => instance.setStyle(style));
+  return instance;
+}
 
 // ---- card -------------------------------------------------------------------
 const card = document.getElementById('card')!;
@@ -130,7 +141,7 @@ const buses = new LiveBuses();
 // so the Map's own per-frame poll below adds no extra requests.
 buses.heartbeat(() => clock.isRealTime() && !document.hidden);
 const schedule = new Schedule(rf, tf, vts);
-if (import.meta.env.DEV) Object.assign(window, { __map: map, __schedule: schedule });
+if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
 // Live MARTA rail replaces its timetable trains, but only when the clock shows the
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);
@@ -160,11 +171,8 @@ function setFog(f: number, dark: number) {
   fogEl.style.setProperty('--fog-rgb', dark > 0.55 ? '40, 47, 58' : '244, 245, 244');
   fogEl.hidden = f < 0.02;
 }
-// Always after this module finishes evaluating, so `shell` (declared below) exists even if the
-// map loaded while the data files were downloading.
-const onReady = (fn: () => void) => (map.loaded() ? queueMicrotask(fn) : map.once('load', fn));
 const sky = new SkyLayer();
-onReady(() => {
+function addMapLayers(map: maplibregl.Map) {
   // Keep the attribution folded to its (i) button so it doesn't run under the view switch.
   document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
   // Put our layers under the basemap's labels so place names stay readable.
@@ -300,7 +308,7 @@ onReady(() => {
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
-});
+}
 
 // ---- controls ---------------------------------------------------------------
 const clockEl = document.getElementById('clock') as HTMLTimeElement;
@@ -350,7 +358,7 @@ let cityAbort: AbortController | null = null;
 
 let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
 let cityTilt = 57; // retain the user's City tilt while Map remains flat
-let opening = params.get('view') === 'city' || params.get('view') === '3d';
+let opening = landing === 'city';
 async function openCity() {
   if (diorama) return;
   hideCard();
@@ -401,12 +409,12 @@ async function openCity() {
     view3d.hidden = true;
     document.body.classList.remove('in3d');
     shell.setView('map'); // closes City, which clears the note, so set the note after
-    shell.setNote('City view couldn’t load here, so this is the map');
+    shell.setNote(map ? 'City view couldn’t load here, so this is the map' : 'Interactive graphics unavailable · MARTA rail overview');
     return;
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
   // Opening on City frames downtown; arriving from the Map keeps the place you were looking at.
-  if (!opening) {
+  if (!opening && map) {
     // Read the current Map camera after loading: keyboard movement may have continued.
     const c = map.getCenter();
     const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
@@ -431,33 +439,34 @@ function closeCity() {
   cityAbort = null;
   opening = false;
   cityLoading.hidden = true;
-  if (diorama) {
+  const pose = diorama && { target: diorama.target(), camera: diorama.camera() };
+  diorama?.dispose();
+  diorama = null;
+  const map = openMap();
+  if (pose && map) {
     // Keep the same centre, direction and horizontal scale; only the tilt changes.
-    const t = diorama.target();
-    const camera = diorama.camera();
+    const { target: t, camera } = pose;
     cityTilt = camera.tilt;
     const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
     map.jumpTo({ center: [lon, lat], bearing: camera.bearing, pitch: 0,
       zoom: mapZoomForScale(lat, camera.metresPerPixel) });
   }
-  diorama?.dispose();
-  diorama = null;
   if (import.meta.env.DEV) Object.assign(window, { __diorama: null });
   view3d.hidden = true;
   if (lastAtm) paintMapAtmosphere?.(lastAtm);
   document.body.classList.remove('in3d');
   shell.setNote(null);
-  setViewParam(null);
-  map.resize();
+  setViewParam('map');
+  map?.resize();
 }
 
-function setViewParam(v: string | null) {
+function setViewParam(v: View) {
   const u = new URL(location.href);
-  if (v) u.searchParams.set('view', v);
-  else u.searchParams.delete('view');
+  u.searchParams.set('view', v);
   history.replaceState(null, '', u);
 }
 
+document.getElementById('early-map')!.hidden = true;
 const shell = createShell({
   view: 'map',
   onView: (v: View) => (v === 'city' ? void openCity() : closeCity()),
@@ -466,17 +475,17 @@ const shell = createShell({
       const t = diorama.target();
       return sceneToLonLat(CITY_ORIGIN, t.x, t.z);
     }
-    const c = map.getCenter();
-    return [c.lng, c.lat];
+    const c = map?.getCenter();
+    return c ? [c.lng, c.lat] : [CITY_ORIGIN.lon, CITY_ORIGIN.lat];
   },
   pan(dx, dy) {
     // The shell sends a content-drag offset; both cameras move in the opposite direction.
     if (diorama) diorama.pan(-dx, -dy);
-    else map.panBy([-dx, -dy], { duration: 0 });
+    else map?.panBy([-dx, -dy], { duration: 0 });
   },
   zoom(dir) {
     if (diorama) return diorama.zoom(dir);
-    map.zoomTo(map.getZoom() + dir, { duration: 200 });
+    map?.zoomTo(map.getZoom() + dir, { duration: 200 });
   },
   rotate(degrees) {
     diorama?.rotate(degrees);
@@ -508,5 +517,5 @@ setInterval(() => {
 // Hidden time controls (kept for later): ?controls=1 shows them.
 document.getElementById('timectl')!.hidden = params.get('controls') !== '1';
 
-const startView = params.get('view');
-if (startView === 'city' || startView === '3d') shell.setView('city');
+if (landing === 'city') shell.setView('city');
+else if (!openMap()) shell.setNote('Interactive graphics unavailable · MARTA rail overview');
