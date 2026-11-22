@@ -52,6 +52,7 @@ import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createCentralLibrary } from './central-library';
 import { createPeachtree191 } from './peachtree-191';
+import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
 import { createStadium } from './stadium';
@@ -190,6 +191,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let floyd: ReturnType<typeof createFloyd> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
+  let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
   let grady: ReturnType<typeof createGrady> = null;
@@ -219,8 +221,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         westin = createWestin(buildings, groundAt);
         peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
         const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
-        library = createCentralLibrary(remaining, groundAt);
-        const stackSite = library?.buildings ?? remaining;
+        truist = createTruistPlaza(remaining, groundAt);
+        const librarySite = truist?.buildings ?? remaining;
+        library = createCentralLibrary(librarySite, groundAt);
+        const stackSite = library?.buildings ?? librarySite;
         const stack = createCoreyTower(stackSite, ground);
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
@@ -240,6 +244,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
+        if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
         if (peachtree) world.group.add(peachtree.group);
         if (library) world.group.add(library.group);
@@ -550,6 +555,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.setNight(night);
     platforms?.setNight(night);
     floyd?.setNight(night);
+    truist?.setNight(night);
     westin?.setNight(night);
     peachtree?.setNight(night);
     library?.setNight(night);
