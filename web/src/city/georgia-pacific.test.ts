@@ -1,4 +1,4 @@
-import { Box3, Raycaster, Vector3 } from 'three';
+import { Box3, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import type { VBuilding } from '../vignette/world';
 import { createGeorgiaPacific } from './georgia-pacific';
@@ -57,4 +57,28 @@ it('steps down toward the east and retains each separate footprint at the north'
   expect(createGeorgiaPacific([tower, revised], () => 3)!.buildings[0]).toBe(revised);
   expect(createGeorgiaPacific([north], () => 3)).toBeNull();
   expect(createGeorgiaPacific([tower], () => null)).toBeNull();
+});
+
+it('lights both sides of each terrace from below and keeps the recessed central grille dark', () => {
+  const site = createGeorgiaPacific([tower], () => 0)!;
+  const lights = site.group.getObjectByName('Eastern terrace uplights') as Mesh;
+  function irradiance(z: number, height: number) {
+    const ray = new Raycaster(new Vector3(475, height, z), new Vector3(-1, 0, 0));
+    const hit = ray.intersectObject(lights)[0];
+    const color = lights.geometry.getAttribute('color');
+    const { a, b, c } = hit.face!;
+    const weight = hit.barycoord!;
+    return color.getY(a) * weight.x + color.getY(b) * weight.y + color.getY(c) * weight.z;
+  }
+  site.setNight(1);
+  expect(lights.visible).toBe(true);
+  // Cross the three east-facing planes just above the second terrace, between louver rows.
+  const grille = irradiance(-394, 69);
+  for (const z of [-379, -403]) {
+    expect(irradiance(z, 69)).toBeGreaterThan(3 * grille);
+    expect(irradiance(z, 69)).toBeGreaterThan(2 * irradiance(z, 106));
+  }
+  expect(irradiance(-394, 202)).toBeGreaterThan(3 * grille);
+  site.setNight(0);
+  expect(lights.visible).toBe(false);
 });

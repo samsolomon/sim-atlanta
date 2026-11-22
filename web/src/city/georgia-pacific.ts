@@ -15,6 +15,8 @@ const tiers = [
   { edges: [407.5, 417.0, 425.5], top: 212.5 },
 ];
 
+const shoulderTops = [205.8, 200.4, 205.8]; // Above the low eastern frontage, south to north.
+
 function outline([south, middle, north]: number[]): P2[] {
   return [
     [395.87, -412.92],
@@ -26,6 +28,47 @@ function outline([south, middle, north]: number[]): P2[] {
     [north, -399.73],
     [north, -412.7],
   ];
+}
+
+// Sample the terrace wash into one vertex-colored overlay. The close reference
+// shows broad lit stone on either side of one recessed grille across the tower.
+function lightRiser(
+  lights: Builder,
+  point: (u: number, height: number, offset: number) => number[],
+  width: number, foot: number, top: number, strip: number, tier: number,
+) {
+  const middle = strip === 1, crown = tier === tiers.length - 1;
+  const tint = new THREE.Color(crown && !middle ? '#ffe4b9' : '#fff7e3');
+  // The sloping covers meet the short crown faces above the last terrace.
+  const start = crown ? shoulderTops[strip] : foot;
+  const levels = [0, 0.07, 0.24, 0.5, 0.78, 1];
+  function vertex(u: number, v: number) {
+    const y = start + v * (top - start);
+    lights.pos.push(...point(u * width, y, 0.18));
+    // Two overlapping pools broaden with height, losing intensity up the wall.
+    const spread = 0.14 + v * 0.28;
+    const pool = (source: number) => Math.exp(-(((u - source) / spread) ** 2));
+    const wash = 0.20 + 0.64 * (1 - v) + (pool(0.26) + pool(0.74)) * Math.exp(-4 * v);
+    // Spill is weakest over the middle louvers. The crown has its own bright center.
+    const edgeSpill = Math.abs(2 * u - 1) ** 4;
+    let gain = middle ? 0.06 + 0.22 * edgeSpill : 1;
+    if (crown) gain = middle ? 1.15 : 0.62;
+    else if (tier === 0 && strip !== 2) gain *= 0.55;
+    const brightness = wash * gain;
+    lights.col.push(tint.r * brightness, tint.g * brightness, tint.b * brightness);
+  }
+  for (let row = 1; row < levels.length; row++) {
+    const low = levels[row - 1], high = levels[row];
+    for (let col = 0; col < 8; col++) {
+      const left = col / 8, right = (col + 1) / 8;
+      vertex(left, low);
+      vertex(right, low);
+      vertex(right, high);
+      vertex(left, low);
+      vertex(right, high);
+      vertex(left, high);
+    }
+  }
 }
 
 export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: number, z: number) => number | null) {
@@ -52,7 +95,8 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
   const random = rng(133);
   const glass = ['#48545b', '#535c61', '#444f55', '#5b6064'];
   // Rings run clockwise in x/z. Left of each edge points out of the building.
-  function facade(a: P2, b: P2, bottom: number, top: number, crown: boolean) {
+  function facade(a: P2, b: P2, bottom: number, top: number, edge: number, tier: number) {
+    const crown = tier === tiers.length - 1;
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const ux = (b[0] - a[0]) / length,
       uz = (b[1] - a[1]) / length;
@@ -85,17 +129,15 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
       const left = length * 0.22,
         right = length * 0.78;
       panel(stone, left, right, bottom, top - 0.9, 0.05, '#48434a');
-      for (let y = 4 * Math.ceil((bottom + 0.25) / 4); y < top - 1.2; y += 2)
+      for (let y = 4 * Math.ceil((bottom + 0.25) / 4); y < top - 1.2; y += 2) {
         panel(stone, left, right, y, y + 0.36, 0.12, '#887771');
-      // Floodlight on the stone cheeks fades toward the top of each rise.
-      for (const [start, end] of [[0, left], [right, length]]) {
-        const first = eastLights.col.length;
-        panel(eastLights, start, end, bottom, top - 0.9, 0.16, '#ffad8f');
-        for (const vertex of [2, 4, 5]) {
-          const offset = first + vertex * 3;
-          for (let c = 0; c < 3; c++) eastLights.col[offset + c] *= 0.07;
+        if (edge === 4 && !crown) {
+          // A little reflected light catches each horizontal louver above the recess.
+          panel(eastLights, left, right, y, y + 0.36, 0.20, '#807b6c');
         }
       }
+      // Outline edges 2, 4 and 6 run down the eastern strips in south-to-north order.
+      lightRiser(eastLights, point, length, bottom, top, edge / 2 - 1, tier);
     } else {
       // Project onto the street grid so window columns continue above the setbacks.
       const phase = (((a[0] * ux + a[1] * uz) % 3) + 3) % 3;
@@ -124,7 +166,7 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
   for (const [index, tier] of tiers.entries()) {
     const ring = outline(tier.edges),
       crown = index === tiers.length - 1;
-    for (let i = 0; i < ring.length; i++) facade(ring[i], ring[(i + 1) % ring.length], base, tier.top, crown);
+    for (let i = 0; i < ring.length; i++) facade(ring[i], ring[(i + 1) % ring.length], base, tier.top, i, index);
     if (crown) {
       // A pale membrane behind the granite parapet. Miter the inside corners of its rim.
       const deck = tier.top - 1.8;
@@ -167,7 +209,7 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
       x1 = tiers[3].edges[i],
       z0 = depths[i],
       z1 = depths[i + 1];
-    const hi = i === 1 ? 200.4 : 205.8,
+    const hi = shoulderTops[i],
       lo = 199.3;
     stone.quad([x0, hi, z0], [x1, lo, z0], [x1, lo, z1], [x0, hi, z1], '#958d86');
     stone.tri([x0, hi, z0], [x0, lo, z0], [x1, lo, z0], '#bfa095');
@@ -193,6 +235,7 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
     vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0,
   });
   const floodlights = new THREE.Mesh(eastLights.geometry(), accent);
+  floodlights.name = 'Eastern terrace uplights';
   floodlights.visible = false;
   group.add(floodlights);
   // This separate footprint abuts the parking deck. The 207 m bake puts a second
@@ -216,7 +259,7 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
     group,
     setNight(night: number) {
       windows.emissiveIntensity = 0.8 * night;
-      accent.opacity = 0.75 * night;
+      accent.opacity = night;
       floodlights.visible = night > 0.01;
     },
   };
