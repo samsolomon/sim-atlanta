@@ -22,6 +22,7 @@ export interface LiveState {
   realTime: boolean; // the clock shows the real present (live data may apply)
   rail: 'live' | 'connecting' | 'down';
   trains: number;
+  cityFreight: boolean;
   buses: number | null; // null: bus feed unavailable or not shown
 }
 
@@ -147,13 +148,16 @@ export function createShell(o: ShellOptions) {
   function renderMore() {
     const s = o.live();
     const rail = !s.realTime
-      ? '<b>Trains</b> timetable (the clock isn’t set to now)'
+      ? '<b>MARTA rail</b> timetable (the clock isn’t set to now)'
       : s.rail === 'live'
-        ? `<b>Trains</b> ${s.trains} MARTA trains, live positions`
+        ? `<b>MARTA rail</b> ${s.trains} MARTA trains, live positions`
         : s.rail === 'connecting'
-          ? '<b>Trains</b> connecting to MARTA…'
-          : '<b>Trains</b> MARTA live feed unavailable, showing the timetable';
+          ? '<b>MARTA rail</b> connecting to MARTA…'
+          : '<b>MARTA rail</b> MARTA live feed unavailable, showing the timetable';
     const bus = !s.realTime ? '<b>Buses</b> shown only at the present time' : s.buses == null ? '<b>Buses</b> live feed unavailable' : `<b>Buses</b> ${s.buses} MARTA buses, live positions`;
+    const freight = view === 'city'
+      ? s.cityFreight ? 'Train positions, timing and consists are illustrative.' : 'No freight simulation available in this scene.'
+      : 'Track traffic comes from reported or inferred daily counts.';
     const wx = !s.realTime
       ? '<b>Weather</b> shown only at the present time'
       : weather
@@ -161,7 +165,7 @@ export function createShell(o: ShellOptions) {
       : '<b>Weather</b> unavailable right now';
     more.innerHTML = `
       <p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>
-      <ul><li>${rail}${view === 'city' ? '. Train visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> where trains run is reported; when is illustrative</li><li>${wx}</li></ul>`;
+      <ul><li>${rail}${view === 'city' ? '. MARTA visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> ${freight}</li><li>${wx}</li></ul>`;
   }
 
   let lastTick = 0;

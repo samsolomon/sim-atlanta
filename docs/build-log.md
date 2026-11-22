@@ -1266,3 +1266,35 @@ The three lab selectors now name the vehicle you’re looking at. The bus is the
 ### 2026-11-21 — How wide is the Connector beneath Georgia State?
 
 City gives each side of the Downtown Connector a 14 m strip. On the county aerial, the striped lanes alone take about 24–25 m in each direction on both sides of the rail crossing. South of the MARTA deck, two northbound feeder lanes join a five-lane mainline. Treating both as painted centreline ribbons makes them overlap just where the traffic model needs distinct lanes. GDOT's nearest mainline record gives 253,000 vehicles a day in 2024 and a calculated 237,000 in 2025, counted across both directions. The dated aerial sections, ramp records and separate source of the lane count give M2b a way to check its lane geometry before animating traffic. [Two aerial cross-sections](log/2026-11-21-connector-footprint.png) · [Measurements and traffic records](connector-road-footprint.md)
+
+## 2026-11-21 — A boxcar found the freeway floor
+
+At 2:12:49 p.m. Eastern in our November 20 replay, two illustrative freight locomotives pass beneath the scheduled Blue Line. In the first render, a boxcar tipped nose-down at the Connector. At the two ends of the mapped freight bridge, the bare-earth grid read 308.8 and 306.9 m NAVD88. Along the intact track on either bank it read about 314 m. A still image of the empty track had let that mistake slip by. [First crossing](log/ui/2026-11-21-freight-bank-before.jpg) · [Same instant with the corrected grade](log/ui/2026-11-21-freight-bank-after.jpg)
+
+The City model now follows that grade across three rail-over-road crossings. The same rendered track carries both trucks of each locomotive and boxcar. Four Overture source segments trace 2,634 m of the Atlanta Terminal main, from the east edge through the Gulch to the north edge. The clock drives an illustrative loop of two locomotives and five boxcars. Its timing, consist and structural heights are schematic. At the Five Points east cut, a conflict with the MARTA terrain opening leaves too little supported freight track to animate.
+
+With moving freight, the Galaxy A16 opening view averaged **51.32 fps** across three eight-second windows on low quality (52.67, 52.62 and 48.68 fps) at 384 × 692. The two highway carriageways still look narrow in these screenshots. The separate roadway study measures what to change. [Connector cross-sections](connector-road-footprint.md)
+
+Checking the two decks from the highway side turned up one more collision. Two of the regularly spaced MARTA support columns crossed the freight loading envelope near the east board edge. We tested column positions against the mapped lower tracks and moved or skipped conflicting supports. In the rendered model, rays from the locomotive roof to the deck above now measure 1.07–1.16 m at ten points across the crossing. These are model clearances. [Locomotive under the MARTA deck](log/ui/2026-11-21-freight-under-marta.jpg)
+
+## 2026-11-21 · The freight line that runs under Five Points
+
+For an illustrative freight train in City, I traced one continuous freight route through the
+board, starting from the bridges over the Downtown Connector by Georgia State. It's the CSXT
+Atlanta Terminal Subdivision. It enters from Hulsey Yard and crosses the Connector. It shares the
+Five Points east cut with MARTA, then dives under Five Points. It surfaces in the Gulch and leaves
+at the north edge beside Norfolk Southern.
+
+The shipped bake already holds it as four Overture segments. They join end to end, giving 2,630 m
+with no gaps. Railroads report train counts at a dozen grade-separated FRA crossings along it, and
+those land on the route in order: 6 trains a day east of Georgia State, 13 under downtown, 14 at
+Ivan Allen Blvd. They are averages for different stretches, not one number for the route.
+
+What surprised me is how much of it is hidden: four covered stretches add up to 736 m. A
+branch that looked important on the map, the Circle Connection through the Gulch, has no
+reported traffic at all. Its count is inferred.
+
+The cover for this route comes from OSM and Overture tunnel tags. Unlike MARTA's cuts, I haven't
+checked it against imagery yet.
+
+![CSXT through the City board](log/rail/2026-11-21-freight-route.jpg)

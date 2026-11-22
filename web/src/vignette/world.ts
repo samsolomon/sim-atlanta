@@ -654,7 +654,7 @@ export class World {
    * tunnel portals and viaduct. Only the open parts are drawn (deeper than the portal is tunnel),
    * so one alignment can surface, dive and surface again across a big board.
    */
-  buildMarta(m: Alignment | null = this.marta) {
+  buildMarta(m: Alignment | null = this.marta, pierAllowed?: (x: number, z: number) => boolean) {
     if (!m) return;
     const b = new Builder();
     const runs = this.openRuns(m);
@@ -711,8 +711,14 @@ export class World {
         b.box(10.4, 1.6, 2.02, 0, e - 0.75, 0, PAL.concrete, rot);
         for (const d of [-5.05, 5.05]) b.box(0.3, 1.1, 2.02, d, e + 0.55, 0, PAL.concreteDark, rot);
         if (Math.round(s) % 26 === 0 || Math.round(s) % 26 === 1) {
-          const hgt = e - 1.55 - g;
-          b.box(2.2, hgt, 2.6, 0, g + hgt / 2, 0, PAL.concrete, rot);
+          const offset = pierAllowed
+            ? [0, -3.2, 3.2].find(d => pierAllowed(p.x + d * p.nx, p.z + d * p.nz))
+            : 0;
+          if (offset === undefined) continue; // span lower tracks between supported locations
+          const base = offset ? this.ground(p.x + offset * p.nx, p.z + offset * p.nz) : g;
+          const hgt = e - 1.55 - base;
+          if (hgt <= 0) continue;
+          b.box(2.2, hgt, 2.6, offset, base + hgt / 2, 0, PAL.concrete, rot);
           b.box(8, 1.0, 2.8, 0, e - 2.0, 0, PAL.concreteDark, rot); // pier cap
         }
       }
