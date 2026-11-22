@@ -55,6 +55,12 @@ reproducible:
 - `/vignette.html?at=<ISO>&weather=rain|fog|storm|overcast|clear&speed=600`, plus `?clean`
   and `?scatter`.
 
+When a visual change is ready for Sam, open its finished view in the City coordinator’s
+Orca worktree. Reuse one review tab. For landmarks, frame the building in daylight and
+save the camera position with the screenshot. Each agent closes its research and test
+tabs and stops its own dev servers after verification. Check with the other agents before
+stopping a worker they share.
+
 Live MARTA appears only when the clock is the real present. Any shifted or sped-up clock
 uses the timetable.
 
