@@ -1525,3 +1525,20 @@ Sam also chose the public name **Sim Atlanta**. The city menu, About page and br
 ### 2026-11-22 — Thirteen exhibit spaces under one map outline
 
 The Congress Center appears in the bake as one 597 m footprint with one height. The floor plans put twelve numbered exhibit halls and the BC connector inside it, all within our board. From the tracks, the easiest way to read the campus is through its gaps. The railway passes between A and B and under their southern lobby; a 10,827 m² loading court runs between B and C. The new roof tiers follow the two original courtyard holes. Building C’s mapped footprint clears the west edge of the miniature by 10.9 m. [Across the tracks before](log/ui/congress-center/tracks-before.jpg) · [After](log/ui/congress-center/tracks-after.jpg) · [Daylight cameras and sources](georgia-world-congress-center.md)
+
+### 2026-11-22: A track bed fighting the floor
+
+Sam saw the track bed under the Model Lab's CQ400 flicker at the default three-quarter view and
+while orbiting. The ballast was a box whose top face sat exactly at y = 0, the same plane as the
+ground disc, so the two surfaces z-fought for every pixel:
+- the grey bed tore into stripes;
+- the ink pass, which finds edges in the depth buffer, drew broken dashes along the sleepers.
+
+Over four frames, nudging the camera 0.02° each time, 1,200 to 37,000 track-bed pixels changed
+between consecutive frames. After the fix, about 120 did.
+
+The fix moves the ballast top to 3 cm above the ground, still 2 cm below the sleepers, and sinks
+its bottom below the ground. A test now fails if any track face lies within 2 cm of the ground
+plane.
+
+![Before: stripes where the ballast meets the ground. After: a solid bed](log/ui/model-lab/2026-11-22-railbed-zfight-before-after.jpg)
