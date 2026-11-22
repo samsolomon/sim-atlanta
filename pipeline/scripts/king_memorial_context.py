@@ -29,11 +29,21 @@ CROWNS = [
 ]
 
 
-def bake(raw):
+def parse_height(value):
+    if not value:
+        return None
+    try:
+        metres = float(value.removesuffix(" m"))
+        return metres if 0 < metres < 1000 else None
+    except ValueError:
+        return None
+
+
+def extract_context(raw, bounds, *, king=False):
     from shapely.geometry import LineString, Polygon, box
     from shapely.ops import polygonize
 
-    clip = box(BOUNDS["minX"], BOUNDS["minZ"], BOUNDS["maxX"], BOUNDS["maxZ"])
+    clip = box(bounds["minX"], bounds["minZ"], bounds["maxX"], bounds["maxZ"])
     elements = json.loads(raw)["elements"]
     nodes = {e["id"]: project(e["lon"], e["lat"]) for e in elements if e["type"] == "node"}
     ways = {e["id"]: e for e in elements if e["type"] == "way"}
@@ -53,7 +63,7 @@ def bake(raw):
         pieces = cropped.geoms if hasattr(cropped, "geoms") else [cropped]
         # Five stories in the 2023 McAuley Park Phase II market study, confirmed
         # at 349 Decatur in the Nov 2025 street panorama (see the block note).
-        pencil_factory = ref in ("osm:way:897345398", "osm:way:897345399")
+        pencil_factory = king and ref in ("osm:way:897345398", "osm:way:897345399")
         for i, part in enumerate(pieces):
             if part.geom_type != "Polygon" or part.area < 1:
                 continue
@@ -63,7 +73,7 @@ def bake(raw):
                 levels = tags.get("building:levels", "5" if pencil_factory else "")
                 buildings.append(dict(id=ref if i == 0 else f"{ref}/{i}", cls=building,
                                       floors=int(levels) if levels.isdigit() else None,
-                                      h=None, rings=rings, name=tags.get("name")))
+                                      h=parse_height(tags.get("height")) if not king else None, rings=rings, name=tags.get("name")))
             else:
                 cover.append(dict(kind=kind, sub=None, name=tags.get("name"), rings=rings))
 
@@ -91,7 +101,7 @@ def bake(raw):
 
     # Rail authors the platforms, station entrance and pedestrian access. Ordinary
     # sidewalks along Decatur stay in the neighborhood ground texture.
-    station = Polygon(ring(ways[270494115]))
+    station = Polygon(ring(ways[270494115])) if king else None
     for ident, way in ways.items():
         t = way.get("tags", {})
         coords = ring(way)
@@ -99,12 +109,17 @@ def bake(raw):
             add_area(f"osm:way:{ident}", t, coords)
         if t.get("highway") and not t.get("railway") and t.get("area") != "yes":
             if t.get("public_transport") or (t["highway"] in ("footway", "steps", "path") and
-                    (station.intersects(LineString(coords)) or t.get("tunnel") or t.get("covered") == "yes")):
+                    ((station is not None and station.intersects(LineString(coords))) or t.get("tunnel") or t.get("covered") == "yes")):
                 continue
-            for pts in clip_runs(coords, BOUNDS):
+            for pts in clip_runs(coords, bounds):
                 roads.append(dict(cls=t["highway"], sub=t.get("footway") or t.get("service"),
                                   name=t.get("name"), bridge=t.get("bridge", "no") != "no",
                                   tunnel=t.get("tunnel", "no") != "no" or t.get("indoor") == "yes", pts=pts))
+    return buildings, roads, cover
+
+
+def bake(raw):
+    buildings, roads, cover = extract_context(raw, BOUNDS, king=True)
     # Approximate waterline in the Oct 8, 2023 NAIP (USGS image 41283).
     # Trace only the water, including the short northeast arm. The deck is a separate building.
     pool = [[1422.8, 577.1], [1433.5, 573.2], [1435.1, 577.2], [1430.1, 579.2],
