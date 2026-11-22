@@ -15,6 +15,12 @@ At Butler, the older exterior photograph shows warm concrete bands extending pas
 
 The footprint extents above are measured along the street grid in the local bake. Roof heights and foundation placement come from the existing City buildings. Floor pitch is interpolated. The 8.4 m typical bay spacing, 0.36 m slab nose, 1.2 m recess, ramp dimensions and glazing divisions are visual estimates. Stall stripes and parked cars illustrate the scale of the roofs. Their positions and occupancy are illustrative.
 
+## Parked cars from roof level
+
+In the first pass the shell started 0.13 m above the pavement and ended at 1.06 m. From the Connector the cabins blended into the roofing. From an aisle on Butler there was daylight beneath the body but nothing to carry it. The revised sedan shares the moving road sedan’s 4.70 m length, 1.80 m body width, 0.32 m sill and 1.42 m roof. Each 0.33 m radius tire has a flat contact patch on the parking surface. The 1.10 m parapet hides the wheels and lower body from an observer just outside the roof edge. The glazing and roof can still be seen above it. These dimensions describe the model. The 145 parked cars on Butler and 29 on Hackney illustrate scale and roof use. [Road vehicle kit](../web/src/vignette/vehicles.ts) · [From the aisle before](log/ui/parking-decks/cars-close-before.jpg) · [From the same aisle after](log/ui/parking-decks/cars-close-after.jpg) · [Across the parapet](log/ui/parking-decks/cars-parapet-after.jpg) · [Original Connector stance](log/ui/parking-decks/cars-connector-before.jpg) · [Corrected Connector stance](log/ui/parking-decks/connector-after.jpg)
+
+The roof-aisle camera is at City (780.51, −6.95, 333.98), aimed at (780.66, −7.72, 342.19), with a 48° vertical field of view. The parapet camera is at (732.42, −7.08, 400.43), aimed at (742.07, −7.40, 394.51), with a 46° vertical field of view. Triples use x, y, z in metres. Both roof inspection cameras use a 0.10 m near plane.
+
 ## Matching City cameras
 
 Desktop Orca, 1446 × 876, high quality, November 20, 2026 at 14:12:45 EST with the clock paused. The orbit views use `__city.lookAt(x, z, {bearing, metresPerPixel, tilt})` in a development build. The street-level inspection uses a 62° vertical field of view, eye at (766, 435) at ground + 1.8 m, and target (704, 381) at ground + 7 m.
@@ -27,4 +33,4 @@ Desktop Orca, 1446 × 876, high quality, November 20, 2026 at 14:12:45 EST with 
 | On Decatur between the garages | (704, 381) | | | | [Before](log/ui/parking-decks/decatur-before.jpg) · [After](log/ui/parking-decks/decatur-after.jpg) |
 | City opening | (−40, −260) | 28° | 2.44085 m/px | 57° | [Before](log/ui/parking-decks/opening-before.jpg) · [After](log/ui/parking-decks/opening-after.jpg) |
 
-The matched captures use the downtown bake on base `51f9394`. The high-quality opening went from 2,096,499 to 2,113,979 submitted triangles (about 0.83%) at 141 draw calls. The Connector stayed at 81 draws and the board-edge view at 113. The existing building mesh carries the concrete, bay recesses, ramps and rooftop markings in one batch. A web rebuild and deployment pick up these details with the existing downtown data.
+The matched captures use the downtown bake on base `100ffec`. The high-quality opening went from 2,096,499 to 2,143,907 submitted triangles (about 2.26%) at 141 draw calls. The Connector stayed at 81 draws and the board-edge view at 113. The existing building mesh carries the concrete, bay recesses, ramps and rooftop markings in one batch. A web rebuild and deployment pick up these details with the existing downtown data.

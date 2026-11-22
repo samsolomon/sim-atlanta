@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Builder, pointInRing, rng, segDist, type P2 } from './geom';
+import { appendParkedSedan } from './parked-sedan';
 import type { VBuilding } from './world';
 
 // Grady's parking study identifies these two parcels. The campus includes several
@@ -153,33 +154,8 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
         const mark = rectangle(center, v - 1.25, 5.1, 0.14).map(([x, z]) => pos(world(x, z), roof + 0.035));
         b.quad(mark[0], mark[1], mark[2], mark[3], '#dfdccc');
         if (random() > deck.occupancy) continue;
-        const body = rectangle(center, v, 3.9, 1.62).map(([x, z]) => world(x, z));
-        const cabin = rectangle(center, v, 2.1, 1.38).map(([x, z]) => world(x, z));
         const paint = ['#a0abad', '#d4c9b6', '#a66f59', '#667a88'][Math.floor(random() * 4)];
-        for (let j = 0; j < 4; j++) {
-          const k = (j + 1) % 4;
-          b.quad(
-            pos(body[j], roof + 0.13),
-            pos(body[k], roof + 0.13),
-            pos(body[k], roof + 0.64),
-            pos(body[j], roof + 0.64),
-            paint
-          );
-          b.quad(
-            pos(body[j], roof + 0.64),
-            pos(body[k], roof + 0.64),
-            pos(cabin[k], roof + 1.06),
-            pos(cabin[j], roof + 1.06),
-            '#647478'
-          );
-        }
-        b.quad(
-          pos(cabin[0], roof + 1.06),
-          pos(cabin[1], roof + 1.06),
-          pos(cabin[2], roof + 1.06),
-          pos(cabin[3], roof + 1.06),
-          paint
-        );
+        appendParkedSedan(b, world(center, v), roof, side * c, side * s, paint);
       }
     }
   }

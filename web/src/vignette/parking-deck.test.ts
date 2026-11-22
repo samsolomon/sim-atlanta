@@ -1,7 +1,10 @@
 import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { expect, it } from 'vitest';
 import { World, type VBuilding, type VData } from './world';
-import { pointInRing, segDist, type P2 } from './geom';
+import { Builder, pointInRing, segDist, type P2 } from './geom';
+
+import { appendParkedSedan } from './parked-sedan';
+import { vehicleGeometry } from './vehicles';
 
 const butler: VBuilding = {
   id: '72f23ef4-84a0-4567-9af7-4478de81418f',
@@ -72,10 +75,10 @@ it.each([butler, hackney])('keeps the surveyed footprint, base and roof of $id i
   expect(new Set(g.getAttribute('aStyle').array)).toEqual(new Set([-1]));
   const ring = building.rings[0];
   const pos = g.getAttribute('position');
-  expect(pos.count / 3).toBeLessThan(7000);
+  expect(pos.count / 3).toBeLessThan(19000);
   g.computeBoundingBox();
   expect(g.boundingBox!.min.y).toBeCloseTo(-17.5);
-  expect(g.boundingBox!.max.y).toBeCloseTo(-17 + building.h! + 1.1);
+  expect(g.boundingBox!.max.y).toBeCloseTo(-17 + building.h! + 1.42);
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i),
       z = pos.getZ(i);
@@ -100,6 +103,7 @@ it('sets the parking interior back behind the concrete slab edge', () => {
   }
   expect(depth(0.7)).toBeCloseTo(5);
   expect(depth(2)).toBeCloseTo(6.2);
+  expect(depth(butler.h! + 1.05)).toBeCloseTo(5);
 });
 
 it('leaves the sloping approaches open through the Hackney roof', () => {
@@ -135,4 +139,32 @@ it('preserves the ordinary facade on unverified buildings and keeps surface lots
   expect(build([], [{ kind: 'parking', name: null, sub: null, rings }]).geometry.getAttribute('position').count).toBe(
     0
   );
+});
+
+it('places four tires on the pavement and matches the road sedan shell at sill and roof', () => {
+  const parked = new Builder();
+  const pavement = 6.5;
+  appendParkedSedan(parked, [0, 0], pavement, 1, 0, '#fff');
+  const contacts = new Set<string>();
+  const shell: number[] = [];
+  for (let i = 0; i < parked.pos.length; i += 3) {
+    const [x, y, z] = parked.pos.slice(i, i + 3);
+    expect(y).toBeGreaterThanOrEqual(pavement);
+    if (y === pavement) {
+      expect(Math.abs(z)).toBeGreaterThan(0.7);
+      expect(Math.abs(Math.abs(x) - 1.457)).toBeLessThan(0.15);
+      contacts.add([Math.sign(x), Math.sign(z)].join(','));
+    }
+    if (parked.col[i] === 1) shell.push(y - pavement);
+  }
+  const moving = vehicleGeometry('sedan');
+  const pos = moving.getAttribute('position'),
+    kind = moving.getAttribute('aKind');
+  const roadShell = Array.from({ length: pos.count }, (_, i) => i)
+    .filter((i) => kind.getX(i) === 0)
+    .map((i) => pos.getY(i));
+  expect(contacts.size).toBe(4);
+  expect(Math.min(...shell)).toBeCloseTo(Math.min(...roadShell));
+  expect(Math.max(...shell)).toBeCloseTo(Math.max(...roadShell));
+  moving.dispose();
 });
