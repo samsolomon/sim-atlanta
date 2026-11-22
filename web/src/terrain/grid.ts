@@ -9,6 +9,7 @@ export interface GroundManifest {
   offsetM: number;
   noData: number;
   encoding: string;
+  horizontal?: { originLat: number; originLon: number; radiusM: number };
   vertical: { crs: string; sceneZeroNavd88M: number };
   sha256: string;
 }
