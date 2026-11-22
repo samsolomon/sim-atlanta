@@ -49,6 +49,7 @@ import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createWestin } from './westin';
+import { createCapitol } from './capitol';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -177,6 +178,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
   let westin: ReturnType<typeof createWestin> = null;
+  let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
     await build('alignments', () => {
@@ -199,11 +201,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
-        const city = { ...vd, buildings: westin?.buildings ?? buildings };
+        const afterWestin = westin?.buildings ?? buildings;
+        capitol = createCapitol(afterWestin, (x, z) => {
+          const h = ground.sample(x, z);
+          return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
+        });
+        const city = { ...vd, buildings: capitol?.buildings ?? afterWestin };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
+        if (capitol) world.group.add(capitol.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
@@ -503,6 +511,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     platforms?.setNight(night);
     floyd?.setNight(night);
     westin?.setNight(night);
+    capitol?.setNight(night);
     terrain?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;

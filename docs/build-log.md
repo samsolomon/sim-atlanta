@@ -1499,3 +1499,26 @@ City’s long source note crossed the whole bottom of the scene. We moved it int
 ## 2026-11-22 — Finding the Westin inside its block
 
 The old skyline gave all 125 metres of the Westin's hotel block the same 220-metre roof. The surprise was that the missing circle was already mapped separately. Its 39-metre glass drum sits on the west end of the seven-story podium, with a second, much smaller circle for the exterior elevator. Portman's park and oblique photographs showed where to put the dark Sun Dial band and where to let the neighbouring skyline break up the glass. The replacement takes two meshes. From the Gulch you can see the towers that the old slab hid. [Skyline before](log/ui/westin/gulch-before.jpg) · [Skyline after](log/ui/westin/gulch-after.jpg) · [Close night view](log/ui/westin/night-after.jpg) · [Source notes and camera poses](westin-peachtree-plaza.md)
+
+### 2026-11-22: The gold dome, by the numbers
+
+The Georgia State Capitol had been a 29 m beige extrusion. Seen from a Blue Line train, it was the
+one downtown landmark that should catch the light, and it didn't.
+
+The Historic American Buildings Survey drew the building in 1995–96: 52 public-domain sheets at
+1:128. The dome section puts the top of Miss Freedom's torch at 259'-7" (79.1 m) above the lowest
+grade, and the dome crown at 195'-9" (59.7 m).
+
+One small trap: the height labels sit in the sheet's margin, not beside the features they mark.
+Scaling the drawing put every label on a distinct feature. The 10.1 m rise from spring to crown
+then matched a hemisphere almost exactly the size of the gold dome OSM had already mapped (19.8 m).
+
+The model was placed from the footprint, not from aerial photos:
+- the crossing of the cross plan lands 0.6 m from OSM's dome part, while the dome in the aerial
+  imagery sits 15 m away;
+- the portico faces Washington St, and a test fails if it's flipped;
+- about 3,200 triangles in all.
+
+At dusk the gilding is floodlit.
+
+![The Capitol from the train side](log/ui/capitol/2026-11-22-capitol-train-after.jpg)
