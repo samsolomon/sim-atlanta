@@ -80,7 +80,7 @@ Decisions from Sam:
 - The menu and sheets trap focus and close on `Esc`.
 - Contrast: the card's fill stays at least 80% opaque behind its text, so contrast holds over bright skies.
 - `prefers-reduced-motion` turns off the camera glide and the rain streaks.
-- Picking trains and buses uses the nearest vehicle within 24 px on screen, not an exact mesh hit, so moving vehicles are tappable on a phone.
+- Picking trains and buses uses the nearest vehicle within 24 px on screen, not an exact mesh hit, so moving vehicles are tappable on a phone. Use the visible car body and the drawn bus position, including any portal clipping. Refresh the shared card even when the basemap has not loaded. A drag, pinch or cancelled touch only moves the camera. The phone card leaves the view switch accessible.
 
 ### Milestone 2: the City view (the big build), risk first
 A downtown diorama in the vignette's style. It is built by generalising the vignette engine rather than starting over. It is split so the riskiest unknown, phone performance at about 23× the vignette's area, is measured before anything moves:

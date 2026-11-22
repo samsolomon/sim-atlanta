@@ -68,7 +68,7 @@ export class CityTrains {
     this.project = makeProjector(manifest.origin);
   }
 
-  private car(color: string, role: number, placement?: NonNullable<ReturnType<ServiceTrack['car']>>) {
+  private car(trainId: string, color: string, role: number, placement?: NonNullable<ReturnType<ServiceTrack['car']>>) {
     const key = color + role + (placement?.clipped ? placement.name + placement.clipped : '');
     let pool = this.pools.get(key);
     if (!pool) {
@@ -90,6 +90,7 @@ export class CityTrains {
       pool.meshes.push(mesh);
       this.group.add(mesh);
     }
+    mesh.userData.trainId = trainId;
     mesh.visible = true;
     return mesh;
   }
@@ -115,7 +116,7 @@ export class CityTrains {
         const role = i === 0 ? 1 : i === units - 1 ? -1 : 0;
         const placement = mapped?.routeId === t.routeId ? mapped.car(t.s.value, offset) : undefined;
         if (placement) {
-          const car = this.car(color, role, placement);
+          const car = this.car(t.id, color, role, placement);
           car.position.set(placement.x, this.cut!.treadY, placement.z);
           this.direction.set(placement.x + placement.dx, this.cut!.treadY, placement.z + placement.dz);
           car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.direction, car.position, car.up));
@@ -132,7 +133,7 @@ export class CityTrains {
         const cx = p.x - p.nx * off, cz = p.z - p.nz * off;
         if (cx < b.minX - CAR_LENGTH / 2 || cx > b.maxX + CAR_LENGTH / 2 ||
             cz < b.minZ - CAR_LENGTH / 2 || cz > b.maxZ + CAR_LENGTH / 2) continue;
-        const car = this.car(color, role);
+        const car = this.car(t.id, color, role);
         car.position.set(cx, al.elev(sc) + 0.55, cz);
         const q = al.line.at(sc + dir * 4);
         this.direction.set(q.x - q.nx * off, al.elev(sc + dir * 4) + 0.55, q.z - q.nz * off);

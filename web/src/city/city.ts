@@ -43,6 +43,7 @@ import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
 import { CityTrains } from './trains';
+import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
 export type Quality = 'low' | 'high';
@@ -90,6 +91,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
   beforeFrame?: (timestamp: number) => void;
+  selectVehicle?: (vehicle: VehicleSelection | null) => void;
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
@@ -242,6 +244,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   });
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
   const trains = new CityTrains(marta, manifest, b, colors, edges, cut);
+  const scenery = scene.children.slice();
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
   if (freight) scene.add(freight.group);
@@ -409,6 +412,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
+  const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
+      camera, trains.group, buses.positions, edges, scenery, freight?.group));
+  });
 
   // ---- sun, sky, weather --------------------------------------------------------------
   const C = (x: string) => new THREE.Color(x);
@@ -598,6 +606,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      stopPicking();
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();

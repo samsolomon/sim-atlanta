@@ -96,6 +96,7 @@ export class CityFreight {
               this.shapes.set(kind, shape);
             }
             car = new THREE.Mesh(shape, section.materials[cut]);
+            car.userData.lengthM = length;
             car.receiveShadow = true;
             section.cars.set(i, car);
             this.group.add(car);
