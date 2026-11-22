@@ -29,6 +29,15 @@ describe('railBedY', () => {
     expect(railBedY(v, 150, -50, ground)).toBe(-3); // flat beyond the last anchor
     expect(railBedY(v, -20, -50, ground)).toBe(0); // and before the first
   });
+  it('prefers a measured absolute bed when the scene zero is known, and its rel otherwise', () => {
+    const v = span(0, 100, { base: 'anchors', rel: 7, form: 'viaduct', height: 'measured', anchors: [
+      { s: 0, x: 0, z: 0, at: 'a', rel: 0 },
+      { s: 100, x: 100, z: 0, at: 'b', rel: 12, navd88: 330 },
+    ] });
+    expect(railBedY(v, 100, -50, ground, 320)).toBe(10); // 330 − 320, independent of the ground sample
+    expect(railBedY(v, 50, -50, ground, 320)).toBeCloseTo(5);
+    expect(railBedY(v, 100, -50, ground)).toBe(-10 + 12); // no zero: fall back to rel
+  });
   it('extends a single anchor by its grade', () => {
     const v = span(0, 100, { base: 'anchors', rel: 2, grade: 0.01, anchors: [{ s: 10, x: 0, z: 0, at: 'a' }] });
     expect(railBedY(v, 60, 0, ground)).toBeCloseTo(2.5);

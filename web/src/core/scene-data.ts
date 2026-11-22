@@ -33,8 +33,10 @@ export interface RailAnchor {
   z: number;
   /** What it is, e.g. "east face of Georgia State station (Floyd Building)". */
   at: string;
-  /** Bed height above the ground here (m, schematic); overrides the span's `rel`. */
+  /** Bed height above the ground here (m); overrides the span's `rel`. A fallback when `navd88` is set. */
   rel?: number;
+  /** Measured absolute bed height (NAVD88 m). Preferred whenever the consumer knows scene zero. */
+  navd88?: number;
 }
 
 /**
@@ -108,10 +110,13 @@ export function railSpanAt(rail: RailData | undefined, pathId: string, s: number
  * Track-bed height for a span at `s`, given a ground sampler in scene metres (bare earth,
  * same vertical zero as the board) and the ground directly under the track at s.
  */
-export function railBedY(span: RailSpan, s: number, groundHere: number, ground: (x: number, z: number) => number): number {
+export function railBedY(span: RailSpan, s: number, groundHere: number, ground: (x: number, z: number) => number,
+  sceneZeroNavd88M?: number): number {
   if (span.base === 'ground' || !span.anchors?.length) return groundHere + span.rel;
   const a = span.anchors;
-  const y = (k: RailAnchor) => ground(k.x, k.z) + (k.rel ?? span.rel);
+  // A measured anchor is absolute; with a known scene zero it no longer depends on the ground sample.
+  const y = (k: RailAnchor) => k.navd88 !== undefined && sceneZeroNavd88M !== undefined
+    ? k.navd88 - sceneZeroNavd88M : ground(k.x, k.z) + (k.rel ?? span.rel);
   if (a.length === 1 || s <= a[0].s) return y(a[0]) + (a.length === 1 ? (span.grade ?? 0) * (s - a[0].s) : 0);
   for (let i = 1; i < a.length; i++) {
     if (s <= a[i].s) {

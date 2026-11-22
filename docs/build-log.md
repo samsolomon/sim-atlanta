@@ -1703,3 +1703,16 @@ The Healey parcel already had the right sixteen stories. City had given them to 
 ### 2026-11-22 — A second piece of Atlanta’s board
 
 East of the Connector the old walnut edge cut across Decatur Street. The opt-in King Memorial board opens 360 m of that wall and carries the street onto another 800 m of measured ground. All 73 edge heights agree, even on the low-detail mesh. Downtown visitors fetched zero east data files at opening on either tier. Crossing the edge fetched 86,963 bytes of static terrain and neighborhood context. South of the station, the 2019 survey predates Marchon. An October 2023 aerial and November 2025 street photograph place five stories of apartments and street-level shops on the former parking lot. Two separate OSM ways had to be joined to recover the main building outline. [Before](log/ui/king-memorial-board/before.jpg) · [After](log/ui/king-memorial-board/after.jpg) · [Marchon aerial and City comparison](log/ui/king-memorial-board/marchon-comparison.jpg) · [Evidence, limits and cameras](log/ui/king-memorial-board/README.md)
+
+### 2026-11-22: Replacing the 7 m placeholder with the measured viaduct
+
+City had hung the viaduct east of Georgia State from a guess: 7 m above the ground at the station
+face and at the Connector's east bank, then flat beyond. The lidar profile showed the guess was
+nearly right at the station, 0.8 m low over the Connector, and 3.9 m low by the board edge, where
+the real structure keeps climbing over the CSX yard.
+
+Eight measured anchors now replace the guess, and they fit the 5 m lidar profile within 0.25 m.
+They carry absolute NAVD88 heights rather than "metres above the ground here", because the ground
+under a viaduct can drop 10 m in a few metres across the Connector.
+
+![Before / after: the Connector (top) and the board edge (bottom)](log/ui/king-memorial/measured-anchors-before-after.jpg)

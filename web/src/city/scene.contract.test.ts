@@ -126,7 +126,9 @@ describe.skipIf(!has)('downtown scene data', () => {
           expect(sp.s1, id).toBeLessThanOrEqual(hi + 0.1);
           if (i) expect(sp.s0, id).toBeGreaterThanOrEqual(spans[i - 1].s1);
           expect(rail!.evidence[sp.ev], sp.ev).toBeDefined();
-          expect(sp.height).toBe('schematic');
+          // Only the Connector viaduct is measured (lidar anchors carry absolute beds); the rest is schematic.
+          expect(sp.height, sp.ev).toBe(sp.ev === 'connector-viaduct' ? 'measured' : 'schematic');
+          if (sp.height === 'measured') expect(sp.anchors!.some((a) => a.navd88 !== undefined), id).toBe(true);
           // Viaducts never follow the ground under them; open cuts sit on the DEM floor.
           if (sp.form === 'viaduct') expect(sp.base, id).toBe('anchors');
           if (sp.form === 'cut') expect([sp.base, sp.rel], id).toEqual(['ground', 0]);
@@ -157,9 +159,11 @@ describe.skipIf(!has)('downtown scene data', () => {
         for (let i = 1; i < spans.length; i++) {
           const [a, b] = [spans[i - 1], spans[i]];
           if (Math.abs(a.s1 - b.s0) > 0.01 || !a.ev.startsWith('gsu') && !b.ev.startsWith('gsu') && b.ev !== 'connector-viaduct') continue;
-          const yA = railBedY(a, a.s1 - 0.01, ground(...at(id, a.s1 - 0.01)), ground);
-          const yB = railBedY(b, b.s0 + 0.01, ground(...at(id, b.s0 + 0.01)), ground);
-          expect(Math.abs(yA - yB), `${id} ${a.ev}|${b.ev}`).toBeLessThan(0.25);
+          for (const zero of [undefined, 323.8]) {
+            const yA = railBedY(a, a.s1 - 0.01, ground(...at(id, a.s1 - 0.01)), ground, zero);
+            const yB = railBedY(b, b.s0 + 0.01, ground(...at(id, b.s0 + 0.01)), ground, zero);
+            expect(Math.abs(yA - yB), `${id} ${a.ev}|${b.ev} zero ${zero}`).toBeLessThan(0.25);
+          }
         }
       }
     });
