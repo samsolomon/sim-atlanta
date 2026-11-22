@@ -5,6 +5,7 @@
  * detailed buildings and trees.
  */
 import * as THREE from 'three';
+import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
@@ -13,6 +14,7 @@ import { PlacementIndex } from './spatial';
 export const MARTA_TRACK_OFFSET = 2.1;
 
 export interface VBuilding {
+  cls?: string | null;
   id: string;
   h: number | null;
   floors: number | null;
@@ -822,6 +824,13 @@ export class World {
       const y0 = foot - 0.5;
       const roofY = originY + h;
       const before = b.pos.length / 3;
+      if (appendParkingDeck(b, bd, y0, originY, roofY)) {
+        for (let i = before; i < b.pos.length / 3; i++) {
+          style.push(-1);
+          base.push(0);
+        }
+        continue;
+      }
       // Walls (run to h + parapet), roof slightly below the parapet top.
       const parapet = h > 6 ? 1.1 : 0;
       for (const ring of bd.rings)
