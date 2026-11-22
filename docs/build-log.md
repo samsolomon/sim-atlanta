@@ -1691,3 +1691,7 @@ gzipped, against 1.44 MB for all of downtown.
 [Study](king-memorial-corridor.md)
 
 ![Guideway, roof and ground along the corridor](log/ui/king-memorial/profile.svg)
+
+### 2026-11-22 — The narrow tower on Forsyth
+
+The Healey parcel already had the right sixteen stories. City had given them to the low roofs behind the tower, too. The Forsyth edge measures 62.56 m long, but the tall slab runs only about 19 m back from the street. Its roof sits around 385.2 m above sea level. The rotunda roof behind it sits around 332.9 m. With that space open again, the Woodruff Park view picks out the narrow masonry tower, ten paired bays and the lift house with two stacks rising between the lower buildings. [Photograph and matched models](log/ui/healey/comparison.jpg) · [Street views, point-cloud measurements and night comparison](log/ui/healey/README.md)
