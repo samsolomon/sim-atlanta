@@ -83,6 +83,8 @@ pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
 
 ## Not yet
 
+[Future features](docs/future-features.md) collects ideas for sharing City views, rendering distant traffic and building a neighborhood from a fork.
+
 - City's phone performance gate, moving vehicles, real terrain, a ride-along camera,
   and growing out to I-285 (see docs/city-plan.md and docs/art-backlog.md).
 - Freight positions. No free source exists; see docs/data-model.md.
