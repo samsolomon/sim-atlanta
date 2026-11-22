@@ -208,7 +208,7 @@ function setNight(on: boolean) {
 let lastFrame = 0;
 const frame = (t: number) => {
   if (figure && playing) {
-    cycle = (cycle + Math.min(t - lastFrame, 100) / (model === 'walker' ? 1200 : 1000)) % 1;
+    cycle = (cycle + Math.min(t - lastFrame, 100) / 1000 * figure.cyclesPerSecond) % 1;
     figure.setPhase(cycle);
     phase.value = String(Math.round(cycle * 100));
   }

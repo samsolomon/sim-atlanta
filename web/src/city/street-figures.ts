@@ -2,7 +2,7 @@
 // Parts are shared across the whole board. Only the instance transforms move.
 import * as THREE from 'three';
 import { Builder } from '../vignette/geom';
-import { travellerAt, type Traveller } from './walkways';
+import { strideAngle, travelSpeed, travellerAt, type Traveller } from './walkways';
 
 type XYZ = [number, number, number];
 const chalk = '#ffffff', denim = '#364052', rubber = '#303038';
@@ -132,6 +132,7 @@ export function createFigurePreview(kind: 'walker' | 'cyclist') {
   setPhase(0);
   return {
     group, setPhase,
+    cyclesPerSecond: strideAngle(kind === 'cyclist', travelSpeed(kind === 'cyclist', .5)) / (2 * Math.PI),
     dispose() {
       group.removeFromParent();
       for (const geometry of geometries) geometry.dispose();

@@ -2,19 +2,19 @@ import { Color, Group, InstancedMesh, Matrix4, Mesh, PerspectiveCamera } from 't
 import { expect, it, vi } from 'vitest';
 import { Line } from '../vignette/geom';
 import { createFigurePreview, StreetFigures } from './street-figures';
-import type { Traveller } from './walkways';
+import { travelSpeed, type Traveller } from './walkways';
 
 it.each(['walker', 'cyclist'] as const)('previews the detailed City %s in place through a complete cycle', kind => {
   const rider = kind === 'cyclist';
   const person: Traveller = { way: { line: new Line([[0, 0], [0, 25]]), from: 0, to: 25, trail: rider },
-    rider, size: 1, tint: 0, phase: 0, speed: 1 };
+    rider, size: 1, tint: 0, phase: 0, speed: travelSpeed(rider, .5) };
   const city = new StreetFigures([person], () => 0, false);
   const camera = new PerspectiveCamera(45, 1, .1, 100);
   camera.position.set(0, 2, 8);
   camera.lookAt(0, 1, 0);
   const preview = createFigurePreview(kind);
   for (const cycle of [0, .25, .75, 1]) {
-    person.phase = cycle * 2 * Math.PI / (rider ? 1.55 : 4.1);
+    person.phase = cycle / preview.cyclesPerSecond * person.speed;
     // Change the camera slightly to refresh City's batches at the same clock.
     camera.position.y += .001;
     city.update(0, camera, 800);

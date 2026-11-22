@@ -7,6 +7,14 @@ type GroundAt = (x: number, z: number) => number | null;
 export interface Walkway { line: Line; from: number; to: number; trail: boolean }
 export interface Traveller { way: Walkway; rider: boolean; phase: number; speed: number; size: number; tint: number }
 
+export function travelSpeed(rider: boolean, fraction: number) {
+  return rider ? 3.5 + fraction * 1.1 : 1.05 + fraction * .45;
+}
+
+export function strideAngle(rider: boolean, metres: number) {
+  return metres * (rider ? 1.55 : 4.1);
+}
+
 const connector = 'Westside Beltline Connector';
 const carriageways = new Set(['service', 'residential', 'unclassified', 'tertiary', 'secondary', 'primary', 'trunk', 'motorway', 'living_street']);
 
@@ -84,7 +92,7 @@ export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean
     for (let i = 0; i < count; i++) {
       const rider = trail && i % 2 === 0;
       travellers.push({ way, rider, phase: (offset + i / count) * 2 * span,
-        speed: rider ? 3.5 + random() * 1.1 : 1.05 + random() * .45,
+        speed: travelSpeed(rider, random()),
         size: .94 + random() * .11, tint: Math.floor(random() * 5) });
     }
   }
@@ -102,5 +110,5 @@ export function travellerAt(person: Traveller, seconds: number) {
   // Ease across the centreline over the final metre of a turnaround.
   const offset = -.38 * dir * Math.min(1, u, Math.abs(span - u), period - u);
   return { x: p.x + offset * p.nx, z: p.z + offset * p.nz,
-    angle: Math.atan2(dir * p.dx, dir * p.dz), stride: Math.sin((seconds * speed + phase) * (person.rider ? 1.55 : 4.1)) };
+    angle: Math.atan2(dir * p.dx, dir * p.dz), stride: Math.sin(strideAngle(person.rider, seconds * speed + phase)) };
 }
