@@ -7,7 +7,7 @@ All **12 numbered exhibit halls and the connecting BC exhibit hall** fit on the 
 | Across the tracks | [Before](log/ui/congress-center/tracks-before.jpg) | [After](log/ui/congress-center/tracks-after.jpg) |
 | Stadium district | [Before](log/ui/congress-center/district-before.jpg) | [After](log/ui/congress-center/district-after.jpg) |
 
-After deployment, open the paused Map link and select **City**. The map hands City its position, scale and bearing. [Daylight review link](https://atlanta.solomon.io/?view=map&q=high&t=2026-11-20T14:12:45-05:00&speed=0#16.462/33.759818/-84.398587/-18) · [Same view in the production build](log/ui/congress-center/review-daylight.jpg) · [Southern entrances](log/ui/congress-center/plaza-after.jpg)
+The matched pairs use the stadium from #48. The daylight review frame includes the revised stadium from #49. After deployment, open the paused Map link and select **City**. The map hands City its position, scale and bearing. [Daylight review link](https://atlanta.solomon.io/?view=map&q=high&t=2026-11-20T14:12:45-05:00&speed=0#16.462/33.759818/-84.398587/-18) · [Same view in the production build](log/ui/congress-center/review-daylight.jpg) · [Southern entrances](log/ui/congress-center/plaza-after.jpg)
 
 ## Reading the campus
 
