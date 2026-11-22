@@ -144,12 +144,12 @@ export function irwinHouseFinish(building: VBuilding): BuildingFinish | undefine
         }
       } else {
         const mainDepth = form === 'double' ? westBack[1] : depth;
-        gable(-.18,w+.18,form === 'gable' ? .55 : porch-.32,mainDepth+.15,eave,2.6);
+        gable(-.18,w+.18,form === 'gable' ? -.12 : porch-.32,mainDepth+.15,eave,2.6);
         if (form === 'gable') {
-          gable(porchLeft-.15,w+.15,-.3,porch+.2,eave,1.95);
+          gable(porchLeft-.15,w+.15,-.68,porch+.2,eave,1.95);
           const mid = (porchLeft+w)/2;
-          batch.quad(p(mid-.92,eave+.35,-.33),p(mid+.92,eave+.35,-.33),p(mid+.92,eave+1.02,-.33),p(mid-.92,eave+1.02,-.33),trim);
-          for (const left of [mid-.81,mid+.03]) batch.quad(p(left,eave+.44,-.34),p(left+.78,eave+.44,-.34),p(left+.78,eave+.93,-.34),p(left,eave+.93,-.34),'#748383');
+          batch.quad(p(mid-.92,eave+.35,-.71),p(mid+.92,eave+.35,-.71),p(mid+.92,eave+1.02,-.71),p(mid-.92,eave+1.02,-.71),trim);
+          for (const left of [mid-.81,mid+.03]) batch.quad(p(left,eave+.44,-.72),p(left+.78,eave+.44,-.72),p(left+.78,eave+.93,-.72),p(left,eave+.93,-.72),'#748383');
         } else if (step) {
           gable(w*.48,w+.05,porch-.57,porch+4.2,eave,1.8);
           batch.quad(p(-.2,eave,-.35),p(w+.2,eave,-.35),p(w+.2,eave+.85,porch+.12),p(-.2,eave+.85,porch+.12),roof);
