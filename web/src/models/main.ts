@@ -10,6 +10,7 @@ import { gradeShader } from '../vignette/grade';
 import { BUS_LENGTH, busGeometry, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
 import { inkShader } from '../vignette/ink';
+import { labTrack } from './track';
 
 const el = document.getElementById('stage')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -35,21 +36,8 @@ const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 48), new THREE.MeshLa
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
-// A short length of track: ballast, sleepers, rails.
-const track = new THREE.Group();
-const ballast = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.3, 60), new THREE.MeshLambertMaterial({ color: '#8d877d' }));
-ballast.position.y = -0.15;
-track.add(ballast);
-for (const x of [-0.72, 0.72]) {
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 60), new THREE.MeshLambertMaterial({ color: '#6b625b' }));
-  rail.position.set(x, 0.05, 0);
-  track.add(rail);
-}
-for (let z = -30; z < 30; z += 0.7) {
-  const tie = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.14, 0.26), new THREE.MeshLambertMaterial({ color: '#9b968c' }));
-  tie.position.set(0, -0.02, z);
-  track.add(tie);
-}
+// A short length of track: ballast, sleepers, rails (see track.ts).
+const track = labTrack();
 track.traverse((o) => ((o as THREE.Mesh).receiveShadow = true));
 scene.add(track);
 

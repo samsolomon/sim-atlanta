@@ -1549,6 +1549,23 @@ At dusk the gilding is floodlit.
 
 ![The Capitol from the train side](log/ui/capitol/2026-11-22-capitol-train-after.jpg)
 
+### 2026-11-22: A track bed fighting the floor
+
+Sam saw the track bed under the Model Lab's CQ400 flicker at the default three-quarter view and
+while orbiting. The ballast was a box whose top face sat exactly at y = 0, the same plane as the
+ground disc, so the two surfaces z-fought for every pixel:
+- the grey bed tore into stripes;
+- the ink pass, which finds edges in the depth buffer, drew broken dashes along the sleepers.
+
+Over four frames, nudging the camera 0.02° each time, 1,200 to 37,000 track-bed pixels changed
+between consecutive frames. After the fix, about 120 did.
+
+The fix moves the ballast top to 3 cm above the ground, still 2 cm below the sleepers, and sinks
+its bottom below the ground. A test now fails if any track face lies within 2 cm of the ground
+plane.
+
+![Before: stripes where the ballast meets the ground. After: a solid bed](log/ui/model-lab/2026-11-22-railbed-zfight-before-after.jpg)
+
 ### 2026-11-22 — Walking to Georgia State
 
 At 2:12:45 on the Friday timetable, two jacketed walkers pass one another on a sidewalk near Georgia State. Across town a helmeted rider pedals past a walker on the Westside Beltline Connector. The bake has nine pieces bearing that trail name, including a 242 m bridge. Three complete ground sections support seven illustrative walkers and seven cyclists. From the 390 px City opening, 103 visible walkers fit in a single draw. Zooming in reveals swinging arms, backpacks, handlebars and wheels. [Georgia State, the trail and the opening camera](log/ui/street-life/README.md)
