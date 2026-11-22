@@ -41,6 +41,12 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
   border-radius: var(--radius); padding: 14px 16px; z-index: 6; font-size: 14px;
 }
 #card[hidden] { display: none; }
+.in3d #card { background-color: var(--glass-solid); }
+.in3d #card .close { color: inherit; cursor: pointer; }
+.in3d #card .chip.live { color: #21713a; }
+:root[data-theme='dark'] .in3d #card .chip.live { color: #8cd99a; }
+:root[data-theme='dark'] .in3d #card .chip.scheduled { color: #91beed; }
+:root[data-theme='dark'] .in3d #card .chip.illustrative { color: #c4a7ff; }
 #card h2 { font-size: 16px; margin: 0 0 2px; display: flex; align-items: center; gap: 8px; padding-right: 28px; }
 #card .sub { color: var(--ink-2); margin: 0 0 10px; font-size: 13px; }
 #card dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
@@ -62,6 +68,12 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 
 @media (max-width: 600px) {
   #card { bottom: 14px; }
+  .in3d #card {
+    top: max(76px, calc(env(safe-area-inset-top) + 68px)); bottom: auto;
+    max-height: calc(100dvh - 190px); overflow-y: auto;
+  }
+  .in3d #card h2 { padding-right: 34px; }
+  .in3d #card .close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
   .attrib3d { bottom: max(84px, calc(env(safe-area-inset-bottom) + 74px)); left: 10px; right: 10px; text-align: center; }
   .in3d:has(.hint) .attrib3d { bottom: max(125px, calc(env(safe-area-inset-bottom) + 115px)); }
 }

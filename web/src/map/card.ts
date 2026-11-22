@@ -34,17 +34,17 @@ function nextRow(t: TrainState, next: Stop | undefined) {
   return `<dt>Next stop</dt><dd>${esc(place(name))}${eta}</dd>`;
 }
 
-export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined) {
+export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, model?: string) {
   const color = route ? routeColor(route) : '#333';
   const name = route?.mode === 'heavy_rail' ? `${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
-  const units = vt ? `${vt.typicalUnits} × ${vt.name}` : '';
+  const units = vt ? `${vt.typicalUnits} × ${model ?? vt.name}` : '';
   const live = t.s.tier === 'live';
   return `
     <h2><span class="dot" style="background:${esc(color)}"></span>${esc(name)}${t.label ? ` <small>#${esc(t.label)}</small>` : ''}</h2>
     <p class="sub">to ${esc(place(t.headsign))} ${chip(t.s.tier, live ? 'Live' : undefined)}</p>
     <dl>
       ${nextRow(t, next)}
-      ${units ? `<dt>Looks like</dt><dd>${esc(units)} ${chip('illustrative', 'typical')}</dd>` : ''}
+      ${units ? `<dt>${model ? 'City model' : 'Looks like'}</dt><dd>${esc(units)} ${chip('illustrative', model ? undefined : 'typical')}</dd>` : ''}
       ${
         live
           ? `<dt>Position</dt><dd>${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)}</dd>`
@@ -102,9 +102,17 @@ export function freightCard(p: TrackArcProps) {
     <p class="tip">No free live feed exists for freight trains, so this shows how busy the line usually is.</p>`;
 }
 
-export function busCard(bus: LiveBus, now: number) {
+export function busCard(bus: LiveBus, now: number, model?: string) {
   const name = bus.routeId?.value.slice('marta:route:'.length);
   return `<h2><span class="dot" style="background:${MODE_COLOR.bus}"></span>MARTA bus ${esc(bus.id.slice('marta:bus:'.length))}</h2>
     <p class="sub">${name ? 'Route ' + esc(name) : 'Route unavailable'}</p>
-    <dl><dt>Position</dt><dd>${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd></dl>`;
+    <dl><dt>Position</dt><dd>${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd>
+      ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>`;
+}
+
+export function cityFreightCard() {
+  return `<h2><span class="dot" style="background:${MODE_COLOR.freight}"></span>Freight train</h2>
+    <p class="sub">Atlanta Terminal Subdivision ${chip('illustrative')}</p>
+    <dl><dt>City model</dt><dd>GE/Wabtec CM44AC locomotives and boxcars</dd></dl>
+    <p class="tip">This train follows the mapped track on a simulated loop. Its position, timing and consist are illustrative.</p>`;
 }

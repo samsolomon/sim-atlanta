@@ -7,7 +7,7 @@ import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atm
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { mapMetresPerPixel, mapZoomForScale } from './core/camera';
-import { busCard, crossingCard, freightCard, trainCard } from './map/card';
+import { busCard, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
 import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
@@ -42,12 +42,14 @@ const map = new maplibregl.Map({
 
 // ---- card -------------------------------------------------------------------
 const card = document.getElementById('card')!;
+const cardContent = document.getElementById('card-content')!;
+card.querySelector('.close')!.addEventListener('click', hideCard);
+let lastCardHTML = '';
 let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
 function showCard(html: string) {
-  card.innerHTML = `<button class="close" type="button" aria-label="Close">×</button>${html}`;
+  if (lastCardHTML !== html) cardContent.innerHTML = lastCardHTML = html;
   card.hidden = false;
-  card.querySelector('.close')!.addEventListener('click', hideCard);
 }
 function hideCard() {
   card.hidden = true;
@@ -61,8 +63,15 @@ function renderTrainCard() {
   const t = source.find(selectedTrain);
   if (!t) return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
   showCard(
-    trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType)),
+    trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
+      view3d.hidden ? undefined : 'Stadler CQ400'),
   );
+}
+
+function renderBusCard() {
+  const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
+  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'));
+  else hideCard();
 }
 
 const [rf, tf, vts, meta] = await Promise.all([
@@ -188,14 +197,9 @@ onReady(() => {
         })),
       });
     }
-    if (selectedBus) {
-      const bus = visibleBuses.get(selectedBus);
-      if (bus) showCard(busCard(bus, buses.observationNow()));
-      else hideCard();
-    }
   }
 
-    // Train icons ignore placement (so they can overlap), which also keeps them out of
+  // Train icons ignore placement (so they can overlap), which also keeps them out of
   // MapLibre's hit-testing; find the nearest train on screen ourselves.
   const nearestTrain = (pt: maplibregl.Point, maxPx = 22) => {
     let best: { id: string; d: number } | null = null;
@@ -231,7 +235,7 @@ onReady(() => {
       const bus = visibleBuses.get(f.properties.id);
       if (!bus || !clock.isRealTime()) return hideCard();
       selectedBus = bus.id;
-      showCard(busCard(bus, buses.observationNow()));
+      renderBusCard();
     } else if (f.layer.id === 'crossings') {
       showCard(crossingCard(f.properties as unknown as CrossingProps));
     } else {
@@ -243,16 +247,11 @@ onReady(() => {
 
   // ---- animation loop: ~30 Hz is plenty for trains moving a few px/sec --------
   let last = 0;
-  let lastCard = 0;
   const frame = (ts: number) => {
     if (ts - last > 33) {
       last = ts;
       updateBuses(ts);
       if (!diorama) trainsSource(map)?.setData(trainFeatures(source.update(), schedule.routes));
-      if (selectedTrain && ts - lastCard > 1000) {
-        lastCard = ts;
-        renderTrainCard();
-      }
     }
     requestAnimationFrame(frame);
   };
@@ -310,6 +309,7 @@ let cityTilt = 57; // retain the user's City tilt while Map remains flat
 let opening = params.get('view') === 'city' || params.get('view') === '3d';
 async function openCity() {
   if (diorama) return;
+  hideCard();
   const load = ++cityLoad;
   cityAbort?.abort();
   const abort = cityAbort = new AbortController();
@@ -330,6 +330,14 @@ async function openCity() {
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
       buses: () => (clock.isRealTime() ? buses.current() : null),
+      selectVehicle: hit => {
+        selectedTrain = hit?.kind === 'train' ? hit.id : null;
+        selectedBus = hit?.kind === 'bus' ? hit.id : null;
+        if (selectedTrain) renderTrainCard();
+        else if (selectedBus) renderBusCard();
+        else if (hit?.kind === 'freight') showCard(cityFreightCard());
+        else hideCard();
+      },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
     });
     if (load !== cityLoad) {
@@ -371,6 +379,7 @@ async function openCity() {
 }
 
 function closeCity() {
+  hideCard();
   cityLoad++;
   cityAbort?.abort();
   cityAbort = null;
@@ -446,6 +455,8 @@ setInterval(() => {
   const now = clock.now();
   updateClock(now);
   shell.tick(now);
+  if (selectedTrain) renderTrainCard();
+  else if (selectedBus) renderBusCard();
 }, 500);
 
 // Hidden time controls (kept for later): ?controls=1 shows them.
