@@ -53,10 +53,14 @@ export function doorCentres() {
 
 const mat = (color: string) => new THREE.MeshLambertMaterial({ color });
 
-/** The stopped train stands on T1, travelling +z. Returns the scene and what the panel reports. */
+/** The stopped train travels +z on the track that boards on its right. Returns the scene and what the panel reports. */
 export function createPlatformScene(kind: PlatformKind) {
   const { layout, offsets, bounds } = LAYOUTS[kind];
-  const [choice] = boardingChoices(layout, 1, ['T1']);
+  // Stop on the track whose boarding edge is on the train's right, so the lab's presets (which
+  // look from −x) face the platform side of the car in both layouts.
+  const choices = boardingChoices(layout, 1);
+  const choice = choices.find((c) => c.doorSide === 'right') ?? choices[0];
+  const stopTrack = choice.trackId;
   const group = new THREE.Group();
   group.name = `Model Lab ${kind} platform`;
   const materials = [mat('#c9c3b6'), mat('#e2bd3c'), mat('#eee8da')];
@@ -81,7 +85,7 @@ export function createPlatformScene(kind: PlatformKind) {
       strip.position.set(-(lip.v + lip.inward * 0.3), top + 0.006, 0);
       group.add(strip);
       // Door zones: the CQ400's door pairs marked on the platform beside the stopped train's edge.
-      const facesTrain = p.edges.some((e) => e.trackId === 'T1' && (e.side === 'right' ? 1 : -1) === lip.inward);
+      const facesTrain = p.edges.some((e) => e.trackId === stopTrack && (e.side === 'right' ? 1 : -1) === lip.inward);
       if (!facesTrain) continue;
       for (const z of doors) {
         const zone = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.014, CQ400_DOORS.width), doorZone);
@@ -95,7 +99,8 @@ export function createPlatformScene(kind: PlatformKind) {
   return {
     group,
     layout,
-    trainX: -offsets.T1,
+    trainX: -offsets[stopTrack],
+    stopTrack,
     platformTop: top,
     slabs,
     doorSide: choice.doorSide as Side,

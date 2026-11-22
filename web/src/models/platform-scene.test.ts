@@ -42,6 +42,6 @@ describe.each(['island', 'side'] as const)('%s platform inspection', (kind) => {
 it('describes the two layouts with the shared primitive', () => {
   expect(createPlatformScene('island').layout.platforms).toHaveLength(1);
   expect(createPlatformScene('side').layout.platforms).toHaveLength(2);
-  expect(createPlatformScene('island').doorSide).toBe('right');
-  expect(createPlatformScene('side').doorSide).toBe('left');
+  expect(createPlatformScene('island')).toMatchObject({ doorSide: 'right', stopTrack: 'T1', platformId: 'island' });
+  expect(createPlatformScene('side')).toMatchObject({ doorSide: 'right', stopTrack: 'T2', platformId: 'south' });
 });

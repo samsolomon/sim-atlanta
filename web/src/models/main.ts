@@ -14,6 +14,7 @@ import { inkShader } from '../vignette/ink';
 import { figureLooks } from '../city/figure-looks';
 import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
+import { createPlatformScene, type PlatformKind } from './platform-scene';
 
 const el = document.getElementById('stage')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -85,7 +86,14 @@ phase.addEventListener('input', () => {
   cycle = phase.valueAsNumber / 100;
   figure?.setPhase(cycle);
 });
+const platformParam = new URLSearchParams(location.search).get('platform');
+let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
+let station: ReturnType<typeof createPlatformScene> | undefined;
+const platformReport = document.getElementById('platform-report')!;
 function build() {
+  station?.dispose();
+  station = undefined;
+  platformReport.hidden = true;
   for (const c of cars) {
     scene.remove(c);
     c.geometry.dispose();
@@ -104,6 +112,7 @@ function build() {
   track.visible = model === 'cq400' || model === 'cm44ac';
   document.getElementById('lines')!.hidden = model !== 'cq400';
   document.getElementById('roles')!.hidden = model !== 'cq400';
+  document.getElementById('platforms')!.hidden = model !== 'cq400';
   document.getElementById('motion')!.hidden = !person;
   nextLook.hidden = !person;
   document.getElementById('title')!.textContent = models[model];
@@ -149,6 +158,18 @@ function build() {
   cab.position.z = CAR_LENGTH / 2 + CAR_GAP / 2;
   mid.position.z = -CAR_LENGTH / 2 - CAR_GAP / 2;
   cars = [cab, mid];
+  if (platformKind) {
+    // Illustrative station: its own two tracks replace the lab track, and the cars stop on T1.
+    station = createPlatformScene(platformKind);
+    scene.add(station.group);
+    track.visible = false;
+    for (const c of cars) c.position.x = station.trainX;
+    const { gapM, stepM } = station.report;
+    platformReport.textContent = `Illustrative ${platformKind === 'island' ? 'island' : 'side platforms'}: `
+      + `doors open on the ${station.doorSide}. Gap ${Math.round(gapM * 1000)} mm (limit 76), `
+      + `step ${Math.round(stepM * 1000)} mm (limit ±16), ${station.doors.length} door zones marked.`;
+    platformReport.hidden = false;
+  }
   for (const c of cars) {
     c.castShadow = c.receiveShadow = true;
     scene.add(c);
@@ -171,6 +192,10 @@ function view(name: string) {
   if (!v) return;
   camera.position.set(...v.pos);
   controls.target.set(...v.target);
+  // Keep the presets centred on the train when a station moves it off the lab's centre line.
+  const dx = station?.trainX ?? 0;
+  camera.position.x += dx;
+  controls.target.x += dx;
   camera.fov = v.fov;
   camera.updateProjectionMatrix();
   controls.update();
@@ -250,6 +275,17 @@ for (const l of Object.keys(LINE_COLORS) as MartaLine[]) mk('lines', l[0].toUppe
 mk('roles', 'Leading', () => (role.value = 1), true);
 mk('roles', 'Tail', () => (role.value = -1));
 mk('roles', 'Coupled', () => (role.value = 0));
+for (const [kind, label] of [[null, 'None'], ['island', 'Island'], ['side', 'Side platforms']] as const) {
+  mk('platforms', label, () => {
+    platformKind = kind;
+    const url = new URL(location.href);
+    if (kind) url.searchParams.set('platform', kind); else url.searchParams.delete('platform');
+    history.replaceState(null, '', url);
+    build();
+    view('¾ front');
+  }, platformKind === kind);
+}
+document.getElementById('platforms')!.append(platformReport); // after the buttons
 for (const v of Object.keys(TRAIN_VIEWS)) mk('views', v, () => view(v));
 const BUS_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 1.8, 30], target: [0, 1.6, 6], fov: 13 },
@@ -326,4 +362,4 @@ function setPhoto(photo?: File) {
 file.addEventListener('change', () => { if (file.files?.[0]) setPhoto(file.files[0]); });
 clearPhoto.addEventListener('click', () => { setPhoto(); file.value = ''; });
 opacity.addEventListener('input', () => { ref.style.opacity = opacity.value; });
-Object.assign(window, { __lab: { view, setNight, role, scene, camera, controls } });
+Object.assign(window, { __lab: { view, setNight, role, scene, camera, controls, station: () => station } });

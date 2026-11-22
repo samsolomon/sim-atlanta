@@ -1579,3 +1579,19 @@ The cyclists on the Westside Beltline Connector were only a few pixels tall in t
 Pause the Model Lab walker mid-stride and select **Next look**. A mustard jacket and green daypack give way to a blue jacket with bare shoulders. On the cyclist, the same change trades an orange frame for a green one. Both figures keep their pose and camera. The Lab remembers a separate look for each figure while you switch between them. [Walker](log/ui/street-looks/walker-0.jpg) · [Next walker look](log/ui/street-looks/walker-1.jpg) · [Cyclist](log/ui/street-looks/cyclist-0.jpg) · [Next cyclist look](log/ui/street-looks/cyclist-1.jpg)
 
 City assigns each illustrative traveller a stable choice from the same 64 looks. Skin, jacket, trousers, pack presence, pack colour and bicycle paint have independent draws. At 2:12:45 p.m. on the Friday timetable, four of the seven Westside Connector cyclists carried a bag and four frame colours appeared. At the 390 px opening, 103 distant walkers still took one draw and 4,120 triangles. A 1,536-byte colour texture lets a batch wear many outfits. The Lab and City share that palette and the models. A web rebuild and deployment pick up the change with the existing downtown bake. [Georgia State sidewalks](log/ui/street-looks/sidewalk.jpg) · [Connector trail](log/ui/street-looks/trail.jpg) · [Opening view](log/ui/street-looks/opening.jpg)
+
+### 2026-11-22: A platform to check the train against
+
+The Model Lab can now stop the CQ400 at an island or at two side platforms. Both layouts are built
+from the same platform primitive City uses, at the car's own floor height, with a pale zone on the
+platform beside each of the train's six door pairs.
+
+The edge sits 75 mm from the car side, just inside the federal 3-inch level-boarding limit for
+rapid rail. The panel reports the gap and the step, so a change to the car model that pushed a
+door off its zone, or the body into the platform, would show at a glance. Tests fail on the same
+conditions.
+
+The layouts are illustrative. Only the 4.86 m side-platform track spacing comes from a surveyed
+station (Georgia State). [Notes](model-lab-platforms.md)
+
+![The CQ400 at an illustrative island platform](log/ui/model-lab/2026-11-22-platform-island-side.jpg)
