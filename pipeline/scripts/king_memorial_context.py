@@ -105,6 +105,11 @@ def bake(raw):
                 roads.append(dict(cls=t["highway"], sub=t.get("footway") or t.get("service"),
                                   name=t.get("name"), bridge=t.get("bridge", "no") != "no",
                                   tunnel=t.get("tunnel", "no") != "no" or t.get("indoor") == "yes", pts=pts))
+    # Approximate waterline in the Oct 8, 2023 NAIP (USGS image 41283).
+    # Trace only the water, including the short northeast arm. The deck is a separate building.
+    pool = [[1422.8, 577.1], [1433.5, 573.2], [1435.1, 577.2], [1430.1, 579.2],
+            [1429.8, 589.6], [1423.5, 589.6]]
+    cover.append(dict(kind="swimming_pool", sub=None, name="Marchon courtyard pool", rings=[pool]))
     trees = [[BOUNDS["minX"] + px, BOUNDS["minZ"] + py, round(radius * 1.8 + 1.5, 1), radius]
              for px, py, radius in CROWNS]
     return dict(trees=trees, name="king-memorial", bounds=BOUNDS, buildings=buildings, roads=roads, ground=cover,
