@@ -161,7 +161,7 @@ export class CityBuses {
       const cur = prev && this.lerp(prev, now);
       // Glide only along the same street and a plausible distance; a report that turned a corner
       // or jumped streets is placed where it was reported, never driven through a block.
-      const glide = cur && cur.run === p.run && Math.hypot(p.x - cur.x, p.z - cur.z) < MAX_GLIDE_M;
+      const glide = cur && cur.run === p.run && Math.hypot(p.x - cur.x, p.z - cur.z) < MAX_GLIDE_M && chordOnRun(cur, p, p.run);
       this.shown.set(b.id, { id: b.id, at, from: glide ? cur : p, to: p, t0: now });
     }
     const live = new Set(fixes.map((b) => b.id));
@@ -216,6 +216,21 @@ export class CityBuses {
     const da = Math.atan2(Math.sin(s.to.a - s.from.a), Math.cos(s.to.a - s.from.a));
     return { x: s.from.x + (s.to.x - s.from.x) * e, z: s.from.z + (s.to.z - s.from.z) * e, a: s.from.a + da * e, run: e < 1 ? s.from.run : s.to.run };
   }
+}
+
+/**
+ * Does the straight glide from a to b stay on the street? Around a bend the chord can cut across a
+ * block, so sample it and require every sample within a carriageway of the run's centreline.
+ */
+function chordOnRun(a: { x: number; z: number }, b: { x: number; z: number }, run: TransportRun) {
+  const limit = roadWidth(run) / 2 + 2;
+  for (let k = 1; k < 8; k++) {
+    const x = a.x + ((b.x - a.x) * k) / 8, z = a.z + ((b.z - a.z) * k) / 8;
+    let d = Infinity;
+    for (let i = 1; i < run.pts.length; i++) d = Math.min(d, segDist(x, z, run.pts[i - 1], run.pts[i]));
+    if (d > limit) return false;
+  }
+  return true;
 }
 
 function smooth(t: number) {

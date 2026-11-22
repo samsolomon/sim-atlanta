@@ -93,6 +93,17 @@ describe('CityBuses', () => {
     expect(Math.abs(b.positions[0].x - -50)).toBeLessThan(3);
   });
 
+  it('places, not glides, a report round a bend on the same street', () => {
+    const bend: TransportRun = { kind: 'ground', cls: 'residential', pts: [[-180, -180], [-120, -180], [-120, -100]] };
+    const b = new CityBuses({ runs: [bend], groundAt, deckAt, origin: { lon: 0, lat: 0 }, bounds, geometry: new THREE.BoxGeometry(), material: new THREE.MeshBasicMaterial() });
+    b.update([fix('k', -170, -180, 1)], 0);
+    b.update([fix('k', -120, -110, 2)], 1000);
+    b.update([fix('k', -120, -110, 2)], 5000); // a straight glide would be mid-block now
+    const p = b.positions[0];
+    expect(Math.abs(p.x - -120)).toBeLessThan(3);
+    expect(Math.abs(p.z - -110)).toBeLessThan(3);
+  });
+
   it('never snaps to a freeway', () => {
     const b = make();
     b.update([fix('m', 0, 150)], 0);
