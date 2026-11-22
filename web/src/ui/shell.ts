@@ -94,7 +94,7 @@ export function createShell(o: ShellOptions) {
   // ---- drop-downs ----------------------------------------------------------
   const menu = el('nav', { class: 'drop drop-l glass', id: 'menu', hidden: '', 'aria-label': 'Site' });
   menu.innerHTML = `
-    <p class="drop-title">A little model of Atlanta</p>
+    <p class="drop-title">Sim Atlanta</p>
     <button type="button" data-act="key">Key</button>
     <a href="/models">Models</a>
     <a href="/about">About &amp; credits</a>`;
