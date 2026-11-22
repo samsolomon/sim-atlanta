@@ -2,8 +2,8 @@
 
 `web/src/city/capitol.ts` replaces the Capitol's generic 29.2 m extrusion (Overture
 `7c9beafb-…`, OSM [way 113041732](https://www.openstreetmap.org/way/113041732)) with a low-poly
-model: the wings, the west portico, the atrium clerestories, the drum, the gold dome, the lantern
-and Miss Freedom. It is about 3,200 triangles in all. The tests are in `capitol.test.ts`.
+model: the wings, the west portico and its entrance, the east front, the atrium clerestories, the drum, the gold dome, the lantern
+and Miss Freedom. It is about 3,500 triangles in all. The tests are in `capitol.test.ts`.
 
 The change is web-only: it touches no pipeline or data files, so it needs no regeneration.
 
@@ -54,13 +54,27 @@ the 1:128 bar within 1%. Each label then falls on a distinct feature.
   about 22 m across. The often-quoted "75 ft dome" (22.9 m) is closer to the drum.
 - **Front:** the portico faces Washington St (`vd.roads`), on the footprint's west projection. A
   test fails if the model is flipped.
-- **Portico:** six columns, on piers in the projection mapped in front of the pavilion. Column
-  spacing is fitted to the mapped width.
+- **West front (sheet 13), the main entrance:**
+  - Six columns stand on six rusticated piers.
+  - Between the piers are five arched bays. The middle three are doors, reached by a full-width
+    flight of about 2.3 m (scaled) and a landing; the outer two are windows over panels.
+  - Five tall arched windows sit between the columns above.
+  - Column spacing is fitted to the mapped forward projection.
+  - Sam's 2026-11-22 screenshot showed this elevation with a blank wall above three treads. It is
+    now modelled from the sheet.
+- **East front (sheet 20):** a central pediment over the mapped east projection, one arched door,
+  and a five-tread stair of about 2.2 m (scaled). The stair runs past the mapped wall, and the
+  footprint test allows for it.
+- **End pavilions:** pediments on both fronts (sheets 13 and 20).
 - **Windows:** three rows (ground, second and third floors), in bays of about 3.8 m fitted per
   wall. The rhythm follows sheet 13; this is a stylisation, not a window-by-window survey.
 - **Gold:** HABS's significance note says gold leaf covered the dome and lantern from 1959 (the
-  date is sometimes given as 1958). At night the gilding is floodlit (`setNight`), and about 30% of
-  the upper windows are lit.
+  date is sometimes given as 1958).
+  - The gilding uses a Phong material with a broad, warm specular lobe (shininess 9) from City's
+    own lights. There is no environment map or reflection pass, and the stone stays matte Lambert.
+  - At night the gilding is floodlit (`setNight`), and about 30% of the upper windows are lit.
+
+![Dome: matte, first highlight, final](log/ui/capitol/2026-11-22-capitol-gold-matte-vs-highlight.jpg)
 
 ## Integration
 
@@ -75,8 +89,18 @@ its group is added after the plinth. The board without terrain is unchanged.
 
 ## Views
 
+**Review frame, production path.** The whole dome and the Georgia State approach curve are both in
+view.
+- Open `/?t=2026-11-20T14:12:45-05:00&speed=0#17.54/33.74927/-84.38684/-110` and tap **City**.
+- City lands on target (440, 515), bearing 250°, tilt 57° and 0.34 m/px. This was verified in Orca
+  by reading the camera back.
+
+![Review frame](log/ui/capitol/2026-11-22-capitol-review-daylight.jpg)
+
 | View | URL `t` | `__city.lookAt` |
 |---|---|---|
+| West front, head-on | `…14:12:45…` / `…17:45:00…` | `(290, 520, { bearing: 123, metresPerPixel: 0.07, tilt: 66 })` |
+| East front, head-on | same | `(345, 540, { bearing: 303, metresPerPixel: 0.07, tilt: 66 })` |
 | From the train side, east, with the dome over the Floyd towers | `2026-11-20T14:12:45-05:00` | `(330, 540, { bearing: 262, metresPerPixel: 0.16, tilt: 72 })` |
 | Wide, day and dusk | `…14:12:45…` / `…17:45:00…` | `(330, 535, { bearing: 252, metresPerPixel: 0.2, tilt: 74 })` |
 | Close: portico and north wing, day and dusk | same | `(318, 545, { bearing: 75, metresPerPixel: 0.09, tilt: 64 })` |
@@ -93,10 +117,15 @@ is outside that frame. To compare with R2 (*Waning Winter*), use the train-side 
 ![Wide, dusk](log/ui/capitol/2026-11-22-capitol-wide-dusk.jpg)
 ![Close, dusk](log/ui/capitol/2026-11-22-capitol-close-dusk.jpg)
 
+| | Day | Dusk |
+|---|---|---|
+| West front | ![](log/ui/capitol/2026-11-22-capitol-west-front-day.jpg) | ![](log/ui/capitol/2026-11-22-capitol-west-front-dusk.jpg) |
+| East front | ![](log/ui/capitol/2026-11-22-capitol-east-front-day.jpg) | ![](log/ui/capitol/2026-11-22-capitol-east-front-dusk.jpg) |
+
 ## Not modelled
 
 The following are left out:
-- the end-pavilion pediments, the east-front details and the balustrade;
+- the balustrades and the sculpture in the pediments;
 - the dome's ribs and the drum's pedimented windows;
 - the grounds' statuary and the Liberty Plaza monuments.
 

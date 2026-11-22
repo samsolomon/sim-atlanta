@@ -54,7 +54,7 @@ export const H = {
 const R = { drum: 11.6, colonnade: 10.4, columns: 11.2, attic: 10.8, dome: 10.0, platform: 3.4, lantern: 2.2 } as const;
 
 const stone = '#d8d0bd', rustic = '#c4baa5', roof = '#8d8e8a', glass = '#5d6a74', shade = '#b9b09c';
-const gold = '#d6a537', goldDeep = '#b98a2c', statue = '#c9b78c';
+const gold = '#cf9d31', goldDeep = '#b3852a', statue = '#c9b78c';
 type GroundAt = (x: number, z: number) => number | null;
 
 const toFrame = ([x, z]: readonly number[]) => {
@@ -246,7 +246,7 @@ export function createCapitol(buildings: VBuilding[], groundAt: GroundAt) {
   // A broad, warm, view-dependent highlight from the scene's own lights; no environment map.
   const goldMaterial = new THREE.MeshPhongMaterial({
     vertexColors: true, side: THREE.DoubleSide, emissive: new THREE.Color(0, 0, 0),
-    specular: new THREE.Color('#ffd27a'), shininess: 14,
+    specular: new THREE.Color('#ffd890'), shininess: 9,
   });
   const masonry = new THREE.Mesh(stoneGeometry, stoneMaterial);
   masonry.name = 'Capitol masonry';

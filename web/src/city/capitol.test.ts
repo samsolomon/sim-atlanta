@@ -76,6 +76,24 @@ describe.skipIf(!staged)('Georgia State Capitol', () => {
     }
   });
 
+  it('climbs from grade to the entrance landings on both fronts', () => {
+    const model = createCapitol([generic], () => 0)!;
+    const p = (model.group.getObjectByName('Capitol masonry') as Mesh).geometry.attributes.position;
+    const tops = (u0: number, u1: number) => {
+      const ys = new Set<number>();
+      for (let i = 0; i < p.count; i++) if (p.getX(i) > u0 && p.getX(i) < u1 && p.getY(i) <= 3) ys.add(+p.getY(i).toFixed(2));
+      return [...ys].filter((y) => y > 0).sort((a, b) => a - b);
+    };
+    // West (frame u < −37.4): seven treads rising to the 2.3 m landing in front of the doors.
+    const west = tops(-42.4, -37.3);
+    expect(west.length).toBeGreaterThanOrEqual(7);
+    expect(Math.max(...west.filter((y) => y <= H.landing + 0.01))).toBeCloseTo(H.landing, 2);
+    // East (outside the mapped wall at u 42.1): a stair up to the door sill.
+    const east = tops(42.1, 45);
+    expect(east.length).toBe(5);
+    expect(Math.max(...east)).toBeCloseTo(H.eastDoor, 2);
+  });
+
   it('faces its portico onto Washington St, not Capitol Ave', () => {
     const model = createCapitol([generic], () => 0)!;
     const pts = world(model);

@@ -1533,7 +1533,7 @@ The model was placed from the footprint, not from aerial photos:
 - the crossing of the cross plan lands 0.6 m from OSM's dome part, while the dome in the aerial
   imagery sits 15 m away;
 - the portico faces Washington St, and a test fails if it's flipped;
-- about 3,200 triangles in all.
+- about 3,500 triangles in all.
 
 At dusk the gilding is floodlit.
 
