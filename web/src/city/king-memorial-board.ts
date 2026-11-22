@@ -3,7 +3,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { TerrainQuality } from '../terrain/surface';
 import type { TerrainCity } from '../terrain/transport-data';
-import { marchonFinish } from './marchon-frontage';
+import { marchonFinishes } from './marchon-frontage';
 import { PAL } from '../vignette/world';
 
 import { eastBounds, eastJoin } from './board-footprint';
@@ -65,7 +65,7 @@ export async function loadEast(
     quality,
     bottomY,
     join: eastJoin,
-    finishFor: marchonFinish,
+    finishFor: marchonFinishes(context.buildings),
   });
 }
 

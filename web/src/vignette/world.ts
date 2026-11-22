@@ -24,7 +24,8 @@ export interface VBuilding {
 export interface BuildingFinish {
   wall: string;
   roof: string;
-  drawFace?: (builder: Builder, a: P2, b: P2, base: number, top: number, litGlass: Builder) => boolean;
+  plainWalls?: boolean;
+  drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
 }
 export interface VRoad {
   cls: string;
@@ -843,20 +844,26 @@ export class World {
       // Walls (run to h + parapet), roof slightly below the parapet top.
       const parapet = h > 6 ? 1.1 : 0;
       const shop = woodruffLot(bd);
-      for (const ring of bd.rings)
+      for (const [ringIndex, ring] of bd.rings.entries()) {
+        if (finish?.drawRing) {
+          const first = b.pos.length / 3;
+          finish.drawRing(b, ring, ringIndex > 0, foot, roofY + parapet, shopLights);
+          for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
+          continue;
+        }
         for (let i = 0; i < ring.length; i++) {
           const a = ring[i];
           const c = ring[(i + 1) % ring.length];
           const first = b.pos.length / 3;
-          if (finish?.drawFace?.(b, a, c, foot, roofY + parapet, shopLights) ||
-              (shop && appendWoodruffWall(shop, a, c, originY, roofY + parapet, b, shopLights))) {
+          if (shop && appendWoodruffWall(shop, a, c, originY, roofY + parapet, b, shopLights)) {
             for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
             continue;
           }
-          const wallKind = finish ? 0 : kind;
+          const wallKind = finish?.plainWalls ? -1 : finish ? 0 : kind;
           style.push(wallKind, wallKind, wallKind, wallKind, wallKind, wallKind);
           b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
+      }
       const wallVerts = b.pos.length / 3 - before;
       const contour = outer.map((p) => new THREE.Vector2(p[0], p[1]));
       const holes = bd.rings.slice(1).map((ring) => ring.map((p) => new THREE.Vector2(p[0], p[1])));
