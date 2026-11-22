@@ -12,7 +12,7 @@ The model divides demand equally by direction and then by available positions. L
 
 ## City rendering
 
-City loads the baked downtown `traffic.json` hourly profile with the scene assets. A missing profile disables this layer. At each frame City updates live buses first, then places illustrative cars at the shared scene time. Cars yield to bus footprints on the same level. An adjacent ramp or an overhead street cannot elevate the car. Each wheelbase samples its own road, using the terrain surface on ground runs and the rendered tread triangles on supported bridges. Cars disappear when their road passes under cover or leaves the board. [City attachment](../web/src/city/city.ts) · [Road-surface lookup](../web/src/city/connector-road-height.ts) · [Car simulation](../web/src/city/connector-traffic.ts)
+City loads the baked downtown `traffic.json` hourly profile with the scene assets. A missing profile disables this layer. At each frame City updates live buses first, then places illustrative cars at the shared scene time. Cars yield to bus footprints on the same level. An adjacent ramp or an overhead street cannot elevate the car. Each wheelbase samples its own road, using the terrain surface on ground runs and the rendered tread triangles on supported bridges. Cars disappear when their road passes under cover or leaves the board. [City attachment](../web/src/city/city.ts) · [Road-surface lookup](../web/src/city/road-height.ts) · [Car simulation](../web/src/city/connector-traffic.ts)
 
 ## Visual check
 

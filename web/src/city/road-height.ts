@@ -19,15 +19,15 @@ function nearest(p: P2, pts: P2[]) {
  * ground/tunnel ways. Bridge heights are supplied by the renderer that drew the
  * deck. An overhead cross street or adjacent ramp cannot elevate the car.
  */
-export function connectorRoadHeight(city: TerrainCity, groundAt: (x: number, z: number) => number | null,
+export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: number) => number | null,
   deckAt?: (x: number, z: number, part: TransportRun) => number | null) {
-  const parts = city.terrainTransport?.roads.filter(r => r.cls === 'motorway') ?? [];
+  const parts = city.terrainTransport?.roads ?? [];
   const cache = new WeakMap<VRoad, TransportRun[]>();
   return (x: number, z: number, road: VRoad) => {
     if (!road.bridge && !road.tunnel) return groundAt(x,z);
     let candidates = cache.get(road);
     if (!candidates) {
-      candidates = parts.filter(part => (part.sub ?? null) === (road.sub ?? null) &&
+      candidates = parts.filter(part => part.cls === road.cls && (part.sub ?? null) === (road.sub ?? null) &&
         part.pts.some(p => nearest(p,road.pts).distance < .08));
       cache.set(road,candidates);
     }
