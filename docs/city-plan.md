@@ -1,5 +1,13 @@
 # A little model of Atlanta: Map + City views and their UI
 
+## Eventual regional coverage
+
+Sam’s long-term City board is a square surrounding the full I‑285 loop and the entire Hartsfield–Jackson Atlanta International Airport. Downtown remains the first detailed area. The board can grow through rail corridors and neighborhoods in stages.
+
+When choosing the regional bounds, combine the full Perimeter road geometry with the airport campus footprint in a local coordinate system measured in metres. Expand the shorter dimension to make the enclosing square. Check the proposed edges against the airport site plan, including the runway ends, taxiways, terminals and concourses, cargo and maintenance areas, and the connections to MARTA and the Rental Car Center. The map should carry an airport train all the way to its station and show the whole airfield in the surrounding landscape. Set exact bounds when the source geometries have been verified. [GDOT roadway inventory](https://www.dot.ga.gov/GDOT/Pages/RoadTrafficData.aspx) · [ATL facilities and site plan](https://www.atl.com/wp-content/uploads/2026/08/GAAtlanta02a-FIN-2026-OS.pdf) · [ATL public maps](https://www.atl.com/maps/)
+
+The BeltLine is another reason to expand. The downtown bake already contains short sections of the **Westside Beltline Connector**. Extend pedestrian and bicycle activity onto additional mapped trail segments as the board reaches them. Trail activity and crowd density are illustrative.
+
 ## Context
 The site has grown into three disconnected things that look like three different products:
 - the 2D MapLibre map at `/`, with a dashboard panel;

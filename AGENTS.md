@@ -2,7 +2,7 @@
 
 A free, fast map of where Atlanta's trains are, or are likely to be, right now. It is
 becoming an art project: a real-time, low-poly 3D miniature of Metro Atlanta that starts
-downtown (Five Points / the Gulch) and grows toward I-285. Pixel art is an optional render
+downtown (Five Points / the Gulch) and will grow to a square enclosing I-285 and the entire Atlanta airport. Pixel art is an optional render
 style.
 
 > This is the only project guide, and every agent reads it. Codex reads `AGENTS.md` natively,
