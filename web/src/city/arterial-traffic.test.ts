@@ -36,6 +36,8 @@ describe('arterial vehicle courses', () => {
     expect(route.dailyFlow).toBe(9500);
     expect(route.line.pts).toEqual([[0,0],[-500,0]]);
     expect(flows([run(left,'a','b',{aadt:{forward:NaN,reverse:0}})])).toEqual([]);
+    expect(flows([run(left,'a','b',{lanes:{}})])).toHaveLength(2);
+    expect(flows([run(left,'a','b',{lanes:{forward:1,reverse:0}})])).toHaveLength(2);
   });
 
   it('keeps disjoint endpoints, ambiguous forks, distinct corridors and perpendicular turns apart', () => {

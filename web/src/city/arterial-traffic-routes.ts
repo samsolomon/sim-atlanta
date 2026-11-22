@@ -139,7 +139,9 @@ export function arterialTrafficRoutes(corridors: readonly ArterialCorridor[], bo
       for (const direction of ['forward','reverse'] as const) {
         if (run.allow !== 'both' && run.allow !== direction) continue;
         const dailyFlow = run.aadt[direction] ?? 0;
-        if (!(Number.isFinite(dailyFlow) && dailyFlow > 0 && (run.lanes?.[direction] ?? 0) > 0)) continue;
+        // One illustrative travel position per permitted direction. HPMS may
+        // omit the lane count or report a single lane shared by both ways.
+        if (!Number.isFinite(dailyFlow) || dailyFlow <= 0) continue;
         const reverse = direction === 'reverse';
         // A representative moving speed, bounded below prevailing signed speeds at busy junctions.
         const speedMps = run.speedMph && Number.isFinite(run.speedMph) && run.speedMph > 0
