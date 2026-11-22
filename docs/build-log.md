@@ -1669,3 +1669,25 @@ From the Jackson Street Bridge the Georgia-Pacific Tower reads as two broad whit
 ### 2026-11-22 — Where the Flatiron catches the light
 
 The shadow across the Flatiron’s upper stories runs straight across five projecting window bays. Two stories higher, the parapet follows each bay out and back. That difference was easy to miss in our first model. A park photograph and Sam’s street details also showed how much pale stone sits between the paired sashes. The revised model sets the glass about 20 cm behind the jambs, a depth estimated from those photographs. From across Peachtree, morning sun catches the round entrance columns a full metre in front of the dark glazing. The park frame gains 1.70% in submitted triangles at the same 65 draws. [Photograph and matched City views](log/ui/flatiron-relief/comparison.jpg) · [Street detail](log/ui/flatiron-relief/street-revised.jpg) · [Sources, dimensions and night comparison](log/ui/flatiron-relief/README.md)
+
+### 2026-11-22: Measuring the viaduct instead of guessing it
+
+The first extension east of the board runs 512 m along the MARTA viaduct to King Memorial. We had
+no published deck heights, so the plan was to draw ground only and leave the guideway as an
+unknown.
+
+Then the USGS lidar turned out to be the same April 2019 flight as our terrain model: its ground
+returns match the bare-earth grid to a 1 cm median. Its returns off the top of the structure give
+the guideway itself, in 5 m steps:
+- 316 m beside the Floyd Building;
+- 15.5 m above the Downtown Connector's lanes;
+- a 325.5 m crest over the CSX yard;
+- under King Memorial's roof, where the lidar can't see the deck and the study says so.
+
+The measurement also showed our old 7 m placeholder running up to 3.9 m low east of the Connector.
+
+The new ground strip shares the downtown grid's edge column node for node. It costs 9.9 KB
+gzipped, against 1.44 MB for all of downtown.
+[Study](king-memorial-corridor.md)
+
+![Guideway, roof and ground along the corridor](log/ui/king-memorial/profile.svg)

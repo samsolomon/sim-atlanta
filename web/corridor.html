@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>King Memorial corridor · Sim Atlanta</title>
+  <link rel="stylesheet" href="/src/ui/tokens.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e8e4d9; color: var(--ink, #2a2722); font: 13px/1.45 system-ui, sans-serif; }
+    #stage { position: fixed; inset: 0; }
+    canvas { display: block; }
+    .card { position: absolute; left: 16px; top: 16px; max-width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+      background: rgba(251, 249, 244, .95); border: 1px solid #ddd6c8; border-radius: 8px; padding: 12px 14px; }
+    h1 { font-size: 16px; margin: 0 0 4px; }
+    p { margin: 6px 0; color: #5e594f; }
+    .views button { font: 500 12px system-ui; border: 1px solid #ddd6c8; background: #fff; border-radius: 5px; padding: 4px 8px; margin: 2px 4px 2px 0; cursor: pointer; }
+    .views button[aria-pressed=true] { background: #2a2722; color: #fbf9f4; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 8px 0 0; font-size: 12px; }
+    dt { color: #6b665c; }
+    dd { margin: 0; }
+    .key span { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <section class="card" aria-label="Corridor study">
+    <h1>King Memorial corridor (study)</h1>
+    <p>Prototype extension east of the downtown board. Dev-only, not linked from the site. Heights are measured or left out.</p>
+    <div class="views" id="views"></div>
+    <p class="key"><span style="background:#1474c4"></span>Guideway top, lidar &nbsp;<span style="background:#7a5bb5"></span>Station canopy roof, lidar &nbsp;<span style="background:#c0392b"></span>Not measured &nbsp;<span style="background:#6b665c"></span>Platform plan (OSM), drawn on the ground: height unknown</p>
+    <dl id="facts"></dl>
+  </section>
+  <script type="module" src="/src/corridor/preview.ts"></script>
+</body>
+</html>

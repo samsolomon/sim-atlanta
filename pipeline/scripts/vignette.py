@@ -22,6 +22,9 @@ K = math.cos(math.radians(LAT0))
 VIGNETTES = {
     "vignette-east": {"x": (300.0, 1150.0), "z": (120.0, 620.0)},
     "downtown": {"x": (-1000.0, 1000.0), "z": (-1300.0, 700.0)},
+    # Corridor prototype east of the board along the MARTA East Line to King Memorial. It shares
+    # downtown's x = 1000 column and 5 m lattice. See docs/king-memorial-corridor.md.
+    "king-memorial": {"x": (1000.0, 1800.0), "z": (280.0, 640.0)},
 }
 
 
