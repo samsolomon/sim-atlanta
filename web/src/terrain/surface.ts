@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { slotPlanes, subtractSlot, type OpenSlot } from './openings';
 
+export interface JoiningEdge { x: number; minZ: number; maxZ: number }
+
 export type TerrainQuality = 'low' | 'high';
 
 // Each block is at most 2 × 2 source cells. High keeps all four; low merges flat
@@ -12,7 +14,7 @@ export class GroundSurface {
   private readonly starts: Uint32Array;
   private readonly blockCols: number;
 
-  constructor(readonly grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = []) {
+  constructor(readonly grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [], join?: JoiningEdge) {
     const { rows, cols, stepM, bounds, vertical } = grid.manifest;
     const blockCols = this.blockCols = Math.ceil((cols - 1) / 2);
     const blockRows = Math.ceil((rows - 1) / 2);
@@ -29,7 +31,9 @@ export class GroundSurface {
     this.minY = minY;
     for (let k = 0; k < detail.length; k++) {
       const x = 2 * (k % blockCols), z = 2 * Math.floor(k / blockCols);
-      if (quality === 'high' || x + 2 >= cols || z + 2 >= rows) {
+      const onJoin = join && (bounds.minX + x * stepM === join.x || bounds.minX + (x + 2) * stepM === join.x)
+        && bounds.minZ + z * stepM < join.maxZ && bounds.minZ + (z + 2) * stepM > join.minZ;
+      if (quality === 'high' || onJoin || x + 2 >= cols || z + 2 >= rows) {
         detail[k] = 1;
         continue;
       }

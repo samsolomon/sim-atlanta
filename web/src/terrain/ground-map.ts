@@ -57,7 +57,9 @@ function stripeLot(ctx: CanvasRenderingContext2D, ring: P2[], lineWidth: number)
 /** The board carries ground detail, so slopes, voids and rail openings share its geometry. */
 export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = quality === 'low' ? 2048 : 4096;
+  const pixelsPerM = (quality === 'low' ? 2048 : 4096) / 2000;
+  canvas.width = Math.max(1, Math.ceil((data.bounds.maxX - data.bounds.minX) * pixelsPerM));
+  canvas.height = Math.max(1, Math.ceil((data.bounds.maxZ - data.bounds.minZ) * pixelsPerM));
   const ctx = canvas.getContext('2d')!;
   const b = data.bounds;
   ctx.scale(canvas.width / (b.maxX - b.minX), canvas.height / (b.maxZ - b.minZ));

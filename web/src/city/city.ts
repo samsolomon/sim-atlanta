@@ -34,6 +34,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
+import { boardPoint, eastBounds, eastJoin, nearEast } from './board-footprint';
 import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic } from './connector-traffic';
@@ -107,6 +108,7 @@ const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 export async function createCity(container: HTMLElement, rf: RoutesFile, quality = pickQuality(), options: {
   signal?: AbortSignal;
   progress?: (label: string) => void;
+  areaNote?: (text: string | null) => void;
   trains: () => TrainState[];
   clockMs: () => number;
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
@@ -151,6 +153,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       console.warn('City ground grid unavailable. Using the flat board.');
     }
   }
+  const previewEast = new URLSearchParams(location.search).get('east') === 'king-memorial' && !!grid;
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
   const b = vd.bounds;
 
@@ -168,6 +171,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
+  let east: ReturnType<typeof createDowntownTerrain> | undefined;
+  let downtownPlinth: THREE.Mesh | undefined;
+  const eastController = new AbortController();
   let transport: ReturnType<typeof createSurfaceTransport> | undefined;
   // Elevated roads get their own structural geometry. Place lamps on ground roads.
   const groundRoads = grid ? [...vd.roads.filter(r => !r.bridge && !r.tunnel),
@@ -182,6 +188,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
   const disposeBoard = () => {
+    eastController.abort();
+    east?.dispose();
     terrain?.dispose();
     transport?.dispose();
     world.dispose();
@@ -252,8 +260,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         grady = createGrady(hospitalSite, ground);
         const city = { ...vd, buildings: grady?.buildings ?? hospitalSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
-        world.buildPlinth(terrain.bottomY);
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
@@ -417,11 +425,57 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   controls.maxDistance = 6500;
   controls.screenSpacePanning = false;
   controls.keys = { LEFT: '', UP: '', RIGHT: '', BOTTOM: '' }; // the shell owns the keyboard
+  let eastLoading = false;
+  let eastFailed = false;
+  let pendingEastTarget: { x: number; z: number } | undefined;
+  function approachEast(x: number, z: number) {
+    if (!previewEast || east || !terrain || !grid) return;
+    if (!nearEast(x, z)) {
+      if (eastFailed) options.areaNote?.(null);
+      eastFailed = false;
+      pendingEastTarget = undefined;
+      return;
+    }
+    if (eastLoading || eastFailed || eastController.signal.aborted) return;
+    eastLoading = true;
+    const downtown = terrain;
+    const westGrid = grid;
+    void import('./king-memorial-board').then(async ({ loadEast, joinedPlinth }) => {
+      eastController.signal.throwIfAborted();
+      const area = await loadEast(DATA, westGrid, quality, downtown.bottomY, eastController.signal);
+      if (eastController.signal.aborted) { area.dispose(); return; }
+      const plinth = joinedPlinth(b, downtown.bottomY);
+      scene.add(plinth, area.group);
+      scenery.push(area.group);
+      area.setSeason(local(new Date(options.clockMs())).doy);
+      if (downtownPlinth) downtownPlinth.visible = false;
+      area.openJoin();
+      downtown.openJoin();
+      east = area;
+      options.areaNote?.(null);
+      renderer.shadowMap.needsUpdate = true;
+      if (pendingEastTarget) {
+        const { x, z } = pendingEastTarget;
+        const offset = camera.position.clone().sub(controls.target);
+        controls.target.set(x, east.groundAt(x, z) ?? 0, z);
+        camera.position.copy(controls.target).add(offset);
+        controls.update();
+      }
+    }).catch(err => {
+      if (!eastController.signal.aborted) {
+        eastFailed = true;
+        options.areaNote?.('King Memorial could not load. Downtown is available.');
+        console.warn('King Memorial board unavailable', err);
+      }
+    }).finally(() => { eastLoading = false; pendingEastTarget = undefined; });
+  }
+  const targetY = (x: number, z: number) => east?.groundAt(x, z) ?? world.ground(x, z);
   const clampTarget = () => {
     const t = controls.target;
-    const dx = THREE.MathUtils.clamp(t.x, b.minX, b.maxX) - t.x;
-    const dz = THREE.MathUtils.clamp(t.z, b.minZ, b.maxZ) - t.z;
-    const dy = grid ? world.ground(t.x + dx, t.z + dz) - t.y : 0;
+    approachEast(t.x, t.z);
+    const point = boardPoint(b, !!east, t.x, t.z);
+    const dx = point.x - t.x, dz = point.z - t.z;
+    const dy = grid ? targetY(point.x, point.z) - t.y : 0;
     if (dx || dy || dz) {
       t.x += dx;
       t.y += dy;
@@ -434,7 +488,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   controls.addEventListener('change', clampTarget);
 
   function setView(azDeg: number, polarDeg: number, dist: number, tx = controls.target.x, tz = controls.target.z) {
-    const ty = world.ground(tx, tz);
+    const ty = targetY(tx, tz);
     controls.target.set(tx, ty, tz);
     const az = THREE.MathUtils.degToRad(azDeg);
     const po = THREE.MathUtils.degToRad(polarDeg);
@@ -505,16 +559,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
     if (terrain) {
-      const surface = ray.intersectObject(terrain.board, false)[0];
+      const surface = ray.intersectObjects(east ? [terrain.board, east.board] : [terrain.board], false)[0];
       if (surface) {
         glideTo = surface.point;
-        glideTo.y = world.ground(glideTo.x, glideTo.z);
+        glideTo.y = targetY(glideTo.x, glideTo.z);
       }
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
-  const manualCamera = () => { if (options.follow?.active) options.follow.stop(); };
-  if (options.follow) controls.addEventListener('start', manualCamera);
+  const manualCamera = () => { pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
+  controls.addEventListener('start', manualCamera);
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
@@ -580,6 +634,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     arena?.setNight(night);
     grady?.setNight(night);
     terrain?.setNight(night);
+    east?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
 
@@ -597,6 +652,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     bg.lerp(pal.snowBg, wx.snow * day * 0.4);
     world.setWet(wx.rain);
     terrain?.setWet(wx.rain);
+    east?.setWet(wx.rain);
     const dist = camera.position.distanceTo(controls.target);
     const f = Math.max(wx.fog, wx.rain * 0.5);
     const fog = scene.fog as THREE.Fog;
@@ -688,16 +744,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     quality,
     lookAt(x, z, view) {
       glideTo = null;
+      pendingEastTarget = previewEast && !east && x > b.maxX && x <= eastBounds.maxX &&
+        z >= eastBounds.minZ && z <= eastBounds.maxZ ? { x, z } : undefined;
+      approachEast(x, z);
+      const point = boardPoint(b, !!east, x, z);
       if (view) {
         const dist = view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
         const tilt = THREE.MathUtils.clamp(view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()),
           THREE.MathUtils.radToDeg(controls.minPolarAngle), THREE.MathUtils.radToDeg(controls.maxPolarAngle));
         setView(-view.bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance),
-          THREE.MathUtils.clamp(x, b.minX, b.maxX), THREE.MathUtils.clamp(z, b.minZ, b.maxZ));
+          point.x, point.z);
         return;
       }
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      controls.target.set(x, world.ground(x, z), z);
+      controls.target.set(point.x, targetY(point.x, point.z), point.z);
       clampTarget();
       camera.position.copy(controls.target).add(off);
       controls.update();
@@ -727,7 +787,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     setAtmosphere(a, now) {
       atm = a;
-      (terrain ?? world).setSeason(local(now).doy);
+      const day = local(now).doy;
+      (terrain ?? world).setSeason(day);
+      east?.setSeason(day);
     },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0), arterialCars: arterials?.visibleCars ?? 0, freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
