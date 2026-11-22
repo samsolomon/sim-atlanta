@@ -19,7 +19,8 @@ describe('Westin Peachtree Plaza', () => {
     model.group.updateMatrixWorld(true);
     const roof = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0,-1,0))
       .intersectObject(model.group, true)[0]?.point.y;
-    expect(roof(279.5,-614.9)).toBeCloseTo(y + 220.05, 2);
+    expect(roof(279.5,-614.9)).toBeCloseTo(y + 254.2, 2); // antenna tip
+    expect(roof(274,-614.9)).toBeCloseTo(y + 220.05, 2); // original roof
     expect(roof(296.65,-627.2)).toBeCloseTo(y + 219.95, 2);
     expect(roof(263,-601)).toBeCloseTo(y + 26);
     expect(roof(352,-612)).toBeCloseTo(y + 26);
@@ -43,7 +44,7 @@ describe('Westin Peachtree Plaza', () => {
     material.map!.addEventListener('dispose', releaseDay);
     material.emissiveMap!.addEventListener('dispose', releaseNight);
     model.setNight(0.75);
-    expect(material.emissiveIntensity).toBe(0.75);
+    expect(material.emissiveIntensity).toBe(3);
     model.setNight(0);
     expect(material.emissiveIntensity).toBe(0);
     expect(model.group.children).toHaveLength(2);
