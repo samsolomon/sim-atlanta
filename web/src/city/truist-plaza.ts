@@ -157,7 +157,9 @@ export function createTruistPlaza(buildings: VBuilding[], groundAt: (x: number, 
     [231, 241, 247, 241, 231],
     [229, 231, 235, 231, 229],
   ];
-  const unit = (width - 4.4) / 5;
+  // The crown sits just behind the deepest window returns. Extend all of its
+  // exterior faces below the lowest parapet to close the staggered junctions.
+  const unit = (width - 4.6) / 5;
   for (let j = 0; j < 5; j++)
     for (let i = 0; i < 5; i++) {
       const l = (i - 2.5) * unit,
@@ -174,7 +176,7 @@ export function createTruistPlaza(buildings: VBuilding[], groundAt: (x: number, 
       const low = [tops[j - 1]?.[i], tops[j][i + 1], tops[j + 1]?.[i], tops[j][i - 1]];
       shell.quad(point(p[3], y), point(p[2], y), point(p[1], y), point(p[0], y), '#678795');
       for (let k = 0; k < 4; k++) {
-        const base = low[k] ?? parapets[k % 2 === 0 ? i : j] - 0.1;
+        const base = low[k] ?? 221.2;
         if (base >= y) continue;
         const a = p[k],
           b = p[(k + 1) % 4];
