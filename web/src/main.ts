@@ -17,6 +17,7 @@ import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
 import type { CityView } from './city/city';
+import { BLUE, TrainFollow } from './city/train-follow';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -44,14 +45,50 @@ const map = new maplibregl.Map({
 const card = document.getElementById('card')!;
 const cardContent = document.getElementById('card-content')!;
 card.querySelector('.close')!.addEventListener('click', hideCard);
+const follow = params.get('follow') === '1' ? new TrainFollow() : undefined;
+const followPanel = document.getElementById('train-follow')!;
+const followAction = followPanel.querySelector<HTMLButtonElement>('[data-follow]')!;
+const recenter = followPanel.querySelector<HTMLButtonElement>('[data-recenter]')!;
+const followStatus = followPanel.querySelector<HTMLElement>('.follow-status')!;
+function updateFollowPanel() {
+  if (!follow) return;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const note = {
+    idle: '', drawn: 'Following train',
+    covered: reduced ? 'Train under cover' : 'Under cover · following the route above ground',
+    unseen: reduced ? 'Train out of view' : 'Train out of view · following the route above ground',
+    lost: 'Follow ended · trip unavailable', outside: 'Follow ended · train left downtown',
+  }[follow.phase];
+  const text = reduced && follow.active ? [note, 'Camera stays still until you recenter.'].filter(Boolean).join(' · ') : note;
+  if (followStatus.textContent !== text) followStatus.textContent = text;
+  followStatus.hidden = !text;
+  followAction.hidden = follow.phase === 'lost' || follow.phase === 'outside';
+  const action = follow.active ? 'Stop following' : 'Follow train';
+  if (followAction.textContent !== action) followAction.textContent = action;
+  recenter.hidden = !(reduced && follow.active);
+}
+followAction.addEventListener('click', () => {
+  if (!follow || !selectedTrain || !diorama) return;
+  if (follow.active) follow.stop();
+  else {
+    const train = source.find(selectedTrain);
+    if (train) follow.start(train);
+  }
+  updateFollowPanel();
+});
+recenter.addEventListener('click', () => follow?.recenter());
 let lastCardHTML = '';
 let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
-function showCard(html: string) {
+function showCard(html: string, canFollow = false) {
+  followPanel.hidden = !canFollow;
+  if (canFollow) updateFollowPanel();
   if (lastCardHTML !== html) cardContent.innerHTML = lastCardHTML = html;
   card.hidden = false;
 }
 function hideCard() {
+  follow?.stop();
+  followPanel.hidden = true;
   card.hidden = true;
   selectedBus = null;
   selectedTrain = null;
@@ -61,10 +98,14 @@ document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 function renderTrainCard() {
   if (!selectedTrain) return;
   const t = source.find(selectedTrain);
-  if (!t) return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
+  if (!t) {
+    if (follow?.phase === 'lost') return showCard('<h2>Train no longer available</h2><p class="sub">Tap another train.</p>', true);
+    return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
+  }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
       view3d.hidden ? undefined : 'Stadler CQ400'),
+    !!follow && !view3d.hidden && t.routeId === BLUE,
   );
 }
 
@@ -330,7 +371,9 @@ async function openCity() {
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
       buses: () => (clock.isRealTime() ? buses.current() : null),
+      follow,
       selectVehicle: hit => {
+        follow?.stop();
         selectedTrain = hit?.kind === 'train' ? hit.id : null;
         selectedBus = hit?.kind === 'bus' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
