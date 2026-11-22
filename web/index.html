@@ -27,9 +27,16 @@
       <div id="city-loading" role="status" hidden>
         <p>Downtown, in miniature</p>
         <span id="city-progress">Loading buildings, streets and trees…</span>
+        <small class="city-source">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></small>
         <a id="early-map" href="?view=map" hidden>Open Map</a>
       </div>
-      <p class="attrib3d">Unofficial · Buildings &amp; track © OpenStreetMap contributors, Overture Maps · <span id="city-ground-source">Flat board</span> · MARTA data · Rail and bridge heights are schematic<span id="city-freight-attrib" hidden> · Illustrative freight loop</span><span id="city-traffic-attrib" hidden> · Illustrative road traffic</span></p>
+      <button class="city-info-toggle" type="button" popovertarget="city-info" aria-label="About this City view" title="About this City view"><span aria-hidden="true">i</span></button>
+      <aside id="city-info" popover aria-labelledby="city-info-title">
+        <strong id="city-info-title">About this City view</strong>
+        <p>Unofficial. Buildings &amp; track © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, Overture Maps. <span id="city-ground-source">Flat board</span> · MARTA data.</p>
+        <p>Rail and bridge heights are schematic.<span id="city-freight-attrib" hidden> Illustrative freight loop.</span><span id="city-traffic-attrib" hidden> Illustrative road traffic.</span></p>
+        <a href="/about">About &amp; credits</a>
+      </aside>
     </section>
 
     <aside id="card" class="glass" hidden aria-live="polite">
