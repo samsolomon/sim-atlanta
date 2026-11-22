@@ -1479,3 +1479,7 @@ So the fixture keeps three things apart:
 The Green Line turnbacks that OSM still maps on the centre tracks are absent from the current
 feed and from MARTA's station page. They are kept as reported history, not as service.
 [Layout and sources](avondale-layout.md)
+
+### 2026-11-22 — Daylight on a night train
+
+Sam wanted to see detail in a dark station while watching the same arrival. The place and weather widget now opens a scene preview with separate lighting and weather choices. A paused 8:41 pm Atlanta timetable frame stays at 8:41 pm while the user switches on daylight. The view keeps the same train positions. The widget labels the preview, and the report below it still describes the observed Atlanta weather when the clock is live. We checked City and Map, returning to automatic conditions and fitting the panel inside a 360 × 640 phone frame. [Night view](log/ui/scene-conditions/dusk.jpg) · [Same moment in daylight](log/ui/scene-conditions/daylight.jpg)
