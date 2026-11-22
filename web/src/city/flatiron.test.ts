@@ -39,9 +39,20 @@ it('keeps the acute end and projects the central Peachtree bays ahead of the fla
     const eye = new Vector3(x, height, z).addScaledVector(along, length * fraction).addScaledVector(normal, 3);
     return new Raycaster(eye, normal.clone().negate()).intersectObjects(result.group.children)[0]?.distance;
   };
-  expect(depth(4.5 / 9, 17.4)).toBeLessThan(2.32);
-  expect(depth(0.5 / 9, 17.4)).toBeGreaterThan(2.86);
-  expect(depth(4.5 / 9, 35.9)).toBeCloseTo(2.01, 2);
+  const atBay = (bay: number, offset: number, height: number) => depth((bay + 0.5) / 9 + offset / length, height);
+  // Shoot through a sash and against its outer stone jamb on the same bay.
+  expect(atBay(4, 0.45, 18.6)).toBeCloseTo(2.175, 2);
+  expect(atBay(4, 0.94, 18.6)).toBeCloseTo(1.97, 2);
+  expect(atBay(0, 0.45, 18.6)).toBeCloseTo(2.975, 2);
+  // The framed tablet sits behind its surround. The main cornice spans both
+  // bay types, while the upper parapet follows the five projecting stacks.
+  expect(atBay(4, 0, 17.2)).toBeCloseTo(2.11, 2);
+  expect(atBay(4, 0, 16.68)).toBeCloseTo(1.97, 2);
+  for (const bay of [0, 4]) expect(atBay(bay, 0, 35.9)).toBeCloseTo(1.52, 2);
+  expect(atBay(4, 0.35, 44.12)).toBeLessThan(2.1);
+  expect(atBay(0, 0.35, 44.12)).toBeGreaterThan(2.6);
+  expect(depth(4 / 9, 3.2)).toBeLessThan(2.32);
+  expect(atBay(3, 0.35, 3.2)).toBeCloseTo(3.545, 2);
   const material = (result.group.children[1] as Mesh).material;
   result.setNight(1);
   expect(material).toMatchObject({ emissiveIntensity: 0.31 });
