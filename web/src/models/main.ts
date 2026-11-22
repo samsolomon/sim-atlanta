@@ -78,7 +78,7 @@ function build() {
   document.getElementById('lines')!.style.display = vehicle === 'cq400' ? '' : 'none';
   document.getElementById('roles')!.style.display = vehicle === 'cq400' ? '' : 'none';
   document.getElementById('title')!.textContent = vehicles[vehicle];
-  document.title = vehicles[vehicle] + ' · Model Lab';
+  document.title = vehicles[vehicle] + ' · Model Lab · Sim Atlanta';
   if (vehicle === 'cm44ac') {
     document.getElementById('blurb')!.textContent = 'CSX 7257, seen at Georgia State, is a modernized GE AC4400CW. This scale study pairs the six-axle locomotive with an illustrative boxcar.';
     cars = (['locomotive', 'boxcar'] as const).map(unit => {

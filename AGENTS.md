@@ -1,4 +1,4 @@
-# sim-atlanta — Agent Guide
+# Sim Atlanta — Agent Guide
 
 A free, fast map of where Atlanta's trains are, or are likely to be, right now. It is
 becoming an art project: a real-time, low-poly 3D miniature of Metro Atlanta that starts
