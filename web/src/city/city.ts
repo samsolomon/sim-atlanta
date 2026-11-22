@@ -52,6 +52,7 @@ import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createWestin } from './westin';
+import { createCoreyTower } from './corey';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createCongressCenter } from './congress-center';
@@ -209,8 +210,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
         const remaining = westin?.buildings ?? buildings;
-        const stadium = createStadium(remaining, ground);
-        const afterStadium = stadium?.buildings ?? remaining;
+        const stack = createCoreyTower(remaining, ground);
+        const stadiumSite = stack?.buildings ?? remaining;
+        const stadium = createStadium(stadiumSite, ground);
+        const afterStadium = stadium?.buildings ?? stadiumSite;
         capitol = createCapitol(afterStadium, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
@@ -223,6 +226,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
+        if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
