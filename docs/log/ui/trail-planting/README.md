@@ -24,6 +24,8 @@ The blade tips bend by at most 8.6 cm along the main wind direction. The middle 
 
 High has 307 distinct triangles submitted across two passes. These are scene counters, not frame timings. The layer fades between 0.096 and 0.16 m per pixel on low, and between 0.12 and 0.20 on high, measured at the patch. Three low-quality camera bearings at 0.12 m per pixel showed the same clumps through the turn. Small silhouette details vary by pixel there. Both wider views cull the patch and skip vertex updates. [Matched view from above, before](above-before.jpg) · [After](above-after.jpg)
 
+At the opposite bearing (14°) the gaps and individual clumps remain legible. A depth-writing comparison produced a darker ink outline on every clump at both bearings. The study keeps the softer edge. [Reverse view at trail scale](reverse.jpg)
+
 ## Reproduce the camera
 
 Use the current downtown bake and start the web dev server with `pnpm dev`. Open City at `/?view=city&q=high&t=2026-11-20T14:12:45-05:00&speed=0`, set a 1120 × 840 CSS-pixel viewport, and run the following in the Orca page. Use `q=low` for the low comparison. The original images use commit `d972b9b` at the same clock and camera.
