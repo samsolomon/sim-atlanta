@@ -37,6 +37,8 @@ import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic } from './connector-traffic';
+import { StreetFigures } from './street-figures';
+import { cityTravellers } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
@@ -60,6 +62,7 @@ export interface CityView {
   measuredGround: boolean;
   hasFreight: boolean;
   hasTraffic: boolean;
+  hasPeople: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
@@ -317,6 +320,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     : undefined;
   if (traffic) scene.add(traffic.group);
   if (arterials) scene.add(arterials.group);
+  const travellers = terrain ? cityTravellers(vd, terrain.groundAt, low) : [];
+  const figures = terrain && travellers.length ? new StreetFigures(travellers, terrain.groundAt, low) : undefined;
+  if (figures) scene.add(figures.group);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -575,6 +581,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     const sceneTime = options.clockMs();
+    figures?.update(sceneTime, camera, container.clientHeight);
     freight?.update(sceneTime);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
@@ -613,6 +620,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   return {
     measuredGround: !!terrain,
     hasFreight: !!freight,
+    hasPeople: !!figures,
     buses,
     hasTraffic: !!(traffic?.group.children.length || arterials?.group.children.length),
     bounds: b,
@@ -669,6 +677,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();
+      figures?.dispose();
       freight?.dispose();
       buses.dispose();
       traffic?.dispose();
