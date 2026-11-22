@@ -135,5 +135,8 @@ errors are structural, not about track height:
 3. **Defer:** the deck clearance, and the steel freight-girder material. Both are lower impact.
    The clearance needs GDOT GeoPI plan sheets or a MARTA records request.
 
-Decision for Control: approve items 1 and 2 as the next City chunk (data override plus the canopy
-rule), or keep the station schematic and spend the time on the deck clearance instead.
+Sam approved the station and Floyd work on November 22. Rail Accuracy owns the platform footprints and cover boundaries. Marlin owns the two towers, their base and the opening through it. City owns the platforms, lights and train rendering. All three use the same rendered track bed. The current generic extrusion closes the track, so the replacement needs a real opening through the base.
+
+For a train entering Floyd, check a car straddling the opening and another fully inside. From the side, a car beside the open platform should stay visible and selectable. Check the same arrival at dusk, in daylight and on the phone. Older scene data without the observed station spans uses its existing rail profile.
+
+Gman197002’s platform photograph shows red-brown paving, a pale warning strip, a light ceiling with square recessed fixtures and daylight visible between supports. Use those for the canopy interior. Sam’s R1 above supplies the approach silhouette and the warm light at the east end. Column spacing, roof thickness and fixture spacing are illustrative. [Platform photograph on Wikimedia Commons](https://commons.wikimedia.org/wiki/File:MARTA_Georgia_State_Station.JPG)

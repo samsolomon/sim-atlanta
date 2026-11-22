@@ -44,6 +44,10 @@ import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
 import { CityTrains } from './trains';
+import { registerStationLine, stationTrack, type StationTrack } from './station-track';
+import { createGeorgiaState } from './station';
+import { georgiaStateScene } from './georgia-state-geometry';
+import { createFloyd } from './floyd';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -168,14 +172,23 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.group.removeFromParent();
   };
   let marta: Alignment[] = [];
+  const stationSite = georgiaStateScene(manifest.origin);
+  let station: StationTrack | undefined;
+  let floyd: ReturnType<typeof createFloyd> = null;
+  let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
-    await build('alignments', () => { marta = martaAlignments(rf, manifest, b, grid);
-      if (cut) marta = marta.map(maskCut); });
+    await build('alignments', () => {
+      ({ tracks: marta, station } = martaAlignments(rf, manifest, b, stationSite, grid));
+      if (cut) marta = marta.map(maskCut);
+    });
     if (grid) {
       const ground = grid;
       await build('terrain', () => {
-        terrain = createDowntownTerrain(ground, vd, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        if (station) floyd = createFloyd(vd.buildings, station.passage, world.ground.bind(world));
+        const city = floyd ? { ...vd, buildings: floyd.buildings } : vd;
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
+        if (floyd) world.group.add(floyd.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
@@ -192,6 +205,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const pierAllowed = lower ? (x: number, z: number) =>
         lower.clearOfFreight(x, z) && !inConnectorLanes(x, z, 1.8) : undefined;
       for (const al of marta) world.buildMarta(al, pierAllowed);
+      if (station) {
+        platforms = createGeorgiaState(station, stationSite, floyd?.eastFace);
+        world.group.add(platforms.group);
+      }
     });
     await build('lights', () => world.buildLights(terrain?.board, terrain?.groundAt, terrain ? inConnectorLanes : undefined));
   } catch (err) {
@@ -468,6 +485,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     tableMat.color.copy(pal.tableNight).lerp(pal.tableDay, day);
     const night = atm.dark;
     world.setNight(night);
+    platforms?.setNight(night);
+    floyd?.setNight(night);
     terrain?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
@@ -650,7 +669,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
  * (and lines sharing track) are near-identical centrelines, so a path that runs within a few
  * metres of one already kept is skipped. Tunnels aren't drawn; buildMarta shows open track only.
  */
-function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds'], grid?: GroundGrid): Alignment[] {
+function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['bounds'], site: ReturnType<typeof georgiaStateScene>, grid?: GroundGrid) {
+  let station: StationTrack | undefined;
   const kept: Alignment[] = [];
   // Keep through services first. A short-turn shape ending at Five Points would
   // otherwise claim half a corridor and be drawn again under the full alignment.
@@ -674,9 +694,17 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
       total++;
       if (kept.some((k) => distToLine(k.line, p.x, p.z) < 6)) near++;
     }
-    if (total && near / total < 0.9) kept.push(grid ? terrainAlignment(al, id, manifest, grid) : al);
+    if (!total || near / total >= 0.9) continue;
+    const registered = grid && !station ? registerStationLine(al, site, manifest.rail?.paths[id]) : undefined;
+    if (registered) al = registered;
+    const track = grid ? terrainAlignment(al, id, manifest, grid) : al;
+    if (registered) {
+      station = stationTrack(track, al.pathMetresAt, manifest.rail?.paths[id]);
+      if (station) track.visibleInStation = station.visibleInStation;
+    }
+    kept.push(track);
   }
-  return kept;
+  return { tracks: kept, station };
 }
 
 function distToLine(line: Line, x: number, z: number) {
