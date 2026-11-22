@@ -12,6 +12,7 @@
  * - `v` is lateral, positive to the right of eastbound travel (the south/ER side).
  * Callers can re-anchor this frame on whatever running line they draw.
  */
+import type { PhysicalPlatform, StationLayout } from '../model/platforms';
 import { makeProjector } from '../core/scene-data';
 
 export type LonLat = readonly [lon: number, lat: number];
@@ -63,9 +64,16 @@ export const GEORGIA_STATE = {
   } as const satisfies Record<'nw' | 'se', FaceSource>,
 } as const;
 
+// GTFS has separate eastbound and westbound stop IDs; the surveyed physical
+// platform beside each normal running track supplies the modeled association.
+export const GEORGIA_STATE_PLATFORMS_BY_STOP = {
+  'marta:stop:908696': [GEORGIA_STATE.platforms[0].osm],
+  'marta:stop:908618': [GEORGIA_STATE.platforms[1].osm],
+} as const;
+
 type XZ = [number, number];
 
-export interface ScenePlatform {
+export interface ScenePlatform extends PhysicalPlatform {
   osm: string;
   side: 'south' | 'north';
   track: Track;
@@ -89,7 +97,7 @@ export interface SceneFace {
   opening: [number, number];
 }
 
-export interface GeorgiaStateScene {
+export interface GeorgiaStateScene extends StationLayout {
   /** Frame origin (the NW face, on the OSM track axis) and unit vectors, in scene x/z. */
   origin: XZ;
   along: XZ;
@@ -128,7 +136,8 @@ export function georgiaStateScene(origin: { lon: number; lat: number }): Georgia
     const sign = p.side === 'south' ? 1 : -1;
     const inner = sign * Math.min(...vs.map((v) => sign * v));
     const outer = sign * Math.max(...vs.map((v) => sign * v));
-    return { osm: p.osm, side: p.side, track: p.track, ring, u0, u1, inner, outer, canopy: [u0, 0], underBuilding: [0, u1] };
+    return { id: p.osm, edges: [{ trackId: p.track, side: sign === 1 ? 'right' : 'left' }],
+      osm: p.osm, side: p.side, track: p.track, ring, u0, u1, inner, outer, canopy: [u0, 0], underBuilding: [0, u1] };
   });
   const face = (f: FaceSource): SceneFace => {
     const tracks = { ER: xz(f.tracks.ER), EL: xz(f.tracks.EL) };
@@ -136,7 +145,7 @@ export function georgiaStateScene(origin: { lon: number; lat: number }): Georgia
     return { u: toFrame(...mid(tracks.ER, tracks.EL)).u, wall: [xz(f.wall[0]), xz(f.wall[1])], tracks, opening: [Math.min(...outers), Math.max(...outers)] };
   };
   return {
-    origin: o, along, right, toFrame, fromFrame,
+    id: GEORGIA_STATE.sources.stopArea, tracks: ['ER', 'EL'], origin: o, along, right, toFrame, fromFrame,
     westTip: Math.min(...scenePlatforms.map((p) => p.u0)),
     platforms: scenePlatforms,
     faces: { nw: face(faces.nw), se: face(faces.se) },

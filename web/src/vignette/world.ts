@@ -9,6 +9,9 @@ import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './ge
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
 
+/** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
+export const MARTA_TRACK_OFFSET = 2.1;
+
 export interface VBuilding {
   id: string;
   h: number | null;
@@ -672,7 +675,7 @@ export class World {
     const tieM = new THREE.Matrix4();
     const ties: THREE.Matrix4[] = [];
     for (const [sv, s1] of runs) {
-      for (const off of [-2.1, 2.1]) {
+      for (const off of [-MARTA_TRACK_OFFSET, MARTA_TRACK_OFFSET]) {
         const tl = m.line.offset(off, 2);
         b.ribbon(tl, 3.6, (s) => ey(s) + 0.25, PAL.ballast, 2, sv, s1);
         for (const r of [-0.72, 0.72]) b.ribbon(tl.offset(r, 2), 0.12, (s) => ey(s) + 0.55, PAL.rail, 2, sv, s1);

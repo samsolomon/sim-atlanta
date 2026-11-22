@@ -26,7 +26,8 @@ import * as THREE from 'three';
 
 export const CAR_LENGTH = 22.9;
 export const CAR_GAP = 0.9; // gangway between cars
-const W = 3.2;
+export const CAR_WIDTH = 3.2;
+const W = CAR_WIDTH;
 const FLOOR = 1.12;
 const ROOF = 3.78;
 
