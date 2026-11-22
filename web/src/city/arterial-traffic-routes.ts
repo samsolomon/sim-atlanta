@@ -2,21 +2,14 @@ import { Line, type P2 } from '../vignette/geom';
 import type { VRoad } from '../vignette/world';
 import type { TerrainCity } from '../terrain/transport-data';
 import type { TrafficCourse } from './road-traffic';
+import type { ResolvedRun } from './arterials';
 
 /** Structural subset of the output of loadArterials(json, city). Road indices and
  * endpoint fingerprints have already been checked by the data selector. */
 export interface ArterialCorridor {
   id: string;
-  runs: readonly {
-    road: VRoad;
-    from: string;
-    to: string;
-    allow: 'both' | 'forward' | 'reverse';
-    aadt: { forward: number; reverse: number };
-    lanes: { forward: number; reverse: number };
-    speedMph: number | null;
-    truckShare: number | null;
-  }[];
+  runs: ReadonlyArray<Pick<ResolvedRun,
+    'road' | 'from' | 'to' | 'allow' | 'aadt' | 'lanes' | 'speedMph' | 'truckShare'>>;
 }
 
 interface ArterialTraversal {
@@ -145,8 +138,8 @@ export function arterialTrafficRoutes(corridors: readonly ArterialCorridor[], bo
     for (const run of corridor.runs) {
       for (const direction of ['forward','reverse'] as const) {
         if (run.allow !== 'both' && run.allow !== direction) continue;
-        const dailyFlow = run.aadt[direction];
-        if (!(Number.isFinite(dailyFlow) && dailyFlow > 0 && run.lanes[direction] > 0)) continue;
+        const dailyFlow = run.aadt[direction] ?? 0;
+        if (!(Number.isFinite(dailyFlow) && dailyFlow > 0 && (run.lanes?.[direction] ?? 0) > 0)) continue;
         const reverse = direction === 'reverse';
         // A representative moving speed, bounded below prevailing signed speeds at busy junctions.
         const speedMps = run.speedMph && Number.isFinite(run.speedMph) && run.speedMph > 0
