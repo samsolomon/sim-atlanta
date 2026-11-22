@@ -84,8 +84,7 @@ the generic block stays, when:
 - the footprint has moved more than 1.5 m (a different bake);
 - any ground sample is missing.
 
-In the terrain stage of `city.ts`, it takes Westin's filtered list (`floyd → westin → capitol`), and
-its group is added after the plinth. The board without terrain is unchanged.
+In the terrain stage of `city.ts`, the Capitol takes the stadium’s remaining footprints and passes its own remaining list to the Georgia World Congress Center. Its group is added after the plinth.
 
 ## Views
 
