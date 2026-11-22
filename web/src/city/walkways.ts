@@ -1,3 +1,4 @@
+import { figureLooks } from './figure-looks';
 import { hashStr, Line, pointInRing, rng, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import type { VRoad } from '../vignette/world';
@@ -5,7 +6,7 @@ import { roadWidth, type TerrainCity } from '../terrain/transport-data';
 
 type GroundAt = (x: number, z: number) => number | null;
 export interface Walkway { line: Line; from: number; to: number; trail: boolean }
-export interface Traveller { way: Walkway; rider: boolean; phase: number; speed: number; size: number; tint: number }
+export interface Traveller { way: Walkway; rider: boolean; phase: number; speed: number; size: number; look: number }
 
 export function travelSpeed(rider: boolean, fraction: number) {
   return rider ? 3.5 + fraction * 1.1 : 1.05 + fraction * .45;
@@ -93,7 +94,7 @@ export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean
       const rider = trail && i % 2 === 0;
       travellers.push({ way, rider, phase: (offset + i / count) * 2 * span,
         speed: travelSpeed(rider, random()),
-        size: .94 + random() * .11, tint: Math.floor(random() * 5) });
+        size: .94 + random() * .11, look: Math.floor(random() * figureLooks.length) });
     }
   }
   return travellers;
