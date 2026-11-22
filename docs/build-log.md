@@ -1423,6 +1423,32 @@ At 2:11:25 on the Friday timetable, a six-car eastbound Blue Line train fills th
 
 At 384 × 692, tapping the middle of Now in a paused replay opened Map. The view switch intercepted all nine points we checked on Now and the left side of 1×. At 360 × 560, the icon-only switch still caught the edge of Now and part of the time slider. In the optional playback view, the switch now sits beside the time panel with an 8 px gap. Both groups stay within reach while following the night train. On a Galaxy A16, a rider could tap the Blue Line train, choose Follow train, then tap 1× to start the replay. [Galaxy A16](log/ui/2026-11-22-portrait-replay-a16.jpg) · [City at 384 × 692 in Orca](log/ui/2026-11-22-portrait-replay.jpg) · [Map at 360 × 560 in Orca](log/ui/2026-11-22-portrait-replay-map.jpg)
 
+### 2026-11-22 — The roof that moved the station
+
+Georgia State's platforms run under the 20-storey Floyd Building, so the station model needs the
+building's openings to be in the right place. In imagery, the station's east end had looked like
+a roof edge. Overlaying OSM on NAIP 2023 showed the error: the towers lean 10–25 m in aerial
+photos, and their bases sit exactly on the OSM outline. Covered track had been running 10 m past
+the building's real SE face.
+
+The cover edges now come from the surveyed faces:
+- 69 m open approach;
+- 71 m under the canopies;
+- 116 m under the building, down from 131 m.
+
+A test walks all ten East Line paths in both directions and checks that each change of cover
+lands within 1 m of the surveyed line.
+
+The survey also found a lateral offset: the GTFS line runs 2.3 m north of the real track centre
+through the station. That is half a track spacing, enough for a car to clip a platform. City will
+ease its drawn line onto the surveyed axis inside the station. OSM also draws the platform edges
+0.7 m from the rails, closer than half a car's width, so only the outer walls are taken from it.
+[Survey](georgia-state-geometry.md)
+
+![NAIP 2023 with OSM outlines: the old edge (red) sits past the SE face](log/ui/georgia-state-geometry/2026-11-22-floyd-se-face-naip.jpg)
+
+![City at 14:12:31: the eastbound train leaves the building at the surveyed SE face](log/ui/georgia-state-geometry/2026-11-22-city-se-face-emerging.jpg)
+
 ### 2026-11-22 — The pair of towers above Georgia State
 
 From the plaza, the Floyd Building has three window bays across the face of each tower. From the street corner, eight bays turn along the side. Both towers rise from the same low roof, with about 53 m of sky between them. In the old City frame, a single 25.2 m block occupied the whole footprint. In the new one, the train enters an 18 m model opening at the northeast edge of the base and passes beneath both towers. The twenty storeys are documented. The 78.4 m height is an unverified map tag, and the soffit is schematic. [Plaza before](log/ui/floyd/plaza-before.jpg) · [Plaza after](log/ui/floyd/plaza-after.jpg) · [Dusk approach](log/ui/floyd/dusk-after.jpg) · [Photographs, dimensions and camera comparisons](floyd-towers.md)

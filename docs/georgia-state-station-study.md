@@ -107,7 +107,7 @@ sign is reversed.
 | Element | City now | Evidence | Status |
 |---|---|---|---|
 | Track plan and both directions | GTFS shape, smoothed. Right-hand offsets of ±2.1 m. | OSM ways, GTFS, the direction check above | **Supported** |
-| Cover: open west approach → canopies (roofed) → Floyd building (covered) → open structure | `rail` spans of 62 / 73 / 131 m, then the viaduct | OSM; Esri imagery 2022-09-27 and 2026-02-02; NAIP 2023 | **Supported**, edges ±10–15 m |
+| Cover: open west approach → canopies (roofed) → Floyd building (covered) → open structure | `rail` spans of 62 / 73 / 131 m, then the viaduct. Since 2026-11-22: 69 / 71 / 116 m, surveyed ([georgia-state-geometry.md](georgia-state-geometry.md)) | OSM; Esri imagery 2022-09-27 and 2026-02-02; NAIP 2023 | **Supported**; edges now ±4–5 m |
 | Track under the canopies | Hidden: `roofed` counts as not visible, and no canopy geometry is drawn | Canopies are visible in all imagery; R1 shows a lit station end | **Gap**: visibility between the canopies is unresolved |
 | Floyd building (the "Twin Towers") | One block, **25.2 m** (OSM height, `floors: 2`) | **Verified:** Georgia DCA, *Modern Downtown Atlanta*, printed page 82, documents two red-brick-veneer 20-storey towers joined by a flat-roofed base adjoining the rail station ([PDF](https://dca.georgia.gov/document/document/modern-downtown-atlanta/download)). The State of Georgia (team.georgia.gov) also says 20 storeys, opened 1980. R2 shows a tower. **Not found:** a published height in metres | **Wrong**: 20 storeys can't fit in 25 m; the real height is unmeasured |
 | MARTA bed through the station | Ramps 0 → +7 m between the anchors | No survey or plan found | **Schematic** |
