@@ -30,7 +30,7 @@ it('picks the exposed end of a portal car and skips the clipped end, hidden stoc
   };
   expect(pick(10)).toEqual({ kind:'train', id:'train' });
   expect(pick(-10)).toBeNull();
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(25,1,35));
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(25,1,35), new THREE.MeshBasicMaterial());
   roof.position.y = 10;
   roof.updateMatrixWorld();
   expect(pick(10,[roof])).toBeNull();
