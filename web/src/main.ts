@@ -149,10 +149,11 @@ const source = new TrainSource(schedule, live);
 live.start();
 
 let override: AtmosphereOverride | null = null;
+let sceneConditions: AtmosphereOverride = {};
 let paintMapAtmosphere: ((atm: Atmosphere) => void) | null = null;
 const updateAtmosphere = () => {
   const w = clock.isRealTime() ? shell.weather() : null;
-  const atm = atmosphere(clock.now(), w, override ?? {});
+  const atm = atmosphere(clock.now(), w, { ...override, ...sceneConditions });
   atmRealTime = clock.isRealTime();
   atmAt = clock.now().getTime();
   lastAtm = atm;
@@ -491,6 +492,10 @@ const shell = createShell({
     diorama?.rotate(degrees);
   },
   onWeather: () => updateAtmosphere(),
+  onSceneConditions(settings) {
+    sceneConditions = settings;
+    updateAtmosphere();
+  },
   live: () => ({
     realTime: clock.isRealTime(),
     rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',
