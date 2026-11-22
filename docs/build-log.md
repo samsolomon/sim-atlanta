@@ -1381,6 +1381,29 @@ On the A16 the first card was readable over pale pavement but lost contrast agai
 
 At 9:52 p.m. the Blue Line crossed the same viaduct with its windows lit. In the open card, the blue schedule label identifies the timetable and the violet model label identifies the illustrative consist. [Night crossing and train card](log/ui/2026-11-21-city-train-card-night.jpg)
 
+## 2026-11-22 · Georgia State against Sam's three photographs
+
+I put City's Georgia State beside three Instagram frames Sam found: @city_surreal's dusk approach,
+@br3nn3nfoto's *Waning Winter* and @4cn.shon's *Fast Lanes*. I matched each with a pinned clock
+and camera. The track plan, cover and three-level stack hold up:
+
+- Freight runs 7.8–10 m above the Connector's floor, and MARTA 4.0–6.7 m above the freight.
+- Freight and MARTA cross on separate parallel bridges 15–25 m apart. *Fast Lanes* only looks
+  stacked because a telephoto lens compresses the distance.
+- A moment of doubt about the westbound train's track turned out to be a trick of the oblique
+  camera. Overheads confirm right-hand running, and a test now pins it.
+
+Two things are wrong, and both are structures:
+
+- **The Floyd building, the station's "Twin Towers", is drawn 25 m tall.** The state calls it a
+  20-storey building.
+- **The station itself is missing.** The canopies aren't drawn, and the track under them is hidden.
+
+The study recommends modelling those before refining track heights. Details:
+[georgia-state-station-study.md](georgia-state-station-study.md)
+
+![City's dusk approach at Georgia State](log/georgia-state-study/2026-11-22-gss-dusk-approach.jpg)
+
 ### 2026-11-22 — City gets the front door
 
 The downtown scene used to wait for the regional basemap style before it could show its loading message. City now paints that message first and creates the MapLibre map when someone opens Map. A bookmarked map coordinate still opens the regional view. Switching a 134° camera into Map and back kept its bearing, centre and 0.30 metres per pixel in Orca.
