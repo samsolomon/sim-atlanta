@@ -76,6 +76,9 @@ function facade(b: Builder, a: Vertex, c: Vertex, lowerA: Vertex, lowerC: Vertex
       if (n % 3 === 0) b.quad(sill(u, 0), sill(end + 0.018, 0), at(end + 0.018, 0), at(u, 0), '#ced4d1');
     }
     const outer = panel === 'window-left' ? 0 : 1, joint = 1 - outer;
+    // Return the entrance and glazing to the adjoining facade at each end.
+    b.quad(sill(outer, 0), sill(outer, -6), at(outer, 0, -6), at(outer, 0), '#626d73');
+    b.quad(at(outer, 0), at(outer, 0, -2.5), at(outer, 1, -2.5), at(outer, 1), '#9ba6ab');
     b.tri(at(outer, 1, 1.8), at(0.7 * outer + 0.3 * joint, 1, 1.8), at(outer, 0.22, 1.8), '#c8cdd0');
     b.quad(at(outer, 1, 1.8), at(outer, 0.955, 1.8), at(joint, 0.04, 1.8), at(joint, 0.085, 1.8), '#e3e6e4');
     b.quad(at(0, 1, -2.5), at(1, 1, -2.5), at(1, 1, 1.8), at(0, 1, 1.8), '#b4bbbf');
