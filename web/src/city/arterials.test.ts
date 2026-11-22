@@ -59,7 +59,11 @@ describe.skipIf(!has)('arterials.json against the drawn downtown roads', () => {
     for (const { c, r } of runs) {
       const dirs = r.allow === 'both' ? ['forward', 'reverse'] : [r.allow];
       expect(Object.keys(r.aadt).sort(), `${c.id} run ${r.run}`).toEqual([...dirs].sort());
-      expect(Object.keys(r.lanes).sort()).toEqual([...dirs].sort());
+      // Lanes are omitted when unknown, never zero, and only for permitted directions.
+      for (const [d, n] of Object.entries(r.lanes)) {
+        expect(dirs).toContain(d);
+        expect(n).toBeGreaterThan(0);
+      }
       expect(Object.values(r.aadt).every((v) => v! > 0)).toBe(true);
       if (r.aadtBasis === 'one-way') expect(r.allow).not.toBe('both');
       if (r.aadtBasis === 'two-way-split') expect(r.allow).toBe('both');

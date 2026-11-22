@@ -258,18 +258,20 @@ def main(refresh=False):
         same_way = osign >= 0
         allow = "both" if ow_dir == "both" else ("forward" if (ow_dir == "forward") == same_way else "reverse")
         aadt, lanes = int(s["AADT"]), int(s.get("THROUGH_LANES") or 0)
+        # Lanes are published only when HPMS supports a count for that direction: a missing
+        # THROUGH_LANES, or a single lane shared by two directions, leaves them out (never 0 or a guess).
         if allow == "both":
             per = {"forward": round(aadt / 2), "reverse": aadt - round(aadt / 2)}
-            ln = {"forward": (lanes + 1) // 2, "reverse": lanes // 2}
+            ln = {"forward": (lanes + 1) // 2, "reverse": lanes // 2} if lanes >= 2 else {}
             basis = "two-way-split"
         elif divided:
             # HPMS counts both directions on one record; each carriageway carries one direction's half.
             per = {allow: round(aadt / 2)}
-            ln = {allow: max(1, lanes // 2)}
+            ln = {allow: lanes // 2} if lanes >= 2 else {}
             basis = "carriageway"
         else:
             per = {allow: aadt}
-            ln = {allow: lanes}
+            ln = {allow: lanes} if lanes >= 1 else {}
             basis = "one-way"
         # Distances and bearings to the chosen HPMS segment, for provenance.
         for p, d, w in smp:
