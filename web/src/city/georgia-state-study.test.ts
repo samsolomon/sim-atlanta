@@ -41,6 +41,16 @@ describe.skipIf(!staged)('Georgia State station study', () => {
       expect(Math.abs((l['gsu-canopy'][1] as number) - 73)).toBeLessThan(10);
       expect(Math.abs((l['gsu-floyd'][1] as number) - 131)).toBeLessThan(10);
     }
+    // The sequence itself, in path order: west portal → canopy → Floyd → viaduct travelling east,
+    // and exactly reversed travelling west.
+    const seq = ['gsu-west-open', 'gsu-canopy', 'gsu-floyd', 'connector-viaduct'];
+    const order = (id: string) => manifest.rail!.paths[id].filter((sp) => seq.includes(sp.ev)).sort((x, y) => x.s0 - y.s0);
+    const east = order(EAST), west = order(WEST);
+    expect(east.map((sp) => sp.ev)).toEqual(seq);
+    expect(west.map((sp) => sp.ev)).toEqual([...seq].reverse());
+    for (const spans of [east, west]) {
+      for (let i = 1; i < spans.length; i++) expect(spans[i].s0).toBeCloseTo(spans[i - 1].s1, 0); // contiguous
+    }
   });
 
   it('stacks freeway < freight < MARTA over the Downtown Connector (x 700–800)', () => {
