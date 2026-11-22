@@ -14,11 +14,13 @@ Portman describes the office plan as a square with alternating projections produ
 
 **Footprint.** The named 265 m, 46-floor Overture record is `d589ba16-ac92-4a00-8386-1d8098172a80`. Its long projecting arms belong at the base. Its short returns and square center anchor the tower near City (466.6, −978.8). Separate curved roof parts and the Truist Plaza Garden Offices retain their own records. The standard extrusion remains available when the expected tower outline or terrain is missing.
 
-**Reproduction.** Before images use `f38db14`. In desktop Orca, use a 1120 × 840 viewport and `/?view=city&q=high&t=2026-11-20T14:12:45-05:00&speed=0`. Use `17:45:00` for dusk. Leave the opening camera untouched. The close views use:
+**Reproduction.** Before images use `f38db14`. In desktop Orca, use a 1446 × 876 viewport and `/?view=city&q=high&t=2026-11-20T14:12:45-05:00&speed=0`. Use `17:45:00` for dusk. Leave the opening camera untouched. The close views use:
 
 ```js
 window.__city.lookAt(435, -1200, { bearing: 8, metresPerPixel: .58, tilt: 59 })
 window.__city.lookAt(515, -740, { bearing: 167, metresPerPixel: .54, tilt: 60 })
 ```
 
-A web rebuild and deployment with the existing data pick up the landmark.
+The matched pairs above were captured before a small shoulder closure. In the reviewed final geometry the crown faces extend behind the office parapets, filling narrow gaps where their bay widths differ. [Final shoulder check](shoulder-check.jpg)
+
+The matched daylight opening rose from 149 to 155 draw submissions and from 2,164,317 to 2,171,193 submitted triangles. A web rebuild and deployment with the existing data pick up the landmark.
