@@ -11,6 +11,7 @@
  */
 import './tokens.css';
 import './shell.css';
+import type { AtmosphereOverride } from '../core/atmosphere';
 import { fetchLive, type Weather } from '../core/weather';
 import { loadPlaces, placeAt } from '../core/places';
 import { sunPosition } from '../vignette/time';
@@ -39,6 +40,7 @@ export interface ShellOptions {
   live(): LiveState;
   /** Called when fresh weather arrives (or is lost). */
   onWeather?(w: Weather | null): void;
+  onSceneConditions(settings: AtmosphereOverride): void;
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
@@ -96,7 +98,36 @@ export function createShell(o: ShellOptions) {
     <button type="button" data-act="key">Key</button>
     <a href="/models">Models</a>
     <a href="/about">About &amp; credits</a>`;
-  const more = el('section', { class: 'drop drop-r glass', id: 'status-more', hidden: '', 'aria-label': 'Live data' });
+  const more = el('section', { class: 'drop drop-r glass', id: 'status-more', hidden: '', 'aria-label': 'Scene preview and live data' });
+  const conditions = el('fieldset', { class: 'scene-conditions' });
+  conditions.innerHTML = `
+    <legend>Scene preview</legend>
+    <label>Lighting<select name="lighting">
+      <option>Follow clock</option><option>Daylight</option><option>Night</option>
+    </select></label>
+    <label>Weather<select name="weather">
+      <option>Automatic</option><option>Clear</option><option>Overcast</option>
+      <option>Rain</option><option>Fog</option><option>Snow</option>
+    </select></label>`;
+  const lighting = conditions.querySelector<HTMLSelectElement>('[name=lighting]')!;
+  const sky = conditions.querySelector<HTMLSelectElement>('[name=weather]')!;
+  const weatherSettings: Record<string, AtmosphereOverride> = {
+    Clear: { cloud: 0, rain: 0, fog: 0, snow: 0 },
+    Overcast: { cloud: 1, rain: 0, fog: 0, snow: 0 },
+    Rain: { cloud: 1, rain: .75, fog: .25, snow: 0 },
+    Fog: { cloud: .7, rain: 0, fog: .9, snow: 0 },
+    Snow: { cloud: 1, rain: 0, fog: .35, snow: .8 },
+  };
+  conditions.addEventListener('change', () => {
+    const settings = { ...weatherSettings[sky.value] };
+    if (lighting.value === 'Daylight') settings.hour = 12;
+    if (lighting.value === 'Night') settings.hour = 0;
+    o.onSceneConditions(settings);
+    lastTick = -Infinity;
+    tick(now);
+  });
+  const details = el('div');
+  more.append(conditions, details);
   const note = el('p', { class: 'bar-note glass', hidden: '' });
 
   const closeDrops = (except?: HTMLElement) => {
@@ -121,7 +152,7 @@ export function createShell(o: ShellOptions) {
     closeDrops(more);
     more.hidden = !open;
     statusBtn.setAttribute('aria-expanded', String(open));
-    if (open) renderMore();
+    if (open) { renderMore(); lighting.focus(); }
   });
   menu.querySelector('[data-act=key]')!.addEventListener('click', () => {
     closeDrops();
@@ -162,11 +193,11 @@ export function createShell(o: ShellOptions) {
     const traffic = view === 'city' && s.cityTraffic
       ? '<li><b>Road traffic</b> Illustrative vehicles follow a typical hourly pattern.</li>' : '';
     const wx = !s.realTime
-      ? '<b>Weather</b> shown only at the present time'
+      ? '<b>Atlanta weather</b> observations are available at the present time'
       : weather
-      ? `<b>Weather</b> ${cap(weather.label)}${weather.tempF != null ? `, ${Math.round(weather.tempF)}°F` : ''} · Open-Meteo, ${Math.max(0, Math.round((Date.now() - weatherAt) / 60000))} min ago`
-      : '<b>Weather</b> unavailable right now';
-    more.innerHTML = `
+      ? `<b>Atlanta weather</b> ${cap(weather.label)}${weather.tempF != null ? `, ${Math.round(weather.tempF)}°F` : ''} · Open-Meteo, ${Math.max(0, Math.round((Date.now() - weatherAt) / 60000))} min ago`
+      : '<b>Atlanta weather</b> unavailable right now';
+    details.innerHTML = `
       <p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>
       <ul><li>${rail}${view === 'city' ? '. MARTA visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> ${freight}</li>${traffic}<li>${wx}</li></ul>`;
   }
@@ -186,7 +217,8 @@ export function createShell(o: ShellOptions) {
     dot.title = liveOn ? 'Live' : s.realTime ? 'Timetable' : 'Timetable · not live';
     // Weather is live data: show it only when the clock is the real present.
     const wxNow = s.realTime ? weather : null;
-    if (wxNow) {
+    const preview = [lighting.selectedIndex ? lighting.value : '', sky.selectedIndex ? sky.value : ''].filter(Boolean);
+    if (wxNow && !preview.length) {
       const night = sunPosition(now).elevation < -2;
       const svg = weatherIcon(wxNow, night);
       if (wxIcon.dataset.svg !== svg) {
@@ -199,10 +231,10 @@ export function createShell(o: ShellOptions) {
     } else {
       wxIcon.hidden = true;
       temp.textContent = '';
-      cond.textContent = '';
+      cond.textContent = preview.length ? 'Preview · ' + preview.join(' · ') : '';
     }
     time.textContent = `${dateFmt.format(now)} · ${timeFmt.format(now)}${s.realTime ? '' : ' · timetable'}`;
-    statusBtn.setAttribute('aria-label', `${place.textContent}, ${wxNow ? `${wxNow.label}, ` : ''}${dateFmt.format(now)} ${timeFmt.format(now)}${liveOn ? ', live' : ''}`);
+    statusBtn.setAttribute('aria-label', `Scene preview and live data, ${cond.textContent}, ${place.textContent}, ${wxNow ? `${wxNow.label}, ` : ''}${dateFmt.format(now)} ${timeFmt.format(now)}${liveOn ? ', live' : ''}`);
     if (!more.hidden) renderMore();
   }
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
@@ -296,6 +328,11 @@ export function createShell(o: ShellOptions) {
     raf = held.size ? requestAnimationFrame(step) : 0;
   };
   addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !more.hidden) {
+      closeDrops();
+      statusBtn.focus();
+      return;
+    }
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey || key.open) return;
     const k = e.key.toLowerCase();
     if (k === 'escape') return closeDrops();
