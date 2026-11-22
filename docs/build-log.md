@@ -1341,6 +1341,7 @@ Control's device and Orca gate ran on the PR build (5b16705):
   three 8-second foreground windows (52.80, 52.42, 52.17) at 384 × 692.
 - **Direct City entry in Orca:** one initial bus request, and two real buses drawn.
 - **Timetable (time-shifted) City:** zero bus requests and zero buses.
+- **Final street-glide fix (7670caf)**, on the A16 in drizzle: an average of 50.76 fps.
 
 ![A live MARTA bus in City at night](log/ui/2026-11-21-city-live-bus-night.jpg)
 
