@@ -33,6 +33,9 @@ import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { CityFreight } from './freight';
+import { CityBuses, makeDeckAt } from './buses';
+import type { LiveBus } from '../model/types';
+import type { TransportRun } from '../terrain/transport-data';
 import { CityTrains } from './trains';
 import { Snow } from './snow';
 
@@ -55,6 +58,8 @@ export interface CityView {
   /** Sun, darkness and weather from the shared atmosphere; the date sets the season. */
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
+  /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
+  buses: Pick<CityBuses, 'occupies' | 'summary'>;
   stats(): { freightCars: number; surfaceCars: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
@@ -75,6 +80,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   progress?: (label: string) => void;
   trains: () => TrainState[];
   clockMs: () => number;
+  /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
+  buses?: () => LiveBus[] | null;
   beforeFrame?: (timestamp: number) => void;
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
@@ -218,6 +225,24 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
   if (freight) scene.add(freight.group);
+  // Live buses on the drawn streets: terrain-painted ground and exact bridge treads, or the
+  // flat board's ribbons when there is no measured ground.
+  // Ordinary at-grade streets come from vd.roads; terrainTransport.roads holds only the scoped
+  // mixed-way intervals (and the street bridges), so a bus index needs both, like groundRoads.
+  const asRun = (r: VData['roads'][number]): TransportRun => ({ kind: r.bridge ? 'bridge' : 'ground', cls: r.cls, pts: r.pts });
+  const busRuns: TransportRun[] = grid && vd.terrainTransport
+    ? [...vd.roads.filter(r => !r.bridge && !r.tunnel).map(asRun), ...vd.terrainTransport.roads]
+    : vd.roads.filter(r => !r.tunnel).map(asRun);
+  const flatY = (x: number, z: number) => world.ground(x, z) + 0.2;
+  const buses = new CityBuses({
+    runs: busRuns,
+    groundAt: terrain ? terrain.groundAt : flatY,
+    deckAt: grid && terrain ? makeDeckAt(grid, terrain.groundAt, b) : (x, z) => Math.max(0.2, flatY(x, z)),
+    origin: manifest.origin,
+    bounds: b,
+  });
+  (buses.mesh.material as THREE.Material).clippingPlanes = edges;
+  scene.add(buses.mesh);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -454,6 +479,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (step.length() < 0.05) glideTo = null;
     }
     controls.update();
+    buses.night.value = atm.dark;
+    buses.update(options.buses?.() ?? null);
     trains.update(options.trains(), atm.dark);
     freight?.update(options.clockMs());
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
@@ -491,6 +518,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   return {
     measuredGround: !!terrain,
     hasFreight: !!freight,
+    buses,
     bounds: b,
     quality,
     lookAt(x, z, view) {
@@ -542,6 +570,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.dispose();
       sun.shadow.dispose();
       freight?.dispose();
+      buses.dispose();
       disposeBoard();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;

@@ -323,6 +323,8 @@ async function openCity() {
       beforeFrame: shell.advanceMovement,
       trains: () => source.update(),
       clockMs: () => clock.now().getTime(),
+      // The Map's bus poll keeps running under City; City only reads the shared fixes.
+      buses: () => (clock.isRealTime() ? buses.current() : null),
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
     });
     if (load !== cityLoad) {
