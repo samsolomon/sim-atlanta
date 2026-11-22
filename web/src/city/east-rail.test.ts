@@ -77,9 +77,22 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
   it('builds a station whose platforms clear City\'s cars and whose roof is the measured roof', () => {
     const pack = J<CorridorPack>('scene/king-memorial/corridor.json');
     const rail = buildEastRail(extended, rf, pack, eastGround, zero);
-    // Lips sit the level-boarding gap outside the drawn car sides.
-    const lip = MARTA_TRACK_OFFSET + CAR_WIDTH / 2 + 0.075;
-    expect(lip - (MARTA_TRACK_OFFSET + CAR_WIDTH / 2)).toBeCloseTo(0.075);
+    // Both side platforms are drawn, each lip just outside the drawn car side (within the 76 mm
+    // level-boarding limit), and each extends away from the tracks.
+    const carSide = MARTA_TRACK_OFFSET + CAR_WIDTH / 2;
+    expect(rail.platforms).toHaveLength(2);
+    expect(rail.platforms.map(p => Math.sign(p.lip)).sort()).toEqual([-1, 1]);
+    for (const p of rail.platforms) {
+      expect(Math.abs(p.lip) - carSide).toBeGreaterThan(0);
+      expect(Math.abs(p.lip) - carSide).toBeLessThanOrEqual(0.076);
+      expect(Math.abs(p.outer)).toBeGreaterThan(Math.abs(p.lip) + 3);
+    }
+    expect(rail.mesh.geometry.attributes.position.count).toBeGreaterThan(1000);
+    // The drawn roof is the measured roof wherever the lidar saw it.
+    for (const r of rail.roofDrawn) {
+      const m = pack.guideway.reduce((a, b) => (Math.abs(b.s - r.s) < Math.abs(a.s - r.s) ? b : a));
+      if (m.roof !== null) expect(r.y).toBeCloseTo(m.roof - zero, 5);
+    }
     // Measured anchors either side of the canopy: the bed there is the lidar top − 0.55 m.
     const via = extended.rail!.paths['marta:path:155177'].find(sp => sp.ev === 'connector-viaduct')!;
     const anchor = (s: number) => via.anchors!.find(a => Math.abs(a.s - s) < 3)!;

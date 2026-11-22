@@ -172,7 +172,9 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   const floor = (s: number) => bed(s) + 0.55 + CAR_FLOOR;
   // North platform (left of eastbound, beside the westbound track) and south platform: from the
   // boarding lip out to just inside the measured roof edge.
+  const platforms: { lip: number; outer: number; s: [number, number] }[] = [];
   for (const [lip, outer] of [[-LIP, ROOF[0] + 0.3], [LIP, ROOF[1] - 0.3]] as const) {
+    platforms.push({ lip, outer, s: PLATFORM_S });
     const [a, c] = lip < outer ? [lip, outer] : [outer, lip];
     strip(PLATFORM_S[0], PLATFORM_S[1], a, c, floor, platformCol, 3);
     for (const v of [a, c]) wall(PLATFORM_S[0], PLATFORM_S[1], v, s => floor(s) - 0.8, floor, deckSide, 3);
@@ -182,6 +184,8 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   // Canopy roof slab at the measured roof heights; the raised centre section where it was measured.
   const roofS: [number, number] = [8945, 9135];
   const roofY = (s: number) => roofAt(s) ?? roofAt(9000)!;
+  const roofDrawn: { s: number; y: number }[] = [];
+  for (let s = roofS[0]; s < roofS[1]; s += 5) roofDrawn.push({ s, y: roofY(s) });
   strip(roofS[0], roofS[1], ROOF[0], ROOF[1], roofY, roofCol, 5);
   for (const v of ROOF) wall(roofS[0], roofS[1], v, s => roofY(s) - 0.9, roofY, roofCol, 5);
   // Columns carry the station deck, and slimmer posts carry the roof above the platforms
@@ -218,7 +222,7 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   mesh.name = 'MARTA east: guideway and King Memorial station';
   mesh.castShadow = mesh.receiveShadow = true;
   return {
-    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS,
+    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn,
     dispose() { mesh.removeFromParent(); geometry.dispose(); material.dispose(); },
   };
 }

@@ -498,6 +498,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     const rail = mod.buildEastRail(extended, rf, pack, area.groundAt, ground.manifest.vertical.sceneZeroNavd88M, b.maxX);
     scene.add(rail.mesh);
+    scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
     trains.setTracks(tracks, union);
     trainBounds = union;
     trainRail = extended.rail;
