@@ -11,7 +11,7 @@ TMAS profile. It is typical traffic, not live. The types and selector are in
 This runs as part of `pnpm data:city`, after `vignette.py downtown`:
 
 ```sh
-.venv/bin/python pipeline/scripts/extract_overture.py roads   # adds access_restrictions + speed_limits
+.venv/bin/python pipeline/scripts/extract_overture.py roads   # includes the access restrictions
 .venv/bin/python pipeline/scripts/arterials.py               # add --refresh to re-query HPMS
 ```
 

@@ -334,7 +334,7 @@ def main(refresh=False):
             "hpms": f"FHWA HPMS {segs_meta.get('name', 'HPMS_National_Current')} (DATA_YEAR {', '.join(map(str, years))};"
                     f" AADT value dates {', '.join(sorted({str(r['match']['aadtDate']) for c in corridors.values() for r in c['runs']}))};"
                     f" service data edited {edited}), services.arcgis.com HPMS_National_Current; cached data/raw/hpms_downtown.json",
-            "overture": "Overture Maps 2026-11-18.0 transportation segments (name, class, access_restrictions heading)",
+            "overture": f"Overture Maps {ov.get('release') or '(release unknown)'} transportation segments (name, class, access_restrictions heading)",
             "geometry": "vignette.json roads (run = index)",
         },
         "board": {"roads": len(vd["roads"])},
