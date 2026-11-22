@@ -50,6 +50,7 @@ import { registerStationLine, stationTrack, type StationTrack } from './station-
 import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
+import { createCentralLibrary } from './central-library';
 import { createPeachtree191 } from './peachtree-191';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
@@ -187,6 +188,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stationSite = georgiaStateScene(manifest.origin);
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
+  let library: ReturnType<typeof createCentralLibrary> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
@@ -217,8 +219,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         westin = createWestin(buildings, groundAt);
         peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
         const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
-        const stack = createCoreyTower(remaining, ground);
-        const stadiumSite = stack?.buildings ?? remaining;
+        library = createCentralLibrary(remaining, groundAt);
+        const stackSite = library?.buildings ?? remaining;
+        const stack = createCoreyTower(stackSite, ground);
+        const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
         const afterStadium = stadium?.buildings ?? stadiumSite;
         capitol = createCapitol(afterStadium, (x, z) => {
@@ -238,6 +242,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
         if (peachtree) world.group.add(peachtree.group);
+        if (library) world.group.add(library.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
         if (capitol) world.group.add(capitol.group);
@@ -547,6 +552,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     floyd?.setNight(night);
     westin?.setNight(night);
     peachtree?.setNight(night);
+    library?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
     grady?.setNight(night);
