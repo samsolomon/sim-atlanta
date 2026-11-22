@@ -12,10 +12,26 @@ export interface FreightTreadPoint {
 }
 export interface SurfaceTransport {
   freightTreads: FreightTreadPoint[][];
+  /** Scene y on the specified road deck, or null outside its visible tread. */
+  deckAt(x: number, z: number, run: TransportRun): number | null;
   clearOfFreight(x: number, z: number): boolean;
   group: THREE.Group;
   structuralTier: 'illustrative';
   dispose(): void;
+}
+
+// Interpolate on the same triangle as the GPU. A bridge end can be banked on
+// one edge, so interpolating across its full quad would give a different height.
+function triangleHeight(p: THREE.BufferAttribute, i: number, x: number, z: number) {
+  const ax = p.getX(i), az = p.getZ(i);
+  const bx = p.getX(i + 1) - ax, bz = p.getZ(i + 1) - az;
+  const cx = p.getX(i + 2) - ax, cz = p.getZ(i + 2) - az;
+  const det = bx * cz - bz * cx;
+  if (Math.abs(det) < 1e-8) return null;
+  const u = ((x - ax) * cz - (z - az) * cx) / det;
+  const v = (bx * (z - az) - bz * (x - ax)) / det;
+  if (u < -1e-7 || v < -1e-7 || u + v > 1 + 1e-7) return null;
+  return (1 - u - v) * p.getY(i) + u * p.getY(i + 1) + v * p.getY(i + 2);
 }
 
 // One texture period is 0.8 scene metres along track, and 4.2 metres across.
@@ -53,6 +69,17 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
   const bounds = city.bounds;
   const freightTreads: FreightTreadPoint[][] = [];
+  // Offsets into the single rendered structural mesh, grouped by source road.
+  const roadTreads = new Map<TransportRun, number[]>();
+  let structurePositions: THREE.BufferAttribute;
+  function deckAt(x: number, z: number, run: TransportRun) {
+    const quads = roadTreads.get(run);
+    if (quads) for (const i of quads) {
+      const h = triangleHeight(structurePositions, i, x, z) ?? triangleHeight(structurePositions, i + 3, x, z);
+      if (h !== null) return h;
+    }
+    return null;
+  }
   // A 3.2 m locomotive, the 2.2 × 2.6 m column on its diagonal and a small margin.
   const pierClearanceM = 3.8;
   const freightSegments = new PlacementIndex<[P2, P2]>();
@@ -115,6 +142,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
       stations.push(seam, line.length - seam);
       stations.sort((a, b) => a - b);
     }
+    const roadTop: number[] = [];
     function strip(left: number, right: number, lift: number, color: string, depth = 0, textured = false) {
       const offsets = [left, right];
       const ends = bridge ? [0, line.length].map(s => {
@@ -165,6 +193,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
         if (prev) {
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
+          if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3);
           (textured ? freight : structures).quad(a, b, c, d, color);
           if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
           if (textured && !bridge && gradeAvailable) {
@@ -198,6 +227,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
     } else {
       const walkway = ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls);
       strip(width / 2, -width / 2, .12, walkway ? PAL.sidewalk : PAL.asphalt, walkway ? .4 : .95);
+      if (roadTop.length) roadTreads.set(run, roadTop);
       if (!walkway && width >= 9) strip(.1, -.1, .15, PAL.lineYellow);
     }
   }
@@ -210,6 +240,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
     if (!builder.pos.length) continue;
     const geometry = builder.geometry();
     const isFreight = builder === freight;
+    if (!isFreight) structurePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
     if (isFreight) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
       map: isFreight ? map : null, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
@@ -220,7 +251,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
     group.add(mesh);
     meshes.push(mesh);
   }
-  return { group, freightTreads, clearOfFreight, structuralTier: 'illustrative', dispose() {
+  return { group, freightTreads, deckAt, clearOfFreight, structuralTier: 'illustrative', dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
     map.dispose();

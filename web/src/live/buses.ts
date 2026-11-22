@@ -43,6 +43,18 @@ export class LiveBuses {
     }
   }
 
+  /**
+   * Poll on a timer, independent of any map or view, while `active()` holds (for example the
+   * clock is the real present and the page is visible). poll() throttles to one request per
+   * 30 s, so other callers polling too add no requests. Returns a stop function.
+   */
+  heartbeat(active: () => boolean, everyMs = 1000) {
+    const id = setInterval(() => {
+      if (active()) void this.poll();
+    }, everyMs);
+    return () => clearInterval(id);
+  }
+
   current(): LiveBus[] {
     const now = this.observationNow();
     return this.buses.filter(bus => bus.at !== null && bus.at <= now && now - bus.at <= MAX_AGE_MS);
