@@ -134,6 +134,9 @@ under the line; it is **not** a clearance.
      the viaduct no longer moves it.
    - The 42 m from the Floyd face stays schematic.
    - There is no anchor under the King Memorial canopy, so City's bed there is an estimate.
+   - **Release:** `scene.json` is gitignored, so this needs `cargo run --release --manifest-path
+     pipeline/Cargo.toml -- scene` (or `pnpm data:scene`) before `pnpm build` and a deploy. Only the
+     `rail` section changes, and the `.bin` files are byte-identical.
 
 ![Before / after at the Connector (top) and the board edge (bottom)](log/ui/king-memorial/measured-anchors-before-after.jpg)
 2. **Deck under the station canopy (190 m): unknown.** The values either side are 324.13 (s 8942)
