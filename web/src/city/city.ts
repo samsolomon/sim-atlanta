@@ -48,6 +48,7 @@ import { registerStationLine, stationTrack, type StationTrack } from './station-
 import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
+import { createWestin } from './westin';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -175,6 +176,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stationSite = georgiaStateScene(manifest.origin);
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
+  let westin: ReturnType<typeof createWestin> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
     await build('alignments', () => {
@@ -192,10 +194,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (grid) {
       const ground = grid;
       await build('terrain', () => {
-        const city = floyd ? { ...vd, buildings: floyd.buildings } : vd;
+        const buildings = floyd?.buildings ?? vd.buildings;
+        westin = createWestin(buildings, (x, z) => {
+          const h = ground.sample(x, z);
+          return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
+        });
+        const city = { ...vd, buildings: westin?.buildings ?? buildings };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
+        if (westin) world.group.add(westin.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
@@ -494,6 +502,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.setNight(night);
     platforms?.setNight(night);
     floyd?.setNight(night);
+    westin?.setNight(night);
     terrain?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
