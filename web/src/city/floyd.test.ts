@@ -58,8 +58,10 @@ describe('Floyd tower replacement', () => {
 
   it('retains the generic scene for missing or unregistered inputs', () => {
     expect(createFloyd([neighbour], [west, east], () => 0)).toBeNull();
+    expect(createFloyd([base], [west, east], () => null)).toBeNull();
+    expect(createFloyd([base], [west, east], () => NaN)).toBeNull();
     for (const points of [[], [west], [east, west], [west, west, east], [west, { ...east, bedY: NaN }]]) {
-      expect(createFloyd([base], points, () => null)).toBeNull();
+      expect(createFloyd([base], points, () => -14)).toBeNull();
     }
   });
 });

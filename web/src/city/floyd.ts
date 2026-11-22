@@ -90,6 +90,8 @@ export function createFloyd(buildings: VBuilding[], passage: readonly FloydSampl
   if (Math.abs(first.u) > 20 || Math.abs(last.u - 115.8) > 20 ||
       pts.some((p, i) => !Number.isFinite(p.u + p.v + p.bedY) ||
         Math.abs(p.v - 8) > 15 || (i > 0 && p.u <= pts[i - 1].u))) return null;
+  const plazaY = groundAt(ORIGIN[0] + ux * 58 - uz * DEPTH, ORIGIN[1] + uz * 58 + ux * DEPTH);
+  if (plazaY === null || !Number.isFinite(plazaY)) return null;
   const soffitY = Math.max(...pts.map(p => p.bedY)) + 6.4;
   const deckY = soffitY + 2.2;
   const b = new Builder();
@@ -126,7 +128,6 @@ export function createFloyd(buildings: VBuilding[], passage: readonly FloydSampl
     prev = sections;
   }
   // Both crowns share a level. 78.4 m is an unverified OSM height above the plaza datum.
-  const plazaY = groundAt(ORIGIN[0] + ux*58 - uz*DEPTH, ORIGIN[1] + uz*58 + ux*DEPTH) ?? first.bedY;
   const crownY = plazaY + 78.4;
   const lit = new Builder();
   tower(b, lit, 0, 31.2, deckY, crownY);
