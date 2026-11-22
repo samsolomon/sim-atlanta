@@ -1,12 +1,11 @@
 import * as THREE from 'three';
-import { Builder } from '../vignette/geom';
+import { Builder, rng } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 
 /** City scene metres; west to east, from face to face. bedY excludes the rail offset. */
 export interface FloydSample { x: number; z: number; bedY: number }
 
 const BASE_ID = '4a81824b-9095-406e-8c5d-60b4b8bf12fd';
-const PART_IDS = new Set([BASE_ID, 'osm:way/537007595', 'osm:way/537007597']);
 const ORIGIN = [494.26, 380.34]; // NW tower, north corner, City x/z.
 const angle = Math.atan2(455.51 - ORIGIN[1], 582.33 - ORIGIN[0]);
 const ux = Math.cos(angle), uz = Math.sin(angle);
@@ -20,9 +19,9 @@ function local(x: number, z: number) {
   return { u: dx * ux + dz * uz, v: -dx * uz + dz * ux };
 }
 
-/** Three bays face the plaza. The longer returns have six. Eighteen glazed levels
+/** Three bays face the plaza. The longer returns have eight. Eighteen glazed levels
  * above the two-level base express the documented twenty storeys. */
-function tower(b: Builder, u: number, width: number, bottom: number, top: number) {
+function tower(b: Builder, lit: Builder, u: number, width: number, bottom: number, top: number) {
   const mid = u + width / 2, crown = 4.4, sill = 0.9;
   const pitch = (top - bottom - crown - sill) / 18;
   b.box(width - 0.7, top - bottom, DEPTH - 0.7, mid, (bottom + top) / 2, DEPTH / 2, glass);
@@ -37,8 +36,40 @@ function tower(b: Builder, u: number, width: number, bottom: number, top: number
     }
   }
   for (const face of [u, u + width]) {
-    for (let bay = 0; bay <= 6; bay++) {
-      b.box(0.8, top - bottom, 1, face, (top + bottom) / 2, 0.5 + (DEPTH - 1) * bay / 6, pier);
+    for (let bay = 0; bay <= 8; bay++) {
+      b.box(0.8, top - bottom, 1, face, (top + bottom) / 2, 0.5 + (DEPTH - 1) * bay / 8, pier);
+    }
+  }
+  const random = rng(u === 0 ? 537007595 : 537007597);
+  // Glazing sits behind the masonry. A vertical mullion can span all floors:
+  // the protruding spandrels conceal it between windows.
+  for (const face of [
+    { bays: 3, span: width, point: (d: number, y: number) => [u + d, y, 0.32] },
+    { bays: 3, span: width, point: (d: number, y: number) => [u + d, y, DEPTH - 0.32] },
+    { bays: 8, span: DEPTH, point: (d: number, y: number) => [u + 0.32, y, d] },
+    { bays: 8, span: DEPTH, point: (d: number, y: number) => [u + width - 0.32, y, d] },
+  ]) {
+    const paneWidth = face.span / face.bays / 5;
+    for (let bay = 0; bay < face.bays; bay++) {
+      for (let pane = 1; pane < 5; pane++) {
+        const d = (bay * 5 + pane) * paneWidth;
+        b.quad(face.point(d - 0.045, bottom), face.point(d + 0.045, bottom),
+          face.point(d + 0.045, top - crown), face.point(d - 0.045, top - crown), '#736f68');
+      }
+      for (let floor = 0; floor < 18; floor++) {
+        if (random() > 0.36) continue;
+        const first = Math.floor(random() * 3);
+        const count = random() > 0.55 ? 3 : 2;
+        const color = random() > 0.4 ? '#dab688' : '#c5bba4';
+        const sillY = bottom + sill + (floor + 0.45) * pitch;
+        for (let pane = first; pane < first + count; pane++) {
+          const d = (bay * 5 + pane) * paneWidth;
+          const lo = d + (pane === 0 ? 0.65 : 0.09);
+          const hi = d + paneWidth - (pane === 4 ? 0.65 : 0.09);
+          lit.quad(face.point(lo, sillY + 0.08), face.point(hi, sillY + 0.08),
+            face.point(hi, sillY + pitch * 0.55 - 0.08), face.point(lo, sillY + pitch * 0.55 - 0.08), color);
+        }
+      }
     }
   }
   // Aerial: pale flat roof with a narrow row of darker rooftop bays on the inner side.
@@ -97,8 +128,9 @@ export function createFloyd(buildings: VBuilding[], passage: readonly FloydSampl
   // Both crowns share a level. 78.4 m is an unverified OSM height above the plaza datum.
   const plazaY = groundAt(ORIGIN[0] + ux*58 - uz*DEPTH, ORIGIN[1] + uz*58 + ux*DEPTH) ?? first.bedY;
   const crownY = plazaY + 78.4;
-  tower(b, 0, 31.2, deckY, crownY);
-  tower(b, 84.1, 31.7, deckY, crownY);
+  const lit = new Builder();
+  tower(b, lit, 0, 31.2, deckY, crownY);
+  tower(b, lit, 84.1, 31.7, deckY, crownY);
   // Recessed plaza-facing strip and coping under the sky gap between the slabs.
   b.box(52.9, 1.5, 0.18, 57.65, deckY - 1.45, DEPTH + 0.1, glass);
   b.box(52.9, 0.45, 0.65, 57.65, deckY + 0.05, DEPTH, trim);
@@ -107,13 +139,29 @@ export function createFloyd(buildings: VBuilding[], passage: readonly FloydSampl
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'Floyd towers and station passage';
   mesh.castShadow = mesh.receiveShadow = true;
-  mesh.rotation.y = -angle;
-  mesh.position.set(ORIGIN[0], 0, ORIGIN[1]);
+  const officeGeometry = lit.geometry();
+  const officeMaterial = new THREE.MeshBasicMaterial({
+    vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false, forceSinglePass: true,
+  });
+  const offices = new THREE.Mesh(officeGeometry, officeMaterial);
+  offices.name = 'Floyd office windows';
+  offices.visible = false;
   const group = new THREE.Group();
-  group.add(mesh);
+  group.rotation.y = -angle;
+  group.position.set(ORIGIN[0], 0, ORIGIN[1]);
+  group.add(mesh, offices);
   return {
-    group, buildings: buildings.filter(b => !PART_IDS.has(b.id)),
+    group, buildings: buildings.filter(b => b.id !== BASE_ID),
     eastFace: { x: last.x, z: last.z, bedY: last.bedY, dx, dz, soffitY, clearWidthM: 2 * HALF_OPENING },
-    dispose() { group.removeFromParent(); geometry.dispose(); material.dispose(); },
+    setNight(dark: number) {
+      offices.visible = dark > 0.01;
+      officeMaterial.color.setScalar(0.72 * Math.min(1, Math.max(0, dark)));
+    },
+    dispose() {
+      group.removeFromParent();
+      geometry.dispose(); material.dispose();
+      officeGeometry.dispose(); officeMaterial.dispose();
+    },
   };
 }
