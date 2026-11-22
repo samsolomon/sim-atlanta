@@ -60,6 +60,21 @@ imagery, in `docs/data-model.md`). Their edges are good to about ±10 m along th
 `is_tunnel` and `is_bridge` flags on a whole baked run are lumped together, so derive cover from
 where the `terrainTransport` pieces are present or absent along the run, never from the run's flags.
 
+## Grade over the three road bridges
+
+From the Connector east bank to Washington St (s 166–686), the rail runs continuously at or above
+street level. The FRA inventory lists Jesse Hill Jr Dr (279971L) and Piedmont Ave (279972T) as
+`RR Over`, and OSM maps each as a short `bridge` piece at layer 1: about 25 m at s 404–428 and
+about 23 m at s 544–566. The `ground` stretches between them are untagged track, which fits an
+embankment or fill.
+
+USGS bare earth keeps embankments but removes bridge decks. So the DEM dips under every bridge
+piece, including the Connector: 308.8 and 306.9 m NAVD88 at its bridge ends, against about 314 m
+on the approaches. Track that follows the DEM would tilt at each bridge end. Instead, run the rail
+grade continuously across all three bridges, taken from the undisturbed banks. Deck heights,
+clearances, and whether the "ground" stretches are fill or a retained structure are unverified,
+so treat them as schematic and illustrative.
+
 ## Five Points east cut: one trench, separate tracks
 
 From s 854 to 962, the freight runs in the **same walled trench** as MARTA, on its **own track**.
