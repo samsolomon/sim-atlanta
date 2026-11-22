@@ -120,3 +120,15 @@ it('follows Atlanta local-hour profiles and treats an absent usable profile as u
   expect(missing.group.children).toHaveLength(0);
   missing.dispose();
 });
+
+it.each([
+  ['2026-11-20T23:45:00-05:00', 'weekend'],
+  ['2026-11-22T23:45:00-05:00', 'weekday'],
+] as const)('blends towards the next Atlanta day at %s', (stamp, following) => {
+  const hourly = { weekday: Array(24).fill(0), weekend: Array(24).fill(0) };
+  hourly[following][0] = 1;
+  const layer = new ConnectorTraffic({ city, hourly, quality: 'low', roadHeight: () => 0 });
+  layer.update(Date.parse(stamp), 0);
+  expect(layer.visibleCars).toBeGreaterThan(0);
+  layer.dispose();
+});

@@ -13,12 +13,13 @@ const speed = 18; // Illustrative metres per second; no measured speed at the cr
 const models = ['sedan', 'suv', 'box'] as const;
 type Kind = typeof models[number];
 type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
-interface TrafficOptions {
+export interface ConnectorTrafficOptions {
   city: TerrainCity;
   quality: keyof typeof CONNECTOR_TRAFFIC_CAP;
   hourly: TrafficData['hourly'];
   roadHeight: RoadHeight;
-  busOccupies?: (x: number, y: number, z: number, lengthM: number) => boolean;
+  /** All distances in City metres. Heading is atan2(dx,dz), zero toward +z. */
+  busOccupies?: (x: number, y: number, z: number, lengthM: number, headingRad: number) => boolean;
   clippingPlanes?: THREE.Plane[];
 }
 interface Slot {
@@ -33,7 +34,9 @@ function hourShare(hourly: TrafficData['hourly'], clockMs: number) {
   const { hour, weekend } = local(new Date(clockMs));
   const weights = weekend ? hourly.weekend : hourly.weekday;
   const index = Math.floor(hour);
-  return THREE.MathUtils.lerp(weights[index], weights[(index + 1) % 24], hour - index);
+  const next = local(new Date(clockMs + 3600000));
+  const following = next.weekend ? hourly.weekend : hourly.weekday;
+  return THREE.MathUtils.lerp(weights[index], following[Math.floor(next.hour)], hour - index);
 }
 
 function slotsFor(routes: TrafficLane[], cap: number, peak: number) {
@@ -73,7 +76,7 @@ export class ConnectorTraffic {
   private pose = new THREE.Object3D();
   private readonly visible: { x: number; z: number; y: number; length: number }[] = [];
 
-  constructor(private readonly opts: TrafficOptions) {
+  constructor(private readonly opts: ConnectorTrafficOptions) {
     this.group.name = 'Illustrative Connector traffic';
     const profiles = [opts.hourly.weekday, opts.hourly.weekend];
     const usable = profiles.every(p => p.length === 24 && p.every(n => Number.isFinite(n) && n >= 0));
@@ -122,9 +125,10 @@ export class ConnectorTraffic {
       const front = axle(s + half), rear = axle(s - half), centre = axle(s);
       if (!front || !rear || !centre) continue;
       const { x, y, z } = centre;
-      if (this.opts.busOccupies?.(x, y, z, length)) continue;
       const dx = front.x-rear.x, dz = front.z-rear.z, horizontal = Math.hypot(dx,dz);
       if (!horizontal) continue;
+      const heading = Math.atan2(dx,dz);
+      if (this.opts.busOccupies?.(x, y, z, length, heading)) continue;
       // Several measured lanes feed the same generic lane beyond the study.
       // Reserve a footprint in travel coordinates so adjacent lanes stay usable.
       let occupied = false;
@@ -141,7 +145,7 @@ export class ConnectorTraffic {
       place.x = x; place.y = y; place.z = z; place.length = length;
       this.visibleCars++;
       this.pose.position.set(x, (front.y+rear.y)*.5+.03, z);
-      this.pose.rotation.set(-Math.atan2(front.y-rear.y,horizontal), Math.atan2(dx,dz), 0, 'YXZ');
+      this.pose.rotation.set(-Math.atan2(front.y-rear.y,horizontal), heading, 0, 'YXZ');
       this.pose.updateMatrix();
       const mesh = this.meshes.get(slot.kind)!;
       mesh.setColorAt(mesh.count, slot.color);
