@@ -15,7 +15,7 @@ The merged model put two narrow amber strips on each of three east-facing planes
 | 14:12:45 | East | [Daylight facade, before and after](day.jpg) |
 | 17:45 | East | [Terrace light at dusk, before and after](dusk.jpg) |
 | 21:15 | Southeast | [Full night, before and after](night.jpg) |
-| 21:15 | Wider skyline from the east | [Tower in the district](district-night.jpg) |
+| 21:15 | Wider skyline from the east | [High quality](district-night.jpg) · [Low quality](district-low-night.jpg) |
 
 The comparison starts at merged commit `64288b2`. In desktop Orca, use a 1296 × 726 viewport with `/?view=city&q=high&t=2026-11-20T21:15:00-05:00&speed=0`. Substitute the clock times above for day or dusk. These calls reproduce the east, southeast and wider skyline cameras in table order.
 
