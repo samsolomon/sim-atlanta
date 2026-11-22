@@ -26,18 +26,22 @@ export function ease(f: number) {
 }
 
 /** Position (metres along path) of a pattern `elapsed` seconds after the trip started. */
-export function distanceAt(p: Pattern, elapsed: number): { s: number; nextStop: number } {
+export function distanceAt(p: Pattern, elapsed: number): { s: number; nextStop: number; atStop?: number } {
   const n = p.arr.length;
-  if (elapsed <= p.dep[0]) return { s: p.dist[0], nextStop: 1 };
+  if (elapsed <= p.dep[0]) {
+    const atOrigin = elapsed >= p.arr[0] && (elapsed < p.dep[0] || elapsed === p.arr[0]);
+    return { s: p.dist[0], nextStop: 1, atStop: atOrigin ? 0 : undefined };
+  }
   for (let k = 0; k < n - 1; k++) {
     if (elapsed < p.arr[k + 1]) {
       const span = p.arr[k + 1] - p.dep[k];
       const f = span > 0 ? Math.min(1, Math.max(0, (elapsed - p.dep[k]) / span)) : 1;
-      return { s: p.dist[k] + ease(f) * (p.dist[k + 1] - p.dist[k]), nextStop: k + 1 };
+      return { s: p.dist[k] + ease(f) * (p.dist[k + 1] - p.dist[k]), nextStop: k + 1,
+        atStop: elapsed === p.arr[k] && elapsed === p.dep[k] ? k : undefined };
     }
-    if (elapsed < p.dep[k + 1]) return { s: p.dist[k + 1], nextStop: Math.min(k + 2, n - 1) };
+    if (elapsed < p.dep[k + 1]) return { s: p.dist[k + 1], nextStop: Math.min(k + 2, n - 1), atStop: k + 1 };
   }
-  return { s: p.dist[n - 1], nextStop: n - 1 };
+  return { s: p.dist[n - 1], nextStop: n - 1, atStop: elapsed === p.arr[n - 1] ? n - 1 : undefined };
 }
 
 /** Point and heading at `s` metres along a path. */
@@ -132,7 +136,7 @@ export class Schedule {
           const geom = this.paths.get(p.pathId);
           const route = this.routes.get(p.routeId);
           if (!geom || !route) continue;
-          const { s, nextStop } = distanceAt(p, elapsed);
+          const { s, nextStop, atStop } = distanceAt(p, elapsed);
           const pt = pointAt(geom, s);
           const vt = this.vehicleTypes.get(route.vehicleType);
           out.push({
@@ -152,6 +156,7 @@ export class Schedule {
             vehicleType: route.vehicleType,
             headsign: p.headsign,
             nextStop: p.stops[nextStop],
+            scheduledStop: atStop === undefined ? undefined : p.stops[atStop],
             label: short || undefined,
           });
         }

@@ -8,6 +8,8 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { RoutesFile } from '../model/types';
+import { scheduledBoardingChoices } from '../model/platforms';
+import { georgiaStateScene, GEORGIA_STATE_PLATFORMS_BY_STOP } from './georgia-state-geometry';
 import { Schedule } from '../sched/engine';
 import { GroundGrid } from '../terrain/grid';
 import { createSurfaceTransport } from '../terrain/transport';
@@ -28,6 +30,24 @@ describe.skipIf(!staged)('Georgia State station study', () => {
   const manifest = staged ? J<SceneManifest>('scene/downtown/scene.json') : null!;
   const rf = staged ? J<RoutesFile>('ga/routes.json') : null!;
   const grid = staged ? new GroundGrid(J('scene/downtown/ground.json'), Uint8Array.from(readFileSync(resolve(data, 'scene/downtown/ground.i16'))).buffer) : null!;
+
+  it('matches both timetable calls at their existing path positions and headings', () => {
+    const schedule = new Schedule(rf, J('ga/timetable.json'), J('ga/vehicle-types.json'));
+    const site = georgiaStateScene(manifest.origin);
+    const bearing = Math.atan2(site.along[0], -site.along[1]) * 180 / Math.PI;
+    for (const [clock, path, stopId, s, trackId] of [
+      ['14:12:00', EAST, 'marta:stop:908696', 8025, 'ER'],
+      ['14:10:00', WEST, 'marta:stop:908618', 16066.3, 'EL'],
+    ] as const) {
+      const time = new Date(`2026-11-20T${clock}-05:00`);
+      const train = schedule.trainsAt(time).find(t => t.pathId === path && t.scheduledStop === stopId)!;
+      expect(train.s).toMatchObject({ value: s, tier: 'scheduled' });
+      expect(scheduledBoardingChoices(site, bearing, train, GEORGIA_STATE_PLATFORMS_BY_STOP))
+        .toEqual([{ platformId: GEORGIA_STATE_PLATFORMS_BY_STOP[stopId][0], trackId, doorSide: 'right' }]);
+      const departed = schedule.trainsAt(new Date(+time + 1)).find(t => t.id === train.id)!;
+      expect(departed.scheduledStop).toBeUndefined();
+    }
+  });
 
   it('covers the approach as open, roofed canopy, building, then open structure (both directions)', () => {
     const lens = (id: string) => Object.fromEntries(manifest.rail!.paths[id].map((sp) => [sp.ev, [sp.cover, Math.round(sp.s1 - sp.s0)]]));

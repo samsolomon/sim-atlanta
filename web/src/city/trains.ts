@@ -3,7 +3,7 @@ import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { TrainState } from '../model/types';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { PlacementIndex } from '../vignette/spatial';
-import { trackVisible, type Alignment, type VData } from '../vignette/world';
+import { MARTA_TRACK_OFFSET, trackVisible, type Alignment, type VData } from '../vignette/world';
 
 import type { prepareEastCut, ServiceTrack } from './east-cut';
 
@@ -129,7 +129,7 @@ export class CityTrains {
         const sc = s + dir * offset;
         if (!carInDaylight(al, sc)) continue;
         const p = al.line.at(sc);
-        const off = dir * 2.1;
+        const off = dir * MARTA_TRACK_OFFSET;
         const cx = p.x - p.nx * off, cz = p.z - p.nz * off;
         if (cx < b.minX - CAR_LENGTH / 2 || cx > b.maxX + CAR_LENGTH / 2 ||
             cz < b.minZ - CAR_LENGTH / 2 || cz > b.maxZ + CAR_LENGTH / 2) continue;

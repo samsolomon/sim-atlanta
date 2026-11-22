@@ -200,3 +200,20 @@ It omits the assignment when the static edition has no matching bus route. The 2
 map draws teal GPS dots for fixes up to three minutes old, at the real clock only.
 The endpoint retains older and undated fixes so other consumers can apply their
 own freshness rules.
+
+### Station platforms and boarding edges
+
+A station layout lists its physical tracks and platforms. Each boarding edge belongs to one platform and names the adjacent track. Its side is measured looking along the station’s declared positive axis. Reversing travel swaps the side of the train facing the same edge. A track may have platforms on both sides, and an island can serve two tracks. [Platform types and queries](../web/src/model/platforms.ts)
+
+| Station and normal travel | Physical platform | Possible boarding edges |
+|---|---|---|
+| Georgia State eastbound | South side platform | ER, doors facing right |
+| Georgia State westbound | North side platform | EL, doors facing right |
+| Avondale eastbound Blue | South island, GTFS stop 908438 | ER, left, or EB, right |
+| Avondale westbound Blue | North island, GTFS stop 908691 | EL, left, or WB, right |
+
+Georgia State fits its boarding lips to the drawn track centres at ±2.10 m, plus the 1.60 m half-car width and a 0.13 m model gap. Each canopy or hall bay gets one slab, with a warning strip at each boarding edge. Avondale’s service evidence identifies the mains as the inferred usual tracks. Its GTFS stop IDs locate the islands. A particular trip’s track and actual door operation remain unknown. [Georgia State geometry](georgia-state-geometry.md) · [Avondale source fixture](avondale-layout.md)
+
+`Schedule.trainsAt()` supplies the train’s existing position, heading and optional `scheduledStop` from the same timetable calculation. A positive dwell occupies the arrival-inclusive, departure-exclusive interval. Equal arrival and departure times identify a call only at that exact instant. For example, on November 20, 2026, the eastbound Blue call at Georgia State is 14:12:00 ET, at 8,025.0 m along its trip path. The westbound call is 14:10:00 ET at 16,066.3 m on its own path. Both are zero-duration calls in this feed. The train continues on the existing interpolation. Its stop coordinate represents the timetable’s path location. An exact stopping marker would require another source.
+
+Use `boardingChoices(layout, travel, candidateTrackIds?)` to enumerate compatible physical edges. For a timetable train, `scheduledBoardingChoices(layout, axisBearingDegrees, train, platformsByStop?)` joins the current call to its platform(s) and uses the train’s heading. Pass a stop-to-platform mapping when their IDs differ, as at Georgia State. A live prediction naming the next station provides no current scheduled call or track assignment.

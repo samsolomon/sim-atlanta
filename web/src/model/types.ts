@@ -179,6 +179,8 @@ export interface TrainState {
   lengthM: Sourced<number>;
   vehicleType: Id;
   headsign: string;
+  /** Current timetable call, during a dwell or exactly at a zero-duration call. */
+  scheduledStop?: Id;
   nextStop?: Id;
   /** Display name of the next stop when it comes from a live feed rather than a stop id. */
   nextStopName?: string;

@@ -56,3 +56,16 @@ describe('service calendar', () => {
     expect(yesterday).toMatchObject({ ymd: 20261120, weekday: 4, secs: 1800 + 86400 });
   });
 });
+
+it('identifies the current scheduled call separately from the next stop and adds no dwell', () => {
+  expect(distanceAt(pattern, 0).atStop).toBe(0);
+  expect(distanceAt(pattern, 20).atStop).toBeUndefined();
+  expect(distanceAt(pattern, 99.999).atStop).toBeUndefined();
+  expect(distanceAt(pattern, 100)).toMatchObject({ atStop: 1, s: 1000, nextStop: 2 });
+  expect(distanceAt(pattern, 129.999).atStop).toBe(1);
+  expect(distanceAt(pattern, 130).atStop).toBeUndefined();
+  expect(distanceAt(pattern, 300).atStop).toBe(2);
+  const zeroDwell = { ...pattern, dep: pattern.arr };
+  expect(distanceAt(zeroDwell, 100)).toMatchObject({ atStop: 1, s: 1000, nextStop: 2 });
+  expect(distanceAt(zeroDwell, 100.001).atStop).toBeUndefined();
+});

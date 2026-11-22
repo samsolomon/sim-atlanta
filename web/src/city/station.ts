@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { CAR_WIDTH } from '../vignette/cq400';
+import { MARTA_TRACK_OFFSET } from '../vignette/world';
+import { platformSection } from './platform-section';
 import { Builder } from '../vignette/geom';
 import type { GeorgiaStateScene } from './georgia-state-geometry';
 import { ENTRY_DEPTH, type StationTrack } from './station-track';
@@ -17,30 +20,42 @@ export function createGeorgiaState(track: StationTrack, site: GeorgiaStateScene,
   };
   const floor = 1.6;
   const soffit = 5.8;
-  const lip = 3.83; // 2.1 m track offset + half a 3.2 m car and its boarding gap
-  function platform(a: number, b: number, side: number, width: number, roof: boolean) {
-    const mid = side * (lip + width / 2);
+  // v increases to the right of eastbound travel; the mesh's local x points left.
+  const offsets = { ER: MARTA_TRACK_OFFSET, EL: -MARTA_TRACK_OFFSET };
+  const slabs = site.platforms.map(p => ({
+    start: p.u0 - site.westTip,
+    section: platformSection(p, [Math.min(p.inner, p.outer), Math.max(p.inner, p.outer)],
+      offsets, CAR_WIDTH / 2 + 0.13),
+  }));
+  function platform(a: number, b: number, section: ReturnType<typeof platformSection>, roof: boolean) {
+    const { min, max, lips } = section;
+    const width = max - min, mid = (max + min) / 2;
+    const pavingMin = min + (lips.some(lip => lip.inward === 1) ? 0.2 : 0);
+    const pavingMax = max - (lips.some(lip => lip.inward === -1) ? 0.2 : 0);
+    const column = lips.length === 1 ? (lips[0].inward === 1 ? max - 0.75 : min + 0.75) : mid;
     const bays = Math.ceil((b - a) / 7.5);
     const bay = (b - a) / bays;
     for (let i = 0; i < bays; i++) {
       const d = a + (i + .5) * bay;
       const pose = at(d);
-      body.box(width, 1.05, bay + .025, mid, floor - .525, 0, '#a89d90', pose);
-      interior.box(width - .20, .09, bay + .02, mid + side * .10, floor + .045, 0, '#955f4d', pose);
-      interior.box(.42, .105, bay + .025, side * (lip + .21), floor + .055, 0, '#dcd4b7', pose);
-      if (roof) {
-        body.box(width + .65, .36, bay + .035, mid, soffit + .18, 0, '#d2c8b7', pose);
-        body.box(.16, .62, bay + .03, side * (lip - .30), soffit + .24, 0, '#867f74', pose);
-        interior.box(width + .57, .055, bay + .025, mid, soffit - .0275, 0, '#e1d3bd', pose);
-        body.box(.55, soffit - floor, .65, side * (lip + width - .75), (floor + soffit) / 2, 0, '#585854', pose);
+      body.box(width, 1.05, bay + .025, -mid, floor - .525, 0, '#a89d90', pose);
+      interior.box(pavingMax - pavingMin, .09, bay + .02, -(pavingMax + pavingMin) / 2,
+        floor + .045, 0, '#955f4d', pose);
+      for (const { v, inward } of lips) {
+        interior.box(.42, .105, bay + .025, -(v + inward * .21), floor + .055, 0, '#dcd4b7', pose);
       }
-      if (roof) lamps.box(.62, .07, 1.1, mid, soffit - .045, 0, '#ffebbb', pose);
+      if (roof) {
+        body.box(width + .65, .36, bay + .035, -mid, soffit + .18, 0, '#d2c8b7', pose);
+        for (const { v, inward } of lips) {
+          body.box(.16, .62, bay + .03, -(v - inward * .30), soffit + .24, 0, '#867f74', pose);
+        }
+        interior.box(width + .57, .055, bay + .025, -mid, soffit - .0275, 0, '#e1d3bd', pose);
+        body.box(.55, soffit - floor, .65, -column, (floor + soffit) / 2, 0, '#585854', pose);
+        lamps.box(.62, .07, 1.1, -mid, soffit - .045, 0, '#ffebbb', pose);
+      }
     }
   }
-  for (const p of site.platforms) {
-    const side = p.side === 'north' ? 1 : -1; // local box x points left of eastbound
-    platform(p.u0 - site.westTip, track.canopyLength, side, Math.abs(p.outer) - lip, true);
-  }
+  for (const slab of slabs) platform(slab.start, track.canopyLength, slab.section, true);
   // The first visible bays of the hall give depth to the view from the viaduct.
   // Keep the full width of both tracks clear through the east face.
   const eastSoffit = face.soffitY;
@@ -56,10 +71,7 @@ export function createGeorgiaState(track: StationTrack, site: GeorgiaStateScene,
       (floor + head) / 2, .1, '#b4a990', entrance);
   }
   function entranceBays(start: number, end: number, back: number) {
-    for (const p of site.platforms) {
-      const side = p.side === 'north' ? 1 : -1;
-      platform(start, end, side, Math.abs(p.outer) - lip, false);
-    }
+    for (const slab of slabs) platform(start, end, slab.section, false);
     for (let d = start + 2; d < end; d += 4) {
       const pose = at(d);
       const ceiling = eastSoffit - track.point(d).bedY;
