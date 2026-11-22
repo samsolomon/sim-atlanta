@@ -18,16 +18,22 @@ ITEM = "ga_m_3308421_ne_16_060_20231008_20240103"
 STAC = "https://planetarycomputer.microsoft.com/api/stac/v1/collections/naip/items/" + ITEM
 TOKEN = "https://planetarycomputer.microsoft.com/api/sas/v1/token/naip"
 # u increases to the southeast, s to the northeast. Both use the City's horizontal metre.
+FOOTPRINT = json.loads(Path(__file__).with_name("sections.json").read_text())
+OX, OZ = FOOTPRINT["originXZ"]
+UX, UZ = FOOTPRINT["acrossXZ"]
+SX, SZ = FOOTPRINT["alongXZ"]
 SECTIONS = [
-    ("A", -76, "South of the MARTA deck", (-40.8, -16.0), (-10.4, 14.6)),
-    ("B", 77, "Between freight and Decatur Street", (-33.6, -9.2), (-3.2, 21.8)),
+    (section["label"], section["alongM"], section["description"],
+     (section["southbound"]["outsideM"], section["southbound"]["insideM"]),
+     (section["northbound"]["insideM"], section["northbound"]["outsideM"]))
+    for section in FOOTPRINT["sections"]
 ]
 EXTENT = (-64, 49, -103, 153)
 PAPER, INK, OBS, CITY, LINK = "#f8f6ef", "#20313a", "#287c69", "#ad452a", "#ba965b"
 
 
 def lonlat(u, s):
-    x, z = 760 + .6*u + .8*s, 545 + .8*u - .6*s
+    x, z = OX + UX*u + SX*s, OZ + UZ*u + SZ*s
     deg = math.pi / 180
     return -84.3916 + x / (6371008.8 * deg * math.cos(33.7539 * deg)), 33.7539 - z / (6371008.8 * deg)
 
@@ -36,7 +42,7 @@ def road_cuts(city, s):
     for road in city["roads"]:
         if road["cls"] != "motorway" or road["bridge"] or road["tunnel"]:
             continue
-        coords = [(.6*(x-760)+.8*(z-545), .8*(x-760)-.6*(z-545)) for x,z in road["pts"]]
+        coords = [(UX*(x-OX)+UZ*(z-OZ), SX*(x-OX)+SZ*(z-OZ)) for x,z in road["pts"]]
         for (a,b),(c,d) in zip(coords, coords[1:]):
             if min(b,d) <= s < max(b,d):
                 u = a + (c-a)*(s-b)/(d-b)

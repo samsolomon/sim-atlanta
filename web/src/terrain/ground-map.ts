@@ -4,6 +4,7 @@ import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
 import { roadWidth, type TerrainCity } from './transport-data';
+import { paintConnector } from './connector-paint';
 
 const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
@@ -101,6 +102,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
       stroke(r, .4, '#d8bd79');
     }
   }
+  paintConnector(ctx, data, texelM);
   ctx.setLineDash(zebraPattern);
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
   ctx.setLineDash([]);

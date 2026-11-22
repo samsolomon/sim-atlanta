@@ -27,6 +27,7 @@ import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -156,8 +157,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       await build('buildings', () => world.buildBuildings());
       await build('trees', () => world.buildTrees());
     }
-    await build('MARTA', () => { for (const al of marta) world.buildMarta(al, transport?.clearOfFreight); });
-    await build('lights', () => world.buildLights(terrain?.board, terrain?.groundAt));
+    await build('MARTA', () => {
+      const lower = transport;
+      const pierAllowed = lower ? (x: number, z: number) =>
+        lower.clearOfFreight(x, z) && !inConnectorLanes(x, z, 1.8) : undefined;
+      for (const al of marta) world.buildMarta(al, pierAllowed);
+    });
+    await build('lights', () => world.buildLights(terrain?.board, terrain?.groundAt, terrain ? inConnectorLanes : undefined));
   } catch (err) {
     disposeBoard();
     throw err;
