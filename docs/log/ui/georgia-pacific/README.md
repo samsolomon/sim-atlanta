@@ -2,6 +2,8 @@
 
 ![The three eastern setbacks seen from the southeast](corner-day.jpg)
 
+The subsequent lighting study compares the merged model with a full-night photograph and the revised terrace uplights. [Night reference and matched City renders](uplighting/README.md)
+
 | City camera | Before, day | After, day | Before, dusk | After, dusk |
 | --- | --- | --- | --- | --- |
 | Ordinary opening | [Before](opening-before.jpg) | [After](opening-day.jpg) | [Before](opening-before-dusk.jpg) | [After](opening-dusk.jpg) |

@@ -1,4 +1,4 @@
-import { Box3, Raycaster, Vector3 } from 'three';
+import { Box3, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import type { VBuilding } from '../vignette/world';
 import { createGeorgiaPacific } from './georgia-pacific';
@@ -57,4 +57,40 @@ it('steps down toward the east and retains each separate footprint at the north'
   expect(createGeorgiaPacific([tower, revised], () => 3)!.buildings[0]).toBe(revised);
   expect(createGeorgiaPacific([north], () => 3)).toBeNull();
   expect(createGeorgiaPacific([tower], () => null)).toBeNull();
+});
+
+it('lights both sides of each terrace from below and keeps the recessed central grille dark', () => {
+  const site = createGeorgiaPacific([tower], () => 0)!;
+  const lights = site.group.getObjectByName('Eastern terrace uplights') as Mesh;
+  function irradiance(z: number, height: number) {
+    const ray = new Raycaster(new Vector3(475, height, z), new Vector3(-1, 0, 0));
+    const hit = ray.intersectObject(lights)[0];
+    const color = lights.geometry.getAttribute('color');
+    const { a, b, c } = hit.face!;
+    const weight = hit.barycoord!;
+    return color.getY(a) * weight.x + color.getY(b) * weight.y + color.getY(c) * weight.z;
+  }
+  site.setNight(1);
+  expect(lights.visible).toBe(true);
+  // Cross the three east-facing planes just above the second terrace, between louver rows.
+  const grille = irradiance(-394, 69);
+  for (const z of [-379, -403]) {
+    expect(irradiance(z, 69)).toBeGreaterThan(3 * grille);
+    expect(irradiance(z, 69)).toBeGreaterThan(2 * irradiance(z, 106));
+  }
+  // At each setback, test the actual mesh foot and the lateral difference between
+  // a pool and the space beside it. A simple vertical color ramp cannot pass this.
+  const position = lights.geometry.getAttribute('position');
+  for (const [wallX, foot] of [[434.3, 66.7], [425.5, 110.7], [416.9, 154.6]]) {
+    const heights = [];
+    for (let i = 0; i < position.count; i++) {
+      if (Math.abs(position.getX(i) - (wallX + 0.18)) < 0.01 && position.getZ(i) > -387.8)
+        heights.push(position.getY(i));
+    }
+    expect(Math.min(...heights)).toBeCloseTo(foot);
+    expect(irradiance(-378.6, foot + 2)).toBeGreaterThan(1.3 * irradiance(-381.7, foot + 2));
+  }
+  expect(irradiance(-394, 202)).toBeGreaterThan(3 * grille);
+  site.setNight(0);
+  expect(lights.visible).toBe(false);
 });

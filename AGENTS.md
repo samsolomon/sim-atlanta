@@ -84,9 +84,11 @@ uses the timetable.
   The chosen style (2026-11-20) follows a low-poly, ink-lined railway reference: leaf-clump
   tree canopies, thin silhouette ink, a colour grade and film grain, and tilt-shift. Vehicles
   are modelled in code from reference photos in the model lab (`/models.html`), with real
-  livery colours but no operator logos. Before hand-modeling each building, open a fresh Orca
-  browser tab and look up photographs of that building. Compare the approach view with another
-  angle, record the source links, and identify which dimensions are estimates.
+  livery colours but no operator logos. For every new landmark model or reskin, open a fresh
+  Orca browser tab and consult daytime and nighttime exterior photographs. Compare the approach
+  with another angle, link the sources, and identify estimated dimensions. Record the lighting
+  visible in the photos and which details you estimated. If reliable night imagery is unavailable,
+  document the gap. Check both daylight and full-night City renders from a matched camera.
 - **Build log.** After a meaningful step (a new data source, a visual milestone, a bug with a
   lesson), append a dated entry to `docs/build-log.md` with concrete numbers and what
   surprised you, and save a screenshot to `docs/log/`. Write it blog-ready.
