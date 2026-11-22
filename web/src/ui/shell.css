@@ -171,3 +171,7 @@
 :root[data-theme='dark'] .chip.reported { color: #ff9a6a; }
 :root[data-theme='dark'] .chip.inferred { color: #e6c05a; }
 :root[data-theme='dark'] .chip.illustrative { color: #bba6ff; }
+
+/* Keep the timetable and observation labels legible above bright roofs or dark streets. */
+.widget.glass, .drop-r.glass { background-color: var(--glass-solid); }
+:root[data-theme='dark'] .scene-conditions select { color-scheme: dark; }
