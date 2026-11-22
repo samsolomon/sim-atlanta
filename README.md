@@ -1,4 +1,4 @@
-# sim-atlanta
+# Sim Atlanta
 
 A free, fast map of where trains are, or are likely to be, right now. It starts with
 Atlanta and Georgia. Every fact on the map says how we know it: **live**, **scheduled**,

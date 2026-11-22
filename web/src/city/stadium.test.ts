@@ -43,6 +43,11 @@ describe('Mercedes-Benz Stadium on the measured board', () => {
       .intersectObject(group, true)[0];
     for (let i = 0; i < 48; i++) {
       const angle = (i + 0.3) * Math.PI / 24;
+      // The swept folds must meet the petal curb around the entire aperture.
+      for (const radius of [65, 75, 85, 95]) {
+        const hit = roof(-857 + radius * Math.cos(angle), -155.5 + radius * Math.sin(angle));
+        expect(hit.point.y - group.position.y).toBeGreaterThan(55);
+      }
       for (const radius of [2, 12, 38, 55]) {
         const hit = roof(-857 + radius * Math.cos(angle), -155.5 + radius * Math.sin(angle));
         expect(hit.object.name).toBe('Eight closed roof petals');

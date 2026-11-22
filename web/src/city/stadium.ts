@@ -15,6 +15,20 @@ const folds: P2[] = [[-794, -277], [-742, -202.5], [-745, -111], [-809, -69.5],
 const leaves: P2[] = [[-840.5, -217.5], [-795, -193.5], [-783, -147], [-815.5, -104],
 [-877, -93], [-921.5, -119], [-931.5, -164.5], [-900, -205]];
 
+// Intermediate turns along the eaves, and the two outer shoulders of each closed
+// petal. These follow the visible roof edge in the same north-up county frame.
+const eaves: P2[] = [[-794, -278.5], [-728.5, -202], [-742, -110.5], [-808, -61.5], [-910, -63.5], [-992, -127], [-972, -227], [-885.5, -286.5]];
+const shoulders: [P2, P2][] = [
+  [[-821, -222], [-800, -212]],
+  [[-781.5, -187], [-777.5, -159]],
+  [[-780.5, -128], [-792.5, -114]],
+  [[-825, -98.5], [-863.5, -94.5]],
+  [[-889, -91.5], [-912.5, -101.5]],
+  [[-936.5, -129], [-941, -151.5]],
+  [[-932, -183.5], [-921.5, -198]],
+  [[-882, -225.5], [-865, -227.5]]
+];
+
 type Vertex = [number, number, number];
 const vertex = ([x, z]: P2, y: number): Vertex => [x, y, z];
 const mix = (a: Vertex, b: Vertex, t: number): Vertex =>
@@ -36,12 +50,37 @@ function boardFootprint(ring: P2[], west: number) {
 }
 
 /** Sloped curtain wall with horizontal concourse beams, mullions, and an overlapping metal blade. */
-function facade(b: Builder, a: Vertex, c: Vertex, lowerA: Vertex, lowerC: Vertex, panel: 'left' | 'right' | 'glass') {
+function facade(b: Builder, a: Vertex, c: Vertex, lowerA: Vertex, lowerC: Vertex, panel: 'left' | 'right' | 'glass' | 'window-left' | 'window-right') {
   const at = (u: number, v: number, offset = 0): Vertex => {
     const p = mix(mix(lowerA, lowerC, u), mix(a, c, u), v);
     const length = Math.hypot(p[0] - hub[0], p[2] - hub[1]);
     return [p[0] + offset * (p[0] - hub[0]) / length, p[1], p[2] + offset * (p[2] - hub[1]) / length];
   };
+  const window = panel === 'window-left' || panel === 'window-right';
+  if (window) {
+    // Set the glazing behind the projecting blades. The concourse floor edges
+    // bridge that recess, and the entrance columns stand clear of the doors.
+    const sill = (u: number, inset: number) => {
+      const p = at(u, 0, inset);
+      return vertex([p[0], p[2]], PLAZA);
+    };
+    b.quad(sill(0, -6), sill(1, -6), at(1, 0, -6), at(0, 0, -6), '#394852');
+    b.quad(at(0, 0, -6), at(1, 0, -6), at(1, 0), at(0, 0), '#606770');
+    b.quad(at(0, 0, -2.5), at(1, 0, -2.5), at(1, 1, -2.5), at(0, 1, -2.5), '#b5cbd4');
+    for (const v of [0.18, 0.36, 0.54, 0.72]) {
+      b.quad(at(0, v, -2.5), at(1, v, -2.5), at(1, v + 0.018, -1), at(0, v + 0.018, -1), '#dbe3e1');
+    }
+    for (let n = 0; n < 12; n++) {
+      const u = n / 12, end = u + 0.009;
+      b.quad(at(u, 0, -2.4), at(end, 0, -2.4), at(end, 1, -2.4), at(u, 1, -2.4), '#e1e6e3');
+      if (n % 3 === 0) b.quad(sill(u, 0), sill(end + 0.018, 0), at(end + 0.018, 0), at(u, 0), '#ced4d1');
+    }
+    const outer = panel === 'window-left' ? 0 : 1, joint = 1 - outer;
+    b.tri(at(outer, 1, 1.8), at(0.7 * outer + 0.3 * joint, 1, 1.8), at(outer, 0.22, 1.8), '#c8cdd0');
+    b.quad(at(outer, 1, 1.8), at(outer, 0.955, 1.8), at(joint, 0.04, 1.8), at(joint, 0.085, 1.8), '#e3e6e4');
+    b.quad(at(0, 1, -2.5), at(1, 1, -2.5), at(1, 1, 1.8), at(0, 1, 1.8), '#b4bbbf');
+    return;
+  }
   // The public entrances sit in the shadow of the projecting envelope.
   const thresholdA: Vertex = [lowerA[0], PLAZA, lowerA[2]];
   const thresholdC: Vertex = [lowerC[0], PLAZA, lowerC[2]];
@@ -72,21 +111,28 @@ function facade(b: Builder, a: Vertex, c: Vertex, lowerA: Vertex, lowerC: Vertex
 function closedLeaf(petals: Builder, rib: number[], i: number) {
   const j = (i + 1) % 8, previous = (i + 7) % 8;
   const center = vertex(hub, 93);
-  const knee = mix(center, vertex(leaves[previous], 83), 0.18);
-  const nextKnee = mix(center, vertex(leaves[i], 83), 0.18);
+  const knee = mix(center, mix(vertex(leaves[i], 83), vertex(leaves[previous], 83), 0.12), 0.24);
+  const nextKnee = mix(center, mix(vertex(leaves[j], 83), vertex(leaves[i], 83), 0.12), 0.24);
   const start = vertex(leaves[i], 83), end = vertex(leaves[j], 83);
   const a = lift(start, 2.6), k = lift(knee, 1.4);
   const tone = ['#ecece5', '#dcded8', '#e5e6df', '#d6d9d3'][i % 4];
   const before = petals.pos.length;
-  // Each curved outer lip overlaps the fixed roof. The underside meets its curb.
+  // Round the outer edge through a pair of shoulder-controlled arcs.
+  const [p, q] = shoulders[i].map(point => vertex(point, 0));
+  const mid = mix(p, q, 0.5);
   let last = a;
-  for (let part = 1; part <= 4; part++) {
-    const t = part / 4, p = mix(a, end, t);
-    const bulge = 1 + 0.10 * Math.sin(Math.PI * t);
-    const edge: Vertex = [hub[0] + (p[0] - hub[0]) * bulge, p[1], hub[1] + (p[2] - hub[1]) * bulge];
+  let underside = start;
+  for (let n = 1; n <= 8; n++) {
+    const t = n / 8;
+    const u = t <= 0.5 ? 2 * t : 2 * t - 1;
+    const [from, control, to] = t <= 0.5 ? [a, p, mid] : [mid, q, end];
+    const edge = mix(mix(from, control, u), mix(control, to, u), u);
+    edge[1] = mix(a, end, t)[1];
+    const curb = mix(start, end, t);
     petals.tri(k, last, edge, tone);
-    petals.quad(last, edge, mix(start, end, t), mix(start, end, (part - 1) / 4), '#b0b5b4');
+    petals.quad(last, edge, curb, underside, '#a6afaf');
     last = edge;
+    underside = curb;
   }
   petals.tri(k, end, nextKnee, tone);
   petals.tri(k, nextKnee, center, tone);
@@ -104,8 +150,9 @@ function roofAndWalls(b: Builder, petals: Builder, rib: number[]) {
   for (let i = 0; i < 8; i++) {
     const j = (i + 1) % 8;
     const a = vertex(ridges[i], 66), c = vertex(ridges[j], 58);
-    const eave = mix(a, c, 0.43), fold = vertex(folds[i], 64);
-    const inner = vertex(leaves[i], 82), next = vertex(leaves[j], 77);
+    const eave = vertex(eaves[i], 61), fold = vertex(folds[i], 64);
+    const innerOutline = leaves[j], nextOutline = leaves[(j + 1) % 8];
+    const inner = vertex(innerOutline, 82.5), next = vertex(nextOutline, 79.5);
     b.tri(a, eave, fold, '#c6c8c4');
     b.tri(eave, c, fold, '#bcc0be');
     b.tri(a, fold, inner, '#c5c7c3');
@@ -116,11 +163,11 @@ function roofAndWalls(b: Builder, petals: Builder, rib: number[]) {
       b.quad(lift(outside, 0.18), lift(edge, 0.18), lift(mix(edge, inner, 0.71), 0.18), lift(inside, 0.18), '#838d90');
     }
     b.quad(fold, c, next, inner, '#b9bdb9');
-    b.quad(c, lift(c, 8), lift(next, 5), next, '#70797b');
-    b.quad(inner, next, vertex(leaves[j], 83), vertex(leaves[i], 83), '#828b8c');
-    const lowerA = foot(ridges[i]), lowerC = foot(ridges[j]), lowerEave = mix(lowerA, lowerC, 0.43);
-    facade(b, a, eave, lowerA, lowerEave, i === 1 ? 'glass' : 'left');
-    facade(b, eave, c, lowerEave, lowerC, i === 0 ? 'glass' : 'right');
+    b.quad(c, lift(c, 8), vertex(nextOutline, 82.5), next, '#70797b');
+    b.quad(inner, next, vertex(nextOutline, 83), vertex(innerOutline, 83), '#828b8c');
+    const lowerA = foot(ridges[i]), lowerC = foot(ridges[j]), lowerEave = foot(eaves[i]);
+    facade(b, a, eave, lowerA, lowerEave, i === 1 ? 'window-left' : 'left');
+    facade(b, eave, c, lowerEave, lowerC, i === 1 ? 'window-right' : i === 0 ? 'glass' : 'right');
     closedLeaf(petals, rib, i);
   }
 }
@@ -166,7 +213,7 @@ export function createStadium(buildings: VBuilding[], grid: GroundGrid) {
       .replace('#include <color_fragment>', `#include <color_fragment>
         float width = max(fwidth(vRib), 0.001);
         float seam = 1.0 - smoothstep(0.035, 0.035 + width, abs(fract(vRib + 0.5) - 0.5));
-        diffuseColor.rgb *= 1.0 - 0.16 * seam * (1.0 - smoothstep(0.2, 0.8, width));`);
+        diffuseColor.rgb *= 1.0 - 0.075 * seam * (1.0 - smoothstep(0.2, 0.8, width));`);
   };
   fixed.name = 'Fixed roof and shell';
   membrane.name = 'Eight closed roof petals';
