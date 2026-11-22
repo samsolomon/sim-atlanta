@@ -1515,3 +1515,7 @@ One corner of Mercedes-Benz Stadium extended 5.48 m beyond our terrain board. Lo
 ### 2026-11-22 — One curtain wall, three tints
 
 We held the hotel, sunlight and camera fixed and changed one material colour. Silver, blue and bronze all picked up the same rooflines, while the adjacent masonry kept its own colour. The Westin uses silver. Future apartment towers can use the same glass with their own window spacing and interior lights. [Three matched Orca views](log/ui/westin/glass-tints.jpg)
+
+### 2026-11-22 — Thirteen exhibit spaces under one map outline
+
+The Congress Center appears in the bake as one 597 m footprint with one height. The floor plans put twelve numbered exhibit halls and the BC connector inside it, all within our board. From the tracks, the easiest way to read the campus is through its gaps. The railway passes between A and B and under their southern lobby; a 10,827 m² loading court runs between B and C. The new roof tiers follow the two original courtyard holes. Building C's glass gallery clears the west edge of the miniature by about eleven metres at its mapped frontage. [Across the tracks before](log/ui/congress-center/tracks-before.jpg) · [After](log/ui/congress-center/tracks-after.jpg) · [Daylight cameras and sources](georgia-world-congress-center.md)

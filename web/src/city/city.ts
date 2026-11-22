@@ -50,6 +50,7 @@ import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createWestin } from './westin';
 import { createStadium } from './stadium';
+import { createCongressCenter } from './congress-center';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -202,12 +203,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         });
         const remaining = westin?.buildings ?? buildings;
         const stadium = createStadium(remaining, ground);
-        const city = { ...vd, buildings: stadium?.buildings ?? remaining };
+        const exhibitionSite = stadium?.buildings ?? remaining;
+        const congressCenter = createCongressCenter(exhibitionSite, ground);
+        const city = { ...vd, buildings: congressCenter?.buildings ?? exhibitionSite,
+          ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
         if (stadium) world.group.add(stadium.group);
+        if (congressCenter) world.group.add(congressCenter.group);
       });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
     } else {
