@@ -57,6 +57,9 @@ body:has(#timectl:not([hidden])) #view3d { --info-bottom: var(--above-playback, 
   color: var(--ink); background: var(--glass-solid); font-size: 13px; line-height: 1.45;
 }
 #city-info p { margin: 8px 0; }
+@media (min-width: 601px) {
+  body:has(#card:not([hidden])) #city-info { max-width: calc(100vw - 380px); }
+}
 
 /* ---- vehicle / place card ---- */
 #card {
