@@ -3,7 +3,7 @@ import { Builder, type P2 } from '../vignette/geom';
 import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { GroundGrid } from './grid';
 
-import { GroundSurface, type JoiningEdge, type TerrainQuality } from './surface';
+import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { groundMap } from './ground-map';
@@ -12,7 +12,7 @@ type Tree = [number, number, number, number];
 type Contours = { value: number };
 export interface DowntownTerrainOptions {
   quality: TerrainQuality;
-  join?: JoiningEdge;
+  join?: TerrainJoins;
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   contours?: Contours;
@@ -26,7 +26,7 @@ function checkBounds(grid: GroundGrid, city: VData) {
 }
 
 function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuality, contours: Contours,
-  join?: JoiningEdge, bottom = mesh.minY - mesh.grid.manifest.stepM) {
+  join?: TerrainJoins, bottom = mesh.minY - mesh.grid.manifest.stepM) {
   const { vertical, bounds: b } = mesh.grid.manifest;
   const geometry = mesh.geometry;
   const material = new THREE.MeshLambertMaterial({ map: groundMap(city, quality) });
@@ -46,7 +46,8 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
   const surface = new THREE.Mesh(geometry, material);
   surface.receiveShadow = true;
   const sides = new Builder();
-  const shared = new Builder();
+  const joins = joinList(join);
+  const shared = joins.map(() => new Builder());
   const pos = geometry.getAttribute('position'), idx = geometry.index!;
   // Only skirt actual perimeter edges, including partial cells adjacent to an opening.
   const flags = new Uint8Array(pos.count);
@@ -56,9 +57,11 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
   }
   function edge(a: number, b: number) {
     if (!(flags[a] & flags[b])) return;
-    const alongJoin = join && pos.getX(a) === join.x && pos.getX(b) === join.x &&
-      Math.min(pos.getZ(a), pos.getZ(b)) >= join.minZ && Math.max(pos.getZ(a), pos.getZ(b)) <= join.maxZ;
-    const wall = alongJoin ? shared : sides;
+    const ax = pos.getX(a), bx = pos.getX(b), az = pos.getZ(a), bz = pos.getZ(b);
+    const which = joins.findIndex(edge => 'x' in edge
+      ? ax === edge.x && bx === edge.x && Math.min(az, bz) >= edge.minZ && Math.max(az, bz) <= edge.maxZ
+      : az === edge.z && bz === edge.z && Math.min(ax, bx) >= edge.minX && Math.max(ax, bx) <= edge.maxX);
+    const wall = shared[which] ?? sides;
     wall.quad([pos.getX(a), bottom, pos.getZ(a)], [pos.getX(b), bottom, pos.getZ(b)],
       [pos.getX(b), pos.getY(b), pos.getZ(b)], [pos.getX(a), pos.getY(a), pos.getZ(a)], '#b59676');
   }
@@ -67,11 +70,12 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
     if (flags[a] || flags[b] || flags[c]) { edge(a, b); edge(b, c); edge(c, a); }
   }
   surface.add(new THREE.Mesh(sides.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
-  if (shared.pos.length) {
-    const wall = new THREE.Mesh(shared.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
-    wall.name = 'joining edge';
+  shared.forEach((part, index) => {
+    if (!part.pos.length) return;
+    const wall = new THREE.Mesh(part.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+    wall.name = index === 0 ? 'joining edge' : 'joining edge ' + index;
     surface.add(wall);
-  }
+  });
   return surface;
 }
 
@@ -117,9 +121,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
-    group, board, scenery: scenery.group, bounds: grid.manifest.bounds,
+    group, board, grid, scenery: scenery.group, bounds: grid.manifest.bounds,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
-    openJoin() { const wall = board.getObjectByName('joining edge'); if (wall) wall.visible = false; },
+    openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
     setNight(factor: number) { scenery.setNight(factor); },
     setWet(factor: number) {

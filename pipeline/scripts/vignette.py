@@ -25,6 +25,7 @@ VIGNETTES = {
     # Corridor prototype east of the board along the MARTA East Line to King Memorial. It shares
     # downtown's x = 1000 column and 5 m lattice. See docs/king-memorial-corridor.md.
     "king-memorial": {"x": (1000.0, 1800.0), "z": (280.0, 640.0)},
+    "sweet-auburn": {"x": (1000.0, 1800.0), "z": (-520.0, 280.0)},
 }
 
 

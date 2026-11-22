@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import type { TerrainQuality } from '../terrain/surface';
+import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import type { TerrainCity } from '../terrain/transport-data';
 import { marchonFinishes } from './marchon-frontage';
 import { PAL } from '../vignette/world';
@@ -38,6 +38,7 @@ export async function loadEast(
   quality: TerrainQuality,
   bottomY: number,
   signal: AbortSignal,
+  extraJoin?: JoiningEdge,
 ) {
   async function asset(name: string) {
     const response = await fetch(`${base}/scene/king-memorial/${name}`, { signal });
@@ -64,13 +65,13 @@ export async function loadEast(
   return createDowntownTerrain(grid, context, context.trees, {
     quality,
     bottomY,
-    join: eastJoin,
+    join: extraJoin ? [eastJoin, extraJoin] : eastJoin,
     finishFor: marchonFinishes(context.buildings),
   });
 }
 
 /** One walnut base under the L-shaped board, with the original eight-metre outside lip. */
-export function joinedPlinth(b: Bounds, bottom: number) {
+export function joinedPlinth(b: Bounds, bottom: number, northZ = eastBounds.minZ) {
   const e = eastBounds,
     lip = 8,
     x = b.maxX + lip;
@@ -78,8 +79,8 @@ export function joinedPlinth(b: Bounds, bottom: number) {
   const outline = [
     [b.minX - lip, b.minZ - lip],
     [x, b.minZ - lip],
-    [x, e.minZ - lip],
-    [e.maxX + lip, e.minZ - lip],
+    [x, northZ - lip],
+    [e.maxX + lip, northZ - lip],
     [e.maxX + lip, e.maxZ + lip],
     [x, e.maxZ + lip],
     [x, b.maxZ + lip],
