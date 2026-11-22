@@ -62,3 +62,19 @@ it('keeps a viaduct pier off the lower freight track and places its column besid
   expect(columnBaseX.length).toBeGreaterThan(0);
   expect(Math.max(...columnBaseX)).toBeLessThan(-2);
 });
+
+it('finds a narrow median between the regularly spaced viaduct stations', () => {
+  const w = new World(data, null, { terrain: 'flat', clumps: 1, lightMapMax: 256 });
+  const viaduct = { line: new Line([[0, 0], [0, 90]]), elev: () => 8 };
+  w.buildMarta(viaduct, (_x, z) => z <= 4 || (z >= 37 && z <= 41) || z >= 75);
+  const pos = (w.group.children[0] as THREE.Mesh).geometry.attributes.position;
+  const medianFoot: number[] = [];
+  for (let i = 0; i < pos.count; i++) {
+    if (Math.abs(pos.getY(i)) < .001 && pos.getZ(i) > 10 && pos.getZ(i) < 70) {
+      medianFoot.push(pos.getZ(i));
+    }
+  }
+  expect(medianFoot.length).toBeGreaterThan(0);
+  expect(Math.min(...medianFoot)).toBeGreaterThan(35);
+  expect(Math.max(...medianFoot)).toBeLessThan(43);
+});

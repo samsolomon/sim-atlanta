@@ -702,22 +702,28 @@ export class World {
       if (atStart) portal(sv, false);
       if (atEnd) portal(s1, true);
       // Viaduct: box-girder deck, parapets and piers wherever the track is well above ground.
+      let lastPierS = -Infinity, seekingPier = false;
       for (let s = sv; s < s1; s += 2) {
         const p = m.line.at(s);
         const e = ey(s);
         const g = this.ground(p.x, p.z);
-        if (e - g < 2.2) continue;
+        if (e - g < 2.2) { seekingPier = false; continue; }
         const rot = new THREE.Matrix4().makeRotationY(Math.atan2(p.dx, p.dz)).setPosition(p.x, 0, p.z);
         b.box(10.4, 1.6, 2.02, 0, e - 0.75, 0, PAL.concrete, rot);
         for (const d of [-5.05, 5.05]) b.box(0.3, 1.1, 2.02, d, e + 0.55, 0, PAL.concreteDark, rot);
-        if (Math.round(s) % 26 === 0 || Math.round(s) % 26 === 1) {
+        // If the nominal station falls in a travel lane, keep looking along the
+        // deck for the next safe bank or median. Keep adjacent piers apart.
+        if (Math.round(s) % 26 < 2) seekingPier = true;
+        if (seekingPier && s - lastPierS >= 14) {
           const offset = pierAllowed
             ? [0, -3.2, 3.2].find(d => pierAllowed(p.x + d * p.nx, p.z + d * p.nz))
             : 0;
-          if (offset === undefined) continue; // span lower tracks between supported locations
+          if (offset === undefined) continue;
           const base = offset ? this.ground(p.x + offset * p.nx, p.z + offset * p.nz) : g;
           const hgt = e - 1.55 - base;
           if (hgt <= 0) continue;
+          seekingPier = false;
+          lastPierS = s;
           b.box(2.2, hgt, 2.6, offset, base + hgt / 2, 0, PAL.concrete, rot);
           b.box(8, 1.0, 2.8, 0, e - 2.0, 0, PAL.concreteDark, rot); // pier cap
         }
