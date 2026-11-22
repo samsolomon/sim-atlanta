@@ -25,7 +25,7 @@ The revised daylight and night frames use the same camera at (329, −763), bear
 
 ### Mirrored glass
 
-A specular highlight alone left the hotel looking like its stone neighbours for much of an orbit. City now builds a small panorama from nearby mapped wall outlines, their heights and the terrain under them. Each glazed pane samples that panorama in its reflected viewing direction. A mid-tower viewpoint and an approximate 120 m reflection distance let rooflines shift between floors. Colours, sky and nighttime brightness are illustrative. The panorama excludes the hotel itself and moving traffic. It is generated once per City load and adds one texture lookup to the glass. [Previous silver finish](log/ui/westin/glass-day.jpg) · [Mirrored glass at the same camera](log/ui/westin/reflection-day.jpg) · [Second orbit angle](log/ui/westin/reflection-orbit.jpg)
+A specular highlight alone left the hotel looking like its stone neighbours for much of an orbit. City now builds a small panorama from nearby mapped wall outlines, their heights and the terrain under them. Each glazed pane samples that panorama in its reflected viewing direction. A mid-tower viewpoint and an approximate 120 m reflection distance let rooflines shift between floors. Colours, sky and nighttime brightness are illustrative. The panorama excludes the hotel itself and moving traffic. It is generated once per City load and adds one texture lookup to the glass. [Previous silver finish](log/ui/westin/glass-day.jpg) · [Mirrored glass at the same camera](log/ui/westin/reflection-day.jpg) · [Second orbit angle](log/ui/westin/reflection-orbit.jpg) · [Reflected glass and crown at night](log/ui/westin/reflection-night.jpg)
 
 ## Integration and reproduction
 
