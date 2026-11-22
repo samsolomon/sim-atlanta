@@ -38,7 +38,9 @@ export function showRailOverview(container: HTMLElement, routes: RoutesFile) {
     labels.delete(stop.name);
     const [x, y] = lonLatToScene(origin, stop.lon, stop.lat);
     const label = document.createElementNS(ns, 'text');
-    label.setAttribute('x', String(x + 350));
+    const west = name === 'H. E. Holmes' || name === 'Bankhead';
+    label.setAttribute('text-anchor', west ? 'end' : 'start');
+    label.setAttribute('x', String(x + (west ? -350 : 350)));
     label.setAttribute('y', String(y - 400));
     label.textContent = name;
     svg.append(label);

@@ -29,9 +29,8 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #view3d { position: fixed; inset: 0; z-index: 1; background: var(--paper-2); }
 #view3d-canvas { position: absolute; inset: 0; }
 #view3d-canvas canvas { display: block; }
-#city-loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: var(--paper-2); color: var(--ink); }
+#city-loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; background: var(--paper); color: var(--ink); }
 #city-loading[hidden] { display: none; }
-#city-loading { background: var(--paper); }
 #early-map { justify-self: center; margin-top: 10px; padding: 12px; color: var(--ink); }
 #city-loading p { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
 #city-progress { color: var(--ink-2); font-size: 14px; }
