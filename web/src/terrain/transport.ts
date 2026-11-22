@@ -1,11 +1,18 @@
 import * as THREE from 'three';
-import { Builder, Line, type P2 } from '../vignette/geom';
+import { Builder, Line, segDist, type P2 } from '../vignette/geom';
+import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
 
 type GroundAt = (x: number, z: number) => number | null;
+export interface FreightTreadPoint {
+  s: number;
+  position: THREE.Vector3;
+}
 export interface SurfaceTransport {
+  freightTreads: FreightTreadPoint[][];
+  clearOfFreight(x: number, z: number): boolean;
   group: THREE.Group;
   structuralTier: 'illustrative';
   dispose(): void;
@@ -45,6 +52,38 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
   group.userData.structuralHeightTier = 'illustrative';
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
   const bounds = city.bounds;
+  const freightTreads: FreightTreadPoint[][] = [];
+  // A 3.2 m locomotive, the 2.2 × 2.6 m column on its diagonal and a small margin.
+  const pierClearanceM = 3.8;
+  const freightSegments = new PlacementIndex<[P2, P2]>();
+  for (const run of data.rail) {
+    if (run.cls !== 'standard_gauge') continue;
+    for (let i = 1; i < run.pts.length; i++) {
+      const segment: [P2, P2] = [run.pts[i - 1], run.pts[i]];
+      freightSegments.add(segment, segment, pierClearanceM);
+    }
+  }
+  const clearOfFreight = (x: number, z: number) =>
+    freightSegments.at(x, z).every(([a, b]) => segDist(x, z, a, b) >= pierClearanceM);
+
+  // West to east: intact rail approaches beyond Piedmont, between Jesse Hill and
+  // the freeway, and east of the freeway. Bare earth inside the highway and the
+  // Georgia State structures is several metres below the railway. The grade between
+  // these bank proxies is schematic. Adjacent freight tracks share the embankment.
+  const banks = [[444.07, 321.30], [647.51, 473.99], [866.02, 541.33]].map(([x, z]) =>
+    ({ x, z, h: grid.sample(x, z) }));
+  const gradeAvailable = data.rail.some(r => r.freightS) && banks.every(bank => bank.h !== null);
+  function freightGrade(x: number, z: number, base: number) {
+    if (!gradeAvailable || x <= banks[0].x || x >= banks[2].x) return base;
+    const i = x < banks[1].x ? 0 : 1;
+    const a = banks[i], b = banks[i + 1];
+    const fraction = (x - a.x) / (b.x - a.x);
+    // The other freight and passenger corridors retain their own structural profiles.
+    if (Math.abs(z - (a.z + fraction * (b.z - a.z))) > 42) return base;
+    const grade = a.h! + fraction * (b.h! - a.h!) - grid.manifest.vertical.sceneZeroNavd88M;
+    const blend = Math.min(1, (x - banks[0].x) / 15, (banks[2].x - x) / 15);
+    return base + blend * Math.max(0, grade - base);
+  }
 
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram') {
     if (run.pts.length < 2) return;
@@ -85,6 +124,13 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
           THREE.MathUtils.clamp(p.z + off * p.nz, bounds.minZ, bounds.maxZ)));
       }) : [];
       let prev: number[][] | null = null, lastS = 0;
+      let tread: FreightTreadPoint[] | undefined;
+      const range = textured ? run.freightS : undefined;
+      function midpoint(s: number, a: number[], b: number[]) {
+        const distance = range![0] + (range![1] - range![0]) * s / line.length;
+        tread!.push({ s: distance, position: new THREE.Vector3(
+          (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2) });
+      }
       for (const s of stations) {
         if (prev && s === lastS) continue;
         const p = line.at(s);
@@ -102,14 +148,34 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
             const ref = end ? h1! : h0!;
             if (!(end ? endCut : startCut) && ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
           }
+          if (textured) y = freightGrade(x, z, y);
           section.push([x, y + lift, z]);
         }
         if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; continue; }
+        if (range && range.every(Number.isFinite)) {
+          if (!prev) {
+            tread = [];
+            freightTreads.push(tread);
+          } else {
+            // The middle of a twisted quad lies on its drawn triangle diagonal.
+            midpoint((lastS + s) / 2, prev[0], section[1]);
+          }
+          midpoint(s, section[0], section[1]);
+        }
         if (prev) {
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           (textured ? freight : structures).quad(a, b, c, d, color);
           if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
+          if (textured && !bridge && gradeAvailable) {
+            // Close exposed ballast faces where the raised approach clears the bare earth.
+            for (const [left, right] of [[a, d], [c, b]]) {
+              const gy = groundAt(left[0], left[2]), hy = groundAt(right[0], right[2]);
+              if (gy !== null && hy !== null && (left[1] - gy > .25 || right[1] - hy > .25)) {
+                structures.quad(left, right, [right[0], hy, right[2]], [left[0], gy, left[2]], PAL.ballastFreight);
+              }
+            }
+          }
           if (depth) {
             const down = ([x, y, z]: number[]) => [x, y - depth, z];
             structures.quad(a, d, down(d), down(a), PAL.concreteDark);
@@ -154,7 +220,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, grou
     group.add(mesh);
     meshes.push(mesh);
   }
-  return { group, structuralTier: 'illustrative', dispose() {
+  return { group, freightTreads, clearOfFreight, structuralTier: 'illustrative', dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
     map.dispose();

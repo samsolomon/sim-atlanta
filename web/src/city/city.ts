@@ -31,6 +31,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
+import { CityFreight } from './freight';
 import { CityTrains } from './trains';
 import { Snow } from './snow';
 
@@ -38,6 +39,7 @@ export type Quality = 'low' | 'high';
 
 export interface CityView {
   measuredGround: boolean;
+  hasFreight: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
@@ -52,7 +54,7 @@ export interface CityView {
   /** Sun, darkness and weather from the shared atmosphere; the date sets the season. */
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
-  stats(): { surfaceCars: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
+  stats(): { freightCars: number; surfaceCars: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
 
@@ -71,6 +73,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   signal?: AbortSignal;
   progress?: (label: string) => void;
   trains: () => TrainState[];
+  clockMs: () => number;
   beforeFrame?: (timestamp: number) => void;
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
@@ -153,7 +156,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       await build('buildings', () => world.buildBuildings());
       await build('trees', () => world.buildTrees());
     }
-    await build('MARTA', () => { for (const al of marta) world.buildMarta(al); });
+    await build('MARTA', () => { for (const al of marta) world.buildMarta(al, transport?.clearOfFreight); });
     await build('lights', () => world.buildLights(terrain?.board, terrain?.groundAt));
   } catch (err) {
     disposeBoard();
@@ -207,6 +210,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
   const trains = new CityTrains(marta, manifest, b, colors, edges);
   scene.add(trains.group);
+  const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
+  if (freight) scene.add(freight.group);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -444,6 +449,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     controls.update();
     trains.update(options.trains(), atm.dark);
+    freight?.update(options.clockMs());
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
@@ -478,6 +484,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   console.info('City build stages (ms)', stages);
   return {
     measuredGround: !!terrain,
+    hasFreight: !!freight,
     bounds: b,
     quality,
     lookAt(x, z, view) {
@@ -521,13 +528,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       atm = a;
       (terrain ?? world).setSeason(local(now).doy);
     },
-    stats: () => ({ surfaceCars: trains.surfaceCars, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    stats: () => ({ freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();
+      freight?.dispose();
       disposeBoard();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;

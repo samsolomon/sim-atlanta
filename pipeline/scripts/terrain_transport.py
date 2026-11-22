@@ -2,6 +2,7 @@
 import bisect
 import itertools
 import json
+import math
 from pathlib import Path
 
 from pyproj import Geod
@@ -71,8 +72,54 @@ def intervals(coords, flags, levels):
             yield kind, [project(*c) for c in [at(a), *inner, at(b)]]
 
 
+# One track of the Atlanta Terminal Subdivision, east to north. Overture source
+# IDs preserve the choice of main track at the parallel Hulsey leads and the Gulch fork.
+FREIGHT_MAIN = (
+    ("c10339f4-274d-4e9e-96e1-fd6218a7bcb5", False),
+    ("2ecfc011-adbf-4653-8a0a-9a794f69ca03", False),
+    ("425c2519-3178-4749-bf27-f6a28f0cae07", True),
+    ("e87db0cb-36d2-4c13-9992-7beae86bda56", True),
+)
+
+
+def freight_axis(rails, bounds):
+    """Establish distance along the continuous route, including its covered intervals."""
+    features = {f["properties"].get("id"): f for f in rails}
+    points = []
+    for source_id, reverse in FREIGHT_MAIN:
+        feature = features.get(source_id)
+        if not feature or feature["properties"].get("class") != "standard_gauge":
+            return None
+        parts = [pts for coords in lines(feature["geometry"])
+                 for pts in clip_runs([project(*p) for p in coords], bounds)]
+        if len(parts) != 1:
+            return None
+        part = parts[0][::-1] if reverse else parts[0]
+        if points and points[-1] != part[0]:
+            return None
+        points.extend(part[1:] if points else part)
+    return points
+
+
+def distance_on_axis(points, at):
+    distance = 0
+    nearest = (math.inf, 0)
+    for a, b in zip(points, points[1:]):
+        dx, dz = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(dx, dz)
+        if length == 0:
+            continue
+        f = max(0, min(1, ((at[0] - a[0]) * dx + (at[1] - a[1]) * dz) / length**2))
+        error = math.hypot(a[0] + f * dx - at[0], a[1] + f * dz - at[1])
+        nearest = min(nearest, (error, distance + f * length))
+        distance += length
+    return round(nearest[1], 2)
+
+
 def bake(roads, rails, bounds):
     result = {"version": 1, "roads": [], "rail": []}
+    axis = freight_axis(rails, bounds)
+    route_ids = {source_id for source_id, _ in FREIGHT_MAIN}
     for key, features, flag_key in (("roads", roads, "road_flags"), ("rail", rails, "rail_flags")):
         for feature in features:
             p = feature["properties"]
@@ -90,6 +137,8 @@ def bake(roads, rails, bounds):
                         item = {"cls": p["class"], "kind": kind, "pts": pts}
                         if p.get("subclass"):
                             item["sub"] = p["subclass"]
+                        if key == "rail" and axis is not None and p.get("id") in route_ids:
+                            item["freightS"] = [distance_on_axis(axis, xz) for xz in (pts[0], pts[-1])]
                         result[key].append(item)
     return result
 
