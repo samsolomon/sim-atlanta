@@ -47,7 +47,7 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
       ${units ? `<dt>${model ? 'City model' : 'Looks like'}</dt><dd>${esc(units)} ${chip('illustrative', model ? undefined : 'typical')}</dd>` : ''}
       ${
         live
-          ? `<dt>Position</dt><dd>${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)}</dd>`
+          ? `<dt class="position-report">Position</dt><dd class="position-report">${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)}</dd>`
           : `<dt>Source</dt><dd>${esc(route?.operator)} timetable${t.s.asOf ? ` (version ${esc(t.s.asOf)})` : ''}</dd>`
       }
     </dl>

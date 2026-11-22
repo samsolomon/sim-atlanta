@@ -17,7 +17,8 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
-import type { SceneManifest } from '../core/scene-data';
+import { makeProjector, type SceneManifest } from '../core/scene-data';
+import { FOLLOW_CAMERA, type TrainFollow } from './train-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -91,6 +92,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
   beforeFrame?: (timestamp: number) => void;
+  follow?: TrainFollow;
   selectVehicle?: (vehicle: VehicleSelection | null) => void;
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
@@ -412,6 +414,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
+  const manualCamera = () => { if (options.follow?.active) options.follow.stop(); };
+  if (options.follow) controls.addEventListener('start', manualCamera);
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
@@ -503,6 +507,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fpsT = performance.now();
   let fps = 0;
   let lastFrame = performance.now();
+  const project = makeProjector(manifest.origin);
+  const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     options.beforeFrame?.(ts);
@@ -517,7 +523,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     controls.update();
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
-    trains.update(options.trains(), atm.dark);
+    const states = options.trains();
+    trains.update(states, atm.dark);
+    const focus = options.follow?.frame(states, trains.group.children, project, b, manifest.rail, ts, !!motionPreference?.matches);
+    if (focus) {
+      glideTo = null;
+      setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
+    }
     const sceneTime = options.clockMs();
     freight?.update(sceneTime);
     traffic?.update(sceneTime, atm.dark);
@@ -583,8 +595,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       tilt: THREE.MathUtils.radToDeg(controls.getPolarAngle()),
       metresPerPixel: 2 * camera.position.distanceTo(controls.target) * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.max(1, container.clientHeight),
     }),
-    pan: panPx,
+    pan(dx, dy) { manualCamera(); panPx(dx, dy); },
     rotate(degrees) {
+      manualCamera();
       glideTo = null;
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
       off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
@@ -592,6 +605,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
     },
     zoom(dir) {
+      manualCamera();
       glideTo = null;
       const off = new THREE.Vector3().subVectors(camera.position, controls.target);
       const d = THREE.MathUtils.clamp(off.length() * (dir > 0 ? 0.8 : 1.25), controls.minDistance, controls.maxDistance);
@@ -607,6 +621,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       cancelAnimationFrame(raf);
       ro.disconnect();
       stopPicking();
+      controls.removeEventListener('start', manualCamera);
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();

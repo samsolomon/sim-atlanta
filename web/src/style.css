@@ -55,6 +55,13 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #card dd { margin: 0; font-variant-numeric: tabular-nums; }
 #card .tip { margin: 10px 0 0; font-size: 12px; color: var(--ink-2); }
 #card .close { position: absolute; top: 8px; right: 8px; border: 0; background: none; font-size: 20px; line-height: 1; padding: 4px 8px; }
+#train-follow { margin-top: 10px; }
+#train-follow button {
+  min-height: 36px; padding: 5px 12px; background: var(--glass-solid); color: inherit;
+  border: 1px solid var(--ink-2); border-radius: 7px; cursor: pointer; font: inherit;
+}
+#train-follow .follow-status { margin: 0 0 8px; font-size: 13px; }
+
 .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; }
 
 .chip {
@@ -73,6 +80,8 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
     top: max(76px, calc(env(safe-area-inset-top) + 68px)); bottom: auto;
     max-height: calc(100dvh - 190px); overflow-y: auto;
   }
+  .in3d #card.following-trip dl > :not(.position-report), .in3d #card.following-trip .tip { display: none; }
+  #train-follow button { min-height: 44px; }
   .in3d #card h2 { padding-right: 34px; }
   .in3d #card .close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
   .attrib3d { bottom: max(84px, calc(env(safe-area-inset-bottom) + 74px)); left: 10px; right: 10px; text-align: center; }
