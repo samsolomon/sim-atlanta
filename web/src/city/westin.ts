@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
+import { mirroredGlass } from './mirrored-glass';
 import { skylineReflection } from './skyline-reflection';
 import type { VBuilding } from '../vignette/world';
 
@@ -12,7 +13,7 @@ const CROWN = 210;
 const BAYS = 64, FLOORS = 64, PIXELS = 4;
 
 /** Repeating silver glazing. The sun and camera determine the highlight on the curved shaft. */
-function facade(environment: THREE.Texture, daylight: THREE.IUniform<number>) {
+function facadeMaps() {
   const width = BAYS * PIXELS, height = FLOORS * PIXELS;
   const day = new Uint8Array(width * height * 4);
   const night = new Uint8Array(day.length);
@@ -56,31 +57,7 @@ function facade(environment: THREE.Texture, daylight: THREE.IUniform<number>) {
     t.needsUpdate = true;
     return t;
   }
-  const map = texture(day), emissiveMap = texture(night);
-  const glass = new THREE.MeshPhongMaterial({ map, emissiveMap, emissive: 0xffffff, emissiveIntensity: 0,
-    specular: 0xe1edf6, shininess: 85 });
-  glass.onBeforeCompile = shader => {
-    shader.uniforms.skyline = { value: environment };
-    shader.uniforms.reflectedDaylight = daylight;
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform sampler2D skyline;\nuniform float reflectedDaylight;')
-      .replace('#include <envmap_fragment>', `
-        vec3 eye = normalize(vViewPosition);
-        vec3 ray = inverseTransformDirection(reflect(-eye, normal), viewMatrix);
-        // Project to a cylindrical block about 120 m away. Upper and lower floors
-        // intersect it at different heights relative to the mid-shaft probe.
-        ray.y += (vMapUv.y - 0.5) * ${((TOP - PODIUM) / 120).toFixed(4)} * length(ray.xz);
-        vec3 reflection = textureLod(skyline, equirectUv(normalize(ray)), 1.25).rgb;
-        float grazing = pow(1.0 - clamp(dot(eye, normal), 0.0, 1.0), 3.0);
-        float glazing = smoothstep(0.06, 0.34, diffuseColor.r);
-        reflection *= mix(vec3(0.018, 0.027, 0.060), vec3(1.0), reflectedDaylight);
-        float weight = glazing * (0.69 + 0.27 * grazing);
-        outgoingLight = mix(reflectedLight.directDiffuse + reflectedLight.indirectDiffuse,
-          reflection, weight) + reflectedLight.directSpecular + totalEmissiveRadiance;
-      `);
-  };
-  glass.addEventListener('dispose', () => { map.dispose(); emissiveMap.dispose(); environment.dispose(); });
-  return glass;
+  return { map: texture(day), emissiveMap: texture(night) };
 }
 
 function podium(b: Builder, ring: P2[], bottom: number) {
@@ -147,7 +124,11 @@ export function createWestin(buildings: VBuilding[], groundAt: (x: number, z: nu
   const trim = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   const remaining = buildings.filter(b => b !== base);
   const daylight = { value: 1 };
-  const glass = facade(skylineReflection(remaining, X, Z, ground + (PODIUM + TOP) / 2, groundAt), daylight);
+  const probeY = ground + (PODIUM + TOP) / 2;
+  const skyline = skylineReflection(remaining, X, Z, probeY, groundAt);
+  const { map, emissiveMap } = facadeMaps();
+  const glass = mirroredGlass({ skyline, probeY, daylight, map, emissiveMap });
+  glass.addEventListener('dispose', () => { map.dispose(); emissiveMap.dispose(); skyline.dispose(); });
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(RADIUS, RADIUS, TOP - PODIUM, 64, 1, true), glass);
   shaft.name = 'Westin guest tower and Sun Dial';
   shaft.position.set(X, (TOP + PODIUM) / 2, Z);
