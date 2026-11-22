@@ -1,3 +1,4 @@
+import { westsideName } from '../terrain/westside-path';
 import { figureLooks } from './figure-looks';
 import { hashStr, Line, pointInRing, rng, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
@@ -16,7 +17,6 @@ export function strideAngle(rider: boolean, metres: number) {
   return metres * (rider ? 1.55 : 4.1);
 }
 
-const connector = 'Westside Beltline Connector';
 const carriageways = new Set(['service', 'residential', 'unclassified', 'tertiary', 'secondary', 'primary', 'trunk', 'motorway', 'living_street']);
 
 // Some mapped sidewalks disappear under a building or into asphalt at this board's
@@ -56,7 +56,7 @@ export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean
     if (!old || way.to - way.from > old.to - old.from) selected.set(key, way);
   }
   function select(r: VRoad) {
-    const trail = r.name === connector;
+    const trail = r.name === westsideName;
     if (r.cls !== 'footway' || (!trail && r.sub !== 'sidewalk') || r.pts.length < 2) return;
     // Work only on complete on-board trail pieces. The bridge requires its own deck alignment.
     if (trail && r.pts.some(([x, z]) => x < minX || x > maxX || z < minZ || z > maxZ)) return;
