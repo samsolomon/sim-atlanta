@@ -37,9 +37,10 @@ describe.skipIf(!staged)('Georgia State station study', () => {
       expect(l['gsu-canopy'][0]).toBe('roofed');
       expect(l['gsu-floyd'][0]).toBe('covered');
       expect(l['connector-viaduct'][0]).toBe('open');
-      expect(Math.abs((l['gsu-west-open'][1] as number) - 62)).toBeLessThan(10);
-      expect(Math.abs((l['gsu-canopy'][1] as number) - 73)).toBeLessThan(10);
-      expect(Math.abs((l['gsu-floyd'][1] as number) - 131)).toBeLessThan(10);
+      // Surveyed edges since 2026-11-22 (docs/georgia-state-geometry.md); before that 62 / 73 / 131.
+      expect(Math.abs((l['gsu-west-open'][1] as number) - 69)).toBeLessThan(3);
+      expect(Math.abs((l['gsu-canopy'][1] as number) - 71)).toBeLessThan(3);
+      expect(Math.abs((l['gsu-floyd'][1] as number) - 116)).toBeLessThan(3);
     }
     // The sequence itself, in path order: west portal → canopy → Floyd → viaduct travelling east,
     // and exactly reversed travelling west.
