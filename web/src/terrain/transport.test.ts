@@ -106,3 +106,20 @@ it('keeps the illustrative main line level from the intact east bank across the 
   }
   layer.dispose();
 });
+
+it('samples the actual triangles of a banked bridge tread and only its own road', () => {
+  const bridge = city.terrainTransport!.roads[0];
+  const stacked = { ...bridge, pts: bridge.pts.map(([x, z]) => [x, z + 30] as [number, number]) };
+  const t = createSurfaceTransport({ ...city, terrainTransport: { version: 1, rail: [], roads: [bridge, stacked] } },
+    grid, (x, z) => groundAt(x, z)! + (z - 450) * .6);
+  // Off-centre samples hit opposite triangles near the tilted west abutment.
+  for (const [x, z] of [[806, 448], [806, 452], [811, 450], [811, 454], [846, 456]]) {
+    const h = surfaceY(t.group, x, z);
+    expect(h).toBeDefined();
+    expect(t.deckAt(x, z, bridge)).toBeCloseTo(h!, 5);
+    expect(t.deckAt(x, z, stacked)).toBeNull();
+  }
+  expect(t.deckAt(0, 0, bridge)).toBeNull();
+  expect(t.deckAt(806, 448, { ...bridge, kind: 'ground' })).toBeNull();
+  t.dispose();
+});
