@@ -38,6 +38,7 @@ import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic } from './connector-traffic';
 import { StreetFigures } from './street-figures';
+import { createTrailPlanting } from './trail-planting';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
 import { loadArterials } from './arterials';
@@ -332,6 +333,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (arterials) scene.add(arterials.group);
   const figures = terrain && travellers.length ? new StreetFigures(travellers, terrain.groundAt, low) : undefined;
   if (figures) scene.add(figures.group);
+  const planting = terrain && createTrailPlanting(travellers, terrain.groundAt, low);
+  if (planting) scene.add(planting.mesh);
   const cx = (b.minX + b.maxX) / 2;
   const cz = (b.minZ + b.maxZ) / 2;
 
@@ -495,7 +498,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   let atm: Atmosphere = { sunElev: 40, sunAz: 180, dark: 0, cloud: 0, rain: 0, snow: 0, fog: 0 };
   const wx = { cloud: 0, rain: 0, snow: 0, fog: 0 }; // eased toward the atmosphere's weather
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduceMotion = motionQuery.matches;
   const shadowTarget = new THREE.Vector3(Infinity, 0, Infinity);
   let shadowElev = Infinity;
   let shadowAz = Infinity;
@@ -592,6 +596,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
+    planting?.update(sceneTime, camera, container.clientHeight, motionQuery.matches);
     freight?.update(sceneTime);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
@@ -687,6 +692,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       renderer.domElement.removeEventListener('dblclick', onDbl);
       controls.dispose();
       sun.shadow.dispose();
+      planting?.dispose();
       figures?.dispose();
       freight?.dispose();
       buses.dispose();
