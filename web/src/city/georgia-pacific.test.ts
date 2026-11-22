@@ -78,6 +78,18 @@ it('lights both sides of each terrace from below and keeps the recessed central 
     expect(irradiance(z, 69)).toBeGreaterThan(3 * grille);
     expect(irradiance(z, 69)).toBeGreaterThan(2 * irradiance(z, 106));
   }
+  // At each setback, test the actual mesh foot and the lateral difference between
+  // a pool and the space beside it. A simple vertical color ramp cannot pass this.
+  const position = lights.geometry.getAttribute('position');
+  for (const [wallX, foot] of [[434.3, 66.7], [425.5, 110.7], [416.9, 154.6]]) {
+    const heights = [];
+    for (let i = 0; i < position.count; i++) {
+      if (Math.abs(position.getX(i) - (wallX + 0.18)) < 0.01 && position.getZ(i) > -387.8)
+        heights.push(position.getY(i));
+    }
+    expect(Math.min(...heights)).toBeCloseTo(foot);
+    expect(irradiance(-378.6, foot + 2)).toBeGreaterThan(1.3 * irradiance(-381.7, foot + 2));
+  }
   expect(irradiance(-394, 202)).toBeGreaterThan(3 * grille);
   site.setNight(0);
   expect(lights.visible).toBe(false);
