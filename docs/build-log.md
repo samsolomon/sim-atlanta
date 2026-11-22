@@ -1603,3 +1603,19 @@ At the normal City opening, downtown’s second distinctive roof fits into about
 ### 2026-11-22 — Which side of the stack?
 
 The Corey Tower was already on the board. Its base clears the southern edge by 68.5 m, but City drew its whole 91.4 m height as a round office block. Lidar puts the shaft radius near 5.3 m at the foot and about 4 m at the rim. There’s one bright face. The sign company calls its 25 × 80 ft display north-facing. In the returns, the two edges point the panel about 40° east of north, straight into the curve. The Georgia State tracks swing from nearly edge-on west of the stack to a clear view of the letters on the eastern approach. Cross to the south and the tall white shaft is blank. [Connector daylight](log/ui/corey-tower/connector-day.jpg) · [Eastern tracks at dusk](log/ui/corey-tower/east-rail-dusk.jpg) · [Reverse view](log/ui/corey-tower/reverse-day.jpg) · [Photo references, dimensions and camera positions](corey-tower.md)
+
+### 2026-11-22: A platform to check the train against
+
+The Model Lab can now stop the CQ400 at an island or at two side platforms. Both layouts are built
+from the same platform primitive City uses, at the car's own floor height, with a pale zone on the
+platform beside each of the train's six door pairs.
+
+The edge sits 75 mm from the car side, just inside the federal 3-inch level-boarding limit for
+rapid rail. The panel reports the gap and the step, so a change to the car model that pushed a
+door off its zone, or the body into the platform, would show at a glance. Tests fail on the same
+conditions.
+
+The layouts are illustrative. Only the 4.86 m side-platform track spacing comes from a surveyed
+station (Georgia State). [Notes](model-lab-platforms.md)
+
+![The CQ400 at an illustrative island platform](log/ui/model-lab/2026-11-22-platform-island-side.jpg)
