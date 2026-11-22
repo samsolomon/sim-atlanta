@@ -50,9 +50,12 @@ import { registerStationLine, stationTrack, type StationTrack } from './station-
 import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
+import { createPeachtree191 } from './peachtree-191';
 import { createWestin } from './westin';
+import { createCoreyTower } from './corey';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createGrady } from './grady';
 import { createCongressCenter } from './congress-center';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -183,7 +186,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stationSite = georgiaStateScene(manifest.origin);
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
+  let peachtree: ReturnType<typeof createPeachtree191> = null;
   let westin: ReturnType<typeof createWestin> = null;
+  let grady: ReturnType<typeof createGrady> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
@@ -203,28 +208,37 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const ground = grid;
       await build('terrain', () => {
         const buildings = floyd?.buildings ?? vd.buildings;
-        westin = createWestin(buildings, (x, z) => {
+        const groundAt = (x: number, z: number) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
-        });
-        const remaining = westin?.buildings ?? buildings;
-        const stadium = createStadium(remaining, ground);
-        const afterStadium = stadium?.buildings ?? remaining;
+        };
+        westin = createWestin(buildings, groundAt);
+        peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
+        const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
+        const stack = createCoreyTower(remaining, ground);
+        const stadiumSite = stack?.buildings ?? remaining;
+        const stadium = createStadium(stadiumSite, ground);
+        const afterStadium = stadium?.buildings ?? stadiumSite;
         capitol = createCapitol(afterStadium, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
         });
         const exhibitionSite = capitol?.buildings ?? afterStadium;
         const congressCenter = createCongressCenter(exhibitionSite, ground);
-        const city = { ...vd, buildings: congressCenter?.buildings ?? exhibitionSite,
+        const hospitalSite = congressCenter?.buildings ?? exhibitionSite;
+        grady = createGrady(hospitalSite, ground);
+        const city = { ...vd, buildings: grady?.buildings ?? hospitalSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (westin) world.group.add(westin.group);
+        if (peachtree) world.group.add(peachtree.group);
+        if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
+        if (grady) world.group.add(grady.group);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
@@ -527,7 +541,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     platforms?.setNight(night);
     floyd?.setNight(night);
     westin?.setNight(night);
+    peachtree?.setNight(night);
     capitol?.setNight(night);
+    grady?.setNight(night);
     terrain?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
