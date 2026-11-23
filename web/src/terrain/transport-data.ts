@@ -7,6 +7,8 @@ export interface TransportRun {
   name?: string | null;
   sub?: string;
   pts: P2[];
+  /** Road pavement NAVD88 metres at each vertex of a lidar-profiled structural run. */
+  deckNavd88M?: number[];
   /** Distances at these endpoints on the illustrative westbound freight route. */
   freightS?: [number, number];
 }

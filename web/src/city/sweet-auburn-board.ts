@@ -9,6 +9,8 @@ import { auburnSigns } from './auburn-signs';
 import { oddFellowsFinish } from './odd-fellows';
 import { irwinHouseFinish } from './irwin-houses';
 import { edgewoodFinish } from './edgewood-block';
+import { cityRoadHeight } from './road-height';
+import { auburnGround, auburnTransport, leonardTateWalls } from './sweet-auburn-transport';
 import { northBounds, northSouthJoin, northWestJoin } from './board-footprint';
 
 export function verifyNorth(west: GroundGrid, south: GroundGrid, north: GroundGrid) {
@@ -45,28 +47,28 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   signal.throwIfAborted();
   if (Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2,'0')).join('') !== manifest.sha256)
     throw new Error('Sweet Auburn ground checksum mismatch');
-  const grid = new GroundGrid(manifest, bytes);
-  verifyNorth(west, south, grid);
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees)) throw new Error('Missing Sweet Auburn context');
+  const grid = auburnGround(manifest, bytes);
+  verifyNorth(west, south, grid);
   const ids=new Set(context.buildings.filter(b => (b.id===heritageId || b.id===bigBethelId)
     && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
-  const area = createDowntownTerrain(grid, {...context,buildings:context.buildings.filter(b=>!ids.has(b.id))}, context.trees, {
+  const city = auburnTransport({ ...context, buildings: context.buildings.filter(b=>!ids.has(b.id)) });
+  const area = createDowntownTerrain(grid, city, context.trees, {
     quality, bottomY, join: [northWestJoin, northSouthJoin, ...extraJoins],
     finishFor: b => b.id === wheatStreetId ? wheatStreetTower : oddFellowsFinish(b) ?? edgewoodFinish(b) ?? irwinHouseFinish(b),
   });
   try {
-    const roads = context.roads.filter(r => r.bridge && !r.tunnel).map(r => ({
-      kind: 'bridge' as const, cls: r.cls, name: r.name, sub: r.sub ?? undefined, pts: r.pts,
-    }));
-    const decks = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads, rail: [] } }, grid, area.groundAt);
+    const decks = createSurfaceTransport(city, grid, area.groundAt);
+    const walls = leonardTateWalls(city, new GroundGrid(manifest, bytes), grid);
     const signs=auburnSigns(ids,manifest.vertical.sceneZeroNavd88M);
     const shells=sanctuaryShells(ids,manifest.vertical.sceneZeroNavd88M);
     area.scenery.add(shells.group);
-    area.group.add(decks.group,signs.group);
+    area.group.add(decks.group,signs.group,walls);
     return {
       ...area,
+      connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, decks.deckAt) },
       setNight(n:number) { area.setNight(n); shells.setNight(n); signs.setNight(n); },
-      dispose() { signs.dispose(); shells.dispose(); decks.dispose(); area.dispose(); },
+      dispose() { walls.geometry.dispose(); walls.material.dispose(); signs.dispose(); shells.dispose(); decks.dispose(); area.dispose(); },
     };
   } catch (error) {
     area.dispose();

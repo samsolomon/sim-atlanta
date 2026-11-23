@@ -5,7 +5,7 @@ import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
 import { dividedIvanAllen, roadWidth, type TerrainCity } from './transport-data';
 import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePaths } from './westside-path';
-import { paintConnector } from './connector-paint';
+import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
 
 const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
@@ -85,7 +85,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   }
 
   const roads: PaintRoad[] = [...data.roads.filter(r => !r.bridge && !r.tunnel),
-    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])];
+    ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
   function stroke(r: PaintRoad, width: number, color: string) {

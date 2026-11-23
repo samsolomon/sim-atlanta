@@ -37,7 +37,7 @@ import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { boardPoint, eastBounds, eastJoin, nearEast, nearNorth, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
 import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
-import { ConnectorTraffic } from './connector-traffic';
+import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
@@ -189,7 +189,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
-  let east: ReturnType<typeof createDowntownTerrain> | undefined;
+  let east: (ReturnType<typeof createDowntownTerrain> & { connectorBoard: ConnectorBoard }) | undefined;
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
@@ -463,7 +463,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         busOccupies: buses.occupies.bind(buses),
         roadHeight: cityRoadHeight(vd, terrain.groundAt, transport?.deckAt) }
     : undefined;
-  const traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
+  let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
+  function extendConnectorTraffic() {
+    if (!trafficOptions || !east) return;
+    const clippingPlanes = edges.map(p => p.clone());
+    clippingPlanes[1].constant = east.bounds.maxX;
+    const neighbors = north ? [east.connectorBoard, north.connectorBoard] : [east.connectorBoard];
+    const joined = new ConnectorTraffic({ ...trafficOptions, neighbors, clippingPlanes });
+    traffic?.dispose();
+    traffic = joined;
+    scene.add(joined.group);
+  }
   const corridors = trafficOptions && loadArterials(arterialData, vd).corridors;
   const arterials = trafficOptions && corridors?.length
     ? new ArterialTraffic({ ...trafficOptions, arterials: corridors })
@@ -544,6 +554,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         eastPlinth = undefined;
       }
       north = area;
+      extendConnectorTraffic();
       downtown.openJoin(1);
       king.openJoin(1);
       area.openJoin();
@@ -589,6 +600,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       area.openJoin();
       downtown.openJoin();
       east = area;
+      extendConnectorTraffic();
       void attachEastRail(area).catch(err => { eastRailFailed = true; console.warn('MARTA east of the board unavailable', err); });
       const next = pendingNorthTarget ?? controls.target;
       approachNorth(next.x, next.z);
@@ -940,7 +952,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hasFreight: !!freight,
     hasPeople: !!figures,
     buses,
-    hasTraffic: !!(traffic?.group.children.length || arterials?.group.children.length),
+    get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length); },
     bounds: b,
     quality,
     lookAt(x, z, view) {

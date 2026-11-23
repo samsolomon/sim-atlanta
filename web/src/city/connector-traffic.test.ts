@@ -47,25 +47,30 @@ describe.skipIf(!staged)('directed motorway chains on the staged City board', ()
     }
   });
 
-  it('includes the separate northern crossing, keeps wraps at the map edge and never draws across the off-board gap', () => {
-    for (const dir of ['northbound', 'southbound'] as const) {
-      const north = routes.filter(r => !r.crossing && r.direction === dir);
-      expect(north).toHaveLength(3);
-      for (const r of north) expect(r.line.pts.every(p => p[1] < -740)).toBe(true);
-    }
+  it('keeps every lane inside the mounted board and never spans its two disconnected crossings', () => {
     for (const r of routes) {
-      expect(r.roads.length).toBe(r.line.pts.length - 1);
-      for (const [x,z] of [r.line.pts[0], r.line.pts.at(-1)!]) {
-        const b = city.bounds;
-        expect(Math.min(x-b.minX,b.maxX-x,z-b.minZ,b.maxZ-z)).toBeLessThan(8);
+      expect(r.roads.length).toBe(r.line.pts.length-1);
+      for (const [x,z] of r.line.pts) {
+        expect(x).toBeLessThanOrEqual(city.bounds.maxX+1e-8);
+        expect(z).toBeLessThanOrEqual(city.bounds.maxZ+1e-8);
+        expect(z).toBeGreaterThanOrEqual(city.bounds.minZ-1e-8);
       }
-      expect(Math.max(...r.line.cum.slice(1).map((v, i) => v-r.line.cum[i]))).toBeLessThan(8);
+      if (r.crossing) expect(r.line.pts.every(p=>p[1]>150)).toBe(true);
+      if (r.line.pts.some(p=>p[1]<-950)) expect(r.line.pts.every(p=>p[1]<0)).toBe(true);
     }
   });
 
-  it('never spans a missing southern link', () => {
-    const roads = city.roads.filter(r => r.pts[0].join(',') !== '741.07,570.95');
-    expect(connectorTrafficRoutes({ ...city, roads }).some(r => r.crossing && r.direction === 'northbound')).toBe(false);
+  it('places all seven northern lanes at the surveyed N21 points in each direction', () => {
+    for (const [dir,inner,outer] of [
+      ['northbound',[629.9,-1224.3],[647.2,-1241.9]],
+      ['southbound',[627.1,-1221.5],[609.9,-1204.0]],
+    ] as const) {
+      const paths=routes.filter(r=>!r.crossing && r.direction===dir);
+      for (let i=0;i<7;i++) {
+        const t=(i+.5)/7,x=inner[0]+t*(outer[0]-inner[0]),z=inner[1]+t*(outer[1]-inner[1]);
+        expect(paths.some(r=>r.line.pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<.01))).toBe(true);
+      }
+    }
   });
 });
 
