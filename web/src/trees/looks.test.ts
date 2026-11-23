@@ -29,18 +29,21 @@ describe.each(LOOKS.map(l => [l.species.id, l] as const))('%s rendering options 
   it('keeps leaves in summer and follows its calendar', () => {
     const p = look.palette(doyOf(7, 1), 0);
     expect(p.leaves).toBe(1);
-    // Deciduous trees have no summer carpet; a pine keeps a thin bed of straw all year.
-    expect(p.carpet).toBeLessThanOrEqual(look.species.id === 'loblolly-pine' ? 0.3 : 0);
+    // Deciduous trees have no summer carpet; evergreens (in leaf on New Year's Day) keep a thin one.
+    expect(p.carpet).toBeLessThanOrEqual(look.palette(doyOf(1, 1), 0).leaves === 1 ? 0.3 : 0);
   });
 });
 
 describe('branch masses', () => {
-  it('give every mass, the leader’s top included, at least one cluster and exactly n in all', async () => {
+  it('give exactly n clusters, at least one on the crowning tuft, and one on every mass when n allows', async () => {
     const { crownMasses, massClusters } = await import('./broadleaf');
     for (const look of LOOKS) for (const size of SIZE_CLASSES) for (const q of ['high', 'low'] as const) for (const opt of look.options) {
       const masses = crownMasses(look.habit, size, q, look.species.sizes[size], look.species.id.length);
       const n = opt.units[q];
-      const clusters = massClusters(masses, n, 1, opt.cover ?? 0.62, opt.flat ?? 0);
+      const h = (await import('./broadleaf')).habitFor(look.habit, size);
+      const clusters = massClusters(masses, n, 1, opt.cover ?? 0.62, opt.flat ?? 0, h.clusterWeight);
+      // With at least as many clusters as masses, no mass (and so no limb) is left bare.
+      if (n >= masses.length) for (const m of masses) expect(clusters.some(c => Math.hypot(c.c[0] - m.c[0], c.c[1] - m.c[1], c.c[2] - m.c[2]) <= m.r * 0.51)).toBe(true);
       expect(clusters).toHaveLength(n);
       // Each cluster sits within its mass's reach of some mass centre; the top mass has one near it.
       const top = masses[masses.length - 1];

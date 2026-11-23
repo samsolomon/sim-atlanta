@@ -21,10 +21,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
-import { broadleafForm, crownMasses, envelope, habitFor, massClusters, type Habit } from './broadleaf';
-import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, crownNormals, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
+import { broadleafForm, crownMasses, envelope, habitFor, massClusters, type Habit, type Unit } from './broadleaf';
+import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, blooms, crownNormals, foliageDepth, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
 import { skeletonGeometry, treeDims, type TreePlacement } from './render';
-import { doyOf, hash01, type Foliage, type SizeClass, type Species, type TreeQuality } from './species';
+import { doyOf, hash01, type Foliage, type SizeClass, type Species, type TreeQuality, type V3 } from './species';
 
 export type Technique = 'cards' | 'cored' | 'lobes' | 'stars';
 export type { LeafShape };
@@ -47,12 +47,14 @@ export interface LookOption {
   ink?: InkFoliageMode;
   /** Near leaf tips per outer leaf mass (the ginkgo C4 technique), high detail only, within TIP_CAP and TIP_RANGE_M. */
   tips?: number;
+  /** Flower chips per tree, per tier, spread over the outer clusters (species that bloom). */
+  blooms?: Record<TreeQuality, number>;
   /** One line for Sam: what it is for. */
   note: string;
 }
 
 /** A day's colouring: tone A and tone B, mixed per leaf mass; leaves is the share still on. */
-export interface Palette { leaves: number; a: THREE.Color; b: THREE.Color; carpet: number; carpetColour: THREE.Color; label: string }
+export interface Palette { leaves: number; a: THREE.Color; b: THREE.Color; carpet: number; carpetColour: THREE.Color; label: string; /** Share of flower chips open, 0–1. */ bloom: number }
 
 export interface Look {
   species: Species;
@@ -63,12 +65,23 @@ export interface Look {
   palette(doy: number, offset: number): Palette;
   /** Extra lightness for card options at low detail, measured to match the generic canopy. */
   lowLift?: number;
+  /** Tone B is the sunlit colour: each cluster's tone follows how far it faces up (a pine's
+   *  yellow-green tops over a deeper green underside), not chance. */
+  toneByLight?: boolean;
+  /** Flower or bract colour, and chip size in metres, for species that bloom (palette.bloom). */
+  bloomColour?: string;
+  /** Several bloom colours (crape myrtle): each tree takes one by its seed. */
+  bloomColours?: string[];
+  bloomSizeM?: number;
+  /** While in flower, up to this share of the leaf clusters turn wholly to the bloom colour
+   *  (a crape myrtle's crown covered in trusses), at no triangle cost. */
+  bloomWash?: number;
 }
 
 // ---- calendar ------------------------------------------------------------------------------
 
 /** One dated stage: the crown on that day; days between two keys are interpolated. */
-export interface Key { m: number; d: number; leaves: number; a: string; b: string; carpet?: number; label: string }
+export interface Key { m: number; d: number; leaves: number; a: string; b: string; carpet?: number; bloom?: number; label: string }
 
 /**
  * A year from dated keys, wrapping at New Year. Each species lists its keys with the source for
@@ -90,6 +103,7 @@ export function keyedCalendar(keys: Key[]) {
       a: prev.ca.clone().lerp(next.ca, t),
       b: prev.cb.clone().lerp(next.cb, t),
       carpet,
+      bloom: (prev.bloom ?? 0) + ((next.bloom ?? 0) - (prev.bloom ?? 0)) * t,
       carpetColour: new THREE.Color('#9c8460').lerp(new THREE.Color('#b0804a'), Math.min(1, carpet)),
       label: t < 0.5 ? prev.label : next.label,
     };
@@ -100,15 +114,17 @@ export function keyedCalendar(keys: Key[]) {
 export const foliageOf = (p: Palette): Foliage => ({
   leaves: p.leaves, colour: p.a.clone().lerp(p.b, 0.35), carpet: p.carpet, carpetColour: p.carpetColour, label: p.label,
 });
+/** The framework's Foliage with a species' bloom colour, for the clump model. */
+const foliageWithBloom = (p: Palette, colour?: string): Foliage => ({ ...foliageOf(p), ...(colour && p.bloom > 0 ? { bloom: { colour: new THREE.Color(colour), share: p.bloom * 0.5 } } : {}) });
 
 /** A broadleaf Species from a habit and a palette; the clump model reuses the look's skeleton. */
-export function broadleafSpecies(s: Omit<Species, 'form' | 'foliage' | 'leaf'> & { habit: Habit; palette: Look['palette']; leaf?: Species['leaf'] }): Species {
-  const { habit, palette, ...rest } = s;
+export function broadleafSpecies(s: Omit<Species, 'form' | 'foliage' | 'leaf'> & { habit: Habit; palette: Look['palette']; leaf?: Species['leaf']; bloomColour?: string }): Species {
+  const { habit, palette, bloomColour, ...rest } = s;
   return {
     leaf: 'clump',
     ...rest,
     form: (size, q, d) => broadleafForm(habit, size, q, d, s.clumps[q], s.id.length),
-    foliage: (doy, offset) => foliageOf(palette(doy, offset)),
+    foliage: (doy, offset) => foliageWithBloom(palette(doy, offset), bloomColour),
   };
 }
 
@@ -118,14 +134,45 @@ const outwardOf = (e: ReturnType<typeof envelope>) => (p: THREE.Vector3) => {
   return new THREE.Vector3(p.x / e.R ** 2, (p.y - e.yc) / half ** 2, p.z / e.R ** 2);
 };
 
+/**
+ * Pull clusters in so each one's outer edge stays within the crown envelope plus a small
+ * ragged margin: no tuft floats outside the species' outline.
+ */
+function inEnvelope(units: Unit[], e: ReturnType<typeof envelope>, margin = 1.06) {
+  return units.map(u => {
+    const n = new THREE.Vector3(...u.n);
+    const edge = new THREE.Vector3(...u.c).addScaledVector(n, u.r);
+    const metric = (p: THREE.Vector3) => Math.hypot(p.x / e.R, (p.y - e.yc) / (p.y > e.yc ? e.above : e.below), p.z / e.R);
+    const mEdge = metric(edge);
+    if (mEdge <= margin) return u;
+    // Move the centre in until its edge (centre + n·r) sits on the margin.
+    const centre = new THREE.Vector3(...u.c), mC = metric(centre), rN = Math.max(0, mEdge - mC);
+    const k = Math.max(0, margin - rN) / Math.max(1e-6, mC);
+    const c: V3 = [u.c[0] * k, e.yc + (u.c[1] - e.yc) * k, u.c[2] * k];
+    return { ...u, c };
+  });
+}
+
+/** An option's leaf clusters, metres: shared by the foliage and its near leaf tips. */
+function lookClusters(look: Look, opt: LookOption, size: SizeClass, q: TreeQuality, n: number, seed: number) {
+  const d = look.species.sizes[size];
+  const h = habitFor(look.habit, size);
+  const masses = crownMasses(look.habit, size, q, d, look.species.id.length);
+  return inEnvelope(massClusters(masses, n, seed, opt.cover ?? 0.62, opt.flat ?? 0, h.clusterWeight), envelope(h, d))
+    // Light-led tone stays below 1, so the bloom wash only takes the sunniest clusters as the
+    // bloom grows, never all of them at its first flower.
+    .map(u => look.toneByLight ? { ...u, tone: Math.min(0.97, Math.max(0, (u.depth - 0.45) / 0.5)) } : u);
+}
+
 /** Foliage for one option and size class, in unit space (crown radius 1, height 1). */
 export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: TreeQuality) {
   const d = look.species.sizes[size];
   const e = envelope(habitFor(look.habit, size), d);
   const seed = look.species.id.length * 1000 + size.length * 10 + (q === 'high' ? 1 : 2);
   const masses = crownMasses(look.habit, size, q, d, look.species.id.length);
-  const clusters = massClusters(masses, opt.units[q], seed, opt.cover ?? 0.62, opt.flat ?? 0);
+  const clusters = lookClusters(look, opt, size, q, opt.units[q], seed);
   const b = new FoliageBuilder();
+  if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {
@@ -137,7 +184,8 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
     // One dark faceted core per mass, cut once the crown is below about 60% in leaf. It keeps
     // its own facet normals: crown normals would light it like the surface.
     const cores = new FoliageBuilder();
-    lobes(cores, masses.map(m => ({ ...m, r: m.r * 0.48, depth: 0.05 })), seed + 3, 3);
+    // Clamped like the cards, so no core shows outside the pulled-in silhouette.
+    lobes(cores, inEnvelope(masses.map(m => ({ ...m, r: m.r * 0.48, depth: 0.05 })), e), seed + 3, 3);
     const both = mergeGeometries([g, cores.geometry()])!;
     g.dispose();
     g = both;
@@ -151,9 +199,8 @@ export function lookTips(look: Look, opt: LookOption, size: SizeClass, q: TreeQu
   const d = look.species.sizes[size];
   const e = envelope(habitFor(look.habit, size), d);
   const seed = look.species.id.length * 1000 + size.length * 10 + 1;
-  const masses = crownMasses(look.habit, size, q, d, look.species.id.length);
   const b = new FoliageBuilder();
-  leafTips(b, massClusters(masses, opt.units.high, seed, opt.cover ?? 0.62, opt.flat ?? 0), look.leaf, opt.tips, seed + 5);
+  leafTips(b, lookClusters(look, opt, size, q, opt.units.high, seed), look.leaf, opt.tips, seed + 5);
   return crownNormals(b.geometry(), outwardOf(e)).scale(1 / e.R, 1 / e.H, 1 / e.R);
 }
 
@@ -189,9 +236,10 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const textured = opt.technique === 'cards' || opt.technique === 'cored';
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
-    ? twoToneFoliage({ flatShading: true, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
-    : twoToneFoliage({ map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
+    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
+    : twoToneFoliage({ bloomWash: look.bloomWash, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
+  const depthMat = foliageDepth(leafMat);
   // Foliage meshes registered with the ink's foliage mask: outlined at the crown's silhouette only.
   const unregister: (() => void)[] = [];
   const inked = (mesh: THREE.InstancedMesh) => { if (opt.ink) unregister.push(inkFoliageMesh(mesh, opt.ink)); return mesh; };
@@ -217,7 +265,12 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   /** Trees (indices into `trees`) carrying leaf tips now: nearest first, within range, capped. */
   let tipped: number[] = [];
   let pal = new Map<(typeof trees)[number], Palette>();
-  const foliageSets: { mesh: THREE.InstancedMesh; members: typeof trees; toneB: THREE.InstancedBufferAttribute; leaves: THREE.InstancedBufferAttribute }[] = [];
+  const foliageSets: { mesh: THREE.InstancedMesh; members: typeof trees; toneB: THREE.InstancedBufferAttribute; leaves: THREE.InstancedBufferAttribute; bloom: THREE.InstancedBufferAttribute }[] = [];
+  const blooming = !!(look.bloomColour || look.bloomColours);
+  // Each tree's bloom colour, fixed by its seed: worked out once, not on every season change.
+  const bloomColours = new Map(trees.map(t => [t, new THREE.Color(look.bloomColours
+    ? look.bloomColours[Math.floor(hash01(t.seed, 13) * look.bloomColours.length)] : look.bloomColour ?? '#ffffff')]));
+  const bloomOf = (t: (typeof trees)[number]) => bloomColours.get(t)!;
   for (const size of new Set(trees.map(t => t.size))) {
     const members = trees.filter(t => t.size === size);
     const limbs = add(skeletonGeometry(look.species, size, quality), bark, members.length, `${size} limbs`);
@@ -227,11 +280,15 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
     const leaves = new THREE.InstancedBufferAttribute(new Float32Array(members.length), 1);
     g.setAttribute('aToneB', toneB);
     g.setAttribute('aLeaves', leaves);
+    const bloom = new THREE.InstancedBufferAttribute(new Float32Array(members.length * 4), 4);
+    g.setAttribute('aBloom', bloom);
     const mesh = inked(add(g, leafMat, members.length, `${size} foliage ${opt.id}`));
+    // Shadows from the same leaves that are drawn: no shadows from dropped leaves or closed flowers.
+    mesh.customDepthMaterial = depthMat;
     // Cards don't receive shadows: self-shadowing blotched the crown interior dark.
     if (textured) mesh.receiveShadow = false;
     members.forEach((t, i) => { mesh.setMatrixAt(i, place(t)); mesh.setColorAt(i, new THREE.Color(1, 1, 1)); });
-    foliageSets.push({ mesh, members, toneB, leaves });
+    foliageSets.push({ mesh, members, toneB, leaves, bloom });
     const tg = lookTips(look, opt, size, quality);
     if (tg) {
       const slots = Math.min(TIP_CAP, members.length);
@@ -282,8 +339,11 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
       set.mesh.setColorAt(i, a);
       set.toneB.setXYZ(i, b.r, b.g, b.b);
       set.leaves.setX(i, p.leaves);
-      set.mesh.setMatrixAt(i, p.leaves <= 0.02 ? zero : place(t));
-      set.toneB.needsUpdate = set.leaves.needsUpdate = true;
+      const bc = bloomOf(t);
+      set.bloom.setXYZW(i, bc.r, bc.g, bc.b, blooming ? p.bloom : 0);
+      // Hidden only when bare and not in flower (dogwood bracts open before the leaves).
+      set.mesh.setMatrixAt(i, p.leaves <= 0.02 && !(blooming && p.bloom > 0.01) ? zero : place(t));
+      set.toneB.needsUpdate = set.leaves.needsUpdate = set.bloom.needsUpdate = true;
     });
     if (carpet) trees.forEach((t, i) => {
       const p = pal.get(t)!;
@@ -320,7 +380,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
       group.removeFromParent();
       unregister.forEach(u => u());
       for (const mesh of meshes) { mesh.geometry.dispose(); mesh.dispose(); }
-      for (const mat of [bark, leafMat, tipMat, carpetMat]) mat.dispose();
+      for (const mat of [bark, leafMat, tipMat, carpetMat, depthMat]) mat.dispose();
     },
   };
 }

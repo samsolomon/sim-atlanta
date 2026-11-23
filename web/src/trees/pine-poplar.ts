@@ -13,16 +13,19 @@ import type { Habit } from './broadleaf';
 
 const pineHabit: Habit = {
   // "Loosely pyramidal in youth … a dense oval crown at maturity as it loses its lower branches"
-  // (NC State); open, irregular, fine (UF ST478). GT's median crown base is a third of height.
-  trunkTop: 0.96, crownBase: 0.4, widest: 0.42,
-  limbs: { high: 4, low: 3 }, limbAngle: 0.35, limbFrom: [0.45, 0.8], limbReach: 0.8,
-  ragged: 0.25, bark: '#7d5c48', barkDark: '#5f4a3d',
-  // Tufts at the branch ends with sky between them.
-  mass: { r: 0.85, low: -0.75, high: 0.5 },
+  // (NC State); open, irregular, fine (UF ST478). Sam's references: a tall clean trunk to about
+  // 40%, then long, slightly ascending, fairly bare limbs carrying separate needle clumps at their
+  // ends, in loose horizontal tiers with sky between, fuller at the top.
+  trunkTop: 0.96, crownBase: 0.4, widest: 0.5,
+  limbs: { high: 4, low: 3 }, limbAngle: 0.22, limbFrom: [0.42, 0.85], limbReach: 0.85,
+  // Reversed on purpose: dark limbs against the sky, the trunk in red-brown plates (NC State).
+  ragged: 0.2, bark: '#4e4038', barkDark: '#6e5242',
+  mass: { r: 0.42, low: -0.8, high: 0.72 },
+  tiers: { high: [3, 3, 3, 2], low: [2, 2, 2] },
   bySize: {
-    sapling: { crownBase: 0.08, widest: 0.25, limbAngle: 0.25, limbFrom: [0.15, 0.6], mass: { r: 0.6, low: -0.85, high: 0.4 } },
-    young: { crownBase: 0.2, widest: 0.32, limbFrom: [0.25, 0.7], mass: { r: 0.58, low: -0.75, high: 0.45 } },
-    specimen: { crownBase: 0.55, widest: 0.55, limbAngle: 0.25, limbFrom: [0.58, 0.85], ragged: 0.3 },
+    sapling: { crownBase: 0.08, widest: 0.25, limbAngle: 0.2, mass: { r: 0.5, low: -0.85, high: 0.6 }, tiers: { high: [3, 3, 2, 1], low: [2, 2, 1] } },
+    young: { crownBase: 0.22, widest: 0.32, mass: { r: 0.46, low: -0.85, high: 0.65 } },
+    specimen: { crownBase: 0.5, widest: 0.55, limbAngle: 0.18, ragged: 0.25, tiers: { high: [3, 3, 3, 3], low: [2, 2, 2] } },
   },
 };
 
@@ -31,21 +34,21 @@ const pineHabit: Habit = {
 // winter" (UF); pollen from late Feb or early Mar (Georgia Forestry Commission); new candles in
 // spring (inferred). The carpet is pine straw.
 const pinePalette = keyedCalendar([
-  { m: 1, d: 10, leaves: 1, a: '#405f42', b: '#5a6a4c', carpet: 0.55, label: 'winter green, dulled' },
-  { m: 3, d: 5, leaves: 1, a: '#3e6442', b: '#a09a52', carpet: 0.4, label: 'pollen, yellow-green candles' },
-  { m: 4, d: 15, leaves: 1, a: '#3c6842', b: '#86a868', carpet: 0.3, label: 'new candles' },
-  { m: 6, d: 1, leaves: 1, a: '#467250', b: '#567e5c', carpet: 0.25, label: 'summer green' },
-  { m: 9, d: 25, leaves: 1, a: '#467250', b: '#5a8060', carpet: 0.25, label: 'summer green' },
-  { m: 11, d: 5, leaves: 0.93, a: '#43704a', b: '#7d6f48', carpet: 0.6, label: 'inner needles orange-brown, shedding' },
-  { m: 12, d: 10, leaves: 1, a: '#3e6242', b: '#7a7048', carpet: 0.75, label: 'green over fresh pine straw' },
+  { m: 1, d: 10, leaves: 1, a: '#3c5e42', b: '#6a7a4c', carpet: 0.55, label: 'winter green, dulled' },
+  { m: 3, d: 5, leaves: 1, a: '#3c6244', b: '#a8a052', carpet: 0.4, label: 'pollen, yellow-green candles' },
+  { m: 4, d: 15, leaves: 1, a: '#3c6444', b: '#94b060', carpet: 0.3, label: 'new candles' },
+  { m: 6, d: 1, leaves: 1, a: '#345a3c', b: '#64844a', carpet: 0.25, label: 'summer green' },
+  { m: 9, d: 25, leaves: 1, a: '#345a3c', b: '#62824a', carpet: 0.25, label: 'summer green' },
+  { m: 11, d: 5, leaves: 0.93, a: '#7a6a46', b: '#7c9a50', carpet: 0.6, label: 'inner needles orange-brown, shedding' },
+  { m: 12, d: 10, leaves: 1, a: '#3c6042', b: '#748a4c', carpet: 0.75, label: 'green over fresh pine straw' },
 ]);
 
 const PINE_OPTIONS: LookOption[] = [
-  { id: 'A', label: 'Needle-tuft cards', technique: 'cards', ink: 2, tips: 3, flat: 0.55, units: { high: 26, low: 12 }, cover: 0.72,
-    note: 'Leaf cards painted with needle bursts, gathered into flat tufts at the branch ends with sky between them, on a long clear trunk; warm silhouette ink and needle tips close up (the ginkgo C4 technique).' },
-  { id: 'B', label: 'Needle stars', technique: 'stars', ink: 2, flat: 0.55, units: { high: 17, low: 12 }, cover: 1.0,
+  { id: 'A', label: 'Tiered needle tufts', technique: 'cards', ink: 2, tips: 3, flat: 0.65, units: { high: 22, low: 10 }, cover: 0.85,
+    note: 'Separate needle tufts at the ends of long, slightly ascending limbs, in four loose horizontal tiers with sky and dark limbs between them, fuller at the top; yellow-green on sunlit tops over a deeper green; warm silhouette ink and needle tips close up (the ginkgo C4 technique).' },
+  { id: 'B', label: 'Needle stars', technique: 'stars', ink: 2, flat: 0.65, units: { high: 15, low: 10 }, cover: 1.1,
     note: 'Each tuft is a star of six thin needle triangles: geometric, crisp at a distance, no texture.' },
-  { id: 'C', label: 'Tiered pads', technique: 'lobes', facets: 4, squash: 0.6, flat: 0.8, units: { high: 12, low: 9 }, cover: 0.95,
+  { id: 'C', label: 'Tiered pads', technique: 'lobes', facets: 4, squash: 0.55, flat: 0.85, units: { high: 13, low: 9 }, cover: 1.0,
     note: 'Flattened faceted pads at the branch ends, every facet inked: the storybook pine, for comparison.' },
 ];
 
@@ -73,7 +76,7 @@ export const loblollyPine = broadleafSpecies({
   habit: pineHabit,
   palette: pinePalette,
 });
-export const loblollyPineLook: Look = { species: loblollyPine, habit: pineHabit, leaf: 'needles', options: PINE_OPTIONS, palette: pinePalette };
+export const loblollyPineLook: Look = { species: loblollyPine, habit: pineHabit, leaf: 'needles', options: PINE_OPTIONS, palette: pinePalette, toneByLight: true };
 
 // ---- tulip poplar --------------------------------------------------------------------------
 
@@ -138,4 +141,4 @@ export const tulipPoplar = broadleafSpecies({
   habit: poplarHabit,
   palette: poplarPalette,
 });
-export const tulipPoplarLook: Look = { species: tulipPoplar, habit: poplarHabit, leaf: 'tulip', options: POPLAR_OPTIONS, palette: poplarPalette, lowLift: -0.03 };
+export const tulipPoplarLook: Look = { species: tulipPoplar, habit: poplarHabit, leaf: 'tulip', options: POPLAR_OPTIONS, palette: poplarPalette, lowLift: -0.025 };

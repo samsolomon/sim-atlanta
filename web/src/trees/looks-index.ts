@@ -3,5 +3,6 @@ import type { Look } from './looks';
 import { waterOakLook, willowOakLook } from './oaks';
 import { loblollyPineLook, tulipPoplarLook } from './pine-poplar';
 import { redMapleLook, sweetgumLook } from './maple-sweetgum';
+import { crapeMyrtleLook, southernMagnoliaLook } from './magnolia-crape';
 
-export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook];
+export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook];

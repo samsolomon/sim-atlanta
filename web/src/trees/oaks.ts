@@ -75,7 +75,7 @@ export const willowOak = broadleafSpecies({
   habit: willowHabit,
   palette: willowPalette,
 });
-export const willowOakLook: Look = { species: willowOak, habit: willowHabit, leaf: 'narrow', options: OAK_OPTIONS, palette: willowPalette, lowLift: 0.04 };
+export const willowOakLook: Look = { species: willowOak, habit: willowHabit, leaf: 'narrow', options: OAK_OPTIONS, palette: willowPalette };
 
 // ---- water oak -----------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ export const waterOak = broadleafSpecies({
   palette: waterPalette,
 });
 export const waterOakLook: Look = {
-  species: waterOak, habit: waterHabit, leaf: 'spatulate', palette: waterPalette, lowLift: -0.025,
+  species: waterOak, habit: waterHabit, leaf: 'spatulate', palette: waterPalette,
   // Denser and darker than the willow oak, with bigger, lumpier masses and coarser leaves.
   options: OAK_OPTIONS.map(o => ({ ...o, cover: (o.cover ?? 0.62) * 1.08 })),
 };
