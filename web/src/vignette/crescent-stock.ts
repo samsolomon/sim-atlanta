@@ -74,11 +74,11 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     lamps = new Builder();
   if (unit === 'charger' || unit === 'chargerPhase6') {
     chargerBody(b, lamps, leading, trailing, unit === 'charger' ? 'phase7' : 'phase6');
-    return finish(b, windows, lamps);
+    return finishStockGeometry(b, windows, lamps);
   }
   if (unit === 'airoCoach') {
     airoCoach(b, windows, lamps, trailing);
-    return finish(b, windows, lamps);
+    return finishStockGeometry(b, windows, lamps);
   }
   const { length, trucks } = dimensions(unit);
   const end = length / 2 - 0.32;
@@ -316,11 +316,11 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     }
     if (trailing) for (const x of [-1.08, 1.08]) lamps.box(0.19, 0.19, 0.06, x, 3.22, -end - 0.045, '#fa2924');
   }
-  return finish(b, windows, lamps);
+  return finishStockGeometry(b, windows, lamps);
 }
 
 /** Merges glazing and lamps after the body and tags them for the night shader. */
-function finish(b: Builder, windows: Builder, lamps: Builder) {
+export function finishStockGeometry(b: Builder, windows: Builder, lamps: Builder) {
   const baseCount = b.col.length / 3,
     windowCount = windows.col.length / 3;
   b.pos.push(...windows.pos, ...lamps.pos);

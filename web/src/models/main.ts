@@ -10,6 +10,7 @@ import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type Ma
 import { gradeShader } from '../vignette/grade';
 import { busGeometry, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
+import { s70Geometry } from '../vignette/streetcar';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { figureLooks } from '../city/figure-looks';
@@ -64,6 +65,7 @@ let line: MartaLine = 'gold';
 const models = {
   cq400: 'Stadler CQ400',
   xn40: 'New Flyer Xcelsior XN40',
+  s70: 'Siemens S70 streetcar',
   cm44ac: 'GE/Wabtec CM44AC',
   ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
@@ -81,7 +83,7 @@ const SPECIES_NOTES: Record<string, string> = {
 };
 type Model = keyof typeof models;
 const requested = new URLSearchParams(location.search).get('v');
-const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400' };
+const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400', streetcar: 's70' };
 let model: Model = requested && Object.hasOwn(models, requested)
   ? requested as Model : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
 function isPassengerUnit(id: Model): id is keyof typeof stockNames {
@@ -366,7 +368,7 @@ function build() {
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = (model === 'cq400' || model === 'cm44ac' || passenger);
+  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 's70' || passenger);
   longTrack.visible = model === 'crescent';
   if (longTrack.visible) track.visible = false;
   ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
@@ -407,6 +409,20 @@ function build() {
     const link = document.createElement('a');
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/crescent-stock.md';
     link.textContent = 'Equipment notes and reference photos';
+    blurb.append(link);
+    return;
+  }
+  if (model === 's70') {
+    const mesh = new THREE.Mesh(s70Geometry(), passengerMaterial(night));
+    mesh.position.y = .125;
+    mesh.castShadow = mesh.receiveShadow = true;
+    scene.add(mesh);
+    cars = [mesh];
+    const blurb = document.getElementById('blurb')!;
+    blurb.textContent = 'Atlanta Streetcar car in its royal-blue livery, cab A leading. Three body sections, four double doors a side. ';
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/atlanta-streetcar.md';
+    link.textContent = 'Dimensions and reference photos';
     blurb.append(link);
     return;
   }
@@ -654,7 +670,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
@@ -667,7 +683,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
