@@ -45,7 +45,7 @@ export function ponceDeLeon(shell: Shell) {
       shell.prism(disc(x, z, .38), shell.base, BASE - .3, terra, terra);
     }
     const at = (t: number, y: number) => [e.x + e.tx * t + e.nx * .4, y, e.z + e.tz * t + e.nz * .4];
-    shell.lights.quad(at(.5, 1), at(e.length - .5, 1), at(e.length - .5, 6.4), at(.5, 6.4), '#8f8a7c');
+    shell.lights.quad(at(.5, Math.max(1, shell.base + 1)), at(e.length - .5, Math.max(1, shell.base + 1)), at(e.length - .5, 6.4), at(.5, 6.4), '#8f8a7c');
   }
 
   // Stacked semicircular iron balconies where the curve meets each tower.
@@ -82,7 +82,7 @@ export function ponceDeLeon(shell: Shell) {
       }
     }
     shell.prism(slab, BELV - 1.6, BELV - .9, terra, terra);
-    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, peak = sites.ponce.heightM;
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, peak = Math.max(sites.ponce.heightM, BELV + 1);
     const roof: P2[] = [[x0 - 1.3, z0 - 1.3], [x1 + 1.3, z0 - 1.3], [x1 + 1.3, z1 + 1.3], [x0 - 1.3, z1 + 1.3]];
     roof.forEach(([x, z], i) => { const [a, b] = roof[(i + 1) % 4]; shell.body.tri([x, BELV - .9, z], [a, BELV - .9, b], [cx, peak, cz], green); });
   }
