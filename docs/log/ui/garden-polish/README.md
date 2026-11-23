@@ -29,4 +29,4 @@ It inherits the dark mounded soil around the ginkgo and the rounded shrubs along
 - [Flower bed](bed.jpg) · [hedges](hedge.jpg)
 - [Ground cover swatches by day, high and low](ground-day.jpg) · [at night](ground-night.jpg): `/models.html?v=ground`
 
-The API is unchanged apart from new options (`edge` on `flowerBed`) and the new `GroundCover`, `drapeRing` and exported `clump`. Publishing needs a web rebuild only.
+Ground-cover colours are authored in sRGB and converted to linear, like every hex colour in City. Patches sit 2 cm above the ground with a polygon offset, so they don't z-fight at distance. The API is unchanged apart from new options (`edge` on `flowerBed`) and the new `GroundCover`, `drapeRing` and exported `clump`. Publishing needs a web rebuild only.

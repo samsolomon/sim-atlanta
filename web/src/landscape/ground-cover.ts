@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { P2 } from '../vignette/geom';
-import { drapeRing, type Ground, type Quality } from './primitives';
+import { drapeRing, g0, type Ground, type Quality } from './primitives';
 
 /**
  * "Pocket nature" ground covers: a small set of draped ground materials with
@@ -24,8 +24,8 @@ export class GroundCover {
   /** Drapes a patch 2 cm above the ground, exactly to the ring, subdivided to 1 m (2 m on low). */
   patch(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number } = {}) {
     const k = COVERS.indexOf(cover), lift = o.lift ?? .02;
-    let last = 0;
-    const y = (x: number, z: number) => { const v = ground(x, z); if (v !== null) last = v; return last + lift; };
+    // Off-board samples reuse the sampler's last valid height (never 0, which in City is 30 m off).
+    const y = (x: number, z: number) => g0(ground, x, z) + lift;
     drapeRing(ring, o.quality === 'low' ? 2 : 1, y, (a, b, c) => { this.pos.push(...a, ...b, ...c); this.kind.push(k, k, k); });
   }
 
@@ -37,7 +37,8 @@ export class GroundCover {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
     geometry.setAttribute('aCover', new THREE.Float32BufferAttribute(this.kind, 1));
     geometry.computeVertexNormals();
-    const material = new THREE.MeshLambertMaterial({ color: '#ffffff' });
+    // Pulled toward the camera in depth, so a 2 cm drape never z-fights the terrain at distance.
+    const material = new THREE.MeshLambertMaterial({ color: '#ffffff', polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
     material.onBeforeCompile = shader => {
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nattribute float aCover;\nvarying float vCover;\nvarying vec3 vGround;')
@@ -57,7 +58,7 @@ float gn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
   float k = floor(vCover + .5);
   vec3 c;
   if (k < .5) {        // mown turf: soft mow stripes and blade speckle
-    c = vec3(.47, .6, .3) * (.95 + .07 * step(.5, fract(p.x / 2.2 + p.y * .06)));
+    c = vec3(.55, .63, .38) * (.95 + .07 * step(.5, fract(p.x / 2.2 + p.y * .06)));
     c *= mix(1., .9 + .2 * gh(floor(p * 12.)), fine);
   } else if (k < 1.5) { // longer meadow grass: clumpy, a little straw in it
     float m = gn(p * 1.4);
@@ -75,7 +76,8 @@ float gn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
     c = h < .4 ? vec3(.52, .34, .2) : h < .75 ? vec3(.6, .47, .26) : vec3(.4, .3, .2);
     c = mix(vec3(.5, .38, .23), c, fine * .8) * (.92 + .12 * gn(p * 1.3));
   }
-  diffuseColor.rgb = c;
+  // The constants are sRGB, like the hex colours elsewhere; the lighting works in linear.
+  diffuseColor.rgb = pow(c, vec3(2.2));
 }`);
     };
     const mesh = new THREE.Mesh(geometry, material);

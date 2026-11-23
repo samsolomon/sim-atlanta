@@ -21,7 +21,7 @@ import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 export type Ground = (x: number, z: number) => number | null;
 export type Quality = 'high' | 'low';
 
-const STONE = '#a29c90', CAP = '#bdb7ab', CURB = '#b6b0a4', MULCH = '#5b4535';
+const STONE = '#a29c90', CAP = '#bdb7ab', CURB = '#b6b0a4';
 const LEAF = ['#4d6b3a', '#5b7a44', '#45613a', '#628048'];
 const CLIPPED = '#4a6838';
 
@@ -125,12 +125,15 @@ function blooms(b: Builder, x: number, y: number, z: number, count: number, colo
   }
 }
 
+// One shared unit icosahedron (already non-indexed) for every shrub lump.
+const ICOSA = new THREE.IcosahedronGeometry(1, 0);
+
 /** A rounded shrub mass: a few jittered icosahedra with leafy per-face colour. */
 function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, height: number, color: string, r: () => number, lumps: number) {
   for (let k = 0; k < lumps; k++) {
     const a = r() * Math.PI * 2, d = k ? radius * (.35 + r() * .3) : 0;
     const rad = radius * (k ? .6 + r() * .25 : .85), cx = x + Math.cos(a) * d, cz = z + Math.sin(a) * d;
-    const g = new THREE.IcosahedronGeometry(1, 0).toNonIndexed(), pos = g.getAttribute('position');
+    const pos = ICOSA.getAttribute('position');
     // Jitter shared corners identically, so faces stay closed.
     const jitter = (vx: number, vy: number, vz: number) => {
       const h = Math.sin(vx * 12.9 + vy * 78.2 + vz * 37.7 + k * 9.1) * 43758.5;
@@ -146,7 +149,6 @@ function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, 
       }
       b.tri(tri[0], tri[1], tri[2], c);
     }
-    g.dispose();
   }
 }
 
@@ -173,15 +175,16 @@ export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) =>
 // Off-board or in a hole, a sampler returns null. Reuse its last valid height rather than 0,
 // which in City's frame can be 30 m away from the real ground.
 const lastValid = new WeakMap<Ground, number>();
-const g0 = (ground: Ground, x: number, z: number) => {
+export const g0 = (ground: Ground, x: number, z: number) => {
   const y = ground(x, z);
   if (y !== null) { lastValid.set(ground, y); return y; }
   return lastValid.get(ground) ?? 0;
 };
 
 /**
- * Planting bed: a curbed edge, mulch draped on the ground and a low fill of
- * flower clumps in the season's colours, with shrubs at the back if asked.
+ * Planting bed: dark, crumbly soil, slightly mounded (`mound`, 0.12 m by default), behind a
+ * clean spade-cut edge (or a stone curb with `edge: 'stone'` or a `curb` height), filled with
+ * blade tufts topped by blooms in drifts of two or three of the season's colours.
  */
 export function flowerBed(b: Builder, ring: P2[], ground: Ground,
   o: { doy: number; quality?: Quality; curb?: number; density?: number; seed?: string; mound?: number; flowers?: number; edge?: 'spade' | 'stone' }) {
@@ -230,7 +233,7 @@ export function hedge(b: Builder, line: P2[], ground: Ground, o: { height?: numb
   const r = rng(hashStr(o.seed ?? line.map(p => p.join(',')).join(';')));
   if (o.clipped ?? true) {
     // Clipped box with a soft, slightly irregular top: sides, chamfered shoulders and a crown.
-    const pts = along(line, quality === 'low' ? 2 : 1), hw = width / 2, sh = Math.min(.18, height * .2);
+    const pts = along(line, quality === 'low' ? 2 : 1), hw = width / 2, sh = Math.min(.18, height * .2, width * .4);
     const tops = pts.map(() => (r() - .5) * .08);
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i - 1], q = pts[i];
