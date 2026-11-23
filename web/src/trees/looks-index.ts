@@ -5,5 +5,6 @@ import { loblollyPineLook, tulipPoplarLook } from './pine-poplar';
 import { redMapleLook, sweetgumLook } from './maple-sweetgum';
 import { crapeMyrtleLook, southernMagnoliaLook } from './magnolia-crape';
 import { japaneseMapleLook } from './japanese-maple';
+import { americanElmLook, floweringDogwoodLook } from './elm-dogwood';
 
-export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook, japaneseMapleLook];
+export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook, americanElmLook, floweringDogwoodLook, japaneseMapleLook];

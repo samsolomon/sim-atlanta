@@ -83,6 +83,8 @@ export interface Look {
   /** While in flower, up to this share of the leaf clusters turn wholly to the bloom colour
    *  (a crape myrtle's crown covered in trusses), at no triangle cost. */
   bloomWash?: number;
+  /** How far blossom escapes the crown's interior shade, 0–1 (0: shaded like the leaves). */
+  bloomLift?: number;
 }
 
 // ---- calendar ------------------------------------------------------------------------------
@@ -229,7 +231,7 @@ export function lookTriangles(look: Look, opt: LookOption, size: SizeClass, q: T
 
 /** Trees of one species drawn with one option; same interface as the ginkgo variants. */
 export function createLook(placements: TreePlacement[], look: Look, optionId: string, quality: TreeQuality,
-  groundAt: (x: number, z: number) => number | null) {
+  groundAt: (x: number, z: number) => number | null, { carpet: withCarpet = true }: { carpet?: boolean } = {}) {
   const opt = look.options.find(o => o.id === optionId) ?? look.options[0];
   const trees = placements.flatMap(p => {
     const y = groundAt(p.x, p.z);
@@ -243,8 +245,8 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const textured = opt.technique === 'cards' || opt.technique === 'cored';
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
-    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
-    : twoToneFoliage({ bloomWash: look.bloomWash, sheen: opt.sheen, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
+    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
+    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, sheen: opt.sheen, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
   const depthMat = foliageDepth(leafMat);
   // Foliage meshes registered with the ink's foliage mask: outlined at the crown's silhouette only.
@@ -272,6 +274,8 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   /** Trees (indices into `trees`) carrying leaf tips now: nearest first, within range, capped. */
   let tipped: number[] = [];
   let pal = new Map<(typeof trees)[number], Palette>();
+  const limbMeshes: THREE.InstancedMesh[] = [];
+  let far = false, anyBare = false;
   const foliageSets: { mesh: THREE.InstancedMesh; members: typeof trees; toneB: THREE.InstancedBufferAttribute; leaves: THREE.InstancedBufferAttribute; bloom: THREE.InstancedBufferAttribute }[] = [];
   const blooming = !!(look.bloomColour || look.bloomColours);
   // Each tree's bloom colour, fixed by its seed: worked out once, not on every season change.
@@ -283,6 +287,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   for (const size of new Set(trees.map(t => t.size))) {
     const members = trees.filter(t => t.size === size);
     const limbs = add(skeletonGeometry(look.species, size, quality), bark, members.length, `${size} limbs`);
+    limbMeshes.push(limbs);
     members.forEach((t, i) => limbs.setMatrixAt(i, place(t)));
     const g = lookFoliage(look, opt, size, quality);
     const toneB = new THREE.InstancedBufferAttribute(new Float32Array(members.length * 3), 3);
@@ -310,7 +315,10 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
       tipSets.push({ mesh: tm, members, toneB: tB, leaves: tL, slots });
     }
   }
-  const carpet = look.species.carpet ? add(new THREE.CircleGeometry(1, CARPET_SIDES).rotateX(-Math.PI / 2), carpetMat, trees.length, 'carpet') : null;
+  // City can draw one leaf carpet across all species instead ({ carpet: false }).
+  const carpet = look.species.carpet && withCarpet ? add(new THREE.CircleGeometry(1, CARPET_SIDES).rotateX(-Math.PI / 2), carpetMat, trees.length, 'carpet') : null;
+  // Leaf litter is ground cover for the perf report (phone-perf's categories).
+  if (carpet) carpet.userData.perf = 'landscape';
   if (carpet) carpet.castShadow = false;
   const tint = new THREE.Color();
   // Low detail has fewer, bigger cards; where more of the shaded interior shows, the look's
@@ -342,6 +350,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
 
   function setSeason(doy: number) {
     pal = new Map(trees.map(t => [t, paletteOf(t)(doy, (hash01(t.seed, 2) * 2 - 1) * look.species.offsetDays)]));
+    anyBare = false;
     for (const set of foliageSets) set.members.forEach((t, i) => {
       // A small per-tree shift in lightness and hue: no two trees in a row match exactly.
       const { p, a, b } = tones(t);
@@ -351,7 +360,10 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
       const bc = bloomOf(t);
       set.bloom.setXYZW(i, bc.r, bc.g, bc.b, blooming ? p.bloom : 0);
       // Hidden only when bare and not in flower (dogwood bracts open before the leaves).
-      set.mesh.setMatrixAt(i, p.leaves <= 0.02 && !(blooming && p.bloom > 0.01) ? zero : place(t));
+      const hidden = p.leaves <= 0.02 && !(blooming && p.bloom > 0.01);
+      // A thin crown (leafing out or dropping) reads as a haze, not a tree: keep the limbs too.
+      if (p.leaves < 0.5 && !(blooming && p.bloom > 0.3)) anyBare = true;
+      set.mesh.setMatrixAt(i, hidden ? zero : place(t));
       set.toneB.needsUpdate = set.leaves.needsUpdate = set.bloom.needsUpdate = true;
     });
     if (carpet) trees.forEach((t, i) => {
@@ -363,7 +375,11 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
     });
     for (const mesh of meshes) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; }
     writeTips();
+    showLimbs();
   }
+  // Far trees drop their limbs, except while any crown is bare or thin: a far tree in winter
+  // would otherwise vanish.
+  function showLimbs() { for (const mesh of limbMeshes) mesh.visible = !far || anyBare; }
   setSeason(doyOf(7, 1));
   const camPos = new THREE.Vector3(), lastCam = new THREE.Vector3(Infinity, 0, 0);
   return {
@@ -374,7 +390,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
     setSeason,
     /** Leaf tips follow the camera: the TIP_CAP nearest trees within TIP_RANGE_M. */
     update(_dt: number, camera?: THREE.Camera) {
-      if (!tipSets.length || !camera) return;
+      if (!tipSets.length || !camera || far) return;
       camera.getWorldPosition(camPos);
       if (camPos.distanceTo(lastCam) < 1) return;
       lastCam.copy(camPos);
@@ -385,6 +401,17 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
     /** Trees carrying leaf tips right now. */
     tipped: () => tipped.length,
     setNight(_n: number) { /* lit only by the scene: foliage never glows */ },
+    /**
+     * City's detail switch (area.setDetail): far from the camera, drop the limbs, leaf tips and
+     * leaf carpet, keeping only the crowns (phone-perf's farTrees gate, as for the generic trees).
+     * Limbs stay while any crown is bare or thin. No caller yet: the tree-species rollout wires it in.
+     */
+    setDetail({ farTrees }: { farTrees?: boolean }) {
+      far = !!farTrees;
+      showLimbs();
+      for (const set of tipSets) set.mesh.visible = !far;
+      if (carpet) carpet.visible = !far;
+    },
     dispose() {
       group.removeFromParent();
       unregister.forEach(u => u());

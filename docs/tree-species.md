@@ -296,7 +296,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [American elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Flowering dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
 
 **Sam's picks (23 Nov).**
 - Option A for willow oak, water oak, tulip poplar and red maple, and generally for broadleaves.
@@ -619,6 +619,46 @@ The weeping laceleaf mound (about 2 m, cascading to the ground, on Sam's ivy ban
 | Specimen | 6–9.4 | 6–10.2 | 0.2–0.57 | 7.5 / 8 / 0.35 | GT 12–18 in medians 7.5 m by 6.0 m; GT maximums 9.4 m and 10.2 m. No Atlanta champion *A. palmatum* is recorded |
 
 **Proposed placement** (for Sam; nothing is placed): front yards, side yards and traffic islands in Ansley Park and Midtown residential blocks, as a small share of the yard mix (taken from "other broadleaf") and a larger share on the planted islands. Never as street trees. Trees Atlanta's plant inventory has only 23 alive (Candler Park 6, Midtown 2, Ansley 0), because most are private plantings, so the share rests on Sam's walk. City placements would be `illustrative`.
+
+### American elm
+
+`web/src/trees/elm-dogwood.ts`. "Open-grown trees fork 10 to 20 feet (3-6 m) from the ground with several erect limbs forming a wide, arching crown" ([FEIS](https://www.fs.usda.gov/database/feis/plants/tree/ulmame/all.html)), "branches like spreading fountains" (Morton Arboretum). Leaves are rough and matte. Bark is ashy grey and narrowly fissured. The proposal is for City's street mixes to map lacebark elm and zelkova, the elm's street substitutes, to this species (not wired in yet). Both are more common on Atlanta streets than the American elm itself.
+
+**Options:**
+- A · vase of branch-mass cards: 177 / 77, plus 108 in tips.
+- B · cored masses: 179 / 85.
+- C · faceted clusters: 177 / 97.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–6.5 | 1.5–4 | 0.04–0.12 | 5 / 3 / 0.08 | GT under 15 cm DBH: median 6.1 m by 3.3 m |
+| Young | 6–13.6 | 4–8.5 | 0.12–0.3 | 10 / 6.4 / 0.22 | GT 15–30 cm medians |
+| Mature | 15–27.4 | 9.1–21.3 | 0.3–0.91 | 21 / 15 / 0.7 | NC State 18.3–24.4 m by 9.1–18.3 m; UF 21.3–27.4 m by 15.2–21.3 m; GT 30–91 cm medians 18.1–23.2 m by 11.6–17.5 m |
+| Specimen | 24–32 | 20–33.5 | 0.9–1.52 | 30 / 28 / 1.4 | Champions: 80 Palisades Rd, 32.0 × 29.0 m; Doraville, 25.4 × 33.5 m |
+
+**Calendar.** Flowers in February and March before the leaves (NC State, FEIS). Fall colour is "an undistinguished yellow" (NC State). Georgia USA-NPN has only 2 tree-years. A [Norcross state-champion photo](https://commons.wikimedia.org/wiki/File:State_Champion_American_Elm,_Norcross_GA.jpg) on 19 Mar 2026 shows a yellow-green haze, either seeds or first leaves. **Inferred:** full leaf by about 20 Apr, soft yellow about 30 Oct, bare by about 18 Nov.
+
+### Flowering dogwood
+
+`web/src/trees/elm-dogwood.ts`. "Branches on the lower half of the crown grow horizontally, those in the upper half are more upright … a strikingly horizontal impact" ([UF ST185](https://ask.ifas.ufl.edu/publication/ST185/pdf)). The crown is drawn as tiers of flat masses (3, 3 and 2) on near-level limbs. It has one trunk: UF says "typically multi-trunked", but 96% of GT's 339 dogwoods are single-stem.
+
+**Bloom.** The bracts open on bare or barely leafing twigs. In bloom the crown stays present and washes white (`bloomWash` 0.8), with early green between, because the bracts dominate the crown. Georgia USA-NPN has 39 tree-years: open flowers Mar 28 to Apr 9 (medians), full flowering Apr 1–13. The Atlanta Dogwood Festival runs Apr 10–12, 2026, and a [dated Oakland Cemetery photo](https://commons.wikimedia.org/wiki/File:Oakland_Cemetery_dogwood_tree_and_downtown_Atlanta_skyline.jpg) shows full bloom on 29 Mar 2017. Red berries from late September are not drawn.
+
+**Options:**
+- A · layered branch-mass cards: 189 / 109, plus 90 in tips.
+- B · cored layers: 183 / 129.
+- C · faceted layers: 169 / 109.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 1.5–4 | 1–4 | 0.03–0.12 | 3 / 2.6 / 0.07 | GT under 15 cm DBH: median 3.4 m by 2.7 m |
+| Young | 4–7 | 3–7.5 | 0.12–0.3 | 6 / 5.5 / 0.2 | GT 15–30 cm medians: 6.4 m by 5.5 m |
+| Mature | 6–9.3 | 4.6–11.1 | 0.3–0.5 | 7.5 / 8 / 0.35 | NC State 4.6–7.6 m by 4.6–9.1 m; UF 6.1–9.1 m by 7.6–9.1 m; GT 30–61 cm medians 8.2 m by 7.2 m |
+| Specimen | 8–12.9 | 9–13.7 | 0.45–0.65 | 9.1 / 13.7 / 0.6 | Champions: 458 Ponce de Leon Ave, 9.1 × 13.7 m; Peachtree Christian courtyard, 12.9 × 12.2 m |
+
+**Fall.** "Red to reddish purple" (NC State), "red to maroon" in sun (UF). Georgia USA-NPN puts coloured leaves Oct 3–20 and falling leaves Oct 5–22, with the latest on Nov 21. Sam saw red-maroon dogwoods at Ansley yard edges on 23 Nov, so the lab keeps them red-maroon into November and bare by early December.
+
+**Brightness.** Option A against the generic tree: elm 0.249 / 0.818 high and 0.249 / 0.806 low; dogwood 0.238 / 0.749 and 0.247 / 0.739.
 
 ### Pair 2 gaps
 

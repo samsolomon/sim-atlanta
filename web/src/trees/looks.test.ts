@@ -103,3 +103,30 @@ describe('foliage ink mask registration', () => {
     expect(inkFoliageCount()).toBe(before);
   });
 });
+
+describe('City detail switch', () => {
+  it('farTrees hides limbs, leaf tips and carpet, and keeps the crowns', () => {
+    const look = LOOKS[0];
+    const opt = look.options.find(o => o.tips)!;
+    const g = createLook([{ species: look.species, size: 'mature', x: 0, z: 0, seed: 1 }], look, opt.id, 'high', () => 0)!;
+    const byName = (re: RegExp) => g.group.children.filter(o => re.test(o.name));
+    g.setDetail({ farTrees: true });
+    for (const o of [...byName(/limbs|tips|carpet/)]) expect(o.visible).toBe(false);
+    for (const o of byName(/foliage/)) expect(o.visible).toBe(true);
+    g.setDetail({ farTrees: false });
+    for (const o of byName(/limbs|tips|carpet|foliage/)) expect(o.visible).toBe(true);
+    g.dispose();
+  });
+  it('keeps the limbs while a deciduous crown is bare, so far trees never vanish in winter', () => {
+    const look = LOOKS.find(l => l.species.id === 'american-elm')!;
+    const g = createLook([{ species: look.species, size: 'mature', x: 0, z: 0, seed: 1 }], look, 'A', 'high', () => 0)!;
+    const limbs = g.group.children.filter(o => /limbs/.test(o.name));
+    expect(limbs.length).toBeGreaterThan(0);
+    g.setSeason(doyOf(1, 15));
+    g.setDetail({ farTrees: true });
+    for (const o of limbs) expect(o.visible).toBe(true);
+    g.setSeason(doyOf(7, 1));
+    for (const o of limbs) expect(o.visible).toBe(false);
+    g.dispose();
+  });
+});
