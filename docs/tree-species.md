@@ -193,13 +193,122 @@ All six will be built in the lab with the same framework, budget and tests, and 
 2. Southern magnolia and loblolly pine: evergreens, and the first `cone` leaf shape.
 3. Crape myrtle and dogwood: multi-stem and layered small trees, with bloom.
 
-## City rollout (decision pending)
+## City rollout (proposal, waiting for Sam)
 
-This is not built yet. The proposal, with weights and sources, will be sent to Sam before anything changes in City. It has two tiers:
+**Nothing here is built.** City still draws one generic tree everywhere except the High Museum ginkgo. Sam decides this proposal before any rollout. It has two tiers:
 
-1. **Reported.** Inventory points (City 2011, Georgia Tech, Trees Atlanta) and OSM species tags are placed by species, using their measured sizes where given.
-2. **Illustrative.** Every other canopy crown gets a species drawn deterministically from its crown id. The draw comes from a context-weighted mix (street, residential yard, park and woods, campus, plus the Ansley ginkgo bias) built on published Atlanta urban-forest composition.
+1. **Reported.** Inventory points are placed by species, at their measured sizes where given. The sources are the City 2011 census (Downtown only), Georgia Tech's campus inventory, Trees Atlanta plantings, and OSM species tags. Their licences are unclear (see [Where ginkgos are](#where-ginkgos-are)), so we would ask the owners before shipping derived positions.
+2. **Illustrative.** Every other canopy crown takes a species drawn deterministically from its crown id, weighted by context. Each crown's context (street, yard, park and woods, or campus) would come from the land use and road masks the parks staging already has.
 
-**Generic crowns stay stable.** Removing a crown under a named tree must not reshuffle the colour and kind of every other generic tree, so the filter belongs after `World.buildTrees` draws each crown's seed.
+**Generic crowns stay stable.** Swapping a crown's species must not reshuffle any other crown. The draw is seeded per crown, and any filtering happens after `World.buildTrees` draws each seed, as it does for the named ginkgo.
 
-The canopy staging (`pipeline/scripts/midtown_landscape.py`, owned by the parks agent) stays as it is. Species live in the renderer.
+Every crown drawn from these mixes has the tier `illustrative`. Weights are shares of **crowns** (the model's unit), so I lean on crown-area or leaf-area evidence for large trees, not on stem counts, which over-weight small trees like crape myrtle.
+
+### Sources
+
+| Key | Source | Basis | How read |
+|---|---|---|---|
+| **USFS16** | USFS/i-Tree Eco, *Atlanta Urban Forest Effects and Values*, July 2016 (443 plots, 2013 data), Table 1 | % trees / % leaf area, citywide | Read in PDF |
+| **C11** | City 2011 street-tree census, `dssgtrees.gatech.edu/CityStreetTrees/CityTrees1.csv`. 6,336 live trees in the board box. Covers Downtown and the expanded area only (lat ≤ 33.771), with no Midtown or Ansley trees | count, and crown² from the spread class | Computed |
+| **TA** | Trees Atlanta plant inventory (ArcGIS), alive, in box, without Genus `x` or shrubs. n = 9,591, 2,000s–2020s plantings | count of plantings (young, not standing stock) | Computed |
+| **GT** | Georgia Tech `Trees_All_View1`, `TreeStatus='Active'`, n = 12,946 | count | Computed |
+| **MA** | Midtown Alliance streetscape guidelines, tree species overview: lacebark elm, Nuttall oak, Princeton American elm, red maple, Shumard oak, trident maple, willow oak | specified list | Read in PDF (found by subagent) |
+| **ZEN** | Zenoble 2021 (UGA MS), a 12 ha, 70-year-old Piedmont second-growth plot. This is Athens, not Atlanta. Top importance values: white oak 82.7, red maple 62.5, beech 59.8, winged elm 57.4, sweetgum 50.6 | importance value | Read in PDF |
+
+**USFS16 Table 1** (% trees / % leaf area): loblolly pine 18.0/17.6, water oak 7.1/15.8, sweetgum 10.5/6.1, tulip poplar 5.9/6.1, red maple 3.4/4.7, pecan 2.5/5.0, dogwood 4.8/2.3, southern magnolia 2.1/3.7, white oak 1.9/3.7, black cherry 3.0/1.3. The report has no breakdown by land use.
+
+**C11 in box, crown² share** (count share in brackets): willow oak 24.4 (15.8), red maple 9.5 (9.0), Callery pear 9.0 (4.5), zelkova 7.8 (7.2), lacebark elm 5.7 (6.7), water oak 5.3 (1.4), crape myrtle 4.6 (14.9), American elm 3.1, winged elm 2.6, river birch 2.6, sugar maple 2.3, Nuttall oak 2.2, trident maple 2.1, southern magnolia 1.3, ginkgo 0.6 (1.2), Chinese pistache 0.2 (0.6).
+
+**TA top plantings** (% of n = 9,591): crape myrtle 8.6, willow oak 6.7, trident maple 5.7, American elm 5.2, redbud 4.6, red maple 4.2, hornbeam 3.9, black gum 3.7, Nuttall oak 3.7, lacebark elm 3.5, sweetbay 3.2, parrotia 2.7, white oak 2.5, bald cypress 2.4, Shumard oak 1.9, ginkgo 1.9. In street strips and tree wells (n = 4,444): crape myrtle 14.2, trident maple 10.3, redbud 6.1, Nuttall oak 5.1, willow oak 5.0, and ginkgo 2.1.
+
+**GT top** (% count): loblolly pine 7.4, crape myrtle 6.7, red maple 4.0, willow oak 3.7, water oak 3.4, southern magnolia 3.3, slash pine 3.1, tulip poplar 2.8, dogwood 2.6, redbud 2.6, Shumard oak 2.2, Virginia pine 2.1, all elms 3.5, Yoshino cherry 1.1, river birch 1.0, ginkgo 0.7, sweetgum 0.7, white oak 0.7.
+
+**Mapping to the palette.** Nuttall, Shumard, pin and scarlet oak go to southern red oak. Zelkova and every *Ulmus* go to elm. Slash and Virginia pine go to loblolly pine. Callery pear, trident and sugar maple, redbud, hornbeam, black gum, holly, pecan, beech and cherry laurel go to other broadleaf.
+
+### Proposed mixes (% of crowns, each sums to 100, checked in code)
+
+| Species | Street | Yard | Park & woods | Campus |
+|---|---|---|---|---|
+| Willow oak | 24 | 10 | 3 | 7 |
+| Water oak | 5 | 14 | 12 | 6 |
+| White oak | 0 | 6 | 8 | 2 |
+| Southern red oak | 5 | 5 | 4 | 6 |
+| Red maple | 10 | 8 | 8 | 6 |
+| Southern magnolia | 2 | 6 | 2 | 5 |
+| Loblolly pine | 1 | 8 | 20 | 13 |
+| Crape myrtle | 8 | 6 | 0 | 6 |
+| Flowering dogwood | 1 | 5 | 3 | 3 |
+| Ginkgo | 2 | 1 | 0 | 1 |
+| Tulip poplar | 0 | 7 | 14 | 4 |
+| Sweetgum | 0 | 5 | 12 | 1 |
+| River birch | 3 | 1 | 1 | 1 |
+| Yoshino cherry | 1 | 1 | 0 | 1 |
+| Elm | 18 | 1 | 2 | 4 |
+| Chinese pistache | 1 | 0 | 0 | 0 |
+| Other broadleaf | 19 | 16 | 11 | 34 |
+
+**Street (basis: C11 crown², checked against MA and TA).**
+- **Willow oak 24.** C11 gives 24.4 crown² and 15.8 count. MA lists it.
+- **Elm 18.** C11 gives zelkova, lacebark, American and winged elm a combined 19.2 crown². MA lists two elms.
+- **Red maple 10.** C11 9.5, and MA lists it.
+- **Crape myrtle 8.** C11 gives 4.6 crown² and 14.9 count, and TA streets 14.2. I put it between the two because crowns are small but numerous.
+- **Water oak 5.** C11 5.3.
+- **Southern red oak 5.** C11 Nuttall oak 2.2, plus MA Nuttall and Shumard oak, plus TA Nuttall 5.1 in streets.
+- **River birch 3.** C11 2.6.
+- **Southern magnolia 2.** C11 1.3.
+- **Ginkgo 2.** C11 count 1.2, TA streets 2.1.
+- **Pistache 1.** C11 0.6 count.
+- **Yoshino cherry, dogwood, loblolly pine, 1 each.** These are token weights. C11 has 0.1 Yoshino, 1.7 dogwood count and 1.4 Virginia pine crown².
+- **Other broadleaf 19.** Mostly Callery pear (9.0), with trident and sugar maple.
+
+**Yard (basis: USFS16 leaf area, adjusted for intown neighbourhoods; thinnest evidence).** No source isolates residential yards. USFS16 is citywide and includes woods. The TA FrontYard cut (n = 216) holds only young plantings: white oak 10.6, black gum 10.2, red maple 8.8, ginkgo 5.1, none of them in Ansley.
+- **Water oak 14.** USFS16 leaf area 15.8.
+- **Willow oak 10.** C11 shows it dominates the adjacent streets. This is a judgement.
+- **White oak 6.** USFS16 3.7, plus TA yards 10.6.
+- **Southern red oak 5.** This is a judgement.
+- **Red maple 8.** USFS16 4.7, plus TA yards 8.8.
+- **Loblolly pine 8.** USFS16 gives 17.6, which I halved because intown lots have fewer pines. This is a judgement.
+- **Tulip poplar 7.** USFS16 6.1.
+- **Sweetgum 5.** USFS16 6.1.
+- **Southern magnolia 6.** USFS16 3.7, raised for intown yards. This is a judgement.
+- **Dogwood 5.** USFS16 4.8 of trees.
+- **Crape myrtle 6.** TA 8.6, and C11 shows it is common.
+- **Other broadleaf 16.** Pecan (USFS16 5.0 of leaf area), black cherry 1.3, holly and redbud.
+
+**Park and woods (basis: USFS16, whose plots are dominated by forest canopy, plus ZEN).**
+- **Loblolly pine 20.** USFS16 17.6/18.0.
+- **Tulip poplar 14.** USFS16 6.1, raised for mesic stream buffers. ZEN names it a gainer.
+- **Sweetgum 12.** USFS16 10.5 of trees; ZEN importance value 50.6.
+- **Water oak 12.** USFS16 15.8.
+- **White oak 8.** USFS16 3.7, ZEN top species.
+- **Red maple 8.** USFS16 4.7, ZEN second.
+- **Elm 2.** ZEN winged elm.
+- **Dogwood 3, southern red oak 4, willow oak 3.** These are for Piedmont Park's planted lawn trees. TA named parks give white oak 12.6 and red cedar 14.7.
+- **Magnolia 2, river birch 1.** These are judgements.
+- **Other broadleaf 11.** Beech (ZEN 59.8), black cherry, black gum and hickory.
+
+**Campus (basis: GT count, nudged toward large crowns).**
+- **Loblolly pine 13.** GT pines total 12.6.
+- **Willow oak 7, water oak 6.** GT 3.7 and 3.4, raised for crown size.
+- **Southern red oak 6.** GT Shumard 2.2 + pin 1.8 + southern red 0.6 + Nuttall/Texas red 1.0.
+- **Crape myrtle 6.** GT 6.7.
+- **Red maple 6.** GT 4.0.
+- **Magnolia 5.** GT 3.3.
+- **Tulip poplar 4.** GT 2.8.
+- **Elm 4.** GT 3.5.
+- **Dogwood 3.** GT 2.6.
+- **White oak 2.** GT 0.7.
+- **Yoshino, river birch, ginkgo, sweetgum, 1 each.** GT 1.1, 1.0, 0.7 and 0.7.
+- **Other broadleaf 34.** GT has 211 taxa. Redbud, holly, laurelcherry, sugar maple and zelkova are each about 1.4 to 2.6.
+
+### Ansley Park ginkgo bias
+
+Inside Ansley Park, triple ginkgo by taking the extra from other broadleaf. Streets go from 2 to 5 (other broadleaf 19 to 16), and yards from 1 to 3 (other broadleaf 16 to 14). That is about 2.5 times the documented baseline of 0.6 to 2.1% (C11, TA, GT), so it stays modest.
+
+**Evidence: essentially none documented.** Trees Atlanta records 0 ginkgos among 198 plantings tagged `AnsleyPark`. OSM has no ginkgo tags in the box. `docs/tree-species.md` finds only two young 'Shangri-La' ginkgos on 17th St (2017–18). C11 does not reach Ansley. The bias rests on Sam's first-hand report of many mature ginkgos. It could be confirmed from mid- to late-November leaf-on aerials, where ginkgo crowns show uniform butter yellow.
+
+### Gaps
+- The City's 2014 canopy study, a 2018–2020 City i-Tree study, Nowak's 1997 UFORE Atlanta table, and the City arborist's annual removal and planting species counts were not obtained. No numbers here come from them.
+- The City 2023 Tree Planting List was found by a subagent, and I have not verified its contents.
+- No figure here comes only from a search snippet. Every number above was computed from the datasets or read in the PDFs.
+- USFS16 has no land-use breakdown, so the yard weights are partly judgement and are marked as such.
