@@ -36,13 +36,14 @@ export function apartmentFinish(building: VBuilding, palette: ApartmentPalette, 
       const reverse = hole ? area2 < 0 : area2 > 0;
       for (let i = 0; i < ring.length; i++) {
         const a = ring[i], b = ring[(i + 1) % ring.length];
-        drawWall(mesh, litGlass, reverse ? b : a, reverse ? a : b, base, top, floors, palette, layoutFor(a, b), seed);
+        drawApartmentWall(mesh, litGlass, reverse ? b : a, reverse ? a : b, base, top, floors, palette, layoutFor(a, b), seed);
       }
     },
   };
 }
 
-function drawWall(mesh: Builder, lit: Builder, a: P2, b: P2, base: number, top: number, floors: number,
+/** Draw one apartment elevation with its interior on the right of the directed edge. */
+export function drawApartmentWall(mesh: Builder, lit: Builder, a: P2, b: P2, base: number, top: number, floors: number,
   p: ApartmentPalette, layout: ApartmentLayout, seed: number) {
   const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
   if (length === 0) return;

@@ -1933,3 +1933,7 @@ At 20 Marietta, the cream M sign hangs where shoppers coming up Broad first meet
 ### 2026-11-23 — The tower that belonged to the next roof
 
 At Five Points an unnamed 72.7 m extrusion stood between two historic buildings. From across Marietta the photographs showed a low shopfront. Of 104 laser returns in a narrow strip along the shared Metropolitan wall, 87 were above 375 m NAVD88. Moving the sample inside the footprint dropped the median to 332.3 m, about 13 m above the sidewalk. The correction restores the view over the shops while keeping the higher rear service roof and the three neighboring footprints separate. [Street photographs, survey and Five Points comparisons](log/ui/marietta-backdrop/README.md)
+
+### 2026-11-23 — Two courtyards at different heights
+
+The two One12 Courtland footprints looked like a pair of flat extrusions. The architect’s photographs explained why the lidar gave three roof levels. An older eight-story building surrounds a court at street grade, while the sixteen-story Courtland tower steps back around a pool on the garage roof. That terrace sits near 333.6 m NAVD88, nearly 30 m below the taller roof. City now follows the five folded canopies along Dobbs, the louvered garage entrance, the Courtland corner and the string lights over the pool. [Architect’s photographs, lidar measurements and matched City views](log/ui/one12-courtland/README.md)
