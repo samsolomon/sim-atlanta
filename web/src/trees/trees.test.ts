@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { genericTriangles } from './generic';
 import { ginkgo, ginkgoState } from './ginkgo';
 import { SPECIES } from './index';
-import { createTrees, treeTriangles, type TreePlacement } from './render';
-import { SIZE_CLASSES, doyOf, hash01 } from './species';
+import { createTrees, skeletonGeometry, treeTriangles, type TreePlacement } from './render';
+import { SIZE_CLASSES, calendarDoy, doyOf, hash01 } from './species';
 
 const offsets = (days: number) => Array.from({ length: 200 }, (_, seed) => (hash01(seed, 2) * 2 - 1) * days);
 
@@ -33,6 +33,12 @@ describe.each(SPECIES.map(s => [s.id, s] as const))('%s', (_, species) => {
         // The trunk's unit radius times the crown radius is half the calliper.
         const d = species.sizes[size];
         expect(form.segs[0].r0 * d.spreadM).toBeCloseTo(d.calliperM, 6);
+        // And the drawn trunk base is that wide, round, at the nominal size.
+        const g = skeletonGeometry(species, size, q);
+        const pos = g.attributes.position;
+        let half = 0;
+        for (let i = 0; i < pos.count; i++) if (pos.getY(i) < 1e-6) half = Math.max(half, Math.hypot(pos.getX(i), pos.getZ(i)) * d.spreadM / 2);
+        expect(half * 2).toBeCloseTo(d.calliperM, 3);
       });
     }
   }
@@ -55,6 +61,11 @@ describe('ginkgo season', () => {
       expect(stage(11, 23, o)).toBe('gold');
       expect(stage(11, 24, o)).toBe('gold');
     }
+  });
+  it('reads leap-year dates on the same calendar', () => {
+    expect(calendarDoy(new Date('2028-11-24T12:00:00-05:00'))).toBe(doyOf(11, 24));
+    expect(calendarDoy(new Date('2028-02-29T12:00:00-05:00'))).toBe(doyOf(2, 28));
+    expect(calendarDoy(new Date('2026-12-31T23:30:00-05:00'))).toBe(365);
   });
   it('drops in three days, not weeks', () => {
     expect(ginkgoState(doyOf(11, 28)).leaves).toBe(1);

@@ -75,6 +75,16 @@ export function hash01(seed: number, salt = 0) {
   return (h >>> 0) / 4294967296;
 }
 
-/** Day-of-year for a month and day in a non-leap year. */
+/**
+ * Day-of-year for a month and day in a non-leap year. Species calendars use this count, so a
+ * leap year's Nov 24 is still day 328.
+ */
 export const doyOf = (month: number, day: number) =>
   Math.round((Date.UTC(2026, month - 1, day) - Date.UTC(2026, 0, 0)) / 86_400_000);
+
+/** A date's non-leap day of year in Atlanta. */
+export function calendarDoy(date: Date) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' })
+    .formatToParts(date).map(x => [x.type, x.value]));
+  return doyOf(Number(p.month), Math.min(Number(p.day), Number(p.month) === 2 ? 28 : 31));
+}

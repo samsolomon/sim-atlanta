@@ -20,7 +20,7 @@ City's canopy is one generic leaf-clump tree, coloured by a random kind. This pr
 
 **Budget.** At each tier, a species tree must use no more triangles than the generic Midtown tree. The generic count comes from the meshes `World.buildTrees` actually builds: **196** at high detail, **156** at low. The tests enforce this for every species and size class.
 
-**Lab controls.** Size class or all sizes in a row beside a walker (1.8 m, measured in the page), season presets (clock date, spring, summer, fall, late fall, winter), day/night, high/low detail, and a live triangle and draw report. The generic tree sits in the same section as the baseline. `?v=ginkgo&size=all&tier=low&t=<ISO>` makes a view reproducible.
+**Lab controls.** Size class or all sizes in a row beside a walker (1.74 m tall, measured in the page), season presets (clock date, spring, summer, fall, late fall, winter), day/night, high/low detail, and a live triangle and draw report. The generic tree sits in the same section as the baseline. `?v=ginkgo&size=all&tier=low&t=<ISO>` makes a view reproducible.
 
 ## Ginkgo
 

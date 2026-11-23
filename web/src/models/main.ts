@@ -17,10 +17,9 @@ import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
 import { createPlatformScene, type PlatformKind } from './platform-scene';
 import { createTrees, treeDims, treeTriangles, type TreePlacement } from '../trees/render';
-import { SIZE_CLASSES, doyOf, type SizeClass, type Species, type TreeQuality } from '../trees/species';
+import { SIZE_CLASSES, calendarDoy, doyOf, type SizeClass, type Species, type TreeQuality } from '../trees/species';
 import { SPECIES as SPECIES_LIST } from '../trees/index';
 import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
-import { local } from '../vignette/time';
 
 const el = document.getElementById('stage')!;
 const low = new URLSearchParams(location.search).get('q') === 'low';
@@ -116,7 +115,7 @@ let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
 const labParams = new URLSearchParams(location.search);
 const clockParam = labParams.get('t');
 const clockDate = clockParam && !Number.isNaN(Date.parse(clockParam)) ? new Date(clockParam) : new Date();
-const clockDoy = local(clockDate).doy;
+const clockDoy = calendarDoy(clockDate);
 let seasonDoy = clockDoy;
 const sizeParam = labParams.get('size');
 let treeSize: SizeClass | 'all' = sizeParam === 'all' || SIZE_CLASSES.includes(sizeParam as SizeClass) ? sizeParam as SizeClass | 'all' : 'all';
@@ -159,6 +158,7 @@ function buildTrees() {
   const extent = Math.max(width, tall) * 0.7;
   sun.position.set(-18, 30, 22).multiplyScalar(Math.max(1, extent / 20));
   sun.shadow.camera.far = extent * 6;
+  sun.shadow.normalBias = 0.05;
   Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
   sun.shadow.camera.updateProjectionMatrix();
   const d = Math.max(width * 1.1, tall * 2.2) + 8;
@@ -176,9 +176,10 @@ function buildTrees() {
   const per = (q: TreeQuality) => species
     ? sizes.map(size => `${size} ${treeTriangles(species, size, q).total}`).join(', ')
     : `${genericTriangles(q).total} per tree at every size`;
-  const draws = (trees as { draws?: number }).draws;
+  const budget = genericTriangles(treeQuality);
+  const draws = (trees as { draws?: number }).draws ?? budget.draws;
   treeReport.textContent = `${treeQuality === 'high' ? 'High' : 'Low'} detail. Triangles per tree: ${per(treeQuality)}`
-    + ` (budget ${genericTriangles(treeQuality).total}). ${draws ?? genericTriangles(treeQuality).draws} instanced draws. Person ${personM.toFixed(2)} m.`;
+    + ` (budget ${budget.total}). ${draws} instanced draws. Person ${personM.toFixed(2)} m.`;
   const dims = species ? sizes.map(size => {
     const dd = treeDims({ species, size, x: 0, z: 0, seed: 0, heightM: species.sizes[size].heightM, spreadM: species.sizes[size].spreadM });
     return `${size}: ${dd.heightM} m tall, ${dd.spreadM} m spread, ${Math.round(dd.calliperM * 100)} cm trunk`;

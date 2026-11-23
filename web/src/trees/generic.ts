@@ -31,12 +31,15 @@ export function createGenericTrees(trees: { x: number; z: number; size: SizeClas
   return {
     group: world.group,
     setSeason: (doy: number) => world.setSeason(doy),
-    dispose: () => world.dispose(),
+    dispose: () => { world.group.removeFromParent(); world.dispose(); },
   };
 }
 
-/** Triangles per generic broadleaf at a tier, counted from the meshes World builds. */
+const counted = new Map<TreeQuality, { total: number; draws: number }>();
+/** Triangles per generic broadleaf at a tier, counted (once) from the meshes World builds. */
 export function genericTriangles(quality: TreeQuality) {
+  const known = counted.get(quality);
+  if (known) return known;
   const g = createGenericTrees([{ x: 0, z: 0, size: 'mature' }], quality);
   let total = 0;
   let draws = 0;
@@ -50,5 +53,6 @@ export function genericTriangles(quality: TreeQuality) {
     draws++;
   });
   g.dispose();
+  counted.set(quality, { total, draws });
   return { total, draws };
 }

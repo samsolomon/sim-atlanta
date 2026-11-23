@@ -24,20 +24,29 @@ export function treeDims(p: TreePlacement): Dims {
   const k = 1 + (hash01(p.seed, 1) - 0.5) * 0.16;
   const heightM = p.heightM ?? n.heightM * k;
   const spreadM = p.spreadM ?? n.spreadM * (1 + (hash01(p.seed, 3) - 0.5) * 0.16);
-  return { heightM, spreadM, calliperM: n.calliperM * (heightM / n.heightM) };
+  // The trunk is drawn as a fraction of the crown, so the calliper follows the spread.
+  return { heightM, spreadM, calliperM: n.calliperM * (spreadM / n.spreadM) };
 }
 
-/** Limbs of one species and size class, merged into one geometry in unit space. */
+/**
+ * Limbs of one species and size class, merged into one geometry in unit space. Each limb is
+ * built round at the class's nominal size in metres and then scaled into unit space, so limbs
+ * stay round once an instance scales by (crown radius, height, crown radius).
+ */
 export function skeletonGeometry(species: Species, size: SizeClass, q: TreeQuality) {
   const b = new Builder();
   const up = new THREE.Vector3(0, 1, 0);
-  for (const sg of species.form(size, q, species.sizes[size]).segs) {
-    const dir = new THREE.Vector3(sg.b[0] - sg.a[0], sg.b[1] - sg.a[1], sg.b[2] - sg.a[2]);
+  const d = species.sizes[size];
+  const R = d.spreadM / 2, H = d.heightM;
+  for (const sg of species.form(size, q, d).segs) {
+    const dir = new THREE.Vector3((sg.b[0] - sg.a[0]) * R, (sg.b[1] - sg.a[1]) * H, (sg.b[2] - sg.a[2]) * R);
     const len = dir.length();
-    const g = new THREE.CylinderGeometry(sg.r1, sg.r0, len, sg.sides, 1, true).translate(0, len / 2, 0);
+    const g = new THREE.CylinderGeometry(sg.r1 * R, sg.r0 * R, len, sg.sides, 1, true).translate(0, len / 2, 0);
     g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, dir.normalize()));
-    g.translate(...sg.a);
+    g.translate(sg.a[0] * R, sg.a[1] * H, sg.a[2] * R);
+    g.scale(1 / R, 1 / H, 1 / R);
     b.addGeometry(g, sg.color);
+    g.dispose();
   }
   return b.geometry();
 }
@@ -49,10 +58,11 @@ const tris = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attribute
 
 /** Triangles for one tree of a species and size class at a quality tier, by part. */
 export function treeTriangles(species: Species, size: SizeClass, q: TreeQuality) {
+  const count = (g: THREE.BufferGeometry) => { const n = tris(g); g.dispose(); return n; };
   const parts = {
-    skeleton: tris(skeletonGeometry(species, size, q)),
-    leaves: species.clumps[q] * tris(leafGeometry(species.leaf)),
-    carpet: species.carpet ? tris(carpetGeometry()) : 0,
+    skeleton: count(skeletonGeometry(species, size, q)),
+    leaves: species.clumps[q] * count(leafGeometry(species.leaf)),
+    carpet: species.carpet ? count(carpetGeometry()) : 0,
   };
   return { ...parts, total: parts.skeleton + parts.leaves + parts.carpet };
 }
