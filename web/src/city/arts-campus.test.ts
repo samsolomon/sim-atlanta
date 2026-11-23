@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing } from '../vignette/geom';
 import { createArtsCampusLandmark } from './arts-campus';
-import { entryRamp, type RampSpec } from './midtown-culture-high';
+import { entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
 import sites from './fixtures/arts-campus.json';
 
 const archive = new URL('../../../pipeline/prototypes/square-board/midtown-upper/context.json', import.meta.url);
@@ -53,4 +53,26 @@ it('keeps the mapped ramp outside the museum footprint, rising toward it from Pe
   // The foot is nearer Peachtree (east) than the head, and the run is about 48 m.
   expect(foot[0]).toBeGreaterThan(head[0]);
   expect(Math.hypot(foot[0] - head[0], foot[1] - head[1])).toBeCloseTo(48.4, 0);
+});
+
+const piazza = (lawn: [number, number][]) => ({
+  plan: sites.museum.piazza.plan as [number, number][],
+  lawn,
+  stair: sites.museum.piazza.stair as [[number, number], [number, number]],
+  tables: [],
+  benches: [],
+});
+const count = (b: Builder) => (b.geometry() as BufferGeometry).getAttribute('position').count;
+
+it('leaves the mapped lawn unpaved and draws the north stair only where the ground falls', () => {
+  const flat = new Builder(),
+    noLawn = new Builder(),
+    falling = new Builder();
+  siflyPiazza(flat, piazza(sites.museum.piazza.lawn as [number, number][]), () => 0);
+  siflyPiazza(noLawn, piazza([]), () => 0);
+  // The mapped lawn is about 330 m², so paving it would add about 70 slabs.
+  expect(count(noLawn) - count(flat)).toBeGreaterThan(60 * 8);
+  // 3DEP falls about 3 m down the passage north of the piazza (v < -9).
+  siflyPiazza(falling, piazza(sites.museum.piazza.lawn as [number, number][]), (_u, v) => (v < -15 ? -3 : 0));
+  expect(count(falling)).toBeGreaterThan(count(flat));
 });

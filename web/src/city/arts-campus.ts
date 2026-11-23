@@ -1,5 +1,5 @@
 import { localLandmarkShell } from './landmark-shell';
-import { enamelBox, enamelGrid, entryRamp, type RampSpec } from './midtown-culture-high';
+import { enamelBox, enamelGrid, entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import sites from './fixtures/arts-campus.json';
@@ -297,35 +297,22 @@ export function createArtsCampusLandmark(
       // A small lift keeps the ramp clear of the rendered terrain triangles.
       return y === null ? null : y - grade + 0.1;
     });
-    // Lay the piazza on the same rendered terrain as both entrances.
-    const piazza: P2[] = [
-      [-54, 0],
-      [-28, 3],
-      [-13, -5],
-      [12, -5],
-      [17, 0],
-      [18, 31],
-      [-53, 31],
-    ];
-    const angle = Math.atan2(-0.479, 0.878),
-      c = Math.cos(angle),
-      sn = Math.sin(angle);
-    for (let u = -54; u < 18; u += 2)
-      for (let v = -5; v < 31; v += 2) {
-        const corners: P2[] = [
-          [u, v],
-          [u + 2, v],
-          [u + 2, v + 2],
-          [u, v + 2],
-        ];
-        if (!pointInRing(u + 1, v + 1, piazza)) continue;
-        const points = corners.map(([a, b]) => {
-          const y = groundAt(550 + a * c - b * sn, -3990 + a * sn + b * c);
-          return y === null ? null : [a, y - grade + 0.16, b];
-        });
-        if (points.every((p): p is number[] => p !== null))
-          shell.body.quad(points[3], points[2], points[1], points[0], '#c3b6a7');
-      }
+    // Sifly Piazza on the same rendered terrain as both entrances.
+    const pz = sites.museum.piazza;
+    siflyPiazza(
+      shell.body,
+      {
+        plan: pz.plan as P2[],
+        lawn: pz.lawn as P2[],
+        stair: pz.stair as [P2, P2],
+        tables: pz.tables as P2[],
+        benches: pz.benches as P2[],
+      },
+      (u, v) => {
+        const y = groundAt(550 + u * 0.878 - v * -0.479, -3990 + u * -0.479 + v * 0.878);
+        return y === null ? null : y - grade + 0.1;
+      },
+    );
   } else memorial(shell);
   return shell.finish('#ffdab0', 0.68);
 }

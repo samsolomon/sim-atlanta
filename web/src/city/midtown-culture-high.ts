@@ -227,3 +227,115 @@ export function entryRamp(
   }
   return true;
 }
+
+export interface PiazzaSpec {
+  /** Paved outline, local (u, v). */
+  plan: P2[];
+  /** Mapped lawn inside the outline; it stays grass, edged by a curb. */
+  lawn: P2[];
+  /** Mapped stair from the piazza edge down to the north passage. */
+  stair: [P2, P2];
+  /** Bistro tables and benches; positions are illustrative. */
+  tables: P2[];
+  benches: P2[];
+}
+
+/**
+ * Sifly Piazza: 1.5 × 3 m white concrete slabs with dark joints laid on the
+ * rendered terrain, a curb round the mapped lawn, the mapped north stair, and
+ * café seating. `ground` gives local heights already lifted clear of terrain.
+ */
+export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number, v: number) => number | null) {
+  const joint = '#a8a398',
+    tones = ['#dad7cf', '#d4d1c8', '#dedbd4'],
+    curb = '#ecebe5';
+  const du = 1.5,
+    dv = 3,
+    gap = 0.05;
+  const us = spec.plan.map(([u]) => u),
+    vs = spec.plan.map(([, v]) => v);
+  let k = 0;
+  for (let u = Math.min(...us); u < Math.max(...us); u += du)
+    for (let v = Math.min(...vs); v < Math.max(...vs); v += dv, k++) {
+      const cu = u + du / 2,
+        cv = v + dv / 2;
+      if (!pointInRing(cu, cv, spec.plan) || pointInRing(cu, cv, spec.lawn)) continue;
+      const at = (a: number, b: number, lift: number) => {
+        const y = ground(a, b);
+        return y === null ? null : [a, y + lift, b];
+      };
+      const under = [at(u, v, 0.03), at(u + du, v, 0.03), at(u + du, v + dv, 0.03), at(u, v + dv, 0.03)];
+      const slab = [
+        at(u + gap, v + gap, 0.06),
+        at(u + du - gap, v + gap, 0.06),
+        at(u + du - gap, v + dv - gap, 0.06),
+        at(u + gap, v + dv - gap, 0.06),
+      ];
+      if (!under.every((p): p is number[] => p !== null) || !slab.every((p): p is number[] => p !== null)) continue;
+      body.quad(under[3], under[2], under[1], under[0], joint);
+      body.quad(slab[3], slab[2], slab[1], slab[0], tones[(k * 7) % tones.length]);
+    }
+  // A low white curb round the mapped lawn.
+  for (let i = 0; i < spec.lawn.length; i++) {
+    const a = spec.lawn[i],
+      b = spec.lawn[(i + 1) % spec.lawn.length],
+      len = Math.hypot(b[0] - a[0], b[1] - a[1]),
+      n = Math.max(1, Math.ceil(len / 2));
+    for (let j = 0; j < n; j++) {
+      const p0: P2 = [a[0] + ((b[0] - a[0]) * j) / n, a[1] + ((b[1] - a[1]) * j) / n],
+        p1: P2 = [a[0] + ((b[0] - a[0]) * (j + 1)) / n, a[1] + ((b[1] - a[1]) * (j + 1)) / n];
+      const g0 = ground(p0[0], p0[1]),
+        g1 = ground(p1[0], p1[1]);
+      if (g0 === null || g1 === null) continue;
+      body.quad(
+        [p0[0], g0 - 0.1, p0[1]],
+        [p0[0], g0 + 0.28, p0[1]],
+        [p1[0], g1 + 0.28, p1[1]],
+        [p1[0], g1 - 0.1, p1[1]],
+        curb,
+      );
+    }
+  }
+  // The mapped stair from the piazza edge down the north passage.
+  const [top, foot] = spec.stair,
+    yTop = ground(top[0], top[1]),
+    yFoot = ground(foot[0], foot[1]);
+  if (yTop !== null && yFoot !== null && yTop - yFoot > 0.3) {
+    const len = Math.hypot(foot[0] - top[0], foot[1] - top[1]),
+      ux = (foot[0] - top[0]) / len,
+      uz = (foot[1] - top[1]) / len,
+      drop = yTop - yFoot,
+      n = Math.round(drop / 0.16),
+      w = 0.8;
+    const q = (t: number, s: number, y: number) => [top[0] + ux * t - uz * s, y, top[1] + uz * t + ux * s];
+    for (let i = 0; i < n; i++) {
+      const a = (len * i) / n,
+        b = (len * (i + 1)) / n,
+        y = yTop - (drop * (i + 1)) / n;
+      body.quad(q(a, -w, y + 0.02), q(a, w, y + 0.02), q(b, w, y + 0.02), q(b, -w, y + 0.02), tones[0]);
+      body.quad(q(a, -w, y), q(a, w, y), q(a, w, y + drop / n), q(a, -w, y + drop / n), joint);
+    }
+    for (const s of [-w - 0.12, w + 0.12])
+      body.quad(q(0, s, yTop - 0.1), q(0, s, yTop + 0.45), q(len, s, yFoot + 0.45), q(len, s, yFoot - 0.1), curb);
+  }
+  // Café seating: round white tables with three red wire chairs each.
+  for (const [u, v] of spec.tables) {
+    const g = ground(u, v);
+    if (g === null) continue;
+    body.box(0.08, 0.72, 0.08, u, g + 0.36, v, '#9a9b98');
+    body.box(0.75, 0.04, 0.75, u, g + 0.74, v, '#efefec');
+    for (let c = 0; c < 3; c++) {
+      const a = (c * 2 * Math.PI) / 3,
+        cu = u + 0.72 * Math.cos(a),
+        cv = v + 0.72 * Math.sin(a);
+      body.box(0.44, 0.05, 0.44, cu, g + 0.45, cv, '#c44a4f');
+      body.box(0.05, 0.45, 0.05, cu, g + 0.22, cv, '#c44a4f');
+      body.box(0.4, 0.38, 0.05, cu + 0.22 * Math.cos(a), g + 0.66, cv + 0.22 * Math.sin(a), '#c44a4f');
+    }
+  }
+  for (const [u, v] of spec.benches) {
+    const g = ground(u, v);
+    if (g === null) continue;
+    body.box(0.5, 0.45, 1.9, u, g + 0.22, v, '#e4e2db');
+  }
+}

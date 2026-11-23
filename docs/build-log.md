@@ -2234,3 +2234,7 @@ Every crown in City has been the same faceted clump tree. Ginkgo comes first bec
 ### 2026-11-23 — Meier's grid and the ramp that pointed the wrong way
 
 Sam's review flagged the High as plain white boxes with a thin grey strip for a ramp. The panel joints were the easy half: a 1.5 m enamel module on every Meier volume. Placing the ramp took more work. The old model aimed it north-east, but OSM maps it as a footway running diagonally to Peachtree, 48 m long. A mapped stair at its head drops about 6 m back to the lawn, which fixes the entry terrace height without a survey. The atrium now reads as a white frame with glass between, not a blue-grey drum. Finding the ginkgo for the tree agent produced a lesson: leaf-off aerials show bare trees mostly as shadows. My first trunk sat at the shadow's root, 4–5 m off. Trees Atlanta's champion register settled it at 27.5 m tall. [Sources, estimates and City views](arts-campus.md)
+
+### 2026-11-23 — Paving Sifly Piazza, minus the lawn
+
+The piazza had been one beige slab. It now has 1.5 × 3 m white concrete slabs with dark joints, café tables along the Memorial and a curb round the lawn. The surprise was the lawn itself. The old slab covered a 330 m² grass plot that OSM maps and the aerial shows tan with dormant turf. The model had paved over it. A mapped stair also leaves the piazza northward and drops 3 m. 3DEP confirms the fall, although the skybridge overhead hides most of the stair. [Sources and City views](arts-campus.md)
