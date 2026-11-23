@@ -13,17 +13,18 @@ import type { Habit } from './broadleaf';
 
 const magnoliaHabit: Habit = {
   // Dense pyramidal evergreen, branched to the ground; smooth grey bark.
-  trunkTop: 0.9, crownBase: 0.03, widest: 0.3,
+  trunkTop: 0.9, crownBase: 0.03, widest: 0.24,
   limbs: { high: 4, low: 3 }, limbAngle: 0.45, limbFrom: [0.1, 0.6], limbReach: 0.85,
   ragged: 0.05, bark: '#7a776f', barkDark: '#6a675f',
-  // Dense tiers to the ground, shrinking toward the top: a pyramid, not a column.
-  mass: { r: 0.66, low: -0.88, high: 0.96 },
-  tiers: { high: [3, 3, 3, 2], low: [2, 2, 2, 1] },
-  taper: 0.4,
+  // Dense tiers to the ground, shrinking toward a filled top: a tall dark cone (gloss round 2).
+  mass: { r: 0.66, low: -0.88, high: 0.8 },
+  tiers: { high: [3, 3, 2, 2, 2], low: [2, 2, 2, 1] },
+  taper: 0.6,
+  cone: 0.8,
   clusterWeight: 0.8,
   bySize: {
     sapling: { widest: 0.28 },
-    specimen: { widest: 0.38, ragged: 0.14 },
+    specimen: { widest: 0.3, ragged: 0.12 },
   },
 };
 
@@ -31,30 +32,31 @@ const magnoliaHabit: Habit = {
 // Jun 6 (medians), "sparse continued flowering throughout the summer" (NC State); red seeds in
 // October. Old leaves drop as the new ones open.
 const magnoliaPalette = keyedCalendar([
-  { m: 1, d: 1, leaves: 1, a: '#3a6e4c', b: '#709a64', carpet: 0.15, label: 'evergreen, glossy' },
-  { m: 4, d: 20, leaves: 1, a: '#3a704c', b: '#7ea86c', carpet: 0.35, label: 'new leaves, old ones dropping' },
-  { m: 5, d: 12, leaves: 1, a: '#3c7250', b: '#76a46a', carpet: 0.3, bloom: 0.15, label: 'first flowers' },
-  { m: 5, d: 28, leaves: 1, a: '#3c7250', b: '#76a46a', carpet: 0.2, bloom: 0.85, label: 'creamy white flowers' },
-  { m: 6, d: 10, leaves: 1, a: '#3c7250', b: '#76a46a', carpet: 0.15, bloom: 0.35, label: 'last of the main bloom' },
-  { m: 7, d: 1, leaves: 1, a: '#3a6e4c', b: '#709e64', carpet: 0.15, bloom: 0.06, label: 'a few summer flowers' },
-  { m: 8, d: 15, leaves: 1, a: '#3a6e4c', b: '#709e64', carpet: 0.15, bloom: 0, label: 'evergreen, glossy' },
+  { m: 1, d: 1, leaves: 1, a: '#3a6e4c', b: '#668e5a', carpet: 0.15, label: 'evergreen, glossy' },
+  { m: 4, d: 20, leaves: 1, a: '#3a704c', b: '#749e66', carpet: 0.35, label: 'new leaves, old ones dropping' },
+  { m: 5, d: 12, leaves: 1, a: '#3c7250', b: '#6c9a62', carpet: 0.3, bloom: 0.15, label: 'first flowers' },
+  { m: 5, d: 28, leaves: 1, a: '#3c7250', b: '#6c9a62', carpet: 0.2, bloom: 0.85, label: 'creamy white flowers' },
+  { m: 6, d: 10, leaves: 1, a: '#3c7250', b: '#6c9a62', carpet: 0.15, bloom: 0.35, label: 'last of the main bloom' },
+  { m: 7, d: 1, leaves: 1, a: '#3a6e4c', b: '#66925c', carpet: 0.15, bloom: 0.06, label: 'a few summer flowers' },
+  { m: 8, d: 15, leaves: 1, a: '#3a6e4c', b: '#66925c', carpet: 0.15, bloom: 0, label: 'evergreen, glossy' },
 ]);
 
 const A_BASE = { technique: 'cards' as const, ink: 2 as const, tips: 3, units: { high: 20, low: 10 }, blooms: { high: 12, low: 8 }, cover: 1.0 };
 const MAGNOLIA_OPTIONS: LookOption[] = [
-  // A and its gloss variants share one tighter crown (bigger cards, less ragged), Sam 23 Nov.
-  { id: 'A', label: 'Branch-mass cards', ...A_BASE,
-    note: 'The ginkgo C4 technique on a dense evergreen pyramid branched to the ground: big leaves, sunlit tops bright over a near-black interior, creamy-white flowers in May and June; warm silhouette ink and leaf tips close up.' },
-  { id: 'A1', label: 'A + sheen', ...A_BASE, sheen: 0.9,
-    note: 'A with a sharp specular glint on each card where its face meets the sun’s half vector: glints scatter over the sunlit side and move with the view. No extra draws or triangles; off at night.' },
-  { id: 'A2', label: 'A + baked glints', ...A_BASE, glint: 0.1,
-    note: 'A with about 10% of the sunlit-side cards baked pale silver: fixed glints that read at any angle. No extra draws or triangles.' },
-  { id: 'A3', label: 'A + sheen + bronze', ...A_BASE, sheen: 0.9, bronze: 0.15,
-    note: 'A1 plus about 15% of shaded-side cards in the rusty bronze of the leaf undersides. No extra draws or triangles.' },
-  { id: 'B', label: 'Cored masses', technique: 'cored', ink: 2, units: { high: 7, low: 7 }, blooms: { high: 4, low: 4 }, cover: 0.95,
-    note: 'The same masses with a dark faceted core under the cards: the most solid, the darkest mass.' },
+  // A and its gloss variants share one tall dark cone; the variants differ only in how many
+  // painted leaves can flash in the sun (Sam's gloss round 2, 23 Nov).
+  { id: 'A', label: 'Dark cone', ...A_BASE,
+    note: 'The ginkgo C4 technique on a tall, dark evergreen cone branched to the ground: big leaves, sunlit tops over a near-black interior, creamy-white flowers in May and June; warm silhouette ink and leaf tips close up.' },
+  { id: 'A1', label: 'Sparse specks', ...A_BASE, specks: 0.05,
+    note: 'A with small warm-white specks: about one painted leaf in twenty on the sun side can flash where its card meets the sun’s half vector, and the specks move with the view. No extra draws or triangles; off at night.' },
+  { id: 'A2', label: 'Specks', ...A_BASE, specks: 0.1,
+    note: 'A1 at about one leaf in ten.' },
+  { id: 'A3', label: 'Dense specks', ...A_BASE, specks: 0.18,
+    note: 'A1 at about one leaf in six.' },
+  // No cored option (B): a core per mass on the cone's 13 masses cannot fit 196 with cards on
+  // every mass, and Sam's direction is A (gloss round 2).
   // At least as many clusters as masses, so no limb ends in bare air.
-  { id: 'C', label: 'Faceted clusters', technique: 'lobes', facets: 3, units: { high: 12, low: 9 }, blooms: { high: 12, low: 6 }, cover: 0.95,
+  { id: 'C', label: 'Faceted clusters', technique: 'lobes', facets: 3, units: { high: 13, low: 9 }, blooms: { high: 12, low: 6 }, cover: 0.95,
     note: 'The same masses as faceted clusters with every facet inked: the house style, for comparison.' },
 ];
 

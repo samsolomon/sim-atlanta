@@ -2642,6 +2642,33 @@ The red Japanese maple is Sam's addition from his walk through Ansley Park, wher
 
 Graphics › Auto used to settle on a tier once, from the screen and pointer type, and never reconsider. Now, when Auto opens City at High, the phone-perf agent's `perf.watchSlow` waits for City to be ready and its areas to go quiet, then samples 10 s of frames. Under 20 fps, City rebuilds at Low at the exact camera (565, −3965, −101°, 55°, 421 m before and after), shows "Switched to lighter graphics" for a few seconds, and the menu reads **Auto (Low)** with High still on offer. The step-down lasts for the session only (sessionStorage), so a better moment can try High again. A manual Graphics choice cancels the watch. Testing it was awkward because a background browser tab draws next to nothing, so the sampler rightly discarded those samples. A dev-only `?slowfps=60` raised the bar instead. It needs only a web rebuild. [Menu after the step-down](log/ui/a2c/auto-low-menu.png)
 
+### 2026-11-23 — A vase and a festival
+
+The American elm and the flowering dogwood are pair 5. The elm is the old street vase: a short trunk forking into erect limbs that arch out like a fountain. The proposal is for City's street mixes to map Atlanta's actual street elms, lacebark elm and zelkova, to it once Sam picks an option; City draws none of it yet.
+
+The dogwood was the harder one. Its identity is a crown of white bracts on bare twigs in early April, the week of the Atlanta Dogwood Festival. On the lab's first pass the leaves were still mostly dropped on that date, so the flower chips sat in an empty crown and barely registered. A dogwood in bloom reads as a white crown, so during bloom the leaf clusters now stay present and turn white, with a little early green between, then go back to leaves as the bracts fall. Its lower branches grow in level layers, drawn as three horizontal tiers of flat masses. [Elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg)
+
+### 2026-11-23 — Far ground for wide views
+
+The phone's slow views are the wide ones, and on the A16 hiding the terrain was worth 7 fps there. My first attempt coarsened the low-tier mesh itself. A 20 m merge at the old 0.2 m tolerance saved only 3%, because 3DEP ground is rarely that flat. Looser tolerances saved up to 64% but broke placement other owners rely on, such as ballast seating, deck clearance and roofs above the ground. Phone-perf suggested the better shape: leave the near mesh alone and draw a separate far mesh past 2.5 km. `GroundSurface.farGeometry` is a quadtree of 5–160 m cells, each accepted if every DEM node inside lies within 2 m. It keeps every rim node, so it meets a neighbour's near or far mesh without a crack, and it clips openings like the near mesh. Across the committed boards it is 115k triangles against 1.10M, for 2.9 MB. Drawn triangles fall from 3.76M to 2.76M at the default view and from 3.07M to 2.20M at the skyline, and the two look the same. Placement, the ground audit and every seam keep sampling the near triangles. Web rebuild only. [Default and skyline compare](log/phone/far-ground-far.jpg)
+
+### 2026-11-24 — When emissive means "white"
+
+Sam flagged 1180 Peachtree's crown glowing like a light box in production. Three.js adds emissive light on top of the lit colour, so a near-white emissive at intensity 1.8 is white no matter what the glass looks like, and bloom then spreads it past the silhouette. The architect's own night photograph shows a soft grey-green wash with the steel lattice just a little brighter. A grey-green emissive below 1.0 gets there, and a test now refuses any crown material that could saturate a channel. [Before and after](log/ui/midtown-skyline/napkin-night-aerial-compare-high.jpg)
+
+
+### 2026-11-23 — Ansley's streets are wide
+
+Sam walked Ansley Park and said the first thing a visitor notices: the streets are unusually wide. City had drawn every one at 7 m, because OpenStreetMap tags them all as plain residential streets with no width. On the satellite view, Peachtree Circle by Winn Park and the two Prados measure 12–13 m curb to curb with parking, and 15th and 17th Streets about 10 m. The side drives really are about 7 m. The widths are a small, inferred table, keyed by street name and limited to Ansley. A test confirms the wider carriageways clear every house wall and mapped tree trunk. It found none in the way, which says how much room these 1900s streets were given. The first attempt missed Peachtree Circle entirely, because it runs just west of the box I had drawn around Ansley for house styles. Requires a web rebuild only. [Before and after](log/ui/ansley-widths/winn-compare.jpg) · [Method](ansley-street-widths.md)
+
+### 2026-11-23 — Gloss is a speck, not a card
+
+Round 1 of the magnolia gloss lit whole leaf cards, and it read as frost: pale blue-grey blotches lifting the crown 30%. The fix came from scale. A card carries a dozen painted leaves, and real gloss is one leaf at a time catching the sun. So the shader now picks single painted leaves by a hash of the leaf's atlas value and a half-metre cell of tree space, then flashes only the picked leaves whose card faces the sun's half vector on the sun side of the crown. At one leaf in six the crown brightens 8% (0.201 to 0.218), not 30%. It costs no draws and no triangles, and night turns it off.
+
+The first try showed nothing at all. A debug pass that painted the pick, side and sun terms as RGB showed that the card normals sit 0.5 to 0.8 from the half vector; the round-1 exponent of 28 had only ever lit the rare card that was nearly a mirror. A broad lobe with a near-binary step made the points visible.
+
+The crown also became a cone: a new `cone` habit option straightens the envelope above its widest point, and the outline clamp and leader follow it. [Sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg).
+
 ### 2026-11-23 — The loading dock was next door
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)

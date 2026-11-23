@@ -230,7 +230,7 @@ export function symphonyTower(shell: Shell) {
 
   const model = shell.finish('#ffe0b0', .7);
   const crownFrame = new THREE.Mesh(lattice2.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
-    emissive: '#dcffee', emissiveIntensity: 0 }));
+    emissive: '#c9ddd4', emissiveIntensity: 0 }));
   crownFrame.name = '1180 crown lattice';
   model.group.add(crownFrame);
   const lineMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
@@ -243,23 +243,24 @@ export function symphonyTower(shell: Shell) {
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   const glass = new THREE.Mesh(geometry, wall.material);
   glass.name = '1180 curtain wall';
-  // Light shows through the veils: thin glass, lit cool white at night.
+  // Kendall/Heaton's night skyline: the veil glass is a soft pale grey-green wash,
+  // dimmer than the white lattice behind it; nothing on the crown clips to white.
   const veilMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true,
-    opacity: .88, depthWrite: false, emissive: '#e2fff0', emissiveIntensity: 0 });
+    opacity: .88, depthWrite: false, emissive: '#9dbcb2', emissiveIntensity: 0 });
   // One mesh per veil, so three.js sorts the near one over the far one.
   const veil = veilSides.map((b, i) => { const m = new THREE.Mesh(b.geometry(), veilMaterial); m.name = `1180 veil ${i}`; return m; });
   const lattice = new THREE.Mesh(frame.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
-    emissive: '#eaf6ff', emissiveIntensity: 0 }));
+    emissive: '#d8e6e1', emissiveIntensity: 0 }));
   lattice.name = '1180 veil frames';
   for (const mesh of [glass, lattice]) { mesh.castShadow = mesh.receiveShadow = true; model.group.add(mesh); }
   model.group.add(...veil);
   return { ...model, setNight(night: number) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
-    veilMaterial.emissiveIntensity = 1.8 * night;
-    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = 1.6 * night;
-    lineMaterial.color.setScalar(Math.min(1, night));
+    veilMaterial.emissiveIntensity = .82 * night;
+    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = .78 * night;
+    lineMaterial.color.setScalar(.75 * Math.min(1, night));
     edgeLine.visible = night > .001;
-    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = 1.4 * night;
+    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = .75 * night;
   } };
 }

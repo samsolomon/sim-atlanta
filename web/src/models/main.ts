@@ -97,6 +97,8 @@ const SPECIES_NOTES: Record<string, string> = {
   'southern-magnolia': 'A dense, dark, glossy evergreen pyramid branched to the ground, with big creamy-white flowers in May and June. ',
   'crape-myrtle': 'A small multi-stem vase of smooth, mottled, peeling bark, in flower all summer (pink, red, white or purple) and yellow to red in the fall. ',
   'japanese-maple': 'The colour accent of Ansley and Midtown yards and traffic islands: a low, wide, layered umbrella on several leaning trunks, deep red-purple in summer and scarlet to crimson late in the fall (one colourway per tree). ',
+  'american-elm': 'The classic street vase: a short trunk forking into erect limbs that arch out into a wide, fountain-like crown, soft yellow in the fall (Atlanta streets plant its look-alikes, lacebark elm and zelkova). ',
+  'flowering-dogwood': 'The yard-edge understorey tree: low and wide in horizontal layers, white bracts on bare twigs in early April, red-maroon in the fall. ',
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
@@ -301,14 +303,14 @@ function buildTrees() {
     Rear: { pos: [0, cy, -d], target: [0, cy, 0], fov: 30 },
     Top: { pos: [0.01, d * 1.2, 0], target: [0, 0, 0], fov: 34 },
     // Standing 1.6 m up, close enough that the tallest tree fills the frame, as in a reference photo.
-    'Eye level': { pos: [0, 1.6, tall * 0.95], target: [0, tall * 0.48, 0], fov: 58 },
+    'Eye level': { pos: [0, 1.6, Math.max(tall * 0.95, Math.max(...spreads) * 1.25)], target: [0, tall * 0.48, 0], fov: 58 },
   };
   camera.far = Math.max(400, d * 4);
   camera.updateProjectionMatrix();
 
   const variantReport = document.getElementById('variant-report')!;
   if (model === 'lineup') {
-    variantReport.textContent = `Left to right in City mix order, all mature. ${rendering === 'current' ? 'Current: each species’ framework clump model.' : rendering === 'default' ? 'Default: Sam’s pick where he has made one (ginkgo C4), otherwise each species’ leading option A.' : `Option ${rendering} where a species has it, otherwise its current model.`}`;
+    variantReport.textContent = `Left to right roughly by City mix weight, all mature. None of these options is in City yet. ${rendering === 'current' ? 'Current: each species’ framework clump model.' : rendering === 'default' ? 'Default: Sam’s pick where he has made one (ginkgo C4), otherwise each species’ leading option A.' : `Option ${rendering} where a species has it, otherwise its current model.`}`;
   } else if (reg) {
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     variantReport.textContent = rendering === 'current'

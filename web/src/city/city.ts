@@ -33,8 +33,9 @@ import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
-import { createDowntownTerrain } from '../terrain/model';
+import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -122,6 +123,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
+import { deviceFacts, deviceTier } from '../core/device-tier';
 
 export type Quality = 'low' | 'high';
 
@@ -166,13 +168,12 @@ export interface CityView {
   glide(x: number, z: number): void;
 }
 
-/** Phones and small touch screens get the light tier; `?q=low|high` overrides. */
+/** Phones, mobile GPUs and small-memory devices get the light tier (core/device-tier.ts);
+ * `?q=low|high` overrides. */
 export function pickQuality(): Quality {
   const q = new URLSearchParams(location.search).get('q');
   if (q === 'low' || q === 'high') return q;
-  const touch = matchMedia('(pointer: coarse)').matches;
-  const small = Math.min(screen.width, screen.height) < 820;
-  return touch && small ? 'low' : 'high';
+  return deviceTier(deviceFacts()).tier;
 }
 
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
@@ -236,6 +237,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const query = new URLSearchParams(location.search);
+  // A/B for phone measurements: ?ground=old draws the near ground at every distance.
+  GroundSurface.farLow = query.get('ground') !== 'old';
   const board = query.get('board');
   const joinedEast = board !== 'downtown' && query.get('east') === 'king-memorial';
   const rectangle = board === null && !joinedEast;
@@ -1284,7 +1287,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const az = atm.sunAz * (Math.PI / 180);
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
-    if (takeHouseLodChange()) renderer.shadowMap.needsUpdate = true;
+    // Bitwise so both flags are consumed every frame (the house one also counts frames).
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();

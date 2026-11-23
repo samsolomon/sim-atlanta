@@ -131,7 +131,8 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
       ctx.setLineDash([4, 8]); stroke(r, .55, PAL.lineWhite); ctx.setLineDash([]);
     } else if (dividedIvanAllen(r)) {
       ctx.setLineDash([3, 6]); stroke(r, .24, PAL.lineWhite); ctx.setLineDash([]);
-    } else if (streets.has(r.cls) && roadWidth(r) >= 9) {
+    } else if (streets.has(r.cls) && r.cls !== 'residential' && roadWidth(r) >= 9) {
+      // Wide residential streets (Ansley's circles) carry no centreline.
       stroke(r, .4, '#d8bd79');
     }
   }

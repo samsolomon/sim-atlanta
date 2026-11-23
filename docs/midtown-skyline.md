@@ -74,6 +74,16 @@ Sam's reference photos were an aerial and an eye-level rooftop shot from a stock
 
 [Garden before and after](log/ui/midtown-skyline/garden2-close-compare-day.jpg) · [Night before and after](log/ui/midtown-skyline/garden2-sam-compare-night.jpg) · [Dusk and night](log/ui/midtown-skyline/garden2-dusk-night.jpg) · [Day at Sam's angle](log/ui/midtown-skyline/garden2-sam-compare-day.jpg) · [Low tier garden](log/ui/midtown-skyline/garden2-close-after-low-day.jpg)
 
+### Night crown, toned down (2026-11-24)
+
+Sam saw the crown in production as a blown-out white slab, brighter than anything around it, blooming past its edges. The cause: the veil glass had a near-white emissive at intensity 1.8, and the inner and end lattices sat at 1.6 and 1.4. Emissive adds on top of lighting, so the colour saturated to white before bloom spread it. Kendall/Heaton's night skyline shows the real crown as a soft, pale grey-green wash on the veil glass, with the white lattice at the open end a little brighter and a thin bright line up the edge; nothing clips. City now uses:
+- veils: grey-green `#9dbcb2` at 0.82
+- inner lattice: `#c9ddd4` at 0.78
+- end lattices: `#d8e6e1` at 0.75
+- edge line: 75%
+
+A test holds every crown material's emissive (colour × intensity) below 0.7 per channel. The warm office windows are unchanged. [Kendall/Heaton night skyline](https://www.kendall-heaton.com/projects/1180-peachtree/) · [Photo and model](log/ui/midtown-skyline/napkin-night-photo-vs-model.jpg) · [Aerial before and after, high tier](log/ui/midtown-skyline/napkin-night-aerial-compare-high.jpg) · [Low tier](log/ui/midtown-skyline/napkin-night-aerial-compare-low.jpg) · [Day and night](log/ui/midtown-skyline/napkin-night-aerial-daynight-high.jpg) · [Close](log/ui/midtown-skyline/napkin-night-close-compare-high.jpg)
+
 ## The Georgian Terrace
 
 The parent footprint reports 19 floors. Two archived building parts distinguish the ten-storey historic corner from the 19-storey rear addition. The part boundaries preserve the angled Ponce frontage, indented courtyard, rounded corner and atrium junction. The hotel's daylight corner photograph shows the brick bay windows and stone cornice below a taller glazed cylinder. Smallwood's side approach shows the projecting terraces and the physical joint between old masonry and new glazing. A visitor's evening photograph shows warm lamps grazing the bases of pale columns and shining behind arched openings. Seasonal decorations vary. [Historic and modern exteriors](https://www.thegeorgianterrace.com/gallery) · [Renovation architect's photographs](https://smallwood-us.com/projects/georgian-terrace/) · [Evening terrace photograph](https://myloveofoldhollywood.blogspot.com/2014/01/touring-atlanta-part-one-of-three.html)

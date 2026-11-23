@@ -296,7 +296,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Magnolia gloss round 2 sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [American elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Flowering dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
 
 **Sam's picks (23 Nov).**
 - Option A for willow oak, water oak, tulip poplar and red maple, and generally for broadleaves.
@@ -304,7 +304,8 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - Loblolly pine: A, tiered needle tufts.
 - Ginkgo: C4.
 - Sweetgum: A ("looks good").
-- Still to pick: the magnolia, among A and its gloss variants A1–A3.
+- American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
+- Still to pick: the magnolia (gloss round 2: A and speck densities A1–A3) and the dogwood (round 2 pending).
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -549,9 +550,9 @@ Flowers and bracts are small chips on the outer, upper side of the leaf clusters
 
 ### Southern magnolia
 
-`web/src/trees/magnolia-crape.ts`. "A dense (more open in the shade), dark green pyramidal shape, the lower branches often bending to the ground" ([UF ST371](https://ask.ifas.ufl.edu/publication/ST371/pdf)). The leaves are leathery and glossy, 13–25 cm long, with rusty undersides. Bark is grey and smooth, developing scaly plates with age. The crown is built as dense tiers of branch masses (`Habit.tiers` 3, 3, 3, 2), down to the ground and shrinking toward the top (`taper` 0.4). Sunlit tops are bright over a near-black interior (`toneByLight`).
+`web/src/trees/magnolia-crape.ts`. "A dense (more open in the shade), dark green pyramidal shape, the lower branches often bending to the ground" ([UF ST371](https://ask.ifas.ufl.edu/publication/ST371/pdf)). The leaves are leathery and glossy, 13–25 cm long, with rusty undersides. Bark is grey and smooth, developing scaly plates with age. The crown is built as dense tiers of branch masses down to the ground, shrinking toward the top (since gloss round 2: `Habit.tiers` 3, 3, 2, 2, 2, `taper` 0.6, `cone` 0.8, widest 0.24; see below). Sunlit tops are bright over a near-black interior (`toneByLight`).
 
-**Options:** A · glossy branch-mass cards with flowers; B · cored masses; C · faceted clusters. All stay within 196 / 156.
+**Options:** A · glossy branch-mass cards with flowers; B · cored masses (dropped in gloss round 2); C · faceted clusters. All stay within 196 / 156.
 
 | Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
 |---|---|---|---|---|---|
@@ -590,6 +591,16 @@ Sam on option A: "this is the right shape. I don't know that I get the sense of 
 
 Crown luminance / saturation (Front, 1 Jul): A 0.232 / 0.832, A1 0.299 / 0.726, A2 0.312 / 0.721, A3 0.300 / 0.726. Gloss lifts the crown 30–35% over the dark base, and the bronze undersides are subtle in front light. At 300 m through ink and grade all three still read: A1 and A3 as a pale silvery patch on the sun side, A2 as pale flecks. (A first build had the sheen's half vector reversed and lit backlit cards; the code review caught it.)
 
+### Magnolia gloss, round 2 (specks on a dark cone)
+
+[Sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg). The coordinator's read of round 1: whole lit cards read as frost or mildew, the baked flecks as sun-bleached patches, and the crown as too round and too light at the top. In the reference, gloss is hundreds of tiny sharp highlights over a near-black cone. A card is far bigger than a leaf, so per-card lighting cannot make that.
+- **Shape.** A new habit option, `cone` (0 to 1), straightens the envelope above its widest point. The masses (`ringAt`) and the outline clamp follow it, and the leader stops lower so it never shows through the pulled-in top. The magnolia uses `cone` 0.8, `taper` 0.6, widest at 0.24, and tiers 3, 3, 2, 2, 2 to a filled top. Its top tone is darker. Above the widest point the crown normals follow the cone's flank (`envelopeNormal`), and the outline clamp pulls clusters in by bisection, since the cone's metric is not linear.
+- **Specks** (`LookOption.specks`, cards only). The shader picks single painted leaves by hashing each leaf's atlas value with a half-metre cell of tree space, so every card picks its own few. A picked leaf turns warm white where its card faces the sun's half vector, on the crown's sun side (the smoothed crown normal) only. The step is near-binary, so it reads as a point and not a wash. It scales with the sun, so it is off at night. A1, A2 and A3 let about 1 leaf in 20, 10 and 6 flash.
+- **Dropped:** the whole-card sheen, the baked silver glints and the bronze undersides.
+- **Cost:** none added. A and its variants are 193 / 113 per tree, plus 90 in near tips. C rises to 13 clusters so every mass keeps one. B (cored) is dropped for the magnolia: a core per mass on 13 masses cannot fit 196 with cards on every mass, and Sam's direction is A.
+
+Crown luminance / saturation (Front, 1 Jul, high): A 0.201 / 0.862, A1 0.205, A2 0.210, A3 0.218 / 0.845; low A 0.211. The specks add 2–8%, not round 1's 30%. The pick reads the atlas at full size (`textureLod`), so mipmaps cannot blend neighbouring leaves into new ids at range, and it hashes tree space, not world position, to keep `sin()` precise far from the origin. Other species measure as before (willow oak 0.256, tulip poplar 0.240, sweetgum 0.255, crape myrtle 0.246, elm 0.249). The cone is deliberately darker than the generic canopy (0.248), as the reference is. At eye level the specks are subtle; they show best in the day row and at 300 m as a faint sun-side sparkle.
+
 ### Japanese maple
 
 `web/src/trees/japanese-maple.ts`, Sam's request (23 Nov). Red Japanese maples are "everywhere in front yards and on the traffic islands" of Ansley Park: low, wide, layered, umbrella-shaped, on several leaning trunks. They are "the colour accents". The sources describe a "low, dense, rounded top and spreading branches" ([NC State](https://plants.ces.ncsu.edu/plants/acer-palmatum/)) that is "typically multi-trunked", with "muscular-looking, picturesque, grey" trunks ([UF ST023](https://ask.ifas.ufl.edu/publication/ST023/pdf)).
@@ -619,6 +630,46 @@ The weeping laceleaf mound (about 2 m, cascading to the ground, on Sam's ivy ban
 | Specimen | 6–9.4 | 6–10.2 | 0.2–0.57 | 7.5 / 8 / 0.35 | GT 12–18 in medians 7.5 m by 6.0 m; GT maximums 9.4 m and 10.2 m. No Atlanta champion *A. palmatum* is recorded |
 
 **Proposed placement** (for Sam; nothing is placed): front yards, side yards and traffic islands in Ansley Park and Midtown residential blocks, as a small share of the yard mix (taken from "other broadleaf") and a larger share on the planted islands. Never as street trees. Trees Atlanta's plant inventory has only 23 alive (Candler Park 6, Midtown 2, Ansley 0), because most are private plantings, so the share rests on Sam's walk. City placements would be `illustrative`.
+
+### American elm
+
+`web/src/trees/elm-dogwood.ts`. "Open-grown trees fork 10 to 20 feet (3-6 m) from the ground with several erect limbs forming a wide, arching crown" ([FEIS](https://www.fs.usda.gov/database/feis/plants/tree/ulmame/all.html)), "branches like spreading fountains" (Morton Arboretum). Leaves are rough and matte. Bark is ashy grey and narrowly fissured. The proposal is for City's street mixes to map lacebark elm and zelkova, the elm's street substitutes, to this species (not wired in yet). Both are more common on Atlanta streets than the American elm itself.
+
+**Options:**
+- A · vase of branch-mass cards: 177 / 77, plus 108 in tips.
+- B · cored masses: 179 / 85.
+- C · faceted clusters: 177 / 97.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–6.5 | 1.5–4 | 0.04–0.12 | 5 / 3 / 0.08 | GT under 15 cm DBH: median 6.1 m by 3.3 m |
+| Young | 6–13.6 | 4–8.5 | 0.12–0.3 | 10 / 6.4 / 0.22 | GT 15–30 cm medians |
+| Mature | 15–27.4 | 9.1–21.3 | 0.3–0.91 | 21 / 15 / 0.7 | NC State 18.3–24.4 m by 9.1–18.3 m; UF 21.3–27.4 m by 15.2–21.3 m; GT 30–91 cm medians 18.1–23.2 m by 11.6–17.5 m |
+| Specimen | 24–32 | 20–33.5 | 0.9–1.52 | 30 / 28 / 1.4 | Champions: 80 Palisades Rd, 32.0 × 29.0 m; Doraville, 25.4 × 33.5 m |
+
+**Calendar.** Flowers in February and March before the leaves (NC State, FEIS). Fall colour is "an undistinguished yellow" (NC State). Georgia USA-NPN has only 2 tree-years. A [Norcross state-champion photo](https://commons.wikimedia.org/wiki/File:State_Champion_American_Elm,_Norcross_GA.jpg) on 19 Mar 2026 shows a yellow-green haze, either seeds or first leaves. **Inferred:** full leaf by about 20 Apr, soft yellow about 30 Oct, bare by about 18 Nov.
+
+### Flowering dogwood
+
+`web/src/trees/elm-dogwood.ts`. "Branches on the lower half of the crown grow horizontally, those in the upper half are more upright … a strikingly horizontal impact" ([UF ST185](https://ask.ifas.ufl.edu/publication/ST185/pdf)). The crown is drawn as tiers of flat masses (3, 3 and 2) on near-level limbs. It has one trunk: UF says "typically multi-trunked", but 96% of GT's 339 dogwoods are single-stem.
+
+**Bloom.** The bracts open on bare or barely leafing twigs. In bloom the crown stays present and washes white (`bloomWash` 0.8), with early green between, because the bracts dominate the crown. Georgia USA-NPN has 39 tree-years: open flowers Mar 28 to Apr 9 (medians), full flowering Apr 1–13. The Atlanta Dogwood Festival runs Apr 10–12, 2026, and a [dated Oakland Cemetery photo](https://commons.wikimedia.org/wiki/File:Oakland_Cemetery_dogwood_tree_and_downtown_Atlanta_skyline.jpg) shows full bloom on 29 Mar 2017. Red berries from late September are not drawn.
+
+**Options:**
+- A · layered branch-mass cards: 189 / 109, plus 90 in tips.
+- B · cored layers: 183 / 129.
+- C · faceted layers: 169 / 109.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 1.5–4 | 1–4 | 0.03–0.12 | 3 / 2.6 / 0.07 | GT under 15 cm DBH: median 3.4 m by 2.7 m |
+| Young | 4–7 | 3–7.5 | 0.12–0.3 | 6 / 5.5 / 0.2 | GT 15–30 cm medians: 6.4 m by 5.5 m |
+| Mature | 6–9.3 | 4.6–11.1 | 0.3–0.5 | 7.5 / 8 / 0.35 | NC State 4.6–7.6 m by 4.6–9.1 m; UF 6.1–9.1 m by 7.6–9.1 m; GT 30–61 cm medians 8.2 m by 7.2 m |
+| Specimen | 8–12.9 | 9–13.7 | 0.45–0.65 | 9.1 / 13.7 / 0.6 | Champions: 458 Ponce de Leon Ave, 9.1 × 13.7 m; Peachtree Christian courtyard, 12.9 × 12.2 m |
+
+**Fall.** "Red to reddish purple" (NC State), "red to maroon" in sun (UF). Georgia USA-NPN puts coloured leaves Oct 3–20 and falling leaves Oct 5–22, with the latest on Nov 21. Sam saw red-maroon dogwoods at Ansley yard edges on 23 Nov, so the lab keeps them red-maroon into November and bare by early December.
+
+**Brightness.** Option A against the generic tree: elm 0.249 / 0.818 high and 0.249 / 0.806 low; dogwood 0.238 / 0.749 and 0.247 / 0.739.
 
 ### Pair 2 gaps
 

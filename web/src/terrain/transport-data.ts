@@ -36,8 +36,26 @@ export function dividedIvanAllen(road: RoadDimensions) {
     !!road.pts?.length && road.pts.every(([x]) => x <= -648.5);
 }
 
+/** Ansley Park, roughly Peachtree Street to Piedmont Park and 15th Street to I-85, in scene metres. */
+export const inAnsley = (x: number, z: number) => x > 800 && x < 1750 && z > -4750 && z < -3700;
+
+// Peachtree Circle runs just west of the house-style box (x 770–835), so the street table reaches further west.
+const inAnsleyStreets = (x: number, z: number) => x > 740 && x < 1750 && z > -4750 && z < -3700;
+
+/**
+ * Ansley Park's wide streets (Sam, 2026-11-23). OSM carries no width here, so these are inferred
+ * curb-to-curb widths measured on aerial imagery against its scale bar (about ±1 m), including
+ * curbside parking; see docs/ansley-street-widths.md. Narrower Ansley drives keep the 7 m default.
+ */
+export const ANSLEY_WIDTHS: Record<string, number> = {
+  'Peachtree Circle Northeast': 12, 'The Prado Northeast': 12, 'South Prado Northeast': 12,
+  '15th Street Northeast': 10, '17th Street Northeast': 10,
+};
+
 export function roadWidth(road: RoadDimensions) {
   if (dividedIvanAllen(road)) return 7.2;
+  const ansley = road.cls === 'residential' && road.name ? ANSLEY_WIDTHS[road.name] : undefined;
+  if (ansley && road.pts?.some(([x, z]) => inAnsleyStreets(x, z))) return ansley;
   if (road.cls === 'motorway' && road.sub === 'link') return 6.5;
   return widths[road.cls] ?? 4;
 }
