@@ -7,6 +7,7 @@
  * bakes use the flat board. Quality is selected once when the view opens.
  */
 import * as THREE from 'three';
+import { ORBIT_MIN, minOrbitDistance } from './dev-camera';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
@@ -789,7 +790,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   controls.enableDamping = true;
   controls.minPolarAngle = THREE.MathUtils.degToRad(20);
   controls.maxPolarAngle = THREE.MathUtils.degToRad(72);
-  controls.minDistance = 150;
+  controls.minDistance = minOrbitDistance(query, import.meta.env.DEV);
+  // A closer dev orbit needs a nearer clip plane, or the subject is cut away.
+  if (controls.minDistance < ORBIT_MIN && !drive) { camera.near = Math.min(camera.near, controls.minDistance / 4); camera.updateProjectionMatrix(); }
   controls.maxDistance = midtown ? 32000 : mosaic ? 11000 : 6500;
   controls.screenSpacePanning = false;
   controls.keys = { LEFT: '', UP: '', RIGHT: '', BOTTOM: '' }; // the shell owns the keyboard
@@ -1329,7 +1332,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     east?.setWet(wx.rain);
     north?.setWet(wx.rain);
     if (mosaic) for (const a of mosaic.patches.values()) a.setWet(wx.rain);
-    const dist = camera.position.distanceTo(controls.target);
+    // A dev close orbit (?dev&mindist) keeps the fog of the normal 150 m limit, so nearby detail stays clear.
+    const dist = Math.max(camera.position.distanceTo(controls.target), controls.minDistance < ORBIT_MIN ? ORBIT_MIN : 0);
     const f = Math.max(wx.fog, wx.rain * 0.5);
     const fog = scene.fog as THREE.Fog;
     fog.color.copy(bg);
