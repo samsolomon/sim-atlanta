@@ -146,3 +146,27 @@ it('cuts the terrain across the whole portal mouth, just under the rail', () => 
   expect(along(slot.end)).toBeCloseTo(-12, 6);
   expect(slot.halfWidthM).toBeGreaterThanOrEqual(f.spacing / 2 + 2.72 + 0.19 + 0.5);
 });
+
+it('frees every mesh and car pool it added when disposed', () => {
+  const area = new Group(),
+    cars = new Group();
+  const line = tracks[1];
+  const coords = line.pts.flatMap((p) => sceneToLonLat(origin, ...p));
+  const rf = {
+    paths: [{ id: 'test', coords, cum: [...line.cum], routeId: 'marta:route:RED' }],
+    routes: [{ id: 'marta:route:RED', color: '#d1282f' }],
+  } as unknown as RoutesFile;
+  const north = createNorthLine({ group: area, groundAt: () => -8.13 }, rf, origin, cars)!;
+  north([{ id: 't', pathId: 'test', routeId: 'marta:route:RED', s: { value: 150, tier: 'scheduled' }, lengthM: { value: 90 } } as TrainState], 0);
+  expect(area.children.length).toBeGreaterThan(0);
+  expect(cars.children.length).toBeGreaterThan(0);
+  let disposed = 0;
+  for (const root of [area, cars])
+    root.traverse((o) => {
+      if ((o as Mesh).geometry) (o as Mesh).geometry.addEventListener('dispose', () => disposed++);
+    });
+  north.dispose();
+  expect(area.children).toHaveLength(0);
+  expect(cars.children).toHaveLength(0);
+  expect(disposed).toBeGreaterThan(3);
+});
