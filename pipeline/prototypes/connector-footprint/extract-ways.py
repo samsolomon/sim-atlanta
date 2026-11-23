@@ -1,5 +1,6 @@
 """Freeze the directed OSM carriageways and their ramps in the Five Points metre frame."""
 import argparse
+import gzip
 import json
 import math
 from pathlib import Path
@@ -10,11 +11,11 @@ parser.add_argument("osm", type=Path, help="OSM API 0.6 map XML, bbox -84.3905,3
 args = parser.parse_args()
 root = ET.parse(args.osm).getroot()
 scale = 6371008.8 * math.pi / 180
-nodes = {
-    n.get("id"): [round((float(n.get("lon")) + 84.3916) * scale * math.cos(math.radians(33.7539)), 2),
-                  round((33.7539 - float(n.get("lat"))) * scale, 2)]
-    for n in root.findall("node")
-}
+def point(lon, lat):
+    return [round((float(lon) + 84.3916) * scale * math.cos(math.radians(33.7539)), 2),
+            round((33.7539 - float(lat)) * scale, 2)]
+
+nodes = {n.get("id"): point(n.get("lon"), n.get("lat")) for n in root.findall("node")}
 ways = {}
 # The lower roads at Williams, Spring and West Peachtree/Civic Center are
 # open-sided underpasses. Draw pavement and cars below the separate upper
@@ -48,6 +49,17 @@ while True:
     if more <= selected:
         break
     selected |= more
+# The archived Midtown map includes the seven-lane SB approach to exit 249C.
+with gzip.open(Path(__file__).parent.parent / "square-board/source/midtown-south.json.gz") as src:
+    elements = json.load(src)["elements"]
+approach = next(e for e in elements if e["type"] == "way" and e["id"] == 337901411)
+coords = {e["id"]: point(e["lon"], e["lat"]) for e in elements if e["type"] == "node"}
+tags = approach["tags"]
+assert tags["highway"] == "motorway" and tags["oneway"] == "yes"
+assert not any(k in tags for k in ("bridge", "tunnel", "covered"))
+ways[approach["id"]] = dict(version=approach["version"], lanes=int(tags["lanes"]),
+    link=False, kind="ground", hov=False, pts=[coords[n] for n in approach["nodes"]])
+selected.add(approach["id"])
 out = Path(__file__).with_name("ways.json")
 out.write_text("{\n" + ",\n".join(f'  "{k}":' + json.dumps(ways[k], separators=(",", ":"))
                                   for k in sorted(selected)) + "\n}\n")

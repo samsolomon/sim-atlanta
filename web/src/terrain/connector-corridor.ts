@@ -10,6 +10,8 @@ export interface Ribbon extends Way {
   id: number;
   key: string;
   line: Line;
+  /** Directed mainline metres at this ribbon's first node, relative to Georgia State. */
+  station0?: number;
   rows: Section[];
   direction: ConnectorDirection;
 }
@@ -54,6 +56,26 @@ for (const [id, raw] of Object.entries(rawWays)) {
       joints.set(key, joint);
     }
     first = i;
+  }
+}
+
+// Each Georgia State crossing supplies a fixed origin even as boards or source
+// ways are added upstream. Links retain their own distance from the ramp start.
+for (const id of [119686423, 316454382]) {
+  const origin = ribbons.find(r => r.id === id)!;
+  origin.station0 = 0;
+  for (const forward of [true, false]) {
+    let r = origin;
+    while (true) {
+      const endpoint = forward ? r.pts.at(-1)! : r.pts[0];
+      const joint = joints.get(endpoint.join(','))!;
+      const mains = (forward ? joint.outgoing : joint.incoming).filter(e => !e.ribbon.link);
+      if (mains.length !== 1) break;
+      const next = mains[0].ribbon;
+      if (next.station0 !== undefined) break;
+      next.station0 = forward ? r.station0! + r.line.length : r.station0! - next.line.length;
+      r = next;
+    }
   }
 }
 
@@ -270,7 +292,11 @@ for (const r of ribbons) {
         stations.add(s);
       }
     }
-  for (let s = 8; s < r.line.length; s += 8) stations.add(s);
+  // Paint, structural treads and lane centre paths share these sections.
+  // Continue the eight-metre sampling grid through source way boundaries.
+  const start = r.station0 ?? 0;
+  for (let station = (Math.floor(start / 8) + 1) * 8; station < start + r.line.length; station += 8)
+    stations.add(station - start);
   for (const s of [...stations].sort((a, b) => a - b)) {
     const row = typical(r, s),
       p = r.line.at(s),
@@ -313,6 +339,20 @@ export function sectionAt(r: Ribbon, s: number): Section {
     b = rows[hi],
     t = Math.max(0, Math.min(1, (s - a.s) / (b.s - a.s || 1)));
   return { s, inner: mix(a.inner, b.inner, t), outer: mix(a.outer, b.outer, t) };
+}
+
+const mainline = (direction: ConnectorDirection) => ribbons
+  .filter((r): r is Ribbon & { station0: number } => r.direction === direction && r.station0 !== undefined)
+  .sort((a, b) => b.station0 - a.station0);
+const carriageways = { northbound: mainline('northbound'), southbound: mainline('southbound') };
+
+/** Half-open mainline interval in metres of travel from that direction's
+ * Georgia State origin. At a source junction the downstream ribbon owns s. */
+export function connectorSectionAtStation(direction: ConnectorDirection, stationM: number) {
+  const ways = carriageways[direction];
+  if (stationM >= ways[0].station0 + ways[0].line.length) return undefined;
+  const ribbon = ways.find(r => stationM >= r.station0);
+  if (ribbon) return { ribbon, section: sectionAt(ribbon, stationM - ribbon.station0) };
 }
 
 /** Match the carrying axis and travel direction, including separately mapped HOV lanes. */

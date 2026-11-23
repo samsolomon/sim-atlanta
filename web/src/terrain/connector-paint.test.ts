@@ -1,3 +1,4 @@
+import { ribbons, stripePoint } from './connector-corridor';
 import { expect, it } from 'vitest';
 import type { P2 } from '../vignette/geom';
 import { connectorLanes, connectorPoint } from './connector-lanes';
@@ -60,4 +61,16 @@ it('clears the old shoulder posts from both carriageways and retains the median'
   expect(inConnectorLanes(...connectorPoint(0, -8))).toBe(false);
   expect(inConnectorLanes(...connectorPoint(0, -8), 1.8)).toBe(true);
   expect(inConnectorLanes(0, 0)).toBe(false);
+});
+
+it('paints all eight edges of the seven-lane Midtown approach from its stationed sections', () => {
+  const approach = ribbons.find(r => r.id === 337901411)!;
+  const tile = { ...city, name: 'midtown-south', bounds: { minX: -1000, maxX: 1800, minZ: -2500, maxZ: -1700 } };
+  const { ctx, strokes } = recording();
+  paintConnector(ctx, tile, 1);
+  for (let edge = 0; edge <= 7; edge++) {
+    const points = approach.rows.map(row => stripePoint(row, edge / 7));
+    expect(strokes.some(stroke => stroke.points.length === points.length &&
+      stroke.points.every(([x,z], i) => x === points[i][0] && z === points[i][1]))).toBe(true);
+  }
 });

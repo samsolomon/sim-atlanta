@@ -7,7 +7,9 @@ import { GroundSurface } from '../terrain/surface';
 import { auburnGround, auburnTransport } from './sweet-auburn-transport';
 import { cityRoadHeight } from './road-height';
 import { ConnectorTraffic, CONNECTOR_TRAFFIC_CAP } from './connector-traffic';
-import { ribbons, sectionAt, stripePoint } from '../terrain/connector-corridor';
+import { northConnectorGround } from '../square-board/connector-ground';
+import { connectorTrafficRoutes } from './connector-traffic-routes';
+import { connectorSectionAtStation, laneKey, successors, ribbons, sectionAt, stripePoint } from '../terrain/connector-corridor';
 
 const auburn = new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url);
 const context: TerrainCity = JSON.parse(readFileSync(new URL('context.json', auburn), 'utf8'));
@@ -76,4 +78,61 @@ it.skipIf(!existsSync(downtown))('uses a single car budget across the two easter
     }
     expect(seen).toEqual(new Set([1,2,3]));
   } finally { layer.dispose(); }
+});
+
+it('carries the seven Midtown approach lanes across the 249C split and the low-tier ground join', () => {
+  const boards = ['north-band', 'midtown-south'].map(id => {
+    const dir = new URL('../../../pipeline/prototypes/square-board/' + id + '/', import.meta.url);
+    const read = (name: string) => readFileSync(new URL(name, dir));
+    const manifest = JSON.parse(read('ground.json').toString());
+    const grid = northConnectorGround(manifest, Uint8Array.from(read('ground.i16')).buffer);
+    const surface = new GroundSurface(grid, 'low');
+    const city = JSON.parse(read('context.json').toString()) as TerrainCity;
+    return { city, surface, height: cityRoadHeight(city, surface.sampleScene.bind(surface)) };
+  });
+  try {
+    const [north, midtown] = boards;
+    const routes = connectorTrafficRoutes(north.city, [midtown.city]);
+    const way = (id: number) => ribbons.find(r => r.id === id)!;
+    const approach = way(337901411), through = way(1467386395), exit = way(9236635);
+    expect(approach.station0).toBeTypeOf('number');
+    expect(through.station0).toBeCloseTo(approach.station0! + approach.line.length, 8);
+    for (const r of ribbons.filter(r => !r.link)) {
+      expect(connectorSectionAtStation(r.direction, r.station0!)?.ribbon).toBe(r);
+    }
+    for (const ribbon of [approach, way(337901447)]) {
+      const at = connectorSectionAtStation(ribbon.direction, ribbon.station0! + 80)!;
+      expect(at.ribbon).toBe(ribbon);
+      expect(at.section.s).toBeCloseTo(80);
+      // Both directions use a common eight-metre station grid across source ways.
+      const regular = ribbon.rows.filter(row => Math.abs((ribbon.station0! + row.s) / 8 -
+        Math.round((ribbon.station0! + row.s) / 8)) < 1e-8);
+      expect(regular.length).toBeGreaterThan(35);
+    }
+
+    expect(connectorSectionAtStation(through.direction, through.station0!)?.ribbon).toBe(through);
+    for (let lane = 0; lane < 7; lane++) {
+      const next = successors.get(laneKey({ ribbon: approach, lane }))!;
+      const expected = [
+        ...(lane < 6 ? [{ ribbon: through, lane }] : []),
+        ...(lane >= 5 ? [{ ribbon: exit, lane: lane - 5 }] : []),
+      ];
+      expect(next.map(laneKey).sort()).toEqual(expected.map(laneKey).sort());
+      const first = stripePoint(approach.rows[0], (lane + .5) / approach.lanes);
+      for (const target of expected) {
+        const end = stripePoint(approach.rows.at(-1)!, (lane + .5) / approach.lanes);
+        const start = stripePoint(target.ribbon.rows[0], (target.lane + .5) / target.ribbon.lanes);
+        expect(Math.hypot(end[0] - start[0], end[1] - start[1])).toBeLessThan(.001);
+        const route = routes.find(r => r.roads.some(road => road.pts === target.ribbon.pts) &&
+          r.line.pts.some(p => Math.hypot(p[0] - first[0], p[1] - first[1]) < .001));
+        expect(route).toBeDefined();
+        const i = route!.line.pts.findIndex(p => Math.abs(p[1] + 1700) < 1e-6);
+        expect(i).toBeGreaterThan(0);
+        const [x,z] = route!.line.pts[i], road = route!.roads[i-1];
+        const y = north.height(x,z,road);
+        expect(y).not.toBeNull();
+        expect(midtown.height(x,z,road)).toBeCloseTo(y!, 5);
+      }
+    }
+  } finally { for (const b of boards) b.surface.geometry.dispose(); }
 });
