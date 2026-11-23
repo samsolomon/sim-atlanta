@@ -38,7 +38,8 @@ pnpm data:vignette   # East Portal diorama data
 pnpm secrets:local   # worker/.dev.vars from 1Password (needs `op` signed in)
 pnpm dev:worker      # live API on :8787
 pnpm dev             # http://localhost:5173, proxies /api to the worker
-pnpm test            # Rust + web + worker tests
+pnpm test            # Rust + pipeline + web + worker tests (pipeline skips without .venv)
+pnpm test:release    # same, but fails if the pipeline checks cannot run
 pnpm build           # web/dist, which the worker serves
 pnpm review          # cross-model review of this branch (see "Review")
 ```
