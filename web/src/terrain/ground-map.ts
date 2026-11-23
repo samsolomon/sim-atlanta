@@ -82,11 +82,14 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   ctx.translate(-b.minX, -b.minZ);
   ctx.fillStyle = '#b5bd97';
   ctx.fillRect(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ);
-  // At low detail a texel spans 0.98 m. Keep the illustrative stripes legible
-  // without allocating a second texture or changing the 2.6 m parking spacing.
+  // Keep the illustrative stripes legible on coarse maps without allocating a second
+  // texture or changing the 2.6 m parking spacing. Widths follow the texel up to the
+  // old low-tier 0.98 m; the 1.38 m low tier keeps those proportions and antialiases,
+  // rather than painting lots and crossings as blotches of white.
   const texelM = (b.maxX - b.minX) / canvas.width;
-  const stallLine = Math.max(.33, .8 * texelM);
-  const zebraPattern = [Math.max(.65, 1.45 * texelM), Math.max(.75, 1.25 * texelM)];
+  const markTexel = Math.min(texelM, .98);
+  const stallLine = Math.max(.33, .8 * markTexel);
+  const zebraPattern = [Math.max(.65, 1.45 * markTexel), Math.max(.75, 1.25 * markTexel)];
   const covers = (data.ground ?? []).filter(g => g.kind in landColors)
     .sort((a,b) => landOrder.indexOf(a.kind) - landOrder.indexOf(b.kind));
   for (const g of covers) {

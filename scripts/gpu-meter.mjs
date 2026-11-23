@@ -20,7 +20,7 @@ const chrome = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/M
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const tally = () => {
-  const G = WebGL2RenderingContext.prototype, M = { textures: new Map(), dims: new Map(), rbs: new Map(), buffers: new Map(), peak: 0 };
+  const G = WebGL2RenderingContext.prototype, M = { textures: new Map(), dims: new Map(), base: new Map(), rbs: new Map(), buffers: new Map(), peak: 0 };
   window.__gpuMeter = M;
   const unit = new WeakMap(), boundTex = new WeakMap(), boundBuf = new WeakMap(), boundRb = new WeakMap();
   const per = (gl, m) => { let v = m.get(gl); if (!v) m.set(gl, v = {}); return v; };
@@ -30,17 +30,20 @@ const tally = () => {
   const wrap = (name, fn) => { const o = G[name]; G[name] = function (...a) { fn.call(this, ...a); return o.apply(this, a); }; };
   wrap('activeTexture', function (u) { unit.set(this, u); });
   wrap('bindTexture', function (t, tex) { per(this, boundTex)[(unit.get(this) ?? 0x84C0) + ':' + t] = tex; });
-  const tex = gl => per(gl, boundTex)[(unit.get(gl) ?? 0x84C0) + ':' + 0x0DE1] ?? per(gl, boundTex)[(unit.get(gl) ?? 0x84C0) + ':' + 0x8C1A];
+  const tex = gl => { const b = per(gl, boundTex), u = (unit.get(gl) ?? 0x84C0) + ':';
+    return b[u + 0x0DE1] ?? b[u + 0x8C1A] ?? b[u + 0x806F] ?? b[u + 0x8513]; };
   wrap('texImage2D', function (t, level, fmt, ...r) {
     if (level !== 0) return;
     let w, h, type;
     if (r.length >= 6) { [w, h, , , type] = r; } else { const src = r[2]; w = src?.videoWidth ?? src?.width; h = src?.videoHeight ?? src?.height; type = r[1]; }
-    const k = tex(this); if (k && w && h) { M.textures.set(k, w * h * bpp(fmt, type)); M.dims.set(k, w + 'x' + h); sum(); }
+    const k = tex(this); if (k && w && h) { M.textures.set(k, w * h * bpp(fmt, type)); M.base.set(k, w * h * bpp(fmt, type)); M.dims.set(k, w + 'x' + h); sum(); }
   });
   wrap('texImage3D', function (t, level, fmt, w, h, d, b, f, type) { const k = tex(this); if (k && level === 0) { M.textures.set(k, w * h * d * bpp(fmt, type)); sum(); } });
-  wrap('texStorage2D', function (t, levels, fmt, w, h) { const k = tex(this); if (k) { M.textures.set(k, w * h * bpp(fmt) * (levels > 1 ? 4 / 3 : 1)); M.dims.set(k, w + 'x' + h + (levels > 1 ? ' mips' : '') + ' fmt' + fmt.toString(16)); sum(); } });
+  wrap('texStorage2D', function (t, levels, fmt, w, h) { const k = tex(this); if (k) { M.base.delete(k); M.textures.set(k, w * h * bpp(fmt) * (levels > 1 ? 4 / 3 : 1)); M.dims.set(k, w + 'x' + h + (levels > 1 ? ' mips' : '') + ' fmt' + fmt.toString(16)); sum(); } });
+  wrap('texStorage3D', function (t, levels, fmt, w, h, d) { const k = tex(this); if (k) { M.base.delete(k); M.textures.set(k, w * h * d * bpp(fmt) * (levels > 1 ? 4 / 3 : 1)); sum(); } });
   wrap('compressedTexImage2D', function (t, level, fmt, w, h, b, data) { const k = tex(this); if (k && level === 0) { M.textures.set(k, data?.byteLength ?? 0); sum(); } });
-  wrap('generateMipmap', function () { const k = tex(this); if (k && M.textures.has(k)) { M.textures.set(k, M.textures.get(k) * 4 / 3); sum(); } });
+  // texStorage2D already counted its levels; a texImage2D level 0 gains 1/3 once, however often it re-mips.
+  wrap('generateMipmap', function () { const k = tex(this); if (k && M.base.has(k)) { M.textures.set(k, M.base.get(k) * 4 / 3); sum(); } });
   wrap('deleteTexture', function (k) { M.textures.delete(k); });
   wrap('bindRenderbuffer', function (t, rb) { per(this, boundRb).rb = rb; });
   wrap('renderbufferStorage', function (t, fmt, w, h) { const k = per(this, boundRb).rb; if (k) { M.rbs.set(k, w * h * bpp(fmt)); sum(); } });
@@ -61,6 +64,7 @@ try {
     try { ws = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { /* starting */ }
     await sleep(200);
   }
+  if (!ws) throw Error(`Chrome exposed no debugger page; set CHROME (now ${chrome}). Needs Node 22+ for WebSocket.`);
   const sock = new WebSocket(ws); await new Promise(r => sock.onopen = r);
   let id = 0; const pending = new Map();
   sock.onmessage = e => { const m = JSON.parse(e.data); if (pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } };

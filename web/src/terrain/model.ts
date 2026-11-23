@@ -131,7 +131,8 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
   const world = new TerrainScenery(city, null, options);
-  // Tag what each pass adds, so the phone-perf report (core/perf.ts) breaks memory out by category.
+  // Tag what each pass adds, so the phone-perf report (core/perf.ts on studio-phone-perf's
+  // branch) breaks memory out by category: 'buildings', 'trees' or 'landscape'.
   const tagNew = (from: number, perf: string) => world.group.children.slice(from).forEach(o => { o.userData.perf ??= perf; });
   let before = world.group.children.length;
   world.buildBuildings(bd => bd.id === separateBuilding ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
