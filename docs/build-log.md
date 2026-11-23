@@ -2389,3 +2389,8 @@ The 1924 Biltmore had been drawn as a 65 m blue glass box. It is now brick on a 
 ### 2026-11-23 — Tiers move from the scene to the cards
 
 Sam's new rule (#231) takes truth-tier words out of the scene. The ambient notes at Brookwood ("Scheduled Crescent · Inferred berth · …") and on the North Line ("Inferred MARTA track") are gone, and the cards carry their content. The Crescent card, in both the current and A2c UIs, gains a "Brookwood berth · inferred berth" row, and any car tapped on the North Line's open cut shows "inferred track". The freight card already said illustrative. Checking the old note's screenshot turned up a mislabel: the consist I had circled as a North Line train was the illustrative freight on Main 2. Tapping it in the browser settled the question, and the caption is corrected. Requires a web rebuild only. [Before and after](log/ui/area-note/compare-tiers-on-cards.jpg)
+
+### 2026-11-23 — 1180's garden and its lit crown
+
+Sam's third note on 1180 Peachtree moved from shape to life. The 68 m garden gained mounded beds, ornamental grasses, a louvred drum and a row of crape myrtles. The trees are stand-ins tagged for the tree lab's species model, which Sam hasn't approved yet. Inside the crown, a white lattice now sits behind the veil glass. At night the crown glows cool white-green and the lattice shows through, which also tamed the earlier blown-out white wedges. A thin light line climbs each veil's curved edge. [Night before and after](log/ui/midtown-skyline/garden2-sam-compare-night.jpg)
+
