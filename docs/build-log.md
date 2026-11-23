@@ -1877,3 +1877,7 @@ From Five Points the William-Oliver reads as two uninterrupted walls of paired w
 ### 2026-11-23 — Two skylines at Atlanta City Hall
 
 From Trinity Avenue, the foreground roof belongs to the 1989 annex. The bake had lifted it to the same height as the Gothic tower on Mitchell. In the 2018 lidar, the atrium ridges reach about 337 m NAVD88 and the 1930 crown reaches 376 m. Restoring that 39 m difference makes the glazed ridges visible from above and the marble porch legible from the sidewalk. At night an amber-and-cream wash follows the tall piers seen in the city’s lighting photograph. [Sources and matched City views](log/ui/atlanta-city-hall/README.md)
+
+### 2026-11-23 — Six columns on Pryor Street
+
+The courthouse looked like one 52.8 m building in the bake. It took two street corners to understand the footprint. The 1914 Slaton facade has six stone columns rising five stories above a banded base. Around the corner, the Justice Center Tower has reflective glass and pale end piers. Lidar picked out the historic U-shaped high roof and two narrow links across the gap to the modern tower. The 25.1 m Carnes building keeps its own footprint alongside them. [Photographs, roof elevations and matched City views](log/ui/fulton-courthouse/README.md)
