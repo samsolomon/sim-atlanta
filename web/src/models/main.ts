@@ -23,6 +23,8 @@ import { SIZE_CLASSES, calendarDoy, doyOf, type SizeClass, type Species, type Tr
 import { SPECIES as SPECIES_LIST } from '../trees/index';
 import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
 import { C_FAMILY, TIP_CAP, TIP_RANGE_M, VARIANTS, createGinkgoVariant, variantTriangles, type GinkgoVariant } from '../trees/ginkgo-variants';
+import { LOOKS } from '../trees/looks-index';
+import { createLook, lookTriangles, type Look } from '../trees/looks';
 import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
 import { HOUSE_KINDS, HOUSE_NOTES, createHouseScene, type HouseKind } from './house-scene';
 
@@ -75,6 +77,8 @@ const models = {
   cyclist: 'Cyclist and bicycle',
   generic: 'Generic leaf-clump tree',
   ginkgo: 'Ginkgo',
+  ...Object.fromEntries(LOOKS.map(l => [l.species.id, l.species.name])) as Record<string, string>,
+  lineup: 'All species',
   ...LANDSCAPE_KINDS,
   ...HOUSE_KINDS,
 } as const;
@@ -82,6 +86,9 @@ const models = {
 const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
 const SPECIES_NOTES: Record<string, string> = {
   generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
+  'willow-oak': 'Downtown’s street oak: a straight trunk under a dense oval crown of fine, narrow leaves; yellow-brown to russet late in the fall. ',
+  'water-oak': 'The yard and woods oak: a short trunk splitting into big ascending leaders under a wider, more open crown of small spatulate leaves; a yellow week in late fall, and some leaves held into winter. ',
+  lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
 type Model = keyof typeof models;
@@ -126,11 +133,44 @@ let compareLabels: { text: string; at: THREE.Vector3 }[] = [];
 const labelLayer = document.createElement('div');
 labelLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;font:600 14px system-ui,sans-serif';
 document.getElementById('stage')!.append(labelLayer);
-// Ginkgo rendering candidates (trees/ginkgo-variants.ts) and the cost test's tree count.
-type Rendering = 'current' | GinkgoVariant | 'all' | 'allC';
-const compareSet = (r: Rendering): GinkgoVariant[] => r === 'allC' ? C_FAMILY : ['A', 'B', 'C', 'D'];
-const variantParam = new URLSearchParams(location.search).get('variant');
-let rendering: Rendering = variantParam && (variantParam === 'all' || variantParam === 'allC' || variantParam === 'current' || variantParam in VARIANTS) ? variantParam as Rendering : 'current';
+// Rendering options per species, and the cost test's tree count. A species with options (the
+// ginkgo's A–D and C family, trees/looks-index.ts for the rest) gets 'current', each option and
+// its compare rows. The lineup shows every species at once in one option letter.
+type Part = { group: THREE.Object3D; setSeason(d: number): void; update?(dt: number, c: THREE.Camera): void; setNight?(n: number): void; dispose(): void; draws?: number | (() => number) };
+interface Renderings {
+  ids: string[];
+  /** The option Sam picked, or the leading candidate: what the lineup's "Default" shows. */
+  preferred: string;
+  label(id: string): string;
+  /** Labelled compare rows: their button label and the options left to right. */
+  compares: { id: string; label: string; set: string[] }[];
+  create(placements: TreePlacement[], id: string, q: TreeQuality, compare: boolean): Part;
+  /** Triangles and notes for the report under the buttons. */
+  report(ids: string[], size: SizeClass, q: TreeQuality): string;
+}
+const GINKGO_RENDERINGS: Renderings = {
+  ids: Object.keys(VARIANTS),
+  preferred: 'C4',
+  label: id => VARIANTS[id as GinkgoVariant],
+  compares: [{ id: 'all', label: 'Compare A–D', set: ['A', 'B', 'C', 'D'] }, { id: 'allC', label: 'Compare C family', set: C_FAMILY }],
+  create: (p, id, q, compare) => createGinkgoVariant(p, id as GinkgoVariant, q, () => 0, compare ? { nearM: 400 } : undefined)!,
+  report: (ids, size, q) => ids.map(v => `${v} ${VARIANTS[v as GinkgoVariant]} ${variantTriangles(v as GinkgoVariant, size, q).total}`).join(', ') + ` triangles per ${size} tree.`
+    + (ids.includes('B') ? (q === 'low' ? ' B draws no fans at low detail (it is A).' : ' B swaps to A beyond 60 m.') : '')
+    + (ids.includes('C4') ? ` C4 counts fan tips on one tree; at most ${TIP_CAP} trees within ${TIP_RANGE_M} m carry them, none at low detail.` : ''),
+};
+const lookRenderings = (look: Look): Renderings => ({
+  ids: look.options.map(o => o.id),
+  preferred: look.options[0].id,
+  label: id => look.options.find(o => o.id === id)?.label ?? id,
+  compares: [{ id: 'all', label: 'Compare all', set: look.options.map(o => o.id) }],
+  create: (p, id, q) => createLook(p, look, id, q, () => 0)!,
+  report: (ids, size, q) => ids.map(id => {
+    const o = look.options.find(x => x.id === id)!, t = lookTriangles(look, o, size, q);
+    return `${o.id} ${o.label}: ${t.total} triangles per ${size} tree (${t.skeleton} limbs, ${t.foliage} leaves, ${t.carpet} carpet). ${o.note}`;
+  }).join(' '),
+});
+const RENDERINGS: Record<string, Renderings> = { ginkgo: GINKGO_RENDERINGS, ...Object.fromEntries(LOOKS.map(l => [l.species.id, lookRenderings(l)])) };
+let rendering = new URLSearchParams(location.search).get('variant') ?? 'current';
 let treeCount = Number(new URLSearchParams(location.search).get('n')) || 1;
 let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
 // Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
@@ -163,34 +203,55 @@ function buildTrees() {
     const cols = Math.ceil(Math.sqrt(treeCount));
     row = Array.from({ length: treeCount }, (_, i) => ({ size: sizes[i % sizes.length], x: (i % cols - (cols - 1) / 2) * pitch, z: (Math.floor(i / cols) - (cols - 1) / 2) * pitch }));
   }
-  const ginkgoVariant = model === 'ginkgo' && rendering !== 'current';
-  if (ginkgoVariant && (rendering === 'all' || rendering === 'allC')) {
-    const set = compareSet(rendering);
+  const reg = RENDERINGS[model];
+  const compare = reg?.compares.find(c => c.id === rendering);
+  const combine = (parts: Part[]): LabTrees => {
+    const group = new THREE.Group();
+    parts.forEach(p => group.add(p.group));
+    return {
+      group,
+      setSeason: d => parts.forEach(p => p.setSeason(d)),
+      update: (dt, cam) => parts.forEach(p => p.update?.(dt, cam)),
+      setNight: n => parts.forEach(p => p.setNight?.(n)),
+      dispose: () => { parts.forEach(p => p.dispose()); group.removeFromParent(); },
+      draws: () => parts.reduce((n, p) => n + (typeof p.draws === 'function' ? p.draws() : p.draws ?? 0), 0),
+    };
+  };
+  if (model === 'lineup') {
+    // Every species at mature size, left to right in mix-weight order, each in the chosen option.
+    const all: Species[] = [...LOOKS.map(l => l.species), SPECIES.ginkgo!];
+    const gaps = all.map(sp => sp.sizes.mature.spreadM);
+    let x = 0;
+    const xs = gaps.map((g, i) => (x += i ? gaps[i - 1] / 2 + 3 + g / 2 : 0));
+    const mid = (xs[0] - gaps[0] / 2 + xs[xs.length - 1] + gaps[gaps.length - 1] / 2) / 2;
+    // 'default' is each species' preferred option; a letter applies wherever a species has it.
+    const pick = (sp: Species) => rendering === 'default' ? RENDERINGS[sp.id]?.preferred : rendering;
+    const uses = (sp: Species) => rendering !== 'current' && !!RENDERINGS[sp.id]?.ids.includes(pick(sp) ?? '');
+    const parts = all.map((sp, i) => {
+      const p: TreePlacement = { species: sp, size: 'mature', x: xs[i] - mid, z: 0, seed: 11, heightM: sp.sizes.mature.heightM, spreadM: sp.sizes.mature.spreadM };
+      return uses(sp) ? RENDERINGS[sp.id].create([p], pick(sp)!, treeQuality, true) : createTrees([p], treeQuality, () => 0)!;
+    });
+    trees = combine(parts);
+    row = all.map((_, i) => ({ size: 'mature' as SizeClass, x: xs[i] - mid, z: 0 }));
+    compareLabels = all.map((sp, i) => ({ text: `${sp.name} · ${uses(sp) ? pick(sp) : 'current'}`, at: new THREE.Vector3(row[i].x, sp.sizes.mature.heightM * 1.04, 0) }));
+    spreads.splice(0, spreads.length, ...gaps);
+    heights.splice(0, heights.length, ...all.map(sp => sp.sizes.mature.heightM));
+  } else if (reg && compare) {
+    // Compare rows: options left to right at one class (mature when "All sizes" is chosen).
+    const set = compare.set;
     const mid0 = (set.length - 1) / 2;
-    // Compare all: A–D left to right at one class (mature when "All sizes" is chosen).
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     const spread = species!.sizes[size].spreadM;
     const gap = Math.max(spread + 3, size === 'sapling' ? 5 : 9);
-    const parts = set.map((v, i) =>
-      createGinkgoVariant([{ species: species!, size, x: (i - mid0) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
-    const group = new THREE.Group();
-    parts.forEach(p => group.add(p.group));
-    trees = {
-      group,
-      setSeason: d => parts.forEach(p => p.setSeason(d)),
-      update: (dt, cam) => parts.forEach(p => p.update(dt, cam)),
-      setNight: n => parts.forEach(p => p.setNight(n)),
-      dispose: () => { parts.forEach(p => p.dispose()); group.removeFromParent(); },
-      draws: () => parts.reduce((n, p) => n + p.draws(), 0),
-    };
-    row = parts.map((_, i) => ({ size, x: (i - mid0) * gap, z: 0 }));
-    compareLabels = set.map((v, i) => ({ text: set.length > 4 ? v : `${v} · ${VARIANTS[v]}`, at: new THREE.Vector3(row[i].x, species!.sizes[size].heightM * 1.04, 0) }));
+    trees = combine(set.map((v, i) => reg.create([{ species: species!, size, x: (i - mid0) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, true)));
+    row = set.map((_, i) => ({ size, x: (i - mid0) * gap, z: 0 }));
+    compareLabels = set.map((v, i) => ({ text: set.length > 4 ? v : `${v} · ${reg.label(v)}`, at: new THREE.Vector3(row[i].x, species!.sizes[size].heightM * 1.04, 0) }));
     spreads.splice(0, spreads.length, ...row.map(() => gap - 3));
     heights.splice(0, heights.length, ...row.map(() => species!.sizes[size].heightM));
-  } else if (ginkgoVariant) {
+  } else if (reg && reg.ids.includes(rendering)) {
     const placements: TreePlacement[] = row.map((r, i) => ({ species: species!, size: r.size, x: r.x, z: r.z, seed: 11 + i * 7,
       heightM: species!.sizes[r.size].heightM, spreadM: species!.sizes[r.size].spreadM }));
-    trees = createGinkgoVariant(placements, rendering as GinkgoVariant, treeQuality, () => 0);
+    trees = combine([reg.create(placements, rendering, treeQuality, false)]);
   } else if (species) {
     const placements: TreePlacement[] = row.map((r, i) => ({ species, size: r.size, x: r.x, z: r.z, seed: 11 + i * 7,
       heightM: species.sizes[r.size].heightM, spreadM: species.sizes[r.size].spreadM }));
@@ -226,22 +287,22 @@ function buildTrees() {
     Side: { pos: [-d, cy, 0.01], target: [0, cy, 0], fov: 30 },
     Rear: { pos: [0, cy, -d], target: [0, cy, 0], fov: 30 },
     Top: { pos: [0.01, d * 1.2, 0], target: [0, 0, 0], fov: 34 },
+    // Standing 1.6 m up, close enough that the tallest tree fills the frame, as in a reference photo.
+    'Eye level': { pos: [0, 1.6, tall * 0.95], target: [0, tall * 0.48, 0], fov: 58 },
   };
   camera.far = Math.max(400, d * 4);
   camera.updateProjectionMatrix();
 
   const variantReport = document.getElementById('variant-report')!;
-  if (model === 'ginkgo') {
+  if (model === 'lineup') {
+    variantReport.textContent = `Left to right in City mix order, all mature. ${rendering === 'current' ? 'Current: each species’ framework clump model.' : rendering === 'default' ? 'Default: Sam’s pick where he has made one (ginkgo C4), otherwise each species’ leading option A.' : `Option ${rendering} where a species has it, otherwise its current model.`}`;
+  } else if (reg) {
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     variantReport.textContent = rendering === 'current'
-      ? 'Current: the octahedron model City draws today.'
-      : (rendering === 'all' || rendering === 'allC' ? 'Left to right: ' : '') + (Object.keys(VARIANTS) as GinkgoVariant[])
-        .filter(v => rendering === 'all' || rendering === 'allC' ? compareSet(rendering).includes(v) : v === rendering)
-        .map(v => `${v} ${VARIANTS[v]} ${variantTriangles(v, size, treeQuality).total}`).join(', ') + ` triangles per ${size} tree.`
-        + (rendering === 'B' || rendering === 'all' ? (treeQuality === 'low' ? ' B draws no fans at low detail (it is A).' : ' B swaps to A beyond 60 m.') : '')
-        + (rendering === 'C4' || rendering === 'allC' ? ` C4 counts fan tips on one tree; at most ${TIP_CAP} trees within ${TIP_RANGE_M} m carry them, none at low detail.` : '');
+      ? `Current: the framework clump model${model === 'ginkgo' ? ' City draws today' : ''}, ${treeTriangles(species!, size, treeQuality).total} triangles per ${size} tree.`
+      : (compare ? 'Left to right: ' : '') + reg.report(compare ? compare.set : [rendering], size, treeQuality);
   }
-  const per = (q: TreeQuality) => species
+  const per = (q: TreeQuality) => model === 'lineup' ? 'see each species' : species
     ? sizes.map(size => `${size} ${treeTriangles(species, size, q).total}`).join(', ')
     : `${genericTriangles(q).total} per tree at every size`;
   const budget = genericTriangles(treeQuality);
@@ -321,10 +382,12 @@ function build() {
   scaleFigure?.dispose();
   scaleFigure = undefined;
   ground.visible = true;
-  const isTree = model === 'generic' || Object.hasOwn(SPECIES, model);
+  const isTree = model === 'generic' || model === 'lineup' || Object.hasOwn(SPECIES, model);
+  eyeLevel.hidden = !isTree;
   for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree && !(isLandscape(model) && id !== 'tree-size');
-  document.getElementById('count')!.hidden = !isTree;
-  document.getElementById('rendering')!.hidden = model !== 'ginkgo';
+  // The lineup is one tree per species; the cost test's counts don't apply.
+  document.getElementById('count')!.hidden = !isTree || model === 'lineup';
+  document.getElementById('rendering')!.hidden = !RENDERINGS[model] && model !== 'lineup';
   if (isHouse(model)) {
     for (const id of ['lines', 'roles', 'platforms', 'motion', 'tree-size', 'season']) document.getElementById(id)!.hidden = true;
     document.getElementById('tier')!.hidden = false;
@@ -627,6 +690,9 @@ for (const [kind, label] of [[null, 'None'], ['island', 'Island'], ['side', 'Sid
 }
 document.getElementById('platforms')!.append(platformReport); // after the buttons
 for (const v of Object.keys(TRAIN_VIEWS)) mk('views', v, () => view(v));
+// Trees also get an eye-level view, framed like a reference photograph.
+mk('views', 'Eye level', () => view('Eye level'));
+const eyeLevel = document.querySelector<HTMLButtonElement>('#views button:last-of-type')!;
 const BUS_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 1.8, 30], target: [0, 1.6, 6], fov: 13 },
   '¾ front': { pos: [-12, 4.0, 19], target: [0, 1.5, 1.5], fov: 30 },
@@ -677,10 +743,11 @@ function setModel(id: Model) {
   camera.far = id === 'crescent' ? 1800 : 400;
   presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
+  renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
   build();
-  view(id === 'generic' || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
+  view(id === 'generic' || id === 'lineup' || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
 }
 function selectModel(id: Model) {
   const url = new URL(location.href);
@@ -688,7 +755,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
@@ -714,9 +781,24 @@ for (const size of [...SIZE_CLASSES, 'all'] as const)
 document.getElementById('tree-size')!.append(treeReport);
 for (const [label, doy] of SEASONS) mk('season', label, () => { seasonDoy = doy; showSeason(); }, label === 'Clock date');
 document.getElementById('season')!.append(seasonReport);
-for (const r of ['current', 'A', 'B', 'C', 'D', 'all', 'C1', 'C2', 'C3', 'C4', 'allC'] as const)
-  mk('rendering', r === 'current' ? 'Current' : r === 'all' ? 'Compare A–D' : r === 'allC' ? 'Compare C family' : `${r} ${VARIANTS[r]}`, () => { rendering = r; setParam('variant', r); build(); view('Front'); }, r === rendering);
-document.getElementById('rendering')!.append(document.getElementById('variant-report')!);
+/** Rendering buttons for the selected species, from its registry; the lineup offers every option letter. */
+function renderingButtons() {
+  const box = document.getElementById('rendering')!;
+  box.querySelectorAll('button').forEach(b => b.remove());
+  const reg = RENDERINGS[model];
+  box.querySelector('legend')!.textContent = model === 'lineup' ? 'Rendering, every species' : `${models[model]} rendering`;
+  const ids = model === 'lineup' ? [...new Set(Object.values(RENDERINGS).flatMap(r => r.ids))].sort() : reg?.ids ?? [];
+  const compares = model === 'lineup' ? [] : reg?.compares ?? [];
+  if (rendering !== 'current' && !(model === 'lineup' && rendering === 'default') && !ids.includes(rendering) && !compares.some(c => c.id === rendering)) {
+    rendering = 'current';
+    setParam('variant', null);
+  }
+  const buttons: [string, string][] = [['current', 'Current'], ...(model === 'lineup' ? [['default', 'Default']] as [string, string][] : []), ...ids.map(id => [id, model === 'lineup' ? id : `${id} ${reg!.label(id)}`] as [string, string]), ...compares.map(c => [c.id, c.label] as [string, string])];
+  // The ginkgo keeps its order: A–D, compare, then the C family and its compare.
+  if (model === 'ginkgo') buttons.splice(0, buttons.length, ...(['current', 'A', 'B', 'C', 'D', 'all', 'C1', 'C2', 'C3', 'C4', 'allC'].map(r => [r, r === 'current' ? 'Current' : reg!.compares.find(c => c.id === r)?.label ?? `${r} ${reg!.label(r)}`] as [string, string])));
+  for (const [r, label] of buttons) mk('rendering', label, () => { rendering = r; setParam('variant', r); build(); view('Front'); }, r === rendering);
+  box.append(document.getElementById('variant-report')!);
+}
 for (const n of [1, 20, 50, 300])
   mk('count', String(n), () => { treeCount = n; setParam('n', String(n)); build(); view('Front'); }, n === treeCount);
 document.getElementById('count')!.append(document.getElementById('perf-report')!);

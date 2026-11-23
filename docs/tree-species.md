@@ -242,16 +242,107 @@ All six will be built in the lab with the same framework, budget and tests, and 
 | Crape myrtle (*Lagerstroemia indica*) | Multi-stem vase (GT median 4 stems, p90 6), smooth mottled bark | 2–3.5 | 3.5–5 | 6–10 tall, 4–7 spread | 10.1 / 7.8 (420 Edgewood Ave) | Pink, red or white bloom July–September. Yellow-orange-red fall colour. |
 | Flowering dogwood (*Cornus florida*) | Low, wider than tall, layered horizontal branching | 1.5–2.5 | 2.5–4 | 5–8 tall, 5–8 spread | 9.1 / 13.7 / 0.60 (Ponce de Leon Ave) | White bracts before the leaves, early April (Dogwood Festival). Red to purple fall colour. |
 
+The willow oak row is superseded by [Species options](#willow-oak), which use sourced classes.
+
 **Sources and gaps.**
 - Mature ranges, forms and bloom months come from each species' [NC State Plant Toolbox](https://plants.ces.ncsu.edu/) page, checked against GT percentiles and City 2011 height and spread bins.
 - Champions come from the Trees Atlanta service.
 - Most species have no sourced Atlanta leaf-out or leaf-drop date.
 - **Willow oak is not documented as "Atlanta's dominant street tree."** Trees Atlanta calls it "likely the most popular oak for streetscape plantings". In the City 2011 census it is second with 1,155 trees, behind crape myrtle at 1,475. It is first among Trees Atlanta plantings in the box, at 647.
 
-**Planned build order.** Pairs share the most code:
-1. Willow oak and red maple: single-trunk deciduous broadleaves.
-2. Southern magnolia and loblolly pine: evergreens, and the first `cone` leaf shape.
-3. Crape myrtle and dogwood: multi-stem and layered small trees, with bloom.
+**Build order** (by City mix weight, one PR per pair): willow oak and water oak; loblolly pine and tulip poplar; red maple and sweetgum; southern magnolia and crape myrtle; American elm and dogwood; white oak.
+
+## Species options (lab only)
+
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Lineup, 20 Nov](log/ui/tree-species/lineup-oaks-fall.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-oaks-summer.jpg)
+
+Each species after the ginkgo gets two or three rendering options in the lab (`/models.html?v=willow-oak&variant=all`) for Sam to pick from. **City draws none of them until he does.** The lab's Trees section lists each species, its options with Compare all, and **All species** (`?v=lineup&variant=default`), every species at mature size side by side in one season. "Default" is Sam's pick where he has made one (ginkgo C4), otherwise a species' option A.
+
+**How the options are built** (`web/src/trees/`):
+- `broadleaf.ts`: a species' habit as a few numbers (trunk height, crown base, egg-shaped envelope, scaffold limbs, branch-mass size). The same habit drives the framework clump model ("Current") and every option.
+- **Foliage follows the branches.** Sam's ginkgo review found that a round envelope filled with uniform leaf cards makes every species look generic. So each scaffold limb ends in a rounded **branch mass**, with a smaller mass on a side branch from its elbow and one on the leader's top, set just inside the species' outline. Each mass splits into small leaf clusters, lit on top and shaded beneath. The crown reads as separate lumps with sky between them, organised by the limbs.
+- `foliage-kit.ts`: the shared builders. Spray sleeves, flame tufts and spray cards serve the ginkgo. Leaf cards, faceted lobes and leaf tips serve the masses. A leaf atlas is painted per leaf shape at three leaf sizes, and the card picks the size that keeps leaves about 0.45 m long on any tree.
+- **Seasons** come from dated keys per species (`keyedCalendar`), each with two colour tones that every leaf cluster mixes in its own proportion.
+- **Leaf drop thins leaf by leaf.** Each painted leaf's alpha is its drop order, and a card discards leaves above the tree's leaf share. Faceted options drop whole clusters instead. The ink's foliage mask gets the same patch (`userData.maskShader`), so it outlines only leaves that are drawn.
+- **Ink.** Card options register with `inkFoliageMesh(mesh, 2)`: warm, silhouette-only ink, as in ginkgo C4. Faceted options keep full ink.
+- **Leaf tips** are the ginkgo C4 extra: small two-triangle leaves on the outer clusters. Like the ginkgo's, they draw on at most `TIP_CAP` (8) trees within `TIP_RANGE_M` (45 m), nearest first, and never at low detail.
+
+**Options for the oaks.**
+
+| | Technique | Willow oak, high / low | Water oak, high / low |
+|---|---|---|---|
+| A · Branch-mass cards | C4 on the oak's structure: leaf cards on branch masses, warm silhouette ink, leaf tips close up | 193 / 81, plus 114 in tips | 193 / 81, plus 120 in tips |
+| B · Cored masses | A small dark faceted core in each mass under the cards. Fuller and more solid; the cores are cut once the crown falls below about 60% in leaf | 191 / 97 | 191 / 97 |
+| C · Faceted clusters | The same masses as faceted clusters, every facet inked: the house clump style | 191 / 105 | 191 / 105 |
+| Current (clump model) | | 193 / 89 | 193 / 89 |
+
+The triangle counts above are for a mature tree. Every class uses the same counts: 82 for limbs (trunk, four limbs with elbows, four side branches), the foliage, and 7 for the carpet. The budget is the generic tree's 196 / 156, and the tests hold it for every option, size and tier. Leaf tips are the near-range exception, as with the ginkgo. **Draws:** each option needs limbs and foliage per size class present, plus leaf tips per class (A, high detail) and one leaf carpet. That comes to 2–3 per class plus 1, however many trees.
+
+### Willow oak
+
+`web/src/trees/oaks.ts`. A straight trunk under a dense, fine-textured oblong crown. Young trees are pyramidal and old ones rounded, with drooping lower limbs ([UF ST-556](https://web.archive.org/web/2010id_/http://hort.ifas.ufl.edu/trees/QUEPHEA.pdf), [Virginia Tech](https://dendro.cnre.vt.edu/dendrology/syllabus/factsheet.cfm?ID=75)). Bark goes from smooth reddish-brown to grey with narrow ridges (NC State).
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–5.5 | 1.2–2.5 | 0.04–0.1 | 4.5 / 1.8 / 0.06 | ANSI Z60.1 Type 1 nursery heights; GT under 15 cm DBH: median 4.9 m tall, 2.4 m wide |
+| Young | 5–12 | 3–7 | 0.1–0.3 | 10.5 / 5.4 / 0.2 | GT 15–30 cm DBH medians: 10.5 m, 5.4 m |
+| Mature | 12.2–22.9 | 7.6–15.2 | 0.3–0.75 | 18 / 13.5 / 0.55 | [NC State](https://plants.ces.ncsu.edu/plants/quercus-phellos/) 12.2–22.9 m tall and 7.6–15.2 m wide; GT 30–91 cm DBH medians: 16.5–22.3 m tall, 9.5–14.5 m wide |
+| Specimen | 24–34.3 | 20–38.4 | 1–1.9 | 32 / 32 / 1.8 | Trees Atlanta champions: Avondale Estates (2010), 34.3 m tall, 38.4 m wide, 1.78 m DBH; 2020, 33.5 m by 33.5 m. The 41.9 m Manor Ridge Dr record is far above every other and is probably an error |
+
+GT is 478 active willow oaks (`GENUS_SPECIES='QUPH'`, surveyed 2012–2019): height p10/p50/p90 4.0 / 14.0 / 22.9 m, spread 1.7 / 7.2 / 15.2 m, DBH 4 / 34 / 74 cm, median crown base 3.7 m. Units are inferred to be feet and inches; the crown widths check out as feet.
+
+**Calendar** (inferred for Atlanta). USA-NPN has no Atlanta willow oak data. These dates shift NC Piedmont status data (35–36°N; buds break about 22 Mar, leaves expand about 11 Apr, colour and drop from October) a little earlier for 33.75°N.
+
+| Date | Stage |
+|---|---|
+| to mid-Mar | Bare grey limbs. The leaf carpet fades by February |
+| ~Mar 18–28 | Catkins; buds breaking |
+| Apr 12 → 28 | Leafing out to full |
+| to Oct 20 | Summer green, light and fine |
+| Nov 5–20 | Turning golden yellow to orange-brown. The colour words are NC State's "yellowish orange-brown to red-brown" and Clemson's "yellow-brown". [Oak Hill, VA, 22 Nov 2019](https://commons.wikimedia.org/wiki/File:2019-11-22_15_45_00_A_couple_of_Willow_Oaks_in_late_autumn_along_Elevation_Lane_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg) shows golden crowns |
+| Dec 3 → 15 | Dropping, to nearly bare over a carpet |
+
+Trees turn within ±7 days of each other.
+
+### Water oak
+
+`web/src/trees/oaks.ts`. A crown that is "spreading, rounded, open" ([UF ST-553](https://web.archive.org/web/2008id_/http://hort.ifas.ufl.edu/trees/QUENIGA.pdf)) with ascending branches ([Virginia Tech](https://dendro.cnre.vt.edu/dendrology/syllabus/factsheet.cfm?ID=73)). It is medium in texture and moderate in density. Bark is grey-black and rough when old. Leaves are spatulate and dark bluish-green. It is drawn like the willow oak but bigger, lumpier and darker, on a short trunk with ascending leaders.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–5.5 | 1.2–3 | 0.04–0.1 | 4.5 / 2.2 / 0.06 | Nursery heights as a Type 1 shade tree (**inferred**: ANSI names willow oak, not water oak) |
+| Young | 6–13 | 3–8 | 0.1–0.3 | 11 / 6.4 / 0.22 | GT 15–30 cm DBH medians: 11.6 m, 6.4 m |
+| Mature | 15.2–24.4 | 10–21.3 | 0.4–0.92 | 18 / 15 / 0.65 | [NC State](https://plants.ces.ncsu.edu/plants/quercus-nigra/) 15.2–24.4 m tall, 15.2–21.3 m wide; GT 30–91 cm DBH medians: 17.7–19.8 m tall, 10.1–15.1 m wide |
+| Specimen | 23.8–31.2 | 24.4–35.1 | 1.6–2.02 | 25.7 / 30 / 1.8 | Trees Atlanta champions, wider than tall: 328 Josephine St, 25.7 m tall, 35.1 m wide, 2.0 m DBH; Atlanta Memorial Park, 31.2 m by 27.4 m |
+
+GT is 446 active water oaks: height p10/p50/p90 7.0 / 17.1 / 23.8 m, spread 3.0 / 11.0 / 18.2 m, DBH 8 / 57 / 92 cm, median crown base 4.6 m.
+
+**Calendar** (inferred for Atlanta). Water oak is semi-evergreen at Atlanta's latitude. USA-NPN north of 33.5°N (18 sites in NC, SC and GA) puts the crown at about 37% leaf in December and near bare in January, though about half of winter checks still find some leaves. Southern Alabama holds 62% in December. Georgia buds break about 8 Apr (n = 2). A [Georgia Tech twig](https://commons.wikimedia.org/wiki/File:Quercus_nigra_Flowering.jpg) was breaking bud on 14 Mar 2012, and an [Athens tree](https://commons.wikimedia.org/wiki/File:Water_Oak_-_Flickr_-_treegrow.jpg) was in fresh leaf on 28 Mar 2007.
+
+| Date | Stage |
+|---|---|
+| Jan 1 | A quarter of the crown held, green and brown |
+| Feb 10 | Nearly bare |
+| Mar 8 → 28 → Apr 20 | Buds breaking, leafing out, full |
+| to Oct 31 | Summer green, darker than the willow oak |
+| Nov 22 | Yellowing, still partly green: "a wonderful yellow fall color show for about a week" (UF) |
+| Dec 5 → 20 | Green, yellow and brown, then a third held over a thin carpet |
+
+Trees turn within ±10 days of each other.
+
+### Reference photographs and gaps
+
+The sheets cite their photographs.
+- **Willow oak:** [Mississippi, Jun 2019](https://commons.wikimedia.org/wiki/File:Tree_in_Mississippi.jpg), [Oak Hill, VA, Nov 2019](https://commons.wikimedia.org/wiki/File:2019-11-22_15_45_00_A_couple_of_Willow_Oaks_in_late_autumn_along_Elevation_Lane_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg) and [Jan 2019](https://commons.wikimedia.org/wiki/File:2019-01-01_09_07_54_A_Willow_Oak_holding_a_few_green_leaves_well_into_winter_along_Kinross_Circle_in_the_Chantilly_Highlands_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg).
+- **Water oak:** [Arlington, Helen Keller Water Oak](https://commons.wikimedia.org/wiki/File:Medal_of_Honor_Trees_at_Arlington_National_Cemetery,_Arlington,_Virginia,_June_18,_2024_-_12.jpg) and [Martin Luther King Jr. Water Oak](https://commons.wikimedia.org/wiki/File:Medal_of_Honor_Trees_at_Arlington_National_Cemetery,_Arlington,_Virginia,_June_18,_2024_-_1.jpg), [Oak Hill, VA, Nov 2019](https://commons.wikimedia.org/wiki/File:2019-11-26_11_37_53_A_Water_Oak_turning_yellow_in_late_autumn_along_White_Barn_Lane_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg) and [Athens, GA, Mar 2007](https://commons.wikimedia.org/wiki/File:Water_Oak_-_Flickr_-_treegrow.jpg).
+
+**Gaps.**
+- Commons has no full-tree, fall or winter photograph of either oak taken in Georgia.
+- It has no bare winter water oak and no reliable water oak bark close-up.
+- The Virginia photos show form and colour only, not Atlanta dates.
+- The first sheet panel is option A from an eye-level camera framed like the primary photo. The models stand at our nominal mature size, which is narrower than the open-grown Mississippi tree.
+
+**Night.** The foliage has no self-light, so crowns at night are lit only by the scene.
 
 ## City rollout (proposal, waiting for Sam)
 
