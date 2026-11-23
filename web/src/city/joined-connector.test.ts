@@ -1,3 +1,9 @@
+import junctionDecks from '../../../pipeline/prototypes/connector-footprint/junction-decks.json';
+import streetDecks from '../../../pipeline/prototypes/connector-footprint/street-bridges.json';
+import { follows, streetPortals } from '../terrain/street-bridges';
+import { junctionPortals } from '../terrain/junction-decks';
+import { bridgeApproaches } from '../terrain/bridge-approaches';
+import { GroundGrid } from '../terrain/grid';
 import { existsSync, readFileSync } from 'node:fs';
 import type { InstancedMesh } from 'three';
 import { expect, it } from 'vitest';
@@ -135,4 +141,48 @@ it('carries the seven Midtown approach lanes across the 249C split and the low-t
       }
     }
   } finally { for (const b of boards) b.surface.geometry.dispose(); }
+});
+
+it.skipIf(!existsSync(downtown))('carries both illustrative mainline routes below Courtland and Peachtree', () => {
+  const city: TerrainCity = JSON.parse(readFileSync(downtown, 'utf8'));
+  const dir = new URL('../../../pipeline/prototypes/downtown-ground/', import.meta.url);
+  const manifest = JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8'));
+  const grid = new GroundGrid(manifest, Uint8Array.from(readFileSync(new URL('ground.i16', dir))).buffer);
+  const ground = new GroundSurface(grid, 'low');
+  const bare = ground.sampleScene.bind(ground);
+  const portals = [...streetPortals(city), ...junctionPortals(city)];
+  const approach = bridgeApproaches(portals, manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads);
+  const decks = createSurfaceTransport(city, grid, approach.groundAt);
+  const roadAt = cityRoadHeight(city, approach.groundAt, decks.deckAt);
+  try {
+    const routes = connectorTrafficRoutes(city);
+    const peachtree = streetDecks.find(d => d.name === 'Peachtree Street Northeast')!;
+    const courtland = junctionDecks.find(d => d.outlineId === 875253220)!;
+    for (const site of [courtland, peachtree]) {
+      const streets = city.terrainTransport!.roads.filter(r => r.kind === 'bridge' &&
+        ['secondary', 'tertiary'].includes(r.cls) && follows(r.pts, site.roads));
+      const directions = new Set<string>();
+      let min = Infinity;
+      for (const route of routes) {
+        for (let s = 5; s < route.line.length - 5; s += 5) {
+          const { x, z } = route.line.at(s);
+          const owner = route.roads[Math.floor(route.line.vertexAt(s))];
+          if (owner.sub === 'link') continue;
+          const tread = streets.map(r => decks.deckAt(x, z, r)).find(h => h !== null);
+          if (tread == null) continue;
+          const y = roadAt(x,z,owner);
+          expect(y, String([x,z])).not.toBeNull();
+          min = Math.min(min, tread - y!);
+          directions.add(route.direction);
+        }
+      }
+      expect(directions).toEqual(new Set(['northbound', 'southbound']));
+      expect(min).toBeGreaterThan(4);
+    }
+  } finally {
+    decks.dispose();
+    approach.geometry.dispose();
+    approach.walls.dispose();
+    ground.geometry.dispose();
+  }
 });

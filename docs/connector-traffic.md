@@ -44,3 +44,11 @@ Use `connectorSectionAtStation(direction, stationM)` for a mainline lookup. It r
 The Orca views use the same 999 × 496 viewport and pinned November 20, 2026 clock at 14:00 Eastern. Open Map with `?view=map&board=midtown&q=low&t=2026-11-20T14:00:00-05:00&speed=0#17/33.76919/-84.39048/0` and select City. [Before on low](log/ui/connector-corridor/midtown-join-before.jpg) · [After on low](log/ui/connector-corridor/midtown-join-low.jpg) · [After on high](log/ui/connector-corridor/midtown-join-high.jpg)
 
 Cross-review also checked the existing Williams deck camera at City (125, −1277), bearing 157°, tilt 44°, 0.38 m per pixel. The tread edges and paint meet at the same locations as in the earlier high-tier capture. [Existing Williams deck](log/ui/connector-corridor/williams-high.jpg) · [Stationed Williams deck](log/ui/connector-corridor/williams-stationing-high.jpg)
+
+### Shared deck passage on the November 23 integration
+
+Open the [Williams fork camera](https://atlanta.solomon.io/?view=city&board=midtown&site=williams&q=high&t=2026-11-20T14:12:49-05:00&speed=0) on a build containing this change. It targets (95.50, −1701.80) with bearing 0°, tilt 46° and 0.32 m/pixel after Midtown loads. [Williams camera capture](log/ui/connector-corridor/merged-williams.jpg)
+
+With the shared street decks from 2db6ae8, we sampled the illustrative mainline routes every 5 m and compared the carrying-road height with the upper street tread wherever the two overlapped. Both directions pass below Courtland/Ralph McGill and Peachtree. The smallest sampled tread-to-road differences on low detail were 7.33 m and 8.54 m respectively. Those numbers include the deck thickness and describe the rendered model. [Courtland](log/ui/connector-corridor/merged-courtland.jpg) · [Peachtree](log/ui/connector-corridor/merged-peachtree.jpg)
+
+The combined release still needs the underpass owner's Baker/Piedmont correction. Mainlines 1051688674 and 1051688675 and ramps 1051688672 and 963910432 are flagged concealed in this snapshot. The northbound traffic surface resolves to null at (918.99, −913.12). At (926.39, −930.49) the rendered low-tier bare earth is only 3.24 m below the upper tread. Recheck both points against the corrected lower grade, then verify moving traffic on both mainlines and ramps. [Baker integration capture](log/ui/connector-corridor/merged-baker.jpg)

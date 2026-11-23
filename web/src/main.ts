@@ -419,7 +419,9 @@ async function openCity() {
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
   // Opening on City frames downtown; arriving from the Map keeps the place you were looking at.
-  if (!opening && map) {
+  if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
+    diorama.lookAt(95.5, -1701.8, { bearing: 0, tilt: 46, metresPerPixel: .32 });
+  } else if (!opening && map) {
     // Read the current Map camera after loading: keyboard movement may have continued.
     const c = map.getCenter();
     const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
