@@ -30,6 +30,14 @@ export function nearestPoint(rects: Iterable<Rect>, x: number, z: number): Point
   return best;
 }
 
+// Outer edges of the mounted rows. Canopy clips here so crowns never hang over the bare table.
+export function mountedBounds(rects: Rect[]): Rect {
+  return {
+    minX: Math.min(...rects.map(r => r.minX)), maxX: Math.max(...rects.map(r => r.maxX)),
+    minZ: Math.min(...rects.map(r => r.minZ)), maxZ: Math.max(...rects.map(r => r.maxZ)),
+  };
+}
+
 // Every horizontal slice of the mounted footprint touches the west side of downtown.
 // Trace the right edge where its width changes; the lip follows the actual mounted tiles.
 export function mosaicPlinth(rects: Rect[], bottom: number) {

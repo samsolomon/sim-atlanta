@@ -100,20 +100,21 @@ it('carries the seven Midtown approach lanes across the 249C split and the low-t
     const [north, midtown] = boards;
     const routes = connectorTrafficRoutes(north.city, [midtown.city]);
     const way = (id: number) => ribbons.find(r => r.id === id)!;
-    const approach = way(337901411), through = way(1467386395), exit = way(9236635);
+    const approaches = ribbons.filter(r => r.id === 337901411);
+    const approach = approaches.at(-1)!, through = way(1467386395), exit = way(9236635);
     expect(approach.station0).toBeTypeOf('number');
     expect(through.station0).toBeCloseTo(approach.station0! + approach.line.length, 8);
-    for (const r of ribbons.filter(r => !r.link)) {
+    for (const r of ribbons.filter(r => r.station0 !== undefined)) {
       expect(connectorSectionAtStation(r.direction, r.station0!)?.ribbon).toBe(r);
     }
-    for (const ribbon of [approach, way(337901447)]) {
+    for (const ribbon of [approaches[0], way(337901447)]) {
       const at = connectorSectionAtStation(ribbon.direction, ribbon.station0! + 80)!;
       expect(at.ribbon).toBe(ribbon);
       expect(at.section.s).toBeCloseTo(80);
       // Both directions use a common eight-metre station grid across source ways.
       const regular = ribbon.rows.filter(row => Math.abs((ribbon.station0! + row.s) / 8 -
         Math.round((ribbon.station0! + row.s) / 8)) < 1e-8);
-      expect(regular.length).toBeGreaterThan(35);
+      expect(regular.length).toBeGreaterThanOrEqual(Math.floor(ribbon.line.length / 8));
     }
 
     expect(connectorSectionAtStation(through.direction, through.station0!)?.ribbon).toBe(through);

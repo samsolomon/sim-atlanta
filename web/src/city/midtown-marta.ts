@@ -3,6 +3,7 @@ import { Builder, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
 import plazas from './fixtures/midtown-marta.json';
+import { createElectricSaturation, ELECTRIC_SATURATION_ID } from './midtown-marta-vents';
 
 type Ground = (x: number, z: number) => number | null;
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -39,6 +40,7 @@ function paving(shell: Shell, ring: number[][], ground: Ground) {
 }
 
 export function createMidtownMarta(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  if (site.id === ELECTRIC_SATURATION_ID) return createElectricSaturation(buildings, site, ground);
   if (site.id === 'osm:way:269637571') return artsBusCanopy(buildings, site, ground);
   if (site.id === 'osm:way:269637886') return artsCenter(buildings, site, ground);
   if (site.id === 'osm:way:235006952' || site.id === 'osm:way:235006968')
