@@ -381,11 +381,11 @@ function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   hedge(b, l.shrubs as P2[], groundAt, { clipped: false, height: 1.0, width: 1.3, seed: 'high-ramp-shrubs' });
   const [from, to] = l.steps as [P2, P2];
   stairRun(b, from, to, l.stepsWidth, groundAt);
-  // Mown turf over the OSM-mapped Peachtree lawn (its round notch is the Rodin pad),
+  // Manicured lawn (faint mow stripes, as a formal landmark lawn) over the OSM-mapped Peachtree lawn (its round notch is the Rodin pad),
   // cut round the ginkgo mound and the Peachtree steps. Under the ramp the
   // turf is hidden by the deck and its walls, so the ramp needs no hole.
   const turf = new GroundCover();
-  turf.patch(l.turf as P2[], groundAt, 'turf', { holes: l.turfHoles as P2[][] });
+  turf.patch(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][] });
   const lawn = landscapeMesh(b), cover = turf.mesh();
   return { ...lawn, turf: cover.mesh, dispose() { lawn.dispose(); cover.dispose(); } };
 }
