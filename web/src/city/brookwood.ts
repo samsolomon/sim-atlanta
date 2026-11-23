@@ -136,8 +136,8 @@ const continuations = [
 ];
 const inside = (r: typeof brookwoodBounds, x: number, z: number) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
 export function brookwoodRailNote(x: number, z: number) {
-  if (inside(brookwoodBounds, x, z)) return 'Scheduled Crescent · Inferred berth · Illustrative consist and freight';
-  if (continuations.some(r => inside(r, x, z))) return 'Scheduled Crescent · Illustrative consist, freight';
+  if (inside(brookwoodBounds, x, z)) return 'Scheduled Crescent · Inferred berth · Illustrative consist & freight';
+  if (continuations.some(r => inside(r, x, z))) return 'Scheduled Crescent · Illustrative consist & freight';
   return null;
 }
 
