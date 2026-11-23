@@ -459,8 +459,7 @@ async function openCity() {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; shell.setNote(text); },
-      // ?ui=next: scenery-tier notes stay off screen (#231); load failures still show.
-      failureNotesOnly: uiNext(location.search),
+      mapGestures: uiNext(location.search),
       trains: () => source.update(),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),

@@ -107,6 +107,7 @@ import { createEquitable } from './equitable';
 import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
+import { mapGestures } from './map-gestures';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -155,9 +156,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   signal?: AbortSignal;
   progress?: (label: string) => void;
   areaNote?: (text: string | null) => void;
-  /** Leave scenery-tier notes (Brookwood service, inferred North Line track) out of areaNote,
-   * keeping only load failures (A2c, #231: no on-screen tiers on ambient scenery). */
-  failureNotesOnly?: boolean;
+  /** Maps-style input (A2c, ?ui=next): drag pans, right/Ctrl-drag rotates, zoom to cursor, twist, two-finger tilt. */
+  mapGestures?: boolean;
   trains: () => TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
@@ -259,9 +259,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   const areaFailures = new Map<string, string>();
-  const SCENERY_NOTES = new Set(['brookwood-service', 'north-line']);
   function areaResult(key: string, note: string | null) {
-    if (options.failureNotesOnly && SCENERY_NOTES.has(key)) return;
     if (!mosaic) { options.areaNote?.(note); return; }
     if (note) areaFailures.set(key, note);
     else areaFailures.delete(key);
@@ -1067,6 +1065,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
+  /** Turn the view about its target; the frame loop's controls.update() applies it. */
+  const rotateBy = (degrees: number) => {
+    manualCamera();
+    glideTo = null;
+    const off = new THREE.Vector3().subVectors(camera.position, controls.target);
+    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
+    camera.position.copy(controls.target).add(off);
+  };
+  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera) : undefined;
+  // Maps-style input zooms on double-click instead of gliding to the clicked point.
+  if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
@@ -1427,11 +1437,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }),
     pan(dx, dy) { manualCamera(); panPx(dx, dy); },
     rotate(degrees) {
-      manualCamera();
-      glideTo = null;
-      const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
-      camera.position.copy(controls.target).add(off);
+      rotateBy(degrees);
       controls.update();
     },
     zoom(dir) {
@@ -1452,6 +1458,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
+      stopGestures?.();
       squareButton?.remove();
       cancelAnimationFrame(raf);
       ro.disconnect();
