@@ -552,3 +552,6 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 .a2-stops { list-style: none; margin: 0; padding: 0; }
 .a2-stops li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--a2-sep); font-size: 14px; font-variant-numeric: tabular-nums; }
 .a2-stops li span:last-child { color: var(--a2-ink2); }
+/* Map → City (and back): the 2D map shows through while City's buildings stand on it. */
+body.city-over-map #view3d { background: transparent !important; }
+body.city-over-map #city-loading { background: transparent !important; }

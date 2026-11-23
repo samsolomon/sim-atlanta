@@ -475,7 +475,10 @@ let cityLoad = 0; // bumped whenever City opens or closes, so a load that finish
 let cityTilt = 57; // retain the user's City tilt while Map remains flat
 let opening = landing === 'city';
 async function openCity() {
-  if (diorama) return;
+  if (diorama) {
+    leaving++; // cancels a City → Map fade in progress
+    return;
+  }
   hideCard();
   const load = ++cityLoad;
   cityAbort?.abort();
@@ -490,6 +493,14 @@ async function openCity() {
   document.body.classList.add('in3d');
   shell.setNote(null);
   let areaNote: string | null = null;
+  // A2c Map → City (brief: "Map to City", option B): the map tilts to City's angle while City
+  // loads, white buildings stand on it, then the coloured scene cross-fades over it. No zoom.
+  const overMap = uiNext(location.search) && !opening && !keepPose && !!map && !reducedMotion() && mapOnCityScale(map);
+  if (overMap) {
+    document.body.classList.add('city-over-map');
+    await tiltMapTo(map!, cityTilt);
+    if (load !== cityLoad) return;
+  }
   try {
     const { createCity } = await import('./city/city');
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
@@ -497,7 +508,7 @@ async function openCity() {
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; shell.setNote(text); },
       mapGestures: uiNext(location.search),
-      whiteModel: uiNext(location.search),
+      whiteModel: !uiNext(location.search) ? false : overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
       trains: () => source.update(),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
@@ -536,6 +547,7 @@ async function openCity() {
     return;
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
+  let offBoard = false;
   // Arriving from Map keeps its camera within the loaded City board.
   // A Graphics change rebuilds City where it was; otherwise a link's camera opens it.
   const cameraLink = keepPose ?? (opening && parseCityCamera(params.get('cam')));
@@ -554,14 +566,22 @@ async function openCity() {
       tilt: cityTilt,
     });
     const target = diorama.target();
-    if (!areaNote && Math.hypot(target.x - mx, target.z - mz) > 1) shell.setNote('Showing the nearest loaded City area');
+    if (Math.hypot(target.x - mx, target.z - mz) > 1) {
+      if (!areaNote) shell.setNote('Showing the nearest loaded City area');
+      // Off the board: the white buildings wouldn't sit on the map's streets, so arrive over paper.
+      offBoard = true;
+    }
   }
+  if (offBoard) document.body.classList.remove('city-over-map');
   // A2c: the white model holds until colour starts; only then is City "here" (Live, credit, vehicles).
-  diorama.beginReveal();
+  diorama.beginReveal(offBoard && overMap ? 'paper' : undefined);
   await diorama.revealed;
   if (load !== cityLoad) return;
   opening = false;
   cityLoading.hidden = true;
+  cityBuiltOnce = true;
+  // The colour cross-fade (1.4 s) covers the map; then paper goes back behind City.
+  if (overMap) overMapTimer = window.setTimeout(() => { if (load === cityLoad) document.body.classList.remove('city-over-map'); }, reducedMotion() ? 0 : 1500);
   void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
@@ -614,7 +634,79 @@ async function applyGraphics() {
   await openCity();
 }
 
-function closeCity() {
+// ---- Map ↔ City camera match (A2c) -------------------------------------------------------------
+const CITY_FOV = 22; // City's vertical field of view; the map takes it while they overlap
+let mapFov: number | null = null; // MapLibre's own, restored when the map flattens
+let mapMaxPitch: number | null = null;
+let overMapTimer = 0;
+let leaving = 0; // bumped when City → Map starts, so a City click during the fade can cancel it
+let cityBuiltOnce = false;
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** City can open exactly on the map's view only near City's scale (its orbit limit). */
+function mapOnCityScale(m: maplibregl.Map) {
+  const mpp = mapMetresPerPixel(m.getCenter().lat, m.getZoom());
+  return (mpp * innerHeight) / (2 * Math.tan((CITY_FOV / 2) * Math.PI / 180)) <= 6000;
+}
+function matchCityLens(m: maplibregl.Map) {
+  mapFov ??= m.getVerticalFieldOfView();
+  mapMaxPitch ??= m.getMaxPitch();
+  m.setMaxPitch(80);
+  m.setVerticalFieldOfView(CITY_FOV);
+}
+function tiltMapTo(m: maplibregl.Map, pitch: number): Promise<void> {
+  matchCityLens(m);
+  return new Promise((done) => {
+    const t = setTimeout(done, 1300);
+    m.once('moveend', () => { clearTimeout(t); done(); });
+    m.easeTo({ pitch, duration: 1000 });
+  });
+}
+function flattenMap(m: maplibregl.Map, animate: boolean) {
+  const restore = () => {
+    if (mapFov != null) m.setVerticalFieldOfView(mapFov);
+    if (mapMaxPitch != null) m.setMaxPitch(mapMaxPitch);
+    mapFov = mapMaxPitch = null;
+  };
+  if (!animate) {
+    m.jumpTo({ pitch: 0 });
+    restore();
+    return;
+  }
+  m.once('moveend', restore);
+  m.easeTo({ pitch: 0, duration: 1000 });
+}
+
+/** City → Map (A2c): the map takes City's exact view underneath, colour fades off it, then the
+ * map flattens. Other exits (Models, errors) use closeCity directly. */
+async function leaveCityToMap() {
+  const m = map;
+  if (!uiNext(location.search) || !diorama || !m || reducedMotion()) return closeCity();
+  const load = cityLoad;
+  const leave = ++leaving;
+  clearTimeout(overMapTimer);
+  const t = diorama.target(), camera = diorama.camera();
+  const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
+  cityTilt = camera.tilt;
+  matchCityLens(m);
+  m.jumpTo({ center: [lon, lat], bearing: camera.bearing, pitch: camera.tilt, zoom: mapZoomForScale(lat, camera.metresPerPixel) });
+  if (lastAtm) paintMapAtmosphere?.(lastAtm);
+  document.body.classList.add('city-over-map');
+  const canvas = document.getElementById('view3d-canvas')!;
+  canvas.style.transition = 'opacity 700ms cubic-bezier(.45,0,.55,1)';
+  canvas.style.opacity = '0';
+  await new Promise((r) => setTimeout(r, 720));
+  canvas.style.transition = canvas.style.opacity = '';
+  // City was chosen again during the fade: stay.
+  if (leave !== leaving || load !== cityLoad || !diorama) {
+    document.body.classList.remove('city-over-map');
+    return;
+  }
+  closeCity(true);
+}
+
+function closeCity(keepMapView = false) {
+  clearTimeout(overMapTimer);
+  document.body.classList.remove('city-over-map');
   keepPose = null;
   document.getElementById('city-info')!.hidePopover?.();
   hideCard();
@@ -627,13 +719,16 @@ function closeCity() {
   diorama?.dispose();
   diorama = null;
   const map = openMap();
-  if (pose && map) {
+  if (keepMapView && map) flattenMap(map, true);
+  else if (!pose && map && (mapFov != null || map.getPitch() !== 0)) flattenMap(map, false); // City never arrived
+  else if (pose && map) {
     // Keep the same centre, direction and horizontal scale; only the tilt changes.
     const { target: t, camera } = pose;
     cityTilt = camera.tilt;
     const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
     map.jumpTo({ center: [lon, lat], bearing: camera.bearing, pitch: 0,
       zoom: mapZoomForScale(lat, camera.metresPerPixel) });
+    flattenMap(map, false);
   }
   if (import.meta.env.DEV) Object.assign(window, { __diorama: null });
   view3d.hidden = true;
@@ -709,7 +804,7 @@ const shellOptions: ShellOptions = {
     if (v !== 'models') leaveModels();
     if (v === 'city') void openCity();
     else if (v === 'models') void openModels();
-    else closeCity();
+    else void leaveCityToMap();
   },
   center() {
     if (diorama) {

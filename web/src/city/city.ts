@@ -156,8 +156,9 @@ export interface CityView {
   dispose(): void;
   /** Resolves when colour starts to show (at once without the white model). */
   revealed: Promise<void>;
-  /** The host has placed the camera and set the atmosphere: start the white-model reveal. */
-  beginReveal(): void;
+  /** The host has placed the camera and set the atmosphere: start the white-model reveal, in
+   * `mode` if it must change (the map's view fell off the board). */
+  beginReveal(mode?: 'paper' | 'map' | 'fade'): void;
   /** Glide the view's centre to scene metres, keeping bearing, tilt and distance (A2c: a selection). */
   glide(x: number, z: number): void;
 }
@@ -179,8 +180,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   areaNote?: (text: string | null) => void;
   /** Maps-style input (A2c, ?ui=next): drag pans, right/Ctrl-drag rotates, zoom to cursor, twist, two-finger tilt. */
   mapGestures?: boolean;
-  /** Arrive as a white study model, then fade colour in (A2c step 9). */
-  whiteModel?: boolean;
+  /** Arrive as a white study model, then fade colour in (A2c step 9; see white-model.ts). */
+  whiteModel?: false | 'paper' | 'map' | 'fade';
   trains: () => TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
@@ -1491,8 +1492,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
     skipPasses: [gtao],
     lowMemory: low,
+    mode: options.whiteModel,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
+  if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
@@ -1601,7 +1604,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, [...(brookwood?.cars.children ?? []), ...streetcar.cars()]),
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     revealed: whiteModel?.revealed ?? Promise.resolve(),
-    beginReveal: () => whiteModel?.begin(),
+    beginReveal(mode) {
+      if (mode) whiteModel?.setMode(mode);
+      whiteModel?.begin();
+    },
     glide(x, z) {
       // A loading area must not pull the camera back to a remembered point afterwards.
       mosaic?.cancelTarget();

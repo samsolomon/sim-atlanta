@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map to City, option B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:1296px;height:726px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.80);--gb:rgba(243,239,230,.68);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);color:var(--ink);background:#f3efe6}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px}
+.vsep{width:1px;align-self:stretch;margin:10px 4px;background:var(--sep)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.vs{height:36px;border:0;border-radius:9px;padding:0 12px;font:600 14px system-ui;background:transparent;color:var(--ink)}
+.vs.on{background:rgba(255,255,255,.95);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lay{position:absolute;inset:0;width:1296px;height:726px;object-fit:cover}
+.f1{animation:kf1 14s step-end infinite}@keyframes kf1{0%{opacity:0}13.55%{opacity:1}97%{opacity:0}}
+.f2{animation:kf2 14s step-end infinite}@keyframes kf2{0%{opacity:0}14.10%{opacity:1}97%{opacity:0}}
+.f3{animation:kf3 14s step-end infinite}@keyframes kf3{0%{opacity:0}14.65%{opacity:1}97%{opacity:0}}
+.f4{animation:kf4 14s step-end infinite}@keyframes kf4{0%{opacity:0}15.20%{opacity:1}97%{opacity:0}}
+.f5{animation:kf5 14s step-end infinite}@keyframes kf5{0%{opacity:0}15.75%{opacity:1}97%{opacity:0}}
+.f6{animation:kf6 14s step-end infinite}@keyframes kf6{0%{opacity:0}16.30%{opacity:1}97%{opacity:0}}
+.f7{animation:kf7 14s step-end infinite}@keyframes kf7{0%{opacity:0}16.85%{opacity:1}97%{opacity:0}}
+.f8{animation:kf8 14s step-end infinite}@keyframes kf8{0%{opacity:0}17.40%{opacity:1}97%{opacity:0}}
+.f9{animation:kf9 14s step-end infinite}@keyframes kf9{0%{opacity:0}17.95%{opacity:1}97%{opacity:0}}
+.f10{animation:kf10 14s step-end infinite}@keyframes kf10{0%{opacity:0}18.50%{opacity:1}97%{opacity:0}}
+.f11{animation:kf11 14s step-end infinite}@keyframes kf11{0%{opacity:0}19.05%{opacity:1}97%{opacity:0}}
+.f12{animation:kf12 14s step-end infinite}@keyframes kf12{0%{opacity:0}19.60%{opacity:1}97%{opacity:0}}
+.f13{animation:kf13 14s step-end infinite}@keyframes kf13{0%{opacity:0}20.15%{opacity:1}97%{opacity:0}}
+.f14{animation:kf14 14s step-end infinite}@keyframes kf14{0%{opacity:0}20.70%{opacity:1}97%{opacity:0}}
+.f15{animation:kf15 14s step-end infinite}@keyframes kf15{0%{opacity:0}21.25%{opacity:1}97%{opacity:0}}
+.f16{animation:kf16 14s step-end infinite}@keyframes kf16{0%{opacity:0}21.80%{opacity:1}97%{opacity:0}}
+.f17{animation:kf17 14s step-end infinite}@keyframes kf17{0%{opacity:0}22.35%{opacity:1}97%{opacity:0}}
+.f18{animation:kf18 14s step-end infinite}@keyframes kf18{0%{opacity:0}22.90%{opacity:1}97%{opacity:0}}
+.f19{animation:kf19 14s step-end infinite}@keyframes kf19{0%{opacity:0}23.45%{opacity:1}97%{opacity:0}}
+.f20{animation:kf20 14s step-end infinite}@keyframes kf20{0%{opacity:0}24.00%{opacity:1}97%{opacity:0}}
+.f21{animation:kf21 14s step-end infinite}@keyframes kf21{0%{opacity:0}24.55%{opacity:1}97%{opacity:0}}
+.f22{animation:kf22 14s step-end infinite}@keyframes kf22{0%{opacity:0}25.10%{opacity:1}97%{opacity:0}}
+.f23{animation:kf23 14s step-end infinite}@keyframes kf23{0%{opacity:0}25.65%{opacity:1}97%{opacity:0}}
+.bld{animation:kBld 14s linear infinite}@keyframes kBld{0%,30%{opacity:0;animation-timing-function:ease-in-out}39%{opacity:1}97%{opacity:1}99%,100%{opacity:0}}
+.col{animation:kCol 14s linear infinite}@keyframes kCol{0%,52%{opacity:0;animation-timing-function:ease-in-out}62%{opacity:1}96%{opacity:1}99%,100%{opacity:0}}
+.swMap{animation:kSwMap 14s linear infinite}
+.swCity{animation:kSwCity 14s linear infinite}
+.tap{animation:kTap 14s linear infinite}
+
+.chrome{animation:kChrome 14s linear infinite}
+.notice{animation:kNotice 14s linear infinite}
+.sLoad{animation:kLoadTxt 14s linear infinite}
+.sLive{animation:kLiveTxt 14s linear infinite}
+.credit{animation:kCredit 14s linear infinite}
+.train{animation:kTrain 14s linear infinite}
+.spin{animation:kSpin 1s linear infinite;transform-origin:50% 50%}
+@keyframes kSwMap{0%,13%{opacity:1}14%,97%{opacity:0}100%{opacity:1}}
+@keyframes kSwCity{0%,13%{opacity:0}14%,97%{opacity:1}100%{opacity:0}}
+@keyframes kTap{0%,10%{opacity:0;transform:scale(.6)}12%{opacity:.9;transform:scale(1)}15%,100%{opacity:0;transform:scale(1.4)}}
+@keyframes kChrome{0%,100%{opacity:1}}
+@keyframes kNotice{0%,13%{opacity:0}16%{opacity:1}60%{opacity:1}63%,100%{opacity:0}}
+@keyframes kLoadTxt{0%,31%{opacity:1}34%,100%{opacity:0}}
+@keyframes kLiveTxt{0%,31%{opacity:0}34%,96%{opacity:1}100%{opacity:0}}
+@keyframes kCredit{0%,100%{opacity:1}}
+@keyframes kTrain{0%,63%{opacity:0;transform:translate(0,0)}66%{opacity:1;transform:translate(0,0)}95%{opacity:1;transform:translate(90px,-60px)}100%{opacity:0;transform:translate(90px,-60px)}}
+@keyframes kSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</helmet>
+<div class="root">
+  <img class="lay" src="/_blob/df5933f9b8bad9ba3b6f0364685499cd" alt="2D map of downtown Atlanta">
+  <img class="lay f1" src="/_blob/d817a3b8918155cbd7d400557be41bfa" alt="">
+  <img class="lay f2" src="/_blob/e70aac4b57c7465dc9dfa7ae67e0ef0e" alt="">
+  <img class="lay f3" src="/_blob/c2ce0113dfa9c32c1e610f433795a0bb" alt="">
+  <img class="lay f4" src="/_blob/2df49f03f18d91c8539b4cba550f80f0" alt="">
+  <img class="lay f5" src="/_blob/f920c42ffd453c63dd135d77458470da" alt="">
+  <img class="lay f6" src="/_blob/677fde0021a1db2bedeec6a336b59dd1" alt="">
+  <img class="lay f7" src="/_blob/ca26229321e5f51618b5cb6132a435be" alt="">
+  <img class="lay f8" src="/_blob/08e200ea40216312d6f4ad50329c6542" alt="">
+  <img class="lay f9" src="/_blob/8a6cafc57da5b42a4068ebad0a845d36" alt="">
+  <img class="lay f10" src="/_blob/b5914bb8886ac7021384c7dd1ef56d4e" alt="">
+  <img class="lay f11" src="/_blob/2148a27b870bf64ea1673ae744a709e8" alt="">
+  <img class="lay f12" src="/_blob/a19271ef4cf5e96c8ac12c446ca6c526" alt="">
+  <img class="lay f13" src="/_blob/41f1a3db4fb7df7eaa7f26bc8555c016" alt="">
+  <img class="lay f14" src="/_blob/f83f769554ab9af04b794b08c9d8fe52" alt="">
+  <img class="lay f15" src="/_blob/43ab13246d1f6e423400f7cdac04cfea" alt="">
+  <img class="lay f16" src="/_blob/7d0ac78e91d8ee5ca5f1719ccb2d8681" alt="">
+  <img class="lay f17" src="/_blob/26fc844a8a2bd9b00b8702536925c315" alt="">
+  <img class="lay f18" src="/_blob/6a0bebf39850a4319c229fd5027c50a9" alt="">
+  <img class="lay f19" src="/_blob/648feb5c8924a6d531d9339292b4bde2" alt="">
+  <img class="lay f20" src="/_blob/d0b1512542f85949197e8fcd8a5ff0d4" alt="">
+  <img class="lay f21" src="/_blob/bf8a1116c4ac9fd24be9aa465b882fc4" alt="">
+  <img class="lay f22" src="/_blob/13eb5298ec793b44e8eb2b687100df61" alt="">
+  <img class="lay f23" src="/_blob/61477b1bc612ac8bd3f2330a68fb1b3c" alt="">
+  <img class="lay bld" src="/_blob/79cd3c731e492ab168e472a74f17c6e2" alt="White study model buildings standing on the map">
+  <img class="lay col" src="/_blob/496ed0cd2633b42805ccd9019097a63b" alt="Live downtown scene in colour">
+  <div class="train" aria-hidden="true" style="position:absolute;left:700px;top:430px;width:16px;height:16px;border-radius:50%;background:#1f5fd1;border:2px solid #fff;box-shadow:0 0 0 4px rgba(31,95,209,.3)"></div>
+
+  <div class="chrome">
+    <div class="g" style="left:8px;top:8px;padding:14px 18px 14px 20px;width:262px">
+      <span style="display:block;font-size:30px;font-weight:700;letter-spacing:-.015em;line-height:1.05">Downtown</span>
+      <span style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:16px"><strong>2:04 PM</strong>58° Clear</span>
+      <span style="position:relative;display:block;height:18px;margin-top:6px;font-size:12px;color:var(--ink2)">
+        <span class="sLoad" style="position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px"><span class="dot" style="background:#2f9e44"></span>Live · Friday, Nov 20</span>
+        <span class="sLive" style="position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px"><span class="dot" style="background:#2f9e44"></span>Live · Friday, Nov 20</span>
+      </span>
+    </div>
+    <div class="g notice" role="status" style="left:8px;top:124px;height:34px;display:flex;align-items:center;gap:8px;padding:0 14px 0 12px;border-radius:12px;font-size:13px;font-weight:600">
+      <svg class="spin" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M12 3a9 9 0 1 1-9 9" style="stroke-width:2.2"></path></svg>Building the city…
+    </div>
+    <div class="g" style="left:8px;bottom:8px;height:48px;display:flex;align-items:center;gap:2px;padding:0 4px 0 2px">
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></span>
+      <span class="vsep"></span>
+      <span style="position:relative;display:flex;gap:2px;padding:2px;border-radius:11px;background:var(--sep)"><span class="vs" style="display:inline-flex;align-items:center;visibility:hidden">Map</span><span class="vs" style="display:inline-flex;align-items:center;visibility:hidden">City</span><span class="vs" style="display:inline-flex;align-items:center;visibility:hidden">Models</span>
+        <span class="swMap" style="position:absolute;inset:2px;display:flex;gap:2px"><span class="vs on" style="display:inline-flex;align-items:center">Map</span><span class="vs" style="display:inline-flex;align-items:center">City</span><span class="vs" style="display:inline-flex;align-items:center">Models</span></span>
+        <span class="swCity" style="position:absolute;inset:2px;display:flex;gap:2px"><span class="vs" style="display:inline-flex;align-items:center">Map</span><span class="vs on" style="display:inline-flex;align-items:center">City</span><span class="vs" style="display:inline-flex;align-items:center">Models</span></span>
+        <span class="tap" aria-hidden="true" style="position:absolute;left:66px;top:-4px;width:46px;height:46px;border-radius:50%;background:rgba(31,95,209,.25)"></span></span>
+      <span class="vsep"></span>
+      <span class="ib" style="width:40px;height:40px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 18V6l11-2v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></span>
+    </div>
+    <div class="g" style="right:8px;bottom:8px;width:44px;display:flex;flex-direction:column;padding:2px 0">
+      <span class="ib"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:30px;height:30px"><circle cx="16" cy="16" r="13" style="stroke-width:1.2"></circle><g transform="rotate(-21 16 16)"><path d="M16 5l3.2 11h-6.4z" style="fill:#c2255c;stroke:none"></path><path d="M16 27l3.2-11h-6.4z" style="fill:currentColor;stroke:none;opacity:.55"></path></g></svg></span>
+      <div class="sep"></div>
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></span>
+      <div class="sep"></div>
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></span>
+    </div>
+    <p class="credit" style="position:absolute;right:60px;bottom:9px;margin:0;font-size:12px;line-height:16px;color:#4a463e;text-shadow:0 0 2px #f4f1ea,0 0 4px #f4f1ea,0 0 8px #f4f1ea">© OpenStreetMap contributors · OpenMapTiles</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1296,"height":726}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
