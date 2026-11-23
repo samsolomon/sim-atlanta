@@ -58,9 +58,10 @@ export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeat
   };
 }
 
-/** The words of the confidence line, before an optional date or "Now" action. */
+/** The one scene-wide word (Sam, 2026-11-23, #231): Live or Timetable. Ambient scenery, the
+ * sky included, carries no on-screen tier; the Key and About explain it. */
 export function confidenceWords(c: Confidence): string[] {
-  return [c.tier === 'live' ? 'Live' : 'Timetable', ...(c.skyObserved ? [] : ['illustrative sky'])];
+  return [c.tier === 'live' ? 'Live' : 'Timetable'];
 }
 
 /** The first-visit hint, matched to the view and the input. */

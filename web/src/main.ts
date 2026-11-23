@@ -119,8 +119,16 @@ function showCard(html: string, canFollow = false) {
   else card.classList.remove('following-trip');
   if (lastCardHTML !== html) cardContent.innerHTML = lastCardHTML = html;
   card.hidden = false;
+  // A different selection (not a refresh of the same one) tells the A2c panel to bring it forward.
+  const key = selectedTrain ?? selectedBus ?? html;
+  if (key !== shownKey) {
+    shownKey = key;
+    card.dispatchEvent(new Event('a2-select'));
+  }
 }
+let shownKey = '';
 function hideCard() {
+  shownKey = '';
   follow?.stop();
   card.classList.remove('following-trip');
   followPanel.hidden = true;
@@ -139,7 +147,7 @@ function renderTrainCard() {
   }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
-      !view3d.hidden),
+      !view3d.hidden, uiNext(location.search)),
     !!follow && !view3d.hidden,
   );
 }
@@ -445,6 +453,8 @@ async function openCity() {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; shell.setNote(text); },
+      // ?ui=next: scenery-tier notes stay off screen (#231); load failures still show.
+      failureNotesOnly: uiNext(location.search),
       trains: () => source.update(),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
@@ -457,7 +467,7 @@ async function openCity() {
         selectedBus = hit?.kind === 'bus' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line));
+        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line, uiNext(location.search)));
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },

@@ -75,7 +75,7 @@
 
 /* The old chrome is hidden in style.css, so it never paints before this chunk loads. */
 /* One thing in the detail-panel place at a time. */
-body:has(#city-info:popover-open) #card { display: none !important; }
+body:has(#city-info:popover-open) .a2-panel { display: none !important; }
 
 /* ---- subject card (top-left) ---- */
 .a2-subject {
@@ -234,27 +234,88 @@ body:has(.a2-subject.a2-open) .a2-notice, body:has(.a2-timepanel:not([hidden])) 
 .a2-hint.a2-gone { opacity: 0; }
 body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 
-/* ---- detail panel (right): the existing card, re-placed until step 4 redraws it ---- */
-:root[data-ui='next'] #card {
-  position: fixed; left: auto; right: var(--a2-right); top: var(--a2-top); bottom: auto; z-index: 6;
-  width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right))); padding: 16px 18px 14px; border: 0; border-radius: 16px;
-  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h, 140px)); overflow-y: auto;
-  color: var(--a2-ink); background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long));
-  -webkit-backdrop-filter: blur(22px) saturate(1.35); backdrop-filter: blur(22px) saturate(1.35);
-  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
+/* ---- detail panel (right): selection, Key or About; only as tall as its content ---- */
+:root[data-ui='next'] { --a2-cam-h: 186px; }
+.a2-panel {
+  right: var(--a2-right); top: var(--a2-top); z-index: 6; width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h));
+  display: flex; flex-direction: column; overflow: hidden; font-size: 14px;
 }
-:root[data-ui='next'] #card::before, :root[data-ui='next'] #card::after { display: none; }
-:root[data-ui='next'] #card .sub, :root[data-ui='next'] #card dt { color: var(--a2-ink2); }
-:root[data-ui='next'] #card .close {
-  top: 12px; right: 12px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: var(--a2-sep); color: inherit;
-  display: grid; place-items: center; font-size: 18px;
+.a2-panel.a2-full { width: min(384px, calc(100vw - var(--a2-left) - var(--a2-right))); height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h)); }
+.a2-panel-body { overflow-y: auto; min-height: 0; flex: 1; }
+.a2-panel .a2-entry:not(.a2-shown) { display: none !important; }
+.a2-panel > .a2-grab { display: none; }
+.a2-backrow {
+  display: flex; align-items: center; gap: 6px; margin: 8px 8px 0; padding: 8px 10px; min-height: 36px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--a2-ink2) !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; text-align: left;
 }
-:root[data-ui='next'] #card .close::after { content: ''; position: absolute; inset: -6px; }
-:root[data-ui='next'] #card :is(button, a):focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+.a2-backrow:hover { background: var(--a2-sep); }
+.a2-backrow svg { width: 15px; height: 15px; flex: none; }
+.a2-backrow span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a2-back-swatch { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+.a2-panel-head { display: flex; align-items: center; gap: 8px; }
+.a2-panel-head h2 { flex: 1; margin: 0; font-size: 20px; line-height: 1.2; }
+.a2-x {
+  position: relative; width: 32px; height: 32px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--a2-sep); color: var(--a2-ink); cursor: pointer;
+}
+.a2-x::after { content: ''; position: absolute; inset: -6px; }
+.a2-x svg { width: 15px; height: 15px; }
+.a2-panel :is(button, a, summary):focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+
+/* The selection is the page's #card, adopted into the panel. */
+.a2-panel #card { position: relative; inset: auto; width: auto; max-height: none; overflow: visible; z-index: auto; margin: 0; padding: 16px 18px 14px;
+  background: none; box-shadow: none; border: 0; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; color: var(--a2-ink); font-size: 14px; }
+.a2-panel #card::before, .a2-panel #card::after { display: none; }
+.a2-panel #card .close { position: absolute; top: 14px; right: 14px; }
+.a2-panel #card h2 { display: block; margin: 6px 44px 12px 0; padding: 0; font-size: 20px; line-height: 1.2; }
+.a2-panel #card :is(.sub, dt) { color: var(--a2-ink2); }
+.a2-panel #card .a2-kicker { display: flex; align-items: center; gap: 7px; margin: 0 44px 0 0; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
+.a2-svc { width: 16px; height: 4px; border-radius: 2px; flex: none; }
+.a2-panel #card .a2-kicker .dot { width: 7px; height: 7px; }
+.a2-panel #card .a2-facts { display: block; margin: 0; }
+.a2-row-fact { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--a2-sep); }
+.a2-row-fact dd { margin: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px 8px; text-align: right; }
+/* Truth-tier labels: 11 px / 600, a separator-colour hairline, secondary ink. */
+.a2-panel .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border: 1px solid var(--a2-sep) !important; color: var(--a2-ink2) !important; white-space: nowrap; }
+.a2-panel .chip.live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--a2-live); }
+.a2-panel .chip.scheduled::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--a2-timetable); }
 /* Follow is the one dark primary button. */
-:root[data-ui='next'] #train-follow button { min-height: 40px; border: 0; border-radius: 10px; font-weight: 600; background: var(--a2-sep); }
-:root[data-ui='next'] #train-follow [data-follow] { background: #2a2722; color: #fbf9f4; }
-:root[data-ui='next'][data-theme='dark'] #train-follow [data-follow] { background: #eef0f3; color: #1c2129; }
+.a2-panel #train-follow { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.a2-panel #train-follow button { flex: 1; min-height: 40px; border: 0; border-radius: 10px; font-weight: 600; font-size: 14px; background: var(--a2-sep); color: var(--a2-ink); }
+.a2-panel #train-follow [data-follow] { background: #2a2722; color: #fbf9f4; }
+:root[data-theme='dark'] .a2-panel #train-follow [data-follow] { background: #eef0f3; color: #1c2129; }
+.a2-panel #train-follow .follow-status { flex: 0 0 100%; margin: 0; font-size: 13px; color: var(--a2-ink2); }
+
+/* Key */
+.a2-key-body { padding: 14px 18px 16px; }
+.a2-key-body .a2-h { margin: 16px 0 8px; }
+.a2-k { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 14px; }
+.a2-k small { display: block; font-size: 12px; color: var(--a2-ink2); }
+.a2-sw { width: 28px; height: 5px; border-radius: 3px; flex: none; }
+.a2-k-sep { margin: 8px 0 0; }
+.a2-tier-label { display: inline-flex; justify-content: center; box-sizing: border-box; min-width: 76px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--a2-sep); font-size: 11px; font-weight: 600; color: var(--a2-ink2); white-space: nowrap; }
+
+/* About: full height, scrolls inside, footer pinned */
+.a2-about { display: flex; flex-direction: column; height: 100%; }
+.a2-panel.a2-full .a2-panel-body { overflow: hidden; display: flex; flex-direction: column; }
+.a2-about .a2-panel-head { padding: 14px 18px 10px; border-bottom: 1px solid var(--a2-sep); }
+.a2-about-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 16px; font-size: 14px; line-height: 1.5; }
+.a2-about-body p { margin: 10px 0; }
+.a2-about-body .a2-h { margin: 18px 0 6px; }
+.a2-lede { font-size: 16px; line-height: 1.45; }
+.a2-quiet { color: var(--a2-ink2); }
+.a2-credits { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; font-size: 13px; }
+.a2-credits dt { font-weight: 600; }
+.a2-credits dd { margin: 0; color: var(--a2-ink2); }
+.a2-about a { color: inherit; }
+.a2-about-foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px 14px; border-top: 1px solid var(--a2-sep); }
+.a2-by { flex: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-weight: 600; text-decoration: none; }
+.a2-by svg { width: 14px; height: 14px; }
+.a2-social { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; position: relative; }
+.a2-social::before { content: ''; position: absolute; inset: 6px; border-radius: 8px; background: var(--a2-sep); z-index: -1; }
+.a2-social svg { width: 15px; height: 15px; }
 
 /* ---- About this City view: shown in the detail-panel place ---- */
 :root[data-ui='next'] #city-info {
@@ -266,8 +327,6 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
   box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
 }
 
-/* ---- Key dialog on A2c glass (step 4 moves the Key into the detail panel) ---- */
-.a2-key.glass { border-radius: 16px; background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long)); color: var(--a2-ink); }
 
 /* ---- phones: top items under the status bar, the app bar above the home indicator ---- */
 @media (max-width: 600px) {
@@ -282,7 +341,10 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
   .a2-subject.a2-open { width: auto; padding: 12px 16px; max-height: none; overflow: visible; }
   .a2-subject-open { display: flex; flex-direction: column; width: 100%; }
   .a2-line { margin-top: 5px; font-size: 14px; gap: 2px 8px; }
-  .a2-tier { margin-top: 4px; }
+  /* One line under the place, as on the board: time, sky, then the scene word (no date). */
+  .a2-subject:not(.a2-open) { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: end; }
+  .a2-subject:not(.a2-open) .a2-tier { margin: 0 0 1px; }
+  .a2-subject .a2-tier-date { display: none; }
   .a2-appbar { right: var(--a2-right); gap: 1px; }
   .a2-seg { flex: 1; }
   .a2-vs { flex: 1; }
@@ -317,10 +379,25 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
   /* While the slider is dragged the sheet shrinks to the slider and the time, so the city shows. */
   .a2-timepanel.a2-dragging > :not(.a2-time-head, .a2-slider) { display: none; }
   .a2-timepanel.a2-dragging .a2-time-head { margin-top: 6px; }
-  :root[data-ui='next'] #card { left: var(--a2-left); right: var(--a2-right); top: auto; width: auto; bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); max-height: 55dvh; border-radius: 24px; }
+  /* Phones: the detail panel is a bottom sheet, and the app bar steps aside while it shows. */
+  .a2-panel, .a2-panel.a2-full { left: var(--a2-left); right: var(--a2-right); top: auto; bottom: var(--a2-bottom); width: auto; z-index: 8;
+    height: auto; max-height: min(70dvh, calc(100dvh - var(--a2-top) - 96px)); border-radius: 24px; }
+  .a2-panel.a2-full { height: calc(100dvh - var(--a2-top) - 96px); }
+  .a2-panel > .a2-grab { display: block; flex: none; width: 40px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: var(--a2-sep); }
+  .a2-panel .a2-x { width: 36px; height: 36px; }
+  .a2-panel #train-follow button { min-height: 44px; }
+  body:has(.a2-panel:not([hidden])) :is(.a2-appbar, .a2-hint, .a2-menu) { display: none; }
+  body:has(.a2-panel:not([hidden])) .a2-credit { visibility: hidden; }
   :root[data-ui='next'] #city-info { inset: auto var(--a2-right) calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px) var(--a2-left); width: auto; max-height: 60dvh; border-radius: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .a2-g, .a2-credit, .a2-credit.a2-gone, .a2-hint { transition: none; }
 }
+.a2-k-note { margin: 10px 0 0; font-size: 12px; line-height: 1.45; color: var(--a2-ink2); }
+/* Other selection cards (bus, crossing, map freight) keep their markup: draw their rows the same way. */
+.a2-panel #card dl:not(.a2-facts) { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; margin: 0; }
+.a2-panel #card dl:not(.a2-facts) :is(dt, dd) { padding: 10px 0; border-top: 1px solid var(--a2-sep); margin: 0; }
+.a2-panel #card dl:not(.a2-facts) dd { text-align: right; }
+.a2-panel #card h2 .dot { display: none; }
+.a2-panel #card .tip { margin: 10px 0 0; font-size: 12px; color: var(--a2-ink2); }

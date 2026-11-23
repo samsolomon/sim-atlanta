@@ -14,7 +14,7 @@ import { loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
-import { createKeyDialog } from '../key';
+import { createDetailPanel } from './panel';
 import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import type { ShellApi, ShellOptions } from '../shell';
@@ -245,7 +245,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   menu.innerHTML = `
     <button type="button" class="a2-row" data-act="key"><span><b>Key</b><small>What the colours and labels mean</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
     <button type="button" class="a2-row" data-act="city-info"><span><b>About this City view</b><small>What is illustrative in the miniature</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <a class="a2-row" href="/about"><span><b>About &amp; credits</b><small>How it works and where the data comes from</small></span><span class="a2-chev" aria-hidden="true">›</span></a>
+    <button type="button" class="a2-row" data-act="about"><span><b>About &amp; credits</b><small>How it works and where the data comes from</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
     <p class="a2-fine">Unofficial. Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · OpenMapTiles · OpenFreeMap.</p>`;
   const cityInfoRow = menu.querySelector<HTMLButtonElement>('[data-act=city-info]')!;
 
@@ -328,9 +328,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, dismiss, { once: true, passive: true });
   }
 
-  const key = createKeyDialog();
-  key.classList.add('a2-key');
-  document.body.append(subject, notice, bar, menu, cam, credit, key, ...(hint ? [hint] : []));
+  const panelHost = createDetailPanel();
+  document.body.append(subject, notice, bar, menu, cam, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 
   // ---- pop-overs ---------------------------------------------------------------------------
@@ -359,7 +358,11 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }));
   menu.querySelector('[data-act=key]')!.addEventListener('click', () => {
     closePops();
-    key.showModal();
+    panelHost.show('key');
+  });
+  menu.querySelector('[data-act=about]')!.addEventListener('click', () => {
+    closePops();
+    panelHost.show('about');
   });
   cityInfoRow.addEventListener('click', () => {
     closePops();
@@ -415,12 +418,16 @@ export function createShellNext(o: ShellOptions): ShellApi {
       svg = '';
       wxText.textContent = '';
     } else {
-      // An illustrative sky still has a condition, named without a temperature.
+      // A shifted clock or a chosen sky is a scene setting: its icon only, no words, so it never
+      // reads as a reported condition (#231).
       const sk = skyLabel(o.sky?.() ?? { cloud: 0, rain: 0, fog: 0, snow: 0 });
       svg = weatherIcon({ kind: sk.kind, label: sk.snow ? 'snow' : sk.label, cloud: 0, rain: 0, fog: 0, live: false }, night);
-      wxText.textContent = sk.label;
+      // At the present, a picked sky says so in words, so it can't pass for the observed one.
+      wxText.textContent = s.realTime && preview ? `Chosen: ${sk.label}` : '';
+      wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
     }
-    wx.hidden = !wxText.textContent;
+    wx.hidden = !svg;
+    if (wxText.textContent) wx.removeAttribute('title');
     if (wxIcon.dataset.svg !== svg) {
       wxIcon.innerHTML = svg;
       wxIcon.dataset.svg = svg;
@@ -431,7 +438,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     tierDate.textContent = conf.shifted ? '' : dateFmt.format(now);
     tierDate.hidden = conf.shifted;
     nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wx.hidden ? '' : `, ${wxText.textContent}`}, ${tierText.textContent}. Time and weather`);
+    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(areaNote ?? feedNote);
@@ -505,9 +512,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
           b.focus();
           return true;
         }
-      return false;
+      return panelHost.escape();
     },
-    blocked: () => key.open,
+    blocked: () => false,
   });
 
   return {

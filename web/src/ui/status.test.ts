@@ -14,15 +14,16 @@ describe('confidence line', () => {
     expect(c.tier).toBe('timetable');
     expect(c.skyObserved).toBe(false);
     expect(c.shifted).toBe(true);
-    expect(confidenceWords(c)).toEqual(['Timetable', 'illustrative sky']);
+    expect(confidenceWords(c)).toEqual(['Timetable']);
   });
   it('reads Timetable at the present while the feed connects or is down', () => {
     expect(confidence({ realTime: true, rail: 'connecting' }, true).tier).toBe('timetable');
     expect(confidence({ realTime: true, rail: 'down' }, true).tier).toBe('timetable');
   });
-  it('calls the sky illustrative when weather is missing or previewed', () => {
-    expect(confidenceWords(confidence(live, false))).toEqual(['Live', 'illustrative sky']);
-    expect(confidenceWords(confidence(live, true, true))).toEqual(['Live', 'illustrative sky']);
+  it('says one scene-wide word and never labels the sky (#231)', () => {
+    expect(confidenceWords(confidence(live, false))).toEqual(['Live']);
+    expect(confidenceWords(confidence(live, true, true))).toEqual(['Live']);
+    expect(confidence(live, false).skyObserved).toBe(false);
   });
 });
 
