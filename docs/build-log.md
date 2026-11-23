@@ -2108,3 +2108,7 @@ A five-number camera link can open the same ground target, bearing, tilt and dis
 ### 2026-11-23 — The High and Memorial Arts Building
 
 Across Sifly Piazza, Meier's atrium and Piano's rows of daylight scoops now read as two different buildings. Their roofs share one 126-vertex map outline. Walking its perimeter on the 3DEP grid revealed 7.8 m of relief, enough to expose a basement on the service side. Both museum wings rise from the piazza grade while the foundation drops to the hillside. Across the square, the Memorial Arts Building's illuminated lobby sits behind the tall Peachtree piers. Uses the existing Midtown tile and requires a web rebuild. [Daylight, full night, camera and survey](arts-campus.md)
+
+### 2026-11-23 — One Atlantic Center, West Peachtree at 14th
+
+One Atlantic Center fits a 250 m tower on a footprint barely 52 m across. Its upper Midtown ground samples span only 1.5 m, but its skyline depends on the last 49 m above the shaft. The owner's night photograph shows a dark copper face between illuminated ridges. City now draws those ridges, the collar, pinnacles and finial separately. The shaft follows the mapped footprint down to the local 3DEP grade. [Photographs, dimensions and matched City views on both tiers](midtown-skyline.md#one-atlantic-center)
