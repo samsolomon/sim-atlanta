@@ -117,9 +117,11 @@ Only the Zenodo copy is openly licensed. We may cite individual trees as facts, 
 
 **What it replaces.** It stands in the canopy map's own crown for this tree. A crown is removed when its trunk lies within the ginkgo's radius plus half its own; here that removes the 17 m crown and a 10 m neighbour 8.8 m away. Removal happens after `World.buildTrees` draws each crown's colour seed, so no other generic tree changes kind or colour (tested).
 
-**The entry ramp.** The culture agent's rebuilt ramp sits about 11.5 m from the trunk. The drawn tufts reach about 10 m out and hang no lower than about 10 m. That clears the 7.5 m the ramp's Peachtree half needs.
+**The entry ramp.** The culture agent's rebuilt ramp sits about 11.5 m from the trunk. The drawn tufts reach 10.5 m out. The nearest comes within 0.6 m of the edge of the mapped ramp footway, and the lowest hangs 9.5 m up (9.0 m at low detail). A test holds every leaf within a metre of the ramp above the 7.5 m the culture agent asked for.
 
-[Close, 23 Nov](log/ui/tree-species/city-ginkgo-nov23-high.jpg) · [Context](log/ui/tree-species/city-ginkgo-context-day.jpg) · [Night](log/ui/tree-species/city-ginkgo-night-high.jpg) · [Context at night](log/ui/tree-species/city-ginkgo-context-night.jpg) · [Low detail](log/ui/tree-species/city-ginkgo-nov23-low.jpg) · [Summer](log/ui/tree-species/city-ginkgo-summer-high.jpg). Camera: `/?view=city&cam=618,-3999,245,70,80&t=2026-11-23T12:00:00-05:00&speed=0`.
+**Size class.** 20 m sits below the specimen class's 22–28 m range. The site uses the specimen class only for its forked form; its height and spread are per-tree overrides.
+
+[Before and after, captioned](log/ui/tree-species/city-ginkgo-review.jpg) · [Close, 23 Nov](log/ui/tree-species/city-ginkgo-nov23-high.jpg) · [Context](log/ui/tree-species/city-ginkgo-context-day.jpg) · [Night](log/ui/tree-species/city-ginkgo-night-high.jpg) · [Context at night](log/ui/tree-species/city-ginkgo-context-night.jpg) · [Low detail](log/ui/tree-species/city-ginkgo-nov23-low.jpg) · [Summer](log/ui/tree-species/city-ginkgo-summer-high.jpg). Camera: `/?view=city&cam=618,-3999,245,70,80&t=2026-11-23T12:00:00-05:00&speed=0`.
 
 **Calendar caveat.** City passes `local().doy`, which counts leap days, so in a leap year the City ginkgo runs a day behind the lab. That is within its ±3-day spread.
 

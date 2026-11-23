@@ -13,12 +13,12 @@ export interface TreePlacement {
   x: number;
   z: number;
   seed: number;
-  /** Measured overrides, metres; otherwise the class's nominal size, varied by the seed. */
+  /** Per-tree overrides, metres (measured or estimated); otherwise the class's nominal size, varied by the seed. */
   heightM?: number;
   spreadM?: number;
 }
 
-/** A placement's size: measurements when given, else the class nominal ±8% by seed. */
+/** A placement's size: its overrides when given, else the class nominal ±8% by seed. */
 export function treeDims(p: TreePlacement): Dims {
   const n = p.species.sizes[p.size];
   const k = 1 + (hash01(p.seed, 1) - 0.5) * 0.16;
@@ -83,6 +83,9 @@ export function createTrees(placements: TreePlacement[], quality: TreeQuality, g
   const add = (geometry: THREE.BufferGeometry, material: THREE.Material, count: number, name: string, shadow = true) => {
     const mesh = new THREE.InstancedMesh(geometry, material, count);
     mesh.name = name;
+    // A handful of trees, often with every instance hidden at first render (a winter carpet):
+    // three.js would cache that empty bounding sphere at the origin and cull them for good.
+    mesh.frustumCulled = false;
     mesh.castShadow = shadow;
     mesh.receiveShadow = true;
     meshes.push(mesh);

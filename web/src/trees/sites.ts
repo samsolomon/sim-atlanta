@@ -13,7 +13,7 @@ export interface TreeSite {
   id: string;
   name: string;
   species: Species;
-  /** Picks the drawn form; the measured size below overrides the class's nominal size. */
+  /** Picks the drawn form; heightM and spreadM override the class's nominal size, even outside its range. */
   size: SizeClass;
   /** Trunk, Five Points metres (x east, z south). */
   x: number;
