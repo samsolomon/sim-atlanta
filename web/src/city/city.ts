@@ -1240,7 +1240,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = null;
       loadFullBoard();
       frameFullBoard();
-      document.getElementById('city-info')?.hidePopover?.();
     };
   }
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {

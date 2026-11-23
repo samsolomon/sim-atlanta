@@ -2680,3 +2680,27 @@ The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX
 ### 2026-11-23 — The loading dock was next door
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
+
+## 2026-11-23 — Classic removal checked for the next release
+
+The retired interface cleanup (#310) is rebased onto `64bc952c`, but stays
+unmerged for the release after shipped `bc32b09`. The hidden City button host
+stays because the menu and board audit still use it. Cross-model review caught
+a subtle leftover: calling `hidePopover()` on that now-plain div throws even
+with optional chaining, because the browser still supplies the method. Removing
+the call keeps full-board framing free of that exception.
+
+Fresh tests pass: 912 web tests, 5 worker tests and 20 Rust tests (one web test
+skipped; pipeline checks skipped without `.venv`). The production build passes.
+Performance stays within enforced ceilings: Low 2.324M triangles / 530 calls,
+High 13.266M / 1,130 calls; several aspirational targets remain unmet.
+
+Browser checks cover Map, City, Models, full-board framing, and day/night cards.
+The 390×640 night card keeps its truth chips and Follow/Share buttons visible.
+The day capture has camera `1799.793,-5699.709,-101,55,421`, at
+`2026-11-20T14:00:00-05:00`, Low quality; selection reframed the original Five
+Points URL toward the train. The night captures use 22:00 on the same date.
+
+![Day card](log/ui/remove-classic/day-card.png)
+![Night card](log/ui/remove-classic/night-card.png)
+![Phone night card](log/ui/remove-classic/phone-night-card.png)
