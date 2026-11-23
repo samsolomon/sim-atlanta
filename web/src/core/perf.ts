@@ -44,9 +44,10 @@ const TRAIL_KEY = 'perf-trail';
  *   &nopass=ink,grade,tilt,bloom,gtao   disable post passes
  *   &post=off     render straight to the canvas, no composer
  *   &hide=trees,scenery,terrain,transport,buildings,vehicles   hide whole categories (fps upper
- *                 bounds per category). `trees` means every instanced mesh in area scenery. */
+ *                 bounds per category). `trees` means every instanced mesh in area scenery.
+ *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never) */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>() };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -55,6 +56,7 @@ export const perfOverrides = (() => {
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
+    farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
   };
 })();
 

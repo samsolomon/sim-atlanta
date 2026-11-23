@@ -1484,6 +1484,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
+    treeDetail();
     const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
     freight?.update(sceneTime);
@@ -1542,6 +1543,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
   let firstFrame = false;
+  // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
+  // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
+  const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
+  let farTrees = false;
+  let detailAreas = -1;
+  function treeDetail() {
+    const areas = [terrain, east, north, ...(mosaic ? [...mosaic.areas.values(), ...mosaic.patches.values()] : [])];
+    const d = camera.position.distanceTo(controls.target);
+    const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
+    if (far === farTrees && areas.length === detailAreas) return;
+    farTrees = far;
+    detailAreas = areas.length;
+    const detail = { farTrees: far, branchShadows: !low };
+    world.setDetail(detail);
+    for (const a of areas) a?.setDetail(detail);
+  }
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
