@@ -144,3 +144,17 @@ The 1898 Wimbish House at 1150 Peachtree (W. T. Downing), home of the Atlanta Wo
 
 Camera `/?view=city&cam=762,-3556,335,55,120`. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg) · [Night](log/ui/midtown-skyline/wimbish-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/wimbish-after-low-day.jpg)
 
+## The Ponce de Leon Apartments
+
+The 1913 Ponce de Leon Apartments (William L. Stoddart), now The Ponce condominiums, at the southeast corner of Peachtree and Ponce, are mapped as "Ponce Condominium" (osm:way:208355680, `old_name` Ponce de Leon Apartments, `start_date` 1913). They had been a generic 43–50 m block. Wikimedia photographs from the corner and the side show:
+- buff brick on a curved front that faces the intersection, over a two-storey white terra-cotta colonnade
+- a deep green bracketed cornice
+- stacked round iron balconies where the curve meets two square corner towers
+- an open arched belvedere on each tower, under a green tile hip roof
+
+The rear walls are plainer brick. The OSM building parts give the curved main block (43.2 m) and both towers (50.4 m). City draws the base, the cornice and its brackets with the shared classical ornament. The evening photograph shows warm lit windows and lanterns at the colonnade. [Wikimedia, 2017, corner, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Ponce_Condominiums_(formerly_Ponce_de_Leon_Apartments),_Atlanta.jpg) · [Wikimedia, evening, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Ponce_de_Leon_Apartments,_Atlanta,_Georgia.jpg) · [Wikimedia, 2013, side, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Ponce_de_Leon_Apartments_(side_view),_Midtown_Atlanta.JPG)
+
+**Estimated:** the 52.5 m belvedere roof peak, the arch proportions, the column pitch (2.6 m), the balcony radius and spacing, and the brick and green tones.
+
+Camera `/?view=city&cam=655,-2000,135,58,230`. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg) · [Night](log/ui/midtown-skyline/ponce-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/ponce-dusk-after-day.jpg) · [Low tier](log/ui/midtown-skyline/ponce-after-low-day.jpg)
+

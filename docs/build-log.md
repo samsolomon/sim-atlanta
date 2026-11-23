@@ -2416,3 +2416,7 @@ Under `?ui=next`, the camera column has a Share button. It opens "Share this vie
 
 The Wimbish House is one of the last Gilded Age mansions on Peachtree, and City had it as a flat two-storey slab, because OSM records a single height for the house and the club's later ballroom wing. The building parts separated them. The 1898 house now rises to its slate hip roof with a turret, a drum bay, twin dormers and the arched loggia, and the wing stays plain behind it. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg)
 
+### 2026-11-23 — The Ponce was there all along
+
+The Ponce de Leon Apartments seemed to be missing from the map until a search for the old name turned up a building mapped as "Ponce Condominium", which keeps the 1913 name in `old_name`. Its curved front, colonnade and the two belvederes across Ponce from the Georgian Terrace now frame the Fox corner from both sides with period buildings. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg)
+
