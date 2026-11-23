@@ -114,7 +114,7 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number, ground: (x:
     lamps = new Builder();
   const concrete = '#a89e8f',
     coping = '#b5ab9b',
-    earth = '#838c56';
+    earth = '#97a183';
   const half = frame.spacing / 2 + 2.72,
     opening = 5.2,
     wing = half + 5;
@@ -126,7 +126,8 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number, ground: (x:
     return g === null ? null : g - base;
   };
   let behind = opening + 1.4;
-  for (let x = -wing; x <= wing; x += 2)
+  // The headwall rises to the ground over the tube itself, not the cut's shoulders.
+  for (let x = -half - 1; x <= half + 1; x += 1)
     for (const z of [-4, -7, -10]) behind = Math.max(behind, (groundAt(x, z) ?? -Infinity) + 0.6);
   const top = Math.min(behind, opening + 6);
   // Headwall face with one opening for both tracks, and its coping.
@@ -153,18 +154,23 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number, ground: (x:
       body.quad([x0, Math.min(g0, 0) - 0.6, z0], [x0, t0, z0], [x1, t1, z1], [x1, Math.min(g1, 0) - 0.6, z1], concrete);
     }
   }
-  // Earth closed over the box from the coping back to where the slope rises above
-  // it. Only the part standing clear of the terrain is drawn, so it never z-fights.
+  // Earth closed over the box from the coping back, at least 0.4 m over the tube's
+  // roof for its full 60 m, sloping off beside it. Only the part standing clear of
+  // the terrain is drawn, lifted 0.15 m where it meets the ground, so it never z-fights.
+  const roofCover = opening + 0.4;
   for (let x = -wing; x < wing; x += 2) {
     const xs = [x, Math.min(x + 2, wing)];
+    const over = (xx: number) => Math.abs(xx) <= half + 0.5;
+    const cap = (xx: number, z: number) => {
+      const g = groundAt(xx, z) ?? -Infinity;
+      const y = Math.max(top - 0.25 * (-z - 0.8), over(xx) ? roofCover : -Infinity);
+      return { y: Math.max(y, g + 0.15), g, clear: y > g + 0.2 };
+    };
     let za = -0.8;
-    let prev = xs.map((xx) => ({ y: top, g: groundAt(xx, -0.8) ?? -Infinity }));
-    for (let z = -2.8; z >= -16.8; z -= 2) {
-      const next = xs.map((xx) => {
-        const g = groundAt(xx, z) ?? -Infinity;
-        return { y: Math.max(g + 0.05, top - 0.25 * (-z - 0.8)), g };
-      });
-      if ([...prev, ...next].some(({ y, g }) => y - g > 0.2))
+    let prev = xs.map((xx) => ({ ...cap(xx, -0.8), y: top }));
+    for (let z = -2.8; z >= -60; z -= 2) {
+      const next = xs.map((xx) => cap(xx, z));
+      if ([...prev, ...next].some(({ clear }) => clear))
         body.quad([xs[0], prev[0].y, za], [xs[0], next[0].y, z], [xs[1], next[1].y, z], [xs[1], prev[1].y, za], earth);
       za = z;
       prev = next;
@@ -183,7 +189,7 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number, ground: (x:
     body.quad([-0.2, -0.6, z], [-0.2, opening, z], [-0.2, opening, z1], [-0.2, -0.6, z1], col);
     body.quad([0.2, -0.6, z], [0.2, opening, z], [0.2, opening, z1], [0.2, -0.6, z1], col);
     body.quad([-half, opening, z], [half, opening, z], [half, opening, z1], [-half, opening, z1], col);
-    body.quad([-half, -0.05, z], [-half, -0.05, z1], [half, -0.05, z1], [half, -0.05, z], col);
+    body.quad([-half, -0.3, z], [-half, -0.3, z1], [half, -0.3, z1], [half, -0.3, z], col);
   }
   body.quad([-half, -0.6, -60], [half, -0.6, -60], [half, opening, -60], [-half, opening, -60], '#050505');
   // Crown lamps over each track and two pairs of interior lamps (illustrative).
