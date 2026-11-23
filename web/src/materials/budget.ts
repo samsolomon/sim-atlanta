@@ -44,6 +44,7 @@ export const TEXTURE_SOURCES: Record<string, TextureSource> = {
   'city/figure-looks.ts': { bytes: 1_536, bucket: 'other', note: 'street figure palette' },
   'terrain/ground-map.ts': { bytes: 420_000_000, bucket: 'other', note: 'terrain ground maps, up to 5735x1639 and 4096x4096 (routed to the terrain owner)' },
   'terrain/transport.ts': { bytes: 43_692, bucket: 'other', note: 'freight track 128x16' },
+  'trees/foliage-kit.ts': { bytes: 7 * 349_525, bucket: 'other', note: 'up to 7 leaf shapes x 512x512 atlas (added on main after the audit; not measured)' },
   'trees/ginkgo-variants.ts': { bytes: 0, bucket: 'other', note: 'leaf atlas (lab and opt-in variants)' },
   'vignette/ink.ts': { bytes: 4, bucket: 'other', note: '1x1 empty mask' },
   'vignette/traffic.ts': { bytes: 0, bucket: 'other', note: 'headlight beam, East Portal only' },
