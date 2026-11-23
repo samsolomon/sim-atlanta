@@ -515,3 +515,12 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 @media (min-width: 601px) and (max-width: 780px) {
   body:has(.a2-subject.a2-open) .a2-panel { display: none !important; }
 }
+
+/* ---- radio (app bar): note icon, pause + title while playing ---- */
+.a2-radio { width: 40px; height: 40px; }
+.a2-radio svg { width: 18px; height: 18px; }
+.a2-radio-title { padding: 0 10px 0 2px; font-size: 12px; color: var(--a2-ink2); white-space: nowrap; }
+@media (max-width: 600px) {
+  .a2-radio { width: 44px; height: 44px; }
+  .a2-radio-title { display: none; }
+}

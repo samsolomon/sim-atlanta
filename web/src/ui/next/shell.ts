@@ -233,7 +233,29 @@ export function createShellNext(o: ShellOptions): ShellApi {
     return b;
   });
   seg.append(...viewBtns);
-  bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg);
+  // ---- radio: off until tapped; while it plays, the track title shows beside it ----
+  const NOTE = SVG('<path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>');
+  const PAUSE = SVG('<path d="M8 5v14M16 5v14"/>');
+  const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Play radio', 'aria-pressed': 'false' }, NOTE);
+  const radioTitle = el('span', { class: 'a2-radio-title', hidden: '', 'aria-live': 'polite' });
+  let radio: import('./radio').Radio | null = null;
+  const showRadio = () => {
+    if (!radio) return;
+    radioBtn.innerHTML = radio.playing ? PAUSE : NOTE;
+    radioBtn.setAttribute('aria-pressed', String(radio.playing));
+    radioBtn.setAttribute('aria-label', radio.playing ? `Pause radio: ${radio.track.title}` : 'Play radio');
+    radioTitle.textContent = radio.track.title;
+    radioTitle.hidden = !radio.playing;
+  };
+  radioBtn.addEventListener('click', async () => {
+    if (!radio) {
+      const { createRadio } = await import('./radio');
+      radio ??= createRadio();
+      radio.onChange(showRadio);
+    }
+    radio.toggle();
+  });
+  bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn, radioTitle);
 
   const menu = el('section', { class: 'a2-menu a2-g a2-long', id: 'a2-menu', hidden: '', 'aria-label': 'Menu' });
   // No title block (A2c-menu): rows, Graphics, then the byline and the map-data credit.
