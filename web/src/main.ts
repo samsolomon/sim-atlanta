@@ -5,7 +5,8 @@ import { showRailOverview } from './map/overview';
 import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
 import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
-import { createShell, type View } from './ui/shell';
+import { createShell, type ShellOptions, type View } from './ui/shell';
+import { uiNext } from './ui/flag';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
 import { busCard, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
@@ -479,7 +480,7 @@ function setViewParam(v: View) {
 }
 
 document.getElementById('early-map')!.hidden = true;
-const shell = createShell({
+const shellOptions: ShellOptions = {
   view: 'map',
   onView: (v: View) => (v === 'city' ? void openCity() : closeCity()),
   center() {
@@ -515,7 +516,23 @@ const shell = createShell({
     cityTraffic: diorama?.hasTraffic ?? false,
     buses: buses.unavailable ? null : buses.current().length,
   }),
-});
+  bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
+  north() {
+    if (diorama) return diorama.rotate(diorama.camera().bearing);
+    map?.easeTo({ bearing: 0, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300 });
+  },
+  onNow() {
+    clock.reset();
+    scrub.value = '0';
+    setSpeed(1);
+    updateAtmosphere();
+  },
+};
+// ?ui=next: the A2c interface (docs/ui-controls-brief.md), loaded only behind the flag.
+const shell = uiNext(location.search)
+  ? (await import('./ui/next/shell')).createShellNext(shellOptions)
+  : createShell(shellOptions);
+if (import.meta.env.DEV) Object.assign(window, { __shell: shell });
 
 // City and its status card must keep time even while remote Map tiles are unavailable.
 updateAtmosphere();

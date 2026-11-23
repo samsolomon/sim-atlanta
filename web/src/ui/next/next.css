@@ -1,0 +1,259 @@
+/* A2c chrome (?ui=next). Values from docs/ui-controls-brief.md, "Appendix: exact values". */
+:root[data-ui='next'] {
+  --a2-inset: 8px;
+  --a2-top: max(var(--a2-inset), calc(env(safe-area-inset-top) + var(--a2-inset)));
+  --a2-left: max(var(--a2-inset), calc(env(safe-area-inset-left) + var(--a2-inset)));
+  --a2-right: max(var(--a2-inset), calc(env(safe-area-inset-right) + var(--a2-inset)));
+  --a2-bottom: max(var(--a2-inset), calc(env(safe-area-inset-bottom) + var(--a2-inset)));
+  --a2-ink: #2a2722;
+  --a2-ink2: #5f5a50;
+  --a2-sep: rgba(60, 45, 30, 0.12);
+  --a2-ga: rgba(252, 250, 245, 0.80);
+  --a2-gb: rgba(243, 239, 230, 0.68);
+  --a2-ga-long: rgba(252, 250, 245, 0.90);
+  --a2-gb-long: rgba(243, 239, 230, 0.82);
+  --a2-hair: rgba(60, 45, 30, 0.18);
+  --a2-rim: rgba(255, 255, 255, 0.9);
+  --a2-sh: 0 10px 28px rgba(40, 30, 20, 0.18), 0 1px 3px rgba(40, 30, 20, 0.10);
+  --a2-track: rgba(60, 45, 30, 0.12);
+  --a2-chip: rgba(255, 255, 255, 0.95);
+  --a2-chip-sh: 0 1px 3px rgba(40, 30, 20, 0.16), 0 0 0 0.5px rgba(60, 45, 30, 0.12);
+  --a2-north: #c2255c;
+  --a2-timetable: var(--sched);
+  --a2-live: var(--live);
+  --a2-focus: #1f5fd1;
+  --a2-app-h: 48px;
+  --a2-app-bottom: var(--a2-bottom);
+}
+:root[data-ui='next'][data-theme='dark'] {
+  --a2-ink: #eef0f3;
+  --a2-ink2: #b7bfcb;
+  --a2-sep: rgba(255, 255, 255, 0.12);
+  --a2-ga: rgba(38, 44, 56, 0.70);
+  --a2-gb: rgba(20, 24, 32, 0.62);
+  --a2-ga-long: rgba(38, 44, 56, 0.86);
+  --a2-gb-long: rgba(20, 24, 32, 0.80);
+  --a2-hair: rgba(255, 255, 255, 0.16);
+  --a2-rim: rgba(255, 255, 255, 0.22);
+  --a2-sh: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --a2-track: rgba(0, 0, 0, 0.22);
+  --a2-chip: rgba(255, 255, 255, 0.20);
+  --a2-chip-sh: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --a2-north: #f06595;
+  --a2-timetable: #6ea8fe;
+  --a2-live: #6fd58a;
+  --a2-focus: #8cb8f2;
+}
+
+/* ---- glass ---- */
+.a2-g {
+  position: fixed; box-sizing: border-box; z-index: 5; margin: 0; border: 0; border-radius: 16px;
+  color: var(--a2-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(160deg, var(--a2-ga), var(--a2-gb));
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+/* Panels that hold long text read over busy roofs: slightly denser glass. */
+.a2-long { --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .a2-g { --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
+}
+.a2-g :is(button, a) { font: inherit; color: inherit; }
+.a2-g :is(button, a):focus-visible, .a2-credit a:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+.a2-ic { display: inline-grid; width: 20px; height: 20px; }
+.a2-ic svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.a2-ib {
+  width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent;
+  padding: 0; border-radius: 10px; cursor: pointer; flex: none;
+}
+.a2-ib:hover { background: var(--a2-sep); }
+.a2-sep { height: 1px; background: var(--a2-sep); margin: 0 8px; }
+.a2-vsep { width: 1px; align-self: stretch; margin: 10px 4px; background: var(--a2-sep); flex: none; }
+
+/* ---- the old chrome stays out of the way ---- */
+:root[data-ui='next'] :is(.maplibregl-ctrl-attrib, .city-info-toggle) { display: none !important; }
+
+/* ---- subject card (top-left) ---- */
+.a2-subject {
+  left: var(--a2-left); top: var(--a2-top); padding: 14px 18px 14px 20px;
+  max-width: min(420px, calc(100vw - var(--a2-left) - var(--a2-right)));
+}
+.a2-subject-open {
+  display: block; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; border-radius: 8px;
+  max-width: 100%;
+}
+.a2-place {
+  display: block; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.05;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.a2-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 8px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.a2-time { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; border-radius: 6px; padding: 0 2px; margin: 0 -2px; }
+.a2-subject-open:hover .a2-time { background: var(--a2-sep); }
+.a2-caret { display: inline-grid; width: 14px; height: 14px; opacity: 0.45; }
+.a2-caret svg { width: 100%; height: 100%; }
+.a2-wx { display: inline-flex; align-items: center; gap: 6px; }
+.a2-wx-icon { display: inline-grid; width: 19px; height: 19px; }
+.a2-wx-icon:empty { display: none; }
+.a2-wx-icon svg { width: 100%; height: 100%; fill: currentColor; }
+.a2-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 7px; font-size: 12px; color: var(--a2-ink2); }
+.a2-tier > span:nth-child(2)::after { content: ' ·'; }
+.a2-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
+.a2-dot-live { background: var(--a2-live); }
+.a2-dot-timetable { background: var(--a2-timetable); }
+.a2-link {
+  border: 0; background: none; padding: 0 2px; margin: 0 -2px; min-height: 24px; cursor: pointer;
+  font-weight: 600; text-decoration: underline; text-underline-offset: 2px; color: var(--a2-ink) !important; border-radius: 4px;
+}
+
+/* Scene preview and per-feed tiers, under the subject card. */
+.a2-status {
+  left: var(--a2-left); top: calc(var(--a2-subject-bottom, 110px) + 8px); z-index: 6;
+  width: min(372px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  max-height: calc(100dvh - var(--a2-subject-bottom, 110px) - 8px - var(--a2-app-bottom) - var(--a2-app-h) - 8px);
+  overflow-y: auto; padding: 14px 16px 16px; font-size: 13px; line-height: 1.4;
+}
+.a2-conditions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 0 12px; margin: 0 0 12px; border: 0; border-bottom: 1px solid var(--a2-sep); }
+.a2-conditions legend { font-size: 15px; font-weight: 650; padding: 0 0 7px; }
+.a2-conditions label { display: grid; gap: 4px; color: var(--a2-ink2); }
+.a2-conditions select { width: 100%; min-height: 36px; padding: 4px 8px; border: 1px solid var(--a2-sep); border-radius: 9px; font: inherit; color: var(--a2-ink); background: var(--a2-sep); }
+:root[data-theme='dark'] .a2-conditions select { color-scheme: dark; }
+.a2-title { margin: 0 0 8px; font-weight: 650; }
+.a2-details ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; color: var(--a2-ink2); font-size: 12.5px; }
+.a2-details b { color: var(--a2-ink); font-weight: 600; margin-right: 4px; }
+
+/* ---- notice pill: 8 px under the subject card ---- */
+.a2-notice {
+  left: var(--a2-left); top: calc(var(--a2-subject-bottom, 110px) + 8px); z-index: 4;
+  max-width: min(420px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  padding: 6px 12px; border-radius: 14px; font-size: 12px; line-height: 1.4; color: var(--a2-ink);
+  /* Tier words read over any roof or road: denser glass than the other chrome. */
+  --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long);
+}
+body:has(.a2-status:not([hidden])) .a2-notice { display: none; }
+
+/* ---- app bar (bottom-left) ---- */
+.a2-appbar {
+  left: var(--a2-left); bottom: var(--a2-app-bottom); height: var(--a2-app-h);
+  display: flex; align-items: center; gap: 2px; padding: 0 4px 0 2px;
+}
+.a2-seg { display: flex; gap: 2px; padding: 2px; border-radius: 11px; background: var(--a2-track); }
+.a2-vs {
+  height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; padding: 0 12px;
+  font-size: 14px !important; font-weight: 600 !important; background: transparent; cursor: pointer; text-decoration: none;
+}
+.a2-vs:hover { background: var(--a2-sep); }
+.a2-vs[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); }
+
+/* ---- menu: opens upward from the app bar ---- */
+.a2-menu {
+  left: var(--a2-left); bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); z-index: 7;
+  width: min(320px, calc(100vw - var(--a2-left) - var(--a2-right))); padding: 6px;
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-app-bottom) - var(--a2-app-h) - 8px); overflow-y: auto;
+}
+.a2-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px;
+  padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; text-align: left; text-decoration: none; cursor: pointer;
+}
+.a2-row:hover { background: var(--a2-sep); }
+.a2-row b { display: block; font-size: 14px; font-weight: 600; }
+.a2-row small { display: block; font-size: 12px; color: var(--a2-ink2); margin-top: 1px; }
+.a2-chev { color: var(--a2-ink2); font-size: 18px; }
+.a2-fine { margin: 6px 12px 8px; padding-top: 10px; border-top: 1px solid var(--a2-sep); font-size: 11px; line-height: 1.45; color: var(--a2-ink2); }
+.a2-fine a { color: inherit; }
+
+/* ---- camera column (bottom-right) ---- */
+.a2-camera {
+  right: var(--a2-right); bottom: var(--a2-bottom); width: 44px;
+  display: flex; flex-direction: column; padding: 2px 0;
+}
+.a2-camera.a2-no-compass:not(:has(.a2-zoom:not([hidden]))) { display: none; }
+.a2-needle { width: 30px; height: 30px; }
+.a2-north { fill: var(--a2-north); }
+.a2-camera.a2-no-compass .a2-compass-sep { display: none; }
+
+/* ---- credit line: no glass, a soft halo; fades after the first move ---- */
+.a2-credit {
+  position: fixed; z-index: 4; right: calc(var(--a2-right) + 44px + 8px); bottom: calc(var(--a2-bottom) + 1px);
+  margin: 0; font: 12px/16px ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #4a463e;
+  text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea; pointer-events: none; transition: opacity 0.6s ease;
+}
+.a2-credit a { color: inherit; pointer-events: auto; border-radius: 3px; }
+.a2-credit.a2-gone { opacity: 0; }
+
+/* ---- first-visit hint: just above the app bar ---- */
+.a2-hint {
+  left: var(--a2-left); bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); z-index: 4;
+  padding: 8px 14px; border-radius: 999px; font-size: 13px; color: var(--a2-ink2);
+  transition: opacity 0.5s ease; pointer-events: none;
+}
+.a2-hint.a2-gone { opacity: 0; }
+body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
+
+/* ---- detail panel (right): the existing card, re-placed until step 4 redraws it ---- */
+:root[data-ui='next'] #card {
+  position: fixed; left: auto; right: var(--a2-right); top: var(--a2-top); bottom: auto; z-index: 6;
+  width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right))); padding: 16px 18px 14px; border: 0; border-radius: 16px;
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h, 140px)); overflow-y: auto;
+  color: var(--a2-ink); background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long));
+  -webkit-backdrop-filter: blur(22px) saturate(1.35); backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
+}
+:root[data-ui='next'] #card::before, :root[data-ui='next'] #card::after { display: none; }
+:root[data-ui='next'] #card .sub, :root[data-ui='next'] #card dt { color: var(--a2-ink2); }
+:root[data-ui='next'] #card .close {
+  top: 12px; right: 12px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: var(--a2-sep); color: inherit;
+  display: grid; place-items: center; font-size: 18px;
+}
+:root[data-ui='next'] #card .close::after { content: ''; position: absolute; inset: -6px; }
+:root[data-ui='next'] #card :is(button, a):focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+/* Follow is the one dark primary button. */
+:root[data-ui='next'] #train-follow button { min-height: 40px; border: 0; border-radius: 10px; font-weight: 600; background: var(--a2-sep); }
+:root[data-ui='next'] #train-follow [data-follow] { background: #2a2722; color: #fbf9f4; }
+:root[data-ui='next'][data-theme='dark'] #train-follow [data-follow] { background: #eef0f3; color: #1c2129; }
+
+/* ---- About this City view: shown in the detail-panel place ---- */
+:root[data-ui='next'] #city-info {
+  inset: var(--a2-top) var(--a2-right) auto auto; width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h, 140px));
+  padding: 16px 18px; border: 0; border-radius: 16px; color: var(--a2-ink);
+  background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long));
+  -webkit-backdrop-filter: blur(22px) saturate(1.35); backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
+}
+
+/* ---- Key dialog on A2c glass (step 4 moves the Key into the detail panel) ---- */
+.a2-key.glass { border-radius: 16px; background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long)); color: var(--a2-ink); }
+
+/* ---- phones: top items under the status bar, the app bar above the home indicator ---- */
+@media (max-width: 600px) {
+  :root[data-ui='next'] {
+    /* Room for the credit line in the home-indicator strip, under the app bar. */
+    --a2-app-bottom: max(34px, calc(env(safe-area-inset-bottom) + 12px));
+    --a2-app-h: 52px;
+  }
+  .a2-subject { padding: 12px 16px; right: calc(var(--a2-right) + 44px + 8px); max-width: none; }
+  .a2-subject:has(~ .a2-camera.a2-no-compass) { right: var(--a2-right); }
+  .a2-place { font-size: 22px; letter-spacing: -0.01em; }
+  .a2-subject-open { display: flex; flex-direction: column; width: 100%; }
+  .a2-line { margin-top: 5px; font-size: 14px; gap: 2px 8px; }
+  .a2-tier { margin-top: 4px; }
+  .a2-appbar { right: var(--a2-right); gap: 1px; }
+  .a2-seg { flex: 1; }
+  .a2-vs { flex: 1; }
+  .a2-camera { top: var(--a2-top); bottom: auto; }
+  .a2-zoom { display: none; }
+  .a2-camera .a2-compass-sep { display: none; }
+  .a2-camera.a2-no-compass { display: none; }
+  .a2-credit { left: 0; right: 0; bottom: max(11px, calc(env(safe-area-inset-bottom) - 12px)); text-align: center; font-size: 11px; line-height: 14px; }
+  .a2-menu { right: var(--a2-right); width: auto; }
+  .a2-status { right: var(--a2-right); width: auto; }
+  :root[data-ui='next'] #card { left: var(--a2-left); right: var(--a2-right); top: auto; width: auto; bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); max-height: 55dvh; border-radius: 24px; }
+  :root[data-ui='next'] #city-info { inset: auto var(--a2-right) calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px) var(--a2-left); width: auto; max-height: 60dvh; border-radius: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a2-g, .a2-credit, .a2-hint { transition: none; }
+}
