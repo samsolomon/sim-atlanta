@@ -5,6 +5,11 @@ import { spawnSync } from 'node:child_process';
 
 const python = new URL('../.venv/bin/python', import.meta.url).pathname;
 if (!existsSync(python)) {
+  // Releases run with PIPELINE_TESTS=strict (`pnpm test:release`) and must never skip.
+  if (process.env.PIPELINE_TESTS === 'strict') {
+    console.error('\n✖ PIPELINE_TESTS=strict: no .venv, so the pipeline checks cannot run. Create it per README.\n');
+    process.exit(1);
+  }
   console.warn('\n⚠️  SKIPPED pipeline checks: no .venv. Create it per README to test building-part extraction.\n');
   process.exit(0);
 }
