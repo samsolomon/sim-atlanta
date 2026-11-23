@@ -1885,3 +1885,7 @@ The courthouse looked like one 52.8 m building in the bake. It took two street c
 ### 2026-11-23 — The second roof at 25 Park Place
 
 From Woodruff Park, the former Trust Company tower reads as a white grid. Turn toward Edgewood and its narrow end rises behind a three-floor pavilion. One 115 m extrusion had erased that view. The lidar put the tower rim at about 433 m NAVD88 and the pavilion terrace at 332 m. Restoring the 101 m step also exposed the space between the deep lobby piers. In the night photograph the warm light catches the projecting stone fins, leaving much of the glass dark. [Photographs, measurements and matched City views](log/ui/park-place-tower/README.md)
+
+### 2026-11-23 — The two atriums at 55 Park Place
+
+The broad western face used to read as one banded block. A photograph taken after the office lights came on showed what the bands had hidden. Two glazed halls sit one above the other between matching three-bay wings. The roof above them climbs in four steps of about four metres apiece. Across the same footprint, the eastern service block rises another six metres above the office roof. From Auburn, its mostly blank wall gives the building a different profile. [Reference photographs, elevations and matched City views](log/ui/55-park-place/README.md)
