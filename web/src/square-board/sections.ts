@@ -1,3 +1,4 @@
+import { midtownFoundations } from '../city/midtown-foundations';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import railRows from '../city/fixtures/midtown-rail.json';
@@ -116,7 +117,7 @@ async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot =
   if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
-  return { id, grid, context };
+  return { id, grid, context: id in rowBounds || id === 'north-band' ? midtownFoundations(context, grid.manifest.vertical.sceneZeroNavd88M) : context };
 }
 
 export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid }) {

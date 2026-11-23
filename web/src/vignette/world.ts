@@ -15,6 +15,8 @@ import { PlacementIndex } from './spatial';
 export const MARTA_TRACK_OFFSET = 2.1;
 
 export interface VBuilding {
+  /** Inferred finished floor in scene metres on a sloped site. */
+  floorY?: number;
   cls?: string | null;
   id: string;
   h: number | null;
@@ -823,8 +825,9 @@ export class World {
     for (const bd of this.data.buildings) {
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
-      const originY = foundationY ? foundationY(bd) : 0;
-      if (originY === null) continue;
+      const footing = foundationY ? foundationY(bd) : 0;
+      if (footing === null) continue;
+      const originY = bd.floorY ?? footing;
       const finish = finishFor?.(bd);
       const h = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
       const r = rng(hashStr(bd.id));
@@ -833,7 +836,7 @@ export class World {
       const kind = h < 16 ? 0 : h < 42 ? (r() < 0.45 ? 0 : 1) : 2;
       const tall = h >= 16;
       const wallCol = finish?.wall ?? pick(r, kind === 0 && tall ? ['#c9b49a', '#b98a6a', '#d8c9b0', '#a9583f', '#e0d6c4'] : kind === 0 ? ['#a9583f', '#b86a4b', '#9a4c39', '#c98f6b', '#d7c3a2'] : kind === 1 ? ['#d9cdb5', '#cfc5b4', '#c1b6a3', '#e1d8c6', '#b9b0a3'] : ['#8fa4b6', '#9fb0bd', '#7f93a4', '#a8b8c2']);
-      let foot = originY;
+      let foot = footing;
       if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
       const y0 = foot - 0.5;
       const roofY = originY + h;
