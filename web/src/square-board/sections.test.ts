@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { InstancedMesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { midtownBaseNavd88M, SquareMosaic } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
@@ -58,6 +59,11 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
     const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
     if (id === 'midtown-south' && name === 'context.json' && midtownUnavailable) return new Response(null, { status: 503 });
     const data = Uint8Array.from(file(id as Board, name));
+    if (id === 'north-band' && name === 'context.json') {
+      const crowns = JSON.parse(readFileSync(new URL('expanded-canopy/crowns.json', source), 'utf8'));
+      return Response.json({ ...JSON.parse(new TextDecoder().decode(data)),
+        trees: crowns[id].trees.slice(0, 3), treeLowCount: 1 });
+    }
     if (fault && id === 'south-corner') {
       if (name === 'ground.i16') return new Response(badCorner.buffer);
       if (fault === 'seam' && name === 'ground.json') return Response.json(manifest);
@@ -87,6 +93,15 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       await addSection(d, mounted, quality, signal);
       if (mounted.size === 5) expect(mounted.has(d === 'north' ? 'south-corner' : 'north-corner')).toBe(false);
     }
+    const trunks = mounted.get('north-band')!.scenery.children.find(
+      mesh => mesh instanceof InstancedMesh && mesh.geometry.type === 'CylinderGeometry',
+    ) as InstancedMesh;
+    expect(trunks.count).toBe(quality === 'high' ? 3 : 1);
+    const hasLeafMesh = (id: Board, geometry: string) => mounted.get(id)!.scenery.children.some(
+      mesh => mesh instanceof InstancedMesh && mesh.geometry.type === geometry,
+    );
+    expect(hasLeafMesh('north-band', 'OctahedronGeometry')).toBe(true);
+    expect(hasLeafMesh('downtown', 'DodecahedronGeometry')).toBe(true);
     let boardArea = 0;
     for (const [id, area] of mounted) {
       const b = bounds[id];
