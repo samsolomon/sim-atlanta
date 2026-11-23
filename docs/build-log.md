@@ -1983,3 +1983,7 @@ In the Georgia State overview you could see the freeway between the Decatur Stre
 ### 2026-11-23 — Where a bridge meets bare earth
 
 At Ted Turner Drive, the ground grid beside one sidewalk drops roughly 10 m below the surveyed deck corner. Sampling the ground again just inside the span bent the sidewalk toward the freeway. The five bridges now take their approach heights at the abutments. A check against the staged City geometry found seven road pieces and twelve sidewalk pieces across three boards, including both halves of Peachtree. [Ted Turner in daylight](log/ui/connector-bridge-sidewalks/ted-turner-day.jpg) · [Capitol at the south edge](log/ui/connector-bridge-sidewalks/capitol-day.jpg)
+
+### 2026-11-23 · The eight little domes on 191 Peachtree
+
+From the skyline I had read each crown as a single shallow dome. In the close photograph the highest points are actually stone balls. Four smaller pale hemispheres sit a stage lower on each crown, framing two arched windows on each face. We rebuilt those shoulders and kept the mapped 234.7 m tip height. The same photograph explained why the office floors looked too busy. Four vertically grouped bays carry several floors of glass between slender piers, while the central recess has plain stacks of square windows. A pair of 216 × 552 textures handles the entire shaft, keeping the landmark at three meshes. [Daylight, full night, skyline and saved cameras](log/ui/peachtree-191/README.md)

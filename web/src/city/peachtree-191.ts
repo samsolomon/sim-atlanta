@@ -26,28 +26,35 @@ function walls(b: Builder, ring: P2[], low: number, high: number, color: string)
   }
 }
 
-// A pair of taller glazed bays separated by pale piers, with quieter punched
-// windows between them. One mipmapped facade for every elevation of the shaft.
+// A single atlas fits a whole outer elevation and three punched bays in the slot.
 function facade() {
-  const bays = 8, floors = 46, w = bays * 10, h = floors * 8;
+  const bayWidth = 24, floorHeight = 12, floors = 46;
+  const w = 9 * bayWidth, h = floors * floorHeight;
   const day = new Uint8Array(w * h * 4), night = new Uint8Array(day.length);
   const random = rng(191);
-  const granite = [218,207,193], frame = [126,130,128], glass = [66,77,85];
-  for (let f = 0; f < floors; f++) {
-    for (let bay = 0; bay < bays; bay++) {
+  const granite = [218, 207, 193], frame = [122, 127, 127];
+  function windowBay(bay: number, panes: number, width: number, grouped: boolean) {
+    const left = (bayWidth - width) / 2;
+    for (let floor = 0; floor < floors; floor++) {
       const lit = random() < .19 ? .28 + .48 * random() : 0;
-      const tall = bay % 4 === 1 || bay % 4 === 2;
-      for (let y = 0; y < 8; y++) for (let x = 0; x < 10; x++) {
-        const pane = x >= 2 && x <= 7 && y >= (tall && f % 4 !== 0 ? 0 : 2) && y < (tall ? 8 : 7);
-        const mullion = pane && (x === 5 || y === 0);
-        const color = !pane ? granite : mullion ? frame : glass;
-        const i = 4 * ((8*f+y)*w + 10*bay+x);
-        day.set(color, i);
+      const sill = grouped ? (floor % 4 === 0 ? 3 : 0) : 2;
+      for (let y = 0; y < floorHeight; y++) for (let x = 0; x < bayWidth; x++) {
+        const dx = x - left;
+        const pane = dx >= 0 && dx < width && y >= sill && y < (grouped ? 12 : 9);
+        const mullion = pane && ((dx % (width / panes)) < 1 || y === 0);
+        const shade = 68 + 4 * (Math.floor(dx * panes / width) % 3);
+        const i = 4 * ((floor * floorHeight + y) * w + bay * bayWidth + x);
+        day.set(!pane ? granite : mullion ? frame : [shade, shade + 13, shade + 22], i);
         day[i+3] = 255;
         const glow = pane && !mullion ? lit : 0;
-        night[i] = 255*glow; night[i+1] = 195*glow; night[i+2] = 123*glow; night[i+3] = 255;
+        night.set([255*glow, 195*glow, 123*glow, 255], i);
       }
     }
+  }
+  for (let bay = 0; bay < 9; bay++) {
+    const grouped = bay >= 1 && bay <= 4;
+    const broad = bay === 2 || bay === 3;
+    windowBay(bay, broad ? 4 : 2, broad ? 20 : grouped ? 14 : 12, grouped);
   }
   function texture(bytes: Uint8Array<ArrayBuffer>) {
     const t = new THREE.DataTexture(bytes, w, h);
@@ -67,8 +74,10 @@ function facade() {
   walls(b, shaft, podiumTop, shaftTop, '#ffffff');
   for (let i = 0; i < shaft.length; i++) {
     const [x,z] = shaft[i], [u,v] = shaft[(i+1) % shaft.length];
-    const repeats = Math.max(1, Math.round(Math.hypot(u-x,v-z)/3.1)) / bays;
-    uv.push(0,0, repeats,0, repeats,1, 0,0, repeats,1, 0,1);
+    const width = Math.hypot(u-x,v-z);
+    const start = width > 25 ? 0 : 6/9;
+    const end = width > 25 ? 6/9 : width > 10 ? 1 : 7/9;
+    uv.push(start,0, end,0, end,1, start,0, end,1, start,1);
   }
   const geo = b.geometry();
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
@@ -90,33 +99,58 @@ function arch(b: Builder, x: number, z: number, nx: number, nz: number,
 }
 
 function crown(b: Builder, x: number, z: number, top: number) {
-  // Heights in this seven-storey crown are estimated from the two elevations.
   const block = (w: number, low: number, high: number, color: string) =>
     b.box(w, high-low, w, x, (low+high)/2, z, color);
-  block(27,shaftTop,206,stone);
-  block(25.6,206,215.8,stone);
-  block(26.4,215.8,217,cornice);
-  for (const [nx,nz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-    const corner = (side: number, half: number, y: number) =>
-      [x + half*(nx+side*nz), y, z + half*(nz-side*nx)];
-    b.quad(corner(-1,13.2,217),corner(1,13.2,217),corner(1,10.1,219),corner(-1,10.1,219),stone);
+  // The paired windows occupy the lower stage. Four domed corner pavilions
+  // step out beyond it, leaving a taller square drum behind the glazing.
+  block(26.2,shaftTop,214.2,stone);
+  block(25.2,214.2,215,cornice);
+  block(20,214.8,218.5,stone);
+  block(20.6,218.5,219.2,cornice);
+  const directions = [[1,0],[-1,0],[0,1],[0,-1]];
+  for (const [nx,nz] of directions) {
+    const at = (s: number, y: number, out: number) => [x+nx*out+s*nz,y,z+nz*out-s*nx];
+    for (const s of [-3.35,3.35]) {
+      arch(b,x+nx*13.15+s*nz,z+nz*13.15-s*nx,nx,nz,203.4,209.9,2.6,.36,true);
+      for (const dx of [-.9,.9]) {
+        const peak = 209.9 + Math.sqrt(2.6**2 - dx**2);
+        b.quad(at(s+dx-.09,203.4,13.19),at(s+dx+.09,203.4,13.19),
+          at(s+dx+.09,peak,13.19),at(s+dx-.09,peak,13.19),'#939491');
+      }
+      for (const y of [206.8,209.9]) b.quad(at(s-2.6,y,13.19),at(s+2.6,y,13.19),
+        at(s+2.6,y+.18,13.19),at(s-2.6,y+.18,13.19),'#939491');
+    }
+    for (const s of [-6.6,0,6.6]) {
+      b.box(nx ? .65 : .85,10.8,nz ? .65 : .85,x+nx*13.22+s*nz,208.4,z+nz*13.22-s*nx,cornice);
+    }
+    // Paired narrow openings on either side of a projecting central pier.
+    for (const s of [-3.9,3.9]) {
+      arch(b,x+nx*8+s*nz,z+nz*8-s*nx,nx,nz,219.2,227.6,2.35,.75,false);
+    }
+    b.box(nx ? 1.7 : 3.2,11.6,nz ? 1.7 : 3.2,x+nx*7.9,225,z+nz*7.9,stone);
+    b.box(nx ? 2.1 : 3.7,.85,nz ? 2.1 : 3.7,x+nx*8,230.8,z+nz*8,cornice);
   }
-  block(20.2,218.9,219.5,cornice);
-  for (const [nx,nz] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-    for (const s of [-3.4,3.4]) arch(b,x+nx*12.83+s*nz,z+nz*12.83-s*nx,nx,nz,206.8,211.6,2.3,.42,true);
-    arch(b,x+nx*8.6,z+nz*8.6,nx,nz,219,226.8,5.6,1.15,false);
+  for (const dx of [-1,1]) for (const dz of [-1,1]) {
+    const sx = x+dx*12.8, sz = z+dz*12.8;
+    b.box(6,10.3,6,sx,208.15,sz,stone);
+    b.box(5.5,1.3,5.5,sx,213.95,sz,cornice);
+    const dome = new THREE.SphereGeometry(2.68,12,4,0,2*Math.PI,0,Math.PI/2);
+    dome.translate(sx,214.6,sz);
+    b.addGeometry(dome,'#e8e4da');
+
+    const px = x+dx*7.3, pz = z+dz*7.3;
+    b.box(3.1,12.2,3.1,px,225.3,pz,stone);
+    b.box(1.4,10.6,3.65,px,225,pz,cornice);
+    b.box(3.65,10.6,1.4,px,225,pz,cornice);
+    b.box(3.7,.7,3.7,px,230.9,pz,stone);
+    b.box(4.45,.95,4.45,px,231.75,pz,cornice);
+    const ball = new THREE.SphereGeometry(1.25,10,6);
+    ball.translate(px,top-1.25,pz);
+    b.addGeometry(ball,'#d7cabb');
   }
-  for (const dx of [-7.4,7.4]) for (const dz of [-7.4,7.4]) {
-    b.box(3.4,12.5,3.4,x+dx,225.25,z+dz,stone);
-    b.box(4.1,1.1,4.1,x+dx,231.55,z+dz,cornice);
-    const finial = new THREE.IcosahedronGeometry(.85);
-    finial.translate(x+dx,top-.85,z+dz);
-    b.addGeometry(finial,cornice);
-  }
-  block(18.8,231.9,233,cornice);
-  const dome = new THREE.SphereGeometry(6.8,12,4,0,2*Math.PI,0,Math.PI/2);
-  dome.scale(1,(top-233)/6.8,1); dome.translate(x,233,z);
-  b.addGeometry(dome,'#bdb3a5');
+  block(16.6,229.9,230.8,stone);
+  block(17.8,230.8,231.3,cornice);
+  block(16.7,231.3,232,stone);
 }
 
 export function createPeachtree191(buildings: VBuilding[], groundAt: (x: number,z: number) => number | null) {
@@ -143,11 +177,21 @@ export function createPeachtree191(buildings: VBuilding[], groundAt: (x: number,
   // Model floodlights at the feet of the lower arcade and lantern. Keep
   // the dark glazed arches dark even when their stone surrounds are lit.
   lights.onBeforeCompile = shader => {
-    shader.vertexShader = 'varying float vCrownY;\n' + shader.vertexShader.replace(
-      '#include <begin_vertex>', '#include <begin_vertex>\n vCrownY = position.y;');
-    shader.fragmentShader = 'varying float vCrownY;\n' + shader.fragmentShader.replace(
+    shader.vertexShader = 'varying vec3 vStonePos;\n' + shader.vertexShader.replace(
+      '#include <begin_vertex>', '#include <begin_vertex>\n vStonePos = position;');
+    shader.fragmentShader = 'varying vec3 vStonePos;\n' + shader.fragmentShader.replace(
+      '#include <color_fragment>', `#include <color_fragment>
+        vec2 tile = vec2((vStonePos.x + vStonePos.z) / 2.3, vStonePos.y / 1.45);
+        vec2 footprint = max(fwidth(tile), vec2(0.001));
+        tile.x += 0.5 * mod(floor(tile.y), 2.0);
+        vec2 edge = 0.5 - abs(fract(tile) - 0.5);
+        vec2 seam = 1.0 - smoothstep(vec2(0.01), 0.035 + footprint, edge);
+        seam *= 1.0 - smoothstep(vec2(0.12), vec2(0.65), footprint);
+        if (vStonePos.y < 219.2 && diffuseColor.r > 0.5 && diffuseColor.r < 0.8) {
+          diffuseColor.rgb *= 1.0 - 0.13 * max(seam.x, seam.y);
+        }`).replace(
       '#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        float lift = vCrownY < 219.0 ? vCrownY - 205.0 : vCrownY - 219.0;
+        float lift = vStonePos.y < 219.0 ? vStonePos.y - 205.0 : vStonePos.y - 219.0;
         float wash = 0.19 + 1.1 * exp(-0.16 * max(lift, 0.0));
         totalEmissiveRadiance *= wash * diffuseColor.rgb;`);
   };

@@ -17,12 +17,15 @@ it('places two open lanterns on the mapped roof parts and leaves the western ent
   site.group.updateMatrixWorld(true);
   const roof = (x: number, z: number) =>
     new Raycaster(new Vector3(x,300,z),new Vector3(0,-1,0)).intersectObject(site.group,true)[0]?.point.y;
-  expect(roof(429.5,-567.7)).toBeCloseTo(ground+234.7,2);
-  expect(roof(469,-567.2)).toBeCloseTo(ground+234.7,2);
+  for (const [x,z] of [[429.5,-567.7],[469,-567.2]]) {
+    expect(roof(x,z)).toBeCloseTo(ground+232,2);
+    expect(roof(x+7.3,z+7.3)).toBeCloseTo(ground+234.7,2);
+    expect(roof(x+12.8,z+12.8)).toBeCloseTo(ground+217.28,2);
+  }
   expect(roof(449,-567.5)).toBeCloseTo(ground+203);
   expect(roof(400,-567)).toBeCloseTo(ground+17);
   expect(roof(397,-538)).toBeUndefined();
-  const through = new Raycaster(new Vector3(414,ground+224,-567.7),new Vector3(1,0,0),0,29);
+  const through = new Raycaster(new Vector3(414,ground+224,-563.8),new Vector3(1,0,0),0,29);
   expect(through.intersectObject(site.group,true)).toHaveLength(0);
   expect(site.group.children.filter(child => child instanceof Mesh)).toHaveLength(3);
 });
