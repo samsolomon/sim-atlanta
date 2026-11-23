@@ -63,6 +63,7 @@ it('carries 17th Street and its walks on the lidar crest above the through motor
 
 it('joins both surveyed ramp decks to the turning pavement and stays elevated across source-way and tile seams', () => {
   const heights = new Map<string, number>();
+  const checkedParts = new Set<string>();
   for (const tile of ['midtown-upper', 'brookwood-south']) {
     const file = (name: string) =>
       readFileSync(
@@ -88,6 +89,7 @@ it('joins both surveyed ramp decks to the turning pavement and stays elevated ac
               r.pts.at(-1)!.join() === part.end.join(),
           );
           if (!road) continue;
+          checkedParts.add(part.start.join());
           const line = new Line(road.pts);
           let previous: number | null = null;
           for (
@@ -99,7 +101,7 @@ it('joins both surveyed ramp decks to the turning pavement and stays elevated ac
               y = height(pt.x, pt.z, road);
             expect(y, `${tile} ${part.start} station ${s}`).not.toBeNull();
             if (previous !== null)
-              expect(Math.abs(y! - previous), `step at ${pt.x},${pt.z}`).toBeLessThan(0.12);
+              expect(Math.abs(y! - previous), `step at ${pt.x},${pt.z}`).toBeLessThan(0.05);
             previous = y;
           }
           for (const pt of [road.pts[0], road.pts.at(-1)!]) {
@@ -152,6 +154,7 @@ it('joins both surveyed ramp decks to the turning pavement and stays elevated ac
       model.dispose();
     }
   }
+  expect(checkedParts.size).toBe(survey.ramps.flatMap((ramp) => ramp.parts).length);
   expect(heights.get('95.72,-4100')).toBeCloseTo(278.5, 0);
   expect(heights.get('-138.19,-4235.39')).toBeCloseTo(274.1, 0);
 });
