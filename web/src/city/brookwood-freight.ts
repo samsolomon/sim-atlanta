@@ -48,24 +48,19 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
     const x = p.x + beyond * p.dx, z = p.z + beyond * p.dz;
     return target.set(x, railhead(x), z);
   }
-  // Each slot's passage is decided once, when first seen. A slot that opens while a
-  // scheduled Crescent is on the corridor stays empty, so a freight never meets the
-  // berth window. A passage already under way finishes before an arriving Crescent
-  // could reach the island.
-  let decided = { slot: NaN, allowed: false };
+  // The freight yields the whole corridor to any scheduled Crescent on it. This depends
+  // only on the scene clock and the current train states, so scrubbing, reloads and a
+  // slow timetable cannot put a freight beside the Crescent's approach or berth.
   let visibleCars = 0;
-  /** `crescentOnCorridor` is null until the timetable has produced train states. */
-  function update(clockMs: number, crescentOnCorridor: boolean | null) {
-    const pass = freightPass(clockMs, line.length);
-    if (crescentOnCorridor === null) decided = { slot: NaN, allowed: false };
-    else if (pass && pass.slot !== decided.slot) decided = { slot: pass.slot, allowed: !crescentOnCorridor };
+  function update(clockMs: number, crescentOnCorridor: boolean) {
+    const pass = crescentOnCorridor ? null : freightPass(clockMs, line.length);
     visibleCars = 0;
     let front = pass?.head ?? 0;
     for (const { car, kind, flip } of cars) {
       const length = FREIGHT_LENGTH[kind];
       const center = front - (pass?.dir ?? 1) * length / 2;
       front -= (pass?.dir ?? 1) * (length + GAP);
-      const show = !!pass && decided.allowed && center > -length && center < line.length + length;
+      const show = !!pass && center > -length && center < line.length + length;
       car.visible = show;
       if (!show) continue;
       // The leading truck is the nose in the direction of travel; the second unit runs long hood forward.

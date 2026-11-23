@@ -117,7 +117,7 @@ export function busCard(bus: LiveBus, now: number, model?: string) {
 
 export function cityFreightCard(line = 'Atlanta Terminal Subdivision') {
   return `<h2><span class="dot" style="background:${MODE_COLOR.freight}"></span>Freight train</h2>
-    <p class="sub">${line} ${chip('illustrative')}</p>
+    <p class="sub">${esc(line)} ${chip('illustrative')}</p>
     <dl><dt>City model</dt><dd>GE/Wabtec CM44AC locomotives and boxcars</dd></dl>
     <p class="tip">This train follows the mapped track in a simulated pattern. Its position, timing and consist are illustrative.</p>`;
 }

@@ -547,12 +547,8 @@ export function createBrookwood(sceneZero: number) {
   }
   const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, [northEdge, westEdge]);
   group.add(freight.group);
-  // Wait for the timetable before letting a freight slot open: an empty first frame would
-  // otherwise admit a passage just before a scheduled Crescent appears.
-  let crescentOnCorridor = false, statesSeen = false, firstUpdate = NaN;
+  let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
-    if (Number.isNaN(firstUpdate)) firstUpdate = performance.now();
-    if (states.length || performance.now() - firstUpdate > 5000) statesSeen = true;
     lightMaterial.emissiveIntensity = dark * 1.8;
     litSlab.material.emissiveIntensity = dark * 0.35;
     for (const mesh of facades) mesh.material.emissiveIntensity = dark * 0.45;
@@ -594,7 +590,7 @@ export function createBrookwood(sceneZero: number) {
     structure,
     update,
     /** Advance the illustrative Main 2 freight after `update` has placed any Crescent. */
-    updateFreight: (clockMs: number) => freight.update(clockMs, statesSeen ? crescentOnCorridor : null),
+    updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor),
     freight: freight.group,
     get freightCars() { return freight.visibleCars; },
     note: brookwoodRailNote,
