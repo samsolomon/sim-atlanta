@@ -38,7 +38,9 @@ These URL options are handy for reviewing:
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
 - In local development, `/terrain-preview.html?at=cut` opens the downtown ground study. Run `pnpm data:city` first, or `pnpm data:terrain` if the downtown board and trees are already present. [Terrain measurements and camera stops](docs/downtown-ground.md)
-- `/` opens the 2.8 km square City board, including King Memorial and Sweet Auburn.
+- `/` opens the 2.8 × 6.8 km City board from downtown through Midtown to Brookwood.
+  On older checkouts missing the five Midtown row directories, run `pnpm data:midtown` before building.
+  Use `?board=square` for the 2.8 km square around downtown and King Memorial.
   Use `?board=downtown` for the downtown-only board. Use `?view=map` for Map or a saved Map camera
   hash. City also accepts `?view=city` and `?view=3d`. Drag to orbit, use WASD to
   move and Q/E to rotate, or tap a train or bus for its source. Phones open on the

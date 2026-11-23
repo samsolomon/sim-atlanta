@@ -198,8 +198,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   const query = new URLSearchParams(location.search);
   const board = query.get('board');
-  const midtown = board === 'midtown';
   const joinedEast = board !== 'downtown' && query.get('east') === 'king-memorial';
+  const rectangle = board === null && !joinedEast;
+  const midtown = rectangle || board === 'midtown';
   const brookwoodStudy = midtown && query.get('site') === 'brookwood';
   let brookwood: ReturnType<typeof import('./brookwood').createBrookwood> | undefined;
   let preparedBrookwood: typeof brookwood;
@@ -219,13 +220,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     return mod ? mod.brookwoodGrid(spec, bytes) : new GroundGrid(spec, bytes);
   }
   const replaced: {parent: THREE.Object3D; object: THREE.Object3D}[] = [];
-  const requestedSquare = midtown || board === 'square' || (board === null && !joinedEast);
+  const requestedSquare = midtown || board === 'square';
   const square = grid && requestedSquare ? await import('./square-mosaic').catch(error => {
     console.warn('City square unavailable', error);
     return undefined;
   }) : undefined;
   options.signal?.throwIfAborted();
-  if (requestedSquare && !square) options.areaNote?.('Square unavailable. Downtown is available.');
+  if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
@@ -764,7 +765,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Pan away and return to retry.`));
+    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -975,8 +976,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!w || !h) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
-    if (mosaic && !midtown && !drive) {
-      controls.maxDistance = Math.max(11000, 9600 / Math.max(.25, camera.aspect));
+    if (mosaic && !drive) {
+      controls.maxDistance = midtown ? Math.max(32000, 11700 / Math.max(.25, camera.aspect)) : Math.max(11000, 9600 / Math.max(.25, camera.aspect));
       camera.far = Math.max(20000, controls.maxDistance + 4000);
     }
     camera.updateProjectionMatrix();
@@ -1036,12 +1037,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const frameFullBoard = () => {
       const aspect = Math.max(.25, camera.aspect);
       const depth = 1100 - mosaic.northEdge;
-      const distance = midtown ? Math.max(depth * 3.25, 11700 / aspect) : Math.max(9200, 9600 / aspect);
-      setView(-15, 35, Math.min(controls.maxDistance, distance), 400, (1100 + mosaic.northEdge) / 2);
+      const distance = midtown ? Math.max(depth * 2.95, 11700 / aspect) : Math.max(9200, 9600 / aspect);
+      const centerZ = (1100 + mosaic.northEdge) / 2;
+      mosaic.remember(400, centerZ);
+      setView(-15, 35, Math.min(controls.maxDistance, distance), 400, centerZ);
     };
-    if (!midtown) {
+    if (rectangle || !midtown) {
       loadFullBoard();
-      if (!drive && !Object.hasOwn(profileCameras, profile)) frameFullBoard();
+      if (!drive && !brookwoodStudy && !Object.hasOwn(profileCameras, profile)) frameFullBoard();
     }
     squareButton.onclick = () => {
       manualCamera();

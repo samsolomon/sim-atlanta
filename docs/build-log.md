@@ -2062,3 +2062,37 @@ Use HTTPS or a localhost proxy for smoke testing. On plain HTTP at a LAN IP, the
 ### November 23, 2026 — Walking the rectangle from Five Points to Brookwood
 
 We photographed all 12 City areas from the same cameras at noon and 11 p.m. The five northern rows already contained 4,629 building pieces, yet just three had bespoke replacements and none had trees. The abrupt change at North Avenue survived a check of every shared ground edge. All 16 joins matched at 2.5 m intervals. The more revealing height problems lay inside the blocks. At Arts Center, one corner of the generic station roof sat 3.3 m below the uphill ground. The inventory gives the five detail teams matched views and a camera for each elevation measurement. [Upper Midtown in daylight](log/rectangle-detail/midtown-upper-day.jpg) · [Same camera at night](log/rectangle-detail/midtown-upper-night.jpg) · [Rectangle detail plan](rectangle-detail-plan.md)
+
+
+## 2026-11-23 — One board from Five Points to Brookwood
+
+City opens on 19.04 km². The camera looks at (400, −2300), bearing 15°, tilt 35°. Twelve areas mount on open, in connected sections. The north edge lies 636 m beyond the Amtrak stop. The header follows the camera’s mapped neighborhood. Square and downtown remain available by URL. [Previous and new opening, day and night](log/ui/city-rectangle/opening.jpg)
+
+On the Studio desktop, Chrome at 1280 × 753, DPR 1, loaded a production build over localhost with the browser cache disabled. Each entry below is one cold navigation, in seconds from navigation to the first usable City and to all twelve areas mounted. The progressive study initially fetched zero northern row contexts. We then clicked “Show full board” after a 500 ms observation pause. Its second number includes that pause and polling latency. First-ready times were close enough to choose eager loading for the whole-board opening. Physical iPhone/A16 checks are deferred.
+
+| Detail | All rows on open, first / full | Progressive, first / full after request |
+|---|---:|---:|
+| High | 0.72 / 1.95 | 0.71 / 2.47 |
+| Low | 0.73 / 1.85 | 0.69 / 2.38 |
+
+The 5 m grid at Five Points is 323.8 m NAVD88. The inferred rail bed at Brookwood is about 264.5 m, a fall of about 59 m. The four DEM corner heights clockwise from southwest are 320.6, 264.6, 273.8 and 313.5 m. Each outer wall runs from the rendered terrain to one plinth at 234 m. The lowest ground node is 239.9 m. USGS 3DEP supplies the bare-earth observations. Resampling to decimetres, triangle interiors and the local Brookwood rail cut are inferred. [3DEP manifest](../pipeline/prototypes/square-board/brookwood-station/ground.json) · [Brookwood rail survey](brookwood-rail.md)
+
+The table gives the **maximum absolute height difference for each shared edge**. We sampled every 5 m, including both endpoints, and required exact agreement of the encoded elevations. The high/low terrain regression also compares rendered edges every 2.5 m to four decimal places. The Brookwood test repeats the 5 m check after the track cut.
+
+| Edges (each independently sampled) | Samples per edge | Max difference on each |
+|---|---:|---:|
+| Downtown to King Memorial / Sweet Auburn / north band / north corner / south band / south corner | 73 / 161 / 401 / 157 / 401 / 13 | 0.0 m |
+| King Memorial to Sweet Auburn / south corner | 161 / 161 | 0.0 m |
+| Sweet Auburn to north corner | 161 | 0.0 m |
+| North band to north corner, south band to south corner | 161 each | 0.0 m |
+| North band → Midtown south → Midtown central → Midtown upper → Brookwood south → station | 561 per join | 0.0 m |
+
+At 08:50 and 23:10 Eastern on November 23 we inspected the row joins, north end, station and scheduled Crescent at both quality settings. The platform marker and consist remain inferred and illustrative respectively. Panning beyond all four corners stopped at the mounted perimeter. Blocking central Midtown’s elevation file stopped a station jump at z = −2500. Restoring the file and choosing “Show full board” recovered all twelve areas and the overview. [High seams](log/ui/city-rectangle/seams-high.jpg) · [Low seams](log/ui/city-rectangle/seams-low.jpg) · [Station at both tiers](log/ui/city-rectangle/brookwood.jpg)
+
+The old endpoint chord put the Kendeda Canopy Walk 4.18 m below terrain and a campus footway 2.59 m below. Generic bridge treads now sample the terrain across their width and length. Mapped surface crossings without a measured deck use inferred clearance allowances of 2.5 m over a path, 5 m over a roadway and 7 m over rail, plus room for the fascia. Surveyed decks retain their own profiles. At 17th Street the measured lidar profile crests near 280.5 m NAVD88. The modeled underside clears the sampled lower carriageway by over 12 m. Peachtree’s recorded 10.05 m clearance applies to the highway. Clearance over the station rails remains inferred. The five-row tread regression sampled 1,215 rendered road centerline points per tier at 5 m intervals with zero intersections. [Decks, approaches and four corners](log/ui/city-rectangle/elevation.jpg) · [17th Street survey](seventeenth-street.md)
+
+The archived OSM extracts contribute 24 surface rail runs. Mapped tunnels stay hidden, and the station retains its hand-built track. The generic rows use DEM-based foundations and tree placement. The inventory identified 59 buried generic roofs on slopes. The coordinator assigned these to parks after the board merge, with the named Connector decks and MARTA portals also following in detail PRs. All 52 public data files match the 794cbcb release byte-for-byte. Production needs only a web rebuild using that data. On an older checkout missing the five Midtown row directories, run `pnpm data:midtown` before `pnpm build`. The 6,615-byte rail fixture ships in the web bundle. Visitors fetch static assets.
+
+Cross-review identified a short unsurveyed span where propagating a clearance all the way to the bank could raise the abutment. The approach now returns to each bank. A 36 m regression span checks both endpoints and 5 m of clear roadway beneath the crossing. [Square and downtown bridges at both tiers](log/ui/city-rectangle/square-bridges.jpg)
+
+A second review pointed out a distinction in the mapped street geometry. A side path ends on the campus bridge at (−933.90, −2643.57). The bridge now meets the path at that shared vertex. A regression uses the archived campus geometry to keep the junction at the approach height.

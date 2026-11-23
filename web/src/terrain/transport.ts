@@ -114,6 +114,26 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     return base + blend * Math.max(0, grade - base);
   }
 
+  // Nearby mapped surface routes constrain the inferred underside of an
+  // unsurveyed deck. Parallel ways and continuations at its abutments do not.
+  type Crossing = { a: P2; b: P2; radius: number; clearance: number };
+  const crossings = new PlacementIndex<Crossing>();
+  function indexCrossing(pts: P2[], radius: number, clearance: number) {
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i];
+      crossings.add({ a, b, radius, clearance }, [a, b], radius);
+    }
+  }
+  const surfaceJunctions = new Set<string>();
+  for (const road of city.roads) {
+    if (road.bridge || road.tunnel || road.pts.length < 2) continue;
+    surfaceJunctions.add(road.pts[0].join(','));
+    surfaceJunctions.add(road.pts.at(-1)!.join(','));
+    indexCrossing(road.pts, roadWidth(road) / 2,
+      ['path','footway','steps','pedestrian','cycleway'].includes(road.cls) ? 2.5 : 5);
+  }
+  for (const rail of data.rail) if (rail.kind === 'ground') indexCrossing(rail.pts, 2.1, 7);
+
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram', owner = run) {
     if (run.pts.length < 2) return;
     // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
@@ -151,7 +171,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // tread follows a single chord between its two DEM endpoint proxies.
     const stations = [0];
     for (let i = 1; i < line.cum.length; i++) {
-      if (!bridge) {
+      if (!bridge || !profile) {
         for (let s = line.cum[i - 1] + 2; s < line.cum[i]; s += 2) stations.push(s);
       }
       if (line.cum[i] > line.cum[i - 1]) stations.push(line.cum[i]);
@@ -177,6 +197,57 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       if (!ribbon) return [p.x+off*p.nx,p.z+off*p.nz];
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
       return stripePoint(row,.5-off/travelWidth);
+    }
+    const inferred = new Map<number, number>();
+    if (bridge && !profile) {
+      // Sample the full tread width. Smooth the minimum upward along the span
+      // so an intervening bank or crossing raises the approach on both sides.
+      const below = new Map<Crossing, number>();
+      for (const s of stations) {
+        const p = line.at(s);
+        for (const route of crossings.at(p.x, p.z)) {
+          const {a, b} = route;
+          const dx = b[0] - a[0], dz = b[1] - a[1];
+          const cross = p.dx * dz - p.dz * dx;
+          if (Math.abs(cross) <= .01) continue;
+          const along = ((a[0]-p.x)*dz - (a[1]-p.z)*dx) / cross;
+          const fraction = ((a[0]-p.x)*p.dz - (a[1]-p.z)*p.dx) / cross;
+          const at = s + along;
+          if (Math.abs(along) > 2 || fraction < 0 || fraction > 1 ||
+              at <= route.radius || line.length-at <= route.radius) continue;
+          below.set(route, at);
+        }
+      }
+      for (const s of stations) {
+        const p = line.at(s);
+        let minimum = -Infinity;
+        const divisions = Math.ceil(width / 1.5);
+        for (let i = 0; i <= divisions; i++) {
+          const [x,z] = lateral(s, width * (i / divisions - .5));
+          const h = groundAt(x,z);
+          if (h !== null) minimum = Math.max(minimum,h);
+        }
+        for (const [{radius, clearance}, at] of below) {
+          if (Math.abs(at - s) > radius) continue;
+          const h = groundAt(p.x, p.z);
+          if (h !== null) minimum = Math.max(minimum, h + clearance + 1);
+        }
+        inferred.set(s,minimum);
+      }
+      // Steepen the approach when a crossing is close to an abutment. The
+      // propagated clearance must come back to the bank at an in-board end.
+      for (const ordered of [stations, [...stations].reverse()]) {
+        let last = ordered[0], height = inferred.get(last)!;
+        const end = ordered.at(-1)!;
+        const bank = inferred.get(end)!;
+        for (const s of ordered.slice(1)) {
+          if (s === last) continue;
+          const slope = Math.max(.15, (height - bank) / Math.abs(end - last));
+          height = Math.max(inferred.get(s)!, height - slope * Math.abs(s - last));
+          inferred.set(s, height);
+          last = s;
+        }
+      }
     }
     const roadTop: number[] = [];
     // An elevated shoulder carries a low concrete parapet except where the
@@ -236,6 +307,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const ref = end ? h1! : h0!;
             if (!(end ? endCut : startCut) && ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
           }
+          if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
           if (textured) y = freightGrade(x, z, y);
           section.push([x, y + lift, z]);
         }
@@ -345,10 +417,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.
     let from = 0;
-    for (let i=1; road.cls==='motorway' && i<road.pts.length-1; i++) {
-      const left=matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link');
-      const right=matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
-      if (left!==right) {
+    for (let i=1; i<road.pts.length-1; i++) {
+      const junction = !road.deckNavd88M && surfaceJunctions.has(road.pts[i].join(','));
+      const changesRibbon = road.cls === 'motorway' &&
+        matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link') !== matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
+      // A surface way ending on a shared interior vertex joins the tread there.
+      if (junction || changesRibbon) {
         draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',road);
         from=i;
       }

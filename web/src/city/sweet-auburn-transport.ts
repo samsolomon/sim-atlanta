@@ -53,7 +53,7 @@ export function auburnTransport(context: TerrainCity): TerrainCity {
     slice(last, line.length);
     return { ...road, bridge: true };
   });
-  return { ...context, roads, terrainTransport: { version: 1, roads: runs, rail: [] } };
+  return { ...context, roads, terrainTransport: { version: 1, roads: runs, rail: context.terrainTransport?.rail ?? [] } };
 }
 
 /** In the Leonard Tate underpass the DEM classifies the overhead freeway as

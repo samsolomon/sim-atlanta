@@ -133,7 +133,10 @@ export function drawSeventeenthStreet(
       const x = mix(row[0], row[3], f),
         z = mix(row[1], row[4], f),
         y = mix(row[2], row[5], f) - zero;
-      return [x, station === 0 && ramp.land.length ? (ground(x, z) ?? y) + 0.02 : y, z];
+      // At the exposed toe the 5 m terrain can rise through the lidar tread
+      // between deck returns. Keep the wearing surface above that approach.
+      const floor = ramp.land.length ? ground(x, z) : null;
+      return [x, floor === null ? y : station === 0 ? floor + .02 : Math.max(y, floor + .07), z];
     };
     // Illustrative single-column bents stand clear of the mapped lower roads.
     for (const [station, fraction] of ramp.supports) {
