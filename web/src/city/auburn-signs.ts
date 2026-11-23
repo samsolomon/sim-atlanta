@@ -1,5 +1,5 @@
 import { CanvasTexture, Group, Mesh, MeshLambertMaterial, PlaneGeometry, SRGBColorSpace } from 'three';
-import { bigBethelId, heritageId } from './auburn-sanctuaries';
+import { bethelSign, bigBethelId, heritageId } from './auburn-sanctuaries';
 
 // A mask keeps the bright tubes separate from the dark sign face at night.
 function signFace(heritage: boolean) {
@@ -46,8 +46,10 @@ export function auburnSigns(ids: Set<string>, zero: number) {
   }
   if (ids.has(bigBethelId)) {
     const mat = signFace(false);
-    face(1033.56, 330.0, -199.0, Math.PI / 2, 4.35, 3.35, mat);
-    face(1029.27, 330.0, -199.0, -Math.PI / 2, 4.35, 3.35, mat);
+    const { x, y, z, width, height, offset } = bethelSign;
+    for (const side of [-1, 1]) {
+      face(x + side * (offset + .035), y, z, side * Math.PI / 2, width, height, mat);
+    }
   }
   const materials = new Set(signs.map(s => s.material));
   return {

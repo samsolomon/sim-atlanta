@@ -4,6 +4,9 @@ import { Builder, rng } from '../vignette/geom';
 export const heritageId = 'osm:way:173532779';
 export const bigBethelId = 'osm:way:97337613';
 
+// Both sign frames clear the widest part of the spire at the bottom of the lettering.
+export const bethelSign = { x: 1031.7, z: -198.6, y: 330, offset: 2.05, width: 4.35, height: 3.35 };
+
 const brick = '#995b46', trim = '#d8cdb6', stone = '#a49e8e', slate = '#625e60';
 type Point = [number, number, number];
 
@@ -146,6 +149,14 @@ function bigBethel(b: Builder) {
   turret(b, 1031.7, -198.6, 3.28, .24, 322.25, 335.7, 8, '#5c605e');
   block(b, 1031.61, 1031.79, -198.70, -198.50, 335.7, 336.72, trim);
   block(b, 1031.34, 1032.06, -198.70, -198.50, 336.28, 336.41, trim);
+  for (const side of [-1, 1]) {
+    const x = bethelSign.x + side * bethelSign.offset;
+    for (const y of [bethelSign.y - 1.08, bethelSign.y + .17]) {
+      block(b, x - .025, x + .025, bethelSign.z - 2.05, bethelSign.z + 2.05, y, y + .07, '#4b4d49');
+      block(b, Math.min(x, bethelSign.x), Math.max(x, bethelSign.x), bethelSign.z - .04,
+        bethelSign.z + .04, y, y + .07, '#4b4d49');
+    }
+  }
   arch(b, 1024.1, -201.06, 'south', 6.8, 304.8, 310.8, '#5f6261');
   block(b, 1020.1, 1028, -201.25, -197.8, 296.3, 302.75, stone);
   for (const x of [1021.4, 1024.1, 1026.75]) arch(b, x, -197.73, 'south', 2.23, 298.45, 302.7, '#443f38');
