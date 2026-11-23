@@ -125,3 +125,24 @@ it('mounts Tower Square at 206 m and feeds night lighting to its return walls', 
   const ray = new Raycaster(new Vector3(467.7, 12.5, -2200), new Vector3(0, 0, 1));
   expect(ray.intersectObject(model.group)[0].point.z).toBeLessThan(-2095.8 - 32);
 });
+
+it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit veils', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:885660351');
+  const model = createSkylineLandmark([building], building, -8, () => -3)!;
+  const wall = model.group.getObjectByName('1180 curtain wall') as Mesh;
+  expect(wall.geometry.getAttribute('uv').count).toBe(wall.geometry.getAttribute('position').count);
+  const veils = [0, 1].map(i => model.group.getObjectByName(`1180 veil ${i}`) as Mesh);
+  // Each veil's top edge sits inward of its base: the tips lean towards each other.
+  for (const veil of veils) {
+    const p = veil.geometry.getAttribute('position');
+    let low = { y: Infinity, z: 0 }, high = { y: -Infinity, z: 0 };
+    for (let i = 0; i < p.count; i++) {
+      if (p.getY(i) < low.y) low = { y: p.getY(i), z: p.getZ(i) };
+      if (p.getY(i) > high.y) high = { y: p.getY(i), z: p.getZ(i) };
+    }
+    expect(Math.abs(high.z)).toBeLessThan(Math.abs(low.z) - 5);
+  }
+  model.setNight(1);
+  expect((wall.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  expect((veils[0].material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+});
