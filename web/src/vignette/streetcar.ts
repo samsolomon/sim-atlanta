@@ -55,13 +55,12 @@ const BASE = 0.14; // skirt bottom, close to the rail
 const WIN_LO = 1.35,
   WIN_HI = 2.75; // the glazing band
 const C = {
-  // Vivid blue-violet as the cars read in daylight (car 1003, Jun 2017; car 1001, Aug 2016). The
-  // grade darkens and desaturates dark blues, so the input is lighter: it renders near #3329c0.
-  body: '#6660d8',
-  roofEdge: '#9894cc', // the eaves read a slightly lighter blue-grey
-  violet: '#7a3ccc',
-  teal: '#3cc8e0',
-  lime: '#8ed43c',
+  // Deep indigo leaning violet, sampled from car 1004 (Mar 2020); Sam preferred it to the brighter
+  // daylight match. The grade darkens dark blues, so the input is lighter: it renders near #28217b.
+  body: '#5a5694',
+  violet: '#6c34bc',
+  teal: '#1aa6bf',
+  lime: '#86c23a',
   white: '#e9ecea',
   glass: '#6d8194', // reflective, reads lighter than the body as in the photos
   frame: '#101219',
@@ -87,10 +86,7 @@ function ring(z: number, top = ROOF, w = W, base = BASE) {
   ];
 }
 /** Panel colours for ring(): skirt underneath, body everywhere else, `roof` on the crown. */
-const panels = (side: string, roof = side) => {
-  const eave = side === C.body ? C.roofEdge : side;
-  return [C.skirt, C.skirt, side, side, eave, eave, roof === C.body ? C.roofEdge : roof, eave, eave, side, side, C.skirt];
-};
+const panels = (side: string, roof = side) => [C.skirt, C.skirt, side, side, side, side, roof, side, side, side, side, C.skirt];
 /** Surface x of the full body section at height y (follows the rounded eave). */
 function surfaceX(y: number, top = ROOF, w = W) {
   const r = Math.min(0.42, (top - BASE) * 0.3);
@@ -197,7 +193,7 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
         [clampD(c[0] - nx * h), c[1] - ny * h],
       ]);
     }
-    const tint = new THREE.Color(color).lerp(new THREE.Color('#1a2030'), 0.4).getStyle();
+    const tint = new THREE.Color(color).lerp(new THREE.Color('#1a2030'), 0.5).getStyle();
     for (let i = 0; i < n; i++) {
       const [a0, a1] = edge[i],
         [b0, b1] = edge[i + 1];
@@ -206,7 +202,7 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
       if (body.length >= 3) skin(b, body.map(([d, y]) => [sign * d, y] as [number, number]), color, eps);
       // Where the band crosses the window band it is film on glass: a tinted copy sits over the glazing.
       const glass = clipY(quad, WIN_LO, Math.min(WIN_HI, yMax));
-      if (glass.length >= 3) skin(b, glass.map(([d, y]) => [sign * d, y] as [number, number]), tint, 0.043);
+      if (glass.length >= 3) skin(b, glass.map(([d, y]) => [sign * d, y] as [number, number]), tint, 0.049);
     }
   };
   /**
@@ -214,25 +210,28 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
    * says which way the later bands step off the first: +1 or -1 along the curve's normal.
    */
   const fan = (sign: number, p: [number, number][], side: 1 | -1, yMax = ROOF - 0.04) => {
-    const bands: [string, number][] = [[C.lime, 0.42], [C.teal, 0.5], [C.violet, 0.66]];
+    const bands: [string, number][] = [[C.lime, 0.7], [C.teal, 0.7], [C.violet, 0.7]];
     let offset = 0;
     bands.forEach(([color, w], k) => {
       const shift = side * (offset + w / 2);
-      sweep(sign, p, w, w, color, 0.02 + k * 0.002, w, shift, yMax);
-      offset += w + 0.04;
+      // Above the door leaves and their glass (0.04-0.046), so the stripes run across the doors as the vinyl does.
+      sweep(sign, p, w, w, color, 0.047 + k * 0.0003, w, shift, yMax);
+      offset += w;
     });
   };
 
-  // Livery, after cars 1003 (Jun 2017), 1001 (Aug 2016) and 1004 (Mar 2020). Both end sections carry
-  // the same graphic, mirrored; the centre section is plain. Each has two fans of three parallel bands,
-  // lime then teal then violet: a lower fan rising from the body by the cab nose to the window line,
-  // and a larger upper fan that leaves the roof and descends behind the first double door, crossing
-  // the window band. Positions and gentle curvature are fitted to the photos (estimates).
+  // Livery, after car 1003 (Jun 2017) and Sam's markup of a side view: on each cab section three
+  // broad straight stripes, lime, light cyan and violet, adjacent and parallel, rising from the low
+  // front by the nose to the roof line behind the first double door and crossing the window band
+  // (tinted over the glass). Mirrored at the other end; the centre section is plain. Positions are
+  // estimates.
   const D = 6.45; // first double door from the cab
   for (const sign of [-1, 1]) {
-    // Lower fan, about 20°, cut by the skirt below and the window sill above.
-    fan(sign, [[flat + 0.3, 0.1], [flat - 1.3, 0.72], [flat - 3.0, 1.3], [flat - 4.6, 1.85]], 1, WIN_LO - 0.04);
-    fan(sign, [[D + 0.55, ROOF - 0.03], [D - 0.05, 2.6], [D - 0.75, 1.55], [D - 1.65, 0.4]], -1);
+    const lowFront: [number, number] = [flat - 0.15, 0.2],
+      upperRear: [number, number] = [D - 1.3, ROOF + 0.2];
+    const lerp = (t: number): [number, number] => [lowFront[0] + (upperRear[0] - lowFront[0]) * t, lowFront[1] + (upperRear[1] - lowFront[1]) * t];
+    // Capped where the flat side meets the curved eave, which reads as the roof line from the side.
+    fan(sign, [lowFront, lerp(1 / 3), lerp(2 / 3), upperRear], 1, ROOF - 0.44);
     const [p0, p1] = sign > 0 ? [centre / 2 + joint, flat] : [-flat, -(centre / 2 + joint)];
     rect(b, p0, p1, 0.6, 0.625, C.white, 0.016); // low white pinstripe
   }

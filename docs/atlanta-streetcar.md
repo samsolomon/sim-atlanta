@@ -44,7 +44,17 @@ The pattern mirrors about the car centre. A thin white pinstripe runs low on the
 
 **Night:** no freely licensed night photograph exists. The interior has white ceiling light strips and blue seats (data-sheet photo), and a 2015 night shot of car 1003 shows white headlights and an amber destination sign ([RailPictures, reference only](https://www.railpictures.net/photo/862574)). In the lab the window band glows with the shared warm stock glow, which is a little warmer than the real white light. The leading cab lights its headlights, top lamp, markers and destination sign, and the trailing cab shows red.
 
-**Third pass (23 Nov 2026), after Sam's livery review.** In sun the cars read as a vivid blue-violet, brighter than the overcast March 2020 frame. The input colour #6660d8 renders near #3329c0 under the grade, and the eaves are a lighter blue-grey.
+**Current livery (stripes follow-up, 23 Nov 2026).** Sam preferred #272's deep indigo, so the body is back to input #5a5694, which renders near #28217b. The graphic is simplified to Sam's markup of a side view.
+
+Each cab section carries three broad straight stripes, mirrored at the other end:
+- **Colours:** lime, light cyan and violet, each 0.7 m wide, adjacent and parallel with crisp edges.
+- **Path:** they rise from the low front by the nose to the roof line behind the first double door, capped where the flat side meets the eave.
+- **Over glass:** where they cross the window band they are drawn as a tinted film over the glass.
+- **Over doors:** they run over the doors as the vinyl does.
+
+The centre section is plain. The angle and placement are estimates checked against car 1003 (Jun 2017) and car 1001 (Aug 2016). [Car 1003](log/streetcar/s70-stripes-1003.jpg) · [Three-quarter](log/streetcar/s70-stripes-34.jpg) · [Lab before and after](log/streetcar/s70-stripes-lab.jpg) · [Night](log/streetcar/s70-stripes-night.jpg)
+
+Superseded: **Third pass (23 Nov 2026), after Sam's livery review.** In sun the cars read as a vivid blue-violet, brighter than the overcast March 2020 frame. The input colour #6660d8 renders near #3329c0 under the grade, and the eaves are a lighter blue-grey.
 
 The sweeps are now two fans of three parallel bands (lime, teal, violet in that order, 0.42 / 0.50 / 0.66 m wide), mirrored on both end sections:
 - **Lower fan:** rises at about 20° from the cab nose and is cut by the skirt and the window sill.
