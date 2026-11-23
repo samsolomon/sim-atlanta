@@ -927,16 +927,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Opening view: downtown at a glance from the southwest — the Gulch in front, Five Points,
   // and the Peachtree Center towers behind.
   setView(-28, 57, 5500, -40, -260);
-  const profileCameras:Record<string,[number,number,number]> = {
-    baker:[876,-920,87],courtland:[690,-1162,84],peachtree:[563,-1274,85],
-    turner:[320,-1445,85],capitol:[354,1050,85],mlk:[595,626,9],decatur:[855,452,3],
+  const profileCameras:Record<string,[number,number,number,number,number]> = {
+    baker:[878,-936,-38,52,.32],courtland:[690,-1162,84,72,.26],peachtree:[563,-1274,-50,48,.23],
+    turner:[320,-1445,85,72,.26],capitol:[354,1050,85,72,.26],mlk:[595,626,9,72,.26],decatur:[855,452,3,72,.26],
   };
   const profile=query.get('bridgeProfile') ?? '';
   if (Object.hasOwn(profileCameras,profile)) {
-    const [x,z,bearing]=profileCameras[profile];
+    const [x,z,bearing,tilt,scale]=profileCameras[profile];
     mosaic?.remember(x,z);
     approachMosaic(x,z);
-    setView(-bearing,72,Math.max(150,.26*container.clientHeight/(2*Math.tan(THREE.MathUtils.degToRad(11)))),x,z);
+    setView(-bearing,tilt,Math.max(150,scale*container.clientHeight/(2*Math.tan(THREE.MathUtils.degToRad(11)))),x,z);
   }
   if (brookwoodStudy) {
     mosaic?.remember(-92,-5054);

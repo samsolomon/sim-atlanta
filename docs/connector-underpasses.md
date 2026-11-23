@@ -40,3 +40,5 @@ Each gallery pairs the same two driver-height cameras at 23:12 Eastern and the s
 Open `/?view=city&board=square&q=low&underpass=baker&dir=nb&offset=-9&t=2026-11-20T23:12:49-05:00&speed=0&tilt=0`. Change the key to switch crossing, use `dir=sb` for the opposite carriageway, or `dir=outer` for the second Capitol ramp. Add `drive=1` to ride through the passage. The camera sits 1.55 m over the carrying road. For the upper street use `/?view=city&board=square&q=high&bridgeProfile=baker&t=2026-11-20T14:12:49-05:00&speed=0&tilt=0`.
 
 For release, rebuild the web bundle. The floor profiles and corrected classifications are tracked. Existing public scene data can be reused. To reproduce the floor bake with the survey environment, run `python pipeline/prototypes/connector-footprint/underpass-floors.py` from the repository root.
+
+Claude’s review requested a moving low-detail daylight check of distant lane paint. In the northbound Baker pass the lane markings soften in the distance but remain attached to the pavement through the far portal. [Daylight ride through Baker](log/ui/underpasses/baker-day-drive.jpg)
