@@ -78,7 +78,7 @@ export function landmarkShell(
         );
       }
   }
-  function finish() {
+  function finish(lightColor = '#f2d5a5') {
     const group = new Group();
     group.name = name;
     group.position.set(origin[0], -grid.manifest.vertical.sceneZeroNavd88M, origin[1]);
@@ -88,7 +88,7 @@ export function landmarkShell(
     group.add(shell);
     const lamps = new Mesh(
       lights.geometry(),
-      new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: '#f2d5a5', emissiveIntensity: 0 }),
+      new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: lightColor, emissiveIntensity: 0 }),
     );
     group.add(lamps);
     return {
