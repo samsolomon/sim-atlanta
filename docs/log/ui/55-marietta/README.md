@@ -44,3 +44,5 @@ The pedestrian camera sits 2.1 m above the local grade at City (72, −149), loo
 | Daylight, 13:45 EST | [Before](street-day-before.jpg) | [After](street-day-after.jpg) |
 | Dusk, 17:22 EST | [Before](street-dusk-before.jpg) | [After](street-dusk-after.jpg) |
 | Night, 20:30 EST | [Before](street-night-before.jpg) | [After](street-night-after.jpg) |
+
+A close view looks across the lower roof toward Forsyth. The roof core meets the lower deck about a metre ahead of the upper wing. The camera is at (16.13, −245.64), elevation 414 m NAVD88, looking at (56.93, −222.68), elevation 402 m, with a 55° field of view. [Fairlie-end roof detail at 13:45 EST](core.webp)

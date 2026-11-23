@@ -106,7 +106,8 @@ function crown(m: Shell) {
       m.body.box(Math.abs(x - u) + 0.2, 0.76, Math.abs(z - v) + 0.2, (u + x) / 2, h + 0.32, (v + z) / 2, frame);
     });
   }
-  m.prism(rect(15.35, 30.05, 32.88, 50.6), upperRoof, 408.34, '#aaa9a1', '#b9bbb2');
+  // The back of the roof core projects toward Fairlie and meets the lower roof at v = 30 m.
+  m.prism(rect(15.35, 30.03, 32.94, 50.64), lowerRoof, 408.34, '#aaa9a1', '#b9bbb2');
   // Two taller screen walls read above the roof from Five Points.
   m.prism(rect(15.36, 30.03, 32.94, 30.52), 408.34, 412.36, stone, frame);
   m.prism(rect(32.42, 30.05, 32.94, 50.64), 408.34, 412.36, stone, frame);

@@ -67,6 +67,13 @@ it('separates the Fulton Bank roof levels and keeps the Marietta entrance recess
   expect(roof(12, 42)).toBeCloseTo(406.22, 1);
   expect(roof(26, 38)).toBeCloseTo(408.34, 1);
   expect(roof(32.7, 38)).toBeCloseTo(412.36, 1);
+  // At mid-height the projecting core meets the lower roof along the Fairlie-facing wall.
+  const [x, z] = xz(28, 29);
+  const coreWall = new Raycaster(
+    new Vector3(x, 402 - 323.8, z),
+    new Vector3(21.77 / len, 0, 25.36 / len),
+  ).intersectObject(result.group)[0];
+  expect(coreWall?.distance).toBeCloseTo(1.03, 1);
   expect(roof(18, 59.5)).toBeCloseTo(397.7, 1);
   expect(ray(...xz(1.15, 44), 326)).toBeUndefined();
   expect(ray(...xz(1.15, 44), 326, 1)! + 323.8).toBeCloseTo(331.72, 1);
