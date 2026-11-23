@@ -89,7 +89,7 @@ export async function response(url: string, signal: AbortSignal) {
   return r;
 }
 
-export async function gridAt(path: string, signal: AbortSignal, northBand = false) {
+export async function gridAt(path: string, signal: AbortSignal, northBand = false, brookwood = false) {
   const [manifest, bytes]: [GroundManifest, ArrayBuffer] = await Promise.all([
     response(path + '/ground.json', signal).then(r => r.json()),
     response(path + '/ground.i16', signal).then(r => r.arrayBuffer()),
@@ -99,13 +99,14 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   if (Array.from(digest, b => b.toString(16).padStart(2, '0')).join('') !== manifest.sha256)
     throw Error('Ground checksum mismatch at ' + path);
+  if (brookwood) return (await import('../city/brookwood')).brookwoodGrid(manifest, bytes);
   return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, bytes);
 }
 
-async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data') {
+async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data', brookwood = false) {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & { name: string }] = await Promise.all([
-    gridAt(path, signal, id === 'north-band'), response(path + '/context.json', signal).then(r => r.json()),
+    gridAt(path, signal, id === 'north-band', brookwood && (id === 'brookwood-station' || id === 'brookwood-south')), response(path + '/context.json', signal).then(r => r.json()),
   ]);
   if (context.name !== id || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
@@ -113,11 +114,11 @@ async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot =
   return { id, grid, context };
 }
 
-export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string }) {
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: boolean }) {
   const square = direction === 'north' || direction === 'south';
   if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
-  const patches = await Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot)));
+  const patches = await Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot, options?.brookwood)));
   signal.throwIfAborted();
   const added = new Map<Board, TrafficArea>();
   try {

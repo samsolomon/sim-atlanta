@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { makeProjector } from '../core/scene-data';
 import type { TrainState } from '../model/types';
-import { Builder, Line, type P2 } from '../vignette/geom';
+import { Builder, Line, segDist, type P2 } from '../vignette/geom';
+import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import survey from './fixtures/brookwood.json';
 
 const project = makeProjector({ lon: -84.3916, lat: 33.7539 });
@@ -30,6 +31,40 @@ function elevation(x: number) {
   const [a, h] = grade[i - 1],
     [b, k] = grade[i];
   return h + ((k - h) * (x - a)) / (b - a);
+}
+
+// Cap the bare-earth surface at track grade in the rail corridor. The lidar raster
+// climbs onto bridges at the depot and remains below the rail viaduct farther west.
+export function brookwoodGrid(manifest: GroundManifest, bytes: ArrayBuffer) {
+  const data = new DataView(bytes.slice(0));
+  const { bounds, stepM, cols, rows, scaleM, offsetM, noData } = manifest;
+  const tracks = [survey.main1, survey.main2, survey.steelLead, survey.siding] as P2[][];
+  for (let row = 0; row < rows; row++) {
+    const z = bounds.minZ + row * stepM;
+    if (z < brookwoodBounds.minZ || z > brookwoodBounds.maxZ) continue;
+    for (let col = 0; col < cols; col++) {
+      const x = bounds.minX + col * stepM;
+      if (x < brookwoodBounds.minX || x > brookwoodBounds.maxX) continue;
+      const offset = 2 * (row * cols + col),
+        sample = data.getInt16(offset, true);
+      const h = sample * scaleM + offsetM,
+        bed = elevation(x) - 0.16;
+      if (sample === noData || h <= bed) continue;
+      let gap = Infinity;
+      for (const line of tracks)
+        for (let i = 1; i < line.length; i++) {
+          const a = line[i - 1],
+            b = line[i];
+          if (x < a[0] - 16 || x > b[0] + 16 || z > Math.max(a[1], b[1]) + 16 || z < Math.min(a[1], b[1]) - 16)
+            continue;
+          gap = Math.min(gap, segDist(x, z, a, b));
+        }
+      if (gap >= 16) continue;
+      const f = Math.min(1, (16 - gap) / 6);
+      data.setInt16(offset, Math.round((h + f * (bed - h) - offsetM) / scaleM), true);
+    }
+  }
+  return new GroundGrid(manifest, data.buffer);
 }
 
 // Signed extension at the ends lets a long consist enter one car at a time.
@@ -80,7 +115,9 @@ function solid(b: Builder, ring: P2[], bottom: number, top: number, color: strin
   g.dispose();
 }
 
-function station(b: Builder, lamps: Builder, zero: number) {
+type GroundAt = (x: number, z: number) => number | null;
+
+function station(b: Builder, lamps: Builder, zero: number, groundAt: GroundAt) {
   const floor = 273 - zero;
   const forecourt: P2[] = [
     [-115, -5073],
@@ -90,7 +127,7 @@ function station(b: Builder, lamps: Builder, zero: number) {
     [-110, -5049],
   ];
   solid(b, forecourt, floor - 1.1, floor - 0.18, '#aca79a');
-  solid(b, depot, floor, floor + 6.65, '#9b6047');
+  solid(b, depot, floor - 0.19, floor + 6.15, '#9b6047');
   solid(b, depot, floor + 6.15, floor + 6.85, '#dbcca6');
   solid(b, depot, floor + 6.85, floor + 7.15, '#4d5549');
   solid(b, depot, floor + 7.15, floor + 7.3, '#bcb6a9');
@@ -105,16 +142,13 @@ function station(b: Builder, lamps: Builder, zero: number) {
       b.box(0.87, 0.25, 0.18, 0, 6.85, z, '#7d8070', m);
   }
   // Brick and concrete supports sit on the outer sides of the train opening.
-  for (const s of [649, 708]) {
-    const p = main.at(s),
-      m = frame(p.x, 0, p.z, p.dx, p.dz);
-    for (const offset of [-8, 14]) {
-      const h = floor - bedAt(s);
-      b.box(1.2, h, 2.2, offset, floor - h / 2, 0, '#918778', m);
-    }
-  }
-  function bedAt(s: number) {
-    return elevation(main.at(s).x) - zero;
+  for (const [x, z] of [
+    [-92, -5069],
+    [-103, -5064],
+    [-54, -5070],
+  ]) {
+    const bed = elevation(x) - zero;
+    b.box(1.3, floor - bed, 1.8, x, (floor + bed) / 2, z, '#918778');
   }
   // Parking stalls and lamps along the Peachtree entrance.
   const front = new Line([depot[1], depot[2]]);
@@ -155,6 +189,8 @@ function station(b: Builder, lamps: Builder, zero: number) {
   for (let s = 3; s < 76; s += 8) {
     const p = island.at(s),
       m = frame(p.x + p.nx * 1.85, tread(s), p.z + p.nz * 1.85, p.dx, p.dz);
+    // The soffit fixtures illuminate the platform lip and the canopy fascia on both sides.
+    lamps.box(3.5, 0.06, 0.46, 0, 3.38, 0, '#ffeed8', m);
     b.box(0.2, 3.6, 0.22, 0, 1.8, 0, '#64796c', m);
     b.box(4.1, 0.18, 0.18, 0, 3.45, 0, '#738478', m);
     b.box(4.25, 0.24, 8.02, 0, 3.7, 0, '#6b8073', m);
@@ -169,6 +205,19 @@ function station(b: Builder, lamps: Builder, zero: number) {
   }
   // Bed-to-deck clearance is an estimate. NBI measures the highway underneath.
   b.ribbon(bridge, 34, () => floor, '#7f817c');
+  // The DEM drops below street grade at both abutments. Join the deck to the first
+  // on-street sample beyond each bank, following the mapped approach centreline.
+  for (const points of [
+    [bridge.pts[0], [10.64, -4988.6], [32.25, -4966.97]],
+    [bridge.pts.at(-1)!, [-69, -5105.52], [-72, -5110]],
+  ] as P2[][]) {
+    const line = new Line(points),
+      end = points.at(-1)!;
+    const bank = groundAt(...end) ?? floor;
+    const height = (s: number) => floor + ((bank + 0.12 - floor) * s) / line.length;
+    b.ribbon(line, 31, height, '#7f817c');
+    for (const d of [-15, 15]) b.ribbon(line.offset(d), 3.1, (s) => height(s) + 0.12, '#c5bdac');
+  }
   // The bridge carries a sidewalk past the forecourt. Keep an opening for station access.
   for (const d of [-13, -4, 4, 13])
     b.wall(
@@ -223,6 +272,13 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
   const px = 64;
   canvas.width = Math.ceil(length * px);
   canvas.height = Math.ceil(height * px);
+  const windowMask = document.createElement('canvas');
+  windowMask.width = canvas.width;
+  windowMask.height = canvas.height;
+  const glow = windowMask.getContext('2d')!;
+  glow.scale(px, px);
+  glow.fillStyle = '#000';
+  glow.fillRect(0, 0, length, height);
   const ctx = canvas.getContext('2d')!;
   ctx.scale(px, px);
   ctx.fillStyle = '#b9a38a';
@@ -272,6 +328,8 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
     for (const side of [-1, 1]) {
       ctx.fillStyle = '#cfbf9d';
       ctx.fillRect(cx + side * (r + 0.36) - 0.14, cy + 0.14, 0.28, height - cy - 0.32);
+      glow.fillStyle = '#baab90';
+      glow.fillRect(cx + side * 0.54 - 0.42, cy + 0.5, 0.84, 1.55);
       ctx.fillStyle = '#8ca69b';
       ctx.fillRect(cx + side * 0.54 - 0.42, cy + 0.5, 0.84, 1.55);
       ctx.fillStyle = '#61796c';
@@ -280,7 +338,12 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const material = new THREE.MeshLambertMaterial({ map: texture });
+  const material = new THREE.MeshLambertMaterial({
+    map: texture,
+    emissiveMap: new THREE.CanvasTexture(windowMask),
+    emissive: '#ffdbab',
+    emissiveIntensity: 0,
+  });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(length, height), material);
   const p = face.at(length / 2);
   mesh.rotation.y = Math.atan2(p.dz, -p.dx);
@@ -291,7 +354,7 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
 function carGeometry(cab: boolean) {
   const b = new Builder(),
     silver = '#adafa9',
-    blue = '#434d72';
+    blue = '#534777';
   b.box(2.65, 0.7, 22, 0, 0.78, 0, '#434644');
   for (const z of [-8.4, 8.4]) b.box(2.75, 0.86, 3.9, 0, 0.45, z, '#303234');
   b.box(3, 2.9, 24.7, 0, 2.45, 0, silver);
@@ -309,23 +372,25 @@ function carGeometry(cab: boolean) {
   return b.geometry();
 }
 
-/** Heights are NAVD88 minus sceneZero. The study datum keeps the model on the City studio table. */
-export function createBrookwood(sceneZero = 264, study = false) {
+/** Attach to the City mosaic at its existing vertical datum. */
+export function createBrookwood(sceneZero: number, groundAt: GroundAt) {
   const b = new Builder(),
     lamps = new Builder();
   const bed = (x: number) => elevation(x) - sceneZero;
-  if (study) {
-    // A narrow sectional base keeps the road and rail approaches inspectable before the terrain tile arrives.
-    b.ribbon(main, 85, (_, x) => bed(x) - 0.25, '#989982');
-    for (const d of [-42.5, 42.5])
-      b.wall(
-        main,
-        d,
-        () => -14,
-        (s) => bed(main.at(s).x) - 0.25,
-        '#7d7162',
-      );
-  }
+  // The island and the mains cross the freeway on a common railway deck.
+  const deck = main.offset(-4);
+  b.ribbon(deck, 13, (_, x) => bed(x) - 0.04, '#939089', 2, 287, 410);
+  for (const d of [-6.5, 6.5])
+    b.wall(
+      deck,
+      d,
+      (s) => bed(deck.at(s).x) - 1.45,
+      (s) => bed(deck.at(s).x),
+      '#706f68',
+      2,
+      287,
+      410,
+    );
   for (const pts of [survey.main1, survey.main2, survey.steelLead, survey.siding]) {
     const line = new Line(pts as P2[]);
     b.ribbon(line, 3.6, (_, x) => bed(x) + 0.12, '#807a70');
@@ -335,7 +400,7 @@ export function createBrookwood(sceneZero = 264, study = false) {
     }
     for (const off of [-0.7175, 0.7175]) b.ribbon(line.offset(off), 0.085, (_, x) => bed(x) + 0.32, '#b0ae9f');
   }
-  station(b, lamps, sceneZero);
+  station(b, lamps, sceneZero, groundAt);
   const group = new THREE.Group(),
     cars = new THREE.Group();
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -350,9 +415,12 @@ export function createBrookwood(sceneZero = 264, study = false) {
   ];
   group.add(structure, lights, cars, ...facades);
   const geometries = [carGeometry(false), carGeometry(true)];
+  const headlampGeometry = new THREE.BoxGeometry(0.32, 0.26, 0.08);
+  const headlampMaterial = new THREE.MeshBasicMaterial({ color: '#fff0cb' });
   const stockMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [] });
   function update(states: TrainState[], dark: number) {
     lightMaterial.emissiveIntensity = dark * 1.8;
+    for (const mesh of facades) mesh.material.emissiveIntensity = dark * 0.45;
     let count = 0;
     for (const train of states) {
       const run = crescentPlacement(train);
@@ -368,6 +436,14 @@ export function createBrookwood(sceneZero = 264, study = false) {
           car.receiveShadow = true;
           cars.add(car);
         }
+        if (i === 0 && !car.children.length) {
+          for (const x of [-0.65, 0.65]) {
+            const lamp = new THREE.Mesh(headlampGeometry, headlampMaterial);
+            lamp.position.set(x, 2.15, 13.11);
+            car.add(lamp);
+          }
+        }
+        for (const lamp of car.children) lamp.visible = i === 0;
         car.geometry = g;
         car.visible = true;
         car.userData.trainId = train.id;
@@ -385,16 +461,17 @@ export function createBrookwood(sceneZero = 264, study = false) {
     structure,
     update,
     bounds: brookwoodBounds,
-    groundAt: (x: number) => bed(x),
+
     dispose() {
       group.removeFromParent();
       for (const mesh of facades) {
         mesh.geometry.dispose();
         mesh.material.map?.dispose();
+        mesh.material.emissiveMap?.dispose();
         mesh.material.dispose();
       }
-      for (const g of [structure.geometry, lights.geometry, ...geometries]) g.dispose();
-      for (const m of [material, lightMaterial, stockMaterial]) m.dispose();
+      for (const g of [structure.geometry, lights.geometry, headlampGeometry, ...geometries]) g.dispose();
+      for (const m of [material, lightMaterial, stockMaterial, headlampMaterial]) m.dispose();
     },
   };
 }

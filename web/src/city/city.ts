@@ -196,6 +196,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   const query = new URLSearchParams(location.search);
   const midtown = query.get('board') === 'midtown';
+  const brookwoodStudy = midtown && query.get('site') === 'brookwood';
+  let brookwood: ReturnType<typeof import('./brookwood').createBrookwood> | undefined;
+  const replaced: {parent: THREE.Object3D; object: THREE.Object3D}[] = [];
   const requestedSquare = midtown || query.get('board') === 'square';
   const square = grid && requestedSquare ? await import('./square-mosaic').catch(error => {
     console.warn('Square City preview unavailable', error);
@@ -255,6 +258,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
   const disposeBoard = () => {
     eastController.abort();
+    brookwood?.dispose();
+    for (const {parent, object} of replaced) parent.add(object);
     mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
@@ -697,9 +702,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
     renderer.shadowMap.needsUpdate = true;
   }
+  async function attachBrookwood(area: NonNullable<typeof east>) {
+    const { createBrookwood } = await import('./brookwood');
+    if (eastController.signal.aborted || brookwood) return;
+    brookwood = createBrookwood(area.grid.manifest.vertical.sceneZeroNavd88M, area.groundAt);
+    scene.add(brookwood.group);
+    scenery.push(brookwood.structure);
+    for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
+      const object = area.group.getObjectByName(id);
+      if (object?.parent) {
+        replaced.push({parent: object.parent, object});
+        object.removeFromParent();
+      }
+    }
+    renderer.shadowMap.needsUpdate = true;
+  }
   function approachMosaic(x: number, z: number) {
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
+      const atl = added.get('brookwood-station');
+      if (atl) void attachBrookwood(atl).catch(() => areaResult('brookwood-rail', 'Brookwood station model unavailable.'));
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       const first = added.keys().next().value!;
@@ -709,6 +731,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.target.set(target.x, targetY(target.x, target.z), target.z);
         camera.position.copy(controls.target).add(offset);
         controls.update();
+        if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
     }, direction => areaResult(direction, `Could not load the ${direction} section. Pan away and return to retry.`));
   }
@@ -874,6 +897,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Opening view: downtown at a glance from the southwest — the Gulch in front, Five Points,
   // and the Peachtree Center towers behind.
   setView(-28, 57, 5500, -40, -260);
+  if (brookwoodStudy) {
+    mosaic?.remember(-92,-5054);
+    approachMosaic(-92,-5054);
+  }
 
   // ---- post: ink, ambient occlusion, bloom, tilt-shift, grade ------------------------------
   const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
@@ -970,7 +997,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
-      camera, trains.group, buses.positions, edges, scenery, freight?.group));
+      camera, trains.group, buses.positions, edges, scenery, freight?.group, brookwood?.cars));
   });
 
   // ---- sun, sky, weather --------------------------------------------------------------
@@ -1115,6 +1142,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let frames = 0;
   let fpsT = performance.now();
   let fps = 0;
+  let showingBrookwoodNote = false;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
@@ -1134,6 +1162,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     trains.update(states, atm.dark);
+    if (brookwood) {
+      trains.surfaceCars += brookwood.update(states, atm.dark);
+      const { x, z } = controls.target, r = brookwood.bounds;
+      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+      if (near !== showingBrookwoodNote) {
+        showingBrookwoodNote = near;
+        areaResult('brookwood-service', near ? 'Scheduled Crescent · Inferred berth · Illustrative consist' : null);
+      }
+    }
     // A followed train heading east loads the King Memorial area itself, without a manual pan,
     // and follow keeps the trip (as "out of view") while that area and its rail are loading.
     // If the pack is missing or fails, follow falls back to downtown and ends at the edge.

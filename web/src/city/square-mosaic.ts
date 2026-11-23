@@ -107,7 +107,7 @@ export class SquareMosaic {
       const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
       if (this.patches.has(id) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;
       this.loading.add(direction);
-      void addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, dataRoot: this.dataRoot }).then(added => {
+      void addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, brookwood: this.midtown, dataRoot: this.dataRoot }).then(added => {
         if (signal.aborted) { for (const area of added.values()) area.dispose(); return; }
         for (const [id, area] of added) this.patches.set(id, area);
         const p = this.wanted;

@@ -9,7 +9,7 @@ export type VehicleSelection = { kind: 'train' | 'bus'; id: string } | { kind: '
  * Comparing screen distances gives the same touch radius on both quality tiers. */
 export function pickVehicle(x: number, y: number, width: number, height: number,
   camera: THREE.PerspectiveCamera, trains: THREE.Group, buses: CityBuses['positions'],
-  edges: THREE.Plane[], scenery: THREE.Object3D[], freight?: THREE.Group): VehicleSelection | null {
+  edges: THREE.Plane[], scenery: THREE.Object3D[], freight?: THREE.Group, intercity?: THREE.Group): VehicleSelection | null {
   const a = new THREE.Vector3(), b = new THREE.Vector3();
   const frustum = new THREE.Frustum().setFromProjectionMatrix(
     new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -39,7 +39,8 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
       consider(vehicle, material.clippingPlanes ?? edges);
     }
   }
-  for (const car of trains.children) railCar(car, car.userData.lengthM ?? CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
+  for (const car of trains.children) railCar(car, CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
+  for (const car of intercity?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'train', id: car.userData.trainId });
   for (const car of freight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight' });
   for (const bus of buses) {
     const dx = Math.sin(bus.a) * BUS_LENGTH / 2, dz = Math.cos(bus.a) * BUS_LENGTH / 2;
