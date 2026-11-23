@@ -39,6 +39,11 @@ export const ROOF = [-8.8, 13.0] as const;
 const LIP = MARTA_TRACK_OFFSET + CAR_WIDTH / 2 + 0.075;
 /** Platform length along the line (OSM ways 319512574 and 319512585: s 8951–9129 on 155177). */
 const PLATFORM_S: [number, number] = [8951, 9129];
+/** King Memorial's street-level station building under the platforms, OSM way 270494115 (v7,
+ * building=train_station, layer 1). MARTA's station profile: "The only station entrance can be
+ * accessed from Decatur Street"; its photo and the 2012 Commons photo show this enclosure under
+ * the elevated platforms. Footprint sourced; wall height (ground to the platform underside) inferred. */
+export const STATION_BUILDING: readonly [number, number][] = [[-84.3746072, 33.7502219], [-84.374583, 33.7501668], [-84.3749974, 33.7500398], [-84.3749904, 33.7500238], [-84.3759165, 33.74974], [-84.3759214, 33.7497511], [-84.3764924, 33.7495761], [-84.3765155, 33.7496284], [-84.3765321, 33.7496662], [-84.3765508, 33.7497089], [-84.3765708, 33.7497547], [-84.3760022, 33.749929], [-84.3760227, 33.7499758], [-84.3758021, 33.7500434], [-84.3758446, 33.7501402], [-84.3760799, 33.7501021], [-84.3760909, 33.7501628], [-84.3759133, 33.7501899], [-84.3756318, 33.7502331], [-84.3756199, 33.7501779], [-84.3757425, 33.750156], [-84.3756945, 33.7500591], [-84.3750886, 33.7502448], [-84.3750778, 33.7502201], [-84.3747742, 33.7503131], [-84.3746623, 33.7503474]];
 const EAST_IDS = ['155177', '155181', '155185', '155188', '155214', '155215', '155216', '155221', '155222', '155223'];
 
 /** Nearest s on a path to a scene point. */
@@ -216,13 +221,30 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     tower.translate(x, g + h / 2, z);
     b.addGeometry(tower, concrete);
   }
+  // The station building: walls from the ground up to just under the platform deck, flat roof.
+  const ring = STATION_BUILDING.map(([lon, lat]) => project(lon, lat));
+  const grades = ring.map(([x, z]) => ground(x, z)).filter((g): g is number => g != null);
+  let building: { base: number; top: number; ring: XZ[] } | undefined;
+  if (grades.length === ring.length) {
+    const base = Math.min(...grades) - 0.5;
+    const top = Math.min(...ring.map(([x, z]) => floor(sOnPath(path, project, [x, z]).s))) - 0.8 - 0.3;
+    const wallCol = '#c8bda8', band = '#a99d88';
+    for (let i = 0; i < ring.length; i++) {
+      const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
+      b.quad([ax, base, az], [bx, base, bz], [bx, top - 0.6, bz], [ax, top - 0.6, az], wallCol);
+      b.quad([ax, top - 0.6, az], [bx, top - 0.6, bz], [bx, top, bz], [ax, top, az], band);
+    }
+    const tris = THREE.ShapeUtils.triangulateShape(ring.map(([x, z]) => new THREE.Vector2(x, z)), []);
+    for (const [i, j, k] of tris) b.tri([ring[i][0], top, ring[i][1]], [ring[j][0], top, ring[j][1]], [ring[k][0], top, ring[k][1]], '#9e968a');
+    building = { base, top, ring };
+  }
   const geometry = b.geometry();
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'MARTA east: guideway and King Memorial station';
   mesh.castShadow = mesh.receiveShadow = true;
   return {
-    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn,
+    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn, building,
     dispose() { mesh.removeFromParent(); geometry.dispose(); material.dispose(); },
   };
 }
