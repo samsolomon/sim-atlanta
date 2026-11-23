@@ -36,6 +36,7 @@ export function drawSeventeenthStreet(
   const mouths = runs.filter(
     (r) => r.cls === 'motorway' && r.sub === 'link' && r.pts.every(([x, z]) => pointInRing(x, z, outline)),
   );
+  const crossings = walks.filter((w) => w.sub === 'crossing');
   const owners = [...streets, ...walks, ...mouths];
   owners.forEach((r) => {
     replaced.add(r);
@@ -131,7 +132,6 @@ export function drawSeventeenthStreet(
     const x = point(i + 0.5, 0.5, 0)[0];
     const northMouth = x > -115 && x < -101,
       southMouth = x > 86 && x < 102;
-    const crossings = walks.filter((w) => w.sub === 'crossing');
     strip(i, i + 1, 0.205, 0.845, 0, '#a49e92', [...streets, ...mouths, ...crossings]);
     for (const [left, right, opening] of [
       [0, 0.205, northMouth],
@@ -157,14 +157,25 @@ export function drawSeventeenthStreet(
     for (const f of [0, 0.19, 0.39, 0.6, 0.81, 1]) {
       const depth = (s: number) =>
         1.25 + 1.25 * Math.max(0, 1 - Math.min(...seats.map((x) => Math.abs(point(s, f, 0)[0] - x))) / 20);
+      // Inverted trapezoidal box. Both inclined webs and the bottom flange
+      // remain visible looking along the Connector underneath the deck.
+      const axis = Math.max(0.022, Math.min(0.978, f));
+      for (const side of [-1, 1]) {
+        quad(
+          point(i, axis + side * 0.022, -0.18),
+          point(i + 1, axis + side * 0.022, -0.18),
+          point(i + 1, axis + side * 0.012, -depth(i + 1)),
+          point(i, axis + side * 0.012, -depth(i)),
+          yellow,
+        );
+      }
       quad(
-        point(i, f, -0.18),
-        point(i + 1, f, -0.18),
-        point(i + 1, f, -depth(i + 1)),
-        point(i, f, -depth(i)),
-        yellow,
+        point(i, axis - 0.012, -depth(i)),
+        point(i + 1, axis - 0.012, -depth(i + 1)),
+        point(i + 1, axis + 0.012, -depth(i + 1)),
+        point(i, axis + 0.012, -depth(i)),
+        '#bc9735',
       );
-      beam(point(i, f, -depth(i)), point(i + 1, f, -depth(i + 1)), 0.55, 0.16, '#b69238');
     }
     for (const f of [0, 1]) {
       if (f === 0 ? northMouth : southMouth) continue;
@@ -207,34 +218,30 @@ export function drawSeventeenthStreet(
         beam(point(i, f, h), point(i + 1, f, h), 0.095, 0.1, pale);
     }
   }
-  // The deck polygon ends above a bare-earth bank at each approach. Carry
-  // the pavement and both sidewalks to exposed grade beyond the DEM cut.
-  for (const [s, nx, nz, sx, sz] of [
-    [0, -207, -4166, -207, -4127],
-    [end, 129, -4249, 137, -4209],
-  ]) {
-    const landing = (f: number, h: number): Point => {
-      const p = point(s, f, 0),
-        x = mix(nx, sx, f),
-        z = mix(nz, sz, f);
-      return [x, (ground(x, z) ?? p[1]) + 0.12 + h, z];
-    };
-    for (const [l, r, h, color] of [
-      [0, 0.205, 0.15, '#d2c5b2'],
-      [0.205, 0.845, 0, '#a49e92'],
-      [0.845, 1, 0.15, '#d2c5b2'],
-    ] as const)
-      quad(point(s, l, h), point(s, r, h), landing(r, h), landing(l, h), color);
+  for (const s of [0, end]) {
     const foot = (p: Point): Point => [p[0], Math.min(p[1], ground(p[0], p[2]) ?? p[1]) - 0.3, p[2]];
-    for (const f of [0, 1]) {
-      const a = point(s, f, -0.15),
-        b = landing(f, 0);
-      quad(a, b, foot(b), foot(a), concrete);
-    }
     const a = point(s, 0, -0.55),
       b = point(s, 1, -0.55);
     quad(a, b, foot(b), foot(a), concrete);
   }
+}
+
+// Share the surveyed end row with the terrain renderer. Its bank mesh uses
+// the adjoining streets' paint and supplies the same triangle height to traffic.
+export function seventeenthPortals(city: TerrainCity) {
+  if (city.bounds.minZ !== -4900 || !city.roads.some((r) => r.bridge && r.name === '17th Street Northwest'))
+    return [];
+  return [
+    [rows[0], [-1, -0.025]],
+    [rows.at(-1)!, [0.982, -0.189]],
+  ].map(([row, direction]) => ({
+    edge: [
+      [row[0], row[1], row[2] - 0.12],
+      [row[3], row[4], row[5] - 0.12],
+    ],
+    direction,
+    curbs: [0.205, 0.845],
+  }));
 }
 
 // The two elevated ramps that terminate on 17th already have independent

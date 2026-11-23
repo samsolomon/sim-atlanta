@@ -333,7 +333,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       junctionNodes.set(key,[...(junctionNodes.get(key)??[]),run]);
     }
   }
-  drawSeventeenthStreet(city, sceneZero, terrainGround, seventeenth, roadTreads, bridgeRuns);
+  drawSeventeenthStreet(city, sceneZero, (x,z) => {
+    const h = grid.sample(x,z);
+    return h === null ? null : h-sceneZero;
+  }, seventeenth, roadTreads, bridgeRuns);
   for (const owner of data.roads) {
     if (sharedDecks.has(owner) || bridgeRuns.has(owner)) continue;
     const road = bounds.minZ === -4900 ? seventeenthRamp(owner, terrainGround, sceneZero) : owner;
@@ -370,8 +373,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       material.onBeforeCompile = shader => {
         shader.uniforms.bridgeNight = bridgeNight;
         shader.vertexShader = 'varying float bridgeSpill;\n' + shader.vertexShader.replace(
-          '#include <begin_vertex>', '#include <begin_vertex>\nbridgeSpill = (1.0 - .77 * abs(normal.y)) * smoothstep(-207.0,-167.0,position.x) * (1.0-smoothstep(112.0,136.0,position.x));');
-
+          '#include <begin_vertex>', `#include <begin_vertex>
+          float bankFade = smoothstep(-207.0,-167.0,position.x) * (1.0-smoothstep(112.0,136.0,position.x));
+          float pierDistance = min(min(abs(position.x+135.0), abs(position.x+75.0)),
+            min(abs(position.x+22.0),min(abs(position.x-26.0),abs(position.x-62.0))));
+          float pool = mix(.35,1.0,1.0-smoothstep(1.5,16.0,pierDistance));
+          bridgeSpill = (1.0-.77*abs(normal.y)) * bankFade * pool;`);
         shader.fragmentShader = 'uniform float bridgeNight; varying float bridgeSpill;\n' + shader.fragmentShader.replace(
           '#include <opaque_fragment>',
           'outgoingLight += diffuseColor.rgb * vec3(.54, .40, .25) * bridgeNight * bridgeSpill;\n#include <opaque_fragment>');
