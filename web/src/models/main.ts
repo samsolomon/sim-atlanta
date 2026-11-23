@@ -10,6 +10,7 @@ import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type Ma
 import { gradeShader } from '../vignette/grade';
 import { busGeometry, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
+import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { inkShader } from '../vignette/ink';
 import { figureLooks } from '../city/figure-looks';
 import { createFigurePreview } from '../city/street-figures';
@@ -17,8 +18,9 @@ import { labTrack } from './track';
 import { createPlatformScene, type PlatformKind } from './platform-scene';
 
 const el = document.getElementById('stage')!;
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const low = new URLSearchParams(location.search).get('q') === 'low';
+const renderer = new THREE.WebGLRenderer({ antialias: !low, preserveDrawingBuffer: true });
+renderer.setPixelRatio(low ? 1 : Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.NeutralToneMapping;
@@ -31,7 +33,7 @@ const hemi = new THREE.HemisphereLight('#eef2f8', '#a08f78', 1.5);
 const sun = new THREE.DirectionalLight('#fff3df', 2.6);
 sun.position.set(-18, 30, 22);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.setScalar(low ? 1024 : 2048);
 sun.shadow.bias = -0.0005; // without these the models shade themselves in fine stripes (shadow acne)
 sun.shadow.normalBias = 0.05;
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
@@ -44,6 +46,8 @@ ground.receiveShadow = true;
 scene.add(ground);
 // A short length of track: ballast, sleepers, rails (see track.ts).
 const track = labTrack();
+const longTrack = labTrack(240);
+scene.add(longTrack);
 track.traverse((o) => ((o as THREE.Mesh).receiveShadow = true));
 scene.add(track);
 
@@ -54,6 +58,7 @@ const models = {
   cq400: 'Stadler CQ400',
   xn40: 'New Flyer Xcelsior XN40',
   cm44ac: 'GE/Wabtec CM44AC',
+  ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
   cyclist: 'Cyclist and bicycle',
 } as const;
@@ -62,6 +67,9 @@ const requested = new URLSearchParams(location.search).get('v');
 const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400' };
 let model: Model = requested && Object.hasOwn(models, requested)
   ? requested as Model : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
+function isPassengerUnit(id: Model): id is keyof typeof stockNames {
+  return Object.hasOwn(stockNames, id);
+}
 let cars: THREE.Mesh[] = [];
 let figure: ReturnType<typeof createFigurePreview> | undefined;
 const play = document.querySelector<HTMLButtonElement>('#play')!;
@@ -105,11 +113,17 @@ function build() {
   figure = undefined;
   const person = model === 'walker' || model === 'cyclist';
   ground.material = person ? figureShadow : floorMaterial;
-  const extent = person ? 6 : 40;
+  const extent = person ? 6 : model === 'crescent' ? 128 : 40;
+  sun.position.set(-18,30,22).multiplyScalar(model === 'crescent' ? 4 : 1);
+  sun.shadow.camera.far = model === 'crescent' ? 380 : 120;
   Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
-  track.visible = model === 'cq400' || model === 'cm44ac';
+  const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
+  track.visible = model === 'cq400' || model === 'cm44ac' || passenger;
+  longTrack.visible = model === 'crescent';
+  if (longTrack.visible) track.visible = false;
+  ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
   document.getElementById('lines')!.hidden = model !== 'cq400';
   document.getElementById('roles')!.hidden = model !== 'cq400';
   document.getElementById('platforms')!.hidden = model !== 'cq400';
@@ -127,6 +141,25 @@ function build() {
     document.getElementById('blurb')!.textContent = model === 'walker'
       ? 'An illustrative downtown pedestrian with a swinging stride.'
       : 'An illustrative rider from the Westside Beltline Connector, on a city bicycle.';
+    return;
+  }
+  if (model === 'crescent' || isPassengerUnit(model)) {
+    const units = model === 'crescent' ? formation : [model];
+    cars = layout(units).map(({unit, offset}, i) => {
+      const mesh = new THREE.Mesh(passengerGeometry(unit, i === 0, i === units.length - 1), passengerMaterial(night));
+      mesh.position.set(0,.125,offset);
+      mesh.castShadow = mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    });
+    const blurb = document.getElementById('blurb')!;
+    blurb.textContent = model === 'crescent'
+      ? 'Illustrative formation · two locomotives, three coaches, café, diner, sleeper and baggage-dorm. '
+      : 'Illustrative Crescent equipment. ';
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/crescent-stock.md';
+    link.textContent = 'Equipment notes and reference photos';
+    blurb.append(link);
     return;
   }
   if (model === 'cm44ac') {
@@ -306,7 +339,22 @@ let presets: Record<string, ViewPreset>;
 const modelSelect = document.querySelector<HTMLSelectElement>('#model-select')!;
 function setModel(id: Model) {
   model = id;
-  presets = { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS }[id];
+  const passengerViews: Record<string, ViewPreset> = {
+    Front: { pos: [0,2.7,27], target: [0,2.3,10], fov: 28 },
+    Rear: { pos: [0,2.7,-27], target: [0,2.3,-10], fov: 28 },
+    Side: { pos: [-38,3,0], target: [0,2,0], fov: 39 },
+    Top: { pos: [.01,49,0], target: [0,0,0], fov: 36 },
+    '¾ front': { pos: [-19,6.8,18], target: [0,2,0], fov: 38 },
+  };
+  if (id === 'crescent') {
+    for (const preset of Object.values(passengerViews)) {
+      const scale = 8.65 / Math.min(1, camera.aspect);
+      preset.pos = preset.pos.map(n => n * scale) as ViewPreset['pos'];
+      preset.target[2] *= 8.65;
+    }
+  }
+  camera.far = id === 'crescent' ? 1800 : 400;
+  presets = id === 'crescent' || isPassengerUnit(id) ? passengerViews : { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS }[id];
   modelSelect.value = id;
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
@@ -319,7 +367,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac']], ['people', ['walker', 'cyclist']]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
@@ -337,10 +385,17 @@ for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac']], ['people'
 modelSelect.addEventListener('change', () => selectModel(modelSelect.value as Model));
 setModel(model);
 const nightBtn = document.getElementById('night')!;
+if (new URLSearchParams(location.search).get('night') === '1') {
+  setNight(true);
+  nightBtn.setAttribute('aria-pressed', 'true');
+}
 nightBtn.addEventListener('click', () => {
   const on = nightBtn.getAttribute('aria-pressed') !== 'true';
   nightBtn.setAttribute('aria-pressed', String(on));
   setNight(on);
+  const url = new URL(location.href);
+  if (on) url.searchParams.set('night', '1'); else url.searchParams.delete('night');
+  history.replaceState(null, '', url);
 });
 const inkBtn = document.getElementById('ink')!;
 inkBtn.addEventListener('click', () => {

@@ -3,6 +3,14 @@ import { makeProjector } from '../core/scene-data';
 import type { TrainState } from '../model/types';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import {
+  consistLength,
+  dimensions,
+  formation,
+  layout,
+  passengerGeometry,
+  passengerMaterial,
+} from '../vignette/crescent-stock';
 import survey from './fixtures/brookwood.json';
 
 const project = makeProjector({ lon: -84.3916, lat: 33.7539 });
@@ -96,12 +104,12 @@ export function crescentPlacement(t: TrainState) {
   const p = main.at(along),
     heading = (t.heading * Math.PI) / 180;
   const dir = Math.sin(heading) * p.dx - Math.cos(heading) * p.dz >= 0 ? 1 : -1;
-  const units = Math.max(1, Math.round(t.lengthM.value / 26));
+
   // Move the whole consist toward the usable island as it approaches the GTFS point.
   // Smooth over 500 m so that even a full-length model keeps moving in trip order.
   const f = Math.max(0, 1 - Math.abs(along - atl) / 500);
-  const shift = (platformEnd - Math.min(units * 26, 368) / 2 - atl) * f * f * (3 - 2 * f);
-  return { center: along + shift, dir, units };
+  const shift = (platformEnd - consistLength / 2 - atl) * f * f * (3 - 2 * f);
+  return { center: along + shift, dir, units: formation.length };
 }
 
 function frame(x: number, y: number, z: number, dx: number, dz: number) {
@@ -416,27 +424,6 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
   return mesh;
 }
 
-function carGeometry(cab: boolean) {
-  const b = new Builder(),
-    silver = '#adafa9',
-    blue = '#534777';
-  b.box(2.65, 0.7, 22, 0, 0.78, 0, '#434644');
-  for (const z of [-8.4, 8.4]) b.box(2.75, 0.86, 3.9, 0, 0.45, z, '#303234');
-  b.box(3, 2.9, 24.7, 0, 2.45, 0, silver);
-  b.box(2.8, 0.28, 24.6, 0, 4.03, 0, '#828681');
-  for (const side of [-1, 1]) {
-    b.box(0.08, 0.27, 24.6, side * 1.5, 2, 0, blue);
-    if (!cab) for (let i = 0; i < 14; i++) b.box(0.07, 0.8, 1.13, side * 1.51, 2.98, i * 1.58 - 10.28, '#344753');
-  }
-  if (cab) {
-    b.box(2.9, 1.5, 3.0, 0, 2.7, 11.5, blue);
-    b.box(2.3, 0.8, 0.14, 0, 3.1, 13, '#384851');
-    for (const x of [-0.65, 0.65]) b.box(0.3, 0.25, 0.18, x, 2.15, 13, '#fff1be');
-    for (let i = 0; i < 6; i++) b.box(2.4, 0.27, 1, 0, 4.23, -8 + i * 2, '#535956');
-  }
-  return b.geometry();
-}
-
 /** Attach to the City mosaic at its existing vertical datum. */
 export function createBrookwood(sceneZero: number) {
   const b = new Builder(),
@@ -490,19 +477,19 @@ export function createBrookwood(sceneZero: number) {
   );
   litSlab.receiveShadow = true;
   group.add(structure, lights, litSlab, cars, ...facades);
-  const geometries = [carGeometry(false), carGeometry(true)];
-  const headlampGeometry = new THREE.BoxGeometry(0.32, 0.26, 0.08);
-  const headlampMaterial = new THREE.MeshBasicMaterial({ color: '#fff0cb' });
-  const stockMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [] });
+  const night = { value: 0 };
+  const stockMaterial = passengerMaterial(night);
+  const shapes = new Map<string, THREE.BufferGeometry>();
+  const consist = layout(formation).map(({ unit, offset, length }, i) => {
+    let geometry = shapes.get(unit);
+    if (!geometry) {
+      geometry = passengerGeometry(unit, i === 0, i === formation.length - 1);
+      shapes.set(unit, geometry);
+    }
+    return { geometry, offset, length, trucks: dimensions(unit).trucks };
+  });
   const northEdge = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-  for (const m of [
-    material,
-    lightMaterial,
-    litSlab.material,
-    stockMaterial,
-    headlampMaterial,
-    ...facades.map((f) => f.material),
-  ]) {
+  for (const m of [material, lightMaterial, litSlab.material, stockMaterial, ...facades.map((f) => f.material)]) {
     m.clippingPlanes = [northEdge];
     m.clipShadows = true;
   }
@@ -510,35 +497,30 @@ export function createBrookwood(sceneZero: number) {
     lightMaterial.emissiveIntensity = dark * 1.8;
     litSlab.material.emissiveIntensity = dark * 0.35;
     for (const mesh of facades) mesh.material.emissiveIntensity = dark * 0.45;
+    night.value = dark;
     let count = 0;
     for (const train of states) {
       const run = crescentPlacement(train);
       if (!run) continue;
-      for (let i = 0; i < run.units; i++) {
-        const s = run.center + run.dir * ((run.units - 1) / 2 - i) * 26;
+      for (const { geometry, offset, length, trucks } of consist) {
+        const s = run.center + run.dir * offset;
         if (s < 0 || s > main.length) continue;
-        const p = main.at(s),
-          g = geometries[i === 0 ? 1 : 0];
+        const fore = main.at(s + (run.dir * trucks) / 2),
+          aft = main.at(s - (run.dir * trucks) / 2);
         let car = cars.children[count++] as THREE.Mesh | undefined;
         if (!car) {
-          car = new THREE.Mesh(g, stockMaterial);
+          car = new THREE.Mesh(geometry, stockMaterial);
           car.receiveShadow = true;
+          car.rotation.order = 'YXZ';
           cars.add(car);
         }
-        if (i === 0 && !car.children.length) {
-          for (const x of [-0.65, 0.65]) {
-            const lamp = new THREE.Mesh(headlampGeometry, headlampMaterial);
-            lamp.position.set(x, 2.15, 13.11);
-            car.add(lamp);
-          }
-        }
-        for (const lamp of car.children) lamp.visible = i === 0;
-        car.geometry = g;
+        car.geometry = geometry;
         car.visible = true;
         car.userData.trainId = train.id;
-        car.userData.lengthM = 26;
-        car.position.set(p.x, bed(p.x) + 0.32, p.z);
-        car.rotation.y = Math.atan2(p.dx * run.dir, p.dz * run.dir);
+        car.userData.lengthM = length;
+        car.position.set((fore.x + aft.x) / 2, (bed(fore.x) + bed(aft.x)) / 2 + 0.32, (fore.z + aft.z) / 2);
+        car.rotation.y = Math.atan2(fore.x - aft.x, fore.z - aft.z);
+        car.rotation.x = -Math.atan2(bed(fore.x) - bed(aft.x), Math.hypot(fore.x - aft.x, fore.z - aft.z));
       }
     }
     for (let j = count; j < cars.children.length; j++) cars.children[j].visible = false;
@@ -564,8 +546,8 @@ export function createBrookwood(sceneZero: number) {
         mesh.material.emissiveMap?.dispose();
         mesh.material.dispose();
       }
-      for (const g of [structure.geometry, lights.geometry, headlampGeometry, ...geometries]) g.dispose();
-      for (const m of [material, lightMaterial, stockMaterial, headlampMaterial]) m.dispose();
+      for (const g of [structure.geometry, lights.geometry, ...shapes.values()]) g.dispose();
+      for (const m of [material, lightMaterial, stockMaterial]) m.dispose();
     },
   };
 }
