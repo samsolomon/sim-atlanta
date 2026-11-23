@@ -22,6 +22,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
   const { band, edges } = classicalOrnament(shell, { stone: marble, shade, limestone: marble, joint });
   const ccw = (r: P2[]) => r.reduce((s, [x, z], i) => { const [a, b] = r[(i + 1) % r.length]; return s + x * b - z * a; }, 0) < 0 ? [...r].reverse() : r;
   const box = (x0: number, x1: number, z0: number, z1: number): P2[] => ccw([[x0, z0], [x1, z0], [x1, z1], [x0, z1]]);
+  // Ground relative to the site grade, the same frame as every height in this model.
   const g = (x: number, z: number) => ground(x, z) ?? 0;
   // The tower's corners are rounded, as the 2017 panorama shows.
   const rounded = (x0: number, x1: number, z0: number, z1: number, r: number): P2[] => {
@@ -154,10 +155,10 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
   const ex = TOWER.x1 + 7, ez = pm, plazaY = g(ex, ez) + .05;
   shell.body.quad([TOWER.x1 + 2.2, plazaY, TOWER.z0 - 2], [TOWER.x1 + 2.2, plazaY, TOWER.z1 + 6], [ex + 6, plazaY, TOWER.z1 + 6], [ex + 6, plazaY, TOWER.z0 - 2], '#b9b5ad');
   for (let k = TOWER.z0; k <= TOWER.z1 + 5; k += 2) shell.body.quad([TOWER.x1 + 2.2, plazaY + .01, k], [ex + 6, plazaY + .01, k], [ex + 6, plazaY + .01, k + .06], [TOWER.x1 + 2.2, plazaY + .01, k + .06], '#a29e96');
-  shell.prism(box(ex - 1.6, ex + 1.6, ez - 1.6, ez + 1.6), plazaY - g(0, 0) - .1, plazaY - g(0, 0) + 2.4, marble, marble);
-  shell.prism(disc(ex, ez, .55), plazaY - g(0, 0) + 2.4, plazaY - g(0, 0) + 11, marble, marble);
-  shell.prism(disc(ex, ez, .75), plazaY - g(0, 0) + 11, plazaY - g(0, 0) + 11.4, marble, marble);
-  const ey = plazaY - g(0, 0) + 11.4;
+  shell.prism(box(ex - 1.6, ex + 1.6, ez - 1.6, ez + 1.6), plazaY - .1, plazaY + 2.4, marble, marble);
+  shell.prism(disc(ex, ez, .55), plazaY + 2.4, plazaY + 11, marble, marble);
+  shell.prism(disc(ex, ez, .75), plazaY + 11, plazaY + 11.4, marble, marble);
+  const ey = plazaY + 11.4;
   for (const s of [-1, 1]) shell.body.tri([ex, ey + .3, ez], [ex + s * 1.7, ey + 1.3, ez], [ex + s * .4, ey + .6, ez + .3], '#2b2d2c');
   shell.prism(disc(ex, ez, .35, 6), ey, ey + .9, '#2b2d2c', '#2b2d2c');
   wash.quad([ex - .6, ey - 8.6, ez + .9], [ex + .6, ey - 8.6, ez + .9], [ex + .5, ey + .6, ez + .9], [ex - .5, ey + .6, ez + .9], '#fff1d6');
@@ -174,7 +175,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
   }
   seatWall(shell.body, [[lawnX0, SLAB.z0], [lawnX1, SLAB.z0]], g);
   for (let k = 0; k < 6; k++) {
-    const z = lz0 + 2 + k * (lz1 - lz0 - 4) / 5, x = lawnX0 + 4, y = g(x, z) + .1 - g(0, 0);
+    const z = lz0 + 2 + k * (lz1 - lz0 - 4) / 5, x = lawnX0 + 4, y = g(x, z) + .1;
     shell.prism(disc(x, z, .6), y, y + .6, marble, marble);
     shell.prism(disc(x, z, .4), y + .6, y + 6.6, '#bdb6a8', '#bdb6a8');
     shell.prism(disc(x, z, .64), y + 6.6, y + 7.4, '#aaa190', '#aaa190');
