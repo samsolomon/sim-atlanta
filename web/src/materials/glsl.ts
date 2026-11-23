@@ -72,8 +72,9 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
 #endif
   } else if (kind < 2.5) {
     // Stucco: trowel mottle and faint rain streaks, no joints.
-    m += .035 * sfSee(3., px) * sfTone(uv * .35);
-    m += .025 * sfSee(1.5, px) * (sfN(vec2(uv.x * 1.6, uv.y * .08)) - .5);
+    // Mottle and streaks are tuned to read from the City's 150 m+ orbit (2026-11-23 gain study).
+    m += .08 * sfSee(3., px) * sfTone(uv * .35);
+    m += .06 * sfSee(1.5, px) * (sfN(vec2(uv.x * 1.6, uv.y * .08)) - .5);
 #ifndef SURFACE_LOW
     if (px < .15) m += .03 * sfSee(.3, px) * (sfN(uv * 3.3) - .5);
 #endif
@@ -110,9 +111,10 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     float t = .6 * (sfN(vec2(uv.x * 2.2, uv.y * .12)) - .5) + .4 * sfTone(uv * .35);
     float see = sfSee(2., px);
     t *= see;
-    m += .10 * t;
+    // Tuned to read from the City's 150 m+ orbit (2026-11-23 gain study: 2.5x the first pass).
+    m += .25 * t;
     // The two tints average to white, so the roof keeps its authored colour as the mean.
-    hue = mix(vec3(1), t > 0. ? vec3(.94, 1.04, 1.04) : vec3(1.06, .96, .96), min(abs(t) * 3., 1.) * a);
+    hue = mix(vec3(1), t > 0. ? vec3(.94, 1.04, 1.04) : vec3(1.06, .96, .96), min(abs(t) * 7., 1.) * a);
     // Standing seams every p1 m; 0 leaves them to the model's own geometry.
     if (s.y > .01) { float seam = max(s.y, .2); m -= .08 * sfJoint(uv.x / seam, .02 / seam, fw.x / seam); }
   } else if (kind < 8.5) {

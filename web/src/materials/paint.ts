@@ -1,4 +1,4 @@
-import { Float32BufferAttribute, type Material, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { Float16BufferAttribute, type Material, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { SURFACE_GLSL } from './glsl';
 import type { Surface } from './library';
 
@@ -29,10 +29,13 @@ export class SurfacePainter {
 
   /** The `aSurface` attribute for the builder's geometry; unpainted vertices stay 0 (flat). */
   attribute(count = this.builder.pos.length / 3) {
-    const data = new Float32Array(count * 4), done = new Uint8Array(count);
+    // Half floats: 8 bytes a vertex. Kinds, bonds and sizes in metres all fit comfortably.
+    // The setters convert to half-float bits; unset vertices stay 0 (flat).
+    const attribute = new Float16BufferAttribute(new Uint16Array(count * 4), 4), done = new Uint8Array(count);
     for (const { start, end, surface } of this.ranges)
-      for (let i = start; i < Math.min(end, count); i++) if (!done[i]) { data.set(surface.data, i * 4); done[i] = 1; }
-    return new Float32BufferAttribute(data, 4);
+      for (let i = start; i < Math.min(end, count); i++)
+        if (!done[i]) { attribute.setXYZW(i, ...surface.data); done[i] = 1; }
+    return attribute;
   }
 }
 
