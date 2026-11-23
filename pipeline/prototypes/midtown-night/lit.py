@@ -32,9 +32,16 @@ for row in json.loads((BOARD / "midtown-rows.json").read_text()):
             continue
         if any(t.get(k) not in (None, "no") for k in ("bridge", "tunnel", "covered", "indoor")) or t.get("layer", "0") not in ("0",):
             continue
-        pts = [nodes[n] for n in e["nodes"] if n in nodes]
-        if len(pts) >= 2:
-            ways[e["id"]] = pts
+        # A way that leaves the extract is split at its missing nodes, never bridged.
+        run, part = [], 0
+        for n in e["nodes"] + [None]:
+            if n in nodes:
+                run.append(nodes[n])
+                continue
+            if len(run) >= 2:
+                ways[(e["id"], part)] = run
+                part += 1
+            run = []
 result = {"paths": [ways[k] for k in sorted(ways)], "lamps": [lamps[k] for k in sorted(lamps)]}
 OUT.write_text(json.dumps(result, separators=(",", ":")) + "\n")
 length = sum(math.dist(a, b) for pts in ways.values() for a, b in zip(pts, pts[1:]))

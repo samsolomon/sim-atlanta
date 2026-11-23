@@ -3,7 +3,7 @@ import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
-import { Builder, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
@@ -173,7 +173,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options);
   for (const landmark of landmarks) scenery.group.add(landmark.group);
-  if (options.lights) scenery.buildLights(board, groundAt, inConnectorLanes, { ...options.lights, lowDetail: options.quality === 'low' });
+  if (options.lights) {
+    // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
+    const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
+    const onSite = (x: number, z: number) => sites.some(ring => pointInRing(x, z, ring));
+    scenery.buildLights(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z),
+      { ...options.lights, lowDetail: options.quality === 'low' });
+  }
   let fragment: World | undefined;
   if (candidate) {
     const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
