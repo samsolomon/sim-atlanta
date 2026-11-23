@@ -115,7 +115,10 @@ function hotel(shell: Builder, lit: Builder, wash: Builder, group: Group, ring: 
       }
       continue;
     }
-    const roomWall = len > 24;
+    // The shaft outline contains an intermediate vertex along the southwest wing.
+    // Classify each elevation by its position beyond the surveyed central core.
+    const midZ = (az + bz) / 2;
+    const roomWall = midZ < -868 || midZ > -829 || (ax + bx) / 2 > 768;
     panel(shell, 0, len, base, wingsRoof, 0, roomWall ? stone : '#526374');
     if (!roomWall) continue;
     const bays = Math.max(1, Math.round(len / 3.9)),

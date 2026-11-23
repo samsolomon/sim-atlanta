@@ -114,6 +114,11 @@ it('separates the hotel wings, crown, recreation deck and low east podium', () =
   expect(roof(767, -891)).toBeCloseTo(321.1);
   expect(roof(825, -901)).toBeCloseTo(306.8);
   expect(roof(788, -808)).toBeCloseTo(322.1);
+  // A podium vertex splits the southwest wing. Its short segment still carries recessed room bays.
+  const normal = new Vector3(10.83, 0, 6.42).normalize();
+  const pane = new Vector3(729.93 + 6.42 * 0.25, 351.0 - 314, -800.58 - 10.83 * 0.25);
+  const ray = new Raycaster(pane.addScaledVector(normal, 2), normal.negate());
+  expect(ray.intersectObject(result.group)[0].distance).toBeCloseTo(2 - 0.045, 3);
 });
 
 it('preserves a mismatched tower independently of the surveyed podium pieces', () => {
