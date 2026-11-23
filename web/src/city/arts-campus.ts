@@ -233,6 +233,23 @@ function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => numb
   enamelGrid(body, block, 2.3, 12, hidden);
   // The diagonal Peachtree ramp climbs to the 2.3 m entry terrace.
   entryRamp(body, ramp, 2.3, ground);
+  // Entry plaza: the notch between the atrium drum, the rounded projection and
+  // the smaller block, decked at the 2.3 m entry level the ramp arrives at.
+  // Without it the 3DEP lawn, about 6 m lower, shows through as a void.
+  const entry: P2[] = [
+    [32, -21],
+    [35, -16],
+    [41, -16],
+    [38, -12.5],
+    [36.5, -9.5],
+    [35, -5],
+    [21, -12],
+  ];
+  for (let deg = 62; deg >= 28; deg -= 6) {
+    const r = (deg * Math.PI) / 180;
+    entry.push([10 + 23.2 * Math.cos(r), -33 + 23.2 * Math.sin(r)]);
+  }
+  prism(entry, -7, 2.36, '#e3e1da', '#d6d3cb');
 }
 
 function memorial(s: Shell) {

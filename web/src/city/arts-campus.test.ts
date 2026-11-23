@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Box3, BufferGeometry, Mesh } from 'three';
+import { Box3, BufferGeometry, Mesh, Raycaster, Vector3 } from 'three';
 import { readFileSync } from 'node:fs';
 import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing } from '../vignette/geom';
@@ -123,4 +123,20 @@ it('gives the Memorial rear volumes a precast skin, and keeps the fly tower plai
   expect(count(lit)).toBeGreaterThan(0);
   const memorial = buildings.find((b) => b.id === sites.memorial.id)!;
   expect(createArtsCampusLandmark(buildings, memorial, 290, () => 294.1)).not.toBeNull();
+});
+
+it('decks the entry notch at the ramp head at the 2.3 m entry level', () => {
+  const model = createArtsCampusLandmark(buildings, museum, 290, () => 287)!;
+  model.group.updateMatrixWorld(true);
+  // The ramp head's notch, between the atrium drum and the two entry volumes.
+  const c = 0.878,
+    s = -0.479,
+    u = 30,
+    v = -13;
+  const x = 550 + u * c - v * s,
+    z = -3990 + u * s + v * c;
+  const ray = new Raycaster(new Vector3(x, 400, z), new Vector3(0, -1, 0));
+  const hit = ray.intersectObject(model.group, true)[0];
+  // Entry grade is 287 here, so the deck should sit 2.36 m above it.
+  expect(hit.point.y).toBeCloseTo(287 + 2.36, 1);
 });

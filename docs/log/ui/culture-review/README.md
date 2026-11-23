@@ -18,3 +18,5 @@ Each image shows BEFORE on the left and AFTER on the right, taken from the same 
    ![Woodruff rear](back.jpg)
 8. **Woodruff Arts Center rear, night**. Same camera, 23:00.
    ![Woodruff rear night](back-night.jpg)
+9. **High Museum entry plaza** (entry gap). Camera `/?view=city&cam=577,-4017,0,5,150`, top-down, 13:00.
+   ![High entry](entry.jpg)

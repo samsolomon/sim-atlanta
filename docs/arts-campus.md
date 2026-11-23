@@ -46,6 +46,15 @@ Sam's review found the back of the Memorial Arts Building blank, with plain boxe
 | Rear from Arts Center Way, cam=570,-3914,70,55,150 | [Day](log/ui/arts-campus/back-west-high-day.jpg) · [Night](log/ui/arts-campus/back-west-high-night.jpg) | [Day](log/ui/arts-campus/back-west-low-day.jpg) · [Night](log/ui/arts-campus/back-west-low-night.jpg) |
 | Rear from the south, cam=570,-3914,0,55,170 | [Day](log/ui/arts-campus/back-south-high-day.jpg) · [Night](log/ui/arts-campus/back-south-high-night.jpg) | [Day](log/ui/arts-campus/back-south-low-day.jpg) · [Night](log/ui/arts-campus/back-south-low-night.jpg) |
 
+## High entry plaza at the ramp head (November 23, 2026)
+
+Sam saw a void from above where the ramp meets the museum. The notch between the atrium drum, the rounded projection and the smaller block lies outside the mapped footprint. City therefore showed the 3DEP lawn there, about 6 m below the 2.3 m entry level the ramp arrives at. A paved deck now fills the notch at entry level, bounded by the drum's glazing, both entry volumes and the ramp head, with white walls down to grade. Its outline follows the modelled volumes. The deck level matches the ramp landing, which is inferred from the mapped stair. Paving detail is plain, and the photographs do not resolve a joint pattern here. Web rebuild only.
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Entry, top-down, cam=577,-4017,0,5,150 | [Day](log/ui/arts-campus/entry-top-high-day.jpg) · [Night](log/ui/arts-campus/entry-top-high-night.jpg) | [Day](log/ui/arts-campus/entry-top-low-day.jpg) · [Night](log/ui/arts-campus/entry-top-low-night.jpg) |
+| Entry, oblique, cam=580,-4016,-60,50,150 | [Day](log/ui/arts-campus/entry-high-day.jpg) · [Night](log/ui/arts-campus/entry-high-night.jpg) | [Day](log/ui/arts-campus/entry-low-day.jpg) · [Night](log/ui/arts-campus/entry-low-night.jpg) |
+
 ## The ginkgo lawn on Peachtree (Street View)
 
 These notes record the landscaping around the champion ginkgo, at City (612.5, −4001.2), for the lawn and landscape builders. They come from Google Street View, which is cited here and not copied:
