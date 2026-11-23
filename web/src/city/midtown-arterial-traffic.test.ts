@@ -6,6 +6,7 @@ import { midtownArterialCorridors, type MidtownTrafficBoard } from './midtown-ar
 import rows from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 
 const board = (row: string): MidtownTrafficBoard => ({
+  row,
   city: JSON.parse(readFileSync(new URL(`../../../pipeline/prototypes/square-board/${row}/context.json`, import.meta.url)).toString()) as TerrainCity,
   roadHeight: () => 0,
 });

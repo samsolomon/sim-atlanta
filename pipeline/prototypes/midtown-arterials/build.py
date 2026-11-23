@@ -28,6 +28,7 @@ import arterials as A  # noqa: E402
 
 BOARD = HERE.parent / "square-board"
 OUT = HERE.parents[2] / "web/src/city/fixtures/midtown-arterials.json"
+REPORT = HERE / "report.json"
 CACHE = Path(A.RAW) / "hpms_midtown.json"
 NAMES = re.compile(r"^(?:(?:West )?Peachtree (?:Street|Road)|Spring Street|Juniper Street|Piedmont Avenue|(?:10th|14th|17th) Street|North Avenue)\b")
 CLASSES = {"primary", "secondary", "tertiary", "trunk"}
@@ -72,16 +73,21 @@ def osm_direction(row):
     nodes = {e["id"]: (round((e["lon"] + 84.3916) * scale * math.cos(math.radians(33.7539)), 2), round((33.7539 - e["lat"]) * scale, 2))
              for e in els if e["type"] == "node"}
     edges = {}
+    flip = {"forward": "reverse", "reverse": "forward", "both": "both", "conditional": "conditional"}
     for e in els:
         t = e.get("tags", {})
         if e["type"] != "way" or t.get("highway") not in CLASSES:
             continue
         ow = t.get("oneway")
-        allow = "forward" if ow in ("yes", "true", "1") else "reverse" if ow == "-1" else "both"
+        # Reversible, alternating and time-conditional one-ways are not plain directions.
+        allow = ("conditional" if any(k.startswith("oneway:conditional") for k in t) or ow in ("reversible", "alternating") else
+                 "forward" if ow in ("yes", "true", "1") else "reverse" if ow == "-1" else
+                 "both" if ow in (None, "no", "false", "0") else "conditional")
         pts = [nodes[n] for n in e["nodes"] if n in nodes]
         for a, b in zip(pts, pts[1:]):
-            edges[(a, b)] = allow
-            edges[(b, a)] = {"forward": "reverse", "reverse": "forward", "both": "both"}[allow]
+            for key, value in (((a, b), allow), ((b, a), flip[allow])):
+                # A vertex pair claimed by two ways with different directions is ambiguous.
+                edges[key] = value if edges.get(key, value) == value else "conflict"
     return edges
 
 
@@ -128,8 +134,9 @@ def main(refresh=False):
             pts = [tuple(p) for p in road["pts"]]
             dirs = {edges[(a, b)] for a, b in zip(pts, pts[1:]) if (a, b) in edges}
             base = {"row": row, "name": name, "a": list(pts[0]), "b": list(pts[-1])}
-            if len(dirs) != 1:
-                rejected.append({**base, "reason": "no-osm-direction" if not dirs else "mixed-direction"})
+            if len(dirs) != 1 or dirs & {"conditional", "conflict"}:
+                reason = ("no-osm-direction" if not dirs else "conditional-oneway" if dirs == {"conditional"} else "mixed-direction")
+                rejected.append({**base, "reason": reason})
                 continue
             allow = dirs.pop()
             smp = A.samples(road["pts"])
@@ -144,9 +151,11 @@ def main(refresh=False):
                 continue
             hk = max(votes, key=votes.get)
             s = segs[hk]
-            cover = max(votes[hk], sum(w for k, w in votes.items() if segs[k].get("ROUTE_ID") == s.get("ROUTE_ID"))) / total
+            rid = s.get("ROUTE_ID")
+            cover = max(votes[hk], sum(w for k, w in votes.items() if rid and segs[k].get("ROUTE_ID") == rid)) / total
             hp_oneway = s.get("FACILITY_TYPE") == 1
             reason = (f"f_system-{s.get('F_SYSTEM')}" if s.get("F_SYSTEM") not in (3, 4) else
+                      "facility-type" if s.get("FACILITY_TYPE") not in (1, 2) else
                       "name" if A.norm(name) not in names(s) and routes.get(s.get("ROUTE_ID")) != A.norm(name) else
                       "coverage" if cover < A.MIN_COVER else
                       "direction-disagree" if allow == "both" and hp_oneway else None)
@@ -167,12 +176,14 @@ def main(refresh=False):
                          "aadtBasis": basis, "truckShare": round(min(0.5, trucks / aadt), 3) if aadt else 0,
                          "speedMph": s.get("SPEED_LIMIT") or None, "fSystem": s.get("F_SYSTEM"),
                          "hpms": {"route": s.get("RouteName"), "year": s.get("DATA_YEAR"), "aadtDate": s.get("AADT_VD")}})
-    out = {"version": 1, "tier": "inferred",
-           "note": "Typical traffic (HPMS AADT, shaped by traffic.json's hourly profile), not live. Vehicle positions are illustrative.",
-           "sources": {"hpms": f"{data['meta'].get('name')} (data edited {data['meta'].get('dataLastEditDate')})",
-                       "osm": "Archived OSM row extracts (oneway), © OpenStreetMap contributors, ODbL"},
-           "runs": runs, "rejected": rejected}
-    OUT.write_text(json.dumps(out, separators=(",", ":")) + "\n")
+    meta = {"version": 1, "tier": "inferred",
+            "note": "Typical traffic (HPMS AADT, shaped by traffic.json's hourly profile), not live. Vehicle positions are illustrative.",
+            "sources": {"hpms": f"{data['meta'].get('name')} (data edited {data['meta'].get('dataLastEditDate')})",
+                        "osm": "Archived OSM row extracts (oneway), (c) OpenStreetMap contributors, ODbL"}}
+    # The client gets only what it reads; provenance and rejections stay in the report.
+    keep = ("row", "name", "a", "b", "from", "to", "allow", "aadt", "speedMph", "truckShare")
+    OUT.write_text(json.dumps({**meta, "runs": [{k: r[k] for k in keep} for r in runs]}, separators=(",", ":")) + "\n")
+    REPORT.write_text(json.dumps({**meta, "runs": runs, "rejected": rejected}, indent=1) + "\n")
     by = {}
     for r in runs:
         by.setdefault(A.norm(r["name"]), []).append(r)

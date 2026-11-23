@@ -43,7 +43,6 @@ import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
-import { MidtownArterialTraffic } from './midtown-arterial-traffic';
 import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import { anyCarInView } from './in-view';
 import { loadArterials } from './arterials';
@@ -661,11 +660,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(joined.group);
   }
   // Midtown's arterials join as their rows mount: HPMS volumes, illustrative positions.
-  let midtownArterials: MidtownArterialTraffic | undefined;
-  function extendMidtownArterials() {
-    if (!trafficOptions || !mosaic) return;
-    const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id)).map(([, a]) => a.connectorBoard);
-    if (!boards.length) return;
+  let midtownArterials: import('./midtown-arterial-traffic').MidtownArterialTraffic | undefined;
+  let midtownBuild = 0;
+  async function extendMidtownArterials(added: Iterable<string>) {
+    if (!trafficOptions || !mosaic || ![...added].some(id => Object.hasOwn(midtownRowBounds, id))) return;
+    const build = ++midtownBuild;
+    const { MidtownArterialTraffic } = await import('./midtown-arterial-traffic');
+    if (build !== midtownBuild || eastController.signal.aborted) return;
+    const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
+      .map(([row, a]) => ({ row, ...a.connectorBoard }));
     const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
     const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: [] }, boards);
     midtownArterials?.dispose();
@@ -786,7 +789,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
-      extendMidtownArterials();
+      void extendMidtownArterials(added.keys());
       const first = added.keys().next().value!;
       areaResult(first === 'north-band' ? 'north' : first === 'south-band' ? 'south' : first, null);
       if (target) {
@@ -1359,7 +1362,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hasFreight: !!freight,
     hasPeople: !!figures,
     buses,
-    get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length); },
+    get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length || midtownArterials?.group.children.length); },
     bounds: b,
     quality,
     lookAt(x, z, view) {

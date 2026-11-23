@@ -10,7 +10,7 @@ Downtown's arterial traffic (`ArterialTraffic`) now continues onto Midtown's nin
 - **Volume** comes from the HPMS record that wins a vote of 5 m samples within 15 m and 20°. The record must be F_SYSTEM 3 or 4, cover at least 60% of the road, and agree on direction. A one-way carriageway of a two-way record carries half its volume.
 - **Names.** A road matches when its name is any of the record's `;`-separated names ("ALPHARETTA HIGHWAY;PEACHTREE STREET"), or when the record's ROUTE_ID is confirmed by name on exactly one street ("Spring St;9SO" confirms the unnamed "9SO" pieces). SR 9's "Roswell Road" runs over Peachtree, 14th and West Peachtree, so it identifies none of them. North Avenue's unnamed US 29 pieces stay unmatched.
 
-The bake matches 204 runs and rejects 90. North Avenue is the thinnest, with 10 runs.
+The bake also rejects reversible and conditional one-ways, records that are not FACILITY_TYPE 1 or 2, and vertex pairs that two OSM ways claim in different directions. It matches 204 runs and rejects 90. North Avenue is the thinnest, with 10 runs. The client fixture keeps only the fields it reads (43 KB). Provenance and every rejection reason are in `pipeline/prototypes/midtown-arterials/report.json`. The layer loads as its own 6 kB (gzipped) chunk when a Midtown row mounts, and warns in the console if a mounted row's roads have drifted from the bake.
 
 ## Cost
 
