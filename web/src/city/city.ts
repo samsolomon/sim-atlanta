@@ -123,6 +123,7 @@ import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
+import { rolloutBatch } from '../trees/rollout-city';
 
 export type Quality = 'low' | 'high';
 
@@ -654,6 +655,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
   scene.add(world.group);
+  // The tree rollout's species, one batch for every board row (trees/rollout-city.ts).
+  scene.add(rolloutBatch.group);
   if (terrain && transport) scene.add(terrain.group, transport.group);
   if (cut && grid) scene.add(cutFloor(grid));
   // Trim content to the board, retaining the ground, cut edge and walnut lip.
@@ -1523,6 +1526,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    rolloutBatch.update(speciesDt, camera);
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;
