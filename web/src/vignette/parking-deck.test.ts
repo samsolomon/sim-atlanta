@@ -362,3 +362,23 @@ it.each(steelDecks)('keeps $name inside its own footprint and seats all four tir
   expect(cars).toBeGreaterThanOrEqual(1);
   expect(cars).toBeLessThanOrEqual(split ? 4 : deck.name === 'K Deck' ? 4 : 10);
 });
+
+it('uses the surveyed garage roof at 191 Peachtree despite the neighboring tower returns', () => {
+  const garage: VBuilding = {
+    ...butler,
+    id: '10389dea-9cd3-4d48-afe6-c077296e0724',
+    floors: 8,
+    h: 198.3,
+    rings: [[[441.81,-549.45],[441.23,-512.87],[447.98,-512.70],[465.09,-512.28],
+      [500.55,-511.40],[500.55,-548.96],[491.49,-548.84],[486.80,-548.90],[455.76,-549.28]]],
+  };
+  const geometry = build([garage]).geometry;
+  geometry.computeBoundingBox();
+  const heights = geometry.getAttribute('position');
+  let roofVertices = 0;
+  for (let i = 0; i < heights.count; i++) {
+    if (Math.abs(heights.getY(i) - (-17 + 31.6)) < 0.001) roofVertices++;
+  }
+  expect(roofVertices).toBeGreaterThan(12);
+  expect(geometry.boundingBox!.max.y).toBeCloseTo(-17 + 31.6 + 2.4);
+});
