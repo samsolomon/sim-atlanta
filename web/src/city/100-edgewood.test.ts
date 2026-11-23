@@ -89,7 +89,7 @@ it('keeps the parking deck separate and sets the colonnade, sunken fan well and 
       noData: -32768,
       sha256: '',
     },
-    new Int16Array(4).fill(3090).buffer,
+    new Int16Array(4).fill(3080).buffer,
   );
 
   const tower = sites.find((b) => b.id.startsWith('f56ffe'))!,
@@ -121,4 +121,5 @@ it('keeps the parking deck separate and sets the colonnade, sunken fan well and 
   expect(h(27.5, 31.5, 314)).toBeCloseTo(310.1, 1);
   expect(h(27.5, 31.5, 314, 1)).toBeCloseTo(317.3, 1);
   expect(h(27.5, 37.1)).toBeLessThan(309.5);
+  expect(h(42, 37.95)).toBeCloseTo(308.34, 1);
 });

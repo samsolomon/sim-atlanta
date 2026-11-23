@@ -51,3 +51,5 @@ The Hurt Park camera stands at City (557, −17), 2.1 m above local grade, looki
 | Rooftop equipment, 13:45 EST | (522, −72, 427) → (557, −95, 377) | 46° | [Before](roof-before.webp) · [After](roof-after.webp) |
 
 The lowest modeled tread sits on the sidewalk, 1.0–1.6 m from the edge of City’s 11 m Edgewood carriageway. The nearest modeled lamp is approximately 1.7 m west of the stairs. The daylight entrance frame shows the treads meeting the sloped paving.
+
+Viewed westward from the low east end, additional treads emerge as the sidewalk drops. The handrails stop at the local paving height. Eye (575, −71, 309.95), target (554, −75.3, 309.53), 79° vertical field of view at 13:45 EST. [Review capture with high bottom riser](east-stair-review.webp) · [Corrected east-end grade](east-stair-final.webp)

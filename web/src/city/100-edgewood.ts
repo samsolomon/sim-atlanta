@@ -90,14 +90,14 @@ function officeFace(m: Shell, a: P2, b: P2, bays: number, seed: number) {
   }
 }
 
-function entrance(m: Shell, plan: (u: number, v: number) => P2) {
+function entrance(m: Shell, plan: (u: number, v: number) => P2, grid: GroundGrid) {
   const at = (u: number, v: number, y: number) => {
     const [x, z] = plan(u, v);
     return [x, y, z];
   };
   const patch = (u: number, v: number, U: number, V: number) => [plan(u, v), plan(U, v), plan(U, V), plan(u, V)];
   const paving = '#aa9a89';
-  m.prism(patch(-0.003, -0.025, 1.013, 1.025), m.base, lobby, '#a9a398', paving);
+  m.prism(patch(-0.003, -0.025, 1.013, 1.0074), m.base, lobby, '#a9a398', paving);
   m.prism(patch(0.065, 0.09, 0.935, 0.852), lobby, officeBase, '#38454b', '#676c69');
   // The glass at the entrance is recessed behind a seven-bay colonnade.
   for (let i = 0; i < 12; i++) {
@@ -143,33 +143,35 @@ function entrance(m: Shell, plan: (u: number, v: number) => P2) {
     at(0, 1, officeBase - 0.46),
     soffit,
   );
-  // Broad concrete stairs point into the plaza on Edgewood; the east side drops to the street.
-  for (let i = 0; i < 7; i++)
-    m.prism(
-      patch(0.267, 1.025 + i * 0.011, 0.738, 1.036 + i * 0.011),
-      m.base,
-      lobby - 0.16 * (i + 1),
-      '#b8aea1',
-      paving,
-    );
+  // Level treads descend to the lower east sidewalk. At the uphill end the
+  // pavement covers the last treads, and the handrail ends at the local grade.
+  const landing = 1.0074,
+    run = 0.0086,
+    rise = 0.16,
+    steps = 11;
+  for (let i = 1; i <= steps; i++) {
+    const height = lobby - i * rise;
+    if (height > m.base)
+      m.prism(patch(0.267, landing + (i - 1) * run, 0.738, landing + i * run), m.base, height, '#b8aea1', paving);
+  }
+  const length = Math.hypot(58.41, 0.74);
   for (const u of [0.276, 0.475, 0.729]) {
-    const rail = (v: number, y: number) => at(u, v, y);
+    const [x, z] = plan(u, landing + steps * run);
+    const grade = grid.sample(528.03 + (58.41 * x - 0.74 * z) / length, -111.95 + (0.74 * x + 58.41 * z) / length);
+    const visible = Math.max(1, Math.min(steps, Math.ceil((lobby - ((grade ?? m.base) + 0.14)) / rise)));
+    const end = landing + visible * run,
+      bottom = lobby - visible * rise;
     m.body.quad(
-      rail(1.012, lobby + 0.89),
-      rail(1.012, lobby + 0.98),
-      rail(1.102, lobby - 0.12),
-      rail(1.102, lobby - 0.21),
+      at(u, landing, lobby + 0.87),
+      at(u, landing, lobby + 0.96),
+      at(u, end, bottom + 0.96),
+      at(u, end, bottom + 0.87),
       '#575a55',
     );
-    for (let i = 0; i <= 2; i++) {
-      const v = 1.012 + 0.044 * i;
-      m.prism(
-        patch(u - 0.0008, v - 0.001, u + 0.0008, v + 0.001),
-        lobby - 0.56 * i,
-        lobby + 0.9 - 0.54 * i,
-        '#5c5d54',
-        '#65665c',
-      );
+    for (const fraction of [0, 0.5, 1]) {
+      const v = landing + (end - landing) * fraction,
+        y = lobby - visible * rise * fraction;
+      m.prism(patch(u - 0.0008, v - 0.001, u + 0.0008, v + 0.001), y - 0.08, y + 0.9, '#5c5d54', '#65665c');
     }
   }
   for (const u of [0.22, 0.49, 0.78])
@@ -247,7 +249,7 @@ export function createHundredEdgewood(buildings: VBuilding[], grid: GroundGrid) 
     const coord = (i: 0 | 1) => (1 - v) * (nw[i] + u * (ne[i] - nw[i])) + v * (sw[i] + u * (se[i] - sw[i]));
     return [coord(0), coord(1)];
   };
-  entrance(m, plan);
+  entrance(m, plan, grid);
   m.prism(
     [plan(0.017, 0.027), plan(0.983, 0.027), plan(0.983, 0.973), plan(0.017, 0.973)],
     officeBase - 0.46,
