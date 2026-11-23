@@ -172,3 +172,16 @@ it('replaces the Biltmore with its masts and night-lit BILTMORE letters', () => 
   model.setNight(1);
   expect(letters.visible).toBe(true);
 });
+
+it('replaces the Academy of Medicine with its portico temple and lantern', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const academy: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:42725820');
+  const model = createSkylineLandmark([academy], academy, -2, () => 0)!;
+  expect(model.group.name).toBe('Academy of Medicine');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(15.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
