@@ -49,6 +49,7 @@ export function createCuratedLandscape(buildings: VBuilding[], site: VBuilding, 
   for (let i = 1; i < entry.wall.length; i++) {
     const [a, c] = [entry.wall[i - 1], entry.wall[i]];
     const len = Math.hypot(c[0] - a[0], c[1] - a[1]), steps = Math.max(1, Math.ceil(len / 2));
+    if (len < 1e-6) continue;
     const nx = -(c[1] - a[1]) / len, nz = (c[0] - a[0]) / len;
     const side = pointInRing(a[0] + (c[0] - a[0]) / 2 + nx * 2, a[1] + (c[1] - a[1]) / 2 + nz * 2, ring) ? 1 : -1;
     const ix = nx * side * THICK, iz = nz * side * THICK;
