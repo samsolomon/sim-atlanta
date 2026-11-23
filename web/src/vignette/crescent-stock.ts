@@ -53,7 +53,7 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     windows = new Builder(),
     lamps = new Builder();
   if (unit === 'charger' || unit === 'chargerPhase6') {
-    chargerBody(b, lamps, leading, unit === 'charger' ? 'phase7' : 'phase6');
+    chargerBody(b, lamps, leading, trailing, unit === 'charger' ? 'phase7' : 'phase6');
     return finish(b, windows, lamps);
   }
   const { length, trucks } = dimensions(unit);

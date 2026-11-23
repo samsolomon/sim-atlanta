@@ -37,8 +37,12 @@ const C = {
   grille: '#131a2a',
 };
 
-/** Writes the Charger body, front end and running gear into `b`; lamps lit only on a leading unit. */
-export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery: ChargerLivery) {
+/**
+ * Writes the Charger body, front end and running gear into `b`. Head lamps light only on a leading
+ * unit and the rear markers only on a trailing one. Decals sit 15–50 mm proud so they hold up in
+ * City's long depth range.
+ */
+export function chargerBody(b: Builder, lamps: Builder, leading: boolean, trailing: boolean, livery: ChargerLivery) {
   const end = CHARGER_LENGTH / 2 - 0.32;
   const len = 2 * end;
   const z = (d: number) => end - d;
@@ -86,7 +90,7 @@ export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery
     return 3.96;
   };
   /** A flat polygon on each side sheet, given as [d, y] points; `eps` lifts it off the paint below. */
-  const sidePoly = (pts: [number, number][], color: string, eps = 0.008) => {
+  const sidePoly = (pts: [number, number][], color: string, eps = 0.02) => {
     for (const s of [-1, 1]) {
       const x = s * (W + eps);
       const v = pts.map(([d, y]) => [x, y, z(d)]);
@@ -128,8 +132,8 @@ export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery
   if (p7) {
     // Red cab cap wrapping back from the cheeks, edged below by a white arc that runs out at the roof.
     const capEdge = lerpKnots([[0.34, 2.9], [1.2, 3.1], [2.2, 3.45], [3.0, 3.75], [3.6, 3.96], [4.2, 4.06]]);
-    sideBand(0.34, 4.2, (d) => capEdge(d) - 0.1, capEdge, C.white, 0.012, 12);
-    sideBand(0.34, 4.2, capEdge, () => 9, C.red, 0.012, 12);
+    sideBand(0.34, 4.2, (d) => capEdge(d) - 0.1, capEdge, C.white, 0.03, 12);
+    sideBand(0.34, 4.2, capEdge, () => 9, C.red, 0.03, 12);
     // Side swoosh: a white diagonal from the sill (about 8.6 m back) to the roof ahead of the grilles,
     // with the lighter blue behind it. Positions fitted to the #363 broadside (estimated).
     const foot = 8.6,
@@ -143,43 +147,43 @@ export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery
       ...ys.map((y) => [lead(y), y] as [number, number]),
       ...[...ys].reverse().map((y) => [lead(y) + width(y), y] as [number, number]),
     ];
-    sidePoly(swoosh, C.white, 0.012);
+    sidePoly(swoosh, C.white, 0.03);
     const behind: [number, number][] = [...ys.map((y) => [lead(y) + width(y), y] as [number, number]), [len, y1], [len, y0]];
-    sidePoly(behind.reverse(), C.amtrakBlue, 0.006);
+    sidePoly(behind.reverse(), C.amtrakBlue, 0.015);
   } else {
     // Phase VI: a thin red crescent over the cab, white beneath, and a silver tail with a red chevron.
     const capEdge = lerpKnots([[0.34, 2.75], [0.87, 3.43], [1.95, 3.86], [3.25, 3.96], [3.6, 4.05]]);
-    sideBand(0.34, 3.6, (d) => capEdge(d) - 0.07, capEdge, C.white, 0.012, 10);
-    sideBand(0.34, 3.6, capEdge, () => 9, C.red, 0.012, 10);
+    sideBand(0.34, 3.6, (d) => capEdge(d) - 0.07, capEdge, C.white, 0.03, 10);
+    sideBand(0.34, 3.6, capEdge, () => 9, C.red, 0.03, 10);
     const back = len - 1.8,
       tip = len - 4.3,
       mid = 2.4;
     // Chevron read off the #304 broadside: rear edge 1.8 m from the tail, point 4.3 m forward of it.
     const notch = len - 3.1,
       lead = len - 2.9;
-    sidePoly([[len, 1.22], [back, 1.22], [notch, mid], [back, 3.96], [len, 3.96]], C.silver, 0.006);
-    sidePoly([[back, 1.22], [lead, 1.22], [tip, mid], [notch, mid]], C.red, 0.012);
-    sidePoly([[notch, mid], [tip, mid], [lead, 3.96], [back, 3.96]], C.red, 0.012);
+    sidePoly([[len, 1.22], [back, 1.22], [notch, mid], [back, 3.96], [len, 3.96]], C.silver, 0.015);
+    sidePoly([[back, 1.22], [lead, 1.22], [tip, mid], [notch, mid]], C.red, 0.03);
+    sidePoly([[notch, mid], [tip, mid], [lead, 3.96], [back, 3.96]], C.red, 0.03);
   }
 
   // Side hardware: cab door with its window, cab windows, grilles and the X-braced radiator panel.
   const rect = (d: number, y: number, wd: number, h: number, color: string, eps: number) =>
     sidePoly([[d - wd / 2, y - h / 2], [d + wd / 2, y - h / 2], [d + wd / 2, y + h / 2], [d - wd / 2, y + h / 2]], color, eps);
-  rect(2.5, 2.38, 0.8, 2.3, C.frame, 0.016);
-  rect(2.5, 2.38, 0.72, 2.22, p7 ? C.door : '#1d4282', 0.02);
-  rect(2.5, 3.05, 0.42, 0.6, C.glass, 0.024);
-  rect(1.6, 3.0, 0.3, 0.62, C.glass, 0.024);
-  rect(3.85, 3.2, 0.55, 0.62, C.glass, 0.016);
-  rect(len - 8.5, 2.5, 1.0, 1.85, C.grille, 0.016);
-  rect(len - 4.9, 3.13, 0.8, 0.7, C.grille, 0.016);
+  rect(2.5, 2.38, 0.8, 2.3, C.frame, 0.035);
+  rect(2.5, 2.38, 0.72, 2.22, p7 ? C.door : '#1d4282', 0.04);
+  rect(2.5, 3.05, 0.42, 0.6, C.glass, 0.05);
+  rect(1.6, 3.0, 0.3, 0.62, C.glass, 0.05);
+  rect(3.85, 3.2, 0.55, 0.62, C.glass, 0.05);
+  rect(len - 8.5, 2.5, 1.0, 1.85, C.grille, 0.035);
+  rect(len - 4.9, 3.13, 0.8, 0.7, C.grille, 0.035);
   const xd0 = len - 7.75,
     xd1 = len - 5.5,
     xy0 = 1.5,
     xy1 = 3.45;
-  rect((xd0 + xd1) / 2, (xy0 + xy1) / 2, xd1 - xd0, xy1 - xy0, C.grille, 0.016);
+  rect((xd0 + xd1) / 2, (xy0 + xy1) / 2, xd1 - xd0, xy1 - xy0, C.grille, 0.035);
   const brace = p7 ? C.amtrakBlue : C.phase6Blue;
-  sidePoly([[xd0, xy0], [xd0 + 0.2, xy0], [xd1, xy1], [xd1 - 0.2, xy1]], brace, 0.022);
-  sidePoly([[xd1 - 0.2, xy0], [xd1, xy0], [xd0 + 0.2, xy1], [xd0, xy1]], brace, 0.022);
+  sidePoly([[xd0, xy0], [xd0 + 0.2, xy0], [xd1, xy1], [xd1 - 0.2, xy1]], brace, 0.05);
+  sidePoly([[xd1 - 0.2, xy0], [xd1, xy0], [xd0 + 0.2, xy1], [xd0, xy1]], brace, 0.05);
   for (const s of [-1, 1]) {
     b.box(0.1, 0.08, 0.14, s * 1.62, 3.42, z(2.0), C.frame); // mirror and camera arm
     for (const y of [0.62, 0.9]) b.box(0.16, 0.05, 0.62, s * 1.44, y, z(2.5), C.pilot); // cab steps
@@ -204,8 +208,10 @@ export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery
       tx = s < 0 ? -0.23 : 0.77;
     onScreen(b, [[px - 0.02, 3.04], [px + 0.02, 3.04], [tx + 0.02, 3.76], [tx - 0.02, 3.76]], C.frame, 0.03);
   }
-  // Roof hatch recessed in the black cap above the windscreen.
-  b.box(0.95, 0.05, 0.62, 0, 4.1, z(1.62), C.frame);
+  // Roof hatch in the black cap above the windscreen, laid on the brow's slope (screenTop to brow).
+  const slope = Math.atan2(4.25 - 3.92, 2.3 - 1.0);
+  const hatchY = 3.92 + ((1.62 - 1.0) / (2.3 - 1.0)) * (4.25 - 3.92);
+  b.box(0.95, 0.05, 0.62, 0, 0, 0, C.frame, new THREE.Matrix4().makeTranslation(0, hatchY + 0.01, z(1.62)).multiply(new THREE.Matrix4().makeRotationX(slope)));
 
   // Lower nose: two round LED headlights under the centre post, lamp "eyes" with ditch and marker lights.
   const disc = (builder: Builder, x: number, y: number, zz: number, r: number, color: string) => {
@@ -214,7 +220,7 @@ export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery
     g.dispose();
   };
   for (const s of [-1, 1]) {
-    disc(leading ? lamps : b, s * 0.16, 2.8, z(0.24), 0.085, leading ? '#fff4da' : '#5b6266');
+    disc(leading ? lamps : b, s * 0.16, 2.8, z(0.13), 0.085, leading ? '#fff4da' : '#5b6266');
     const front = z(0) + 0.006;
     const eye = s < 0
       ? [[-1.22, 2.5], [-0.48, 2.39], [-0.6, 1.89], [-1.16, 2.09]]
@@ -239,8 +245,10 @@ export function chargerBody(b: Builder, lamps: Builder, leading: boolean, livery
   }
   b.box(2.6, 0.5, 0.2, 0, 0.83, z(0) + 0.08, '#2b2f33');
   b.box(2.75, 0.5, 0.16, 0, 0.36, z(0) + 0.14, C.pilot); // snowplough
-  b.box(0.42, 0.34, 0.5, 0, 0.92, z(0) + 0.35, C.frame);
+  b.box(0.42, 0.34, 0.5, 0, 0.92, z(0) + 0.07, C.frame); // coupler, front face at the over-couplers length
   b.box(0.42, 0.34, 0.3, 0, 0.92, z(len) - 0.15, C.frame);
+  // Rear end markers, lit only when this unit ends the train.
+  for (const s of [-1, 1]) disc(trailing ? lamps : b, s * 1.05, 1.62, z(len) - 0.03, 0.08, trailing ? '#fa2924' : '#5a1616');
 
   // Underframe, fuel tank and two Bo trucks with 44 in wheels.
   b.box(2.6, 0.26, len - 0.3, 0, 0.87, 0, C.under);
