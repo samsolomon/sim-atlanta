@@ -146,3 +146,22 @@ it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit
   expect((wall.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   expect((veils[0].material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
 });
+
+it('replaces the Biltmore with its masts and night-lit BILTMORE letters', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const hotel: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:886034013');
+  const model = createSkylineLandmark([hotel], hotel, -5, () => 0)!;
+  expect(model.group.name).toBe('Atlanta Biltmore');
+  // Degenerate mast bars once produced NaN normals, which bloom turned into a black square at night.
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+  // The masts rise 46 m above the 56 m main roof.
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(102, 0);
+  const letters = model.group.getObjectByName('Biltmore letters') as Mesh;
+  expect(letters.visible).toBe(false);
+  model.setNight(1);
+  expect(letters.visible).toBe(true);
+});

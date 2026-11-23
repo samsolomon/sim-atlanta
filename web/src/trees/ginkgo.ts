@@ -120,7 +120,7 @@ export const ginkgo: Species = {
   sizes: {
     sapling: { heightM: 4, spreadM: 1.5, calliperM: 0.065 },
     young: { heightM: 7, spreadM: 3.2, calliperM: 0.12 },
-    mature: { heightM: 17, spreadM: 10, calliperM: 0.45 },
+    mature: { heightM: 17, spreadM: 12, calliperM: 0.45 },
     specimen: { heightM: 27.5, spreadM: 26.2, calliperM: 1.5 },
   },
   ranges: {

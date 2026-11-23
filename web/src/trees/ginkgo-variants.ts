@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { Builder, rng } from '../vignette/geom';
 import { inkFoliage, type InkFoliageMode } from '../vignette/ink';
+import { TIP_CAP, TIP_RANGE_M, fanGeometry, flames, sleeves, sprayAt as at, sprayCards, sprayFrame as frame, type Spray } from './foliage-kit';
 import { ginkgo, ginkgoState } from './ginkgo';
 import { treeDims, type TreePlacement } from './render';
 import { hash01, lerp3, polar, trunkRadius, type Dims, type SizeClass, type TreeQuality, type V3 } from './species';
@@ -23,9 +24,8 @@ export type GinkgoVariant = 'A' | 'B' | 'C' | 'D' | 'C1' | 'C2' | 'C3' | 'C4';
 /** The leaf-card family Sam picked, by how the ink pass treats the crown (vignette/ink.ts). */
 export const C_FAMILY: GinkgoVariant[] = ['C', 'C1', 'C2', 'C3', 'C4'];
 const INK_MODE: Partial<Record<GinkgoVariant, InkFoliageMode>> = { C1: 1, C2: 2, C3: 3, C4: 2 };
-/** C4: at most this many trees, nearest first and within `tipRangeM`, carry fan tips; none at low detail. */
-export const TIP_CAP = 8;
-export const TIP_RANGE_M = 45;
+/** C4: at most TIP_CAP trees, nearest first and within TIP_RANGE_M, carry fan tips; none at low detail. */
+export { TIP_CAP, TIP_RANGE_M };
 /** C4: fan leaves per tipped tree (three triangles each). */
 export const TIP_FANS = 100;
 export const VARIANTS: Record<GinkgoVariant, string> = {
@@ -66,7 +66,7 @@ const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
   mature: {
     top: 0.82,
     // Crown base at about 0.27 of the height; broad oval to the top.
-    envelope: { cy: 0.6, hy: 0.36, r: 1, flat: 1, sprays: { high: 28, low: 22 } },
+    envelope: { cy: 0.58, hy: 0.42, r: 1, flat: 1, sprays: { high: 28, low: 22 } },
     limbs: [
       { y: 0.27, a: 0.3, elbow: [0.38, 0.4], tip: [0.78, 0.6] },
       { y: 0.31, a: 3.4, elbow: [0.4, 0.43], tip: [0.8, 0.62] },
@@ -78,7 +78,7 @@ const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
   specimen: {
     top: 0.2,
     // One broad continuous dome, its base low over the heavy scaffolds.
-    envelope: { cy: 0.56, hy: 0.4, r: 1, flat: 1.25, sprays: { high: 28, low: 22 } },
+    envelope: { cy: 0.55, hy: 0.42, r: 1, flat: 1.25, sprays: { high: 28, low: 22 } },
     limbs: [
       { y: 0.18, a: 0.4, elbow: [0.46, 0.3], tip: [0.86, 0.46] },
       { y: 0.18, a: 1.6, elbow: [0.44, 0.34], tip: [0.82, 0.54] },
@@ -89,9 +89,6 @@ const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
   },
 };
 const shapeOf = (size: SizeClass) => SHAPES[size === 'sapling' || size === 'young' ? 'young' : size];
-
-/** One foliage spray: from `base`, along unit direction `dir`, `len` long and `w` wide (unit space). */
-export interface Spray { base: V3; dir: V3; len: number; w: number; depth: number }
 
 /**
  * Sprays laid along each limb's outer two thirds and up the leader, swept upward like the
@@ -140,7 +137,7 @@ function envelopeSprays(e: Envelope, q: TreeQuality, size: SizeClass): Spray[] {
   const out: Spray[] = [];
   for (let i = 0; i < n; i++) {
     // Height: even in the cosine of the polar angle, skipping the very bottom of the ellipsoid.
-    const u = -0.75 + 1.7 * ((i + 0.5) / n);
+    const u = -0.95 + 1.9 * ((i + 0.5) / n);
     const k = u > 0 ? u * e.flat : u;
     const ring = Math.sqrt(Math.max(0, 1 - Math.min(1, k * k)));
     const a = i * 2.39996 + (r() - 0.5) * 0.5;
@@ -148,7 +145,7 @@ function envelopeSprays(e: Envelope, q: TreeQuality, size: SizeClass): Spray[] {
     const y = e.cy + u * e.hy * shell;
     const rad = e.r * ring * shell;
     const out3 = new THREE.Vector3(Math.cos(a), 0.55 + 0.6 * Math.max(0, u), Math.sin(a)).normalize();
-    const w = (q === 'high' ? 0.24 : 0.3) + r() * 0.06;
+    const w = (q === 'high' ? 0.3 : 0.36) + r() * 0.06;
     out.push({ base: [Math.cos(a) * rad * 0.82, y - 0.05, Math.sin(a) * rad * 0.82], dir: [out3.x, out3.y, out3.z], len: 0.3 + r() * 0.1, w, depth: 0.45 + 0.55 * ring * shell });
   }
   return out;
@@ -199,79 +196,14 @@ export function variantSkeleton(size: SizeClass, q: TreeQuality) {
   return b.geometry();
 }
 
+export type { Spray };
+
 // ---- foliage geometry per variant -----------------------------------------------------------
 
 /** Shade per vertex: sunlit rim and top bright, the core toward ochre. Multiplies the season colour. */
 function shade(depth: number, up: number) {
   const k = 0.74 + 0.3 * Math.min(1, Math.max(0, depth * 0.7 + up * 0.5));
   return new THREE.Color(k, k * (0.86 + 0.14 * k), k * (0.7 + 0.3 * k));
-}
-
-/** Frame for a spray: unit vectors along it and across it, in unit space (pre-scale). */
-function frame(s: Spray) {
-  const along = new THREE.Vector3(...s.dir);
-  const across = new THREE.Vector3(-along.z, 0, along.x).normalize();
-  if (across.lengthSq() < 1e-6) across.set(1, 0, 0);
-  const normal = new THREE.Vector3().crossVectors(along, across).normalize();
-  return { along, across, normal };
-}
-const at = (s: Spray, f: number, x: number, n: number, fr: ReturnType<typeof frame>) =>
-  new THREE.Vector3(...s.base).addScaledVector(fr.along, s.len * f).addScaledVector(fr.across, x).addScaledVector(fr.normal, n);
-
-/** A: a three-sided sheath per spray, widest a third of the way out, tip swept up. 6 triangles. */
-function sleeves(sprays: Spray[]) {
-  const b = new Builder();
-  for (const s of sprays) {
-    const fr = frame(s);
-    const root = at(s, -0.08, 0, 0, fr), tip = at(s, 1, 0, 0, fr);
-    const ring = [[1, -0.3], [0, 0.8], [-1, -0.3]].map(([x, n]) => at(s, 0.36, x * s.w, n * s.w, fr));
-    const c = shade(s.depth, s.dir[1]);
-    for (let i = 0; i < 3; i++) {
-      const p = ring[i], q = ring[(i + 1) % 3];
-      // Two facets per side, the upper one lighter: the crease reads under the ink.
-      b.tri(tip.toArray(), p.toArray(), q.toArray(), c);
-      b.tri(root.toArray(), q.toArray(), p.toArray(), c.clone().multiplyScalar(0.82));
-    }
-  }
-  return b.geometry();
-}
-
-/** D: two stacked upward flames per spray, each a three-sided pyramid without a base. 6 triangles. */
-function flames(sprays: Spray[]) {
-  const b = new Builder();
-  for (const s of sprays) {
-    const fr = frame(s);
-    const c = shade(s.depth, s.dir[1]);
-    for (const [f0, f1, wk] of [[0, 0.62, 1], [0.42, 1.05, 0.7]] as const) {
-      const apex = at(s, f1, 0, 0, fr).add(new THREE.Vector3(0, s.len * 0.12, 0));
-      const ring = [[1, -0.4], [0, 1], [-1, -0.4]].map(([x, n]) => at(s, f0, x * s.w * wk, n * s.w * wk * 0.8, fr));
-      for (let i = 0; i < 3; i++) b.tri(apex.toArray(), ring[i].toArray(), ring[(i + 1) % 3].toArray(), i % 2 ? c.clone().multiplyScalar(0.85) : c);
-    }
-  }
-  return b.geometry();
-}
-
-/** C: two crossed cards per spray with UVs into the fan-leaf atlas. 4 triangles. */
-function cards(sprays: Spray[]) {
-  const pos: number[] = [], uv: number[] = [], col: number[] = [];
-  sprays.forEach((s, k) => {
-    const fr = frame(s);
-    const c = shade(s.depth, s.dir[1]);
-    const u0 = (k % 2) * 0.5;
-    for (const side of [fr.across, fr.normal]) {
-      const w = s.w * 1.5;
-      const p = [at(s, -0.05, 0, 0, fr).addScaledVector(side, -w), at(s, -0.05, 0, 0, fr).addScaledVector(side, w),
-        at(s, 1.05, 0, 0, fr).addScaledVector(side, w), at(s, 1.05, 0, 0, fr).addScaledVector(side, -w)];
-      const t = [[u0, 0], [u0 + 0.5, 0], [u0 + 0.5, 1], [u0, 1]];
-      for (const i of [0, 1, 2, 0, 2, 3]) { pos.push(...p[i].toArray()); uv.push(...t[i]); col.push(c.r, c.g, c.b); }
-    }
-  });
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  g.computeVertexNormals();
-  return g;
 }
 
 /** B: fan chips on spur shoots along each spray, as instance transforms in unit space. */
@@ -301,17 +233,6 @@ export function tipChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass) {
   const step = Math.max(1, outer.length / TIP_FANS);
   return Array.from({ length: Math.min(TIP_FANS, outer.length) }, (_, i) => outer[Math.floor(i * step)]);
 }
-/** A ginkgo leaf as a three-triangle fan, about 1 unit across, stem at the origin. */
-export function fanGeometry() {
-  const g = new THREE.BufferGeometry();
-  const pts = [[0, 0, 0], [-0.5, 0.75, 0], [-0.18, 0.95, 0], [0.18, 0.95, 0], [0.5, 0.75, 0]];
-  const pos: number[] = [];
-  for (let i = 1; i < 4; i++) pos.push(...pts[0], ...pts[i], ...pts[i + 1]);
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.computeVertexNormals();
-  return g;
-}
-
 /** Fan-leaf atlas for C, painted once per page: gold fans on spur shoots, transparent between. */
 let atlas: THREE.Texture | null = null;
 function leafAtlas() {
@@ -342,7 +263,7 @@ function leafAtlas() {
 /** A, C or D foliage for one size class, in unit space. */
 function foliageGeometry(v: GinkgoVariant, size: SizeClass, unitSprays: Spray[]) {
   const { sprays, toUnit } = metric(unitSprays, size);
-  return toUnit(v.startsWith('C') ? cards(sprays) : v === 'D' ? flames(sprays) : sleeves(sprays));
+  return toUnit(v.startsWith('C') ? sprayCards(sprays, shade) : v === 'D' ? flames(sprays, shade) : sleeves(sprays, shade));
 }
 
 const tris = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3;
