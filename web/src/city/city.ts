@@ -1266,14 +1266,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const states = options.trains();
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
-    if (northLine?.bounds) {
-      const { x, z } = controls.target, r = northLine.bounds;
-      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
-      if (near !== showingNorthLineNote) {
-        showingNorthLineNote = near;
-        areaResult('north-line', near ? 'Inferred North Line track · Illustrative portal' : null);
-      }
-    }
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
       const { x, z } = controls.target, r = brookwood.bounds;
@@ -1281,6 +1273,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (near !== showingBrookwoodNote) {
         showingBrookwoodNote = near;
         areaResult('brookwood-service', near ? 'Scheduled Crescent · Inferred berth · Illustrative consist' : null);
+      }
+    }
+    if (northLine?.bounds) {
+      const { x, z } = controls.target, r = northLine.bounds;
+      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+      if (near !== showingNorthLineNote) {
+        showingNorthLineNote = near;
+        areaResult('north-line', near ? 'Inferred MARTA track' : null);
       }
     }
     // A followed train heading east loads the King Memorial area itself, without a manual pan,
