@@ -12,7 +12,7 @@ import {
   passengerMaterial,
 } from '../vignette/crescent-stock';
 import survey from './fixtures/brookwood.json';
-import { corridor, corridorGrade } from './brookwood-corridor';
+import { corridor, corridorGrade, corridorGrids } from './brookwood-corridor';
 
 const project = makeProjector({ lon: -84.3916, lat: 33.7539 });
 const main = new Line(survey.main1 as P2[]);
@@ -82,15 +82,19 @@ export function brookwoodGrid(manifest: GroundManifest, bytes: ArrayBuffer) {
         if (x < g.minX || x > g.maxX || z < g.minZ || z > g.maxZ) continue;
         gap = Math.min(gap, segDist(x, z, g.a, g.b));
       }
-      if (gap >= 16) continue;
       // Beyond the survey the mapped track is at grade: fill shallow dips under the
-      // ballast as well as trimming high ground beside it.
-      if (h < bed && gap >= 9) continue;
-      const f = h > bed ? Math.min(1, (16 - gap) / 6) : Math.min(1, (9 - gap) / 4);
+      // ballast as well as trimming high ground beside it. Stay within 6 m there so the
+      // parallel MARTA North Line, 10.8 m away at its closest, keeps its staged ground.
+      const reach = surveyed && !(fills && h < bed) ? 16 : 6;
+      if (gap >= reach) continue;
+      if (h < bed && !fills) continue;
+      const f = Math.min(1, (reach - gap) / (reach === 16 ? 6 : 2));
       data.setInt16(offset, Math.round((h + f * (bed - h) - offsetM) / scaleM), true);
     }
   }
-  return new GroundGrid(manifest, data.buffer);
+  const graded = new GroundGrid(manifest, data.buffer);
+  corridorGrids.add(graded);
+  return graded;
 }
 
 // Signed extension at the ends lets a long consist enter one car at a time.

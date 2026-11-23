@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import type { TransportRun } from '../terrain/transport-data';
 import { GroundSurface } from '../terrain/surface';
+import { GroundGrid } from '../terrain/grid';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { joins } from '../square-board/sections';
 import { brookwoodBedNavd88M, brookwoodGrid } from './brookwood';
@@ -20,11 +21,39 @@ it('joins the surveyed mains and siding to their mapped continuations at the boa
   }
   expect(corridor.siding.east[0]).toEqual(survey.siding.at(-1));
   expect(corridor.siding.pts.at(-1)![1]).toBe(-5700);
-  const hidden = (['brookwood-south', 'brookwood-station'] as const).flatMap(row =>
-    brookwoodCorridorRail(railRows[row] as TransportRun[]).filter(r => r.replaced));
+  const hiddenOn = (graded: boolean) => (['brookwood-south', 'brookwood-station'] as const).flatMap(row => {
+    const read = (f: string) => readFileSync(new URL(`../../../pipeline/prototypes/square-board/${row}/${f}`, import.meta.url));
+    const manifest = JSON.parse(read('ground.json').toString());
+    const bytes = Uint8Array.from(read('ground.i16')).buffer;
+    const grid = graded ? brookwoodGrid(manifest, bytes) : new GroundGrid(manifest, bytes);
+    return brookwoodCorridorRail(railRows[row] as TransportRun[], grid).filter(r => r.replaced);
+  });
+  // Without the Brookwood model the rows keep drawing their generic track.
+  expect(hiddenOn(false)).toHaveLength(0);
+  const hidden = hiddenOn(true);
   expect(hidden).toHaveLength(5);
   // The Atlanta Terminal stub in the northwest corner keeps its generic drawing.
   expect(hidden.every(r => r.name !== 'Atlanta Terminal Subdivision')).toBe(true);
+});
+
+it('leaves the staged ground under the parallel MARTA North Line untouched', () => {
+  const read = (f: string) => readFileSync(new URL(`../../../pipeline/prototypes/square-board/brookwood-station/${f}`, import.meta.url));
+  const manifest = JSON.parse(read('ground.json').toString());
+  const bytes = midtownConnectorGround(manifest, Uint8Array.from(read('ground.i16')).buffer);
+  const staged = new GroundGrid(manifest, bytes), graded = brookwoodGrid(manifest, bytes);
+  let samples = 0;
+  for (const run of railRows['brookwood-station'] as TransportRun[]) {
+    if (run.cls !== 'subway') continue;
+    const line = new Line(run.pts);
+    for (let s = 0; s <= line.length; s += 2) {
+      const { x, z } = line.at(s);
+      if (x <= 410) continue;
+      // Bilinear samples can reach one feathered node beside the NS track: at most 2.4 cm.
+      expect(Math.abs(graded.sample(x, z)! - staged.sample(x, z)!), `${x},${z}`).toBeLessThan(0.03);
+      samples++;
+    }
+  }
+  expect(samples).toBeGreaterThan(100);
 });
 
 it.each(['high', 'low'] as const)('seats the extended ballast on rendered %s-detail ground', quality => {
@@ -50,7 +79,7 @@ it.each(['high', 'low'] as const)('seats the extended ballast on rendered %s-det
       }
     }
     surface.geometry.dispose();
-    if (!samples) continue;
+    expect(samples, row).toBeGreaterThan(500);
     // The ballast top sits 0.12 m above bed: never buried, and never more than 0.4 m
     // above the rendered ground beneath the centreline.
     expect(low, row).toBeGreaterThan(-0.12);

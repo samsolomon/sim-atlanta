@@ -1,4 +1,5 @@
 import type { P2 } from '../vignette/geom';
+import type { GroundGrid } from '../terrain/grid';
 import type { TransportRun } from '../terrain/transport-data';
 import survey from './fixtures/brookwood.json';
 import grade from './fixtures/brookwood-corridor.json';
@@ -45,8 +46,13 @@ export const corridorGrade = { west: grade.west as [number, number][], east: gra
 
 const replaced = new Set<TransportRun>(Object.values(corridor).flatMap(track => track.runs));
 
-/** The Brookwood model draws the joined continuations. Keep them in the row data for
- * placement clearance and road crossings, but do not draw them a second time. */
-export function brookwoodCorridorRail(rail: TransportRun[]) {
+/** Grids graded for the Brookwood model, which then draws the joined continuations. */
+export const corridorGrids = new WeakSet<GroundGrid>();
+
+/** Keep the joined continuations in the row data for placement clearance and road
+ * crossings. Skip their generic drawing only when the Brookwood model graded this grid;
+ * if the model failed to load, the row keeps its generic track. */
+export function brookwoodCorridorRail(rail: TransportRun[], grid: GroundGrid) {
+  if (!corridorGrids.has(grid)) return rail;
   return rail.map(run => (replaced.has(run) ? { ...run, replaced: true } : run));
 }

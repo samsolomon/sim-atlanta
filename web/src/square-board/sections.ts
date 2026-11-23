@@ -133,7 +133,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   try {
     for (const { id, grid, context } of patches) {
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
-        context.terrainTransport = { version: 1, roads: [], rail: brookwoodCorridorRail(railRows[id as MidtownRow] as TransportRun[]) };
+        context.terrainTransport = { version: 1, roads: [], rail: brookwoodCorridorRail(railRows[id as MidtownRow] as TransportRun[], grid) };
       }
       const contextWithDecks = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
