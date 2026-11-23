@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sim Atlanta · November 22 evening build</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #20272a; color: #f1eee6 }
+    body { max-width: 1280px; margin: auto; padding: 20px }
+    h1 { font-size: clamp(20px, 3vw, 30px); margin: 0 0 12px }
+    header, fieldset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+    fieldset { border: 0; padding: 0; margin: 0 }
+    select, button { font: inherit; border: 1px solid #778184; border-radius: 5px; padding: 5px 9px }
+    button[aria-pressed="true"] { background: #fae2a7; color: #20272a }
+    figure { margin: 14px 0 }
+    img { display: block; max-width: 100%; max-height: 74vh; margin: 0 auto; object-fit: contain }
+    figcaption { margin: 10px 0; color: #d7dedc }
+    a { color: #a9d9eb }
+  </style>
+</head>
+<body>
+  <h1>Sim Atlanta · November 22 evening build</h1>
+  <header>
+    <label for="place">Location</label>
+    <select id="place"></select>
+    <fieldset id="views" aria-label="Photographs of the model"></fieldset>
+  </header>
+  <figure><img id="frame" alt=""><figcaption id="caption"></figcaption></figure>
+  <a href="../../../build-log.md">Build log and sources</a>
+  <script>
+    // The gallery uses the original Orca captures saved with each change.
+    const entries = [
+      ['Hyatt Regency and Polaris', 'hyatt-polaris', 'The blue dome sits above the original balcony wings.', {Day:'peachtree-day-after', Before:'peachtree-day-before', Dusk:'peachtree-dusk-after', Night:'peachtree-night-after'}],
+      ['Atlanta Marriott Marquis', 'marriott-marquis', 'The curved guest-room tower rises above its low podium.', {Day:'courtland-day-after', Before:'courtland-day-before', Dusk:'courtland-dusk-after', Night:'courtland-night-after'}],
+      ['Peachtree Center promenade', 'peachtree-center', 'Four office towers use the same narrow window pattern and form two mirrored pairs.', {Day:'promenade-day-after', Before:'promenade-day-before', Night:'promenade-night-after'}],
+      ['Georgia Power headquarters', 'georgia-power', 'The stepped glass tower, the curved podium and the low annex occupy three distinct roof heights.', {Day:'south-day-after', Before:'south-day-before', Night:'south-night-after', Annex:'annex-day-after'}],
+      ['Candler Building and 113 Peachtree', 'candler-hotel', 'The stone hotel rises behind a separate two-story storefront.', {Day:'park-day-after', Before:'park-day-before', Dusk:'park-dusk-after', Night:'park-night-after', Storefront:'store-day-after'}],
+      ['Two Peachtree', 'two-peachtree', 'The station-side roof leaves the tower’s narrow profile visible from Five Points.', {Day:'five-points-after', Before:'five-points-before', Night:'five-points-night-after'}],
+      ['Centennial Tower', 'centennial-tower', 'The two chevrons appear on the tower’s unequal long faces.', {Day:'gulch-after', Before:'gulch-before', Dusk:'gulch-dusk-after', Night:'gulch-night-after'}],
+      ['Twelve Centennial Park', 'twelve-centennial', 'The residential tower and the lower hotel are separate buildings.', {Day:'ivan-allen-after', Before:'ivan-allen-before', Dusk:'ivan-allen-dusk-after', Night:'ivan-allen-night-after'}],
+      ['100 Peachtree', '100-peachtree', 'The Equitable Building above Woodruff Park.', {Day:'woodruff-after', Before:'woodruff-before'}],
+      ['34 Peachtree', '34-peachtree', 'The curtain wall and the deep rooftop equipment well are visible from Woodruff Park.', {Day:'woodruff-day-after', Before:'woodruff-day-before', Dusk:'woodruff-dusk-after', Night:'woodruff-night-after'}],
+      ['191 Peachtree parking deck', '191-garage', 'The parking surface sits 31.6 metres above its foundation.', {Day:'day-after', Before:'day-before', Night:'night-after'}],
+      ['King Memorial Station', 'king-memorial', 'A scheduled train approaches, reaches the covered platform and departs in the east preview.', {Sequence:'city-station-approach-stop-depart', Entrance:'city-station-building', Lamps:'city-station-lights'}],
+      ['Irwin Street houses', 'irwin-houses', 'Three porch-front houses fit their sloping lots in Sweet Auburn.', {Comparison:'comparison', Elevations:'elevations'}],
+      ['Wheat Street Towers', 'wheat-street-towers', 'A 14-story residential building replaces an eight-metre extrusion.', {Comparison:'comparison', Elevations:'elevations', Night:'night'}],
+      ['Historic Ebenezer and Big Bethel', 'sweet-auburn-churches', 'Two silhouettes and their signs along Auburn Avenue.', {Comparison:'comparison', Orbit:'orbit', Night:'night'}],
+      ['Odd Fellows Building and Auditorium', 'odd-fellows', 'The Bell Street tower rises above the adjoining auditorium.', {Comparison:'comparison', Roofs:'roofs', Night:'night'}],
+    ];
+    const place = document.getElementById('place');
+    const views = document.getElementById('views');
+    const frame = document.getElementById('frame');
+    const caption = document.getElementById('caption');
+    entries.forEach(([name], index) => place.add(new Option(name, index)));
+
+    function showPlace() {
+      const [name, directory, description, photos] = entries[place.selectedIndex];
+      caption.textContent = description;
+      views.replaceChildren();
+      for (const [view, filename] of Object.entries(photos)) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = view;
+        button.onclick = () => {
+          frame.src = '../' + directory + '/' + filename + '.jpg';
+          frame.alt = name + ' · ' + view;
+          for (const other of views.children) other.setAttribute('aria-pressed', String(other === button));
+        };
+        views.append(button);
+      }
+      views.firstElementChild.click();
+    }
+    place.addEventListener('change', showPlace);
+    showPlace();
+  </script>
+</body>
+</html>
