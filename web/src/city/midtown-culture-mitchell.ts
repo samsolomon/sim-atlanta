@@ -139,11 +139,14 @@ export function createMitchellHouse(
     }
   porch(-10.7, 0.15, 2.95, 8.8, 0.8, 3.75);
   porch(-10.7, 0.15, 2.95, 8.8, 3.86, 6.9);
-  // Garden lamps stand on their own ground, not on a porch datum.
-  for (const u of [-11.9, 11.35]) {
-    const foot = groundAt(x + u, z - 3.85);
-    if (foot === null) continue;
-    const y0 = foot - grade;
+  // The Crescent lamp stands on the lower porch deck (0.8 m); the lawn lamp
+  // stands on its own sampled ground beside the Peachtree porch.
+  const foot = groundAt(x + 11.35, z - 3.85);
+  for (const [u, y0] of [
+    [-11.9, 0.825],
+    [11.35, foot === null ? null : foot - grade],
+  ] as const) {
+    if (y0 === null) continue;
     body.box(0.16, 2.75, 0.16, u, y0 + 1.375, -3.85, '#414742');
     lights.box(0.32, 0.42, 0.32, u, y0 + 2.875, -3.85, '#ffdfb1');
   }
