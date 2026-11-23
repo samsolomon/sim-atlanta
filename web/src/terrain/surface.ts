@@ -59,13 +59,16 @@ export class GroundSurface {
    */
   carve(yields: readonly GroundYield[]) {
     const { bounds, stepM } = this.grid.manifest;
-    for (const y of yields) {
+    // Seams must match the neighbouring board node for node, so a yield near an edge is
+    // skipped (the stair still draws, uncarved) rather than failing the whole board.
+    const inside = yields.filter(y => {
       const { minX, maxX, minZ, maxZ } = yieldPlanes(y);
-      if (minX <= bounds.minX + stepM || maxX >= bounds.maxX - stepM || minZ <= bounds.minZ + stepM || maxZ >= bounds.maxZ - stepM)
-        throw new Error('A ground yield must stay a cell inside the board edge');
-    }
-    if (!yields.length) return;
-    this.yields = [...this.yields, ...yields];
+      const ok = minX > bounds.minX + stepM && maxX < bounds.maxX - stepM && minZ > bounds.minZ + stepM && maxZ < bounds.maxZ - stepM;
+      if (!ok) console.warn('Ground yield skipped: within a cell of the board edge', y.ring);
+      return ok;
+    });
+    if (!inside.length) return;
+    this.yields = [...this.yields, ...inside];
     this.build();
   }
 

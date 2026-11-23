@@ -8,7 +8,8 @@ it('keeps the close-in near plane and tightens the depth range far out', () => {
   const near = orbitNear(12000, 9800);
   expect(near).toBe(2400);
   expect(12000 ** 2 / (near * 2 ** 24)).toBeLessThan(0.005);
-  // Never past half the clearance over the skyline, so no tower can be clipped.
-  expect(orbitNear(3000, 600)).toBe(125);
+  // Never past half the clearance over the skyline and snowfall, so neither is clipped.
+  expect(orbitNear(3000, 600)).toBe(40);
+  expect(orbitNear(3000, 500)).toBe(20);
   expect(orbitNear(NaN, 100)).toBe(20);
 });

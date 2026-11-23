@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Headless ground-contact audit of the full City board at both terrain tiers.
 //
-//   pnpm dev --port 5291 &   # any running dev server
-//   node scripts/ground-audit.mjs [--url http://localhost:5291] [--out audit.json] [--q high,low]
+//   pnpm dev &   # any running dev server
+//   pnpm audit:ground [--url http://localhost:5173] [--out audit.json] [--q high,low] [--step 0.5]
 //
 // Drives the system Chrome over the DevTools protocol (no extra dependency), waits
 // for every board to mount, and runs window.__groundAudit() (web/src/terrain/ground-audit.ts).
@@ -15,7 +15,7 @@ const arg = (name, fallback) => {
   const i = process.argv.indexOf('--' + name);
   return i > 0 ? process.argv[i + 1] : fallback;
 };
-const base = arg('url', 'http://localhost:5291');
+const base = arg('url', 'http://localhost:5173');
 const out = arg('out', null);
 const tiers = arg('q', 'high,low').split(',');
 const step = Number(arg('step', '0.5'));
@@ -106,6 +106,8 @@ function print(q, r) {
 try {
   const cdp = connect(await target());
   await cdp.send('Runtime.enable');
+  // Fail fast when no dev server answers, instead of polling for ten minutes.
+  try { await fetch(base, { signal: AbortSignal.timeout(5000) }); } catch { throw Error(`No dev server at ${base}; pass --url`); }
   for (const q of tiers) {
     await cdp.send('Page.navigate', { url: `${base}/?view=city&q=${q}&t=2026-11-20T14:00:00-05:00` });
     const start = Date.now();

@@ -354,8 +354,11 @@ export function stairRun(b: Builder, from: P2, to: P2, width: number, ground: Gr
     const s0 = k * go, s1 = (k + 1) * go, top = lo + (k + 1) * rise;
     const p = (s: number, side: number, y: number) => [a[0] + ux * s + nx * side, y, a[1] + uz * s + nz * side];
     b.quad(p(s0, -h, top), p(s1, -h, top), p(s1, h, top), p(s0, h, top), CAP);
-    b.quad(p(s0, h, lo - .1), p(s0, -h, lo - .1), p(s0, -h, top), p(s0, h, top), STONE);
-    for (const side of [-h, h]) b.quad(p(s0, side, lo - .1), p(s1, side, lo - .1), p(s1, side, top), p(s0, side, top), STONE);
+    // Risers and sides reach below the carved floor (a riser under the nosings), so the
+    // cut never shows a slot under the stone.
+    const base = lo - rise - .1;
+    b.quad(p(s0, h, base), p(s0, -h, base), p(s0, -h, top), p(s0, h, top), STONE);
+    for (const side of [-h, h]) b.quad(p(s0, side, base), p(s1, side, base), p(s1, side, top), p(s0, side, top), STONE);
   }
   const cheeks = o.cheeks ?? true;
   // Cheek walls sit flush against the treads (h to h + 0.3). Their cap follows the
