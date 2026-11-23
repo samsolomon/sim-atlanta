@@ -8,7 +8,7 @@ import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
 import { connectorMedians, inConnectorLanes } from './connector-paint';
-import { drawSeventeenthStreet, seventeenthRamp } from '../city/seventeenth-street';
+import { drawSeventeenthStreet } from '../city/seventeenth-street';
 import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
@@ -339,9 +339,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     return h === null ? null : h-sceneZero;
   }, seventeenth, roadTreads, bridgeRuns);
   for(const [owner,parts] of landWalks) for(const pts of parts) draw({...owner,pts,kind:"ground"},"road",owner);
-  for (const owner of data.roads) {
-    if (sharedDecks.has(owner) || bridgeRuns.has(owner)) continue;
-    const road = bounds.minZ === -4900 ? seventeenthRamp(owner, terrainGround, sceneZero) : owner;
+  for (const road of data.roads) {
+    if (sharedDecks.has(road) || bridgeRuns.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.
@@ -350,11 +349,11 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const left=matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link');
       const right=matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
       if (left!==right) {
-        draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',owner);
+        draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',road);
         from=i;
       }
     }
-    draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from)} : road,'road',owner);
+    draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from)} : road,'road',road);
   }
   for (const r of data.rail) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
   const map = freightTexture();
@@ -380,7 +379,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           float pierDistance = min(min(abs(position.x+135.0), abs(position.x+75.0)),
             min(abs(position.x+22.0),min(abs(position.x-26.0),abs(position.x-62.0))));
           float pool = mix(.35,1.0,1.0-smoothstep(1.5,16.0,pierDistance));
-          bridgeSpill = (1.0-.77*abs(normal.y)) * bankFade * pool;`);
+          float nearSpan = 1.0-smoothstep(20.0,36.0,abs(position.z+4192.0+.30*position.x));
+          bridgeSpill = (1.0-.77*abs(normal.y)) * bankFade * pool * nearSpan;`);
         shader.fragmentShader = 'uniform float bridgeNight; varying float bridgeSpill;\n' + shader.fragmentShader.replace(
           '#include <opaque_fragment>',
           'outgoingLight += diffuseColor.rgb * vec3(.54, .40, .25) * bridgeNight * bridgeSpill;\n#include <opaque_fragment>');
