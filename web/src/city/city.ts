@@ -54,6 +54,7 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createOneParkTower } from './one-park-tower';
+import { createOmniAtlanta } from './omni-atlanta';
 import { createFivePointsPlaza } from './five-points-plaza';
 import { createTwoPeachtree } from './two-peachtree';
 import { createHealey } from './healey';
@@ -230,6 +231,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
+  let omniAtlanta: ReturnType<typeof createOmniAtlanta> = null;
   let fivePointsPlaza: ReturnType<typeof createFivePointsPlaza> = null;
   let twoPeachtree: ReturnType<typeof createTwoPeachtree> = null;
   let healey: ReturnType<typeof createHealey> = null;
@@ -296,8 +298,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
         healey = createHealey(towerSite, groundAt);
         const afterHealey = healey?.buildings ?? towerSite;
-        fivePointsPlaza = createFivePointsPlaza(afterHealey, ground);
-        const afterFivePointsPlaza = fivePointsPlaza?.buildings ?? afterHealey;
+        omniAtlanta = createOmniAtlanta(afterHealey, ground);
+        const afterOmniAtlanta = omniAtlanta?.buildings ?? afterHealey;
+        fivePointsPlaza = createFivePointsPlaza(afterOmniAtlanta, ground);
+        const afterFivePointsPlaza = fivePointsPlaza?.buildings ?? afterOmniAtlanta;
         twoPeachtree = createTwoPeachtree(afterFivePointsPlaza, ground);
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         oneParkTower = createOneParkTower(afterTwoPeachtree, ground);
@@ -348,6 +352,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
+        if (omniAtlanta) world.group.add(omniAtlanta.group);
         if (fivePointsPlaza) world.group.add(fivePointsPlaza.group);
         if (twoPeachtree) world.group.add(twoPeachtree.group);
         if (georgiaPower) world.group.add(georgiaPower.group);
@@ -820,6 +825,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     flatiron?.setNight(night);
     healey?.setNight(night);
     oneParkTower?.setNight(night);
+    omniAtlanta?.setNight(night);
     fivePointsPlaza?.setNight(night);
     twoPeachtree?.setNight(night);
     georgiaPower?.setNight(night);
