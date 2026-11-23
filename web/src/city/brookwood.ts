@@ -117,7 +117,7 @@ function solid(b: Builder, ring: P2[], bottom: number, top: number, color: strin
 
 type GroundAt = (x: number, z: number) => number | null;
 
-function station(b: Builder, lamps: Builder, zero: number, groundAt: GroundAt) {
+function station(b: Builder, lamps: Builder, litPlatform: Builder, zero: number, groundAt: GroundAt) {
   const floor = 273 - zero;
   const forecourt: P2[] = [
     [-115, -5073],
@@ -131,6 +131,41 @@ function station(b: Builder, lamps: Builder, zero: number, groundAt: GroundAt) {
   solid(b, depot, floor + 6.15, floor + 6.85, '#dbcca6');
   solid(b, depot, floor + 6.85, floor + 7.15, '#4d5549');
   solid(b, depot, floor + 7.15, floor + 7.3, '#bcb6a9');
+  const entrance = new Line([depot[1], depot[2]]),
+    middle = entrance.at(entrance.length / 2);
+  const hall = frame(middle.x, floor, middle.z, middle.dx, middle.dz);
+  // Low hipped roof above the rectangular waiting hall; the service wing has a flat roof.
+  const roof = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(hall).toArray();
+  const south = -entrance.length / 2 - 0.75,
+    north = entrance.length / 2 + 0.75;
+  const corners = [
+    roof(0.75, 7.21, south),
+    roof(0.75, 7.21, north),
+    roof(-14.25, 7.21, north),
+    roof(-14.25, 7.21, south),
+  ];
+  const ridges = [roof(-6.75, 8.78, south + 7), roof(-6.75, 8.78, north - 7)];
+  b.quad(corners[0], corners[1], ridges[1], ridges[0], '#555c56');
+  b.quad(corners[2], corners[3], ridges[0], ridges[1], '#515651');
+  b.tri(corners[1], corners[2], ridges[1], '#5f655b');
+  b.tri(corners[3], corners[0], ridges[0], '#62665c');
+  for (const [from, to, count] of [
+    [1, 2, 3],
+    [0, 1, 1],
+    [2, 3, 1],
+  ] as const) {
+    const face = new Line([depot[from], depot[to]]);
+    for (let i = 0; i < count; i++) {
+      const p = face.at(((i + 0.5) * face.length) / count),
+        m = frame(p.x, floor, p.z, p.dx, p.dz);
+      b.box(0.52, 0.2, 5, 0.12, 3.78, 0, '#ddcfb4', m);
+      for (const side of [-1, 1]) {
+        b.box(0.36, 3.55, 0.3, 0.24, 1.81, side * 2.08, '#d4c5a9', m);
+        b.box(0.48, 0.19, 0.46, 0.24, 0.16, side * 2.08, '#dfd4bb', m);
+      }
+      if (from === 2) b.box(2.15, 0.2, 4.4, 1.05, 3, 0, '#5d7165', m);
+    }
+  }
   // Projecting eaves, dentils and cream pilasters give the pavilion a readable silhouette.
   for (let i = 1; i < depot.length; i++) {
     const face = new Line([depot[i - 1], depot[i]]);
@@ -167,14 +202,27 @@ function station(b: Builder, lamps: Builder, zero: number, groundAt: GroundAt) {
   const island = new Line([[...platform[0]], [...platform[3]]]);
   const tread = (s: number) => elevation(island.at(s).x) - zero + 0.53;
   // Follow the measured taper between the two polygon edges.
-  const facing = new Line([platform[1], platform[2]]);
+  const mappedEdge = new Line([platform[1], platform[2]]);
+  // OSM's independently digitized lip comes within 1.2 m of Main 1 in the middle.
+  // Shift the lip inward locally to clear the model's 1.5 m half-width.
+  const edgePoints: P2[] = [];
+  for (let s = 0; ; s = Math.min(s + 5, mappedEdge.length)) {
+    const p = mappedEdge.at(s),
+      rail = chainage(p.x, p.z),
+      track = main.at(rail.along);
+    const scale = Math.max(1, 1.65 / rail.distance);
+    edgePoints.push([track.x + (p.x - track.x) * scale, track.z + (p.z - track.z) * scale]);
+    if (s === mappedEdge.length) break;
+  }
+  const facing = new Line(edgePoints);
   for (let s = 0; s < island.length; s += 5) {
     const end = Math.min(s + 5, island.length);
     const a = island.at(s),
       b1 = facing.at((s / island.length) * facing.length);
     const c = facing.at((end / island.length) * facing.length),
       d = island.at(end);
-    b.quad([a.x, tread(s), a.z], [b1.x, tread(s), b1.z], [c.x, tread(end), c.z], [d.x, tread(end), d.z], '#bab7a5');
+    const slab = s >= 15 && end <= 95 ? litPlatform : b;
+    slab.quad([a.x, tread(s), a.z], [b1.x, tread(s), b1.z], [c.x, tread(end), c.z], [d.x, tread(end), d.z], '#bab7a5');
   }
   for (const edge of [island, facing]) {
     b.wall(
@@ -186,7 +234,7 @@ function station(b: Builder, lamps: Builder, zero: number, groundAt: GroundAt) {
     );
     b.ribbon(edge, 0.16, (_, x) => elevation(x) - zero + 0.55, '#d2af5d');
   }
-  for (let s = 3; s < 76; s += 8) {
+  for (let s = 19; s < 92; s += 8) {
     const p = island.at(s),
       m = frame(p.x + p.nx * 1.85, tread(s), p.z + p.nz * 1.85, p.dx, p.dz);
     // The soffit fixtures illuminate the platform lip and the canopy fascia on both sides.
@@ -235,7 +283,7 @@ function station(b: Builder, lamps: Builder, zero: number, groundAt: GroundAt) {
       () => floor + 0.12,
       '#bab6a7',
     );
-    if (d < 0)
+    if (d > 0)
       b.wall(
         bridge,
         d,
@@ -400,7 +448,8 @@ export function createBrookwood(sceneZero: number, groundAt: GroundAt) {
     }
     for (const off of [-0.7175, 0.7175]) b.ribbon(line.offset(off), 0.085, (_, x) => bed(x) + 0.32, '#b0ae9f');
   }
-  station(b, lamps, sceneZero, groundAt);
+  const litPlatform = new Builder();
+  station(b, lamps, litPlatform, sceneZero, groundAt);
   const group = new THREE.Group(),
     cars = new THREE.Group();
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -413,13 +462,24 @@ export function createBrookwood(sceneZero: number, groundAt: GroundAt) {
     facade(depot[0], depot[1], 1, 'P E A C H T R E E', 273 - sceneZero),
     facade(depot[2], depot[3], 1, '', 273 - sceneZero),
   ];
-  group.add(structure, lights, cars, ...facades);
+  const litSlab = new THREE.Mesh(
+    litPlatform.geometry(),
+    new THREE.MeshLambertMaterial({
+      vertexColors: true,
+      side: THREE.DoubleSide,
+      emissive: '#f8ddab',
+      emissiveIntensity: 0,
+    }),
+  );
+  litSlab.receiveShadow = true;
+  group.add(structure, lights, litSlab, cars, ...facades);
   const geometries = [carGeometry(false), carGeometry(true)];
   const headlampGeometry = new THREE.BoxGeometry(0.32, 0.26, 0.08);
   const headlampMaterial = new THREE.MeshBasicMaterial({ color: '#fff0cb' });
   const stockMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [] });
   function update(states: TrainState[], dark: number) {
     lightMaterial.emissiveIntensity = dark * 1.8;
+    litSlab.material.emissiveIntensity = dark * 0.35;
     for (const mesh of facades) mesh.material.emissiveIntensity = dark * 0.45;
     let count = 0;
     for (const train of states) {
@@ -464,6 +524,8 @@ export function createBrookwood(sceneZero: number, groundAt: GroundAt) {
 
     dispose() {
       group.removeFromParent();
+      litSlab.material.dispose();
+      litSlab.geometry.dispose();
       for (const mesh of facades) {
         mesh.geometry.dispose();
         mesh.material.map?.dispose();
