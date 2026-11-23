@@ -1525,7 +1525,8 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           litWin = win * (st > 2.5 ? step(0.66, cellH) : y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
           litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
-          diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4));
+          // Houses keep their masonry foundation band instead of the generic plinth line.
+          diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4) * step(st, 2.5));
         }`,
       )
       .replace(

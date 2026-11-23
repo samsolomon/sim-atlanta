@@ -130,7 +130,10 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const along = front ? Math.abs((front[1][0] - front[0][0]) * box.u[0] + (front[1][1] - front[0][1]) * box.u[1])
     / Math.hypot(front[1][0] - front[0][0], front[1][1] - front[0][1]) : 0;
   const crossGable = !concave && shape !== 'pyramidal' && along > .7 && box.long > 4.5 && r() < .65;
-  const dormers = !concave && shape === 'gabled' && along > .7 && rise >= 2.4 && quality === 'high' ? (r() < .5 ? 0 : r() < .6 ? 1 : 2) : 0;
+  // Both dormer rolls are always drawn, so a house keeps its colours on either tier.
+  // Under a 2.7 m rise a dormer's roof would cross the main ridge.
+  const dormerRoll = r(), pairRoll = r();
+  const dormers = !concave && shape === 'gabled' && along > .7 && rise >= 2.7 && quality === 'high' ? (dormerRoll < .5 ? 0 : pairRoll < .6 ? 1 : 2) : 0;
   return { concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half, front, siding: kind,
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall: palette[Math.floor(r() * palette.length)], roof: roofs[Math.floor(r() * roofs.length)],
@@ -232,9 +235,10 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   if (p.front) {
     const { len, at } = frontFrame(p);
     // Front door with a white surround; under the porch, or on a stoop with steps.
-    const s = p.porch ? 0 : len * .18;
-    b.quad(at(s - .62, .03, base + .05), at(s + .62, .03, base + .05), at(s + .62, .03, base + 2.4), at(s - .62, .03, base + 2.4), p.trim);
-    b.quad(at(s - .48, .05, base + .1), at(s + .48, .05, base + .1), at(s + .48, .05, base + 2.2), at(s - .48, .05, base + 2.2), p.doorColor);
+    // Under a porch the door stands on the deck (0.55 m up); otherwise on the floor, above a stoop.
+    const s = p.porch ? 0 : len * .18, sill = p.porch ? .55 : 0;
+    b.quad(at(s - .62, .03, base + sill + .05), at(s + .62, .03, base + sill + .05), at(s + .62, .03, base + sill + 2.4), at(s - .62, .03, base + sill + 2.4), p.trim);
+    b.quad(at(s - .48, .05, base + sill + .1), at(s + .48, .05, base + sill + .1), at(s + .48, .05, base + sill + 2.2), at(s - .48, .05, base + sill + 2.2), p.doorColor);
     if (!p.porch) {
       const foot = Math.min(base - .2, p.frontFoot ?? base - .2), rise = base - foot;
       const box = (s0: number, s1: number, o0: number, o1: number, y0: number, y1: number, c: string) => {
@@ -248,13 +252,16 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
     }
   }
   if (p.quality === 'high' && (p.siding === 'clapboard' || p.siding === 'shingle')) {
-    // White corner boards on painted and shingled walls.
+    // White corner boards on painted and shingled walls, 2 cm proud of each wall along its own outward normal.
     for (let i = 0; i < outer.length; i++) {
       const v = outer[i], prev = outer[(i + outer.length - 1) % outer.length], next = outer[(i + 1) % outer.length];
       for (const o of [prev, next]) {
-        const l = Math.hypot(o[0] - v[0], o[1] - v[1]) || 1, ux = (o[0] - v[0]) / l * .16, uz = (o[1] - v[1]) / l * .16;
-        const ox = (v[0] - p.centre[0]) > 0 ? .02 : -.02, oz = (v[1] - p.centre[1]) > 0 ? .02 : -.02;
-        b.quad([v[0] + ox, base + .75, v[1] + oz], [v[0] + ux + ox, base + .75, v[1] + uz + oz], [v[0] + ux + ox, eave, v[1] + uz + oz], [v[0] + ox, eave, v[1] + oz], p.trim);
+        const l = Math.hypot(o[0] - v[0], o[1] - v[1]) || 1, ux = (o[0] - v[0]) / l, uz = (o[1] - v[1]) / l;
+        let nx = -uz, nz = ux;
+        const mx = (v[0] + o[0]) / 2, mz = (v[1] + o[1]) / 2;
+        if ((mx - p.centre[0]) * nx + (mz - p.centre[1]) * nz < 0) { nx = -nx; nz = -nz; }
+        const ox = nx * .02, oz = nz * .02;
+        b.quad([v[0] + ox, base + .75, v[1] + oz], [v[0] + ux * .16 + ox, base + .75, v[1] + uz * .16 + oz], [v[0] + ux * .16 + ox, eave, v[1] + uz * .16 + oz], [v[0] + ox, eave, v[1] + oz], p.trim);
       }
     }
   }
@@ -263,7 +270,8 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   if (!p.concave && p.shape !== 'pyramidal' && p.long > 2 * p.half && p.long > 4.5) {
     const sides = outer.map((a, i) => [a, outer[(i + 1) % outer.length]] as P2[]).filter(([a, d]) => {
       const len = Math.hypot(d[0] - a[0], d[1] - a[1]);
-      return len > p.long * 1.6 && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len > .9 && !(p.front && a === p.front[0]);
+      const isFront = p.front && Math.hypot(a[0] - p.front[0][0], a[1] - p.front[0][1]) < 1e-6 && Math.hypot(d[0] - p.front[1][0], d[1] - p.front[1][1]) < 1e-6;
+      return len > p.long * 1.6 && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len > .9 && !isFront;
     });
     sides.forEach((edge, k) => crossGable(p, b, edge, (k % 2 ? .25 : -.25) * Math.hypot(edge[1][0] - edge[0][0], edge[1][1] - edge[0][1]), eave));
   }
@@ -274,7 +282,9 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   if (p.crossGable) crossGable(p, b, p.front, 0, eave);
   for (let k = 0; k < p.dormers; k++) {
     // Gabled dormers on the front slope, set back a third of the way up.
-    const s = (p.dormers === 1 ? 0 : k ? .26 : -.26) * len, t0 = p.half * .35, y0 = roofAt(t0), top = y0 + 1.25, w = .85;
+    // Beside a cross gable, dormers move out toward the ends rather than colliding with it.
+    const spread = p.crossGable ? .32 : .26;
+    const s = (p.dormers === 1 ? (p.crossGable ? spread : 0) : k ? spread : -spread) * len, t0 = p.half * .35, y0 = roofAt(t0), top = y0 + 1.25, w = .85;
     if (p.crossGable && Math.abs(s) < 2.8) continue;
     const t1 = (top + .5 - eave) * p.half / p.rise;
     b.quad(at(s - w, -t0, y0), at(s + w, -t0, y0), at(s + w, -t0, top), at(s - w, -t0, top), p.wall);

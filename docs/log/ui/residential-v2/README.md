@@ -24,10 +24,10 @@ Everything below is `illustrative` unless OSM tags it. The choices are determini
   - Two storeys by default in Ansley Park (x 800–1750, z −4750 to −3700); elsewhere one storey under 150 m², two above. OSM levels or height win where tagged.
   - A cross gable over 65 % of long street fronts.
   - Plans longer than twice their depth get side gables, staggered toward opposite ends, which break the long "barn" ridges.
-  - Half of tall gabled roofs facing the street get one or two dormers (high tier).
+  - Half of gabled roofs with at least a 2.7 m rise facing the street get one or two dormers (high tier). Beside a cross gable they move toward the ends, and on fronts too short for that they are left out. The random draws are identical on both tiers, so a house keeps its colours on either.
 - **Roofs.** Eight asphalt shades, slate on a quarter of Ansley's brick houses, and muted terracotta on 60 % of stucco.
 
-**Budget.** The house detail drawn by the finish (roofs, gables, dormers, porches, stoops, doors and trim) is 335,694 triangles at high, 102 per house, and 262,406 at low, 80 per house, across the nine square-board rows. It is all in the existing building batch, so no draws are added.
+**Budget.** The house detail drawn by the finish (roofs, gables, dormers, porches, stoops, doors and trim) is 335,960 triangles at high, 102 per house, and 262,406 at low, 80 per house, across the nine square-board rows. It is all in the existing building batch, so no draws are added.
 
 **Footprints changed per row.** These are unchanged from #207: north-band 77, north-corner 18, south-band 205, south-corner 0, midtown-south 262, midtown-central 578, midtown-upper 607, brookwood-south 794, brookwood-station 746, downtown 25, King 0, Sweet Auburn 36.
 
