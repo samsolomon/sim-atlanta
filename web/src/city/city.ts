@@ -19,7 +19,7 @@ import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
-import { FOLLOW_CAMERA, type TrainFollow } from './train-follow';
+import { drawnCar, FOLLOW_CAMERA, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -122,6 +122,9 @@ export interface CityView {
   /** Centre the view on scene metres (x east, z −north). */
   lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number }): void;
   target(): { x: number; z: number };
+  /** True when scene metres (x, z) lie on a mounted area, or with `eventually`, anywhere on
+   * the board once every area has mounted. */
+  onBoard(x: number, z: number, eventually?: boolean): boolean;
   camera(): GroundCamera & { tilt: number };
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
   pan(dxPx: number, dyPx: number): void;
@@ -160,7 +163,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
   beforeFrame?: (timestamp: number) => void;
-  follow?: TrainFollow;
+  follow?: VehicleFollow;
   selectVehicle?: (vehicle: VehicleSelection | null) => void;
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
@@ -1243,6 +1246,27 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
   const driveStart = performance.now();
+  // A car counts as drawn only when it is visible and inside its own clipping planes, so
+  // follow never frames a consist that a board edge or tunnel mouth has cut away.
+  const busDrawn = (x: number, z: number) => edges.every(plane => plane.distanceToPoint(new THREE.Vector3(x, 0, z)) >= 0);
+  function locate(v: Followed, states: ReturnType<typeof options.trains>): Fix | null {
+    if (v.kind === 'train') {
+      const t = states.find(s => s.id === v.id);
+      if (!t) return null;
+      const [x, z] = project(t.lon, t.lat);
+      const cars = [...trains.group.children, ...(brookwood?.cars.children ?? [])]
+        .filter(c => c.userData.trainId === t.id).flatMap(c => drawnCar(c) ?? []);
+      return { id: t.id, pathId: t.pathId, tier: t.s.tier, x, z, cars, hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
+    }
+    if (v.kind === 'bus') {
+      const bus = options.buses?.()?.find(b => b.id === v.id);
+      if (!bus) return null;
+      const shown = buses.positions.find(p => p.id === v.id);
+      const [x, z] = shown ? [shown.x, shown.z] : project(bus.position.value.lon, bus.position.value.lat);
+      return { id: bus.id, tier: bus.position.tier, x, z, cars: shown && busDrawn(x, z) ? [{ x, z }] : [], hidden: null };
+    }
+    return null;
+  }
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     options.beforeFrame?.(ts);
@@ -1301,21 +1325,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         areaResult('north-line', near ? 'Inferred MARTA track' : null);
       }
     }
-    // A followed train heading east loads the King Memorial area itself, without a manual pan,
-    // and follow keeps the trip (as "out of view") while that area and its rail are loading.
-    // If the pack is missing or fails, follow falls back to downtown and ends at the edge.
-    let followBounds = trainBounds;
-    if (options.follow?.active && previewEast) {
-      const t = states.find(s => s.id === options.follow!.tripId);
-      if (t) {
-        const [fx, fz] = project(t.lon, t.lat);
-        approachEast(fx, fz);
-        if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
-      }
+    const followed = options.follow?.vehicle;
+    const fix = followed ? locate(followed, states) : null;
+    // A followed vehicle loads the area it is heading into, without a manual pan. On the full
+    // board follow runs to the mounted edge. Off the mosaic, a train heading east keeps its trip
+    // (as "out of view") while King Memorial and its rail load, then falls back to downtown.
+    let followBounds: typeof trainBounds | ((p: { x: number; z: number }) => boolean) = trainBounds;
+    if (fix && mosaic) {
+      approachMosaic(fix.x, fix.z);
+      // Per mounted area, so a row that failed or is still loading counts as off the board.
+      const rects = Array.from(mosaic.areas.values(), a => a.bounds);
+      followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
+    } else if (fix && previewEast) {
+      approachEast(fix.x, fix.z);
+      if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
     }
-    const focus = options.follow?.frame(states, trains.group.children, project, followBounds, trainRail, ts, !!motionPreference?.matches);
+    const focus = options.follow?.frame(fix, followBounds, ts, !!motionPreference?.matches, controls.target);
     if (focus) {
       glideTo = null;
+      // An area that finishes loading must not pull the camera back to a remembered point.
+      mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     const sceneTime = options.clockMs();
@@ -1391,6 +1420,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
+    onBoard(x, z, eventually = false) {
+      if (eventually && mosaic) {
+        const r = mosaic.bounds;
+        return x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+      }
+      const p = pointOnBoard(x, z);
+      return Math.hypot(p.x - x, p.z - z) < 1;
+    },
     camera: () => ({
       bearing: -THREE.MathUtils.radToDeg(controls.getAzimuthalAngle()),
       tilt: THREE.MathUtils.radToDeg(controls.getPolarAngle()),

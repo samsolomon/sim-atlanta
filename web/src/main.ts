@@ -9,7 +9,7 @@ import { createShell, type ShellOptions, type View } from './ui/shell';
 import { uiNext } from './ui/flag';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
-import { busCard, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
+import { busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
 import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
@@ -19,7 +19,7 @@ import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
 import type { CityView } from './city/city';
-import { BLUE, TrainFollow } from './city/train-follow';
+import { VehicleFollow } from './city/vehicle-follow';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -57,35 +57,55 @@ function openMap() {
 const card = document.getElementById('card')!;
 const cardContent = document.getElementById('card-content')!;
 card.querySelector('.close')!.addEventListener('click', hideCard);
-const follow = params.get('follow') === '1' ? new TrainFollow() : undefined;
+// Follow is on for every selectable vehicle in City. ?follow=0 turns it off; ?follow=<route id>
+// (for example marta:route:RED) follows the nearest train on that route once City opens, and
+// ?follow=marta:bus:<vehicle> follows that live bus at the real clock.
+const followParam = params.get('follow');
+const follow = followParam === '0' ? undefined : new VehicleFollow();
+let followRoute = followParam?.includes(':route:') ? followParam : null;
+let followBus = followParam?.startsWith('marta:bus:') ? followParam : null;
+let followLinkAt: number | undefined;
+let followLinkOpened: number | undefined;
 const followPanel = document.getElementById('train-follow')!;
 const followAction = followPanel.querySelector<HTMLButtonElement>('[data-follow]')!;
 const recenter = followPanel.querySelector<HTMLButtonElement>('[data-recenter]')!;
 const followStatus = followPanel.querySelector<HTMLElement>('.follow-status')!;
+let lastStatusHTML = '';
 function updateFollowPanel() {
   if (!follow) return;
   card.classList.toggle('following-trip', follow.active);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const noun = selectedBus ? 'bus' : 'train';
+  const Noun = noun[0].toUpperCase() + noun.slice(1);
   const note = {
-    idle: '', drawn: 'Following train',
-    covered: reduced ? 'Train under cover' : 'Under cover · following the route above ground',
-    unseen: reduced ? 'Train out of view' : 'Train out of view · following the route above ground',
-    lost: 'Follow ended · trip unavailable', outside: 'Follow ended · train left downtown',
+    idle: '', drawn: `Following ${noun}`,
+    underground: reduced ? 'Underground · mapped tunnel' : 'Underground · mapped tunnel · following its alignment above ground',
+    covered: reduced ? `${Noun} under cover` : 'Under cover · following the route above ground',
+    unseen: reduced ? `${Noun} out of view` : `${Noun} out of view · following its position above ground`,
+    lost: noun !== 'bus' ? 'Follow ended · trip unavailable'
+      : clock.isRealTime() ? 'Follow ended · bus stopped reporting' : 'Follow ended · live buses show only at the present time',
+    outside: `Follow ended · ${noun} left the board`,
   }[follow.phase];
   const text = reduced && follow.active ? [note, 'Camera stays still until you recenter.'].filter(Boolean).join(' · ') : note;
-  if (followStatus.textContent !== text) followStatus.textContent = text;
+  // The position's own tier stays beside the status while following, also in the compact card.
+  // The chip is the position's tier, labelled as such: it does not vouch for the tunnel or cover note.
+  const html = text ? `${text}${follow.active && follow.tier ? ' · position ' + chip(follow.tier) : ''}` : '';
+  if (lastStatusHTML !== html) followStatus.innerHTML = lastStatusHTML = html;
   followStatus.hidden = !text;
   followAction.hidden = follow.phase === 'lost' || follow.phase === 'outside';
-  const action = follow.active ? 'Stop following' : 'Follow train';
+  const action = follow.active ? 'Stop following' : `Follow ${noun}`;
   if (followAction.textContent !== action) followAction.textContent = action;
   recenter.hidden = !(reduced && follow.active);
 }
 followAction.addEventListener('click', () => {
-  if (!follow || !selectedTrain || !diorama) return;
+  if (!follow || !diorama) return;
   if (follow.active) follow.stop();
-  else {
+  else if (selectedTrain) {
     const train = source.find(selectedTrain);
-    if (train) follow.start(train);
+    if (train) follow.start({ kind: 'train', id: train.id, pathId: train.pathId, tier: train.s.tier });
+  } else if (selectedBus) {
+    const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
+    if (bus) follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
   }
   updateFollowPanel();
 });
@@ -120,14 +140,55 @@ function renderTrainCard() {
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
       !view3d.hidden),
-    !!follow && !view3d.hidden && t.routeId === BLUE,
+    !!follow && !view3d.hidden,
   );
 }
 
 function renderBusCard() {
   const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
-  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'));
+  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
+  else if (follow?.phase === 'lost' || follow?.phase === 'outside') showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
   else hideCard();
+}
+
+// A review link names a route, not a trip id, which changes with each timetable refresh.
+function followFromLink() {
+  if (followBus && follow && diorama && clock.isRealTime()) {
+    const bus = buses.current().find(b => b.id === followBus);
+    if (bus) {
+      followBus = null;
+      selectedBus = bus.id;
+      selectedTrain = null;
+      follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
+      renderBusCard();
+    }
+  }
+  if (!followRoute || !follow || !diorama) return;
+  // At the real clock, wait for live rail: a timetable trip picked first would be replaced.
+  // If live rail never arrives (overnight, or a slow first poll), fall back to the timetable after 15 s.
+  followLinkOpened ??= performance.now();
+  if (clock.isRealTime() && !source.liveActive && !live.error && performance.now() - followLinkOpened < 15_000) return;
+  // Measure from the linked camera: while its area loads, City holds the view at the nearest loaded edge.
+  const target = parseCityCamera(params.get('cam')) || diorama.target();
+  let best: { id: string; d: number; x: number; z: number } | null = null;
+  for (const t of source.current) {
+    if (t.routeId !== followRoute || !Number.isFinite(t.lon) || !Number.isFinite(t.lat)) continue;
+    const [x, z] = lonLatToScene(CITY_ORIGIN, t.lon, t.lat);
+    if (!diorama.onBoard(x, z, true)) continue;
+    const d = Math.hypot(x - target.x, z - target.z);
+    if (!best || d < best.d) best = { id: t.id, d, x, z };
+  }
+  // Wait for that train's area to mount, so follow does not end at a loading edge.
+  // If it never mounts, the follow starts anyway and ends at the edge as usual.
+  if (best) followLinkAt ??= performance.now();
+  if (best && !diorama.onBoard(best.x, best.z) && performance.now() - followLinkAt! < 20_000) return;
+  const train = best && source.find(best.id);
+  if (!train) return;
+  followRoute = null;
+  selectedTrain = train.id;
+  selectedBus = null;
+  follow.start({ kind: 'train', id: train.id, pathId: train.pathId, tier: train.s.tier });
+  renderTrainCard();
 }
 
 const [rf, tf, vts, meta] = await Promise.all([
@@ -147,6 +208,7 @@ if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
 // real present: a time-shifted or sped-up view stays on the timetable.
 const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
+if (import.meta.env.DEV) Object.assign(window, { __source: source, __follow: follow });
 live.start();
 
 let override: AtmosphereOverride | null = null;
@@ -560,6 +622,7 @@ setInterval(() => {
   const now = clock.now();
   updateClock(now);
   shell.tick(now);
+  followFromLink();
   if (selectedTrain) renderTrainCard();
   else if (selectedBus) renderBusCard();
 }, 500);
