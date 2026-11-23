@@ -235,6 +235,8 @@ export interface PiazzaSpec {
   lawn: P2[];
   /** Mapped stair from the piazza edge down to the north passage. */
   stair: [P2, P2];
+  /** Paved run from the piazza edge to the stair head, in metres. */
+  stairLanding?: number;
   /** Bistro tables and benches; positions are illustrative. */
   tables: P2[];
   benches: P2[];
@@ -254,26 +256,37 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
     gap = 0.05;
   const us = spec.plan.map(([u]) => u),
     vs = spec.plan.map(([, v]) => v);
-  let k = 0;
-  for (let u = Math.min(...us); u < Math.max(...us); u += du)
-    for (let v = Math.min(...vs); v < Math.max(...vs); v += dv, k++) {
-      const cu = u + du / 2,
-        cv = v + dv / 2;
-      if (!pointInRing(cu, cv, spec.plan) || pointInRing(cu, cv, spec.lawn)) continue;
-      const at = (a: number, b: number, lift: number) => {
-        const y = ground(a, b);
-        return y === null ? null : [a, y + lift, b];
-      };
-      const under = [at(u, v, 0.03), at(u + du, v, 0.03), at(u + du, v + dv, 0.03), at(u, v + dv, 0.03)];
-      const slab = [
-        at(u + gap, v + gap, 0.06),
-        at(u + du - gap, v + gap, 0.06),
-        at(u + du - gap, v + dv - gap, 0.06),
-        at(u + gap, v + dv - gap, 0.06),
-      ];
-      if (!under.every((p): p is number[] => p !== null) || !slab.every((p): p is number[] => p !== null)) continue;
-      body.quad(under[3], under[2], under[1], under[0], joint);
-      body.quad(slab[3], slab[2], slab[1], slab[0], tones[(k * 7) % tones.length]);
+  const at = (a: number, b: number, lift: number) => {
+    const y = ground(a, b);
+    return y === null ? null : [a, y + lift, b];
+  };
+  const lay = (u0: number, v0: number, u1: number, v1: number, inset: number, tone: string) => {
+    const under = [at(u0, v0, 0.03), at(u1, v0, 0.03), at(u1, v1, 0.03), at(u0, v1, 0.03)];
+    const slab = [
+      at(u0 + inset, v0 + inset, 0.06),
+      at(u1 - inset, v0 + inset, 0.06),
+      at(u1 - inset, v1 - inset, 0.06),
+      at(u0 + inset, v1 - inset, 0.06),
+    ];
+    if (!under.every((p): p is number[] => p !== null) || !slab.every((p): p is number[] => p !== null)) return;
+    if (inset > 0) body.quad(under[3], under[2], under[1], under[0], joint);
+    body.quad(slab[3], slab[2], slab[1], slab[0], tone);
+  };
+  const paved = (u: number, v: number) => pointInRing(u, v, spec.plan) && !pointInRing(u, v, spec.lawn);
+  const u0 = Math.min(...us),
+    v0 = Math.min(...vs);
+  for (let iu = 0; u0 + iu * du < Math.max(...us); iu++)
+    for (let iv = 0; v0 + iv * dv < Math.max(...vs); iv++) {
+      const u = u0 + iu * du,
+        v = v0 + iv * dv,
+        tone = tones[(iu * 7 + iv * 3) % tones.length];
+      const corners = [paved(u, v), paved(u + du, v), paved(u + du, v + dv), paved(u, v + dv)];
+      if (corners.every(Boolean) && paved(u + du / 2, v + dv / 2)) lay(u, v, u + du, v + dv, gap, tone);
+      else if (corners.some(Boolean) || paved(u + du / 2, v + dv / 2))
+        // Edge slabs are cut to the outline and lawn in 0.5 m pieces.
+        for (let a = u; a < u + du - 0.01; a += 0.5)
+          for (let b = v; b < v + dv - 0.01; b += 0.5)
+            if (paved(a + 0.25, b + 0.25)) lay(a, b, a + 0.5, b + 0.5, 0, tone);
     }
   // A low white curb round the mapped lawn.
   for (let i = 0; i < spec.lawn.length; i++) {
@@ -306,14 +319,24 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
       uz = (foot[1] - top[1]) / len,
       drop = yTop - yFoot,
       n = Math.round(drop / 0.16),
-      w = 0.8;
+      w = 0.8,
+      landing = spec.stairLanding ?? 0;
     const q = (t: number, s: number, y: number) => [top[0] + ux * t - uz * s, y, top[1] + uz * t + ux * s];
+    // A paved landing joins the piazza edge to the stair head.
+    body.quad(
+      q(-landing, -w, yTop + 0.06),
+      q(-landing, w, yTop + 0.06),
+      q(0, w, yTop + 0.06),
+      q(0, -w, yTop + 0.06),
+      tones[1],
+    );
+    // Each tread sits at its riser top, so the falling terrain stays beneath it.
     for (let i = 0; i < n; i++) {
       const a = (len * i) / n,
         b = (len * (i + 1)) / n,
-        y = yTop - (drop * (i + 1)) / n;
+        y = yTop - (drop * i) / n;
       body.quad(q(a, -w, y + 0.02), q(a, w, y + 0.02), q(b, w, y + 0.02), q(b, -w, y + 0.02), tones[0]);
-      body.quad(q(a, -w, y), q(a, w, y), q(a, w, y + drop / n), q(a, -w, y + drop / n), joint);
+      body.quad(q(b, -w, y - drop / n), q(b, w, y - drop / n), q(b, w, y), q(b, -w, y), joint);
     }
     for (const s of [-w - 0.12, w + 0.12])
       body.quad(q(0, s, yTop - 0.1), q(0, s, yTop + 0.45), q(len, s, yFoot + 0.45), q(len, s, yFoot - 0.1), curb);
@@ -330,7 +353,18 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
         cv = v + 0.72 * Math.sin(a);
       body.box(0.44, 0.05, 0.44, cu, g + 0.45, cv, '#c44a4f');
       body.box(0.05, 0.45, 0.05, cu, g + 0.22, cv, '#c44a4f');
-      body.box(0.4, 0.38, 0.05, cu + 0.22 * Math.cos(a), g + 0.66, cv + 0.22 * Math.sin(a), '#c44a4f');
+      // The back stands across the radius, on the far side from the table.
+      const bu = cu + 0.22 * Math.cos(a),
+        bv = cv + 0.22 * Math.sin(a),
+        su = -0.2 * Math.sin(a),
+        sv = 0.2 * Math.cos(a);
+      body.quad(
+        [bu - su, g + 0.47, bv - sv],
+        [bu - su, g + 0.85, bv - sv],
+        [bu + su, g + 0.85, bv + sv],
+        [bu + su, g + 0.47, bv + sv],
+        '#c44a4f',
+      );
     }
   }
   for (const [u, v] of spec.benches) {

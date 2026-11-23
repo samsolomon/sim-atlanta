@@ -305,6 +305,7 @@ export function createArtsCampusLandmark(
         plan: pz.plan as P2[],
         lawn: pz.lawn as P2[],
         stair: pz.stair as [P2, P2],
+        stairLanding: pz.stairLanding,
         tables: pz.tables as P2[],
         benches: pz.benches as P2[],
       },

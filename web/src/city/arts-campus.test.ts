@@ -64,14 +64,42 @@ const piazza = (lawn: [number, number][]) => ({
 });
 const count = (b: Builder) => (b.geometry() as BufferGeometry).getAttribute('position').count;
 
-it('leaves the mapped lawn unpaved and draws the north stair only where the ground falls', () => {
+/** Whether a slab triangle at height y covers local (u, v). */
+function covers(b: Builder, u: number, v: number, y: number) {
+  const pos = (b.geometry() as BufferGeometry).getAttribute('position');
+  for (let i = 0; i < pos.count; i += 3) {
+    const t = [0, 1, 2].map((k) => [pos.getX(i + k), pos.getY(i + k), pos.getZ(i + k)]);
+    if (t.some((p) => Math.abs(p[1] - y) > 0.005)) continue;
+    const d = (a: number[], c: number[]) => (u - c[0]) * (a[2] - c[2]) - (a[0] - c[0]) * (v - c[2]);
+    const [d1, d2, d3] = [d(t[0], t[1]), d(t[1], t[2]), d(t[2], t[0])];
+    if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return true;
+  }
+  return false;
+}
+
+it('paves up to the mapped lawn curb but not across the lawn', () => {
+  const b = new Builder();
+  siflyPiazza(b, piazza(sites.museum.piazza.lawn as [number, number][]), () => 0);
+  // Inside the lawn: no slab. Just outside each curb: slab, with no bare strip.
+  for (const [u, v] of [
+    [0, 5],
+    [5, 20],
+    [-5, 12],
+  ])
+    expect(covers(b, u, v, 0.06)).toBe(false);
+  for (const [u, v] of [
+    [-10.4, 5],
+    [0, -4.4],
+    [-1.4, 18],
+    [5, 23],
+  ])
+    expect(covers(b, u, v, 0.06)).toBe(true);
+});
+
+it('draws the north stair only where the ground falls', () => {
   const flat = new Builder(),
-    noLawn = new Builder(),
     falling = new Builder();
   siflyPiazza(flat, piazza(sites.museum.piazza.lawn as [number, number][]), () => 0);
-  siflyPiazza(noLawn, piazza([]), () => 0);
-  // The mapped lawn is about 330 m², so paving it would add about 70 slabs.
-  expect(count(noLawn) - count(flat)).toBeGreaterThan(60 * 8);
   // 3DEP falls about 3 m down the passage north of the piazza (v < -9).
   siflyPiazza(falling, piazza(sites.museum.piazza.lawn as [number, number][]), (_u, v) => (v < -15 ? -3 : 0));
   expect(count(falling)).toBeGreaterThan(count(flat));
