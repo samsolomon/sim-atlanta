@@ -8,11 +8,56 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
 export function georgianTerrace(shell: Shell, ground: LocalGround) {
   const buff = '#bfa585', stone = '#ddccb2', glass = ['#5c676c','#718080','#59656b'];
+  const limestone = '#d9cdb8', joint = '#a89880', shade = '#9d8f7c', crown = '#e6dccb';
   function roof(plan: P2[],lo: number,hi: number,tint: string) { shell.prism(plan,lo,hi,tint,stone); }
-  function cornice(plan: P2[],lo: number,hi: number) {
-    const cx = plan.reduce((sum,p) => sum+p[0],0)/plan.length;
-    const cz = plan.reduce((sum,p) => sum+p[1],0)/plan.length;
-    roof(plan.map(([x,z]) => [cx+(x-cx)*1.018,cz+(z-cz)*1.018]),lo,hi,stone);
+  // Outward-facing edge frames for cornices, string courses and modillions.
+  // Each projection is a true per-edge offset, so notched walls keep their band.
+  function edges(plan: P2[]) {
+    const area = plan.reduce((sum,[x,z],i) => { const [u,v] = plan[(i+1)%plan.length]; return sum+x*v-u*z; },0);
+    const sign = Math.sign(area) || 1;
+    return plan.map(([x,z],i) => {
+      const [u,v] = plan[(i+1)%plan.length], length = Math.hypot(u-x,v-z);
+      const tx = (u-x)/length, tz = (v-z)/length;
+      return { x, z, tx, tz, nx: sign*tz, nz: -sign*tx, length };
+    }).filter(e => e.length > .3);
+  }
+  // A band projecting `out` metres from every wall, with mitred corners.
+  function band(plan: P2[],lo: number,hi: number,out: number,tint = stone) {
+    const n = plan.length, e = (i: number) => {
+      const [x,z] = plan[(i+n)%n], [u,v] = plan[(i+1+n)%n], l = Math.hypot(u-x,v-z) || 1;
+      return [(v-z)/l,-(u-x)/l];
+    };
+    const area = plan.reduce((sum,[x,z],i) => { const [u,v] = plan[(i+1)%n]; return sum+x*v-u*z; },0);
+    const sign = Math.sign(area) || 1;
+    const offset: P2[] = plan.map(([x,z],i) => {
+      const [ax,az] = e(i-1), [bx,bz] = e(i), mx = ax+bx, mz = az+bz;
+      const k = Math.min(3, 2/Math.max(.2, mx*mx+mz*mz)), d = sign*out*k;
+      return [x+mx*d,z+mz*d];
+    });
+    roof(offset,lo,hi,tint);
+  }
+  // Brackets under a cornice: small blocks every `pitch` metres along each wall.
+  function modillions(plan: P2[],lo: number,hi: number,out: number,pitch: number,width: number) {
+    for (const {x,z,tx,tz,nx,nz,length} of edges(plan)) {
+      const count = Math.floor(length/pitch);
+      for (let i = 0; i < count; i++) {
+        const s = (i+.5)*length/count, a = s-width/2, c = s+width/2;
+        const at = (t: number,y: number,o: number) => [x+tx*t+nx*o,y,z+tz*t+nz*o];
+        shell.body.quad(at(a,lo,out),at(c,lo,out),at(c,hi,out),at(a,hi,out),stone);
+        shell.body.quad(at(a,lo,0),at(c,lo,0),at(c,lo,out),at(a,lo,out),shade);
+        shell.body.quad(at(a,lo,0),at(a,lo,out),at(a,hi,out),at(a,hi,0),stone);
+        shell.body.quad(at(c,lo,0),at(c,hi,0),at(c,hi,out),at(c,lo,out),stone);
+      }
+    }
+  }
+  // Pale limestone over the two base storeys, with rusticated joints.
+  function rusticated(plan: P2[],lo: number,hi: number) {
+    for (const {x,z,tx,tz,nx,nz,length} of edges(plan)) {
+      const at = (t: number,y: number,o: number) => [x+tx*t+nx*o,y,z+tz*t+nz*o];
+      shell.body.quad(at(0,lo,.05),at(length,lo,.05),at(length,hi,.05),at(0,hi,.05),limestone);
+      for (let y = .9; y < hi-.3; y += .75)
+        shell.body.quad(at(0,y,.07),at(length,y,.07),at(length,y+.07,.07),at(0,y+.07,.07),joint);
+    }
   }
   function facade(plan: P2[],lo: number,hi: number,rows: number) {
     plan.forEach((a,i) => shell.facade(a,plan[(i+1)%plan.length],lo,hi,rows,3.25,.53,.66,glass,.16));
@@ -27,12 +72,29 @@ export function georgianTerrace(shell: Shell, ground: LocalGround) {
   const deck = Math.max(1.05,...frontage)+.3;
   roof(historic,shell.base,37,buff);
   facade(historic,8.6,35.6,8);
-  cornice(historic,7.7,8.6);
-  cornice(historic,35.6,37.12);
+  // The 1911 wing's classical vocabulary, from the street photographs: a limestone
+  // base, a belt cornice over it, a string course under the top storey, and a deep
+  // crowning cornice on modillions below a low parapet.
+  rusticated(historic,shell.base,7.7);
+  band(historic,7.7,8.2,.55,crown);
+  band(historic,8.2,8.6,.25);
+  modillions(historic,7.25,7.7,.5,1.2,.3);
+  band(historic,32.1,32.45,.22);
+  band(historic,35.6,36.15,.3);
+  modillions(historic,36.15,36.55,.95,1,.32);
+  band(historic,36.55,37.15,1.05,crown);
+  band(historic,37.15,38,-.15,buff);
+  // The round corner bay rises a little higher and the crowning cornice wraps it.
   const corner = circle(-31,32,3.05);
-  roof(corner,shell.base,37.9,buff);
+  roof(corner,shell.base,38,buff);
   facade(corner,9,36,8);
-  for (const h of [8.1,15.4,29.8,35.8,37.5]) roof(circle(-31,32,3.2),h,h+.48,stone);
+  rusticated(corner,shell.base,7.7);
+  band(corner,7.7,8.2,.55,crown);
+  band(corner,32.1,32.45,.22);
+  band(corner,35.6,36.15,.3);
+  modillions(corner,36.15,36.55,.95,1,.32);
+  band(corner,36.55,37.15,1.05,crown);
+  band(corner,37.15,38.9,-.15,buff);
   // The two-storey mapped infill fills the recess in front of the upper wing.
   roof(parts.porch.ring as P2[],shell.base,8.6,buff);
 
@@ -40,7 +102,7 @@ export function georgianTerrace(shell: Shell, ground: LocalGround) {
   const addition: P2[] = parts.addition.ring.map(([x,z]) => [x,z]);
   roof(addition,shell.base,68,buff);
   facade(addition,7,65.7,17);
-  for (const h of [9,54,63,66.9]) cornice(addition,h,h+.85);
+  for (const h of [9,54,63,66.9]) band(addition,h,h+.85,.3);
   const atrium = circle(-9,-9.7,5.8);
   roof(atrium,8,70,'#84989b');
   atrium.forEach((a,i) => shell.facade(a,atrium[(i+1)%atrium.length],9,69.5,18,2.6,.88,.86,['#647f8b','#8297a1'],.07));
@@ -55,7 +117,7 @@ export function georgianTerrace(shell: Shell, ground: LocalGround) {
   const podium = parts.podium.ring as P2[];
   roof(podium,shell.base,12,buff);
   facade(podium,1.4,11,3);
-  cornice(podium,11.4,12.2);
+  band(podium,11.4,12.2,.3);
   for (const [plan,lo] of [[parts.driveCanopy.ring,4.6],[parts.northCanopy.ring,7.4],[parts.ponceCanopy.ring,7.6]] as const) {
     roof(plan as P2[],lo,lo+.55,stone);
     for (const [x,z] of (plan as P2[]).filter((_,i) => i%3===0)) {
