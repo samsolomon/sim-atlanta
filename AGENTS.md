@@ -41,6 +41,7 @@ pnpm dev             # http://localhost:5173, proxies /api to the worker
 pnpm test            # Rust + pipeline + web + worker tests (pipeline skips without .venv)
 pnpm test:release    # same, but fails if the pipeline checks cannot run
 pnpm build           # web/dist, which the worker serves
+pnpm test:perf       # City budgets per tier, headless Chrome (needs Chrome + data; docs/perf.md)
 pnpm review          # cross-model review of this branch (see "Review")
 ```
 
@@ -125,6 +126,7 @@ uses the timetable.
 - Branch per task, and never commit to `main` directly. Orca runs each agent in its own
   worktree, so don't edit another worktree's files.
 - Before a PR: run `pnpm test`, check visual changes in a browser, then run `pnpm review`.
+  If the PR changes what City draws or loads, also run `pnpm test:perf`, and lower a ceiling when a cut reaches its target.
 
 ## Review
 
