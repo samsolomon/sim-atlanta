@@ -15,7 +15,7 @@ In the baked OSM data, the Bell Street office tower is way 841048595 (“Odd Fel
 | Tower roof toward Auburn | 241 | 320.02 |
 | Small upper projection | 17 | 321.63 |
 
-The model follows these six heights. The front tower roof sits 2.78 m above the rear one. The auditorium ridge rises 5.95 m above the storefront roof and sits behind it. The ground foundation on both board tiers is 294.80 m NAVD88. City x points east and z south in local metres from Five Points (33.7539° N, 84.3916° W), and scene y equals NAVD88 metres minus 323.8. Hip slopes, ridge endpoints, the small upper volume's footprint and parapet thickness are estimated. The lidar predates the tower's renovation. [Roof views](roofs.jpg) · [Survey script and selection rectangles](../../../../pipeline/prototypes/odd-fellows/survey.py)
+The model follows these six heights. The street cornice is estimated at 320.10 m, just above the front roof. The front tower roof sits 2.78 m above the rear one. The auditorium ridge rises 5.95 m above the storefront roof and sits behind it. The ground foundation on both board tiers is 294.80 m NAVD88. City x points east and z south in local metres from Five Points (33.7539° N, 84.3916° W), and scene y equals NAVD88 metres minus 323.8. Hip slopes, ridge endpoints, the small upper volume's footprint and parapet thickness are estimated. The lidar predates the tower's renovation. [Roof views](roofs.jpg) · [Survey script and selection rectangles](../../../../pipeline/prototypes/odd-fellows/survey.py)
 
 ## Streets and light
 

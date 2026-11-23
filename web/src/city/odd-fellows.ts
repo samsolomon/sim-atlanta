@@ -150,7 +150,9 @@ const tower: BuildingFinish = {
     for (let i = 0; i < ring.length; i++) {
       const a = ring[i], b = ring[(i + 1) % ring.length], f = facade(batch, a, b);
       const front = Math.min(a[1], b[1]) > -192, bell = Math.min(a[0], b[0]) > 1120;
-      if (front || bell) officeFront(f, base, cap + .95, front ? 5 : 7);
+      // The street cornice stands just above the 320.02 m front roof. The
+      // raised end bays project above that line in the Auburn photograph.
+      if (front || bell) officeFront(f, base, cap + 1.76, front ? 5 : 7);
       else {
         f.panel(0, f.length, base - .55, cap, 0, deepBrick);
         if (f.length < 5) continue;
