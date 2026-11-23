@@ -78,3 +78,15 @@ it('leaves inferred road clearance over an unsurveyed surface crossing', () => {
     for (const x of [-18,18]) expect(model.deckAt(x,-2900,run)).toBeCloseTo(floor() + .12, 4);
   } finally { model.dispose(); }
 });
+
+it('joins the campus side path at its shared vertex on the bridge', () => {
+  const grid = ground('midtown-central');
+  const city = auburnTransport(JSON.parse(read('midtown-central', 'context.json').toString()));
+  const junction = [-933.9, -2643.57] as const;
+  const bridge = city.terrainTransport!.roads.find(run =>
+    run.pts.slice(1, -1).some(([x,z]) => x === junction[0] && z === junction[1]))!;
+  const model = createSurfaceTransport(city, grid, () => 0);
+  try {
+    expect(model.deckAt(...junction, bridge)).toBeCloseTo(.12, 4);
+  } finally { model.dispose(); }
+});

@@ -124,8 +124,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       crossings.add({ a, b, radius, clearance }, [a, b], radius);
     }
   }
+  const surfaceJunctions = new Set<string>();
   for (const road of city.roads) {
-    if (!road.bridge && !road.tunnel) indexCrossing(road.pts, roadWidth(road) / 2,
+    if (road.bridge || road.tunnel || road.pts.length < 2) continue;
+    surfaceJunctions.add(road.pts[0].join(','));
+    surfaceJunctions.add(road.pts.at(-1)!.join(','));
+    indexCrossing(road.pts, roadWidth(road) / 2,
       ['path','footway','steps','pedestrian','cycleway'].includes(road.cls) ? 2.5 : 5);
   }
   for (const rail of data.rail) if (rail.kind === 'ground') indexCrossing(rail.pts, 2.1, 7);
@@ -413,10 +417,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.
     let from = 0;
-    for (let i=1; road.cls==='motorway' && i<road.pts.length-1; i++) {
-      const left=matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link');
-      const right=matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
-      if (left!==right) {
+    for (let i=1; i<road.pts.length-1; i++) {
+      const junction = !road.deckNavd88M && surfaceJunctions.has(road.pts[i].join(','));
+      const changesRibbon = road.cls === 'motorway' &&
+        matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link') !== matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
+      // A surface way ending on a shared interior vertex joins the tread there.
+      if (junction || changesRibbon) {
         draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',road);
         from=i;
       }
