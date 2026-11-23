@@ -106,6 +106,13 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
     expect(rail.bed(9040)).toBeLessThan(rail.bed(8932.5));
     expect(rail.bed(9040)).toBeGreaterThan(rail.bed(9137.5));
     expect(rail.sSeam).toBeCloseTo(8541.6, -1);
+    // Platform lights: dark by day, on at night (lamp discs plus floor pools).
+    const lights = rail.mesh.getObjectByName('King Memorial platform lights')!;
+    expect(rail.lampCount).toBeGreaterThan(0);
+    rail.setNight(0);
+    expect(lights.visible).toBe(false);
+    rail.setNight(1);
+    expect(lights.visible).toBe(true);
     rail.dispose();
   });
 });

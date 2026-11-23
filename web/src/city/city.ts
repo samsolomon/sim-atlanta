@@ -179,7 +179,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: ReturnType<typeof createDowntownTerrain> | undefined;
-  let eastRail: { dispose(): void } | undefined;
+  let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
   let trainRail = manifest.rail;
@@ -745,6 +745,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.setNight(night);
     platforms?.setNight(night);
     floyd?.setNight(night);
+    eastRail?.setNight(night);
     marquis?.setNight(night);
     twelve?.setNight(night);
     truist?.setNight(night);

@@ -315,3 +315,19 @@ The fps readings came from a background tab and are not measurements.
      unmounted.
 - **Don't:** add an illustrative dwell to the timetable. King Memorial's zero dwell is the published
   schedule.
+
+### Platform lighting (2026-11-22)
+
+**Evidence:** the 2015 Commons platform photo,
+[MARTA King Memorial Station.JPG](https://commons.wikimedia.org/wiki/File:MARTA_King_Memorial_Station.JPG)
+(Gman197002, CC BY-SA 4.0), shows rows of round pendant downlights hung from the roof trusses along
+both platforms. No night photo of King Memorial turned up on Commons.
+
+**Model:** `east-rail.ts` adds, after dark only:
+- two rows of lamp discs under the roof on each platform, every 6 m;
+- a soft warm pool on the platform under each lamp, using additive blending and following City's
+  darkness.
+
+Lamp positions and brightness are **illustrative**. The street-level building stays unlit.
+
+![Night before (top left) and after (top right); day unchanged (bottom left); Decatur St at night (bottom right)](log/ui/king-memorial/city-station-lights.jpg)
