@@ -15,7 +15,7 @@ import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
 import { BYLINE, createDetailPanel } from './panel';
-import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
+import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import { shareUrl } from '../share';
 import type { ShellApi, ShellOptions } from '../shell';
@@ -87,8 +87,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     <p class="a2-h">Weather</p>
     <div class="a2-seg2" role="group" aria-label="Weather">${['Auto', 'Clear', 'Rain', 'Fog', 'Storm'].map((w) => `<button type="button" data-wx="${w}">${w}</button>`).join('')}</div>
     <p class="a2-caption">Auto shows the observed weather at the present time and an illustrative sky otherwise.</p>
-    <button type="button" class="a2-back">${SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>')}Back to now</button>
-    <details class="a2-sources"><summary>Each feed right now</summary><div class="a2-sources-body"></div></details>`;
+    <button type="button" class="a2-back">${SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>')}Back to now</button>`;
   const range = panel.querySelector<HTMLInputElement>('.a2-range')!;
   const dateInput = panel.querySelector<HTMLInputElement>('.a2-date-input')!;
   const dateText = panel.querySelector<HTMLElement>('.a2-date-text')!;
@@ -215,11 +214,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
   };
   phone.addEventListener('change', placePanel);
-  const sourcesBox = panel.querySelector<HTMLDetailsElement>('.a2-sources')!;
-  sourcesBox.addEventListener('toggle', () => {
-    panel.querySelector<HTMLElement>('.a2-sources-body')!.dataset.open = sourcesBox.open ? '1' : '';
-    clockChanged();
-  });
   placePanel();
 
   // One notice at a time, 8 px under the subject card. Tier words wrap; they never truncate.
@@ -232,14 +226,13 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const bar = el('nav', { class: 'a2-appbar a2-g', 'aria-label': 'App' });
   const menuBtn = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Menu', 'aria-expanded': 'false', 'aria-controls': 'a2-menu' }, `<span class="a2-ic">${ICON.list}</span>`);
   const seg = el('div', { class: 'a2-seg', role: 'group', 'aria-label': 'View' });
-  const viewBtns = (['map', 'city'] as View[]).map((v) => {
-    const b = el('button', { type: 'button', class: 'a2-vs', 'data-view': v, title: v === 'map' ? 'Map (M)' : 'City (C)' }, v === 'map' ? 'Map' : 'City');
+  const LABEL: Record<View, string> = { map: 'Map', city: 'City', models: 'Models' };
+  const viewBtns = (['map', 'city', 'models'] as View[]).map((v) => {
+    const b = el('button', { type: 'button', class: 'a2-vs', 'data-view': v, title: v === 'models' ? 'Models' : `${LABEL[v]} (${LABEL[v][0]})` }, LABEL[v]);
     b.addEventListener('click', () => setView(v, true));
     return b;
   });
-  // The Model lab joins as the third view in step 7; until then this opens its page.
-  const models = el('a', { class: 'a2-vs', href: '/models' }, 'Models');
-  seg.append(...viewBtns, models);
+  seg.append(...viewBtns);
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg);
 
   const menu = el('section', { class: 'a2-menu a2-g a2-long', id: 'a2-menu', hidden: '', 'aria-label': 'Menu' });
@@ -288,7 +281,10 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const shareSep = el('div', { class: 'a2-sep a2-share-sep', 'aria-hidden': 'true' });
   const shareBtn = el('button', { type: 'button', class: 'a2-ib a2-share', 'aria-label': 'Share this view', 'aria-expanded': 'false', 'aria-controls': 'a2-share', title: 'Share this view' },
     SVG('<path d="M12 3v12"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'));
-  cam.append(compass, camSep, zoomIn, zoomOut, shareSep, shareBtn);
+  const resetBtn = el('button', { type: 'button', class: 'a2-ib a2-reset', 'aria-label': 'Reset view', title: 'Reset view', hidden: '' },
+    SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>'));
+  resetBtn.addEventListener('click', () => o.resetModelView?.());
+  cam.append(compass, resetBtn, camSep, zoomIn, zoomOut, shareSep, shareBtn);
 
   // ---- share: live (no time) or freeze this moment (t=…&speed=0), camera in the link ----------
   const share = el('section', { class: 'a2-share-panel a2-g a2-long', id: 'a2-share', hidden: '', 'aria-label': 'Share this view' });
@@ -317,7 +313,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const renderShare = () => {
     const target = o.shareTarget?.();
     share.querySelector('.a2-share-lede')!.textContent = !target ? 'This view is still loading.'
-      : target.view === 'city' ? 'The link opens on this exact camera in City.' : 'The link opens on this exact view of the Map.';
+      : target.view === 'city' ? 'The link opens on this exact camera in City.'
+      : target.view === 'models' ? 'The link opens this model in Models.' : 'The link opens on this exact view of the Map.';
+    share.querySelector<HTMLElement>('.a2-share-modes')!.hidden = target?.view === 'models';
     share.querySelector('.a2-freeze-text')!.textContent =
       `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. Trains from the timetable.`;
     modeInputs.forEach((i) => (i.checked = i.value === shareMode));
@@ -362,7 +360,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const b = o.bearing?.() ?? 0;
     const rotated = Math.abs(((b + 540) % 360) - 180) > 0.5;
     // On Map the compass appears only once the map is rotated; City always shows it.
-    const show = view === 'city' || rotated;
+    const show = view === 'city' || (view === 'map' && rotated);
     if (compass.hidden === show) {
       compass.hidden = !show;
       camSep.hidden = !show;
@@ -496,7 +494,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
   void loadPlaces();
 
   let now = new Date();
-  const sources = panel.querySelector<HTMLElement>('.a2-sources-body')!;
 
   let lastTick = 0;
   let areaNote: string | null = null;
@@ -584,7 +581,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     wxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.wx === weatherChoice)));
     const back = panel.querySelector<HTMLButtonElement>('.a2-back')!;
     back.disabled = s.realTime && weatherChoice === 'Auto';
-    if (sources.dataset.open === '1') sources.innerHTML = liveDetails(s, view, weather, weatherAt);
   }
   const fmtSpan = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`);
 
@@ -597,6 +593,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
   function setView(v: View, fromUser = false) {
     viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     if (hint) hint.textContent = hintText(v, coarse.matches);
+    // Models has its own card and panels; the scene chrome (place card, notes, credit) steps aside.
+    document.body.classList.toggle('a2-in-models', v === 'models');
+    resetBtn.hidden = v !== 'models';
     if (v === view && !fromUser) return;
     const changed = v !== view;
     view = v;
@@ -607,6 +606,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
   }
   viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+  document.body.classList.toggle('a2-in-models', view === 'models');
 
   // ---- keyboard -----------------------------------------------------------------------------
   const { advanceMovement } = createKeyboard({
@@ -619,7 +619,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
           b.focus();
           return true;
         }
-      return panelHost.escape();
+      return panelHost.escape() || (o.viewEscape?.() ?? false);
     },
     blocked: () => false,
   });

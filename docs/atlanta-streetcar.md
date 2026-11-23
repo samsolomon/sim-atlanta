@@ -44,7 +44,16 @@ The pattern mirrors about the car centre. A thin white pinstripe runs low on the
 
 **Night:** no freely licensed night photograph exists. The interior has white ceiling light strips and blue seats (data-sheet photo), and a 2015 night shot of car 1003 shows white headlights and an amber destination sign ([RailPictures, reference only](https://www.railpictures.net/photo/862574)). In the lab the window band glows with the shared warm stock glow, which is a little warmer than the real white light. The leading cab lights its headlights, top lamp, markers and destination sign, and the trailing cab shows red.
 
-[Front three-quarter](log/streetcar/s70-front34.jpg) · [Side and sweeps](log/streetcar/s70-side.jpg) · [Cab front](log/streetcar/s70-front.jpg) · [Trailing cab and night](log/streetcar/s70-rear-night.jpg)
+**Second pass (23 Nov 2026), after Sam's review:**
+- **Colour:** the body is now the deep, violet-leaning indigo of car 1004. The City grade crushes dark blues to saturated navy, so the input colour (#5a5694) is lighter than the target. It renders near #28217b on a lit face.
+- **Sweeps:** rebuilt as cubic-Bézier bands sampled along the body side. A broad violet swoosh and a teal band leave the roof by the mid-section door and flow down to the cab's bottom corner. A lime wedge tapers from the roof, and a lime streak runs low near the cab.
+- **Glazing:** one nearly continuous light, reflective band with thin pillars.
+- **Body:** rounded eaves, a sloped rounded nose, a skirt close to the rail, and long low roof fairings within the 3.84 m height.
+- **Details:** amber door indicators that glow at night.
+
+Curve control points remain estimates. [Side, matched](log/streetcar/s70-pass2-side.jpg) · [Three-quarter front](log/streetcar/s70-pass2-front34.jpg) · [Cab front](log/streetcar/s70-pass2-front.jpg) · [Night](log/streetcar/s70-pass2-night.jpg) · [Lab before and after](log/streetcar/s70-pass2-lab.jpg)
+
+First pass: [Front three-quarter](log/streetcar/s70-front34.jpg) · [Side and sweeps](log/streetcar/s70-side.jpg) · [Cab front](log/streetcar/s70-front.jpg) · [Trailing cab and night](log/streetcar/s70-rear-night.jpg)
 
 ## Interface for City
 

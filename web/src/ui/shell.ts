@@ -45,6 +45,10 @@ export interface ShellOptions {
   onClock?(): void;
   /** Horizontal scale at the view centre, for "Metro Atlanta" past neighbourhood zoom. */
   metresPerPixel?(): number | null;
+  /** Turn the Models camera back to its first view (A2c camera column in Models). */
+  resetModelView?(): void;
+  /** Escape for a view's own surfaces (the Models browser and Details): true when consumed. */
+  viewEscape?(): boolean;
   /** Graphics quality for City (A2c menu): Auto picks by device, as `pickQuality` does. */
   graphics?: { get(): 'auto' | 'high' | 'low'; set(q: 'auto' | 'high' | 'low'): void };
   /** What a share link should reopen: City's camera, or the Map's hash (A2c share). */

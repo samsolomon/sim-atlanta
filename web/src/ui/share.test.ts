@@ -25,3 +25,13 @@ describe('share links', () => {
     expect(url).toBe('https://sim.example/?view=map#14/33.757/-84.392/30');
   });
 });
+
+describe('model links', () => {
+  it('name the model, keep ui=next, and never freeze the clock', () => {
+    const url = new URL(shareUrl('https://sim.example/?ui=next&view=models&t=2026-11-20T14:00:00-05:00&speed=0', { view: 'models', model: 'cq400' }, 'freeze', at));
+    expect(url.searchParams.get('view')).toBe('models');
+    expect(url.searchParams.get('v')).toBe('cq400');
+    expect(url.searchParams.get('ui')).toBe('next');
+    expect(url.searchParams.has('t')).toBe(false);
+  });
+});

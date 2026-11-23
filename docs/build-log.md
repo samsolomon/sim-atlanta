@@ -2460,3 +2460,28 @@ My first pass filled each species' crown outline with evenly spaced leaf cards. 
 
 **Some evidence is missing.** Commons has no full-tree photograph of either oak taken in Georgia, so the sheets compare against Mississippi, Arlington and Virginia trees, and the Atlanta calendar is inferred from North Carolina and Alabama phenology. [Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [All species, 20 Nov](log/ui/tree-species/lineup-oaks-fall.jpg)
 
+### 2026-11-23 — Checking what the Academy is made of
+
+Sam asked whether the Academy of Medicine was stucco, painted brick or stone, and the paperwork didn't say. The National Register nomination lists the metal roof, the cupola, the Tuscan columns and the caduceus, but never the walls. The answer came from zooming a 4592-pixel Wikimedia photograph to a wall in raking light: smooth stucco, no brick coursing anywhere. With that settled, the pass went into the parts people see. The teal roofs became aged copper with seams. The dark arches became sashes with surrounds, muntins and keystones. And the bare lawn became the formal 1941 garden that Georgia Tech's preservation plan says survives: boxwood, a brick walk and black-soil beds. [Close before and after](log/ui/midtown-skyline/academy2-close-compare-day.jpg)
+
+
+
+### 2026-11-23 — Beds that are mostly plants
+
+The flower beds looked like dark holes, and the fix wasn't the soil. Real beds are mostly foliage, with the soil showing at the edges. Beds now fill about 80 % with mounded mid-green planting, with bloom clusters in drifts on top. They borrow the tree work's silhouette-only ink, so outlines stop chopping the colour into confetti. On the low tier a bed is a single mounded mass with drift patches. [Before and after, both tiers](log/ui/bed-fill/README.md)
+
+### 2026-11-23 — Streetcar track that reaches King
+
+City's streetcar rails came from OSM tram ways in the downtown vignette, and they ended at the board edge. East of the Connector, Edgewood and Auburn had no track at all. The track now comes from the GTFS shapes the vehicles will run on: three paths merged into one network, laid as two grooved rails on a concrete slab. A contact wire 5.8 m up follows the curves, and curb-side poles with cantilever arms stand about every 32 m wherever the sidewalk is clear of roads, buildings and junctions. One surprise: the Connector is a viaduct over Auburn and Edgewood. The first height lookup took the nearest road and would have lifted the track onto the motorway deck right under it, so motorways no longer count. Requires a web rebuild only. [Edgewood before and after](log/ui/streetcar/track-edgewood-before-after.jpg) · [Notes](streetcar-city.md)
+### 2026-11-23 — A2c, step 7: the Model lab becomes the Models view
+
+Under `?ui=next`, Models is now the third segment of the view switch, not a separate page. The lab runs inside the app with the same four places: a model card top-left (name ⌄ to browse, ‹ › through its category, one line, "Vehicles · 1 of 16"), the lab's own controls re-homed in a right-hand Details panel, a browser with search and category chips (All 31, Vehicles 16, People 2, Trees 2, Landscape 9, Houses 2), and reset, zoom and share in the camera column. "Compare with a photo" appears only with `?dev`. It took a seam with the four agents who build lab entries. The lab's markup moved into one shared module, its CSS was scoped under `.lab` (it used to restyle every `body`, `h2` and `fieldset` on the page), and its frame loop now pauses while the view is hidden (#265). Nothing copies the catalogue: the browser reads the lab's own buttons, so the in-app count equals `/models.html`'s 31, and all 31 select with no console errors. City is disposed on the way into Models, so two 3D scenes never run at once. Review caught a framing bug: the lab measured its stage before the app's layout class arrived, so the Crescent opened at landscape scale on phones. It needs only a web rebuild. [Board vs build](log/ui/a2c/step7-board-models.jpg) · [Browser](log/ui/a2c/step7-board-browser.jpg) · [Phone](log/ui/a2c/step7-phone.jpg)
+
+### 2026-11-23 — The streetcar, second pass: a colour the grade kept eating
+
+Sam's review of the S70 called the first pass a bright royal blue with blocky stickers. The real car is a deep, violet-leaning indigo, with long sweeps that read as motion. The colour was the lesson. Our first indigo came out of the grade as pure saturated navy, #000068 with red and green crushed to zero, while the photograph's body sits near #2f3060. A sweep of input colours against a fixed sample on the lit nose found that #5a5694 in renders as #28217b out. The grade is steep enough in dark blues that the input has to be much lighter than the target. The sweeps are now cubic Béziers sampled into 24-segment strips that follow the rounded eave, so they flow from the roof by the mid-section door down to the cab's bottom corner. Glazing became one light band with thin pillars. The nose, eaves, skirt and roof fairings were rounded off. Lab only, so only a web rebuild is needed. [Matched side](log/streetcar/s70-pass2-side.jpg) · [Lab before and after](log/streetcar/s70-pass2-lab.jpg)
+
+### 2026-11-23 — The Fed turns white
+
+City had drawn the Federal Reserve Bank's block at Peachtree and 10th in the generic palette, which landed on red brick: a warehouse where a marble temple of money stands. It is now white ashlar marble, stepping back in tiers to a flat crown, with a two-storey loggia on Peachtree and the salvaged Corinthian columns of the old Fed standing free in the forecourt. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg)
+

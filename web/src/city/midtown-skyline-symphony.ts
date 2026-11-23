@@ -111,7 +111,7 @@ export function symphonyTower(shell: Shell) {
   for (const z of [-1, 1]) {
     const bed: P2[] = Array.from({ length: 14 }, (_, i) => [-72 + 3.4 * Math.cos(i * Math.PI / 7), z * 5.5 + 2.2 * Math.sin(i * Math.PI / 7)]);
     const lawn = () => top + .18;
-    flowerBed(shell.body, bed, lawn, { doy, mound: .35, seed: `1180-bed-${z}` });
+    flowerBed(shell.body, bed, lawn, { doy, mound: .35, soil: 'rich-black', seed: `1180-bed-${z}` });
     ornamentals(shell.body, [-53, z * 7], 2, lawn, { doy, count: 6, seed: `1180-grass-${z}` });
   }
   // Two cypress cones at the tower end, as before.

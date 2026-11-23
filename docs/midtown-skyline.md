@@ -136,6 +136,29 @@ The 1941 Academy of Medicine at 875 West Peachtree (Hentz, Adler & Shutze; now a
 
 Camera `/?view=city&cam=452,-2721,60,45,150`. [Before and after](log/ui/midtown-skyline/academy-compare-day.jpg) · [Night](log/ui/midtown-skyline/academy-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/academy-after-low-day.jpg) · [Wider](log/ui/midtown-skyline/academy-wide-after-high-day.jpg)
 
+### Second pass: materials, openings and the 1941 garden (2026-11-23)
+
+**Wall material, re-verified.** The National Register nomination (1980) describes a five-bay Neo-Classical building with a standing-seam hipped metal roof, a central cupola with Roman windows, a pedimented portico of six Tuscan columns carrying a large caduceus, round arched windows and corner pilasters. It does not name the wall finish. The 2009 Wikimedia photograph at full resolution (4592 × 3056) settles it: smooth putty-cream **stucco** with a fine grain and no coursing, over a banded stucco base and a cast-stone water table. The walls keep stucco, now a warmer putty tone with a banded base and faint streaks under the eaves where water runs off the cornice. The shared procedural stucco and aged-copper surfaces from the materials library will replace these vertex tones when that library merges. [NRHP nomination, NPS](https://npgallery.nps.gov/GetAsset/43283731-e6d9-459e-8324-f8855aa67409) · [Wikimedia, 2009, full resolution](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine_875_West_Peachtree_Street_NE_Atlanta_Georgia.JPG)
+
+**Copper.** The roofs are now a muted grey-green verdigris with darker standing seams, bundled every 2.2 m at City scale, in place of the saturated teal.
+
+**Openings.**
+- Each arched sash has a moulded surround and a keystone inside a recessed blind arch, with white muntins, a radiating fanlight and a stone sill, as the close photographs show.
+- The portico has Tuscan bases and capitals.
+- The tympanum carries the caduceus.
+- The central door has a moulded surround and a fanlight, flanked by arched sashes.
+
+**Grounds.** Georgia Tech's 2023 Campus Historic Preservation Plan lists the Academy of Medicine Garden (1941, Classical Revival) as recommended eligible. It records that the front lawn keeps many of its original plantings, that shrubs replaced the trees flanking the entrance, and that the south sunken garden is now hardscape. The nomination records a front yard with shrubbery and a paved brick walk. City now draws:
+- a brick walk from West Peachtree to the steps
+- clipped boxwood along the walk, the street edge and the foundation
+- two boxwood-edged formal beds of rich black soil flanking the steps (#263)
+
+[GT 2023 Campus Historic Preservation Plan](https://www.facilities.gatech.edu/sites/default/files/2024-07/2023%20GT%20Campus%20Historic%20Preservation%20Update_Final%20Report%20with%20Appendices.pdf)
+
+**Estimated:** the bed and hedge layout, the hedge heights, the seam spacing, the streak placement and the sash proportions. **Gap:** still no night photograph; the door fanlight lamp is illustrative.
+
+[Before and after](log/ui/midtown-skyline/academy2-compare-day.jpg) · [Close before and after](log/ui/midtown-skyline/academy2-close-compare-day.jpg) · [Close at night](log/ui/midtown-skyline/academy2-close-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/academy2-after-low-day.jpg) · close camera `/?view=city&cam=440,-2721,52,60,80`
+
 ## The Wimbish House
 
 The 1898 Wimbish House at 1150 Peachtree (W. T. Downing), home of the Atlanta Woman's Club, was drawn as a generic two-storey box. Wikimedia photographs from the street and from the garden show buff stone under a steep slate hip roof. A round drum bay and a conical turret frame an arched loggia on the south front, two pinnacled dormers rise between them, and a tall chimney stands at the back. The OSM building parts give the plan: the house at the east end, the porch, and the club's later two-storey wing to the west. The mapped 7.2 m height fits the wing, not the three-storey house, so the house is raised to an inferred 11.5 m eave and an 18 m ridge. The turret cap is at 19.6 m and the chimney at 20.5 m. [Wikimedia, 2019, front, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House.jpg) · [Wikimedia, 2019, oblique, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House_3.jpg) · [Wikimedia, 2013, from Peachtree, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Atlanta_Women%27s_Club_2013_09_28_7845.JPG)
@@ -157,4 +180,20 @@ The rear walls are plainer brick. The OSM building parts give the curved main bl
 **Estimated:** the 52.5 m belvedere roof peak, the arch proportions, the column pitch (2.6 m), the balcony radius and spacing, and the brick and green tones.
 
 Camera `/?view=city&cam=655,-2000,135,58,230`. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg) · [Night](log/ui/midtown-skyline/ponce-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/ponce-dusk-after-day.jpg) · [Low tier](log/ui/midtown-skyline/ponce-after-low-day.jpg)
+
+## The Federal Reserve Bank of Atlanta
+
+The Federal Reserve Bank of Atlanta at 1000 Peachtree, at 10th Street (Kohn Pedersen Fox, 2001; osm:way:28979077), was drawn as generic red brick from its OSM building parts. Wikimedia photographs from three angles (2019–2023) show:
+- white Georgia marble in large ashlar blocks
+- a grid of deep punched windows between flat piers
+- a tower that steps back in tiers at its ends to a flat crown
+- a two-storey loggia on the Peachtree front
+- salvaged Corinthian columns standing free in the forecourt
+- an eagle on a column at the corner plaza, and flagpoles
+
+The OSM parts give the plan: the tower block, the low operations wing to the west and the service annexes. City keeps the wing and annexes plain marble at their mapped heights and rebuilds the tower in four tiers: 36, 40.5, 44.5 and 48 m. [Wikimedia, 2019, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_of_Atlanta_Headquarters.jpg) · [Wikimedia, 2023, loggia, CC0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_Building_(Atlanta),_Sept_2023_01.jpg) · [Wikimedia, 2023, forecourt, CC0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_Building_(Atlanta),_Sept_2023_02.jpg) · [Wikimedia, 2022, eagle column, CC BY-SA 2.0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_of_Atlanta.jpg)
+
+**Estimated:** the tier heights and setbacks (the parts carry levels only, so they are inferred), the window grid, the loggia pier count, the column and eagle placement, and the marble tone. **Gap:** no night photograph was found, so the lit offices and loggia are illustrative.
+
+Camera `/?view=city&cam=640,-3150,250,55,320`. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg) · [Night](log/ui/midtown-skyline/fed-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/fed-after-low-day.jpg)
 

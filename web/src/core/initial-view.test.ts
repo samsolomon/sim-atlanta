@@ -18,3 +18,10 @@ describe('landing view', () => {
     expect(initialView('?view=city', '#12/33/-84')).toBe('city');
   });
 });
+
+describe('Models view', () => {
+  it('opens only under ?ui=next; elsewhere the Model lab stays /models.html', () => {
+    expect(initialView('?ui=next&view=models', '')).toBe('models');
+    expect(initialView('?view=models', '')).toBe('city');
+  });
+});
