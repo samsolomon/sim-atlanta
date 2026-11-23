@@ -1124,13 +1124,53 @@ export class World {
     }
   }
 
-  /** Street lights: posts with glowing heads and soft pools of light on the pavement at night. */
+  /** Street lights: posts with glowing heads and soft pools of light on the pavement at night.
+   * `mapped` restricts street lamps to chosen roads and adds lower lamps along mapped lit
+   * paths and at mapped lamp nodes. */
   buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
-    inTravelLane?: (x: number, z: number) => boolean) {
+    inTravelLane?: (x: number, z: number) => boolean,
+    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
     const r = rng(311);
-    const spots: { x: number; z: number; y: number; ang: number }[] = [];
+    const spots: { x: number; z: number; y: number; ang: number; h?: number; pool?: number }[] = [];
+    const clear = (x: number, z: number) => this.inBounds(x, z, 3) && !inTravelLane?.(x, z) &&
+      !this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring));
+    // A board area bakes only its own light map, so a pool crossing a row seam would stop
+    // in a straight line. Mapped areas keep each lamp a pool radius back from the seams.
+    const seamClear = (z: number, pool: number) => !mapped || (z - this.b.minZ >= pool && this.b.maxZ - z >= pool);
+    const carriageways = new PlacementIndex<{ a: P2; b: P2; half: number }>();
+    if (mapped) for (const rd of this.data.roads) {
+      if (!DRIVABLE.has(rd.cls) || rd.bridge || rd.tunnel) continue;
+      for (let i = 1; i < rd.pts.length; i++) {
+        const seg = { a: rd.pts[i - 1], b: rd.pts[i], half: (WIDTH[rd.cls] ?? 7) / 2 + 0.3 };
+        carriageways.add(seg, [seg.a, seg.b], seg.half);
+      }
+    }
+    const onCarriageway = (x: number, z: number) => carriageways.at(x, z).some((g) => segDist(x, z, g.a, g.b) < g.half);
+    const groundY = (x: number, z: number) => (groundAt ? groundAt(x, z) : this.ground(x, z));
+    for (const pts of mapped?.paths ?? []) {
+      // Pedestrian-scale lamps every 24 m beside each mapped lit path, on whichever side
+      // keeps them off a carriageway.
+      const line = new Line(pts);
+      for (let s = 4 + r() * 8; s < line.length; s += 24) {
+        const p = line.at(s);
+        for (const side of [1, -1]) {
+          const x = p.x + p.nx * 1.4 * side, z = p.z + p.nz * 1.4 * side;
+          if (!clear(x, z) || !seamClear(z, 9) || onCarriageway(x, z)) continue;
+          const y = groundY(x, z);
+          if (y !== null) spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side), h: 4, pool: 9 });
+          break;
+        }
+      }
+    }
+    const mappedLamps: P2[] = [];
+    for (const [x, z] of mapped?.lamps ?? []) {
+      const y = clear(x, z) && seamClear(z, 14) ? groundY(x, z) : null;
+      if (y === null) continue;
+      spots.push({ x, z, y, ang: 0, h: 6, pool: 14 });
+      mappedLamps.push([x, z]);
+    }
     for (const rd of this.data.roads) {
-      if (!DRIVABLE.has(rd.cls) || rd.cls === 'service') continue;
+      if (!DRIVABLE.has(rd.cls) || rd.cls === 'service' || (mapped && !mapped.include(rd))) continue;
       // The Connector has tall lights every ~50 m along both shoulders; streets every 28 m, alternating sides.
       const hwy = rd.cls === 'motorway' && rd.sub !== 'link';
       if (rd.cls === 'motorway' && !hwy) continue;
@@ -1144,18 +1184,24 @@ export class World {
         side = -side;
         if (!this.inBounds(x, z, 3) || inTravelLane?.(x, z)) continue;
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
+        // A mapped lamp already stands here.
+        if (!seamClear(z, 17) || mappedLamps.some(([mx, mz]) => Math.hypot(mx - x, mz - z) < 6)) continue;
         const y = groundAt ? groundAt(x, z) : rd.bridge ? Math.max(0, this.ground(x, z)) : this.ground(x, z);
         if (y === null) continue;
         spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side) });
       }
     }
     const m = new THREE.Matrix4();
-    const post = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.16, 7, 5).translate(0, 3.5, 0), new THREE.MeshLambertMaterial({ color: '#4a4f55' }), spots.length);
+    // Thin posts barely read at the low tier: four sides instead of five.
+    const post = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.16, 7, mapped?.lowDetail ? 4 : 5).translate(0, 3.5, 0), new THREE.MeshLambertMaterial({ color: '#4a4f55' }), spots.length);
     this.lampHeads = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 0.25, 1.4), new THREE.MeshBasicMaterial({ color: '#8a8f94' }), spots.length);
+    const scale = new THREE.Matrix4();
     spots.forEach((sp, i) => {
-      m.makeTranslation(sp.x, sp.y, sp.z);
+      const h = sp.h ?? 7;
+      m.makeTranslation(sp.x, sp.y, sp.z).multiply(scale.makeScale(1, h / 7, 1));
       post.setMatrixAt(i, m);
-      m.makeRotationY(sp.ang).setPosition(sp.x, sp.y + 7, sp.z);
+      m.makeRotationY(sp.ang).setPosition(sp.x, sp.y + h, sp.z);
+      if (h < 7) m.multiply(scale.makeScale(h / 7, 1, h / 7));
       this.lampHeads!.setMatrixAt(i, m);
     });
     post.castShadow = true;
@@ -1168,7 +1214,7 @@ export class World {
    * storefronts) painted into a texture over the board, added to the ground, street and
    * lot materials in proportion to the night factor.
    */
-  private bakeLightMap(spots: { x: number; z: number }[], board?: THREE.Mesh) {
+  private bakeLightMap(spots: { x: number; z: number; pool?: number }[], board?: THREE.Mesh) {
     const b = this.b;
     const PX = Math.max(1, Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / this.opts.lightMapMax); // metres per texel
     const c = document.createElement('canvas');
@@ -1182,13 +1228,14 @@ export class World {
       const px = (x - b.minX) / PX;
       const pz = (z - b.minZ) / PX;
       const grad = g.createRadialGradient(px, pz, 0, px, pz, r / PX);
+      if (!grad) return; // headless canvas stubs in tests
       grad.addColorStop(0, `rgba(${rgb},${a})`);
       grad.addColorStop(0.35, `rgba(${rgb},${a * 0.55})`);
       grad.addColorStop(1, `rgba(${rgb},0)`);
       g.fillStyle = grad;
       g.fillRect(px - r / PX, pz - r / PX, (2 * r) / PX, (2 * r) / PX);
     };
-    for (const sp of spots) pool(sp.x, sp.z, 17, '255,196,128', 0.85); // ~3000 K LED/sodium mix
+    for (const sp of spots) pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.pool ? 0.6 : 0.85); // ~3000 K LED/sodium mix
     // Shopfront spill along building edges at street level.
     for (const bd of this.data.buildings) {
       const ring = bd.rings[0];
