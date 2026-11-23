@@ -75,6 +75,7 @@ import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createAmericasMart } from './americasmart';
 import { createTheCenter } from './the-center';
 import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
@@ -267,6 +268,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let americasMart: ReturnType<typeof createAmericasMart> = null;
   let theCenter: ReturnType<typeof createTheCenter> = null;
   let samNunn: ReturnType<typeof createSamNunn> = null;
   let candler: ReturnType<typeof createCandler> = null;
@@ -356,8 +358,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterCandler = candler?.buildings ?? afterGrady;
         equitable = createEquitable(afterCandler, ground);
         const samNunnSite = equitable?.buildings ?? afterCandler;
-        theCenter = createTheCenter(samNunnSite, ground);
-        const afterTheCenter = theCenter?.buildings ?? samNunnSite;
+        americasMart = createAmericasMart(samNunnSite, ground);
+        const afterAmericasMart = americasMart?.buildings ?? samNunnSite;
+        theCenter = createTheCenter(afterAmericasMart, ground);
+        const afterTheCenter = theCenter?.buildings ?? afterAmericasMart;
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
@@ -391,6 +395,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (americasMart) world.group.add(americasMart.group);
         if (theCenter) world.group.add(theCenter.group);
         if (samNunn) world.group.add(samNunn.group);
         if (candler) world.group.add(candler.group);
@@ -398,7 +403,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
-      await build('streets and freight', () => { transport = createSurfaceTransport(vd, ground, terrain!.groundAt, cut); });
+      await build('streets and freight', () => { transport = createSurfaceTransport(americasMart?.surfaceData(vd) ?? vd, ground, terrain!.groundAt, cut); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
@@ -937,6 +942,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    americasMart?.setNight(night);
     theCenter?.setNight(night);
     samNunn?.setNight(night);
     candler?.setNight(night);
