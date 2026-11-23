@@ -67,13 +67,18 @@ class AttachPartsTest(unittest.TestCase):
                       (2, {"building:part": "yes", "building:levels": "1"}, 0, 0, 10, 10))["osm:way:1"]
         self.assertAlmostEqual(max(p["h"] for p in b["parts"]), 86.4)
 
-    def test_raised_part_leaves_its_underside_open(self):
+    def test_raised_part_stands_on_a_ground_floor_but_a_canopy_stays_open(self):
         b = buildings((1, {"building": "yes", "building:levels": "7"}, 0, 0, 50, 50),
                       (2, {"building:part": "yes", "height": "25", "min_height": "4"}, 0, 0, 50, 20),
                       (3, {"building:part": "yes", "height": "25"}, 0, 20, 50, 50))["osm:way:1"]
-        self.assertFalse([p for p in b["parts"] if p["id"] == "podium"])
         raised = next(p for p in b["parts"] if p["id"] == "osm:way:2")
         self.assertEqual(raised["minH"], 4)
+        # The parent's own 25.2 m never fills the raised part's footprint; a 4 m floor does.
+        self.assertEqual(sorted(p["h"] for p in b["parts"] if p["id"] == "podium"), [4])
+        c = buildings((1, {"building": "yes", "building:levels": "2"}, 0, 0, 50, 50),
+                      (2, {"building:part": "roof", "height": "6", "min_height": "5"}, 0, 0, 50, 20),
+                      (3, {"building:part": "yes", "height": "7"}, 0, 20, 50, 50))["osm:way:1"]
+        self.assertFalse([p for p in c["parts"] if p["id"] == "podium"])
 
     def test_orphans_keep_their_own_ids_names_and_tiers(self):
         found = buildings((5, {"building:part": "yes", "height": "10", "name": "A"}, 100, 100, 120, 120),

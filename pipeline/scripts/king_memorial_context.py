@@ -148,7 +148,8 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
         taken = bool(parent_h) and any((parse_height(t.get("height")) or 0) >= parent_h - .5 for _, t, _ in mine)
         for ref, ptags, shape in mine:
             top, bottom, tier = part_height(ptags, tags, king, tallest, taken)
-            masses.append(dict(id=ref, top=top, bottom=bottom, tier=tier, shape=shape.intersection(piece)))
+            masses.append(dict(id=ref, top=top, bottom=bottom, tier=tier, shape=shape.intersection(piece),
+                               canopy=ptags.get("building:part") == "roof"))
         masses = resolve(masses)
         out = []
         for m in masses:
@@ -182,6 +183,14 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
             else:
                 cap = max(grounded, key=lambda m: m["top"])
             podium_h, tier = min(own, cap["top"]), "inferred"
+        # A raised part (other than a roof canopy) stands on a ground floor up to
+        # its underside, where nothing else is mapped beneath it.
+        solid = unary_union([m["shape"] for m in grounded]) if grounded else None
+        for m in masses:
+            if m["bottom"] > 0 and not m["canopy"]:
+                under = m["shape"].difference(solid) if solid is not None else m["shape"]
+                for poly in _polygons(under, 20):
+                    out.append(dict(id="podium", rings=_rings(poly), h=round(m["bottom"], 1), tier="inferred"))
         # Below a quarter of the plan the parts are details (an entrance, a canopy)
         # and the parent outline keeps its own mapped height and tier.
         rest = piece.difference(covered)
