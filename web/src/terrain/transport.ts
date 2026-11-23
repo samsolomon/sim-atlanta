@@ -297,10 +297,27 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         tread!.push({ s: distance, position: new THREE.Vector3(
           (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2) });
       }
+      // A MARTA bed on bare earth often rides a crest narrower than its 4.2 m tread
+      // (the North Line embankment near Brookwood). Level each section onto the
+      // highest rendered ground across the full width, here and 1 m either side, so
+      // the terrain cannot rise through the middle of the tread between its edges.
+      const crest = textured && !bridge && !profile && run.cls === 'subway' ? (s: number) => {
+        let top = -Infinity;
+        for (const ds of [-1, 0, 1]) {
+          const t = THREE.MathUtils.clamp(s + ds, 0, line.length);
+          for (let k = 0; k <= 6; k++) {
+            const [x, z] = lateral(t, width * (k / 6 - .5));
+            const h = groundAt(x, z);
+            if (h !== null) top = Math.max(top, h);
+          }
+        }
+        return top;
+      } : null;
       for (const s of stations) {
         if (prev && s === lastS) continue;
         const p = line.at(s);
         const section: number[][] = [];
+        const level = crest?.(s) ?? -Infinity;
         for (const [i, offset] of offsets.entries()) {
           const [px,pz]=lateral(s,offset*taper(s));
           const x = THREE.MathUtils.clamp(px,bounds.minX,bounds.maxX);
@@ -326,7 +343,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             if (!(end ? endCut : startCut) && ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
           }
           if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
-          if (textured) y = freightGrade(x, z, y);
+          if (textured) y = Math.max(freightGrade(x, z, y), level);
           section.push([x, y + lift, z]);
         }
         if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; continue; }
