@@ -99,15 +99,25 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
       }
     const mouth = Math.max(...tracks.map((l) => profile.at(l, 0) - (area.groundAt(l.at(0).x, l.at(0).z) ?? -Infinity)));
     // Piers stand clear of every rendered lane and mapped road at its drawn width.
-    const piers = northLinePiers(profile, city.roads, (x, z) => inConnectorLanes(x, z, 1));
+    const piers = northLinePiers(profile, city.roads, (x, z) => inConnectorLanes(x, z, 1), rows, area.groundAt);
     const onA = piers.filter((i) => profile.centre[i].z > -5410);
     expect(onA.length).toBeGreaterThanOrEqual(3);
     for (const i of piers) {
       const c = profile.centre[i];
-      expect(inConnectorLanes(c.x, c.z, 1.2)).toBe(false);
-      for (const road of city.roads)
-        for (let k = 1; k < road.pts.length; k++)
-          expect(segDist(c.x, c.z, road.pts[k - 1], road.pts[k])).toBeGreaterThan(roadWidth(road) / 2 + 1.2);
+      for (const [u, v] of [[-1.2, -1.1], [1.2, -1.1], [1.2, 1.1], [-1.2, 1.1]]) {
+        const x = c.x + c.nz * u + c.nx * v,
+          z = c.z - c.nx * u + c.nz * v;
+        expect(inConnectorLanes(x, z, 1)).toBe(false);
+        for (const road of city.roads)
+          for (let k = 1; k < road.pts.length; k++)
+            expect(segDist(x, z, road.pts[k - 1], road.pts[k])).toBeGreaterThan(roadWidth(road) / 2 + 1 - 1e-6);
+      }
+    }
+    // Bridge B's pier stays out of the Clear Creek channel (its lowest ground).
+    const onB = piers.filter((i) => profile.centre[i].z < -5540);
+    for (const i of onB) {
+      const span = profile.centre.filter((c) => c.bridge && c.z < -5540).map((c) => area.groundAt(c.x, c.z) ?? Infinity);
+      expect(area.groundAt(profile.centre[i].x, profile.centre[i].z)!).toBeGreaterThan(Math.min(...span) + 1.5);
     }
     expect(spanSamples).toBeGreaterThan(30);
     expect(through).toBeLessThan(0);

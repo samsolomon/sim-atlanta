@@ -152,7 +152,7 @@ export function createNorthLine(
   if (!profile.height.every(Number.isFinite)) return;
   area.group.add(northLineGuideway(lines, profile, area.groundAt));
   const roads = area.connectorBoard?.city.roads ?? [];
-  const spans = northLineStructure(profile, northLinePiers(profile, roads, (x, z) => inConnectorLanes(x, z, 1)), area.groundAt);
+  const spans = northLineStructure(profile, northLinePiers(profile, roads, (x, z) => inConnectorLanes(x, z, 1), rows, area.groundAt), area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
   const height = (line: Line, along: number) => profile.at(line, along);
   const darkness = { value: 0 };
