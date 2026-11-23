@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loading 7, white model fills with colour</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:1296px;height:726px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.80);--gb:rgba(243,239,230,.68);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);color:var(--ink);background:#f3efe6}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px}
+.vsep{width:1px;align-self:stretch;margin:10px 4px;background:var(--sep)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.vs{height:36px;border:0;border-radius:9px;padding:0 12px;font:600 14px system-ui;background:transparent;color:var(--ink)}
+.vs.on{background:rgba(255,255,255,.95);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lay{position:absolute;inset:0;width:1296px;height:726px;object-fit:cover}
+.white{animation:kWhite 12s linear infinite}
+.still{animation:kStill 12s linear infinite}
+.live{animation:kLive 12s linear infinite;transform-origin:50% 50%}
+.chrome{animation:kChrome 12s linear infinite}
+.notice{animation:kNotice 12s linear infinite}
+.sLoad{animation:kLoadTxt 12s linear infinite}
+.sLive{animation:kLiveTxt 12s linear infinite}
+.credit{animation:kCredit 12s linear infinite}
+.train{animation:kTrain 12s linear infinite}
+.spin{animation:kSpin 1s linear infinite;transform-origin:50% 50%}
+@keyframes kWhite{0%,3%{opacity:0}8%{opacity:1}95%{opacity:1}100%{opacity:0}}
+@keyframes kStill{0%,16%{opacity:0}30%{opacity:1}95%{opacity:1}100%{opacity:0}}
+@keyframes kLive{0%,30%{opacity:0}33%,95%{opacity:1}100%{opacity:0}}
+@keyframes kChrome{0%,2%{opacity:0}5%{opacity:1}96%{opacity:1}100%{opacity:0}}
+@keyframes kNotice{0%,4%{opacity:0}7%{opacity:1}31%{opacity:1}34%{opacity:0}100%{opacity:0}}
+@keyframes kLoadTxt{0%,31%{opacity:1}34%,100%{opacity:0}}
+@keyframes kLiveTxt{0%,31%{opacity:0}34%,96%{opacity:1}100%{opacity:0}}
+@keyframes kCredit{0%,32%{opacity:0}35%{opacity:1}72%{opacity:1}76%,100%{opacity:0}}
+@keyframes kTrain{0%,34%{opacity:0;transform:translate(0,0)}37%{opacity:1;transform:translate(0,0)}95%{opacity:1;transform:translate(150px,-92px)}100%{opacity:0;transform:translate(150px,-92px)}}
+@keyframes kSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.live{animation-name:kStill}.spin{animation:none}}
+</style>
+</helmet>
+<div class="root">
+  <img class="lay white" src="/_blob/91d95938e76ffad7f10e3706d0aa9128" alt="White study model of the downtown board">
+  <img class="lay still" src="/_blob/a21d3449f13a5f95a93345e35012d97c" alt="Pre-rendered still of the downtown board">
+  <img class="lay live" src="/_blob/a21d3449f13a5f95a93345e35012d97c" alt="Live downtown scene">
+  <div class="train" aria-hidden="true" style="position:absolute;left:600px;top:560px;width:16px;height:16px;border-radius:50%;background:#1f5fd1;border:2px solid #fff;box-shadow:0 0 0 4px rgba(31,95,209,.3)"></div>
+
+  <div class="chrome">
+    <div class="g" style="left:8px;top:8px;padding:14px 18px 14px 20px;width:262px">
+      <span style="display:block;font-size:30px;font-weight:700;letter-spacing:-.015em;line-height:1.05">Castleberry Hill</span>
+      <span style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:16px"><strong>2:04 PM</strong>58° Clear</span>
+      <span style="position:relative;display:block;height:18px;margin-top:6px;font-size:12px;color:var(--ink2)">
+        <span class="sLoad" style="position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px"><span class="dot" style="background:#b8b0a2"></span>Friday, Nov 20</span>
+        <span class="sLive" style="position:absolute;left:0;top:0;display:flex;align-items:center;gap:6px"><span class="dot" style="background:#2f9e44"></span>Live · Friday, Nov 20</span>
+      </span>
+    </div>
+    <div class="g notice" role="status" style="left:8px;top:124px;height:34px;display:flex;align-items:center;gap:8px;padding:0 14px 0 12px;border-radius:12px;font-size:13px;font-weight:600">
+      <svg class="spin" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M12 3a9 9 0 1 1-9 9" style="stroke-width:2.2"></path></svg>Building the city…
+    </div>
+    <div class="g" style="left:8px;bottom:8px;height:48px;display:flex;align-items:center;gap:2px;padding:0 4px 0 2px">
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></span>
+      <span class="vsep"></span>
+      <span style="display:flex;gap:2px;padding:2px;border-radius:11px;background:var(--sep)"><span class="vs" style="display:inline-flex;align-items:center">Map</span><span class="vs on" style="display:inline-flex;align-items:center">City</span><span class="vs" style="display:inline-flex;align-items:center">Models</span></span>
+      <span class="vsep"></span>
+      <span class="ib" style="width:40px;height:40px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 18V6l11-2v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></span>
+    </div>
+    <div class="g" style="right:8px;bottom:8px;width:44px;display:flex;flex-direction:column;padding:2px 0">
+      <span class="ib"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:30px;height:30px"><circle cx="16" cy="16" r="13" style="stroke-width:1.2"></circle><g transform="rotate(-21 16 16)"><path d="M16 5l3.2 11h-6.4z" style="fill:#c2255c;stroke:none"></path><path d="M16 27l3.2-11h-6.4z" style="fill:currentColor;stroke:none;opacity:.55"></path></g></svg></span>
+      <div class="sep"></div>
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></span>
+      <div class="sep"></div>
+      <span class="ib"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></span>
+    </div>
+    <p class="credit" style="position:absolute;right:60px;bottom:9px;margin:0;font-size:12px;line-height:16px;color:#4a463e;text-shadow:0 0 2px #f4f1ea,0 0 4px #f4f1ea,0 0 8px #f4f1ea">© OpenStreetMap contributors · OpenMapTiles</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1296,"height":726}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
