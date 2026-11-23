@@ -96,6 +96,12 @@ uses the timetable.
   with another angle, link the sources, and identify estimated dimensions. Record the lighting
   visible in the photos and which details you estimated. If reliable night imagery is unavailable,
   document the gap. Check both daylight and full-night City renders from a matched camera.
+- **Materials.** Landmarks pick materials from the library (`web/src/materials/`,
+  `shell.paint(surfaces.brick(), ...)` or `prism(..., { wall: surfaces.stucco() })`) first.
+  Add a new library material only when photos show something it can't cover. The library is
+  procedural (no texture bytes), keeps the vertex colour as the mean, and fades detail with
+  distance. A new texture anywhere in `web/src` must be declared in
+  `web/src/materials/budget.ts`, which a test holds to a fixed budget. See `docs/materials.md`.
 - **Build log.** After a meaningful step (a new data source, a visual milestone, a bug with a
   lesson), append a dated entry to `docs/build-log.md` with concrete numbers and what
   surprised you, and save a screenshot to `docs/log/`. Write it blog-ready.

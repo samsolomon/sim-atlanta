@@ -113,6 +113,7 @@ import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
+import { surfaceDefaults } from '../materials';
 
 export type Quality = 'low' | 'high';
 
@@ -179,6 +180,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
+  // Library materials follow the quality tier; ?surfaces=off draws every landmark flat (A/B).
+  surfaceDefaults.tier = quality;
+  surfaceDefaults.enabled = new URLSearchParams(globalThis.location?.search ?? '').get('surfaces') !== 'off';
   async function asset(name: string) {
     const r = await fetch(`${DATA}/scene/downtown/${name}`, { signal: options.signal });
     if (!r.ok) throw new Error(`City ${name} (${r.status})`);
