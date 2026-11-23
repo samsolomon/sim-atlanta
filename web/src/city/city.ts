@@ -59,6 +59,7 @@ import { createFlatiron } from './flatiron';
 import { createCentralLibrary } from './central-library';
 import { createPeachtreeCenter } from './peachtree-center';
 import { createPeachtree191 } from './peachtree-191';
+import { createHyattRegency } from './hyatt-regency';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
@@ -226,6 +227,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let library: ReturnType<typeof createCentralLibrary> = null;
   let peachtreeCenter: ReturnType<typeof createPeachtreeCenter> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
+  let hyatt: ReturnType<typeof createHyattRegency> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -265,8 +267,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterCenter = peachtreeCenter?.buildings ?? remaining;
         marquis = createMarriottMarquis(afterCenter, ground);
         const hotelSite = marquis?.buildings ?? afterCenter;
-        twelve = createTwelveCentennial(hotelSite, ground);
-        const afterTwelve = twelve?.buildings ?? hotelSite;
+        hyatt = createHyattRegency(hotelSite, ground);
+        const afterHyatt = hyatt?.buildings ?? hotelSite;
+        twelve = createTwelveCentennial(afterHyatt, ground);
+        const afterTwelve = twelve?.buildings ?? afterHyatt;
         truist = createTruistPlaza(afterTwelve, groundAt);
         const librarySite = truist?.buildings ?? afterTwelve;
         library = createCentralLibrary(librarySite, groundAt);
@@ -305,6 +309,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
+        if (hyatt) world.group.add(hyatt.group);
         if (marquis) world.group.add(marquis.group);
         if (twelve) world.group.add(twelve.group);
         if (truist) world.group.add(truist.group);
@@ -757,6 +762,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     platforms?.setNight(night);
     floyd?.setNight(night);
     eastRail?.setNight(night);
+    hyatt?.setNight(night);
     marquis?.setNight(night);
     twelve?.setNight(night);
     truist?.setNight(night);
