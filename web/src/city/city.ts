@@ -68,6 +68,7 @@ import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
+import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
@@ -246,6 +247,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
+  let russell: ReturnType<typeof createRussellBuilding> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
@@ -304,8 +306,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
         const afterStadium = stadium?.buildings ?? stadiumSite;
-        centennial = createCentennialTower(afterStadium, ground);
-        const afterCentennial = centennial?.buildings ?? afterStadium;
+        russell = createRussellBuilding(afterStadium, ground);
+        const afterRussell = russell?.buildings ?? afterStadium;
+        centennial = createCentennialTower(afterRussell, ground);
+        const afterCentennial = centennial?.buildings ?? afterRussell;
         capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
@@ -345,6 +349,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
+        if (russell) world.group.add(russell.group);
         if (centennial) world.group.add(centennial.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
@@ -801,6 +806,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     twoPeachtree?.setNight(night);
     georgiaPower?.setNight(night);
     georgiaPacific?.setNight(night);
+    russell?.setNight(night);
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
