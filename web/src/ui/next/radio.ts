@@ -41,7 +41,8 @@ export function createRadio(list: Track[] = PLAYLIST): Radio {
   const changed = () => {
     listeners.forEach((fn) => fn());
     const ms = (navigator as Navigator & { mediaSession?: MediaSession }).mediaSession;
-    if (ms && typeof MediaMetadata !== 'undefined') {
+    // The OS only hears about real audio; a silent stub never claims to be playing there.
+    if (ms && typeof MediaMetadata !== 'undefined' && list[i].src) {
       ms.metadata = new MediaMetadata({ title: list[i].title, artist: 'Sim Atlanta radio' });
       ms.playbackState = playing ? 'playing' : 'paused';
     }
@@ -58,7 +59,9 @@ export function createRadio(list: Track[] = PLAYLIST): Radio {
     clearTimeout(timer);
     if (t.src) {
       if (!audio.src.endsWith(t.src)) audio.src = t.src;
-      void audio.play().catch(() => {
+      void audio.play().catch((e: unknown) => {
+        // A pause or track change aborts the pending play: that's not a failure.
+        if (e instanceof DOMException && e.name === 'AbortError') return;
         playing = false;
         changed();
       });

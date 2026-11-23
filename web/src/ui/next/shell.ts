@@ -237,21 +237,33 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const NOTE = SVG('<path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>');
   const PAUSE = SVG('<path d="M8 5v14M16 5v14"/>');
   const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Play radio', 'aria-pressed': 'false' }, NOTE);
-  const radioTitle = el('span', { class: 'a2-radio-title', hidden: '', 'aria-live': 'polite' });
+  const radioTitle = el('span', { class: 'a2-radio-title', hidden: '' });
   let radio: import('./radio').Radio | null = null;
+  let radioLoading: Promise<import('./radio').Radio> | null = null;
   const showRadio = () => {
     if (!radio) return;
+    // Until the music exists the playlist is a stub: say so rather than pose as playing audio.
+    const words = radio.track.src ? radio.track.title : `${radio.track.title} · no audio yet`;
     radioBtn.innerHTML = radio.playing ? PAUSE : NOTE;
     radioBtn.setAttribute('aria-pressed', String(radio.playing));
-    radioBtn.setAttribute('aria-label', radio.playing ? `Pause radio: ${radio.track.title}` : 'Play radio');
-    radioTitle.textContent = radio.track.title;
+    radioBtn.setAttribute('aria-label', radio.playing ? `Pause radio: ${words}` : 'Play radio');
+    radioTitle.textContent = words;
+    radioTitle.title = words;
     radioTitle.hidden = !radio.playing;
   };
   radioBtn.addEventListener('click', async () => {
-    if (!radio) {
-      const { createRadio } = await import('./radio');
-      radio ??= createRadio();
-      radio.onChange(showRadio);
+    try {
+      // One load, however many taps land while it's in flight.
+      radioLoading ??= import('./radio').then(({ createRadio }) => {
+        const r = createRadio();
+        r.onChange(showRadio);
+        return r;
+      });
+      radio = await radioLoading;
+    } catch {
+      radioLoading = null; // try again on the next tap (a stale chunk after a deploy, say)
+      showNotice('The radio couldn’t load. Try again.');
+      return;
     }
     radio.toggle();
   });
