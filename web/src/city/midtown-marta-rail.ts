@@ -97,16 +97,38 @@ export function northCar(run: Run, s: number) {
   return { x: p.x + over * p.dx, z: p.z + over * p.dz, along, dx: p.dx * run.dir, dz: p.dz * run.dir };
 }
 
-function portal(line: Line, base: number) {
-  const { x, z, dx, dz } = line.at(0);
+// One cut-and-cover box carries both mains (aerial imagery), so a single headwall
+// spans the two mouths. Its face stands at the more advanced mapped mouth and both
+// tracks clip there; the other track's last few metres sit inside the hood.
+export function portalFrame(lines: Line[]) {
+  const a = lines[0].at(0),
+    b = lines[1].at(0);
+  const dx = (a.dx + b.dx) / 2,
+    dz = (a.dz + b.dz) / 2,
+    n = Math.hypot(dx, dz);
+  const fx = dx / n,
+    fz = dz / n;
+  // Distance of each mouth along the outward (open-track) heading.
+  const ahead = (p: { x: number; z: number }) => p.x * fx + p.z * fz;
+  const face = Math.max(ahead(a), ahead(b));
+  const mx = (a.x + b.x) / 2,
+    mz = (a.z + b.z) / 2,
+    shift = face - ahead({ x: mx, z: mz });
+  const spacing = Math.abs((b.x - a.x) * fz - (b.z - a.z) * fx);
+  return { x: mx + fx * shift, z: mz + fz * shift, dx: fx, dz: fz, spacing };
+}
+
+function portal(frame: ReturnType<typeof portalFrame>, base: number) {
   const body = new Builder(),
     concrete = '#a89e8f';
-  // Illustrative exterior concrete hood with a recessed louver panel. The
-  // schematic hood terminates the visible guideway at the reported cover edge.
-  body.box(5.8, 0.6, 8, 0, 4.95, -3.95, concrete);
+  // Illustrative concrete headwall with a centre wall between the two tracks.
+  const half = frame.spacing / 2 + 2.72,
+    width = 2 * half + 0.38;
+  body.box(width, 0.6, 8, 0, 4.95, -3.95, concrete);
+  body.box(0.4, 4.65, 8, 0, 2.32, -3.95, '#aa9e8c');
   for (const sign of [-1, 1]) {
-    body.box(0.38, 5.1, 8, sign * 2.72, 2.45, -3.95, '#aa9e8c');
-    const side = sign * 2.72;
+    const side = sign * half;
+    body.box(0.38, 5.1, 8, side, 2.45, -3.95, '#aa9e8c');
     body.quad(
       [side - 0.18, 0, 0.05],
       [side + 0.18, 0, 0.05],
@@ -116,15 +138,15 @@ function portal(line: Line, base: number) {
     );
     body.quad([side, 0, 0.05], [side, 4.55, 0.05], [side, 1.1, 7.7], [side, 0, 7.7], '#998d7e');
   }
-  body.box(5.12, 4.65, 0.16, 0, 2.32, -6.7, '#333436');
+  body.box(width - 0.4, 4.65, 0.16, 0, 2.32, -6.7, '#333436');
   body.box(1.6, 0.44, 0.1, 0, 4.97, 0.1, '#534f49');
   for (let i = 0; i < 4; i++) body.box(1.56, 0.038, 0.14, 0, 4.8 + i * 0.1, 0.15, '#aa9e8c');
   const mesh = new THREE.Mesh(
     body.geometry(),
     new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
   );
-  mesh.position.set(x, base, z);
-  mesh.rotation.y = Math.atan2(dx, dz);
+  mesh.position.set(frame.x, base, frame.z);
+  mesh.rotation.y = Math.atan2(frame.dx, frame.dz);
   mesh.name = 'North Line portal';
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
@@ -138,23 +160,32 @@ export function createNorthLine(area: THREE.Group, rf: RoutesFile, origin: Origi
     height = treadHeights(mesh);
   const darkness = { value: 0 };
   const planes = new Map<Line, THREE.Plane[]>();
-  for (const line of lines) {
-    const p = line.at(0),
-      endSample = line.at(0.05),
-      h = height(endSample.x, endSample.z);
-    if (h === null) continue;
-    area.add(portal(line, h));
-    planes.set(line, [
-      new THREE.Plane(new THREE.Vector3(p.dx, 0, p.dz), -p.dx * p.x - p.dz * p.z),
-      new THREE.Plane(new THREE.Vector3(0, 0, 1), 5700),
-    ]);
+  if (lines.length === 2) {
+    const frame = portalFrame(lines),
+      base = Math.min(
+        ...lines.map((l) => {
+          const p = l.at(0.05);
+          return height(p.x, p.z) ?? Infinity;
+        }),
+      );
+    if (Number.isFinite(base)) {
+      area.add(portal(frame, base));
+      const clip = [
+        new THREE.Plane(new THREE.Vector3(frame.dx, 0, frame.dz), -frame.dx * frame.x - frame.dz * frame.z),
+        new THREE.Plane(new THREE.Vector3(0, 0, 1), 5700),
+      ];
+      for (const line of lines) planes.set(line, clip);
+    }
   }
   const colors = new Map(rf.routes.map((r) => [r.id, r.color]));
   const pools = new Map<
     string,
     { geometry: THREE.BufferGeometry; material: THREE.Material; meshes: THREE.Mesh[]; count: number }
   >();
-  return (states: TrainState[], dark: number) => {
+  const xs = lines.flatMap((l) => l.pts.map((p) => p[0])),
+    zs = lines.flatMap((l) => l.pts.map((p) => p[1]));
+  const bounds = { minX: Math.min(...xs) - 60, maxX: Math.max(...xs) + 60, minZ: Math.min(...zs), maxZ: Math.max(...zs) + 60 };
+  const update = (states: TrainState[], dark: number) => {
     darkness.value = dark;
     for (const pool of pools.values()) pool.count = 0;
     let total = 0;
@@ -216,4 +247,5 @@ export function createNorthLine(area: THREE.Group, rf: RoutesFile, origin: Origi
       for (let i = pool.count; i < pool.meshes.length; i++) pool.meshes[i].visible = false;
     return total;
   };
+  return Object.assign(update, { bounds: planes.size ? bounds : null });
 }

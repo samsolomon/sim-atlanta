@@ -5,7 +5,7 @@ import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import type { TransportRun } from '../terrain/transport-data';
 import rows from './fixtures/midtown-rail.json';
-import { createNorthLine, northCar, northLinePaths, northLineTracks } from './midtown-marta-rail';
+import { createNorthLine, northCar, northLinePaths, northLineTracks, portalFrame } from './midtown-marta-rail';
 
 const origin = { lon: -84.3916, lat: 33.7539 };
 const tracks = northLineTracks(rows['brookwood-station'] as TransportRun[], -5700);
@@ -79,4 +79,15 @@ it('draws the same source identity at a live or scheduled fix and retires cars w
   }
   expect(update([], 0)).toBe(0);
   expect(cars.children.some((c) => c.visible)).toBe(false);
+});
+
+it('frames one shared headwall at the more advanced mouth, wide enough for both tracks', () => {
+  const f = portalFrame(tracks);
+  expect(f.spacing).toBeGreaterThan(4);
+  expect(f.spacing).toBeLessThan(6);
+  // Both mapped mouths lie on or behind the shared face, so no car shows ahead of the hood.
+  for (const line of tracks) {
+    const p = line.at(0);
+    expect((p.x - f.x) * f.dx + (p.z - f.z) * f.dz).toBeLessThanOrEqual(1e-6);
+  }
 });

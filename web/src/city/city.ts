@@ -256,7 +256,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!mosaic) { options.areaNote?.(note); return; }
     if (note) areaFailures.set(key, note);
     else areaFailures.delete(key);
-    options.areaNote?.([...areaFailures.values()].join(' ') || null);
+    options.areaNote?.([...areaFailures.values()].join(' · ') || null);
   }
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
@@ -1222,6 +1222,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fpsT = performance.now();
   let fps = 0;
   let showingBrookwoodNote = false;
+  let showingNorthLineNote = false;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
@@ -1265,6 +1266,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const states = options.trains();
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
+    if (northLine?.bounds) {
+      const { x, z } = controls.target, r = northLine.bounds;
+      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+      if (near !== showingNorthLineNote) {
+        showingNorthLineNote = near;
+        areaResult('north-line', near ? 'Inferred North Line track · Illustrative portal' : null);
+      }
+    }
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
       const { x, z } = controls.target, r = brookwood.bounds;
