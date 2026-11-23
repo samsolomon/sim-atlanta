@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { Color } from 'three';
+import { Color, Mesh } from 'three';
 import { expect, it } from 'vitest';
 import tags from '../../../pipeline/prototypes/residential/tags.json';
 import { residential } from './residential';
@@ -153,4 +153,50 @@ it('orients ridges by style: Craftsman front gables run back from the street, Tu
     const one = residential(city([deep]), undefined, undefined, undefined, 'high', { [deep.id]: { style: 'colonial' } }).planOf(deep.id)!;
     expect(one.shape).not.toBe('pyramidal');
   }
+});
+
+it('lays yards by rule: walks stop short of the roadway, nothing lands inside a footprint', () => {
+  // Two neighbouring houses facing the street along z = -6.
+  const a = house('yard-a', rect(10, 9, -20, 6)), b = house('yard-b', rect(10, 9, -4, 6));
+  const flat = () => 0;
+  for (const quality of ['high', 'low'] as const) {
+    const plan = residential(city([a, b]), undefined, flat, () => 0, quality, { 'yard-a': { style: 'colonial' }, 'yard-b': { style: 'craftsman' } });
+    const layer = plan.yards()!;
+    expect(layer).not.toBeNull();
+    const points: number[][] = [];
+    layer.group.traverse(o => {
+      if (!(o instanceof Mesh)) return;
+      const p = o.geometry.getAttribute('position');
+      for (let i = 0; i < p.count; i++) points.push([p.getX(i), p.getZ(i)]);
+    });
+    expect(points.length).toBeGreaterThan(0);
+    const inside = (x: number, z: number, r: number[][]) => {
+      let c = false;
+      for (let i = 0, j = r.length - 1; i < r.length; j = i++) if ((r[i][1] > z) !== (r[j][1] > z) && x < (r[j][0] - r[i][0]) * (z - r[i][1]) / (r[j][1] - r[i][1]) + r[i][0]) c = !c;
+      return c;
+    };
+    for (const [x, z] of points) {
+      // The street centreline is z = -6; walks and drives stop 4.5 m short of it (half-width tolerance).
+      expect(z).toBeGreaterThan(-6 + 4.5 - .7);
+      for (const h of [a, b]) expect(inside(x, z, h.rings[0].map(([px, pz]) => [px + .02 * Math.sign(px - (h.rings[0][0][0] + 5)), pz]))).toBe(false);
+    }
+    layer.dispose();
+  }
+});
+
+it('reports the yard budget per row and tier', () => {
+  const proto = new URL('../../../pipeline/prototypes/square-board/', import.meta.url);
+  const rows = ['north-band', 'north-corner', 'south-band', 'midtown-south', 'midtown-central', 'midtown-upper', 'brookwood-south', 'brookwood-station'];
+  const totals: Record<string, number> = {};
+  for (const quality of ['high', 'low'] as const) {
+    let sum = 0;
+    for (const row of rows) {
+      const plan = residential(JSON.parse(readFileSync(new URL(row + '/context.json', proto), 'utf8')), undefined, () => 0, () => 0, quality);
+      const layer = plan.yards();
+      if (layer) { sum += layer.triangles; layer.dispose(); }
+    }
+    totals[quality] = sum;
+  }
+  console.log('yard triangles', JSON.stringify(totals));
+  expect(totals.low).toBeLessThan(totals.high);
 });
