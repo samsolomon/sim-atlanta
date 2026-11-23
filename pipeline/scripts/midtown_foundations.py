@@ -76,12 +76,18 @@ def bake():
             ident = b["id"].split("/")[0]
             low, high = footprint_heights(b["rings"], dem, m["bounds"], m["stepM"])
             h = b["h"] if b["h"] is not None else (3.6*b["floors"] if b["floors"] else 8)
-            sites[ident].append((low, high, math.floor(low-zero) + zero + h))
+            # A building drawn as mapped parts is buried first at its lowest grounded roof.
+            grounded = [p["h"] for p in b.get("parts", []) if not p.get("minH")]
+            if grounded:
+                h = min(grounded)
+            # Narrow part masses meet the coarser low-tier ground up to ~1 m below 3DEP.
+            margin = 1.0 if grounded else .4
+            sites[ident].append((low, high, math.floor(low-zero) + zero + h, margin))
     grades = {}
     for ident, pieces in sorted(sites.items()):
-        low, high, roof = min(p[0] for p in pieces), max(p[1] for p in pieces), min(p[2] for p in pieces)
+        low, high = min(p[0] for p in pieces), max(p[1] for p in pieces)
         # Include the low-tier tessellation tolerance at the cutoff.
-        if roof < high + .4:
+        if any(roof < high + margin for _, _, roof, margin in pieces):
             grades[ident] = [math.floor(low*10)/10, math.ceil(high*10)/10]
     (PACK/"midtown-foundations/grades.json").write_text('{\n' + ',\n'.join(f'  {json.dumps(k)}: {json.dumps(v)}' for k, v in grades.items()) + '\n}'+"\n")
     return grades

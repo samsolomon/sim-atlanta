@@ -199,7 +199,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (candidate) {
     const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
     if (rings.length) {
-      fragment = makeScenery({ ...city, buildings: [{ ...candidate, rings }], roads: [], rail: [] }, [],
+      const parts = candidate.parts?.map(part => ({ ...part, rings: part.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3) }))
+        .filter(part => part.rings.length);
+      fragment = makeScenery({ ...city, buildings: [{ ...candidate, rings, parts }], roads: [], rail: [] }, [],
         options.quality, grid.manifest.stepM, groundAt, { finishFor: options.finishFor });
       fragment.group.name = candidate.id;
       scenery.group.add(fragment.group);

@@ -12,7 +12,10 @@ export function midtownFoundations<T extends TerrainCity>(city: T, sceneZero: nu
     const grade = sites[building.id.split('/')[0]];
     if (!grade) return building;
     const [low, high] = grade;
-    const height = building.h ?? (building.floors ? building.floors * 3.6 : 8);
+    // A building drawn as mapped parts is buried first at its lowest grounded roof.
+    const grounded = building.parts?.filter(part => !part.minH).map(part => part.h) ?? [];
+    const height = grounded.length ? Math.min(...grounded)
+      : building.h ?? (building.floors ? building.floors * 3.6 : 8);
     // Use the middle grade, raising it only enough for a door at the uphill edge.
     // A structure too short for a door tucks its uphill side into the slope
     // instead, with its roof flush with the high ground at worst.
