@@ -1552,6 +1552,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     revealed: whiteModel?.revealed ?? Promise.resolve(),
     beginReveal: () => whiteModel?.begin(),
     glide(x, z) {
+      // A loading area must not pull the camera back to a remembered point afterwards.
+      mosaic?.cancelTarget();
+      pendingNorthTarget = undefined;
+      pendingEastTarget = undefined;
       const p = pointOnBoard(x, z);
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },

@@ -147,7 +147,9 @@ function focusSelection() {
     const br = (c.bearing * Math.PI) / 180;
     // Shift the view centre so the vehicle lands half the panel away from it: right of it on
     // desktop (the panel is on the right), below it on phones (the sheet is at the bottom).
-    const off = ((phone ? r?.height ?? 0 : (r?.width ?? 0) + 16) / 2) * c.metresPerPixel;
+    // Vertical screen pixels cover more ground in a tilted view (about 1/cos of the tilt).
+    const tiltStretch = 1 / Math.max(0.35, Math.cos((c.tilt * Math.PI) / 180));
+    const off = (((phone ? r?.height ?? 0 : r?.width ?? 0) + 16) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
     const [dx, dz] = phone ? [-Math.sin(br) * off, Math.cos(br) * off] : [Math.cos(br) * off, Math.sin(br) * off];
     diorama.glide(x + dx, z + dz);
   } else if (map) {

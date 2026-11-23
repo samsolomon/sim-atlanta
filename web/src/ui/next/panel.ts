@@ -118,16 +118,31 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
   actions.className = 'a2-card-actions';
   actions.innerHTML = '<button type="button" class="a2-btn" data-card-share>Share</button>';
   card.append(actions);
-  actions.querySelector('[data-card-share]')!.addEventListener('click', () => hooks.share?.());
-  card.addEventListener('click', (e) => {
-    if (!(e.target as HTMLElement).closest('[data-all-stops]')) return;
+  actions.querySelector('[data-card-share]')!.addEventListener('click', (e) => {
+    e.stopPropagation(); // the share panel it opens would otherwise see an outside click
+    hooks.share?.();
+  });
+  const renderStops = () => {
     const html = hooks.allStops?.();
-    if (!html) return;
+    if (!html) return false;
+    const scroll = body.scrollTop;
     entries.stops.node.innerHTML = `${head('All stops')}${html}`;
     entries.stops.node.querySelector('[data-close]')?.addEventListener('click', () => close());
+    body.scrollTop = scroll;
+    return true;
+  };
+  card.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('[data-all-stops]') || !renderStops()) return;
     show('stops');
     entries.stops.node.querySelector<HTMLElement>('[data-close]')?.focus();
   });
+  // The list counts down like the card it came from.
+  setInterval(() => { if (current() === entries.stops && !renderStops()) back(); }, 1000);
+  /** All stops belongs to the selection it was opened from. */
+  const dropStops = () => {
+    const at = stack.indexOf(entries.stops);
+    if (at >= 0) stack.splice(at, 1);
+  };
   for (const e of Object.values(entries)) {
     e.node.classList.add('a2-entry');
     body.append(e.node);
@@ -180,7 +195,10 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
   backRow.addEventListener('click', back);
 
   // Follow the page's card: a new selection becomes the newest content; hidden → it leaves the stack.
-  card.addEventListener('a2-select', () => show('selection'));
+  card.addEventListener('a2-select', () => {
+    dropStops();
+    show('selection');
+  });
   // The selection's own text changes under Key or About (a train ends its trip): keep the back row true.
   new MutationObserver(() => {
     if (!backRow.hidden && stack[stack.length - 2] === entries.selection) render();
@@ -192,6 +210,7 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
       const at = stack.indexOf(entries.selection);
       if (at >= 0) {
         stack.splice(at, 1);
+        dropStops();
         render();
       }
     }

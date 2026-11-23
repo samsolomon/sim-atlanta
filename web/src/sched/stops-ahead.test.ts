@@ -21,7 +21,8 @@ describe.skipIf(!have)('All stops (needs pnpm data)', () => {
     const sched = new Schedule(json('routes.json'), json('timetable.json'), json('vehicle-types.json'));
     const at = new Date('2026-11-20T14:00:00-05:00');
     const t = sched.trainsAt(at).find((x) => x.nextStop)!;
-    const stops = sched.stopsAhead({ id: 'marta:live:123', pathId: t.pathId, nextStop: t.nextStop }, at);
+    // Live MARTA trains name their next stop and carry no stop id.
+    const stops = sched.stopsAhead({ id: 'marta:live:123', pathId: t.pathId, nextStopName: `${sched.stops.get(t.nextStop!)!.name.toUpperCase()} STATION` }, at);
     expect(stops.length).toBeGreaterThan(0);
     expect(stops.every((s) => s.inSec === null)).toBe(true);
   });

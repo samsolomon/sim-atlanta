@@ -509,7 +509,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (![subject, panel, bar, menu, share, shareBtn, panelHost.host].some((c) => c.contains(t))) closePops();
+    if (![subject, panel, bar, menu, share, shareBtn].some((c) => c.contains(t))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
 
