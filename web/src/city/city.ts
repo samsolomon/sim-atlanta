@@ -77,6 +77,7 @@ import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createAtlantaCityHall } from './atlanta-city-hall';
 import { createAmericasMart } from './americasmart';
 import { createHurtBuilding } from './hurt-building';
 import { createTheCenter } from './the-center';
@@ -273,6 +274,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let atlantaCityHall: ReturnType<typeof createAtlantaCityHall> = null;
   let americasMart: ReturnType<typeof createAmericasMart> = null;
   let hurtBuilding: ReturnType<typeof createHurtBuilding> = null;
   let theCenter: ReturnType<typeof createTheCenter> = null;
@@ -368,8 +370,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterCandler = candler?.buildings ?? afterGrady;
         equitable = createEquitable(afterCandler, ground);
         const samNunnSite = equitable?.buildings ?? afterCandler;
-        americasMart = createAmericasMart(samNunnSite, ground);
-        const afterAmericasMart = americasMart?.buildings ?? samNunnSite;
+        atlantaCityHall = createAtlantaCityHall(samNunnSite, ground);
+        const afterAtlantaCityHall = atlantaCityHall?.buildings ?? samNunnSite;
+        americasMart = createAmericasMart(afterAtlantaCityHall, ground);
+        const afterAmericasMart = americasMart?.buildings ?? afterAtlantaCityHall;
         hurtBuilding = createHurtBuilding(afterAmericasMart, ground);
         const afterHurtBuilding = hurtBuilding?.buildings ?? afterAmericasMart;
         theCenter = createTheCenter(afterHurtBuilding, ground);
@@ -409,6 +413,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (atlantaCityHall) world.group.add(atlantaCityHall.group);
         if (americasMart) world.group.add(americasMart.group);
         if (hurtBuilding) world.group.add(hurtBuilding.group);
         if (theCenter) world.group.add(theCenter.group);
@@ -959,6 +964,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    atlantaCityHall?.setNight(night);
     americasMart?.setNight(night);
     hurtBuilding?.setNight(night);
     theCenter?.setNight(night);
