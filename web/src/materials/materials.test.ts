@@ -98,6 +98,17 @@ describe('shader patch', () => {
     expect(m.customProgramCacheKey()).toBe('mine|surfaces-low');
   });
 
+  it("keys a hook-only material by its own hook, and never patches twice", () => {
+    const a = new MeshLambertMaterial(), b = new MeshLambertMaterial();
+    a.onBeforeCompile = shader => { shader.fragmentShader += '// a'; };
+    b.onBeforeCompile = shader => { shader.fragmentShader += '// b'; };
+    applySurfaces(a); applySurfaces(b);
+    expect(a.customProgramCacheKey()).not.toBe(b.customProgramCacheKey());
+    const hook = a.onBeforeCompile;
+    applySurfaces(a);
+    expect(a.onBeforeCompile).toBe(hook);
+  });
+
   it('takes no derivatives inside the detail branches', () => {
     // fwidth is undefined in non-uniform control flow; only the frame footprint may use it.
     expect(SURFACE_GLSL.match(/fwidth\(/g)).toHaveLength(1);

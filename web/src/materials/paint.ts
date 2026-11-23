@@ -47,13 +47,16 @@ export class SurfacePainter {
  */
 export function applySurfaces(material: Material, o: { tier?: SurfaceTier } = {}) {
   const tier = o.tier ?? surfaceDefaults.tier;
+  if (material.userData.surfaces) return material; // already patched: a second patch would redeclare the GLSL
+  material.userData.surfaces = tier;
   const before = material.onBeforeCompile.bind(material);
-  const key = material.customProgramCacheKey.bind(material);
+  // Read the key now: three's default key is the hook's source, which is about to become ours.
+  const key = material.customProgramCacheKey();
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms, renderer: WebGLRenderer) => {
     before(shader, renderer);
     patchSurfaceShader(shader, tier);
   };
-  material.customProgramCacheKey = () => `${key()}|surfaces-${tier}`;
+  material.customProgramCacheKey = () => `${key}|surfaces-${tier}`;
   material.needsUpdate = true;
   return material;
 }

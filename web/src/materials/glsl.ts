@@ -66,8 +66,9 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     else if (bond > 2.5 && mod(row, 2.) > .5) { unit = .1125; c.x = uv.x / unit + .25; }
     float fx = fw.x / unit;
     float head = sfJoint(c.x, .022, fx) + (bond > .5 && bond < 1.5 ? sfJoint(c.x - .667, .022, fx) : 0.);
-    float joint = sfJoint(c.y, .067, fw.y / .075) + head;
-    m += .07 * sfSee(.075, px) * (sfH(floor(c) + vec2(0., row * 3.1)) - .5) + .10 * sign(s.w) * joint;
+    float see = sfSee(.075, px); // zero by px = .0375, so the branch edge above never pops
+    float joint = (sfJoint(c.y, .067, fw.y / .075) + head) * see;
+    m += .07 * see * (sfH(floor(c) + vec2(0., row * 3.1)) - .5) + .10 * sign(s.w) * joint;
     }
 #endif
   } else if (kind < 2.5) {
@@ -98,7 +99,7 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     m += .02 * sfSee(3., px) * sfTone(uv * .3);
   } else if (kind < 6.5) {
     // Curtain wall: mullions every p1 m, a spandrel band at each p2 m floor, a tone per pane.
-    vec2 size = vec2(max(s.y, .3), max(s.w, .5)), c = uv / size, fc = fw / size;
+    vec2 size = vec2(max(s.y, .3), max(s.w, 1.)), c = uv / size, fc = fw / size;
     float mullion = sfJoint(c.x, .03 / size.x, fc.x) + sfJoint(c.y, .03 / size.y, fc.y);
     // A 0.9 m spandrel band above each floor line, drawn as a wide joint centred in the band.
     float band = .45 / size.y, spandrel = sfJoint(c.y - band, band, fc.y);
@@ -124,7 +125,7 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     if (px < .125) {
     vec2 c = vec2(uv.x / .3, uv.y / .25);
     c.x += .5 * mod(floor(c.y), 2.);
-    m += .09 * sfSee(.25, px) * (sfH(floor(c) + 3.) - .5) - .10 * (sfJoint(c.y, .05, fw.y / .25) + sfJoint(c.x, .03, fw.x / .3));
+    m += sfSee(.25, px) * (.09 * (sfH(floor(c) + 3.) - .5) - .10 * (sfJoint(c.y, .05, fw.y / .25) + sfJoint(c.x, .03, fw.x / .3)));
     }
 #endif
   } else if (kind < 9.5) {
@@ -134,7 +135,7 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     if (px < .125) {
     vec2 c = vec2(uv.x / .25, uv.y / .35);
     float see = sfSee(.25, px);
-    m += see * (.10 * cos(6.2832 * c.x) + .05 * (sfH(floor(c) + 9.) - .5)) - .06 * sfJoint(c.y, .05, fw.y / .35);
+    m += see * (.10 * cos(6.2832 * c.x) + .05 * (sfH(floor(c) + 9.) - .5) - .06 * sfJoint(c.y, .05, fw.y / .35));
     }
 #endif
   } else if (kind < 10.5) {
@@ -150,7 +151,7 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     if (px < .125) {
     vec2 c = vec2(uv.x / .25, uv.y / .3);
     c.x += .37 * floor(c.y);
-    m += .08 * sfSee(.25, px) * (sfH(floor(c)) - .5) - .10 * (sfJoint(c.y, .06, fw.y / .3) + sfJoint(c.x, .03, fw.x / .25));
+    m += sfSee(.25, px) * (.08 * (sfH(floor(c)) - .5) - .10 * (sfJoint(c.y, .06, fw.y / .3) + sfJoint(c.x, .03, fw.x / .25)));
     }
 #endif
   } else if (kind < 12.5) {
@@ -167,7 +168,7 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
 #ifndef SURFACE_LOW
     vec2 c = vec2(uv.x / .33, uv.y / .14);
     c.x += .5 * mod(floor(c.y), 2.);
-    if (px < .07) m -= .07 * (sfJoint(c.y, .06, fw.y / .14) + sfJoint(c.x, .015, fw.x / .33));
+    if (px < .07) m -= .07 * sfSee(.14, px) * (sfJoint(c.y, .06, fw.y / .14) + sfJoint(c.x, .015, fw.x / .33));
 #endif
   }
   return base * hue * (1. + a * m);

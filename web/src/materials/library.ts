@@ -8,7 +8,7 @@ import { SURFACE_KINDS, type SurfaceKind } from './glsl';
  *   shell.paint(surfaces.brick({ colour: 'deepRed', bond: 'flemish' }), () => shell.prism(...));
  *
  * Landmarks pick materials from here first. Add a new material only when photographs show
- * something these cannot cover, and give it a swatch in the model lab.
+ * something these cannot cover, and give it a swatch in the model lab's Materials section.
  */
 export interface Surface {
   readonly name: string;
