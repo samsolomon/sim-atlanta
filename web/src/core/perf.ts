@@ -170,7 +170,7 @@ function dims(img: unknown): [number, number] {
   return [i.naturalWidth || i.videoWidth || i.width || 0, i.naturalHeight || i.height || 0];
 }
 /** GPU bytes (estimated) and CPU bytes the page still holds for one texture. */
-function textureBytes(t: THREE.Texture) {
+export function textureBytes(t: THREE.Texture) {
   const img = (t as { image?: unknown }).image;
   const faces = Array.isArray(img) ? img.length : 1; // cube maps
   const [w, h] = dims(Array.isArray(img) ? img[0] : img);
@@ -182,7 +182,7 @@ function textureBytes(t: THREE.Texture) {
   const cpu = data?.byteLength ?? (canvas ? w * h * 4 : 0);
   return { gpu: Math.round(gpu), cpu };
 }
-function targetBytes(rt: THREE.RenderTarget) {
+export function targetBytes(rt: THREE.RenderTarget) {
   let b = 0;
   for (const t of rt.textures ?? [rt.texture]) b += rt.width * rt.height * texelBytes(t.format as number, t.type as number) * Math.max(1, rt.depth ?? 1);
   if (rt.depthBuffer || rt.depthTexture) b += rt.width * rt.height * 4;
@@ -300,6 +300,33 @@ function inventory() {
     renderTargets: targets.size,
     gl: { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, programs: renderer.info.programs?.length ?? 0 },
   };
+}
+
+/** The heaviest meshes by triangles (instances included), with their ancestry, for owners. */
+function top(n = 25) {
+  if (!ctx) return [];
+  const roots = ctx.roots();
+  const rows: { tris: number; instances: number; geoMB: number; visible: boolean; cat: string; path: string; material: string }[] = [];
+  ctx.scene.traverse(o => {
+    const m = o as THREE.Mesh & { isInstancedMesh?: boolean; count?: number };
+    if (!m.isMesh || !m.geometry) return;
+    const g = m.geometry;
+    const inst = m.isInstancedMesh ? (m.count ?? 0) : 1;
+    const tris = Math.round(((g.index ? g.index.count : (g.attributes.position?.count ?? 0)) / 3) * inst);
+    const names: string[] = [];
+    let cat = 'other';
+    let visible = true;
+    for (let p: THREE.Object3D | null = o; p; p = p.parent) {
+      if (!p.visible) visible = false;
+      if (p.name) names.push(p.name);
+      const tag = (p.userData?.perf as string | undefined) ?? roots.get(p);
+      if (tag && cat === 'other') cat = tag;
+    }
+    const mat = Array.isArray(m.material) ? m.material[0] : m.material;
+    rows.push({ tris, instances: inst, geoMB: MB(Object.values(g.attributes).reduce((s, a) => s + ((a as THREE.BufferAttribute).array?.byteLength ?? 0), 0)),
+      visible, cat, path: names.reverse().join(' / ') || '(unnamed)', material: `${mat?.type ?? ''}${mat?.name ? ' ' + mat.name : ''}` });
+  });
+  return rows.sort((a, b) => b.tris - a.tris).slice(0, n);
 }
 
 function rendererInfo() {
@@ -426,7 +453,7 @@ function attach(c: PerfContext) {
 function detach() { ctx = null; }
 
 export const perf = {
-  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run,
+  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
   get phases() { return phases.map(p => ({ ...p })); },

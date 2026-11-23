@@ -13,10 +13,12 @@ import { join } from 'node:path';
 const args = process.argv.slice(2);
 let out = null;
 let desktop = false;
+let extra = null;
 const urls = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
   else if (args[i] === '--desktop') desktop = true;
+  else if (args[i] === '--eval') extra = args[++i];
   else urls.push(args[i]);
 }
 if (!urls.length) { console.error('usage: perf-run.mjs [--out dir] [--desktop] URL...'); process.exit(2); }
@@ -87,6 +89,7 @@ for (const [n, url] of urls.entries()) {
     try { if (await evaluate('document.title') === 'PERF_DONE') { done = true; break; } } catch { /* navigating */ }
   }
   const result = done ? await evaluate('JSON.parse(localStorage.getItem("perf-result"))') : { url, error: 'timeout', logs: [...logs] };
+  if (done && extra) result.eval = await evaluate(extra);
   results.push(result);
   if (out) {
     const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 70 });
