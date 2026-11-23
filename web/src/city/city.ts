@@ -55,6 +55,7 @@ import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
 import { createOneParkTower } from './one-park-tower';
+import { createParkPlaceTower } from './park-place-tower';
 import { createFultonCourthouse } from './fulton-courthouse';
 import { createPeachtreeOffices } from './peachtree-offices';
 import { createWilliamOliver } from './william-oliver';
@@ -257,6 +258,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
+  let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
   let williamOliver: ReturnType<typeof createWilliamOliver> = null;
@@ -331,8 +333,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
         healey = createHealey(towerSite, groundAt);
         const afterHealey = healey?.buildings ?? towerSite;
-        fultonCourthouse = createFultonCourthouse(afterHealey, ground);
-        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterHealey;
+        parkPlaceTower = createParkPlaceTower(afterHealey, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHealey;
+        fultonCourthouse = createFultonCourthouse(afterParkPlaceTower, ground);
+        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterParkPlaceTower;
         peachtreeOffices = createPeachtreeOffices(afterFultonCourthouse, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterFultonCourthouse;
         williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
@@ -403,6 +407,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
+        if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
         if (williamOliver) world.group.add(williamOliver.group);
@@ -958,6 +963,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     healey?.setNight(night);
     footballHall?.setNight(night);
     oneParkTower?.setNight(night);
+    parkPlaceTower?.setNight(night);
     fultonCourthouse?.setNight(night);
     peachtreeOffices?.setNight(night);
     williamOliver?.setNight(night);
