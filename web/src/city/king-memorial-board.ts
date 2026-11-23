@@ -1,3 +1,4 @@
+import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
@@ -50,7 +51,7 @@ export async function loadEast(
     asset('ground.json').then((r) => r.json() as Promise<GroundManifest>),
     asset('ground.i16').then((r) => r.arrayBuffer()),
     asset('context.json').then(
-      (r) => r.json() as Promise<TerrainCity & { trees: [number, number, number, number][] }>,
+      (r) => r.json() as Promise<TerrainCity & NeighborhoodCanopy>,
     ),
   ]);
   signal.throwIfAborted();
@@ -63,7 +64,8 @@ export async function loadEast(
   verifyJoin(west, grid);
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees))
     throw new Error('Missing King Memorial neighborhood');
-  const area = createDowntownTerrain(grid, context, context.trees, {
+  const area = createDowntownTerrain(grid, context, neighborhoodTrees(context, quality), {
+    simpleLeafClumps: context.treeLowCount !== undefined,
     quality,
     bottomY,
     join: extraJoin ? [eastJoin, ...(Array.isArray(extraJoin) ? extraJoin : [extraJoin])] : eastJoin,

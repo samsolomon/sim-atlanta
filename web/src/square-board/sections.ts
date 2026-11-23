@@ -1,3 +1,4 @@
+import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
 import { northConnectorGround, northConnectorTransport } from './connector-ground';
@@ -98,10 +99,10 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
 
 async function readPatch(id: Patch, signal: AbortSignal, dataRoot = '/data') {
   const path = dataRoot + '/scene/square-board/' + id;
-  const [grid, context]: [GroundGrid, TerrainCity & { name: string }] = await Promise.all([
+  const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band'), response(path + '/context.json', signal).then(r => r.json()),
   ]);
-  if (context.name !== id || Object.entries(bounds[id]).some(([k, v]) =>
+  if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
   return { id, grid, context };
@@ -115,7 +116,8 @@ export async function addSection(direction: Direction, mounted: Map<Board, Area>
     for (const { id, grid, context } of patches) {
       const city = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
-      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'north-band' ? options?.northBuilding : undefined });
+      const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+        simpleLeafClumps: context.treeLowCount !== undefined, quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'north-band' ? options?.northBuilding : undefined });
       try {
         const decks = createSurfaceTransport(city, grid, area.groundAt);
         area.group.add(decks.group);

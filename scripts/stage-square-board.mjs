@@ -1,4 +1,5 @@
 // Stage only the four optional preview patches. Validate all four before copying any.
+import { withCanopy } from './stage-canopy.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
@@ -16,5 +17,5 @@ for (const patch of ['north-band', 'north-corner', 'south-band', 'south-corner']
 }
 for (const { dest, files } of staged) {
   await mkdir(dest, {recursive:true});
-  for (const [name, bytes] of files) await writeFile(new URL(name, dest), bytes);
+  for (const [name, bytes] of files) await writeFile(new URL(name, dest), name === 'context.json' ? withCanopy(bytes) : bytes);
 }
