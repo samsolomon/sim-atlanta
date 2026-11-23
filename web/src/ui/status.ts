@@ -68,3 +68,41 @@ export function hintText(view: View, touch: boolean): string {
   if (view === 'map') return touch ? 'Drag to move · pinch to zoom' : 'Drag to move · scroll to zoom';
   return touch ? 'Drag to look around · pinch to zoom' : 'Drag to look around · right-drag to move';
 }
+
+export interface Sky { cloud: number; rain: number; fog: number; snow: number }
+
+/** A plain condition for the sky on screen, observed or illustrative. */
+export function skyLabel(s: Sky): { label: string; kind: 'clear' | 'cloudy' | 'overcast' | 'rain' | 'storm' | 'fog'; snow: boolean } {
+  if (s.snow > 0.3) return { label: 'Snow', kind: 'overcast', snow: true };
+  if (s.rain >= 0.95) return { label: 'Storm', kind: 'storm', snow: false };
+  if (s.rain > 0.6) return { label: 'Rain', kind: 'rain', snow: false };
+  if (s.rain > 0.05) return { label: 'Light rain', kind: 'rain', snow: false };
+  if (s.fog > 0.6) return { label: 'Fog', kind: 'fog', snow: false };
+  if (s.cloud > 0.75) return { label: 'Overcast', kind: 'overcast', snow: false };
+  if (s.cloud > 0.3) return { label: 'Partly cloudy', kind: 'cloudy', snow: false };
+  return { label: 'Clear', kind: 'clear', snow: false };
+}
+
+/** Past neighbourhood scale (the view spans more than this many metres) the card reads "Metro Atlanta". */
+export const NEIGHBOURHOOD_SPAN_M = 6000;
+
+export function placeLabel(name: string | null, spanM: number | null): string | null {
+  if (!name) return null;
+  if (spanM != null && spanM > NEIGHBOURHOOD_SPAN_M && name !== 'Georgia') return 'Metro Atlanta';
+  return name;
+}
+
+/** The time slider covers 12 hours either side of its anchor, in minutes. */
+export const SLIDER_MIN = 720;
+export const sliderValue = (simMs: number, anchorMs: number) =>
+  Math.max(-SLIDER_MIN, Math.min(SLIDER_MIN, Math.round((simMs - anchorMs) / 60_000)));
+
+/** Whole days between two Atlanta calendar dates (yyyy-mm-dd). */
+export function dayDiff(fromIso: string, toIso: string): number {
+  const d = (s: string) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  return Math.round((d(toIso) - d(fromIso)) / 86_400_000);
+}
+
+const isoFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+/** The Atlanta calendar date of an instant, as yyyy-mm-dd. */
+export const atlantaDate = (ms: number) => isoFmt.format(ms);

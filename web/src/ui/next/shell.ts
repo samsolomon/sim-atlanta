@@ -15,14 +15,15 @@ import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
 import { createKeyDialog } from '../key';
-import { confidence, confidenceWords, hintText, liveDetails, type View } from '../status';
+import { atlantaDate, confidence, liveDetails, confidenceWords, dayDiff, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
+import { clock } from '../../core/clock';
 import type { ShellApi, ShellOptions } from '../shell';
 
 const TZ = 'America/New_York';
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
 const dayTimeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', hour: 'numeric', minute: '2-digit' });
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'long', month: 'short', day: 'numeric' });
-const longDate = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'long', month: 'long', day: 'numeric' });
+const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric' });
 const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
 const SVG = (body: string, box = 24) =>
@@ -44,7 +45,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   // ---- subject card (top-left) ------------------------------------------------------------
   const subject = el('section', { class: 'a2-subject a2-g', 'aria-label': 'Place and time' });
-  const open = el('button', { type: 'button', class: 'a2-subject-open', 'aria-expanded': 'false', 'aria-controls': 'a2-status' });
+  const open = el('button', { type: 'button', class: 'a2-subject-open', 'aria-expanded': 'false', 'aria-controls': 'a2-time' });
   const place = el('span', { class: 'a2-place' }, 'Atlanta');
   const line = el('span', { class: 'a2-line' });
   const time = el('span', { class: 'a2-time' });
@@ -65,37 +66,142 @@ export function createShellNext(o: ShellOptions): ShellApi {
   tier.append(tierDot, tierText, tierDate, nowBtn);
   subject.append(open, tier);
 
-  // Scene preview and per-feed tiers, under the card (Time & weather replaces it in step 3).
-  const status = el('section', { class: 'a2-status a2-g a2-long', id: 'a2-status', hidden: '', 'aria-label': 'Scene preview and live data' });
-  const conditions = el('fieldset', { class: 'a2-conditions' });
-  conditions.innerHTML = `
-    <legend>Scene preview</legend>
-    <label>Lighting<select name="lighting">
-      <option>Follow clock</option><option>Daylight</option><option>Night</option>
-    </select></label>
-    <label>Weather<select name="weather">
-      <option>Automatic</option><option>Clear</option><option>Overcast</option>
-      <option>Rain</option><option>Fog</option><option>Snow</option>
-    </select></label>`;
-  const lighting = conditions.querySelector<HTMLSelectElement>('[name=lighting]')!;
-  const sky = conditions.querySelector<HTMLSelectElement>('[name=weather]')!;
+  // ---- Time & weather: inside the card on desktop, a bottom sheet on phones ------------------
+  const panel = el('section', { class: 'a2-timepanel', id: 'a2-time', hidden: '', 'aria-label': 'Time and weather' });
+  panel.innerHTML = `
+    <div class="a2-sheet-head"><span class="a2-grab" aria-hidden="true"></span><h2>Time &amp; weather</h2>
+      <button type="button" class="a2-close" aria-label="Close">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <div class="a2-h a2-time-head"><span class="a2-h-label">Time</span>
+      <label class="a2-date">${SVG('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>')}<span class="a2-date-text"></span><span class="a2-date-time"></span>
+        <input type="date" class="a2-date-input" aria-label="Date"></label>
+      <span class="a2-anchor-phone"></span></div>
+    <div class="a2-slider"><span class="a2-now-tick" aria-hidden="true"></span>
+      <input type="range" class="a2-range" min="${-SLIDER_MIN}" max="${SLIDER_MIN}" step="5" value="0" aria-label="Time, 12 hours either side"></div>
+    <div class="a2-scale" aria-hidden="true"><span>−12 h</span><span class="a2-anchor"></span><span>+12 h</span></div>
+    <p class="a2-h">Speed</p>
+    <div class="a2-seg2" role="group" aria-label="Speed">
+      <button type="button" data-speed="0" aria-label="Pause">${SVG('<path d="M8 5v14M16 5v14"/>')}</button>
+      <button type="button" data-speed="1">1×</button><button type="button" data-speed="30">30×</button></div>
+    <p class="a2-h">Weather</p>
+    <div class="a2-seg2" role="group" aria-label="Weather">${['Auto', 'Clear', 'Rain', 'Fog', 'Storm'].map((w) => `<button type="button" data-wx="${w}">${w}</button>`).join('')}</div>
+    <p class="a2-caption">Auto shows the observed weather at the present time and an illustrative sky otherwise.</p>
+    <button type="button" class="a2-back">${SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>')}Back to now</button>
+    <details class="a2-sources"><summary>Each feed right now</summary><div class="a2-sources-body"></div></details>`;
+  const range = panel.querySelector<HTMLInputElement>('.a2-range')!;
+  const dateInput = panel.querySelector<HTMLInputElement>('.a2-date-input')!;
+  const dateText = panel.querySelector<HTMLElement>('.a2-date-text')!;
+  const anchorText = panel.querySelector<HTMLElement>('.a2-anchor')!;
+  const anchorPhone = panel.querySelector<HTMLElement>('.a2-anchor-phone')!;
+  const speedBtns = [...panel.querySelectorAll<HTMLButtonElement>('[data-speed]')];
+  const wxBtns = [...panel.querySelectorAll<HTMLButtonElement>('[data-wx]')];
   const weatherSettings: Record<string, AtmosphereOverride> = {
+    Auto: {},
     Clear: { cloud: 0, rain: 0, fog: 0, snow: 0 },
-    Overcast: { cloud: 1, rain: 0, fog: 0, snow: 0 },
     Rain: { cloud: 1, rain: .75, fog: .25, snow: 0 },
     Fog: { cloud: .7, rain: 0, fog: .9, snow: 0 },
-    Snow: { cloud: 1, rain: 0, fog: .35, snow: .8 },
+    Storm: { cloud: 1, rain: 1, fog: .4, snow: 0 },
   };
-  conditions.addEventListener('change', () => {
-    const settings = { ...weatherSettings[sky.value] };
-    if (lighting.value === 'Daylight') settings.hour = 12;
-    if (lighting.value === 'Night') settings.hour = 0;
-    o.onSceneConditions(settings);
+  let weatherChoice = 'Auto';
+  // The slider spans ±12 h around an anchor: the real present, or the moment a link or the date
+  // picker chose. Moving it shifts the clock, which then reads Timetable.
+  let anchorLive = clock.isRealTime();
+  let anchorMs = clock.now().getTime();
+  const anchor = () => (anchorLive ? Date.now() : anchorMs);
+  let dragging = false;
+  const setTime = (ms: number) => {
+    clock.baseSim = ms;
+    clock.baseReal = performance.now();
+    clock.offsetMin = 0;
+    clock.pinned = true;
+    clockChanged();
+  };
+  const clockChanged = () => {
+    o.onClock?.();
     lastTick = -Infinity;
-    tick(now);
+    tick(clock.now());
+  };
+  range.addEventListener('input', () => {
+    const v = Number(range.value);
+    // Back at Now on a live anchor at 1×: that is the present again, not a pinned copy of it.
+    if (v === 0 && anchorLive && clock.speed === 1) backToNow(false);
+    else setTime(anchor() + v * 60_000);
   });
-  const details = el('div', { class: 'a2-details' });
-  status.append(conditions, details);
+  const endDrag = () => {
+    dragging = false;
+    panel.classList.remove('a2-dragging');
+  };
+  range.addEventListener('pointerdown', () => {
+    dragging = true;
+    panel.classList.add('a2-dragging');
+  });
+  range.addEventListener('pointerup', endDrag);
+  range.addEventListener('pointercancel', endDrag);
+  range.addEventListener('blur', endDrag);
+  dateInput.addEventListener('change', () => {
+    if (!dateInput.value) return;
+    const t = clock.now().getTime();
+    const ms = t + dayDiff(atlantaDate(t), dateInput.value) * 86_400_000;
+    anchorLive = false;
+    anchorMs = ms;
+    setTime(ms);
+  });
+  panel.querySelector('.a2-date')!.addEventListener('click', (e) => {
+    if (e.target === dateInput) return;
+    e.preventDefault();
+    try {
+      dateInput.showPicker();
+    } catch {
+      dateInput.focus();
+    }
+  });
+  for (const b of speedBtns)
+    b.addEventListener('click', () => {
+      const sp = Number(b.dataset.speed);
+      if (sp === clock.speed) return;
+      clock.rebase();
+      if (sp !== 1 || !clock.isRealTime()) clock.pinned = true;
+      clock.speed = sp;
+      clockChanged();
+    });
+  for (const b of wxBtns)
+    b.addEventListener('click', () => {
+      weatherChoice = b.dataset.wx!;
+      o.onSceneConditions({ ...weatherSettings[weatherChoice] });
+      clockChanged();
+    });
+  function backToNow(resetWeather = true) {
+    anchorLive = true;
+    o.onNow?.();
+    if (resetWeather && weatherChoice !== 'Auto') {
+      weatherChoice = 'Auto';
+      o.onSceneConditions({});
+    }
+    clockChanged();
+  }
+  panel.querySelector('.a2-back')!.addEventListener('click', () => backToNow());
+  panel.querySelector('.a2-close')!.addEventListener('click', () => {
+    closePops();
+    open.focus();
+  });
+  // Desktop: the card grows to hold the panel. Phones: the panel is its own bottom sheet (glass
+  // with backdrop-filter is a containing block, so the sheet can't be fixed from inside the card).
+  const phone = matchMedia('(max-width: 600px)');
+  const placePanel = () => {
+    if (phone.matches) {
+      panel.classList.add('a2-g', 'a2-long');
+      document.body.append(panel);
+    } else {
+      panel.classList.remove('a2-g', 'a2-long');
+      subject.append(panel);
+    }
+  };
+  phone.addEventListener('change', placePanel);
+  const sourcesBox = panel.querySelector<HTMLDetailsElement>('.a2-sources')!;
+  sourcesBox.addEventListener('toggle', () => {
+    panel.querySelector<HTMLElement>('.a2-sources-body')!.dataset.open = sourcesBox.open ? '1' : '';
+    clockChanged();
+  });
+  placePanel();
 
   // One notice at a time, 8 px under the subject card. Tier words wrap; they never truncate.
   const notice = el('p', { class: 'a2-notice a2-g', hidden: '', role: 'status' });
@@ -206,16 +312,17 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   const key = createKeyDialog();
   key.classList.add('a2-key');
-  document.body.append(subject, status, notice, bar, menu, cam, credit, key, ...(hint ? [hint] : []));
+  document.body.append(subject, notice, bar, menu, cam, credit, key, ...(hint ? [hint] : []));
   subjectBottom();
 
   // ---- pop-overs ---------------------------------------------------------------------------
-  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [status, open]];
+  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open]];
   const closePops = (except?: HTMLElement) => {
     for (const [p, b] of pops)
       if (p !== except && !p.hidden) {
         p.hidden = true;
         b.setAttribute('aria-expanded', 'false');
+        if (p === panel) subject.classList.remove('a2-open');
       }
   };
   const toggle = (p: HTMLElement, b: HTMLButtonElement, focus: () => void) => {
@@ -223,10 +330,15 @@ export function createShellNext(o: ShellOptions): ShellApi {
     closePops(p);
     p.hidden = !show;
     b.setAttribute('aria-expanded', String(show));
+    if (p === panel) subject.classList.toggle('a2-open', show);
     if (show) focus();
   };
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-row')?.focus()));
-  open.addEventListener('click', () => toggle(status, open, () => { renderStatus(); lighting.focus(); }));
+  open.addEventListener('click', () => toggle(panel, open, () => {
+    lastTick = -Infinity;
+    tick(clock.now());
+    (phone.matches ? panel.querySelector<HTMLElement>('.a2-close') : range)?.focus();
+  }));
   menu.querySelector('[data-act=key]')!.addEventListener('click', () => {
     closePops();
     key.showModal();
@@ -237,13 +349,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (![subject, status, bar, menu].some((c) => c.contains(t))) closePops();
+    if (![subject, panel, bar, menu].some((c) => c.contains(t))) closePops();
   });
-  nowBtn.addEventListener('click', () => {
-    o.onNow?.();
-    lastTick = -Infinity;
-    tick(new Date());
-  });
+  nowBtn.addEventListener('click', () => backToNow());
 
   // ---- weather and place --------------------------------------------------------------------
   let weather: Weather | null = null;
@@ -260,9 +368,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   void loadPlaces();
 
   let now = new Date();
-  function renderStatus() {
-    details.innerHTML = `<p class="a2-title">${place.textContent} · ${longDate.format(now)}</p>${liveDetails(o.live(), view, weather, weatherAt)}`;
-  }
+  const sources = panel.querySelector<HTMLElement>('.a2-sources-body')!;
 
   let lastTick = 0;
   let areaNote: string | null = null;
@@ -272,39 +378,70 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (t - lastTick < 500) return;
     lastTick = t;
     const c = o.center();
-    const name = c ? placeAt(c[0], c[1]) : null;
+    const mpp = o.metresPerPixel?.() ?? null;
+    const name = placeLabel(c ? placeAt(c[0], c[1]) : null, mpp == null ? null : mpp * innerWidth);
     if (name && place.textContent !== name) place.textContent = name;
     const s = o.live();
-    const preview = [lighting.selectedIndex ? lighting.value : '', sky.selectedIndex ? sky.value : ''].filter(Boolean);
+    const preview = weatherChoice !== 'Auto';
     // Weather is live data: show it only when the clock is the real present.
-    const wxNow = s.realTime ? weather : null;
-    const conf = confidence(s, !!wxNow, preview.length > 0);
-    if (wxNow && !preview.length) {
-      const svg = weatherIcon(wxNow, sunPosition(now).elevation < -2);
-      if (wxIcon.dataset.svg !== svg) {
-        wxIcon.innerHTML = svg;
-        wxIcon.dataset.svg = svg;
-      }
+    const wxNow = s.realTime && !preview ? weather : null;
+    const conf = confidence(s, !!wxNow, preview);
+    const night = sunPosition(now).elevation < -2;
+    let svg: string;
+    if (wxNow) {
+      svg = weatherIcon(wxNow, night);
       wxText.textContent = `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`;
-      wx.hidden = false;
-    } else if (preview.length) {
-      wxIcon.innerHTML = '';
-      delete wxIcon.dataset.svg;
-      wxText.textContent = `Preview · ${preview.join(' · ')}`;
-      wx.hidden = false;
-    } else wx.hidden = true;
+    } else {
+      // An illustrative sky still has a condition, named without a temperature.
+      const sk = skyLabel(o.sky?.() ?? { cloud: 0, rain: 0, fog: 0, snow: 0 });
+      svg = weatherIcon({ kind: sk.kind, label: sk.snow ? 'snow' : sk.label, cloud: 0, rain: 0, fog: 0, live: false }, night);
+      wxText.textContent = sk.label;
+    }
+    if (wxIcon.dataset.svg !== svg) {
+      wxIcon.innerHTML = svg;
+      wxIcon.dataset.svg = svg;
+    }
     timeText.textContent = (conf.shifted ? dayTimeFmt : timeFmt).format(now);
     tierDot.className = `a2-dot a2-dot-${conf.tier}`;
     tierText.textContent = confidenceWords(conf).join(' · ');
     tierDate.textContent = conf.shifted ? '' : dateFmt.format(now);
     tierDate.hidden = conf.shifted;
     nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wx.hidden ? '' : `, ${wxText.textContent}`}, ${tierText.textContent}. Scene preview and live data`);
+    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}, ${wxText.textContent}, ${tierText.textContent}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(areaNote ?? feedNote);
-    if (!status.hidden) renderStatus();
+    if (!panel.hidden) renderPanel(s);
   }
+
+  function renderPanel(s: ReturnType<ShellOptions['live']>) {
+    const sim = now.getTime();
+    // A clock run far past the slider's reach re-anchors on the moment it shows.
+    if (Math.abs(sim - anchor()) > SLIDER_MIN * 60_000) {
+      anchorLive = false;
+      anchorMs = sim;
+    }
+    const v = sliderValue(sim, anchor());
+    if (!dragging && Number(range.value) !== v) range.value = String(v);
+    const pct = ((Number(range.value) + SLIDER_MIN) / (2 * SLIDER_MIN)) * 100;
+    range.style.setProperty('--a2-from', `${Math.min(50, pct)}%`);
+    range.style.setProperty('--a2-to', `${Math.max(50, pct)}%`);
+    range.setAttribute('aria-valuetext', `${dayTimeFmt.format(now)}${v === 0 ? '' : `, ${v > 0 ? '+' : '−'}${fmtSpan(Math.abs(v))} from the middle`}`);
+    const anchorLabel = anchorLive ? `Now · ${timeFmt.format(Date.now())}` : `${shortDate.format(anchorMs)} · ${timeFmt.format(anchorMs)}`;
+    anchorText.textContent = anchorLabel;
+    // Phones have no scale under the slider: the right-hand label is always the real present.
+    anchorPhone.textContent = `Now · ${timeFmt.format(Date.now())}`;
+    dateText.textContent = shortDate.format(now);
+    panel.querySelector('.a2-date-time')?.replaceChildren(timeFmt.format(now));
+    dateInput.value = atlantaDate(sim);
+    speedBtns.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.speed) === clock.speed)));
+    wxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.wx === weatherChoice)));
+    const back = panel.querySelector<HTMLButtonElement>('.a2-back')!;
+    back.disabled = s.realTime && weatherChoice === 'Auto';
+    if (sources.dataset.open === '1') sources.innerHTML = liveDetails(s, view, weather, weatherAt);
+  }
+  const fmtSpan = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`);
+
   function showNotice(text: string | null) {
     if (notice.textContent !== (text ?? '')) notice.textContent = text ?? '';
     notice.hidden = !text;

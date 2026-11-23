@@ -532,6 +532,18 @@ const shellOptions: ShellOptions = {
     setSpeed(1);
     updateAtmosphere();
   },
+  onClock() {
+    updateAtmosphere();
+    updateClock(clock.now());
+    if (selectedTrain) renderTrainCard();
+    else if (selectedBus) renderBusCard();
+  },
+  metresPerPixel() {
+    if (diorama) return diorama.camera().metresPerPixel;
+    const c = map?.getCenter();
+    return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
+  },
+  sky: () => lastAtm,
 };
 // ?ui=next: the A2c interface (docs/ui-controls-brief.md), loaded only behind the flag.
 const shell = uiNext(location.search)
@@ -553,7 +565,8 @@ setInterval(() => {
 }, 500);
 
 // Hidden time controls (kept for later): ?controls=1 shows them.
-document.getElementById('timectl')!.hidden = params.get('controls') !== '1';
+// Under ?ui=next, Time & weather in the subject card replaces it.
+document.getElementById('timectl')!.hidden = params.get('controls') !== '1' || uiNext(location.search);
 
 if (landing === 'city') shell.setView('city');
 else if (!openMap()) shell.setNote('Interactive graphics unavailable · MARTA rail overview');

@@ -53,3 +53,31 @@ describe('?ui=next', () => {
     expect(uiNext('')).toBe(false);
   });
 });
+
+import { atlantaDate, dayDiff, placeLabel, skyLabel, sliderValue } from './status';
+
+describe('subject card helpers', () => {
+  it('names the sky plainly', () => {
+    expect(skyLabel({ cloud: 0, rain: 0, fog: 0, snow: 0 }).label).toBe('Clear');
+    expect(skyLabel({ cloud: 1, rain: 1, fog: .4, snow: 0 }).label).toBe('Storm');
+    expect(skyLabel({ cloud: 1, rain: .75, fog: .25, snow: 0 }).label).toBe('Rain');
+    expect(skyLabel({ cloud: .7, rain: 0, fog: .9, snow: 0 }).label).toBe('Fog');
+  });
+  it('reads Metro Atlanta past neighbourhood scale', () => {
+    expect(placeLabel('Downtown', 2000)).toBe('Downtown');
+    expect(placeLabel('Downtown', 20000)).toBe('Metro Atlanta');
+    expect(placeLabel('Georgia', 90000)).toBe('Georgia');
+    expect(placeLabel(null, 100)).toBe(null);
+  });
+  it('clamps the slider to ±12 h', () => {
+    expect(sliderValue(0, 0)).toBe(0);
+    expect(sliderValue(150 * 60_000, 0)).toBe(150);
+    expect(sliderValue(-30 * 3_600_000, 0)).toBe(-720);
+  });
+  it('counts Atlanta calendar days, after midnight UTC included', () => {
+    // 11:30 PM Eastern on Nov 20 is already Nov 21 in UTC.
+    expect(atlantaDate(Date.parse('2026-11-21T04:30:00Z'))).toBe('2026-11-20');
+    expect(dayDiff('2026-11-20', '2026-11-23')).toBe(3);
+    expect(dayDiff('2026-11-23', '2026-11-20')).toBe(-3);
+  });
+});
