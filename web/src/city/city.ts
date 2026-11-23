@@ -49,6 +49,7 @@ import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { createStreetcarCars } from './streetcar-cars';
+import { buildStreetcarStops, platformSites, streetcarStops } from './streetcar-stops';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -300,6 +301,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let streetcarDowntown: ReturnType<typeof buildStreetcarTrack> | undefined;
   // Street surface under the streetcar, per board, for its track and its cars.
   const streetcarSurface: { bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; height: (x: number, z: number) => number | null }[] = [];
+  let stopsDowntown: ReturnType<typeof buildStreetcarStops> | undefined;
+  let northStops: ReturnType<typeof buildStreetcarStops> | undefined;
+  const streetcarStopList = () => streetcarStops(rf, manifest.origin, (path, stop) => (options.stopDistances?.(path, stop) ?? []).length > 0);
   // Elevated roads get their own structural geometry. Place lamps on ground roads.
   const groundRoads = grid ? [...vd.roads.filter(r => !r.bridge && !r.tunnel),
     ...vd.terrainTransport!.roads.filter(r => r.kind === 'ground').map(r =>
@@ -316,6 +320,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     eastController.abort();
     preparedBrookwood?.dispose();
     streetcarDowntown?.dispose();
+    stopsDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
     mosaic?.dispose();
     eastRail?.dispose();
@@ -586,9 +591,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const flat = (x: number, z: number) => world.ground(x, z) + 0.2; // vignette road surface
       const ground = terrain ? terrain.groundAt : flat;
       const height = roadSurface(vd.roads, cityRoadHeight(vd, ground, transport?.deckAt), ground);
-      streetcarDowntown = buildStreetcarTrack(streetcarLines(rf, manifest.origin), b, height, poleBlocked(vd.roads, vd.buildings));
+      const lines = streetcarLines(rf, manifest.origin);
+      streetcarDowntown = buildStreetcarTrack(lines, b, height, poleBlocked(vd.roads, vd.buildings));
       streetcarSurface.push({ bounds: b, height });
       world.group.add(streetcarDowntown.group);
+      stopsDowntown = buildStreetcarStops(platformSites(streetcarStopList(), lines, vd.roads), b, height);
+      world.group.add(stopsDowntown.group);
     });
     await build('MARTA', () => {
       const lower = transport;
@@ -883,9 +891,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const entry = { bounds: area.bounds, height: surface };
         streetcarSurface.push(entry);
         area.group.add(track.group);
+        const stops = buildStreetcarStops(platformSites(streetcarStopList(), streetcarLines(rf, manifest.origin), board.city.roads), area.bounds, surface);
+        area.group.add(stops.group);
+        northStops = stops;
         const disposeArea = area.dispose.bind(area);
         area.dispose = () => {
           track.dispose();
+          stops.dispose();
+          if (northStops === stops) northStops = undefined;
           const i = streetcarSurface.indexOf(entry);
           if (i >= 0) streetcarSurface.splice(i, 1);
           disposeArea();
@@ -1284,6 +1297,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     terrain?.setNight(night);
     east?.setNight(night);
     north?.setNight(night);
+    stopsDowntown?.setNight(night);
+    northStops?.setNight(night);
     if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
