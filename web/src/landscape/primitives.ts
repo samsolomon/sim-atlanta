@@ -159,6 +159,10 @@ function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, 
  */
 export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) => number, emit: (a: number[], b: number[], c: number[]) => void, holes: P2[][] = []) {
   // Holes (mounds, paths, pads) are cut by the triangulation itself; indices run over ring then holes.
+  // ShapeUtils drops a closing duplicate vertex from each contour, so drop it first to keep indices aligned.
+  const open = (r: P2[]) => r.length > 1 && r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1] ? r.slice(0, -1) : r;
+  ring = open(ring);
+  holes = holes.map(open);
   const all = [...ring, ...holes.flat()];
   const v2 = (r: P2[]) => r.map(([x, z]) => new THREE.Vector2(x, z));
   for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(v2(ring), holes.map(v2))) {

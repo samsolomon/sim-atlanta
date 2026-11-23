@@ -43,10 +43,11 @@ export interface BuildingFinish {
   fallbackHeight?: number;
   /** Overrides the 1.1 m parapet on buildings taller than 6 m (0 for pitched roofs). */
   parapet?: number;
-  /** Shader wall pattern; 3–6 are house facades (clapboard, brick, stucco, shingle) with double-hung windows. */
+  /** Shader wall pattern; 3–6 are house facades (clapboard, brick, stucco, shingle) with double-hung windows; 7–10 the same siding without windows. */
   windowStyle?: number;
   /** Supplies roof fixtures in place of the generic rooftop equipment. */
-  dressRoof?: (builder: Builder, outer: P2[], roof: number) => void;
+  /** `litGlass` takes window glass that glows at night (it shares the building draw). */
+  dressRoof?: (builder: Builder, outer: P2[], roof: number, litGlass: Builder) => void;
   drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
 }
 export interface VRoad {
@@ -915,7 +916,7 @@ export class World {
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
-      if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY);
+      if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY, shopLights);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
         base.push(mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
@@ -1456,11 +1457,16 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           vec3 frame = diffuseColor.rgb * 0.82;
           float st = floor(vStyle + 0.5);
           float win = 0.0;
+          // Houses at 7–10 draw their own windows; keep the shader's off even after the distance fade.
+          float hasWin = 1.0;
           if (st > 2.5) {
             // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle). Fine siding lines fade
             // to their average once a course is under a couple of pixels, so walls never shimmer.
             float px = fwidth(y);
             float lap = 1.0;
+            // 7–10 are the same sidings with the windows drawn as geometry instead.
+            hasWin = step(st, 6.5);
+            st = st > 6.5 ? st - 4.0 : st;
             if (st < 3.5) {
               lap = mix(0.95, 0.84 + 0.16 * step(0.2, fract(y / 0.2)), 1.0 - smoothstep(0.06, 0.16, px));
             } else if (st < 4.5) {
@@ -1490,9 +1496,10 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
             float trim = step(0.5 - halfW, f.x) * step(f.x, 0.5 + halfW) * inY * above;
             float glassX = step(0.5 - halfW + 0.025, f.x) * step(f.x, 0.5 + halfW - 0.025) * (1.0 - pair * step(abs(f.x - 0.5), 0.012));
             float glassY = step(0.145, f.y) * step(f.y, 0.595) * (1.0 - step(abs(f.y - 0.37), 0.009));
-            win = glassX * glassY * above;
+            win = glassX * glassY * above * hasWin;
+            trim *= hasWin;
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.92, 0.88), trim * (1.0 - win));
-            float shutters = step(0.62, hh(vec2(bay, 7.0))) * inY * above
+            float shutters = hasWin * step(0.62, hh(vec2(bay, 7.0))) * inY * above
               * (step(0.5 - halfW - 0.085, f.x) * step(f.x, 0.5 - halfW - 0.012) + step(0.5 + halfW + 0.012, f.x) * step(f.x, 0.5 + halfW + 0.085));
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.15, 0.2, 0.17), shutters);
           } else if (y < 4.2 && y > 0.4) {
@@ -1517,7 +1524,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           // Where windows shrink below ~2 px, fade the pattern to its average so walls don't shimmer.
           vec2 fw = fwidth(vec2(u / 2.6, y / 3.4));
           float clarity = 1.0 - smoothstep(0.25, 0.6, max(fw.x, fw.y));
-          win = mix(0.4, win, clarity);
+          win = mix(0.4, win, clarity) * hasWin;
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
           float cellH = st > 2.5 ? hh(floor(vec2(u / 3.6, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
