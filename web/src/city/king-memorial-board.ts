@@ -38,7 +38,7 @@ export async function loadEast(
   quality: TerrainQuality,
   bottomY: number,
   signal: AbortSignal,
-  extraJoin?: JoiningEdge,
+  extraJoin?: JoiningEdge | JoiningEdge[],
 ) {
   async function asset(name: string) {
     const response = await fetch(`${base}/scene/king-memorial/${name}`, { signal });
@@ -65,7 +65,7 @@ export async function loadEast(
   return createDowntownTerrain(grid, context, context.trees, {
     quality,
     bottomY,
-    join: extraJoin ? [eastJoin, extraJoin] : eastJoin,
+    join: extraJoin ? [eastJoin, ...(Array.isArray(extraJoin) ? extraJoin : [extraJoin])] : eastJoin,
     finishFor: marchonFinishes(context.buildings),
   });
 }
