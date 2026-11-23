@@ -72,6 +72,8 @@ export class SquareMosaic {
   readonly patches = new Map<Board, TrafficArea>();
   readonly joins = joins;
   private loading = new Set<Section>();
+  /** Section loads still running, including follow-ups they start. */
+  private inflight = new Set<Promise<void>>();
   private failed = new Set<Section>();
   private wanted?: Point;
 
@@ -116,7 +118,7 @@ export class SquareMosaic {
       const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
       if (this.patches.has(id) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;
       this.loading.add(direction);
-      void addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, brookwood: this.brookwood, dataRoot: this.dataRoot }).then(added => {
+      const load: Promise<void> = addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, brookwood: this.brookwood, dataRoot: this.dataRoot }).then(added => {
         if (signal.aborted) { for (const area of added.values()) area.dispose(); return; }
         for (const [id, area] of added) this.patches.set(id, area);
         const p = this.wanted;
@@ -130,8 +132,13 @@ export class SquareMosaic {
           failure(direction);
           console.warn(direction + ' City terrain unavailable', error);
         }
-      }).finally(() => this.loading.delete(direction));
+      }).finally(() => { this.loading.delete(direction); this.inflight.delete(load); });
+      this.inflight.add(load);
     }
+  }
+  /** Resolves once no section load (or follow-up load it started) is still running. */
+  async idle() {
+    while (this.inflight.size) await Promise.allSettled([...this.inflight]);
   }
   dispose() {
     for (const a of this.patches.values()) a.dispose();
