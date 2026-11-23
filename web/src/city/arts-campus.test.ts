@@ -158,3 +158,16 @@ it('lays the Peachtree lawn beside the museum, low within the ginkgo crown', () 
   // The granite steps reach out to the Peachtree sidewalk.
   expect(new Box3().setFromObject(lawn, true).max.x).toBeGreaterThan(632);
 });
+
+it('turfs the mapped Peachtree lawn but not the ginkgo mound, the steps or the Rodin pad', () => {
+  const model = createArtsCampusLandmark(buildings, museum, 290, () => -32)!;
+  model.group.updateMatrixWorld(true);
+  const turf = model.group.children[2] as Mesh;
+  const hit = (x: number, z: number) =>
+    new Raycaster(new Vector3(x, 100, z), new Vector3(0, -1, 0)).intersectObject(turf, false).length > 0;
+  expect(hit(595, -3990)).toBe(true); // open lawn west of the mound
+  expect(hit(620, -4004)).toBe(true); // lawn between the mound and Peachtree
+  expect(hit(612.5, -4001.2)).toBe(false); // ginkgo mound
+  expect(hit(626.5, -3991.7)).toBe(false); // Peachtree steps
+  expect(hit(604.8, -3999.7)).toBe(false); // Rodin pad, the lawn's own notch
+});
