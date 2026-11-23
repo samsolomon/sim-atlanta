@@ -1,7 +1,7 @@
 import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
-import { bedded, cuttingYields, type BallastQuad } from './cutting';
+import { bedFlags, cuttingYields, type BallastQuad } from './cutting';
 import { drapeTriangle, type DrapeGround } from './drape';
 import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
@@ -304,6 +304,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       let prev: number[][] | null = null, lastS = 0;
       let tread: FreightTreadPoint[] | undefined;
       let ballast: BallastQuad[] | null = null;
+      // Ground ballast quads draw once their run is complete: whether each one is draped
+      // or drawn flat over a cutting bed depends on its neighbours.
+      const pending = new Map<BallastQuad[], ((flat: boolean) => void)[]>();
       const range = textured ? run.freightS : undefined;
       function midpoint(s: number, a: number[], b: number[]) {
         const distance = range![0] + (range![1] - range![0]) * s / line.length;
@@ -363,14 +366,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           const drawn = (terrainGround as DrapeGround).triangles;
           // Ground ballast, for graded cuttings. The East cut's freight sits in its own slot.
           const graded = textured && !bridge && run !== cut?.freight;
-          if (graded) {
-            if (!ballast) ballastRuns.push(ballast = []);
-            ballast.push([a, b, c, d]);
-          }
-          // A quad the terrain stands over gets a cutting carved under it, so it stays flat
-          // (unless it reaches the edge cells, where only the drape can help).
-          const carved = graded && inCarvable([a, b, c, d]) && bedded([a, b, c, d], (x, z) => terrainGround(x, z));
-          if (graded && drawn && !carved) {
+          // Ground ballast may draw after the loop, so it keeps this quad's own start station.
+          const s0 = lastS;
+          const draw = (flat: boolean) => { const lastS = s0; if (!flat && graded && drawn) {
             // Ground ballast follows the drawn terrain between its 2 m stations, so a
             // crease in the bank can't show through it (terrain/drape.ts). The raise is
             // capped at 25 cm: a graded cut sits below its bank on purpose, and the
@@ -387,7 +385,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           } else {
             (textured ? freight : structures).quad(a, b, c, d, color);
             if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
-          }
+          } };
+          if (graded) {
+            if (!ballast) { ballastRuns.push(ballast = []); pending.set(ballast, []); }
+            ballast.push([a, b, c, d]);
+            pending.get(ballast)!.push(draw);
+          } else draw(false);
           if (textured && !bridge && gradeAvailable) {
             // Close exposed ballast faces where the raised approach clears the bare earth.
             for (const [left, right] of [[a, d], [c, b]]) {
@@ -410,6 +413,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         }
         prev = section;
         lastS = s;
+      }
+      // A bedded quad stays flat over its carved bed, unless it reaches the board's edge
+      // cells, which carve never moves (there only the drape can help).
+      for (const [quads, draws] of pending) {
+        const flags = bedFlags(quads, (x, z) => terrainGround(x, z));
+        draws.forEach((draw, i) => draw(flags[i] && inCarvable(quads[i])));
       }
     }
 

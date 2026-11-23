@@ -22,6 +22,7 @@ async function show() {
   const grid = new GroundGrid(m, bytes);
   const area = createDowntownTerrain(grid, city, canopy.trees, { quality: 'low' });
   const transport = createSurfaceTransport(city, grid, area.groundAt);
+  area.carve(transport.cutting);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#e6e3d8');
   scene.add(area.group, transport.group, new THREE.HemisphereLight('#fff9ed', '#aab6a7', 1.65));

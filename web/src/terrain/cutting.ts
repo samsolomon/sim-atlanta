@@ -9,7 +9,7 @@ export type BallastQuad = readonly [a: V, b: V, c: V, d: V];
  * (a bank on a 5 m grid reaching over a 4.2 m bed), the terrain is lowered to a formation
  * just under the ballast, with side slopes rising at 1:1.5 for 3 m on each side.
  */
-export const CUTTING = { below: 0.05, slope: 1.5, width: 3, tolerance: 0.03, maxGrade: 0.2 } as const;
+export const CUTTING = { below: 0.05, slope: 1.5, width: 3, tolerance: 0.03, maxGrade: 0.2, pit: 0.5, pitClear: 5 } as const;
 
 /**
  * Ground yields that grade the terrain to the ballast formation, as triangles sharing
@@ -27,10 +27,9 @@ export function cuttingYields(runs: readonly (readonly BallastQuad[])[], ground:
   inside: { minX: number; maxX: number; minZ: number; maxZ: number }): GroundYield[] {
   const beds: V[][] = [], sides: V[][] = [];
   for (const run of runs) {
-    const plausible = run.map(q => grade(q) <= CUTTING.maxGrade);
-    const flagged = run.map(q => bedded(q, ground));
+    const bed = bedFlags(run, ground);
     for (let i = 0; i < run.length; i++) {
-      if (!plausible[i] || !(flagged[i] || flagged[i - 1] || flagged[i + 1])) continue;
+      if (!bed[i]) continue;
       const [a, b, c, d] = run[i].map(floorPoint);
       // The bed, split on the same a-c diagonal as the drawn ballast quad.
       beds.push([a, b, c], [a, c, d]);
@@ -121,10 +120,19 @@ function plane(t: V[]) {
   return (x: number, z: number) => p[1] - (nx * (x - p[0]) + nz * (z - p[2])) / ny;
 }
 
-/** True where a quad gets a cutting bed: a plausible grade, with terrain above it.
- * Exported so those quads skip the drape and stay flat over the carved bed. */
-export function bedded(q: BallastQuad, ground: (x: number, z: number) => number | null) {
-  return grade(q) <= CUTTING.maxGrade && penetrates(q, ground);
+/**
+ * Which quads of a run get a cutting bed: those the terrain stands over, plus their
+ * neighbours so the cutting eases out. A quad steeper than `maxGrade` is never bedded.
+ * One steeper than `pit` (a DEM pit, such as a road under a missing rail bridge) also
+ * keeps cuttings `pitClear` quads away: a cutting can't fix a missing structure, and its
+ * slopes would only scar the bank around it. Exported so bedded
+ * quads are drawn flat over the carved bed rather than draped.
+ */
+export function bedFlags(run: readonly BallastQuad[], ground: (x: number, z: number) => number | null) {
+  const steep = run.map(q => grade(q)), pit = steep.map(g => g > CUTTING.pit);
+  const nearPit = run.map((_, i) => steep[i] > CUTTING.maxGrade || pit.slice(Math.max(0, i - CUTTING.pitClear), i + CUTTING.pitClear + 1).some(Boolean));
+  const flagged = run.map((q, i) => !nearPit[i] && penetrates(q, ground));
+  return run.map((_, i) => !nearPit[i] && (flagged[i] || !!flagged[i - 1] || !!flagged[i + 1]));
 }
 
 /** True where the terrain stands above the ballast top, sampled over the quad's two

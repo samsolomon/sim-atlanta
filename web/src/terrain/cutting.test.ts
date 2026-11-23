@@ -82,9 +82,8 @@ it('leaves a pit alone: a quad steeper than the grade limit is not a cutting', (
   const surface = mound('high');
   const steep = run(30, x => (x < 30 ? 0.13 : -3));
   const yields = cuttingYields([steep], (x, z) => surface.sampleScene(x, z), inside);
-  // The level quads either side of the drop are graded; the 3 m drop from x 28 to 30 is not.
-  expect(yields.length).toBeGreaterThan(0);
-  for (const y of yields) expect(y.ring.every(([x]) => x <= 28 + 1e-9) || y.ring.every(([x]) => x >= 30 - 1e-9)).toBe(true);
+  // Nothing within five quads (10 m) of the 3 m drop from x 28 to 30 is graded.
+  for (const y of yields) expect(y.ring.every(([x]) => x <= 18 + 1e-9) || y.ring.every(([x]) => x >= 40 - 1e-9)).toBe(true);
 });
 
 it('clips yields to the board inset rather than dropping them', () => {

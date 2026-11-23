@@ -76,5 +76,17 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
       if (s > 0 && s < len && Math.abs(n) < 2) onTreads++;
     }
     expect(onTreads).toBe(0);
+    // Ballast draws after its run is graded; each quad must keep its own place along the
+    // sleeper texture (a shared station once stretched one texel over the whole track).
+    const freight = mounted.get('south-band')!.group.getObjectByName('Freight track') as Mesh;
+    const v = freight.geometry.getAttribute('uv');
+    let stretched = 0;
+    for (let i = 0; i < v.count; i += 3) {
+      const ys = [v.getY(i), v.getY(i + 1), v.getY(i + 2)];
+      // Stations are at most 2 m apart, 2.5 texture periods; corners and curves add a little.
+      if (Math.max(...ys) - Math.min(...ys) > 4) stretched++;
+    }
+    expect(v.count).toBeGreaterThan(1000);
+    expect(stretched).toBe(0);
   } finally { for (const area of mounted.values()) area.dispose(); }
 }, 60_000);
