@@ -121,7 +121,6 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
-import { deviceFacts, deviceTier } from '../core/device-tier';
 
 export type Quality = 'low' | 'high';
 
@@ -166,12 +165,13 @@ export interface CityView {
   glide(x: number, z: number): void;
 }
 
-/** Phones, mobile GPUs and small-memory devices get the light tier (core/device-tier.ts);
- * `?q=low|high` overrides. */
+/** Phones and small touch screens get the light tier; `?q=low|high` overrides. */
 export function pickQuality(): Quality {
   const q = new URLSearchParams(location.search).get('q');
   if (q === 'low' || q === 'high') return q;
-  return deviceTier(deviceFacts()).tier;
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const small = Math.min(screen.width, screen.height) < 820;
+  return touch && small ? 'low' : 'high';
 }
 
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
@@ -1485,7 +1485,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
-    treeDetail();
     const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
     freight?.update(sceneTime);
@@ -1544,26 +1543,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
   let firstFrame = false;
-  // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
-  // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
-  const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
-  let farTrees = false;
-  let detailAreas = -1;
-  function treeDetail() {
-    const areas = [terrain, east, north, ...(mosaic ? [...mosaic.areas.values(), ...mosaic.patches.values()] : [])];
-    const d = camera.position.distanceTo(controls.target);
-    const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    // Off the mosaic the list is always [terrain, east, north]; count the mounted ones, so an
-    // area that arrives later still gets the current detail.
-    const mounted = areas.filter(Boolean).length;
-    if (far === farTrees && mounted === detailAreas) return;
-    farTrees = far;
-    detailAreas = mounted;
-    // Limb shadows stay on until a moving-camera A16 run shows they cost something.
-    const detail = { farTrees: far };
-    world.setDetail(detail);
-    for (const a of areas) a?.setDetail(detail);
-  }
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {

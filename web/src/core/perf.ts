@@ -47,11 +47,10 @@ const TRAIL_KEY = 'perf-trail';
  *   &post=off     render straight to the canvas, no composer
  *   &hide=trees,scenery,terrain,transport,buildings,vehicles   hide whole categories (fps upper
  *                 bounds per category). `trees` means every instanced mesh in area scenery.
- *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample, so per-move work such as
  *                 shadow-map redraws is measured too (a static camera hides it) */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>() };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -60,7 +59,6 @@ export const perfOverrides = (() => {
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
-    farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
   };
 })();
 
