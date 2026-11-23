@@ -43,7 +43,8 @@ it('infers gables, hips and pyramids from the footprint, with eave-height walls 
   plan.finishFor(ell)!.dressRoof!(out, ell.rings[0], plan.city.buildings.find(x => x.id === 'ell')!.h!, new Builder());
   // Roof vertices sit at or above the eave; inner-corner windows below it now face into the notch, as they should.
   const ellEave = plan.city.buildings.find(x => x.id === 'ell')!.h!;
-  for (let i = 0; i < out.pos.length; i += 3) if (out.pos[i + 1] >= ellEave - 1e-6) expect(out.pos[i] > 68.01 && out.pos[i + 2] > 8.01).toBe(false);
+  // ...beyond its 0.45 m eave overhang.
+  for (let i = 0; i < out.pos.length; i += 3) if (out.pos[i + 1] >= ellEave - 1e-6) expect(out.pos[i] > 68.7 && out.pos[i + 2] > 8.7).toBe(false);
   // A one-storey cottage under 150 m² (Home Park bungalows); the same plan in Ansley Park is two storeys.
   const cottage = house('cottage', rect(11, 9));
   expect(residential(city([cottage]), undefined, undefined, undefined, 'high', pin('cottage')).city.buildings[0].h).toBeCloseTo(3.2, 5);
@@ -60,8 +61,8 @@ it('keeps reported roof shapes and leaves offices, big blocks and existing finis
   const office = { ...house('office', rect(14, 8)), cls: 'office' };
   const block = house('block', rect(40, 30));
   const irwin = house('osm:way:270493826', [[0, 0], [10, 0], [10, 14], [0, 14]]);
-  // Pin both to Colonial, whose pitch (0.72 × half-depth) the ridge check below assumes.
-  const colonial = { [hippedId]: { style: 'colonial' as const }, plain: { style: 'colonial' as const } };
+  // Pin both to Tudor: always side-gabled unless OSM says otherwise, pitch 1.1 × half-depth.
+  const colonial = { [hippedId]: { style: 'tudor' as const }, plain: { style: 'tudor' as const } };
   const plan = residential(city([tagged, office, block, irwin]), irwinHouseFinish, undefined, undefined, 'high', colonial);
   expect(plan.count).toBe(1);
   expect(plan.city.buildings.find(b => b.id === 'office')!.h).toBeNull();
@@ -70,8 +71,8 @@ it('keeps reported roof shapes and leaves offices, big blocks and existing finis
   const ridgeEnd = (b: VBuilding, p: ReturnType<typeof residential>) => {
     const out = new Builder(), drawn = p.city.buildings.find(x => x.id === b.id)!;
     p.finishFor(b)!.dressRoof!(out, b.rings[0], drawn.h!, new Builder());
-    // Ridge vertices sit at eave + rise (0.72 × the 4 m half-depth); chimneys stand above it.
-    const ridge = drawn.h! + 2.88;
+    // Ridge vertices sit at eave + rise (1.1 × the 4 m half-depth); chimneys stand above it.
+    const ridge = drawn.h! + 4.4;
     const xs = out.pos.filter((_, i) => i % 3 === 0 && Math.abs(out.pos[i + 1] - ridge) < 1e-4 && out.pos[i + 2] > 0 && out.pos[i + 2] < 8);
     return Math.max(...xs);
   };
@@ -115,23 +116,23 @@ it('reports how many footprints change in each row', () => {
 });
 
 it('composes a modest set of windows and lights about a third of rooms', () => {
-  // Windows count by their glass: lit glass goes to the lit builder, dark glass is #4c5a60.
+  // Windows count by their glass: lit glass goes to the lit builder, unlit sky-toned glass is #8fa4b2.
   let total = 0, glowing = 0;
   for (let i = 0; i < 30; i++) {
     const b = house(`colonial-${i}`, rect(12, 9, i * 30, 0));
     const plan = residential(city([b]), undefined, undefined, undefined, 'high', { [b.id]: { style: 'colonial', storeys: 2 } });
     const out = new Builder(), lit = new Builder();
     plan.finishFor(b)!.dressRoof!(out, b.rings[0], plan.city.buildings[0].h!, lit);
-    const dark = new Color('#4c5a60');
+    const dark = new Color('#8fa4b2');
     let darkVerts = 0;
     for (let v = 0; v < out.col.length; v += 3)
       if (Math.abs(out.col[v] - dark.r) < 1e-4 && Math.abs(out.col[v + 1] - dark.g) < 1e-4 && Math.abs(out.col[v + 2] - dark.b) < 1e-4) darkVerts++;
     total += (darkVerts + lit.pos.length / 3) / 6;
     glowing += lit.pos.length / 18;
   }
-  // A two-storey Colonial: about 20–30 sashes (pairs count twice), well under the ~48 of the old tiled grid.
+  // A two-storey Colonial: about 12–22 sashes (pairs count twice), never the ~48 of a tiled grid.
   expect(total / 30).toBeGreaterThan(8);
-  expect(total / 30).toBeLessThan(32);
+  expect(total / 30).toBeLessThan(24);
   expect(glowing / total).toBeGreaterThan(.2);
   expect(glowing / total).toBeLessThan(.5);
 });
