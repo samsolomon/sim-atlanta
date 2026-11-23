@@ -98,9 +98,6 @@ class AttachPartsTest(unittest.TestCase):
         self.assertGreaterEqual(min(xs), 19.9)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class DowntownPartsTest(unittest.TestCase):
     def feature(self, ident, parent, props, x0, z0, x1, z1):
@@ -115,12 +112,25 @@ class DowntownPartsTest(unittest.TestCase):
         from downtown_parts import attach
         parent = {"id": "p", "h": 50.0, "floors": 12, "rings": [[[0, 0], [40, 0], [40, 40], [0, 40]]]}
         vignette = {"buildings": [parent, {"id": "q", "h": 10.0, "floors": 3, "rings": [[[60, 0], [70, 0], [70, 10]]]}]}
-        features = [self.feature("t", "p", {"height": 212.0}, 0, 0, 20, 40),
+        features = [self.feature("t", "p", {"height": 30.0}, 0, 0, 20, 40),
                     self.feature("u", "p", {}, 20, 0, 40, 40)]
         self.assertEqual(attach(vignette, features), 1)
         parts = {p["id"]: p for p in parent["parts"]}
-        self.assertEqual((parts["overture:t"]["h"], parts["overture:t"]["tier"]), (212.0, "reported"))
+        self.assertEqual((parts["overture:t"]["h"], parts["overture:t"]["tier"]), (30.0, "reported"))
         # A part with no data takes the parent's 50 m, inferred, not the 8 m default.
         self.assertEqual((parts["overture:u"]["h"], parts["overture:u"]["tier"]), (50.0, "inferred"))
         self.assertEqual(parent["h"], 50.0)
         self.assertNotIn("parts", vignette["buildings"][1])
+
+    def test_dataless_part_does_not_copy_a_height_another_part_reports(self):
+        from downtown_parts import attach
+        parent = {"id": "p", "h": 212.0, "floors": None, "rings": [[[0, 0], [40, 0], [40, 40], [0, 40]]]}
+        features = [self.feature("t", "p", {"height": 212.0}, 0, 0, 20, 40),
+                    self.feature("u", "p", {}, 20, 0, 40, 40)]
+        attach({"buildings": [parent]}, features)
+        parts = {p["id"]: p for p in parent["parts"]}
+        self.assertEqual((parts["overture:u"]["h"], parts["overture:u"]["tier"]), (8, "illustrative"))
+
+
+if __name__ == "__main__":
+    unittest.main()

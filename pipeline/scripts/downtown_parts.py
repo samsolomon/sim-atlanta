@@ -24,6 +24,10 @@ def polygons(geometry):
     return [coords] if geometry["type"] == "Polygon" else coords if geometry["type"] == "MultiPolygon" else []
 
 
+def _metres(value, limit=1000):
+    return value if isinstance(value, (int, float)) and 0 <= value < limit else None
+
+
 def heights(props, parent, tallest, taken):
     """(top, bottom, tier): a height is reported; floors alone are inferred."""
     per_level = LEVEL_M
@@ -33,15 +37,21 @@ def heights(props, parent, tallest, taken):
         per_level = ph / most
     elif pf and not ph:
         per_level = 3.6
-    top, tier = props.get("height"), "reported"
-    if not top and props.get("num_floors"):
+    top, tier = _metres(props.get("height")), "reported"
+    if not top and _metres(props.get("num_floors"), 200):
         top, tier = props["num_floors"] * per_level, "inferred"
-    if not top and (ph or pf):
-        # A part with no data of its own takes the parent's mapped height.
-        top, tier = ph or pf * 3.6, "inferred"
     if not top:
-        top, tier = PART_FALLBACK_M, "illustrative"
-    bottom = props.get("min_height") or ((props.get("min_floor") or 0) * per_level)
+        # A part with no data of its own takes the parent's mapped height, unless
+        # another part already reports it or the parent's floors describe a podium.
+        if ph and not taken and not (pf and ph / pf > 4.5):
+            top, tier = ph, "inferred"
+        elif pf:
+            top, tier = pf * 3.6, "inferred"
+        else:
+            top, tier = PART_FALLBACK_M, "illustrative"
+    bottom = _metres(props.get("min_height"))
+    if bottom is None:
+        bottom = (_metres(props.get("min_floor"), 200) or 0) * per_level
     return top, min(bottom, top - .1), tier
 
 
@@ -62,8 +72,9 @@ def attach(vignette, features):
             top, bottom, tier = heights(f["properties"], b, tallest, taken)
             for poly in polygons(f["geometry"]):
                 shape = Polygon([project(*c) for c in poly[0][:-1]], [[project(*c) for c in r[:-1]] for r in poly[1:]]).buffer(0)
+                # A thin raised part (a canopy, skybridge or passage roof) stays open beneath.
                 masses.append(dict(id="overture:" + f["properties"]["id"], top=top, bottom=bottom, tier=tier,
-                                   shape=shape.intersection(piece), canopy=False))
+                                   shape=shape.intersection(piece), canopy=bottom > 0 and top - bottom <= 1.5))
         parts = masses_to_parts(b, piece, masses)
         if parts:
             b["parts"] = parts
