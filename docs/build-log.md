@@ -1901,3 +1901,9 @@ The period bank advertisement shows four red neon signs. Current photographs sho
 In the hotel’s own dusk photograph, two brightly lit crowns rise over The Ritz-Carlton, Atlanta. Both belong to the office tower behind it. The hotel ends at a much lower flat roof. Inside its footprint, 4,017 lidar returns put the main roof at about 397 m NAVD88, roughly 68 m above Peachtree. The previous City block stood 94 m tall.
 
 The hotel is easiest to recognize from the corner. Its window bands fold toward the street, the dining terrace projects over the Peachtree sidewalk and the Ellis driveway disappears underneath the guest rooms. At night the occupied rooms and entrance sign carry the light. [Reference photographs, roof measurements and camera positions](log/ui/ritz-carlton-atlanta/README.md) · [Matched daylight, dusk and night](log/ui/ritz-carlton-atlanta/comparison.jpg)
+
+### 2026-11-23 — One footprint, three heights on Auburn Avenue
+
+Southern Bell’s 1961 photographs show a limestone building with stepped shoulders. By the 1978 National Register survey, a narrow tower stood over its southwest corner. Both views explain what the old 78 m City block hid. The limestone roof is only about 66 m above the west sidewalk. The mast reaches roughly 127 m above it, while most of the thin eastern wing stands only a few metres above the lower ground there.
+
+At street level the building gives its height back gradually: the middle steps away from the two limestone wings, down to a two-story corbelled entrance on Peachtree Center Avenue. From the railway the blue-white roundel is a more useful clue. It appears below 191 Peachtree’s twin crowns in a published dusk train photograph. [Source photographs, terrain comparison and City cameras](log/ui/southern-bell/README.md) · [Matched before and after](log/ui/southern-bell/comparison.jpg)
