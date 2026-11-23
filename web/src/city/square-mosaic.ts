@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addSection, bounds, midtownRows, connect, joins, type Area, type Board, type Direction, type Section, type TrafficArea } from '../square-board/sections';
+import { addSection, bounds, midtownRows, connect, joins, type Area, type Board, type BrookwoodGrid, type Direction, type Section, type TrafficArea } from '../square-board/sections';
 import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
@@ -55,7 +55,7 @@ export function mosaicPlinth(rects: Rect[], bottom: number) {
 }
 
 export class SquareMosaic {
-  constructor(private readonly dataRoot: string, readonly midtown = false) {}
+  constructor(private readonly dataRoot: string, readonly midtown = false, private readonly brookwood?: BrookwoodGrid) {}
   get areaCount() { return 7 + (this.midtown ? midtownRows.length : 0); }
   get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
   private fullBoard = false;
@@ -107,7 +107,7 @@ export class SquareMosaic {
       const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
       if (this.patches.has(id) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;
       this.loading.add(direction);
-      void addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, brookwood: this.midtown, dataRoot: this.dataRoot }).then(added => {
+      void addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, brookwood: this.brookwood, dataRoot: this.dataRoot }).then(added => {
         if (signal.aborted) { for (const area of added.values()) area.dispose(); return; }
         for (const [id, area] of added) this.patches.set(id, area);
         const p = this.wanted;

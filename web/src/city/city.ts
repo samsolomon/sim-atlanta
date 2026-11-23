@@ -198,6 +198,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const midtown = query.get('board') === 'midtown';
   const brookwoodStudy = midtown && query.get('site') === 'brookwood';
   let brookwood: ReturnType<typeof import('./brookwood').createBrookwood> | undefined;
+  let preparedBrookwood: typeof brookwood;
+  let railModule: Promise<typeof import('./brookwood') | undefined> | undefined;
+  async function brookwoodGrid(spec: GroundManifest, bytes: ArrayBuffer) {
+    // Prepare the station before either row is cut. Both rows retain the original
+    // surface and generic structures if the chunk or the model is unavailable.
+    railModule ??= import('./brookwood').then(mod => {
+      if (eastController.signal.aborted) return;
+      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M);
+      return mod;
+    }).catch(error => {
+      console.warn('Brookwood station unavailable', error);
+      return undefined;
+    });
+    const mod = await railModule;
+    return mod ? mod.brookwoodGrid(spec, bytes) : new GroundGrid(spec, bytes);
+  }
   const replaced: {parent: THREE.Object3D; object: THREE.Object3D}[] = [];
   const requestedSquare = midtown || query.get('board') === 'square';
   const square = grid && requestedSquare ? await import('./square-mosaic').catch(error => {
@@ -206,7 +222,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }) : undefined;
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Square preview unavailable. Downtown is available.');
-  const mosaic = square && new square.SquareMosaic(DATA, midtown);
+  const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
   const previewEast = !!mosaic || (!!grid && query.get('east') === 'king-memorial');
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -258,7 +274,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
   const disposeBoard = () => {
     eastController.abort();
-    brookwood?.dispose();
+    preparedBrookwood?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
     mosaic?.dispose();
     eastRail?.dispose();
@@ -702,10 +718,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
     renderer.shadowMap.needsUpdate = true;
   }
-  async function attachBrookwood(area: NonNullable<typeof east>) {
-    const { createBrookwood } = await import('./brookwood');
-    if (eastController.signal.aborted || brookwood) return;
-    brookwood = createBrookwood(area.grid.manifest.vertical.sceneZeroNavd88M, area.groundAt);
+  function attachBrookwood(area: NonNullable<typeof east>) {
+    if (!preparedBrookwood) {
+      areaResult('brookwood-rail', 'Brookwood station model unavailable.');
+      return;
+    }
+    brookwood = preparedBrookwood;
     scene.add(brookwood.group);
     scenery.push(brookwood.structure);
     for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
@@ -721,7 +739,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
       const atl = added.get('brookwood-station');
-      if (atl) void attachBrookwood(atl).catch(() => areaResult('brookwood-rail', 'Brookwood station model unavailable.'));
+      if (atl) attachBrookwood(atl);
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       const first = added.keys().next().value!;

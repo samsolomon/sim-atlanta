@@ -34,10 +34,16 @@ function nextRow(t: TrainState, next: Stop | undefined) {
   return `<dt>Next stop</dt><dd>${esc(place(name))}${eta}</dd>`;
 }
 
-export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, model?: string) {
+export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city = false) {
   const color = route ? routeColor(route) : '#333';
   const name = route?.mode === 'heavy_rail' ? `${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
-  const units = vt ? `${vt.typicalUnits} × ${model ?? vt.name}` : '';
+  let model: string | undefined;
+  if (city && vt && route?.mode === 'heavy_rail') model = `${vt.typicalUnits} × Stadler CQ400`;
+  if (city && t.routeId === 'amtrak:route:Crescent') {
+    const coaches = Math.max(0, Math.round(t.lengthM.value / 26) - 1);
+    model = coaches ? `Locomotive and ${coaches} ${coaches === 1 ? 'coach' : 'coaches'}` : 'Locomotive';
+  }
+  const units = model ?? (vt ? `${vt.typicalUnits} × ${vt.name}` : '');
   const live = t.s.tier === 'live';
   return `
     <h2><span class="dot" style="background:${esc(color)}"></span>${esc(name)}${t.label ? ` <small>#${esc(t.label)}</small>` : ''}</h2>

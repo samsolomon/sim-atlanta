@@ -115,9 +115,7 @@ function solid(b: Builder, ring: P2[], bottom: number, top: number, color: strin
   g.dispose();
 }
 
-type GroundAt = (x: number, z: number) => number | null;
-
-function station(b: Builder, lamps: Builder, litPlatform: Builder, zero: number, groundAt: GroundAt) {
+function station(b: Builder, lamps: Builder, litPlatform: Builder, zero: number) {
   const floor = 273 - zero;
   const forecourt: P2[] = [
     [-115, -5073],
@@ -255,16 +253,35 @@ function station(b: Builder, lamps: Builder, litPlatform: Builder, zero: number,
   b.ribbon(bridge, 34, () => floor, '#7f817c');
   // The DEM drops below street grade at both abutments. Join the deck to the first
   // on-street sample beyond each bank, following the mapped approach centreline.
-  for (const points of [
-    [bridge.pts[0], [10.64, -4988.6], [32.25, -4966.97]],
-    [bridge.pts.at(-1)!, [-69, -5105.52], [-72, -5110]],
-  ] as P2[][]) {
-    const line = new Line(points),
-      end = points.at(-1)!;
-    const bank = groundAt(...end) ?? floor;
+  const approaches: { points: P2[]; bank: number }[] = [
+    { points: [bridge.pts[0], [10.64, -4988.6], [32.25, -4966.97]], bank: 274.04 },
+    { points: [bridge.pts.at(-1)!, [-69, -5105.52], [-72, -5110]], bank: 272.88 },
+  ];
+  for (const approach of approaches) {
+    const line = new Line(approach.points),
+      bank = approach.bank - zero;
     const height = (s: number) => floor + ((bank + 0.12 - floor) * s) / line.length;
     b.ribbon(line, 31, height, '#7f817c');
     for (const d of [-15, 15]) b.ribbon(line.offset(d), 3.1, (s) => height(s) + 0.12, '#c5bdac');
+  }
+  // Twenty minor ribs and two 30-foot gateway arches over the paired sidewalks.
+  // The ribs lean across each walkway; the long outer bow ties their silhouette together.
+  for (const side of [-1, 1]) {
+    function arch(from: number, span: number, rise: number, lean: number, radius: number) {
+      const curve: THREE.Vector3[] = [];
+      for (let j = 0; j <= 16; j++) {
+        const t = j / 16,
+          bow = 4 * t * (1 - t),
+          p = bridge.at(from + t * span);
+        const offset = side * (16.3 - lean * bow);
+        curve.push(new THREE.Vector3(p.x - p.nx * offset, floor + 0.55 + rise * bow, p.z - p.nz * offset));
+      }
+      const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curve), 24, radius, 6, false);
+      b.addGeometry(tube, '#e1e1d7');
+      tube.dispose();
+    }
+    arch(7, 86, 9.14, 1.1, 0.23);
+    for (let i = 0; i < 10; i++) arch(7 + 7.8 * i, 15.6, 5, 0.9, 0.145);
   }
   // The bridge carries a sidewalk past the forecourt. Keep an opening for station access.
   for (const d of [-13, -4, 4, 13])
@@ -421,7 +438,7 @@ function carGeometry(cab: boolean) {
 }
 
 /** Attach to the City mosaic at its existing vertical datum. */
-export function createBrookwood(sceneZero: number, groundAt: GroundAt) {
+export function createBrookwood(sceneZero: number) {
   const b = new Builder(),
     lamps = new Builder();
   const bed = (x: number) => elevation(x) - sceneZero;
@@ -449,7 +466,7 @@ export function createBrookwood(sceneZero: number, groundAt: GroundAt) {
     for (const off of [-0.7175, 0.7175]) b.ribbon(line.offset(off), 0.085, (_, x) => bed(x) + 0.32, '#b0ae9f');
   }
   const litPlatform = new Builder();
-  station(b, lamps, litPlatform, sceneZero, groundAt);
+  station(b, lamps, litPlatform, sceneZero);
   const group = new THREE.Group(),
     cars = new THREE.Group();
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
