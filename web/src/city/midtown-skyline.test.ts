@@ -1,0 +1,39 @@
+import { Box3, Mesh, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
+import { expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { GroundGrid } from '../terrain/grid';
+import { createDowntownTerrain } from '../terrain/model';
+import type { VBuilding } from '../vignette/world';
+import { createSkylineLandmark } from './midtown-skyline';
+
+const row = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-upper/context.json', import.meta.url), 'utf8'));
+const tower: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:39450314');
+
+it('keeps generic scenery when the upper Midtown footprint or grade is incomplete', () => {
+  expect(createSkylineLandmark([tower], tower, null, () => 0)).toBeNull();
+  expect(createSkylineLandmark([tower], tower, 0, () => null)).toBeNull();
+  const clipped = { ...tower, rings: [tower.rings[0].slice(0, 6)] };
+  expect(createSkylineLandmark([clipped], clipped, 0, () => 0)).toBeNull();
+});
+
+it('mounts the 250 m landmark on terrain and suppresses the generic roof', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const bounds = { minX: 350, maxX: 430, minZ: -3730, maxZ: -3650 };
+  const grid = new GroundGrid({ version: 1, rows: 17, cols: 17, stepM: 5, bounds, scaleM: .1,
+    offsetM: 0, encoding: 'signed int16 little-endian', noData: -32768,
+    vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 300 }, sha256: '' }, new Int16Array(17 * 17).fill(2820).buffer);
+  const area = createDowntownTerrain(grid, { bounds, buildings: [tower], roads: [], rail: [] }, [], { quality: 'low' });
+  try {
+    const model = area.scenery.getObjectByName('One Atlantic Center')!;
+    expect(new Box3().setFromObject(model).max.y).toBeCloseTo(232);
+    area.group.updateMatrixWorld(true);
+    const ray = new Raycaster(new Vector3(390, 500, -3690), new Vector3(0,-1,0));
+    expect(ray.intersectObjects(area.scenery.children.filter(child => child !== model))).toHaveLength(0);
+    area.setNight(1);
+    expect(((model.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  } finally {
+    area.dispose();
+    vi.unstubAllGlobals();
+  }
+});
