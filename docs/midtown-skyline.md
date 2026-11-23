@@ -197,3 +197,40 @@ The OSM parts give the plan: the tower block, the low operations wing to the wes
 
 Camera `/?view=city&cam=640,-3150,250,55,320`. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg) · [Night](log/ui/midtown-skyline/fed-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/fed-after-low-day.jpg)
 
+
+### Second pass: lidar massing, entrance, gardens and night (2026-11-23)
+
+**Massing, measured.** The USGS 3DEP lidar point cloud (GA_Statewide_B2_2018; 159,669 returns within 100 m) puts the roofs, above the 298.3 m NAVD88 site grade, at:
+
+| Part | Height | NAVD88 (95th-percentile return) |
+| --- | --- | --- |
+| Corner tower top | 61.9 m | 360.2 m |
+| Its crown step | 58.9 m | 357.2 m |
+| Slab cornice | 47.5 m | about 345.8 m |
+| Slab's recessed top floor | 53.7 m | 352.0 m |
+| Low west wing and mid-block | 14.2 m | 312.5 m |
+
+The Peachtree sidewalk is at 294.3 m. All five heights are reported, from the lidar. The first pass had the corner wrong: the tower at Peachtree and 10th is the taller block, not the slab. The 2017 panorama confirms the rounded corner tower rising above the curved slab. The tower now steps in twice to a flat crown with tall paired attic windows, and the slab has a strong cornice and a recessed top floor of deep-set windows. [USGS point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json) · [Wikimedia panorama, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Horizontal_panorama_of_the_Federal_Reserve_Bank_Building_of_Atlanta.jpg) · [Esri World Imagery aerial (plan)](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-84.38621376018638,33.78128432483475,-84.38383333467605,33.78326283106255&bboxSR=4326&imageSR=4326&size=800,800&format=jpg&f=image)
+
+**Facade.**
+- White marble ashlar with faint veining.
+- Punched windows in deep reveals with dark frames.
+- Vertical recessed panels group the tower's window columns.
+- A Peachtree loggia of freestanding columns with arched openings.
+- A pedimented entrance portico on the tower: four square piers, a plain frieze (the bank's name is left off on purpose) and a small pedimented door.
+
+**Courtyard and gardens.**
+- The eagle column on its square base stands on a granite-paved plaza in front of the portico, as the panorama shows.
+- Lawn terraces step down along the slab front, held by low marble walls, with clipped hedges and a seat wall (#214 primitives).
+- The salvaged columns stand on the lawn.
+- City's existing street trees line Peachtree and 10th.
+
+**Night.**
+- The stepped crown is floodlit white from below.
+- Vertical washes light the recessed panels.
+- The offices glow warm and scattered.
+- The eagle column and loggia piers are uplit.
+
+**Gap:** I found no citable night photograph, so the night scheme follows Sam's reference description. **Estimated:** the step insets, the attic window and panel layout, the loggia arch count, the plaza and terrace layout, and the light intensities.
+
+Cameras: aerial from the southwest `/?view=city&cam=600,-3150,45,52,420` · entrance `/?view=city&cam=650,-3130,290,62,140`. [Aerial before and after](log/ui/midtown-skyline/fed2-aerial-compare-day.jpg) · [Night](log/ui/midtown-skyline/fed2-aerial-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/fed2-aerial-dusk-day.jpg) · [Entrance](log/ui/midtown-skyline/fed2-entrance-compare-day.jpg) · [Entrance at night](log/ui/midtown-skyline/fed2-entrance-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/fed2-aerial-after-low-day.jpg)

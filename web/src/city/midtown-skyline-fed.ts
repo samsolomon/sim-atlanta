@@ -195,7 +195,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
   return { ...model, setNight(night: number) {
     model.setNight(night);
     // Floodlit from below: the stepped crown and attic glow bright white.
-    crownMaterial.emissiveIntensity = .85 * night;
+    crownMaterial.emissiveIntensity = .38 * night;
     washMaterial.color.setScalar(Math.min(1, night));
     washMesh.visible = night > .001;
   } };
