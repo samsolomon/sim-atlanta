@@ -2,6 +2,7 @@ import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } fro
 import type { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
+import { applySurfaces, surfaceDefaults, SurfacePainter, type Surface } from '../materials';
 
 /** A footprint in its street frame, with roof heights in NAVD88 metres. */
 export function landmarkShell(
@@ -36,20 +37,34 @@ export function localLandmarkShell(
   if (!probes.every(([x, z]) => pointInRing(x, z, ring))) return null;
   const body = new Builder(),
     lights = new Builder(),
-    random = rng(1976);
-  function prism(plan: P2[], lo: number, hi: number, wall: string, roof: string) {
-    for (let i = 0; i < plan.length; i++) {
-      const [x, z] = plan[i],
-        [a, b] = plan[(i + 1) % plan.length];
-      body.quad([x, lo, z], [x, hi, z], [a, hi, b], [a, lo, b], wall);
-    }
-    for (const [a, b, c] of ShapeUtils.triangulateShape(
-      plan.map(([x, z]) => new Vector2(x, z)),
-      [],
-    )) {
-      const point = (i: number) => [plan[i][0], hi, plan[i][1]];
-      body.tri(point(a), point(c), point(b), roof);
-    }
+    random = rng(1976),
+    painter = new SurfacePainter();
+  /** Draws with a library material: everything `draw` adds to the body gets `surface`. */
+  function paint<T>(surface: Surface, draw: () => T): T {
+    return painter.paint(body, surface, draw);
+  }
+  /** `materials` optionally paints the walls and the roof with library surfaces. */
+  function prism(plan: P2[], lo: number, hi: number, wall: string, roof: string, materials: { wall?: Surface; roof?: Surface } = {}) {
+    const walls = () => {
+      for (let i = 0; i < plan.length; i++) {
+        const [x, z] = plan[i],
+          [a, b] = plan[(i + 1) % plan.length];
+        body.quad([x, lo, z], [x, hi, z], [a, hi, b], [a, lo, b], wall);
+      }
+    };
+    const top = () => {
+      for (const [a, b, c] of ShapeUtils.triangulateShape(
+        plan.map(([x, z]) => new Vector2(x, z)),
+        [],
+      )) {
+        const point = (i: number) => [plan[i][0], hi, plan[i][1]];
+        body.tri(point(a), point(c), point(b), roof);
+      }
+    };
+    if (materials.wall) paint(materials.wall, walls);
+    else walls();
+    if (materials.roof) paint(materials.roof, top);
+    else top();
   }
   /** Faces are directed with the building on the left in the (u,v) plan. */
   function facade(
@@ -92,6 +107,11 @@ export function localLandmarkShell(
     group.position.set(origin[0], originY, origin[1]);
     group.rotation.y = -angle;
     const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+    // Only painted shells change program; the rest stay exactly as they were.
+    if (painter.painted && surfaceDefaults.enabled) {
+      shell.geometry.setAttribute('aSurface', painter.attribute(body.pos.length / 3));
+      applySurfaces(shell.material);
+    }
     shell.castShadow = shell.receiveShadow = true;
     group.add(shell);
     const lamps = new Mesh(
@@ -107,5 +127,5 @@ export function localLandmarkShell(
       },
     };
   }
-  return { base, ring, body, lights, prism, facade, finish };
+  return { base, ring, body, lights, prism, facade, paint, finish };
 }
