@@ -11,12 +11,11 @@ Heights carry truth tiers:
 
 Hillside foundations now check the lowest grounded part, and the roof-under-terrain test checks every part's roof. King and Sweet Auburn have no mapped parts. Downtown comes from Overture and is a separate change.
 
-**Money shot:** upper Midtown from the southeast, target (600, −3650), bearing 300°, tilt 68°, 1500 m. Day 11:30, night 23:30 EST on 20 November, high tier.
+**Money shot.** Upper Midtown from the southeast, with the same camera before and after (`/?view=city&cam=600,-3650,300,68,1500`), 20 November, high tier.
 
-| | Before | After |
-| --- | --- | --- |
-| Day | ![](skyline-before-day.jpg) | ![](skyline-after-day.jpg) |
-| Night | ![](skyline-before-night.jpg) | ![](skyline-after-night.jpg) |
+![Upper Midtown at 11:30, before and after, with the changed towers labelled](skyline-compare-day.jpg)
+
+![The same view at 23:30](skyline-compare-night.jpg)
 
 Closer views, each at bearing 25° and tilt 55° unless noted:
 
