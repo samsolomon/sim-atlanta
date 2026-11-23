@@ -20,6 +20,7 @@ import { createTrees, treeDims, treeTriangles, type TreePlacement } from '../tre
 import { SIZE_CLASSES, calendarDoy, doyOf, type SizeClass, type Species, type TreeQuality } from '../trees/species';
 import { SPECIES as SPECIES_LIST } from '../trees/index';
 import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
+import { VARIANTS, createGinkgoVariant, variantTriangles, type GinkgoVariant } from '../trees/ginkgo-variants';
 import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
 
 const el = document.getElementById('stage')!;
@@ -111,7 +112,18 @@ phase.addEventListener('input', () => {
 const platformParam = new URLSearchParams(location.search).get('platform');
 let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
 let station: ReturnType<typeof createPlatformScene> | undefined;
-let trees: { group: THREE.Object3D; setSeason(doy: number): void; dispose(): void } | null = null;
+type LabTrees = { group: THREE.Object3D; setSeason(doy: number): void; dispose(): void; update?(dt: number, camera: THREE.Camera): void; setNight?(n: number): void; draws?: number | (() => number) };
+let trees: LabTrees | null = null;
+// Captions over each tree in "Compare all", projected every frame so screenshots label themselves.
+let compareLabels: { text: string; at: THREE.Vector3 }[] = [];
+const labelLayer = document.createElement('div');
+labelLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;font:600 14px system-ui,sans-serif';
+document.getElementById('stage')!.append(labelLayer);
+// Ginkgo rendering candidates (trees/ginkgo-variants.ts) and the cost test's tree count.
+type Rendering = 'current' | GinkgoVariant | 'all';
+const variantParam = new URLSearchParams(location.search).get('variant');
+let rendering: Rendering = variantParam && (variantParam === 'all' || variantParam === 'current' || variantParam in VARIANTS) ? variantParam as Rendering : 'current';
+let treeCount = Number(new URLSearchParams(location.search).get('n')) || 1;
 let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
 // Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
 const labParams = new URLSearchParams(location.search);
@@ -136,13 +148,46 @@ function buildTrees() {
   let x = 0;
   sizes.forEach((_, i) => { x += (i ? spreads[i - 1] / 2 : 0) + spreads[i] / 2 + (i ? 3 : 0); xs.push(x); });
   const mid = (xs[0] - spreads[0] / 2 + xs[xs.length - 1] + spreads[spreads.length - 1] / 2) / 2;
-  const row = sizes.map((size, i) => ({ size, x: xs[i] - mid, z: 0 }));
-  if (species) {
+  let row = sizes.map((size, i) => ({ size, x: xs[i] - mid, z: 0 }));
+  // Cost test: a grid of N trees cycling through the shown classes.
+  if (treeCount > 1) {
+    const pitch = Math.max(...spreads) * 1.15;
+    const cols = Math.ceil(Math.sqrt(treeCount));
+    row = Array.from({ length: treeCount }, (_, i) => ({ size: sizes[i % sizes.length], x: (i % cols - (cols - 1) / 2) * pitch, z: (Math.floor(i / cols) - (cols - 1) / 2) * pitch }));
+  }
+  const ginkgoVariant = model === 'ginkgo' && rendering !== 'current';
+  if (ginkgoVariant && rendering === 'all') {
+    // Compare all: A–D left to right at one class (mature when "All sizes" is chosen).
+    const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
+    const spread = species!.sizes[size].spreadM;
+    const gap = Math.max(spread + 3, size === 'sapling' ? 5 : 9);
+    const parts = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) =>
+      createGinkgoVariant([{ species: species!, size, x: (i - 1.5) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
+    const group = new THREE.Group();
+    parts.forEach(p => group.add(p.group));
+    trees = {
+      group,
+      setSeason: d => parts.forEach(p => p.setSeason(d)),
+      update: (dt, cam) => parts.forEach(p => p.update(dt, cam)),
+      setNight: n => parts.forEach(p => p.setNight(n)),
+      dispose: () => { parts.forEach(p => p.dispose()); group.removeFromParent(); },
+      draws: () => parts.reduce((n, p) => n + p.draws(), 0),
+    };
+    row = parts.map((_, i) => ({ size, x: (i - 1.5) * gap, z: 0 }));
+    compareLabels = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) => ({ text: `${v} · ${VARIANTS[v]}`, at: new THREE.Vector3(row[i].x, species!.sizes[size].heightM * 1.04, 0) }));
+    spreads.splice(0, spreads.length, ...row.map(() => gap - 3));
+    heights.splice(0, heights.length, ...row.map(() => species!.sizes[size].heightM));
+  } else if (ginkgoVariant) {
+    const placements: TreePlacement[] = row.map((r, i) => ({ species: species!, size: r.size, x: r.x, z: r.z, seed: 11 + i * 7,
+      heightM: species!.sizes[r.size].heightM, spreadM: species!.sizes[r.size].spreadM }));
+    trees = createGinkgoVariant(placements, rendering as GinkgoVariant, treeQuality, () => 0);
+  } else if (species) {
     const placements: TreePlacement[] = row.map((r, i) => ({ species, size: r.size, x: r.x, z: r.z, seed: 11 + i * 7,
       heightM: species.sizes[r.size].heightM, spreadM: species.sizes[r.size].spreadM }));
     trees = createTrees(placements, treeQuality, () => 0);
   } else trees = createGenericTrees(row, treeQuality);
   scene.add(trees!.group);
+  trees!.setNight?.(night.value);
   // A walker beside the smallest tree, facing the camera.
   scaleFigure = createFigurePreview('walker', 0);
   scaleFigure.group.position.set(row[0].x - spreads[0] / 2 - 1.5, 0, 2);
@@ -175,11 +220,22 @@ function buildTrees() {
   camera.far = Math.max(400, d * 4);
   camera.updateProjectionMatrix();
 
+  const variantReport = document.getElementById('variant-report')!;
+  if (model === 'ginkgo') {
+    const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
+    variantReport.textContent = rendering === 'current'
+      ? 'Current: the octahedron model City draws today.'
+      : (rendering === 'all' ? 'Left to right: ' : '') + (Object.keys(VARIANTS) as GinkgoVariant[])
+        .filter(v => rendering === 'all' || v === rendering)
+        .map(v => `${v} ${VARIANTS[v]} ${variantTriangles(v, size, treeQuality).total}`).join(', ') + ` triangles per ${size} tree.`
+        + (rendering === 'B' || rendering === 'all' ? ' B swaps to A beyond 60 m.' : '');
+  }
   const per = (q: TreeQuality) => species
     ? sizes.map(size => `${size} ${treeTriangles(species, size, q).total}`).join(', ')
     : `${genericTriangles(q).total} per tree at every size`;
   const budget = genericTriangles(treeQuality);
-  const draws = (trees as { draws?: number }).draws ?? budget.draws;
+  const drawsOf = (trees as LabTrees | null)?.draws;
+  const draws = typeof drawsOf === 'function' ? drawsOf() : drawsOf ?? budget.draws;
   treeReport.textContent = `${treeQuality === 'high' ? 'High' : 'Low'} detail. Triangles per tree: ${per(treeQuality)}`
     + ` (budget ${budget.total}). ${draws} instanced draws. Person ${personM.toFixed(2)} m.`;
   const dims = species ? sizes.map(size => {
@@ -237,11 +293,14 @@ function build() {
   figure = undefined;
   trees?.dispose();
   trees = null;
+  compareLabels = [];
   scaleFigure?.dispose();
   scaleFigure = undefined;
   ground.visible = true;
   const isTree = model === 'generic' || Object.hasOwn(SPECIES, model);
   for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree && !(isLandscape(model) && id !== 'tree-size');
+  document.getElementById('count')!.hidden = !isTree;
+  document.getElementById('rendering')!.hidden = model !== 'ginkgo';
   if (isLandscape(model)) {
     for (const id of ['lines', 'roles', 'platforms', 'motion']) document.getElementById(id)!.hidden = true;
     nextLook.hidden = true;
@@ -421,9 +480,25 @@ function setNight(on: boolean) {
   sun.intensity = on ? 0.15 : 2.6;
   bg.set(on ? '#1f2535' : '#e9e5dc');
   floorMaterial.color.set(on ? '#2a3040' : '#d9d3c6');
+  trees?.setNight?.(night.value);
 }
 
 let lastFrame = 0;
+const intervals: number[] = [];
+// Cost readout for the Trees section: CPU time to submit a frame, and what the GPU was sent.
+const perf = (() => {
+  const ms: number[] = [];
+  let frames = 0;
+  return {
+    push(m: number, tri: number, calls: number) {
+      ms.push(m); if (ms.length > 60) ms.shift();
+      if (++frames % 30 || !trees) return;
+      const avg = ms.reduce((a, b) => a + b, 0) / ms.length;
+      document.getElementById('perf-report')!.textContent =
+        `${treeCount} tree${treeCount > 1 ? 's' : ''}: ${tri.toLocaleString()} triangles and ${calls} draw calls per frame (all passes), ${avg.toFixed(1)} ms CPU to submit, ${(1000 / (intervals.reduce((a, b) => a + b, 0) / Math.max(1, intervals.length))).toFixed(0)} fps (60-frame means).`;
+    },
+  };
+})();
 /** One render, also callable from captures when a background tab throttles requestAnimationFrame. */
 const draw = (t: number) => {
   if (figure && playing) {
@@ -431,6 +506,16 @@ const draw = (t: number) => {
     figure.setPhase(cycle);
     phase.value = String(Math.round(cycle * 100));
   }
+  const dt = Math.min(t - lastFrame, 100) / 1000;
+  intervals.push(t - lastFrame); if (intervals.length > 60) intervals.shift();
+  labelLayer.replaceChildren(...compareLabels.map(l => {
+    const p = l.at.clone().project(camera);
+    const d = document.createElement('div');
+    d.textContent = l.text;
+    d.style.cssText = `position:absolute;left:${(p.x + 1) / 2 * 100}%;top:${(1 - p.y) / 2 * 100}%;transform:translate(-50%,-100%);background:#000c;color:#fff;padding:3px 8px;border-radius:4px;white-space:nowrap`;
+    return d;
+  }));
+  trees?.update?.(dt, camera);
   lastFrame = t;
   controls.update();
   ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
@@ -438,7 +523,11 @@ const draw = (t: number) => {
   ink.uniforms.uFar.value = camera.far;
   ink.uniforms.uStrength.value = inkOn ? 0.9 : 0;
   grade.uniforms.uTime.value = t / 1000;
+  const t0 = performance.now();
+  renderer.info.autoReset = false;
+  renderer.info.reset();
   composer.render();
+  perf.push(performance.now() - t0, renderer.info.render.triangles, renderer.info.render.calls);
 };
 const frame = (t: number) => {
   draw(t);
@@ -555,6 +644,12 @@ for (const size of [...SIZE_CLASSES, 'all'] as const)
 document.getElementById('tree-size')!.append(treeReport);
 for (const [label, doy] of SEASONS) mk('season', label, () => { seasonDoy = doy; showSeason(); }, label === 'Clock date');
 document.getElementById('season')!.append(seasonReport);
+for (const r of ['current', 'A', 'B', 'C', 'D', 'all'] as const)
+  mk('rendering', r === 'current' ? 'Current' : r === 'all' ? 'Compare all' : `${r} ${VARIANTS[r]}`, () => { rendering = r; setParam('variant', r); build(); view('Front'); }, r === rendering);
+document.getElementById('rendering')!.append(document.getElementById('variant-report')!);
+for (const n of [1, 50, 300])
+  mk('count', String(n), () => { treeCount = n; setParam('n', String(n)); build(); view('Front'); }, n === treeCount);
+document.getElementById('count')!.append(document.getElementById('perf-report')!);
 for (const tier of ['high', 'low'] as const)
   mk('tier', tier === 'high' ? 'High' : 'Low', () => { treeQuality = tier; setParam('tier', tier); build(); }, tier === treeQuality);
 document.getElementById('tier')!.append(landscapeReport);
@@ -593,4 +688,20 @@ function setPhoto(photo?: File) {
 file.addEventListener('change', () => { if (file.files?.[0]) setPhoto(file.files[0]); });
 clearPhoto.addEventListener('click', () => { setPhoto(); file.value = ''; });
 opacity.addEventListener('input', () => { ref.style.opacity = opacity.value; });
-Object.assign(window, { __lab: { view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+/** Render `frames` frames back to back (ink, grade and shadows on) and report the mean cost; finish() flushes the GPU. */
+function bench(frames = 60) {
+  const gl = renderer.getContext();
+  composer.render(); gl.finish();
+  renderer.info.autoReset = false;
+  const t0 = performance.now();
+  let tri = 0, calls = 0;
+  for (let i = 0; i < frames; i++) {
+    trees?.update?.(1 / 60, camera);
+    renderer.info.reset();
+    composer.render();
+    tri = renderer.info.render.triangles; calls = renderer.info.render.calls;
+  }
+  gl.finish();
+  return { msPerFrame: (performance.now() - t0) / frames, triangles: tri, calls };
+}
+Object.assign(window, { __lab: { bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });

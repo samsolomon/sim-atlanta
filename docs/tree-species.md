@@ -142,6 +142,33 @@ Only the Zenodo copy is openly licensed. We may cite individual trees as facts, 
 - **Sam's account.** Sam reports many mature ginkgos in the neighbourhood.
 - **Plan.** Try dated mid- to late-November leaf-on aerials, where ginkgos show as uniform bright butter-yellow crowns. Place any we can resolve as `inferred`, citing the image date. Otherwise, bias Ansley's illustrative species mix toward ginkgo. Never scatter named trees.
 
+## Four ginkgo renderings
+
+Sam wants the ginkgo to read differently from the generic clump trees. Its foliage follows the main limbs in dense, feathery sprays that sweep upward, and up close the fan leaves cluster on spur shoots. The lab (`/models.html?v=ginkgo`, **Ginkgo rendering**) builds four candidates on one shared skeleton of upswept, angular two-segment limbs. All four share the same season calendar, the drop-day gold carpet, a few falling leaves during the drop, a warm self-light by day (switched off at night), and darker inner sprays shading to bright rims. **City still draws the current model until Sam picks one.**
+
+| | How it works | Triangles per tree, high / low | Notes |
+|---|---|---|---|
+| A · Branch sleeves | A faceted three-sided sheath per spray along each limb, swept up, with a crease between facets | 185 / 101 | Reads at every distance and holds the ink style |
+| B · Micro-fans | Three-triangle fan chips on spur shoots: 20 per spray at high detail, 8 at low | 1,265 / 245 | Near range only. Swaps to A beyond 60 m, so 300 distant trees cost the same as A |
+| C · Leaf cards | Two crossed cards per spray, cut out from a painted fan-leaf atlas with sky between | 145 / 85 | Without ink it is the leafiest of the four. With ink, every cutout edge is outlined and the crown goes dark. The alpha test does not shimmer, but the ink does |
+| D · Flame tufts | Two stacked three-sided flame facets per spray | 185 / 101 | A storybook look and very cheap |
+
+The current model costs 179 / 81 triangles per tree (191 / 81 for the specimen). The generic tree's 196 / 156 is the budget. A, C and D stay within it, and B is the deliberate near-range exception.
+
+**Measured cost.** Mature trees in the lab at 1, 50 and 300 trees, with ink, grade and shadows on, using `__lab.bench(60)`. Triangles are counted for the main pass. Times are CPU submit plus `gl.finish` per frame on the Mac Studio, in ms.
+
+| Trees | Current | A | B | C | D |
+|---|---|---|---|---|---|
+| 1 | 1,746 tri · 0.10 | 1,832 · 0.11 | 3,992 · 0.29 | 1,752 · 0.09 | 1,832 · 0.35 |
+| 50 | 17,601 · 0.25 | 21,901 · 0.38 | 129,901 · 0.35 (near) | 17,901 · 0.16 | 21,901 · 0.38 |
+| 300 | 106,023 · 0.20 | 131,823 · 0.27 | 131,823 · 0.63 (far, as A) | 107,823 · 0.37 | 131,823 · 0.63 |
+
+**Draws.** Every variant uses limbs and foliage per size class present, plus the carpet and the falling leaves. B adds its far sleeves. That comes to 4–5 instanced draws for any number of trees.
+
+**Reference photographs.** The sheets show cited Commons photographs: sapling, young, mature and specimen, in fall and winter. Commons has no usable sapling-in-winter photograph. Sam's two reference screenshots (a big upswept crown, and close-up fans on branches) are not committed, for copyright reasons.
+
+Compare sheets, each showing fall, winter, night and low detail beside the references: [sapling](log/ui/tree-species/variants-sapling.jpg) · [young](log/ui/tree-species/variants-young.jpg) · [mature](log/ui/tree-species/variants-mature.jpg) · [specimen](log/ui/tree-species/variants-specimen.jpg)
+
 ## Next species (lab only)
 
 All six will be built in the lab with the same framework, budget and tests, and will not be placed in City until Sam decides on the rollout. Spread is a diameter. Sizes are in metres, given as class ranges. "GT" is the Georgia Tech inventory and "City 2011" the downtown census.
