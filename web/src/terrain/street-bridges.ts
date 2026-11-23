@@ -109,17 +109,39 @@ export function drawStreetBridges(
       }
     }
     const { rows } = deck;
+    // Match each skew abutment to the bank once. Interior bare-earth samples
+    // may belong to the freeway below. Use one blend length across the deck
+    // so a low sidewalk corner cannot create a kink in the carriageway.
+    const ends = [rows[0], rows.at(-1)!];
+    const span = distance(position(ends[0], 0.5), position(ends[1], 0.5));
+    const inside = (r: number[]) => [0, 1].every(f => {
+      const [x, z] = position(r, f), b = city.bounds;
+      return x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
+    });
+    const landings = ends.flatMap((row, index) => {
+      if (!inside(row)) return [];
+      const centre = position(row, 0.5);
+      const fractions = [0, row[6], row[7], row[8], 1];
+      const offsets = fractions.map(f => {
+        const bank = ground(...position(row, f));
+        return bank === null ? 0 : bank - (mix(row[2], row[5], f) - zero);
+      });
+      // Both boards must use the surveyed grade for the entire quad at a seam.
+      const ordered = index === 0 ? rows : [...rows].reverse();
+      const cut = ordered.findIndex(r => !inside(r));
+      const limit = cut < 0 ? span / 3 : distance(centre, position(ordered[cut - 1], 0.5));
+      const reach = Math.min(limit, span / 3, Math.max(7, ...offsets.map(h => 4 * Math.abs(h))));
+      return reach > 0 ? [{ centre, fractions, offsets, reach }] : [];
+    });
     function point(i: number, f: number, lift: number): Point {
-      const row = rows[i],
-        [x, z] = position(row, f);
-      const edge = Math.min(
-        distance(position(rows[0], f), [x, z]),
-        distance(position(rows.at(-1)!, f), [x, z]),
-      );
+      const row = rows[i], [x, z] = position(row, f);
       let y = mix(row[2], row[5], f) - zero;
-      if (edge < 7) {
-        const approach = ground(x, z);
-        if (approach !== null) y = mix(approach, y, edge / 7);
+      for (const end of landings) {
+        const t = distance(end.centre, position(row, 0.5)) / end.reach;
+        if (t >= 1) continue;
+        const k = end.fractions.findIndex((v, j) => j > 0 && f <= v);
+        const u = (f - end.fractions[k - 1]) / (end.fractions[k] - end.fractions[k - 1]);
+        y += mix(end.offsets[k - 1], end.offsets[k], u) * (1 - t * t * (3 - 2 * t));
       }
       return [x, y + lift, z];
     }
@@ -151,7 +173,8 @@ export function drawStreetBridges(
       }
       const pavement = 0.12,
         sidewalk = 0.27;
-      strip(a[6], a[8], b[6], b[8], pavement, PAL.asphalt, streets);
+      strip(a[6], a[7], b[6], b[7], pavement, PAL.asphalt, streets);
+      strip(a[7], a[8], b[7], b[8], pavement, PAL.asphalt, streets);
       strip(0, a[6], 0, b[6], sidewalk, PAL.sidewalk, walks[0]);
       strip(a[8], 1, b[8], 1, sidewalk, PAL.sidewalk, walks[1]);
       wall(a[6], b[6], pavement, sidewalk, PAL.concrete);

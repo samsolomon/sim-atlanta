@@ -1,6 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import { northConnectorTransport } from '../square-board/connector-ground';
+import { southConnectorTransport } from '../square-board/south-connector-decks';
+import { Builder } from '../vignette/geom';
+import { drawStreetBridges } from './street-bridges';
 import { GroundGrid } from './grid';
 import { createSurfaceTransport } from './transport';
 import type { TerrainCity, TransportRun } from './transport-data';
@@ -142,5 +146,37 @@ it('shares the Peachtree grade across the downtown and north-band cut', () => {
   } finally {
     a.deck.dispose();
     b.deck.dispose();
+  }
+});
+
+const stagedDowntown = new URL('../../public/data/scene/downtown/vignette.json', import.meta.url);
+it.skipIf(!existsSync(stagedDowntown))('mounts the staged streets and both sidewalks on every covered board', () => {
+  const downtown: TerrainCity = JSON.parse(readFileSync(stagedDowntown, 'utf8'));
+  const band = (name: string) => JSON.parse(read('square-board/' + name + '/context.json').toString());
+  const boards = [
+    [downtown, 4, 6], // Decatur, the two MLK ways, and the downtown half of Peachtree
+    [northConnectorTransport(band('north-band')), 2, 4], // Peachtree and Ted Turner
+    [southConnectorTransport(band('south-band')), 1, 2], // Capitol
+  ] as const;
+  for (const [board, streets, walks] of boards) {
+    const replaced = [...drawStreetBridges(board, zero, () => null, new Builder(), new Map())];
+    expect(replaced.filter(r => r.cls === 'footway')).toHaveLength(walks);
+    expect(replaced.filter(r => r.cls !== 'footway')).toHaveLength(streets);
+  }
+});
+
+it('samples the Ted Turner banks without pulling its first interior section down to the freeway', () => {
+  const context = JSON.parse(read('square-board/north-band/context.json').toString());
+  const board = northConnectorTransport(context);
+  const grid = loadGrid('square-board/north-band');
+  const road = board.terrainTransport!.roads.find(r => r.name === 'Ted Turner Drive Northwest' && r.kind === 'bridge')!;
+  // First interior cross-section of the survey, 5.7 m from the skew abutment.
+  const x = 308.76, z = -1416.89;
+  const deck = createSurfaceTransport(board, grid, (px, pz) =>
+    Math.hypot(px - x, pz - z) < 12 && pz < -1415 && px > 299 ? 285 - zero : 303.2 - zero);
+  try {
+    expect(deck.deckAt(x, z, road)! + zero).toBeCloseTo(303.7, 0);
+  } finally {
+    deck.dispose();
   }
 });

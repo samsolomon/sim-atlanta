@@ -1965,3 +1965,7 @@ Looking north from Baker Street, you can now read the plaza from both ends of th
 ### 2026-11-23 — Closing the air gaps beside Decatur Street
 
 In the Georgia State overview you could see the freeway between the Decatur Street roadway and its sidewalks. Four source ways describe the street and walking routes, but the county aerial shows one 22 m bridge. Its ends are skewed, so the two sidewalk curbs meet the bank at different places. Rebuilding the shared deck from its outline and the 2019 lidar also resolved the same gap on MLK, Peachtree, Ted Turner and Capitol. The nearby independent footbridge keeps its own tread. [Before](log/ui/connector-bridge-sidewalks/decatur-before.jpg) · [After](log/ui/connector-bridge-sidewalks/decatur-after.jpg) · [Sources and other crossings](connector-bridge-sidewalks.md)
+
+### 2026-11-23 — Where a bridge meets bare earth
+
+At Ted Turner Drive, the ground grid beside one sidewalk drops roughly 10 m below the surveyed deck corner. Sampling the ground again just inside the span bent the sidewalk toward the freeway. The five bridges now take their approach heights at the abutments. A check against the staged City geometry found seven road pieces and twelve sidewalk pieces across three boards, including both halves of Peachtree. [Ted Turner in daylight](log/ui/connector-bridge-sidewalks/ted-turner-day.jpg) · [Capitol at the south edge](log/ui/connector-bridge-sidewalks/capitol-day.jpg)
