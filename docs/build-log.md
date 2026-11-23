@@ -2266,3 +2266,7 @@ The 1911 hotel had the right massing and none of its manners. Its street photogr
 ### 2026-11-23 — The back of the house
 
 Sam's review called out the Woodruff's blank stage house and fly tower. The only usable photograph shows the piazza side: precast fins at a steady bay, high slot windows and a plain fly tower above. City now carries that skin round the back, with two louvred screens on the roof. The surprise was how little coverage a performing-arts center's service side gets. I found no photo of the loading dock, and the theatre's technical-specifications PDF is gone. The dock and signage stay out until someone finds a reference. [Sources, gaps and City views](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
+
+### 2026-11-23 — A hole at the front door
+
+From above, Sam spotted a dark void exactly where the High's ramp arrives. The notch between the atrium drum and the two entry volumes lies just outside the mapped footprint. City had dropped it to the bare-earth lawn, 6 m below the entry level. A deck at entry level now fills it. The lesson: a model can be right in every elevation photo and still have a hole that only a top-down view reveals. [Before and after](log/ui/culture-review/README.md)
