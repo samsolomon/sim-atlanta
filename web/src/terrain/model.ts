@@ -7,6 +7,7 @@ import { GroundGrid } from './grid';
 import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
+import { createMidtownMarta } from '../city/midtown-marta';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
@@ -139,9 +140,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
   for (const site of city.buildings) {
-    if (!midtownLandmarkIds.has(site.id)) continue;
-    const landmark = createMidtownLandmark(sceneryCity.buildings, site,
-      foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt);
+    const landmark = midtownLandmarkIds.has(site.id) ? createMidtownLandmark(sceneryCity.buildings, site,
+      foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt) : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };
       landmarks.push(landmark);
