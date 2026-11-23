@@ -10,7 +10,7 @@ function grove() {
   w.trees.forEach((t, i) => { t.c = 0.3 + (i * 0.05) % 0.6; });
   const branches = () => {
     let b: THREE.InstancedMesh | undefined;
-    w.group.traverse(o => { if (o instanceof THREE.InstancedMesh && o.geometry.attributes.color && o.count === w.trees.length && !(o.material as THREE.MeshLambertMaterial).flatShading && (o.material as THREE.MeshLambertMaterial).vertexColors) b = o; });
+    w.group.traverse(o => { if (o instanceof THREE.InstancedMesh && o.geometry.attributes.color && !(o.material as THREE.MeshLambertMaterial).flatShading && (o.material as THREE.MeshLambertMaterial).vertexColors) b = o; });
     return b!;
   };
   return { w, branches };
@@ -39,5 +39,18 @@ describe('generic tree branch skeletons', () => {
     w.setDetail({ farTrees: true });
     w.setSeason(16);
     expect(branches().visible).toBe(false);
+  });
+});
+
+describe('branch instances', () => {
+  it('draw only for thinning broadleaves, never pines or magnolias', () => {
+    const { w, branches } = grove();
+    // Make a third of the grove evergreen.
+    w.trees.forEach((t, i) => { if (i % 3 === 0) t.c = 0.1; });
+    w.setSeason(15); // winter: every broadleaf bare
+    const broadleaves = w.trees.filter(t => t.c >= 0.26).length;
+    expect(branches().count).toBe(broadleaves);
+    w.setSeason(180);
+    expect(branches().count).toBe(0);
   });
 });

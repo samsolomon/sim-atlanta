@@ -1045,6 +1045,7 @@ export class World {
       q.setFromEuler(new THREE.Euler(0, t.c * 40, 0));
       m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
       this.branches!.setMatrixAt(i, m);
+      this.branchMatrices[i] = m.clone();
     });
   }
 
@@ -1054,6 +1055,8 @@ export class World {
   private branches?: THREE.InstancedMesh;
   /** True while some broadleaf crown is thin enough to show the limbs inside it. */
   private branchesShow = true;
+  /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
+  private branchMatrices: THREE.Matrix4[] = [];
   private detail = { farTrees: false, branchShadows: true };
   /**
    * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
@@ -1096,9 +1099,11 @@ export class World {
     const tint = new THREE.Color();
     const v = new THREE.Vector3();
     const sc3 = new THREE.Vector3();
-    // Under full leaf the bare-branch crowns sit hidden inside every canopy: skip drawing them.
-    let thinnest = 1;
-    this.trees.forEach((t) => {
+    // Bare-branch crowns only show inside a thinning broadleaf crown. Under full leaf, and on
+    // pines and magnolias, they sit hidden: draw only the thinning trees' (compacted instances).
+    const branches = this.branches;
+    let kb = 0;
+    this.trees.forEach((t, ti) => {
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
       const r = rng(Math.floor(t.c * 1e9) + 7);
@@ -1129,7 +1134,7 @@ export class World {
         else if (st.stage === 'turning') c.set(green).lerp(new THREE.Color(species), Math.min(1, st.t * 1.3));
         else if (st.stage === 'dropping') c.set(species).lerp(brown, st.t * 0.6);
         canopyLeft = st.canopy;
-        thinnest = Math.min(thinnest, canopyLeft);
+        if (canopyLeft < 0.97 && branches && this.branchMatrices[ti]) branches.setMatrixAt(kb++, this.branchMatrices[ti]);
       }
       // A rounded crown of clumps: top clumps catch the sun, lower ones sit in shade.
       const R = 2.3 * t.s;
@@ -1161,7 +1166,11 @@ export class World {
       }
     });
     pines.count = kp;
-    this.branchesShow = thinnest < 0.97;
+    if (branches) {
+      branches.count = kb;
+      branches.instanceMatrix.needsUpdate = true;
+    }
+    this.branchesShow = kb > 0;
     this.applyBranchVisibility();
     for (const im of [canopy, pines]) {
       im.instanceMatrix.needsUpdate = true;
