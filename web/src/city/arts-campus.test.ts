@@ -5,7 +5,7 @@ import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing } from '../vignette/geom';
 import { createArtsCampusLandmark } from './arts-campus';
 import { entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
-import { precastWall } from './midtown-culture-woodruff';
+import { loadingDock, precastWall } from './midtown-culture-woodruff';
 import sites from './fixtures/arts-campus.json';
 
 const archive = new URL('../../../pipeline/prototypes/square-board/midtown-upper/context.json', import.meta.url);
@@ -170,4 +170,39 @@ it('turfs the mapped Peachtree lawn but not the ginkgo mound, the steps or the R
   expect(hit(612.5, -4001.2)).toBe(false); // ginkgo mound
   expect(hit(626.5, -3991.7)).toBe(false); // Peachtree steps
   expect(hit(604.8, -3999.7)).toBe(false); // Rodin pad, the lawn's own notch
+});
+
+it('draws the Arts Center Way loading dock up to the podium top, with dark bays and lamps over them', () => {
+  const body = new Builder(),
+    lit = new Builder();
+  // A street 5 m below the shell datum, as at Arts Center Way, and a 2.4 m podium top.
+  loadingDock(
+    body,
+    lit,
+    [0, 0],
+    [42, 0],
+    [0, -1],
+    () => -5,
+    [
+      [12, 5],
+      [18.4, 5],
+    ],
+    6.2,
+    2.4,
+  );
+  const box = new Box3().setFromObject(new Mesh(body.geometry() as BufferGeometry), true);
+  expect(box.max.y).toBeCloseTo(2.4, 5);
+  expect(box.min.y).toBeCloseTo(-5.1, 5);
+  // Only the two lamps glow; the bays stay dark at night.
+  expect(count(lit)).toBe(2 * 6);
+});
+
+it('gives the 15th Street face a ground loggia and balconied windows', () => {
+  const plain = new Builder(),
+    rich = new Builder(),
+    lit = new Builder();
+  const opts = { bay: 1.4, finWidth: 0.35, finDepth: 0.3, slots: false };
+  precastWall(plain, lit, [0, 0], [65, 0], [0, 1], 1.5, 20, opts);
+  precastWall(rich, lit, [0, 0], [65, 0], [0, 1], 1.5, 20, { ...opts, loggia: 4.5, balconies: 12.5 });
+  expect(count(rich)).toBeGreaterThan(count(plain) + 20 * 6);
 });
