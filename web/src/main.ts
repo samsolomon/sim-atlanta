@@ -623,6 +623,8 @@ const shellOptions: ShellOptions = {
   },
   sky: () => lastAtm,
   shareTarget() {
+    // Decide by the view on screen: City still loading has no camera to share yet.
+    if (!view3d.hidden && !diorama) return null;
     if (diorama) {
       const t = diorama.target(), c = diorama.camera();
       return { view: 'city' as const, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };

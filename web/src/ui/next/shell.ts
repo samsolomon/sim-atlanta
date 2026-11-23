@@ -278,19 +278,23 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const nativeBtn = share.querySelector<HTMLButtonElement>('[data-native]')!;
   nativeBtn.hidden = typeof navigator.share !== 'function';
   let shareMode: 'live' | 'freeze' = 'live';
+  // The frozen moment is taken once, when the panel opens, so the label and the copied link agree.
+  let frozenAt = clock.now();
+  /** null while there is nothing to reopen yet (City still loading, or no renderer at all). */
   const currentLink = () => {
     const target = o.shareTarget?.();
-    return target ? shareUrl(location.href, target, shareMode, clock.now()) : location.href;
+    return target ? shareUrl(location.href, target, shareMode, frozenAt) : null;
   };
   const renderShare = () => {
     const target = o.shareTarget?.();
-    share.querySelector('.a2-share-lede')!.textContent = target?.view === 'city'
-      ? 'The link opens on this exact camera in City.' : 'The link opens on this exact view of the Map.';
-    const t = clock.now();
+    share.querySelector('.a2-share-lede')!.textContent = !target ? 'This view is still loading.'
+      : target.view === 'city' ? 'The link opens on this exact camera in City.' : 'The link opens on this exact view of the Map.';
     share.querySelector('.a2-freeze-text')!.textContent =
-      `${shortDate.format(t)} · ${timeFmt.format(t)}, paused. Trains from the timetable.`;
+      `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. Trains from the timetable.`;
     modeInputs.forEach((i) => (i.checked = i.value === shareMode));
-    shareUrlOut.textContent = currentLink();
+    const link = currentLink();
+    if (shareUrlOut.textContent !== (link ?? '')) shareUrlOut.textContent = link ?? '';
+    copyBtn.disabled = nativeBtn.disabled = !link;
   };
   modeInputs.forEach((i) => i.addEventListener('change', () => {
     shareMode = i.value as 'live' | 'freeze';
@@ -298,6 +302,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }));
   copyBtn.addEventListener('click', async () => {
     const link = currentLink();
+    if (!link) return;
     try {
       await navigator.clipboard.writeText(link);
       copyBtn.textContent = 'Copied';
@@ -312,7 +317,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     setTimeout(() => (copyBtn.textContent = 'Copy link'), 1800);
   });
   nativeBtn.addEventListener('click', () => {
-    navigator.share?.({ title: document.title, url: currentLink() }).catch(() => { /* dismissed */ });
+    const link = currentLink();
+    if (link) navigator.share?.({ title: document.title, url: link }).catch(() => { /* dismissed */ });
   });
   share.querySelector('[data-close]')!.addEventListener('click', () => {
     closePops();
@@ -416,6 +422,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
     // A shifted or paused clock most likely means this moment is the point of the link.
     shareMode = clock.isRealTime() ? 'live' : 'freeze';
+    frozenAt = clock.now();
     renderShare();
     copyBtn.focus();
   }));
@@ -438,7 +445,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (![subject, panel, bar, menu, share, cam].some((c) => c.contains(t))) closePops();
+    if (![subject, panel, bar, menu, share, shareBtn].some((c) => c.contains(t))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
 
@@ -511,6 +518,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(areaNote ?? feedNote);
     if (!panel.hidden) renderPanel(s);
+    // The camera can move under an open share panel: keep the shown link the one Copy sends.
+    if (!share.hidden) renderShare();
   }
 
   function renderPanel(s: ReturnType<ShellOptions['live']>) {
