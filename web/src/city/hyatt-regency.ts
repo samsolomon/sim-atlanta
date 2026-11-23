@@ -34,7 +34,8 @@ export function createHyattRegency(buildings: VBuilding[], grid: GroundGrid) {
   const base = Math.min(...grades) - 0.4;
   const stone = new Builder(),
     occupied = new Builder(),
-    blue = new Builder();
+    blue = new Builder(),
+    rings = new Builder();
   const random = rng(1967);
   function mass(poly: P2[], bottom: number, top: number, wall: string, roof: string) {
     const at = (i: number, y: number) => [poly[i][0], y, poly[i][1]];
@@ -244,7 +245,7 @@ export function createHyattRegency(buildings: VBuilding[], grid: GroundGrid) {
         [b[0] + 0.04, b[1]],
       ],
       '#afd5e6',
-      blue
+      rings
     );
   }
   for (let i = 0; i < 24; i++) {
@@ -274,14 +275,16 @@ export function createHyattRegency(buildings: VBuilding[], grid: GroundGrid) {
   const bulk = new Mesh(stone.geometry(), material('#000000'));
   bulk.castShadow = bulk.receiveShadow = true;
   const lit = material('#f2d69d'),
-    beacon = material('#297ed9');
-  group.add(bulk, new Mesh(occupied.geometry(), lit), new Mesh(blue.geometry(), beacon));
+    beacon = material('#20529c'),
+    halo = material('#8acbff');
+  group.add(bulk, new Mesh(occupied.geometry(), lit), new Mesh(blue.geometry(), beacon), new Mesh(rings.geometry(), halo));
   return {
     group,
     buildings: buildings.filter((b) => b !== hotel),
     setNight(dark: number) {
       lit.emissiveIntensity = dark * 0.55;
-      beacon.emissiveIntensity = dark * 1.65;
+      beacon.emissiveIntensity = dark * 0.85;
+      halo.emissiveIntensity = dark * 1.8;
     },
   };
 }
