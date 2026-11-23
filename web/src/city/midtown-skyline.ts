@@ -35,12 +35,12 @@ function oneAtlantic(shell: Shell) {
     }
     for (const side of [-1, 1]) panel(side * 10 - 1.6, side * 10 + 1.6, 1, 13, 26.3, glass[1]);
     // Grouped multi-pane strips between granite piers, in the shared
-    // Johnson/Burgee granite atlas (see johnson-burgee.ts). Each face starts
-    // at a different atlas bay so lit offices do not repeat around the tower.
+    // Johnson/Burgee granite atlas (see johnson-burgee.ts). Each face uses
+    // its own nine atlas bays, so lit offices never repeat around the tower.
     for (const [left, right, depth, start, bays] of [[-14, 14, 26.3, 0, 7], [-19, -15, 24.2, 7, 1], [15, 19, 24.2, 8, 1]]) {
-      const u0 = (start + 2 * face) / 9, u1 = u0 + bays / 9;
-      shaftGlass.quad(point(left, 18, depth + .02), point(right, 18, depth + .02),
-        point(right, 201, depth + .02), point(left, 201, depth + .02), '#ffffff');
+      const u0 = (start + 9 * face) / 36, u1 = u0 + bays / 36;
+      shaftGlass.quad(point(left, 18, depth + .07), point(right, 18, depth + .07),
+        point(right, 201, depth + .07), point(left, 201, depth + .07), '#ffffff');
       shaftUv.push(u0,0, u1,0, u1,1, u0,0, u1,1, u0,1);
     }
     // Floodlit pointed pinnacles stand clear of the sloping copper planes.
@@ -68,12 +68,14 @@ function oneAtlantic(shell: Shell) {
   const model = shell.finish('#ffe2af', .85);
   // The pink Spanish granite is the same flame-finished ashlar as 191
   // Peachtree's Rosa Dante, with a three-floor band module (photo estimate).
-  const strips = graniteWindowAtlas({ bays: Array.from({length: 9}, () => ({panes: 4, width: 16, grouped: true})),
+  const strips = graniteWindowAtlas({ bays: Array.from({length: 36}, () => ({panes: 4, width: 16, grouped: true})),
     floors: 45, bayWidth: 24, floorHeight: 12, granite: [204, 174, 160], frame: [214, 206, 196],
     groupFloors: 3, bandHeight: 3, punchedSill: 2, punchedHead: 9, occupancy: .16, seed: 1987 });
-  const coursing = ashlarCoursing(1.5, .75, 'diffuseColor.r > 0.45 && diffuseColor.g < 0.56', .08);
-  const stone = model.group.children[0] as Mesh<BufferGeometry, MeshLambertMaterial>;
-  for (const material of [strips, stone.material]) {
+  const coursing = ashlarCoursing(1.5, .75, 'vStonePos.y < 200.0 && diffuseColor.r > 0.45 && diffuseColor.g < 0.5', .08);
+  // finish() adds the vertex-coloured stone first and the lamps second.
+  const [stone] = model.group.children as Mesh<BufferGeometry, MeshLambertMaterial>[];
+  const isStone = stone?.material.vertexColors && stone.material.emissive.getHex() === 0;
+  for (const material of isStone ? [strips, stone.material] : [strips]) {
     material.onBeforeCompile = shader => withStonePosition(shader, coursing);
     material.customProgramCacheKey = () => 'one-atlantic-ashlar';
   }

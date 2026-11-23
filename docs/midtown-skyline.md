@@ -23,7 +23,7 @@ Sam pointed out that One Atlantic Center (1987) and 191 Peachtree (1990) are bot
 - One Atlantic's strips run between continuous piers on all four faces, while 191 mixes grouped bays with punched windows in its slot.
 - The crowns differ: One Atlantic has a copper pyramid with pale pinnacles and a gilded finial, and 191 has paired domed temple lanterns.
 
-`web/src/city/johnson-burgee.ts` now holds the granite window atlas and the ashlar-coursing shader. 191 calls it with its previous parameters, and a hash of its geometry, textures, shader source and night response is unchanged by the refactor. One Atlantic uses the same atlas: 9 bays of four-pane strips, 45 floors from 18 to 201 m, a granite band every third floor and 16% occupied offices. It adds 1.5 × 0.75 m coursing on the stone of the shaft and base.
+`web/src/city/johnson-burgee.ts` now holds the granite window atlas and the ashlar-coursing shader. 191 calls it with its previous parameters, and a hash of its geometry, textures, shader source and night response is unchanged by the refactor. One Atlantic uses the same atlas: 36 bays of four-pane strips, nine per face so lit offices never repeat, over 45 floors from 18 to 201 m, a granite band every third floor and 16% occupied offices. It adds 1.5 × 0.75 m coursing on the stone of the shaft and base.
 
 **Estimated:**
 - The three-floor band module.

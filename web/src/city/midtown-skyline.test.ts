@@ -36,6 +36,14 @@ it('mounts the 250 m landmark on terrain and suppresses the generic roof', () =>
     const shaft = (model.getObjectByName('One Atlantic shaft') as Mesh).material as MeshLambertMaterial;
     expect(shaft.map).not.toBeNull();
     expect(shaft.emissiveIntensity).toBeGreaterThan(0);
+    const strips = (model.getObjectByName('One Atlantic shaft') as Mesh).geometry;
+    expect(strips.getAttribute('uv').count).toBe(strips.getAttribute('position').count);
+    // Four faces x three zones, each on its own atlas bays: u spans the whole atlas once.
+    const us = Array.from(strips.getAttribute('uv').array).filter((_, i) => i % 2 === 0);
+    expect(Math.min(...us)).toBe(0);
+    expect(Math.max(...us)).toBeCloseTo(1);
+    const stone = (model.children[0] as Mesh).material as MeshLambertMaterial;
+    for (const material of [shaft, stone]) expect(material.customProgramCacheKey()).toBe('one-atlantic-ashlar');
   } finally {
     area.dispose();
     vi.unstubAllGlobals();
