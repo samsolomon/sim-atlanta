@@ -84,7 +84,7 @@ it.each(['high', 'low'] as const)('keeps the Irwin porch decks above their slopi
   } finally { area.dispose(); }
 });
 
-it.each(['high', 'low'] as const)('places the Wheat Street and Auburn church roofs on their lidar heights on %s', async quality => {
+it.each(['high', 'low'] as const)('places the measured Sweet Auburn landmark roofs on their lidar heights on %s', async quality => {
   const root = new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url);
   vi.stubGlobal('fetch', async (url: string) => {
     const name = url.split('/').pop()!;
@@ -104,6 +104,8 @@ it.each(['high', 'low'] as const)('places the Wheat Street and Auburn church roo
       expect(hit.point.y + area.grid.manifest.vertical.sceneZeroNavd88M).toBeCloseTo(navd, 2);
     }
     for (const [x, z, navd] of [
+      [1110, -197, 320.02], [1111, -216, 317.24], // Odd Fellows tower, front and rear
+      [1068, -194, 304.07], [1083, -209.2, 310.02], // Auditorium storefront and hall ridge
       [1608.45, -148, 320.1], [1625, -148, 312.8], // Heritage nave and education wing
       [1027.175, -226, 315.65], [1017.85, -198.3, 315.85], [1031.7, -198.6, 336.72], // Big Bethel
     ]) {
