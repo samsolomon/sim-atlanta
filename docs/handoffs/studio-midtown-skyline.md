@@ -79,3 +79,9 @@
 - **Night:** Three.js emissive adds on top of lighting. A near-white emissive above about 0.9 clips to white and blooms. Raise emissive colour or opacity, not just intensity, when a transparent surface reads dim.
 - **New UI:** the top-left time panel now covers about the top-left 200 × 130 px of captures. Place captions elsewhere.
 - **Cargo:** not on PATH on the Studio. Use `export PATH="/opt/homebrew/opt/rustup/bin:$PATH"`. `.venv` (Python 3.15 with shapely, laspy and pypdf) exists in this worktree.
+
+## Codex takeover, 2026-11-23 (local date)
+- Fetched origin, read guide and predecessor's last 100 messages, rebased branch on origin/main.
+- Captured runtime-only colour/opacity trials in `docs/log/ui/midtown-skyline/napkin-night-colour-trials.jpg`: A #b2cfc5/.92, B #c4ddd4/.97, C #d8e9e2/1.00; intensity .82 unchanged. Both tiers, requested aerial and 23:30 clock. Production source unchanged.
+- The veil brightens, but mottling persists at both tiers. Investigate before calling the soft wash finished. No pick or merge yet; tests/ceiling/review remain after selection.
+- Coordinator delivery blocked: saved environment alias is `air`, but `orca orchestration send --on air` returns `Remote Orca runtime rejected the pairing token`. User asked to refresh pairing. Local delivery cannot find the remote terminal. `orca orchestration check` returned no messages.

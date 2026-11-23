@@ -2763,3 +2763,7 @@ The old freight locomotive was a long box with a yellow nose and an EMD-like cab
 ### 2026-11-23 — Freight takeover verification
 
 The freight locomotive branch now passes the full test command with Python checks enabled: 20 Rust, 11 Python, 918 web and 5 worker tests. The missing routes contract fixture was an incomplete local data copy. Both City performance ceilings pass (533 low-tier draw calls, 1,136 high). A fresh Claude cross-review found no in-scope issues. The inherited Brookwood camera hid the engines behind the station; moving the frozen clock back 20 seconds exposed them. [Day and night captures with cameras](freight-stock.md#codex-takeover-verification--2026-11-23). Coordinator approval remains pending because the Air pairing token is rejected.
+
+### 2026-11-23 — 1180 crown colour trials
+
+Compared three pale-green emission colours at 92%, 97%, and 100% veil opacity, holding emission strength at 0.82. Six captures use the same Midtown aerial at 23:30 across both quality tiers. The paler panels brighten, but a mottled appearance remains even at full opacity: opacity alone does not recreate the smooth wash in the Kendall/Heaton night photograph. These are review trials, not a selected production change. [Comparison sheet](log/ui/midtown-skyline/napkin-night-colour-trials.jpg).
