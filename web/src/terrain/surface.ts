@@ -46,6 +46,10 @@ export class GroundSurface {
   private starts!: Uint32Array;
   private blockCols!: number;
   private yields: GroundYield[] = [];
+  /** Low tier draws a far mesh for distant boards (terrain/model.ts). `?ground=old` turns it off for A/B runs. */
+  static farLow = true;
+  /** Scene heights per grid node, as drawn (NaN in voids). */
+  private heights!: Float32Array;
 
   constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
     private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins) {
@@ -92,6 +96,7 @@ export class GroundSurface {
     for (const [i,navd] of patches[grid.manifest.sha256] ?? []) heights[i]=navd-vertical.sceneZeroNavd88M;
     if (!Number.isFinite(minY)) throw new Error('Ground grid is empty');
     this.minY = minY;
+    this.heights = heights;
     const joins = joinList(join);
     for (let k = 0; k < detail.length; k++) {
       const x = 2 * (k % blockCols), z = 2 * Math.floor(k / blockCols);
@@ -253,6 +258,108 @@ export class GroundSurface {
     this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     this.geometry.setIndex(indices);
     this.geometry.computeVertexNormals();
+  }
+
+  /**
+   * A far-view mesh for this board: a quadtree of square cells (5 m up to `maxCellM`),
+   * each the two triangles on the sw–ne diagonal, accepted when every DEM node inside lies
+   * within `errorM` of them. Render-only: placement keeps sampling the near triangles.
+   * Every node on the board rim is kept, so seams and side walls meet the near mesh of
+   * either neighbour exactly; cells over an opening are 5 m and clipped like the near mesh.
+   * A cell whose edge borders finer cells fans from its centre node to keep them crack-free.
+   */
+  farGeometry(errorM: number, maxCellM = 160) {
+    const { rows, cols, stepM, bounds } = this.grid.manifest, heights = this.heights;
+    const cellsX = cols - 1, cellsZ = rows - 1;
+    const maxSize = 2 ** Math.floor(Math.log2(Math.max(1, maxCellM / stepM)));
+    const slots = this.openings.map(slotPlanes);
+    const slotCell = new Uint8Array(cellsX * cellsZ);
+    for (const sl of slots) {
+      const c0 = Math.max(0, Math.floor((sl.minX - bounds.minX) / stepM) - 1), c1 = Math.min(cellsX - 1, Math.floor((sl.maxX - bounds.minX) / stepM) + 1);
+      const r0 = Math.max(0, Math.floor((sl.minZ - bounds.minZ) / stepM) - 1), r1 = Math.min(cellsZ - 1, Math.floor((sl.maxZ - bounds.minZ) / stepM) + 1);
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) slotCell[r * cellsX + c] = 1;
+    }
+    // Leaves: origin (cell units) and size; `leafAt` maps each 5 m cell to its leaf (-1: void).
+    const lx: number[] = [], lz: number[] = [], ls: number[] = [];
+    const leafAt = new Int32Array(cellsX * cellsZ).fill(-1);
+    const node = (c: number, r: number) => r * cols + c;
+    const accept = (cx: number, cz: number, s: number) => {
+      const nw = heights[node(cx, cz)], ne = heights[node(cx + s, cz)], sw = heights[node(cx, cz + s)], se = heights[node(cx + s, cz + s)];
+      for (let r = 0; r <= s; r++) for (let c = 0; c <= s; c++) {
+        const h = heights[node(cx + c, cz + r)];
+        if (!Number.isFinite(h)) return false;
+        const plane = c + r <= s ? nw + (ne - nw) * c / s + (sw - nw) * r / s : se + (sw - se) * (s - c) / s + (ne - se) * (s - r) / s;
+        if (Math.abs(h - plane) > errorM) return false;
+      }
+      for (let r = cz; r < cz + s; r++) for (let c = cx; c < cx + s; c++) if (slotCell[r * cellsX + c]) return false;
+      return true;
+    };
+    const place = (cx: number, cz: number, s: number) => {
+      const id = ls.length; lx.push(cx); lz.push(cz); ls.push(s);
+      for (let r = cz; r < cz + s; r++) for (let c = cx; c < cx + s; c++) leafAt[r * cellsX + c] = id;
+    };
+    const split = (cx: number, cz: number, s: number): void => {
+      if (cx >= cellsX || cz >= cellsZ) return;
+      if (s === 1) {
+        const h = [node(cx, cz), node(cx + 1, cz), node(cx, cz + 1), node(cx + 1, cz + 1)].map(i => heights[i]);
+        if (h.every(Number.isFinite)) place(cx, cz, 1);
+        return;
+      }
+      if (cx + s <= cellsX && cz + s <= cellsZ && accept(cx, cz, s)) { place(cx, cz, s); return; }
+      const h = s / 2;
+      split(cx, cz, h); split(cx + h, cz, h); split(cx, cz + h, h); split(cx + h, cz + h, h);
+    };
+    for (let cz = 0; cz < cellsZ; cz += maxSize) for (let cx = 0; cx < cellsX; cx += maxSize) split(cx, cz, maxSize);
+    const pos: number[] = [], uv: number[] = [], indices: number[] = [];
+    const remap = new Map<number, number>();
+    const add = (x: number, y: number, z: number) => {
+      const i = pos.length / 3;
+      pos.push(x, y, z);
+      uv.push((x - bounds.minX) / (bounds.maxX - bounds.minX), (bounds.maxZ - z) / (bounds.maxZ - bounds.minZ));
+      return i;
+    };
+    const vertex = (n: number) => {
+      let v = remap.get(n);
+      if (v === undefined) remap.set(n, v = add(bounds.minX + (n % cols) * stepM, heights[n], bounds.minZ + Math.floor(n / cols) * stepM));
+      return v;
+    };
+    // A node strictly inside a leaf edge is kept when the cell across the edge is a void,
+    // off the board, or a finer leaf with a corner there.
+    const keep = (c: number, r: number, across: [number, number][]) => across.some(([ac, ar]) => {
+      if (ac < 0 || ar < 0 || ac >= cellsX || ar >= cellsZ) return true;
+      const id = leafAt[ar * cellsX + ac];
+      if (id < 0) return true;
+      return (c - lx[id]) % ls[id] === 0 && (r - lz[id]) % ls[id] === 0;
+    });
+    let clip = false;
+    const emit = (a: number, b: number, c: number) => {
+      const face = [vertex(a), vertex(b), vertex(c)];
+      let faces = [face];
+      if (clip) for (const sl of slots) faces = faces.flatMap(f => subtractSlot(f, sl.planes, pos, add));
+      for (const f of faces) for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]);
+    };
+    for (let id = 0; id < ls.length; id++) {
+      const cx = lx[id], cz = lz[id], s = ls[id];
+      clip = s === 1 && slotCell[cz * cellsX + cx] === 1;
+      const nw = node(cx, cz), ne = node(cx + s, cz), sw = node(cx, cz + s), se = node(cx + s, cz + s);
+      const ring = [nw];
+      for (let t = 1; t < s; t++) if (keep(cx, cz + t, [[cx - 1, cz + t - 1], [cx - 1, cz + t]])) ring.push(node(cx, cz + t));
+      ring.push(sw);
+      for (let t = 1; t < s; t++) if (keep(cx + t, cz + s, [[cx + t - 1, cz + s], [cx + t, cz + s]])) ring.push(node(cx + t, cz + s));
+      ring.push(se);
+      for (let t = s - 1; t > 0; t--) if (keep(cx + s, cz + t, [[cx + s, cz + t - 1], [cx + s, cz + t]])) ring.push(node(cx + s, cz + t));
+      ring.push(ne);
+      for (let t = s - 1; t > 0; t--) if (keep(cx + t, cz, [[cx + t - 1, cz - 1], [cx + t, cz - 1]])) ring.push(node(cx + t, cz));
+      if (ring.length === 4) { emit(nw, sw, ne); emit(sw, se, ne); continue; }
+      const centre = node(cx + s / 2, cz + s / 2);
+      for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
   }
 
   /** Draw-time patches such as light pools must follow the original triangles,
