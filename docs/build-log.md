@@ -2206,3 +2206,7 @@ Brookwood's railway used to stop being a model 575 m west and 410 m east of the 
 ### 2026-11-23 — Promenade's crown turns cool white
 
 Sam looked at Promenade II at night and spotted what the model had wrong: the stepped crown is drawn in cool white neon, not lamplight. White lines trace every setback corner and frame the faces between them. The lantern and spire glow the same colour, while the offices below stay warm. The fix is a fourth mesh on the landmark. It is unlit, hidden by day, and holds 0.9 m bands on five setbacks, 0.5 m bars on 32 corner fins, and the lantern and spire faces. My first pass used 0.4 m bands, which disappeared completely at the skyline camera's 0.85 m per pixel. A line on a miniature has to be at least a pixel wide. [Close crown at night](log/ui/midtown-skyline/promenade-crown-high-night.jpg)
+
+### 2026-11-23 — The concrete frame at Tower Square
+
+From across the block the 206 m tower reads as rows of dark slots. From the foot of the building the concrete returns extend beyond the glazing and catch new violet and blue light. City now draws the recessed windows and their projecting slab edges on all four banks above the local 304.5 m grade. [Tower Square sources and City views](midtown-skyline.md#tower-square)

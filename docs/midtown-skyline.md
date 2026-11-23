@@ -71,3 +71,11 @@ A self-review found five more parts inside the parent outline. The recess behind
 Courtyard view: target (659, −2081), bearing 80°, tilt 62°, 0.15 m/px. [High daylight](log/ui/midtown-skyline/terrace-courtyard-high-day.jpg) · [High night](log/ui/midtown-skyline/terrace-courtyard-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/terrace-courtyard-low-day.jpg) · [Low night](log/ui/midtown-skyline/terrace-courtyard-low-night.jpg)
 
 Podium view from the northeast: target (700, −2100), bearing 250°, tilt 55°, 0.3 m/px. [High daylight](log/ui/midtown-skyline/terrace-podium-high-day.jpg) · [High night](log/ui/midtown-skyline/terrace-podium-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/terrace-podium-low-day.jpg) · [Low night](log/ui/midtown-skyline/terrace-podium-low-night.jpg)
+
+## Tower Square
+
+The Digital Library of Georgia's face-on photograph shows the old BellSouth tower's rows of dark horizontal openings, shallow shoulders and pale concrete return walls. Josh Green's upward night photograph resolves the recess under each slab and the coloured light along the tall blank corner. The 1980s signage has since changed. City uses unlettered concrete and a static violet-blue wash along the return walls. Window occupancy and lighting intensity are illustrative. [Archival exterior](https://dlg.usg.edu/record/nge_ngen_m-9641) · [Night view from the corner](https://atlanta.urbanize.city/post/photos-how-lighting-additions-are-enlivening-midtown-night)
+
+The footprint reports concrete, a flat roof, 47 storeys and a 206 m height. Its recessed corners leave four projecting window banks, roughly 53 × 67 m overall. The 3DEP perimeter spans 304.3–306.2 m NAVD88 with 304.5 m at the centre. The 9 m base, 197 m top window line, 5 m mechanical cap and 0.8 m recess depth are estimated. The tower has a separate identity from the station and its plaza. [Mapped tower](https://www.openstreetmap.org/way/26800371)
+
+Camera (470, −2180), bearing 8°, tilt 45°, 0.73 m/px. [High daylight](log/ui/midtown-skyline/tower-square-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-low-night.jpg)

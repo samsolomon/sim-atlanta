@@ -105,4 +105,15 @@ it('lights the Promenade crown cool white at night and keeps its offices warm', 
   expect(glow.color.r).toBeCloseTo(.1);
   model.setNight(0);
   expect(neon.visible).toBe(false);
+
+it('mounts Tower Square at 206 m and feeds night lighting to its return walls', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const office: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:26800371');
+  const model = createSkylineLandmark([office],office,-3,() => -1)!;
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(205);
+  const wash = (model.group.children[2] as Mesh).material as MeshLambertMaterial;
+  model.setNight(1);
+  expect(wash.opacity).toBeGreaterThan(0);
+  model.setNight(0);
+  expect(wash.opacity).toBe(0);
 });
