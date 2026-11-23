@@ -12,7 +12,7 @@ const X = SVG('<path d="M6 6l12 12M18 6L6 18"/>');
 const BACK = SVG('<path d="M15 6l-6 6 6 6"/>');
 const OUT = SVG('<path d="M7 17L17 7M9 7h8v8"/>');
 
-type Id = 'selection' | 'key' | 'about';
+type Id = 'selection' | 'key' | 'about' | 'stops';
 interface Entry { id: Id; node: HTMLElement; title(): string; full?: boolean }
 
 const head = (title: string) =>
@@ -79,7 +79,14 @@ function aboutNode(): HTMLElement {
   return n;
 }
 
-export function createDetailPanel() {
+export interface PanelHooks {
+  /** The selected train's stops ahead, as HTML, or null when there's no list. */
+  allStops?(): string | null;
+  /** Open the share panel (the card's Share button). */
+  share?(): void;
+}
+
+export function createDetailPanel(hooks: PanelHooks = {}) {
   const host = document.createElement('aside');
   host.className = 'a2-panel a2-g a2-long';
   host.hidden = true;
@@ -103,6 +110,38 @@ export function createDetailPanel() {
     selection: { id: 'selection', node: card, title: () => card.querySelector('h2')?.textContent?.trim() || 'Selection' },
     key: { id: 'key', node: keyNode(), title: () => 'Key' },
     about: { id: 'about', node: aboutNode(), title: () => 'About & credits', full: true },
+    stops: { id: 'stops', node: document.createElement('div'), title: () => 'All stops' },
+  };
+  entries.stops.node.className = 'a2-stops-body';
+  // Share sits beside Follow (or alone when Follow isn't offered), as on the A2c-desktop board.
+  const actions = document.createElement('div');
+  actions.className = 'a2-card-actions';
+  actions.innerHTML = '<button type="button" class="a2-btn" data-card-share>Share</button>';
+  card.append(actions);
+  actions.querySelector('[data-card-share]')!.addEventListener('click', (e) => {
+    e.stopPropagation(); // the share panel it opens would otherwise see an outside click
+    hooks.share?.();
+  });
+  const renderStops = () => {
+    const html = hooks.allStops?.();
+    if (!html) return false;
+    const scroll = body.scrollTop;
+    entries.stops.node.innerHTML = `${head('All stops')}${html}`;
+    entries.stops.node.querySelector('[data-close]')?.addEventListener('click', () => close());
+    body.scrollTop = scroll;
+    return true;
+  };
+  card.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('[data-all-stops]') || !renderStops()) return;
+    show('stops');
+    entries.stops.node.querySelector<HTMLElement>('[data-close]')?.focus();
+  });
+  // The list counts down like the card it came from.
+  setInterval(() => { if (current() === entries.stops && !renderStops()) back(); }, 1000);
+  /** All stops belongs to the selection it was opened from. */
+  const dropStops = () => {
+    const at = stack.indexOf(entries.stops);
+    if (at >= 0) stack.splice(at, 1);
   };
   for (const e of Object.values(entries)) {
     e.node.classList.add('a2-entry');
@@ -156,7 +195,10 @@ export function createDetailPanel() {
   backRow.addEventListener('click', back);
 
   // Follow the page's card: a new selection becomes the newest content; hidden → it leaves the stack.
-  card.addEventListener('a2-select', () => show('selection'));
+  card.addEventListener('a2-select', () => {
+    dropStops();
+    show('selection');
+  });
   // The selection's own text changes under Key or About (a train ends its trip): keep the back row true.
   new MutationObserver(() => {
     if (!backRow.hidden && stack[stack.length - 2] === entries.selection) render();
@@ -168,6 +210,7 @@ export function createDetailPanel() {
       const at = stack.indexOf(entries.selection);
       if (at >= 0) {
         stack.splice(at, 1);
+        dropStops();
         render();
       }
     }

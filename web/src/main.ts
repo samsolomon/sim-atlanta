@@ -9,7 +9,7 @@ import { createShell, type ShellOptions, type View } from './ui/shell';
 import { uiNext } from './ui/flag';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
-import { busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
+import { place as stationName, busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
 import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
@@ -126,9 +126,41 @@ function showCard(html: string, canFollow = false) {
   if (key !== shownKey) {
     shownKey = key;
     card.dispatchEvent(new Event('a2-select'));
+    requestAnimationFrame(focusSelection);
   }
 }
 let shownKey = '';
+/** A2c: move the camera so a new selection sits in the middle of the open area beside the detail
+ * panel (above it on phones). Follow, when it runs, drives the camera itself. */
+function focusSelection() {
+  if (!uiNext(location.search) || follow?.active) return;
+  const t = selectedTrain ? source.find(selectedTrain) : null;
+  const b = !t && selectedBus ? buses.current().find((x) => x.id === selectedBus) : null;
+  const at = t ? { lon: t.lon, lat: t.lat } : b ? b.position.value : null;
+  if (!at) return;
+  const phone = innerWidth <= 600;
+  const r = document.querySelector('.a2-panel')?.getBoundingClientRect();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (diorama) {
+    const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
+    const c = diorama.camera();
+    const br = (c.bearing * Math.PI) / 180;
+    // Shift the view centre so the vehicle lands half the panel away from it: right of it on
+    // desktop (the panel is on the right), below it on phones (the sheet is at the bottom).
+    // Vertical screen pixels cover more ground in a tilted view (about 1/cos of the tilt).
+    const tiltStretch = 1 / Math.max(0.35, Math.cos((c.tilt * Math.PI) / 180));
+    const off = (((phone ? r?.height ?? 0 : r?.width ?? 0) + 16) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
+    const [dx, dz] = phone ? [-Math.sin(br) * off, Math.cos(br) * off] : [Math.cos(br) * off, Math.sin(br) * off];
+    diorama.glide(x + dx, z + dz);
+  } else if (map) {
+    // Offset the centre by projection rather than MapLibre's padding, which would persist as
+    // camera state and skew the map's centre (and share links) after the panel closes.
+    const half = ((r?.[phone ? 'height' : 'width'] ?? 0) + 16) / 2;
+    const p = map.project([at.lon, at.lat]);
+    const centre = map.unproject([p.x + (phone ? 0 : half), p.y + (phone ? half : 0)]);
+    map.easeTo({ center: centre, duration: reduced ? 0 : 450 });
+  }
+}
 function hideCard() {
   shownKey = '';
   follow?.stop();
@@ -744,6 +776,21 @@ const shellOptions: ShellOptions = {
     return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
   },
   sky: () => lastAtm,
+  allStops() {
+    const t = selectedTrain && source.find(selectedTrain);
+    if (!t) return null;
+    const stops = schedule.stopsAhead(t, clock.now());
+    if (!stops.length) return null;
+    const esc = (x: string) => x.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const name = (x: string) => esc(stationName(x));
+    const timed = stops.some((s) => s.inSec != null);
+    // Times come from the timetable (scheduled); a live train's later stops have no prediction.
+    const note = timed
+      ? '<p class="a2-stops-note"><span class="chip scheduled">Scheduled</span> Times from the published timetable; a delayed train will be later.</p>'
+      : '<p class="a2-stops-note">The live feed predicts only the next stop; the rest follow in timetable order, without times.</p>';
+    const rows = stops.map((s) => `<li><span>${name(s.name)}</span>${s.inSec == null ? '' : `<span>${s.inSec < 60 ? 'arriving' : `${Math.round(s.inSec / 60)} min`}</span>`}</li>`).join('');
+    return `${note}<ol class="a2-stops">${rows}</ol>`;
+  },
   loading: () => (!view3d.hidden && !cityLoading.hidden ? 'Building the city…' : null),
   // A link's ?q= decides the tier until the viewer picks one, so the menu shows that.
   graphics: uiNext(location.search) ? {
@@ -773,7 +820,12 @@ const shellOptions: ShellOptions = {
 const shell = uiNext(location.search)
   ? (await import('./ui/next/shell')).createShellNext(shellOptions)
   : createShell(shellOptions);
-if (import.meta.env.DEV) Object.assign(window, { __shell: shell });
+if (import.meta.env.DEV) Object.assign(window, {
+  __shell: shell,
+  // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
+  __selectTrain(id: string) { selectedTrain = id; selectedBus = null; renderTrainCard(); },
+  __trains: () => source.current,
+});
 
 // City and its status card must keep time even while remote Map tiles are unavailable.
 updateAtmosphere();

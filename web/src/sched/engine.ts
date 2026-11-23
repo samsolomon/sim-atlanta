@@ -128,6 +128,36 @@ export class Schedule {
     return out.size || !word ? [...out] : this.pathsFor(routeId);
   }
 
+  /**
+   * The stops still ahead of a train, for the A2c "All stops" list. A timetable trip gives each
+   * stop's scheduled arrival (seconds from `date`); a live train has no prediction past its next
+   * stop, so its later stops come without times, in timetable order.
+   */
+  stopsAhead(t: Pick<TrainState, 'id' | 'pathId' | 'nextStop' | 'nextStopName'>, date: Date): { stopId: string; name: string; inSec: number | null }[] {
+    const named = (id: string) => this.stops.get(id)?.name ?? id;
+    // A live train names its next stop ("FIVE POINTS STATION") rather than giving its id.
+    const norm = (x: string) => x.toLowerCase().replace(/\s+station\b.*$/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const isNext = (id: string) => id === t.nextStop || (!t.nextStop && !!t.nextStopName && norm(named(id)) === norm(t.nextStopName));
+    const m = t.id.match(/^(.+):trip:(\d+)-(\d+)-(\d+)$/);
+    const table = m && this.tables.find((x) => x.feed === m[1]);
+    if (m && table) {
+      const p = table.patterns[Number(m[2])];
+      const day = serviceDays(date, table.tz).find((d) => d.ymd === Number(m[4]));
+      if (p && day) {
+        const elapsed = day.secs - Number(m[3]);
+        // The next stop still ahead (a stop can repeat in a loop pattern), never one already served.
+        const from = p.stops.findIndex((id, k) => isNext(id) && p.arr[k] >= elapsed - 1);
+        if (from < 0) return [];
+        return p.stops.slice(from).map((id, k) => ({ stopId: id, name: named(id), inSec: Math.max(0, Math.round(p.arr[from + k] - elapsed)) }));
+      }
+    }
+    for (const table of this.tables) {
+      const p = table.patterns.find((x) => x.pathId === t.pathId && x.stops.some(isNext));
+      if (p) return p.stops.slice(p.stops.findIndex(isNext)).map((id) => ({ stopId: id, name: named(id), inSec: null }));
+    }
+    return [];
+  }
+
   /** Every train the timetables say should be on the line at `date`. */
   trainsAt(date: Date): TrainState[] {
     const out: TrainState[] = [];

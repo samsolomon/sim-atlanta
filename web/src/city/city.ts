@@ -156,6 +156,8 @@ export interface CityView {
   revealed: Promise<void>;
   /** The host has placed the camera and set the atmosphere: start the white-model reveal. */
   beginReveal(): void;
+  /** Glide the view's centre to scene metres, keeping bearing, tilt and distance (A2c: a selection). */
+  glide(x: number, z: number): void;
 }
 
 /** Phones and small touch screens get the light tier; `?q=low|high` overrides. */
@@ -1456,6 +1458,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
     skipPasses: [gtao],
+    lowMemory: low,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
   raf = requestAnimationFrame(frame);
@@ -1548,6 +1551,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     revealed: whiteModel?.revealed ?? Promise.resolve(),
     beginReveal: () => whiteModel?.begin(),
+    glide(x, z) {
+      // A loading area must not pull the camera back to a remembered point afterwards.
+      mosaic?.cancelTarget();
+      pendingNorthTarget = undefined;
+      pendingEastTarget = undefined;
+      const p = pointOnBoard(x, z);
+      glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
+    },
     dispose() {
       whiteModel?.dispose();
       stopGestures?.();

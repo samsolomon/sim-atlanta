@@ -457,7 +457,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, dismiss, { once: true, passive: true });
   }
 
-  const panelHost = createDetailPanel();
+  const panelHost = createDetailPanel({ allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
   document.body.append(subject, notice, bar, menu, cam, share, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 
