@@ -484,9 +484,6 @@ function setNight(on: boolean) {
 }
 
 let lastFrame = 0;
-/** One render, also callable from captures when a background tab throttles requestAnimationFrame. */
-const draw = (t: number) => {
-
 const intervals: number[] = [];
 // Cost readout for the Trees section: CPU time to submit a frame, and what the GPU was sent.
 const perf = (() => {
@@ -502,7 +499,8 @@ const perf = (() => {
     },
   };
 })();
-const frame = (t: number) => {
+/** One render, also callable from captures when a background tab throttles requestAnimationFrame. */
+const draw = (t: number) => {
   if (figure && playing) {
     cycle = (cycle + Math.min(t - lastFrame, 100) / 1000 * figure.cyclesPerSecond) % 1;
     figure.setPhase(cycle);
@@ -529,11 +527,10 @@ const frame = (t: number) => {
   renderer.info.autoReset = false;
   renderer.info.reset();
   composer.render();
+  perf.push(performance.now() - t0, renderer.info.render.triangles, renderer.info.render.calls);
 };
 const frame = (t: number) => {
   draw(t);
-
-  perf.push(performance.now() - t0, renderer.info.render.triangles, renderer.info.render.calls);
   requestAnimationFrame(frame);
 };
 requestAnimationFrame(frame);
@@ -691,8 +688,6 @@ function setPhoto(photo?: File) {
 file.addEventListener('change', () => { if (file.files?.[0]) setPhoto(file.files[0]); });
 clearPhoto.addEventListener('click', () => { setPhoto(); file.value = ''; });
 opacity.addEventListener('input', () => { ref.style.opacity = opacity.value; });
-Object.assign(window, { __lab: { view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
-
 /** Render `frames` frames back to back (ink, grade and shadows on) and report the mean cost; finish() flushes the GPU. */
 function bench(frames = 60) {
   const gl = renderer.getContext();
@@ -709,4 +704,4 @@ function bench(frames = 60) {
   gl.finish();
   return { msPerFrame: (performance.now() - t0) / frames, triangles: tri, calls };
 }
-Object.assign(window, { __lab: { bench, view, setNight, role, scene, camera, controls, station: () => station } });
+Object.assign(window, { __lab: { bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
