@@ -126,6 +126,8 @@ export function createTrees(placements: TreePlacement[], quality: TreeQuality, g
   // Carpet: tilted to the local slope so it neither floats nor sinks on a hillside.
   const carpeted = trees.filter(t => t.species.carpet);
   const carpet = carpeted.length ? add(carpetGeometry(), carpetMat, carpeted.length, 'leaf carpet', false) : null;
+  // The fallen-leaf carpet is ground dressing for the perf report, not tree crown.
+  if (carpet) carpet.userData.perf = 'landscape';
   const tilts = carpeted.map(t => {
     const r = t.dims.spreadM / 2;
     const g = (x: number, z: number) => groundAt(x, z) ?? t.y;
@@ -195,6 +197,14 @@ export function createTrees(placements: TreePlacement[], quality: TreeQuality, g
     draws: meshes.length,
     triangles: () => meshes.reduce((sum, mesh) => sum + tris(mesh.geometry) * mesh.count, 0),
     setSeason,
+    /**
+     * Level of detail, the same entry point as World.setDetail: `farTrees` hides the limbs
+     * (crowns and carpet stay). Board areas call it through area.setDetail.
+     */
+    setDetail(d: { farTrees?: boolean }) {
+      if (d.farTrees === undefined) return;
+      for (const mesh of meshes) if (mesh.name.endsWith(' limbs')) mesh.visible = !d.farTrees;
+    },
     setWet(f: number) {
       for (const mat of [barkMat, leafMat, carpetMat]) mat.color.setScalar(1 - 0.3 * f);
     },

@@ -269,7 +269,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     carved: carved as readonly GroundYield[],
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
-    setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); },
+    setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); },
     setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
