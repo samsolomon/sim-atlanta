@@ -3,6 +3,7 @@ import { flowerBed, hedge } from '../landscape/primitives';
 import type { LocalGround } from './midtown-skyline';
 import type { localLandmarkShell } from './landmark-shell';
 import { classicalOrnament } from './classical-ornament';
+import { surfaces } from '../materials';
 import sites from './fixtures/midtown-skyline.json';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -23,7 +24,7 @@ export function academyOfMedicine(shell: Shell, ground: LocalGround) {
     ? [...shell.ring].reverse() : shell.ring;
   const PLINTH = 1.6, EAVE = 8.4;
   shell.prism(ring, shell.base, PLINTH, base, base);
-  shell.prism(ring, PLINTH, EAVE, stucco, stucco);
+  shell.prism(ring, PLINTH, EAVE, stucco, stucco, { wall: surfaces.stucco() });
   rusticated(ring, shell.base, PLINTH - .25);
   band(ring, PLINTH - .25, PLINTH, .15, trim);
   // Weathering: faint streaks under the eaves where water runs off the cornice.
@@ -61,9 +62,12 @@ export function academyOfMedicine(shell: Shell, ground: LocalGround) {
       }
     }
   };
-  hip(-13.5, 6, 6.5, 19.5, 2.6);
-  hip(-11.5, 7.5, -20.5, -9, 2.6);
-  hip(6.5, 20.5, -6, 7, 2.2);
+  // Aged copper from the shared material library; seams are already drawn as geometry.
+  shell.paint(surfaces.agedCopper({ seam: 0 }), () => {
+    hip(-13.5, 6, 6.5, 19.5, 2.6);
+    hip(-11.5, 7.5, -20.5, -9, 2.6);
+    hip(6.5, 20.5, -6, 7, 2.2);
+  });
 
   // Central lantern with an arched thermal window on each face.
   const lantern: P2[] = [[-6, -7], [5, -7], [5, 6], [-6, 6]];

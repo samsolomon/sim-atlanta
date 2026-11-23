@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
 import { classicalOrnament } from './classical-ornament';
+import { surfaces } from '../materials';
 import plan from './fixtures/midtown-skyline/biltmore.json';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -33,7 +34,7 @@ export function biltmore(shell: Shell) {
   const ccw = (ring: P2[]) => ring.reduce((s, [x, z], i) => { const [a, b] = ring[(i + 1) % ring.length]; return s + x * b - z * a; }, 0) < 0 ? [...ring].reverse() : ring;
   const parts = plan.parts.map(p => ({ ...p, ring: ccw(p.ring as P2[]) }));
   for (const p of parts) {
-    shell.prism(p.ring, shell.base, p.h, brick, roofTint);
+    shell.prism(p.ring, shell.base, p.h, brick, roofTint, { wall: surfaces.brick() });
     if (p.h < 20) continue; // low service annexes stay plain
     const rows = Math.max(1, Math.round((p.h - BASE - 2) / FLOOR));
     p.ring.forEach((a, i) => shell.facade(a, p.ring[(i + 1) % p.ring.length], BASE + .6, p.h - 1.6, rows, 2.6, .48, .62, glass, .14));
