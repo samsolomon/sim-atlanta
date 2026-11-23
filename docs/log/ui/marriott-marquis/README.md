@@ -22,3 +22,5 @@ High quality, paused November 20, 2026 at 13:45 and 17:22 EST. Reproduce in a de
 | --- | --- | --- | --- |
 | Courtland and Connector | (621, −851), 301°, 57°, 0.54 | [Before](courtland-day-before.jpg) · [After](courtland-day-after.jpg) | [Before](courtland-dusk-before.jpg) · [After](courtland-dusk-after.jpg) |
 | Baker and Peachtree Center | (615, −854), 162°, 57°, 0.55 | [Before](baker-day-before.jpg) · [After](baker-day-after.jpg) | [Before](baker-dusk-before.jpg) · [After](baker-dusk-after.jpg) |
+
+At 20:30 EST the pale fins fall into shadow and scattered guest-room windows light the two broad faces. Portman’s evening photograph shows the mostly dark end and the illuminated driveway between the offices. Individual occupied rooms are illustrative. [Evening reference](https://portmanarchitects.com/wp-content/uploads/2019/03/New_Slider02-3.jpg) · [Courtland at night](courtland-night-after.jpg) · [Baker at night](baker-night-after.jpg)

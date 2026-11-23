@@ -111,7 +111,7 @@ export function createMarriottMarquis(buildings: VBuilding[], grid: GroundGrid) 
         solid.quad(pt(l, low), pt(r, low), pt(r, high), pt(l, high), stone);
         // Solid, staggered infill around the great lower hall tapers out toward the ends.
         const infill = Math.max(0, 1 - (mid / 35) ** 2 - ((low - 358) / 25) ** 2);
-        const pane = hashStr(side + '/' + col + '/' + floor) % 8 === 0 ? rooms : solid;
+        const pane = hashStr(side + '/' + col + '/' + floor) % 101 < 13 ? rooms : solid;
         const left = l + 0.25 + 2.45 * infill;
         pane.quad(
           pt(left, low + 0.48, 0.06),
