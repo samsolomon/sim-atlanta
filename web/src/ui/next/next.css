@@ -176,14 +176,16 @@ body:has(.a2-status:not([hidden])) .a2-notice { display: none; }
 .a2-north { fill: var(--a2-north); }
 .a2-camera.a2-no-compass .a2-compass-sep { display: none; }
 
-/* ---- credit line: no glass, a soft halo; fades after the first move ---- */
+/* ---- credit line: no glass, a soft halo; stays on Map, fades in City after the first move ---- */
 .a2-credit {
   position: fixed; z-index: 4; right: calc(var(--a2-right) + 44px + 8px); bottom: calc(var(--a2-bottom) + 1px);
   margin: 0; font: 12px/16px ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #4a463e;
   text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea; pointer-events: none; transition: opacity 0.6s ease;
 }
 .a2-credit a { color: inherit; pointer-events: auto; border-radius: 3px; }
-.a2-credit.a2-gone { opacity: 0; }
+/* Night: the secondary night ink with a dark halo. */
+:root[data-theme='dark'] .a2-credit { color: #b7bfcb; text-shadow: 0 0 2px #0b1020, 0 0 6px #0b1020; }
+.a2-credit.a2-gone { opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0s 0.6s; }
 
 /* ---- first-visit hint: just above the app bar ---- */
 .a2-hint {
@@ -257,5 +259,5 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .a2-g, .a2-credit, .a2-hint { transition: none; }
+  .a2-g, .a2-credit, .a2-credit.a2-gone, .a2-hint { transition: none; }
 }
