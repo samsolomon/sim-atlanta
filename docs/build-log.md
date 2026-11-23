@@ -2460,3 +2460,7 @@ My first pass filled each species' crown outline with evenly spaced leaf cards. 
 
 **Some evidence is missing.** Commons has no full-tree photograph of either oak taken in Georgia, so the sheets compare against Mississippi, Arlington and Virginia trees, and the Atlanta calendar is inferred from North Carolina and Alabama phenology. [Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [All species, 20 Nov](log/ui/tree-species/lineup-oaks-fall.jpg)
 
+### 2026-11-23 — Checking what the Academy is made of
+
+Sam asked whether the Academy of Medicine was stucco, painted brick or stone, and the paperwork didn't say. The National Register nomination lists the metal roof, the cupola, the Tuscan columns and the caduceus, but never the walls. The answer came from zooming a 4592-pixel Wikimedia photograph to a wall in raking light: smooth stucco, no brick coursing anywhere. With that settled, the pass went into the parts people see. The teal roofs became aged copper with seams. The dark arches became sashes with surrounds, muntins and keystones. And the bare lawn became the formal 1941 garden that Georgia Tech's preservation plan says survives: boxwood, a brick walk and black-soil beds. [Close before and after](log/ui/midtown-skyline/academy2-close-compare-day.jpg)
+
