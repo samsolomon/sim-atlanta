@@ -41,6 +41,12 @@ export interface ShellOptions {
   north?(): void;
   /** Back to the real present at 1× (A2c "Now"). */
   onNow?(): void;
+  /** The shell moved the shared clock (A2c Time & weather): refresh what depends on it. */
+  onClock?(): void;
+  /** Horizontal scale at the view centre, for "Metro Atlanta" past neighbourhood zoom. */
+  metresPerPixel?(): number | null;
+  /** The sky on screen (observed, typical or previewed), to name an illustrative condition. */
+  sky?(): { cloud: number; rain: number; fog: number; snow: number } | null;
 }
 
 /** What the host page drives; both shells return it. */
