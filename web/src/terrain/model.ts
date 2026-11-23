@@ -7,6 +7,9 @@ import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from 
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
+import { bridgeApproaches } from './bridge-approaches';
+import { streetPortals } from './street-bridges';
+import { junctionPortals, onJunction } from './junction-decks';
 import { groundMap } from './ground-map';
 
 type Tree = [number, number, number, number];
@@ -118,8 +121,16 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
-  const groundAt = (x: number, z: number) => mesh.sampleScene(x, z);
+  const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
+  const portals = [...streetPortals(city), ...junctionPortals(city)];
+  const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
+  if (approaches) {
+    const top = new THREE.Mesh(approaches.geometry, board.material);
+    top.receiveShadow = true;
+    board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+  }
+  const groundAt = approaches?.groundAt ?? bare;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
@@ -132,7 +143,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       landmarks.push(landmark);
     }
   }
-  const scenery = makeScenery(sceneryCity, trees, options.quality, grid.manifest.stepM, groundAt, options);
+  const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
+  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options);
   for (const landmark of landmarks) scenery.group.add(landmark.group);
   let fragment: World | undefined;
   if (candidate) {
