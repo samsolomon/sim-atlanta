@@ -276,6 +276,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     <button type="button" class="a2-x a2-menu-close" aria-label="Close menu">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
     <div class="a2-menu-rows">
       <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
+      <button type="button" class="a2-mi" data-act="board" hidden>${SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 5v14"/>')}<span>Show full board<small>Every City area, or retry one that failed</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
     </div>
     <div class="a2-sep"></div>
@@ -502,6 +503,19 @@ export function createShellNext(o: ShellOptions): ShellApi {
   menu.querySelector('[data-act=key]')!.addEventListener('click', () => {
     closePops();
     panelHost.show('key');
+  });
+  // City's own retry control (it lives in #city-info): offered in the menu while City has one.
+  const boardRow = menu.querySelector<HTMLButtonElement>('[data-act=board]')!;
+  const cityBoardButton = () => document.querySelector<HTMLButtonElement>('#city-info button');
+  menuBtn.addEventListener('click', () => {
+    const b = cityBoardButton();
+    boardRow.hidden = view !== 'city' || !b;
+    // City names it by state ("Show full board", "Frame the full board").
+    if (b) boardRow.querySelector('span:not(.a2-chev)')!.firstChild!.textContent = b.textContent;
+  });
+  boardRow.addEventListener('click', () => {
+    closePops();
+    cityBoardButton()?.click();
   });
   menu.querySelector('[data-act=about]')!.addEventListener('click', () => {
     closePops();
