@@ -23,7 +23,7 @@ import { drawnCar, FOLLOW_CAMERA, trainHidden, type Fix, type Followed, type Veh
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
-import { inkShader } from '../vignette/ink';
+import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
 import { tiltShiftShader } from '../vignette/tiltshift';
@@ -997,6 +997,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const composer = new EffectComposer(renderer, sceneTarget);
   composer.addPass(new RenderPass(scene, camera));
   const ink = new ShaderPass(inkShader());
+  // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
+  // board the pass does nothing and the ink is unchanged.
+  composer.addPass(new FoliageMaskPass(scene, camera, ink));
   composer.addPass(ink);
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
   if (gtao) {
@@ -1258,6 +1261,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // ---- loop -----------------------------------------------------------------------------
   let raf = 0;
   let frames = 0;
+  let speciesTs = performance.now();
   let fpsT = performance.now();
   let fps = 0;
   let lastFrame = performance.now();
@@ -1356,6 +1360,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
     midtownArterials?.update(sceneTime, atm.dark);
+    const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
+    speciesTs = ts;
+    for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;

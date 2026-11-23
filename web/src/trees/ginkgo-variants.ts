@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { Builder, rng } from '../vignette/geom';
-import { inkFoliage, type InkFoliageMode } from '../vignette/ink';
+import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
 import { TIP_CAP, TIP_RANGE_M, fanGeometry, flames, sleeves, sprayAt as at, sprayCards, sprayFrame as frame, type Spray } from './foliage-kit';
 import { ginkgo, ginkgoState } from './ginkgo';
 import { treeDims, type TreePlacement } from './render';
@@ -26,6 +26,8 @@ export const C_FAMILY: GinkgoVariant[] = ['C', 'C1', 'C2', 'C3', 'C4'];
 const INK_MODE: Partial<Record<GinkgoVariant, InkFoliageMode>> = { C1: 1, C2: 2, C3: 3, C4: 2 };
 /** C4: at most TIP_CAP trees, nearest first and within TIP_RANGE_M, carry fan tips; none at low detail. */
 export { TIP_CAP, TIP_RANGE_M };
+/** C4: fan leaves per tipped tree (three triangles each). */
+export const TIP_FANS = 100;
 export const VARIANTS: Record<GinkgoVariant, string> = {
   A: 'Branch sleeves',
   B: 'Micro-fans',
@@ -40,8 +42,18 @@ export const VARIANTS: Record<GinkgoVariant, string> = {
 // ---- skeleton and sprays -------------------------------------------------------------------
 
 interface Limb { y: number; a: number; elbow: [number, number]; tip: [number, number] }
-interface Shape { top: number; limbs: Limb[] }
-/** Unit space: crown radius 1, height 1. Upswept limbs; the specimen forks low into scaffolds. */
+/**
+ * A rounded crown envelope in unit space: an ellipsoid centred at height `cy` with vertical
+ * half-axis `hy` and radius `r`; `flat` > 1 flattens the top into a broad dome.
+ */
+interface Envelope { cy: number; hy: number; r: number; flat: number; sprays: Record<TreeQuality, number> }
+interface Shape { top: number; limbs: Limb[]; envelope?: Envelope }
+/**
+ * Unit space: crown radius 1, height 1. Young trees keep a narrow, pyramidal leader with
+ * upswept limbs. Mature and specimen ginkgos "stay fairly round": several ascending scaffolds
+ * from a clear trunk of a quarter to a third of the height fill a rounded, broad-oval crown,
+ * and the specimen's heavy low limbs carry one continuous dome (docs/tree-species.md).
+ */
 const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
   young: {
     top: 1, limbs: [
@@ -52,19 +64,27 @@ const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
     ],
   },
   mature: {
-    top: 0.9, limbs: [
-      { y: 0.28, a: 0.3, elbow: [0.4, 0.46], tip: [0.86, 0.72] },
-      { y: 0.34, a: 3.4, elbow: [0.38, 0.52], tip: [0.84, 0.78] },
-      { y: 0.44, a: 1.9, elbow: [0.32, 0.62], tip: [0.72, 0.88] },
-      { y: 0.5, a: 4.9, elbow: [0.3, 0.68], tip: [0.66, 0.94] },
+    top: 0.82,
+    // Crown base at about 0.27 of the height; broad oval to the top.
+    envelope: { cy: 0.58, hy: 0.42, r: 1, flat: 1, sprays: { high: 28, low: 22 } },
+    limbs: [
+      { y: 0.27, a: 0.3, elbow: [0.38, 0.4], tip: [0.78, 0.6] },
+      { y: 0.31, a: 3.4, elbow: [0.4, 0.43], tip: [0.8, 0.62] },
+      { y: 0.36, a: 1.9, elbow: [0.34, 0.5], tip: [0.72, 0.7] },
+      { y: 0.42, a: 4.9, elbow: [0.32, 0.56], tip: [0.7, 0.76] },
+      { y: 0.5, a: 2.6, elbow: [0.24, 0.64], tip: [0.5, 0.84] },
     ],
   },
   specimen: {
-    top: 0.2, limbs: [
-      { y: 0.2, a: 0.4, elbow: [0.44, 0.36], tip: [0.9, 0.66] },
-      { y: 0.2, a: 2.1, elbow: [0.48, 0.32], tip: [0.92, 0.6] },
-      { y: 0.2, a: 3.8, elbow: [0.42, 0.38], tip: [0.86, 0.7] },
-      { y: 0.2, a: 5.3, elbow: [0.26, 0.5], tip: [0.55, 0.94] },
+    top: 0.2,
+    // One broad continuous dome, its base low over the heavy scaffolds.
+    envelope: { cy: 0.55, hy: 0.42, r: 1, flat: 1.25, sprays: { high: 28, low: 22 } },
+    limbs: [
+      { y: 0.18, a: 0.4, elbow: [0.46, 0.3], tip: [0.86, 0.46] },
+      { y: 0.18, a: 1.6, elbow: [0.44, 0.34], tip: [0.82, 0.54] },
+      { y: 0.18, a: 2.9, elbow: [0.48, 0.3], tip: [0.88, 0.48] },
+      { y: 0.18, a: 4.1, elbow: [0.42, 0.36], tip: [0.8, 0.58] },
+      { y: 0.2, a: 5.3, elbow: [0.3, 0.48], tip: [0.6, 0.78] },
     ],
   },
 };
@@ -76,6 +96,7 @@ const shapeOf = (size: SizeClass) => SHAPES[size === 'sapling' || size === 'youn
  */
 export function ginkgoSprays(size: SizeClass, q: TreeQuality): Spray[] {
   const shape = shapeOf(size);
+  if (shape.envelope) return envelopeSprays(shape.envelope, q, size);
   const limbs = q === 'high' ? shape.limbs : shape.limbs.slice(0, 3);
   const perLimb = q === 'high' ? 4 : 2;
   const r = rng(size.length * 97 + (q === 'high' ? 3 : 5));
@@ -101,6 +122,31 @@ export function ginkgoSprays(size: SizeClass, q: TreeQuality): Spray[] {
     const a = i * 2.4 + r();
     const dir = new THREE.Vector3(Math.cos(a) * 0.3, 1, Math.sin(a) * 0.3).normalize();
     out.push({ base: [0, Math.max(0.55, 0.62 + i * 0.04), 0], dir: [dir.x, dir.y, dir.z], len: 0.3 + r() * 0.1, w: 0.2, depth: 0.5 + i * 0.1 });
+  }
+  return out;
+}
+
+/**
+ * Rounded crowns: sprays spread over the envelope's outer shell (golden-angle spiral, jittered so
+ * gaps open here and there), each pointing outward and a little up, so the crown reads as one
+ * mass of upswept foliage. Low detail draws fewer, wider sprays.
+ */
+function envelopeSprays(e: Envelope, q: TreeQuality, size: SizeClass): Spray[] {
+  const n = e.sprays[q];
+  const r = rng(size.length * 131 + (q === 'high' ? 7 : 9));
+  const out: Spray[] = [];
+  for (let i = 0; i < n; i++) {
+    // Height: even in the cosine of the polar angle, skipping the very bottom of the ellipsoid.
+    const u = -0.95 + 1.9 * ((i + 0.5) / n);
+    const k = u > 0 ? u * e.flat : u;
+    const ring = Math.sqrt(Math.max(0, 1 - Math.min(1, k * k)));
+    const a = i * 2.39996 + (r() - 0.5) * 0.5;
+    const shell = 0.62 + 0.2 * r();
+    const y = e.cy + u * e.hy * shell;
+    const rad = e.r * ring * shell;
+    const out3 = new THREE.Vector3(Math.cos(a), 0.55 + 0.6 * Math.max(0, u), Math.sin(a)).normalize();
+    const w = (q === 'high' ? 0.3 : 0.36) + r() * 0.06;
+    out.push({ base: [Math.cos(a) * rad * 0.82, y - 0.05, Math.sin(a) * rad * 0.82], dir: [out3.x, out3.y, out3.z], len: 0.3 + r() * 0.1, w, depth: 0.45 + 0.55 * ring * shell });
   }
   return out;
 }
@@ -182,7 +228,10 @@ export function fanChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass = 
 }
 /** C4: only the fan chips on the outer sprays, the branch tips a viewer sees first. */
 export function tipChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass) {
-  return fanChips(unitSprays, q, size).filter((c, i) => c.depth >= 0.7 && i % 2 === 0);
+  // At most TIP_FANS fans per tree, spread evenly over the outer sprays.
+  const outer = fanChips(unitSprays, q, size).filter(c => c.depth >= 0.7);
+  const step = Math.max(1, outer.length / TIP_FANS);
+  return Array.from({ length: Math.min(TIP_FANS, outer.length) }, (_, i) => outer[Math.floor(i * step)]);
 }
 /** Fan-leaf atlas for C, painted once per page: gold fans on spur shoots, transparent between. */
 let atlas: THREE.Texture | null = null;
@@ -267,7 +316,7 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const foliageMat = isCards ? leafMat({ map: leafAtlas(), alphaTest: 0.5 }) : leafMat({ flatShading: true });
   const chipMat = leafMat({ vertexColors: false });
   const inkMode = INK_MODE[variant];
-  if (inkMode) { inkFoliage(foliageMat, inkMode); inkFoliage(chipMat, inkMode); }
+
   const fansNear = variant === 'B' && quality === 'high';
   const tips = variant === 'C4' && quality === 'high';
   const carpetMat = new THREE.MeshLambertMaterial({ color: '#e6b83e', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -332,6 +381,16 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const tint = new THREE.Color();
   let state = trees.map(() => ({ leaves: 1, falling: 0, c: new THREE.Color() }));
 
+  // Tilt each carpet to the local slope so it neither floats nor sinks on a mound or hillside.
+  const tilts = trees.map(t => {
+    const r = t.dims.spreadM / 2;
+    const g = (x: number, z: number) => groundAt(x, z) ?? t.y;
+    const n = new THREE.Vector3(-(g(t.x + r, t.z) - g(t.x - r, t.z)) / (2 * r), 1, -(g(t.x, t.z + r) - g(t.x, t.z - r)) / (2 * r)).normalize();
+    return new THREE.Quaternion().setFromUnitVectors(up, n);
+  });
+  // Foliage that the ink pass should treat as one crown: cards, fan tips and falling leaves.
+  const unregister = inkMode ? meshes.filter(mesh => mesh.material === foliageMat || mesh.material === chipMat).map(mesh => inkFoliageMesh(mesh, inkMode)) : [];
+
   function setSeason(doy: number) {
     state = trees.map(t => {
       const { st, c } = seasonColour(doy, (hash01(t.seed, 2) * 2 - 1) * ginkgo.offsetDays);
@@ -366,7 +425,7 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
       const cv = (state[i] as unknown as { carpet: number }).carpet;
       if (cv <= 0) { carpet.setMatrixAt(i, zero); return; }
       const r = t.dims.spreadM / 2 * 1.15 * (0.6 + 0.4 * cv);
-      carpet.setMatrixAt(i, m.compose(v.set(t.x, t.y + 0.05, t.z), q.identity(), s.set(r, 1, r)));
+      carpet.setMatrixAt(i, m.compose(v.set(t.x, t.y + 0.05, t.z), tilts[i], s.set(r, 1, r)));
       carpet.setColorAt(i, tint.set('#a8915c').lerp(new THREE.Color('#e6b83e'), cv));
     });
     for (const mesh of meshes) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; }
@@ -455,7 +514,9 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
     setSeason,
     update,
     setNight(n: number) { for (const mat of [foliageMat, chipMat]) mat.emissiveIntensity = 0.25 * (1 - n); },
+    setWet(f: number) { for (const mat of [bark, foliageMat, chipMat, carpetMat]) mat.color.setScalar(1 - 0.3 * f); },
     dispose() {
+      for (const u of unregister) u();
       group.removeFromParent();
       for (const mesh of meshes) { mesh.geometry.dispose(); mesh.dispose(); }
       for (const mat of [bark, foliageMat, chipMat, carpetMat]) mat.dispose();

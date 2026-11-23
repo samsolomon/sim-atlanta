@@ -11,7 +11,7 @@ import { gradeShader } from '../vignette/grade';
 import { busGeometry, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
-import { inkShader } from '../vignette/ink';
+import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { figureLooks } from '../city/figure-looks';
 import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
@@ -457,8 +457,11 @@ const composer = new EffectComposer(renderer, (() => {
   return t;
 })());
 composer.addPass(new RenderPass(scene, camera));
+let foliageMask: FoliageMaskPass;
 const ink = new ShaderPass(inkShader());
-ink.uniforms.uFoliage.value = 1; // the lab shows inkFoliage-marked leaf variants
+// Foliage mask for inkFoliageMesh leaves: drawn after the scene, read by the ink pass.
+foliageMask = new FoliageMaskPass(scene, camera, ink);
+composer.insertPass(foliageMask, 1);
 composer.addPass(ink);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass(gradeShader());
