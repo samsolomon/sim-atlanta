@@ -54,7 +54,9 @@ export function piedmontGates(ground: Ground) {
       const qy = ground(qx, qz) ?? base, leafH = g.crown === 'pyramid' ? 3.8 : 3.4;
       post(b, qx, qz, .18, qy, qy + leafH + .3, IRON);
       const leaf = half - .2;
-      for (const h of [.15, leafH - .1]) b.box(.05, .06, leaf, qx + IN[0] * leaf / 2, qy + h, qz + IN[1] * leaf / 2, IRON);
+      // Top and bottom rails run inward along the open leaf.
+      const [rx, rz] = [Math.abs(IN[0]) * leaf + Math.abs(IN[1]) * .05, Math.abs(IN[1]) * leaf + Math.abs(IN[0]) * .05];
+      for (const h of [.15, leafH - .1]) b.box(rx, .06, rz, qx + IN[0] * leaf / 2, qy + h, qz + IN[1] * leaf / 2, IRON);
       for (let k = 1; k <= 9; k++) {
         const t = k / 10 * leaf, [bx, bz] = [qx + IN[0] * t, qz + IN[1] * t];
         // Arched top at 14th Street, flat at 12th.
