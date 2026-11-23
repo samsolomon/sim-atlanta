@@ -22,7 +22,7 @@ export function promenadeTower(shell: Shell) {
   shell.prism(shell.ring, shell.base, 9, '#927f75','#aea29a');
   // TVS massing steps inward on the diagonal street grid, ending in a narrow lantern.
   for (const [width,depth,notch,lo,hi,rows] of [
-    [29,19.8,3.2,9,143,32],[24.6,17,3.2,143,156,3],[19.8,14,3.2,156,168,3],
+    [25.2,19.1,3.2,9,143,32],[24.6,17,3.2,143,156,3],[19.8,14,3.2,156,168,3],
     [15,11,2.7,168,180,2],[10.7,7.8,2.1,180,189,2],
   ]) {
     const plan = chamfered(width,depth,notch);
