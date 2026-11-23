@@ -171,10 +171,10 @@ export class RoadTraffic {
     });
     if (!placed.length) return kept;
     const masts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 5.2, 0.22).translate(0, 2.6, 0),
-      new THREE.MeshLambertMaterial({ color: '#3d4247', clippingPlanes: this.material.clippingPlanes }), placed.length);
+      new THREE.MeshLambertMaterial({ color: '#3d4247', clippingPlanes: this.opts.clippingPlanes ?? [] }), placed.length);
     // Unlit, so the lamp reads at night; illustrative timing at a mapped signal.
     const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 1.2, 0.45).translate(0, 5.6, 0),
-      new THREE.MeshBasicMaterial({ clippingPlanes: this.material.clippingPlanes }), placed.length);
+      new THREE.MeshBasicMaterial({ clippingPlanes: this.opts.clippingPlanes ?? [] }), placed.length);
     placed.forEach(({ m }, i) => { masts.setMatrixAt(i, m); mesh.setMatrixAt(i, m); mesh.setColorAt(i, LAMP.red); });
     masts.name = 'Signal masts'; mesh.name = 'Signal heads';
     this.group.add(masts, mesh);
