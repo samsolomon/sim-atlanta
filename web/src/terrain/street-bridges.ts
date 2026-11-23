@@ -28,7 +28,7 @@ function overlaps(deck: Deck, b: Box) {
 
 // A scoped run may be split at a way or board boundary. Match the actual
 // line, including its interior, never a nearby or crossing pedestrian bridge.
-function follows(points: P2[], lines: number[][][]) {
+export function follows(points: P2[], lines: number[][][]) {
   const on = (p: P2) =>
     lines.some((line) =>
       line.some((b, i) => i > 0 && segDist(p[0], p[1], line[i - 1] as P2, b as P2) < 0.09),
@@ -61,6 +61,18 @@ function mountedDecks(city: TerrainCity) {
   return result;
 }
 
+// The upper surface continues landward from the surveyed abutment. Use the
+// connected street direction even when the deck crosses the bank obliquely.
+export function streetPortals(city: TerrainCity) {
+  return mountedDecks(city).flatMap(({ deck }) => deck.approaches.map((approach, i) => {
+    const row = i === 0 ? deck.rows[0] : deck.rows.at(-1)!;
+    const [a, b] = approach.centre;
+    const len = distance(a, b);
+    return { edge: [row.slice(0, 3), row.slice(3, 6)], curbs: [row[6], row[8]],
+      direction: [(b[0]-a[0])/len, (b[1]-a[1])/len] };
+  }));
+}
+
 function clip(face: Point[], bounds: Box) {
   for (const [axis, edge, sign] of [
     [0, bounds.minX, 1],
@@ -89,7 +101,7 @@ function clip(face: Point[], bounds: Box) {
 export function drawStreetBridges(
   city: TerrainCity,
   zero: number,
-  ground: Ground,
+  _ground: Ground,
   builder: Builder,
   treads: Map<TransportRun, number[]>,
 ) {
@@ -109,41 +121,9 @@ export function drawStreetBridges(
       }
     }
     const { rows } = deck;
-    // Match each skew abutment to the bank once. Interior bare-earth samples
-    // may belong to the freeway below. Use one blend length across the deck
-    // so a low sidewalk corner cannot create a kink in the carriageway.
-    const ends = [rows[0], rows.at(-1)!];
-    const span = distance(position(ends[0], 0.5), position(ends[1], 0.5));
-    const inside = (r: number[]) => [0, 1].every(f => {
-      const [x, z] = position(r, f), b = city.bounds;
-      return x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
-    });
-    const landings = ends.flatMap((row, index) => {
-      if (!inside(row)) return [];
-      const centre = position(row, 0.5);
-      const fractions = [0, row[6], row[7], row[8], 1];
-      const offsets = fractions.map(f => {
-        const bank = ground(...position(row, f));
-        return bank === null ? 0 : bank - (mix(row[2], row[5], f) - zero);
-      });
-      // Both boards must use the surveyed grade for the entire quad at a seam.
-      const ordered = index === 0 ? rows : [...rows].reverse();
-      const cut = ordered.findIndex(r => !inside(r));
-      const limit = cut < 0 ? span / 3 : distance(centre, position(ordered[cut - 1], 0.5));
-      const reach = Math.min(limit, span / 3, Math.max(7, ...offsets.map(h => 4 * Math.abs(h))));
-      return reach > 0 ? [{ centre, fractions, offsets, reach }] : [];
-    });
     function point(i: number, f: number, lift: number): Point {
       const row = rows[i], [x, z] = position(row, f);
-      let y = mix(row[2], row[5], f) - zero;
-      for (const end of landings) {
-        const t = distance(end.centre, position(row, 0.5)) / end.reach;
-        if (t >= 1) continue;
-        const k = end.fractions.findIndex((v, j) => j > 0 && f <= v);
-        const u = (f - end.fractions[k - 1]) / (end.fractions[k] - end.fractions[k - 1]);
-        y += mix(end.offsets[k - 1], end.offsets[k], u) * (1 - t * t * (3 - 2 * t));
-      }
-      return [x, y + lift, z];
+      return [x, mix(row[2], row[5], f) - zero + lift, z];
     }
     for (let i = 1; i < rows.length; i++) {
       const a = rows[i - 1],

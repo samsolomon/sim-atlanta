@@ -5,6 +5,7 @@ import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
 import { dividedIvanAllen, roadWidth, type TerrainCity } from './transport-data';
 import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePaths } from './westside-path';
+import { paintJunctionApproaches } from './junction-decks';
 import { paintStreetBridgeApproaches } from './street-bridges';
 import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
 
@@ -118,6 +119,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
     }
   }
   paintStreetBridgeApproaches(ctx, data);
+  paintJunctionApproaches(ctx, data);
   paintConnector(ctx, data, texelM);
   ctx.setLineDash(zebraPattern);
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
