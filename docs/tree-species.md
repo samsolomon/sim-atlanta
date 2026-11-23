@@ -296,7 +296,9 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Lineup, 20 Nov](log/ui/tree-species/lineup-oaks-fall.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-oaks-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Lineup, 5 Nov](log/ui/tree-species/lineup-fall.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+
+**Sam's picks.** A, branch-mass cards, for the oaks and generally for broadleaves (23 Nov). C4 for the ginkgo.
 
 Each species after the ginkgo gets two or three rendering options in the lab (`/models.html?v=willow-oak&variant=all`) for Sam to pick from. **City draws none of them until he does.** The lab's Trees section lists each species, its options with Compare all, and **All species** (`?v=lineup&variant=default`), every species at mature size side by side in one season. "Default" is Sam's pick where he has made one (ginkgo C4), otherwise a species' option A.
 
@@ -385,6 +387,81 @@ The sheets cite their photographs.
 - The first sheet panel is option A from an eye-level camera framed like the primary photo. The models stand at our nominal mature size, which is narrower than the open-grown Mississippi tree.
 
 **Night.** The foliage has no self-light, so crowns at night are lit only by the scene.
+
+### Crown brightness matches today's canopy
+
+Sam's concern with cards was that they "lose a lot of colour" against the low-poly canopy. Every card option now:
+- **Lights the crown as one blob.** `crownNormals` (`foliage-kit.ts`) bends each card's normal 80% of the way toward the crown envelope's outward normal, and keeps the ragged silhouette.
+- **Keeps one normal on both faces.** Double-sided cards no longer flip it on back faces, which darkened half of every card.
+- **Takes its colour from the season tint.** The atlas supplies only alpha and a light per-leaf variation.
+- **Receives no shadows**, which blotched crown interiors.
+- **Uses a softer vertex shade**, and summer palettes moved toward the generic tree's bluer greens (`#5f8f4e` family).
+- **May lift the low tier.** A species' `lowLift` adds a small lightness change where its fewer, bigger low-detail cards show more interior.
+
+The tree-species agent made the ink change: foliage silhouettes are inked only on the outside pixel, with a lighter warm ink.
+
+**Measured** with `__lab.crownStats()`: one frame through ink and grade, averaged over a depth-tested foliage mask, with Rec. 709 luminance and HSV saturation. The view is the Front preset at mature size, noon on 1 Jul. The baseline is the generic tree.
+
+| Option A | High: luminance / saturation | Low |
+|---|---|---|
+| Generic tree (baseline) | 0.248 / 0.806 | 0.239 / 0.833 |
+| Willow oak | 0.250 / 0.781 | 0.232 / 0.825 |
+| Water oak | 0.239 / 0.823 | 0.242 / 0.817 |
+| Tulip poplar | 0.244 / 0.815 | 0.231 / 0.816 |
+| Loblolly pine | 0.152 / 0.949 | 0.180 / 0.885 |
+
+All broadleaves are within 4% of the baseline luminance. The loblolly follows City's darker pine green (`#355f3c`), whose sRGB luminance is about two thirds of the broadleaf green's, so its expected crown luminance is about 0.165. The grade pushes such dark greens to high saturation.
+
+### Loblolly pine
+
+`web/src/trees/pine-poplar.ts`. A long, straight, cylindrical bole carries a high, open, irregular oval crown. The crown is "loosely pyramidal in youth … a dense oval crown at maturity as it loses its lower branches" ([NC State](https://plants.ces.ncsu.edu/plants/pinus-taeda/)). "Needles are borne in clusters at the tips of twigs, which are bare below." Bark is red-brown in broad flat scaly plates. Nothing read supports a "flat-topped" crown.
+
+**Options.**
+- **A · Needle-tuft cards:** needle-burst cards gathered into flat tufts at the branch ends, with warm silhouette ink and needle tips close up. 193 / 81, plus 144 in tips.
+- **B · Needle stars:** each tuft is six thin triangles fanning out. 191 / 105.
+- **C · Tiered pads:** flattened faceted pads, fully inked. 185 / 105.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–6 | 1.2–3 | 0.04–0.1 | 4.5 / 2 / 0.07 | **Inferred**; no nursery size found |
+| Young | 7–16.5 | 2.4–6 | 0.1–0.3 | 14 / 4.5 / 0.22 | GT 15–30 cm DBH medians: 16.5 m, 4.5 m |
+| Mature | 18.3–27.4 | 6.1–12.2 | 0.3–0.76 | 22 / 12 / 0.5 | NC State 18.3–27.4 m by 6.1–12.2 m; GT 30–91 cm medians 18.3–21.9 m by 7.0–11.8 m; FEIS DBH 61–76 cm |
+| Specimen | 30–45.1 | 12.2–20.1 | 0.76–1.12 | 38 / 17 / 1.0 | Champions: 436 Princeton Way, 41.5 × 20.1 m, 1.12 m DBH; Fernbank Forest, 45.1 × 16.0 m |
+
+GT holds 957 active loblollies. Median height is 3.5 times spread, and median crown base a third of height.
+
+**Calendar** (evergreen; **inferred** dates):
+- Pollen from early March ([Georgia Forestry Commission](https://gatrees.org/love-it-or-hate-itthe-truth-about-tree-pollen/)), then new candles in April.
+- Third-year inner needles turn orange-brown and shed in October and November while the tips stay green. Sources: NC State; [UGA Extension](https://site.extension.uga.edu/wilcoxcoag/2017/11/brown-needles-in-pine-stands); [17 Nov 2018 photo](https://commons.wikimedia.org/wiki/File:2018-11-17_14_26_32_Loblolly_Pines_undergoing_old_needle_abscission_in_late_autumn_along_a_walking_path_in_the_Franklin_Farm_section_of_Oak_Hill,_Fairfax_County,_Virginia.jpg).
+- Duller in winter ("light green to brown during the winter", UF).
+- A pine-straw carpet lies under the tree all year, thickest after the fall shed.
+
+### Tulip poplar
+
+`web/src/trees/pine-poplar.ts`. "A fairly narrow oval crown, even as it grows older … a straight trunk … several large-diameter major limbs in the top half of the crown" (UF ST363). About two thirds of the bole is free of branches in stands (FEIS). Texture is coarse, with big four-lobed, square-tipped leaves. Bark is grey with pale diamond furrows.
+
+**Options.**
+- **A · Branch-mass cards:** C4, square-tipped leaf atlas. 193 / 81, plus 108 in tips.
+- **B · Cored masses:** 191 / 97.
+- **C · Faceted clusters:** 193 / 105.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–7 | 1.2–3.5 | 0.04–0.12 | 5 / 2.2 / 0.07 | GT under 15 cm DBH: median 7.0 m by 3.2 m |
+| Young | 7–14 | 3–6 | 0.12–0.3 | 12.3 / 4.5 / 0.2 | GT 15–30 cm medians |
+| Mature | 19.2–36.6 | 7.6–18.3 | 0.3–0.91 | 27 / 11 / 0.65 | NC State 24.4–36.6 m by 9.1–18.3 m; GT 30–91 cm medians 19.2–25.1 m by 7.6–10.8 m |
+| Specimen | 36.6–50.6 | 17.1–29.9 | 0.91–1.9 | 44 / 24 / 1.5 | Champions: 44.3 × 29.9 m, 1.9 m DBH (2020); Bitsy Grant Tennis Center, 50.6 m (2014), the city's tallest |
+
+**Calendar.** Georgia USA-NPN has 6 sites. Buds break in March and April. All 28 October records were coloured. Of 10 November records, 9 were in leaf; no December record was. The [Georgia Forestry Commission](https://www.fox5atlanta.com/news/leaf-watch-2021-week-five-fall-colors-take-over-north-georgia) found the north Georgia mountains bare by 11 Nov 2021. **Inferred** for Atlanta:
+- Leafing out from 22 Mar, full by the end of April.
+- Golden yellow by mid-October.
+- Dropping in early November, bare by about 18 Nov.
+- The pale "tulip" fruit on winter twigs is not drawn.
+
+### Pair 2 gaps
+
+- Commons has no verified Atlanta or Georgia photograph of a whole loblolly pine or tulip poplar. The only Georgia Piedmont photo is a distant loblolly stand in Oconee National Forest.
+- There is no Atlanta fall-colour date per species.
 
 ## City rollout (proposal, waiting for Sam)
 

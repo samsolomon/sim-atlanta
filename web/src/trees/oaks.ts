@@ -32,8 +32,8 @@ const willowPalette = keyedCalendar([
   { m: 3, d: 18, leaves: 0, a: '#c9cf7e', b: '#d6c57a', label: 'bare, catkins' },
   { m: 3, d: 28, leaves: 0.12, a: '#c2d47a', b: '#d3c87c', label: 'buds breaking, catkins' },
   { m: 4, d: 12, leaves: 0.6, a: '#a9cc66', b: '#c3d47e', label: 'leafing out' },
-  { m: 4, d: 28, leaves: 1, a: '#74a046', b: '#8db352', label: 'summer green' },
-  { m: 10, d: 20, leaves: 1, a: '#6c9443', b: '#80a049', label: 'summer green' },
+  { m: 4, d: 28, leaves: 1, a: '#628f60', b: '#76a06a', label: 'summer green' },
+  { m: 10, d: 20, leaves: 1, a: '#5f8b5c', b: '#729a64', label: 'summer green' },
   { m: 11, d: 5, leaves: 1, a: '#9fa448', b: '#c4a446', label: 'turning yellow' },
   { m: 11, d: 20, leaves: 0.92, a: '#dcae3e', b: '#bd7c3a', label: 'golden yellow to orange-brown' },
   { m: 12, d: 3, leaves: 0.5, a: '#b98a42', b: '#93613a', carpet: 0.7, label: 'yellow-brown, dropping' },
@@ -75,7 +75,7 @@ export const willowOak = broadleafSpecies({
   habit: willowHabit,
   palette: willowPalette,
 });
-export const willowOakLook: Look = { species: willowOak, habit: willowHabit, leaf: 'narrow', options: OAK_OPTIONS, palette: willowPalette };
+export const willowOakLook: Look = { species: willowOak, habit: willowHabit, leaf: 'narrow', options: OAK_OPTIONS, palette: willowPalette, lowLift: 0.04 };
 
 // ---- water oak -----------------------------------------------------------------------------
 
@@ -101,8 +101,8 @@ const waterPalette = keyedCalendar([
   { m: 2, d: 10, leaves: 0.06, a: '#66703f', b: '#917a4c', carpet: 0.3, label: 'nearly bare' },
   { m: 3, d: 8, leaves: 0.04, a: '#a8c36a', b: '#c4c676', label: 'buds breaking, catkins' },
   { m: 3, d: 28, leaves: 0.45, a: '#9cc262', b: '#b7ca72', label: 'leafing out' },
-  { m: 4, d: 20, leaves: 1, a: '#659848', b: '#7ba652', label: 'summer green' },
-  { m: 10, d: 31, leaves: 1, a: '#5f8e45', b: '#73994d', label: 'summer green' },
+  { m: 4, d: 20, leaves: 1, a: '#62935f', b: '#70a067', label: 'summer green' },
+  { m: 10, d: 31, leaves: 1, a: '#60905c', b: '#6e9d64', label: 'summer green' },
   { m: 11, d: 22, leaves: 0.9, a: '#6d8a3e', b: '#c9ac3a', label: 'yellowing, still partly green' },
   { m: 12, d: 5, leaves: 0.6, a: '#6c7c3c', b: '#a58447', carpet: 0.35, label: 'green, yellow and brown' },
   { m: 12, d: 20, leaves: 0.37, a: '#62723c', b: '#8f7546', carpet: 0.6, label: 'holding a third of its leaves' },
@@ -131,7 +131,7 @@ export const waterOak = broadleafSpecies({
   palette: waterPalette,
 });
 export const waterOakLook: Look = {
-  species: waterOak, habit: waterHabit, leaf: 'spatulate', palette: waterPalette,
+  species: waterOak, habit: waterHabit, leaf: 'spatulate', palette: waterPalette, lowLift: -0.025,
   // Denser and darker than the willow oak, with bigger, lumpier masses and coarser leaves.
   options: OAK_OPTIONS.map(o => ({ ...o, cover: (o.cover ?? 0.62) * 1.08 })),
 };

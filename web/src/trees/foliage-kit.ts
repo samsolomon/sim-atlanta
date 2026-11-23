@@ -14,7 +14,7 @@ import { Builder, rng } from '../vignette/geom';
 import type { Unit } from './broadleaf';
 import type { V3 } from './species';
 
-export type LeafShape = 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval';
+export type LeafShape = 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval' | 'needles';
 /** Vertex shade for a spray from its depth (0 core, 1 rim) and how far it points up. */
 export type SprayShade = (depth: number, up: number) => THREE.Color;
 
@@ -112,6 +112,7 @@ export function fanGeometry() {
 // ---- leaf atlas ----------------------------------------------------------------------------
 
 const atlases = new Map<LeafShape, THREE.Texture>();
+const WHITE = new THREE.Color(1, 1, 1);
 /** Atlas cell size in pixels; leaf sizes below are for a 128 px cell. */
 const CELL = 256;
 /** Leaf size multiplier in cells 0, 1 and 2: coarse, medium, fine. */
@@ -137,6 +138,11 @@ function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
     case 'star':
       for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2, rr = k % 2 ? s * 0.18 : s * 0.5; g.lineTo(Math.sin(a) * rr, s * 0.5 + Math.cos(a) * rr); }
       g.closePath(); break;
+    case 'needles':
+      // A fascicle burst: long thin needles radiating from the twig tip.
+      // Wide enough (about 3 px a needle) that mipmaps keep them above the alpha test at range.
+      for (let k = 0; k < 7; k++) { const a = -0.9 + k * 0.3; g.moveTo(-s * 0.05, 0); g.lineTo(Math.sin(a) * s * 1.3 - s * 0.09, Math.cos(a) * s * 1.3); g.lineTo(Math.sin(a) * s * 1.3 + s * 0.09, Math.cos(a) * s * 1.3); g.lineTo(s * 0.05, 0); g.closePath(); }
+      break;
     case 'tulip':
       g.moveTo(0, 0); g.lineTo(-s * 0.45, s * 0.35); g.lineTo(-s * 0.4, s * 0.85); g.lineTo(-s * 0.12, s * 0.8);
       g.lineTo(0, s * 0.92); g.lineTo(s * 0.12, s * 0.8); g.lineTo(s * 0.4, s * 0.85); g.lineTo(s * 0.45, s * 0.35); g.closePath(); break;
@@ -144,6 +150,7 @@ function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
 }
 /** Leaf sizes in atlas pixels (a 128 px cell spans a card about 2–3 m across). */
 const LEAF_PX: Record<LeafShape, [number, number]> = {
+  needles: [9, 12],
   narrow: [9, 13], spatulate: [11, 15], oval: [12, 17], lobed: [13, 17], palmate: [12, 16], star: [13, 17], tulip: [13, 17],
 };
 /**
@@ -230,8 +237,28 @@ export class FoliageBuilder {
   }
 }
 
+/**
+ * Light a crown like one solid blob: bend every vertex normal `blend` of the way toward
+ * `outward(p)`, the crown's outward direction at that point (Sam: cards should keep the low-poly
+ * canopy's brightness). `outward` takes points in the geometry's current space: call it before
+ * scaling to unit space when the callback works in metres (as looks.ts does).
+ * Materials must not use flatShading, which ignores vertex normals.
+ */
+export function crownNormals(g: THREE.BufferGeometry, outward: (p: THREE.Vector3) => THREE.Vector3, blend = 0.8) {
+  if (!g.attributes.normal) g.computeVertexNormals();
+  const pos = g.attributes.position, nor = g.attributes.normal;
+  const p = new THREE.Vector3(), n = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    p.fromBufferAttribute(pos, i);
+    n.fromBufferAttribute(nor, i).multiplyScalar(1 - blend).addScaledVector(outward(p).normalize(), blend).normalize();
+    nor.setXYZ(i, n.x, n.y, n.z);
+  }
+  nor.needsUpdate = true;
+  return g;
+}
+
 /** A jittered bipyramid per mass, tumbled: 6 or 8 flat facets. */
-export function lobes(b: FoliageBuilder, units: Unit[], seed: number, sides: 3 | 4 = 4) {
+export function lobes(b: FoliageBuilder, units: Unit[], seed: number, sides: 3 | 4 = 4, squash = 1) {
   const r = rng(seed);
   for (const u of units) {
     const c = new THREE.Vector3(...u.c);
@@ -239,13 +266,36 @@ export function lobes(b: FoliageBuilder, units: Unit[], seed: number, sides: 3 |
     const rot = new THREE.Quaternion().setFromEuler(new THREE.Euler((r() - 0.5) * 0.6, r() * Math.PI, (r() - 0.5) * 0.6));
     const j = () => 0.8 + r() * 0.4;
     const pt = (x: number, y: number, z: number) => c.clone().add(new THREE.Vector3(x, y, z).applyQuaternion(rot));
-    const top = pt(0, u.r * 0.62 * j(), 0);
-    const bot = pt(0, -u.r * 0.5 * j(), 0);
+    const top = pt(0, u.r * 0.62 * squash * j(), 0);
+    const bot = pt(0, -u.r * 0.5 * squash * j(), 0);
     const ring = Array.from({ length: sides }, (_, i) => i / sides * Math.PI * 2).map(a => pt(Math.cos(a) * u.r * j(), (r() - 0.5) * u.r * 0.3, Math.sin(a) * u.r * j()));
     for (let i = 0; i < sides; i++) {
       const p = ring[i], q = ring[(i + 1) % sides];
       b.tri([top, q, p], shade(u.depth, 0.9), u);
       b.tri([bot, p, q], shade(u.depth * 0.6, -0.5), u);
+    }
+  }
+}
+
+/**
+ * Needle stars: each tuft is `rays` thin triangles fanning out from its centre, mostly sideways
+ * and up, like a loblolly's fascicles at a bare twig tip. Flat shaded, tips lighter.
+ */
+export function needleStars(b: FoliageBuilder, units: Unit[], seed: number, rays = 6) {
+  const r = rng(seed);
+  for (const u of units) {
+    const c = new THREE.Vector3(...u.c);
+    const n = new THREE.Vector3(...u.n);
+    for (let k = 0; k < rays; k++) {
+      const a = (k / rays) * Math.PI * 2 + r() * 0.5;
+      const dir = new THREE.Vector3(Math.cos(a), 0.25 + r() * 0.5, Math.sin(a)).normalize().addScaledVector(n, 0.35).normalize();
+      const side = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+      if (side.lengthSq() < 1e-4) side.set(1, 0, 0);
+      const w = u.r * 0.28;
+      const base = c.clone().addScaledVector(dir, -u.r * 0.15);
+      const tip = c.clone().addScaledVector(dir, u.r * (0.95 + r() * 0.25));
+      const col = shade(u.depth, dir.y);
+      b.tri([base.clone().addScaledVector(side, -w), base.clone().addScaledVector(side, w), tip], col, u);
     }
   }
 }
@@ -265,7 +315,8 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
     for (const [ax, ay] of [[t1, t2], [t1, n]] as const) {
       const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => c.clone().addScaledVector(ax, x * w).addScaledVector(ay, y * w));
       const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(cell, x, y));
-      const col = shade(u.depth, n.y);
+      // Softer than the facets' shade: the crown normals already light the crown as a blob.
+      const col = shade(u.depth, n.y).lerp(WHITE, 0.55);
       b.tri([p[0], p[1], p[2]], col, u, [uv[0], uv[1], uv[2]]);
       b.tri([p[0], p[2], p[3]], col, u, [uv[0], uv[2], uv[3]]);
     }
@@ -299,6 +350,18 @@ export function twoToneFoliage(opts: THREE.MeshLambertMaterialParameters) {
   };
   m.onBeforeCompile = (sh) => {
     visibility(sh);
+    if (textured) {
+      // The atlas sets only which leaves exist (alpha) and a light per-leaf variation; the
+      // season tint sets the colour, so mipmapped edge texels can't darken the crown.
+      sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
+  vec4 texel = texture2D(map, vMapUv);
+  diffuseColor.a *= texel.a;
+  diffuseColor.rgb *= mix(1.0, texel.r, 0.25);
+#endif`);
+    }
+    // Double-sided cards keep one normal on both faces (three.js flips it on back faces,
+    // which would darken half of every card).
+    if (!opts.flatShading) sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n  normal = normalize(vNormal);');
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec3 aToneB;')
       .replace('#include <color_vertex>', `#include <color_vertex>
@@ -314,6 +377,7 @@ export function twoToneFoliage(opts: THREE.MeshLambertMaterialParameters) {
 
 /** Leaf length and width in metres for near leaf tips, by leaf shape. */
 const TIP_LEAF: Record<LeafShape, [number, number]> = {
+  needles: [0.5, 0.05],
   narrow: [0.42, 0.09], spatulate: [0.36, 0.16], oval: [0.4, 0.2], lobed: [0.42, 0.24], palmate: [0.38, 0.3], star: [0.38, 0.3], tulip: [0.4, 0.3],
 };
 /**
