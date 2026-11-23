@@ -16,3 +16,20 @@ Track height follows the surface street it runs on. Under the Downtown Connector
 The track spans two boards: downtown, built at City start, and Sweet Auburn, built when that board mounts and disposed with it. Each track segment, wire span and pole belongs to the board that holds its midpoint, so the seam at x = 1000 is drawn exactly once. A test checks that the two halves add up to the whole. The slab and rails sit 0.15–0.17 m above the street surface, over the drawn asphalt and markings. Stops and vehicles follow in separate changes. Vehicles will use the Siemens S70 from the model lab (#260) and run on the published schedule.
 
 Cameras: Edgewood near Hilliard at (1407, −57), bearing 250°, tilt 62°, distance 70 m. Auburn at Piedmont at (860, −185), bearing 250°, tilt 70°, distance 45 m. Woodruff Park at (320, −180), bearing 170°, tilt 55°, distance 80 m. Viaduct at (1205, −180), bearing 90°, tilt 72°, distance 70 m. [Edgewood, before and after](log/ui/streetcar/track-edgewood-before-after.jpg) · [Auburn, before and after](log/ui/streetcar/track-auburn-before-after.jpg) · [Woodruff Park, before and after](log/ui/streetcar/track-woodruff-before-after.jpg) · [Under the viaduct](log/ui/streetcar/track-viaduct.jpg) · [Night](log/ui/streetcar/track-edgewood-high-night.jpg) · [Low day](log/ui/streetcar/track-edgewood-low-day.jpg) · [Low night](log/ui/streetcar/track-edgewood-low-night.jpg)
+
+## Vehicles
+
+Each scheduled streetcar trip runs one Siemens S70 (cars 1001–1004), using the model from the lab (#260, `web/src/vignette/streetcar.ts`). It is placed on the same GTFS shape its track is built from, by the car's own kinematics:
+- The centre section rides its own truck, between its axles at ±0.9 m.
+- Each end section hangs from the centre section at its joint (±2.305 m) and rides its power truck (±8.2 m), aimed from joint to truck.
+- Cab A leads.
+
+On a 20 m-radius curve a test holds every joint closed to within a micron, and every truck and axle within 5 cm of the rail. Height follows the street surface the track is built on, on whichever board is mounted.
+
+**Tiers.** Positions come from the MARTA timetable and are `scheduled`. The card says "Scheduled · not live", and Follow says "position Scheduled". The MARTA bus vehicle-positions feed, which the worker already caches, carried 185 vehicles on a weekday afternoon. None was within 15 m of the streetcar shapes, so there is no free live feed to use and no new upstream call. The car is an illustrative S70 in its real colours, without logos.
+
+**Follow and picking.** Each section is a plain mesh with `trainId` and its own `lengthM`. Follow finds the cars through `locate()`, and picking sizes each section by its length.
+
+**Traffic.** For road traffic, `streetcarLanes()` gives the shapes with per-segment headings, and the controller's `occupied(x, z, margin)` reports the drawn sections. The Connector agent wires these into RoadTraffic.
+
+Cameras: Auburn Avenue at (1361, −178), bearing 20°, tilt 58°, distance 80 m, at 13:31. King Historic District at (1538, −178), bearing 250°, tilt 60°, distance 70 m, at 21:30. A Follow link: `/?view=city&follow=marta:route:STREETCAR`. [Auburn, before and after](log/ui/streetcar/cars-auburn-before-after.jpg) · [Night at King](log/ui/streetcar/cars-king-high-night.jpg) · [Low day](log/ui/streetcar/cars-auburn-low-day.jpg) · [Follow card](log/ui/streetcar/cars-follow-card.jpg)

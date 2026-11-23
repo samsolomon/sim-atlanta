@@ -48,6 +48,7 @@ import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
+import { createStreetcarCars } from './streetcar-cars';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -282,6 +283,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const eastController = new AbortController();
   let transport: ReturnType<typeof createSurfaceTransport> | undefined;
   let streetcarDowntown: ReturnType<typeof buildStreetcarTrack> | undefined;
+  // Street surface under the streetcar, per board, for its track and its cars.
+  const streetcarSurface: { bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; height: (x: number, z: number) => number | null }[] = [];
   // Elevated roads get their own structural geometry. Place lamps on ground roads.
   const groundRoads = grid ? [...vd.roads.filter(r => !r.bridge && !r.tunnel),
     ...vd.terrainTransport!.roads.filter(r => r.kind === 'ground').map(r =>
@@ -569,6 +572,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const ground = terrain ? terrain.groundAt : flat;
       const height = roadSurface(vd.roads, cityRoadHeight(vd, ground, transport?.deckAt), ground);
       streetcarDowntown = buildStreetcarTrack(streetcarLines(rf, manifest.origin), b, height, poleBlocked(vd.roads, vd.buildings));
+      streetcarSurface.push({ bounds: b, height });
       world.group.add(streetcarDowntown.group);
     });
     await build('MARTA', () => {
@@ -642,7 +646,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const trainEdges = edges.map(p => p.clone());
   let northLine: ReturnType<typeof createNorthLine>;
   const trains = new CityTrains(marta, manifest, b, colors, trainEdges, cut);
+  // Atlanta Streetcar: Siemens S70s on the published schedule, drawn where a board is mounted.
+  const streetcar = createStreetcarCars(rf, manifest.origin, (x, z) => {
+    for (const { bounds: r, height } of streetcarSurface)
+      if (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) return height(x, z);
+    return null;
+  }, []);
   const scenery = scene.children.slice();
+  // Added after the scenery snapshot, so a streetcar never occludes its own pick.
+  scene.add(streetcar.group);
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
   if (freight) scene.add(freight.group);
@@ -851,11 +863,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       north = area;
       {
         const board = area.connectorBoard;
-        const track = buildStreetcarTrack(streetcarLines(rf, manifest.origin), area.bounds,
-          roadSurface(board.city.roads, board.roadHeight, area.groundAt), poleBlocked(board.city.roads, board.city.buildings));
+        const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
+        const track = buildStreetcarTrack(streetcarLines(rf, manifest.origin), area.bounds, surface, poleBlocked(board.city.roads, board.city.buildings));
+        const entry = { bounds: area.bounds, height: surface };
+        streetcarSurface.push(entry);
         area.group.add(track.group);
         const disposeArea = area.dispose.bind(area);
-        area.dispose = () => { track.dispose(); disposeArea(); };
+        area.dispose = () => {
+          track.dispose();
+          const i = streetcarSurface.indexOf(entry);
+          if (i >= 0) streetcarSurface.splice(i, 1);
+          disposeArea();
+        };
       }
       extendConnectorTraffic();
       if (!mosaic) {
@@ -1144,7 +1163,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
-      camera, trains.group, buses.positions, edges, scenery, freight?.group, brookwood?.cars, brookwood?.freight));
+      camera, trains.group, buses.positions, edges, scenery, freight?.group, brookwood?.cars, brookwood?.freight, streetcar.group));
   });
 
   // ---- sun, sky, weather --------------------------------------------------------------
@@ -1303,7 +1322,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const t = states.find(s => s.id === v.id);
       if (!t) return null;
       const [x, z] = project(t.lon, t.lat);
-      const cars = [...trains.group.children, ...(brookwood?.cars.children ?? [])]
+      const cars = [...trains.group.children, ...(brookwood?.cars.children ?? []), ...streetcar.cars()]
         .filter(c => c.userData.trainId === t.id).flatMap(c => drawnCar(c) ?? []);
       return { id: t.id, pathId: t.pathId, tier: t.s.tier, routeId: t.routeId, heading: t.heading, x, z, cars,
         hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
@@ -1356,6 +1375,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const states = options.trains();
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
+    trains.surfaceCars += streetcar.update(states, atm.dark);
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
     }
@@ -1497,7 +1517,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       north?.setSeason(day);
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
     },
-    drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, brookwood?.cars.children ?? []),
+    drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, [...(brookwood?.cars.children ?? []), ...streetcar.cars()]),
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       stopGestures?.();
@@ -1511,6 +1531,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       sun.shadow.dispose();
       figures?.dispose();
       freight?.dispose();
+      streetcar.dispose();
       buses.dispose();
       traffic?.dispose();
       arterials?.dispose();
