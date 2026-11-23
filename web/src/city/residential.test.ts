@@ -1,0 +1,76 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { expect, it } from 'vitest';
+import tags from '../../../pipeline/prototypes/residential/tags.json';
+import { residential } from './residential';
+import { irwinHouseFinish } from './irwin-houses';
+import { Builder, type P2 } from '../vignette/geom';
+import type { TerrainCity } from '../terrain/transport-data';
+import type { VBuilding } from '../vignette/world';
+
+const rect = (w: number, d: number, x = 0, z = 0): P2[] => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
+const house = (id: string, ring: P2[], extra: Partial<VBuilding> = {}) => ({ id, cls: 'house', h: null, floors: null, rings: [ring], ...extra }) as VBuilding;
+const city = (buildings: VBuilding[]) => ({ bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, buildings,
+  roads: [{ cls: 'residential', name: 'Test St', bridge: false, tunnel: false, pts: [[-50, -6], [50, -6]] }], rail: [] }) as unknown as TerrainCity;
+
+function roof(b: VBuilding, plan: ReturnType<typeof residential>) {
+  const out = new Builder();
+  const finish = plan.finishFor(b)!;
+  const drawn = plan.city.buildings.find(x => x.id === b.id)!;
+  finish.dressRoof!(out, b.rings[0], drawn.h!);
+  const ys: number[] = [];
+  for (let i = 1; i < out.pos.length; i += 3) ys.push(out.pos[i]);
+  return { finish, drawn, top: Math.max(...ys), count: out.pos.length / 3 };
+}
+
+it('infers gables, hips and pyramids from the footprint, with eave-height walls and no parapet', () => {
+  const long = house('long', rect(14, 8)), square = house('square', rect(10, 10, 30)), ell = house('ell', [[60, 0], [72, 0], [72, 6], [66, 6], [66, 14], [60, 14]]);
+  const plan = residential(city([long, square, ell]));
+  expect(plan.count).toBe(3);
+  for (const b of [long, square, ell]) {
+    const { finish, drawn, top } = roof(b, plan);
+    expect(finish.parapet).toBe(0);
+    expect(finish.windowStyle).toBe(3);
+    // Two storeys inferred above 95 m²; the ridge rises 0.72 × half-depth, capped at 4.5 m.
+    expect(drawn.h).toBeCloseTo(2 * 3.05 + .4, 5);
+    expect(top).toBeGreaterThan(drawn.h! + 1.5);
+  }
+  // A one-storey cottage under 95 m².
+  const cottage = house('cottage', rect(9, 7));
+  expect(residential(city([cottage])).city.buildings[0].h).toBeCloseTo(3.45, 5);
+});
+
+it('keeps reported roof shapes and leaves offices, big blocks and existing finishes alone', () => {
+  const [hippedId] = Object.entries(tags).find(([, v]) => v[0] === 'hipped')!;
+  const tagged = house(hippedId, rect(16, 8));
+  const office = { ...house('office', rect(14, 8)), cls: 'office' };
+  const block = house('block', rect(40, 30));
+  const irwin = house('osm:way:270493826', [[0, 0], [10, 0], [10, 14], [0, 14]]);
+  const plan = residential(city([tagged, office, block, irwin]), irwinHouseFinish);
+  expect(plan.count).toBe(1);
+  expect(plan.city.buildings.find(b => b.id === 'office')!.h).toBeNull();
+  expect(plan.city.buildings.find(b => b.id === 'block')!.h).toBeNull();
+  // A long plan would gable, but the OSM tag says hipped: its ridge stops short of the ends.
+  const ridgeEnd = (b: VBuilding, p: ReturnType<typeof residential>) => {
+    const out = new Builder(), drawn = p.city.buildings.find(x => x.id === b.id)!;
+    p.finishFor(b)!.dressRoof!(out, b.rings[0], drawn.h!);
+    const top = Math.max(...out.pos.filter((_, i) => i % 3 === 1));
+    const xs = out.pos.filter((_, i) => i % 3 === 0 && Math.abs(out.pos[i + 1] - top) < 1e-6 && out.pos[i + 2] > 0 && out.pos[i + 2] < 8);
+    return Math.max(...xs);
+  };
+  const untagged = house('plain', rect(16, 8));
+  expect(ridgeEnd(untagged, residential(city([untagged])))).toBeGreaterThan(15.9);
+  expect(ridgeEnd(tagged, plan)).toBeLessThan(13);
+});
+
+it('reports how many footprints change in each row', () => {
+  const proto = new URL('../../../pipeline/prototypes/square-board/', import.meta.url);
+  const staged = new URL('../../public/data/scene/', import.meta.url);
+  const rows = ['north-band', 'north-corner', 'south-band', 'south-corner', 'midtown-south', 'midtown-central', 'midtown-upper', 'brookwood-south', 'brookwood-station'];
+  const counts: Record<string, number> = {};
+  for (const row of rows) counts[row] = residential(JSON.parse(readFileSync(new URL(row + '/context.json', proto), 'utf8'))).count;
+  for (const [name, file] of [['downtown', 'downtown/vignette.json'], ['king', 'king-memorial/context.json'], ['auburn', 'sweet-auburn/context.json']])
+    if (existsSync(new URL(file, staged))) counts[name] = residential(JSON.parse(readFileSync(new URL(file, staged), 'utf8'))).count;
+  console.log('residential footprints per row', JSON.stringify(counts));
+  expect(counts['brookwood-south']).toBeGreaterThan(500);
+  expect(counts['midtown-upper']).toBeGreaterThan(300);
+});

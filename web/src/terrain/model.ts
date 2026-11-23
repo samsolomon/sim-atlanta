@@ -1,3 +1,4 @@
+import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
@@ -153,6 +154,10 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
   const groundAt = approaches?.groundAt ?? bare;
+  // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
+  const homes = residential(city, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2));
+  city = homes.city;
+  options = { ...options, finishFor: homes.finishFor };
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
