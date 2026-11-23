@@ -2210,3 +2210,7 @@ Sam looked at Promenade II at night and spotted what the model had wrong: the st
 ### 2026-11-23 — The concrete frame at Tower Square
 
 From across the block the 206 m tower reads as rows of dark slots. From the foot of the building the concrete returns extend beyond the glazing and catch new violet and blue light. City now draws the recessed windows and their projecting slab edges on all four banks above the local 304.5 m grade. [Tower Square sources and City views](midtown-skyline.md#tower-square)
+
+### 2026-11-23 — Letting the map say "this is a garden"
+
+Overture marked a 48 × 14 m footprint downtown as a 1.44 m building. The aerials show a retaining wall along the sidewalk, with 6 m of planted slope falling away behind it. City now keeps a short curated list of footprints like this, each with its evidence. For each one it draws a wall and a planted bed draped on the 3DEP surface, in place of the box. A sweep of all 12 boards found no other structure shorter than half its own grade relief, so the list starts with one entry. Before adding entries, it needs an aerial check, not a bigger search. [Mechanism, evidence and day and night views](log/ui/landscape-curation/README.md)
