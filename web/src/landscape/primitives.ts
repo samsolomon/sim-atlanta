@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import { inkFoliageMesh } from '../vignette/ink';
+import type { GroundYield } from '../terrain/surface';
 
 /**
  * Reusable landscape primitives in City's low-poly, ink-lined style.
@@ -334,11 +335,16 @@ export function seatWall(b: Builder, line: P2[], ground: Ground, o: { height?: n
 /**
  * Stair run between two points, with treads at `riser` spacing from the
  * ground at the bottom to the ground at the top, and cheek walls.
+ *
+ * Returns the footprint the drawn terrain must yield to (pass it to the board's
+ * `carve`), so a slope that bulges between the two landings never shows through
+ * the treads. The cheek walls rise to the adjacent grade so the cut shows stone,
+ * not void. Null for a degenerate run.
  */
 export function stairRun(b: Builder, from: P2, to: P2, width: number, ground: Ground,
-  o: { riser?: number; cheeks?: boolean; fromY?: number; toY?: number } = {}) {
+  o: { riser?: number; cheeks?: boolean; fromY?: number; toY?: number } = {}): GroundYield | null {
   // Elevations default to the ground at each end; pass fromY/toY (scene metres) for surveyed landings.
-  if (Math.hypot(to[0] - from[0], to[1] - from[1]) < 1e-6 || !(width > 0)) return;
+  if (Math.hypot(to[0] - from[0], to[1] - from[1]) < 1e-6 || !(width > 0)) return null;
   const y0 = o.fromY ?? g0(ground, ...from), y1 = o.toY ?? g0(ground, ...to);
   const [lo, hi, a, c] = y0 <= y1 ? [y0, y1, from, to] : [y1, y0, to, from];
   const steps = Math.min(400, Math.max(1, Math.round((hi - lo) / Math.max(.05, o.riser ?? .16))));
@@ -351,11 +357,28 @@ export function stairRun(b: Builder, from: P2, to: P2, width: number, ground: Gr
     b.quad(p(s0, h, lo - .1), p(s0, -h, lo - .1), p(s0, -h, top), p(s0, h, top), STONE);
     for (const side of [-h, h]) b.quad(p(s0, side, lo - .1), p(s1, side, lo - .1), p(s1, side, top), p(s0, side, top), STONE);
   }
-  if (o.cheeks ?? true) for (const side of [-1, 1]) {
-    const edge: P2[] = [[a[0] + nx * side * (h + .2), a[1] + nz * side * (h + .2)], [c[0] + nx * side * (h + .2), c[1] + nz * side * (h + .2)]];
+  const cheeks = o.cheeks ?? true;
+  // Cheek walls sit flush against the treads (h to h + 0.3). Their cap follows the
+  // stair's slope, or the grade on either face where that stands higher.
+  if (cheeks) for (const side of [-1, 1]) {
+    const off = side * (h + .15);
+    const edge: P2[] = [[a[0] + nx * off, a[1] + nz * off], [c[0] + nx * off, c[1] + nz * off]];
+    const grade = (x: number, z: number) => Math.max(g0(ground, x + nx * .15, z + nz * .15), g0(ground, x - nx * .15, z - nz * .15));
     strip(b, edge, .3, (x, z) => Math.min(g0(ground, x, z), lo) - .2,
-      (x, z) => { const t = Math.max(0, Math.min(1, ((x - a[0]) * ux + (z - a[1]) * uz) / len)); return lo + (hi - lo) * t + .35; }, STONE, CAP, 1);
+      (x, z) => {
+        const t = Math.max(0, Math.min(1, ((x - a[0]) * ux + (z - a[1]) * uz) / len));
+        return Math.max(lo + (hi - lo) * t + .35, grade(x, z) + .05);
+      }, STONE, CAP, .5);
   }
+  // The yield runs inside the cheek walls (or just outside cheekless sides), and just
+  // behind the first riser, so its skirt is never coplanar with stone.
+  const half = cheeks ? h + .15 : h + .01, s0 = Math.min(.02, len / 4);
+  const corner = (s: number, side: number): [number, number] => [a[0] + ux * s + nx * side, a[1] + uz * s + nz * side];
+  return {
+    ring: [corner(s0, -half), corner(len, -half), corner(len, half), corner(s0, half)],
+    // A plane a riser and 5 cm below every tread nosing.
+    floor: (x, z) => lo + (hi - lo) * (((x - a[0]) * ux + (z - a[1]) * uz) / len) - rise - .05,
+  };
 }
 
 /**

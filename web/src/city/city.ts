@@ -1497,6 +1497,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   };
 
   if (import.meta.env.DEV) {
+    // Dev-only: frame a camera link (bearing, tilt, distance, x, z) without a reload.
+    // zoom > 1 narrows the lens from the same position, for close-up evidence shots.
+    (window as unknown as Record<string, unknown>).__setView = (bearing: number, tilt: number, dist: number, x: number, z: number, zoom = 1) => {
+      manualCamera();
+      setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z);
+      camera.zoom = zoom;
+      camera.updateProjectionMatrix();
+    };
+    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas };
     // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
     (window as unknown as Record<string, unknown>).__groundAudit = async (o?: object) => {
       const { groundAudit, cityLayer, CITY_COLORS } = await import('../terrain/ground-audit');

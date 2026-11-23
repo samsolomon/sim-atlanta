@@ -356,7 +356,8 @@ export function createArtsCampusLandmark(
     const group = new Group();
     group.name = finished.group.name;
     group.add(finished.group, lawn.mesh, lawn.turf);
-    return { ...finished, group };
+    // The board carves its drawn terrain under the granite steps.
+    return { ...finished, group, yields: lawn.yields };
   } else memorial(shell);
   return shell.finish('#ffdab0', 0.68);
 }
@@ -380,12 +381,12 @@ function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   flowerBed(b, mound, groundAt, { doy: 172, mound: 0.5, flowers: 0, seed: 'high-ginkgo' });
   hedge(b, l.shrubs as P2[], groundAt, { clipped: false, height: 1.0, width: 1.3, seed: 'high-ramp-shrubs' });
   const [from, to] = l.steps as [P2, P2];
-  stairRun(b, from, to, l.stepsWidth, groundAt);
+  const steps = stairRun(b, from, to, l.stepsWidth, groundAt);
   // Manicured lawn (faint mow stripes, as a formal landmark lawn) over the OSM-mapped Peachtree lawn (its round notch is the Rodin pad),
   // cut round the ginkgo mound and the Peachtree steps. Under the ramp the
   // turf is hidden by the deck and its walls, so the ramp needs no hole.
   const turf = new GroundCover();
   turf.patch(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][] });
   const lawn = landscapeMesh(b), cover = turf.mesh();
-  return { ...lawn, turf: cover.mesh, dispose() { lawn.dispose(); cover.dispose(); } };
+  return { ...lawn, turf: cover.mesh, yields: steps ? [steps] : [], dispose() { lawn.dispose(); cover.dispose(); } };
 }

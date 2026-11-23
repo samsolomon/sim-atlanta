@@ -9,7 +9,7 @@ import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
-import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
+import { GroundSurface, joinList, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { createMitchellHouse, mitchellId } from '../city/midtown-culture-mitchell';
@@ -175,6 +175,10 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       landmarks.push(landmark);
     }
   }
+  // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
+  // Carve before anything else samples the ground inside their footprints.
+  const yields = landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []);
+  if (yields.length) mesh.carve(yields);
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
