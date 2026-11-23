@@ -18,6 +18,7 @@ import type { Atmosphere } from '../core/atmosphere';
 import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
+import { createNorthLine } from './midtown-marta-rail';
 import { FOLLOW_CAMERA, type TrainFollow } from './train-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
@@ -255,7 +256,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!mosaic) { options.areaNote?.(note); return; }
     if (note) areaFailures.set(key, note);
     else areaFailures.delete(key);
-    options.areaNote?.([...areaFailures.values()].join(' ') || null);
+    options.areaNote?.([...areaFailures.values()].join(' · ') || null);
   }
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
@@ -613,6 +614,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
   // Trains clip to their own copy of the board edges, so the east area can open them alone.
   const trainEdges = edges.map(p => p.clone());
+  let northLine: ReturnType<typeof createNorthLine>;
   const trains = new CityTrains(marta, manifest, b, colors, trainEdges, cut);
   const scenery = scene.children.slice();
   scene.add(trains.group);
@@ -767,6 +769,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
       const atl = added.get('brookwood-station');
+      if (atl) northLine = createNorthLine(atl.group, rf, manifest.origin, trains.group);
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());
@@ -1219,6 +1222,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fpsT = performance.now();
   let fps = 0;
   let showingBrookwoodNote = false;
+  let showingNorthLineNote = false;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
@@ -1261,6 +1265,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     trains.update(states, atm.dark);
+    trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
       const { x, z } = controls.target, r = brookwood.bounds;
@@ -1268,6 +1273,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (near !== showingBrookwoodNote) {
         showingBrookwoodNote = near;
         areaResult('brookwood-service', near ? 'Scheduled Crescent · Inferred berth · Illustrative consist' : null);
+      }
+    }
+    if (northLine?.bounds) {
+      const { x, z } = controls.target, r = northLine.bounds;
+      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+      if (near !== showingNorthLineNote) {
+        showingNorthLineNote = near;
+        areaResult('north-line', near ? 'Inferred MARTA track' : null);
       }
     }
     // A followed train heading east loads the King Memorial area itself, without a manual pan,
