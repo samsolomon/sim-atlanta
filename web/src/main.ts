@@ -1,3 +1,4 @@
+import { perf } from './core/perf';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { initialView } from './core/initial-view';
@@ -479,6 +480,7 @@ async function openCity() {
     leaving++; // cancels a City → Map fade in progress
     return;
   }
+  perf.phase('city:open');
   hideCard();
   const load = ++cityLoad;
   cityAbort?.abort();
@@ -577,6 +579,7 @@ async function openCity() {
   diorama.beginReveal(offBoard && overMap ? 'paper' : undefined);
   await diorama.revealed;
   if (load !== cityLoad) return;
+  perf.phase('city:revealed');
   opening = false;
   cityLoading.hidden = true;
   cityBuiltOnce = true;
