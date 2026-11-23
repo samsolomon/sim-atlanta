@@ -54,9 +54,11 @@ An illustrative Norfolk Southern freight runs on Main 2: two locomotives and eig
 | Crescent on the west stretch, 09:21 and 22:42 | [Day](log/ui/brookwood-corridor/d-crescent-low.jpg) · [Night](log/ui/brookwood-corridor/n-crescent-low.jpg) | [Day](log/ui/brookwood-corridor/d-crescent-high.jpg) · [Night](log/ui/brookwood-corridor/n-crescent-high.jpg) |
 | Freight past the island, 14:03 and 23:03 | [Day](log/ui/brookwood-corridor/d-freight-low.jpg) · [Night](log/ui/brookwood-corridor/n-freight-low.jpg) | [Day](log/ui/brookwood-corridor/d-freight-high.jpg) · [Night](log/ui/brookwood-corridor/n-freight-high.jpg) |
 
+Captioned comparisons: [Crescent and freight by day](log/ui/brookwood-corridor/compare-trains.jpg) · [by night](log/ui/brookwood-corridor/compare-trains-night.jpg).
+
 | Camera | Low day / night | High day / night |
 | --- | --- | --- |
 | West, −780,−4400,300,55,700 | [Day](log/ui/brookwood-corridor/west-low-day.jpg) · [Night](log/ui/brookwood-corridor/west-low-night.jpg) | [Day](log/ui/brookwood-corridor/west-high-day.jpg) · [Night](log/ui/brookwood-corridor/west-high-night.jpg) |
 | Northeast, 550,−5550,40,55,600 | [Day](log/ui/brookwood-corridor/east-low-day.jpg) · [Night](log/ui/brookwood-corridor/east-low-night.jpg) | [Day](log/ui/brookwood-corridor/east-high-day.jpg) · [Night](log/ui/brookwood-corridor/east-high-night.jpg) |
 
-West seam [before](log/ui/brookwood-corridor/seam-west-before.jpg) · [after](log/ui/brookwood-corridor/seam-west-high-day.jpg) at `cam=-575,-4590,250,55,120`. The warehouses beside the west track show no exposed footings ([view](log/ui/brookwood-corridor/west-warehouses-high-day.jpg)).
+Captioned comparisons: [west seam, before and after](log/ui/brookwood-corridor/compare-west-seam.jpg) · [west stretch, before and after](log/ui/brookwood-corridor/compare-west-stretch.jpg). West seam [before](log/ui/brookwood-corridor/seam-west-before.jpg) · [after](log/ui/brookwood-corridor/seam-west-high-day.jpg) at `cam=-575,-4590,250,55,120`. The warehouses beside the west track show no exposed footings ([view](log/ui/brookwood-corridor/west-warehouses-high-day.jpg)).
