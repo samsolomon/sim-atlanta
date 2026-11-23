@@ -1,0 +1,61 @@
+# Squaring the Atlanta board
+
+The existing board covers 4.928 km². A pair of 400 m bands and two missing corners add 2.912 km², yielding an exact 2.8 km square. On a populated checkout run `pnpm data:square-board`, then `pnpm dev`. Open `/square-board.html?q=high` or `?q=low` on that server. Select **North** or **South** to load that section, in either order. **Overview** shows the areas loaded so far. **King Memorial** looks west along the station approach. Drag to orbit and scroll to inspect. [Existing and completed board at the same camera](overview.jpg) · [North and south streets](seams.jpg) · [King Memorial guideway](king.jpg)
+
+![North-up plot of today's footprint, gaps and proposed square](bounds.png)
+
+## Where the additions go
+
+All extents include both edges. Coordinates are City metres east (x) and south (z) of Five Points. The existing outer width, 2,800 m, fixes the side of the smallest axis-aligned square that retains every neighborhood. Filling the east-side gaps first leaves 800 m of north–south extent to add. Splitting it evenly keeps the existing north–south midpoint and minimizes the longest outward move. Each section touches the existing board along its entire inner boundary.
+
+| Area | x range (m) | z range (m) | Area (km²) |
+|---|---|---|---:|
+| Downtown | −1000…1000 | −1300…700 | 4.000 |
+| King Memorial | 1000…1800 | 280…640 | 0.288 |
+| Sweet Auburn | 1000…1800 | −520…280 | 0.640 |
+| North band | −1000…1800 | −1700…−1300 | 1.120 |
+| Northeast corner | 1000…1800 | −1300…−520 | 0.624 |
+| South band | −1000…1800 | 700…1100 | 1.120 |
+| Southeast corner | 1000…1800 | 640…700 | 0.048 |
+
+Clipping the City of Atlanta's neighborhood polygons gives these areas to the nearest 0.1 ha. The north band intersects Downtown (72.7), Old Fourth Ward (36.6) and English Avenue (2.7). The northeast corner adds Old Fourth Ward (47.6), Sweet Auburn (11.3) and Downtown (3.4). The south band adds Capitol Gateway (29.4), Grant Park (27.9), Downtown (23.2), Castleberry Hill (15.0), Mechanicsville (11.6), Oakland (3.4) and Summerhill (1.6). The narrow southeast strip joins Grant Park (2.5) and Oakland (2.3) directly to the King board. The intersects describe portions of these neighborhoods. [City of Atlanta DCP neighborhood polygons](https://gis.atlantaga.gov/dpcd/rest/services/AdministrativeArea/GeopoliticalArea/FeatureServer/1)
+
+## Ground, streets and bytes
+
+| Addition | Ground range (m NAVD88) | Building pieces | Road/path runs | Asset bytes | gzip-9 bytes |
+|---|---:|---:|---:|---:|---:|
+| North band | 283.3–312.3 | 324 | 1,037 | 407,657 | 110,626 |
+| Northeast corner | 287.6–319.4 | 115 | 405 | 170,156 | 50,130 |
+| South band | 290.5–324.1 | 342 | 1,046 | 341,393 | 92,674 |
+| Southeast corner | 308.9–323.8 | 8 | 59 | 18,343 | 5,718 |
+
+North adds 577,813 bytes raw (160,756 gzip), south 359,736 (98,392 gzip). The total is 937,549 raw or 259,148 gzipped. Each direction adds six static files, individually compressed for this comparison. Actual HTTP transfer depends on the host. The archive of raw OSM input stays in the pipeline.
+
+The four grids use the same USGS 1 m bare-earth source (2018–19), sampled at the containing native pixel every 5 m. The input is NAD83 / UTM zone 16N. City uses local spherical metres from WGS84 (−84.3916°, 33.7539°), radius 6,371,008.8 m. Row zero is north and columns increase east. Check the SHA-256 and decode row-major little-endian signed int16 decimetres. Mask −32768 before multiplying by 0.1. Subtract 323.8 m NAVD88 once for scene y. Outside a grid or where a nonzero interpolation weight touches the mask, return unknown. All four grids contain zero masked nodes. A valid bare-earth sample can represent interpolated ground beneath a removed bridge. It supplies neither railhead height nor tunnel cover. [Source, datum approximation and Five Points cut measurements](../../../downtown-ground.md)
+
+Roads, buildings and selected land-cover polygons use archived OpenStreetMap geometry clipped to each rectangle. Their mapped horizontal positions are reported. Roof heights are reported where tagged (5 pieces), inferred from floor counts at 3.6 m per floor (156), and illustrative at 8 m elsewhere (628). Deck clearances and foundations are illustrative. The new bands contain no canopy survey. Downtown in this study uses the shared ground, generic buildings and terrain transport. Production landmark and lighting passes have their own City integration. The OSM archives and derived context data are available under the ODbL. [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) · [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/)
+
+## Seam evidence
+
+- The runtime verifies registration and every shared 5 m ground node before removing either side's edge wall. Geometry tests also sample the rendered surface every 2.5 m along every shared edge at high and low detail. The downtown–north and downtown–south edges each match at 401 nodes. A one-byte corruption in the south corner leaves King's south edge closed. South can then be retried. Both load orders pass.
+- Of 57 shared-edge/name pairs with a crossing on both sides, 55 match to the nearest centimetre. Examples include Peachtree Street at the north edge, Jackson Street beside Sweet Auburn and Grant Street and Oakland Avenue beside King Memorial. The audit compares sets of exact-name crossings in both directions. Unnamed streets and features present on only one side require separate inspection.
+- Two names have an extra mapped carriageway. At x = 1000 the northeast Connector crosses z = −789.37 and −850.42 m. Downtown's ordinary road layer has the first named crossing only. At z = 700, Ted Turner Drive SW crosses x = −587.01 and −604.01 m in the south band. Downtown has the first named crossing only. The 61.05 m and 17.00 m separations are measured **along the edge**. Compare the additional crossings to the arterial and bridge layers before using them for vehicle animation.
+- The producer's downtown Blue/Green guideway meets the King geometry at x = 1000, z ≈ 554 m. The west bed reads 324.845 m NAVD88 and the east bed 324.857 m at rail chainage 8541.6 m. The difference is 1.3 cm between models. The preview uses the rail owner's measured anchors, schematic under-canopy interpolation and existing platform/roof geometry. Neither direction installs replacement rail. [Rail evidence and interpretation](../../../king-memorial-corridor.md) · [Matched King views](king.jpg)
+- The north band covers the rest of the Peachtree Summit footprint across z = −1300. For a single building, load its full footprint and sample ground on both boards, then replace both generic pieces together. The current preview clips ordinary buildings independently, so a shared footprint can retain two foundations or different heights.
+
+## Rebuild and integrate
+
+A fresh checkout needs normal City and route data from `pnpm data` (see the repository README). On a populated checkout, staging copies the checked-in assets. To regenerate them, use the pinned local GeoTIFF from the downtown instructions and the four archived OSM maps. Each context records its request URL and raw SHA-256. A later live OSM response can differ. [Terrain download](../../../downtown-ground.md#reproduce-the-bake) · [Archived inputs and outputs](../../../../pipeline/prototypes/square-board)
+
+```sh
+.venv/bin/python -m pip install numpy rasterio pyproj shapely pillow
+.venv/bin/python -B pipeline/scripts/square_board.py data/raw/terrain/USGS_1M_16_x74y374_GA_Statewide_2018_B18_DRRA.tif
+pnpm data:square-board
+.venv/bin/python -B pipeline/scripts/square_board_audit.py --figure docs/log/ui/square-board/bounds.png
+pnpm test
+pnpm build
+```
+
+Pass `--section north` or `--section south` to bake one section. The audit also needs the staged City neighborhood polygons (`pnpm data:places`). A second full bake reproduced all twelve output hashes. The dedicated Vite entry is included when square-board data is staged. To publish that preview, stage the pack, rebuild and deploy the assets together.
+
+In desktop Orca at 1296 × 726, normal City opening requested seven downtown scene assets and zero square-board assets on both settings. The dedicated preview opened its three existing areas, fetched six new assets on the first direction and six on the second. Revisiting a direction reused its mounted geometry. Camera targets and offsets are identical between high and low. These captures establish coverage and seam behavior. Target-device memory, frame time and recovery after switching views still need hardware validation before enabling these sections in normal City. At integration, use the same atomic section loader and neighboring skirt indices, retain the old exterior walls during fetch or failure, and keep King rail on its existing vertical model.
