@@ -1,62 +1,63 @@
 @import '../ui/tokens.css';
+/* Everything is scoped under .lab: models.html's <body class="lab">, or the Models view inside the app. */
 
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-body { display: grid; grid-template-columns: clamp(250px, 24vw, 320px) minmax(0, 1fr); background: var(--paper-2); color: var(--ink); }
-[hidden] { display: none !important; }
-button, input, select { font: inherit; }
-button, .file-button, select { cursor: pointer; }
-:focus-visible, .file-button:focus-within { outline: 2px solid var(--city-rail); outline-offset: 2px; }
-.sidebar { min-height: 0; display: flex; flex-direction: column; background: var(--paper); border-right: 1px solid var(--line); }
-.lab-header, .inspector { padding-inline: 20px; }
-.lab-header { padding-block: 18px 14px; border-bottom: 1px solid var(--line); }
-.lab-header nav { display: flex; justify-content: space-between; font-size: 13px; }
-a { color: var(--ink-2); text-decoration: none; }
-a:hover { color: var(--ink); text-decoration: underline; }
-h1, h2, p { margin: 0; }
-h1 { margin-top: 12px; font-size: 24px; letter-spacing: -.035em; line-height: 1.15; }
-.inspector { min-height: 0; overflow-y: auto; padding-bottom: 18px; }
-.library { padding-block: 16px; border-bottom: 1px solid var(--line); }
-.model-group + .model-group { margin-top: 14px; }
-.model-group h2, legend, .mobile-model { color: var(--ink-2); font-size: 12px; font-weight: 650; }
-.model-group h2 { margin-bottom: 5px; }
-.model-group button { display: block; text-align: left; width: 100%; border: 0; border-radius: 4px; background: transparent; color: inherit; font-size: 14px; padding: 7px 10px; }
-.model-group button:hover, .settings button:hover, .file-button:hover { background: var(--paper-3); }
-.model-group button[aria-pressed=true] { background: var(--ink); color: var(--paper); font-weight: 600; }
-.settings { padding-top: 14px; display: grid; gap: 14px; }
-fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
-legend { padding: 0; margin-bottom: 5px; }
-.settings button, .file-button { display: inline-block; color: var(--ink); font-size: 12.5px; font-weight: 550; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; padding: 5px 9px; margin: 2px 4px 2px 0; }
-.settings button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.playback, .reference-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-#play { min-width: 64px; }
-input[type=range] { width: 108px; accent-color: var(--ink); }
-.file-button { position: relative; }
-#file { opacity: 0; position: absolute; inset: 0; width: 100%; cursor: pointer; }
-.mobile-model { display: none; }
-.preview { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.model-heading { background: var(--paper); border-bottom: 1px solid var(--line); padding: 17px 24px 14px; }
-.model-heading h2 { font-size: clamp(19px, 2vw, 27px); line-height: 1.15; letter-spacing: -.035em; }
-.model-heading p { margin-top: 4px; max-width: 72ch; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
-#stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
-#stage canvas, #ref { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-#stage canvas { touch-action: none; }
-#ref { z-index: 1; object-fit: contain; opacity: .45; pointer-events: none; }
+.lab, .lab * { box-sizing: border-box; }
+html:has(> body.lab), body.lab { margin: 0; height: 100%; }
+.lab { display: grid; grid-template-columns: clamp(250px, 24vw, 320px) minmax(0, 1fr); background: var(--paper-2); color: var(--ink); }
+.lab [hidden] { display: none !important; }
+.lab button, .lab input, .lab select { font: inherit; }
+.lab button, .lab .file-button, .lab select { cursor: pointer; }
+.lab :focus-visible, .lab .file-button:focus-within { outline: 2px solid var(--city-rail); outline-offset: 2px; }
+.lab .sidebar { min-height: 0; display: flex; flex-direction: column; background: var(--paper); border-right: 1px solid var(--line); }
+.lab .lab-header, .lab .inspector { padding-inline: 20px; }
+.lab .lab-header { padding-block: 18px 14px; border-bottom: 1px solid var(--line); }
+.lab .lab-header nav { display: flex; justify-content: space-between; font-size: 13px; }
+.lab a { color: var(--ink-2); text-decoration: none; }
+.lab a:hover { color: var(--ink); text-decoration: underline; }
+.lab h1, .lab h2, .lab p { margin: 0; }
+.lab h1 { margin-top: 12px; font-size: 24px; letter-spacing: -.035em; line-height: 1.15; }
+.lab .inspector { min-height: 0; overflow-y: auto; padding-bottom: 18px; }
+.lab .library { padding-block: 16px; border-bottom: 1px solid var(--line); }
+.lab .model-group + .model-group { margin-top: 14px; }
+.lab .model-group h2, .lab legend, .lab .mobile-model { color: var(--ink-2); font-size: 12px; font-weight: 650; }
+.lab .model-group h2 { margin-bottom: 5px; }
+.lab .model-group button { display: block; text-align: left; width: 100%; border: 0; border-radius: 4px; background: transparent; color: inherit; font-size: 14px; padding: 7px 10px; }
+.lab .model-group button:hover, .lab .settings button:hover, .lab .file-button:hover { background: var(--paper-3); }
+.lab .model-group button[aria-pressed=true] { background: var(--ink); color: var(--paper); font-weight: 600; }
+.lab .settings { padding-top: 14px; display: grid; gap: 14px; }
+.lab fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
+.lab legend { padding: 0; margin-bottom: 5px; }
+.lab .settings button, .lab .file-button { display: inline-block; color: var(--ink); font-size: 12.5px; font-weight: 550; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; padding: 5px 9px; margin: 2px 4px 2px 0; }
+.lab .settings button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.lab .playback, .lab .reference-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.lab #play { min-width: 64px; }
+.lab input[type=range] { width: 108px; accent-color: var(--ink); }
+.lab .file-button { position: relative; }
+.lab #file { opacity: 0; position: absolute; inset: 0; width: 100%; cursor: pointer; }
+.lab .mobile-model { display: none; }
+.lab .preview { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.lab .model-heading { background: var(--paper); border-bottom: 1px solid var(--line); padding: 17px 24px 14px; }
+.lab .model-heading h2 { font-size: clamp(19px, 2vw, 27px); line-height: 1.15; letter-spacing: -.035em; }
+.lab .model-heading p { margin-top: 4px; max-width: 72ch; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.lab #stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.lab #stage canvas, .lab #ref { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.lab #stage canvas { touch-action: none; }
+.lab #ref { z-index: 1; object-fit: contain; opacity: .45; pointer-events: none; }
 @media (max-width: 690px) {
-  body { height: 100dvh; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 57fr) minmax(0, 43fr); }
-  .preview { grid-row: 1; }
-  .model-heading { padding: max(10px, env(safe-area-inset-top)) 14px 9px; }
-  .sidebar { grid-row: 2; border: 0; border-top: 1px solid var(--line); }
-  .lab-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; }
-  .lab-header h1 { order: -1; font-size: 17px; margin: 0; }
-  .lab-header nav { gap: 12px; }
-  .inspector { padding: 0 14px max(14px, env(safe-area-inset-bottom)); }
-  .library { padding-block: 8px; }
-  .model-group { display: none; }
-  .mobile-model { display: flex; align-items: center; gap: 10px; }
-  select { flex: 1; min-width: 0; padding: 6px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; }
-  .settings { gap: 9px; padding-top: 10px; }
-  .settings button, .file-button { min-height: 34px; }
+  .lab { height: 100dvh; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 57fr) minmax(0, 43fr); }
+  .lab .preview { grid-row: 1; }
+  .lab .model-heading { padding: max(10px, env(safe-area-inset-top)) 14px 9px; }
+  .lab .sidebar { grid-row: 2; border: 0; border-top: 1px solid var(--line); }
+  .lab .lab-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; }
+  .lab .lab-header h1 { order: -1; font-size: 17px; margin: 0; }
+  .lab .lab-header nav { gap: 12px; }
+  .lab .inspector { padding: 0 14px max(14px, env(safe-area-inset-bottom)); }
+  .lab .library { padding-block: 8px; }
+  .lab .model-group { display: none; }
+  .lab .mobile-model { display: flex; align-items: center; gap: 10px; }
+  .lab select { flex: 1; min-width: 0; padding: 6px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; }
+  .lab .settings { gap: 9px; padding-top: 10px; }
+  .lab .settings button, .lab .file-button { min-height: 34px; }
 }
 
-.platform-report { margin: 6px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.35; }
+.lab .platform-report { margin: 6px 0 0; color: var(--ink-2); font-size: 12px; line-height: 1.35; }

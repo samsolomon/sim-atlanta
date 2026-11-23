@@ -1,5 +1,6 @@
 /** Inspect City's models and their poses against a reference photo. */
 import './lab.css';
+import { mountLab } from './lab-markup';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -24,6 +25,8 @@ import { C_FAMILY, TIP_CAP, TIP_RANGE_M, VARIANTS, createGinkgoVariant, variantT
 import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
 import { HOUSE_KINDS, HOUSE_NOTES, createHouseScene, type HouseKind } from './house-scene';
 
+// The markup is shared with the in-app Models view (lab-markup.ts); mount it before any lookup.
+mountLab();
 const el = document.getElementById('stage')!;
 const low = new URLSearchParams(location.search).get('q') === 'low';
 const renderer = new THREE.WebGLRenderer({ antialias: !low, preserveDrawingBuffer: true });
@@ -572,7 +575,9 @@ const draw = (t: number) => {
   perf.push(performance.now() - t0, renderer.info.render.triangles, renderer.info.render.calls);
 };
 const frame = (t: number) => {
-  draw(t);
+  // Inside the app the lab sits in a view that hides when Map or City shows: draw nothing then.
+  // __lab.render() still draws on demand for captures.
+  if (!el.closest('[hidden]')) draw(t);
   requestAnimationFrame(frame);
 };
 requestAnimationFrame(frame);
