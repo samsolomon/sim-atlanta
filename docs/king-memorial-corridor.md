@@ -489,4 +489,6 @@ Tests in `king-rail.test.ts`:
 - a mount through `loadEast` that must carry a freight mesh;
 - with `pnpm data`, drawn track within 12 m of every CSX/NS NARN arc in the board.
 
+Crowns from older context packs that would stand on the ballast are dropped at mount. The current pack has none. The MARTA piers near the seam stand clear of the nearest freight track: I checked this in a browser, but no test holds it. Release: web rebuild only, because the fixture ships in `web/src`. No `pnpm data` change.
+
 [Before and after](log/ui/freight/king-csx.jpg) · camera `/?view=city&cam=1350,480,45,55,550`

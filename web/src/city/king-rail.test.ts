@@ -87,6 +87,19 @@ it('mounts the King Memorial board with its freight track', async () => {
   } finally { area.dispose(); }
 }, 60_000);
 
+// With the generated data (pnpm data): downtown's freight ends meet the fixture's at the seam.
+const vignetteFile = resolve(__dirname, '../../public/data/scene/downtown/vignette.json');
+describe.skipIf(!existsSync(vignetteFile))('the downtown seam', () => {
+  it('meets every downtown freight end at x = 1000 within 5 cm', () => {
+    const downtown = JSON.parse(readFileSync(vignetteFile, 'utf8')) as { terrainTransport: { rail: { cls: string; pts: number[][] }[] } };
+    const ends = downtown.terrainTransport.rail.filter(r => r.cls === 'standard_gauge')
+      .flatMap(r => r.pts.filter(([x]) => x === eastBounds.minX).map(([, z]) => z)).sort((a, b) => a - b);
+    const king = kingRail.flatMap(r => r.pts.filter(([x]) => x === eastBounds.minX).map(([, z]) => z)).sort((a, b) => a - b);
+    expect(ends.length).toBe(king.length);
+    ends.forEach((z, i) => expect(Math.abs(z - king[i])).toBeLessThan(0.05));
+  });
+});
+
 // With the generated data (pnpm data): every CSX or NS NARN arc inside the board is drawn.
 const freightFile = resolve(__dirname, '../../public/data/ga/freight.geojson');
 describe.skipIf(!existsSync(freightFile))('NARN freight on the King Memorial board', () => {

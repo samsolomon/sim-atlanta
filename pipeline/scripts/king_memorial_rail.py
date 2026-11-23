@@ -38,7 +38,7 @@ def bake(raw):
         for pts in clip_runs([nodes[i] for i in way["nodes"]], BOUNDS):
             runs.append(dict(kind="ground" if tags.get("bridge", "no") == "no" else "bridge",
                              cls="standard_gauge", name=tags.get("name"), id=f"osm:way:{way['id']}",
-                             service=tags.get("service"), pts=pts))
+                             sub=tags.get("service"), pts=pts))
     return runs
 
 
@@ -51,4 +51,4 @@ if __name__ == "__main__":
     raw = Path(sys.argv[1]).read_bytes() if len(sys.argv) > 1 else fetch(url, Path(RAW) / "osm_king_memorial_rail.json")
     runs = bake(raw)
     FIXTURE.write_text(json.dumps(runs, separators=(",", ":")) + "\n")
-    print(len(runs), "runs;", sum(1 for r in runs if not r["service"]), "main")
+    print(len(runs), "runs;", sum(1 for r in runs if not r["sub"]), "main")
