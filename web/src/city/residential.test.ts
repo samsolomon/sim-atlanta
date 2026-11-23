@@ -32,8 +32,12 @@ it('infers gables, hips and pyramids from the footprint, with eave-height walls 
     expect(finish.windowStyle).toBe(3);
     // Two storeys inferred above 95 m²; the ridge rises 0.72 × half-depth, capped at 4.5 m.
     expect(drawn.h).toBeCloseTo(2 * 3.05 + .4, 5);
-    expect(top).toBeGreaterThan(drawn.h! + 1.5);
+    expect(top).toBeGreaterThan(drawn.h! + (b === ell ? .9 : 1.5));
   }
+  // The L plan's roof never reaches over its empty corner.
+  const out = new Builder();
+  plan.finishFor(ell)!.dressRoof!(out, ell.rings[0], plan.city.buildings.find(x => x.id === 'ell')!.h!);
+  for (let i = 0; i < out.pos.length; i += 3) expect(out.pos[i] > 66.01 && out.pos[i + 2] > 6.01).toBe(false);
   // A one-storey cottage under 95 m².
   const cottage = house('cottage', rect(9, 7));
   expect(residential(city([cottage])).city.buildings[0].h).toBeCloseTo(3.45, 5);

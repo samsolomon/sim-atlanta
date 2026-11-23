@@ -14,7 +14,7 @@ const HOMES = new Set(['house', 'detached', 'semidetached_house', 'bungalow', 't
 const tags = tagged as unknown as Record<string, [string | null, string | null, string | null]>;
 
 type Shape = 'gabled' | 'hipped' | 'pyramidal';
-type Plan = { shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
+type Plan = { concave: boolean; porchFoot?: number; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
   wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean };
 
 // Early twentieth-century Atlanta streets: red and brown brick, painted
@@ -57,7 +57,10 @@ function roadIndex(city: TerrainCity) {
       const a = r.pts[i - 1], b = r.pts[i];
       for (let x = Math.floor(Math.min(a[0], b[0]) / 40); x <= Math.floor(Math.max(a[0], b[0]) / 40); x++)
         for (let z = Math.floor(Math.min(a[1], b[1]) / 40); z <= Math.floor(Math.max(a[1], b[1]) / 40); z++)
-          cells.set(`${x},${z}`, [...cells.get(`${x},${z}`) ?? [], [a, b]]);
+        {
+          const key = `${x},${z}`, list = cells.get(key);
+          if (list) list.push([a, b]); else cells.set(key, [[a, b]]);
+        }
     }
   }
   return (x: number, z: number) => {
@@ -72,25 +75,31 @@ function roadIndex(city: TerrainCity) {
 
 function plan(b: VBuilding, street: (x: number, z: number) => number): Plan | null {
   const ring = b.rings[0];
-  if (b.rings.length !== 1 || !ring || ring.length < 4 || !HOMES.has(b.cls ?? '')) return null;
+  // Pieces clipped at a board seam (`id/n`) keep the generic box on both sides,
+  // since neither half can be roofed as one house.
+  if (b.id.includes('/') || b.rings.length !== 1 || !ring || ring.length < 4 || !HOMES.has(b.cls ?? '')) return null;
   const size = area(ring);
-  if (size < 25 || size > 450 || (b.floors ?? 0) > 3 || (b.h ?? 0) > 14) return null;
+  if (size < 25 || size > 450 || (b.floors || 0) > 3 || (b.h ?? 0) > 14) return null;
   const box = oriented(ring);
   if (!box || box.half < 2) return null;
   const [shapeTag, material] = tags[b.id] ?? [null, null, null];
   const r = rng(hashStr(b.id));
   const fill = size / (4 * box.long * box.half), aspect = box.long / box.half;
-  // Tagged shapes win; otherwise long rectangles gable, compact or irregular plans hip.
-  const shape: Shape = shapeTag === 'gabled' || shapeTag === 'hipped' || shapeTag === 'pyramidal' ? shapeTag
-    : fill > .85 && aspect > 1.3 ? 'gabled' : aspect < 1.12 ? 'pyramidal' : 'hipped';
+  // A ridge through an L or courtyard plan would roof empty ground. Concave
+  // plans get a low hip-and-deck roof that follows the footprint instead.
+  const concave = fill < .85;
+  // Tagged shapes win on rectangular plans; otherwise long rectangles gable, compact plans hip.
+  const shape: Shape = !concave && (shapeTag === 'gabled' || shapeTag === 'hipped' || shapeTag === 'pyramidal') ? shapeTag
+    : !concave && aspect > 1.3 ? 'gabled' : aspect < 1.12 ? 'pyramidal' : 'hipped';
   const rise = Math.min(4.5, Math.max(1.6, box.half * .72));
-  const storeys = b.floors ?? (b.cls === 'bungalow' || size < 95 ? 1 : 2);
+  const storeys = b.floors || (b.cls === 'bungalow' || size < 95 ? 1 : 2);
   const eave = b.h ? Math.max(3, b.h - rise) : storeys * 3.05 + .4;
   const kind = material === 'brick' ? 'brick' : material === 'wood' ? 'clapboard' : r() < .45 ? 'brick' : r() < .85 ? 'clapboard' : 'stucco';
   const palette = kind === 'brick' ? BRICK : kind === 'clapboard' ? CLAPBOARD : STUCCO;
   // The porch faces the nearest street from the footprint's longer frontage.
   let porch: P2[] | null = null;
-  if (b.cls !== 'terrace' && r() < .7) {
+  // Terrace and semi-detached halves share frontage, so they get no porch of their own.
+  if (b.cls !== 'terrace' && b.cls !== 'semidetached_house' && r() < .7) {
     let best = Infinity;
     for (let i = 0; i < ring.length; i++) {
       const a = ring[i], c = ring[(i + 1) % ring.length], len = Math.hypot(c[0] - a[0], c[1] - a[1]);
@@ -100,13 +109,43 @@ function plan(b: VBuilding, street: (x: number, z: number) => number): Plan | nu
     }
     if (best > 40) porch = null;
   }
-  return { shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half,
+  return { concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half,
     wall: palette[Math.floor(r() * palette.length)], roof: ROOFS[Math.floor(r() * ROOFS.length)],
-    trim: kind === 'brick' ? '#e4ddca' : '#f1ece0', porch, chimney: kind === 'brick' ? r() < .8 : r() < .45, brick: kind === 'brick' };
+    trim: kind === 'brick' ? '#e4ddca' : '#f1ece0', porch, chimney: !concave && (kind === 'brick' ? r() < .8 : r() < .45), brick: kind === 'brick' };
+}
+
+/** Edges offset inward by d, intersected pairwise: the deck of a hip-and-deck roof. */
+function inset(ring: P2[], d: number): P2[] {
+  let signed = 0;
+  for (let i = 0; i < ring.length; i++) { const [x0, z0] = ring[i], [x1, z1] = ring[(i + 1) % ring.length]; signed += x0 * z1 - x1 * z0; }
+  const s = signed > 0 ? 1 : -1, n = ring.length;
+  const lines = ring.map((a, i) => {
+    const c = ring[(i + 1) % n], len = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1;
+    const nx = -(c[1] - a[1]) / len * s, nz = (c[0] - a[0]) / len * s;
+    // The left normal of an anticlockwise ring points inside.
+    return { p: [a[0] + nx * d, a[1] + nz * d] as P2, v: [(c[0] - a[0]) / len, (c[1] - a[1]) / len] as P2 };
+  });
+  return ring.map((a, i) => {
+    const l0 = lines[(i + n - 1) % n], l1 = lines[i];
+    const det = l0.v[0] * l1.v[1] - l0.v[1] * l1.v[0];
+    if (Math.abs(det) < 1e-6) return l1.p;
+    const t = ((l1.p[0] - l0.p[0]) * l1.v[1] - (l1.p[1] - l0.p[1]) * l1.v[0]) / det;
+    return [l0.p[0] + l0.v[0] * t, l0.p[1] + l0.v[1] * t];
+  });
 }
 
 function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
   const { centre: c, u, long, half, rise } = p;
+  if (p.concave) {
+    // Low hip skirt to an inset deck: it stays over the walls on L and T plans.
+    const d = Math.min(1.6, half * .45), top = eave + Math.min(1.4, d * .9), inner = inset(outer, d);
+    for (let i = 0; i < outer.length; i++) {
+      const j = (i + 1) % outer.length;
+      b.quad([outer[i][0], eave, outer[i][1]], [outer[j][0], eave, outer[j][1]], [inner[j][0], top, inner[j][1]], [inner[i][0], top, inner[i][1]], p.roof);
+    }
+    for (let i = 1; i + 1 < inner.length; i++) b.tri([inner[0][0], top, inner[0][1]], [inner[i][0], top, inner[i][1]], [inner[i + 1][0], top, inner[i + 1][1]], p.roof);
+    return;
+  }
   const reach = p.shape === 'gabled' ? long + .01 : p.shape === 'pyramidal' ? 0 : Math.max(0, long - half);
   const ridge = (x: number, z: number): number[] => {
     const t = Math.max(-reach, Math.min(reach, (x - c[0]) * u[0] + (z - c[1]) * u[1]));
@@ -160,15 +199,27 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     plans.set(b.id, p);
     // Walls stop at the eave; the pitched roof carries the rest of the height.
     const range = ground && relief(b.rings[0], ground);
+    if (p.porch && ground) {
+      // The porch deck runs down to the lowest ground under it; drop it if it would stand on stilts.
+      const [a, d] = p.porch, len = Math.hypot(d[0] - a[0], d[1] - a[1]);
+      let nx = -(d[1] - a[1]) / len, nz = (d[0] - a[0]) / len;
+      const mx = (a[0] + d[0]) / 2, mz = (a[1] + d[1]) / 2;
+      if ((mx - p.centre[0]) * nx + (mz - p.centre[1]) * nz < 0) { nx = -nx; nz = -nz; }
+      const under = [0, .5, 1].flatMap(t => [0, 2.3].map(o => ground(a[0] + (d[0] - a[0]) * t + nx * o, a[1] + (d[1] - a[1]) * t + nz * o)))
+        .filter((h): h is number => h !== null);
+      p.porchFoot = under.length ? Math.min(...under) : undefined;
+    }
     // World stands walls on `footing` unless a floor is already fitted.
     const base = b.floorY ?? footing?.(b) ?? range?.[0];
+    let floorY: number | undefined;
     if (range && base !== undefined && base !== null && base + p.eave < range[1] + .1) {
       const [low, high] = range;
       // Same rule as the baked hillside grades: mid-grade, raised for a door uphill.
-      const floorY = Math.max((low + high) / 2, high - p.eave + Math.min(p.eave, 2.4));
-      return { ...b, h: p.eave, floors: null, floorY };
+      floorY = Math.max((low + high) / 2, high - p.eave + Math.min(p.eave, 2.4));
     }
-    return { ...b, h: p.eave, floors: null };
+    const floor = floorY ?? b.floorY ?? base ?? undefined;
+    if (p.porch && floor !== undefined && p.porchFoot !== undefined && floor + .55 - p.porchFoot > 1.5) p.porch = null;
+    return floorY === undefined ? { ...b, h: p.eave, floors: null } : { ...b, h: p.eave, floors: null, floorY };
   });
   const finishFor = (b: VBuilding): BuildingFinish | undefined => {
     const own = existing?.(b);
@@ -201,7 +252,7 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
             builder.quad(top[0], top[1], top[2], top[3], color);
             for (let k = 0; k < 4; k++) builder.quad(bot[k], bot[(k + 1) % 4], top[(k + 1) % 4], top[k], color);
           };
-          quadBox(-w / 2, w / 2, 0, depth, base - 1, base + .55, '#8d857a');
+          quadBox(-w / 2, w / 2, 0, depth, Math.min(base - .3, (p.porchFoot ?? base) - .2), base + .55, '#8d857a');
           for (const s of [-w / 2 + .15, -w / 6, w / 6, w / 2 - .15]) quadBox(s - .09, s + .09, depth - .25, depth - .07, base + .55, base + 2.85, p.trim);
           quadBox(-w / 2 - .15, w / 2 + .15, -.05, depth + .2, base + 2.85, base + 3.05, p.roof);
         }

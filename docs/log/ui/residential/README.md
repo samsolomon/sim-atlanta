@@ -15,7 +15,7 @@ City drew every house as a flat-roofed box with storefront glazing, so neighbour
 | midtown-south | 262 |
 | midtown-central | 578 |
 | midtown-upper | 607 |
-| brookwood-south | 795 |
+| brookwood-south | 794 |
 | brookwood-station | 746 |
 | downtown (Overture) | 25 |
 | King Memorial | 0 |
@@ -35,6 +35,10 @@ These counts come from `web/src/city/residential.test.ts`.
 | Porch | `illustrative` | 70 % of non-terrace houses get a porch: a deck, four posts and a shallow roof on the frontage nearest a mapped street within 40 m |
 | Chimney | `illustrative` | 80 % of brick houses and 45 % of others get a stack on the ridge line toward one end |
 
+**Plans that are not rectangles.** L, T and courtyard plans (under 85 % of their oriented box) get a low hip skirt rising to a flat deck inset from the walls, so no roof reaches over an empty corner. A tagged `gabled` or `hipped` on such a plan is not honoured. Footprints clipped at a board seam (`id/n`, three houses) keep the generic box on both sides, rather than getting two unrelated half-roofs. Landmarks claim their sites before this pass runs, so the Margaret Mitchell House keeps its own model. Terrace and semi-detached halves get no porch of their own. A porch runs down to the lowest ground under it, and is dropped if its deck would stand more than 1.5 m above that ground.
+
+**Night.** Houses light about a third of their rooms on every storey, hashed per window. They no longer use the storefront rule on the ground floor.
+
 **Ground contact.** Lower eaves would have buried three hillside houses. The pass now runs against the rendered ground. When a house's eave would end up below its high ground, it gets the same uphill floor rule as the [hillside foundations](../midtown-foundations/README.md). The whole-rectangle roof test passes at both tiers.
 
 ## Views
@@ -43,7 +47,7 @@ All views are at 14:00 and 23:00 Eastern on 20 November 2026, on a 999 × 496 vi
 
 - [Midtown side streets east of Piedmont Avenue, before and after](midtown-compare.jpg): `/?view=city&cam=1425,-2475,40,58,160`
 - [Home Park, before and after](home-park-compare.jpg): `/?view=city&cam=-660,-3780,40,58,160`
-- [Ansley Park at night](ansley-night-captioned.jpg) and [at low quality](ansley-low-captioned.jpg): `/?view=city&cam=1280,-3950,40,58,160`
+- [Ansley Park at night, before and after](ansley-night-compare.jpg) and [at low quality](ansley-low-captioned.jpg): `/?view=city&cam=1280,-3950,40,58,160`
 - Raw captures: `<site>-<low|high>-<day|night>.jpg`
 
 Publishing needs a web rebuild only. The tag fixture comes from `pipeline/scripts/residential_tags.py`.

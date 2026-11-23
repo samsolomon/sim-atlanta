@@ -154,10 +154,6 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
   const groundAt = approaches?.groundAt ?? bare;
-  // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
-  const homes = residential(city, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2));
-  city = homes.city;
-  options = { ...options, finishFor: homes.finishFor };
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
@@ -179,6 +175,11 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   }
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
+  // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
+  // Runs after the landmarks have claimed their sites.
+  const homes = residential(sceneryCity, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2));
+  sceneryCity = homes.city;
+  options = { ...options, finishFor: homes.finishFor };
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);

@@ -1457,8 +1457,9 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           win = mix(0.4, win, clarity);
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
-          float cellH = hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
-          litWin = win * (y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
+          float cellH = st > 2.5 ? hh(floor(vec2(u / 3.0, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
+          // Homes: about a third of rooms lit on every storey; offices as before, shopfronts mostly lit.
+          litWin = win * (st > 2.5 ? step(0.66, cellH) : y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
           litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
           diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4));
