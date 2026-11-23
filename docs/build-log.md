@@ -2105,6 +2105,17 @@ The low concrete building at North Avenue hides a surprisingly long roof. Its di
 
 A five-number camera link can open the same ground target, bearing, tilt and distance on a production build. The museum test jumped nearly four kilometres north of Five Points and retained its 421 m orbit distance as the Midtown terrain arrived. A malformed camera still opened the Williams preset, and an off-board target stopped at the edge of the loaded terrain. Requires a web rebuild. [Low-tier camera-link check](log/ui/city-camera-query.jpg)
 
+### 2026-11-23 — The Crescent at Peachtree Station
+
+At 08:50 the red cab cheeks of a Charger lead the southbound Crescent away from the depot. At 23:10 the northbound has its headlights at the other end of the island. The same nine vehicles occupy 224.59 m of Main 1 in both views. The timetable supplies the position, the berth is inferred, and the equipment is illustrative. Atlanta sightings turned up a detail that changed the silhouette of the last car. The baggage-dorm has a row of crew-room windows at one end. At night those rooms can stay lit behind the sleepers, with two red markers on the end wall. [Equipment, measurements and dated photographs](crescent-stock.md)
+
+The lab now has eight individual equipment studies and a full formation. Brookwood reuses seven shapes and one material for the train. Its 8,232 triangles take at most nine draws in the main pass, including the windows and lamps. Each body follows the grade and heading between its own truck centres. The following views use localhost, a stopped clock on November 23, and the same City camera at x −176 m, z −4,963 m, bearing −45°, tilt 65°, distance 338 m. This stock change needs only a web rebuild with `pnpm build` against the staged rectangle data.
+
+| Gallery | High quality | Low quality |
+|---|---|---|
+| Model Lab | [Day](log/crescent/lab-high-day.jpg) · [Night](log/crescent/lab-high-night.jpg) | [Day](log/crescent/lab-low-day.jpg) · [Night](log/crescent/lab-low-night.jpg) |
+| Brookwood | [08:50 southbound](log/crescent/brookwood-high-day.jpg) · [23:10 northbound](log/crescent/brookwood-high-night.jpg) | [08:50 southbound](log/crescent/brookwood-low-day.jpg) · [23:10 northbound](log/crescent/brookwood-low-night.jpg) |
+
 ### 2026-11-23 — The High and Memorial Arts Building
 
 Across Sifly Piazza, Meier's atrium and Piano's rows of daylight scoops now read as two different buildings. Their roofs share one 126-vertex map outline. Walking its perimeter on the 3DEP grid revealed 7.8 m of relief, enough to expose a basement on the service side. Both museum wings rise from the piazza grade while the foundation drops to the hillside. Across the square, the Memorial Arts Building's illuminated lobby sits behind the tall Peachtree piers. Uses the existing Midtown tile and requires a web rebuild. [Daylight, full night, camera and survey](arts-campus.md)
