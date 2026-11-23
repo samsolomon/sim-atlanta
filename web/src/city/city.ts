@@ -1556,21 +1556,34 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
   const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
   let farTrees = false;
-  let detailAreas = -1;
+  // Areas (and the downtown World) that already carry the current detail; a newly mounted or
+  // swapped area is caught here without allocating every frame.
+  let detailed = new WeakSet<object>();
   function treeDetail() {
-    const areas = [terrain, east, north, ...(mosaic ? [...mosaic.areas.values(), ...mosaic.patches.values()] : [])];
     const d = camera.position.distanceTo(controls.target);
     const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    // Off the mosaic the list is always [terrain, east, north]; count the mounted ones, so an
-    // area that arrives later still gets the current detail.
-    const mounted = areas.filter(Boolean).length;
-    if (far === farTrees && mounted === detailAreas) return;
-    farTrees = far;
-    detailAreas = mounted;
+    if (far !== farTrees) { farTrees = far; detailed = new WeakSet(); }
     // Limb shadows stay on until a moving-camera A16 run shows they cost something.
     const detail = { farTrees: far };
-    world.setDetail(detail);
-    for (const a of areas) a?.setDetail(detail);
+    let applied = false;
+    const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
+      if (!a || detailed.has(a)) return;
+      a.setDetail(detail);
+      detailed.add(a);
+      applied = true;
+    };
+    apply(world);
+    apply(terrain);
+    apply(east);
+    apply(north);
+    if (mosaic) {
+      for (const a of mosaic.areas.values()) apply(a);
+      for (const a of mosaic.patches.values()) apply(a);
+    }
+    if (!applied) return;
+    // Limbs cast shadows, and the low shadow map only redraws on camera steps.
+    renderer.shadowMap.needsUpdate = true;
+    if (perfOverrides.hide.size) perf.applyHide();
   }
   raf = requestAnimationFrame(frame);
 

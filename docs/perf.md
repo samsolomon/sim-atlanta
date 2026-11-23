@@ -87,7 +87,7 @@ A Studio dry run at the A16 viewport (fps there is meaningless, but counts and m
 `scripts/perf-budget.mjs` builds `web/`, serves it, runs both tiers in headless Chrome, and fails if any ceiling is exceeded.
 The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and the A16's ready time come only from the device runs.
 
-| Low (phone), main at 3526f38 | Measured | Target |
+| Low (phone), main 3526f38 + far-tree LOD | Measured | Target |
 | --- | --- | --- |
 | Triangles | 3.33M (3.70M before the far-tree LOD, 4.77M before tree-species #306 and parks #315) | 2.0M |
 | Draw calls | 541 | 500 |
@@ -95,7 +95,7 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 | Texture MB | 109 (160 before ground-contact #308) | 100 |
 | Geometry MB | 195 | 200 |
 | JS heap after GC | 411 MB | 400 MB |
-| A16 fps (default view, still camera) | 12.8 on main before these PRs | 30 |
+| A16 fps (default view, still camera) | 15.9 with the far-tree LOD, before #315 (12.8 on main this morning) | 30 |
 | A16 ready | 20 s | 8 s |
 
 | High (desktop) | Measured | Target |
