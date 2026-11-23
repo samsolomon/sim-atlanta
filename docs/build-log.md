@@ -2445,3 +2445,18 @@ The Atlanta Streetcar joins the lab as a Siemens S70, built from Siemens's Atlan
 ### 2026-11-23 — Card tiers that follow the train
 
 Review found two ways #239's card rows could overstate a tier. Every tapped Crescent car claimed the inferred Brookwood berth, even out on a continuation, because the flag was attached to the whole Brookwood model. And both rows were captured once at tap time, so "inferred track" stayed on a North Line card after the train had gone back underground, and never appeared for a link follow. City now reports per train, on every card refresh, whether a car is drawn on the North Line open cut, and whether a Crescent consist is berthed within 3 m of its island berth. Requires a web rebuild only. [Crescent card on the stretch and at the island](log/ui/area-note/compare-crescent-berth-card.jpg)
+
+### 2026-11-23 — Two oaks, and why a tree needs branches before leaves
+
+The willow oak and water oak are Atlanta's two most common oaks, so they are the first species after the ginkgo to reach the model lab. Each comes in three renderings for Sam to choose from.
+
+My first pass filled each species' crown outline with evenly spaced leaf cards. It looked tidy, and every tree looked the same. Sam's ginkgo review put the reason plainly: you recognise a species by how its leaves hang from the branches, not by its colour or outline. The oaks now carry their foliage the way the branches do. Each scaffold limb ends in a rounded mass of small leaf clusters, lit on top and shaded beneath, with sky between the masses. The skeleton is built from those masses, so every limb ends inside one.
+
+**The leaves still fit the budget.** Every option costs 191–193 triangles at high detail and 81–105 at low, against the generic tree's 196/156. The leading option uses the ginkgo's chosen technique: leaf cards with warm, silhouette-only ink, plus leaf tips on the eight nearest trees.
+
+**Leaves fall one at a time.** Each painted leaf in the atlas stores its own drop order in its alpha. A card throws away the leaves above its tree's leaf share, so a crown thins evenly instead of losing whole clumps. That matters for the water oak, which is semi-evergreen this far south. USA-NPN puts its crown at about 37% in December, and the lab shows that thin, see-through crown on 20 December.
+
+**The numbers are real.** Sizes come from NC State, Clemson and UF, from 478 willow oaks and 446 water oaks measured on the Georgia Tech campus, and from Trees Atlanta's champions. One "champion" willow oak is listed at 41.9 m, far above every other record, and is probably an error.
+
+**Some evidence is missing.** Commons has no full-tree photograph of either oak taken in Georgia, so the sheets compare against Mississippi, Arlington and Virginia trees, and the Atlanta calendar is inferred from North Carolina and Alabama phenology. [Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [All species, 20 Nov](log/ui/tree-species/lineup-oaks-fall.jpg)
+

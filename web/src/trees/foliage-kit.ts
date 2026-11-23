@@ -1,12 +1,20 @@
 /**
- * Species-independent foliage builders shared by the lab's rendering options. Sprays are foliage
- * laid along limbs: branch sleeves, flame tufts and spray cards, plus the fan-leaf chip. Each
- * species keeps its own skeleton, sprays, shading, atlas and calendar (ginkgo-variants.ts).
+ * Species-independent foliage builders shared by every lab rendering option
+ * (ginkgo-variants.ts, looks.ts). Two families:
+ *
+ *   sprays  foliage laid along limbs: branch sleeves, flame tufts, spray cards, fan chips
+ *   masses  foliage packed into a crown envelope: faceted lobes, unit cards, a faceted core
+ *
+ * Plus the painted leaf atlases for cards, and a two-tone foliage material whose leaf masses
+ * mix two seasonal colours and drop one by one. Each species keeps its own skeleton, sprays,
+ * shading and calendar.
  */
 import * as THREE from 'three';
-import { Builder } from '../vignette/geom';
+import { Builder, rng } from '../vignette/geom';
+import type { Unit } from './broadleaf';
 import type { V3 } from './species';
 
+export type LeafShape = 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval';
 /** Vertex shade for a spray from its depth (0 core, 1 rim) and how far it points up. */
 export type SprayShade = (depth: number, up: number) => THREE.Color;
 
@@ -101,3 +109,235 @@ export function fanGeometry() {
 }
 
 
+// ---- leaf atlas ----------------------------------------------------------------------------
+
+const atlases = new Map<LeafShape, THREE.Texture>();
+/** Atlas cell size in pixels; leaf sizes below are for a 128 px cell. */
+const CELL = 256;
+/** Leaf size multiplier in cells 0, 1 and 2: coarse, medium, fine. */
+const LEAF_SCALE = [1.5, 0.85, 0.45];
+/** The solid cell's alpha: a faceted core is cut once the crown is below about 60% in leaf. */
+const CORE_ALPHA = 0.72;
+/** Cell (0–3) of the 2×2 atlas; cell 3 is solid, for faceted cores that share the cards' material. */
+const SOLID = 3;
+function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
+  g.beginPath();
+  switch (shape) {
+    case 'narrow': g.ellipse(0, s * 0.5, s * 0.13, s * 0.5, 0, 0, Math.PI * 2); break;
+    case 'spatulate':
+      g.moveTo(0, 0); g.lineTo(-s * 0.12, s * 0.45); g.quadraticCurveTo(-s * 0.36, s * 0.95, 0, s);
+      g.quadraticCurveTo(s * 0.36, s * 0.95, s * 0.12, s * 0.45); g.closePath(); break;
+    case 'oval': g.ellipse(0, s * 0.5, s * 0.3, s * 0.5, 0, 0, Math.PI * 2); break;
+    case 'lobed':
+      for (let k = 0; k < 4; k++) { const y = s * (0.25 + k * 0.2); g.ellipse(0, y, s * (0.32 - k * 0.04), s * 0.13, 0, 0, Math.PI * 2); }
+      break;
+    case 'palmate':
+      for (const a of [-0.8, 0, 0.8]) { g.moveTo(0, 0); g.ellipse(Math.sin(a) * s * 0.35, Math.cos(a) * s * 0.4, s * 0.2, s * 0.32, -a, 0, Math.PI * 2); }
+      break;
+    case 'star':
+      for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2, rr = k % 2 ? s * 0.18 : s * 0.5; g.lineTo(Math.sin(a) * rr, s * 0.5 + Math.cos(a) * rr); }
+      g.closePath(); break;
+    case 'tulip':
+      g.moveTo(0, 0); g.lineTo(-s * 0.45, s * 0.35); g.lineTo(-s * 0.4, s * 0.85); g.lineTo(-s * 0.12, s * 0.8);
+      g.lineTo(0, s * 0.92); g.lineTo(s * 0.12, s * 0.8); g.lineTo(s * 0.4, s * 0.85); g.lineTo(s * 0.45, s * 0.35); g.closePath(); break;
+  }
+}
+/** Leaf sizes in atlas pixels (a 128 px cell spans a card about 2–3 m across). */
+const LEAF_PX: Record<LeafShape, [number, number]> = {
+  narrow: [9, 13], spatulate: [11, 15], oval: [12, 17], lobed: [13, 17], palmate: [12, 16], star: [13, 17], tulip: [13, 17],
+};
+/**
+ * Grey leaves on a transparent ground, three cells of rounded sprays and one solid cell. The
+ * material's vertex and instance colours tint them, so one atlas serves every season.
+ */
+export function leafAtlas(shape: LeafShape): THREE.Texture | null {
+  const hit = atlases.get(shape);
+  if (hit) return hit;
+  // Tests run without a DOM; geometry and counts do not need the paint.
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = c.height = 2 * CELL;
+  const g = c.getContext('2d')!;
+  const r = rng(shape.length * 977);
+  const [lo, hi] = LEAF_PX[shape];
+  const k = CELL / 128;
+  for (let cell = 0; cell < 4; cell++) {
+    const ox = (cell % 2) * CELL, oy = Math.floor(cell / 2) * CELL;
+    if (cell === SOLID) { g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`; g.fillRect(ox + 2, oy + 2, CELL - 4, CELL - 4); continue; }
+    // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).
+    const ls = LEAF_SCALE[cell] * k;
+    // A rounded spray: dense in the middle, ragged at the edge, twigs underneath.
+    g.strokeStyle = 'rgba(105,95,72,0.97)'; g.lineWidth = 1.3 * k;
+    for (let j = 0; j < 5; j++) {
+      const a = r() * Math.PI * 2;
+      g.beginPath(); g.moveTo(ox + 64 * k, oy + 70 * k); g.lineTo(ox + (64 + Math.cos(a) * 40) * k, oy + (70 + Math.sin(a) * 40) * k); g.stroke();
+    }
+    const count = Math.round(5200 / (lo * hi * 0.35) / LEAF_SCALE[cell] ** 2);
+    for (let i = 0; i < count; i++) {
+      const rad = 54 * Math.sqrt(r()) * (0.75 + 0.25 * Math.sin(i));
+      const a = r() * Math.PI * 2;
+      const x = ox + (64 + Math.cos(a) * rad) * k, y = oy + (64 + Math.sin(a) * rad) * k;
+      const s = (lo + r() * (hi - lo)) * ls;
+      g.save(); g.translate(x, y); g.rotate(r() * Math.PI * 2);
+      const v = Math.round(175 + 80 * (0.4 + 0.6 * r()) * (1 - rad / 90));
+      // Alpha is each leaf's drop order: the material cuts it against the tree's leaf share.
+      g.fillStyle = `rgba(${v},${v},${v},${(0.56 + 0.44 * r()).toFixed(3)})`;
+      leafPath(g, shape, s); g.fill();
+      g.restore();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  atlases.set(shape, tex);
+  return tex;
+}
+/**
+ * Pick the atlas cell whose leaves come out about `leafM` long on a card `cardM` across, so
+ * leaves look the same size on a sapling's small cards and a specimen's big ones.
+ */
+export function cellFor(cardM: number, leafM = 0.45) {
+  const want = leafM / (cardM * 11 / 128);
+  let best = 0;
+  LEAF_SCALE.forEach((sc, i) => { if (Math.abs(Math.log(sc / want)) < Math.abs(Math.log(LEAF_SCALE[best] / want))) best = i; });
+  return best;
+}
+const cellUV = (cell: number, u: number, v: number): [number, number] => [((cell % 2) + u) / 2, 1 - (Math.floor(cell / 2) + 1 - v) / 2];
+
+// ---- foliage geometry ----------------------------------------------------------------------
+
+/** Vertex shade: the rim and top bright, the core dark. Multiplies the season colour. */
+export function shade(depth: number, up: number) {
+  // Strong top-to-underside contrast, so each branch mass reads as its own rounded lump.
+  const k = 0.5 + 0.56 * Math.min(1, Math.max(0, depth * 0.55 + up * 0.45));
+  return new THREE.Color(k, k, k * 0.96);
+}
+
+/** Collects triangles with colour, UV and the per-mass tone and drop attributes. */
+export class FoliageBuilder {
+  pos: number[] = []; col: number[] = []; uv: number[] = []; mass: number[] = [];
+  tri(p: THREE.Vector3[], c: THREE.Color, u: Unit, uvs: [number, number][] = [cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5)]) {
+    p.forEach((v, i) => { this.pos.push(v.x, v.y, v.z); this.col.push(c.r, c.g, c.b); this.uv.push(...uvs[i]); this.mass.push(u.tone, u.drop); });
+  }
+  geometry() {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
+    g.setAttribute('aMass', new THREE.Float32BufferAttribute(this.mass, 2));
+    g.computeVertexNormals();
+    return g;
+  }
+}
+
+/** A jittered bipyramid per mass, tumbled: 6 or 8 flat facets. */
+export function lobes(b: FoliageBuilder, units: Unit[], seed: number, sides: 3 | 4 = 4) {
+  const r = rng(seed);
+  for (const u of units) {
+    const c = new THREE.Vector3(...u.c);
+    // A random tumble, so neighbouring masses never stack into tiers of matching pyramids.
+    const rot = new THREE.Quaternion().setFromEuler(new THREE.Euler((r() - 0.5) * 0.6, r() * Math.PI, (r() - 0.5) * 0.6));
+    const j = () => 0.8 + r() * 0.4;
+    const pt = (x: number, y: number, z: number) => c.clone().add(new THREE.Vector3(x, y, z).applyQuaternion(rot));
+    const top = pt(0, u.r * 0.62 * j(), 0);
+    const bot = pt(0, -u.r * 0.5 * j(), 0);
+    const ring = Array.from({ length: sides }, (_, i) => i / sides * Math.PI * 2).map(a => pt(Math.cos(a) * u.r * j(), (r() - 0.5) * u.r * 0.3, Math.sin(a) * u.r * j()));
+    for (let i = 0; i < sides; i++) {
+      const p = ring[i], q = ring[(i + 1) % sides];
+      b.tri([top, q, p], shade(u.depth, 0.9), u);
+      b.tri([bot, p, q], shade(u.depth * 0.6, -0.5), u);
+    }
+  }
+}
+
+/** Two crossed cards per mass: one tangent to the crown (its silhouette), one radial (its depth). */
+export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25) {
+  const r = rng(seed);
+  for (const u of units) {
+    const c = new THREE.Vector3(...u.c);
+    const n = new THREE.Vector3(...u.n);
+    const t1 = new THREE.Vector3(0, 1, 0).cross(n);
+    if (t1.lengthSq() < 1e-4) t1.set(1, 0, 0);
+    t1.normalize().applyAxisAngle(n, (r() - 0.5) * 1.2);
+    const t2 = new THREE.Vector3().crossVectors(n, t1).normalize();
+    const w = u.r * scale;
+    const cell = cellFor(w * 2);
+    for (const [ax, ay] of [[t1, t2], [t1, n]] as const) {
+      const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => c.clone().addScaledVector(ax, x * w).addScaledVector(ay, y * w));
+      const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(cell, x, y));
+      const col = shade(u.depth, n.y);
+      b.tri([p[0], p[1], p[2]], col, u, [uv[0], uv[1], uv[2]]);
+      b.tri([p[0], p[2], p[3]], col, u, [uv[0], uv[2], uv[3]]);
+    }
+  }
+}
+
+// ---- material ------------------------------------------------------------------------------
+
+/**
+ * Lambert foliage with two tones per tree: instance colour is tone A, `aToneB` tone B, and each
+ * leaf mass mixes them by its own `aMass.x`. A mass whose drop order `aMass.y` is above the
+ * tree's leaf share `aLeaves` collapses to nothing.
+ */
+export function twoToneFoliage(opts: THREE.MeshLambertMaterialParameters) {
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
+  const textured = !!opts.map;
+  // Which leaves exist: shared with the ink's foliage mask (userData.maskShader), so the mask
+  // traces only the leaves actually drawn.
+  const visibility = (sh: { vertexShader: string; fragmentShader: string }) => {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec2 aMass;\nattribute float aLeaves;\nvarying float vLeaves;')
+      .replace('#include <begin_vertex>', textured
+        ? '#include <begin_vertex>\nvLeaves = aLeaves;'
+        : '#include <begin_vertex>\nvLeaves = aLeaves;\nif (aMass.y > aLeaves) transformed = vec3(0.0);');
+    // Textured cards thin leaf by leaf: each painted leaf's alpha (0.56–1) is its drop order.
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vLeaves;')
+      .replace('#include <alphatest_fragment>', textured
+        ? '#include <alphatest_fragment>\nif (diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.005) discard;'
+        : '#include <alphatest_fragment>');
+  };
+  m.onBeforeCompile = (sh) => {
+    visibility(sh);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec3 aToneB;')
+      .replace('#include <color_vertex>', `#include <color_vertex>
+#ifdef USE_INSTANCING_COLOR
+  vColor.xyz = color.xyz * mix(instanceColor.xyz, aToneB, aMass.x);
+#endif`);
+  };
+  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '');
+  m.userData.maskShader = visibility;
+  m.userData.maskKey = 'species-look' + (textured ? ':map' : '');
+  return m;
+}
+
+/** Leaf length and width in metres for near leaf tips, by leaf shape. */
+const TIP_LEAF: Record<LeafShape, [number, number]> = {
+  narrow: [0.42, 0.09], spatulate: [0.36, 0.16], oval: [0.4, 0.2], lobed: [0.42, 0.24], palmate: [0.38, 0.3], star: [0.38, 0.3], tulip: [0.4, 0.3],
+};
+/**
+ * Near-range leaf tips: small two-triangle leaves on the outer leaf masses, so a crown seen
+ * close up shows leaves at its edge. Each tip takes its mass's tone and drop order.
+ */
+export function leafTips(b: FoliageBuilder, units: Unit[], shape: LeafShape, perUnit: number, seed: number) {
+  const r = rng(seed);
+  const [len, wid] = TIP_LEAF[shape];
+  for (const u of units) {
+    if (u.depth < 0.6) continue;
+    const n = new THREE.Vector3(...u.n);
+    for (let k = 0; k < perUnit; k++) {
+      // On the mass's outward half, just proud of the cards.
+      const dir = new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize().addScaledVector(n, 1.2).normalize();
+      const c = new THREE.Vector3(...u.c).addScaledVector(dir, u.r * (1.05 + r() * 0.2));
+      const along = new THREE.Vector3(r() - 0.5, r() - 0.2, r() - 0.5).normalize();
+      const across = new THREE.Vector3().crossVectors(along, dir).normalize();
+      const s = 0.8 + r() * 0.5;
+      const base = c.clone().addScaledVector(along, -len * s / 2), tip = c.clone().addScaledVector(along, len * s / 2);
+      const l = c.clone().addScaledVector(across, wid * s), rr = c.clone().addScaledVector(across, -wid * s);
+      const col = shade(0.9, dir.y).multiplyScalar(0.95 + r() * 0.15);
+      b.tri([base, l, tip], col, u);
+      b.tri([base, tip, rr], col, u);
+    }
+  }
+}
