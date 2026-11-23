@@ -61,14 +61,18 @@ import { createCentralLibrary } from './central-library';
 import { createPeachtreeCenter } from './peachtree-center';
 import { createPeachtree191 } from './peachtree-191';
 import { createHyattRegency } from './hyatt-regency';
+import { createAltitudeApartments } from './altitude-apartments';
+import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
+import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
 import { createEquitable } from './equitable';
 import { createGrady } from './grady';
@@ -120,6 +124,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   progress?: (label: string) => void;
   areaNote?: (text: string | null) => void;
   trains: () => TrainState[];
+  /** Where the timetable stops trains along a path (for platform berthing). */
+  stopDistances?: (pathId: string, stopId: string) => number[];
   clockMs: () => number;
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
@@ -230,14 +236,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let peachtreeCenter: ReturnType<typeof createPeachtreeCenter> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
   let hyatt: ReturnType<typeof createHyattRegency> = null;
+  let altitude: ReturnType<typeof createAltitudeApartments> = null;
+  let hilton: ReturnType<typeof createHiltonAtlanta> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let samNunn: ReturnType<typeof createSamNunn> = null;
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
+  let russell: ReturnType<typeof createRussellBuilding> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
@@ -269,8 +279,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterCenter = peachtreeCenter?.buildings ?? remaining;
         marquis = createMarriottMarquis(afterCenter, ground);
         const hotelSite = marquis?.buildings ?? afterCenter;
-        hyatt = createHyattRegency(hotelSite, ground);
-        const afterHyatt = hyatt?.buildings ?? hotelSite;
+        hilton = createHiltonAtlanta(hotelSite, ground);
+        const afterHilton = hilton?.buildings ?? hotelSite;
+        altitude = createAltitudeApartments(afterHilton, ground);
+        const afterAltitude = altitude?.buildings ?? afterHilton;
+        hyatt = createHyattRegency(afterAltitude, ground);
+        const afterHyatt = hyatt?.buildings ?? afterAltitude;
         twelve = createTwelveCentennial(afterHyatt, ground);
         const afterTwelve = twelve?.buildings ?? afterHyatt;
         truist = createTruistPlaza(afterTwelve, groundAt);
@@ -292,8 +306,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
         const afterStadium = stadium?.buildings ?? stadiumSite;
-        centennial = createCentennialTower(afterStadium, ground);
-        const afterCentennial = centennial?.buildings ?? afterStadium;
+        russell = createRussellBuilding(afterStadium, ground);
+        const afterRussell = russell?.buildings ?? afterStadium;
+        centennial = createCentennialTower(afterRussell, ground);
+        const afterCentennial = centennial?.buildings ?? afterRussell;
         capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
@@ -308,13 +324,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         candler = createCandler(afterGrady, ground);
         const afterCandler = candler?.buildings ?? afterGrady;
         equitable = createEquitable(afterCandler, ground);
-        const city = { ...vd, buildings: equitable?.buildings ?? afterCandler,
+        const samNunnSite = equitable?.buildings ?? afterCandler;
+        samNunn = createSamNunn(samNunnSite, ground);
+        const city = { ...vd, buildings: samNunn?.buildings ?? samNunnSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
         if (marquis) world.group.add(marquis.group);
+        if (hilton) world.group.add(hilton.group);
+        if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
         if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
@@ -329,10 +349,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
+        if (russell) world.group.add(russell.group);
         if (centennial) world.group.add(centennial.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (samNunn) world.group.add(samNunn.group);
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
@@ -617,6 +639,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(rail.mesh);
     scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
     trains.setTracks(tracks, union);
+    if (options.stopDistances) trains.setBerths(mod.kingMemorialBerths(rf, extended, pack.station?.platforms ?? [], options.stopDistances));
     trainBounds = union;
     trainRail = extended.rail;
     trainEdges[1].constant = eastBounds.maxX;
@@ -781,6 +804,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     eastRail?.setNight(night);
     hyatt?.setNight(night);
     marquis?.setNight(night);
+    hilton?.setNight(night);
+    altitude?.setNight(night);
     twelve?.setNight(night);
     truist?.setNight(night);
     westin?.setNight(night);
@@ -793,9 +818,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     twoPeachtree?.setNight(night);
     georgiaPower?.setNight(night);
     georgiaPacific?.setNight(night);
+    russell?.setNight(night);
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    samNunn?.setNight(night);
     candler?.setNight(night);
     equitable?.setNight(night);
     grady?.setNight(night);

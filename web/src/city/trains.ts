@@ -8,6 +8,33 @@ import { MARTA_TRACK_OFFSET, trackVisible, type Alignment, type VData } from '..
 import type { prepareEastCut, ServiceTrack } from './east-cut';
 
 type Segment = { al: Alignment; i: number };
+
+/**
+ * A platform a scheduled stop berths at, in path metres: the GTFS stop distance and the usable
+ * platform ends. Built only from sourced platform geometry; paths without one are unaffected.
+ */
+export interface Berth { stopS: number; p0: number; p1: number }
+/** Distance before and after a stop over which a berthing shift eases in and out. */
+export const BERTH_REACH = 200;
+
+/**
+ * How far (path metres, + = forward in travel) to draw a scheduled consist so it berths inside
+ * the platform. The timetable position is unchanged. The shift is 0 beyond BERTH_REACH and full at
+ * the stop, so a moving train never jumps or stops early. It moves the consist only far enough to
+ * fit; a consist longer than the platform is centred on it.
+ */
+export function berthShift(s: number, lengthM: number, berths: readonly Berth[] | undefined): number {
+  if (!berths?.length) return 0;
+  let best: Berth | undefined;
+  for (const b of berths) if (Math.abs(s - b.stopS) < BERTH_REACH && (!best || Math.abs(s - b.stopS) < Math.abs(s - best.stopS))) best = b;
+  if (!best) return 0;
+  const half = lengthM / 2;
+  const target = lengthM > best.p1 - best.p0 ? (best.p0 + best.p1) / 2
+    : Math.min(Math.max(best.stopS, best.p0 + half), best.p1 - half);
+  const t = 1 - Math.abs(s - best.stopS) / BERTH_REACH;
+  const w = t * t * (3 - 2 * t); // smoothstep: no kink where the shift begins
+  return w * (target - best.stopS);
+}
 const SNAP = 18;
 
 /** Match a GTFS position to the same smoothed centreline used to build the physical rails.
@@ -60,6 +87,10 @@ export class CityTrains {
   private direction = new THREE.Vector3();
   private orientation = new THREE.Matrix4();
   surfaceCars = 0;
+
+  private berths = new Map<string, Berth[]>();
+  /** Platform berths per path; scheduled consists are drawn inside them (see berthShift). */
+  setBerths(berths: Map<string, Berth[]>) { this.berths = berths; }
 
   constructor(alignments: Alignment[], private manifest: SceneManifest, private bounds: VData['bounds'],
     private colors: Map<string, string>, private clip: THREE.Plane[],
@@ -115,6 +146,9 @@ export class CityTrains {
       const pad = units * pitch / 2;
       if (x < b.minX - pad || x > b.maxX + pad || z < b.minZ - pad || z > b.maxZ + pad) continue;
       const track = this.tracks.locate(x, z, t.heading);
+      // Live positions are drawn as reported; only timetable positions berth at a platform.
+      const berth = t.s.tier === 'scheduled'
+        ? berthShift(t.s.value, units * pitch - CAR_GAP, this.berths.get(t.pathId)) : 0;
       const mapped = this.cut?.paths.get(t.pathId);
       for (let i = 0; i < units; i++) {
         // The Map symbol is centred on the source position. Both ends can straddle a portal.
@@ -132,7 +166,7 @@ export class CityTrains {
         }
         if (!track) continue;
         const { al, s, dir } = track;
-        const sc = s + dir * offset;
+        const sc = s + dir * (offset + berth);
         if (!carInDaylight(al, sc)) continue;
         const p = al.line.at(sc);
         const off = dir * MARTA_TRACK_OFFSET;
