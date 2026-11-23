@@ -58,6 +58,7 @@ import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
+import { createRitzCarlton } from './ritz-carlton-atlanta';
 import { createFultonCourthouse } from './fulton-courthouse';
 import { createPeachtreeOffices } from './peachtree-offices';
 import { createWilliamOliver } from './william-oliver';
@@ -263,6 +264,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
+  let ritzCarlton: ReturnType<typeof createRitzCarlton> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
   let williamOliver: ReturnType<typeof createWilliamOliver> = null;
@@ -343,8 +345,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
         const afterFultonBank = fultonBank?.buildings ?? afterFiftyFiveParkPlace;
-        fultonCourthouse = createFultonCourthouse(afterFultonBank, ground);
-        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterFultonBank;
+        ritzCarlton = createRitzCarlton(afterFultonBank, ground);
+        const afterRitzCarlton = ritzCarlton?.buildings ?? afterFultonBank;
+        fultonCourthouse = createFultonCourthouse(afterRitzCarlton, ground);
+        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterRitzCarlton;
         peachtreeOffices = createPeachtreeOffices(afterFultonCourthouse, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterFultonCourthouse;
         williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
@@ -418,6 +422,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
+        if (ritzCarlton) world.group.add(ritzCarlton.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
         if (williamOliver) world.group.add(williamOliver.group);
@@ -976,6 +981,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     parkPlaceTower?.setNight(night);
     fiftyFiveParkPlace?.setNight(night);
     fultonBank?.setNight(night);
+    ritzCarlton?.setNight(night);
     fultonCourthouse?.setNight(night);
     peachtreeOffices?.setNight(night);
     williamOliver?.setNight(night);
