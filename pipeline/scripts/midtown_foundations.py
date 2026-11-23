@@ -77,6 +77,8 @@ def bake():
             low, high = footprint_heights(b["rings"], dem, m["bounds"], m["stepM"])
             h = b["h"] if b["h"] is not None else (3.6*b["floors"] if b["floors"] else 8)
             # A building drawn as mapped parts is buried first at its lowest grounded roof.
+            # Even a small part sets the floor: its walls run down to the footing, so
+            # lifting the floor leaves nothing floating, while a sunk part vanishes.
             grounded = [p["h"] for p in b.get("parts", []) if not p.get("minH")]
             if grounded:
                 h = min(grounded)

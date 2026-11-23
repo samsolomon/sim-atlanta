@@ -9,13 +9,16 @@ export function skylineReflection(buildings: VBuilding[], x: number, z: number, 
   const pixels = new Uint8Array(width * height * 4);
   const walls = [];
   for (const building of buildings) {
-    const ring = building.rings[0];
-    if (!ring?.length || !building.h || ring.every(([px, pz]) => Math.hypot(px - x, pz - z) > 700)) continue;
-    const base = groundAt(...ring[0]);
+    const ground = building.rings[0];
+    if (!ground?.length || ground.every(([px, pz]) => Math.hypot(px - x, pz - z) > 700)) continue;
+    const base = groundAt(...ground[0]);
     if (base == null || !Number.isFinite(base)) continue;
-    for (let i = 0; i < ring.length; i++) {
+    // Mapped building parts reflect as drawn, each with its own top and underside.
+    const masses = building.parts?.length ? building.parts.map(p => ({ ring: p.rings[0], lo: p.minH ?? 0, hi: p.h }))
+      : building.h ? [{ ring: ground, lo: 0, hi: building.h }] : [];
+    for (const { ring, lo, hi } of masses) for (let i = 0; i < ring.length; i++) {
       const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
-      walls.push({ x: ax - x, z: az - z, dx: bx - ax, dz: bz - az, base: base - eyeY, top: base + building.h - eyeY });
+      walls.push({ x: ax - x, z: az - z, dx: bx - ax, dz: bz - az, base: base + lo - eyeY, top: base + hi - eyeY });
     }
   }
   const rowAt = (elevation: number, distance: number) =>

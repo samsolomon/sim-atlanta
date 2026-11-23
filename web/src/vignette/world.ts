@@ -886,9 +886,10 @@ export class World {
       // Walls (run to h + parapet), roof slightly below the parapet top.
       const parapet = finish?.parapet ?? (h - mass.minH > 6 ? 1.1 : 0);
       for (const [ringIndex, ring] of mass.rings.entries()) {
-        if (finish?.drawRing) {
+        // Finishes describe a whole footprint; mapped parts use the plain walls.
+        if (finish?.drawRing && !bd.parts?.length) {
           const first = b.pos.length / 3;
-          finish.drawRing(b, ring, ringIndex > 0, mass.minH > 0 ? wallBase : foot, roofY + parapet, shopLights);
+          finish.drawRing(b, ring, ringIndex > 0, foot, roofY + parapet, shopLights);
           for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
           continue;
         }
@@ -914,7 +915,7 @@ export class World {
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
-      finish?.dressRoof?.(b, outer, roofY);
+      if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
         base.push(mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
@@ -923,7 +924,7 @@ export class World {
         style.push(-1);
         base.push(0);
       }
-      if (finish?.dressRoof) continue;
+      if ((finish?.dressRoof && !bd.parts?.length) || mass.minH > 0) continue;
       // Rooftop clutter: HVAC units, vents and a stair/elevator penthouse on bigger roofs.
       const area = ringArea(outer);
       const xs = outer.map((p) => p[0]);

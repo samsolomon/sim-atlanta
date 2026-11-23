@@ -98,19 +98,11 @@ def part_height(tags, parent_tags, king=False, tallest=None):
 
 
 def resolve(masses):
-    """Merge overlapping masses with equal ranges, then trim a mass wherever a
-    mass spanning its whole vertical range covers it (the taller one wins)."""
+    """Trim each mass wherever an earlier mass spans its whole vertical range
+    (taller first; equal ranges by id), so every part keeps its own id and tier."""
     from shapely.ops import unary_union
 
-    merged = {}
-    for m in masses:
-        key = (round(m["top"], 2), round(m["bottom"], 2))
-        if key in merged:
-            merged[key]["shape"] = merged[key]["shape"].union(m["shape"])
-            merged[key]["id"] = min(merged[key]["id"], m["id"])
-        else:
-            merged[key] = dict(m)
-    masses = sorted(merged.values(), key=lambda m: (-m["top"], m["bottom"]))
+    masses = sorted(masses, key=lambda m: (-m["top"], m["bottom"], m["id"]))
     for i, m in enumerate(masses):
         covers = [o["shape"] for o in masses[:i] if o["bottom"] <= m["bottom"] and o["top"] >= m["top"]]
         if covers:
@@ -121,8 +113,9 @@ def resolve(masses):
 def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
     """Give each drawn building its mapped building:part masses.
 
-    Parts that overlap with the same vertical range are merged; a part whose
-    range lies inside a taller, wider-spanning part is trimmed by it. Whatever
+    A part whose vertical range lies inside another part's is trimmed by it.
+    Parts inside an outline City does not draw (roofs, stations, railway
+    buildings, slivers) are left to whatever replaces that outline. Whatever
     the parts leave of the parent keeps the parent's height, capped by its
     lowest part when the parts map at least half the plan. Parts outside every outline become buildings.
     """
@@ -142,7 +135,7 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
             orphans.append((ref, tags, shape))
 
     for b in buildings:
-        piece, tags, ref = pieces_by_id[b["id"]]
+        piece, tags, ref = pieces_by_id[id(b)]
         mine = by_parent.get(ref)
         if not mine:
             continue
@@ -171,9 +164,10 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
         # its lowest part. A sparse part (an entrance or canopy) leaves the parent as it was.
         podium_h = own
         if covered is not None and covered.area >= 0.5 * piece.area:
-            major = [m["top"] for m in grounded if m["shape"].area >= 0.1 * covered.area]
-            if min(major, default=own) < own:
-                podium_h, tier = min(major), "inferred"
+            major = [m for m in grounded if m["shape"].area >= 0.1 * covered.area]
+            lowest = min(major, key=lambda m: m["top"], default=None)
+            if lowest and lowest["top"] < own:
+                podium_h, tier = lowest["top"], lowest["tier"]
         rest = piece.difference(covered) if covered is not None else piece
         for poly in _polygons(rest, 20):
             if not poly.buffer(-0.75).is_empty:
@@ -244,7 +238,7 @@ def extract_context(raw, bounds, *, king=False, station_building=None, named_dec
                 buildings.append(dict(id=ident, cls=building,
                                       floors=int(levels) if levels.isdigit() else None,
                                       h=parse_height(tags.get("height")) if not king else None, rings=rings, name=tags.get("name")))
-                pieces_by_id[ident] = (part, tags, ref)
+                pieces_by_id[id(buildings[-1])] = (part, tags, ref)
             else:
                 cover.append(dict(kind=kind, sub=None, name=tags.get("name"), rings=rings))
 

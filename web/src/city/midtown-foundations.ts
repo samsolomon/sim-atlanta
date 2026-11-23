@@ -13,6 +13,8 @@ export function midtownFoundations<T extends TerrainCity>(city: T, sceneZero: nu
     if (!grade) return building;
     const [low, high] = grade;
     // A building drawn as mapped parts is buried first at its lowest grounded roof.
+    // Even a small part sets the floor: its walls run down to the footing, so
+    // lifting the floor leaves nothing floating, while a sunk part vanishes.
     const grounded = building.parts?.filter(part => !part.minH).map(part => part.h) ?? [];
     const height = grounded.length ? Math.min(...grounded)
       : building.h ?? (building.floors ? building.floors * 3.6 : 8);
