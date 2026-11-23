@@ -47,6 +47,7 @@ export function isConnectorCity(city: TerrainCity) {
       'king-memorial',
       'sweet-auburn',
       'north-band',
+      'midtown-south',
       'north-corner',
       'south-band',
       'south-corner',
