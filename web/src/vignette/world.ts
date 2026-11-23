@@ -1471,10 +1471,10 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           vec3 frame = diffuseColor.rgb * 0.82;
           float st = floor(vStyle + 0.5);
           float win = 0.0;
-          // Houses at 7–10 draw their own windows; keep the shader's off even after the distance fade.
+          // Houses at 7–10 and 12 draw their own windows; keep the shader's off even after the distance fade.
           float hasWin = 1.0;
           if (st > 2.5) {
-            // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle). Fine siding lines fade
+            // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle, 11 ashlar). Fine siding lines fade
             // to their average once a course is under a couple of pixels, so walls never shimmer.
 ${SIDING_GLSL}
             // Masonry foundation band below the first floor.
