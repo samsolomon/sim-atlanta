@@ -1,5 +1,5 @@
-import { ShapeUtils, Vector2 } from 'three';
-import { type P2 } from '../vignette/geom';
+import { DoubleSide, Mesh, MeshBasicMaterial, ShapeUtils, Vector2 } from 'three';
+import { Builder, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
 import plazas from './fixtures/midtown-marta.json';
@@ -39,6 +39,8 @@ function paving(shell: Shell, ring: number[][], ground: Ground) {
 }
 
 export function createMidtownMarta(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  if (site.id === 'osm:way:269637571') return artsBusCanopy(buildings, site, ground);
+  if (site.id === 'osm:way:269637886') return artsCenter(buildings, site, ground);
   if (site.id === 'osm:way:235006952' || site.id === 'osm:way:235006968')
     return midtownEntrance(buildings, site, ground);
   if (site.id !== 'osm:way:234939895' || site.rings.length !== 1) return null;
@@ -222,4 +224,136 @@ function midtownEntrance(buildings: VBuilding[], site: VBuilding, ground: Ground
     }
   }
   return shell.finish('#ffefd4', 0.72);
+}
+
+function artsCenter(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  const shell = localLandmarkShell(
+    buildings,
+    site,
+    'Arts Center station',
+    [0, 0],
+    [1, 0],
+    [
+      [427, -3910],
+      [420, -3950],
+    ],
+    0,
+    0,
+  );
+  if (!shell) return null;
+  const { body, lights, prism } = shell;
+  // This long western slope serves the bus loop at its lower level. The entrance
+  // projecting east meets the higher Arts Center Way plaza.
+  const entry = ground(450, -3931);
+  if (entry === null) return null;
+  // Paved boarding areas below the canopies rest on the same ground mesh as buses.
+  paving(shell, shell.ring, ground);
+  const soffit = entry + 3.6;
+  prism(shell.ring, soffit, soffit + 0.96, '#c7bcaa', '#bdb5a9');
+  for (let i = 0; i < 10; i++) {
+    const z = -3894 - i * 10.5,
+      x = 430.4 - i * 1.68;
+    for (const side of [-6.1, 5.1]) {
+      const base = ground(x + side, z);
+      if (base === null) continue;
+      body.box(1.2, soffit - base, 1.4, x + side, (base + soffit) / 2, z, '#a6a197');
+      lights.box(0.66, 0.16, 1.1, x + side + 1.4, soffit - 0.12, z, '#f0edd9');
+    }
+  }
+  // The projecting east entrance meets the mezzanine, above the bus-level bays.
+  const wing: P2[] = [
+    [430.8, -3920.8],
+    [452.61, -3924.42],
+    [450.38, -3938.14],
+    [428.5, -3934.5],
+  ];
+  prism(wing, entry - 0.65, entry + 0.08, '#ada69b', '#bcaf98');
+  for (const [x, z] of [
+    [451.3, -3925.8],
+    [449.5, -3936.6],
+  ])
+    body.box(0.7, 3.8, 0.8, x, entry + 1.8, z, '#c6bdab');
+  const lobby: P2[] = [
+    [425, -3910],
+    [433, -3911.25],
+    [426.8, -3951.25],
+    [418.8, -3950],
+  ];
+  prism(lobby, entry - 0.65, entry + 0.08, '#bcb1a1', '#bcb1a1');
+  prism(lobby, entry + 0.08, soffit - 0.12, '#55676b', '#92938a');
+  for (let bay = 0; bay < 9; bay++) {
+    const z = -3911.3 - bay * 4.6,
+      x = 433 - bay * 0.71;
+    body.box(0.28, 3.45, 0.2, x, entry + 1.82, z, '#a9aaa1');
+  }
+  for (let j = 0; j < 6; j++) body.box(0.8, 0.12, 0.48, 448.6 + j * 0.26, soffit - 0.12, -3935 + j * 1.8, '#efecd2');
+  // Passenger wayfinding pylon and low railing at the upper-level entrance.
+  const pylon = ground(461, -3930);
+  if (pylon !== null) {
+    body.box(0.85, 4.1, 0.42, 461, pylon + 2.05, -3930, '#465462');
+    lights.box(0.88, 0.5, 0.44, 461, pylon + 3.8, -3930, '#d0e4e1');
+  }
+  paving(shell, plazas['1035248909'], ground);
+  // Tiered seating and geometric color panels face the pedestrian approach.
+  for (let i = 0; i < 3; i++) {
+    const x = 453.4 + i * 1.35,
+      z = -3930,
+      base = ground(x, z);
+    if (base === null) continue;
+    const h = 0.4 * (3 - i);
+    body.box(1.35, h, 10, x, base + h / 2, z, '#7f9d4a');
+    lights.box(0.14, 0.19, 9.95, x + 0.68, base + h - 0.11, z, '#e7edb7');
+  }
+  const palette = ['#2d85ab', '#f2bc49', '#cb6753', '#efdbac', '#4aa8a4'];
+  const mural = new Builder();
+  const art = (u: number, h: number) => [451.2 + (u - 5.1) * 0.16, entry + 0.9 + h, -3936 + u];
+  for (let i = 0; i < 6; i++) {
+    const l = i * 1.7,
+      r = l + 1.7,
+      top = 2.45;
+    mural.tri(art(l, 0), art(r, top), art(r, 0), palette[i % palette.length]);
+    mural.tri(art(l, 0), art(l, top), art(r, top), palette[(i + 2) % palette.length]);
+  }
+  const result = shell.finish('#f7ebcd', 0.85);
+  const material = new MeshBasicMaterial({ vertexColors: true, side: DoubleSide });
+  result.group.add(new Mesh(mural.geometry(), material));
+  return {
+    ...result,
+    setNight(night: number) {
+      result.setNight(night);
+      material.color.setScalar(1 - 0.22 * night);
+    },
+  };
+}
+
+function artsBusCanopy(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  const shell = localLandmarkShell(
+    buildings,
+    site,
+    'Arts Center bus canopy',
+    [0, 0],
+    [1, 0],
+    [
+      [391, -3920],
+      [384, -3980],
+    ],
+    0,
+    0,
+  );
+  if (!shell) return null;
+  const grades = shell.ring.map(([x, z]) => ground(x, z));
+  if (!grades.every((y): y is number => y !== null)) return null;
+  paving(shell, shell.ring, ground);
+  const soffit = Math.max(...grades) + 4.2;
+  shell.prism(shell.ring, soffit, soffit + 0.68, '#b5ac9b', '#b8b2a4');
+  for (let bay = 0; bay < 11; bay++) {
+    const z = -3880 - bay * 10.5,
+      x = 401 - bay * 1.66;
+    const base = ground(x, z);
+    if (base === null) continue;
+    shell.body.box(1.25, soffit - base, 1.3, x, (base + soffit) / 2, z, '#a89f91');
+    shell.body.box(12, 0.42, 0.7, x, soffit - 0.19, z, '#aca699');
+    shell.lights.box(1.5, 0.13, 0.5, x + 3, soffit - 0.48, z, '#f1e9ce');
+  }
+  return shell.finish('#f5e8cb', 0.72);
 }
