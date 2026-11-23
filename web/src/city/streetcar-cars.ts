@@ -75,7 +75,7 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
   const geometry = s70Sections({ leadingA: true });
   const pool: THREE.Mesh[][] = [];
   // Drawn section footprints, for road traffic to yield to.
-  let footprints: { a: P2; b: P2 }[] = [];
+  let footprints: { a: P2; b: P2; y: number }[] = [];
   const v = new THREE.Vector3(),
     joint = new THREE.Vector3(),
     truck = new THREE.Vector3();
@@ -149,6 +149,7 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
         footprints.push({
           a: [mesh.position.x - dir.x * half, mesh.position.z - dir.z * half],
           b: [mesh.position.x + dir.x * half, mesh.position.z + dir.z * half],
+          y: mesh.position.y,
         });
       }
     }
@@ -161,9 +162,11 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
     update,
     /** Drawn section meshes, for Follow and picking. */
     cars: () => pool.flat().filter((m) => m.visible),
-    /** True where a drawn streetcar section (1.4 m half-width) lies within margin. */
-    occupied(x: number, z: number, margin: number) {
-      for (const { a, b } of footprints) {
+    /** True where a drawn streetcar section (1.4 m half-width) lies within margin. Given a
+     * height `y`, sections on another level (2.5 m or more apart, a bridge overhead) don't count. */
+    occupied(x: number, z: number, margin: number, y?: number) {
+      for (const { a, b, y: fy } of footprints) {
+        if (y !== undefined && Math.abs(y - fy) >= 2.5) continue;
         if (Math.min(a[0], b[0]) - margin - 2 > x || Math.max(a[0], b[0]) + margin + 2 < x) continue;
         if (Math.min(a[1], b[1]) - margin - 2 > z || Math.max(a[1], b[1]) + margin + 2 < z) continue;
         if (segDist(x, z, a, b) < 1.4 + margin) return true;
@@ -185,4 +188,20 @@ export function streetcarLanes(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
     halfWidth: 1.6,
     headings: line.pts.slice(1).map((b, i) => Math.atan2(b[0] - line.pts[i][0], b[1] - line.pts[i][1])),
   }));
+}
+
+/** Half a model car's width plus a little clearance. A car in the next lane (about 3.3 m
+ * from the streetcar's centreline) stays drawn; one in the streetcar's lane, or crossing its
+ * path, does not. */
+const CAR_HALF_WIDTH_M = 1;
+
+/** True when a car centred at (x, y, z), `lengthM` long and heading `headingRad` (clockwise from
+ * +z, as `Math.atan2(dx, dz)`), would overlap a drawn streetcar: its centre or either end
+ * comes within the streetcar's half width plus the car's, on the same level. */
+export function streetcarCovers(streetcar: { occupied(x: number, z: number, margin: number, y?: number): boolean },
+  x: number, y: number, z: number, lengthM: number, headingRad: number) {
+  const hx = Math.sin(headingRad) * lengthM / 2, hz = Math.cos(headingRad) * lengthM / 2;
+  return streetcar.occupied(x, z, CAR_HALF_WIDTH_M, y)
+    || streetcar.occupied(x + hx, z + hz, CAR_HALF_WIDTH_M, y)
+    || streetcar.occupied(x - hx, z - hz, CAR_HALF_WIDTH_M, y);
 }
