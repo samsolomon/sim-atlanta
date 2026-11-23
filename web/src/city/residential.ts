@@ -281,15 +281,19 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
     const { at, n } = frontFrame(p, [a, d]);
     const role = sameEdge(a, d) ? 'front' : fn && n[0] * fn[0] + n[1] * fn[1] < -.7 ? 'rear' : 'side';
     // Window: trim surround, glass (lit or dark), a meeting rail and, on Colonials, shutters.
-    const win = (s: number, sill: number, w: number, h: number) => {
-      if (Math.abs(s) + w / 2 > len / 2 - .35) return;
+    // A paired window is two sashes side by side with a mullion between them.
+    const win = (s: number, sill: number, w: number, h: number, paired = false) => {
+      const total = paired ? w * 2 + .12 : w;
+      if (Math.abs(s) + total / 2 > len / 2 - .3) return;
       const y0 = base + sill, y1 = y0 + h;
-      b.quad(at(s - w / 2 - .08, .03, y0 - .08), at(s + w / 2 + .08, .03, y0 - .08), at(s + w / 2 + .08, .03, y1 + .08), at(s - w / 2 - .08, .03, y1 + .08), p.trim);
+      b.quad(at(s - total / 2 - .1, .03, y0 - .1), at(s + total / 2 + .1, .03, y0 - .1), at(s + total / 2 + .1, .03, y1 + .1), at(s - total / 2 - .1, .03, y1 + .1), p.trim);
       const glass = r() < .33 ? lit : b;
-      glass.quad(at(s - w / 2, .045, y0), at(s + w / 2, .045, y0), at(s + w / 2, .045, y1), at(s - w / 2, .045, y1), glass === lit ? '#6b7a80' : '#4c5a60');
-      if (high) b.quad(at(s - w / 2, .05, y0 + h * .48), at(s + w / 2, .05, y0 + h * .48), at(s + w / 2, .05, y0 + h * .52), at(s - w / 2, .05, y0 + h * .52), p.trim);
+      for (const c of paired ? [s - (w + .12) / 2, s + (w + .12) / 2] : [s])
+        glass.quad(at(c - w / 2, .045, y0), at(c + w / 2, .045, y0), at(c + w / 2, .045, y1), at(c - w / 2, .045, y1), glass === lit ? '#6b7a80' : '#4c5a60');
+      if (high) b.quad(at(s - total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .53), at(s - total / 2, .05, y0 + h * .53), p.trim);
+      const w0 = total;
       if (shutters && role === 'front') for (const side of [-1, 1]) {
-        const x0 = s + side * (w / 2 + .1), x1 = s + side * (w / 2 + .45);
+        const x0 = s + side * (w0 / 2 + .12), x1 = s + side * (w0 / 2 + .5);
         b.quad(at(Math.min(x0, x1), .04, y0), at(Math.max(x0, x1), .04, y0), at(Math.max(x0, x1), .04, y1), at(Math.min(x0, x1), .04, y1), '#26302b');
       }
     };
@@ -298,22 +302,24 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
       if (role === 'front') {
         const door = p.doorS;
         const avoid = (s: number) => Math.abs(s - door) < 1.3 && k === 0 ? null : s;
-        const slots = p.style === 'colonial' ? (len > 10 ? [-.38, -.22, .22, .38] : [-.28, .28]).concat(k > 0 ? [0] : [])
-          : p.style === 'craftsman' ? (k === 0 ? [.14, .22, .3] : [-.22, .22])
-          : (k === 0 ? [-.3, -.22, -.14] : [-.22]);
+        // Ribbon and cluster lights touch (spacing ≈ their width); Colonial pairs sit symmetrically.
+        const ribbon = (centre: number, n: number, step: number) => Array.from({ length: n }, (_, j) => centre + (j - (n - 1) / 2) * step / len);
+        const slots = p.style === 'colonial' ? (len > 11 ? [-.3, .3] : [-.27, .27]).concat(k > 0 ? [0] : [])
+          : p.style === 'craftsman' ? (k === 0 ? ribbon(.22, 3, .95) : [-.22, .22])
+          : (k === 0 ? ribbon(-.2, 3, .8) : [-.2]);
         for (const t of slots) {
           const s = avoid(t * len);
           if (s === null) continue;
-          // Craftsman ribbons and Tudor clusters are narrow lights set close together.
-          const w = p.style === 'colonial' ? .9 : .75;
-          win(s, sill, w, p.style === 'tudor' ? 1.3 : 1.5);
+          // Colonial pairs; Craftsman ribbons and Tudor clusters are narrower lights set close together.
+          if (p.style === 'colonial') win(s, sill, .85, 1.7, len > 7);
+          else win(s, sill, p.style === 'tudor' ? .7 : .85, p.style === 'tudor' ? 1.45 : 1.6);
         }
       } else if (role === 'side') {
         const count = len > 9 ? 2 : 1;
-        for (let j = 0; j < count; j++) win((count === 1 ? 0 : j ? .22 : -.22) * len, sill, .85, 1.4);
+        for (let j = 0; j < count; j++) win((count === 1 ? 0 : j ? .22 : -.22) * len, sill, .8, 1.55, p.style === 'colonial');
       } else {
-        win(-.25 * len, sill + .3, .7, 1.1);
-        if (k === 0 && len > 8) win(.25 * len, sill + .3, .7, 1.1);
+        win(-.25 * len, sill + .3, .75, 1.2);
+        if (k === 0 && len > 8) win(.25 * len, sill + .3, .75, 1.2);
       }
     }
     // A trim belt at each floor line, so one, two and three storeys read apart.
@@ -323,7 +329,7 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
     }
     // Attic window in each gable end (walls across the ridge on a gabled roof).
     if (p.shape === 'gabled' && !p.concave && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len < .3 && len < p.half * 2.2)
-      win(0, eave - base + p.rise * .3, .6, .7);
+      win(0, eave - base + p.rise * .3, .7, .8);
   }
 }
 

@@ -22,6 +22,7 @@ import { SPECIES as SPECIES_LIST } from '../trees/index';
 import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
 import { C_FAMILY, TIP_CAP, TIP_RANGE_M, VARIANTS, createGinkgoVariant, variantTriangles, type GinkgoVariant } from '../trees/ginkgo-variants';
 import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
+import { HOUSE_KINDS, HOUSE_NOTES, createHouseScene, type HouseKind } from './house-scene';
 
 const el = document.getElementById('stage')!;
 const low = new URLSearchParams(location.search).get('q') === 'low';
@@ -70,6 +71,7 @@ const models = {
   generic: 'Generic leaf-clump tree',
   ginkgo: 'Ginkgo',
   ...LANDSCAPE_KINDS,
+  ...HOUSE_KINDS,
 } as const;
 // Species in the lab's Trees section; 'generic' is City's current tree, the baseline.
 const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
@@ -278,7 +280,20 @@ function buildLandscape() {
     + `low ${landscape.triangles.low.toLocaleString()}. Showing ${treeQuality} detail.`;
   landscapeReport.hidden = false;
 }
+const isHouse = (id: string): id is HouseKind => Object.hasOwn(HOUSE_KINDS, id);
+let houseScene: ReturnType<typeof createHouseScene> | null = null;
+/** Houses drawn exactly as City draws them, with triangle and draw counts for the tier shown. */
+function buildHouses() {
+  houseScene = createHouseScene(model as HouseKind, treeQuality);
+  scene.add(houseScene.group);
+  houseScene.setNight(night.value);
+  landscapeReport.textContent = `${houseScene.houses} houses, ${houseScene.draws} draw calls, `
+    + `${Math.round(houseScene.triangles).toLocaleString()} triangles (${Math.round(houseScene.triangles / houseScene.houses)} per house). Showing ${treeQuality} detail.`;
+  landscapeReport.hidden = false;
+}
 function build() {
+  houseScene?.dispose();
+  houseScene = null;
   landscape?.dispose();
   landscape?.group.removeFromParent();
   landscape = null;
@@ -305,6 +320,23 @@ function build() {
   for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree && !(isLandscape(model) && id !== 'tree-size');
   document.getElementById('count')!.hidden = !isTree;
   document.getElementById('rendering')!.hidden = model !== 'ginkgo';
+  if (isHouse(model)) {
+    for (const id of ['lines', 'roles', 'platforms', 'motion', 'tree-size', 'season']) document.getElementById(id)!.hidden = true;
+    document.getElementById('tier')!.hidden = false;
+    nextLook.hidden = true;
+    track.visible = longTrack.visible = false;
+    ground.material = floorMaterial;
+    ground.scale.setScalar(1.2);
+    sun.position.set(-18, 30, 22).multiplyScalar(1.5);
+    sun.shadow.normalBias = .05;
+    Object.assign(sun.shadow.camera, { left: -50, right: 50, top: 50, bottom: -50, far: 160 });
+    sun.shadow.camera.updateProjectionMatrix();
+    document.getElementById('title')!.textContent = models[model];
+    document.title = models[model] + ' · Model Lab · Sim Atlanta';
+    document.getElementById('blurb')!.textContent = HOUSE_NOTES[model] + 'Style, siding, colour and storeys are illustrative; in City OSM tags win where present.';
+    buildHouses();
+    return;
+  }
   if (isLandscape(model)) {
     for (const id of ['lines', 'roles', 'platforms', 'motion']) document.getElementById(id)!.hidden = true;
     nextLook.hidden = true;
@@ -590,6 +622,13 @@ const FIGURE_VIEWS: Record<string, ViewPreset> = {
 };
 const FREIGHT_VIEWS = { ...TRAIN_VIEWS, '¾ front': { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 } } satisfies Record<string, ViewPreset>;
 let presets: Record<string, ViewPreset>;
+const HOUSE_VIEWS: Record<string, ViewPreset> = {
+  Front: { pos: [0, 16, 62], target: [0, 3, 0], fov: 40 },
+  '¾ front': { pos: [-34, 22, 46], target: [0, 3, 0], fov: 42 },
+  Side: { pos: [-60, 12, 0], target: [0, 3, 0], fov: 40 },
+  Rear: { pos: [0, 16, -62], target: [0, 3, 0], fov: 40 },
+  Top: { pos: [.01, 80, 0], target: [0, 0, 0], fov: 40 },
+};
 const LANDSCAPE_VIEWS: Record<string, ViewPreset> = {
   Front: { pos: [0, 8, 26], target: [0, 1.2, 0], fov: 40 },
   '¾ front': { pos: [-17, 11, 19], target: [0, 1.2, 0], fov: 40 },
@@ -615,7 +654,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
@@ -628,7 +667,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
@@ -668,12 +707,14 @@ setModel(model);
 const nightBtn = document.getElementById('night')!;
 if (new URLSearchParams(location.search).get('night') === '1') {
   setNight(true);
+  (houseScene as ReturnType<typeof createHouseScene> | null)?.setNight(1);
   nightBtn.setAttribute('aria-pressed', 'true');
 }
 nightBtn.addEventListener('click', () => {
   const on = nightBtn.getAttribute('aria-pressed') !== 'true';
   nightBtn.setAttribute('aria-pressed', String(on));
   setNight(on);
+  houseScene?.setNight(on ? 1 : 0);
   const url = new URL(location.href);
   if (on) url.searchParams.set('night', '1'); else url.searchParams.delete('night');
   history.replaceState(null, '', url);

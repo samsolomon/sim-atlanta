@@ -45,3 +45,17 @@ it('keeps manicured turf last, so existing cover indices do not move', () => {
   expect(COVERS.indexOf('leaf-litter')).toBe(5);
   expect(COVERS[COVERS.length - 1]).toBe('manicured');
 });
+
+it('handles closed rings and holes (a repeated first vertex) without shifting hole indices', () => {
+  const closed = (r: P2[]) => [...r, r[0]];
+  const cover = new GroundCover();
+  cover.patch(closed([[-10, -10], [10, -10], [10, 10], [-10, 10]]), () => 0, 'turf',
+    { holes: [closed([[-3, -3], [-3, 3], [3, 3], [3, -3]])] });
+  const p = cover.mesh().mesh.geometry.getAttribute('position');
+  let area = 0;
+  for (let i = 0; i < p.count; i += 3) {
+    const ax = p.getX(i + 1) - p.getX(i), az = p.getZ(i + 1) - p.getZ(i), bx = p.getX(i + 2) - p.getX(i), bz = p.getZ(i + 2) - p.getZ(i);
+    area += Math.abs(ax * bz - az * bx) / 2;
+  }
+  expect(area).toBeCloseTo(400 - 36, 3);
+});
