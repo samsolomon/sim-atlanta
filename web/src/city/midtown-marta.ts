@@ -62,7 +62,7 @@ export function createMidtownMarta(buildings: VBuilding[], site: VBuilding, grou
   prism(shell.ring, roof - 1.0, roof, concrete, '#c1bbb0');
   // Skewed end faces follow the diagonal cuts of the real street canopy. Keep
   // the approach open between the solid cheek and the inner stair enclosure.
-  function wall(a: P2, b: P2, width: number) {
+  const wall = (a: P2, b: P2, width: number) => {
     const dx = b[0] - a[0],
       dz = b[1] - a[1],
       len = Math.hypot(dx, dz);
@@ -70,7 +70,7 @@ export function createMidtownMarta(buildings: VBuilding[], site: VBuilding, grou
       nz = (dx * width) / len;
     const lo = Math.min(ground(...a) ?? grade, ground(...b) ?? grade) - 0.4;
     prism([a, b, [b[0] + nx, b[1] + nz], [a[0] + nx, a[1] + nz]], lo, roof - 0.95, concrete, concrete);
-  }
+  };
   wall([409.6, -1949], [412, -1994], 0.65);
   wall([423.1, -1961], [423.9, -1973], 0.7);
   wall([417.4, -1979], [418.3, -1993], 0.6);
