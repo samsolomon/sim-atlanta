@@ -2496,3 +2496,8 @@ Sam's sunlit shots of the streetcar showed a car much brighter than the overcast
 ### 2026-11-23 — Eaves
 
 Sam's note on the houses was "something feels funny", and the single biggest cause was the roof edge. The roofs stopped exactly at the walls, with no overhang and no shadow. Now eaves and rakes overhang by 0.3–0.6 m with a fascia and soffit, so every wall carries a shadow line, the strongest "house" cue there is. The same pass made roofs lighter and front-gabled Craftsman houses, gave windows real size and spacing with sky-toned glass, and added deep porches with columns and steps. Long footprints became period apartments rather than giant houses. [Before and after views, the lab and the budget](log/ui/residential-v2d/README.md)
+
+
+### 2026-11-23 — Trains under downtown, accounted for
+
+Following a Blue Line train under downtown used to end in a shrug: "Train out of view". The Midtown North Line had OSM tunnel ways, and downtown had nothing. Downtown now has all 60 of its mapped subway ways, classed as tunnel, building passage, bridge or open, and Follow reads the mapped cover of the train's own line. That last detail matters at Five Points, where the north–south and east–west tunnels cross on different levels. The surprise was the unnamed pieces: two platform tracks beside the West Line took its name from the same layer, but three connector tracks a metre above the South Line correctly stayed off it. Requires a web rebuild only. [Before and after](log/ui/follow-downtown/compare-blue-underground.jpg)
