@@ -109,7 +109,7 @@ export function symphonyTower(shell: Shell) {
   // The veils continue each broad face and curve in towards the other one:
   // 7.8 m inward over 36.6 m, measured end-on in the owner's aerial.
   const veils = new Builder(), frame = new Builder();
-  const x0 = -28, x1 = 30, cols = 20, rows = 10;
+  const x0 = -28, x1 = 30, cols = 10, rows = 8;
   for (const side of [-1, 1]) {
     const face = side > 0 ? 17.3 : -17.6;
     const at = (u: number, t: number, inset = 0): number[] => {
@@ -129,7 +129,7 @@ export function symphonyTower(shell: Shell) {
       const u = c / cols, p = at(u, r / rows, -.05), q = at(u, (r + 1) / rows, -.05);
       frame.quad([p[0] - .12, p[1], p[2]], [p[0] + .12, p[1], p[2]], [q[0] + .12, q[1], q[2]], [q[0] - .12, q[1], q[2]], '#e6ecea');
     }
-    for (let r = 0; r <= rows; r++) for (let c = 0; c < cols; c++)
+    for (let r = 0; r <= rows; r += 2) for (let c = 0; c < cols; c++)
       bar(at(c / cols, r / rows, -.05), at((c + 1) / cols, r / rows, -.05), r === rows ? -.18 : .18, frame, '#e6ecea');
     // Open white lattice trusses carry each veil at the tower's narrow ends.
     for (const u of [0, 1]) {
@@ -160,7 +160,7 @@ export function symphonyTower(shell: Shell) {
   return { ...model, setNight(night: number) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
-    veilMaterial.emissiveIntensity = .9 * night;
-    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = .6 * night;
+    veilMaterial.emissiveIntensity = 1.8 * night;
+    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = 1.4 * night;
   } };
 }
