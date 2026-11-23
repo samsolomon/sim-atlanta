@@ -63,19 +63,19 @@ def _polygons(shape, min_area=1.0):
     return [g for g in geoms if g.geom_type == "Polygon" and g.area >= min_area]
 
 
-def part_height(tags, parent_tags, king=False, tallest=None):
+def part_height(tags, parent_tags, king=False, tallest=None, height_taken=False):
     """(top, bottom, tier) in metres above the footprint for one building:part.
 
     A height tag is reported. Levels alone are inferred: when the parent reports
-    a height, its tallest part (by levels, `tallest`) is scaled to that height,
-    as long as that gives 2.5-6.5 m per level; a parent with levels only lends
-    City's 3.6 m; anything else uses 3.3 m.
+    a height that no part already reports (`height_taken`), its tallest part by
+    levels (`tallest`) is scaled to it, within 2.5-5 m per level; a parent with
+    levels only lends City's 3.6 m; anything else uses 3.3 m.
     """
     parent_h = None if king else parse_height(parent_tags.get("height"))
     parent_levels = _levels(parent_tags.get("building:levels"))
     most = max(tallest or 0, parent_levels or 0)
     per_level = LEVEL_M
-    if parent_h and most and 2.5 <= parent_h / most <= 6.5:
+    if parent_h and most and not height_taken and 2.5 <= parent_h / most <= 5:
         per_level = parent_h / most
     elif parent_levels and not parent_h:
         per_level = 3.6  # the parent itself is drawn at 3.6 m per level
@@ -116,8 +116,10 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
     A part whose vertical range lies inside another part's is trimmed by it.
     Parts inside an outline City does not draw (roofs, stations, railway
     buildings, slivers) are left to whatever replaces that outline. Whatever
-    the parts leave of the parent keeps the parent's height, capped by its
-    lowest part when the parts map at least half the plan. Parts outside every outline become buildings.
+    the parts leave of the parent is a podium: capped at the tallest part when
+    the parts map a quarter of the plan, at the lowest substantial part when
+    they map half of it, and left at the parent's height when they are only
+    details. Parts outside every outline become buildings.
     """
     from shapely.ops import unary_union
 
@@ -142,8 +144,10 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
         masses = []
         tallest = max(((_levels(t.get("building:levels")) or 0) for _, t, _ in mine
                        if t.get("building:part") != "roof" and not parse_height(t.get("height"))), default=0)
+        parent_h = None if king else parse_height(tags.get("height"))
+        taken = bool(parent_h) and any((parse_height(t.get("height")) or 0) >= parent_h - .5 for _, t, _ in mine)
         for ref, ptags, shape in mine:
-            top, bottom, tier = part_height(ptags, tags, king, tallest)
+            top, bottom, tier = part_height(ptags, tags, king, tallest, taken)
             masses.append(dict(id=ref, top=top, bottom=bottom, tier=tier, shape=shape.intersection(piece)))
         masses = resolve(masses)
         out = []
@@ -155,20 +159,32 @@ def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
                 out.append(entry)
         if not out:
             continue
-        # The parent footprint the parts leave uncovered is a podium at the parent's own height.
-        own = b["h"] if b["h"] is not None else (b["floors"] * 3.6 if b["floors"] else PART_FALLBACK_M)
-        tier = "reported" if b["h"] is not None else "inferred" if b["floors"] else "illustrative"
-        grounded = [m for m in masses if m["bottom"] == 0]
-        covered = unary_union([m["shape"] for m in grounded]) if grounded else None
-        # Where parts map most of the plan, the remainder is a podium no taller than
-        # its lowest part. A sparse part (an entrance or canopy) leaves the parent as it was.
+        # The parent footprint the parts leave uncovered. Raised parts (canopies,
+        # passages) count as covered, so the space beneath them stays open.
+        # The parent's own height. A height far beyond its levels (over 4.5 m per
+        # level) means the levels describe a podium under a taller part.
+        own, tier = PART_FALLBACK_M, "illustrative"
+        if b["h"] is not None and not (b["floors"] and b["h"] / b["floors"] > 4.5):
+            own, tier = b["h"], "reported"
+        elif b["floors"]:
+            own, tier = b["floors"] * 3.6, "inferred"
+        grounded = [m for m in masses if m["bottom"] == 0 and not m["shape"].is_empty]
+        covered = unary_union([m["shape"] for m in masses])
+        share = unary_union([m["shape"] for m in grounded]).area / piece.area if grounded else 0
         podium_h = own
-        if covered is not None and covered.area >= 0.5 * piece.area:
-            major = [m for m in grounded if m["shape"].area >= 0.1 * covered.area]
-            lowest = min(major, key=lambda m: m["top"], default=None)
-            if lowest and lowest["top"] < own:
-                podium_h, tier = lowest["top"], lowest["tier"]
-        rest = piece.difference(covered) if covered is not None else piece
+        if share >= 0.25:
+            # Parts map the building: OSM gives the parent the whole building's
+            # height, so the remainder is a podium no taller than its tallest part,
+            # or its lowest substantial part where the parts map most of the plan.
+            if share >= 0.5:
+                major = [m for m in grounded if m["shape"].area >= 0.1 * covered.area]
+                cap = min(major or grounded, key=lambda m: m["top"])
+            else:
+                cap = max(grounded, key=lambda m: m["top"])
+            podium_h, tier = min(own, cap["top"]), "inferred"
+        # Below a quarter of the plan the parts are details (an entrance, a canopy)
+        # and the parent outline keeps its own mapped height and tier.
+        rest = piece.difference(covered)
         for poly in _polygons(rest, 20):
             if not poly.buffer(-0.75).is_empty:
                 out.append(dict(id="podium", rings=_rings(poly), h=round(podium_h, 1), tier=tier))
