@@ -27,6 +27,7 @@ import { LOOKS } from '../trees/looks-index';
 import { createLook, lookTriangles, type Look } from '../trees/looks';
 import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
 import { HOUSE_KINDS, HOUSE_NOTES, createHouseScene, type HouseKind } from './house-scene';
+import { MATERIAL_KINDS, MATERIAL_NOTES, createMaterialScene, type MaterialKind } from './materials-scene';
 
 // The markup is shared with the in-app Models view (lab-markup.ts); mount it before any lookup.
 mountLab();
@@ -81,6 +82,7 @@ const models = {
   lineup: 'All species',
   ...LANDSCAPE_KINDS,
   ...HOUSE_KINDS,
+  ...MATERIAL_KINDS,
 } as const;
 // Species in the lab's Trees section; 'generic' is City's current tree, the baseline.
 const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
@@ -361,9 +363,21 @@ function buildHouses() {
     + `${Math.round(houseScene.triangles).toLocaleString()} triangles (${Math.round(houseScene.triangles / houseScene.houses)} per house). Showing ${treeQuality} detail.`;
   landscapeReport.hidden = false;
 }
+const isMaterial = (id: string): id is MaterialKind => Object.hasOwn(MATERIAL_KINDS, id);
+let materialScene: ReturnType<typeof createMaterialScene> | null = null;
+/** Every library material at both tiers; the lab's Night button gives the night look. */
+function buildMaterials() {
+  materialScene = createMaterialScene();
+  scene.add(materialScene.group);
+  landscapeReport.textContent = `${materialScene.swatches} materials x 2 tiers, ${materialScene.draws} draw calls plus ${materialScene.draws} shadow passes (one program per tier), `
+    + `${Math.round(materialScene.triangles).toLocaleString()} triangles, 0 texture bytes.`;
+  landscapeReport.hidden = false;
+}
 function build() {
   houseScene?.dispose();
   houseScene = null;
+  materialScene?.dispose();
+  materialScene = null;
   landscape?.dispose();
   landscape?.group.removeFromParent();
   landscape = null;
@@ -389,11 +403,14 @@ function build() {
   const isTree = model === 'generic' || model === 'lineup' || Object.hasOwn(SPECIES, model);
   eyeLevel.hidden = !isTree;
   for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree && !(isLandscape(model) && id !== 'tree-size');
+  for (const b of document.getElementById('tier')!.querySelectorAll('button')) b.hidden = isMaterial(model);
+  document.querySelector('#tier legend')!.textContent = isMaterial(model) ? 'Swatches' : 'Detail';
   // The lineup is one tree per species; the cost test's counts don't apply.
   document.getElementById('count')!.hidden = !isTree || model === 'lineup';
   document.getElementById('rendering')!.hidden = !RENDERINGS[model] && model !== 'lineup';
-  if (isHouse(model)) {
+  if (isHouse(model) || isMaterial(model)) {
     for (const id of ['lines', 'roles', 'platforms', 'motion', 'tree-size', 'season']) document.getElementById(id)!.hidden = true;
+    // Swatches show both tiers at once, so their tier buttons are hidden above; the report still shows.
     document.getElementById('tier')!.hidden = false;
     nextLook.hidden = true;
     track.visible = longTrack.visible = false;
@@ -405,6 +422,11 @@ function build() {
     sun.shadow.camera.updateProjectionMatrix();
     document.getElementById('title')!.textContent = models[model];
     document.title = models[model] + ' · Model Lab · Sim Atlanta';
+    if (isMaterial(model)) {
+      document.getElementById('blurb')!.textContent = MATERIAL_NOTES[model] + 'Patterns are illustrative stylisation, tuned against photographs.';
+      buildMaterials();
+      return;
+    }
     document.getElementById('blurb')!.textContent = HOUSE_NOTES[model] + 'Style, siding, colour and storeys are illustrative; in City OSM tags win where present.';
     buildHouses();
     return;
@@ -546,7 +568,8 @@ function build() {
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 400);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number };
+/** `near` defaults to the lab's 0.1 m; the swatches' City-distance view uses City's 20 m so the ink matches. */
+type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number; near?: number };
 const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
   '¾ front': { pos: [-11, 4.2, 36], target: [0, 2.0, 18], fov: 28 },
@@ -564,6 +587,7 @@ function view(name: string) {
   camera.position.x += dx;
   controls.target.x += dx;
   camera.fov = v.fov;
+  camera.near = v.near ?? 0.1;
   camera.updateProjectionMatrix();
   controls.update();
   document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === name)));
@@ -720,6 +744,16 @@ const HOUSE_VIEWS: Record<string, ViewPreset> = {
   Rear: { pos: [0, 16, -62], target: [0, 3, 0], fov: 40 },
   Top: { pos: [.01, 80, 0], target: [0, 0, 0], fov: 40 },
 };
+// Swatch rows run back to front; the high-tier block is on the left (x < 0), low on the right.
+// The lab's view buttons are fixed names: ¾ front and Side are close-ups of the high and low
+// blocks, and Rear is the City's lens (22°) from about 200 m, where detail fades to flat colour.
+const MATERIAL_VIEWS: Record<string, ViewPreset> = {
+  Front: { pos: [0, 48, 62], target: [0, 2, 0], fov: 42 },
+  '¾ front': { pos: [-24, 12, 30], target: [-24, 4, 4], fov: 40 },
+  Side: { pos: [24, 12, 30], target: [24, 4, 4], fov: 40 },
+  Rear: { pos: [0, 120, 165], target: [0, 3, 0], fov: 22, near: 20 },
+  Top: { pos: [.01, 90, 0], target: [0, 0, 0], fov: 40 },
+};
 const LANDSCAPE_VIEWS: Record<string, ViewPreset> = {
   Front: { pos: [0, 8, 26], target: [0, 1.2, 0], fov: 40 },
   '¾ front': { pos: [-17, 11, 19], target: [0, 1.2, 0], fov: 40 },
@@ -745,13 +779,13 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
   build();
-  view(id === 'generic' || id === 'lineup' || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
+  view(id === 'generic' || id === 'lineup' || isMaterial(id) || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
 }
 function selectModel(id: Model) {
   const url = new URL(location.href);
@@ -759,7 +793,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
