@@ -231,15 +231,17 @@ function inset(ring: P2[], d: number): P2[] {
   });
 }
 
-function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
+function roofFor(p: Plan, b: Builder, outer: P2[], eave: number, far = false) {
   const { centre: c, u, long, half, rise } = p;
+  // Far away (see house-lod.ts) the roof is its bare planes: no overhang, fascia, soffit or ridge trim.
   // Eaves and rakes overhang the walls (0.3–0.6 m by style), with a fascia board and a soffit, so
   // every wall gets a shadow line under the roof edge. The roof plane simply extends outward and
   // down, so gables and dormers built on it stay on the same plane.
-  const ov = p.overhang, low = eave - ov * rise / half, ring = inset(outer, -ov);
+  const ov = far ? 0 : p.overhang, low = eave - ov * rise / half, ring = far ? outer : inset(outer, -ov);
   // 0.7 × the roof colour in display (sRGB) terms, so the shadow under the eave reads.
   const soffit = '#' + [1, 3, 5].map(i => Math.round(parseInt(p.roof.slice(i, i + 2), 16) * .7).toString(16).padStart(2, '0')).join('');
   const edge = (a: P2, d: P2, oa: P2, od: P2) => {
+    if (far) return;
     b.quad([a[0], low - .2, a[1]], [d[0], low - .2, d[1]], [d[0], low, d[1]], [a[0], low, a[1]], p.trim);
     // The low tier keeps the fascia (the shadow line) and drops the soffit.
     if (p.quality === 'high') b.quad([oa[0], eave, oa[1]], [od[0], eave, od[1]], [d[0], low - .2, d[1]], [a[0], low - .2, a[1]], soffit);
@@ -273,7 +275,7 @@ function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
   }
   if (p.shape === 'gabled') {
     // Rake fascia: a trim board along each sloping roof edge past the gable wall.
-    for (let i = 0; i < ring.length; i++) {
+    if (!far) for (let i = 0; i < ring.length; i++) {
       const a = ring[i], d = ring[(i + 1) % ring.length], ra = ridge(...a, reach), rd = ridge(...d, reach);
       if (Math.hypot(ra[0] - rd[0], ra[2] - rd[2]) >= 1e-3) continue;
       for (const q of [a, d]) b.quad([q[0], low - .2, q[1]], [q[0], low, q[1]], [ra[0], ra[1], ra[2]], [ra[0], ra[1] - .2, ra[2]], p.trim);
@@ -283,7 +285,7 @@ function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
       const a = outer[i], d = outer[(i + 1) % outer.length], ra = ridge(...a, long), rd = ridge(...d, long);
       if (Math.hypot(ra[0] - rd[0], ra[2] - rd[2]) < 1e-3) b.tri([a[0], eave, a[1]], [d[0], eave, d[1]], ra, p.wall);
     }
-    for (const s of [-1, 1]) {
+    if (!far) for (const s of [-1, 1]) {
       // Trim the ridge ends so the rake reads in the ink pass.
       const e = [c[0] + u[0] * s * reach, eave + rise, c[1] + u[1] * s * reach];
       b.box(.14, .14, .14, e[0], e[1], e[2], p.trim);
@@ -699,8 +701,19 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
       },
     };
   };
+  /** The far version of every house (house-lod.ts): the same walls and colours under a bare roof, no windows,
+   * porch, chimney or trim. Siding styles 7–10 keep the shader's windows off, so day colour matches the near version. */
+  const farFinishFor = (b: VBuilding): BuildingFinish | undefined => {
+    const own = existing?.(b);
+    if (own) return own;
+    const p = plans.get(b.id);
+    if (!p) return undefined;
+    return { wall: p.wall, roof: p.roof, parapet: 0, windowStyle: STYLE[p.siding], dressRoof(builder, outer, eave) { roofFor(p, builder, outer, eave, true); } };
+  };
   return {
-    city: { ...city, buildings }, finishFor, count: plans.size,
+    city: { ...city, buildings }, finishFor, farFinishFor, count: plans.size,
+    /** Whether a building is one of the planned houses. */
+    isHouse: (id: string) => plans.has(id),
     /** Read-only view of a house's plan (style, roof shape, ridge direction), for tests and the lab. */
     planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys }; },
     /** Yard landscaping for every planned house: one primitives draw and one ground-cover draw. */
@@ -710,6 +723,7 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
       const { b, cover } = yards(plans, footprints ?? city.buildings, ground, street, quality);
       const group = new THREE.Group();
       group.name = 'yards';
+      group.userData.perf = 'landscape';
       const land = landscapeMesh(b), covers = cover.triangles ? cover.mesh({ quality }) : null;
       group.add(land.mesh);
       if (covers) group.add(covers.mesh);

@@ -47,7 +47,11 @@ function roofClearances(area: Area, buildings: Building[]) {
   const owner = (x: number, z: number) => index.get(`${Math.floor(x/50)},${Math.floor(z/50)}`)
     ?.find(b => inside(x, z, b.rings[0]) && !b.rings.slice(1).some(hole => inside(x, z, hole)));
   const tops = new Map<string, { y: number; tris: number[][] }>();
-  for (const mesh of area.scenery.children.filter(o => o instanceof Mesh && o.geometry.hasAttribute('aBase')) as Mesh[]) {
+  // Houses draw in their own distance tiles (house-lod.ts), so look through the whole scenery.
+  // Only the far version is built until a camera comes near, so nothing is counted twice.
+  const shells: Mesh[] = [];
+  area.scenery.traverse(o => { if (o instanceof Mesh && o.geometry.hasAttribute('aBase')) shells.push(o); });
+  for (const mesh of shells) {
     const p = mesh.geometry.getAttribute('position'), style = mesh.geometry.getAttribute('aStyle');
     for (let i = 0; i < p.count; i += 3) {
       const y = p.getY(i);
