@@ -22,16 +22,16 @@ PACK = Path(ROOT) / "pipeline/prototypes"
 BOARDS = ["king-memorial", "sweet-auburn", "square-board/north-band", "square-board/north-corner",
           "square-board/south-band", "square-board/south-corner"]
 UTC_SHA256 = "2da149ea8b5c8f24ef69ef18cb15a1e08c1e29cd564687c8b82bef2a3407af0f"
-X0, Z0, SIDE = -1000, -1700, 2800
 WIDTH = dict(motorway=22, trunk=14, primary=13, secondary=11, tertiary=9,
              residential=7.5, unclassified=7, service=4.5, pedestrian=5, footway=2, steps=2, cycleway=2)
 
 
-def sample(array, transform, crs, output):
+def sample(array, transform, crs, output, x0, z0):
     """Project scene cell centres in strips. Neighboring height tiles fill the same grid."""
     tr = Transformer.from_crs(4326, crs, always_xy=True)
-    for i in range(0, SIDE, 64):
-        x, z = np.meshgrid(X0 + np.arange(SIDE) + .5, Z0 + np.arange(i, min(i + 64, SIDE)) + .5)
+    rows_out, cols_out = output.shape
+    for i in range(0, rows_out, 64):
+        x, z = np.meshgrid(x0 + np.arange(cols_out) + .5, z0 + np.arange(i, min(i + 64, rows_out)) + .5)
         mx, my = tr.transform(*scene_to_lonlat(x, z))
         rows = np.floor((my - transform.f) / transform.e).astype(int)
         cols = np.floor((mx - transform.c) / transform.a).astype(int)
@@ -39,25 +39,28 @@ def sample(array, transform, crs, output):
         output[i:i + len(z)][ok] = array[rows[ok], cols[ok]]
 
 
-def sources(tile):
+def sources(tile, x0, x1, z0, z1, crop):
     if hashlib.sha256(tile.read_bytes()).hexdigest() != UTC_SHA256:
         raise ValueError("Expected the published UTCMosaic2023.tif")
-    canopy = np.zeros((SIDE, SIDE), dtype=np.uint8)
+    canopy = np.zeros((z1-z0, x1-x0), dtype=np.uint8)
     heights = np.zeros_like(canopy)
     with rasterio.open(tile) as src:
         tr = Transformer.from_crs(4326, src.crs, always_xy=True)
-        corners = [tr.transform(*scene_to_lonlat(x, z)) for x in (X0, X0+SIDE) for z in (Z0, Z0+SIDE)]
+        corners = [tr.transform(*scene_to_lonlat(x, z)) for x in (x0, x1) for z in (z0, z1)]
         xs, ys = zip(*corners)
         win = from_bounds(min(xs)-2, min(ys)-2, max(xs)+2, max(ys)+2, src.transform).round_offsets().round_lengths()
-        sample(src.read(1, window=win), src.window_transform(win), src.crs, canopy)
+        sample(src.read(1, window=win), src.window_transform(win), src.crs, canopy, x0, z0)
     for key in ("032002311", "032003200"):
-        chm, valid, transform = fetch_crop("expanded-square", (X0, X0+SIDE), (Z0, Z0+SIDE), key)
-        sample(np.where(valid, chm, 0), transform, 3857, heights)
+        chm, valid, transform = fetch_crop(crop, (x0, x1), (z0, z1), key)
+        sample(np.where(valid, chm, 0), transform, 3857, heights, x0, z0)
     return canopy == 1, heights
 
 
 def obstacles(boards):
     for ctx in boards.values():
+        for feature in ctx.get("ground", []):
+            if feature["kind"] == "water":
+                yield Polygon(feature["rings"][0], feature["rings"][1:]), 2
         for b in ctx["buildings"]:
             yield Polygon(b["rings"][0], b["rings"][1:]), 2
         for road in ctx["roads"]:
@@ -87,13 +90,19 @@ def obstacles(boards):
         yield LineString([project(*p) for p in platform["ring"]]).buffer(5), 2
 
 
-def bake(tile):
-    boards = {k: json.loads((PACK / k / "context.json").read_bytes()) for k in BOARDS}
-    cover, heights = sources(tile)
+def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="expanded-square", extra_ground=None):
+    boards = {k: json.loads((PACK / k / "context.json").read_bytes()) for k in names}
+    if extra_ground:
+        for ctx in boards.values():
+            ctx["ground"].extend(extra_ground[ctx["name"]])
+    bounds = [ctx["bounds"] for ctx in boards.values()]
+    x0, z0 = (int(min(b[key] for b in bounds)) for key in ("minX", "minZ"))
+    x1, z1 = (int(max(b[key] for b in bounds)) for key in ("maxX", "maxZ"))
+    cover, heights = sources(tile, x0, x1, z0, z1, crop)
     # Walks exclude trunks but can pass underneath an existing crown. Roadways,
     # buildings and rail clear the full width of the seasonal model.
     blocked = rasterize(sorted(obstacles(boards), key=lambda a: a[1]), out_shape=cover.shape,
-                        transform=Affine.translation(X0, Z0), all_touched=True, dtype="uint8")
+                        transform=Affine.translation(x0, z0), all_touched=True, dtype="uint8")
     clear = ndimage.distance_transform_edt(blocked < 2)
     interior = ndimage.distance_transform_edt(cover)
     radius = np.minimum(np.minimum(interior+.5, (clear-.75)/1.3), 10)
@@ -113,14 +122,14 @@ def bake(tile):
     pack = {}
     for name, ctx in boards.items():
         b = ctx["bounds"]
-        i0, i1 = int(b["minZ"])-Z0, int(b["maxZ"])-Z0
-        j0, j1 = int(b["minX"])-X0, int(b["maxX"])-X0
+        i0, i1 = int(b["minZ"])-z0, int(b["maxZ"])-z0
+        j0, j1 = int(b["minX"])-x0, int(b["maxX"])-x0
         trees = []
 
         def place(x, z, radius, height):
-            i, j = math.floor(z-Z0), math.floor(x-X0)
+            i, j = math.floor(z-z0), math.floor(x-x0)
             # A deciduous clump can reach 1.28 nominal radii. Allow for pixel registration.
-            offset = math.hypot(x - (X0 + j + .5), z - (Z0 + i + .5))
+            offset = math.hypot(x - (x0 + j + .5), z - (z0 + i + .5))
             radius = math.floor(min(radius, (clear[i,j] - .75 - offset)/1.3, 10)*10)/10
             if radius < 2 or blocked[i,j] or occupied[i,j] or min(x-b["minX"], b["maxX"]-x, z-b["minZ"], b["maxZ"]-z) < 1:
                 return
@@ -138,7 +147,7 @@ def bake(tile):
                 continue
             r = radius[i,j]
             h = top[i,j] if top[i,j] >= 4 else 1.8*r+1.5
-            place(X0+int(j)+.5, Z0+int(i)+.5, r, h)
+            place(x0+int(j)+.5, z0+int(i)+.5, r, h)
         # Keep the largest crown in each 32 m cell for the low-detail view.
         ranked = sorted(trees, key=lambda t: (-t[3], -t[2], t[1], t[0]))
         cells, dominant, rest = set(), [], []
@@ -152,7 +161,6 @@ def bake(tile):
         pack[ctx["name"]] = dict(trees=dominant + rest, lowCount=len(dominant))
         print(name, f"{cover[i0:i1,j0:j1].mean():.1%} classified", len(trees), "crowns,", manual,
               "retained from photo traces,", len(dominant), "on low")
-    out = PACK / "expanded-canopy/crowns.json"
     out.write_text(json.dumps(pack, separators=(",", ":"))+"\n")
     return cover, boards, pack
 

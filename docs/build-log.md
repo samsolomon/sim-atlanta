@@ -2096,6 +2096,9 @@ The archived OSM extracts contribute 24 surface rail runs. Mapped tunnels stay h
 Cross-review identified a short unsurveyed span where propagating a clearance all the way to the bank could raise the abutment. The approach now returns to each bank. A 36 m regression span checks both endpoints and 5 m of clear roadway beneath the crossing. [Square and downtown bridges at both tiers](log/ui/city-rectangle/square-bridges.jpg)
 
 A second review pointed out a distinction in the mapped street geometry. A side path ends on the campus bridge at (−933.90, −2643.57). The bridge now meets the path at that shared vertex. A regression uses the archived campus geometry to keep the junction at the approach height.
+## November 23, 2026 — From 10th Street to the lake
+
+Midtown's five rows had 11.2 km² of terrain and zero tree crowns. Atlanta's 2023 canopy classification and the Meta/WRI height map now supply 14,296 inferred crowns, with 5,897 in low detail. The classified fraction nearly doubles from North Avenue to Brookwood station, from 19.9% to 37.4%. Oak Hill finally has a lawn between the trees. The first daylight pass put a tree in Lake Clara Meer, where leaf cover extended past the bank. Using the mapped waterline as a crown exclusion keeps the lake open through both rows. Plazas and lawns are painted on the same 3DEP triangles that support the trunks. Publishing requires staging the Midtown data and rebuilding the web bundle. [Matched park and plaza views, sources and cameras](log/ui/midtown-landscape/README.md)
 
 ### 2026-11-23 — North Avenue comes above ground
 
