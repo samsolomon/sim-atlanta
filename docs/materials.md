@@ -159,9 +159,19 @@ Phone timing is deferred.
 - **Brookwood painted masonry:** about 15 MB of canvases at 64 px/m. The walls could become
   `stucco` or painted `brick` surfaces. The lettering and window glow would move to a much
   smaller canvas, or the lettering to geometry. Expected saving: most of the 15 MB.
-- **Generic facades:** the residential siding GLSL in `patchFacades` could move into the
-  library unchanged, with a byte-identical shader test, so houses and landmarks share one
-  brick, clapboard, stucco and shingle definition.
+
+## Moved into the library (2026-11-23, byte-identical source)
+
+- `materials/stone.ts`: `ashlarCoursing` and `withStonePosition`, from `city/johnson-burgee.ts`,
+  which re-exports them, so One Atlantic and 191 Peachtree are unchanged.
+- `materials/siding.ts`: `SIDING_GLSL`, the residential clapboard, brick, stucco and shingle
+  courses from `patchFacades` in `vignette/world.ts`, which interpolates it at the same place.
+  Style ids 3 to 10 and the `hasWin` gate stay in world.ts.
+
+Both moves were checked by rebuilding the original files from the moved text: they match byte
+for byte. The window atlases (`graniteWindowAtlas`, the Westin, Truist, Peachtree Center and
+1180 atlases) stay with their towers, because their lit-window night maps are per-building data,
+not reusable materials.
 
 ## Model lab
 

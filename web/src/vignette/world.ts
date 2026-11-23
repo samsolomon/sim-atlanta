@@ -10,6 +10,7 @@ import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
+import { SIDING_GLSL } from '../materials/siding';
 
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
 export const MARTA_TRACK_OFFSET = 2.1;
@@ -1443,27 +1444,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           if (st > 2.5) {
             // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle). Fine siding lines fade
             // to their average once a course is under a couple of pixels, so walls never shimmer.
-            float px = fwidth(y);
-            float lap = 1.0;
-            // 7–10 are the same sidings with the windows drawn as geometry instead.
-            hasWin = step(st, 6.5);
-            st = st > 6.5 ? st - 4.0 : st;
-            if (st < 3.5) {
-              lap = mix(0.95, 0.84 + 0.16 * step(0.2, fract(y / 0.2)), 1.0 - smoothstep(0.06, 0.16, px));
-            } else if (st < 4.5) {
-              float row = floor(y / 0.075);
-              float joint = step(fract(y / 0.075), 0.16) + step(fract(u / 0.21 + 0.5 * mod(row, 2.0)), 0.05);
-              float brick = mix(0.82, 0.95 + 0.1 * hh(vec2(floor(u / 0.21), row)), 1.0 - min(joint, 1.0));
-              lap = mix(0.93, brick, 1.0 - smoothstep(0.02, 0.06, px));
-            } else if (st < 5.5) {
-              lap = 0.97 + 0.05 * hh(floor(vec2(u * 2.0, y * 2.0)));
-            } else {
-              float row = floor(y / 0.3);
-              float joint = step(fract(y / 0.3), 0.12) + step(fract(u / 0.25 + 0.37 * row), 0.06);
-              float shingle = mix(0.8, 0.9 + 0.14 * hh(vec2(floor(u / 0.25 + 0.37 * row), row)), 1.0 - min(joint, 1.0));
-              lap = mix(0.9, shingle, 1.0 - smoothstep(0.08, 0.2, px));
-            }
-            diffuseColor.rgb *= lap;
+${SIDING_GLSL}
             // Masonry foundation band below the first floor.
             if (y < 0.75) diffuseColor.rgb = vec3(0.47, 0.44, 0.41) * (0.92 + 0.08 * hh(floor(vec2(u / 0.4, y / 0.2))));
             // Double-hung windows in 3.6 m bays on each 3.05 m storey: some paired, white trim,
