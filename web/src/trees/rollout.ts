@@ -1,0 +1,269 @@
+/**
+ * The City tree rollout (docs/tree-species.md#city-rollout): which canopy-map crowns become one of
+ * the picked species, how Ansley Park's generic crowns are sized and paired, and what grows on its
+ * traffic islands. Pure: crowns and board context in, a plan out, so both quality tiers and every
+ * board row decide the same way. Plan once from a row's full (high-tier) crown list; tierPlan() then
+ * keeps what belongs to a tier's subset. Everything placed here is `illustrative`
+ * (docs/tree-species.md, City rollout).
+ *
+ * - Each crown is classified as street, yard or park from the board's roads and ground.
+ * - A crown's species is a deterministic draw seeded by its position (never its index, so a crown
+ *   is the same species at both tiers), weighted by the #225 context mixes for the four rolled-out
+ *   species, and kept only if the crown's measured size fits that species. Otherwise it stays
+ *   generic. Loblolly is never curbside, sweetgum never in a street strip, Japanese maple never a
+ *   street tree.
+ * - In Ansley Park: about 40% of the generic broadleaf crowns are drawn at specimen size, street
+ *   crowns gain a partner facing them across the street, and the grass islands follow the island
+ *   rule (a round island gets one large hardwood at its centre; others get maples and crape myrtles).
+ */
+import type { P2 } from '../vignette/geom';
+import type { VGround, VRoad } from '../vignette/world';
+import { hash01 } from './species';
+
+export type RolloutSpecies = 'crape-myrtle' | 'loblolly-pine' | 'sweetgum' | 'japanese-maple';
+export type Context = 'street' | 'yard' | 'park';
+export type Crown = [number, number, number, number];
+
+/** Percent of crowns per context for the rolled-out species; the rest stay generic. */
+export const MIX: Record<Context, Partial<Record<RolloutSpecies, number>>> = {
+  // #225 street mix: crape myrtle 8. Loblolly (1) is never curbside; sweetgum is 0 on streets.
+  street: { 'crape-myrtle': 8 },
+  // #225 yard mix (crape myrtle 6, loblolly 8, sweetgum 5) plus Japanese maple from "other
+  // broadleaf": 4% in Midtown yards, 8% in Ansley Park (Sam: "everywhere in front yards").
+  yard: { 'crape-myrtle': 6, 'loblolly-pine': 8, 'sweetgum': 5, 'japanese-maple': 4 },
+  // #225 park and woods mix.
+  park: { 'loblolly-pine': 20, 'sweetgum': 12 },
+};
+const ANSLEY_YARD_MAPLE = 8;
+
+/** Crown size each species can honestly take (height and crown radius, metres). */
+const FITS: Record<RolloutSpecies, (h: number, r: number) => boolean> = {
+  'crape-myrtle': (h, r) => h <= 10 && r <= 5,
+  'japanese-maple': (h, r) => h <= 9 && r <= 5,
+  'loblolly-pine': (h, r) => h >= 9 && r <= 10,
+  'sweetgum': (h, r) => h >= 8 && h <= 33,
+};
+/** Height at which a crown is drawn with the species' specimen form. */
+const SPECIMEN_AT: Record<RolloutSpecies, number> = { 'crape-myrtle': 9, 'japanese-maple': 7, 'loblolly-pine': 30, 'sweetgum': 22 };
+
+const DRIVABLE = new Set(['primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'trunk']);
+const HALF_WIDTH: Record<string, number> = { trunk: 7, primary: 6.5, secondary: 5.5, tertiary: 4.5, residential: 3.75, unclassified: 3.5 };
+const PARKLIKE = new Set(['park', 'garden', 'cemetery', 'wood', 'forest', 'nature_reserve', 'golf_course', 'recreation_ground']);
+/**
+ * A crown whose trunk stands within this of a carriageway edge is a street tree. The canopy bake
+ * keeps trunks off the sidewalks, so street-strip trunks start about 4 m from the edge and most
+ * stand 6–10 m out.
+ */
+const STREET_M = 7;
+
+export interface PlacedSpecies { species: RolloutSpecies; x: number; z: number; heightM: number; spreadM: number; size: 'mature' | 'specimen'; seed: number }
+export interface RolloutPlan {
+  /** Canopy-map crowns now drawn as a species (keys from crownKey). */
+  replaced: Set<string>;
+  species: PlacedSpecies[];
+  /** Generic crowns drawn at a named size (keys): enlarged canopy crowns, pairs and island trees. */
+  enlarged: Map<string, { h: number; r: number }>;
+  /** New generic broadleaf crowns (facing pairs, island hardwoods), to append after the canopy
+   *  map's; `from` is the crown a pair mirrors (none for an island tree). */
+  added: { crown: Crown; from?: string }[];
+  /** Crowns removed for an island's own planting (keys). */
+  cleared: Set<string>;
+  context: Map<string, Context>;
+}
+
+export const crownKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
+/** A seed from a position: the same crown gets the same draw on every tier and every load. */
+export const positionSeed = (x: number, z: number) => {
+  let h = 2166136261;
+  for (const v of [Math.round(x * 10), Math.round(z * 10)]) { h = Math.imul(h ^ (v & 0xffff), 16777619); h = Math.imul(h ^ (v >>> 16), 16777619); }
+  return h >>> 0;
+};
+
+function segDist(x: number, z: number, a: P2, b: P2) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], l = dx * dx + dz * dz;
+  const t = l ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / l)) : 0;
+  return Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz);
+}
+function inRing(x: number, z: number, r: P2[]) {
+  let c = false;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++)
+    if ((r[i][1] > z) !== (r[j][1] > z) && x < (r[j][0] - r[i][0]) * (z - r[i][1]) / (r[j][1] - r[i][1]) + r[i][0]) c = !c;
+  return c;
+}
+const ringArea = (r: P2[]) => Math.abs(r.reduce((s, p, i) => s + p[0] * r[(i + 1) % r.length][1] - r[(i + 1) % r.length][0] * p[1], 0)) / 2;
+const ringPerimeter = (r: P2[]) => r.reduce((s, p, i) => s + Math.hypot(r[(i + 1) % r.length][0] - p[0], r[(i + 1) % r.length][1] - p[1]), 0);
+
+interface Segment { a: P2; b: P2; half: number }
+/** Drivable carriageway segments on a coarse grid, for fast nearest-road queries. */
+function roadIndex(roads: VRoad[]) {
+  const cell = 40, grid = new Map<string, Segment[]>();
+  for (const rd of roads) {
+    if (!DRIVABLE.has(rd.cls) || rd.bridge || rd.tunnel) continue;
+    for (let i = 1; i < rd.pts.length; i++) {
+      const s = { a: rd.pts[i - 1], b: rd.pts[i], half: HALF_WIDTH[rd.cls] ?? 4 };
+      const x0 = Math.floor((Math.min(s.a[0], s.b[0]) - 20) / cell), x1 = Math.floor((Math.max(s.a[0], s.b[0]) + 20) / cell);
+      const z0 = Math.floor((Math.min(s.a[1], s.b[1]) - 20) / cell), z1 = Math.floor((Math.max(s.a[1], s.b[1]) + 20) / cell);
+      for (let gx = x0; gx <= x1; gx++) for (let gz = z0; gz <= z1; gz++) {
+        const k = `${gx},${gz}`;
+        (grid.get(k) ?? grid.set(k, []).get(k)!).push(s);
+      }
+    }
+  }
+  /** Nearest carriageway: distance from its edge, and the segment. */
+  return (x: number, z: number) => {
+    let best: { edge: number; seg: Segment } | null = null;
+    for (const s of grid.get(`${Math.floor(x / cell)},${Math.floor(z / cell)}`) ?? []) {
+      const e = segDist(x, z, s.a, s.b) - s.half;
+      if (!best || e < best.edge) best = { edge: e, seg: s };
+    }
+    return best;
+  };
+}
+
+export interface RolloutInput {
+  crowns: Crown[];
+  roads: VRoad[];
+  ground?: VGround[];
+  /** Building outer rings, so added crowns never land inside one. */
+  buildings?: P2[][];
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  inAnsley?: (x: number, z: number) => boolean;
+}
+
+export function planRollout({ crowns, roads, ground = [], buildings = [], bounds, inAnsley = () => false }: RolloutInput): RolloutPlan {
+  const near = roadIndex(roads);
+  const parks = ground.filter(g => PARKLIKE.has(g.kind) || (g.kind === 'grass' && ringArea(g.rings[0]) > 2000));
+  const plan: RolloutPlan = { replaced: new Set(), species: [], enlarged: new Map(), added: [], cleared: new Set(), context: new Map() };
+  const contextOf = (x: number, z: number): Context => {
+    const r = near(x, z);
+    if (r && r.edge < STREET_M) return 'street';
+    return parks.some(g => inRing(x, z, g.rings[0])) ? 'park' : 'yard';
+  };
+
+  // Islands first: their crowns are cleared and replanted.
+  const islands = inAnsleyIslands(ground, near, inAnsley);
+  for (const isl of islands) {
+    for (const [x, z] of crowns) if (inRing(x, z, isl.ring)) plan.cleared.add(crownKey(x, z));
+    if (isl.round) {
+      // One large hardwood at the centre (the generic broadleaf, at specimen size).
+      const big: Crown = [isl.cx, isl.cz, 24, Math.min(10, Math.sqrt(isl.area / Math.PI) + 4)];
+      plan.added.push({ crown: big });
+      plan.enlarged.set(crownKey(big[0], big[1]), { h: big[2], r: big[3] });
+    } else {
+      const n = Math.max(1, Math.min(3, Math.round(isl.area / 120)));
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + hash01(positionSeed(isl.cx, isl.cz), i) * 0.8;
+        const d = n === 1 ? 0 : Math.min(3, Math.sqrt(isl.area) * 0.22);
+        const x = isl.cx + Math.cos(a) * d, z = isl.cz + Math.sin(a) * d;
+        const seed = positionSeed(x, z);
+        const maple = hash01(seed, 1) < 0.6;
+        plan.species.push(maple
+          ? { species: 'japanese-maple', x, z, heightM: 5, spreadM: 5.5, size: 'mature', seed }
+          : { species: 'crape-myrtle', x, z, heightM: 6, spreadM: 4.5, size: 'mature', seed });
+      }
+    }
+  }
+
+  const keys = new Set(crowns.map(([x, z]) => crownKey(x, z)));
+  for (const [x, z, h, r] of crowns) {
+    const key = crownKey(x, z);
+    if (plan.cleared.has(key)) continue;
+    const ctx = contextOf(x, z);
+    plan.context.set(key, ctx);
+    const ansley = inAnsley(x, z);
+    const seed = positionSeed(x, z);
+    const weights = { ...MIX[ctx] };
+    if (ansley && ctx === 'yard') weights['japanese-maple'] = ANSLEY_YARD_MAPLE;
+    let u = hash01(seed, 21) * 100;
+    let pick: RolloutSpecies | null = null;
+    for (const [sp, w] of Object.entries(weights) as [RolloutSpecies, number][]) {
+      if (u < w) { pick = sp; break; }
+      u -= w;
+    }
+    if (pick && FITS[pick](h, r)) {
+      plan.replaced.add(key);
+      plan.species.push({ species: pick, x, z, heightM: h, spreadM: r * 2, size: h >= SPECIMEN_AT[pick] ? 'specimen' : 'mature', seed });
+      continue;
+    }
+    if (!ansley) continue;
+    // Ansley skew: about 40% of the remaining broadleaf crowns at specimen size (25–35 m).
+    if (hash01(seed, 22) < 0.4) {
+      const big = { h: Math.max(h, 25 + 10 * hash01(seed, 23)), r: Math.max(r, 9 + 4 * hash01(seed, 24)) };
+      plan.enlarged.set(key, big);
+    }
+    // Facing pairs: a street crown gains a partner mirrored across its street.
+    if (ctx === 'street') {
+      const n = near(x, z)!;
+      const { a, b } = n.seg;
+      const dx = b[0] - a[0], dz = b[1] - a[1], l = dx * dx + dz * dz;
+      const t = l ? ((x - a[0]) * dx + (z - a[1]) * dz) / l : 0;
+      // Past a segment's end (a corner, a bend) there is no "across the street": no pair.
+      if (t <= 0.02 || t >= 0.98) continue;
+      const px = a[0] + t * dx, pz = a[1] + t * dz;
+      const mx = 2 * px - x, mz = 2 * pz - z;
+      if (mx < bounds.minX + 2 || mx >= bounds.maxX - 2 || mz < bounds.minZ + 2 || mz >= bounds.maxZ - 2) continue;
+      if (!inAnsley(mx, mz)) continue;
+      const nm = near(mx, mz);
+      if (!nm || nm.edge < 1) continue; // in another carriageway
+      if (buildings.some(ring => inRing(mx, mz, ring))) continue;
+      const crowded = (cx: number, cz: number) => Math.hypot(cx - mx, cz - mz) < 7;
+      if (crowns.some(([cx, cz]) => crowded(cx, cz)) || plan.added.some(({ crown: [cx, cz] }) => crowded(cx, cz))) continue;
+      const pk = crownKey(mx, mz);
+      if (keys.has(pk)) continue;
+      const size = plan.enlarged.get(key) ?? { h, r };
+      plan.added.push({ crown: [mx, mz, size.h, size.r], from: key });
+      plan.enlarged.set(pk, size);
+    }
+  }
+  return plan;
+}
+
+/** Ansley's grass traffic islands: small grass polygons ringed by carriageways. */
+function inAnsleyIslands(ground: VGround[], near: ReturnType<typeof roadIndex>, inAnsley: (x: number, z: number) => boolean) {
+  const out: { ring: P2[]; cx: number; cz: number; area: number; round: boolean }[] = [];
+  for (const g of ground) {
+    if (g.kind !== 'grass') continue;
+    const ring = g.rings[0];
+    const area = ringArea(ring);
+    if (area > 1500 || area < 40) continue;
+    const [cx, cz] = centroid(ring);
+    if (!inAnsley(cx, cz)) continue;
+    // A grass verge along one street is long and thin; an island is compact.
+    const roundness = (4 * Math.PI * area) / ringPerimeter(ring) ** 2;
+    if (roundness < 0.45) continue;
+    // Every edge of the island within a few metres of a carriageway.
+    if (!ring.every(([x, z]) => { const n = near(x, z); return !!n && n.edge < 14; })) continue;
+    out.push({ ring, cx, cz, area, round: roundness >= 0.75 });
+  }
+  return out;
+}
+
+/** Area-weighted centroid of a ring (a repeated closing vertex is harmless). */
+function centroid(r: P2[]): P2 {
+  let a = 0, x = 0, z = 0;
+  for (let i = 0; i < r.length; i++) {
+    const [x0, z0] = r[i], [x1, z1] = r[(i + 1) % r.length];
+    const c = x0 * z1 - x1 * z0;
+    a += c; x += (x0 + x1) * c; z += (z0 + z1) * c;
+  }
+  return Math.abs(a) < 1e-9 ? r[0] : [x / (3 * a), z / (3 * a)];
+}
+
+/**
+ * The part of a row's plan that a quality tier draws: the tier's own crowns keep their species and
+ * sizes; a facing pair appears only where its source crown is in the tier; island trees always.
+ */
+export function tierPlan(plan: RolloutPlan, tierCrowns: Crown[]): RolloutPlan {
+  const here = new Set(tierCrowns.map(([x, z]) => crownKey(x, z)));
+  const added = plan.added.filter(a => a.from === undefined || here.has(a.from));
+  const addedKeys = new Set(added.map(a => crownKey(a.crown[0], a.crown[1])));
+  const keep = (k: string) => here.has(k) || addedKeys.has(k);
+  return {
+    replaced: new Set([...plan.replaced].filter(keep)),
+    species: plan.species.filter(sp => { const k = crownKey(sp.x, sp.z); return here.has(k) || !plan.context.has(k); }),
+    enlarged: new Map([...plan.enlarged].filter(([k]) => keep(k))),
+    added,
+    cleared: plan.cleared,
+    context: plan.context,
+  };
+}
