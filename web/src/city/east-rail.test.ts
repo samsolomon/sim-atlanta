@@ -1,13 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import type { SceneManifest } from '../core/scene-data';
+import { makeProjector, type SceneManifest } from '../core/scene-data';
 import type { RoutesFile } from '../model/types';
 import { GroundGrid } from '../terrain/grid';
 import { alignment } from '../vignette/alignment';
 import { CAR_WIDTH } from '../vignette/cq400';
 import { MARTA_TRACK_OFFSET } from '../vignette/world';
-import { buildEastRail, extendRail, joinedGround, type CorridorPack } from './east-rail';
+import { buildEastRail, ENCLOSURES, extendRail, joinedGround, STATION_BUILDING, type CorridorPack } from './east-rail';
 import { terrainAlignment } from './terrain-rail';
 
 const data = resolve(__dirname, '../../public/data');
@@ -88,11 +89,12 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
       expect(Math.abs(p.outer)).toBeGreaterThan(Math.abs(p.lip) + 3);
     }
     expect(rail.mesh.geometry.attributes.position.count).toBeGreaterThan(1000);
-    // The OSM station building is drawn on its footprint, from the ground to under the platforms.
-    expect(rail.building).toBeDefined();
-    expect(rail.building!.ring).toHaveLength(26);
-    expect(rail.building!.top).toBeLessThan(rail.floor(9040) - 0.8);
-    expect(rail.building!.top - rail.building!.base).toBeGreaterThan(8);
+    // Only the lobby and the lifted mezzanine are enclosed; the mezzanine meets the platform fascia
+    // and clears the street level, and the lobby stays under the entry canopy.
+    const { lobby, mezzanine } = rail.enclosed;
+    expect(mezzanine!.top).toBeCloseTo(Math.min(rail.floor(9010), rail.floor(9094)) - 0.8, 5);
+    expect(mezzanine!.underside - eastGround(1480, 415)!).toBeGreaterThan(6);
+    expect(lobby!.top - lobby!.base).toBeLessThan(5);
     // The drawn roof is the measured roof wherever the lidar saw it.
     for (const r of rail.roofDrawn) {
       const m = pack.guideway.reduce((a, b) => (Math.abs(b.s - r.s) < Math.abs(a.s - r.s) ? b : a));
@@ -112,6 +114,9 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
     expect(st.flights).toBeGreaterThanOrEqual(3);
     expect(st.rise).toBeGreaterThan(12);
     expect(st.x).toBeLessThan(1430); // the Grant St end
+    const east = rail.exterior.eastStair!;
+    expect(east.x).toBeGreaterThan(1520); // the Borders Dr end
+    expect(east.flights).toBeGreaterThanOrEqual(3); // the ground rises toward the east end
     expect(cn.underside).toBeGreaterThan(3.5);
     expect(cn.underside).toBeLessThan(6);
     expect(cn.length).toBeGreaterThan(40);
@@ -122,6 +127,43 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
     expect(lights.visible).toBe(false);
     rail.setNight(1);
     expect(lights.visible).toBe(true);
+    rail.dispose();
+  });
+
+  it('leaves the street level under the platforms open between the columns', () => {
+    // On main the whole OSM envelope was a solid wall from the ground to the deck. Rays across the
+    // station a few metres above grade, midway between column rows, must now pass through.
+    const pack = J<CorridorPack>('scene/king-memorial/corridor.json');
+    const rail = buildEastRail(extended, rf, pack, eastGround, zero);
+    const path = rf.paths.find(p => p.id === 'marta:path:155177')!;
+    const project = makeProjector(extended.origin);
+    const frame = (s: number) => {
+      let i = 0;
+      while (path.cum[i + 1] < s) i++;
+      const [ax, az] = project(path.coords[2 * i], path.coords[2 * i + 1]);
+      const [bx, bz] = project(path.coords[2 * i + 2], path.coords[2 * i + 3]);
+      const len = Math.hypot(bx - ax, bz - az), t = (s - path.cum[i]) / (path.cum[i + 1] - path.cum[i]);
+      return { x: ax + t * (bx - ax), z: az + t * (bz - az), nx: -(bz - az) / len, nz: (bx - ax) / len };
+    };
+    rail.mesh.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster();
+    const checked: number[] = [];
+    // Columns stand every 18 m from s 8951; test midway. West and east open bays, and under the mezzanine.
+    for (const s of [8978, 8996, 9032, 9068, 9122]) {
+      const f = frame(s);
+      const from = (v: number) => new THREE.Vector3(f.x + f.nx * v, 0, f.z + f.nz * v);
+      const v0 = s >= ENCLOSURES.lobby.s[0] && s <= ENCLOSURES.lobby.s[1] ? ENCLOSURES.lobby.v[1] + 0.5 : -8.8, v1 = 14;
+      const a = from(v0), c = from(v1);
+      const y = Math.max(eastGround(a.x, a.z)!, eastGround(c.x, c.z)!) + 3;
+      a.y = c.y = y;
+      ray.set(a, c.clone().sub(a).normalize());
+      ray.far = a.distanceTo(c);
+      expect(ray.intersectObject(rail.mesh, false), `s ${s}`).toHaveLength(0);
+      checked.push(s);
+    }
+    expect(checked).toHaveLength(5);
+    // The station envelope is still the OSM footprint, and the enclosures sit inside it.
+    expect(STATION_BUILDING).toHaveLength(26);
     rail.dispose();
   });
 });
