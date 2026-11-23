@@ -3,6 +3,8 @@ import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
 import sites from './fixtures/midtown-skyline.json';
 
+import { promenadeCentral, promenadeTower } from './midtown-promenade';
+
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 const site = sites.oneAtlantic;
 
@@ -61,14 +63,22 @@ function oneAtlantic(shell: Shell) {
   return shell.finish('#ffe2af', .85);
 }
 
+const landmarks = [
+  { site, axis: [1,0], probes: [[-24,0],[24,0],[0,-24],[0,24]], build: oneAtlantic },
+  { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
+  { site: sites.promenadeCentral, axis: [1,1], probes: [[-35,-20],[40,15],[0,-26],[0,24]], build: promenadeCentral },
+] satisfies { site: typeof site, axis: P2, probes: P2[], build: typeof oneAtlantic }[];
+
+export const skylineIds = new Set(landmarks.map(entry => entry.site.id));
+
 export function createSkylineLandmark(buildings: VBuilding[], building: VBuilding, base: number | null,
   groundAt: (x: number, z: number) => number | null) {
-  if (building.id !== site.id || building.rings.length !== 1 || base === null) return null;
+  const entry = landmarks.find(({site}) => site.id === building.id);
+  if (!entry || building.rings.length !== 1 || base === null) return null;
+  const {site, axis, probes, build} = entry;
   const grade = groundAt(site.x, site.z);
   if (grade === null || !Number.isFinite(grade)) return null;
-  const shell = localLandmarkShell(buildings, building, site.name, [site.x,site.z], [1,0],
-    [[-24,0],[24,0],[0,-24],[0,24]], base - grade - .35, grade);
-  return shell && oneAtlantic(shell);
+  const shell = localLandmarkShell(buildings, building, site.name, [site.x,site.z], axis,
+    probes, base - grade - .35, grade);
+  return shell && build(shell);
 }
-
-export const skylineIds = new Set<string>([site.id]);

@@ -37,3 +37,14 @@ it('mounts the 250 m landmark on terrain and suppresses the generic roof', () =>
     vi.unstubAllGlobals();
   }
 });
+
+it.each([
+  ['osm:way:269636921','Promenade Central',36.2],
+  ['osm:way:269637575','Promenade Tower',211],
+] as const)('replaces %s at the measured local grade', (id, name, height) => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === id);
+  const model = createSkylineLandmark([building,tower], building, -8, () => -3)!;
+  expect(model.group.name).toBe(name);
+  expect(model.buildings).toEqual([tower]);
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(height-3);
+});

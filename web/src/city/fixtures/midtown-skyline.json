@@ -5,5 +5,19 @@
     "x": 391.2,
     "z": -3689.5,
     "heightM": 250
+  },
+  "promenadeTower": {
+    "id": "osm:way:269637575",
+    "name": "Promenade Tower",
+    "x": 598,
+    "z": -3778,
+    "heightM": 211
+  },
+  "promenadeCentral": {
+    "id": "osm:way:269636921",
+    "name": "Promenade Central",
+    "x": 680,
+    "z": -3767,
+    "heightM": 36.2
   }
 }

@@ -2119,3 +2119,7 @@ Across Sifly Piazza, Meier's atrium and Piano's rows of daylight scoops now read
 ### 2026-11-23 — One Atlantic Center, West Peachtree at 14th
 
 One Atlantic Center fits a 250 m tower on a footprint barely 52 m across. Its upper Midtown ground samples span only 1.5 m, but its skyline depends on the last 49 m above the shaft. The owner's night photograph shows a dark copper face between illuminated ridges. City now draws those ridges, the collar, pinnacles and finial separately. The shaft follows the mapped footprint down to the local 3DEP grade. [Photographs, dimensions and matched City views on both tiers](midtown-skyline.md#one-atlantic-center)
+
+### 2026-11-23 — Two Promenade addresses
+
+A 2001 letterhead settled which building was Promenade I. The 36.2 m office at 1200 Peachtree now has its stepped plaza entrance and canopy. Next door, the 211 m tower at 1230 rises through five setbacks to a pale lantern. The low building crosses 9.2 m of terrain relief, nearly twice the variation around the tower. Both foundations now reach the lowest sampled edge. [Promenade evidence and day/night views](midtown-skyline.md#promenade-i-and-ii)
