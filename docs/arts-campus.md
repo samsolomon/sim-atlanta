@@ -34,3 +34,14 @@ The matched camera targets (565, −3965), bearing −101°, tilt 55°, at 0.33 
 | Sifly Piazza, cam=540,-3972,150,45,150 | [Day](log/ui/arts-campus/piazza-high-day.jpg) · [Night](log/ui/arts-campus/piazza-high-night.jpg) | [Day](log/ui/arts-campus/piazza-low-day.jpg) · [Night](log/ui/arts-campus/piazza-low-night.jpg) |
 
 Both cameras use clear weather at 13:00 and 23:00 Eastern on November 20, 2026. The wide campus captures above were reshot with these changes. Web rebuild only.
+
+## Woodruff rear: stage house and fly tower (November 23, 2026)
+
+Sam's review found the back of the Memorial Arts Building blank, with plain boxes for the stage house and fly tower. The piazza-side photograph shows the rear skin. The stage house is white precast with vertical fins at a regular bay, horizontal panel joints and recessed slot windows high in the wall. The fly tower above is a plain jointed box. City now draws that skin on the exposed stage-house faces, including the short east return beside the auditorium: fins 0.6 m wide, 0.5 m proud and 4.2 m apart, joints every 2.4 m, and slot windows 1.2 × 2.2 m in alternate bays, all estimated from the photograph. The fly tower gets 3 m × 6 m panel joints and a coping. The aerial shows mechanical units on the roof, so two louvred screens stand on the stage-house roof. Their positions are illustrative. [Piazza side with the stage house and fly tower](https://commons.wikimedia.org/wiki/File:Woodruff_Arts_Center3.jpg) · [Peachtree side](https://commons.wikimedia.org/wiki/File:Woodruff_Arts_Center2.jpg)
+
+**Gaps.** I found no photograph of the Arts Center Way or 15th Street service side, and the Alliance technical-specifications PDF returns 404. City therefore draws no loading dock, service doors or signage band yet, because placing them would be invention. A service court appears in the aerial south-west of the building, but my reading of its position did not register reliably against the footprint. I found no reliable night photograph of the rear. At night one in three slot windows is lit, which is illustrative. Web rebuild only.
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Rear from Arts Center Way, cam=570,-3914,70,55,150 | [Day](log/ui/arts-campus/back-west-high-day.jpg) · [Night](log/ui/arts-campus/back-west-high-night.jpg) | [Day](log/ui/arts-campus/back-west-low-day.jpg) · [Night](log/ui/arts-campus/back-west-low-night.jpg) |
+| Rear from the south, cam=570,-3914,0,55,170 | [Day](log/ui/arts-campus/back-south-high-day.jpg) · [Night](log/ui/arts-campus/back-south-high-night.jpg) | [Day](log/ui/arts-campus/back-south-low-day.jpg) · [Night](log/ui/arts-campus/back-south-low-night.jpg) |
