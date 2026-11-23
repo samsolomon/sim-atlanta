@@ -154,3 +154,23 @@ export class Builder {
     return g;
   }
 }
+
+/**
+ * Faceted transverse sections with individually coloured longitudinal panels. Local +z is forward.
+ * Both end caps take `capColor` (the second panel's colour by default).
+ */
+export function loft(b: Builder, rings: number[][][], colors: string[], capRear = true, capFront = true, capColor = colors[1]) {
+  const last = rings[rings.length - 1];
+  for (let i = 1; i < last.length - 1; i++) {
+    if (capFront) b.tri(last[0], last[i], last[i + 1], capColor);
+    if (capRear) b.tri(rings[0][0], rings[0][i + 1], rings[0][i], capColor);
+  }
+  for (let k = 1; k < rings.length; k++) {
+    const a = rings[k - 1],
+      c = rings[k];
+    for (let i = 0; i < a.length; i++) {
+      const j = (i + 1) % a.length;
+      b.quad(a[i], a[j], c[j], c[i], colors[i]);
+    }
+  }
+}
