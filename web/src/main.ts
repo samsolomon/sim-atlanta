@@ -143,13 +143,12 @@ document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 function renderTrainCard() {
   if (!selectedTrain) return;
   // After a tier handoff the card describes the vehicle now followed (or the one whose follow
-  // just ended). It is a continuation, not a new tap: drop the old trip's drawn-track facts and
-  // keep the A2c panel where the user left it.
+  // just ended). It is a continuation, not a new tap: keep the A2c panel where the user left it.
+  // Drawn-track facts are recomputed below from the train City draws now.
   const lineage = follow?.active ? follow.lineage : follow?.endedLineage ?? [];
   const current = follow?.vehicle ?? follow?.ended;
   if (current?.kind === 'train' && current.id !== selectedTrain && lineage.includes(selectedTrain)) {
     selectedTrain = current.id;
-    selectedDrawn = {};
     shownKey = current.id;
   }
   const t = source.find(selectedTrain);
