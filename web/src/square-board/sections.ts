@@ -7,6 +7,7 @@ import railRows from '../city/fixtures/midtown-rail.json';
 import { brookwoodCorridorRail } from '../city/brookwood-corridor';
 import { midtownLights } from '../city/midtown-night';
 import { northLineRail } from '../city/midtown-marta-guideway';
+import { northLinePortalSlots } from '../city/midtown-marta-rail';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
@@ -147,6 +148,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
         lights: id in rowBounds ? midtownLights : undefined,
+        openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {

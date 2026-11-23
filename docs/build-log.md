@@ -2353,3 +2353,8 @@ Sam's second note was that the cars looked like different heights and should mat
 ### 2026-11-23 — Piers that miss the lanes
 
 Sam noticed that the Midtown bridges over the Connector floated: no deck from the survey had a single support. The North Line spans had just gained piers with a footprint test that avoids every rendered lane, road and railway, so the street and freeway decks now share it. At first it found no room at all on North Avenue or 10th Street. The culprit was the mapped freeway centreline, which the test widened to a generic 14 m road and so buried the 5 m median. The rendered lanes already describe the freeway exactly, so the centreline was dropped from the obstacle list, and both bridges now stand on a median pier. Requires a web rebuild only. [10th Street before and after](log/ui/midtown-piers/compare-10th-street.jpg)
+
+
+### 2026-11-23 — The hill was inside the tunnel
+
+The first portal fix added a headwall and a dark tube, and Sam still saw green in the mouth. He also preferred the old twin hoods. The green was never sky behind the hood. A 5 m terrain grid blends the hillside over the tunnel into the cut floor, so the ground mesh climbed about a metre inside the tube. No amount of interior geometry can hide terrain that sits in front of it. The fix cuts a 10 m opening in the terrain under the hood, down to just below the rail. The twin hoods return as a closed, double-sided tube that fades to black. The crown lamps stay. Requires a web rebuild only. [Before and after, cropped](log/ui/midtown-marta/portal-hoods-oblique-before-after.jpg)

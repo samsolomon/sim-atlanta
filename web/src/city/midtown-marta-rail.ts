@@ -104,98 +104,49 @@ export function portalFrame(lines: Line[]) {
 export const NORTH_LINE_VANISH_DEPTH = 5;
 
 /**
- * Cut-and-cover tunnel mouth: a headwall set into the slope, splayed wing walls
- * along the cut, earth closed over the box, and a 60 m interior that fades to
- * near-black. Small lamps at the crown and a little way in glow at night
- * (illustrative: no photograph of the portal was found).
+ * Twin concrete hoods with a centre wall (the 2026-11-23 form Sam prefers), closed
+ * into a tube: the interior walls, centre wall, roof and floor run 24 m back and fade
+ * to a black end cap, all double-sided, so no terrain or sky reads through the mouth.
+ * The terrain inside the hood is cut away by northLinePortalSlots. Small lamps at the
+ * crown and a little way in glow at night (illustrative: no photograph found).
  */
-function portal(frame: ReturnType<typeof portalFrame>, base: number, ground: (x: number, z: number) => number | null) {
+function portal(frame: ReturnType<typeof portalFrame>, base: number) {
   const body = new Builder(),
-    lamps = new Builder();
-  const concrete = '#a89e8f',
-    coping = '#b5ab9b',
-    earth = '#97a183';
+    lamps = new Builder(),
+    concrete = '#a89e8f';
   const half = frame.spacing / 2 + 2.72,
-    opening = 5.2,
-    wing = half + 5;
-  // Local x across the mouth, y up from the rail, z outward along the open track.
-  const world = (x: number, z: number) => [frame.x + frame.dz * x + frame.dx * z, frame.z - frame.dx * x + frame.dz * z];
-  const groundAt = (x: number, z: number) => {
-    const [wx, wz] = world(x, z);
-    const g = ground(wx, wz);
-    return g === null ? null : g - base;
-  };
-  let behind = opening + 1.4;
-  // The headwall rises to the ground over the tube itself, not the cut's shoulders.
-  for (let x = -half - 1; x <= half + 1; x += 1)
-    for (const z of [-4, -7, -10]) behind = Math.max(behind, (groundAt(x, z) ?? -Infinity) + 0.6);
-  const top = Math.min(behind, opening + 6);
-  // Headwall face with one opening for both tracks, and its coping.
-  const face = (x0: number, x1: number, y0: number, y1: number) => {
-    body.quad([x0, y0, 0], [x0, y1, 0], [x1, y1, 0], [x1, y0, 0], concrete);
-    body.quad([x0, y1, 0], [x0, y1, -0.8], [x1, y1, -0.8], [x1, y1, 0], concrete);
-  };
-  face(-wing, -half, -0.6, top);
-  face(half, wing, -0.6, top);
-  face(-half, half, opening, top);
-  body.box(2 * wing + 0.6, 0.35, 1.1, 0, top + 0.17, -0.4, coping);
-  // Wing walls stepping down along the cut to the ground 8 m out.
-  for (const side of [-1, 1]) {
-    for (let k = 0; k < 4; k++) {
-      const z0 = k * 2,
-        z1 = z0 + 2;
-      const x0 = side * (wing + z0 * 0.15),
-        x1 = side * (wing + z1 * 0.15);
-      const g0 = groundAt(x0, z0) ?? 0,
-        g1 = groundAt(x1, z1) ?? 0;
-      const t0 = top + (g0 + 0.3 - top) * (z0 / 8),
-        t1 = top + (g1 + 0.3 - top) * (z1 / 8);
-      if (t0 <= g0 && t1 <= g1) continue;
-      body.quad([x0, Math.min(g0, 0) - 0.6, z0], [x0, t0, z0], [x1, t1, z1], [x1, Math.min(g1, 0) - 0.6, z1], concrete);
-    }
+    width = 2 * half + 0.38,
+    height = 4.65;
+  body.box(width, 0.6, 8, 0, 4.95, -3.95, concrete);
+  body.box(0.4, 4.65, 8, 0, 2.32, -3.95, '#aa9e8c');
+  for (const sign of [-1, 1]) {
+    const side = sign * half;
+    body.box(0.38, 5.1, 8, side, 2.45, -3.95, '#aa9e8c');
+    body.quad([side - 0.18, 0, 0.05], [side + 0.18, 0, 0.05], [side + 0.18, 1.1, 7.7], [side - 0.18, 1.1, 7.7], concrete);
+    body.quad([side, 0, 0.05], [side, 4.55, 0.05], [side, 1.1, 7.7], [side, 0, 7.7], '#998d7e');
   }
-  // Earth closed over the box from the coping back, at least 0.4 m over the tube's
-  // roof for its full 60 m, sloping off beside it. Only the part standing clear of
-  // the terrain is drawn, lifted 0.15 m where it meets the ground, so it never z-fights.
-  const roofCover = opening + 0.4;
-  for (let x = -wing; x < wing; x += 2) {
-    const xs = [x, Math.min(x + 2, wing)];
-    const over = (xx: number) => Math.abs(xx) <= half + 0.5;
-    const cap = (xx: number, z: number) => {
-      const g = groundAt(xx, z) ?? -Infinity;
-      const y = Math.max(top - 0.25 * (-z - 0.8), over(xx) ? roofCover : -Infinity);
-      return { y: Math.max(y, g + 0.15), g, clear: y > g + 0.2 };
-    };
-    let za = -0.8;
-    let prev = xs.map((xx) => ({ ...cap(xx, -0.8), y: top }));
-    for (let z = -2.8; z >= -60; z -= 2) {
-      const next = xs.map((xx) => cap(xx, z));
-      if ([...prev, ...next].some(({ clear }) => clear))
-        body.quad([xs[0], prev[0].y, za], [xs[0], next[0].y, z], [xs[1], next[1].y, z], [xs[1], prev[1].y, za], earth);
-      za = z;
-      prev = next;
-    }
-  }
-  // Interior: side walls, centre wall, roof and floor fading to near-black.
-  const shade = (z: number) => {
-    const t = Math.min(1, -z / 18);
-    const c = new THREE.Color('#6e6a62').lerp(new THREE.Color('#0a0a09'), Math.pow(t, 0.7));
-    return '#' + c.getHexString();
-  };
-  for (let z = 0; z > -60; z -= z > -18 ? 1.5 : 6) {
-    const z1 = Math.max(-60, z - (z > -18 ? 1.5 : 6)),
+  body.box(1.6, 0.44, 0.1, 0, 4.97, 0.1, '#534f49');
+  for (let i = 0; i < 4; i++) body.box(1.56, 0.038, 0.14, 0, 4.8 + i * 0.1, 0.15, '#aa9e8c');
+  // Interior tube, a little inside the hood walls, fading to near-black.
+  const inner = half - 0.2,
+    shade = (z: number) =>
+      '#' + new THREE.Color('#5d5952').lerp(new THREE.Color('#080807'), Math.pow(Math.min(1, -z / 14), 0.7)).getHexString();
+  for (let z = -0.3; z > -24; z -= 1.5) {
+    const z1 = Math.max(-24, z - 1.5),
       col = shade((z + z1) / 2);
-    for (const x of [-half, half]) body.quad([x, -0.6, z], [x, opening, z], [x, opening, z1], [x, -0.6, z1], col);
-    body.quad([-0.2, -0.6, z], [-0.2, opening, z], [-0.2, opening, z1], [-0.2, -0.6, z1], col);
-    body.quad([0.2, -0.6, z], [0.2, opening, z], [0.2, opening, z1], [0.2, -0.6, z1], col);
-    body.quad([-half, opening, z], [half, opening, z], [half, opening, z1], [-half, opening, z1], col);
-    body.quad([-half, -0.3, z], [-half, -0.3, z1], [half, -0.3, z1], [half, -0.3, z], col);
+    for (const x of [-inner, -0.21, 0.21, inner]) body.quad([x, -0.4, z], [x, height, z], [x, height, z1], [x, -0.4, z1], col);
+    body.quad([-inner, height, z], [inner, height, z], [inner, height, z1], [-inner, height, z1], col);
+    body.quad([-inner, -0.3, z], [-inner, -0.3, z1], [inner, -0.3, z1], [inner, -0.3, z], col);
   }
-  body.quad([-half, -0.6, -60], [half, -0.6, -60], [half, opening, -60], [-half, opening, -60], '#050505');
-  // Crown lamps over each track and two pairs of interior lamps (illustrative).
+  body.quad([-inner, -0.4, -24], [inner, -0.4, -24], [inner, height, -24], [-inner, height, -24], '#050505');
+  // Beyond the hood the tube runs underground: an outer shell keeps it closed where
+  // the slot leaves the terrain open, without showing above the hill.
+  for (const x of [-half - 0.19, half + 0.19]) body.quad([x, -0.4, -7.9], [x, 5.25, -7.9], [x, 5.25, -24], [x, -0.4, -24], concrete);
+  body.quad([-half - 0.19, 5.25, -7.9], [half + 0.19, 5.25, -7.9], [half + 0.19, 5.25, -24], [-half - 0.19, 5.25, -24], concrete);
+  // Crown lamps over each track and a pair a little way in (illustrative).
   for (const x of [-half / 2, half / 2]) {
-    lamps.box(0.5, 0.2, 0.25, x, opening + 0.35, 0.2, '#ffe9c2');
-    for (const z of [-6, -16]) lamps.box(0.4, 0.15, 0.6, x * 1.6, opening - 0.2, z, '#ffd9a0');
+    lamps.box(0.7, 0.22, 0.25, x, height - 0.22, 0.12, '#ffe9c2');
+    lamps.box(0.35, 0.12, 0.5, x, height - 0.12, -6, '#ffd9a0');
   }
   const group = new THREE.Group();
   group.name = 'North Line portal';
@@ -206,6 +157,28 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number, ground: (x:
   group.position.set(frame.x, base, frame.z);
   group.rotation.y = Math.atan2(frame.dx, frame.dz);
   return { group, glow };
+}
+
+/**
+ * The 3DEP grid at the mouth blends the hillside over the tunnel into the cut, so
+ * terrain rises inside the hood. Cut it from 3 m outside the face to 10 m in, down to
+ * just under the rail, so the hood's interior reads dark from every angle. Beyond
+ * that the hill stands above the tube's roof.
+ */
+export function northLinePortalSlots(grid: { sample(x: number, z: number): number | null; manifest: { vertical: { sceneZeroNavd88M: number } } }) {
+  const lines = northLineTracks(railRows['brookwood-station'] as TransportRun[], -5700);
+  if (lines.length !== 2) return [];
+  const f = portalFrame(lines);
+  const out = grid.sample(f.x + f.dx * 10, f.z + f.dz * 10);
+  if (out === null) return [];
+  const bed = out - grid.manifest.vertical.sceneZeroNavd88M - 0.4;
+  return [
+    {
+      start: [f.x + f.dx * 0.5, bed, f.z + f.dz * 0.5] as const,
+      end: [f.x - f.dx * 10, bed, f.z - f.dz * 10] as const,
+      halfWidthM: f.spacing / 2 + 2.72 + 0.15,
+    },
+  ];
 }
 
 export function createNorthLine(
@@ -241,7 +214,7 @@ export function createNorthLine(
   {
     const frame = portalFrame(lines),
       base = Math.min(...lines.map((l) => height(l, 0.05)));
-    portalParts = portal(frame, base, area.groundAt);
+    portalParts = portal(frame, base);
     area.group.add(portalParts.group);
     // Keep cars a few metres into the dark tube before clipping them.
     const clip = [
