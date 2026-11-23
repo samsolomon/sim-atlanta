@@ -45,10 +45,27 @@ export class GroundSurface {
   minY!: number;
   private starts!: Uint32Array;
   private blockCols!: number;
+  /** Block whose triangle range holds this block's ground (a merged 20 m quad lives in its north-west block). */
+  private owner!: Int32Array;
+  /** Low tier: merge 2 × 2 flat 10 m blocks into one 20 m quad. */
+  static mergeLow = true;
+  /**
+   * Low-tier flatness tolerance (m): a block merges when every omitted node lies within
+   * this of the coarse triangles. 0.5 m halves the phone's ground triangles (1.10M → 0.58M
+   * on the committed boards); 0.2 m was the original. Seams, openings and yields stay 5 m.
+   */
+  static lowTolerance = 0.5;
+  /** `?ground=old` A/B switch: today's low tier (0.2 m, no 20 m merge). */
+  static useOriginalLow() { GroundSurface.mergeLow = false; GroundSurface.lowTolerance = 0.2; }
   private yields: GroundYield[] = [];
 
+  /**
+   * `fine` boxes (scene metres) keep the original 0.2 m low-tier tolerance and never merge:
+   * building footprints, decks and rail, where placed geometry meets the drawn ground.
+   */
   constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
-    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins) {
+    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins,
+    private readonly fine: readonly { minX: number; maxX: number; minZ: number; maxZ: number }[] = []) {
     this.build();
   }
 
@@ -93,6 +110,13 @@ export class GroundSurface {
     if (!Number.isFinite(minY)) throw new Error('Ground grid is empty');
     this.minY = minY;
     const joins = joinList(join);
+    // Blocks under placed geometry keep the original tolerance (see `fine`).
+    const fineBlock = new Uint8Array(detail.length);
+    if (quality === 'low') for (const f of this.fine) {
+      const c0 = Math.max(0, Math.floor((f.minX - bounds.minX) / (2 * stepM))), c1 = Math.min(blockCols - 1, Math.floor((f.maxX - bounds.minX) / (2 * stepM)));
+      const r0 = Math.max(0, Math.floor((f.minZ - bounds.minZ) / (2 * stepM))), r1 = Math.min(blockRows - 1, Math.floor((f.maxZ - bounds.minZ) / (2 * stepM)));
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) fineBlock[r * blockCols + c] = 1;
+    }
     for (let k = 0; k < detail.length; k++) {
       const x = 2 * (k % blockCols), z = 2 * Math.floor(k / blockCols);
       const bx = bounds.minX + x * stepM, bz = bounds.minZ + z * stepM, size = 2 * stepM;
@@ -106,7 +130,7 @@ export class GroundSurface {
       const nw = z * cols + x, ne = nw + 2, sw = nw + 2 * cols, se = sw + 2;
       // Check all five omitted nodes against the candidate pair of coarse triangles.
       const close = (a: number, b: number) =>
-        Math.abs(heights[(a + b) / 2] - (heights[a] + heights[b]) / 2) <= 0.20;
+        Math.abs(heights[(a + b) / 2] - (heights[a] + heights[b]) / 2) <= (fineBlock[k] ? 0.2 : GroundSurface.lowTolerance);
       if (!(close(nw, ne) && close(nw, sw) && close(ne, sw) && close(ne, se) && close(sw, se))) detail[k] = 1;
     }
     const pos: number[] = [], uv: number[] = [], indices: number[] = [];
@@ -191,12 +215,72 @@ export class GroundSurface {
       }
       for (const f of faces) emit(f);
     };
+    // Low tier: a 2 × 2 group of flat blocks whose 25 nodes all lie within the same 0.20 m
+    // of one 20 m quad becomes that quad. Blocks on a join, an opening, a yield, a void or
+    // the last row and column are detailed or excluded, so seams and slots never move.
+    const owner = this.owner = Int32Array.from({ length: detail.length }, (_, k) => k);
+    const merged = new Uint8Array(detail.length);
+    if (quality === 'low' && GroundSurface.mergeLow) {
+      for (let bz = 0; bz + 1 < blockRows; bz += 2) for (let bx = 0; bx + 1 < blockCols; bx += 2) {
+        const k = bz * blockCols + bx, group = [k, k + 1, k + blockCols, k + blockCols + 1];
+        const x = 2 * bx, z = 2 * bz;
+        if (x + 4 > cols - 1 || z + 4 > rows - 1) continue;
+        // Yields do not decide the tessellation (a carve must not move the ground outside it);
+        // a merged quad clips against the yields of all four of its blocks.
+        if (group.some(g => detail[g] || slots.has(g) || fineBlock[g])) continue;
+        const nw = z * cols + x, ne = nw + 4, sw = nw + 4 * cols, se = sw + 4;
+        let flat = true;
+        for (let r = 0; r <= 4 && flat; r++) for (let c = 0; c <= 4 && flat; c++) {
+          const h = heights[nw + r * cols + c];
+          // Triangles (nw, sw, ne) and (sw, se, ne): the diagonal runs sw–ne.
+          const plane = c + r <= 4
+            ? heights[nw] + (heights[ne] - heights[nw]) * c / 4 + (heights[sw] - heights[nw]) * r / 4
+            : heights[se] + (heights[sw] - heights[se]) * (4 - c) / 4 + (heights[ne] - heights[se]) * (4 - r) / 4;
+          flat = Number.isFinite(h) && Math.abs(h - plane) <= GroundSurface.lowTolerance;
+        }
+        if (!flat) continue;
+        for (const g of group) { merged[g] = 1; owner[g] = k; }
+      }
+    }
+    // Nodes a merged quad must keep on one of its edges, between two corners, so a
+    // neighbour's triangles meet it without a crack: every 5 m node beside a detailed
+    // block, the 10 m midpoint beside a coarse unmerged block, nothing beside another quad.
+    const edgeNodes = (a: number, step: number, [first, second]: number[]) => {
+      // a is the corner the edge starts from; a + 4·step is the next corner.
+      const kind = (nb: number) => nb < 0 ? 'none' : merged[nb] ? 'quad' : detail[nb] ? 'detail' : 'coarse';
+      const k0 = kind(first), k1 = kind(second), out: number[] = [];
+      if (k0 === 'detail') out.push(a + step);
+      if (k0 === 'detail' || k0 === 'coarse' || k1 === 'detail' || k1 === 'coarse') out.push(a + 2 * step);
+      if (k1 === 'detail') out.push(a + 3 * step);
+      return out;
+    };
     for (let k = 0; k < detail.length; k++) {
       starts[k] = indices.length;
       blockSlots = slots.get(k);
       blockYields = yieldBlocks.get(k);
       const bx = k % blockCols, bz = Math.floor(k / blockCols);
       const x = 2 * bx, z = 2 * bz;
+      if (merged[k]) {
+        if (owner[k] !== k) continue;
+        const ys = [k, k + 1, k + blockCols, k + blockCols + 1].flatMap(g => yieldBlocks.get(g) ?? []);
+        blockYields = ys.length ? [...new Set(ys)] : undefined;
+        const nw = z * cols + x, ne = nw + 4, sw = nw + 4 * cols, se = sw + 4;
+        const west = bx ? [k - 1, k + blockCols - 1] : [-1, -1];
+        const south = bz + 2 < blockRows ? [k + 2 * blockCols, k + 2 * blockCols + 1] : [-1, -1];
+        const east = bx + 2 < blockCols ? [k + blockCols + 2, k + 2] : [-1, -1];
+        const north = bz ? [k - blockCols + 1, k - blockCols] : [-1, -1];
+        // Ring in the same winding as the 10 m blocks: nw → sw → se → ne.
+        const ring = [nw, ...edgeNodes(nw, cols, west), sw, ...edgeNodes(sw, 1, south), se,
+          ...edgeNodes(se, -cols, east), ne, ...edgeNodes(ne, -1, north)];
+        if (ring.length === 4) {
+          tri(nw, sw, ne);
+          tri(sw, se, ne);
+        } else {
+          const centre = nw + 2 * cols + 2;
+          for (let i = 0; i < ring.length; i++) tri(centre, ring[i], ring[(i + 1) % ring.length]);
+        }
+        continue;
+      }
       if (detail[k]) {
         for (let r = z; r < Math.min(z + 2, rows - 1); r++) {
           for (let c = x; c < Math.min(x + 2, cols - 1); c++) {
@@ -241,10 +325,12 @@ export class GroundSurface {
   trianglesNear(x: number,z: number,radius:number, visit:(a:number,b:number,c:number)=>void) {
     const {bounds,stepM}=this.grid.manifest, size=2*stepM;
     const index=this.geometry.index!;
-    const rows=(this.starts.length-1)/this.blockCols;
+    const rows=(this.starts.length-1)/this.blockCols, seen=new Set<number>();
     for(let j=Math.max(0,Math.floor((z-radius-bounds.minZ)/size));j<Math.floor(rows) && j<=Math.floor((z+radius-bounds.minZ)/size);j++)
       for(let i=Math.max(0,Math.floor((x-radius-bounds.minX)/size));i<this.blockCols && i<=Math.floor((x+radius-bounds.minX)/size);i++) {
-        const k=j*this.blockCols+i;
+        const k=this.owner[j*this.blockCols+i];
+        if(seen.has(k)) continue;
+        seen.add(k);
         for(let n=this.starts[k];n<this.starts[k+1];n+=3) visit(index.getX(n),index.getX(n+1),index.getX(n+2));
       }
   }
@@ -257,8 +343,11 @@ export class GroundSurface {
     const rows = (this.starts.length - 1) / this.blockCols;
     const j0 = Math.max(0, Math.floor((minZ - bounds.minZ) / size)), j1 = Math.min(rows - 1, Math.floor((maxZ - bounds.minZ) / size));
     const i0 = Math.max(0, Math.floor((minX - bounds.minX) / size)), i1 = Math.min(this.blockCols - 1, Math.floor((maxX - bounds.minX) / size));
+    const seen = new Set<number>();
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const k = j * this.blockCols + i;
+      const k = this.owner[j * this.blockCols + i];
+      if (seen.has(k)) continue;
+      seen.add(k);
       for (let n = this.starts[k]; n < this.starts[k + 1]; n += 3) {
         const a = index.getX(n), b = index.getX(n + 1), c = index.getX(n + 2);
         visit(p.getX(a), p.getY(a), p.getZ(a), p.getX(b), p.getY(b), p.getZ(b), p.getX(c), p.getY(c), p.getZ(c));
@@ -276,7 +365,7 @@ export class GroundSurface {
     // A point exactly on a block boundary may belong to the valid side of a hole.
     for (let bz = Math.min(Math.floor(v), lastZ); bz >= Math.max(0, Math.ceil(v) - 1); bz--) {
       for (let bx = Math.min(Math.floor(u), lastX); bx >= Math.max(0, Math.ceil(u) - 1); bx--) {
-        const k = bz * this.blockCols + bx;
+        const k = this.owner[bz * this.blockCols + bx];
         for (let i = this.starts[k]; i < this.starts[k + 1]; i += 3) {
           const a = idx.getX(i), b = idx.getX(i + 1), c = idx.getX(i + 2);
           const ax = pos.getX(a), az = pos.getZ(a);

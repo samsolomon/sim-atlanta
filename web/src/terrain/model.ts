@@ -146,12 +146,29 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
   return world;
 }
 
+/** Where placed geometry meets the drawn ground: building footprints, decks and rail (3 m margin). */
+export function fineGround(city: TerrainCity) {
+  const boxes: { minX: number; maxX: number; minZ: number; maxZ: number }[] = [];
+  const box = (pts: readonly (readonly number[])[], m: number) => {
+    const xs = pts.map(p => p[0]), zs = pts.map(p => p[1]);
+    boxes.push({ minX: Math.min(...xs) - m, maxX: Math.max(...xs) + m, minZ: Math.min(...zs) - m, maxZ: Math.max(...zs) + m });
+  };
+  for (const b of city.buildings) for (const ring of b.rings) box(ring, 3);
+  const runs = [...(city.terrainTransport?.roads ?? []), ...(city.terrainTransport?.rail ?? [])];
+  for (const run of runs) for (let i = 1; i < run.pts.length; i++) {
+    // Short pieces, so a long diagonal run does not claim its whole bounding box.
+    const [a, b] = [run.pts[i - 1], run.pts[i]], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 10));
+    for (let j = 0; j < n; j++) box([[a[0] + (b[0] - a[0]) * j / n, a[1] + (b[1] - a[1]) * j / n], [a[0] + (b[0] - a[0]) * (j + 1) / n, a[1] + (b[1] - a[1]) * (j + 1) / n]], 12);
+  }
+  return boxes;
+}
+
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
-  const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
+  const mesh = new GroundSurface(grid, options.quality, options.openings, options.join, fineGround(city));
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
   const lighting = underpassLights(city,mesh,board.material.map);

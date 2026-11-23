@@ -32,6 +32,7 @@ import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
 import { World, type Alignment, type VData } from '../vignette/world';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain } from '../terrain/model';
 import { underpassDrive } from './underpass-drive';
@@ -233,6 +234,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const query = new URLSearchParams(location.search);
+  // A/B for phone measurements: ?ground=old builds today's low-tier ground mesh.
+  if (query.get('ground') === 'old') GroundSurface.useOriginalLow();
   const board = query.get('board');
   const joinedEast = board !== 'downtown' && query.get('east') === 'king-memorial';
   const rectangle = board === null && !joinedEast;
