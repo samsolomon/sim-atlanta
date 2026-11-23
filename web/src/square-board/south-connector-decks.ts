@@ -80,5 +80,5 @@ export function southConnectorTransport(context: TerrainCity): TerrainCity {
     ground(end, line.length);
     return { ...road, bridge: true };
   });
-  return { ...city, roads: sources, terrainTransport: { version: 1, roads, rail: city.terrainTransport!.rail } };
+  return { ...city, roads: sources, terrainTransport: { version: 1, roads, rail: context.terrainTransport?.rail ?? [] } };
 }

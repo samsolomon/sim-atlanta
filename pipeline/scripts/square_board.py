@@ -8,7 +8,8 @@ from pathlib import Path
 
 import downtown_terrain as terrain
 from king_memorial_context import extract_context
-from vignette import K, LAT0, LON0, R, ROOT, VIGNETTES
+from terrain_transport import clip_runs
+from vignette import K, LAT0, LON0, R, ROOT, VIGNETTES, project
 
 PACK = Path(ROOT) / "pipeline/prototypes/square-board"
 DOWNTOWN = PACK.parent / "downtown-ground"
@@ -23,6 +24,22 @@ def bbox(name):
     return ",".join(f"{v:.6f}" for v in (
         LON0 + math.degrees((x0-pad)/(R*K)), LAT0 - math.degrees((z1+pad)/R),
         LON0 + math.degrees((x1+pad)/(R*K)), LAT0 - math.degrees((z0-pad)/R)))
+
+
+def south_freight(raw, bounds):
+    """Continue the five mapped surface tracks from Castleberry Hill to the west edge."""
+    elements = json.loads(raw)["elements"]
+    nodes = {e["id"]: project(e["lon"], e["lat"]) for e in elements if e["type"] == "node"}
+    rails = []
+    for way in elements:
+        tags = way.get("tags", {})
+        if way["type"] != "way" or tags.get("railway") != "rail" or tags.get("operator") != "Norfolk Southern Railway":
+            continue
+        if any(tags.get(key, "no") != "no" for key in ("bridge", "tunnel")):
+            continue
+        for pts in clip_runs([nodes[i] for i in way["nodes"]], bounds):
+            rails.append(dict(kind="ground", cls="standard_gauge", name=tags.get("name"), pts=pts))
+    return rails
 
 
 def bake(tile, direction):
@@ -47,6 +64,8 @@ def bake(tile, direction):
                        ground=ground, trees=[], rail=[], source=dict(
                            attribution="© OpenStreetMap contributors", sha256=hashlib.sha256(raw).hexdigest(),
                            url="https://api.openstreetmap.org/api/0.6/map.json?bbox="+bbox(name)))
+        if name == "south-band":
+            context["terrainTransport"] = dict(version=1, roads=[], rail=south_freight(raw, manifest["bounds"]))
         (out / "context.json").write_text(json.dumps(context, separators=(",", ":"))+"\n")
         print(name, len(buildings), "buildings,", len(roads), "road/path runs")
 
