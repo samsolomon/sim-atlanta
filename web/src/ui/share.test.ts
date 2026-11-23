@@ -14,7 +14,7 @@ describe('share links', () => {
   it('a live City link has no time; a frozen one pauses at the moment', () => {
     const page = 'https://sim.example/?view=city&ui=next&t=2026-11-20T14:00:00-05:00&speed=30&follow=1&tune=1';
     const live = shareUrl(page, { view: 'city', cam: '565,-3965,-101,55,421' }, 'live', at);
-    expect(live).toBe('https://sim.example/?ui=next&view=city&cam=565,-3965,-101,55,421');
+    expect(live).toBe('https://sim.example/?view=city&cam=565,-3965,-101,55,421');
     const freeze = shareUrl(page, { view: 'city', cam: '565,-3965,-101,55,421' }, 'freeze', at);
     expect(new URL(freeze).searchParams.get('t')).toBe('2026-11-21T02:30:00Z');
     expect(new URL(freeze).searchParams.get('speed')).toBe('0');
@@ -27,11 +27,12 @@ describe('share links', () => {
 });
 
 describe('model links', () => {
-  it('name the model, keep ui=next, and never freeze the clock', () => {
+  it('name the model, drop the old ui=next, and never freeze the clock', () => {
     const url = new URL(shareUrl('https://sim.example/?ui=next&view=models&t=2026-11-20T14:00:00-05:00&speed=0', { view: 'models', model: 'cq400' }, 'freeze', at));
     expect(url.searchParams.get('view')).toBe('models');
     expect(url.searchParams.get('v')).toBe('cq400');
-    expect(url.searchParams.get('ui')).toBe('next');
+    expect(url.searchParams.has('ui')).toBe(false);
+    expect(new URL(shareUrl('https://sim.example/?ui=classic&view=map', { view: 'map', hash: '#14/33.7/-84.4' }, 'live', at)).searchParams.get('ui')).toBe('classic');
     expect(url.searchParams.has('t')).toBe(false);
   });
 });

@@ -20,8 +20,9 @@ describe('landing view', () => {
 });
 
 describe('Models view', () => {
-  it('opens only under ?ui=next; elsewhere the Model lab stays /models.html', () => {
+  it('opens in A2c; the classic shell keeps the Model lab at /models.html', () => {
+    expect(initialView('?view=models', '')).toBe('models');
     expect(initialView('?ui=next&view=models', '')).toBe('models');
-    expect(initialView('?view=models', '')).toBe('city');
+    expect(initialView('?ui=classic&view=models', '')).toBe('city');
   });
 });

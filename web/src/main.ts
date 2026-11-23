@@ -578,7 +578,7 @@ let graphics: Graphics = (() => {
     return 'auto';
   }
 })();
-/** undefined lets createCity pick (?q=, then the device). Only ?ui=next offers the choice. */
+/** undefined lets createCity pick (?q=, then the device). Only A2c offers the choice. */
 const chosenQuality = () => (uiNext(location.search) && graphics !== 'auto' && !params.has('q') ? graphics : undefined);
 let keepPose: { x: number; z: number; bearing: number; tilt: number; distanceM: number } | null = null;
 async function setGraphics(g: Graphics) {
@@ -644,7 +644,7 @@ function closeCity() {
   map?.resize();
 }
 
-// ---- Models (A2c, ?ui=next): the Model lab as the third view -------------------------------------
+// ---- Models (A2c): the Model lab as the third view -------------------------------------
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
 // while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
 let labRoot: HTMLElement | null = null;
@@ -816,7 +816,7 @@ const shellOptions: ShellOptions = {
     return { view: 'map' as const, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
   },
 };
-// ?ui=next: the A2c interface (docs/ui-controls-brief.md), loaded only behind the flag.
+// The A2c interface (docs/ui-controls-brief.md); ?ui=classic keeps the old shell for one release.
 const shell = uiNext(location.search)
   ? (await import('./ui/next/shell')).createShellNext(shellOptions)
   : createShell(shellOptions);
@@ -842,7 +842,7 @@ setInterval(() => {
 }, 500);
 
 // Hidden time controls (kept for later): ?controls=1 shows them.
-// Under ?ui=next, Time & weather in the subject card replaces it.
+// Under A2c, Time & weather in the subject card replaces it.
 document.getElementById('timectl')!.hidden = params.get('controls') !== '1' || uiNext(location.search);
 
 if (landing === 'city') shell.setView('city');
