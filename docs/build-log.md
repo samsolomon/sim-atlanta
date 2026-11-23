@@ -2290,3 +2290,7 @@ Upper Midtown was missing several high-rises. ICON Midtown stood two storeys tal
 ### 2026-11-23 — Tier notes that follow the trains
 
 The "Inferred MARTA track" note used to appear only when the camera's target sat within 60 m of the North Line guideway. A wider view could show a North Line train with no note at all. The North Line and Brookwood notes now also appear whenever any of their cars is inside the camera frustum, on the kept side of its clip planes, so a train still behind the portal doesn't count. One surprise: the wide Brookwood split camera I first proposed for the test doesn't frame the guideway at all through City's narrow 22° lens. [Before and after](log/ui/area-note/compare-north-line-note.jpg)
+
+### 2026-11-23 — Piers that find the gores
+
+A 235 m concrete box girder carries the North Line over six carriageways at Brookwood. The only two photographs of it show plain single-column piers standing in the gores. City now places piers by searching each span for footprints clear of every rendered lane and mapped road, preferring the longest reach under 45 m. With nothing but lane geometry to go on, it put three piers under Bridge A within a few metres of the gores the photographs suggest: 114, 156 and 206 m against roughly 119–129, 159–169 and 204–219 m. A fourth went at 270 m. Pipe railings, cast abutment walls and one small deck lamp complete the spans. Requires a web rebuild only. [From the photo's angle, before and after](log/ui/midtown-marta/spans-i85-before-after.jpg)
