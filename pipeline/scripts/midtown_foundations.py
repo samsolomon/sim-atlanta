@@ -1,4 +1,4 @@
-"""Find hillside buildings whose generic roof needs an uphill finished-floor datum."""
+"""Find hillside buildings across the rectangle whose generic roof needs an uphill finished-floor datum."""
 import json
 import math
 from collections import defaultdict
@@ -42,17 +42,27 @@ def footprint_heights(rings, dem, bounds, step):
     return float(heights.min()), float(heights.max())
 
 
-def bake():
-    sites = defaultdict(list)
+# The downtown board's generic buildings are Overture footprints staged by
+# `pnpm data`. Their roofs share the same check on the downtown 3DEP grid.
+DOWNTOWN = (PACK / "downtown-ground", Path(ROOT) / "web/public/data/scene/downtown/vignette.json")
+
+
+def boards():
     for row in [*MIDTOWN_ROWS, "north-band"]:
         folder = PACK / "square-board" / row
+        yield folder, json.loads((folder/"context.json").read_text())["buildings"]
+    folder, staged = DOWNTOWN
+    yield folder, json.loads(staged.read_text())["buildings"]
+
+
+def bake():
+    sites = defaultdict(list)
+    for folder, buildings in boards():
         m = json.loads((folder/"ground.json").read_text())
         dem = np.fromfile(folder/"ground.i16",dtype="<i2").reshape(m["rows"],m["cols"]) * m["scaleM"]
         zero = m["vertical"]["sceneZeroNavd88M"]
-        for b in json.loads((folder/"context.json").read_text())["buildings"]:
+        for b in buildings:
             ident = b["id"].split("/")[0]
-            if row == "north-band" and ident not in sites:
-                continue
             low, high = footprint_heights(b["rings"], dem, m["bounds"], m["stepM"])
             h = b["h"] or (3.6*b["floors"] if b["floors"] else 8)
             sites[ident].append((low, high, math.floor(low-zero) + zero + h))
