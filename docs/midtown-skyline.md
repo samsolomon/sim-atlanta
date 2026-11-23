@@ -1,0 +1,9 @@
+# Midtown skyline
+
+## One Atlantic Center
+
+The West Peachtree tower stands on a 52.2 × 51.9 m mapped footprint. The 3DEP grid gives 282.4 m NAVD88 at its centre and 281.6–283.1 m around the perimeter. City samples the rendered bare-earth triangles for the current quality tier and extends the foundation to the lowest sampled edge. The mapped 250 m architectural height includes the finial. These data describe terrain and total height. Finished floor elevations and intermediate roof levels are inferred. [Mapped footprint](https://www.openstreetmap.org/way/39450314) · [Upper Midtown perimeter survey](midtown-landmarks.md)
+
+Mary Ann Sullivan's street views show tall arched entrances on four sides, a recessed band over the base and slender granite piers running up the shaft. Her distant view shows the narrow vertical rhythm continuing into the pale pinnacles below a copper pyramid. The owner's brochure shows the same ribs from directly below on its cover. Page 2 shows the entrance arch washed amber at dusk, warm light around the roof collar, bright diagonal ridges against darker roof planes and a small lit finial. The model estimates the office glazing from 18 to 201 m, the crown springing at 208 m and the copper apex at 244 m. Bay spacing, glass colour, occupied offices and lamp intensity are illustrative. [Street, corner and crown photographs](https://homepages.bluffton.edu/~SULLIVANM/atlanta/johnsonburgee2/atlantic.html) · [Owner's exterior photographs, pages 1–2](https://www.1ac.com/pdfs/1ac_brochure.pdf)
+
+The matched City cameras target (450, −3785) at bearing 25°, tilt 47° and 0.81 m/px, on 20 November at 11:30 and 23:30 EST. [High daylight](log/ui/midtown-skyline/one-atlantic-high-day.jpg) · [High night](log/ui/midtown-skyline/one-atlantic-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/one-atlantic-low-day.jpg) · [Low night](log/ui/midtown-skyline/one-atlantic-low-night.jpg)
