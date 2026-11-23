@@ -44,6 +44,24 @@ The pattern mirrors about the car centre. A thin white pinstripe runs low on the
 
 **Night:** no freely licensed night photograph exists. The interior has white ceiling light strips and blue seats (data-sheet photo), and a 2015 night shot of car 1003 shows white headlights and an amber destination sign ([RailPictures, reference only](https://www.railpictures.net/photo/862574)). In the lab the window band glows with the shared warm stock glow, which is a little warmer than the real white light. The leading cab lights its headlights, top lamp, markers and destination sign, and the trailing cab shows red.
 
+**Third pass (23 Nov 2026), after Sam's livery review.** In sun the cars read as a vivid blue-violet, brighter than the overcast March 2020 frame. The input colour #6660d8 renders near #3329c0 under the grade, and the eaves are a lighter blue-grey.
+
+The sweeps are now two fans of three parallel bands (lime, teal, violet in that order, 0.42 / 0.50 / 0.66 m wide), mirrored on both end sections:
+- **Lower fan:** rises at about 20° from the cab nose and is cut by the skirt and the window sill.
+- **Upper fan:** leaves the roof and descends behind the first double door. Where it crosses the window band it is drawn as a tinted film over the glass.
+
+The centre section is plain, and the wordmark and emblem areas are left as body colour.
+
+**References:**
+- Car 1003 at King Memorial, Jun 2017.
+- Car 1001, Aug 2016.
+- Car 1004, Mar 2020.
+- The Luckie St skyview frame, Sep 2018 (CC BY 2.0), which shows the car at Centennial Olympic Park but small.
+
+Sam's Centennial Olympic Park and Ponce shelter shots weren't available as citable files. Band positions and curvature are estimates fitted to these photos.
+
+[Three-quarter, car 1003](log/streetcar/s70-pass3-34-1003.jpg) · [Three-quarter, car 1001](log/streetcar/s70-pass3-34-1001.jpg) · [Side](log/streetcar/s70-pass3-side.jpg) · [Lab before and after](log/streetcar/s70-pass3-lab.jpg) · [Night](log/streetcar/s70-pass3-night.jpg)
+
 **Second pass (23 Nov 2026), after Sam's review:**
 - **Colour:** the body is now the deep, violet-leaning indigo of car 1004. The City grade crushes dark blues to saturated navy, so the input colour (#5a5694) is lighter than the target. It renders near #28217b on a lit face.
 - **Sweeps:** rebuilt as cubic-Bézier bands sampled along the body side. A broad violet swoosh and a teal band leave the roof by the mid-section door and flow down to the cab's bottom corner. A lime wedge tapers from the roof, and a lime streak runs low near the cab.
