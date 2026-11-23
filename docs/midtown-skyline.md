@@ -42,6 +42,14 @@ The separate Promenade II at 1230 Peachtree has a dark, copper-speckled glass sh
 
 The matched camera for II targets (642, −3844), bearing 25°, tilt 47°, 0.85 m/px. For I use (682, −3783), bearing −110°, tilt 34°, 0.35 m/px. Both use the One Atlantic dates and times above. [II high day](log/ui/midtown-skyline/promenade-high-day.jpg) · [II high night](log/ui/midtown-skyline/promenade-high-night.jpg) · [II low day](log/ui/midtown-skyline/promenade-low-day.jpg) · [II low night](log/ui/midtown-skyline/promenade-low-night.jpg) · [I high day](log/ui/midtown-skyline/promenade-central-high-day.jpg) · [I high night](log/ui/midtown-skyline/promenade-central-high-night.jpg) · [I low day](log/ui/midtown-skyline/promenade-central-low-day.jpg) · [I low night](log/ui/midtown-skyline/promenade-central-low-night.jpg)
 
+### Promenade II crown at night (2026-11-23)
+
+Sam's night photograph of the stepped crown shows cool-white neon on the corners of every setback (the stepped chevrons), vertical frames outlining the setback faces, and a lit lantern, spire and finial. The offices below stay warm. Chris McClanahan's 2011 view across Lake Clara Meer shows the same white outline on the crown and spire beside the warm Midtown towers. The image is low resolution, but it confirms the colour. [Midtown at night, CC BY-SA 2.0](https://commons.wikimedia.org/wiki/File:Midtown_at_night.jpg)
+
+City now draws the neon as a separate unlit mesh in about 6000 K white (`#eef2ff`). It has 0.9 m bands along the top of each of the five crown setbacks, 0.5 m bars on the corner fins of the four upper tiers, and the lantern and spire faces. Before, the lantern used the tower's warm lamp colour. The neon is hidden by day and fades in with night. The band and bar widths are estimated for legibility at City scale, and the brightness is illustrative.
+
+Close crown camera: target (657, −3905), bearing 25°, tilt 38°, 430 m. [High night](log/ui/midtown-skyline/promenade-crown-high-night.jpg) · [Low night](log/ui/midtown-skyline/promenade-crown-low-night.jpg) · [High daylight](log/ui/midtown-skyline/promenade-crown-high-day.jpg) · [Low daylight](log/ui/midtown-skyline/promenade-crown-low-day.jpg)
+
 ## 1180 Peachtree
 
 The 41-storey Symphony Tower occupies the eastern portion of a single 126 × 35 m mapped outline. The west end curves around a lower glazed wing. Pickard Chilton's approach view shows the lower wing in front of two separate glass screens. The reverse view shows the narrow high-rise face between them and diagonal framing above the roof. At night Kendall/Heaton's skyline photograph shows two bright pale fins, a dark opening and a less uniformly lit office face below. [Architect's gallery](https://www.pickardchilton.com/work/1180-peachtree) · [Reverse angle and night skyline](https://www.kendall-heaton.com/projects/1180-peachtree/) · [Mapped footprint](https://www.openstreetmap.org/way/885660351)
