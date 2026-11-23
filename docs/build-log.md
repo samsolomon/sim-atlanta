@@ -2170,3 +2170,7 @@ The surprise came from the parts list. Two parts became fifteen once I searched 
 ### 2026-11-23 — Two street levels at the Crescent Apartments
 
 The ground beneath Margaret Mitchell House falls almost 3 m from the lawn toward Crescent Avenue. The Peachtree porch meets the high lawn while two separate balconies step up the Crescent elevation. The bay beneath the half-timbered gable and the brick chimney are visible above both. [Eight City views, survey and exterior photographs](margaret-mitchell-house.md)
+
+### 2026-11-23 — Neon on North Avenue
+
+City drew the Varsity as a flat beige box. The rebuild works from Jules Gray's façade grammar: a 28.7 m cream tile front with a wavy maroon parapet, a porthole, and a marquee under a 15 m tapered blade. Each side wall carries 34 accordion panels, every one with a maroon triangle at top and bottom. Across the service lane, a 44 m curb-service canopy follows a 2 m fall in the lot, and the highway "V" faces the Connector. The surprise came from the aerial: the canopy runs parallel to the building, not out toward the street. At night a second emissive mesh lights the red neon apart from the warm storefront, so one building carries two light colours. [Sources, estimates and eight City views](varsity.md)
