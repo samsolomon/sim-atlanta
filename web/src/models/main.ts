@@ -16,6 +16,8 @@ import { figureLooks } from '../city/figure-looks';
 import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
 import { createPlatformScene, type PlatformKind } from './platform-scene';
+import { createGinkgos, ginkgoState, type GinkgoTree } from '../city/ginkgo';
+import { local } from '../vignette/time';
 
 const el = document.getElementById('stage')!;
 const low = new URLSearchParams(location.search).get('q') === 'low';
@@ -61,6 +63,7 @@ const models = {
   ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
   cyclist: 'Cyclist and bicycle',
+  ginkgo: 'Ginkgo',
 } as const;
 type Model = keyof typeof models;
 const requested = new URLSearchParams(location.search).get('v');
@@ -97,6 +100,16 @@ phase.addEventListener('input', () => {
 const platformParam = new URLSearchParams(location.search).get('platform');
 let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
 let station: ReturnType<typeof createPlatformScene> | undefined;
+let grove: ReturnType<typeof createGinkgos> = null;
+// Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
+const clockParam = new URLSearchParams(location.search).get('t');
+const clockDate = clockParam && !Number.isNaN(Date.parse(clockParam)) ? new Date(clockParam) : new Date();
+let seasonDoy = local(clockDate).doy;
+// A broad old specimen and a young street tree, both measured from the photo sources in docs/tree-species.md.
+const LAB_GINKGOS: GinkgoTree[] = [
+  { x: -6, z: 0, heightM: 20, crownM: 7.5, age: 1, seed: 7 },
+  { x: 9, z: 3, heightM: 9, crownM: 2.6, age: 0, seed: 23 },
+];
 const platformReport = document.getElementById('platform-report')!;
 function build() {
   station?.dispose();
@@ -111,6 +124,33 @@ function build() {
   cars = [];
   figure?.dispose();
   figure = undefined;
+  grove?.dispose();
+  grove = null;
+  const tree = model === 'ginkgo';
+  document.getElementById('season')!.hidden = !tree;
+  if (tree) {
+    grove = createGinkgos(LAB_GINKGOS, low ? 'low' : 'high', () => 0);
+    if (grove) scene.add(grove.group);
+    showSeason();
+    ground.material = floorMaterial;
+    for (const id of ['lines', 'roles', 'platforms', 'motion']) document.getElementById(id)!.hidden = true;
+    nextLook.hidden = true;
+    track.visible = longTrack.visible = false;
+    ground.scale.setScalar(1);
+    sun.position.set(-18, 30, 22).multiplyScalar(1.6);
+    sun.shadow.camera.far = 160;
+    Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30 });
+    sun.shadow.camera.updateProjectionMatrix();
+    document.getElementById('title')!.textContent = models[model];
+    document.title = models[model] + ' · Model Lab · Sim Atlanta';
+    const blurb = document.getElementById('blurb')!;
+    blurb.replaceChildren('A broad old specimen and a young street tree. Grey leader and sparse upswept limbs, leaf tufts on spur shoots, butter-yellow in late November and a fast drop to a gold carpet. ');
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/tree-species.md';
+    link.textContent = 'Species notes and reference photos';
+    blurb.append(link);
+    return;
+  }
   const person = model === 'walker' || model === 'cyclist';
   ground.material = person ? figureShadow : floorMaterial;
   const extent = person ? 6 : model === 'crescent' ? 128 : 40;
@@ -120,7 +160,7 @@ function build() {
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = model === 'cq400' || model === 'cm44ac' || passenger;
+  track.visible = !tree && (model === 'cq400' || model === 'cm44ac' || passenger);
   longTrack.visible = model === 'crescent';
   if (longTrack.visible) track.visible = false;
   ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
@@ -334,6 +374,13 @@ const FIGURE_VIEWS: Record<string, ViewPreset> = {
   Rear: { pos: [0, 1.14, -4.5], target: [0, .87, 0], fov: 30 },
   Top: { pos: [0, 5.0, .01], target: [0, 0, 0], fov: 32 },
 };
+const TREE_VIEWS: Record<string, ViewPreset> = {
+  Front: { pos: [1, 9, 62], target: [1, 9, 0], fov: 30 },
+  '¾ front': { pos: [-34, 14, 46], target: [1, 8, 1], fov: 32 },
+  Side: { pos: [-62, 9, 1], target: [0, 9, 1], fov: 30 },
+  Rear: { pos: [1, 9, -62], target: [1, 9, 0], fov: 30 },
+  Top: { pos: [0.01, 70, 1], target: [0, 0, 1], fov: 34 },
+};
 const FREIGHT_VIEWS = { ...TRAIN_VIEWS, '¾ front': { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 } } satisfies Record<string, ViewPreset>;
 let presets: Record<string, ViewPreset>;
 const modelSelect = document.querySelector<HTMLSelectElement>('#model-select')!;
@@ -354,7 +401,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = id === 'crescent' || isPassengerUnit(id) ? passengerViews : { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS }[id];
+  presets = id === 'crescent' || isPassengerUnit(id) ? passengerViews : { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, ginkgo: TREE_VIEWS }[id];
   modelSelect.value = id;
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
@@ -367,7 +414,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['ginkgo']]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
@@ -382,6 +429,20 @@ for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.k
   }
   modelSelect.append(options);
 }
+// Season presets for Atlanta ginkgos (non-leap day of year); the first button is the clock's date.
+const seasonReport = document.getElementById('season-report')!;
+const STAGE_NAMES = { bare: 'bare grey branches', leafout: 'leafing out', green: 'summer green', turning: 'turning', gold: 'butter-yellow', dropping: 'dropping its leaves', carpet: 'bare over a gold carpet' };
+function showSeason() {
+  grove?.setSeason(seasonDoy);
+  const date = new Date(Date.UTC(2026, 0, seasonDoy));
+  const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  seasonReport.textContent = `${label}: ${STAGE_NAMES[ginkgoState(seasonDoy).stage]}. Change the date with ?t= as in City.`;
+}
+const clockDoy = seasonDoy;
+for (const [label, doy] of [['Clock date', clockDoy], ['Jul 1', 182], ['Nov 8', 312], ['Nov 22', 326], ['Nov 28', 332], ['Dec 3', 337], ['Jan 15', 15]] as const) {
+  mk('season', label, () => { seasonDoy = doy; showSeason(); }, label === 'Clock date');
+}
+document.getElementById('season')!.append(seasonReport);
 modelSelect.addEventListener('change', () => selectModel(modelSelect.value as Model));
 setModel(model);
 const nightBtn = document.getElementById('night')!;
