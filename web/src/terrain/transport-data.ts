@@ -9,6 +9,11 @@ export interface TransportRun {
   pts: P2[];
   /** Road pavement NAVD88 metres at each vertex of a lidar-profiled structural run. */
   deckNavd88M?: number[];
+  /** Share of the deck profile at each approach vertex. Zero meets local terrain. */
+  deckWeight?: number[];
+  /** Original directed centerline before resampling a measured deck or its approach. */
+  sourceAxis?: P2[];
+  crossSection?: { width: number; lanes: number; opposing: number };
   /** Distances at these endpoints on the illustrative westbound freight route. */
   freightS?: [number, number];
 }

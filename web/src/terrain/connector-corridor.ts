@@ -1,4 +1,5 @@
-import rawWays from '../../../pipeline/prototypes/connector-footprint/ways.json';
+import midtownWays from '../city/fixtures/midtown-connector/ways.json';
+import downtownWays from '../../../pipeline/prototypes/connector-footprint/ways.json';
 import { Line, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { surveyedEdges } from './connector-survey';
@@ -24,6 +25,7 @@ type End = { ribbon: Ribbon; start: boolean; offset: number };
 type Joint = { incoming: End[]; outgoing: End[] };
 export const mix = (a: P2, b: P2, f: number): P2 => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
 export const stripePoint = (row: Section, fraction: number) => mix(row.inner, row.outer, fraction);
+const rawWays = { ...downtownWays, ...midtownWays };
 const joints = new Map<string, Joint>();
 const sourceEnds = new Set(
   Object.values(rawWays).flatMap((w) => [w.pts[0].join(','), w.pts.at(-1)!.join(',')]),
@@ -195,7 +197,7 @@ for (const joint of joints.values()) {
             : !e.ribbon.link && medianBranch
               ? Math.min(1, total - e.ribbon.lanes)
               : 0;
-      if (trunk.ribbon.link) e.offset = Math.min(assigned, total - e.ribbon.lanes);
+      if (trunk.ribbon.link || side.filter(branch => !branch.ribbon.link).length > 1) e.offset = Math.min(assigned, total - e.ribbon.lanes);
       assigned += e.ribbon.lanes;
       const s = e.start ? 0 : e.ribbon.line.length;
       pins.get(e.ribbon)!.push({

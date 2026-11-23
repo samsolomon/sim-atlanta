@@ -167,12 +167,22 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const ribbon = use === 'road' && run.cls === 'motorway'
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
-    const width = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    const mapped = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    const width = run.crossSection?.width ?? mapped;
+    // An approach carries the inventory deck width at the abutment and blends
+    // to the mapped street width where its profile weight reaches bare earth.
+    function taper(s: number) {
+      const weights = run.deckWeight;
+      if (!weights || !run.crossSection) return 1;
+      const vertex = line.vertexAt(s), index = Math.min(Math.floor(vertex), weights.length - 2);
+      const weight = weights[index] + (weights[index+1]-weights[index])*(vertex-index);
+      return (mapped + weight * (width - mapped)) / width;
+    }
     // Keep original corners as well as intermediate terrain samples. A structural
     // tread follows a single chord between its two DEM endpoint proxies.
     const stations = [0];
     for (let i = 1; i < line.cum.length; i++) {
-      if (!bridge || !profile) {
+      if (!bridge || !profile || run.deckWeight) {
         for (let s = line.cum[i - 1] + 2; s < line.cum[i]; s += 2) stations.push(s);
       }
       if (line.cum[i] > line.cum[i - 1]) stations.push(line.cum[i]);
@@ -270,7 +280,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       structures.quad(q,p,up(p),up(q),PAL.concrete);
       structures.quad(up(a),up(b),up(q),up(p),PAL.concrete);
     }
-    function strip(left: number, right: number, lift: number, color: string, depth = 0, textured = false, dashed = false) {
+    function strip(left: number, right: number, lift: number, color: string, depth = 0, textured = false, dashed = false, leftSide = true, rightSide = true,
+      paint?: (s: number) => boolean) {
       const offsets = [left, right];
       const ends = bridge ? [0, line.length].map(s => {
         return offsets.map(off => {
@@ -291,7 +302,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         const p = line.at(s);
         const section: number[][] = [];
         for (const [i, offset] of offsets.entries()) {
-          const [px,pz]=lateral(s,offset);
+          const [px,pz]=lateral(s,offset*taper(s));
           const x = THREE.MathUtils.clamp(px,bounds.minX,bounds.maxX);
           const z = THREE.MathUtils.clamp(pz,bounds.minZ,bounds.maxZ);
           let y = bridge ? h0! + (h1! - h0!) * (s / line.length) - sceneZero : groundAt(x, z);
@@ -300,6 +311,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const vertex = line.vertexAt(s);
             const index = Math.min(Math.floor(vertex), profile.length - 2);
             y = profile[index] + (profile[index+1]-profile[index])*(vertex-index) - sceneZero;
+            if (run.deckWeight) {
+              const weights = run.deckWeight;
+              const weight = weights[index] + (weights[index+1]-weights[index])*(vertex-index);
+              const bare = groundAt(x,z);
+              if (bare !== null) y = Math.max(bare, bare + weight * (y - bare));
+            }
           } else if (bridge) {
             // Match the lateral grade of the approach just at the abutment. DEM
             // samples inside the freeway never set the height of the span.
@@ -323,7 +340,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           midpoint(s, section[0], section[1]);
         }
-        if (prev && (!dashed || (lastS+s)/2 % 12 < 3)) {
+        if (prev && (!dashed || (lastS+s)/2 % 12 < 3) && (!paint || paint((lastS+s)/2))) {
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
@@ -340,12 +357,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           if (depth) {
             if (profile && ribbon && use === 'road') {
-              parapet(a, d, b, c);
-              parapet(b, c, a, d);
+              if (leftSide) parapet(a, d, b, c);
+              if (rightSide) parapet(b, c, a, d);
             }
             const down = ([x, y, z]: number[]) => [x, y - depth, z];
-            structures.quad(a, d, down(d), down(a), PAL.concreteDark);
-            structures.quad(b, down(b), down(c), c, PAL.concreteDark);
+            if (leftSide) structures.quad(a, d, down(d), down(a), PAL.concreteDark);
+            if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
             structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
           }
         }
@@ -363,12 +380,29 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }
     } else {
       const walkway = ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls);
-      strip(width / 2, -width / 2, .12, ribbon ? PAL.asphaltHwy : sidepath ? pathConcrete : walkway ? PAL.sidewalk : PAL.asphalt, walkway ? .4 : .95);
+      const color = ribbon ? PAL.asphaltHwy : sidepath ? pathConcrete : walkway ? PAL.sidewalk : PAL.asphalt;
+      // At a deck toe the two shoulders and the center follow different
+      // triangles of bare earth. Carry that crossfall into the pavement mesh.
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : 1;
+      for (let i = 0; i < bands; i++) {
+        strip(width * (.5 - i/bands), width * (.5 - (i+1)/bands), .12, color,
+          walkway ? .4 : .95, false, false, i === 0, i+1 === bands);
+      }
       if (roadTop.length) roadTreads.set(owner, [...(roadTreads.get(owner) ?? []), ...roadTop]);
       if (ribbon) {
         for (let i=0;i<=ribbon.lanes;i++) {
           const offset=travelWidth*(.5-i/ribbon.lanes);
           strip(offset+.14,offset-.14,.15,i===0 && !ribbon.link ? PAL.lineYellow : PAL.lineWhite,0,false,i>0 && i<ribbon.lanes);
+        }
+      } else if (run.crossSection) {
+        const { lanes, opposing } = run.crossSection;
+        // Inventory lanes end where the taper would squeeze them below 2.5 m.
+        // The mapped street's own centre line takes over at the toe.
+        const paint = (s: number) => width * taper(s) / lanes >= 2.5;
+        for (let lane=1; lane<lanes; lane++) {
+          const off = width * (.5 - lane/lanes);
+          const center = lane === opposing;
+          strip(off+.09,off-.09,.15,center ? PAL.lineYellow : PAL.lineWhite,0,false,!center,true,true,paint);
         }
       } else if (!walkway && width >= 9) strip(.1, -.1, .15, PAL.lineYellow);
     }
@@ -425,11 +459,11 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link') !== matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
       // A surface way ending on a shared interior vertex joins the tread there.
       if (junction || changesRibbon) {
-        draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',road);
+        draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1),deckWeight:road.deckWeight?.slice(from,i+1)},'road',road);
         from=i;
       }
     }
-    draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from)} : road,'road',road);
+    draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from),deckWeight:road.deckWeight?.slice(from)} : road,'road',road);
   }
   for (const r of data.rail) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
   const map = freightTexture();

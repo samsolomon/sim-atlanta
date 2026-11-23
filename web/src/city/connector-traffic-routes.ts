@@ -8,6 +8,7 @@ import {
   successors,
   type LaneEnd,
 } from '../terrain/connector-corridor';
+import { midtownThroughLane, trafficLaneFraction } from '../terrain/midtown-connector-lanes';
 import type { ConnectorDirection } from '../terrain/connector-lanes';
 import type { TerrainCity } from '../terrain/transport-data';
 
@@ -30,6 +31,7 @@ interface Piece extends LaneEnd {
   incoming: number;
   startsWay: boolean;
   endsWay: boolean;
+  exitLane: number;
 }
 const distance = (a: P2, b: P2) => Math.hypot(b[0] - a[0], b[1] - a[1]);
 function inside(p: P2, b: Box) {
@@ -91,13 +93,16 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
       pts: ribbon.pts,
     };
     for (let lane = 0; lane < ribbon.lanes; lane++) {
-      const points = ribbon.rows.map((row) => stripePoint(row, (lane + 0.5) / ribbon.lanes));
+      const exitLane = midtownThroughLane(ribbon, lane);
+      const points = ribbon.rows.map(row =>
+        stripePoint(row, trafficLaneFraction(lane, exitLane, ribbon.lanes, row.s)));
       for (const pts of clipped(points, boxes)) {
         const p: Piece = {
           ribbon,
           lane,
           pts,
           owner,
+          exitLane,
           next: [],
           incoming: 0,
           startsWay: distance(pts[0], points[0]) < 0.001,
@@ -110,7 +115,7 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
   }
   for (const p of pieces) {
     if (!p.endsWay) continue;
-    for (const next of successors.get(laneKey(p)) ?? []) {
+    for (const next of successors.get(laneKey({ ribbon: p.ribbon, lane: p.exitLane })) ?? []) {
       const q = starts.get(laneKey(next));
       if (!q || distance(q.pts[0], p.pts.at(-1)!) > 0.05) continue;
       p.next.push(q);
