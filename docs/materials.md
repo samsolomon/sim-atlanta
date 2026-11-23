@@ -162,3 +162,14 @@ Phone timing is deferred.
 - **Generic facades:** the residential siding GLSL in `patchFacades` could move into the
   library unchanged, with a byte-identical shader test, so houses and landmarks share one
   brick, clapboard, stucco and shingle definition.
+
+## Model lab
+
+`/models.html?v=swatches` (Materials > Library swatches) draws every catalogue material as a
+small gabled block through the same shader as City. The high tier is on the left block and
+the low tier on the right; wall materials paint the walls and roofing paints the roof.
+
+- **¾ front:** close-up of the high-tier block.
+- **Side:** close-up of the low-tier block.
+- **Rear:** the City's 22° lens from about 200 m, to check the fade to flat colour.
+- **Night:** the lab's Night button.

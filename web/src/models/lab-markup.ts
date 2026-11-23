@@ -18,6 +18,7 @@ export const LAB_HTML = `
           <div class="model-group" role="group" aria-labelledby="trees-label" id="trees"><h2 id="trees-label">Trees</h2></div>
           <div class="model-group" role="group" aria-labelledby="landscape-label" id="landscape"><h2 id="landscape-label">Landscape</h2></div>
           <div class="model-group" role="group" aria-labelledby="houses-label" id="houses"><h2 id="houses-label">Houses</h2></div>
+          <div class="model-group" role="group" aria-labelledby="materials-label" id="materials"><h2 id="materials-label">Materials</h2></div>
           <label class="mobile-model">Model <select id="model-select"></select></label>
         </section>
         <section class="settings" aria-label="Model controls">
