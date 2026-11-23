@@ -315,3 +315,22 @@ The fps readings came from a background tab and are not measurements.
      unmounted.
 - **Don't:** add an illustrative dwell to the timetable. King Memorial's zero dwell is the published
   schedule.
+
+### Following a train into King Memorial (2026-11-22)
+
+A followed train now loads the King Memorial area itself: City passes the followed trip's position
+to `approachEast` every frame. While the area or its rail is loading, follow uses the joined bounds,
+so the trip is kept and the card says "Train out of view · following the route above ground". If
+the pack is missing or fails, follow falls back to downtown and ends at the edge, and the area note
+says "King Memorial could not load. Downtown is available."
+
+Checked in Orca with no manual pan, following the 1:50 Blue Line trip from 14:00:30 (top row) and
+with the east pack delayed by 8 s or missing (bottom row):
+
+| Run | Result |
+|---|---|
+| Normal | The camera target runs from x 668 to x 1473 and stays on "Following train" through the station at 14:02. |
+| Pack delayed 8 s | "Train out of view" for about one sample at x 1112, then "Following train" to x 1473. |
+| Pack missing (404) | "Follow ended · train left downtown" at x 998, with the "could not load" note. Downtown keeps working. |
+
+![Follow: normal (top), delayed and missing pack (bottom)](log/ui/king-memorial/follow-into-king-fallbacks.jpg)

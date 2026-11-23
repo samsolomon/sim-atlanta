@@ -59,6 +59,22 @@ describe('Blue Line follow preview', () => {
     expect(f.frame([train],[],project,bounds,rail,500,false)).toBeUndefined();
   });
 
+  it('keeps a trip heading into an adjacent area while that area loads, and exposes the trip id', () => {
+    const f = new TrainFollow(); f.start(train);
+    expect(f.tripId).toBe(train.id);
+    const beyond = {...train,lon:560,s:{...train.s,value:600}};
+    // City passes the joined bounds while the adjacent area is loading: no car drawn yet, so
+    // the camera tracks the source and the card says the train is out of view.
+    const joined = {...bounds,maxX:900};
+    expect(f.frame([beyond],[],project,joined,rail,0,false)).toBeDefined();
+    expect(f.phase).toBe('unseen');
+    expect(f.active).toBe(true);
+    // If that area fails, City passes downtown's bounds again and follow ends at the edge.
+    expect(f.frame([beyond],[],project,bounds,rail,100,false)).toBeUndefined();
+    expect(f.phase).toBe('outside');
+    expect(f.tripId).toBeUndefined();
+  });
+
   it('rejects a different trip, different path or data-source handover', () => {
     const f = new TrainFollow(); f.start({...train,routeId:'marta:route:GREEN'});
     expect(f.active).toBe(false);
