@@ -54,11 +54,13 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     for (const area of mounted.values()) root.add(area.group);
     const audit = groundAudit(root, [...mounted].map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })),
       { layer: cityLayer, colors: CITY_COLORS, step: 0.5, tolerance: 0.03, exclude });
-    const held = (l: LayerResult) => HELD.includes(l.layer);
+    // The low tier carves stairs but does not drape (phone memory), so it holds the treads only.
+    const tierHeld = quality === 'high' ? HELD : HELD.filter(l => l.startsWith('landscape primitives'));
+    const held = (l: LayerResult) => tierHeld.includes(l.layer);
     const sampled = audit.layers.filter(held);
     // The layers under test are actually present: the High's granite steps and lawn turf
     // (midtown-upper) and the south band's ground freight ballast.
-    for (const layer of ['rail ballast', 'ground cover', 'landscape primitives:tread'])
+    for (const layer of quality === 'high' ? ['rail ballast', 'ground cover', 'landscape primitives:tread'] : ['landscape primitives:tread'])
       expect(sampled.some(l => l.layer === layer && l.samples > 100), layer).toBe(true);
     const failures = sampled.filter(l => l.penetrating).map(l =>
       `${l.board} ${l.layer}: ${l.penetrating} samples, worst ${(l.worst!.depth * 100).toFixed(1)} cm at ${l.worst!.x.toFixed(1)},${l.worst!.z.toFixed(1)}`);

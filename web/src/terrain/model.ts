@@ -156,11 +156,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     top.receiveShadow = true;
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
-  // The sampler also carries the drawn triangles, so ground-following layers can drape (terrain/drape.ts).
+  // On the high tier the sampler also carries the drawn triangles, so ground-following
+  // layers can drape (terrain/drape.ts). The low tier skips the drape until the phone
+  // memory budget is known: it adds ~100k triangles across the board.
   // Forward the optional road: unconnected motorways must keep sampling bare earth.
   type Road = Parameters<NonNullable<typeof approaches>['groundAt']>[2];
   const groundAt = Object.assign((x: number, z: number, road?: Road) => approaches ? approaches.groundAt(x, z, road) : bare(x, z),
-    { triangles: mesh }) satisfies DrapeGround;
+    { triangles: options.quality === 'high' ? mesh : undefined }) satisfies DrapeGround;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
