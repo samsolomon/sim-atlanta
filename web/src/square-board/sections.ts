@@ -2,6 +2,7 @@ import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
 import { northConnectorGround, northConnectorTransport } from './connector-ground';
 import { auburnTransport } from '../city/sweet-auburn-transport';
+import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
@@ -112,7 +113,8 @@ export async function addSection(direction: Direction, mounted: Map<Board, Area>
   const added = new Map<Board, TrafficArea>();
   try {
     for (const { id, grid, context } of patches) {
-      const city = id === 'north-band' ? northConnectorTransport(context) : auburnTransport(context);
+      const city = id === 'north-band' ? northConnectorTransport(context) :
+        id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
       const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id) });
       try {
         const decks = createSurfaceTransport(city, grid, area.groundAt);
