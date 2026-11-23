@@ -1072,7 +1072,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
-      camera, trains.group, buses.positions, edges, scenery, freight?.group, brookwood?.cars));
+      camera, trains.group, buses.positions, edges, scenery, freight?.group, brookwood?.cars, brookwood?.freight));
   });
 
   // ---- sun, sky, weather --------------------------------------------------------------
@@ -1218,7 +1218,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let frames = 0;
   let fpsT = performance.now();
   let fps = 0;
-  let showingBrookwoodNote = false;
+  let showingBrookwoodNote: string | null = null;
   let showingNorthLineNote = false;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
@@ -1265,11 +1265,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
-      const { x, z } = controls.target, r = brookwood.bounds;
-      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
-      if (near !== showingBrookwoodNote) {
-        showingBrookwoodNote = near;
-        areaResult('brookwood-service', near ? 'Scheduled Crescent · Inferred berth · Illustrative consist' : null);
+      const note = brookwood.note(controls.target.x, controls.target.z);
+      if (note !== showingBrookwoodNote) {
+        showingBrookwoodNote = note;
+        areaResult('brookwood-service', note);
       }
     }
     if (northLine?.bounds) {
@@ -1300,6 +1299,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
     freight?.update(sceneTime);
+    brookwood?.updateFreight(sceneTime);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
@@ -1398,7 +1398,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       north?.setSeason(day);
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
     },
-    stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0), arterialCars: arterials?.visibleCars ?? 0, freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0), arterialCars: arterials?.visibleCars ?? 0, freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       squareButton?.remove();
       cancelAnimationFrame(raf);

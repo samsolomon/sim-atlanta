@@ -1,0 +1,92 @@
+import * as THREE from 'three';
+import { Line, type P2 } from '../vignette/geom';
+import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+
+/** An illustrative Norfolk Southern passage on Main 2 of the Norcross District.
+ * Timing, direction, speed and consist are all invented. The Crescent keeps Main 1. */
+export const NORCROSS_LINE = 'NS Norcross District';
+const CONSIST: FreightUnit[] = ['locomotive', 'locomotive', ...Array<FreightUnit>(8).fill('boxcar')];
+const GAP = 0.3;
+export const FREIGHT_SPEED_MPS = 6.7;
+/** One passage may begin every 20 minutes, alternating direction. */
+export const FREIGHT_SLOT_MS = 20 * 60 * 1000;
+export const freightTrainLength = CONSIST.reduce((sum, kind) => sum + FREIGHT_LENGTH[kind] + GAP, 0);
+
+export interface FreightPass { slot: number; dir: 1 | -1; head: number }
+
+/** The head position (metres along Main 2 from the west edge) for a passage in this
+ * slot, or null once its tail has left the board. */
+export function freightPass(clockMs: number, lineLength: number): FreightPass | null {
+  const slot = Math.floor(clockMs / FREIGHT_SLOT_MS);
+  const travelled = ((clockMs - slot * FREIGHT_SLOT_MS) / 1000) * FREIGHT_SPEED_MPS;
+  if (travelled > lineLength + freightTrainLength) return null;
+  const dir = slot % 2 ? -1 : 1;
+  return { slot, dir, head: dir === 1 ? travelled : lineLength - travelled };
+}
+
+export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[]) {
+  const line = new Line(pts);
+  const group = new THREE.Group();
+  group.name = 'Illustrative freight';
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: planes, clipShadows: true });
+  const shapes = new Map<FreightUnit, THREE.BufferGeometry>();
+  const cars = CONSIST.map((kind, i) => {
+    let shape = shapes.get(kind);
+    if (!shape) shapes.set(kind, (shape = freightGeometry(kind)));
+    const car = new THREE.Mesh(shape, material);
+    car.userData.lengthM = FREIGHT_LENGTH[kind];
+    car.userData.line = NORCROSS_LINE;
+    car.receiveShadow = true;
+    car.visible = false;
+    group.add(car);
+    return { car, kind, flip: i === 1 };
+  });
+  const nose = new THREE.Vector3(), tail = new THREE.Vector3(), m = new THREE.Matrix4();
+  // Straddling cars extend along the end tangent so they slide out through the clip planes.
+  function at(s: number, target: THREE.Vector3) {
+    const clamped = THREE.MathUtils.clamp(s, 0, line.length), p = line.at(clamped), beyond = s - clamped;
+    const x = p.x + beyond * p.dx, z = p.z + beyond * p.dz;
+    return target.set(x, railhead(x), z);
+  }
+  // Each slot's passage is decided once, when first seen. A slot that opens while a
+  // scheduled Crescent is on the corridor stays empty, so a freight never meets the
+  // berth window. A passage already under way finishes before an arriving Crescent
+  // could reach the island.
+  let decided = { slot: NaN, allowed: false };
+  let visibleCars = 0;
+  /** `crescentOnCorridor` is null until the timetable has produced train states. */
+  function update(clockMs: number, crescentOnCorridor: boolean | null) {
+    const pass = freightPass(clockMs, line.length);
+    if (crescentOnCorridor === null) decided = { slot: NaN, allowed: false };
+    else if (pass && pass.slot !== decided.slot) decided = { slot: pass.slot, allowed: !crescentOnCorridor };
+    visibleCars = 0;
+    let front = pass?.head ?? 0;
+    for (const { car, kind, flip } of cars) {
+      const length = FREIGHT_LENGTH[kind];
+      const center = front - (pass?.dir ?? 1) * length / 2;
+      front -= (pass?.dir ?? 1) * (length + GAP);
+      const show = !!pass && decided.allowed && center > -length && center < line.length + length;
+      car.visible = show;
+      if (!show) continue;
+      // The leading truck is the nose in the direction of travel; the second unit runs long hood forward.
+      const half = (pass!.dir * FREIGHT_TRUCK_SPACING[kind]) / 2;
+      at(center + half, nose);
+      at(center - half, tail);
+      car.position.addVectors(nose, tail).multiplyScalar(0.5);
+      car.quaternion.setFromRotationMatrix(m.lookAt(nose, tail, car.up));
+      if (flip) car.rotateY(Math.PI);
+      visibleCars++;
+    }
+    return visibleCars;
+  }
+  return {
+    group,
+    update,
+    get visibleCars() { return visibleCars; },
+    dispose() {
+      group.removeFromParent();
+      for (const shape of shapes.values()) shape.dispose();
+      material.dispose();
+    },
+  };
+}
