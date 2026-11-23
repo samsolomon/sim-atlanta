@@ -385,7 +385,8 @@ function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   // (outline estimated from the City view and the tree agent's Street View notes; illustrative).
   const turf = new GroundCover();
   turf.patch([[601, -4009.5], [624, -4007.5], [633, -4005.5], [634.5, -3999.5], [631.5, -3997], [620, -3989.5], [607, -3995], [601, -4000]], groundAt, 'turf');
-  const lawn = new Group();
-  lawn.add(landscapeMesh(b).mesh, turf.mesh().mesh);
-  return { mesh: lawn };
+  // The turf rides on the landscape mesh, which stays the lawn's named child.
+  const lawn = landscapeMesh(b);
+  lawn.mesh.add(turf.mesh().mesh);
+  return lawn;
 }
