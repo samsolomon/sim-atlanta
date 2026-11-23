@@ -8,6 +8,7 @@ it('keeps the 24-story tower, suspended Forsyth bridge and former department sto
     {
       id: '7300fd12-c904-4654-8263-cf47f751fd64',
       h: 118.3,
+      floors: 24,
       rings: [
         [
           [-198.84, -43.13],
@@ -22,6 +23,7 @@ it('keeps the 24-story tower, suspended Forsyth bridge and former department sto
     {
       id: '5a5f7fc1-6865-42bf-89e6-dde9ceb2d789',
       h: 22.358081817626953,
+      floors: 11,
       rings: [
         [
           [-208.11, -49.33],
