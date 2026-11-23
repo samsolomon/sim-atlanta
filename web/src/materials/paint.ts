@@ -6,8 +6,8 @@ export type SurfaceTier = 'high' | 'low';
 
 /**
  * Defaults for every material the library patches. City sets them once from its quality and
- * the `?surfaces=off` switch (FLAT), before landmarks build; the model lab overrides the tier
- * per material instead, so it can show both tiers side by side.
+ * the `?surfaces=off` switch, before landmarks build. applySurfaces also takes a tier per
+ * material, so one page can show both tiers side by side.
  */
 export const surfaceDefaults: { tier: SurfaceTier; enabled: boolean } = { tier: 'high', enabled: true };
 
@@ -22,7 +22,8 @@ export class SurfacePainter {
     return result;
   }
 
-  get painted() { return this.ranges.some(r => r.end > r.start); }
+  /** True once any vertex has a real pattern (FLAT alone does not count). */
+  get painted() { return this.ranges.some(r => r.end > r.start && r.surface.data[0] !== 0); }
 
   /** The `aSurface` attribute for a geometry of `count` vertices; unpainted vertices stay 0 (flat). */
   attribute(count: number) {
@@ -36,7 +37,8 @@ export class SurfacePainter {
 /**
  * Adds the library to a vertex-coloured Lambert or Phong material whose geometry carries
  * `aSurface`. Patterns use model-space position and normal, so they follow the building's own
- * walls. Any existing onBeforeCompile and cache key are kept and run first.
+ * walls. Any existing onBeforeCompile and cache key are kept and run first. Code that sets its
+ * own hook on the material afterwards must chain the same way, or the surfaces disappear.
  */
 export function applySurfaces(material: Material, o: { tier?: SurfaceTier } = {}) {
   const tier = o.tier ?? surfaceDefaults.tier;

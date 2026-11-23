@@ -15,7 +15,7 @@ function sources(dir: string): string[] {
     return statSync(path).isDirectory() ? sources(path) : /\.ts$/.test(name) && !/\.test\.ts$/.test(name) ? [path] : [];
   });
 }
-const MAKES_TEXTURE = /new (THREE\.)?(DataTexture|CanvasTexture|CompressedTexture|Data3DTexture|DataArrayTexture|VideoTexture|Texture)\(|TextureLoader|KTX2Loader/;
+const MAKES_TEXTURE = /new (THREE\.)?(DataTexture|CanvasTexture|CompressedTexture|Data3DTexture|DataArrayTexture|VideoTexture|DepthTexture|FramebufferTexture|CubeTexture|Texture|WebGL(Cube|3D|Array)?RenderTarget)\(|TextureLoader|KTX2Loader/;
 
 describe('texture budget', () => {
   const makers = sources(SRC).filter(path => MAKES_TEXTURE.test(readFileSync(path, 'utf8'))).map(path => relative(SRC, path));
@@ -123,5 +123,17 @@ describe('landmark shells', () => {
     const a = mesh.geometry.attributes.aSurface;
     expect(a.getX(0)).toBe(brick.data[0]); // first wall vertex
     expect(a.getX(a.count - 1)).toBe(0); // last roof vertex stays flat
+  });
+
+  it('keep window glass flat inside a painted wall', () => {
+    const s = shell(), brick = surfaces.brick();
+    s.paint(brick, () => {
+      s.prism(s.ring, 0, 10, '#a65e45', '#7f7b74');
+      s.facade([-10, -10], [10, -10], 1, 9, 3, 2.5, .5, .6, ['#334455'], 0);
+    });
+    const mesh = s.finish().group.children[0] as unknown as { geometry: { attributes: { aSurface: { getX(i: number): number; count: number } } } };
+    const a = mesh.geometry.attributes.aSurface;
+    expect(a.getX(0)).toBe(brick.data[0]);
+    expect(a.getX(a.count - 1)).toBe(0); // the last window pane
   });
 });

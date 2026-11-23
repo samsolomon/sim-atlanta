@@ -97,6 +97,9 @@ export const surfaces = {
   },
 } as const;
 
+/** No pattern: the plain vertex colour. Used to keep window quads flat inside a painted wall. */
+export const FLAT: Surface = { name: 'flat', kind: 'none', colour: '#ffffff', data: [0, 0, 0, 0] };
+
 /** One default instance of every material, for swatches and tests. */
 export function catalogue(): Surface[] {
   return [

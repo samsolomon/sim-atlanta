@@ -1,10 +1,12 @@
 /**
- * Texture memory, by source file. Every file under web/src that constructs a texture must be
- * listed here with its estimated GPU bytes (width x height x 4, plus a third for mipmaps), and
- * budget.test.ts fails when a file that is not listed makes one or a budget is exceeded.
+ * Texture memory, by source file. Every file under web/src that constructs a texture or a
+ * render target must be listed here with its estimated GPU bytes (width x height x 4, plus a
+ * third for mipmaps), and materials.test.ts fails when a file that is not listed makes one or a
+ * budget is exceeded.
  *
- * Bytes were measured in the City (high tier, Studio, 2026-11-23) by walking the scene's
- * materials. Nothing in the stack uses GPU-compressed formats yet: three 0.180 ships the KTX2 /
+ * The bytes are declared, not re-measured by the test: they were measured in the City (high
+ * tier, Studio, 2026-11-23) by walking the scene's materials. A listed file that grows its
+ * textures must update its entry; re-measure with the scene walk in docs/materials.md. Nothing in the stack uses GPU-compressed formats yet: three 0.180 ships the KTX2 /
  * Basis loader and transcoder, but every texture here is generated at runtime, so the library
  * stays procedural (0 bytes) instead.
  */
@@ -49,6 +51,10 @@ export const TEXTURE_SOURCES: Record<string, TextureSource> = {
   'vignette/ink.ts': { bytes: 4, bucket: 'other', note: '1x1 empty mask' },
   'vignette/traffic.ts': { bytes: 0, bucket: 'other', note: 'headlight beam, East Portal only' },
   'vignette/world.ts': { bytes: 0, bucket: 'other', note: 'East Portal canvases' },
+  // Screen-sized render targets: post-processing, not materials. Bytes scale with the viewport.
+  'city/city.ts': { bytes: 0, bucket: 'other', note: 'HalfFloat scene target + depth texture, screen-sized' },
+  'vignette/main.ts': { bytes: 0, bucket: 'other', note: 'East Portal render target, screen-sized' },
+  'models/main.ts': { bytes: 0, bucket: 'other', note: 'model lab render targets, screen-sized' },
 };
 
 export function bucketBytes(bucket: TextureBucket) {

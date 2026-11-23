@@ -2,7 +2,7 @@ import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } fro
 import type { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
-import { applySurfaces, surfaceDefaults, SurfacePainter, type Surface } from '../materials';
+import { applySurfaces, FLAT, surfaceDefaults, SurfacePainter, type Surface } from '../materials';
 
 /** A footprint in its street frame, with roof heights in NAVD88 metres. */
 export function landmarkShell(
@@ -92,13 +92,14 @@ export function localLandmarkShell(
         const y = lo + (j + (1 - verticalFill) / 2) * pitch,
           top = y + verticalFill * pitch;
         const batch = random() < occupancy ? lights : body;
-        batch.quad(
+        // Window glass stays flat even when the wall around it is painted.
+        painter.paint(batch, FLAT, () => batch.quad(
           point(l, y),
           point(l, top),
           point(r, top),
           point(r, y),
           colors[Math.floor(random() * colors.length)],
-        );
+        ));
       }
   }
   function finish(lightColor = '#f2d5a5', nightIntensity = 0.64) {

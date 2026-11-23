@@ -25,6 +25,10 @@ shell.prism(part, base, h, brick, roof, { wall: surfaces.brick({ colour: 'deepRe
 - `shell.paint(surface, draw)` tags everything `draw` adds to the shell body. When paints
   are nested, the innermost one wins.
 - `prism(..., { wall, roof })` paints walls and roof separately.
+- `facade()` window panes stay flat inside a painted wall.
+- Code that sets its own `onBeforeCompile` on a painted shell's material after `finish()`
+  (as One Atlantic does for its ashlar) must chain the existing hook and cache key, or the
+  surfaces disappear.
 - Unpainted shells are byte-identical to before: same geometry, same program.
 - `surface.colour` is a suggested base colour from `PALETTE`. A landmark may keep its own hex
   taken from photographs.
@@ -61,14 +65,16 @@ of every material. The defaults are tuned for that.
 | Concrete | `concrete` | `lift` (m) | lift lines, tone | ~120 / ~70 |
 | Asphalt roofing | `asphaltRoof` | | tone only | ~100 far, ~120 near / ~50 |
 
-The costs are static estimates. Measured frame times are in the proof section below. All
+The costs are static estimates; measured frame times come with the proof sheets. All
 materials share one program per tier, `…|surfaces-high` or `…|surfaces-low`.
 
 ## Texture budget
 
-`web/src/materials/budget.ts` lists every source file that constructs a texture, with its
-estimated GPU bytes (width × height × 4, plus a third for mipmaps). The bytes were measured
-in the City on 2026-11-23. `materials.test.ts` fails when:
+`web/src/materials/budget.ts` lists every source file that constructs a texture or render
+target, with its estimated GPU bytes (width × height × 4, plus a third for mipmaps). The bytes
+are declared, not re-measured by the test. They were measured in the City on 2026-11-23 by
+walking every material's texture slots, so a listed file that grows its textures must update
+its entry. `materials.test.ts` fails when:
 
 - an unlisted file makes a texture,
 - a listed file no longer makes one,
