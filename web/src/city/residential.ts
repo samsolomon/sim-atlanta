@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import tagged from '../../../pipeline/prototypes/residential/tags.json';
-import type { TerrainCity } from '../terrain/transport-data';
+import { inAnsley, roadWidth, type TerrainCity } from '../terrain/transport-data';
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import { flowerBed, hedge, landscapeMesh } from '../landscape/primitives';
 import { GroundCover } from '../landscape/ground-cover';
@@ -46,8 +46,6 @@ const TERRACOTTA = ['#94604c', '#9d6a52', '#87574a'];
 const DOORS = ['#2f3a34', '#5b2a24', '#2b2f3a', '#3b2c22', '#6a5d4b', '#1f2224'];
 // Shader sidings 7–10: the 3–6 textures without shader windows; houses draw their own windows.
 const STYLE: Record<Siding, number> = { clapboard: 7, brick: 8, stucco: 9, shingle: 10 };
-/** Ansley Park, roughly Peachtree Street to Piedmont Park and 15th Street to I-85, in scene metres. */
-const inAnsley = (x: number, z: number) => x > 800 && x < 1750 && z > -4750 && z < -3700;
 
 function area(ring: P2[]) {
   let a = 0;
@@ -74,15 +72,13 @@ function oriented(ring: P2[]) {
   return best;
 }
 
-// Carriageway half-widths by class (as in transport-data), so distances are to the kerb.
-const HALF: Record<string, number> = { motorway: 7, trunk: 7, primary: 6.5, secondary: 5.5, tertiary: 4.5, residential: 3.5, unclassified: 3.5, living_street: 3 };
 /** Distance from a point to the nearest kerb (centreline distance minus half the road's width). */
 function roadIndex(city: TerrainCity) {
   const cells = new Map<string, [P2, P2, number][]>();
   for (const r of city.roads) {
     if (r.bridge || r.tunnel || ['footway', 'path', 'steps', 'cycleway', 'service'].includes(r.cls)) continue;
     for (let i = 1; i < r.pts.length; i++) {
-      const a = r.pts[i - 1], b = r.pts[i], half = HALF[r.cls] ?? 3;
+      const a = r.pts[i - 1], b = r.pts[i], half = roadWidth(r) / 2;
       for (let x = Math.floor(Math.min(a[0], b[0]) / 40); x <= Math.floor(Math.max(a[0], b[0]) / 40); x++)
         for (let z = Math.floor(Math.min(a[1], b[1]) / 40); z <= Math.floor(Math.max(a[1], b[1]) / 40); z++)
         {
