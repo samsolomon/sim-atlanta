@@ -8,6 +8,8 @@ import { symphonyTower } from './midtown-skyline-symphony';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
+/** Rendered ground in the landmark's street frame, metres above the site grade. */
+export type LocalGround = (u: number, v: number) => number | null;
 const site = sites.oneAtlantic;
 
 function oneAtlantic(shell: Shell) {
@@ -71,7 +73,7 @@ const landmarks = [
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
   { site: sites.promenadeCentral, axis: [1,1], probes: [[-35,-20],[40,15],[0,-26],[0,24]], build: promenadeCentral },
-] satisfies { site: typeof site, axis: P2, probes: P2[], build: typeof oneAtlantic }[];
+] satisfies { site: typeof site, axis: P2, probes: P2[], build: (shell: Shell, ground: LocalGround) => unknown }[];
 
 export const skylineIds = new Set(landmarks.map(entry => entry.site.id));
 
@@ -84,5 +86,10 @@ export function createSkylineLandmark(buildings: VBuilding[], building: VBuildin
   if (grade === null || !Number.isFinite(grade)) return null;
   const shell = localLandmarkShell(buildings, building, site.name, [site.x,site.z], axis,
     probes, base - grade - .35, grade);
-  return shell && build(shell);
+  const [c, s] = [Math.cos(Math.atan2(axis[1], axis[0])), Math.sin(Math.atan2(axis[1], axis[0]))];
+  const ground: LocalGround = (u, v) => {
+    const y = groundAt(site.x + u * c - v * s, site.z + u * s + v * c);
+    return y === null || !Number.isFinite(y) ? null : y - grade;
+  };
+  return shell && build(shell, ground);
 }

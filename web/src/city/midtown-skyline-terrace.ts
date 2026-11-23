@@ -1,11 +1,12 @@
 import type { P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
+import type { LocalGround } from './midtown-skyline';
 
 import parts from './fixtures/midtown-skyline/georgian-terrace.json';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
-export function georgianTerrace(shell: Shell) {
+export function georgianTerrace(shell: Shell, ground: LocalGround) {
   const buff = '#bfa585', stone = '#ddccb2', glass = ['#5c676c','#718080','#59656b'];
   function roof(plan: P2[],lo: number,hi: number,tint: string) { shell.prism(plan,lo,hi,tint,stone); }
   function cornice(plan: P2[],lo: number,hi: number) {
@@ -20,7 +21,10 @@ export function georgianTerrace(shell: Shell) {
     [x+r*Math.cos(i*Math.PI/8),z+r*Math.sin(i*Math.PI/8)]);
   // Historic wing turns the Peachtree/Ponce corner with a rounded bay and terrace.
   const historic: P2[] = parts.historic.ring.map(([x,z]) => [x,z]);
-  roof(shell.ring,shell.base,1.05,buff);
+  // Peachtree sits about 2.5 m above the site grade on 3DEP. The raised terrace
+  // (a layer-1 walkway reached by steps in OSM) is level with its highest point.
+  const frontage = [-7,0,8,16,24,32].map(z => ground(-35,z) ?? 0);
+  const deck = Math.max(1.05,...frontage)+.3;
   roof(historic,shell.base,37,buff);
   facade(historic,8.6,35.6,8);
   cornice(historic,7.7,8.6);
@@ -29,6 +33,8 @@ export function georgianTerrace(shell: Shell) {
   roof(corner,shell.base,37.9,buff);
   facade(corner,9,36,8);
   for (const h of [8.1,15.4,29.8,35.8,37.5]) roof(circle(-31,32,3.2),h,h+.48,stone);
+  // The two-storey mapped infill fills the recess in front of the upper wing.
+  roof(parts.porch.ring as P2[],shell.base,8.6,buff);
 
   // Separate upper block and glass stair/atrium cylinder of the 1991 addition.
   const addition: P2[] = parts.addition.ring.map(([x,z]) => [x,z]);
@@ -44,34 +50,52 @@ export function georgianTerrace(shell: Shell) {
     shell.body.tri([x,70.5,z],[a,70.5,b],[-9,73,-9.7],stone);
   });
 
-  // A colonnade along the historic west terrace supports the deep entablature.
-  const terrace: P2[] = [[-35,-6],[-31.5,-6],[-33,25],[-36,25]];
-  roof(terrace,shell.base,1.4,'#ae9c89');
-  roof(terrace,7.4,8.25,stone);
-  for (let i=0;i<6;i++) {
-    const z=-4+i*5.3, x=-34.3-i*.16;
-    roof(circle(x,z,.61),1.4,7.4,stone);
-    roof(circle(x,z,.83),7.0,7.4,'#e2d4bd');
-    shell.lights.quad([x-.63,1.6,z-.25],[x-.63,4.1,z-.25],[x-.63,4.1,z+.25],[x-.63,1.6,z+.25],'#bb9e78');
+  // Three-storey mapped podium east of the tower, and the mapped drive and
+  // entrance canopies, which stand open on posts over their drives.
+  const podium = parts.podium.ring as P2[];
+  roof(podium,shell.base,12,buff);
+  facade(podium,1.4,11,3);
+  cornice(podium,11.4,12.2);
+  for (const [plan,lo] of [[parts.driveCanopy.ring,4.6],[parts.northCanopy.ring,7.4],[parts.ponceCanopy.ring,7.6]] as const) {
+    roof(plan as P2[],lo,lo+.55,stone);
+    for (const [x,z] of (plan as P2[]).filter((_,i) => i%3===0)) {
+      roof(circle(x,z,.2),shell.base,lo,'#8d8170');
+    }
   }
-  // Lay each arched pane directly on a long west-facing segment. The
-  // recessed court and the projecting end bays have different setbacks.
-  historic.forEach(([x,z],i) => {
-    const [a,b]=historic[(i+1)%historic.length];
+
+  // A colonnade along the raised west terrace supports the deep entablature.
+  // The deck wraps the rounded corner onto Ponce inside the mapped outline.
+  const terrace: P2[] = [[-33.6,-7.3],[-34.9,10.2],[-36.35,32.7],[-35.2,35.4],[-33.5,36.9],[-31.7,37.6],
+    [-29.6,37.6],[-13.2,32.2],[-14.24,29.18],[-28.41,33.68],[-31.21,34.95],[-33.28,33.84],[-33.95,31.57],
+    [-33.46,30.24],[-32.81,20.56],[-31.42,1.76],[-30.83,-7.28]];
+  roof(terrace,shell.base,deck,'#ae9c89');
+  // Mapped west edge of the hotel outline along Peachtree.
+  const edge = (z: number) => z<10.2 ? -33.6-1.3*(z+7.3)/17.5 : -34.9-1.45*(z-10.2)/22.5;
+  const entablature: P2[] = [[edge(-6.6)+.2,-6.6],[-31,-6.6],[-32.7,25],[edge(25)+.2,25]];
+  roof(entablature,7.4,8.25,stone);
+  for (let i=0;i<6;i++) {
+    const z=-4+i*5.3, x=edge(z)+1.1;
+    roof(circle(x,z,.61),deck,7.4,stone);
+    roof(circle(x,z,.83),7.0,7.4,'#e2d4bd');
+    shell.lights.quad([x-.63,deck+.2,z-.25],[x-.63,deck+2.7,z-.25],[x-.63,deck+2.7,z+.25],[x-.63,deck+.2,z+.25],'#bb9e78');
+  }
+  // Arched French windows open from the terrace on the porch and the end bays.
+  const windows: [P2,P2][] = [[[-33.46,30.24],[-32.81,20.56]],[[-32.81,20.56],[-31.42,1.76]],[[-31.42,1.76],[-30.83,-7.28]]];
+  const spring = Math.min(deck+2.7,5.9);
+  for (const [[x,z],[a,b]] of windows) {
     const length=Math.hypot(a-x,b-z);
-    if (x>-26 || a>-26 || b>=z || length<7) return;
     const bays=Math.max(1,Math.round(length/5));
     for (let bay=0;bay<bays;bay++) {
       const pane=(u: number,y: number) => {
         const t=(bay+.5)/bays+u/length;
         return [x+(a-x)*t+(b-z)*.08/length,y,z+(b-z)*t-(a-x)*.08/length];
       };
-      shell.body.quad(pane(-1.4,1.1),pane(-1.4,5.2),pane(1.4,5.2),pane(1.4,1.1),'#4b5758');
-      for(let arc=0;arc<8;arc++) {
-        const a=arc*Math.PI/8,b=(arc+1)*Math.PI/8;
-        shell.body.tri(pane(0,5.2),pane(1.4*Math.cos(a),5.2+1.4*Math.sin(a)),pane(1.4*Math.cos(b),5.2+1.4*Math.sin(b)),'#5d6866');
+      shell.body.quad(pane(-1.4,deck+.1),pane(-1.4,spring),pane(1.4,spring),pane(1.4,deck+.1),'#4b5758');
+      for (let arc=0;arc<8;arc++) {
+        const t0=arc*Math.PI/8,t1=(arc+1)*Math.PI/8;
+        shell.body.tri(pane(0,spring),pane(1.4*Math.cos(t0),spring+1.4*Math.sin(t0)),pane(1.4*Math.cos(t1),spring+1.4*Math.sin(t1)),'#5d6866');
       }
     }
-  });
+  }
   return shell.finish('#f9d8a1',.68);
 }
