@@ -2238,3 +2238,7 @@ Sam's review flagged the High as plain white boxes with a thin grey strip for a 
 ### 2026-11-23 — A gazebo that was standing in the lake
 
 At Lake Clara Meer, City had drawn the restored gazebo as an 8 m brick box rising out of the water, beside a generic footbridge. The park's own 2002 dock wasn't there at all. 3DEP's hydro-flattened lake gives a measured water surface, 267.4 m NAVD88, at both quality tiers. That fixes the bottom of everything, while the rest comes from photographs. The bridge is now granite, with an arch near each end, square piers, black rails and amber acorn lamps on the approaches. The white-columned gazebo sits on its round platform and glows warm at dusk, as in the photos. The Dockside pier has its four stone posts. No published dimensions exist for any of it, so every height above the water is labelled as an estimate. [References, tiers and day and night views](log/ui/clara-meer/README.md)
+
+### 2026-11-23 — Granite at the park gates
+
+Piedmont Park's two Piedmont Avenue entrances now stand at their OSM gate nodes. At 14th Street, tall rough-granite piers with stepped pyramid caps frame black iron leaves, and low walls sweep out to smaller end piers. At 12th Street, shorter slab-capped piers carry the cut-out PIEDMONT PARK beam, with acorn lamps just inside. Nobody seems to have photographed either gate at night, so the only lights drawn are the documented path lamps. Every dimension is an estimate scaled from the people in the photographs. [References, estimates and day and night views](log/ui/piedmont-gates/README.md)
