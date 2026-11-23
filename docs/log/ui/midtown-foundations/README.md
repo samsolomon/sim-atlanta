@@ -10,3 +10,5 @@ Both cameras use 2026-11-20 at 14:00 and 23:00 Eastern, a paused clock and a 999
 | --- | --- | --- | --- | --- |
 | Sage Parking (1690, −3910), bearing −55°, tilt 54°, 0.30 m/px | [Day](sage-parking-low-day.jpg) | [Night](sage-parking-low-night.jpg) | [Day](sage-parking-high-day.jpg) | [Night](sage-parking-high-night.jpg) |
 | Arts Center (451, −3933), bearing 22°, tilt 50°, 0.34 m/px | [Day](arts-center-low-day.jpg) | [Night](arts-center-low-night.jpg) | [Day](arts-center-high-day.jpg) | [Night](arts-center-high-night.jpg) |
+
+One affected civic building, OSM way 269871432, crosses the previous square's northern boundary. The bake includes its north-band piece when fitting the common floor. The regression casts a ray on each side of z = −1700, 20 cm apart, and compares the drawn roof elevations. The camera targets (1580, −1700), bearing 25°, tilt 50°, orbit 340 m. [Low day](north-seam-low-day.jpg) · [Low night](north-seam-low-night.jpg) · [High day](north-seam-high-day.jpg) · [High night](north-seam-high-night.jpg)

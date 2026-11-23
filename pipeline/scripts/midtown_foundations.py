@@ -44,15 +44,18 @@ def footprint_heights(rings, dem, bounds, step):
 
 def bake():
     sites = defaultdict(list)
-    for row in MIDTOWN_ROWS:
+    for row in [*MIDTOWN_ROWS, "north-band"]:
         folder = PACK / "square-board" / row
         m = json.loads((folder/"ground.json").read_text())
         dem = np.fromfile(folder/"ground.i16",dtype="<i2").reshape(m["rows"],m["cols"]) * m["scaleM"]
         zero = m["vertical"]["sceneZeroNavd88M"]
         for b in json.loads((folder/"context.json").read_text())["buildings"]:
+            ident = b["id"].split("/")[0]
+            if row == "north-band" and ident not in sites:
+                continue
             low, high = footprint_heights(b["rings"], dem, m["bounds"], m["stepM"])
             h = b["h"] or (3.6*b["floors"] if b["floors"] else 8)
-            sites[b["id"].split("/")[0]].append((low, high, math.floor(low-zero) + zero + h))
+            sites[ident].append((low, high, math.floor(low-zero) + zero + h))
     grades = {}
     for ident, pieces in sorted(sites.items()):
         low, high, roof = min(p[0] for p in pieces), max(p[1] for p in pieces), min(p[2] for p in pieces)

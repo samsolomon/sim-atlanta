@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Mesh } from 'three';
+import { Mesh, Raycaster, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { addSection, midtownRows, type Area, type Board } from '../square-board/sections';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
@@ -14,11 +14,12 @@ it.each(['low', 'high'] as const)('keeps every rendered generic Midtown roof abo
   const ctx = new Proxy({}, { get: () => () => {} });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   vi.stubGlobal('fetch', (url: string) => new Response(bytes(url.split('/square-board/')[1])));
-  const manifest: GroundManifest = JSON.parse(new TextDecoder().decode(bytes('north-band/ground.json')));
-  const grid = new GroundGrid(manifest, bytes('north-band/ground.i16'));
+  const manifest: GroundManifest = JSON.parse(new TextDecoder().decode(bytes('../downtown-ground/ground.json')));
+  const grid = new GroundGrid(manifest, bytes('../downtown-ground/ground.i16'));
   const previous = createDowntownTerrain(grid, { bounds: manifest.bounds, buildings: [], roads: [], rail: [] }, [], { quality });
-  const mounted = new Map<Board, Area>([['north-band', previous], ['downtown', previous]]);
+  const mounted = new Map<Board, Area>([['downtown', previous]]);
   try {
+    await addSection('north', mounted, quality, new AbortController().signal);
     for (const row of midtownRows) {
       await addSection(row, mounted, quality, new AbortController().signal, { brookwood: async (manifest, bytes) => brookwoodGrid(manifest, bytes) });
       const area = mounted.get(row)!;
@@ -56,6 +57,14 @@ it.each(['low', 'high'] as const)('keeps every rendered generic Midtown roof abo
       expect(triangles).toBeGreaterThan(1000);
       expect(minClearance, worst).toBeGreaterThanOrEqual(-.01);
     }
+    // Civic building 269871432 straddles the old square edge. Cast on the
+    // two clipped pieces themselves to catch a missing north-band registration.
+    function roofAt(row: Board, z: number) {
+      const shell = mounted.get(row)!.scenery.children.find(o => o instanceof Mesh && o.geometry.hasAttribute('aBase'))!;
+      const ray = new Raycaster(new Vector3(1580, 100, z), new Vector3(0,-1,0));
+      return ray.intersectObject(shell)[0].point.y;
+    }
+    expect(roofAt('north-band', -1699.9)).toBeCloseTo(roofAt('midtown-south', -1700.1), 4);
   } finally {
     for (const area of new Set(mounted.values())) area.dispose();
   }
