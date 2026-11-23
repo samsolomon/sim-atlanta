@@ -45,6 +45,8 @@ export interface ShellOptions {
   onClock?(): void;
   /** Horizontal scale at the view centre, for "Metro Atlanta" past neighbourhood zoom. */
   metresPerPixel?(): number | null;
+  /** Graphics quality for City (A2c menu): Auto picks by device, as `pickQuality` does. */
+  graphics?: { get(): 'auto' | 'high' | 'low'; set(q: 'auto' | 'high' | 'low'): void };
   /** What a share link should reopen: City's camera, or the Map's hash (A2c share). */
   shareTarget?(): import('./share').ShareView | null;
   /** The sky on screen (observed, typical or previewed), to name an illustrative condition. */

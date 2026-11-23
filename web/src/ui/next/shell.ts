@@ -243,12 +243,37 @@ export function createShellNext(o: ShellOptions): ShellApi {
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg);
 
   const menu = el('section', { class: 'a2-menu a2-g a2-long', id: 'a2-menu', hidden: '', 'aria-label': 'Menu' });
+  // No title block (A2c-menu): rows, Graphics, then the byline and the map-data credit.
+  const chev = `<span class="a2-chev">${SVG('<path d="M9 6l6 6-6 6"/>')}</span>`;
   menu.innerHTML = `
-    <button type="button" class="a2-row" data-act="key"><span><b>Key</b><small>What the colours and labels mean</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <button type="button" class="a2-row" data-act="city-info"><span><b>About this City view</b><small>What is illustrative in the miniature</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <button type="button" class="a2-row" data-act="about"><span><b>About &amp; credits</b><small>How it works and where the data comes from</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <p class="a2-fine">Unofficial. Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · OpenMapTiles · OpenFreeMap.</p>`;
-  const cityInfoRow = menu.querySelector<HTMLButtonElement>('[data-act=city-info]')!;
+    <div class="a2-menu-rows">
+      <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
+      <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
+    </div>
+    <div class="a2-sep"></div>
+    <div class="a2-menu-gfx">
+      <p class="a2-h" id="a2-gfx-label">Graphics</p>
+      <div class="a2-seg2" role="group" aria-labelledby="a2-gfx-label">${['Auto', 'High', 'Low'].map((q) => `<button type="button" data-gfx="${q.toLowerCase()}">${q}</button>`).join('')}</div>
+      <p class="a2-caption">Low draws at standard resolution with simpler shadows, fewer leaves and less rain. Good for older phones.</p>
+    </div>
+    <div class="a2-sep"></div>
+    <div class="a2-menu-foot">
+      <div class="a2-menu-by"><a class="a2-by" href="https://solomon.io">Built by Sam Solomon${SVG('<path d="M7 17L17 7M9 7h8v8"/>')}</a>
+        <a class="a2-social" href="https://x.com/samuelrsolomon" aria-label="Sam Solomon on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zM17.61 20.64h2.04L6.49 3.24H4.3z"/></svg></a>
+        <a class="a2-social" href="https://www.instagram.com/samuelrsolomon" aria-label="Sam Solomon on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.8" cy="7.2" r=".6" fill="currentColor"/></svg></a></div>
+      <p class="a2-fine">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · Overture · MARTA</p>
+    </div>`;
+  const gfxBtns = [...menu.querySelectorAll<HTMLButtonElement>('[data-gfx]')];
+  const showGraphics = () => {
+    const g = o.graphics?.get() ?? 'auto';
+    gfxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.gfx === g)));
+  };
+  gfxBtns.forEach((b) => b.addEventListener('click', () => {
+    o.graphics?.set(b.dataset.gfx as 'auto' | 'high' | 'low');
+    showGraphics();
+  }));
+  showGraphics();
+  menu.querySelector('.a2-menu-gfx')!.toggleAttribute('hidden', !o.graphics);
 
   // ---- camera column (bottom-right) -------------------------------------------------------
   const cam = el('div', { class: 'a2-camera a2-g', role: 'group', 'aria-label': 'Camera' });
@@ -408,7 +433,13 @@ export function createShellNext(o: ShellOptions): ShellApi {
         p.hidden = true;
         b.setAttribute('aria-expanded', 'false');
         if (p === panel) subject.classList.remove('a2-open');
+        if (p === menu) menuIcon(false);
       }
+  };
+  // The menu button shows × while the menu is open (A2c-menu).
+  const menuIcon = (open: boolean) => {
+    menuBtn.innerHTML = open ? `<span class="a2-ic a2-ic-x">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</span>` : `<span class="a2-ic">${ICON.list}</span>`;
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
   };
   const toggle = (p: HTMLElement, b: HTMLButtonElement, focus: () => void) => {
     const show = p.hidden;
@@ -416,9 +447,10 @@ export function createShellNext(o: ShellOptions): ShellApi {
     p.hidden = !show;
     b.setAttribute('aria-expanded', String(show));
     if (p === panel) subject.classList.toggle('a2-open', show);
+    if (p === menu) menuIcon(show);
     if (show) focus();
   };
-  menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-row')?.focus()));
+  menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
   shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
     // A shifted or paused clock most likely means this moment is the point of the link.
     shareMode = clock.isRealTime() ? 'live' : 'freeze';
@@ -438,10 +470,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
   menu.querySelector('[data-act=about]')!.addEventListener('click', () => {
     closePops();
     panelHost.show('about');
-  });
-  cityInfoRow.addEventListener('click', () => {
-    closePops();
-    document.getElementById('city-info')?.showPopover?.();
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
@@ -564,7 +592,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
   // ---- views --------------------------------------------------------------------------------
   function setView(v: View, fromUser = false) {
     viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
-    cityInfoRow.hidden = v !== 'city';
     if (hint) hint.textContent = hintText(v, coarse.matches);
     if (v === view && !fromUser) return;
     const changed = v !== view;
@@ -576,7 +603,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
   }
   viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
-  cityInfoRow.hidden = view !== 'city';
 
   // ---- keyboard -----------------------------------------------------------------------------
   const { advanceMovement } = createKeyboard({

@@ -455,7 +455,7 @@ async function openCity() {
   let areaNote: string | null = null;
   try {
     const { createCity } = await import('./city/city');
-    const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
+    const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; shell.setNote(text); },
@@ -499,7 +499,9 @@ async function openCity() {
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
   // Arriving from Map keeps its camera within the loaded City board.
-  const cameraLink = opening && parseCityCamera(params.get('cam'));
+  // A Graphics change rebuilds City where it was; otherwise a link's camera opens it.
+  const cameraLink = keepPose ?? (opening && parseCityCamera(params.get('cam')));
+  keepPose = null;
   if (cameraLink) {
     diorama.lookAt(cameraLink.x, cameraLink.z, cameraLink);
   } else if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
@@ -520,6 +522,48 @@ async function openCity() {
   cityLoading.hidden = true;
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
+}
+
+// ---- Graphics (A2c menu): Auto, High or Low for City, remembered per viewer ----------------------
+type Graphics = 'auto' | 'high' | 'low';
+const GRAPHICS_KEY = 'a2-graphics';
+let graphics: Graphics = (() => {
+  try {
+    const g = localStorage.getItem(GRAPHICS_KEY);
+    return g === 'high' || g === 'low' ? g : 'auto';
+  } catch {
+    return 'auto';
+  }
+})();
+/** undefined lets createCity pick (?q=, then the device). Only ?ui=next offers the choice. */
+const chosenQuality = () => (uiNext(location.search) && graphics !== 'auto' && !params.has('q') ? graphics : undefined);
+let keepPose: { x: number; z: number; bearing: number; tilt: number; distanceM: number } | null = null;
+async function setGraphics(g: Graphics) {
+  graphics = g;
+  try {
+    localStorage.setItem(GRAPHICS_KEY, g);
+  } catch {
+    /* private mode: the choice lasts for this page */
+  }
+  // A menu choice replaces a ?q= from the link.
+  if (params.has('q')) {
+    params.delete('q');
+    const u = new URL(location.href);
+    u.searchParams.delete('q');
+    history.replaceState(null, '', u);
+  }
+  if (!diorama) return;
+  const { pickQuality } = await import('./city/city');
+  if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
+  // Rebuild City at the same camera with the new tier.
+  const t = diorama.target(), c = diorama.camera();
+  keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
+  hideCard();
+  cityLoad++;
+  cityAbort?.abort();
+  diorama.dispose();
+  diorama = null;
+  await openCity();
 }
 
 function closeCity() {
@@ -622,6 +666,7 @@ const shellOptions: ShellOptions = {
     return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
   },
   sky: () => lastAtm,
+  graphics: uiNext(location.search) ? { get: () => graphics, set: (g) => void setGraphics(g) } : undefined,
   shareTarget() {
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;

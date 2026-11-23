@@ -193,14 +193,6 @@ body:has(.a2-subject.a2-open) .a2-notice, body:has(.a2-timepanel:not([hidden])) 
   width: min(320px, calc(100vw - var(--a2-left) - var(--a2-right))); padding: 6px;
   max-height: calc(100dvh - var(--a2-top) - var(--a2-app-bottom) - var(--a2-app-h) - 8px); overflow-y: auto;
 }
-.a2-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px;
-  padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; text-align: left; text-decoration: none; cursor: pointer;
-}
-.a2-row:hover { background: var(--a2-sep); }
-.a2-row b { display: block; font-size: 14px; font-weight: 600; }
-.a2-row small { display: block; font-size: 12px; color: var(--a2-ink2); margin-top: 1px; }
-.a2-chev { color: var(--a2-ink2); font-size: 18px; }
 .a2-fine { margin: 6px 12px 8px; padding-top: 10px; border-top: 1px solid var(--a2-sep); font-size: 11px; line-height: 1.45; color: var(--a2-ink2); }
 .a2-fine a { color: inherit; }
 
@@ -425,3 +417,31 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
   .a2-share-panel .a2-btn { height: 44px; }
   body:has(.a2-share-panel:not([hidden])) :is(.a2-appbar, .a2-hint) { display: none; }
 }
+
+/* ---- menu (A2c-menu): rows, Graphics, byline, map-data credit ---- */
+.a2-menu { padding: 8px 8px 10px; }
+.a2-menu-rows { padding: 0 0 6px; }
+.a2-mi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px;
+  background: transparent; font-size: 15px !important; font-weight: 500 !important; text-align: left; cursor: pointer; }
+.a2-mi:hover { background: var(--a2-sep); }
+.a2-mi > svg { width: 19px; height: 19px; flex: none; }
+.a2-mi > span:not(.a2-chev) { flex: 1; }
+.a2-mi small { display: block; margin-top: 1px; font-size: 12px; font-weight: 400; color: var(--a2-ink2); }
+.a2-chev { display: inline-grid; color: var(--a2-ink2); }
+.a2-chev svg { width: 16px; height: 16px; }
+.a2-menu > .a2-sep { margin: 0 8px; }
+.a2-menu-gfx { padding: 10px 12px 14px; }
+.a2-menu-gfx .a2-h { margin: 0 0 6px; }
+.a2-menu-foot { padding: 10px 12px 2px; display: flex; flex-direction: column; gap: 4px; }
+.a2-menu-by { display: flex; align-items: center; gap: 0; }
+.a2-menu .a2-fine { margin: 0; padding: 0; border: 0; font-size: 11px; color: var(--a2-ink2); }
+.a2-menu .a2-fine a, .a2-menu .a2-by { color: inherit; }
+.a2-menu .a2-by { color: var(--a2-ink); }
+
+@media (max-width: 600px) {
+  /* Phones: the menu is a bottom sheet over the app bar (A2c-phone-menu). */
+  .a2-menu { left: var(--a2-left); right: var(--a2-right); bottom: var(--a2-bottom); width: auto; z-index: 8; border-radius: 24px; padding: 14px 10px 18px; }
+  body:has(.a2-menu:not([hidden])) :is(.a2-appbar, .a2-hint) { display: none; }
+  .a2-menu .a2-seg2 button { height: 38px; }
+}
+.a2-ic-x svg { fill: none; }
