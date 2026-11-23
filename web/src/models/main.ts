@@ -88,6 +88,8 @@ const SPECIES_NOTES: Record<string, string> = {
   generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
   'willow-oak': 'Downtown’s street oak: a straight trunk under a dense oval crown of fine, narrow leaves; yellow-brown to russet late in the fall. ',
   'water-oak': 'The yard and woods oak: a short trunk splitting into big ascending leaders under a wider, more open crown of small spatulate leaves; a yellow week in late fall, and some leaves held into winter. ',
+  'loblolly-pine': 'The tall pine of Atlanta’s yards and woods: a long clear red-brown trunk under a high, open, irregular crown, its needles in tufts at the tips of bare twigs. Evergreen; the inner needles brown and drop in fall. ',
+  'tulip-poplar': 'The city’s tallest tree: a straight column of trunk under a narrow oval crown of big square-tipped leaves, golden yellow early in the fall and bare by mid-November. ',
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
@@ -901,4 +903,60 @@ function overdraw() {
   for (let i = 0; i < px.length; i += 4) { const n = px[i]; if (n > 0.5) { covered++; sum += n; max = Math.max(max, n); } }
   return { coveredPct: +(100 * covered / (size.x * size.y)).toFixed(1), layersPerCoveredPixel: +(sum / Math.max(1, covered)).toFixed(2), maxLayers: Math.round(max) };
 }
-Object.assign(window, { __lab: { overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+/**
+ * Crown colour as Sam sees it: renders a frame through ink and grade, reads the canvas, and
+ * averages only the pixels where foliage is visible (a mask render: foliage white with its own
+ * alpha test and leaf-drop patch, everything else black, depth-tested). Foliage is any mesh
+ * named foliage/leaves/tips/chips/sleeves/plumes, or the generic canopy's clump and cone meshes.
+ * Luminance is Rec. 709 on the display values (0–1); saturation is HSV.
+ */
+function crownStats() {
+  const gl = renderer.getContext();
+  draw(performance.now());
+  const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const shown = new Uint8Array(size.x * size.y * 4);
+  gl.readPixels(0, 0, size.x, size.y, gl.RGBA, gl.UNSIGNED_BYTE, shown);
+  const isFoliage = (o: THREE.Mesh) => /foliage|leaves|tips|chips|sleeves|plume/.test(o.name)
+    // The generic canopy: instanced clumps and cone tiers (lab props are not instanced).
+    || ((o as THREE.InstancedMesh).isInstancedMesh && ['OctahedronGeometry', 'DodecahedronGeometry', 'ConeGeometry'].includes(o.geometry.type));
+  const saved = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  const made: THREE.Material[] = [];
+  const black = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, toneMapped: false });
+  scene.traverse(o => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !o.visible) return;
+    saved.set(m, m.material);
+    if (!isFoliage(m)) { m.material = black; return; }
+    const src = m.material as THREE.MeshLambertMaterial;
+    const white = new THREE.MeshBasicMaterial({ color: 0xffffff, map: src.map ?? null, alphaTest: src.alphaTest, side: THREE.DoubleSide, toneMapped: false });
+    const patch = src.userData?.maskShader as ((sh: THREE.WebGLProgramParametersWithUniforms) => void) | undefined;
+    if (patch) { white.onBeforeCompile = sh => patch(sh); white.customProgramCacheKey = () => 'crownStats:' + (src.userData.maskKey ?? 'p'); }
+    made.push(white);
+    m.material = white;
+  });
+  const rt = new THREE.WebGLRenderTarget(size.x, size.y);
+  const bgSaved = scene.background;
+  scene.background = new THREE.Color(0x000000);
+  renderer.setRenderTarget(rt);
+  renderer.render(scene, camera);
+  const mask = new Uint8Array(size.x * size.y * 4);
+  renderer.readRenderTargetPixels(rt, 0, 0, size.x, size.y, mask);
+  renderer.setRenderTarget(null);
+  scene.background = bgSaved;
+  for (const [m, mat] of saved) m.material = mat;
+  for (const mat of [...made, black]) mat.dispose();
+  rt.dispose();
+  let n = 0, lum = 0, sat = 0;
+  for (let i = 0; i < mask.length; i += 4) {
+    // Instance colours and the atlas tint the mask's white; the background is pure black.
+    if (mask[i] + mask[i + 1] + mask[i + 2] < 6) continue;
+    const r = shown[i] / 255, g = shown[i + 1] / 255, b = shown[i + 2] / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    lum += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    sat += mx > 0 ? (mx - mn) / mx : 0;
+    n++;
+  }
+  draw(performance.now());
+  return { pixels: n, luminance: +(lum / Math.max(1, n)).toFixed(3), saturation: +(sat / Math.max(1, n)).toFixed(3) };
+}
+Object.assign(window, { __lab: { crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });

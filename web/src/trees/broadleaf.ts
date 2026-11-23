@@ -199,7 +199,7 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
  * mass area: the small lobed clusters that make a crown read as a broadleaf's. A cluster's depth
  * follows how far it faces up, so every mass has a lit top and a shaded underside.
  */
-export function massClusters(masses: Mass[], n: number, seed: number, size = 0.62): Unit[] {
+export function massClusters(masses: Mass[], n: number, seed: number, size = 0.62, flat = 0): Unit[] {
   const r = rng(seed);
   const area = masses.reduce((t, m) => t + m.r * m.r, 0);
   // Largest-remainder shares by mass area, at least one each, summing to exactly n.
@@ -216,6 +216,8 @@ export function massClusters(masses: Mass[], n: number, seed: number, size = 0.6
     for (let j = 0; j < Math.max(0, k); j++) {
       const dir = new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize().add(outward).normalize();
       const c = new THREE.Vector3(...m.c).addScaledVector(dir, m.r * 0.5);
+      // Flat tufts (a pine's needle pads): clusters spread sideways, facing up.
+      if (flat) { c.y = m.c[1] + (c.y - m.c[1]) * (1 - flat * 0.7); dir.y += flat * 1.5; dir.normalize(); }
       out.push({
         c: [c.x, c.y, c.z], r: m.r * size * (0.85 + r() * 0.3), n: [dir.x, dir.y, dir.z],
         depth: Math.min(1, m.depth * 0.45 + 0.55 * (dir.y * 0.5 + 0.5)),

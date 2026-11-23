@@ -2506,3 +2506,15 @@ Following a Blue Line train under downtown used to end in a shrug: "Train out of
 
 My first Federal Reserve made the long slab the tallest part and stepped it toward a crown. Sam's photographs said the corner tower at Peachtree and 10th rises above everything else. Rather than trade one guess for another, I pulled 160,000 USGS lidar returns over the block. The corner tower's crown sits at 360.2 m NAVD88, 61.9 m above the site, and steps once at 357.2 m. The slab tops out at a 47.5 m cornice with a 53.7 m recessed top floor. Those numbers rebuilt the massing. Then came the entrance Sam asked for: a portico with the eagle column on a granite plaza, lawn terraces down the Peachtree front, and a crown floodlit white at night. [Aerial before and after](log/ui/midtown-skyline/fed2-aerial-compare-day.jpg)
 
+### 2026-11-23 — Pines, poplars, and getting the colour back
+
+Sam picked option A, leaf cards hung on branch masses, for the oaks and for broadleaves in general. He had one complaint: the cards "lose a lot of colour" next to today's low-poly canopy.
+
+**Measuring it.** A new lab call, `__lab.crownStats()`, renders a frame through ink and grade, masks the visible foliage, and averages its luminance and saturation. The willow oak's cards came out 29% darker than the generic tree (0.18 against 0.25) and nearly fully saturated (0.999 against 0.81).
+
+**Most of the darkness was lighting.** Each card was lit by its own flat normal. Three.js also flips the normal on a double-sided card's back face, so half of every card faced away from the sun. Now every card is lit by the crown's outward normal, 80% of the way, so the crown shades like one solid blob and keeps its ragged edge. Turning off self-shadowing on the cards cleared the blotchy interior. The atlas now sets only which leaves exist, and the season sets the colour.
+
+**The saturation was the palette.** Moving the summer greens toward the generic tree's bluer `#5f8f4e` family fixed it. Every broadleaf option A now lands within 4% of the low-poly tree's luminance at both detail levels.
+
+**Two new species.** The loblolly pine carries flat needle tufts at the ends of bare twigs, high on a long clear trunk, over pine straw all year. Its inner needles brown in early November. The tulip poplar is a column of trunk under a narrow oval crown of big square-tipped leaves, gold by mid-October and bare by mid-November. Atlanta's tallest tree on record is a 50.6 m tulip poplar at Bitsy Grant Tennis Center. [Loblolly sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [All species, 5 Nov](log/ui/tree-species/lineup-fall.jpg)
+

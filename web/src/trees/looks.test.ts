@@ -29,7 +29,8 @@ describe.each(LOOKS.map(l => [l.species.id, l] as const))('%s rendering options 
   it('keeps leaves in summer and follows its calendar', () => {
     const p = look.palette(doyOf(7, 1), 0);
     expect(p.leaves).toBe(1);
-    expect(p.carpet).toBe(0);
+    // Deciduous trees have no summer carpet; a pine keeps a thin bed of straw all year.
+    expect(p.carpet).toBeLessThanOrEqual(look.species.id === 'loblolly-pine' ? 0.3 : 0);
   });
 });
 
@@ -39,7 +40,7 @@ describe('branch masses', () => {
     for (const look of LOOKS) for (const size of SIZE_CLASSES) for (const q of ['high', 'low'] as const) for (const opt of look.options) {
       const masses = crownMasses(look.habit, size, q, look.species.sizes[size], look.species.id.length);
       const n = opt.units[q];
-      const clusters = massClusters(masses, n, 1);
+      const clusters = massClusters(masses, n, 1, opt.cover ?? 0.62, opt.flat ?? 0);
       expect(clusters).toHaveLength(n);
       // Each cluster sits within its mass's reach of some mass centre; the top mass has one near it.
       const top = masses[masses.length - 1];
