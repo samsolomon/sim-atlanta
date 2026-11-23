@@ -86,7 +86,7 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 
 | Low (phone) | 2026-11-23 | Target |
 | --- | --- | --- |
-| Triangles | 4.77M | 2.0M |
+| Triangles | 4.21M (4.77M before tree-species #306) | 2.0M |
 | Draw calls | 475 | 500 |
 | Programs | 76 | 80 |
 | Texture MB | 160 | 100 |
