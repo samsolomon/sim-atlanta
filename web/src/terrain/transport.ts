@@ -8,6 +8,7 @@ import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
 import { connectorMedians, inConnectorLanes } from './connector-paint';
+import { drawSeventeenthStreet, seventeenthRamp } from '../city/seventeenth-street';
 import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
@@ -22,6 +23,7 @@ export interface SurfaceTransport {
   deckAt(x: number, z: number, run: TransportRun): number | null;
   clearOfFreight(x: number, z: number): boolean;
   group: THREE.Group;
+  setNight?(factor: number): void;
   structuralTier: 'illustrative';
   dispose(): void;
 }
@@ -61,10 +63,13 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   group.userData.structuralHeightTier = 'illustrative';
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
   const bounds = city.bounds;
+  const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
+  const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
+  let bridgePositions: THREE.BufferAttribute;
   let structurePositions: THREE.BufferAttribute;
   function deckAt(x: number, z: number, run: TransportRun) {
     const halfWidth = junctionWidths.get(run);
@@ -72,7 +77,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       i > 0 && segDist(x, z, run.pts[i - 1], p) <= halfWidth + .1)) return null;
     const quads = roadTreads.get(run);
     if (quads) for (const i of quads) {
-      const h = triangleHeight(structurePositions, i, x, z);
+      const h = triangleHeight(bridgeRuns.has(run) ? bridgePositions : structurePositions, i, x, z);
       if (h !== null) return h;
     }
     return null;
@@ -137,7 +142,6 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     if (bridge && !profile && ((startCut && endCut) || (!startCut && startHeight === null) || (!endCut && endHeight === null))) return;
     // A board cut can pass through mid-air. Carry the in-board support to that edge.
     const h0 = startHeight ?? endHeight, h1 = endHeight ?? startHeight;
-    const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
     const sidepath = sidepaths.has(run);
     const ribbon = use === 'road' && run.cls === 'motorway'
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
@@ -329,8 +333,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       junctionNodes.set(key,[...(junctionNodes.get(key)??[]),run]);
     }
   }
-  for (const road of data.roads) {
-    if (sharedDecks.has(road)) continue;
+  drawSeventeenthStreet(city, sceneZero, terrainGround, seventeenth, roadTreads, bridgeRuns);
+  for (const owner of data.roads) {
+    if (sharedDecks.has(owner) || bridgeRuns.has(owner)) continue;
+    const road = bounds.minZ === -4900 ? seventeenthRamp(owner, terrainGround, sceneZero) : owner;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.
@@ -339,23 +345,38 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const left=matchRibbon(road.pts[i-1],road.pts[i],road.sub==='link');
       const right=matchRibbon(road.pts[i],road.pts[i+1],road.sub==='link');
       if (left!==right) {
-        draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',road);
+        draw({...road,pts:road.pts.slice(from,i+1),deckNavd88M:road.deckNavd88M?.slice(from,i+1)},'road',owner);
         from=i;
       }
     }
-    draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from)} : road,'road',road);
+    draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from)} : road,'road',owner);
   }
   for (const r of data.rail) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
-  for (const [builder, name] of [[structures, 'Decks and embedded rails'], [freight, 'Freight track']] as const) {
+  const bridgeNight = { value: 0 };
+  for (const [builder, name] of [[structures, 'Decks and embedded rails'], [seventeenth, '17th Street Bridge'], [freight, 'Freight track']] as const) {
     if (!builder.pos.length) continue;
     const geometry = builder.geometry();
     const isFreight = builder === freight;
-    if (!isFreight) structurePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
+    if (builder === seventeenth) bridgePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
+    if (builder === structures) structurePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
     if (isFreight) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
       map: isFreight ? map : null, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    if (builder === seventeenth) {
+      // Contractor night photographs show lit steel and pier faces. Fill the
+      // vertex colours locally without adding point lights to the whole City.
+      material.onBeforeCompile = shader => {
+        shader.uniforms.bridgeNight = bridgeNight;
+        shader.vertexShader = 'varying float bridgeSpill;\n' + shader.vertexShader.replace(
+          '#include <begin_vertex>', '#include <begin_vertex>\nbridgeSpill = (1.0 - .77 * abs(normal.y)) * smoothstep(-207.0,-167.0,position.x) * (1.0-smoothstep(112.0,136.0,position.x));');
+
+        shader.fragmentShader = 'uniform float bridgeNight; varying float bridgeSpill;\n' + shader.fragmentShader.replace(
+          '#include <opaque_fragment>',
+          'outgoingLight += diffuseColor.rgb * vec3(.54, .40, .25) * bridgeNight * bridgeSpill;\n#include <opaque_fragment>');
+      };
+    }
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = name;
     mesh.castShadow = !isFreight; // The structural batch also contains the freight deck undersides.
@@ -363,7 +384,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     group.add(mesh);
     meshes.push(mesh);
   }
-  return { group, freightTreads, deckAt, clearOfFreight, structuralTier: 'illustrative', dispose() {
+  return { group, freightTreads, deckAt, clearOfFreight, structuralTier: 'illustrative',
+    setNight: seventeenth.pos.length ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
     map.dispose();

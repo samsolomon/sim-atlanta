@@ -152,6 +152,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
         added.set(id, {
           ...area,
+          setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
           connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, deckHeight) },
           dispose() { for (const t of transports) t.dispose(); area.dispose(); },
         });
