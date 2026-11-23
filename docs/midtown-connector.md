@@ -47,3 +47,13 @@ Use `/?view=city&cam=-190,-4650,10,52,1210&q=high&weather=clear&speed=0&t=2026-1
 | 10th Street, 10,−3072,0,48,380 | [Day](log/ui/midtown-connector/tenth-low-day.jpg) · [Night](log/ui/midtown-connector/tenth-low-night.jpg) | [Day](log/ui/midtown-connector/tenth-high-day.jpg) · [Night](log/ui/midtown-connector/tenth-high-night.jpg) |
 
 The bridge inventory widths for North Avenue (21.3 m) and 10th Street (25.6 m) at first ran the full length of each approach. Then the pavement dropped abruptly to the mapped street width where the approach met the ground ([before](log/ui/midtown-connector/tenth-before-day.jpg)). Each approach now blends with its deck-profile weight, from the inventory width at the abutment to the mapped width at the toe. That narrows 10th Street and North Avenue and widens 14th Street slightly (11.6 m to its 13 m mapped width). Inventory lane stripes stop where a lane would fall below 2.5 m, and the street's own centre line continues from the toe. Buses keep within a quarter of the mapped width, so every lane they use stays on the narrowed tread.
+
+## Piers under the measured decks
+
+The street and freeway decks from this survey used to span the Connector with no visible support. Each deck at least 30 m long now gets concrete bents, with the deck's sidewalks and cycle tracks riding on them. Spans are 20–45 m, kept at least 10 m from either abutment. If no clear footprint lies within 45 m, the span carries on to the nearest clear one.
+
+A column stands only where its 2.4 × 2.2 m footprint, plus 1 m, touches no rendered Connector lane, no drawn ground road at its drawn width plus 1 m, and no railway. A flyover ignores only its own ribbons, so its piers can't land in the lanes beneath it. This is the North Line's footprint test from #213, now shared as `terrain/pier-clearance.ts`. The mapped motorway centrelines are left out of the road list for these decks: at a generic 14 m width they bury the 5 m Connector medians, and the rendered lanes already test the freeway exactly.
+
+A wide deck's bent keeps only its clear columns, and needs at least half of them. The pier cap spans the rest. Result: 22 bents and 27 columns across the five rows. North Avenue and 10th Street each stand on a single median pier, and 14th Street has four. Column sizes, cap depth (pavement to cap underside, 1.4 m) and pier spacing are illustrative; actual pier locations were not surveyed.
+
+[10th Street before and after](log/ui/midtown-piers/compare-10th-street.jpg) · [Brookwood flyover](log/ui/midtown-piers/compare-brookwood-flyover.jpg) · [Northeast decks](log/ui/midtown-piers/compare-northeast-deck.jpg) · [Night and low tier](log/ui/midtown-piers/compare-10th-night-low.jpg)
