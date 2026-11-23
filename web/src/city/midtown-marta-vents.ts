@@ -316,8 +316,16 @@ function slab(body: Builder, ring: P2[], lo: number, hi: number, wall: string, r
     body.tri([ring[0][0], hi, ring[0][1]], [ring[i + 1][0], hi, ring[i + 1][1]], [ring[i][0], hi, ring[i][1]], roof);
 }
 
+// Sample every corner and every 2 m along each edge so a dip between corners
+// still sits above the footing.
 function grade(ring: P2[], ground: Ground) {
-  const g = ring.map(([x, z]) => ground(x, z));
+  const g: (number | null)[] = [];
+  for (let i = 0; i < ring.length; i++) {
+    const [x, z] = ring[i],
+      [a, b] = ring[(i + 1) % ring.length];
+    const n = Math.max(1, Math.ceil(Math.hypot(a - x, b - z) / 2));
+    for (let k = 0; k < n; k++) g.push(ground(x + ((a - x) * k) / n, z + ((b - z) * k) / n));
+  }
   return g.every((v): v is number => v !== null) ? { lo: Math.min(...g), hi: Math.max(...g) } : null;
 }
 
@@ -343,7 +351,7 @@ function fanHouse(body: Builder, lights: Builder, ground: Ground) {
     }
   }
   // A single door lamp on the annex, as on other MARTA service doors (inferred).
-  lights.box(0.25, 0.2, 0.2, 465, g.hi + 2.6, -3375.0, '#fff1d4');
+  lights.box(0.25, 0.2, 0.2, 465, g.hi + 2.6, -3375.15, '#fff1d4');
   return true;
 }
 
@@ -354,13 +362,26 @@ function flushGrate(body: Builder, ring: P2[], ground: Ground, height: number) {
   return true;
 }
 
+// A grate set into paving: its top follows the ground at every corner.
+function drapedGrate(body: Builder, ring: P2[], ground: Ground, proud: number) {
+  const y = ring.map(([x, z]) => ground(x, z));
+  if (!y.every((v): v is number => v !== null)) return false;
+  for (let i = 0; i < ring.length; i++) {
+    const j = (i + 1) % ring.length;
+    body.quad([ring[i][0], y[i] - 0.2, ring[i][1]], [ring[i][0], y[i] + proud, ring[i][1]], [ring[j][0], y[j] + proud, ring[j][1]], [ring[j][0], y[j] - 0.2, ring[j][1]], '#8f8d86');
+  }
+  for (let i = 1; i < ring.length - 1; i++)
+    body.tri([ring[0][0], y[0] + proud, ring[0][1]], [ring[i + 1][0], y[i + 1] + proud, ring[i + 1][1]], [ring[i][0], y[i] + proud, ring[i][1]], '#5f6062');
+  return true;
+}
+
 /** Vent structures the row data does not carry as buildings. Each row adds its own. */
 export function midtownVents(bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, ground: Ground) {
   const body = new Builder(),
     lights = new Builder();
   let any = false;
   if (inside(bounds, FAN_HOUSE)) any = fanHouse(body, lights, ground) || any;
-  if (inside(bounds, FIFTH_GRATE)) any = flushGrate(body, FIFTH_GRATE, ground, 0.15) || any;
+  if (inside(bounds, FIFTH_GRATE)) any = drapedGrate(body, FIFTH_GRATE, ground, 0.15) || any;
   if (!any) return null;
   const group = new Group();
   group.name = 'Midtown MARTA vents';
