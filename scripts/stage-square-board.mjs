@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const staged = [];
-const patches = process.argv.includes('--midtown') ? ['midtown-south'] : ['north-band', 'north-corner', 'south-band', 'south-corner'];
+const patches = process.argv.includes('--midtown')
+  ? Object.keys(JSON.parse(await readFile(new URL('../pipeline/prototypes/square-board/midtown-rows.json', import.meta.url), 'utf8')))
+  : ['north-band', 'north-corner', 'south-band', 'south-corner'];
 for (const patch of patches) {
   const src = new URL(`../pipeline/prototypes/square-board/${patch}/`, import.meta.url);
   const dest = new URL(`../web/public/data/scene/square-board/${patch}/`, import.meta.url);
