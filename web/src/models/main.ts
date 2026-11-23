@@ -20,7 +20,7 @@ import { createTrees, treeDims, treeTriangles, type TreePlacement } from '../tre
 import { SIZE_CLASSES, calendarDoy, doyOf, type SizeClass, type Species, type TreeQuality } from '../trees/species';
 import { SPECIES as SPECIES_LIST } from '../trees/index';
 import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
-import { VARIANTS, createGinkgoVariant, variantTriangles, type GinkgoVariant } from '../trees/ginkgo-variants';
+import { C_FAMILY, TIP_CAP, TIP_RANGE_M, VARIANTS, createGinkgoVariant, variantTriangles, type GinkgoVariant } from '../trees/ginkgo-variants';
 import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
 
 const el = document.getElementById('stage')!;
@@ -120,9 +120,10 @@ const labelLayer = document.createElement('div');
 labelLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;font:600 14px system-ui,sans-serif';
 document.getElementById('stage')!.append(labelLayer);
 // Ginkgo rendering candidates (trees/ginkgo-variants.ts) and the cost test's tree count.
-type Rendering = 'current' | GinkgoVariant | 'all';
+type Rendering = 'current' | GinkgoVariant | 'all' | 'allC';
+const compareSet = (r: Rendering): GinkgoVariant[] => r === 'allC' ? C_FAMILY : ['A', 'B', 'C', 'D'];
 const variantParam = new URLSearchParams(location.search).get('variant');
-let rendering: Rendering = variantParam && (variantParam === 'all' || variantParam === 'current' || variantParam in VARIANTS) ? variantParam as Rendering : 'current';
+let rendering: Rendering = variantParam && (variantParam === 'all' || variantParam === 'allC' || variantParam === 'current' || variantParam in VARIANTS) ? variantParam as Rendering : 'current';
 let treeCount = Number(new URLSearchParams(location.search).get('n')) || 1;
 let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
 // Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
@@ -156,13 +157,15 @@ function buildTrees() {
     row = Array.from({ length: treeCount }, (_, i) => ({ size: sizes[i % sizes.length], x: (i % cols - (cols - 1) / 2) * pitch, z: (Math.floor(i / cols) - (cols - 1) / 2) * pitch }));
   }
   const ginkgoVariant = model === 'ginkgo' && rendering !== 'current';
-  if (ginkgoVariant && rendering === 'all') {
+  if (ginkgoVariant && (rendering === 'all' || rendering === 'allC')) {
+    const set = compareSet(rendering);
+    const mid0 = (set.length - 1) / 2;
     // Compare all: A–D left to right at one class (mature when "All sizes" is chosen).
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     const spread = species!.sizes[size].spreadM;
     const gap = Math.max(spread + 3, size === 'sapling' ? 5 : 9);
-    const parts = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) =>
-      createGinkgoVariant([{ species: species!, size, x: (i - 1.5) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
+    const parts = set.map((v, i) =>
+      createGinkgoVariant([{ species: species!, size, x: (i - mid0) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
     const group = new THREE.Group();
     parts.forEach(p => group.add(p.group));
     trees = {
@@ -173,8 +176,8 @@ function buildTrees() {
       dispose: () => { parts.forEach(p => p.dispose()); group.removeFromParent(); },
       draws: () => parts.reduce((n, p) => n + p.draws(), 0),
     };
-    row = parts.map((_, i) => ({ size, x: (i - 1.5) * gap, z: 0 }));
-    compareLabels = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) => ({ text: `${v} · ${VARIANTS[v]}`, at: new THREE.Vector3(row[i].x, species!.sizes[size].heightM * 1.04, 0) }));
+    row = parts.map((_, i) => ({ size, x: (i - mid0) * gap, z: 0 }));
+    compareLabels = set.map((v, i) => ({ text: set.length > 4 ? v : `${v} · ${VARIANTS[v]}`, at: new THREE.Vector3(row[i].x, species!.sizes[size].heightM * 1.04, 0) }));
     spreads.splice(0, spreads.length, ...row.map(() => gap - 3));
     heights.splice(0, heights.length, ...row.map(() => species!.sizes[size].heightM));
   } else if (ginkgoVariant) {
@@ -225,10 +228,11 @@ function buildTrees() {
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     variantReport.textContent = rendering === 'current'
       ? 'Current: the octahedron model City draws today.'
-      : (rendering === 'all' ? 'Left to right: ' : '') + (Object.keys(VARIANTS) as GinkgoVariant[])
-        .filter(v => rendering === 'all' || v === rendering)
+      : (rendering === 'all' || rendering === 'allC' ? 'Left to right: ' : '') + (Object.keys(VARIANTS) as GinkgoVariant[])
+        .filter(v => rendering === 'all' || rendering === 'allC' ? compareSet(rendering).includes(v) : v === rendering)
         .map(v => `${v} ${VARIANTS[v]} ${variantTriangles(v, size, treeQuality).total}`).join(', ') + ` triangles per ${size} tree.`
-        + (rendering === 'B' || rendering === 'all' ? ' B swaps to A beyond 60 m.' : '');
+        + (rendering === 'B' || rendering === 'all' ? (treeQuality === 'low' ? ' B draws no fans at low detail (it is A).' : ' B swaps to A beyond 60 m.') : '')
+        + (rendering === 'C4' || rendering === 'allC' ? ` C4 counts fan tips on one tree; at most ${TIP_CAP} trees within ${TIP_RANGE_M} m carry them, none at low detail.` : '');
   }
   const per = (q: TreeQuality) => species
     ? sizes.map(size => `${size} ${treeTriangles(species, size, q).total}`).join(', ')
@@ -454,6 +458,7 @@ const composer = new EffectComposer(renderer, (() => {
 })());
 composer.addPass(new RenderPass(scene, camera));
 const ink = new ShaderPass(inkShader());
+ink.uniforms.uFoliage.value = 1; // the lab shows inkFoliage-marked leaf variants
 composer.addPass(ink);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass(gradeShader());
@@ -646,10 +651,10 @@ for (const size of [...SIZE_CLASSES, 'all'] as const)
 document.getElementById('tree-size')!.append(treeReport);
 for (const [label, doy] of SEASONS) mk('season', label, () => { seasonDoy = doy; showSeason(); }, label === 'Clock date');
 document.getElementById('season')!.append(seasonReport);
-for (const r of ['current', 'A', 'B', 'C', 'D', 'all'] as const)
-  mk('rendering', r === 'current' ? 'Current' : r === 'all' ? 'Compare all' : `${r} ${VARIANTS[r]}`, () => { rendering = r; setParam('variant', r); build(); view('Front'); }, r === rendering);
+for (const r of ['current', 'A', 'B', 'C', 'D', 'all', 'C1', 'C2', 'C3', 'C4', 'allC'] as const)
+  mk('rendering', r === 'current' ? 'Current' : r === 'all' ? 'Compare A–D' : r === 'allC' ? 'Compare C family' : `${r} ${VARIANTS[r]}`, () => { rendering = r; setParam('variant', r); build(); view('Front'); }, r === rendering);
 document.getElementById('rendering')!.append(document.getElementById('variant-report')!);
-for (const n of [1, 50, 300])
+for (const n of [1, 20, 50, 300])
   mk('count', String(n), () => { treeCount = n; setParam('n', String(n)); build(); view('Front'); }, n === treeCount);
 document.getElementById('count')!.append(document.getElementById('perf-report')!);
 for (const tier of ['high', 'low'] as const)
@@ -706,4 +711,47 @@ function bench(frames = 60) {
   gl.finish();
   return { msPerFrame: (performance.now() - t0) / frames, triangles: tri, calls };
 }
-Object.assign(window, { __lab: { bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+/**
+ * Foliage overdraw: renders only the leaf meshes (with their alpha test), adding 1 per fragment
+ * that survives the test, and reports layers per covered pixel. Depth test is off, so this is
+ * the worst case before early-z rejection.
+ */
+function overdraw() {
+  const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.FloatType });
+  const leaves: THREE.InstancedMesh[] = [];
+  scene.traverse(o => { if (o instanceof THREE.InstancedMesh && /foliage|leaves|tips|chips|sleeves/.test(o.name) && o.visible) leaves.push(o); });
+  const saved = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
+  const hidden: THREE.Object3D[] = [];
+  scene.traverse(o => { if ((o as THREE.Mesh).isMesh && !leaves.includes(o as THREE.InstancedMesh) && o.visible) { o.visible = false; hidden.push(o); } });
+  // Hide every other renderable, lines and points included.
+  scene.traverse(o => { if (((o as THREE.Line).isLine || (o as THREE.Points).isPoints) && o.visible) { o.visible = false; hidden.push(o); } });
+  for (const l of leaves) {
+    const src = l.material as THREE.MeshLambertMaterial;
+    saved.set(l, l.material);
+    // Exactly 1.0 per fragment that survives the alpha test, whatever the tint or atlas colour.
+    const counter = new THREE.MeshBasicMaterial({ map: src.map ?? null, alphaTest: src.alphaTest, side: THREE.DoubleSide,
+      transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false });
+    counter.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n gl_FragColor = vec4(1.0);'); };
+    l.material = counter;
+  }
+  const bgSaved = scene.background;
+  scene.background = null;
+  renderer.setRenderTarget(rt);
+  const clearSaved = renderer.getClearColor(new THREE.Color()), alphaSaved = renderer.getClearAlpha();
+  renderer.setClearColor(0x000000, 0);
+  renderer.clear();
+  renderer.render(scene, camera);
+  const px = new Float32Array(size.x * size.y * 4);
+  renderer.readRenderTargetPixels(rt, 0, 0, size.x, size.y, px);
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(clearSaved, alphaSaved);
+  scene.background = bgSaved;
+  for (const [o, mat] of saved) { ((o as THREE.Mesh).material as THREE.Material).dispose(); (o as THREE.Mesh).material = mat; }
+  for (const o of hidden) o.visible = true;
+  rt.dispose();
+  let covered = 0, sum = 0, max = 0;
+  for (let i = 0; i < px.length; i += 4) { const n = px[i]; if (n > 0.5) { covered++; sum += n; max = Math.max(max, n); } }
+  return { coveredPct: +(100 * covered / (size.x * size.y)).toFixed(1), layersPerCoveredPixel: +(sum / Math.max(1, covered)).toFixed(2), maxLayers: Math.round(max) };
+}
+Object.assign(window, { __lab: { overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });

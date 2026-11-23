@@ -169,6 +169,53 @@ The current model costs 179 / 81 triangles per tree (191 / 81 for the specimen).
 
 Compare sheets, each showing fall, winter, night and low detail beside the references: [sapling](log/ui/tree-species/variants-sapling.jpg) · [young](log/ui/tree-species/variants-young.jpg) · [mature](log/ui/tree-species/variants-mature.jpg) · [specimen](log/ui/tree-species/variants-specimen.jpg)
 
+## Leaf cards without the dark ink (C1–C4)
+
+Sam picked C (leaf cards), with B's fans, but the ink outlines drained C's colour. The cause is the ink pass (`web/src/vignette/ink.ts`). It runs once over the finished frame and draws a line wherever depth jumps (a second difference, relative to distance) and, more faintly, wherever luminance steps. It has no idea what a pixel belongs to. Every cut-out leaf on a card is a depth jump against the sky behind it, so every leaf got a near-black outline.
+
+**The hook: a foliage mark in the colour alpha.** `inkFoliage(material, mode)` patches a material so its fragments write a small mode code into alpha. Opaque surfaces write 1, and City runs ink directly after the scene render, before AO, bloom, tilt-shift and grade, so the mark arrives intact. The ink pass then:
+- draws **no** line where the pixel and its four neighbours are all foliage;
+- draws a silhouette where foliage meets anything else, but **only if** the far side stays clear 4 and 8 pixels out. Crown against sky, ground or a building qualifies; a small gap between leaves does not;
+- for modes 2 and 3, uses a warm ochre-brown ink (`#5a3a12`) at 75% strength in place of near-black.
+
+A large depth jump between two foliage pixels still draws, so one crown standing in front of another keeps its edge.
+
+The foliage logic sits behind a `uFoliage` uniform. City leaves it at 0 today, so City's ink costs and draws exactly what it did before (checked at `cam=618,-3999,245,70,80`). The lab sets it to 1.
+
+Caveat: an alpha-blended effect drawn over marked foliage (snow, rain sprites, additive lights) rewrites the mark. Before a marked species reaches City, either move the mark to its own target or keep blended effects off crowns. The mark needs opaque materials: alpha-tested cards are fine, alpha-blended ones are not, which also suits phones. Any species, and later the generic canopy, can opt in with one call.
+
+| | Ink | Triangles per tree, high / low |
+|---|---|---|
+| C | Old ink, every leaf outlined | 145 / 85 |
+| C1 | Silhouette only, near-black | 145 / 85 |
+| C2 | Silhouette only, warm ochre | 145 / 85 |
+| C3 | Warm. Interior lines kept close up, faded out between 16 and 40 m | 145 / 85 |
+| C4 | C2, plus three-triangle fan leaves on the outer branch tips | 445 on a tipped tree / 85 |
+
+**Guardrails (Sam).**
+- No fans at all at low detail.
+- Cards are alpha-tested (discard), never blended. A test checks this.
+- C4 caps the fans: at most `TIP_CAP` = 8 trees carry tips, nearest first and within `TIP_RANGE_M` = 45 m. The rest stay C2. Tips are re-chosen only when the camera moves more than 1 m.
+- B (micro-fans) also draws no fans at low detail.
+
+**Worst-case budget test.** A synthetic 4 × 5 grove of 20 mature trees 11.5 m apart, about as dense as the Peachtree avenue at Andrew Young, with the camera standing inside it (`ginkgo-variants.test.ts`).
+
+| Tier | Variant | Triangles drawn | Draws | Ceiling (fails above) |
+|---|---|---|---|---|
+| High | C, C1, C2, C3 | 3,000 | 4 | 7,320 triangles, 5 draws |
+| High | C4 (8 trees tipped) | 5,400 | 5 | 7,320 triangles, 5 draws |
+| Low | All C variants | 1,620 | 4 | 3,120 triangles, 4 draws |
+
+**Measured on the Mac Studio** in the lab, with the same grove and an eye-level camera inside it (`?v=ginkgo&variant=…&n=20`, then `__lab.bench(60)` and `__lab.overdraw()`). Frame time is the wall time to submit 60 frames and `gl.finish`, which covers CPU and GPU together. Every case came in between 0.04 and 0.43 ms, inside the noise of a sub-millisecond measurement, so no variant is measurably slower than another here.
+- Foliage overdraw: alpha-tested leaf fragments per covered pixel, depth test off, which is the worst case:
+  - High: current 2.97 (max 12), cards 1.52 (max 8). C4 is 1.53.
+  - Low: current 2.31, cards 1.24.
+- Main-pass triangles for the whole lab frame: current 7,743, C–C3 7,863, C4 12,663 at high; about 3,800–4,500 at low.
+- `EXT_disjoint_timer_query_webgl2` is available in the Studio's Chrome, so a later pass can split CPU from GPU.
+- A16 and iPhone numbers are deferred until Sam has the phone.
+
+[C family compare sheet: specimen, mature, close-ups, night and low detail](log/ui/tree-species/variants-c-family.jpg)
+
 ## Next species (lab only)
 
 All six will be built in the lab with the same framework, budget and tests, and will not be placed in City until Sam decides on the rollout. Spread is a diameter. Sizes are in metres, given as class ranges. "GT" is the Georgia Tech inventory and "City 2011" the downtown census.
