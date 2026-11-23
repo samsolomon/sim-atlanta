@@ -55,7 +55,7 @@ export class VehicleFollow {
   /** Returns the camera target for this frame, or undefined to leave the camera alone.
    * `current` is the camera's actual target, so anything else that moved the camera
    * (an area finishing its load, a board clamp) is corrected on the next frame. */
-  frame(fix: Fix | null, bounds: Bounds, now: number, reducedMotion: boolean, current?: Point): Point | undefined {
+  frame(fix: Fix | null, bounds: Bounds | ((p: Point) => boolean), now: number, reducedMotion: boolean, current?: Point): Point | undefined {
     const v = this.followed;
     if (!v) return;
     // A trip that changes path or tier is a different claim. End rather than relabel it.
@@ -64,7 +64,8 @@ export class VehicleFollow {
       this.stop('lost');
       return;
     }
-    const inside = (p: Point) => p.x >= bounds.minX && p.x <= bounds.maxX && p.z >= bounds.minZ && p.z <= bounds.maxZ;
+    const inside = typeof bounds === 'function' ? bounds
+      : (p: Point) => p.x >= bounds.minX && p.x <= bounds.maxX && p.z >= bounds.minZ && p.z <= bounds.maxZ;
     // Retain a consist crossing a board edge while at least one car remains on the board.
     const cars = fix.cars.filter(inside);
     if (!cars.length && !inside(fix)) {
@@ -94,6 +95,7 @@ export class VehicleFollow {
 }
 
 type Run = { pts: number[][] };
+const NORTH_LINE = new Set(['marta:route:RED', 'marta:route:GOLD']);
 /** True when (x, z) lies beside a way that OSM maps as North Line tunnel, within `reach`
  * metres across it. GTFS shapes and OSM ways differ by a few metres, and the two mains run
  * side by side. Past a tunnel mouth the claim stops: a point beyond a way's end counts only
@@ -116,8 +118,9 @@ export function inMappedTunnel(x: number, z: number, reach = 20, runs: readonly 
 
 /** Why a followed train has no drawn car. Downtown's baked rail cover comes first; the
  * North Line's mapped tunnel covers Midtown, where no rail cover is baked. */
-export function trainHidden(rail: SceneManifest['rail'], pathId: string, s: number, x: number, z: number): Hidden {
+export function trainHidden(rail: SceneManifest['rail'], routeId: string, pathId: string, s: number, x: number, z: number): Hidden {
   const cover = railSpanAt(rail, pathId, s)?.cover;
   if (cover === 'covered' || cover === 'roofed') return 'covered';
-  return inMappedTunnel(x, z) ? 'underground' : null;
+  // Only North Line services run in that tunnel; the Crescent and freight pass beside its portal.
+  return NORTH_LINE.has(routeId) && inMappedTunnel(x, z) ? 'underground' : null;
 }

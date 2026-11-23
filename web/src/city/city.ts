@@ -1263,7 +1263,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const [x, z] = project(t.lon, t.lat);
       const cars = [...trains.group.children, ...(brookwood?.cars.children ?? [])]
         .filter(c => c.userData.trainId === t.id).flatMap(c => drawnAt(c) ?? []);
-      return { id: t.id, pathId: t.pathId, tier: t.s.tier, x, z, cars, hidden: trainHidden(trainRail, t.pathId, t.s.value, x, z) };
+      return { id: t.id, pathId: t.pathId, tier: t.s.tier, x, z, cars, hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
     if (v.kind === 'bus') {
       const bus = options.buses?.()?.find(b => b.id === v.id);
@@ -1337,10 +1337,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // A followed vehicle loads the area it is heading into, without a manual pan. On the full
     // board follow runs to the mounted edge. Off the mosaic, a train heading east keeps its trip
     // (as "out of view") while King Memorial and its rail load, then falls back to downtown.
-    let followBounds = trainBounds;
+    let followBounds: typeof trainBounds | ((p: { x: number; z: number }) => boolean) = trainBounds;
     if (fix && mosaic) {
       approachMosaic(fix.x, fix.z);
-      followBounds = square!.mountedBounds(Array.from(mosaic.areas.values(), a => a.bounds));
+      // Per mounted area, so a row that failed or is still loading counts as off the board.
+      const rects = Array.from(mosaic.areas.values(), a => a.bounds);
+      followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
     } else if (fix && previewEast) {
       approachEast(fix.x, fix.z);
       if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };

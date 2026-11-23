@@ -1,5 +1,7 @@
 # Follow a Blue Line train in City
 
+> **Superseded (2026-11-23).** Follow is now on by default for every MARTA rail line, the Crescent and live MARTA buses. `?follow=0` turns it off, `?follow=<route id>` follows the nearest train on that route, and the `?follow=1` used below is no longer needed. See [the follow review sheets](log/ui/follow/README.md). The Blue Line notes below remain accurate as history.
+
 Open the [paused local preview](http://localhost:5173/?view=map&follow=1&q=high&t=2026-11-20T14:11:25-05:00&speed=0&controls=1#19.1/33.75251/-84.38940/-148) on a running development server with downtown assets staged. Select **City**, tap a silver passenger car in the cut, then choose **Follow train** on the Blue Line card. Press **1×** to ride east. The train is scheduled trip `marta:trip:4-50520-20261120` to Indian Creek. The trip ID includes its service date. A different service date needs a new selection.
 
 The camera holds a bearing of −148°, a 26° tilt and a 300 m distance from its ground target. The selected car opens the card. The follow target is the centre of that trip’s drawn consist while cars are on the board. This lets a trailing car remain in view at a portal. Once every car is under cover, the camera moves above the source path and the card keeps its position tier. City draws the same train when its cars emerge. The camera stays above the board throughout.

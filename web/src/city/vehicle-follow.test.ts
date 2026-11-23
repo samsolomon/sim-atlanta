@@ -92,6 +92,14 @@ describe('vehicle follow', () => {
     expect(back.x).toBeGreaterThanOrEqual(20);
   });
 
+  it('ends in a gap between mounted areas, not just outside their bounding box', () => {
+    const f = new VehicleFollow(); f.start(train);
+    const mounted = (p: {x:number;z:number}) => p.x < 200 || p.x > 300;
+    expect(f.frame(fix(150),mounted,0,false)).toBeDefined();
+    expect(f.frame(fix(250),mounted,16,false)).toBeUndefined();
+    expect(f.phase).toBe('outside');
+  });
+
   it('follows a bus, which has no path, and keeps its own tier', () => {
     const f = new VehicleFollow(); f.start({kind:'bus',id:'marta:bus:1501',tier:'live'});
     const bus = {id:'marta:bus:1501',tier:'live' as const,x:40,z:50,cars:[{x:40,z:50}],hidden:null};
@@ -132,8 +140,11 @@ describe('mapped North Line tunnel', () => {
   });
 
   it('prefers downtown rail cover, then the mapped tunnel, then makes no claim', () => {
-    expect(trainHidden(rail,'blue-east',20,482,-3063)).toBe('covered');
-    expect(trainHidden(rail,'blue-east',60,482,-3063)).toBe('underground');
-    expect(trainHidden(rail,'blue-east',60,0,0)).toBeNull();
+    const red = 'marta:route:RED';
+    expect(trainHidden(rail,red,'blue-east',20,482,-3063)).toBe('covered');
+    expect(trainHidden(rail,red,'blue-east',60,482,-3063)).toBe('underground');
+    expect(trainHidden(rail,red,'blue-east',60,0,0)).toBeNull();
+    // The Crescent passes beside the portal; it is never in the North Line tunnel.
+    expect(trainHidden(rail,'amtrak:route:Crescent','x',60,482,-3063)).toBeNull();
   });
 });

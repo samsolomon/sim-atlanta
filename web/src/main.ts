@@ -65,6 +65,7 @@ const follow = followParam === '0' ? undefined : new VehicleFollow();
 let followRoute = followParam?.includes(':route:') ? followParam : null;
 let followBus = followParam?.startsWith('marta:bus:') ? followParam : null;
 let followLinkAt: number | undefined;
+let followLinkOpened: number | undefined;
 const followPanel = document.getElementById('train-follow')!;
 const followAction = followPanel.querySelector<HTMLButtonElement>('[data-follow]')!;
 const recenter = followPanel.querySelector<HTMLButtonElement>('[data-recenter]')!;
@@ -81,12 +82,14 @@ function updateFollowPanel() {
     underground: reduced ? 'Underground · mapped tunnel' : 'Underground · mapped tunnel · following its alignment above ground',
     covered: reduced ? `${Noun} under cover` : 'Under cover · following the route above ground',
     unseen: reduced ? `${Noun} out of view` : `${Noun} out of view · following its position above ground`,
-    lost: noun === 'bus' ? 'Follow ended · bus stopped reporting' : 'Follow ended · trip unavailable',
+    lost: noun !== 'bus' ? 'Follow ended · trip unavailable'
+      : clock.isRealTime() ? 'Follow ended · bus stopped reporting' : 'Follow ended · live buses show only at the present time',
     outside: `Follow ended · ${noun} left the board`,
   }[follow.phase];
   const text = reduced && follow.active ? [note, 'Camera stays still until you recenter.'].filter(Boolean).join(' · ') : note;
   // The position's own tier stays beside the status while following, also in the compact card.
-  const html = text ? `${text}${follow.active && follow.tier ? ' ' + chip(follow.tier) : ''}` : '';
+  // The chip is the position's tier, labelled as such: it does not vouch for the tunnel or cover note.
+  const html = text ? `${text}${follow.active && follow.tier ? ' · position ' + chip(follow.tier) : ''}` : '';
   if (lastStatusHTML !== html) followStatus.innerHTML = lastStatusHTML = html;
   followStatus.hidden = !text;
   followAction.hidden = follow.phase === 'lost' || follow.phase === 'outside';
@@ -162,7 +165,9 @@ function followFromLink() {
   }
   if (!followRoute || !follow || !diorama) return;
   // At the real clock, wait for live rail: a timetable trip picked first would be replaced.
-  if (clock.isRealTime() && !source.liveActive && !live.error) return;
+  // If live rail never arrives (overnight, or a slow first poll), fall back to the timetable after 15 s.
+  followLinkOpened ??= performance.now();
+  if (clock.isRealTime() && !source.liveActive && !live.error && performance.now() - followLinkOpened < 15_000) return;
   // Measure from the linked camera: while its area loads, City holds the view at the nearest loaded edge.
   const target = parseCityCamera(params.get('cam')) || diorama.target();
   let best: { id: string; d: number; x: number; z: number } | null = null;
@@ -175,8 +180,8 @@ function followFromLink() {
   }
   // Wait for that train's area to mount, so follow does not end at a loading edge.
   // If it never mounts, the follow starts anyway and ends at the edge as usual.
-  followLinkAt ??= performance.now();
-  if (best && !diorama.onBoard(best.x, best.z) && performance.now() - followLinkAt < 20_000) return;
+  if (best) followLinkAt ??= performance.now();
+  if (best && !diorama.onBoard(best.x, best.z) && performance.now() - followLinkAt! < 20_000) return;
   const train = best && source.find(best.id);
   if (!train) return;
   followRoute = null;
