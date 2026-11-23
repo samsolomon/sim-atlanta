@@ -25,17 +25,13 @@ export function streetcarPaths(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
   return out;
 }
 
-/** Scene point at GTFS distance s along a path, extended straight past either end. */
-export function pointAt(path: Path, s: number) {
+/** Drawn distance along the scene polyline for a GTFS distance s (proportional per segment). */
+export function alongAt(path: Path, s: number) {
   const { cum, line } = path;
   const first = cum[0],
     last = cum[cum.length - 1];
-  if (s < first || s > last) {
-    // Off the end of the shape (a car dwelling at a terminal): continue along the end segment.
-    const end = s < first ? line.at(0) : line.at(line.length);
-    const over = s < first ? s - first : s - last;
-    return { ...end, x: end.x + end.dx * over, z: end.z + end.dz * over };
-  }
+  if (s <= first) return s - first;
+  if (s >= last) return line.length + (s - last);
   let lo = 0,
     hi = cum.length - 1;
   while (hi - lo > 1) {
@@ -44,7 +40,24 @@ export function pointAt(path: Path, s: number) {
     else hi = m;
   }
   const f = cum[hi] > cum[lo] ? (s - cum[lo]) / (cum[hi] - cum[lo]) : 0;
-  return line.at(line.cum[lo] + f * (line.cum[hi] - line.cum[lo]));
+  return line.cum[lo] + f * (line.cum[hi] - line.cum[lo]);
+}
+
+/** Scene point at a drawn distance along a path, extended straight past either end. */
+export function pointAlong(path: Path, along: number) {
+  const { line } = path;
+  if (along < 0 || along > line.length) {
+    // Off the end of the shape (a car dwelling at a terminal): continue along the end segment.
+    const end = along < 0 ? line.at(0) : line.at(line.length);
+    const over = along < 0 ? along : along - line.length;
+    return { ...end, x: end.x + end.dx * over, z: end.z + end.dz * over };
+  }
+  return line.at(along);
+}
+
+/** Scene point at GTFS distance s along a path. */
+export function pointAt(path: Path, s: number) {
+  return pointAlong(path, alongAt(path, s));
 }
 
 /**
@@ -66,8 +79,10 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
   const v = new THREE.Vector3(),
     joint = new THREE.Vector3(),
     truck = new THREE.Vector3();
-  const on = (path: Path, s: number) => {
-    const p = pointAt(path, s),
+  // Kinematic offsets are real metres, so they apply along the drawn shape, not in GTFS
+  // distance (which differs from the drawn geometry by up to 8% on some paths).
+  const on = (path: Path, along: number) => {
+    const p = pointAlong(path, along),
       y = height(p.x, p.z);
     return y === null ? null : new THREE.Vector3(p.x, y, p.z);
   };
@@ -84,7 +99,8 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
       if (t.routeId !== STREETCAR_ROUTE) continue;
       const path = paths.get(t.pathId);
       if (!path) continue;
-      const s = t.s.value;
+      // The car's centre on the drawn shape; every pivot offset below is in drawn metres.
+      const s = alongAt(path, t.s.value);
       const c0 = on(path, s - 0.9),
         c1 = on(path, s + 0.9),
         tA = on(path, s + S70_LAYOUT.sections.A.pivots[1]),
@@ -96,7 +112,9 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
       if (!car) {
         car = geometry.map((g, k) => {
           const mesh = new THREE.Mesh(g.geometry, material);
-          mesh.castShadow = mesh.receiveShadow = true;
+          // Like other moving vehicles: the shadow map redraws only when the camera or sun moves.
+          mesh.castShadow = false;
+          mesh.receiveShadow = true;
           mesh.userData.lengthM = lengthOf(IDS[k]);
           group.add(mesh);
           return mesh;

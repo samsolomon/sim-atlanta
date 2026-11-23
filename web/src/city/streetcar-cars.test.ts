@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import { S70_LAYOUT } from '../vignette/streetcar';
-import { createStreetcarCars, pointAt, streetcarPaths } from './streetcar-cars';
+import { alongAt, createStreetcarCars, pointAlong, pointAt, streetcarPaths } from './streetcar-cars';
 
 afterEach(() => vi.unstubAllGlobals());
 const origin = { lon: -84.3916, lat: 33.7539 };
@@ -41,13 +41,13 @@ it('articulates the S70 through a 20 m curve with every joint closed and every t
       expect(fromEnd.distanceTo(fromC)).toBeLessThan(1e-6);
       // Its power truck sits on the track at s + pivot.
       const truck = local(id, sec.pivots[1]).applyMatrix4(mesh.matrixWorld);
-      const rail = pointAt(path, s + sec.pivots[1]);
+      const rail = pointAlong(path, alongAt(path, s) + sec.pivots[1]);
       expect(Math.hypot(truck.x - rail.x, truck.z - rail.z)).toBeLessThan(0.05);
     }
     // The centre section's axles sit on the track.
     for (const z of S70_LAYOUT.sections.C.pivots) {
       const axle = new Vector3(0, 0, z).applyMatrix4(C.matrixWorld);
-      const rail = pointAt(path, s + z);
+      const rail = pointAlong(path, alongAt(path, s) + z);
       expect(Math.hypot(axle.x - rail.x, axle.z - rail.z)).toBeLessThan(0.05);
     }
     for (const m of [B, C, A]) expect(m.userData.trainId).toBe('t');
@@ -89,4 +89,44 @@ it('draws no car whose end would overhang an unmounted board', () => {
   const cars = createStreetcarCars(rf, origin, (x) => (x < -20 ? 0 : null), []);
   expect(cars.update([{ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 35 }, lengthM: { value: 24 } } as TrainState], 0)).toBe(0);
   expect(cars.update([{ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 20 }, lengthM: { value: 24 } } as TrainState], 0)).toBe(1);
+});
+
+it('applies the pivot offsets in drawn metres when GTFS distances run long', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
+  // The same shape, but its GTFS distances read 8% long.
+  const long = { ...rf, paths: [{ ...rf.paths[0], cum: cum.map((c) => c * 1.08) }] } as unknown as RoutesFile;
+  const cars = createStreetcarCars(long, origin, () => 0, []);
+  cars.update([{ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 30 * 1.08 }, lengthM: { value: 24 } } as TrainState], 0);
+  const [B, , A] = cars.cars();
+  for (const m of [B, A]) m.updateMatrixWorld(true);
+  const truckA = new Vector3(0, 0, 8.2 - (2.305 + 12.055) / 2).applyMatrix4(A.matrixWorld);
+  const truckB = new Vector3(0, 0, -8.2 + (2.305 + 12.055) / 2).applyMatrix4(B.matrixWorld);
+  // Power trucks 16.4 m apart along the straight, not 16.4 × 1.08.
+  expect(truckA.distanceTo(truckB)).toBeCloseTo(16.4, 1);
+});
+
+it('is found by Follow and by a tap on any of its sections', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
+  const THREE = await import('three');
+  const { drawnCar } = await import('./vehicle-follow');
+  const { pickVehicle } = await import('./pick');
+  const cars = createStreetcarCars(rf, origin, () => 0, []);
+  const path = streetcarPaths(rf, origin).get('p')!;
+  cars.update([{ id: 'sc-1', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 30 }, lengthM: { value: 24 } } as TrainState], 0);
+  // Follow (locate / drawnAt) sees every drawn section at the car's position.
+  for (const m of cars.cars()) expect(drawnCar(m)).not.toBeNull();
+  // A tap on the car selects it.
+  const p = pointAt(path, 30);
+  const camera = new THREE.PerspectiveCamera(40, 1, 1, 2000);
+  camera.position.set(p.x, 60, p.z + 0.01);
+  camera.lookAt(p.x, 0, p.z);
+  camera.updateMatrixWorld(true);
+  camera.updateProjectionMatrix();
+  cars.group.updateMatrixWorld(true);
+  const hit = pickVehicle(400, 400, 800, 800, camera, new THREE.Group(), [], [], [], undefined, undefined, undefined, cars.group);
+  expect(hit).toEqual({ kind: 'train', id: 'sc-1' });
+  // And with no streetcar group, nothing is picked there.
+  expect(pickVehicle(400, 400, 800, 800, camera, new THREE.Group(), [], [], [])).toBeNull();
 });
