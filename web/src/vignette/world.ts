@@ -31,6 +31,7 @@ export interface BuildingFinish {
   drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
 }
 export interface VRoad {
+  id?: string;
   cls: string;
   sub?: string | null;
   name: string | null;

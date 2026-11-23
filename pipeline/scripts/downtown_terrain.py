@@ -144,7 +144,7 @@ def verify_shared_edge(grid, reference):
     return mine.size
 
 
-def bake(source, out, box="downtown", reference=None):
+def bake(source, out, box="downtown", reference=None, north_tile=None):
     use_box(box)
     remote = str(source).startswith("https://")
     if remote:
@@ -163,6 +163,14 @@ def bake(source, out, box="downtown", reference=None):
     x, z = np.meshgrid(np.arange(X0, X1 + 1, STEP), np.arange(Z0, Z1 + 1, STEP))
     with rasterio.open(source) as src:
         grid = pack(read_ground(src, x, z))
+        if north_tile is not None:
+            north_sha = "269c95c2e82547eca4173ec87ea1c0c5acd20f294f833166999d59da501066b5"
+            with Path(north_tile).open("rb") as f:
+                if hashlib.file_digest(f, "sha256").hexdigest() != north_sha:
+                    raise ValueError("Northern USGS tile checksum mismatch")
+            missing = grid == NODATA
+            with rasterio.open(north_tile) as north:
+                grid[missing] = pack(read_ground(north, x[missing], z[missing]))
         shared = verify_shared_edge(grid, reference) if reference is not None else 0
         if box == "downtown":
             origin_height = interpolate(grid, 0, 0)
@@ -190,6 +198,12 @@ def bake(source, out, box="downtown", reference=None):
             "noData": NODATA, "noDataCount": int(np.count_nonzero(grid == NODATA)),
             "sampling": "nearest native pixel at node; bilinear between valid nodes",
         }
+        if north_tile is not None:
+            north_id = TILE.replace("y374", "y375")
+            manifest["source"]["fill"] = {
+                "url": f"{BASE_URL}/TIFF/{north_id}.tif", "sha256": north_sha,
+                "metadata": f"{BASE_URL}/metadata/{north_id}.xml", "nodes": int(missing.sum()),
+            }
         if box != "downtown":
             manifest["box"] = box
             manifest["read"] = ("ranged HTTP read of the pinned tile; tile SHA-256 not checked, shared nodes "

@@ -1,4 +1,5 @@
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
+import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
 import { northConnectorGround, northConnectorTransport } from './connector-ground';
@@ -13,12 +14,16 @@ import type { TerrainCity } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
 export type Patch = `${Direction}-${'band' | 'corner'}`;
-export type Board = Patch | 'downtown' | 'king' | 'auburn';
+export type MidtownRow = keyof typeof rowBounds;
+export const midtownRows = (Object.keys(rowBounds) as MidtownRow[]).sort((a, b) => rowBounds[b].maxZ - rowBounds[a].maxZ);
+export type Section = Direction | MidtownRow;
+export type Board = Patch | MidtownRow | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
 export type TrafficArea = Area & { connectorBoard: ConnectorBoard };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
+  ...Object.fromEntries(midtownRows.map(id => [id, { minX: -1000, maxX: 1800, ...rowBounds[id] }])) as Record<MidtownRow, GroundManifest['bounds']>,
   'north-band': { minX: -1000, maxX: 1800, minZ: -1700, maxZ: -1300 },
   'north-corner': { minX: 1000, maxX: 1800, minZ: -1300, maxZ: -520 },
   'south-corner': { minX: 1000, maxX: 1800, minZ: 640, maxZ: 700 },
@@ -30,7 +35,8 @@ const neighbors: Record<Board, Board[]> = {
   downtown: ['king', 'auburn', 'north-band', 'north-corner', 'south-band', 'south-corner'],
   king: ['downtown', 'auburn', 'south-corner'],
   auburn: ['downtown', 'king', 'north-corner'],
-  'north-band': ['downtown', 'north-corner'],
+  'north-band': ['downtown', 'north-corner', 'midtown-south'],
+  ...Object.fromEntries(midtownRows.map((id, i) => [id, [midtownRows[i-1] ?? 'north-band', ...midtownRows.slice(i+1, i+2)]])) as Record<MidtownRow, Board[]>,
   'north-corner': ['north-band', 'downtown', 'auburn'],
   'south-band': ['downtown', 'south-corner'],
   'south-corner': ['south-band', 'downtown', 'king'],
@@ -97,7 +103,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, bytes);
 }
 
-async function readPatch(id: Patch, signal: AbortSignal, dataRoot = '/data') {
+async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data') {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band'), response(path + '/context.json', signal).then(r => r.json()),
@@ -108,8 +114,11 @@ async function readPatch(id: Patch, signal: AbortSignal, dataRoot = '/data') {
   return { id, grid, context };
 }
 
-export async function addSection(direction: Direction, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string }) {
-  const patches = await Promise.all([readPatch(`${direction}-band`, signal, options?.dataRoot), readPatch(`${direction}-corner`, signal, options?.dataRoot)]);
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string }) {
+  const square = direction === 'north' || direction === 'south';
+  if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
+  const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
+  const patches = await Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot)));
   signal.throwIfAborted();
   const added = new Map<Board, TrafficArea>();
   try {
@@ -117,16 +126,33 @@ export async function addSection(direction: Direction, mounted: Map<Board, Area>
       const city = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
       const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
-        simpleLeafClumps: context.treeLowCount !== undefined, quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'north-band' ? options?.northBuilding : undefined });
+        quality, simpleLeafClumps: context.treeLowCount !== undefined,
+        bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
+        separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
+      });
+      const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
-        const decks = createSurfaceTransport(city, grid, area.groundAt);
+        const stationRoad = id === 'brookwood-station' && city.roads.find(road => road.id === 'osm:way:38978515');
+        const data = city.terrainTransport!;
+        const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
+        const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
+        const decks = createSurfaceTransport(base, grid, area.groundAt);
+        transports.push(decks);
         area.group.add(decks.group);
+        if (stationRoad && separate.length) {
+          const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
+          transports.push(stationDeck);
+          stationDeck.group.name = stationRoad.id!;
+          area.group.add(stationDeck.group);
+        }
+        const deckHeight: typeof decks.deckAt = (x, z, run) =>
+          decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
         added.set(id, {
           ...area,
-          connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, decks.deckAt) },
-          dispose() { decks.dispose(); area.dispose(); },
+          connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, deckHeight) },
+          dispose() { for (const t of transports) t.dispose(); area.dispose(); },
         });
-      } catch (error) { area.dispose(); throw error; }
+      } catch (error) { for (const t of transports) t.dispose(); area.dispose(); throw error; }
     }
     connect(mounted, added);
     return added;

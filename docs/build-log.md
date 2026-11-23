@@ -1965,3 +1965,29 @@ The 2018 lidar puts the Luckie Street hall at about 331 m NAVD88, but part of th
 ## 2026-11-23 — The first letter on the Georgia Aquarium entrance
 
 At sidewalk height the G in “Georgia Aquarium” straddled the fold between the curved blue entrance wall and its Baker Street return. The angle from above had hidden the distortion. We moved the name inward, aligned its lettering to 19 consecutive facade panels and reduced the gap between the letters and the cladding from 34 cm to 4 cm. The same Orca sidewalk view now shows blue on both sides of the G. We also checked it from across the plaza and after dark. [Matched sidewalk views](log/ui/georgia-aquarium/entrance-wordmark.jpg)
+
+### 2026-11-23 — A bottle across Pemberton Place
+
+Looking north from Baker Street, you can now read the plaza from both ends of the frame. The aquarium's blue bow is on the left. On the right, the museum's glass tower carries a green bottle through a silver canopy. The 2018 lidar picks out its rectangular cap at 329.1 m NAVD88 and the downward sweep of the canopy toward Baker. From the other side of the block the landmark almost disappears behind its brick service wall. One detail changed between references. The reflecting pool in the designer's night photograph had become lawn and a curved walk by the county's 2024 aerial. [Both landmarks from Baker](log/ui/world-of-coca-cola/both-day-after.webp) · [Night from the plaza](log/ui/world-of-coca-cola/pemberton-night-after.webp) · [Photographs, survey and matched City views](log/ui/world-of-coca-cola/README.md)
+
+### 2026-11-23 — Across North Avenue
+
+The first Midtown row adds 800 metres of City north of the old square. Peachtree Street crosses the join at x = 591.09 m on both sides. All 19 other named street crossings match too. The surprise came below the streets. Downtown's elevation raster runs out diagonally partway through this row, leaving 48,018 of its 90,321 nodes empty. The neighboring USGS tile fills them, and all 561 nodes against the existing board still match to the decimetre. The new section includes the Fox Theatre and Bank of America Plaza footprints. [North Avenue camera](log/ui/midtown-board/north-avenue.jpg) · [Measured route to Brookwood](midtown-board.md)
+
+### 2026-11-23 — From North Avenue to the Peachtree Station approach
+
+Four more 800 m rows carry the City board through Midtown and past the Amtrak stop. All 82 named street crossings match across the four new joins. The ground at the low end of the station row is 239.9 m NAVD88, almost 84 m below Five Points. The downtown tabletop would have poked through Brookwood. Lowering the base for this view to 234 m keeps the original street relief all the way north. At the depot, the generic building and Peachtree Street bridge each have their own handle for the rail model to replace. [Station camera](log/ui/midtown-board/station-ground.jpg) · [Downtown to Brookwood](log/ui/midtown-board/brookwood-overview.jpg)
+
+### 2026-11-23 — The glass block above Centennial Olympic Park
+
+From the park lawn, 250 Williams looks like a single mirror. From the curb you can see through the notch in its lower edge, past the balcony rail to a second wall of glass. The roof has a similar trick of perspective. Its four corners sit roughly 4.4 m below the main field, and two crossing skylights lift the center almost 9 m above it. The bake still calls the block the American Cancer Society Center. Current property listings use 250 Williams, and the Society lists a different Atlanta address. City now shows the lower corners, park balcony and sheltered Williams frontage on the original 14,418 m² footprint. [Photographs and measured roof sections](log/ui/250-williams/README.md)
+
+From the Williams Street drop-off, the canopy hides most of the glass above. At full night its ceiling and round columns pick up a little light from the entrance, while short runs of office windows glow much higher on the block. We gave the sheltered concrete its own dimmer wash so the columns remain legible against those windows. The seven cameras follow the same November afternoon from 13:45 through dusk at 17:22 to full night at 20:30. [Williams Street at night](log/ui/250-williams/williams-night-after.webp) · [All 21 before-and-after pairs](log/ui/250-williams/comparison.jpg)
+
+### 2026-11-23 — Closing the air gaps beside Decatur Street
+
+In the Georgia State overview you could see the freeway between the Decatur Street roadway and its sidewalks. Four source ways describe the street and walking routes, but the county aerial shows one 22 m bridge. Its ends are skewed, so the two sidewalk curbs meet the bank at different places. Rebuilding the shared deck from its outline and the 2019 lidar also resolved the same gap on MLK, Peachtree, Ted Turner and Capitol. The nearby independent footbridge keeps its own tread. [Before](log/ui/connector-bridge-sidewalks/decatur-before.jpg) · [After](log/ui/connector-bridge-sidewalks/decatur-after.jpg) · [Sources and other crossings](connector-bridge-sidewalks.md)
+
+### 2026-11-23 — Where a bridge meets bare earth
+
+At Ted Turner Drive, the ground grid beside one sidewalk drops roughly 10 m below the surveyed deck corner. Sampling the ground again just inside the span bent the sidewalk toward the freeway. The five bridges now take their approach heights at the abutments. A check against the staged City geometry found seven road pieces and twelve sidewalk pieces across three boards, including both halves of Peachtree. [Ted Turner in daylight](log/ui/connector-bridge-sidewalks/ted-turner-day.jpg) · [Capitol at the south edge](log/ui/connector-bridge-sidewalks/capitol-day.jpg)

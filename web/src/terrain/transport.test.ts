@@ -32,7 +32,7 @@ it('puts both mapped decks over the freeway and below the schematic layer-3 Blue
   const freight = surfaceY(transport.group, 743.7095, 532.1742)!;
   const decatur = surfaceY(transport.group, 835.7977, 453.6815)!;
   expect(freight + zero).toBeCloseTo(312.3, 1);
-  expect(decatur + zero).toBeCloseTo(309.8, 0);
+  expect(decatur + zero).toBeCloseTo(310.9, 1); // 2019 lidar pavement plus the rendered wearing surface
   expect(freight - groundAt(743.7095, 532.1742)!).toBeGreaterThan(8);
   expect(decatur - groundAt(835.7977, 453.6815)!).toBeGreaterThan(7);
   // Control's Connector study uses the east bank + 7 m at s = 8284.4 m.

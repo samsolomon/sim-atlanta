@@ -2,9 +2,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { InstancedMesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
+import { midtownBaseNavd88M, SquareMosaic } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import { addSection, bounds, connect, joins, type Area, type Board } from './sections';
+import { addSection, bounds, midtownRows, connect, joins, type Area, type Board } from './sections';
 
 import { buildEastRail, extendRail } from '../city/east-rail';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
@@ -52,9 +53,11 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
   new DataView(badCorner.buffer).setInt16(2 * 80, -32768, true);
   const manifest = JSON.parse(file('south-corner', 'ground.json').toString());
   manifest.sha256 = createHash('sha256').update(badCorner).digest('hex');
+  let midtownUnavailable = true;
   let fault: 'checksum' | 'seam' | null = 'checksum';
   vi.stubGlobal('fetch', async (url: string) => {
     const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (id === 'midtown-south' && name === 'context.json' && midtownUnavailable) return new Response(null, { status: 503 });
     const data = Uint8Array.from(file(id as Board, name));
     if (id === 'north-band' && name === 'context.json') {
       const crowns = JSON.parse(readFileSync(new URL('expanded-canopy/crowns.json', source), 'utf8'));
@@ -104,7 +107,8 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       const b = bounds[id];
       boardArea += (b.maxX - b.minX) * (b.maxZ - b.minZ);
       for (const [i, edge] of joins(id).entries()) {
-        expect(area.board.getObjectByName(i ? 'joining edge ' + i : 'joining edge')?.visible).toBe(false);
+        const exterior = id === 'north-band' && 'z' in edge && edge.z === -1700;
+        expect(area.board.getObjectByName(i ? 'joining edge ' + i : 'joining edge')?.visible).toBe(exterior);
         const vertical = 'x' in edge;
         for (let v = vertical ? edge.minZ : edge.minX; v <= (vertical ? edge.maxZ : edge.maxX); v += 2.5) {
           const x = vertical ? edge.x : v, z = vertical ? v : edge.z;
@@ -114,7 +118,78 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       }
     }
     expect(boardArea).toBe(2800 ** 2);
+    const north = mounted.get('north-band')!;
+    const northWall = north.board.getObjectByName('joining edge 2')!;
+    await expect(addSection('midtown-south', mounted, quality, signal)).rejects.toThrow(/503/);
+    expect(northWall.visible).toBe(true);
+    expect(mounted.size).toBe(7);
+    midtownUnavailable = false;
+    const added = await addSection('midtown-south', mounted, quality, signal);
+    const tile = added.get('midtown-south')!;
+    for (let x = -1000; x <= 1800; x += 2.5)
+      expect(tile.groundAt(x, -1700)).toBeCloseTo(north.groundAt(x, -1700)!, 4);
+    expect(tile.board.getObjectByName('joining edge')!.visible).toBe(false);
+    expect(north.board.getObjectByName('joining edge 2')!.visible).toBe(false);
+    for (const [index, id] of midtownRows.slice(1).entries()) {
+      const previous = mounted.get(midtownRows[index])!;
+      const row = (await addSection(id, mounted, quality, signal)).get(id)!;
+      for (let x = -1000; x <= 1800; x += 2.5)
+        expect(row.groundAt(x, row.bounds.maxZ)).toBeCloseTo(previous.groundAt(x, row.bounds.maxZ)!, 4);
+      expect(previous.board.getObjectByName('joining edge 1')!.visible).toBe(false);
+      expect(row.board.getObjectByName('joining edge')!.visible).toBe(false);
+      const heights = new Int16Array(Uint8Array.from(file(id, 'ground.i16')).buffer);
+      expect(heights.reduce((min, h) => Math.min(min, h), Infinity) * 0.1).toBeGreaterThan(midtownBaseNavd88M);
+    }
+    const station = mounted.get('brookwood-station')!;
+    for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
+      const fallback = station.group.getObjectByName(id)!;
+      expect(fallback.visible).toBe(true);
+      expect(fallback.children.length).toBeGreaterThan(0);
+    }
   } finally { for (const area of mounted.values()) area.dispose(); }
+});
+
+it('stops a direct Brookwood camera at a failed predecessor and resumes the pending target on retry', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const requested: string[] = [];
+  let available = false;
+  vi.stubGlobal('fetch', async (url: string) => {
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      requested.push(id);
+      if (!available && id === 'midtown-upper') return new Response(null, { status: 503 });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/data', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const target = { x: -81, z: -5065 };
+  let reached: typeof target | undefined;
+  const errors: string[] = [];
+  const advance = () => mosaic.approach(0, 0, 'low', signal, (_, point) => { if (point) reached = point; }, d => errors.push(d));
+  try {
+    advance();
+    expect(requested).toEqual([]);
+    mosaic.remember(target.x, target.z);
+    advance();
+    await vi.waitFor(() => expect(errors).toEqual(['midtown-upper']));
+    advance();
+    expect(requested).toEqual(['north-band', 'north-corner', 'midtown-south', 'midtown-central', 'midtown-upper']);
+    expect(mosaic.point(target.x, target.z).z).toBe(-3300);
+    expect(reached).toBeUndefined();
+    available = true;
+    mosaic.requestFullBoard();
+    advance();
+    await vi.waitFor(() => expect(reached).toEqual(target));
+    expect(requested.filter(id => midtownRows.some(row => row === id))).toEqual([
+      'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station',
+    ]);
+  } finally { mosaic.dispose(); downtown.dispose(); }
 });
 
 const staged = new URL('../../public/data/', import.meta.url);
