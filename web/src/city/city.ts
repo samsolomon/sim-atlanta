@@ -1513,7 +1513,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     grade.uniforms.uTime.value = ts / 1000;
     renderer.info.reset();
     const renderStart = performance.now();
-    if (renderer.shadowMap.needsUpdate) perf.shadowUpdate();
+    // Count only redraws that render: with shadows off, needsUpdate is set but no pass runs.
+    if (renderer.shadowMap.enabled && renderer.shadowMap.needsUpdate) perf.shadowUpdate();
     whiteModel?.before();
     if (perfOverrides.postOff) renderer.render(scene, camera);
     else if (!whiteModel?.holding) composer.render();
