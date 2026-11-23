@@ -24,3 +24,18 @@ it('drapes every cover on the ground, exactly inside its ring, in one draw', () 
   }
   built.dispose();
 });
+
+it('cuts holes out of a patch', () => {
+  const cover = new GroundCover();
+  cover.patch([[-10, -10], [10, -10], [10, 10], [-10, 10]], () => 0, 'turf', { holes: [[[-3, -3], [-3, 3], [3, 3], [3, -3]]] });
+  const p = cover.mesh().mesh.geometry.getAttribute('position');
+  let area = 0;
+  for (let i = 0; i < p.count; i += 3) {
+    const ax = p.getX(i + 1) - p.getX(i), az = p.getZ(i + 1) - p.getZ(i), bx = p.getX(i + 2) - p.getX(i), bz = p.getZ(i + 2) - p.getZ(i);
+    area += Math.abs(ax * bz - az * bx) / 2;
+    // No triangle's centre falls inside the hole.
+    const cx = (p.getX(i) + p.getX(i + 1) + p.getX(i + 2)) / 3, cz = (p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2)) / 3;
+    expect(Math.abs(cx) < 3 && Math.abs(cz) < 3).toBe(false);
+  }
+  expect(area).toBeCloseTo(400 - 36, 3);
+});

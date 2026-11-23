@@ -157,9 +157,12 @@ function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, 
  * metres, with a height sampled at every vertex. The edge is exactly the ring, and the surface
  * follows any slope, which a flat outline fill or a cell grid alone does not.
  */
-export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) => number, emit: (a: number[], b: number[], c: number[]) => void) {
-  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(ring.map(([x, z]) => new THREE.Vector2(x, z)), [])) {
-    const A = ring[i], B = ring[k], C = ring[j];
+export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) => number, emit: (a: number[], b: number[], c: number[]) => void, holes: P2[][] = []) {
+  // Holes (mounds, paths, pads) are cut by the triangulation itself; indices run over ring then holes.
+  const all = [...ring, ...holes.flat()];
+  const v2 = (r: P2[]) => r.map(([x, z]) => new THREE.Vector2(x, z));
+  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(v2(ring), holes.map(v2))) {
+    const A = all[i], B = all[k], C = all[j];
     const n = Math.max(1, Math.ceil(Math.max(Math.hypot(B[0] - A[0], B[1] - A[1]), Math.hypot(C[0] - B[0], C[1] - B[1]), Math.hypot(A[0] - C[0], A[1] - C[1])) / cell));
     const at = (u: number, v: number) => {
       const x = A[0] + (B[0] - A[0]) * u / n + (C[0] - A[0]) * v / n, z = A[1] + (B[1] - A[1]) * u / n + (C[1] - A[1]) * v / n;

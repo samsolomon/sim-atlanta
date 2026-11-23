@@ -9,7 +9,7 @@ import { drapeRing, g0, type Ground, type Quality } from './primitives';
  * fades to its average once it is under a couple of pixels, so nothing shimmers.
  *
  *   const covers = new GroundCover();
- *   covers.patch(ring, groundAt, 'turf', { quality });
+ *   covers.patch(ring, groundAt, 'turf', { quality, holes: [mound, path] });
  *   group.add(covers.mesh().mesh);
  *
  * Materials and patterns are illustrative.
@@ -22,11 +22,11 @@ export class GroundCover {
   private kind: number[] = [];
 
   /** Drapes a patch 2 cm above the ground, exactly to the ring, subdivided to 1 m (2 m on low). */
-  patch(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number } = {}) {
+  patch(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number; holes?: P2[][] } = {}) {
     const k = COVERS.indexOf(cover), lift = o.lift ?? .02;
     // Off-board samples reuse the sampler's last valid height (never 0, which in City is 30 m off).
     const y = (x: number, z: number) => g0(ground, x, z) + lift;
-    drapeRing(ring, o.quality === 'low' ? 2 : 1, y, (a, b, c) => { this.pos.push(...a, ...b, ...c); this.kind.push(k, k, k); });
+    drapeRing(ring, o.quality === 'low' ? 2 : 1, y, (a, b, c) => { this.pos.push(...a, ...b, ...c); this.kind.push(k, k, k); }, o.holes);
   }
 
   get triangles() { return this.pos.length / 9; }
