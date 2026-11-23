@@ -68,6 +68,7 @@ import { createCoreyTower } from './corey';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createCandler } from './candler';
 import { createEquitable } from './equitable';
 import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
@@ -232,6 +233,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
@@ -299,8 +301,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const hospitalSite = arena?.buildings ?? arenaSite;
         grady = createGrady(hospitalSite, ground);
         const afterGrady = grady?.buildings ?? hospitalSite;
-        equitable = createEquitable(afterGrady, ground);
-        const city = { ...vd, buildings: equitable?.buildings ?? afterGrady,
+        candler = createCandler(afterGrady, ground);
+        const afterCandler = candler?.buildings ?? afterGrady;
+        equitable = createEquitable(afterCandler, ground);
+        const city = { ...vd, buildings: equitable?.buildings ?? afterCandler,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
@@ -324,6 +328,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
       });
@@ -773,6 +778,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    candler?.setNight(night);
     equitable?.setNight(night);
     grady?.setNight(night);
     terrain?.setNight(night);
