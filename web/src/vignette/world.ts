@@ -1278,7 +1278,7 @@ const cutKey = (i: number, j: number) => (i + 4096) * 8192 + (j + 4096);
 const PINE_TIERS = 4; // track elevation where the cut is covered over (train roof ≈ 4 m)
 
 /** Clip a ring to the board rectangle (Sutherland–Hodgman). */
-function clipRing(ring: P2[], b: { minX: number; maxX: number; minZ: number; maxZ: number }): P2[] {
+export function clipRing(ring: P2[], b: { minX: number; maxX: number; minZ: number; maxZ: number }): P2[] {
   let pts = ring;
   const edges: [(p: P2) => boolean, (a: P2, c: P2) => P2][] = [
     [(p) => p[0] >= b.minX, (a, c) => lerpAt(a, c, (b.minX - a[0]) / (c[0] - a[0]))],
