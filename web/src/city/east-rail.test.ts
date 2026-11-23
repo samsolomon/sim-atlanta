@@ -106,6 +106,15 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
     expect(rail.bed(9040)).toBeLessThan(rail.bed(8932.5));
     expect(rail.bed(9040)).toBeGreaterThan(rail.bed(9137.5));
     expect(rail.sSeam).toBeCloseTo(8541.6, -1);
+    // Exterior: the zigzag stair rises from the ground to the platform floor at the west end, in
+    // several flights; the entry canopy stands on Decatur St's station side at street-canopy height.
+    const st = rail.exterior.stair!, cn = rail.exterior.canopy!;
+    expect(st.flights).toBeGreaterThanOrEqual(3);
+    expect(st.rise).toBeGreaterThan(12);
+    expect(st.x).toBeLessThan(1430); // the Grant St end
+    expect(cn.underside).toBeGreaterThan(3.5);
+    expect(cn.underside).toBeLessThan(6);
+    expect(cn.length).toBeGreaterThan(40);
     // Platform lights: dark by day, on at night (lamp discs plus floor pools).
     const lights = rail.mesh.getObjectByName('King Memorial platform lights')!;
     expect(rail.lampCount).toBeGreaterThan(0);

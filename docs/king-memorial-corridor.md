@@ -350,3 +350,26 @@ both platforms. No night photo of King Memorial turned up on Commons.
 Lamp positions and brightness are **illustrative**. The street-level building stays unlit.
 
 ![Night before (top left) and after (top right); day unchanged (bottom left); Decatur St at night (bottom right)](log/ui/king-memorial/city-station-lights.jpg)
+
+### Exterior: the zigzag stair and the Decatur St entry canopy (2026-11-23)
+
+**References:**
+- Sam's three photos (not committed):
+  - the Grant St corner with the open zigzag stair tower and its rounded landings;
+  - the Decatur St frontage with the long white entry canopy;
+  - an elevated view of the deck, columns and stair.
+- Google Street View, Dec 2025, at 375–377 Decatur St SE. Pano IyOLr4MeUbTilypkCjNWJg, heading 160,
+  shows the white entry and bus canopy on round columns, with recessed downlights.
+
+**Model:** in `east-rail.ts`, replacing the two illustrative box stair towers.
+
+| Piece | Placement | Source | Dimensions |
+|---|---|---|---|
+| Zigzag stair | West end, next to the deck, north of the north platform | Sam's corner photo and Street View at Grant St (±8 m) | Four flights on two alternating lanes, 0.6 m slabs, 1.1 m solid parapets, rounded landings, six round columns, a bridge to the platform. **Estimated** |
+| Entry canopy | In front of the building's recessed entrance (OSM 270494115, subway entrance 11877267661), out toward the curb | Pano IyOLr4MeUbTilypkCjNWJg; Sam's Decatur photo | 58 × 12.5 m, underside 4.6 m, 1.6 m fascia, rounded ends, columns every 10.5 m. **Estimated** |
+| Canopy downlights | Two rows, every 6 m | The pano shows recessed downlights | Positions **illustrative**. They face down, so from raised City cameras the lit pools sit under the canopy. |
+
+The real stair hugs the deck more tightly and has rounded parapet ends. At City scale it reads as a
+switchback with rounded landings. The sculpture and plaza planters are not modelled.
+
+![Sam's references (left) against City by day and night (middle, right): stair (top), canopy (bottom)](log/ui/king-memorial/exterior-vs-references.jpg)

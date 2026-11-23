@@ -134,6 +134,8 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   const sSeam = sOnPath(path, project, [seamX, at(8542).z]).s;
   const sEnd = sOnPath(path, project, [1795, 350]).s;
   const b = new Builder();
+  const canopyLamps: { x: number; z: number; y: number; g: number }[] = [];
+  const exterior: { stair?: { x: number; z: number; flights: number; rise: number }; canopy?: { x: number; z: number; underside: number; length: number; width: number } } = {};
   const concrete = '#b9b4aa', deckSide = '#9c978d', track = '#5b544e', roofCol = '#cfd3d6', platformCol = '#c9c3b6', edge = '#e2bd3c';
   // A local frame point: s along, v right of travel, y up.
   const P = (s: number, v: number, y: number) => {
@@ -208,18 +210,92 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
       b.addGeometry(post, deckSide);
     }
   }
-  // Stair towers at the two OSM subway entrances (11877267661, 11877267665) toward Decatur St
-  // (illustrative massing: the photos show open concrete stair towers on the north side).
-  for (const [x, z] of [[1468, 434], [1428, 457]] as XZ[]) {
-    const g = ground(x, z);
-    if (g == null) continue;
-    const s = sOnPath(path, project, [x, z]).s;
-    const h = floor(s) - g + 1.1;
-    const tower = new THREE.BoxGeometry(6, h, 9);
-    const p = at(s);
-    tower.rotateY(-Math.atan2(p.tz, p.tx));
-    tower.translate(x, g + h / 2, z);
-    b.addGeometry(tower, concrete);
+  // Station exterior from Street View (Decatur St, Dec 2025) and Sam's reference photos.
+  // Positions about ±8 m; dimensions estimated (illustrative).
+  // 1. The open zigzag stair at the west end by Grant St, north of the deck: switchback flights
+  //    with rounded landings on round columns, rising to the platform.
+  {
+    const sC = PLATFORM_S[0] + 12, vC = ROOF[0] - 3.0; // against the deck, north of the north platform
+    const p = at(sC);
+    const along = new THREE.Vector3(p.tx, 0, p.tz), up = new THREE.Vector3(0, 1, 0), right = new THREE.Vector3(-p.tz, 0, p.tx);
+    const [ox, , oz] = P(sC, vC, 0);
+    const g = ground(ox, oz);
+    if (g != null) {
+      const L = 7.2, lane = 1.3, half = 2.6, thick = 0.6, top = floor(sC);
+      const n = Math.max(2, Math.round((top - g) / 4.3)), h = (top - g) / n;
+      const lp = (x: number, y: number, z: number) => [ox + along.x * x + right.x * z, y, oz + along.z * x + right.z * z];
+      const slab = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) => {
+        // Top, underside and the two long sides of a sloped flight between (x0,y0) and (x1,y1).
+        b.quad(lp(x0, y0, z0), lp(x1, y1, z0), lp(x1, y1, z1), lp(x0, y0, z1), concrete);
+        b.quad(lp(x0, y0 - thick, z1), lp(x1, y1 - thick, z1), lp(x1, y1 - thick, z0), lp(x0, y0 - thick, z0), deckSide);
+        for (const z of [z0, z1]) for (const t of [0, z > 0 ? 0.22 : -0.22]) b.quad(lp(x0, y0 - thick, z + t), lp(x1, y1 - thick, z + t), lp(x1, y1 + 1.1, z + t), lp(x0, y0 + 1.1, z + t), concrete); // solid parapets, 0.22 m thick
+      };
+      const basis = new THREE.Matrix4().makeBasis(along, up, right);
+      const landing = (x: number, y: number, outward: 1 | -1) => {
+        const box = new THREE.BoxGeometry(1.2, thick, 2 * half);
+        box.translate(x + outward * 0.6, y - thick / 2, 0);
+        const round = new THREE.CylinderGeometry(half, half, thick, 14, 1, false, outward > 0 ? 0 : Math.PI, Math.PI);
+        round.translate(x + outward * 1.2, y - thick / 2, 0);
+        const wall = new THREE.CylinderGeometry(half, half, 1.1, 14, 1, true, outward > 0 ? 0 : Math.PI, Math.PI);
+        wall.translate(x + outward * 1.2, y + 0.55, 0);
+        for (const geo of [box, round, wall]) { geo.applyMatrix4(basis); geo.translate(ox, 0, oz); b.addGeometry(geo, concrete); }
+      };
+      for (let k = 0; k < n; k++) {
+        const y0 = g + k * h, y1 = y0 + h, east = k % 2 === 0;
+        const z = east ? -lane : lane;
+        slab(east ? -L / 2 : L / 2, east ? L / 2 : -L / 2, y0, y1, z - lane, z + lane);
+        landing(east ? L / 2 : -L / 2, y1, east ? 1 : -1);
+      }
+      // Round columns under the landings, and a short bridge from the top landing to the platform.
+      for (const x of [-L / 2 - 1.6, L / 2 + 1.6]) for (const z of [-1.8, 1.8]) {
+        const col = new THREE.CylinderGeometry(0.6, 0.6, top - g, 12);
+        const [cx, , cz] = lp(x, 0, z);
+        col.translate(cx, g + (top - g) / 2, cz);
+        b.addGeometry(col, concrete);
+      }
+      const xTop = n % 2 ? L / 2 + 1.2 : -L / 2 - 1.2;
+      const reach = (ROOF[0] + 0.3) - vC - half + 0.6; // to the north platform's outer edge
+      const bridge = new THREE.BoxGeometry(2.6, thick, reach);
+      bridge.translate(xTop, top - thick / 2, half + reach / 2 - 0.3);
+      bridge.applyMatrix4(basis); bridge.translate(ox, 0, oz);
+      b.addGeometry(bridge, concrete);
+      exterior.stair = { x: ox, z: oz, flights: n, rise: top - g };
+    }
+  }
+  // 2. The long white entry and bus canopy on round columns along Decatur St (pano IyOLr4MeUbTilypkCjNWJg,
+  //    heading 160): between the building's north face and the curb, rounded ends.
+  {
+    const a: XZ = [1407, 409], c: XZ = [1552, 381]; // Decatur St SE centreline (OSM way 629238160)
+    const len = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    const dx = (c[0] - a[0]) / len, dz = (c[1] - a[1]) / len;
+    const sx = -dz, sz = dx; // toward the station (south of the street)
+    // In front of the building's recessed entrance (OSM 270494115: face ~20 m off the centreline for u 59–118,
+    // the subway_entrance node 11877267661 inside it), out toward the curb. Extent estimated.
+    const u0 = 60, u1 = 118, w0 = 8.5, w1 = 21;
+    const pt = (u: number, w: number): XZ => [a[0] + dx * u + sx * w, a[1] + dz * u + sz * w];
+    const gC = ground(...pt((u0 + u1) / 2, (w0 + w1) / 2));
+    if (gC != null) {
+      const under = gC + 4.6, depth = 1.6, white = '#eceae4';
+      const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(dx, 0, dz), new THREE.Vector3(0, 1, 0), new THREE.Vector3(sx, 0, sz));
+      const [cx, cz] = pt((u0 + u1) / 2, (w0 + w1) / 2), W = w1 - w0;
+      const slabG = new THREE.BoxGeometry(u1 - u0 - W, depth, W);
+      slabG.translate(0, under + depth / 2, 0);
+      const ends = [-1, 1].map(e => { const cyl = new THREE.CylinderGeometry(W / 2, W / 2, depth, 16, 1, false, e > 0 ? 0 : Math.PI, Math.PI);
+        cyl.translate(e * (u1 - u0 - W) / 2, under + depth / 2, 0); return cyl; });
+      for (const geo of [slabG, ...ends]) { geo.applyMatrix4(basis); geo.translate(cx, 0, cz); b.addGeometry(geo, white); }
+      for (let u = u0 + 6; u <= u1 - 6; u += 10.5) {
+        const [x, z] = pt(u, w0 + 1.6), gg = ground(x, z) ?? gC;
+        const col = new THREE.CylinderGeometry(0.32, 0.32, under - gg, 10);
+        col.translate(x, gg + (under - gg) / 2, z);
+        b.addGeometry(col, white);
+      }
+      exterior.canopy = { x: cx, z: cz, underside: under - gC, length: u1 - u0, width: W };
+      // Recessed downlights under the canopy (Street View pano IyOLr4MeUbTilypkCjNWJg). Spacing illustrative.
+      for (let u = u0 + 5; u <= u1 - 5; u += 6) for (const w of [w0 + 3, w1 - 4]) {
+        const [x, z] = pt(u, w);
+        canopyLamps.push({ x, z, y: under - 0.02, g: ground(x, z) ?? gC });
+      }
+    }
   }
   // The station building: walls from the ground up to just under the platform deck, flat roof.
   const ring = STATION_BUILDING.map(([lon, lat]) => project(lon, lat));
@@ -260,6 +336,16 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
       }
     }
   }
+  for (const l of canopyLamps) {
+    const disc = new THREE.CircleGeometry(0.28, 8);
+    disc.rotateX(Math.PI / 2);
+    disc.translate(l.x, l.y, l.z);
+    glow.addGeometry(disc, '#ffe2a8');
+    const pool = new THREE.CircleGeometry(1.6, 12);
+    pool.rotateX(-Math.PI / 2);
+    pool.translate(l.x, l.g + 0.05, l.z);
+    glow.addGeometry(pool, '#3a2e1c');
+  }
   const glowGeometry = glow.geometry();
   const glowMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     transparent: true, depthWrite: false, forceSinglePass: true });
@@ -273,7 +359,7 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   mesh.name = 'MARTA east: guideway and King Memorial station';
   mesh.castShadow = mesh.receiveShadow = true;
   return {
-    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn, building,
+    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn, building, exterior,
     lampCount: glowGeometry.attributes.position.count,
     setNight(dark: number) {
       const d = Math.min(1, Math.max(0, dark));
