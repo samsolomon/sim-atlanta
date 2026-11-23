@@ -76,3 +76,16 @@ These notes record the landscaping around the champion ginkgo, at City (612.5, �
 | Dec 2025 only | Temporary construction fencing along the Peachtree sidewalk | Do not model |
 
 The sizes and bed extents are estimates from the photographs. None of them is measured.
+
+## Peachtree lawn landscaping (November 23, 2026)
+
+This section builds on the Street View notes above and uses the parks agent's landscape primitives from #214, all in a single draw:
+- **Mound bed:** a raised hardwood-mulch mound 13 m across round the champion ginkgo trunk at (612.5, −4001.2), with no flowers, as the photographs show.
+- **Shrubs:** a loose row 1 m tall along the ramp's south parapet, 2.6 m off the ramp centreline, from near Peachtree toward the museum.
+- **Steps:** the mapped granite steps from the Peachtree sidewalk to the piazza walk, 4 m wide, on the 3DEP ends at 291.0 and 292.5 m NAVD88.
+
+Nothing within the ginkgo's 9 m crown stands more than 1.5 m above the lawn. The grass and the slope rising toward the museum come from the 3DEP terrain itself. The oak and the magnolias stay as generic canopy crowns, the lamp belongs to the street-light layer, and the ginkgo belongs to the tree agent. The Street View notes show no separate flower beds on this lawn, so none are added. Bed extents, shrub size and step width are photographic estimates. Planting colour is illustrative. Web rebuild only.
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Lawn, cam=612,-4002,-70,50,150 | [Day](log/ui/arts-campus/lawn-high-day.jpg) · [Night](log/ui/arts-campus/lawn-high-night.jpg) | [Day](log/ui/arts-campus/lawn-low-day.jpg) · [Night](log/ui/arts-campus/lawn-low-night.jpg) |

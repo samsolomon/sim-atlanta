@@ -20,3 +20,5 @@ Each image shows BEFORE on the left and AFTER on the right, taken from the same 
    ![Woodruff rear night](back-night.jpg)
 9. **High Museum entry plaza** (entry gap). Camera `/?view=city&cam=577,-4017,0,5,150`, top-down, 13:00.
    ![High entry](entry.jpg)
+10. **High Museum Peachtree lawn**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 13:00.
+   ![High lawn](lawn.jpg)
