@@ -186,6 +186,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options,
     named.length ? replacedBy(named) : null);
   for (const landmark of landmarks) scenery.group.add(landmark.group);
+  // Yards by rule around every house (walks, drives, foundation planting).
+  const yardLayer = homes.yards();
+  if (yardLayer) scenery.group.add(yardLayer.group);
   const species = createTrees(named, options.quality, groundAt);
   if (species) scenery.group.add(species.group);
   if (options.lights) {

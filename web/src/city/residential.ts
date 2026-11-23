@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import tagged from '../../../pipeline/prototypes/residential/tags.json';
 import type { TerrainCity } from '../terrain/transport-data';
-import { hashStr, pointInRing, rng, type Builder, type P2 } from '../vignette/geom';
+import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
+import { flowerBed, hedge, landscapeMesh } from '../landscape/primitives';
+import { GroundCover } from '../landscape/ground-cover';
 import type { BuildingFinish, VBuilding } from '../vignette/world';
 
 /**
@@ -487,6 +489,97 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   }
 }
 
+const WALK = '#cbc6ba', DRIVE = '#b2ada3';
+
+/**
+ * Yards by rule from the house, its front wall and the nearest mapped street (there are no
+ * parcel lines): a front walk from the door toward the street, a driveway along the side away
+ * from the door (dropped if it would cross another building), foundation shrubs on a pine-straw
+ * or mulch strip along the front, and on some houses a small bed by the walk and a clipped hedge
+ * near the street. The low tier keeps walks and driveways. All `illustrative`.
+ */
+function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
+  street: (x: number, z: number) => number, quality: 'high' | 'low') {
+  const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
+  // Footprint index, so drives and walks never cross another building.
+  const cells = new Map<string, P2[][]>();
+  for (const o of all) {
+    const ring = o.rings[0];
+    if (!ring) continue;
+    const xs = ring.map(q => q[0]), zs = ring.map(q => q[1]);
+    for (let x = Math.floor(Math.min(...xs) / 20); x <= Math.floor(Math.max(...xs) / 20); x++)
+      for (let z = Math.floor(Math.min(...zs) / 20); z <= Math.floor(Math.max(...zs) / 20); z++) {
+        const k = `${x},${z}`, list = cells.get(k);
+        if (list) list.push(ring); else cells.set(k, [ring]);
+      }
+  }
+  const blocked = (x: number, z: number) => (cells.get(`${Math.floor(x / 20)},${Math.floor(z / 20)}`) ?? []).some(ring => pointInRing(x, z, ring));
+  let last = 0;
+  const y = (x: number, z: number, lift: number) => { const v = ground(x, z); if (v !== null) last = v; return last + lift; };
+  // A flat strip draped on the ground between two points, `w` wide.
+  const strip = (a: P2, c: P2, w: number, color: string) => {
+    const len = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    if (len < .5) return;
+    const ux = (c[0] - a[0]) / len, uz = (c[1] - a[1]) / len, nx = -uz * w / 2, nz = ux * w / 2, n = Math.ceil(len);
+    for (let k = 0; k < n; k++) {
+      const p0 = [a[0] + ux * len * k / n, a[1] + uz * len * k / n], p1 = [a[0] + ux * len * (k + 1) / n, a[1] + uz * len * (k + 1) / n];
+      b.quad([p0[0] + nx, y(p0[0] + nx, p0[1] + nz, .04), p0[1] + nz], [p1[0] + nx, y(p1[0] + nx, p1[1] + nz, .04), p1[1] + nz],
+        [p1[0] - nx, y(p1[0] - nx, p1[1] - nz, .04), p1[1] - nz], [p0[0] - nx, y(p0[0] - nx, p0[1] - nz, .04), p0[1] - nz], color);
+    }
+  };
+  // How far from a point along a direction before the street (4.5 m short of its centreline) or another building.
+  const reach = (x: number, z: number, dx: number, dz: number, max = 14) => {
+    for (let t = .5; t <= max; t += .5) {
+      const px = x + dx * t, pz = z + dz * t;
+      if (street(px, pz) < 4.5 || blocked(px, pz)) return t - .5;
+    }
+    return 0;
+  };
+  for (const p of plans.values()) {
+    if (!p.front || p.concave) continue;
+    const { len, e, n, m } = frontFrame(p);
+    const at = (s: number, o: number): P2 => [m[0] + e[0] * s + n[0] * o, m[1] + e[1] * s + n[1] * o];
+    const r = rng(hashStr(p.id + '/yard'));
+    // Walks start past the 2.4 m porch and its steps, or past the stoop.
+    const porchDepth = p.porch ? 2.4 + .9 : 1.3 + .3 * 3;
+    // A front walk from every entry (two on apartments) to the street.
+    let walk = 0;
+    for (const ds of p.doors) {
+      const door = at(ds, porchDepth), w = reach(door[0], door[1], n[0], n[1]);
+      if (w > 1) strip(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2, WALK);
+      if (ds === p.doorS) walk = w;
+    }
+    // Driveway on the side away from the door, along the side wall and out to the street.
+    const side = p.doorS <= 0 ? 1 : -1, dx = side * (len / 2 + 1.8);
+    const back = at(dx, -Math.min(8, p.half * 2)), front = at(dx, 0);
+    const out = reach(front[0], front[1], n[0], n[1]);
+    if (out > 1 && !blocked(...back) && !blocked(...at(dx, -2)) && r() < .6) strip(back, [front[0] + n[0] * out, front[1] + n[1] * out], 3, DRIVE);
+    if (!high) continue;
+    // Foundation planting: a pine-straw or mulch strip with shrubs, broken at the door. A full
+    // Craftsman porch covers the front; around a half porch the planting runs beside it.
+    const straw = r() < .6 ? 'pine-straw' : 'mulch';
+    const halfPorch = p.porch ? Math.max(3.6, Math.min(len * .5, 6)) / 2 + .3 : 1.2;
+    const c0 = p.porch ? Math.max(-len / 2 + halfPorch, Math.min(len / 2 - halfPorch, p.doorS)) : p.doorS;
+    for (const [s0, s1] of [[-len / 2 + .3, c0 - halfPorch], [c0 + halfPorch, len / 2 - .3]] as [number, number][]) {
+      if (s1 - s0 < 1.5 || (p.porch && p.style === 'craftsman')) continue;
+      cover.patch([at(s0, .05), at(s1, .05), at(s1, 1.3), at(s0, 1.3)], ground, straw, { lift: .03 });
+      hedge(b, [at(s0 + .5, .75), at(s1 - .5, .75)], ground, { clipped: false, height: 1.1, width: .95, lumps: 1, spacing: 1.4, seed: p.id + s0 });
+    }
+    // A small bed beside the walk on some houses.
+    if (walk > 3 && r() < .3) {
+      const s = p.doorS + 1.1, o0 = porchDepth + .6, o1 = Math.min(walk + porchDepth - .6, o0 + 2.4);
+      if (o1 - o0 > 1) flowerBed(b, [at(s, o0), at(s + 1.4, o0), at(s + 1.4, o1), at(s, o1)], ground, { doy: 300, quality, density: .7, seed: p.id + 'bed' });
+    }
+    // A clipped hedge near the street on some lots, broken at the walk.
+    if (walk > 4 && r() < .25) {
+      const o = porchDepth + walk - .8;
+      hedge(b, [at(-len / 2, o), at(p.doorS - 1, o)], ground, { height: .9, width: .6, quality, seed: p.id + 'h1' });
+      hedge(b, [at(p.doorS + 1, o), at(len / 2, o)], ground, { height: .9, width: .6, quality, seed: p.id + 'h2' });
+    }
+  }
+  return { b, cover };
+}
+
 /**
  * Residential finishes plus the eave-height adjustment, for one board's city.
  * `ground` (the rendered surface, scene metres) lets a lowered eave keep clear of a hillside:
@@ -588,5 +681,16 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     city: { ...city, buildings }, finishFor, count: plans.size,
     /** Read-only view of a house's plan (style, roof shape, ridge direction), for tests and the lab. */
     planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys }; },
+    /** Yard landscaping for every planned house: one primitives draw and one ground-cover draw. */
+    yards() {
+      if (!ground || !plans.size) return null;
+      const { b, cover } = yards(plans, city.buildings, ground, street, quality);
+      const group = new THREE.Group();
+      group.name = 'yards';
+      const land = landscapeMesh(b), covers = cover.triangles ? cover.mesh({ quality }) : null;
+      group.add(land.mesh);
+      if (covers) group.add(covers.mesh);
+      return { group, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
+    },
   };
 }

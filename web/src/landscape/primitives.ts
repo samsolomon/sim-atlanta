@@ -281,7 +281,8 @@ export function flowerBed(b: Builder, ring: P2[], ground: Ground,
 }
 
 /** Clipped hedge (a squared box run that follows the ground) or a loose shrub row. */
-export function hedge(b: Builder, line: P2[], ground: Ground, o: { height?: number; width?: number; clipped?: boolean; quality?: Quality; seed?: string } = {}) {
+export function hedge(b: Builder, line: P2[], ground: Ground,
+  o: { height?: number; width?: number; clipped?: boolean; quality?: Quality; seed?: string; lumps?: number; spacing?: number } = {}) {
   const height = o.height ?? 1.1, width = o.width ?? .8, quality = o.quality ?? 'high';
   const r = rng(hashStr(o.seed ?? line.map(p => p.join(',')).join(';')));
   if (o.clipped ?? true) {
@@ -300,9 +301,10 @@ export function hedge(b: Builder, line: P2[], ground: Ground, o: { height?: numb
     }
     return;
   }
-  for (const p of along(line, quality === 'low' ? 1.6 : 1)) {
+  // `lumps` (icosahedra per shrub) and `spacing` trade detail for cost, e.g. in city-wide yards.
+  for (const p of along(line, o.spacing ?? (quality === 'low' ? 1.6 : 1))) {
     const rad = width * (.6 + r() * .3), x = p.x + (r() - .5) * .3, z = p.z + (r() - .5) * .3;
-    shrubMass(b, x, g0(ground, p.x, p.z) - .05, z, rad, height * (.85 + r() * .3), LEAF[Math.floor(r() * LEAF.length)], r, quality === 'low' ? 1 : 3);
+    shrubMass(b, x, g0(ground, p.x, p.z) - .05, z, rad, height * (.85 + r() * .3), LEAF[Math.floor(r() * LEAF.length)], r, o.lumps ?? (quality === 'low' ? 1 : 3));
   }
 }
 
