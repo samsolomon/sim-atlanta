@@ -57,7 +57,7 @@ Sam saw a void from above where the ramp meets the museum. The notch between the
 
 ## The ginkgo lawn on Peachtree (Street View)
 
-These notes record the landscaping around the champion ginkgo, at City (612.5, −4001.2), for the lawn and landscape builders. They come from Google Street View, which is cited here and not copied:
+These notes record the landscaping around the champion ginkgo, now at City (607.2, −3998.6) by the lawn path's dead end, for the lawn and landscape builders. They come from Google Street View, which is cited here and not copied:
 - [Peachtree, Dec 2025, heading 252°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55)
 - [The same spot, Nov 2019](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=70), using "See more dates"
 - [South, from the café terrace, Sep 2024, heading 300°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78972,-84.38478&heading=300&pitch=10&fov=45)

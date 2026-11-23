@@ -33,18 +33,18 @@ export const TREE_SITES: TreeSite[] = [
     species: ginkgo,
     // The forked specimen form: photographs show the low fork. Sized as Sam judged the tree today.
     size: 'specimen',
-    // Triangulated from two Street View panoramas calibrated on Rodin's The Shade; ±3 m.
-    x: 612.5, z: -4001.2,
+    // At the dead end of the lawn path, 1.2 m past it on the lawn, where Sam places it from
+    // knowing the site. Street View from Peachtree agrees to within about 2 m.
+    x: 607.2, z: -3998.6,
     heightM: 20, spreadM: 18,
     tiers: { species: 'reported', position: 'inferred', size: 'inferred' },
     sources: [
       'https://services6.arcgis.com/BZn8g8tzu5WfMokL/arcgis/rest/services/TreeChampionData_2019/FeatureServer/0',
       'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55',
-      'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78972,-84.38478&heading=300&pitch=10&fov=45',
       'https://commons.wikimedia.org/wiki/File:Ginkgo_tree_and_Rodin_at_the_Woodruff_Arts_Center.jpg',
       'https://commons.wikimedia.org/wiki/File:10_The_High.jpg',
     ],
-    note: 'Champion record (2012) puts the trunk at 33.789866, -84.384916 = (617.9, -3999.2) and measures 27.5 m by 26.2 m. Street View (Dec 2025 from Peachtree, Sep 2024 from the café to the south), each calibrated on The Shade at (603.6, -4003.4), triangulates the forked trunk 5.7 m WSW of that, 6 m from the end of the lawn path. Photo estimate 17 m by 15 m. Drawn at 20 m by 18 m.',
+    note: 'Champion record (2012): 33.789866, -84.384916 = (617.9, -3999.2), 27.5 m by 26.2 m. Local observation (Sam) puts the trunk at the dead end of the lawn path, (607.5, -3997.4); drawn 1.2 m past it on the lawn. Street View from Peachtree (Dec 2025), measured against The Shade in the same frame, shows the trunk 5.1° left of the sculpture; this spot is 8.5° left, about 2 m apart at 37 m range. Photo estimate 17 m by 15 m. Drawn at 20 m by 18 m.',
   },
 ];
 
