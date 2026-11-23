@@ -1,11 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { Group } from 'three';
+import { Group, type Material, type Mesh, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import type { TransportRun } from '../terrain/transport-data';
 import rows from './fixtures/midtown-rail.json';
-import { createNorthLine, northCar, northLinePaths, northLineTracks, portalFrame } from './midtown-marta-rail';
+import { createNorthLine, NORTH_LINE_VANISH_DEPTH, northCar, northLinePaths, northLineTracks, portalFrame } from './midtown-marta-rail';
+import { CAR_LENGTH } from '../vignette/cq400';
 import { northLineProfile } from './midtown-marta-guideway';
 
 const origin = { lon: -84.3916, lat: 33.7539 };
@@ -95,4 +96,31 @@ it('frames one shared headwall at the more advanced mouth, wide enough for both 
     const p = line.at(0);
     expect((p.x - f.x) * f.dx + (p.z - f.z) * f.dz).toBeLessThanOrEqual(1e-6);
   }
+});
+
+it('keeps cars visible a few metres into the dark tube, then clips them', () => {
+  const area = new Group(),
+    cars = new Group();
+  const line = tracks[1];
+  const coords = line.pts.flatMap((p) => sceneToLonLat(origin, ...p));
+  const rf = {
+    paths: [{ id: 'test', coords, cum: [...line.cum], routeId: 'marta:route:RED' }],
+    routes: [{ id: 'marta:route:RED', color: '#d1282f' }],
+  } as unknown as RoutesFile;
+  createNorthLine({ group: area, groundAt: () => -8.13 }, rf, origin, cars);
+  const mouth = area.getObjectByName('North Line portal')!;
+  expect(mouth).toBeDefined();
+  // The vanish point lies inside the tube and within the half car that northCar extrapolates.
+  expect(NORTH_LINE_VANISH_DEPTH).toBeGreaterThan(2);
+  expect(NORTH_LINE_VANISH_DEPTH).toBeLessThan(CAR_LENGTH / 2);
+  const f = portalFrame(tracks);
+  const material = (() => {
+    const update = createNorthLine({ group: new Group(), groundAt: () => -8.13 }, rf, origin, cars)!;
+    update([{ id: 't', pathId: 'test', routeId: 'marta:route:RED', s: { value: 20, tier: 'scheduled' }, lengthM: { value: 90 } } as TrainState], 0);
+    return (cars.children.find((c) => c.visible) as Mesh).material as Material;
+  })();
+  const [face] = material.clippingPlanes!;
+  const inside = (d: number) => face.distanceToPoint(new Vector3(f.x - f.dx * d, 0, f.z - f.dz * d));
+  expect(inside(NORTH_LINE_VANISH_DEPTH - 1)).toBeGreaterThan(0);
+  expect(inside(NORTH_LINE_VANISH_DEPTH + 1)).toBeLessThan(0);
 });
