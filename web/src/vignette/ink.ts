@@ -156,13 +156,17 @@ export class FoliageMaskPass extends Pass {
       const s = src as THREE.MeshBasicMaterial;
       m = new THREE.MeshBasicMaterial({ map: s.map ?? null, alphaTest: s.alphaTest, side: s.side });
       const uniforms = { tSceneDepth: { value: depth }, uRes: { value: this.res } };
+      // A source material that hides leaves in its own shader (leaf drop, per-leaf thinning) hands
+      // the same patch over as userData.maskShader, so the mask hides exactly what is not drawn.
+      const patch = src.userData.maskShader as ((sh: THREE.WebGLProgramParametersWithUniforms) => void) | undefined;
       m.onBeforeCompile = sh => {
+        patch?.(sh);
         Object.assign(sh.uniforms, uniforms);
         sh.fragmentShader = 'uniform sampler2D tSceneDepth;\nuniform vec2 uRes;\n' + sh.fragmentShader
           .replace('void main() {', 'void main() {\n  if (gl_FragCoord.z > texture2D(tSceneDepth, gl_FragCoord.xy / uRes).r + 0.00002) discard;')
           .replace('#include <dithering_fragment>', `#include <dithering_fragment>\n  gl_FragColor = vec4(${(mode / 5).toFixed(2)}, 0.0, 0.0, 1.0);`);
       };
-      m.customProgramCacheKey = () => 'foliageMask' + mode;
+      m.customProgramCacheKey = () => 'foliageMask' + mode + (patch ? ':' + (src.userData.maskKey ?? 'patched') : '');
       m.userData.depth = uniforms.tSceneDepth;
       byMode.set(mode, m);
     }
