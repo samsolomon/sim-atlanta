@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 from scipy.spatial import cKDTree
+from scipy.interpolate import RegularGridInterpolator
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "scripts"))
@@ -65,6 +66,11 @@ def samples(xy, tree, cloud):
 profiles = []
 cached = np.load(sys.argv[1]) if len(sys.argv) > 1 else None
 for row in json.loads((BOARD / "midtown-rows.json").read_text()):
+    manifest = json.loads((BOARD / row / "ground.json").read_text())
+    earth = np.fromfile(BOARD / row / "ground.i16", "<i2").reshape(manifest["rows"], manifest["cols"])
+    bounds = manifest["bounds"]
+    ground = RegularGridInterpolator((np.arange(bounds["minX"], bounds["maxX"]+1, 5),
+                                      np.arange(bounds["minZ"], bounds["maxZ"]+1, 5)), earth.T*.1)
     for road in roads(row):
         xy = np.array(road["pts"])
         if cached is None:
@@ -77,5 +83,10 @@ for row in json.loads((BOARD / "midtown-rows.json").read_text()):
             cloud = cached[cached[:, 3] == 17, :3]
         profile = samples(xy, cKDTree(cloud[:, :2]), cloud)
         if profile:
+            # An extrapolated abutment meets the exposed bank at the higher
+            # of its estimated return slope and the sampled land elevation.
+            for i, p in enumerate(profile["pts"]):
+                if i < profile["measured"][0] or i > profile["measured"][-1]:
+                    profile["heights"][i] = max(profile["heights"][i], round(ground([p]).item(), 2))
             profiles.append(profile)
 (FIXTURES / "decks.json").write_text("[\n" + ",\n".join(json.dumps(p, separators=(",", ":")) for p in profiles) + "\n]\n")
