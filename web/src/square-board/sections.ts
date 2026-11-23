@@ -1,3 +1,8 @@
+import type { ConnectorBoard } from '../city/connector-traffic';
+import { cityRoadHeight } from '../city/road-height';
+import { northConnectorGround, northConnectorTransport } from './connector-ground';
+import { auburnTransport } from '../city/sweet-auburn-transport';
+import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
@@ -9,6 +14,7 @@ export type Direction = 'north' | 'south';
 export type Patch = `${Direction}-${'band' | 'corner'}`;
 export type Board = Patch | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
+export type TrafficArea = Area & { connectorBoard: ConnectorBoard };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
@@ -77,7 +83,7 @@ export async function response(url: string, signal: AbortSignal) {
   return r;
 }
 
-export async function gridAt(path: string, signal: AbortSignal) {
+export async function gridAt(path: string, signal: AbortSignal, northBand = false) {
   const [manifest, bytes]: [GroundManifest, ArrayBuffer] = await Promise.all([
     response(path + '/ground.json', signal).then(r => r.json()),
     response(path + '/ground.i16', signal).then(r => r.arrayBuffer()),
@@ -87,13 +93,13 @@ export async function gridAt(path: string, signal: AbortSignal) {
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   if (Array.from(digest, b => b.toString(16).padStart(2, '0')).join('') !== manifest.sha256)
     throw Error('Ground checksum mismatch at ' + path);
-  return new GroundGrid(manifest, bytes);
+  return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, bytes);
 }
 
 async function readPatch(id: Patch, signal: AbortSignal) {
   const path = '/data/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & { name: string }] = await Promise.all([
-    gridAt(path, signal), response(path + '/context.json', signal).then(r => r.json()),
+    gridAt(path, signal, id === 'north-band'), response(path + '/context.json', signal).then(r => r.json()),
   ]);
   if (context.name !== id || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
@@ -104,17 +110,21 @@ async function readPatch(id: Patch, signal: AbortSignal) {
 export async function addSection(direction: Direction, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal) {
   const patches = await Promise.all([readPatch(`${direction}-band`, signal), readPatch(`${direction}-corner`, signal)]);
   signal.throwIfAborted();
-  const added = new Map<Board, Area>();
+  const added = new Map<Board, TrafficArea>();
   try {
     for (const { id, grid, context } of patches) {
-      const area = createDowntownTerrain(grid, context, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id) });
-      added.set(id, area);
-      const roads = context.roads.filter(r => r.bridge && !r.tunnel).map(r => ({
-        kind: 'bridge' as const, cls: r.cls, name: r.name, sub: r.sub ?? undefined, pts: r.pts,
-      }));
-      const decks = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads, rail: [] } }, grid, area.groundAt);
-      area.group.add(decks.group);
-      added.set(id, { ...area, dispose() { decks.dispose(); area.dispose(); } });
+      const city = id === 'north-band' ? northConnectorTransport(context) :
+        id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
+      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id) });
+      try {
+        const decks = createSurfaceTransport(city, grid, area.groundAt);
+        area.group.add(decks.group);
+        added.set(id, {
+          ...area,
+          connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, decks.deckAt) },
+          dispose() { decks.dispose(); area.dispose(); },
+        });
+      } catch (error) { area.dispose(); throw error; }
     }
     connect(mounted, added);
     return added;

@@ -6,6 +6,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import { addSection, bounds, connect, joins, type Area, type Board } from './sections';
 
 import { buildEastRail, extendRail } from '../city/east-rail';
+import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
 import { terrainAlignment } from '../city/terrain-rail';
 import { alignment } from '../vignette/alignment';
 
@@ -18,6 +19,29 @@ function grid(id: Board) {
   return new GroundGrid(JSON.parse(file(id, 'ground.json').toString()), Uint8Array.from(file(id, 'ground.i16')).buffer);
 }
 afterEach(() => vi.unstubAllGlobals());
+
+it('follows both carriageways across seven boards with open northern underpasses and a concealed Capitol cap', () => {
+  const cities = Object.values(bounds).map(bounds => ({ bounds, roads: [], buildings: [], rail: [] }));
+  const routes = connectorTrafficRoutes(cities[0], cities.slice(1));
+  for (const direction of ['northbound', 'southbound'] as const) {
+    const through = routes.filter(r => {
+      if (r.direction !== direction) return false;
+      const ends = [r.line.pts[0][1], r.line.pts.at(-1)![1]].sort((a, b) => a - b);
+      return ends[0] < -1699 && ends[1] > 1099;
+    });
+    expect(through.length).toBeGreaterThanOrEqual(5);
+    expect(Math.max(...through.map(route => route.line.length))).toBeGreaterThan(3700);
+    for (const route of through) {
+      const owners = [...new Set(route.roads)];
+      const civic = owners.filter(road => road.pts.some(([x, z]) => x > 350 && x < 405 && z < -1360 && z > -1440));
+      expect(civic.length).toBeGreaterThan(0);
+      expect(civic.every(road => !road.tunnel)).toBe(true);
+    }
+    // The south HOV ramp can take its own alignment beside the capped mainlines.
+    expect(through.some(route => route.roads.some(road => road.tunnel &&
+      road.pts.some(([, z]) => z > 815 && z < 842)))).toBe(true);
+  }
+});
 
 it.each(['high', 'low'] as const)('preserves all exterior and internal seam nodes and midpoints on %s', async quality => {
   const ctx = new Proxy({}, { get: () => () => { } });
