@@ -26,10 +26,10 @@ Clipping the City of Atlanta's neighborhood polygons gives these areas to the ne
 |---|---:|---:|---:|---:|---:|
 | North band | 283.3–312.3 | 324 | 1,037 | 407,657 | 110,626 |
 | Northeast corner | 287.6–319.4 | 115 | 405 | 170,156 | 50,130 |
-| South band | 290.5–324.1 | 342 | 1,046 | 341,393 | 92,674 |
+| South band | 290.5–324.1 | 342 | 1,046 | 342,493 | 93,044 |
 | Southeast corner | 308.9–323.8 | 8 | 59 | 18,343 | 5,718 |
 
-North adds 577,813 bytes raw (160,756 gzip), south 359,736 (98,392 gzip). The total is 937,549 raw or 259,148 gzipped. Each direction adds six static files, individually compressed for this comparison. Actual HTTP transfer depends on the host. The archive of raw OSM input stays in the pipeline.
+North adds 577,813 bytes raw (160,756 gzip), south 360,836 (98,762 gzip). The total is 938,649 raw or 259,518 gzipped. Each direction adds six static files, individually compressed for this comparison. Actual HTTP transfer depends on the host. The archive of raw OSM input stays in the pipeline.
 
 The four grids use the same USGS 1 m bare-earth source (2018–19), sampled at the containing native pixel every 5 m. The input is NAD83 / UTM zone 16N. City uses local spherical metres from WGS84 (−84.3916°, 33.7539°), radius 6,371,008.8 m. Row zero is north and columns increase east. Check the SHA-256 and decode row-major little-endian signed int16 decimetres. Mask −32768 before multiplying by 0.1. Subtract 323.8 m NAVD88 once for scene y. Outside a grid or where a nonzero interpolation weight touches the mask, return unknown. All four grids contain zero masked nodes. A valid bare-earth sample can represent interpolated ground beneath a removed bridge. It supplies neither railhead height nor tunnel cover. [Source, datum approximation and Five Points cut measurements](../../../downtown-ground.md)
 
@@ -69,3 +69,11 @@ The opening fetched seven downtown scene assets. From a north-first or south-fir
 At the matched station camera with all seven areas mounted, desktop Orca recorded 133 draw calls and 2.99 million triangles at high detail, and 67 calls and 1.05 million triangles at low detail. The clock is paused on the scheduled eastbound Blue train on 2026-11-20 at 14:02 EST. Pan, orbit and double-click work in the preview. Both detail settings reached all four outer corners. Default activation awaits target-device checks.
 
 Peachtree Summit's two fallback pieces have separate handles in the square preview. In the successful north-section callback in `city.ts`, `terrain.buildingFragment` and `added.get('north-band').buildingFragment` identify them. The landmark owner can mount one complete model from the original downtown ring, sample its foundation across both grids, then hide both handles. Before north arrives, the clipped downtown fragment stays visible through delay or failure.
+
+## Castleberry Hill freight crossing
+
+On November 23, desktop Orca checked the deployed square near Spring Street, both ends of the Downtown Connector, Ted Turner Drive, and the joins toward Sweet Auburn and King Memorial. All 2,011 pairwise comparisons of the eleven shared ground edges returned the same valid decimetre value on either side. No ground step was visible at the sampled cameras. At the southern edge near Ted Turner Drive, five ballast strips ended together in grass. The adjacent section had loaded successfully.
+
+The archived south-band OpenStreetMap extract contains three Griffin District ways (54032227, 471970106, 471970107) and two NS Atlanta South District ways (874501032, 874501033). At z = 700 m they meet the downtown endpoints at x = −747.94, −742.82, −751.86, −767.22 and −773.15 m respectively. Each continues 343–381 m to the west edge. The bake clips each mapped centerline separately. Horizontal position is reported from OSM. Ballast and rail heights follow the local terrain and are illustrative. The source supplies no surveyed railhead heights. The extra geometry costs 1,100 bytes raw or 370 bytes at gzip-9 in the existing south-band context request. [Archived OSM input](../../../../pipeline/prototypes/square-board/source/south-band.json.gz) · [Matched high and low City views](freight-seam.jpg)
+
+To repeat the visual check, open the pinned map camera, then choose **City** and wait for the south section. The five tracks cross the middle of the view on their way toward the southwest. Run the south bake twice and compare the six output file hashes to check reproducibility. On a populated checkout, run `pnpm data:square-board` and `pnpm build`, then deploy the static bundle and data together. [Pinned Castleberry Hill camera](https://atlanta.solomon.io/?view=map&board=square&q=high&t=2026-11-20T14:02:00-05:00&speed=0#17.23990/33.7476048/-84.3997665/5) · [North and south inspection cameras](seam-audit.jpg)

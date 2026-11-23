@@ -45,3 +45,20 @@ it.each(['high', 'low'] as const)('carries both I-20 decks across source joins a
     surface.geometry.dispose();
   }
 });
+
+it('joins the five downtown freight treads at the south seam and follows each mapped way to the west edge', () => {
+  const rail = southConnectorTransport(context).terrainTransport!.rail;
+  const crossings = rail.map(run => {
+    const [first, last] = [run.pts[0], run.pts.at(-1)!];
+    const [north, west] = first[1] === 700 ? [first, last] : [last, first];
+    expect(north[1]).toBe(700);
+    expect(west[0]).toBe(-1000);
+    expect(run.kind).toBe('ground');
+    expect(run.freightS).toBeUndefined();
+    return [north[0], west[1]];
+  }).sort(([a], [b]) => a - b);
+  // North coordinates are the independently baked downtown terrainTransport endpoints.
+  expect(crossings).toEqual([
+    [-773.15, 953.85], [-767.22, 959.02], [-751.86, 967.13], [-747.94, 972.08], [-742.82, 976.99],
+  ]);
+});
