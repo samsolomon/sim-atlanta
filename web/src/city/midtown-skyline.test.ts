@@ -146,6 +146,12 @@ it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit
   expect((wall.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   expect((veils[0].material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   // The crown lattice glows from inside and the leading-edge light line appears only at night.
+  // The crown is a soft wash at night (Kendall/Heaton night skyline): no crown
+  // material's emissive may saturate a channel, or it clips to a white slab.
+  for (const name of ['1180 veil 0', '1180 veil 1', '1180 crown lattice', '1180 veil frames']) {
+    const m = (model.group.getObjectByName(name) as Mesh).material as MeshLambertMaterial;
+    expect(Math.max(m.emissive.r, m.emissive.g, m.emissive.b) * m.emissiveIntensity, name).toBeLessThan(.7);
+  }
   const lattice = model.group.getObjectByName('1180 crown lattice') as Mesh;
   expect((lattice.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   const edge = model.group.getObjectByName('1180 edge light') as Mesh;
