@@ -104,6 +104,17 @@ export class Schedule {
     return this.paths.get(id);
   }
 
+  /** Distances (path metres) at which this path's timetable patterns call at a stop; the
+   * positions scheduled trains actually stop at, which can differ from the stop coordinate. */
+  stopDistances(pathId: string, stopId: string): number[] {
+    const out = new Set<number>();
+    for (const t of this.tables) for (const p of t.patterns) {
+      if (p.pathId !== pathId) continue;
+      p.stops.forEach((id, i) => { if (id === stopId) out.add(p.dist[i]); });
+    }
+    return [...out];
+  }
+
   /**
    * Paths a route's trains run on, optionally limited to patterns whose headsign names
    * a direction (MARTA: "RED SOUTHBOUND TO AIRPORT STATION").

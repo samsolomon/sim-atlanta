@@ -54,6 +54,7 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createOneParkTower } from './one-park-tower';
+import { createFivePointsPlaza } from './five-points-plaza';
 import { createTwoPeachtree } from './two-peachtree';
 import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
@@ -68,9 +69,11 @@ import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
+import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
 import { createEquitable } from './equitable';
 import { createGrady } from './grady';
@@ -122,6 +125,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   progress?: (label: string) => void;
   areaNote?: (text: string | null) => void;
   trains: () => TrainState[];
+  /** Where the timetable stops trains along a path (for platform berthing). */
+  stopDistances?: (pathId: string, stopId: string) => number[];
   clockMs: () => number;
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
@@ -225,6 +230,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
+  let fivePointsPlaza: ReturnType<typeof createFivePointsPlaza> = null;
   let twoPeachtree: ReturnType<typeof createTwoPeachtree> = null;
   let healey: ReturnType<typeof createHealey> = null;
   let flatiron: ReturnType<typeof createFlatiron> = null;
@@ -239,9 +245,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let samNunn: ReturnType<typeof createSamNunn> = null;
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
+  let russell: ReturnType<typeof createRussellBuilding> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
@@ -288,8 +296,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
         healey = createHealey(towerSite, groundAt);
         const afterHealey = healey?.buildings ?? towerSite;
-        twoPeachtree = createTwoPeachtree(afterHealey, ground);
-        const afterTwoPeachtree = twoPeachtree?.buildings ?? afterHealey;
+        fivePointsPlaza = createFivePointsPlaza(afterHealey, ground);
+        const afterFivePointsPlaza = fivePointsPlaza?.buildings ?? afterHealey;
+        twoPeachtree = createTwoPeachtree(afterFivePointsPlaza, ground);
+        const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         oneParkTower = createOneParkTower(afterTwoPeachtree, ground);
         const afterOnePark = oneParkTower?.buildings ?? afterTwoPeachtree;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
@@ -300,8 +310,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
         const afterStadium = stadium?.buildings ?? stadiumSite;
-        centennial = createCentennialTower(afterStadium, ground);
-        const afterCentennial = centennial?.buildings ?? afterStadium;
+        russell = createRussellBuilding(afterStadium, ground);
+        const afterRussell = russell?.buildings ?? afterStadium;
+        centennial = createCentennialTower(afterRussell, ground);
+        const afterCentennial = centennial?.buildings ?? afterRussell;
         capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
@@ -316,7 +328,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         candler = createCandler(afterGrady, ground);
         const afterCandler = candler?.buildings ?? afterGrady;
         equitable = createEquitable(afterCandler, ground);
-        const city = { ...vd, buildings: equitable?.buildings ?? afterCandler,
+        const samNunnSite = equitable?.buildings ?? afterCandler;
+        samNunn = createSamNunn(samNunnSite, ground);
+        const city = { ...vd, buildings: samNunn?.buildings ?? samNunnSite,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
@@ -334,15 +348,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
+        if (fivePointsPlaza) world.group.add(fivePointsPlaza.group);
         if (twoPeachtree) world.group.add(twoPeachtree.group);
         if (georgiaPower) world.group.add(georgiaPower.group);
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
         if (stadium) world.group.add(stadium.group);
+        if (russell) world.group.add(russell.group);
         if (centennial) world.group.add(centennial.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (samNunn) world.group.add(samNunn.group);
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
@@ -615,6 +632,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(rail.mesh);
     scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
     trains.setTracks(tracks, union);
+    if (options.stopDistances) trains.setBerths(mod.kingMemorialBerths(rf, extended, pack.station?.platforms ?? [], options.stopDistances));
     trainBounds = union;
     trainRail = extended.rail;
     trainEdges[1].constant = eastBounds.maxX;
@@ -790,12 +808,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     flatiron?.setNight(night);
     healey?.setNight(night);
     oneParkTower?.setNight(night);
+    fivePointsPlaza?.setNight(night);
     twoPeachtree?.setNight(night);
     georgiaPower?.setNight(night);
     georgiaPacific?.setNight(night);
+    russell?.setNight(night);
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    samNunn?.setNight(night);
     candler?.setNight(night);
     equitable?.setNight(night);
     grady?.setNight(night);
