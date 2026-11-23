@@ -63,6 +63,7 @@ import { createSouthernBell } from './southern-bell';
 import { createRhodesHaverty } from './rhodes-haverty';
 import { createCommerceBuilding } from './commerce-building';
 import { createHundredEdgewood } from './100-edgewood';
+import { createMetropolitan } from './metropolitan';
 import { createFultonCourthouse } from './fulton-courthouse';
 import { createPeachtreeOffices } from './peachtree-offices';
 import { createWilliamOliver } from './william-oliver';
@@ -273,6 +274,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let rhodesHaverty: ReturnType<typeof createRhodesHaverty> = null;
   let commerceBuilding: ReturnType<typeof createCommerceBuilding> = null;
   let hundredEdgewood: ReturnType<typeof createHundredEdgewood> = null;
+  let metropolitan: ReturnType<typeof createMetropolitan> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
   let williamOliver: ReturnType<typeof createWilliamOliver> = null;
@@ -363,8 +365,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterCommerceBuilding = commerceBuilding?.buildings ?? afterRhodesHaverty;
         hundredEdgewood = createHundredEdgewood(afterCommerceBuilding, ground);
         const afterHundredEdgewood = hundredEdgewood?.buildings ?? afterCommerceBuilding;
-        fultonCourthouse = createFultonCourthouse(afterHundredEdgewood, ground);
-        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterHundredEdgewood;
+        metropolitan = createMetropolitan(afterHundredEdgewood, ground);
+        const afterMetropolitan = metropolitan?.buildings ?? afterHundredEdgewood;
+        fultonCourthouse = createFultonCourthouse(afterMetropolitan, ground);
+        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterMetropolitan;
         peachtreeOffices = createPeachtreeOffices(afterFultonCourthouse, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterFultonCourthouse;
         williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
@@ -443,6 +447,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (rhodesHaverty) world.group.add(rhodesHaverty.group);
         if (commerceBuilding) world.group.add(commerceBuilding.group);
         if (hundredEdgewood) world.group.add(hundredEdgewood.group);
+        if (metropolitan) world.group.add(metropolitan.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
         if (williamOliver) world.group.add(williamOliver.group);
@@ -1006,6 +1011,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     rhodesHaverty?.setNight(night);
     commerceBuilding?.setNight(night);
     hundredEdgewood?.setNight(night);
+    metropolitan?.setNight(night);
     fultonCourthouse?.setNight(night);
     peachtreeOffices?.setNight(night);
     williamOliver?.setNight(night);
