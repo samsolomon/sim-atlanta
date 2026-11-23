@@ -26,6 +26,8 @@ const INK_MODE: Partial<Record<GinkgoVariant, InkFoliageMode>> = { C1: 1, C2: 2,
 /** C4: at most this many trees, nearest first and within `tipRangeM`, carry fan tips; none at low detail. */
 export const TIP_CAP = 8;
 export const TIP_RANGE_M = 45;
+/** C4: fan leaves per tipped tree (three triangles each). */
+export const TIP_FANS = 100;
 export const VARIANTS: Record<GinkgoVariant, string> = {
   A: 'Branch sleeves',
   B: 'Micro-fans',
@@ -40,8 +42,18 @@ export const VARIANTS: Record<GinkgoVariant, string> = {
 // ---- skeleton and sprays -------------------------------------------------------------------
 
 interface Limb { y: number; a: number; elbow: [number, number]; tip: [number, number] }
-interface Shape { top: number; limbs: Limb[] }
-/** Unit space: crown radius 1, height 1. Upswept limbs; the specimen forks low into scaffolds. */
+/**
+ * A rounded crown envelope in unit space: an ellipsoid centred at height `cy` with vertical
+ * half-axis `hy` and radius `r`; `flat` > 1 flattens the top into a broad dome.
+ */
+interface Envelope { cy: number; hy: number; r: number; flat: number; sprays: Record<TreeQuality, number> }
+interface Shape { top: number; limbs: Limb[]; envelope?: Envelope }
+/**
+ * Unit space: crown radius 1, height 1. Young trees keep a narrow, pyramidal leader with
+ * upswept limbs. Mature and specimen ginkgos "stay fairly round": several ascending scaffolds
+ * from a clear trunk of a quarter to a third of the height fill a rounded, broad-oval crown,
+ * and the specimen's heavy low limbs carry one continuous dome (docs/tree-species.md).
+ */
 const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
   young: {
     top: 1, limbs: [
@@ -52,19 +64,27 @@ const SHAPES: Record<'young' | 'mature' | 'specimen', Shape> = {
     ],
   },
   mature: {
-    top: 0.9, limbs: [
-      { y: 0.28, a: 0.3, elbow: [0.4, 0.46], tip: [0.86, 0.72] },
-      { y: 0.34, a: 3.4, elbow: [0.38, 0.52], tip: [0.84, 0.78] },
-      { y: 0.44, a: 1.9, elbow: [0.32, 0.62], tip: [0.72, 0.88] },
-      { y: 0.5, a: 4.9, elbow: [0.3, 0.68], tip: [0.66, 0.94] },
+    top: 0.82,
+    // Crown base at about 0.27 of the height; broad oval to the top.
+    envelope: { cy: 0.6, hy: 0.36, r: 1, flat: 1, sprays: { high: 28, low: 22 } },
+    limbs: [
+      { y: 0.27, a: 0.3, elbow: [0.38, 0.4], tip: [0.78, 0.6] },
+      { y: 0.31, a: 3.4, elbow: [0.4, 0.43], tip: [0.8, 0.62] },
+      { y: 0.36, a: 1.9, elbow: [0.34, 0.5], tip: [0.72, 0.7] },
+      { y: 0.42, a: 4.9, elbow: [0.32, 0.56], tip: [0.7, 0.76] },
+      { y: 0.5, a: 2.6, elbow: [0.24, 0.64], tip: [0.5, 0.84] },
     ],
   },
   specimen: {
-    top: 0.2, limbs: [
-      { y: 0.2, a: 0.4, elbow: [0.44, 0.36], tip: [0.9, 0.66] },
-      { y: 0.2, a: 2.1, elbow: [0.48, 0.32], tip: [0.92, 0.6] },
-      { y: 0.2, a: 3.8, elbow: [0.42, 0.38], tip: [0.86, 0.7] },
-      { y: 0.2, a: 5.3, elbow: [0.26, 0.5], tip: [0.55, 0.94] },
+    top: 0.2,
+    // One broad continuous dome, its base low over the heavy scaffolds.
+    envelope: { cy: 0.56, hy: 0.4, r: 1, flat: 1.25, sprays: { high: 28, low: 22 } },
+    limbs: [
+      { y: 0.18, a: 0.4, elbow: [0.46, 0.3], tip: [0.86, 0.46] },
+      { y: 0.18, a: 1.6, elbow: [0.44, 0.34], tip: [0.82, 0.54] },
+      { y: 0.18, a: 2.9, elbow: [0.48, 0.3], tip: [0.88, 0.48] },
+      { y: 0.18, a: 4.1, elbow: [0.42, 0.36], tip: [0.8, 0.58] },
+      { y: 0.2, a: 5.3, elbow: [0.3, 0.48], tip: [0.6, 0.78] },
     ],
   },
 };
@@ -79,6 +99,7 @@ export interface Spray { base: V3; dir: V3; len: number; w: number; depth: numbe
  */
 export function ginkgoSprays(size: SizeClass, q: TreeQuality): Spray[] {
   const shape = shapeOf(size);
+  if (shape.envelope) return envelopeSprays(shape.envelope, q, size);
   const limbs = q === 'high' ? shape.limbs : shape.limbs.slice(0, 3);
   const perLimb = q === 'high' ? 4 : 2;
   const r = rng(size.length * 97 + (q === 'high' ? 3 : 5));
@@ -104,6 +125,31 @@ export function ginkgoSprays(size: SizeClass, q: TreeQuality): Spray[] {
     const a = i * 2.4 + r();
     const dir = new THREE.Vector3(Math.cos(a) * 0.3, 1, Math.sin(a) * 0.3).normalize();
     out.push({ base: [0, Math.max(0.55, 0.62 + i * 0.04), 0], dir: [dir.x, dir.y, dir.z], len: 0.3 + r() * 0.1, w: 0.2, depth: 0.5 + i * 0.1 });
+  }
+  return out;
+}
+
+/**
+ * Rounded crowns: sprays spread over the envelope's outer shell (golden-angle spiral, jittered so
+ * gaps open here and there), each pointing outward and a little up, so the crown reads as one
+ * mass of upswept foliage. Low detail draws fewer, wider sprays.
+ */
+function envelopeSprays(e: Envelope, q: TreeQuality, size: SizeClass): Spray[] {
+  const n = e.sprays[q];
+  const r = rng(size.length * 131 + (q === 'high' ? 7 : 9));
+  const out: Spray[] = [];
+  for (let i = 0; i < n; i++) {
+    // Height: even in the cosine of the polar angle, skipping the very bottom of the ellipsoid.
+    const u = -0.75 + 1.7 * ((i + 0.5) / n);
+    const k = u > 0 ? u * e.flat : u;
+    const ring = Math.sqrt(Math.max(0, 1 - Math.min(1, k * k)));
+    const a = i * 2.39996 + (r() - 0.5) * 0.5;
+    const shell = 0.62 + 0.2 * r();
+    const y = e.cy + u * e.hy * shell;
+    const rad = e.r * ring * shell;
+    const out3 = new THREE.Vector3(Math.cos(a), 0.55 + 0.6 * Math.max(0, u), Math.sin(a)).normalize();
+    const w = (q === 'high' ? 0.24 : 0.3) + r() * 0.06;
+    out.push({ base: [Math.cos(a) * rad * 0.82, y - 0.05, Math.sin(a) * rad * 0.82], dir: [out3.x, out3.y, out3.z], len: 0.3 + r() * 0.1, w, depth: 0.45 + 0.55 * ring * shell });
   }
   return out;
 }
@@ -250,7 +296,10 @@ export function fanChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass = 
 }
 /** C4: only the fan chips on the outer sprays, the branch tips a viewer sees first. */
 export function tipChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass) {
-  return fanChips(unitSprays, q, size).filter((c, i) => c.depth >= 0.7 && i % 2 === 0);
+  // At most TIP_FANS fans per tree, spread evenly over the outer sprays.
+  const outer = fanChips(unitSprays, q, size).filter(c => c.depth >= 0.7);
+  const step = Math.max(1, outer.length / TIP_FANS);
+  return Array.from({ length: Math.min(TIP_FANS, outer.length) }, (_, i) => outer[Math.floor(i * step)]);
 }
 /** A ginkgo leaf as a three-triangle fan, about 1 unit across, stem at the origin. */
 export function fanGeometry() {
