@@ -1881,3 +1881,7 @@ From Trinity Avenue, the foreground roof belongs to the 1989 annex. The bake had
 ### 2026-11-23 — Six columns on Pryor Street
 
 The courthouse looked like one 52.8 m building in the bake. It took two street corners to understand the footprint. The 1914 Slaton facade has six stone columns rising five stories above a banded base. Around the corner, the Justice Center Tower has reflective glass and pale end piers. Lidar picked out the historic U-shaped high roof and two narrow links across the gap to the modern tower. The 25.1 m Carnes building keeps its own footprint alongside them. [Photographs, roof elevations and matched City views](log/ui/fulton-courthouse/README.md)
+
+### 2026-11-23 — The second roof at 25 Park Place
+
+From Woodruff Park, the former Trust Company tower reads as a white grid. Turn toward Edgewood and its narrow end rises behind a three-floor pavilion. One 115 m extrusion had erased that view. The lidar put the tower rim at about 433 m NAVD88 and the pavilion terrace at 332 m. Restoring the 101 m step also exposed the space between the deep lobby piers. In the night photograph the warm light catches the projecting stone fins, leaving much of the glass dark. [Photographs, measurements and matched City views](log/ui/park-place-tower/README.md)
