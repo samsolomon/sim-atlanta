@@ -1,3 +1,5 @@
+import { triangleHeight } from './tread-height';
+import { drawJunctionDecks } from './junction-decks';
 import * as THREE from 'three';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
@@ -9,7 +11,7 @@ import { connectorMedians, inConnectorLanes } from './connector-paint';
 import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
-type GroundAt = (x: number, z: number) => number | null;
+type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
 export interface FreightTreadPoint {
   s: number;
   position: THREE.Vector3;
@@ -22,20 +24,6 @@ export interface SurfaceTransport {
   group: THREE.Group;
   structuralTier: 'illustrative';
   dispose(): void;
-}
-
-// Interpolate on the same triangle as the GPU. A bridge end can be banked on
-// one edge, so interpolating across its full quad would give a different height.
-function triangleHeight(p: THREE.BufferAttribute, i: number, x: number, z: number) {
-  const ax = p.getX(i), az = p.getZ(i);
-  const bx = p.getX(i + 1) - ax, bz = p.getZ(i + 1) - az;
-  const cx = p.getX(i + 2) - ax, cz = p.getZ(i + 2) - az;
-  const det = bx * cz - bz * cx;
-  if (Math.abs(det) < 1e-8) return null;
-  const u = ((x - ax) * cz - (z - az) * cx) / det;
-  const v = (bx * (z - az) - bz * (x - ax)) / det;
-  if (u < -1e-7 || v < -1e-7 || u + v > 1 + 1e-7) return null;
-  return (1 - u - v) * p.getY(i) + u * p.getY(i + 1) + v * p.getY(i + 2);
 }
 
 // One texture period is 0.8 scene metres along track, and 4.2 metres across.
@@ -79,6 +67,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const roadTreads = new Map<TransportRun, number[]>();
   let structurePositions: THREE.BufferAttribute;
   function deckAt(x: number, z: number, run: TransportRun) {
+    const halfWidth = junctionWidths.get(run);
+    if (halfWidth !== undefined && !run.pts.some((p, i) =>
+      i > 0 && segDist(x, z, run.pts[i - 1], p) <= halfWidth + .1)) return null;
     const quads = roadTreads.get(run);
     if (quads) for (const i of quads) {
       const h = triangleHeight(structurePositions, i, x, z);
@@ -121,15 +112,27 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram', owner = run) {
     if (run.pts.length < 2) return;
     // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
-    const groundAt: GroundAt = cut && run === cut.freight ? () => cut.treadY - .13 : terrainGround;
+    const groundAt: GroundAt = cut && run === cut.freight ? () => cut.treadY - .13 : (x,z) => terrainGround(x,z,run);
     const line = new Line(run.pts);
     if (!line.length) return;
     const bridge = run.kind === 'bridge';
     const onEdge = ([x, z]: P2) => x === bounds.minX || x === bounds.maxX || z === bounds.minZ || z === bounds.maxZ;
     const start = run.pts[0], end = run.pts[run.pts.length - 1];
     const startCut = onEdge(start), endCut = onEdge(end);
-    const startHeight = bridge && !startCut ? grid.sample(...start) : null;
-    const endHeight = bridge && !endCut ? grid.sample(...end) : null;
+    function support(p:P2) {
+      if (use!=='road') return null;
+      for(const parent of junctionNodes.get(p.join(',')) ?? []) {
+        for(const i of roadTreads.get(parent) ?? []) {
+          const y=triangleHeight(sharedPositions,i,...p);
+          if(y!==null) return y-.12;
+        }
+      }
+      return null;
+    }
+    const firstSupport=support(start),lastSupport=support(end);
+    const elevation=(p:P2,height:number|null) => height===null ? grid.sample(...p) : height+grid.manifest.vertical.sceneZeroNavd88M;
+    const startHeight = bridge && !startCut ? elevation(start,firstSupport) : null;
+    const endHeight = bridge && !endCut ? elevation(end,lastSupport) : null;
     const profile = run.deckNavd88M;
     if (bridge && !profile && ((startCut && endCut) || (!startCut && startHeight === null) || (!endCut && endHeight === null))) return;
     // A board cut can pass through mid-air. Carry the in-board support to that edge.
@@ -196,7 +199,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const ends = bridge ? [0, line.length].map(s => {
         return offsets.map(off => {
           const [x,z]=lateral(s,off);
-          return groundAt(THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX),THREE.MathUtils.clamp(z,bounds.minZ,bounds.maxZ));
+          return (s===0 ? firstSupport : lastSupport) ?? groundAt(THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX),THREE.MathUtils.clamp(z,bounds.minZ,bounds.maxZ));
         });
       }) : [];
       let prev: number[][] | null = null, lastS = 0;
@@ -315,6 +318,17 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
   }
   const sharedDecks = drawStreetBridges(city, grid.manifest.vertical.sceneZeroNavd88M, terrainGround, structures, roadTreads);
+  const junctionWidths = new Map<TransportRun, number>();
+  const junctionRuns = drawJunctionDecks(city, grid.manifest.vertical.sceneZeroNavd88M, structures, roadTreads, junctionWidths);
+  for (const run of junctionRuns) sharedDecks.add(run);
+  const sharedPositions = new THREE.Float32BufferAttribute(structures.pos,3);
+  const junctionNodes = new Map<string,TransportRun[]>();
+  for(const run of sharedDecks) if(run.cls==='secondary' || run.cls==='tertiary') {
+    for(const p of run.pts) {
+      const key=p.join(',');
+      junctionNodes.set(key,[...(junctionNodes.get(key)??[]),run]);
+    }
+  }
   for (const road of data.roads) {
     if (sharedDecks.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
