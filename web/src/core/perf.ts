@@ -69,6 +69,7 @@ const N = 2048; // ~34 s at 60 fps
 const stamps = new Float64Array(N);
 const updateMs = new Float32Array(N);
 const renderMs = new Float32Array(N);
+const tris = new Float32Array(N);
 let head = 0;
 let count = 0;
 let shadowUpdates = 0;
@@ -123,11 +124,13 @@ function phase(name: string) {
   if ((name === 'city:revealed' || name === 'city:first-frame') && has('city:revealed') && has('city:first-frame') && !has('ready')) phase('ready');
 }
 
-/** One rendered frame: rAF timestamp, then CPU ms spent updating and in composer.render(). */
-function frame(ts: number, update: number, render: number) {
+/** One rendered frame: rAF timestamp, CPU ms spent updating and in composer.render(), and the
+ * triangles it drew (all passes, shadow redraws included). */
+function frame(ts: number, update: number, render: number, triangles = 0) {
   stamps[head] = ts;
   updateMs[head] = update;
   renderMs[head] = render;
+  tris[head] = triangles;
   head = (head + 1) % N;
   if (count < N) count++;
 }
@@ -153,16 +156,18 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 
 function frames(windowMs: number) {
   const idx = recent(windowMs);
-  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
   const up = idx.map(i => updateMs[i]);
   const rn = idx.map(i => renderMs[i]);
+  const tr = idx.map(i => tris[i]);
   return {
     fps: r1(((idx.length - 1) * 1000) / Math.max(1, span)), frames: idx.length,
     p50: r1(pct(dts, 0.5)), p95: r1(pct(dts, 0.95)), max: r1(Math.max(...dts)),
     updateP50: r1(pct(up, 0.5)), renderP50: r1(pct(rn, 0.5)), renderP95: r1(pct(rn, 0.95)),
+    trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
   };
 }
 
@@ -465,7 +470,9 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
   const summary = {
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
-    calls: full.renderer?.calls ?? null, triangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
+    // Median over the sample: one frame's count depends on whether it redrew the shadow map.
+    calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
+    lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
     pixelRatio: full.renderer?.pixelRatio ?? null, drawingBuffer: full.renderer?.drawingBuffer ?? null,
     heapMB: full.heap?.usedMB ?? null, textureMB: full.memory?.total.textureMB ?? null, geometryMB: full.memory?.total.geometryMB ?? null,
     cpuMB: full.memory?.total.cpuMB ?? null, shadowUpdatesInSample: shadowUpdates - shadowBefore,

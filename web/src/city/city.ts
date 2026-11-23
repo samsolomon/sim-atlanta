@@ -1524,7 +1524,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     else if (!whiteModel?.holding) composer.render();
     whiteModel?.after();
     const renderEnd = performance.now();
-    perf.frame(ts, renderStart - frameStart, renderEnd - renderStart);
+    perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
     if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
     frames++;
