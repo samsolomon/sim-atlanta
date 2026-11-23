@@ -24,9 +24,12 @@ if (!noBuild) {
   if (b.status !== 0) process.exit(b.status ?? 1);
 }
 const port = 4700 + Math.floor(Math.random() * 200);
-const server = spawn('npx', ['vite', 'preview', '--outDir', dist, '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { cwd: web, stdio: 'ignore' });
+// The vite binary itself, not npx, so kill() stops the server and not just a wrapper.
+const server = spawn(join(web, 'node_modules/.bin/vite'), ['preview', '--outDir', dist, '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { cwd: web, stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-for (let i = 0; i < 60; i++) { try { await fetch(`http://127.0.0.1:${port}/`); break; } catch { await sleep(250); } }
+let up = false;
+for (let i = 0; i < 120 && !up; i++) { try { up = (await fetch(`http://127.0.0.1:${port}/`)).ok; } catch { await sleep(250); } }
+if (!up) { server.kill(); console.error(`vite preview did not answer on :${port}`); process.exit(1); }
 
 let failed = false;
 try {
@@ -38,7 +41,8 @@ try {
     if (r.status !== 0) { failed = true; continue; }
     const s = JSON.parse(readFileSync(json, 'utf8'))[0]?.summary;
     if (!s) { console.error(`${tier}: no result`); failed = true; continue; }
-    if (s.areas < 12) console.warn(`${tier}: only ${s.areas} areas mounted; figures are partial`);
+    // A partial board comes in under every ceiling, so it must fail rather than pass quietly.
+    if (s.areas < 12) { console.error(`${tier}: only ${s.areas} of 12 areas mounted; check the staged data`); failed = true; continue; }
     console.log(`\n${tier.toUpperCase()}            measured     ceiling      target`);
     for (const [k, ceil] of Object.entries(b.ceiling)) {
       const v = s[k];

@@ -21,6 +21,12 @@ describe('perf', () => {
     expect(perf.phases.some(p => p.name === 'ready')).toBe(false);
     perf.phase('city:first-frame');
     expect(perf.phases.filter(p => p.name === 'ready')).toHaveLength(1);
+    // A second City open gets its own ready.
+    perf.phase('city:open');
+    perf.phase('city:first-frame');
+    expect(perf.phases.filter(p => p.name === 'ready')).toHaveLength(1);
+    perf.phase('city:revealed');
+    expect(perf.phases.filter(p => p.name === 'ready')).toHaveLength(2);
   });
 
   it('estimates texture bytes with mipmaps and render targets without', () => {

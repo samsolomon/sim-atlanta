@@ -111,7 +111,10 @@ function phase(name: string) {
     saveTrail(name === 'ready');
   }
   // Ready: colour is revealed and a frame has drawn (without the white model, revealed comes first).
-  const has = (n: string) => phases.some(q => q.name === n);
+  // Per City open: only phases since the latest city:open count, so a reopen gets its own ready.
+  let openAt = 0;
+  for (let i = phases.length - 1; i >= 0; i--) if (phases[i].name === 'city:open') { openAt = i; break; }
+  const has = (n: string) => phases.slice(openAt).some(q => q.name === n);
   if ((name === 'city:revealed' || name === 'city:first-frame') && has('city:revealed') && has('city:first-frame') && !has('ready')) phase('ready');
 }
 

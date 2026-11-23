@@ -2,7 +2,8 @@
  * Which City tier a device starts on (phone performance). The reference phone, a Galaxy A16
  * (Mali GPU, 4-6 GB, 411 CSS px wide), must start on low. Desktops and recent tablets stay high.
  * The rules are deliberately few: a wrong "low" costs some detail, a wrong "high" costs a
- * 4-second frame. The runtime fallback (perf.ts `watchSlow`) catches what these miss.
+ * 4-second frame. The runtime fallback (perf.ts `watchSlow`, wired by the Graphics 'Auto' menu)
+ * is meant to catch what these miss.
  */
 export interface DeviceFacts {
   /** `(pointer: coarse)` */
@@ -18,7 +19,8 @@ export interface DeviceFacts {
 }
 
 /** Mobile and software GPUs that cannot carry the full board at the high tier. */
-const WEAK_GPU = /\b(Mali|PowerVR|SwiftShader|llvmpipe|Adreno \(TM\) [1-6]\d\d|Adreno [1-6]\d\d)\b/i;
+/** Adreno below 640 (2019 and older); 650 and up are flagship parts left to the other rules. */
+const WEAK_GPU = /\b(Mali|PowerVR|SwiftShader|llvmpipe|Adreno (\(TM\) )?([1-5]\d\d|6[0-3]\d))\b/i;
 
 export function deviceTier(f: DeviceFacts): { tier: 'low' | 'high'; reason: string } {
   if (f.coarse && f.minScreen < 820) return { tier: 'low', reason: 'phone-sized touch screen' };

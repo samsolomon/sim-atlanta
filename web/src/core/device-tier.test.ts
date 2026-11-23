@@ -19,5 +19,6 @@ describe('deviceTier', () => {
   it('treats old Adrenos as weak but leaves flagship Adrenos to the other rules', () => {
     expect(deviceTier({ ...desktop, coarse: true, minScreen: 900, gpu: 'Adreno (TM) 619' }).tier).toBe('low');
     expect(deviceTier({ ...desktop, coarse: true, minScreen: 900, gpu: 'Adreno (TM) 740' }).tier).toBe('high');
+    expect(deviceTier({ ...desktop, coarse: true, minScreen: 900, gpu: 'Adreno (TM) 650' }).tier).toBe('high');
   });
 });
