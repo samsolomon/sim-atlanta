@@ -1,6 +1,6 @@
-import { Color, CylinderGeometry } from 'three';
+import { Color, CylinderGeometry, DoubleSide, Mesh, MeshLambertMaterial } from 'three';
 import type { GroundGrid } from '../terrain/grid';
-import type { Builder, P2 } from '../vignette/geom';
+import { Builder, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 
@@ -39,18 +39,19 @@ function face(batch: Builder, side: Side, a: number, b: number, lo: number, hi: 
     color,
   );
 }
-function shelf(m: Shell, side: Side, a: number, b: number, outer: number, inner: number, top: number, thick: number) {
+function shelf(m: Shell, side: Side, a: number, b: number, outer: number, inner: number, top: number, thick: number, underside = m.body) {
   const p = (s: number, y: number, d: number) => point(side, s, y, d);
   face(m.body, side, a, b, top - thick, top, outer, concrete);
-  for (const y of [top, top - thick])
-    m.body.quad(p(a, y, outer), p(b, y, outer), p(b, y, inner), p(a, y, inner), y === top ? rim : '#b1aa98');
+  m.body.quad(p(a, top, outer), p(b, top, outer), p(b, top, inner), p(a, top, inner), rim);
+  const y = top - thick;
+  underside.quad(p(a, y, inner), p(b, y, inner), p(b, y, outer), p(a, y, outer), '#b1aa98');
   for (const s of [a, b])
     m.body.quad(p(s, top, outer), p(s, top, inner), p(s, top - thick, inner), p(s, top - thick, outer), concrete);
 }
-function column(m: Shell, x: number, z: number, lo: number, hi: number, r: number) {
+function column(batch: Builder, x: number, z: number, lo: number, hi: number, r: number) {
   const geo = new CylinderGeometry(r, r, hi - lo, 10, 1);
   geo.translate(x, (lo + hi) / 2, z);
-  m.body.addGeometry(geo, '#d0cabe');
+  batch.addGeometry(geo, '#d0cabe');
   geo.dispose();
 }
 
@@ -96,7 +97,8 @@ function glazing(m: Shell, side: Side, a: number, b: number, lo: number, hi: num
       const skyline = 327 + 2.7 * Math.sin(phase + u * 0.063) + ((u > 29 && u < 44) || (u > 83 && u < 96) ? 4.2 : 0);
       const sky = Math.min(1, Math.max(0, (y - skyline + 4) / 12));
       const cloud = Math.sin(u * 0.043 + phase + (y - 320) * 0.16);
-      const tone = Math.round(47 * (0.19 + 0.48 * sky + 0.18 * cloud + 0.045 * Math.cos(0.31 * u)));
+      const reflection = 0.19 + 0.48 * sky + 0.18 * cloud + 0.045 * Math.cos(0.31 * u);
+      const tone = Math.round((palette.length - 1) * Math.max(0, Math.min(1, reflection)));
       const story = Math.floor((y - 318.7) / 4.32),
         room = (Math.floor((u + phase) / 2.7) + phase) % 46;
       const lit =
@@ -121,7 +123,7 @@ function terrace(m: Shell, side: Side, a: number, b: number) {
     );
   for (let u = a + 4.4; u < b - 1; u += 8.5) {
     const [x, , z] = point(side, u, 0, 2.2);
-    column(m, x, z, floor, top - 0.43, 0.4);
+    column(m.body, x, z, floor, top - 0.43, 0.4);
   }
   for (const y of [floor + 0.36, floor + 0.78, floor + 1.06]) face(m.body, side, a, b, y, y + 0.075, 0.13, '#839094');
   for (let u = a + 0.14; u < b; u += 1.55) face(m.body, side, u, u + 0.055, floor, floor + 1.1, 0.13, '#85918f');
@@ -173,7 +175,12 @@ function crown(m: Shell) {
       .reverse()
       .map(([x, z]): P2 => [x, depth - z]),
   ];
-  m.prism(plan, cornerY, roofY, '#66858a', gravel);
+  // Keep the crown behind the curtain-wall backing where the two share a street face.
+  const crownPlan: P2[] = plan.map(([x, z]) => [
+    Math.max(0.12, Math.min(width - 0.12, x)),
+    Math.max(0.12, Math.min(depth - 0.12, z)),
+  ]);
+  m.prism(crownPlan, cornerY, roofY, '#66858a', gravel);
   for (const [dx, dz] of [
     [0, 0],
     [width, 0],
@@ -185,7 +192,7 @@ function crown(m: Shell) {
     m.prism(ledge, cornerY - 0.28, cornerY, '#b1afa5', gravel);
   }
 }
-function podium(m: Shell, side: Side) {
+function podium(m: Shell, side: Side, canopyLight: Builder) {
   const span = length(side),
     end = span - 3,
     west = side === 'park',
@@ -238,13 +245,13 @@ function podium(m: Shell, side: Side) {
   }
   for (let s = 4.2; s < span; s += 9.75) {
     const [x, , z] = point(side, s, 0, 2.35);
-    column(m, x, z, m.base, soffit - 0.48, 0.55);
+    column(west || east ? canopyLight : m.body, x, z, m.base, soffit - 0.48, 0.55);
   }
   if (west || east) {
     const a = west ? 8 : span * 0.25,
       b = west ? span - 8 : span * 0.78,
       top = east ? 316.95 : lower;
-    shelf(m, side, a, b, -0.9, 5.4, top, 0.55);
+    shelf(m, side, a, b, -0.9, 5.4, top, 0.55, canopyLight);
     // Broad, visibly coffered drop-off canopy.
     for (let s = a + 1; s < b; s += 3.15) shelf(m, side, s, s + 0.29, -0.8, 5.15, top - 0.52, 0.28);
   } else {
@@ -344,9 +351,22 @@ export function createWilliams250(buildings: VBuilding[], grid: GroundGrid) {
   m.prism(core(5.5), soffit, cornerY, '#839296', gravel);
   crown(m);
   rooflights(m);
+  const canopyLight = new Builder();
   for (const side of sides) {
     curtain(m, side);
-    podium(m, side);
+    podium(m, side, canopyLight);
   }
-  return m.finish('#e4d3a2');
+  const model = m.finish('#e4d3a2');
+  // The sheltered concrete picks up a softer wash than the occupied office panes.
+  const material = new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: '#d7d1bd', emissiveIntensity: 0 });
+  const canopy = new Mesh(canopyLight.geometry(), material);
+  canopy.castShadow = canopy.receiveShadow = true;
+  model.group.add(canopy);
+  return {
+    ...model,
+    setNight(night: number) {
+      model.setNight(night);
+      material.emissiveIntensity = night * 0.095;
+    },
+  };
 }

@@ -25,16 +25,18 @@ The 2018 USGS sample contains **32,168 returns** within the footprint at levels 
 | Ground and balcony | The bare-earth grid gives roughly 299 m at the northwest corner, 305 m at the southwest and 310 m along Williams. The park balcony and soffit levels use returns around 319–320 m and the photographic sightline. |
 | Fine details | The podium recess depths, column diameters, curtain-wall module, representative roof volumes and night occupancy are estimates. |
 
-## Studio verification checkpoint
+## Matched City views
 
-These baseline City views show the baked building on November 20, 2026 at 13:45, 17:22 and 20:30 EST. The modeled views and cross-model review are pending. Use high quality, a frozen clock and the following camera positions. Each eye and target gives east, south and absolute elevation in metres (NAVD88), followed by the vertical field of view.
+The seven cameras use City’s high-quality renderer with the clock frozen on November 20, 2026. Eye and target coordinates give east, south and absolute elevation in metres (NAVD88), followed by vertical field of view. Each pair holds the camera and clock fixed. [Full comparison gallery](comparison.jpg)
 
-| Approach | Eye → target, field of view | Baseline |
-| --- | --- | --- |
-| Across Centennial Olympic Park | (-146, -728, 314) → (16, -850, 328), 57° | [day](park-day-before.webp) · [dusk](park-dusk-before.webp) · [night](park-night-before.webp) |
-| Pemberton Place approach | (-177, -934, 306.5) → (21, -862, 328), 56° | [day](pemberton-day-before.webp) · [dusk](pemberton-dusk-before.webp) · [night](pemberton-night-before.webp) |
-| Park frontage | (-76, -852, 306.2) → (0, -858, 318), 68° | [day](west-day-before.webp) · [dusk](west-dusk-before.webp) · [night](west-night-before.webp) |
-| Williams Street colonnade | (99, -837, 313) → (77, -861, 317.4), 78° | [day](williams-day-before.webp) · [dusk](williams-dusk-before.webp) · [night](williams-night-before.webp) |
-| John Portman Boulevard | (30, -766, 309.1) → (30, -806, 319), 68° | [day](south-day-before.webp) · [dusk](south-dusk-before.webp) · [night](south-night-before.webp) |
-| Park, roof and AmericasMart | (-99, -736, 461) → (33, -868, 327), 62° | [day](roof-day-before.webp) · [dusk](roof-dusk-before.webp) · [night](roof-night-before.webp) |
-| Baker Street corner | (-58, -946, 301) → (-24, -906, 319), 70° | [day](baker-day-before.webp) · [dusk](baker-dusk-before.webp) · [night](baker-night-before.webp) |
+![Seven approaches to 250 Williams, each showing the baked and modeled building at day, dusk and night](comparison.jpg)
+
+| Approach | Eye → target, field of view | 13:45 EST | 17:22 EST | 20:30 EST |
+| --- | --- | --- | --- | --- |
+| Across Centennial Olympic Park | (-146, -728, 314) → (16, -850, 328), 57° | [Before](park-day-before.webp) · [after](park-day-after.webp) | [Before](park-dusk-before.webp) · [after](park-dusk-after.webp) | [Before](park-night-before.webp) · [after](park-night-after.webp) |
+| Pemberton Place approach | (-177, -934, 306.5) → (21, -862, 328), 56° | [Before](pemberton-day-before.webp) · [after](pemberton-day-after.webp) | [Before](pemberton-dusk-before.webp) · [after](pemberton-dusk-after.webp) | [Before](pemberton-night-before.webp) · [after](pemberton-night-after.webp) |
+| Park frontage | (-76, -852, 306.2) → (0, -858, 318), 68° | [Before](west-day-before.webp) · [after](west-day-after.webp) | [Before](west-dusk-before.webp) · [after](west-dusk-after.webp) | [Before](west-night-before.webp) · [after](west-night-after.webp) |
+| Williams Street colonnade | (99, -837, 313) → (77, -861, 317.4), 78° | [Before](williams-day-before.webp) · [after](williams-day-after.webp) | [Before](williams-dusk-before.webp) · [after](williams-dusk-after.webp) | [Before](williams-night-before.webp) · [after](williams-night-after.webp) |
+| John Portman Boulevard | (30, -766, 309.1) → (30, -806, 319), 68° | [Before](south-day-before.webp) · [after](south-day-after.webp) | [Before](south-dusk-before.webp) · [after](south-dusk-after.webp) | [Before](south-night-before.webp) · [after](south-night-after.webp) |
+| Park, roof and AmericasMart | (-99, -736, 461) → (33, -868, 327), 62° | [Before](roof-day-before.webp) · [after](roof-day-after.webp) | [Before](roof-dusk-before.webp) · [after](roof-dusk-after.webp) | [Before](roof-night-before.webp) · [after](roof-night-after.webp) |
+| Baker Street corner | (-58, -946, 301) → (-24, -906, 319), 70° | [Before](baker-day-before.webp) · [after](baker-day-after.webp) | [Before](baker-dusk-before.webp) · [after](baker-dusk-after.webp) | [Before](baker-night-before.webp) · [after](baker-night-after.webp) |
