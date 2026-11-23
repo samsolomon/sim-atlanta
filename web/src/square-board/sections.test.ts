@@ -1,8 +1,9 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import { addSection, bounds, connect, joins, seam, verifySeam, type Area, type Board } from './sections';
+import { addSection, bounds, connect, joins, type Area, type Board } from './sections';
 
 import { buildEastRail, extendRail } from '../city/east-rail';
 import { terrainAlignment } from '../city/terrain-rail';
@@ -21,11 +22,19 @@ afterEach(() => vi.unstubAllGlobals());
 it.each(['high', 'low'] as const)('preserves all exterior and internal seam nodes and midpoints on %s', async quality => {
   const ctx = new Proxy({}, { get: () => () => { } });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
-  let failSouth = true;
+  const badCorner = Uint8Array.from(file('south-corner', 'ground.i16'));
+  // x=1400 at z=640 is on the last tested neighbor (King), after the band's edges pass.
+  new DataView(badCorner.buffer).setInt16(2 * 80, -32768, true);
+  const manifest = JSON.parse(file('south-corner', 'ground.json').toString());
+  manifest.sha256 = createHash('sha256').update(badCorner).digest('hex');
+  let fault: 'checksum' | 'seam' | null = 'checksum';
   vi.stubGlobal('fetch', async (url: string) => {
     const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
     const data = Uint8Array.from(file(id as Board, name));
-    if (failSouth && id === 'south-corner' && name === 'ground.i16') data[0] ^= 1;
+    if (fault && id === 'south-corner') {
+      if (name === 'ground.i16') return new Response(badCorner.buffer);
+      if (fault === 'seam' && name === 'ground.json') return Response.json(manifest);
+    }
     return new Response(data.buffer);
   });
   const mounted = new Map<Board, Area>();
@@ -35,10 +44,18 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       connect(mounted, new Map([[id, createDowntownTerrain(g, context, [], { quality, bottomY: -48, join: joins(id) })]]));
     }
     const signal = new AbortController().signal;
-    await expect(addSection('south', mounted, quality, signal)).rejects.toThrow(/checksum/);
-    expect([...mounted.keys()]).toEqual(['downtown', 'king', 'auburn']);
-    expect(mounted.get('king')!.board.getObjectByName('joining edge 2')?.visible).toBe(true);
-    failSouth = false;
+    function walls() {
+      return [...mounted].flatMap(([id, area]) => joins(id).map((_, i) =>
+        area.board.getObjectByName(i ? 'joining edge ' + i : 'joining edge')!.visible));
+    }
+    const originalWalls = walls();
+    for (const error of [/checksum/, /1400,640/]) {
+      await expect(addSection('south', mounted, quality, signal)).rejects.toThrow(error);
+      expect([...mounted.keys()]).toEqual(['downtown', 'king', 'auburn']);
+      expect(walls()).toEqual(originalWalls);
+      fault = 'seam';
+    }
+    fault = null;
     for (const d of quality === 'high' ? ['north', 'south'] as const : ['south', 'north'] as const) {
       await addSection(d, mounted, quality, signal);
       if (mounted.size === 5) expect(mounted.has(d === 'north' ? 'south-corner' : 'north-corner')).toBe(false);
@@ -58,10 +75,6 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       }
     }
     expect(boardArea).toBe(2800 ** 2);
-    // A valid-length, separately hashed tile can still disagree on a single shared node.
-    const corner = grid('south-corner'), original = corner.sample.bind(corner);
-    vi.spyOn(corner, 'sample').mockImplementation((x, z) => x === 1400 && z === 640 ? null : original(x, z));
-    expect(() => verifySeam(grid('king'), corner, seam('king', 'south-corner'))).toThrow(/1400,640/);
   } finally { for (const area of mounted.values()) area.dispose(); }
 });
 
