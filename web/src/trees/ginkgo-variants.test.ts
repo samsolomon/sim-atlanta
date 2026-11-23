@@ -77,3 +77,16 @@ describe('ginkgo leaf guardrails (worst case: a 20-tree grove, camera inside it)
     g.dispose();
   });
 });
+
+describe('foliage ink mask registration', () => {
+  it('registers C1–C4 leaves for the mask pass and releases them on dispose; plain C registers nothing', async () => {
+    const { inkFoliageCount } = await import('../vignette/ink');
+    const before = inkFoliageCount();
+    const c = createGinkgoVariant([{ species: ginkgo, size: 'mature', x: 0, z: 0, seed: 1 }], 'C', 'high', () => 0)!;
+    expect(inkFoliageCount()).toBe(before);
+    const c4 = createGinkgoVariant([{ species: ginkgo, size: 'mature', x: 0, z: 0, seed: 1 }], 'C4', 'high', () => 0)!;
+    expect(inkFoliageCount()).toBeGreaterThan(before);
+    c4.dispose(); c.dispose();
+    expect(inkFoliageCount()).toBe(before);
+  });
+});

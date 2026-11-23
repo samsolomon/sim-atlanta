@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { Builder, rng } from '../vignette/geom';
-import { inkFoliage, type InkFoliageMode } from '../vignette/ink';
+import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
 import { TIP_CAP, TIP_RANGE_M, fanGeometry, flames, sleeves, sprayAt as at, sprayCards, sprayFrame as frame, type Spray } from './foliage-kit';
 import { ginkgo, ginkgoState } from './ginkgo';
 import { treeDims, type TreePlacement } from './render';
@@ -316,7 +316,7 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const foliageMat = isCards ? leafMat({ map: leafAtlas(), alphaTest: 0.5 }) : leafMat({ flatShading: true });
   const chipMat = leafMat({ vertexColors: false });
   const inkMode = INK_MODE[variant];
-  if (inkMode) { inkFoliage(foliageMat, inkMode); inkFoliage(chipMat, inkMode); }
+
   const fansNear = variant === 'B' && quality === 'high';
   const tips = variant === 'C4' && quality === 'high';
   const carpetMat = new THREE.MeshLambertMaterial({ color: '#e6b83e', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -381,6 +381,16 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const tint = new THREE.Color();
   let state = trees.map(() => ({ leaves: 1, falling: 0, c: new THREE.Color() }));
 
+  // Tilt each carpet to the local slope so it neither floats nor sinks on a mound or hillside.
+  const tilts = trees.map(t => {
+    const r = t.dims.spreadM / 2;
+    const g = (x: number, z: number) => groundAt(x, z) ?? t.y;
+    const n = new THREE.Vector3(-(g(t.x + r, t.z) - g(t.x - r, t.z)) / (2 * r), 1, -(g(t.x, t.z + r) - g(t.x, t.z - r)) / (2 * r)).normalize();
+    return new THREE.Quaternion().setFromUnitVectors(up, n);
+  });
+  // Foliage that the ink pass should treat as one crown: cards, fan tips and falling leaves.
+  const unregister = inkMode ? meshes.filter(mesh => mesh.material === foliageMat || mesh.material === chipMat).map(mesh => inkFoliageMesh(mesh, inkMode)) : [];
+
   function setSeason(doy: number) {
     state = trees.map(t => {
       const { st, c } = seasonColour(doy, (hash01(t.seed, 2) * 2 - 1) * ginkgo.offsetDays);
@@ -415,7 +425,7 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
       const cv = (state[i] as unknown as { carpet: number }).carpet;
       if (cv <= 0) { carpet.setMatrixAt(i, zero); return; }
       const r = t.dims.spreadM / 2 * 1.15 * (0.6 + 0.4 * cv);
-      carpet.setMatrixAt(i, m.compose(v.set(t.x, t.y + 0.05, t.z), q.identity(), s.set(r, 1, r)));
+      carpet.setMatrixAt(i, m.compose(v.set(t.x, t.y + 0.05, t.z), tilts[i], s.set(r, 1, r)));
       carpet.setColorAt(i, tint.set('#a8915c').lerp(new THREE.Color('#e6b83e'), cv));
     });
     for (const mesh of meshes) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; }
@@ -504,7 +514,9 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
     setSeason,
     update,
     setNight(n: number) { for (const mat of [foliageMat, chipMat]) mat.emissiveIntensity = 0.25 * (1 - n); },
+    setWet(f: number) { for (const mat of [bark, foliageMat, chipMat, carpetMat]) mat.color.setScalar(1 - 0.3 * f); },
     dispose() {
+      for (const u of unregister) u();
       group.removeFromParent();
       for (const mesh of meshes) { mesh.geometry.dispose(); mesh.dispose(); }
       for (const mat of [bark, foliageMat, chipMat, carpetMat]) mat.dispose();
