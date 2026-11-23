@@ -3,6 +3,7 @@ import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
 import sites from './fixtures/midtown-skyline.json';
 
+import { symphonyTower } from './midtown-skyline-symphony';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -65,6 +66,7 @@ function oneAtlantic(shell: Shell) {
 
 const landmarks = [
   { site, axis: [1,0], probes: [[-24,0],[24,0],[0,-24],[0,24]], build: oneAtlantic },
+  { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
   { site: sites.promenadeCentral, axis: [1,1], probes: [[-35,-20],[40,15],[0,-26],[0,24]], build: promenadeCentral },
 ] satisfies { site: typeof site, axis: P2, probes: P2[], build: typeof oneAtlantic }[];

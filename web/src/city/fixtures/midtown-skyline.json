@@ -19,5 +19,12 @@
     "x": 680,
     "z": -3767,
     "heightM": 36.2
+  },
+  "symphony": {
+    "id": "osm:way:885660351",
+    "name": "1180 Peachtree",
+    "x": 713,
+    "z": -3672,
+    "heightM": 200
   }
 }

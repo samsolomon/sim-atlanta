@@ -39,6 +39,7 @@ it('mounts the 250 m landmark on terrain and suppresses the generic roof', () =>
 });
 
 it.each([
+  ['osm:way:885660351','1180 Peachtree',200],
   ['osm:way:269636921','Promenade Central',36.2],
   ['osm:way:269637575','Promenade Tower',211],
 ] as const)('replaces %s at the measured local grade', (id, name, height) => {
