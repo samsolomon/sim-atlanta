@@ -88,7 +88,7 @@ export class SquareMosaic {
     }
   }
   requestFullBoard() { this.fullBoard = true; this.failed.clear(); }
-  cancelTarget() { this.wanted = undefined; this.fullBoard = false; }
+  cancelTarget() { this.wanted = undefined; }
 
   approach(x: number, z: number, quality: TerrainQuality, signal: AbortSignal,
     mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void) {

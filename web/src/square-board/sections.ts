@@ -1,5 +1,6 @@
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
+import railRows from '../city/fixtures/midtown-rail.json';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
@@ -11,7 +12,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
-import type { TerrainCity } from '../terrain/transport-data';
+import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
 export type Patch = `${Direction}-${'band' | 'corner'}`;
@@ -127,6 +128,9 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const added = new Map<Board, TrafficArea>();
   try {
     for (const { id, grid, context } of patches) {
+      if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
+        context.terrainTransport = { version: 1, roads: [], rail: railRows[id as MidtownRow] as TransportRun[] };
+      }
       const city = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
         id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
