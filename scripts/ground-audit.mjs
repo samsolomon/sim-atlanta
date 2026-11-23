@@ -89,6 +89,9 @@ function print(q, r) {
   console.log('\nground layers by sublayer and board:');
   for (const l of r.layers.filter(l => ground(l.layer) && l.penetrating))
     console.log('  ' + l.board.padEnd(18) + l.layer.padEnd(34) + String(l.penetrating).padStart(8) + String(l.sites).padStart(6) + ' sites  worst' + cm(l.worst.depth));
+  console.log('\nz-fight risk (samples within ±3 cm of terrain, no polygonOffset):');
+  for (const l of r.layers.filter(l => l.coplanar > 50).sort((a, b) => b.coplanar - a.coplanar).slice(0, 15))
+    console.log('  ' + l.board.padEnd(18) + l.layer.slice(0, 40).padEnd(42) + String(l.coplanar).padStart(8) + ' of ' + l.samples);
   console.log('\nboards (ground layers only):');
   const boards = [...new Set(r.layers.map(l => l.board))];
   for (const b of boards) {

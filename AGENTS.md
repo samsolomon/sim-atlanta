@@ -67,6 +67,12 @@ save the camera position with the screenshot. Each agent closes its research and
 tabs and stops its own dev servers after verification. Check with the other agents before
 stopping a worker they share.
 
+For ground contact (terrain showing through stairs, ballast, decks or covers), run
+`pnpm audit:ground --url http://localhost:<port>` against a dev server. It audits the full board at
+both tiers. In dev, `window.__setView(bearing, tilt, dist, x, z, zoom)` frames a close-up without a
+reload. Lay ground-following layers on the drawn triangles with `terrain/drape.ts`, and give hard
+surfaces a `GroundYield` for `GroundSurface.carve`, never a large constant lift.
+
 Live MARTA appears only when the clock is the real present. Any shifted or sped-up clock
 uses the timetable.
 

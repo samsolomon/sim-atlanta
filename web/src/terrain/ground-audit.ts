@@ -41,6 +41,8 @@ export interface LayerResult {
   sites: number;
   /** Penetrating samples by depth: 3–10 cm, 10–30 cm, 30–100 cm, over 1 m. */
   histogram: [number, number, number, number];
+  /** Samples within ±tolerance of the terrain on a material without polygonOffset: z-fight risk. */
+  coplanar: number;
   worst: Penetration | null;
 }
 
@@ -119,6 +121,7 @@ export function groundAudit(root: THREE.Object3D, boards: AuditBoard[], o: Audit
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     if (materials.every(mat => !mat.visible || (mat.transparent && mat.opacity === 0) || mat.colorWrite === false)) return;
     const doubleSided = materials.some(mat => mat.side === THREE.DoubleSide);
+    const offset = materials.every(mat => mat.polygonOffset && mat.polygonOffsetFactor + mat.polygonOffsetUnits < 0);
     const col = mesh.geometry.getAttribute('color') as THREE.BufferAttribute | undefined;
     const base = layer;
     for (let i = 0; i + 2 < count; i += 3) {
@@ -162,10 +165,11 @@ export function groundAudit(root: THREE.Object3D, boards: AuditBoard[], o: Audit
         const [board, ty] = t;
         const key = layer + '\u0000' + board.id;
         let r = results.get(key);
-        if (!r) results.set(key, r = { layer, board: board.id, triangles: 0, samples: 0, penetrating: 0, sites: 0, histogram: [0, 0, 0, 0], worst: null, cells: new Set() });
+        if (!r) results.set(key, r = { layer, board: board.id, triangles: 0, samples: 0, penetrating: 0, sites: 0, histogram: [0, 0, 0, 0], coplanar: 0, worst: null, cells: new Set() });
         if (p === 0 && q === 0) r.triangles++;
         r.samples++;
         const depth = ty - y;
+        if (!offset && Math.abs(depth) <= tol) r.coplanar++;
         if (depth > tol && depth < buried) {
           r.penetrating++;
           r.histogram[depth < .1 ? 0 : depth < .3 ? 1 : depth < 1 ? 2 : 3]++;

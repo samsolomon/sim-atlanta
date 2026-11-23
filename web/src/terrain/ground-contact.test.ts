@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Group } from 'three';
+import { Group, type Mesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { addSection, bounds, connect, joins, midtownRows, type Area, type Board } from '../square-board/sections';
 import { CITY_COLORS, cityLayer, groundAudit, type LayerResult } from './ground-audit';
@@ -52,5 +52,17 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     const failures = sampled.filter(l => l.penetrating).map(l =>
       `${l.board} ${l.layer}: ${l.penetrating} samples, worst ${(l.worst!.depth * 100).toFixed(1)} cm at ${l.worst!.x.toFixed(1)},${l.worst!.z.toFixed(1)}`);
     expect(failures).toEqual([]);
+    // The High's lawn turf leaves the carved granite steps to the stone: no turf triangle
+    // over a tread (the steps run 4 m wide from 633.4,-3995.6 to 619.6,-3987.8).
+    const turf = mounted.get('midtown-upper')!.group.getObjectByName('ground-cover') as Mesh;
+    const p = turf.geometry.getAttribute('position');
+    const [ax, az, cx, cz] = [633.4, -3995.6, 619.6, -3987.8], len = Math.hypot(cx - ax, cz - az);
+    let onTreads = 0;
+    for (let i = 0; i < p.count; i += 3) {
+      const x = (p.getX(i) + p.getX(i + 1) + p.getX(i + 2)) / 3, z = (p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2)) / 3;
+      const s = ((x - ax) * (cx - ax) + (z - az) * (cz - az)) / len, n = ((z - az) * (cx - ax) - (x - ax) * (cz - az)) / len;
+      if (s > 0 && s < len && Math.abs(n) < 2) onTreads++;
+    }
+    expect(onTreads).toBe(0);
   } finally { for (const area of mounted.values()) area.dispose(); }
 }, 60_000);

@@ -386,7 +386,8 @@ function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   // cut round the ginkgo mound and the Peachtree steps. Under the ramp the
   // turf is hidden by the deck and its walls, so the ramp needs no hole.
   const turf = new GroundCover();
-  turf.patch(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][] });
+  // The carved stair footprint is stone, not lawn, at either tier.
+  turf.patch(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][], cut: steps ? [steps.ring] : [] });
   const lawn = landscapeMesh(b), cover = turf.mesh();
   return { ...lawn, turf: cover.mesh, yields: steps ? [steps] : [], dispose() { lawn.dispose(); cover.dispose(); } };
 }

@@ -86,3 +86,38 @@ export function drapeTriangle(src: TriangleSource, a: V, b: V, c: V, lift: numbe
   if (covered < Math.abs(area) * (1 - 1e-4)) { whole(); return; }
   for (const poly of pieces) for (let i = 1; i + 1 < poly.length; i++) emit(poly[0], poly[i], poly[i + 1]);
 }
+
+/**
+ * Emit the parts of triangle abc that lie outside the convex plan `ring`, with
+ * heights interpolated on abc. Ground covers use it to leave a hard surface's
+ * footprint (a stair run's GroundYield ring) to the stone.
+ */
+export function cutOut(a: V, b: V, c: V, ring: readonly (readonly [number, number])[],
+  emit: (p: number[], q: number[], r: number[]) => void) {
+  let area = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [px, pz] = ring[i], [qx, qz] = ring[(i + 1) % ring.length];
+    area += px * qz - qx * pz;
+  }
+  const s = Math.sign(area);
+  let inside: number[][] = [[...a], [...b], [...c]];
+  const out: number[][][] = [];
+  for (let i = 0; i < ring.length && inside.length >= 3; i++) {
+    const [px, pz] = ring[i], [qx, qz] = ring[(i + 1) % ring.length];
+    const d = (v: number[]) => s * ((qx - px) * (v[2] - pz) - (qz - pz) * (v[0] - px));
+    const pos: number[][] = [], neg: number[][] = [];
+    for (let j = 0; j < inside.length; j++) {
+      const p = inside[j], q = inside[(j + 1) % inside.length], dp = d(p), dq = d(q);
+      if (dp >= 0) pos.push(p);
+      if (dp <= 0) neg.push(p);
+      if ((dp > 0 && dq < 0) || (dp < 0 && dq > 0)) {
+        const t = dp / (dp - dq), m = [0, 1, 2].map(k => p[k] + t * (q[k] - p[k]));
+        pos.push(m); neg.push(m);
+      }
+    }
+    if (neg.length >= 3) out.push(neg);
+    inside = pos;
+  }
+  if (inside.length < 3) { emit([...a], [...b], [...c]); return; }   // abc misses the ring
+  for (const poly of out) for (let i = 1; i + 1 < poly.length; i++) emit(poly[0], poly[i], poly[i + 1]);
+}

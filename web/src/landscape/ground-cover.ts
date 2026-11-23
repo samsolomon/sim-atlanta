@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { P2 } from '../vignette/geom';
 import { drapeRing, g0, type Ground, type Quality } from './primitives';
-import { drapeTriangle, type DrapeGround } from '../terrain/drape';
+import { cutOut, drapeTriangle, type DrapeGround } from '../terrain/drape';
+import type { GroundYield } from '../terrain/surface';
 
 /**
  * "Pocket nature" ground covers: a small set of draped ground materials with
@@ -25,11 +26,14 @@ export class GroundCover {
   private kind: number[] = [];
 
   /** Drapes a patch 2 cm above the ground, exactly to the ring, subdivided to 1 m (2 m on low). */
-  patch(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number; holes?: P2[][] } = {}) {
+  patch(ring: P2[], ground: Ground, cover: Cover, o: { quality?: Quality; lift?: number; holes?: P2[][];
+    /** Convex hard-surface footprints (a stair run's GroundYield ring) the cover leaves to the stone. */
+    cut?: GroundYield['ring'][] } = {}) {
     const k = COVERS.indexOf(cover), lift = o.lift ?? .02;
     // Off-board samples reuse the sampler's last valid height (never 0, which in City is 30 m off).
     const y = (x: number, z: number) => g0(ground, x, z) + lift;
-    const put = (a: number[], b: number[], c: number[]) => { this.pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); this.kind.push(k, k, k); };
+    const push = (a: number[], b: number[], c: number[]) => { this.pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); this.kind.push(k, k, k); };
+    const put = (o.cut ?? []).reduce((next, ring) => (a: number[], b: number[], c: number[]) => cutOut(a, b, c, ring, next), push);
     // On a City board, split each cell along the drawn terrain so no crease shows through.
     const drawn = (ground as DrapeGround).triangles;
     drapeRing(ring, o.quality === 'low' ? 2 : 1, y, drawn ? (a, b, c) => drapeTriangle(drawn, a, b, c, lift, put) : put, o.holes);
