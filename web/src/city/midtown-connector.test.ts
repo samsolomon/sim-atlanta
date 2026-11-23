@@ -57,6 +57,8 @@ it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s de
     expect(central.decks.deckAt(17,-3064.1,approach(19.17))).not.toBeNull();
     expect(central.decks.deckAt(-17,-3065.7,approach(-0.83))).toBeNull();
     expect(central.decks.deckAt(-17,-3072.7,approach(-0.83))).not.toBeNull();
+    expect(central.decks.deckAt(95,-3063.1,approach(145.29))).not.toBeNull();
+    expect(central.decks.deckAt(119,-3062.5,approach(145.29))).toBeNull();
 
     const routes = connectorTrafficRoutes(scene[0].city, scene.slice(1).map(board => board.city));
     let openSamples = 0;

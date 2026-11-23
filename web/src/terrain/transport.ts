@@ -169,8 +169,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
     const mapped = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
     const width = run.crossSection?.width ?? mapped;
-    // An approach carries the inventory deck width at the abutment and narrows
-    // to the mapped street where its profile weight reaches the bare earth.
+    // An approach carries the inventory deck width at the abutment and blends
+    // to the mapped street width where its profile weight reaches bare earth.
     function taper(s: number) {
       const weights = run.deckWeight;
       if (!weights || !run.crossSection) return 1;
@@ -280,7 +280,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       structures.quad(q,p,up(p),up(q),PAL.concrete);
       structures.quad(up(a),up(b),up(q),up(p),PAL.concrete);
     }
-    function strip(left: number, right: number, lift: number, color: string, depth = 0, textured = false, dashed = false, leftSide = true, rightSide = true) {
+    function strip(left: number, right: number, lift: number, color: string, depth = 0, textured = false, dashed = false, leftSide = true, rightSide = true,
+      paint?: (s: number) => boolean) {
       const offsets = [left, right];
       const ends = bridge ? [0, line.length].map(s => {
         return offsets.map(off => {
@@ -339,7 +340,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           midpoint(s, section[0], section[1]);
         }
-        if (prev && (!dashed || (lastS+s)/2 % 12 < 3)) {
+        if (prev && (!dashed || (lastS+s)/2 % 12 < 3) && (!paint || paint((lastS+s)/2))) {
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
@@ -394,10 +395,14 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           strip(offset+.14,offset-.14,.15,i===0 && !ribbon.link ? PAL.lineYellow : PAL.lineWhite,0,false,i>0 && i<ribbon.lanes);
         }
       } else if (run.crossSection) {
-        for (let lane=1; lane<run.crossSection.lanes; lane++) {
-          const off = width * (.5 - lane/run.crossSection.lanes);
-          const center = lane === run.crossSection.opposing;
-          strip(off+.09,off-.09,.15,center ? PAL.lineYellow : PAL.lineWhite,0,false,!center);
+        const { lanes, opposing } = run.crossSection;
+        // Inventory lanes end where the taper would squeeze them below 2.5 m.
+        // The mapped street's own centre line takes over at the toe.
+        const paint = (s: number) => width * taper(s) / lanes >= 2.5;
+        for (let lane=1; lane<lanes; lane++) {
+          const off = width * (.5 - lane/lanes);
+          const center = lane === opposing;
+          strip(off+.09,off-.09,.15,center ? PAL.lineYellow : PAL.lineWhite,0,false,!center,true,true,paint);
         }
       } else if (!walkway && width >= 9) strip(.1, -.1, .15, PAL.lineYellow);
     }

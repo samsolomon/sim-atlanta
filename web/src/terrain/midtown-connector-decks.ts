@@ -5,6 +5,7 @@ import profiles from '../city/fixtures/midtown-connector/decks.json';
 import type { TerrainCity, TransportRun } from './transport-data';
 import type { P2 } from '../vignette/geom';
 
+const walkways = new Set(['footway', 'pedestrian', 'steps', 'path', 'cycleway']);
 const endKey = (start: number[], end: number[]) => start.join(',') + '/' + end.join(',');
 const landingByEnds = new Map(landings.map(p => [endKey(p.start,p.end),p]));
 const surveyed = new Map(profiles.map(p => [endKey(p.start, p.end), p]));
@@ -42,7 +43,8 @@ export function midtownConnectorDecks(city: TerrainCity): TerrainCity {
   }
   for (const run of roads) {
     const name = run.name;
-    if (run.sourceAxis && name && Object.hasOwn(crossings, name)) {
+    // The inventory describes the carriageway, never a sidewalk sharing its name.
+    if (run.sourceAxis && name && Object.hasOwn(crossings, name) && !walkways.has(run.cls)) {
       run.crossSection = crossings[name as keyof typeof crossings];
     }
   }
