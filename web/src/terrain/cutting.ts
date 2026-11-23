@@ -13,8 +13,8 @@ export const CUTTING = { below: 0.05, slope: 1.5, width: 3, tolerance: 0.03, max
 
 /**
  * Ground yields that grade the terrain to the ballast formation, as triangles sharing
- * their edges: the bed under each flagged quad, plus a side slope on either side. Edges
- * shared by two yields get no skirt, so a run of them carves one smooth cutting.
+ * their edges: the bed under each flagged quad, plus a side slope on either side. Carve
+ * skirts only edges with no yield beyond them, so a run carves one smooth cutting.
  * `runs` are consecutive quads of one strip; a flagged quad also carves its neighbours,
  * so the cutting eases out over a few metres. Yields are clipped to `inside` (the board
  * less its edge cells, which carve never moves).
@@ -28,7 +28,7 @@ export function cuttingYields(runs: readonly (readonly BallastQuad[])[], ground:
   const beds: V[][] = [], sides: V[][] = [];
   for (const run of runs) {
     const plausible = run.map(q => grade(q) <= CUTTING.maxGrade);
-    const flagged = run.map((q, i) => plausible[i] && penetrates(q, ground));
+    const flagged = run.map(q => bedded(q, ground));
     for (let i = 0; i < run.length; i++) {
       if (!plausible[i] || !(flagged[i] || flagged[i - 1] || flagged[i + 1])) continue;
       const [a, b, c, d] = run[i].map(floorPoint);
@@ -39,21 +39,28 @@ export function cuttingYields(runs: readonly (readonly BallastQuad[])[], ground:
       sides.push([a, d, d2], [a, d2, a2], [b, b2, c2], [b, c2, c]);
     }
   }
-  // Carve takes the first yield that covers a spot, so every bed comes before every side
-  // slope: a neighbouring track's slope never sets the floor under a bed.
-  // Each floor is the plane of its unclipped triangle; a clipped sliver can't define one.
-  const kept = [...beds, ...sides].map(t => ({ t: clip(t, inside), floor: plane(t) })).filter(({ t }) => t.length >= 3 && area(t) > 1e-4);
-  const key = (p: V, q: V) => [p, q].map(v => `${v[0].toFixed(4)},${v[2].toFixed(4)}`).sort().join('|');
-  const count = new Map<string, number>();
-  for (const { t } of kept) for (let k = 0; k < t.length; k++) {
-    const e = key(t[k], t[(k + 1) % t.length]);
-    count.set(e, (count.get(e) ?? 0) + 1);
+  // Side slopes must not overlap other yields: where two overlap, a face on one side of
+  // an edge is split where its neighbour isn't, and lowering opens a slit at that
+  // T-junction. A slope that would overlap gives way, and the edge it leaves uncovered
+  // gets a skirt. Beds always stay: they hold the terrain under the ballast, and where two
+  // overlap (a turnout) their floors nearly agree.
+  const kept: V[][] = [], cells = new Map<string, V[][]>();
+  const side = new Set(sides);
+  const cellsOf = (t: V[]) => {
+    const xs = t.map(p => Math.floor(p[0] / 10)), zs = t.map(p => Math.floor(p[2] / 10)), out: string[] = [];
+    for (let x = Math.min(...xs); x <= Math.max(...xs); x++) for (let z = Math.min(...zs); z <= Math.max(...zs); z++) out.push(x + ',' + z);
+    return out;
+  };
+  for (const t of [...beds, ...sides]) {
+    const keys = cellsOf(t);
+    if (side.has(t) && keys.some(k => cells.get(k)?.some(o => overlaps(o, t)))) continue;
+    kept.push(t);
+    for (const k of keys) cells.set(k, [...cells.get(k) ?? [], t]);
   }
-  return kept.map(({ t, floor }) => ({
-    ring: t.map(p => [p[0], p[2]] as const),
-    floor,
-    open: t.map((p, k) => (count.get(key(p, t[(k + 1) % t.length])) ?? 0) > 1),
-  }));
+  // Each floor is the plane of its unclipped triangle; a clipped sliver can't define one.
+  return kept.map(t => ({ t: clip(t, inside), floor: plane(t) }))
+    .filter(({ t }) => t.length >= 3 && area(t) > 1e-4)
+    .map(({ t, floor }) => ({ ring: t.map(p => [p[0], p[2]] as const), floor }));
 }
 
 const floorPoint = (p: V): V => [p[0], p[1] - CUTTING.below, p[2]];
@@ -87,6 +94,17 @@ function clip(t: V[], r: { minX: number; maxX: number; minZ: number; maxZ: numbe
   return poly;
 }
 
+/** True where two convex polygons share interior area in plan (separating-axis test). */
+function overlaps(a: V[], b: V[]) {
+  for (const poly of [a, b]) for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length], nx = q[2] - p[2], nz = p[0] - q[0];
+    const span = (s: V[]) => s.map(v => nx * v[0] + nz * v[2]);
+    const sa = span(a), sb = span(b), eps = 1e-6 * (Math.hypot(nx, nz) || 1);
+    if (Math.max(...sa) <= Math.min(...sb) + eps || Math.max(...sb) <= Math.min(...sa) + eps) return false;
+  }
+  return true;
+}
+
 /** Along-track grade of a quad's smoother edge. One edge can drop onto a lower terrain
  * step beside the track (a wall foot) while the other follows the real formation. */
 function grade([a, b, c, d]: BallastQuad) {
@@ -103,12 +121,18 @@ function plane(t: V[]) {
   return (x: number, z: number) => p[1] - (nx * (x - p[0]) + nz * (z - p[2])) / ny;
 }
 
-/** True where the terrain stands above the ballast top anywhere on a 5 × 5 sample grid. */
+/** True where a quad gets a cutting bed: a plausible grade, with terrain above it.
+ * Exported so those quads skip the drape and stay flat over the carved bed. */
+export function bedded(q: BallastQuad, ground: (x: number, z: number) => number | null) {
+  return grade(q) <= CUTTING.maxGrade && penetrates(q, ground);
+}
+
+/** True where the terrain stands above the ballast top, sampled over the quad's two
+ * drawn triangles (split on the a-c diagonal). */
 function penetrates([a, b, c, d]: BallastQuad, ground: (x: number, z: number) => number | null) {
-  for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) {
-    const u = i / 4, v = j / 4;
-    // Bilinear over the quad is close enough to its two triangles for a flag.
-    const at = (k: number) => (1 - v) * ((1 - u) * a[k] + u * b[k]) + v * ((1 - u) * d[k] + u * c[k]);
+  for (const [p, q, r] of [[a, b, c], [a, c, d]]) for (let i = 0; i <= 4; i++) for (let j = 0; i + j <= 4; j++) {
+    const u = i / 4, v = j / 4, w = 1 - u - v;
+    const at = (k: number) => w * p[k] + u * q[k] + v * r[k];
     const g = ground(at(0), at(2));
     if (g !== null && g > at(1) + CUTTING.tolerance) return true;
   }

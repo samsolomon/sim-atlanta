@@ -52,6 +52,30 @@ it.each(['high', 'low'] as const)('grades a cutting under two parallel tracks on
     if (cx > 12 && cx < 48 && [28, 33].some(z => Math.abs(cz - z) < 2)) fins++;
   }
   expect(fins).toBe(0);
+  // Where one track's side slope reaches the other's bed, the floors differ; the carved
+  // ground must still be closed. Across both tracks, every step in the drawn height must
+  // sit on a skirt (a vertical triangle); a step with none is a slit between yields.
+  const walls: [number, number, number, number][] = [];
+  for (let t = 0; t < index.count; t += 3) {
+    const v = [0, 1, 2].map(k => index.getX(t + k)).map(i => [p.getX(i), p.getY(i), p.getZ(i)]);
+    const u = [0, 1, 2].map(k => v[1][k] - v[0][k]), w = [0, 1, 2].map(k => v[2][k] - v[0][k]);
+    const ny = u[2] * w[0] - u[0] * w[2], len = Math.hypot(u[1] * w[2] - u[2] * w[1], ny, u[0] * w[1] - u[1] * w[0]);
+    if (len > 1e-9 && Math.abs(ny) / len < 1e-3) {
+      const xs = v.map(q => q[0]), zs = v.map(q => q[2]);
+      walls.push([Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)]);
+    }
+  }
+  const slits: string[] = [];
+  for (let x = 12.3; x < 48; x += 1.7) {
+    let last = ground(x, 20)!;
+    for (let z = 20.01; z < 41; z += .01) {
+      const y = ground(x, z)!;
+      if (Math.abs(y - last) > .03 && !walls.some(([x0, x1, z0, z1]) => x >= x0 - .02 && x <= x1 + .02 && z >= z0 - .02 && z <= z1 + .02))
+        slits.push(`${x.toFixed(1)},${z.toFixed(2)}: ${last.toFixed(2)} -> ${y.toFixed(2)}`);
+      last = y;
+    }
+  }
+  expect(slits).toEqual([]);
 });
 
 it('leaves a pit alone: a quad steeper than the grade limit is not a cutting', () => {

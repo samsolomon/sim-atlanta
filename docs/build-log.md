@@ -2613,11 +2613,11 @@ Sam's reviews came in species by species. The fixes went into the shared code, s
 
 The ground audit from #282 left three places where the drawn terrain still stood over the freight ballast: the Gulch by 98 cm, the south band by 47 cm and midtown-south by 57 cm. The terrain is a 5 m grid and the ballast is 4.2 m wide, so a single bank node beside the track can tilt a whole terrain triangle over the bed. The drape lifts ballast by at most 25 cm, which isn't enough.
 
-The fix grades a cutting. Wherever terrain stands more than 3 cm over a ballast quad, the board is carved with triangles: a bed 5 cm under the ballast, plus side slopes rising at 1:1.5 for 3 m on each side. Edges shared between those triangles get no skirt, so a run of them carves one smooth cutting instead of a row of fins. Two things surprised me:
-- **Order matters where tracks run side by side.** Carve keeps the first yield that covers a spot, so one track's side slope was setting the floor under its neighbour's bed. Every bed now comes before every side slope.
+The fix grades a cutting. Wherever terrain stands more than 3 cm over a ballast quad, the board is carved with triangles: a bed 5 cm under the ballast, plus side slopes rising at 1:1.5 for 3 m on each side. A skirt closes an edge only where nothing beyond it is carved, so a run of triangles carves one smooth cutting instead of a row of fins. Two things surprised me:
+- **Overlap opens slits.** Where tracks run side by side, one track's side slope reached over its neighbour's bed. A terrain face on one side of an edge was split where the face across it wasn't, and lowering opened a slit at that T-junction. Side slopes now give way to anything already carved, and each vertex takes the lowest floor of every yield containing it. A synthetic test sweeps height profiles across two tracks and fails on any step with no skirt.
 - **The Gulch was hidden by my own grade gate.** One ballast edge drops 1.1 m onto the foot of the deck wall while the other edge stays level, so the centre-line grade read 29%. The gate now uses the smoother edge.
 
-Results, high tier: penetrating ballast samples fell from 5,831 to 690, and the Gulch and south band went to zero. Low tier: 12,627 to 1,848. The cost is about 28k terrain triangles at each tier: +1.8% on high and +2.5% on low.
+Results, high tier: penetrating ballast samples fell from 5,831 to 690, and the Gulch and south band went to zero. Low tier: 12,627 to 1,732. Quads that get a bed are drawn flat instead of draped, so they don't float over the carved ground. The cost is about 23k terrain triangles at each tier: +1.5% on high and +2.1% on low.
 
 Midtown-south is not a cutting. There the ballast drops about 6 m over 6 m of track, where the DEM dips to a road that passes under the tracks. Grading the bank to that would make the pit worse, so any quad steeper than 20% is left alone, and the site stays a named exception for whoever owns rail structures.
 

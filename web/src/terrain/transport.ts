@@ -1,7 +1,7 @@
 import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
-import { cuttingYields, type BallastQuad } from './cutting';
+import { bedded, cuttingYields, type BallastQuad } from './cutting';
 import { drapeTriangle, type DrapeGround } from './drape';
 import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
@@ -75,6 +75,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
   const ballastRuns: BallastQuad[][] = [];
+  // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
+  const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
+    minZ: bounds.minZ + grid.manifest.stepM + .01, maxZ: bounds.maxZ - grid.manifest.stepM - .01 };
+  const inCarvable = (q: BallastQuad) => q.every(([x, , z]) => x >= carvable.minX && x <= carvable.maxX && z >= carvable.minZ && z <= carvable.maxZ);
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
   const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
@@ -349,16 +353,24 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           midpoint(s, section[0], section[1]);
         }
-        if (prev && (!dashed || (lastS+s)/2 % 12 < 3) && (!paint || paint((lastS+s)/2))) {
+        const drawQuad = prev && (!dashed || (lastS+s)/2 % 12 < 3) && (!paint || paint((lastS+s)/2));
+        // A skipped quad breaks the ballast run, so quads either side aren't neighbours.
+        if (!drawQuad) ballast = null;
+        if (prev && drawQuad) {
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           const drawn = (terrainGround as DrapeGround).triangles;
-          if (textured && !bridge) {
+          // Ground ballast, for graded cuttings. The East cut's freight sits in its own slot.
+          const graded = textured && !bridge && run !== cut?.freight;
+          if (graded) {
             if (!ballast) ballastRuns.push(ballast = []);
             ballast.push([a, b, c, d]);
           }
-          if (textured && !bridge && drawn && run !== cut?.freight) {
+          // A quad the terrain stands over gets a cutting carved under it, so it stays flat
+          // (unless it reaches the edge cells, where only the drape can help).
+          const carved = graded && inCarvable([a, b, c, d]) && bedded([a, b, c, d], (x, z) => terrainGround(x, z));
+          if (graded && drawn && !carved) {
             // Ground ballast follows the drawn terrain between its 2 m stations, so a
             // crease in the bank can't show through it (terrain/drape.ts). The raise is
             // capped at 25 cm: a graded cut sits below its bank on purpose, and the
@@ -534,9 +546,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     group.add(mesh);
     meshes.push(mesh);
   }
-  const { stepM } = grid.manifest;
-  const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z),
-    { minX: bounds.minX + stepM + .01, maxX: bounds.maxX - stepM - .01, minZ: bounds.minZ + stepM + .01, maxZ: bounds.maxZ - stepM - .01 });
+  const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z), carvable);
   return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
     setNight: seventeenth.pos.length ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
