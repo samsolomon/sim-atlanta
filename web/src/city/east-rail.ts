@@ -202,6 +202,8 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   const top = (s: number) => bed(s) + 0.25;
   strip(sSeam, sEnd, -half, half, top, concrete);
   for (const v of [-half, half]) wall(sSeam, sEnd, v, s => top(s) - 1.2, top, deckSide);
+  // Soffit, so the deck reads as a solid slab from the open street level below.
+  strip(sSeam, sEnd, -half, half, s => top(s) - 1.2, deckSide);
   for (const side of [-1, 1]) for (const r of [-0.72, 0.72]) {
     const v = side * MARTA_TRACK_OFFSET + r;
     strip(sSeam, sEnd, v - 0.05, v + 0.05, s => bed(s) + 0.56, track, 2);
@@ -228,6 +230,7 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     const [a, c] = lip < outer ? [lip, outer] : [outer, lip];
     strip(PLATFORM_S[0], PLATFORM_S[1], a, c, floor, platformCol, 3);
     for (const v of [a, c]) wall(PLATFORM_S[0], PLATFORM_S[1], v, s => floor(s) - 0.8, floor, deckSide, 3);
+    strip(PLATFORM_S[0], PLATFORM_S[1], a, c, s => floor(s) - 0.8, deckSide, 3); // soffit
     const inward = Math.sign(outer - lip);
     strip(PLATFORM_S[0], PLATFORM_S[1], Math.min(lip, lip + inward * 0.6), Math.max(lip, lip + inward * 0.6), s => floor(s) + 0.012, edge, 3);
   }
@@ -240,11 +243,21 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   for (const v of ROOF) wall(roofS[0], roofS[1], v, s => roofY(s) - 0.9, roofY, roofCol, 5);
   // Columns carry the station deck, and slimmer posts carry the roof above the platforms
   // (illustrative: the photos show round columns under the station; spacing is not surveyed).
+  // Outside the enclosed mezzanine each column row carries a transverse crosshead under both
+  // platforms and the track deck, so the open street level shows what holds the station up.
+  const xhead = (s: number) => ({ y0: top(s) - 2.0, y1: floor(s) - 0.8 });
   for (let s = roofS[0] + 6; s < roofS[1]; s += 18) {
+    const inMezz = s > ENCLOSURES.mezzanine.s[0] - 1 && s < ENCLOSURES.mezzanine.s[1] + 1;
+    if (!inMezz) {
+      const { y0, y1 } = xhead(s), [s0, s1] = [s - 0.7, s + 0.7], [v0, v1] = [ROOF[0] + 0.4, ROOF[1] - 0.4];
+      for (const v of [v0, v1]) b.quad(P(s0, v, y0), P(s1, v, y0), P(s1, v, y1), P(s0, v, y1), deckSide);
+      for (const sx of [s0, s1]) b.quad(P(sx, v0, y0), P(sx, v1, y0), P(sx, v1, y1), P(sx, v0, y1), concrete);
+      b.quad(P(s0, v0, y0), P(s0, v1, y0), P(s1, v1, y0), P(s1, v0, y0), deckSide);
+    }
     for (const v of [ROOF[0] + 1.2, ROOF[1] - 1.2]) {
       const [x, , z] = P(s, v, 0), g = ground(x, z);
       if (g == null) continue;
-      const under = floor(s) - 0.8;
+      const under = inMezz ? floor(s) - 0.8 : xhead(s).y0;
       const col = new THREE.CylinderGeometry(0.7, 0.7, under - g, 10);
       col.translate(x, g + (under - g) / 2, z);
       b.addGeometry(col, concrete);
@@ -273,12 +286,15 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
         for (const z of [z0, z1]) for (const t of [0, z > 0 ? 0.22 : -0.22]) b.quad(lp(x0, y0 - thick, z + t), lp(x1, y1 - thick, z + t), lp(x1, y1 + 1.1, z + t), lp(x0, y0 + 1.1, z + t), concrete); // solid parapets, 0.22 m thick
       };
       const basis = new THREE.Matrix4().makeBasis(along, up, right);
-      const landing = (x: number, y: number, outward: 1 | -1) => {
+      // `open`: the top landing leaves the platform-side quarter of its rounded parapet open for the bridge.
+      const landing = (x: number, y: number, outward: 1 | -1, open = false) => {
         const box = new THREE.BoxGeometry(1.2, thick, 2 * half);
         box.translate(x + outward * 0.6, y - thick / 2, 0);
         const round = new THREE.CylinderGeometry(half, half, thick, 14, 1, false, outward > 0 ? 0 : Math.PI, Math.PI);
         round.translate(x + outward * 1.2, y - thick / 2, 0);
-        const wall = new THREE.CylinderGeometry(half, half, 1.1, 14, 1, true, outward > 0 ? 0 : Math.PI, Math.PI);
+        const wall = open
+          ? new THREE.CylinderGeometry(half, half, 1.1, 7, 1, true, outward > 0 ? Math.PI / 2 : Math.PI, Math.PI / 2)
+          : new THREE.CylinderGeometry(half, half, 1.1, 14, 1, true, outward > 0 ? 0 : Math.PI, Math.PI);
         wall.translate(x + outward * 1.2, y + 0.55, 0);
         for (const geo of [box, round, wall]) { geo.applyMatrix4(basis); geo.translate(ox, 0, oz); b.addGeometry(geo, concrete); }
       };
@@ -286,13 +302,13 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
         const y0 = g + k * h, y1 = y0 + h, east = k % 2 === 0;
         const z = east ? -lane : lane;
         slab(east ? -L / 2 : L / 2, east ? L / 2 : -L / 2, y0, y1, z - lane, z + lane);
-        landing(east ? L / 2 : -L / 2, y1, east ? 1 : -1);
+        landing(east ? L / 2 : -L / 2, y1, east ? 1 : -1, k === n - 1);
       }
       // Round columns under the landings, and a short bridge from the top landing to the platform.
       for (const x of [-L / 2 - 1.6, L / 2 + 1.6]) for (const z of [-1.8, 1.8]) {
-        const col = new THREE.CylinderGeometry(0.6, 0.6, top - g, 12);
-        const [cx, , cz] = lp(x, 0, z);
-        col.translate(cx, g + (top - g) / 2, cz);
+        const [cx, , cz] = lp(x, 0, z), cg = (ground(cx, cz) ?? g) - 0.3; // each column on its own ground
+        const col = new THREE.CylinderGeometry(0.6, 0.6, top - cg, 12);
+        col.translate(cx, cg + (top - cg) / 2, cz);
         b.addGeometry(col, concrete);
       }
       const xTop = n % 2 ? L / 2 + 1.2 : -L / 2 - 1.2;
@@ -437,10 +453,19 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     disc.rotateX(Math.PI / 2);
     disc.translate(x, y, z);
     glow.addGeometry(disc, '#ffe2a8');
+    // Rest the pool on the highest ground under it, so a slope doesn't bury half of it.
+    const rim = [0, 1, 2, 3].map(k => ground(x + 2.2 * Math.cos(k * Math.PI / 2), z + 2.2 * Math.sin(k * Math.PI / 2)) ?? g);
     const pool = new THREE.CircleGeometry(2.2, 12);
     pool.rotateX(-Math.PI / 2);
-    pool.translate(x, g + 0.05, z);
+    pool.translate(x, Math.max(g, ...rim) + 0.05, z);
     glow.addGeometry(pool, '#3a2e1c');
+  }
+  // The glazed lobby is open while trains run, so its Decatur St glass glows after dark. No night
+  // photograph of the station was found; brightness is illustrative.
+  const lb = enclosed.lobby;
+  if (lb) {
+    const L = ENCLOSURES.lobby, v = L.v[0] - 0.08;
+    glow.quad(P(L.s[0] + 1, v, lb.base + 0.6), P(L.s[1] - 1, v, lb.base + 0.6), P(L.s[1] - 1, v, lb.top - 0.8), P(L.s[0] + 1, v, lb.top - 0.8), '#4a3a22');
   }
   const glowGeometry = glow.geometry();
   const glowMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,

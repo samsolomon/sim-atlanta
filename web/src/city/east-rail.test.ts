@@ -94,7 +94,8 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
     const { lobby, mezzanine } = rail.enclosed;
     expect(mezzanine!.top).toBeCloseTo(Math.min(rail.floor(9010), rail.floor(9094)) - 0.8, 5);
     expect(mezzanine!.underside - eastGround(1480, 415)!).toBeGreaterThan(6);
-    expect(lobby!.top - lobby!.base).toBeLessThan(5);
+    // The lobby stays a street-level box: a clear gap under the mezzanine, not a wall up to the deck.
+    expect(mezzanine!.underside - lobby!.top).toBeGreaterThan(1.5);
     // The drawn roof is the measured roof wherever the lidar saw it.
     for (const r of rail.roofDrawn) {
       const m = pack.guideway.reduce((a, b) => (Math.abs(b.s - r.s) < Math.abs(a.s - r.s) ? b : a));
@@ -162,6 +163,20 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
       checked.push(s);
     }
     expect(checked).toHaveLength(5);
+    // With the street level open, each column row outside the mezzanine carries the track deck: a ray
+    // up from the ground under the track axis meets a crosshead before the deck soffit.
+    let carried = 0;
+    for (let s = rail.roofS[0] + 6; s < rail.roofS[1]; s += 18) {
+      if (s > ENCLOSURES.mezzanine.s[0] - 1 && s < ENCLOSURES.mezzanine.s[1] + 1) continue;
+      const f = frame(s), g = eastGround(f.x, f.z)!;
+      ray.set(new THREE.Vector3(f.x, g + 0.5, f.z), new THREE.Vector3(0, 1, 0));
+      ray.far = 40;
+      const hit = ray.intersectObject(rail.mesh, false)[0];
+      expect(hit, `s ${s}`).toBeDefined();
+      expect(hit.point.y, `s ${s}`).toBeLessThan(rail.bed(s) + 0.25 - 1.2 - 0.5);
+      carried++;
+    }
+    expect(carried).toBeGreaterThanOrEqual(5);
     // The station envelope is still the OSM footprint, and the enclosures sit inside it.
     expect(STATION_BUILDING).toHaveLength(26);
     rail.dispose();
