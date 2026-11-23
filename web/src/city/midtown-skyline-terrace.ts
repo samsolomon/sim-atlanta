@@ -8,6 +8,11 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 export function georgianTerrace(shell: Shell) {
   const buff = '#bfa585', stone = '#ddccb2', glass = ['#5c676c','#718080','#59656b'];
   function roof(plan: P2[],lo: number,hi: number,tint: string) { shell.prism(plan,lo,hi,tint,stone); }
+  function cornice(plan: P2[],lo: number,hi: number) {
+    const cx = plan.reduce((sum,p) => sum+p[0],0)/plan.length;
+    const cz = plan.reduce((sum,p) => sum+p[1],0)/plan.length;
+    roof(plan.map(([x,z]) => [cx+(x-cx)*1.018,cz+(z-cz)*1.018]),lo,hi,stone);
+  }
   function facade(plan: P2[],lo: number,hi: number,rows: number) {
     plan.forEach((a,i) => shell.facade(a,plan[(i+1)%plan.length],lo,hi,rows,3.25,.53,.66,glass,.16));
   }
@@ -15,11 +20,11 @@ export function georgianTerrace(shell: Shell) {
     [x+r*Math.cos(i*Math.PI/8),z+r*Math.sin(i*Math.PI/8)]);
   // Historic wing turns the Peachtree/Ponce corner with a rounded bay and terrace.
   const historic: P2[] = parts.historic.ring.map(([x,z]) => [x,z]);
-  roof(shell.ring,shell.base,4.5,buff);
+  roof(shell.ring,shell.base,1.05,buff);
   roof(historic,shell.base,37,buff);
   facade(historic,8.6,35.6,8);
-  roof(historic,7.7,8.6,stone);
-  roof(historic,35.6,37,stone);
+  cornice(historic,7.7,8.6);
+  cornice(historic,35.6,37.12);
   const corner = circle(-31,32,3.05);
   roof(corner,shell.base,37.9,buff);
   facade(corner,9,36,8);
@@ -29,7 +34,7 @@ export function georgianTerrace(shell: Shell) {
   const addition: P2[] = parts.addition.ring.map(([x,z]) => [x,z]);
   roof(addition,shell.base,68,buff);
   facade(addition,7,65.7,17);
-  for (const h of [9,54,63,66.9]) roof(addition,h,h+.85,stone);
+  for (const h of [9,54,63,66.9]) cornice(addition,h,h+.85);
   const atrium = circle(-9,-9.7,5.8);
   roof(atrium,8,70,'#84989b');
   atrium.forEach((a,i) => shell.facade(a,atrium[(i+1)%atrium.length],9,69.5,18,2.6,.88,.86,['#647f8b','#8297a1'],.07));
