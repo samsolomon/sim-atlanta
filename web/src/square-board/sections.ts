@@ -1,3 +1,4 @@
+import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
@@ -127,7 +128,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   try {
     for (const { id, grid, context } of patches) {
       const city = id === 'north-band' ? northConnectorTransport(context) :
-        id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
+        id === 'south-band' ? southConnectorTransport(context) :
+        id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
       const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
