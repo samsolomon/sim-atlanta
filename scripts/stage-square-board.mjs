@@ -1,4 +1,5 @@
 // Stage only the four optional preview patches. Validate all four before copying any.
+import { withMidtownLandscape } from './stage-midtown-landscape.mjs';
 import { withCanopy } from './stage-canopy.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -19,7 +20,8 @@ for (const patch of patches) {
       createHash('sha256').update(bytes).digest('hex') !== manifest.sha256) throw Error('Invalid patch ' + patch);
   staged.push({ dest, files });
 }
+const decorate = midtown ? withMidtownLandscape : withCanopy;
 for (const { dest, files } of staged) {
   await mkdir(dest, {recursive:true});
-  for (const [name, bytes] of files) await writeFile(new URL(name, dest), !midtown && name === 'context.json' ? withCanopy(bytes) : bytes);
+  for (const [name, bytes] of files) await writeFile(new URL(name, dest), name === 'context.json' ? decorate(bytes) : bytes);
 }
