@@ -47,12 +47,13 @@ Sam's reference frame of "#1405" comes from a USA Today video credited to Amtrak
 - **The café:** no Phase VII café has been photographed yet, so it stays Phase VI.
 - **Viewliner II diners, sleepers and baggage-dorms** wear **Phase IIIB**: three equal red, white and blue bands spanning the lower window row, visible between the windows and full width on blank panels. The upper windows carry no stripe.
 - **Viewliner I sleepers** in Phase VI or Phase VII also run on the Crescent but are not modelled.
+- **Viewliner II full baggage car** (lab only): no dated photo of one on the Crescent was found, so it keeps its earlier thin red and blue stripes, unverified.
 
 [Amtrak paint schemes](https://en.wikipedia.org/wiki/Amtrak_paint_schemes) · [#20 on 24 May 2025](https://neworleansrailroads.com/blog/2025/06/17/crescent-20-phase-vii-expansion/) · [25067, Phase VI](https://commons.wikimedia.org/wiki/File:AMTK_25067.jpg) · [25003, Phase VII](https://commons.wikimedia.org/wiki/File:Amtrak_Phase_VII_Amfleet_II.jpg) · [Baggage-dorm 69006](https://commons.wikimedia.org/wiki/File:AMTK_69006.jpg) · [Sleeper 62506](https://commons.wikimedia.org/wiki/File:Viewliner_II_2025a.jpg) · [Café and diner 68007 at DeLand](https://commons.wikimedia.org/wiki/File:Amtrak_Cafe_%26_Dining_Cars_@_DeLand_SunRail_Station.jpg)
 
 **AIRO** is a corridor trainset. Its assigned routes are Northeast Regional, Keystone, Carolinian, Palmetto, Piedmont, Cascades and others; none is the Crescent. Airo graphics are not used here.
 
-[Roof step, photo and labelled lab](log/crescent/cars/roof-step.jpg) · [Roof step, three-quarter](log/crescent/cars/roof-step-34.jpg) · [Full consist](log/crescent/cars/consist.jpg) · [Full consist, side](log/crescent/cars/consist-side.jpg) · [Phase VI coach](log/crescent/cars/coach-phase6.jpg) · [Phase VII coach](log/crescent/cars/coach-phase7.jpg) · [Café](log/crescent/cars/cafe.jpg) · [Diner](log/crescent/cars/diner.jpg) · [Sleeper](log/crescent/cars/sleeper.jpg) · [Baggage-dorm](log/crescent/cars/baggage-dorm.jpg) · [Brookwood](log/crescent/cars/brookwood-day.jpg)
+[Roof step, photo and labelled lab](log/crescent/cars/roof-step.jpg) · [Roof step, three-quarter](log/crescent/cars/roof-step-34.jpg) · [Full consist](log/crescent/cars/consist.jpg) · [Full consist, side](log/crescent/cars/consist-side.jpg) · [Phase VI coach](log/crescent/cars/coach-phase6.jpg) · [Phase VII coach](log/crescent/cars/coach-phase7.jpg) · [Café](log/crescent/cars/cafe.jpg) · [Diner](log/crescent/cars/diner.jpg) · [Sleeper](log/crescent/cars/sleeper.jpg) · [Baggage-dorm](log/crescent/cars/baggage-dorm.jpg) · [Brookwood by day](log/crescent/cars/brookwood-day.jpg) · [Brookwood at night](log/crescent/cars/brookwood-night.jpg). Night reference: sleeper 62506 under platform light at Charlottesville, 12 Nov 2025, in the sleeper plate. At night the bands drop into the dark and the lit window rows carry the train, as in that photo.
 
 ## Day and night reference plates
 

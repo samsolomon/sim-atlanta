@@ -233,15 +233,16 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
         const door = end - 1.05,
           lean = 0.4,
           d1 = door - 9.6,
-          d2 = door - 1.6,
+          d2 = door - 1.3,
           d3 = -end + 1.2;
         strip(-end + 0.06, d3, livery.blue, 0.012, 0, lean);
         strip(d3 + 0.12, d1, livery.blue, 0.012, lean, -lean);
-        strip(d1 + 0.15, d2, livery.midnight, 0.012, -lean, -lean);
-        strip(d2 + 0.15, door - 0.5, livery.green, 0.012, -lean, 0);
+        strip(d1 + 0.15, d2, livery.midnight, 0.012, -lean, -0.2);
+        strip(d2 + 0.15, door - 0.5, livery.green, 0.012, -0.2, 0);
         strip(d3, d3 + 0.12, livery.white, 0.012, lean);
         strip(d1, d1 + 0.15, livery.white, 0.012, -lean);
-        strip(d2, d2 + 0.15, livery.white, 0.012, -lean);
+        // A shallower lean keeps the class panel clear of the last window frame (edge at 10.1 m).
+        strip(d2, d2 + 0.15, livery.white, 0.012, -0.2);
       } else if (amfleet) {
         // Phase VI: one blue band holding the windows, red/white/red pinstripes above it.
         band(2.07, 3.13, livery.phase6Blue);
@@ -249,6 +250,10 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
         band(3.15, 3.18, red);
         band(3.18, 3.2, livery.white);
         band(3.2, 3.23, red);
+      } else if (unit === 'baggage') {
+        // No dated photo of a Crescent full baggage car was found; keep the earlier thin stripes (unverified).
+        band(2.49, 2.71, '#386a9c');
+        band(2.905, 3.095, red);
       } else {
         // Viewliner II, Phase IIIB: three equal bands spanning the lower windows, blue at the sill.
         band(2.48, 2.68, livery.iiibBlue);
