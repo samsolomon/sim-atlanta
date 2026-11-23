@@ -2146,3 +2146,7 @@ The 126 m outline at 1180 Peachtree contains both a lower curved wing and a narr
 ### 2026-11-23 — From North Avenue to the Flats
 
 The west stand at Bobby Dodd climbs a 17.7 m grade difference. One generic roof had disappeared 5.65 m into the hillside. Its replacement has two seating decks above the field with a press box at the high side. Across the campus path, the 40-vertex Evans Administration Building now carries the four illuminated TECH signs under a slate spire. [Terrain readings, references and eight City views](tech-campus.md)
+
+### 2026-11-23 — Two street levels at the Crescent Apartments
+
+The ground beneath Margaret Mitchell House falls almost 3 m from the lawn toward Crescent Avenue. The Peachtree porch meets the high lawn while two separate balconies step up the Crescent elevation. The bay beneath the half-timbered gable and the brick chimney are visible above both. [Eight City views, survey and exterior photographs](margaret-mitchell-house.md)
