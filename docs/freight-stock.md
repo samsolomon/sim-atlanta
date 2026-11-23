@@ -30,7 +30,7 @@ CSX 7257, seen in Sam's Georgia State photo, is a CM44AC: a GE AC4400CW rebuilt 
   - the engine hood with door seams and an exhaust stack
   - the flared radiator with wing intakes overhanging the walkways
 - **Walkways:** side handrails on stanchions.
-- **Running gear:** a sill stripe, GE Hi-Ad three-axle trucks, the fuel tank with air reservoirs, snowploughs and steps.
+- **Running gear:** a sill stripe, GE Hi-Ad three-axle trucks, the fuel tank with air reservoirs beside it, snowploughs and steps. Unlit lamp lenses are pale glass, so the plain City material still shows them.
 - **Rear:** an end panel with its own headlight and number boards.
 - **Lighting:** the end that leads lights its headlights, ditch lights and number boards at night (the stock material's `stockLight`). City freight still uses a plain material, so lamps show as painted there.
 

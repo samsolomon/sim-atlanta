@@ -48,5 +48,8 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
     }
     for (let z = -7; z <= 7; z += 1.4) b.box(3.12, .08, .09, 0, 4.5, z, '#a59b8c');
   }
-  return b.geometry();
+  // A zero stockLight attribute so the lit stock material can be shared with locomotives.
+  const g = b.geometry();
+  g.setAttribute('stockLight', new THREE.BufferAttribute(new Float32Array(g.getAttribute('position').count), 1));
+  return g;
 }

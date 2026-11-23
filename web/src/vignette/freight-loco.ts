@@ -24,6 +24,8 @@ const PAINT = {
   ns: { body: '#2e2f33', bodyShade: '#26272a', nose: '#2e2f33', rearPanel: '#2e2f33', sill: '#2e2f33', endRail: '#e6e2d6', sideRail: '#2e2f33', cabFace: '#2e2f33', noseStripe: '#ece8dc' },
 };
 // Running gear in weathered dark grey-brown, not black, as in the photos.
+/** Lamp lenses when not lit: pale glass, so plain-material views (City) still show the lamps. */
+const UNLIT = '#d8d0b8';
 const DARK = '#6a655e',
   FRAME = '#6f6a63',
   GRILLE = '#15191d',
@@ -75,7 +77,7 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
   b.addGeometry(tank, '#77716a');
   tank.dispose();
   for (const s of [-1, 1]) {
-    const res = new THREE.CylinderGeometry(0.2, 0.2, 3.2, 10).rotateX(Math.PI / 2).translate(s * 0.95, 1.33, 2.0);
+    const res = new THREE.CylinderGeometry(0.2, 0.2, 3.2, 10).rotateX(Math.PI / 2).translate(s * 1.1, 1.0, 2.6);
     b.addGeometry(res, '#3a3e42');
     res.dispose();
   }
@@ -91,18 +93,18 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
   const face = noseZ + 0.012;
   const plate = (builder: Builder, x: number, y: number, w: number, h: number, color: string, dz = 0) => builder.box(w, h, 0.03, x, y, face + dz, color);
   plate(b, 0.0, 2.45, 0.86, 1.6, P.nose === P.body ? '#202226' : '#c89a27'); // nose door
-  for (const y of [3.2, 2.95]) plate(leadFront ? lamps : b, 0.62, y, 0.2, 0.2, leadFront ? '#fff4d8' : '#5f6468', 0.02);
-  plate(b, 0.62, 3.2, 0.26, 0.5, '#181a1d', 0.01);
+  for (const y of [3.2, 2.95]) plate(leadFront ? lamps : b, 0.62, y, 0.2, 0.2, leadFront ? '#fff4d8' : UNLIT, 0.02);
+  plate(b, 0.62, 3.075, 0.26, 0.5, '#181a1d', 0.01);
   plate(b, -0.68, 3.08, 0.2, 0.26, GLASS, 0.02); // porthole
   for (const s of [-1, 1]) {
     plate(b, s * 1.0, 1.82, 0.28, 0.28, '#181a1d', 0.01);
-    plate(leadFront ? lamps : b, s * 1.0, 1.82, 0.18, 0.18, leadFront ? '#fff2cf' : '#5f6468', 0.02); // ditch lights
+    plate(leadFront ? lamps : b, s * 1.0, 1.82, 0.18, 0.18, leadFront ? '#fff2cf' : UNLIT, 0.02); // ditch lights
     plate(b, s * 0.55, 1.72, 0.08, 0.08, s < 0 ? '#9b2a22' : '#2b7a3a', 0.02); // markers
   }
   if (P.noseStripe) {
     // NS-like nose: white stripes across the face and around both sides of the short hood.
     for (const y of [1.8, 2.05, 2.3, 2.55, 2.8]) {
-      plate(b, 0, y, 2.46, 0.1, P.noseStripe, 0.004);
+      plate(b, 0, y, 2.46, 0.1, P.noseStripe, 0.025);
       for (const s of [-1, 1]) b.box(0.02, 0.1, noseZ - cabFrontZ, s * 1.26, y, (noseZ + cabFrontZ) / 2, P.noseStripe);
     }
   }
@@ -131,7 +133,7 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
     for (const s of [-1, 1]) {
       const x = s * W;
       const tri = [[x, yNose, cabFrontZ], [x, GE_CAB_ROOF, topZ], [x, yNose, topZ]];
-      if (s < 0) tri.reverse();
+      if (s > 0) tri.reverse(); // outward normals on both sides
       b.tri(tri[0], tri[1], tri[2], P.body); // cheek
     }
   }
@@ -160,8 +162,8 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
   b.box(hoodW, 2.65, 2.7, 0, 1.55 + 2.65 / 2, cabRearZ - 1.35, P.body); // electrical cabinet
   b.box(hoodW + 0.04, 0.5, 2.6, 0, 4.4, cabRearZ - 1.35, P.bodyShade); // raised intake / DB box (estimated)
   // Engine hood: nearly cab height, as in the photos (top about 4.3 m).
-  b.box(hoodW, 2.75, 9.3, 0, 1.55 + 1.375, -2.85 - 0.6, P.body); // engine hood
-  b.box(hoodW - 0.3, 0.1, 9.1, 0, 4.33, -3.45, P.bodyShade); // roof walk
+  b.box(hoodW, 2.75, 11.0, 0, 1.55 + 1.375, -2.6, P.body); // engine hood, up to the cabinet
+  b.box(hoodW - 0.3, 0.1, 10.8, 0, 4.33, -2.6, P.bodyShade); // roof walk
   b.box(0.55, 0.3, 0.8, 0, 4.48, -1.6, '#2a2a2a'); // exhaust stack
   // Radiator: wings flare to full width above side intake grilles.
   const rz0 = -10.4,
@@ -174,7 +176,7 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
     b.box(0.03, 0.85, rz1 - rz0 - 0.4, s * 1.565, GE_RADIATOR_TOP - 0.5, (rz0 + rz1) / 2, GRILLE); // wing intakes
     // Hood side detail: louvred panels behind the cab and door seams along the engine hood.
     for (let i = 0; i < 3; i++) b.box(0.03, 0.62, 0.48, s * (hoodW / 2 + 0.01), 3.55, cabRearZ - 0.55 - i * 0.62, GRILLE);
-    for (let z = -7.6; z < 4; z += 1.15) b.box(0.02, 2.5, 0.03, s * (hoodW / 2 + 0.01), 2.9, z, P.bodyShade);
+    for (let z = -7.6; z < 2.8; z += 1.15) b.box(0.02, 2.5, 0.03, s * (hoodW / 2 + 0.01), 2.9, z, P.bodyShade);
     for (let i = 0; i < 2; i++) b.box(0.03, 0.4, 0.55, s * (hoodW / 2 + 0.01), 2.1, -4.8 + i * 0.75, GRILLE);
     // Side handrail on stanchions along the walkway.
     b.box(0.04, 0.04, 14.2, s * 1.47, 2.58, -3.1, P.sideRail);
@@ -182,7 +184,7 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
   }
   // Rear end: flat panel under the radiator with the rear headlight and number boards.
   b.box(2.1, 2.55, 0.04, 0, 2.85, rz0 - 0.02, P.rearPanel);
-  for (const y of [3.95, 3.7]) (leadRear ? lamps : b).box(0.2, 0.2, 0.03, 0, y, rz0 - 0.05, leadRear ? '#fff4d8' : '#5f6468');
+  for (const y of [3.95, 3.7]) (leadRear ? lamps : b).box(0.2, 0.2, 0.03, 0, y, rz0 - 0.05, leadRear ? '#fff4d8' : UNLIT);
   for (const s of [-1, 1]) {
     (leadRear ? lamps : b).box(0.48, 0.13, 0.03, s * 0.72, 4.35, rz0 - 0.05, leadRear ? '#f3efe2' : '#6a6e72');
     b.box(0.05, 1.0, 0.05, s * 1.3, 2.05, rear - 0.2, P.endRail);
