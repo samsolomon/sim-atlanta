@@ -133,16 +133,40 @@ it('keeps cars visible a few metres into the dark tube, then clips them', () => 
   expect(inside(NORTH_LINE_VANISH_DEPTH + 1)).toBeLessThan(0);
 });
 
-it('cuts the terrain inside the portal hood only, just under the rail', () => {
+it('cuts the terrain across the whole portal mouth, just under the rail', () => {
   const f = portalFrame(tracks);
   const grid = { sample: () => 264.3, manifest: { vertical: { sceneZeroNavd88M: 323.8 } } };
   const [slot] = northLinePortalSlots(grid);
   expect(northLinePortalSlots(grid)).toHaveLength(1);
   // Bed 0.4 m under the cut floor's rail level, so the hood's dark interior has no terrain in it.
   expect(slot.start[1]).toBeCloseTo(264.3 - 323.8 - 0.4, 6);
-  // From 0.5 m outside the face to 10 m in, within the hood's outer walls.
+  // From 2 m outside the face to 12 m in, across both tubes and 0.5 m past their outer walls.
   const along = (p: readonly number[]) => (p[0] - f.x) * f.dx + (p[2] - f.z) * f.dz;
-  expect(along(slot.start)).toBeCloseTo(0.5, 6);
-  expect(along(slot.end)).toBeCloseTo(-10, 6);
-  expect(slot.halfWidthM).toBeLessThan(f.spacing / 2 + 2.72 + 0.2);
+  expect(along(slot.start)).toBeCloseTo(2, 6);
+  expect(along(slot.end)).toBeCloseTo(-12, 6);
+  expect(slot.halfWidthM).toBeGreaterThanOrEqual(f.spacing / 2 + 2.72 + 0.19 + 0.5);
+});
+
+it('frees every mesh and car pool it added when disposed', () => {
+  const area = new Group(),
+    cars = new Group();
+  const line = tracks[1];
+  const coords = line.pts.flatMap((p) => sceneToLonLat(origin, ...p));
+  const rf = {
+    paths: [{ id: 'test', coords, cum: [...line.cum], routeId: 'marta:route:RED' }],
+    routes: [{ id: 'marta:route:RED', color: '#d1282f' }],
+  } as unknown as RoutesFile;
+  const north = createNorthLine({ group: area, groundAt: () => -8.13 }, rf, origin, cars)!;
+  north([{ id: 't', pathId: 'test', routeId: 'marta:route:RED', s: { value: 150, tier: 'scheduled' }, lengthM: { value: 90 } } as TrainState], 0);
+  expect(area.children.length).toBeGreaterThan(0);
+  expect(cars.children.length).toBeGreaterThan(0);
+  let disposed = 0;
+  for (const root of [area, cars])
+    root.traverse((o) => {
+      if ((o as Mesh).geometry) (o as Mesh).geometry.addEventListener('dispose', () => disposed++);
+    });
+  north.dispose();
+  expect(area.children).toHaveLength(0);
+  expect(cars.children).toHaveLength(0);
+  expect(disposed).toBeGreaterThan(3);
 });

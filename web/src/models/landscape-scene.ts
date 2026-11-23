@@ -10,6 +10,8 @@ export const LANDSCAPE_KINDS = {
   walls: 'Retaining edge, seat wall and stairs',
   ornamentals: 'Specimen ornamentals',
   ground: 'Ground covers',
+  yard: 'Front yard',
+  park: 'Park edge',
   garden: 'Garden on a slope',
 } as const;
 export type LandscapeKind = keyof typeof LANDSCAPE_KINDS;
@@ -20,7 +22,9 @@ export const LANDSCAPE_NOTES: Record<LandscapeKind, string> = {
   terraces: 'Level lawns stepping down a 2.4 m slope, each held by capped retaining edges, with a planted strip on each level. ',
   walls: 'A retaining edge that holds the higher grade, a level seat wall and a stair run with cheek walls up the slope. ',
   ornamentals: 'Small clusters of multi-stem shrubs and grasses for specimen planting; trees stay with the tree-species module. ',
-  ground: 'Six draped ground materials in one draw, left to right: mown turf, meadow grass, worn earth, mulch, pine straw and leaf litter. ',
+  ground: 'Seven draped ground materials in one draw, left to right: lawn turf, meadow grass, worn earth, mulch, pine straw, leaf litter and manicured turf. Light and calm by design. ',
+  yard: 'A house lot: lawn turf, a worn-earth front walk, a foundation bed and pine straw under ornamentals, behind a clipped hedge. ',
+  park: 'A park edge: lawn turf, a meadow strip, an earth path and leaf litter under a shrub group. ',
   garden: 'All of them together on one slope: the kind of lawn edge a landmark sits in. ',
 };
 
@@ -45,6 +49,16 @@ function plot(b: Builder, kind: LandscapeKind, doy: number, quality: Quality) {
     seatWall(b, [[-7, 6.5], [-1, 6.5]], slope, { quality });
     stairRun(b, [12, 4.5], [12, -4.5], 2.4, slope);
   }
+  if (kind === 'yard') {
+    flowerBed(b, [[-10, 4.6], [-2, 4.6], [-2, 6.2], [-10, 6.2]], slope, { doy, quality, seed: 'yard-bed' });
+    hedge(b, [[-12, 15.6], [-1.4, 15.6]], slope, { quality, height: .9, width: .7 });
+    hedge(b, [[1.4, 15.6], [12, 15.6]], slope, { quality, height: .9, width: .7 });
+    ornamentals(b, [6, 7.5], 1.4, slope, { doy, quality, seed: 'yard', count: 4 });
+  }
+  if (kind === 'park') {
+    hedge(b, [[5, 12], [11, 14]], slope, { clipped: false, quality, height: 1.2 });
+    ornamentals(b, [-8, -6], 2, slope, { doy, quality, seed: 'park' });
+  }
   if (kind === 'ornamentals' || kind === 'garden') {
     ornamentals(b, [-3, -8], 2.2, slope, { doy, quality, seed: 'a' });
     ornamentals(b, [2, 9], 1.6, slope, { doy, quality, seed: 'b', count: 5 });
@@ -53,7 +67,18 @@ function plot(b: Builder, kind: LandscapeKind, doy: number, quality: Quality) {
 
 const sq = (x: number, z: number, w: number, d: number): P2[] => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
 function covers(c: GroundCover, kind: LandscapeKind, quality: Quality) {
-  if (kind === 'ground') COVERS.forEach((cover, i) => c.patch(sq(-14 + i * 4.8, -2, 4.2, 12), slope, cover, { quality }));
+  if (kind === 'ground') COVERS.forEach((cover, i) => c.patch(sq(-15 + i * 4.3, -2, 3.8, 12), slope, cover, { quality }));
+  if (kind === 'yard') {
+    c.patch(sq(-12, 4, 24, 12), slope, 'turf', { quality });
+    c.patch(sq(-1, 4.5, 2, 11), slope, 'earth', { quality, lift: .03 });
+    c.patch(sq(3, 6, 6, 3), slope, 'pine-straw', { quality, lift: .03 });
+  }
+  if (kind === 'park') {
+    c.patch(sq(-16, 3, 32, 13), slope, 'turf', { quality });
+    c.patch(sq(-16, -16, 32, 14), slope, 'meadow', { quality });
+    c.patch([[-16, 8], [16, 6], [16, 8], [-16, 10]], slope, 'earth', { quality, lift: .03 });
+    c.patch(sq(4, 11, 8, 4), slope, 'leaf-litter', { quality, lift: .03 });
+  }
   if (kind === 'garden') {
     c.patch(sq(-16, -16, 32, 32), slope, 'turf', { quality });
     c.patch(sq(-16, -16, 32, 5), slope, 'meadow', { quality, lift: .03 });
@@ -81,7 +106,7 @@ export function createLandscapeScene(kind: LandscapeKind, doy: number, quality: 
   group.add(built.mesh);
   const cover = new GroundCover();
   covers(cover, kind, quality);
-  const coverMesh = cover.triangles ? cover.mesh() : null;
+  const coverMesh = cover.triangles ? cover.mesh({ quality }) : null;
   if (coverMesh) group.add(coverMesh.mesh);
   // Count both tiers for the report: primitives plus ground covers.
   const other = new Builder(), otherCover = new GroundCover(), otherTier = quality === 'high' ? 'low' : 'high';

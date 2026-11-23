@@ -44,7 +44,6 @@ import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
 import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
-import { anyCarInView } from './in-view';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { CityFreight } from './freight';
@@ -108,6 +107,7 @@ import { createEquitable } from './equitable';
 import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
+import { mapGestures } from './map-gestures';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -156,9 +156,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   signal?: AbortSignal;
   progress?: (label: string) => void;
   areaNote?: (text: string | null) => void;
-  /** Leave scenery-tier notes (Brookwood service, inferred North Line track) out of areaNote,
-   * keeping only load failures (A2c, #231: no on-screen tiers on ambient scenery). */
-  failureNotesOnly?: boolean;
+  /** Maps-style input (A2c, ?ui=next): drag pans, right/Ctrl-drag rotates, zoom to cursor, twist, two-finger tilt. */
+  mapGestures?: boolean;
   trains: () => TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
@@ -260,9 +259,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   const areaFailures = new Map<string, string>();
-  const SCENERY_NOTES = new Set(['brookwood-service', 'north-line']);
   function areaResult(key: string, note: string | null) {
-    if (options.failureNotesOnly && SCENERY_NOTES.has(key)) return;
     if (!mosaic) { options.areaNote?.(note); return; }
     if (note) areaFailures.set(key, note);
     else areaFailures.delete(key);
@@ -792,7 +789,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
       const atl = added.get('brookwood-station');
-      if (atl) northLine = createNorthLine(atl, rf, manifest.origin, trains.group);
+      if (atl) {
+        const line = createNorthLine(atl, rf, manifest.origin, trains.group);
+        northLine = line;
+        // The area's dispose clears its group without freeing it; free the North Line too.
+        const disposeArea = atl.dispose.bind(atl);
+        atl.dispose = () => { line?.dispose(); if (northLine === line) northLine = undefined; disposeArea(); };
+      }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());
@@ -1065,6 +1068,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
+  /** Turn the view about its target; the frame loop's controls.update() applies it. */
+  const rotateBy = (degrees: number) => {
+    manualCamera();
+    glideTo = null;
+    const off = new THREE.Vector3().subVectors(camera.position, controls.target);
+    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
+    camera.position.copy(controls.target).add(off);
+  };
+  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera) : undefined;
+  // Maps-style input zooms on double-click instead of gliding to the clicked point.
+  if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
@@ -1249,8 +1264,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let speciesTs = performance.now();
   let fpsT = performance.now();
   let fps = 0;
-  let showingBrookwoodNote: string | null = null;
-  let showingNorthLineNote = false;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
@@ -1317,22 +1330,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
-      // Near the corridor, or with any Crescent or freight car in the frame.
-      const note = brookwood.note(controls.target.x, controls.target.z) ??
-        (anyCarInView([...brookwood.cars.children, ...brookwood.freight.children], camera) ? brookwood.runningNote : null);
-      if (note !== showingBrookwoodNote) {
-        showingBrookwoodNote = note;
-        areaResult('brookwood-service', note);
-      }
-    }
-    if (northLine?.bounds) {
-      const { x, z } = controls.target, r = northLine.bounds;
-      // Near the open guideway, or with any North Line car out of the portal and in the frame.
-      const near = (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) || anyCarInView(northLine.cars(), camera);
-      if (near !== showingNorthLineNote) {
-        showingNorthLineNote = near;
-        areaResult('north-line', near ? 'Inferred MARTA track' : null);
-      }
     }
     const followed = options.follow?.vehicle;
     const fix = followed ? locate(followed, states) : null;
@@ -1447,11 +1444,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }),
     pan(dx, dy) { manualCamera(); panPx(dx, dy); },
     rotate(degrees) {
-      manualCamera();
-      glideTo = null;
-      const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
-      camera.position.copy(controls.target).add(off);
+      rotateBy(degrees);
       controls.update();
     },
     zoom(dir) {
@@ -1472,6 +1465,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
+      stopGestures?.();
       squareButton?.remove();
       cancelAnimationFrame(raf);
       ro.disconnect();

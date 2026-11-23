@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { Schedule } from '../sched/engine';
 import { consistLength } from '../vignette/crescent-stock';
 import { Line } from '../vignette/geom';
-import { brookwoodRailNote, corridorChainage, crescentPlacement } from './brookwood';
+import { corridorChainage, crescentPlacement } from './brookwood';
 import { corridor } from './brookwood-corridor';
 import { createNorcrossFreight, NORCROSS_LINE } from './brookwood-freight';
 
@@ -38,16 +38,6 @@ describe.skipIf(!staged)('Brookwood corridor trains', () => {
         expect(run[i].t - run[i - 1].t, new Date(run[i].t).toISOString()).toBe(step);
         expect(dir * (run[i].center - run[i - 1].center)).toBeGreaterThan(-0.5);
         expect(Math.abs(run[i].center - run[i - 1].center)).toBeLessThan(400);
-      }
-    }
-  });
-
-  it('labels every point of the corridor with the train note', () => {
-    for (const track of [corridor.main1, corridor.main2, corridor.siding]) {
-      const line = new Line(track.pts);
-      for (let s = 0; s <= line.length; s += 5) {
-        const { x, z } = line.at(s);
-        expect(brookwoodRailNote(x, z), `${x},${z}`).toMatch(/Illustrative consist & freight/);
       }
     }
   });

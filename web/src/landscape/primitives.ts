@@ -205,13 +205,14 @@ export function flowerBed(b: Builder, ring: P2[], ground: Ground,
     const rim = along([...ring, ring[0]], quality === 'low' ? 2 : 1);
     for (let i = 1; i < rim.length; i++) {
       const a = rim[i - 1], c = rim[i];
-      b.quad([a.x, g0(ground, a.x, a.z) - .03, a.z], [c.x, g0(ground, c.x, c.z) - .03, c.z], [c.x, surface(c.x, c.z), c.z], [a.x, surface(a.x, a.z), a.z], '#231a15');
+      b.quad([a.x, g0(ground, a.x, a.z) - .03, a.z], [c.x, g0(ground, c.x, c.z) - .03, c.z], [c.x, surface(c.x, c.z), c.z], [a.x, surface(a.x, a.z), a.z], '#3a2d24');
     }
   }
-  const SOIL = ['#2c221c', '#33281f', '#261d18', '#3a2d22'];
+  // Dark beds, but dark brown rather than black: they never weigh heavily on the board.
+  const SOIL = ['#4a3a2e', '#523f31', '#45362b', '#574535'];
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
   // Crumbly dark soil draped exactly to the bed's outline, speckled per triangle.
-  drapeRing(ring, quality === 'low' ? 1.2 : .5, surface, (p, q, w) => b.tri(p, q, w, speckle(SOIL[Math.floor(r() * 4)], r, .18)));
+  drapeRing(ring, quality === 'low' ? 1.2 : .5, surface, (p, q, w) => b.tri(p, q, w, speckle(SOIL[Math.floor(r() * 4)], r, .1)));
   // Drifts of two or three colours, not confetti: a seeded axis splits the bed into bands.
   const palette = bloom(o.doy), n = 2 + Math.floor(r() * 2), start = Math.floor(r() * palette.length);
   const drift = Array.from({ length: n }, (_, k) => palette[(start + k) % palette.length]);

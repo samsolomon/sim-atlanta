@@ -8,7 +8,7 @@ import { MAX_GRADE, northLineDepths, northLineGuideway, northLinePiers, northLin
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { roadWidth } from '../terrain/transport-data';
 import { segDist } from '../vignette/geom';
-import { northLineTracks } from './midtown-marta-rail';
+import { northLinePortalSlots, northLineTracks, portalFrame } from './midtown-marta-rail';
 import { auburnTransport } from './sweet-auburn-transport';
 import { joins } from '../square-board/sections';
 import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
@@ -153,6 +153,44 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
     expect(p95).toBeLessThan(2.5);
     expect(meshGap).toBeLessThan(0.05);
     expect(mouth).toBeLessThan(0.5);
+  } finally {
+    area.dispose();
+  }
+});
+
+// Sam's check: no terrain may show inside the portal tubes. Inside the mouth's
+// footprint (both tubes to their outer wall faces, from 1 m outside the face to 12 m
+// in) the rendered ground must be cut away, below the floor slab, or above the roof.
+it.each(['low', 'high'] as const)('leaves no terrain inside the North Line portal tubes on %s', { timeout: 60000 }, (quality) => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
+  const manifest = JSON.parse(read('ground.json').toString());
+  const grid = brookwoodGrid(manifest, midtownConnectorGround(manifest, Uint8Array.from(read('ground.i16')).buffer));
+  const context = midtownFoundations(JSON.parse(read('context.json').toString()), grid.manifest.vertical.sceneZeroNavd88M);
+  const rows = railRows[row] as TransportRun[];
+  context.terrainTransport = { version: 1, roads: [], rail: rows };
+  const city = midtownConnectorDecks(auburnTransport(context));
+  const area = createDowntownTerrain(grid, city, [], { quality, join: joins(row), openings: northLinePortalSlots(grid) });
+  try {
+    const tracks = northLineTracks(rows, -5700);
+    const draft = northLineProfile(tracks, rows, area.groundAt, city.roads);
+    const floor = Math.min(...tracks.map((l) => draft.at(l, 0.05))) - 0.08;
+    const f = portalFrame(tracks);
+    const half = f.spacing / 2 + 2.72 + 0.19;
+    let worst = -Infinity,
+      samples = 0;
+    for (let z = 1; z >= -11.75; z -= 0.25)
+      for (let x = -half; x <= half + 1e-6; x += 0.25) {
+        const wx = f.x + f.dz * x + f.dx * z,
+          wz = f.z - f.dx * x + f.dz * z;
+        samples++;
+        const g = area.groundAt(wx, wz);
+        // Ground above the 4.65 m interior roof is outside the tube; anything between
+        // the floor slab and the roof would show inside it.
+        if (g !== null && g < floor + 0.08 + 4.65) worst = Math.max(worst, g - floor);
+      }
+    expect(samples).toBeGreaterThan(1000);
+    expect(worst).toBeLessThan(0);
   } finally {
     area.dispose();
   }

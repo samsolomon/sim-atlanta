@@ -139,6 +139,18 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number) {
     body.quad([-inner, -0.3, z], [-inner, -0.3, z1], [inner, -0.3, z1], [inner, -0.3, z], col);
   }
   body.quad([-inner, -0.4, -24], [inner, -0.4, -24], [inner, height, -24], [-inner, height, -24], '#050505');
+  // Solid dark ballast slab across the whole terrain cut (beyond the outer walls and
+  // from 2.2 m outside the face) and down each tube, so no
+  // ground can show between the rails and the walls where a track's mapped mouth
+  // sits behind the shared face.
+  for (const [x0, x1] of [
+    [-half - 0.75, -0.2],
+    [0.2, half + 0.75],
+  ])
+    for (let z = 2.2; z > -24; z -= 2) {
+      const z1 = Math.max(-24, z - 2);
+      body.quad([x0, -0.08, z], [x0, -0.08, z1], [x1, -0.08, z1], [x1, -0.08, z], z > -2 ? '#4e463d' : shade(z1));
+    }
   // Beyond the hood the tube runs underground: an outer shell keeps it closed where
   // the slot leaves the terrain open, without showing above the hill.
   for (const x of [-half - 0.19, half + 0.19]) body.quad([x, -0.4, -7.9], [x, 5.25, -7.9], [x, 5.25, -24], [x, -0.4, -24], concrete);
@@ -161,8 +173,8 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number) {
 
 /**
  * The 3DEP grid at the mouth blends the hillside over the tunnel into the cut, so
- * terrain rises inside the hood. Cut it from 3 m outside the face to 10 m in, down to
- * just under the rail, so the hood's interior reads dark from every angle. Beyond
+ * terrain rises inside the hood. Cut the full mouth width (both tubes plus 0.5 m beyond
+ * the outer wall faces) from 2 m outside the face to 12 m in, down to just under the rail, so the hood's interior reads dark from every angle. Beyond
  * that the hill stands above the tube's roof.
  */
 export function northLinePortalSlots(grid: { sample(x: number, z: number): number | null; manifest: { vertical: { sceneZeroNavd88M: number } } }) {
@@ -174,9 +186,9 @@ export function northLinePortalSlots(grid: { sample(x: number, z: number): numbe
   const bed = out - grid.manifest.vertical.sceneZeroNavd88M - 0.4;
   return [
     {
-      start: [f.x + f.dx * 0.5, bed, f.z + f.dz * 0.5] as const,
-      end: [f.x - f.dx * 10, bed, f.z - f.dz * 10] as const,
-      halfWidthM: f.spacing / 2 + 2.72 + 0.15,
+      start: [f.x + f.dx * 2, bed, f.z + f.dz * 2] as const,
+      end: [f.x - f.dx * 12, bed, f.z - f.dz * 12] as const,
+      halfWidthM: f.spacing / 2 + 2.72 + 0.7,
     },
   ];
 }
@@ -204,7 +216,8 @@ export function createNorthLine(
   const piers = northLinePiers(draft, roads, lanes, rows, area.groundAt);
   const depths = northLineDepths(draft, piers);
   const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
-  area.group.add(northLineGuideway(lines, profile, area.groundAt));
+  const guideway = northLineGuideway(lines, profile, area.groundAt);
+  area.group.add(guideway);
   const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
   const height = (line: Line, along: number) => profile.at(line, along);
@@ -286,6 +299,7 @@ export function createNorthLine(
         );
         if (i >= n / 2) car.rotateY(Math.PI);
         car.userData.trainId = t.id;
+        car.userData.inferredTrack = true;
         car.visible = true;
         total++;
       }
@@ -295,5 +309,22 @@ export function createNorthLine(
     return total;
   };
   const shown = () => [...pools.values()].flatMap((pool) => pool.meshes.slice(0, pool.count));
-  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown });
+  /** Free everything this North Line added; the area's own dispose only clears its group. */
+  function dispose() {
+    for (const object of [guideway, spans.mesh, spans.lamps, portalParts.group]) {
+      object.removeFromParent();
+      object.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        o.geometry.dispose();
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
+      });
+    }
+    for (const pool of pools.values()) {
+      for (const car of pool.meshes) car.removeFromParent();
+      pool.geometry.dispose();
+      pool.material.dispose();
+    }
+    pools.clear();
+  }
+  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown, dispose });
 }

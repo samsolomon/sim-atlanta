@@ -67,7 +67,8 @@ export function confidenceWords(c: Confidence): string[] {
 /** The first-visit hint, matched to the view and the input. */
 export function hintText(view: View, touch: boolean): string {
   if (view === 'map') return touch ? 'Drag to move · pinch to zoom' : 'Drag to move · scroll to zoom';
-  return touch ? 'Drag to look around · pinch to zoom' : 'Drag to look around · right-drag to move';
+  // City under ?ui=next moves like a map (city/map-gestures.ts).
+  return touch ? 'Drag to move · twist to turn · pinch to zoom' : 'Drag to move · right-drag to turn';
 }
 
 export interface Sky { cloud: number; rain: number; fog: number; snow: number }

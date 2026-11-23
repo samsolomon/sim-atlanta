@@ -145,6 +145,13 @@ it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit
   model.setNight(1);
   expect((wall.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   expect((veils[0].material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  // The crown lattice glows from inside and the leading-edge light line appears only at night.
+  const lattice = model.group.getObjectByName('1180 crown lattice') as Mesh;
+  expect((lattice.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  const edge = model.group.getObjectByName('1180 edge light') as Mesh;
+  expect(edge.visible).toBe(true);
+  model.setNight(0);
+  expect(edge.visible).toBe(false);
 });
 
 it('replaces the Biltmore with its masts and night-lit BILTMORE letters', () => {
