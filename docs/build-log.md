@@ -2411,3 +2411,8 @@ The 1941 Academy of Medicine is small, a single tall storey on a raised base, so
 ### 2026-11-23 — A2c, step 5: share exactly what you see
 
 Under `?ui=next`, the camera column has a Share button. It opens "Share this view", a small panel beside the column on desktop and a sheet on phones. A **Live** link carries no time, so it opens at the viewer's present. **Freeze this moment** adds `t=…&speed=0` for the moment the panel opened. If the clock is already shifted, Freeze is preselected. City links reuse #166's `cam=x,z,bearing,tilt,distance` format, through a new formatter that round-trips its parser; Map links carry MapLibre's own hash. A link from a moved camera (200, −1500, bearing 25°, tilt 50°, 600 m, 9:30 PM) reopened on exactly those five numbers and the same paused minute. Two review catches were subtle. The frozen time was being re-read at the moment of copying, so at 30× the link drifted about 10 minutes from the time the panel showed. And while City was still loading, Share would have handed out a Map link. Weather choices are not in the link yet. It needs only a web rebuild. [Desktop, phone and column](log/ui/a2c/step5-share.jpg)
+
+### 2026-11-23 — The Woman's Club gets its turrets
+
+The Wimbish House is one of the last Gilded Age mansions on Peachtree, and City had it as a flat two-storey slab, because OSM records a single height for the house and the club's later ballroom wing. The building parts separated them. The 1898 house now rises to its slate hip roof with a turret, a drum bay, twin dormers and the arched loggia, and the wing stays plain behind it. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg)
+

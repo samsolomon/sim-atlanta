@@ -136,3 +136,11 @@ The 1941 Academy of Medicine at 875 West Peachtree (Hentz, Adler & Shutze; now a
 
 Camera `/?view=city&cam=452,-2721,60,45,150`. [Before and after](log/ui/midtown-skyline/academy-compare-day.jpg) · [Night](log/ui/midtown-skyline/academy-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/academy-after-low-day.jpg) · [Wider](log/ui/midtown-skyline/academy-wide-after-high-day.jpg)
 
+## The Wimbish House
+
+The 1898 Wimbish House at 1150 Peachtree (W. T. Downing), home of the Atlanta Woman's Club, was drawn as a generic two-storey box. Wikimedia photographs from the street and from the garden show buff stone under a steep slate hip roof. A round drum bay and a conical turret frame an arched loggia on the south front, two pinnacled dormers rise between them, and a tall chimney stands at the back. The OSM building parts give the plan: the house at the east end, the porch, and the club's later two-storey wing to the west. The mapped 7.2 m height fits the wing, not the three-storey house, so the house is raised to an inferred 11.5 m eave and an 18 m ridge. The turret cap is at 19.6 m and the chimney at 20.5 m. [Wikimedia, 2019, front, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House.jpg) · [Wikimedia, 2019, oblique, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House_3.jpg) · [Wikimedia, 2013, from Peachtree, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Atlanta_Women%27s_Club_2013_09_28_7845.JPG)
+
+**Estimated:** all heights, the roof pitch, the turret and drum radii, the dormers, the arch count and the stone tone. **Gap:** no night photograph was found, so only an illustrative lamp in the loggia is lit.
+
+Camera `/?view=city&cam=762,-3556,335,55,120`. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg) · [Night](log/ui/midtown-skyline/wimbish-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/wimbish-after-low-day.jpg)
+
