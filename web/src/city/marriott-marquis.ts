@@ -89,7 +89,7 @@ export function createMarriottMarquis(buildings: VBuilding[], grid: GroundGrid) 
   // Baker Street ballroom roof sits eight metres above the entrance terrace.
   solid.box(86.8, 8.2, 27.4, 631, deck + 4.1, -902.5, '#c9c7c0');
   // The porte-cochère and its piers face west, between Marquis One and Two.
-  solid.box(44, 1.2, 19.8, 547.3, 325.5, -855.2, '#ddd9cc');
+  solid.box(44, 1.2, 19.8, 547.3, deck - 0.36, -855.2, '#ddd9cc');
   for (const z of [-845.8, -864.6]) {
     for (const x of [526, 535])
       solid.box(1.05, deck - bottom - 0.65, 1.05, x, (bottom + deck - 0.65) / 2, z, stone);
