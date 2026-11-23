@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:390px;height:844px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.88);--gb:rgba(243,239,230,.80);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);color:var(--ink);background:#eeebe4}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;cursor:pointer;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px}
+.vsep{width:1px;align-self:stretch;margin:10px 3px;background:var(--sep)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.vs{height:36px;border:0;border-radius:9px;padding:0 10px;font:600 14px system-ui;background:transparent;color:var(--ink);cursor:pointer}
+.vs[aria-pressed="true"]{background:rgba(255,255,255,.95);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div class="root">
+  <img src="/_blob/9cfa74d8f177819c9b5da8b3052d6fe2" alt="2D map of central Atlanta with rail lines" style="position:absolute;inset:0;width:390px;height:844px;object-fit:cover">
+
+  <div class="g" style="left:8px;right:60px;top:54px;padding:12px 16px">
+    <span style="display:block;font-size:22px;font-weight:700;letter-spacing:-.01em">Downtown</span>
+    <span style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:14px"><strong>2:04 PM</strong>58° Clear<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2)"><span class="dot" style="background:#2f9e44"></span>Live</span></span>
+  </div>
+  <div class="g" style="right:8px;top:54px;width:44px;display:flex;flex-direction:column;padding:2px 0">
+    <button class="ib" aria-label="Share this view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></button>
+  </div>
+
+  <p style="position:absolute;left:0;right:0;bottom:11px;margin:0;text-align:center;font-size:11px;line-height:14px;color:#4a463e;text-shadow:0 0 2px #f4f1ea,0 0 4px #f4f1ea,0 0 8px #f4f1ea">© <a href="https://www.openstreetmap.org/copyright" style="color:inherit">OpenStreetMap</a> contributors · OpenMapTiles</p>
+
+  <div class="g" style="left:8px;right:8px;bottom:34px;height:52px;display:flex;align-items:center;gap:1px;padding:0 4px 0 2px">
+    <button class="ib" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+    <span class="vsep"></span>
+    <span role="group" aria-label="View" style="flex:1;display:flex;gap:2px;padding:2px;border-radius:11px;background:var(--sep)"><button class="vs" aria-pressed="true" style="flex:1">Map</button><button class="vs" aria-pressed="false" style="flex:1">City</button><button class="vs" aria-pressed="false" style="flex:1">Models</button></span>
+    <span class="vsep"></span>
+    <button class="ib" aria-label="Play radio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l11-2v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

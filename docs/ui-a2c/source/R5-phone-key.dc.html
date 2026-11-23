@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Key, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:390px;height:844px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.88);--gb:rgba(243,239,230,.80);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);color:var(--ink)}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;cursor:pointer;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.h{margin:14px 0 6px;font-size:13px;font-weight:600;color:var(--ink2)}
+.k{display:flex;align-items:center;gap:12px;padding:6px 0;font-size:15px}
+.k small{display:block;font-size:12px;color:var(--ink2)}
+.sw{width:28px;height:5px;border-radius:3px;flex:none}
+.tier{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--sep);color:var(--ink2);white-space:nowrap;min-width:76px;box-sizing:border-box}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div class="root">
+  <img src="/_blob/79735a4af92dc0ab41b97c9971075f37" alt="Downtown Atlanta diorama by day" style="position:absolute;inset:0;width:390px;height:844px;object-fit:cover">
+
+  <div class="g" style="left:8px;right:60px;top:54px;padding:12px 16px">
+    <span style="display:block;font-size:22px;font-weight:700;letter-spacing:-.01em">Castleberry Hill</span>
+    <span style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:14px"><strong>2:04 PM</strong>58° Clear<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2)"><span class="dot" style="background:#2f9e44"></span>Live</span></span>
+  </div>
+  <div class="g" style="right:8px;top:54px;width:44px;display:flex;flex-direction:column;padding:2px 0">
+    <button class="ib" aria-label="Compass"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:30px;height:30px"><circle cx="16" cy="16" r="13" style="stroke-width:1.2"></circle><g transform="rotate(-21 16 16)"><path d="M16 5l3.2 11h-6.4z" style="fill:#c2255c;stroke:none"></path><path d="M16 27l3.2-11h-6.4z" style="fill:currentColor;stroke:none;opacity:.55"></path></g></svg></button>
+    <div class="sep"></div>
+    <button class="ib" aria-label="Share this view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></button>
+  </div>
+
+  <section class="g" aria-label="Key" style="left:8px;right:8px;bottom:8px;border-radius:24px;padding:8px 18px 24px">
+    <div aria-hidden="true" style="width:40px;height:5px;border-radius:3px;background:var(--sep);margin:0 auto 12px"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <h2 style="flex:1;margin:0;font-size:20px">Key</h2>
+      <button class="ib" aria-label="Close" style="width:34px;height:34px;border-radius:50%;background:var(--sep)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <p class="h">Colour means the kind of service</p>
+    <div class="k"><span class="sw" style="background:#1f5fd1"></span><span>City rail<small>MARTA trains and the streetcar</small></span></div>
+    <div class="k"><span class="sw" style="background:#7b3fe4"></span><span>Intercity<small>Amtrak’s Crescent</small></span></div>
+    <div class="k"><span class="sw" style="background:#c2410c"></span><span>Freight<small>Freight railroads, simulated</small></span></div>
+    <div class="k"><span class="sw" style="background:#227971"></span><span>Bus<small>MARTA buses, at the present time only</small></span></div>
+    <div class="sep" style="margin:8px 0 0"></div>
+    <p class="h">Confidence</p>
+    <div class="k"><span class="tier">Live</span><span>Real-time feed, moments ago</span></div>
+    <div class="k"><span class="tier">Scheduled</span><span>From a published timetable</span></div>
+    <div class="k"><span class="tier">Reported</span><span>An operator’s reported average</span></div>
+    <div class="k"><span class="tier">Inferred</span><span>Filled in from nearby reports</span></div>
+    <div class="k"><span class="tier">Illustrative</span><span>Typical, not observed</span></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
