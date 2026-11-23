@@ -74,3 +74,30 @@ it('grounds scenery, omits decks, forwards wet/season/night and releases its own
   expect(area.group.parent).toBeNull();
   expect(area.group.children).toHaveLength(0);
 });
+
+it('keeps one independently hideable fragment when a landmark ring extends past the board', () => {
+  const ctx = new Proxy({}, { get: () => () => { } });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const bounds = { minX: 0, maxX: 40, minZ: 0, maxZ: 40 };
+  const grid = new GroundGrid({
+    version: 1, rows: 9, cols: 9, stepM: 5, bounds, scaleM: .1, offsetM: 0,
+    encoding: 'signed int16 little-endian', noData: -32768, vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 0 },
+    sha256: ''
+  }, new ArrayBuffer(162));
+  const city: VData = {
+    bounds, roads: [], rail: [], buildings: [
+      { id: 'summit', h: 70, floors: null, rings: [[[10, -5], [30, -5], [30, 10], [10, 10]]] },
+      { id: 'neighbor', h: 8, floors: null, rings: [[[10, 20], [30, 20], [30, 30], [10, 30]]] },
+    ]
+  };
+  const area = createDowntownTerrain(grid, city, [], { quality: 'low', separateBuilding: 'summit' });
+  try {
+    const ray = new THREE.Raycaster(new THREE.Vector3(20, 100, 5), new THREE.Vector3(0, -1, 0));
+    const fragment = area.buildingFragment!;
+    expect(fragment.name).toBe('summit');
+    expect(ray.intersectObject(fragment).length).toBeGreaterThan(0);
+    expect(ray.intersectObjects(area.scenery.children.filter(o => o !== fragment))).toHaveLength(0);
+    ray.ray.origin.z = -4;
+    expect(ray.intersectObject(fragment)).toHaveLength(0);
+  } finally { area.dispose(); }
+});

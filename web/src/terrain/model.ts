@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
-import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
+import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { GroundGrid } from './grid';
 
 import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
@@ -15,6 +15,7 @@ export interface DowntownTerrainOptions {
   join?: TerrainJoins;
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
+  separateBuilding?: string;
   contours?: Contours;
   openings?: readonly OpenSlot[];
 }
@@ -97,13 +98,13 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
 }
 
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null, finishFor?: DowntownTerrainOptions['finishFor']) {
+  sceneY: (x: number, z: number) => number | null, finishFor?: DowntownTerrainOptions['finishFor'], separateBuilding?: string) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
   const world = new TerrainScenery(city, null, options);
-  world.buildBuildings(bd => foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
+  world.buildBuildings(bd => bd.id === separateBuilding ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
   world.buildTrees();
   world.setSeason(180);
@@ -117,15 +118,26 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const groundAt = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
-  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt, options.finishFor);
+  const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
+  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt, options.finishFor, options.separateBuilding);
+  let fragment: World | undefined;
+  if (candidate) {
+    const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
+    if (rings.length) {
+      fragment = makeScenery({ ...city, buildings: [{ ...candidate, rings }], roads: [], rail: [] }, [],
+        options.quality, grid.manifest.stepM, groundAt, options.finishFor);
+      fragment.group.name = candidate.id;
+      scenery.group.add(fragment.group);
+    }
+  }
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
-    group, board, grid, scenery: scenery.group, bounds: grid.manifest.bounds,
+    group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
-    setNight(factor: number) { scenery.setNight(factor); },
+    setNight(factor: number) { scenery.setNight(factor); fragment?.setNight(factor); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);
@@ -136,6 +148,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }
       });
+      fragment?.group.removeFromParent();
+      fragment?.dispose();
       scenery.dispose();
       group.clear();
     },
