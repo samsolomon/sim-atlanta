@@ -2258,3 +2258,8 @@ The first named tree in City is the High Museum's ginkgo, the city's champion. T
 ### 2026-11-23 — A truth-tier note that ran under the clock
 
 At Brookwood station two area notes combine into one pill: "Scheduled Crescent · Inferred berth · Illustrative consist & freight · Inferred MARTA track". At 999 px wide the pill ran under the clock card, so its last tier words were hidden, and the light glass let "Inferred berth" fade over the dark road. The pill now measures itself against the menu button and the status card. When it doesn't fit between them, it drops below the top row and wraps, and denser glass keeps every word readable by day and night. Checked at 1440, 999, 768 and 390 px. [999 px before and after](log/ui/area-note/compare-999.jpg) · [Phone](log/ui/area-note/compare-390.jpg)
+
+### 2026-11-23 — A cornice for the Georgian Terrace
+
+The 1911 hotel had the right massing and none of its manners. Its street photographs show a limestone base, a belt cornice, a string course under the top storey, and a deep crowning cornice on modillions that wraps the round corner bay. These are bands under a metre deep, but together they make the wing read as a 1911 building and the 1991 addition as a modern one. The old bands scaled the plan about its centroid, so walls facing into the notches got no cornice at all. The new ones offset each wall along its own normal with mitred corners. [Before and after](log/ui/midtown-skyline/terrace-ornament-compare-day.jpg)
+

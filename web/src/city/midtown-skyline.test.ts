@@ -68,7 +68,7 @@ it('keeps the historic Georgian Terrace lower than its mapped rear addition', ()
   const model = createSkylineLandmark([hotel], hotel, -5, () => 0)!;
   model.group.updateMatrixWorld(true);
   const heightAt = (x: number,z: number) => new Raycaster(new Vector3(x,150,z),new Vector3(0,-1,0)).intersectObject(model.group)[0].point.y;
-  expect(heightAt(642,-2070)).toBeCloseTo(37.12);
+  expect(heightAt(642,-2070)).toBeCloseTo(38); // parapet above the crowning cornice
   expect(heightAt(701,-2108)).toBeCloseTo(68);
   // Mapped three-storey podium east of the addition, and the raised Peachtree terrace.
   expect(heightAt(712.5,-2110)).toBeGreaterThan(11);
