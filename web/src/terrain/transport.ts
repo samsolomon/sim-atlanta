@@ -298,26 +298,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         tread!.push({ s: distance, position: new THREE.Vector3(
           (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2) });
       }
-      // A MARTA bed on bare earth often rides a crest narrower than its 4.2 m tread
-      // (the North Line embankment near Brookwood). Level each section onto the
-      // highest rendered ground across its full width so the terrain cannot rise
-      // through the middle of the tread. The lift fades out over the last 6 m before
-      // an in-board end, so the tread still meets a bridge abutment or tunnel mouth.
-      const crest = textured && !bridge && !profile && run.cls === 'subway' ? (s: number) => {
-        let top = -Infinity;
-        for (let k = 0; k <= 6; k++) {
-          const [x, z] = lateral(s, width * (k / 6 - .5));
-          const h = groundAt(x, z);
-          if (h !== null) top = Math.max(top, h);
-        }
-        const fade = Math.min(1, (startCut ? Infinity : s) / 6, (endCut ? Infinity : line.length - s) / 6);
-        return { top, fade };
-      } : null;
       for (const s of stations) {
         if (prev && s === lastS) continue;
         const p = line.at(s);
         const section: number[][] = [];
-        const level = crest?.(s);
         for (const [i, offset] of offsets.entries()) {
           const [px,pz]=lateral(s,offset*taper(s));
           const x = THREE.MathUtils.clamp(px,bounds.minX,bounds.maxX);
@@ -344,7 +328,6 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
           if (textured) y = freightGrade(x, z, y);
-          if (level && level.top > y) y += level.fade * (level.top - y);
           section.push([x, y + lift, z]);
         }
         if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; continue; }
@@ -364,7 +347,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           (textured ? freight : structures).quad(a, b, c, d, color);
           if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
-          if (textured && !bridge && (gradeAvailable || crest)) {
+          if (textured && !bridge && gradeAvailable) {
             // Close exposed ballast faces where the raised approach clears the bare earth.
             for (const [left, right] of [[a, d], [c, b]]) {
               const gy = groundAt(left[0], left[2]), hy = groundAt(right[0], right[2]);
