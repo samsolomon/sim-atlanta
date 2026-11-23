@@ -2246,3 +2246,7 @@ Piedmont Park's two Piedmont Avenue entrances now stand at their OSM gate nodes.
 ### 2026-11-23 — Paving Sifly Piazza, minus the lawn
 
 The piazza had been one beige slab. It now has 1.5 × 3 m white concrete slabs with dark joints, café tables along the Memorial and a curb round the lawn. The surprise was the lawn itself. The old slab covered a 330 m² grass plot that OSM maps and the aerial shows tan with dormant turf. The model had paved over it. A mapped stair also leaves the piazza northward and drops 3 m. 3DEP confirms the fall, although the skybridge overhead hides most of the stair. [Sources and City views](arts-campus.md)
+
+### 2026-11-23 — Turning on Midtown's street lights
+
+From above at 10 pm, Midtown looked like downtown with the streets switched off. Its towers already glowed as brightly, but the roads between them were the same blue as the ground. The fix borrowed downtown's own street lights, the same lamps and baked warm pools, with two limits. Street lamps go only on the nine arterials, and pedestrian lamps go only where OSM says a path is lit. That second rule found 404 lit paths, mostly on the Tech campus, and none in Piedmont Park, so the park stays dark, as it should. The 1,809 lamps cost 8 draw calls, and baking them takes 4–6 ms per row. [Midtown at night](midtown-night.md) · [Before](log/ui/midtown-night/wide-before-high-night.jpg) · [After](log/ui/midtown-night/wide-high-night.jpg)

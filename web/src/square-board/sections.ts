@@ -4,6 +4,7 @@ import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import railRows from '../city/fixtures/midtown-rail.json';
 import { brookwoodCorridorRail } from '../city/brookwood-corridor';
+import { midtownLights } from '../city/midtown-night';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
@@ -143,6 +144,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
+        lights: id in rowBounds ? midtownLights : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {

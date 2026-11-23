@@ -5,6 +5,7 @@ import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
+import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
 import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
@@ -35,6 +36,8 @@ export interface DowntownTerrainOptions {
   separateBuilding?: string;
   contours?: Contours;
   openings?: readonly OpenSlot[];
+  /** Street and path lamps for this area, in the downtown night style. */
+  lights?: Parameters<World['buildLights']>[3];
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -116,7 +119,7 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
 
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {}) {
-  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: 2048 };
+  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
@@ -170,6 +173,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options);
   for (const landmark of landmarks) scenery.group.add(landmark.group);
+  if (options.lights) scenery.buildLights(board, groundAt, inConnectorLanes, { ...options.lights, lowDetail: options.quality === 'low' });
   let fragment: World | undefined;
   if (candidate) {
     const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
