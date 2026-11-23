@@ -49,6 +49,15 @@ it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s de
     const ramp = station.city.roads.find(r => r.sub === 'link' && r.pts[0][0] === 79.17)!;
     expect(station.height(-47.77,-5066.48,ramp)! + 323.8).toBeCloseTo(260.5, 0);
 
+    // 10th Street carries its 25.6 m inventory width at the abutment and
+    // narrows to the mapped street where the approach meets bare earth.
+    const central = scene[midtownRows.indexOf('midtown-central')];
+    const approach = (x: number) => central.city.terrainTransport!.roads.find(r =>
+      r.name === '10th Street Northwest' && r.deckWeight && r.sourceAxis?.[0][0] === x)!;
+    expect(central.decks.deckAt(17,-3064.1,approach(19.17))).not.toBeNull();
+    expect(central.decks.deckAt(-17,-3065.7,approach(-0.83))).toBeNull();
+    expect(central.decks.deckAt(-17,-3072.7,approach(-0.83))).not.toBeNull();
+
     const routes = connectorTrafficRoutes(scene[0].city, scene.slice(1).map(board => board.city));
     let openSamples = 0;
     for (const route of routes) {

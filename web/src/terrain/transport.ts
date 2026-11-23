@@ -167,7 +167,17 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const ribbon = use === 'road' && run.cls === 'motorway'
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
-    const width = run.crossSection?.width ?? (ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2);
+    const mapped = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    const width = run.crossSection?.width ?? mapped;
+    // An approach carries the inventory deck width at the abutment and narrows
+    // to the mapped street where its profile weight reaches the bare earth.
+    function taper(s: number) {
+      const weights = run.deckWeight;
+      if (!weights || !run.crossSection) return 1;
+      const vertex = line.vertexAt(s), index = Math.min(Math.floor(vertex), weights.length - 2);
+      const weight = weights[index] + (weights[index+1]-weights[index])*(vertex-index);
+      return (mapped + weight * (width - mapped)) / width;
+    }
     // Keep original corners as well as intermediate terrain samples. A structural
     // tread follows a single chord between its two DEM endpoint proxies.
     const stations = [0];
@@ -291,7 +301,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         const p = line.at(s);
         const section: number[][] = [];
         for (const [i, offset] of offsets.entries()) {
-          const [px,pz]=lateral(s,offset);
+          const [px,pz]=lateral(s,offset*taper(s));
           const x = THREE.MathUtils.clamp(px,bounds.minX,bounds.maxX);
           const z = THREE.MathUtils.clamp(pz,bounds.minZ,bounds.maxZ);
           let y = bridge ? h0! + (h1! - h0!) * (s / line.length) - sceneZero : groundAt(x, z);
