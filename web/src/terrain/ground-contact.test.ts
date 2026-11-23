@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Group, type Mesh } from 'three';
+import { Group, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { addSection, bounds, connect, joins, midtownRows, type Area, type Board } from '../square-board/sections';
 import { CITY_COLORS, cityLayer, groundAudit, type LayerResult } from './ground-audit';
@@ -31,6 +31,18 @@ const HELD = ['rail ballast', 'ground cover', 'landscape primitives:tread', 'lan
 const GRADED_CUTS = [
   { minX: -840, maxX: -760, minZ: -1935, maxZ: -1820 },
 ];
+/** Inside a convex ring (either winding), in plan. */
+function insideConvex(ring: readonly (readonly [number, number])[], x: number, z: number) {
+  let sign = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
+    const c = (bx - ax) * (z - az) - (bz - az) * (x - ax);
+    if (Math.abs(c) < 1e-9) continue;
+    if (sign && Math.sign(c) !== sign) return false;
+    sign = Math.sign(c);
+  }
+  return true;
+}
 const exclude = (layer: string, x: number, z: number) => layer === 'rail ballast' &&
   GRADED_CUTS.some(b => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ);
 
@@ -88,5 +100,44 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     }
     expect(v.count).toBeGreaterThan(1000);
     expect(stretched).toBe(0);
+    // Graded cuttings carve after scenery has sampled the ground. Nothing placed in a cut
+    // may be left standing on the old bank: every instance (trees, shrubs, lamps) and every
+    // mesh vertex low enough to be a base must sit on the carved ground.
+    let inCuts = 0;
+    const floating: string[] = [];
+    for (const [id, area] of mounted) {
+      if (!area.carved.length) continue;
+      const rings = area.carved.map(y => y.ring);
+      const inCut = (x: number, z: number) => rings.some(r => insideConvex(r, x, z));
+      const m = new Matrix4(), pos = new Vector3();
+      area.scenery.updateMatrixWorld(true);
+      area.scenery.traverse(o => {
+        if (!(o instanceof Mesh)) return;
+        const check = (x: number, y: number, z: number) => {
+          if (!inCut(x, z)) return;
+          inCuts++;
+          const ground = area.terrainAt(x, z);
+          if (ground !== null && y - ground > .25) floating.push(`${id} ${o.name || o.parent?.name || o.type} at ${x.toFixed(1)},${z.toFixed(1)}: ${(y - ground).toFixed(2)} m up`);
+        };
+        if (o instanceof InstancedMesh) {
+          for (let i = 0; i < o.count; i++) {
+            o.getMatrixAt(i, m);
+            pos.setFromMatrixPosition(m.premultiply(o.matrixWorld));
+            check(pos.x, pos.y, pos.z);
+          }
+        } else {
+          // A mesh's lowest vertex in a cut is where it meets the ground.
+          const p = o.geometry.getAttribute('position');
+          let low: Vector3 | null = null;
+          for (let i = 0; i < p.count; i++) {
+            pos.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+            if (inCut(pos.x, pos.z) && (!low || pos.y < low.y)) low = pos.clone();
+          }
+          if (low) check(low.x, low.y, low.z);
+        }
+      });
+    }
+    console.info(`scenery samples in graded cuts on ${quality}: ${inCuts}`);
+    expect(floating).toEqual([]);
   } finally { for (const area of mounted.values()) area.dispose(); }
 }, 60_000);
