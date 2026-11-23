@@ -26,6 +26,10 @@ it('carries traffic in both directions between the downtown mainline and both Br
   }
 });
 
+// Measured budget: 0.4 s alone; up to 4.2 s (high) with three full suites running at once
+// (2026-11-23, Mac Studio). Each tier builds five rows of real terrain, drawing only the freeway
+// and deck runs the routes ride on, then samples every open route every 3 m.
+const BUDGET_MS = 20_000;
 it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s detail', quality => {
   const scene = midtownRows.map(row => {
     const read = (file: string) => readFileSync(new URL('../../../pipeline/prototypes/square-board/'+row+'/'+file, import.meta.url));
@@ -34,8 +38,11 @@ it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s de
     const city = midtownConnectorDecks(seventeenthAccess(auburnTransport(JSON.parse(read('context.json').toString()))));
     const surface = new GroundSurface(grid, quality, undefined, joins(row));
     const banks = bridgeApproaches(seventeenthPortals(city), 323.8, surface.sampleScene.bind(surface), city.bounds, city.roads);
-    const decks = createSurfaceTransport(city, grid, banks.groundAt);
-    return {city,decks,banks,surface,height:cityRoadHeight(city,banks.groundAt,decks.deckAt)};
+    // The routes ride only the freeway: draw its runs and the decks, not every street and track.
+    const data = city.terrainTransport!;
+    const freeway = { ...city, terrainTransport: { ...data, roads: data.roads.filter(r => r.cls === 'motorway' || r.kind === 'bridge'), rail: [] } };
+    const decks = createSurfaceTransport(freeway, grid, banks.groundAt);
+    return {city,decks,banks,surface,height:cityRoadHeight(freeway,banks.groundAt,decks.deckAt)};
   });
   try {
     const brookwood = scene[midtownRows.indexOf('brookwood-south')];
@@ -83,4 +90,4 @@ it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s de
       board.banks.walls.dispose();
     }
   }
-});
+}, BUDGET_MS);

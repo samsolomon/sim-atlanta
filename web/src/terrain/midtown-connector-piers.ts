@@ -39,7 +39,11 @@ export function midtownConnectorPiers(city: TerrainCity, groundAt: Ground, deckA
   // Motorway ways with no ribbon keep their drawn width.
   const ribboned = (r: { cls: string; sub?: string | null; pts: [number, number][] }) =>
     r.cls === 'motorway' && r.pts.length > 1 && !!matchRibbon(r.pts[0], r.pts[1], r.sub === 'link');
-  const ground = city.roads.filter(r => !r.tunnel && !ribboned(r));
+  // Sidewalk and cycle bridges never block a bent; other bridges may pass beneath one.
+  const ground = city.roads.filter(r => !r.tunnel && !ribboned(r) && !(r.bridge && walkways.has(r.cls)));
+  // One index of obstacles serves every deck; each deck ignores its own ribbons and street.
+  let own = new Set<Ribbon>();
+  const clearOf = pierObstacles(ground, (x, z) => inConnectorLanes(x, z, 1, own), data.rail);
   const builder = new Builder();
   let columns = 0;
   const bents: { name: string | null; x: number; z: number; columns: number }[] = [];
@@ -47,15 +51,15 @@ export function midtownConnectorPiers(city: TerrainCity, groundAt: Ground, deckA
     if (run.kind !== 'bridge' || !run.sourceAxis || !run.deckNavd88M || run.deckWeight || walkways.has(run.cls)) continue;
     const line = new Line(run.pts);
     if (line.length < 30) continue;
-    const own = new Set<Ribbon>();
+    own = new Set<Ribbon>();
     if (run.cls === 'motorway') for (let i = 1; i < run.pts.length; i++) {
       const r = matchRibbon(run.pts[i - 1], run.pts[i], run.sub === 'link');
       if (r) own.add(r);
     }
     // Other bridges stay obstacles (a street deck may pass under a flyover); the deck's own
-    // street and its sidewalks, which ride on the same bents, do not.
-    const below = ground.filter(r => !r.bridge || (r.name !== run.name && !walkways.has(r.cls) && r.pts !== run.sourceAxis));
-    const clear = pierObstacles(below, (x, z) => inConnectorLanes(x, z, 1, own), data.rail);
+    // street, which rides on the same bents, does not.
+    const self = (r: (typeof ground)[number]) => !!r.bridge && (r.name === run.name || r.pts === run.sourceAxis);
+    const clear = (x: number, z: number, dx: number, dz: number) => clearOf(x, z, dx, dz, 1.2, 1.1, self);
     // The width transport.ts draws: ribbon lanes plus shoulders, the inventory, or the class.
     const lanes = Math.max(0, ...[...own].map(r => r.lanes));
     const width = run.crossSection?.width ?? (lanes ? lanes * 3.55 + (run.sub === 'link' ? 1.4 : 3.6) : roadWidth(run));
