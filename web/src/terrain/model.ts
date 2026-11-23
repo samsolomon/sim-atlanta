@@ -20,6 +20,7 @@ import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
+import { activeOval } from '../city/active-oval';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
@@ -189,6 +190,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Yards by rule around every house (walks, drives, foundation planting).
   const yardLayer = homes.yards();
   if (yardLayer) scenery.group.add(yardLayer.group);
+  // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
+  const oval = activeOval(city.bounds, groundAt, options.quality);
+  if (oval) scenery.group.add(oval.group);
   const species = createTrees(named, options.quality, groundAt);
   if (species) scenery.group.add(species.group);
   if (options.lights) {
@@ -235,6 +239,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       species?.dispose();
       // Also unregisters the yard planting from the ink pass.
       yardLayer?.dispose();
+      oval?.dispose();
       scenery.dispose();
       group.clear();
     },

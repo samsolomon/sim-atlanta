@@ -131,7 +131,7 @@ function blooms(b: Builder, x: number, y: number, z: number, count: number, colo
 const ICOSA = new THREE.IcosahedronGeometry(1, 0);
 
 /** A rounded shrub mass: a few jittered icosahedra with leafy per-face colour. */
-function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, height: number, color: string, r: () => number, lumps: number) {
+function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, height: number, color: string, r: () => number, lumps: number, floor = y) {
   for (let k = 0; k < lumps; k++) {
     const a = r() * Math.PI * 2, d = k ? radius * (.35 + r() * .3) : 0;
     const rad = radius * (k ? .6 + r() * .25 : .85), cx = x + Math.cos(a) * d, cz = z + Math.sin(a) * d;
@@ -147,7 +147,8 @@ function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, 
         const j = jitter(pos.getX(v), pos.getY(v), pos.getZ(v));
         // Flatten the underside so masses sit on the ground.
         const vy = Math.max(-.35, pos.getY(v));
-        tri.push([cx + pos.getX(v) * rad * j, y + (vy + .35) * height / 1.35 * (k ? .8 : 1), cz + pos.getZ(v) * rad * j]);
+        // The flattened underside drops to `floor`, so a clump seated high on a bank still meets the low side.
+        tri.push([cx + pos.getX(v) * rad * j, pos.getY(v) <= -.35 ? floor : y + (vy + .35) * height / 1.35 * (k ? .8 : 1), cz + pos.getZ(v) * rad * j]);
       }
       b.tri(tri[0], tri[1], tri[2], c);
     }
@@ -304,7 +305,9 @@ export function hedge(b: Builder, line: P2[], ground: Ground,
   // `lumps` (icosahedra per shrub) and `spacing` trade detail for cost, e.g. in city-wide yards.
   for (const p of along(line, o.spacing ?? (quality === 'low' ? 1.6 : 1))) {
     const rad = width * (.6 + r() * .3), x = p.x + (r() - .5) * .3, z = p.z + (r() - .5) * .3;
-    shrubMass(b, x, g0(ground, p.x, p.z) - .05, z, rad, height * (.85 + r() * .3), LEAF[Math.floor(r() * LEAF.length)], r, o.lumps ?? (quality === 'low' ? 1 : 3));
+    // Seat each clump on the highest ground under its spread, so a rising bank never covers its upper faces.
+    const k = rad * .7, ys = [[0, 0], [k, 0], [-k, 0], [0, k], [0, -k]].map(([dx, dz]) => g0(ground, x + dx, z + dz));
+    shrubMass(b, x, Math.max(...ys) - .05, z, rad, height * (.85 + r() * .3), LEAF[Math.floor(r() * LEAF.length)], r, o.lumps ?? (quality === 'low' ? 1 : 3), Math.min(...ys) - .05);
   }
 }
 
