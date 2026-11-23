@@ -944,6 +944,7 @@ export class World {
     patchFacades(mat, this.night);
     const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = mesh.receiveShadow = true;
+    mesh.userData.building = true; // City's white-model-on-map stage draws only buildings
     this.group.add(mesh);
     const cm = instanced(new THREE.BoxGeometry(1, 1, 1), '#ffffff', clutter);
     clutterCol.forEach((c, i) => cm.setColorAt(i, c));

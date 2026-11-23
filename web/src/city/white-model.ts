@@ -31,7 +31,16 @@ export function createWhiteModel(o: {
   /** Low tier: skip the up-front compileAsync (it raises the memory peak); colour compiles in its
    * first frame, under the still, as before. */
   lowMemory?: boolean;
+  /**
+   * 'paper': the white model fades in over the paper, then colour (first open from a link).
+   * 'map': white buildings only, over a transparent background, standing on the tilted 2D map
+   *   underneath; then the full colour scene, ground included, cross-fades in over the map.
+   * 'fade': City was built before this session: no white stage, colour cross-fades in.
+   */
+  mode?: 'paper' | 'map' | 'fade';
 }) {
+  let mode = o.mode ?? 'paper';
+  const ease = 'cubic-bezier(.45,0,.55,1)'; // ease-in-out, as the brief asks
   // A slightly lowered albedo keeps sunlit faces from clipping to one flat white. No board clipping
   // planes: on this material they culled every mesh. (Dev: ?whitealbedo= to tune.)
   const albedo = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whitealbedo'))) || WHITE_ALBEDO;
@@ -56,7 +65,83 @@ export function createWhiteModel(o: {
   overlay.className = 'city-white-model';
   overlay.setAttribute('aria-hidden', 'true');
   overlay.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;z-index:1';
-  const fade = (ms: number) => (overlay.style.transition = o.reducedMotion ? 'none' : `opacity ${ms}ms ease`);
+  const fade = (ms: number) => (overlay.style.transition = o.reducedMotion ? 'none' : `opacity ${ms}ms ${ease}`);
+  const fadeCanvas = (to: number, ms: number) => {
+    const c = o.container.style;
+    c.transition = o.reducedMotion ? 'none' : `opacity ${ms}ms ${ease}`;
+    c.opacity = String(to);
+  };
+  // In 'map' mode the canvas stays hidden until colour, so the still sits beside it, not inside.
+  const overlayHost = () => (mode === 'map' ? o.container.parentElement ?? o.container : o.container);
+
+  /** Buildings only, in white, over a transparent background (the map shows through). */
+  const isBuilding = (mesh: THREE.Mesh, box: THREE.Box3) => {
+    if (mesh.userData.building) return true;
+    box.setFromObject(mesh);
+    const size = box.getSize(new THREE.Vector3());
+    return size.y > 6 && Math.max(size.x, size.z) < 600;
+  };
+  const LUT = new Uint8Array(256).map((_, i) => {
+    const v = i / 255;
+    return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055));
+  });
+  function drawBuildingsOnly(into: HTMLCanvasElement) {
+    const c = o.renderer.domElement;
+    const w = c.width, h = c.height;
+    const rt = new THREE.WebGLRenderTarget(w, h, { depthBuffer: true });
+    const bg = o.scene.background, fog = o.scene.fog;
+    const clear = o.renderer.getClearColor(new THREE.Color()), alpha = o.renderer.getClearAlpha();
+    const off: THREE.Object3D[] = [];
+    for (const x of o.hide()) if (x && x.visible) { x.visible = false; off.push(x); }
+    const box = new THREE.Box3();
+    o.scene.traverseVisible((m) => {
+      const mesh = m as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const skip = (mesh as THREE.InstancedMesh).instanceColor || mats.some((x) => x.transparent || x.alphaTest > 0);
+      if (skip || !isBuilding(mesh, box)) off.push(mesh);
+      else {
+        swapped.set(mesh, mesh.material);
+        mesh.material = white;
+      }
+    });
+    for (const m of off) m.visible = false;
+    o.scene.background = null;
+    o.scene.fog = null;
+    // Off the board's own ground the buildings would read grey; lift them to paper, as on the
+    // reference (docs/ui-a2c/loading/map-with-white-buildings.jpg). (Dev: ?whitelift= to tune.)
+    const lift = new THREE.AmbientLight(0xffffff, (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whitelift'))) || 1.4);
+    o.scene.add(lift);
+    o.renderer.setRenderTarget(rt);
+    o.renderer.setClearColor(0x000000, 0);
+    o.renderer.clear();
+    o.renderer.render(o.scene, o.camera);
+    const px = new Uint8Array(w * h * 4);
+    o.renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
+    o.renderer.setRenderTarget(null);
+    o.scene.remove(lift);
+    o.renderer.setClearColor(clear, alpha);
+    o.scene.background = bg;
+    o.scene.fog = fog;
+    for (const m of off) m.visible = true;
+    for (const [mesh, mat] of swapped) mesh.material = mat;
+    swapped.clear();
+    rt.dispose();
+    // A render target holds linear colour, bottom row first: encode to sRGB and flip.
+    const img = new ImageData(w, h);
+    for (let y = 0; y < h; y++) {
+      const src = (h - 1 - y) * w * 4, dst = y * w * 4;
+      for (let x = 0; x < w * 4; x += 4) {
+        img.data[dst + x] = LUT[px[src + x]];
+        img.data[dst + x + 1] = LUT[px[src + x + 1]];
+        img.data[dst + x + 2] = LUT[px[src + x + 2]];
+        img.data[dst + x + 3] = px[src + x + 3];
+      }
+    }
+    into.width = w;
+    into.height = h;
+    into.getContext('2d')!.putImageData(img, 0, 0);
+  }
 
   // Things the override can't make white: instanced colours (trees), and see-through materials
   // (glass, light pools), which would turn into opaque white sheets.
@@ -91,7 +176,7 @@ export function createWhiteModel(o: {
     get phase() { return phase; },
     /** Call just before the composer renders. */
     before() {
-      if (phase !== 'white') return;
+      if (phase !== 'white' || mode === 'map') return;
       o.inkBoost?.();
       skipped.length = 0;
       for (const p of o.skipPasses ?? []) if (p) { skipped.push([p, p.enabled]); p.enabled = false; }
@@ -103,19 +188,27 @@ export function createWhiteModel(o: {
         restore();
         for (const [p, was] of skipped) p.enabled = was;
         if (++whiteFrames < SETTLE) return;
-        // Hold the white frame as a still, fade it in over the paper, and warm up colour behind it.
-        const c = o.renderer.domElement;
-        overlay.width = c.width;
-        overlay.height = c.height;
-        overlay.getContext('2d')!.drawImage(c, 0, 0);
-        o.container.append(overlay);
+        if (mode === 'map') {
+          // White buildings stand on the tilted map; the colour frames so far warmed the shaders.
+          drawBuildingsOnly(overlay);
+          overlayHost().append(overlay);
+          fade(1200);
+          requestAnimationFrame(() => (overlay.style.opacity = '1'));
+        } else {
+          // Hold the white frame as a still over the paper, and warm up colour behind it.
+          const c = o.renderer.domElement;
+          overlay.width = c.width;
+          overlay.height = c.height;
+          overlay.getContext('2d')!.drawImage(c, 0, 0);
+          overlayHost().append(overlay);
+          // The canvas already shows the white model, so the still goes on at full strength.
+          fade(0);
+          overlay.style.opacity = '1';
+        }
         // A resize would stretch the still out of register with the scene: drop it instead.
         stillCamera.copy(o.camera.matrixWorld);
         ro = new ResizeObserver(() => this.check());
         ro.observe(o.container);
-        // The canvas already shows the white model, so the still goes on at full strength.
-        fade(0);
-        overlay.style.opacity = '1';
         phase = 'compiling';
         // compileAsync can stall (it waits on every program reporting ready); never hold the city
         // hostage to it. Whatever isn't warm compiles in the first colour frame, under the still.
@@ -129,11 +222,15 @@ export function createWhiteModel(o: {
       } else if (this.check()) {
         // dropped
       } else if (phase === 'colour') {
-        // The first colour frame is drawn under the still; now let colour show through.
+        // The first colour frame is drawn; now let colour show through.
         phase = 'done';
-        fade(1000);
-        requestAnimationFrame(() => (overlay.style.opacity = '0'));
-        setTimeout(() => overlay.remove(), o.reducedMotion ? 0 : 1100);
+        const ms = mode === 'paper' ? 1000 : 1400;
+        if (mode !== 'paper') requestAnimationFrame(() => fadeCanvas(1, ms));
+        if (overlay.isConnected) {
+          fade(ms);
+          requestAnimationFrame(() => (overlay.style.opacity = '0'));
+          setTimeout(() => overlay.remove(), o.reducedMotion ? 0 : ms + 100);
+        }
         finish();
         resolveRevealed();
       }
@@ -148,25 +245,37 @@ export function createWhiteModel(o: {
       return false;
     },
     /** True while frames would draw colour that the still hides: skip the expensive draw. */
-    get holding() { return phase === 'waiting' || phase === 'compiling'; },
+    get holding() { return phase === 'waiting' || (phase === 'compiling' && mode !== 'map'); },
+    /** Before begin(): City couldn't open on the map's view (off the board), so arrive over paper. */
+    setMode(m: 'paper' | 'map' | 'fade') {
+      if (phase === 'waiting') mode = m;
+    },
     /** The camera and atmosphere are set: draw the white model on the next frame. */
     begin() {
       if (phase !== 'waiting') return;
-      phase = 'white';
-      // The white model fades in over the paper (about 300 ms).
       const c = o.container.style;
       c.transition = 'none';
       c.opacity = '0';
-      requestAnimationFrame(() => {
-        c.transition = o.reducedMotion ? 'none' : 'opacity 300ms ease';
-        c.opacity = '1';
-      });
+      if (mode === 'paper') {
+        phase = 'white';
+        // The white model settles in over the paper (about 1.2 s, ease-in-out).
+        requestAnimationFrame(() => fadeCanvas(1, 1200));
+      } else if (mode === 'map') phase = 'white';
+      else {
+        // Built before: colour compiles behind the map, then cross-fades in.
+        phase = 'compiling';
+        const ceiling = new Promise((r) => setTimeout(r, 2500));
+        void Promise.race([o.lowMemory ? undefined : o.renderer.compileAsync(o.scene, o.camera).catch(() => undefined), ceiling]).then(() => {
+          if (phase === 'compiling') phase = 'colour';
+        });
+      }
     },
     /** A user gesture during the fade would slide the scene under a still: drop the still. */
     cancel() {
       if (phase !== 'white' && phase !== 'waiting') {
         finish();
         overlay.remove();
+        fadeCanvas(1, 0);
         if (phase !== 'done') {
           phase = 'done';
           resolveRevealed();
