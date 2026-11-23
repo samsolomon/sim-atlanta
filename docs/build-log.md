@@ -2480,3 +2480,8 @@ Under `?ui=next`, Models is now the third segment of the view switch, not a sepa
 ### 2026-11-23 — The streetcar, second pass: a colour the grade kept eating
 
 Sam's review of the S70 called the first pass a bright royal blue with blocky stickers. The real car is a deep, violet-leaning indigo, with long sweeps that read as motion. The colour was the lesson. Our first indigo came out of the grade as pure saturated navy, #000068 with red and green crushed to zero, while the photograph's body sits near #2f3060. A sweep of input colours against a fixed sample on the lit nose found that #5a5694 in renders as #28217b out. The grade is steep enough in dark blues that the input has to be much lighter than the target. The sweeps are now cubic Béziers sampled into 24-segment strips that follow the rounded eave, so they flow from the roof by the mid-section door down to the cab's bottom corner. Glazing became one light band with thin pillars. The nose, eaves, skirt and roof fairings were rounded off. Lab only, so only a web rebuild is needed. [Matched side](log/streetcar/s70-pass2-side.jpg) · [Lab before and after](log/streetcar/s70-pass2-lab.jpg)
+
+### 2026-11-23 — The Fed turns white
+
+City had drawn the Federal Reserve Bank's block at Peachtree and 10th in the generic palette, which landed on red brick: a warehouse where a marble temple of money stands. It is now white ashlar marble, stepping back in tiers to a flat crown, with a two-storey loggia on Peachtree and the salvaged Corinthian columns of the old Fed standing free in the forecourt. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg)
+

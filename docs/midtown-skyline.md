@@ -181,3 +181,19 @@ The rear walls are plainer brick. The OSM building parts give the curved main bl
 
 Camera `/?view=city&cam=655,-2000,135,58,230`. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg) · [Night](log/ui/midtown-skyline/ponce-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/ponce-dusk-after-day.jpg) · [Low tier](log/ui/midtown-skyline/ponce-after-low-day.jpg)
 
+## The Federal Reserve Bank of Atlanta
+
+The Federal Reserve Bank of Atlanta at 1000 Peachtree, at 10th Street (Kohn Pedersen Fox, 2001; osm:way:28979077), was drawn as generic red brick from its OSM building parts. Wikimedia photographs from three angles (2019–2023) show:
+- white Georgia marble in large ashlar blocks
+- a grid of deep punched windows between flat piers
+- a tower that steps back in tiers at its ends to a flat crown
+- a two-storey loggia on the Peachtree front
+- salvaged Corinthian columns standing free in the forecourt
+- an eagle on a column at the corner plaza, and flagpoles
+
+The OSM parts give the plan: the tower block, the low operations wing to the west and the service annexes. City keeps the wing and annexes plain marble at their mapped heights and rebuilds the tower in four tiers: 36, 40.5, 44.5 and 48 m. [Wikimedia, 2019, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_of_Atlanta_Headquarters.jpg) · [Wikimedia, 2023, loggia, CC0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_Building_(Atlanta),_Sept_2023_01.jpg) · [Wikimedia, 2023, forecourt, CC0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_Building_(Atlanta),_Sept_2023_02.jpg) · [Wikimedia, 2022, eagle column, CC BY-SA 2.0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_of_Atlanta.jpg)
+
+**Estimated:** the tier heights and setbacks (the parts carry levels only, so they are inferred), the window grid, the loggia pier count, the column and eagle placement, and the marble tone. **Gap:** no night photograph was found, so the lit offices and loggia are illustrative.
+
+Camera `/?view=city&cam=640,-3150,250,55,320`. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg) · [Night](log/ui/midtown-skyline/fed-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/fed-after-low-day.jpg)
+
