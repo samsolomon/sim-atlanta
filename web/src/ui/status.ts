@@ -70,7 +70,7 @@ export function confidenceWords(c: Confidence): string[] {
 export function hintText(view: View, touch: boolean): string {
   if (view === 'models') return touch ? 'Drag to turn the model · pinch to zoom' : 'Drag to turn the model · scroll to zoom';
   if (view === 'map') return touch ? 'Drag to move · pinch to zoom' : 'Drag to move · scroll to zoom';
-  // City under ?ui=next moves like a map (city/map-gestures.ts).
+  // City moves like a map in A2c (city/map-gestures.ts).
   return touch ? 'Drag to move · twist to turn · pinch to zoom' : 'Drag to move · right-drag to turn';
 }
 

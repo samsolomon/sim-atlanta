@@ -1,6 +1,7 @@
 # UI controls and chrome: design brief
 
-Status: approved direction **A2c**, confirmed by Sam on 2026-11-23.
+Status: approved direction **A2c**, confirmed by Sam on 2026-11-23. **Built and the default
+interface** (steps 1–9 merged; `?ui=classic` keeps the old shell for one release).
 Design canvas: https://claude.ai/artifact/CCsbqwgHy8fTJ2ujri2iSx (private to Sam).
 Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds are history.
 
@@ -287,7 +288,7 @@ References:
   - honour reduced motion: camera jumps are instant
   - measure text contrast on glass over busy scenes after the build
 
-## Build order (behind `?ui=next` until it replaces the current interface)
+## Build order (built behind `?ui=next`; now the default)
 
 1. **Shell:** the four places, glass tokens, 8 px insets, app bar, camera column, the
    corrected hint, and the credit line. Map and City.

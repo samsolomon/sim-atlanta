@@ -4,7 +4,7 @@
 html, body { margin: 0; height: 100%; background: var(--paper-2); color: var(--ink); }
 #map { position: fixed; inset: 0; }
 .maplibregl-ctrl-attrib { background: rgba(251, 249, 244, 0.7) !important; color: var(--ink-2); }
-/* ?ui=next (set by start.ts before paint): the A2c shell carries the credits and City info. */
+/* A2c (data-ui=next, set by start.ts before paint unless ?ui=classic): the shell carries the credits and City info. */
 :root[data-ui='next'] :is(.maplibregl-ctrl-attrib, .city-info-toggle) { display: none !important; }
 
 button {

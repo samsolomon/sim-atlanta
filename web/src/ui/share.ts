@@ -13,7 +13,8 @@ export function shareUrl(page: string, target: ShareView, mode: 'live' | 'freeze
   const u = new URL(from.origin + from.pathname);
   for (const k of KEEP) {
     const v = from.searchParams.get(k);
-    if (v != null) u.searchParams.set(k, v);
+    // A2c is the default: an old ?ui=next adds nothing to a link.
+    if (v != null && !(k === 'ui' && v === 'next')) u.searchParams.set(k, v);
   }
   u.searchParams.set('view', target.view);
   if (target.view === 'city') u.searchParams.set('cam', target.cam);

@@ -46,12 +46,12 @@ describe('live details', () => {
   });
 });
 
-describe('?ui=next', () => {
-  it('opts in only with the exact value', () => {
+describe('interface flag', () => {
+  it('is A2c by default and for old ?ui=next links; ?ui=classic opts out', () => {
+    expect(uiNext('')).toBe(true);
     expect(uiNext('?ui=next')).toBe(true);
-    expect(uiNext('?view=city&ui=next')).toBe(true);
-    expect(uiNext('?ui=old')).toBe(false);
-    expect(uiNext('')).toBe(false);
+    expect(uiNext('?view=city')).toBe(true);
+    expect(uiNext('?ui=classic')).toBe(false);
   });
 });
 
