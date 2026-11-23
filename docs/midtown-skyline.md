@@ -87,4 +87,4 @@ A self-review found three geometry problems, all now fixed:
 
 The bank faces now sit on the measured outline: ±33.7 m on the long axis and ±26.3 m across. The violet-blue wash is hidden by day.
 
-Close camera from the northwest: target (470, −2110), bearing 330°, tilt 60°, 260 m. [High daylight](log/ui/midtown-skyline/tower-square-close-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-close-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-close-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-close-low-night.jpg)
+Close camera from the northwest: target (470, −2110), bearing 330°, tilt 60°, 135 m. [High daylight](log/ui/midtown-skyline/tower-square-close-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-close-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-close-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-close-low-night.jpg)
