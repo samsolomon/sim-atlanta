@@ -76,9 +76,10 @@ uses the timetable.
 - **Free to host.** The site targets the Cloudflare free tier, and visitors pay nothing. No
   paid data feeds, and the worker cache keeps MARTA calls bounded. Flag anything that adds
   per-visitor server cost.
-- **Secrets.** The MARTA key lives in 1Password (`op://Personal/trains-marta-api/credential`)
-  and in a Wrangler secret. Never print, log, commit, or return it in a response. `.dev.vars`
-  and `.env*` are gitignored.
+- **Secrets.** The MARTA key lives in 1Password (`op://Personal/sim-atlanta-marta-api/credential`)
+  and in a Wrangler secret. The 511GA API key lives in
+  `op://Personal/sim-atlanta-511ga-api/credential`; no code uses it yet. Never print, log,
+  commit, or return either key in a response. `.dev.vars` and `.env*` are gitignored.
 - **Art direction.** Landmarks should look real and functional, and stylisation rules make
   everything else feel good. Recolouring the same boxes is a colour treatment, not artwork.
   The chosen style (2026-11-20) follows a low-poly, ink-lined railway reference: leaf-clump

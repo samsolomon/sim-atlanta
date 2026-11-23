@@ -26,7 +26,7 @@ pnpm data           # fetch + build Map data, downtown rail profiles and City da
 pnpm data:city      # refresh the City board, traffic network, tree canopy and baked ground grid
 pnpm data:vignette  # East Portal diorama: refreshes the Overture roads/land-use/infrastructure/building
                     # extracts, then crops them and adds FHWA traffic + Meta/WRI trees (re-run after pulling)
-pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item trains-marta-api
+pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item sim-atlanta-marta-api
 pnpm build          # the worker serves web/dist
 pnpm dev:worker     # live API on :8787
 pnpm dev            # http://localhost:5173 (proxies /api to the worker)
