@@ -42,9 +42,11 @@ const TRAIL_KEY = 'perf-trail';
  *   &pr=0.75      pixel ratio override
  *   &shadow=off   or a shadow map size (512, 1024, 2048…)
  *   &nopass=ink,grade,tilt,bloom,gtao   disable post passes
- *   &post=off     render straight to the canvas, no composer */
+ *   &post=off     render straight to the canvas, no composer
+ *   &hide=trees,scenery,terrain,transport,buildings,vehicles   hide whole categories (fps upper
+ *                 bounds per category). `trees` means every instanced mesh in area scenery. */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>() };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -52,6 +54,7 @@ export const perfOverrides = (() => {
     shadow: sh === 'off' ? 'off' as const : Number(sh) >= 64 ? Number(sh) : null,
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
+    hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
   };
 })();
 
@@ -426,7 +429,20 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   }
   const shadowBefore = shadowUpdates;
   await sleep(sampleMs);
-  const r = { ...report(true), fps10s: frames(sampleMs), sampleMs, shadowUpdatesInSample: shadowUpdates - shadowBefore };
+  const full = report(true);
+  const f = frames(sampleMs);
+  const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
+  // A flat summary first, so a truncated or field-picked copy still carries the essentials.
+  const summary = {
+    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
+    calls: full.renderer?.calls ?? null, triangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
+    pixelRatio: full.renderer?.pixelRatio ?? null, drawingBuffer: full.renderer?.drawingBuffer ?? null,
+    heapMB: full.heap?.usedMB ?? null, textureMB: full.memory?.total.textureMB ?? null, geometryMB: full.memory?.total.geometryMB ?? null,
+    cpuMB: full.memory?.total.cpuMB ?? null, shadowUpdatesInSample: shadowUpdates - shadowBefore,
+    dataMs: at('city:data'), rendererMs: at('city:renderer'), firstFrameMs: at('city:first-frame'), readyMs: at('ready'),
+    lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
+  };
+  const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;
   const line = 'PERF_RESULT ' + JSON.stringify(r);
   console.info(line);
@@ -446,6 +462,19 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   return r;
 }
 
+/** Apply &hide (cheap enough to repeat as areas mount; only runs under ?perf with &hide). */
+function applyHide() {
+  if (!ctx || !perfOverrides.hide.size) return;
+  const roots = ctx.roots();
+  const hide = perfOverrides.hide;
+  ctx.scene.traverse(o => {
+    let cat: string | undefined;
+    for (let p: THREE.Object3D | null = o; p && !cat; p = p.parent) cat = (p.userData?.perf as string | undefined) ?? roots.get(p);
+    const tree = cat === 'scenery' && (o as THREE.InstancedMesh).isInstancedMesh;
+    if ((cat && hide.has(cat) && (o as THREE.Mesh).isMesh) || (tree && hide.has('trees'))) o.visible = false;
+  });
+}
+
 /** Wire the renderer and scene (call once City has a renderer). */
 function attach(c: PerfContext) {
   ctx = c;
@@ -454,7 +483,7 @@ function attach(c: PerfContext) {
 function detach() { ctx = null; }
 
 export const perf = {
-  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top,
+  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
   get phases() { return phases.map(p => ({ ...p })); },

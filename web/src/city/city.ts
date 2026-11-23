@@ -1519,6 +1519,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
     frames++;
     if (ts - fpsT > 1000) {
       fps = (frames * 1000) / (ts - fpsT);
