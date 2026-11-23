@@ -67,3 +67,26 @@ it('answers occupancy only near a drawn car', () => {
   expect(cars.occupied(p.x, p.z + 6, 0.5)).toBe(false);
   expect(cars.occupied(p.x - 40, p.z, 0.5)).toBe(false);
 });
+
+it('keeps the car straight and whole when it dwells at the very start of its shape', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
+  const cars = createStreetcarCars(rf, origin, () => 0, []);
+  expect(cars.update([{ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 0 }, lengthM: { value: 24 } } as TrainState], 0)).toBe(1);
+  const [B, C, A] = cars.cars();
+  for (const m of [B, C, A]) {
+    expect(Number.isFinite(m.position.x) && Number.isFinite(m.rotation.y)).toBe(true);
+    expect(m.rotation.y).toBeCloseTo(C.rotation.y, 5);
+  }
+  expect(B.position.x).toBeLessThan(C.position.x);
+  expect(A.position.x).toBeGreaterThan(C.position.x);
+});
+
+it('draws no car whose end would overhang an unmounted board', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
+  // Only x < -20 is mounted: a car centred at x = -25 (s = 35) reaches x ≈ -13.
+  const cars = createStreetcarCars(rf, origin, (x) => (x < -20 ? 0 : null), []);
+  expect(cars.update([{ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 35 }, lengthM: { value: 24 } } as TrainState], 0)).toBe(0);
+  expect(cars.update([{ id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 20 }, lengthM: { value: 24 } } as TrainState], 0)).toBe(1);
+});

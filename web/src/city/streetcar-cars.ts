@@ -25,18 +25,25 @@ export function streetcarPaths(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
   return out;
 }
 
-/** Scene point at GTFS distance s along a path (held at the ends). */
+/** Scene point at GTFS distance s along a path, extended straight past either end. */
 export function pointAt(path: Path, s: number) {
   const { cum, line } = path;
-  const t = THREE.MathUtils.clamp(s, cum[0], cum[cum.length - 1]);
+  const first = cum[0],
+    last = cum[cum.length - 1];
+  if (s < first || s > last) {
+    // Off the end of the shape (a car dwelling at a terminal): continue along the end segment.
+    const end = s < first ? line.at(0) : line.at(line.length);
+    const over = s < first ? s - first : s - last;
+    return { ...end, x: end.x + end.dx * over, z: end.z + end.dz * over };
+  }
   let lo = 0,
     hi = cum.length - 1;
   while (hi - lo > 1) {
     const m = (lo + hi) >> 1;
-    if (cum[m] <= t) lo = m;
+    if (cum[m] <= s) lo = m;
     else hi = m;
   }
-  const f = cum[hi] > cum[lo] ? (t - cum[lo]) / (cum[hi] - cum[lo]) : 0;
+  const f = cum[hi] > cum[lo] ? (s - cum[lo]) / (cum[hi] - cum[lo]) : 0;
   return line.at(line.cum[lo] + f * (line.cum[hi] - line.cum[lo]));
 }
 
@@ -82,7 +89,9 @@ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Heig
         c1 = on(path, s + 0.9),
         tA = on(path, s + S70_LAYOUT.sections.A.pivots[1]),
         tB = on(path, s + S70_LAYOUT.sections.B.pivots[1]);
-      if (!c0 || !c1 || !tA || !tB) continue;
+      // Draw a car only when both of its ends stand on a mounted board.
+      const ends = [on(path, s - S70_LENGTH / 2), on(path, s + S70_LENGTH / 2)];
+      if (!c0 || !c1 || !tA || !tB || ends.some((e) => !e)) continue;
       let car = pool[used];
       if (!car) {
         car = geometry.map((g, k) => {

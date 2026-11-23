@@ -652,8 +652,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) return height(x, z);
     return null;
   }, []);
-  scene.add(streetcar.group);
   const scenery = scene.children.slice();
+  // Added after the scenery snapshot, so a streetcar never occludes its own pick.
+  scene.add(streetcar.group);
   scene.add(trains.group);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
   if (freight) scene.add(freight.group);
@@ -868,7 +869,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         streetcarSurface.push(entry);
         area.group.add(track.group);
         const disposeArea = area.dispose.bind(area);
-        area.dispose = () => { track.dispose(); streetcarSurface.splice(streetcarSurface.indexOf(entry), 1); disposeArea(); };
+        area.dispose = () => {
+          track.dispose();
+          const i = streetcarSurface.indexOf(entry);
+          if (i >= 0) streetcarSurface.splice(i, 1);
+          disposeArea();
+        };
       }
       extendConnectorTraffic();
       if (!mosaic) {
@@ -1525,6 +1531,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       sun.shadow.dispose();
       figures?.dispose();
       freight?.dispose();
+      streetcar.dispose();
       buses.dispose();
       traffic?.dispose();
       arterials?.dispose();
