@@ -12,27 +12,37 @@ type Ground = (x: number, z: number) => number | null;
 type Gate = {
   at: P2; opening: number; pier: number; shaft: number; crown: 'slab' | 'pyramid';
   wall: { length: number; height: number; endPier?: number }; lintel: boolean; sign: boolean; lamps: boolean;
+  /** Unit vector into the park, along an axis (default east, off Piedmont Avenue). */
+  inward?: P2;
 };
 const GRANITE = '#8f887c', CAP = '#a49e93', IRON = '#1b1d1f';
-const gates: Gate[] = [
+const gates: Record<string, Gate> = {
   // 12th Street: flat slab caps and the cut-out PIEDMONT PARK beam. Acorn lamps line the path inside.
-  { at: features.gates['12th Street'].at as P2, opening: 6.5, pier: 1.1, shaft: 3.2, crown: 'slab',
+  '12th Street': { at: features.gates['12th Street'].at as P2, opening: 6.5, pier: 1.1, shaft: 3.2, crown: 'slab',
     wall: { length: 5, height: .9 }, lintel: false, sign: true, lamps: true },
   // 14th Street: tall piers with stepped pyramid caps and finials, low walls to smaller end piers.
-  { at: features.gates['14th Street'].at as P2, opening: 6, pier: 1.2, shaft: 4, crown: 'pyramid',
+  '14th Street': { at: features.gates['14th Street'].at as P2, opening: 6, pier: 1.2, shaft: 4, crown: 'pyramid',
     wall: { length: 7, height: 1.1, endPier: .7 }, lintel: true, sign: false, lamps: false },
-];
-// The park lies east of Piedmont Avenue at both gates: +x is inward, z runs along the street.
-const IN: P2 = [1, 0], ALONG: P2 = [0, 1];
+  // 10th Street at Charles Allen Drive (Street View, March 2025): the same stepped pyramid piers either side
+  // of the drive, no lintel, and taller granite walls out to end piers. The mapped node is the inner iron
+  // gate; the piers stand an estimated 2 m nearer the street, and the park lies north (−z).
+  '10th Street': { at: [features.gates['10th Street'].at[0] - .4, features.gates['10th Street'].at[1] + 2] as P2, opening: 8,
+    pier: 1.2, shaft: 4.2, crown: 'pyramid', wall: { length: 6.5, height: 1.5, endPier: .9 }, lintel: false, sign: false,
+    lamps: false, inward: [0, -1] },
+};
 
 function post(b: Builder, x: number, z: number, w: number, y0: number, y1: number, color: string) {
   b.box(w, y1 - y0, w, x, (y0 + y1) / 2, z, color);
 }
 
+/** Where a gate stands, which way is into the park and how wide its opening is. */
+export const gateFrame = (name: string) => ({ at: gates[name].at, inward: gates[name].inward ?? [1, 0] as P2, opening: gates[name].opening });
+
 /** Granite and iron in one mesh; acorn globes in a second that glows at night. */
-export function piedmontGates(ground: Ground) {
+export function piedmontGates(ground: Ground, names: string[] = ['12th Street', '14th Street']) {
   const b = new Builder(), glow = new Builder();
-  for (const g of gates) {
+  for (const g of names.map(n => gates[n])) {
+    const IN = g.inward ?? [1, 0], ALONG: P2 = [-IN[1], IN[0]];
     const base = ground(...g.at);
     if (base === null) continue;
     const at = (along: number, inward = 0): P2 => [g.at[0] + ALONG[0] * along + IN[0] * inward, g.at[1] + ALONG[1] * along + IN[1] * inward];
@@ -80,8 +90,10 @@ export function piedmontGates(ground: Ground) {
       }
       if (g.wall.endPier) {
         const [ex, ez] = at(side * (w1 + g.wall.endPier / 2)), ey = ground(ex, ez) ?? base;
-        post(b, ex, ez, g.wall.endPier, ey - .3, ey + 1.5, GRANITE);
-        post(b, ex, ez, g.wall.endPier + .15, ey + 1.5, ey + 1.65, CAP);
+        // End piers stand half a metre above their wall.
+        const eh = Math.max(1.5, g.wall.height + .5);
+        post(b, ex, ez, g.wall.endPier, ey - .3, ey + eh, GRANITE);
+        post(b, ex, ez, g.wall.endPier + .15, ey + eh, ey + eh + .15, CAP);
       }
     }
     if (g.lintel) {

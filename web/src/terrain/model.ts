@@ -21,6 +21,7 @@ import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
+import { piedmontPark } from '../city/piedmont-park';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
@@ -205,6 +206,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
   const oval = activeOval(city.bounds, groundAt, options.quality);
   if (oval) scenery.group.add(oval.group);
+  // Piedmont Park furniture at mapped points, entrance map kiosks (high tier) and the 10th Street gate.
+  const park = piedmontPark(city, groundAt, options.quality);
+  if (park) scenery.group.add(park.group);
   const species = createTrees(named, options.quality, groundAt);
   if (species) scenery.group.add(species.group);
   if (options.lights) {
@@ -236,7 +240,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     terrainAt: bare,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); },
-    setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },
+    setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);
@@ -254,6 +258,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       // Also unregisters the yard planting from the ink pass.
       yardLayer?.dispose();
       oval?.dispose();
+      park?.dispose();
       scenery.dispose();
       group.clear();
     },
