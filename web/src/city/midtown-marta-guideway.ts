@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { roadWidth, type TransportRun } from '../terrain/transport-data';
+import type { TransportRun } from '../terrain/transport-data';
 import { Builder, Line, type P2 } from '../vignette/geom';
+import { pierObstacles } from '../terrain/pier-clearance';
 
 type Ground = (x: number, z: number) => number | null;
 
@@ -359,28 +360,8 @@ export function northLinePiers(
   ground: Ground = () => null,
 ) {
   const c = profile.centre;
-  // Roads at the width transport.ts draws them, plus 1 m; other railways at a
-  // locomotive's half-width plus margin (the clearance transport.ts keeps for piers).
-  const lines = [
-    ...roads.filter((r) => r.pts.length > 1).map((r) => ({ line: new Line(r.pts), half: roadWidth(r as Parameters<typeof roadWidth>[0]) / 2 + 1 })),
-    ...rail.filter((r) => r.name !== NORTH_LINE && r.pts.length > 1).map((r) => ({ line: new Line(r.pts), half: 3.8 })),
-  ];
-  const clearAt = (i: number) => {
-    const p = c[i];
-    for (const [u, v] of [
-      [-1.2, -1.1],
-      [1.2, -1.1],
-      [1.2, 1.1],
-      [-1.2, 1.1],
-      [0, 0],
-    ]) {
-      const x = p.x + p.nz * u + p.nx * v,
-        z = p.z - p.nx * u + p.nz * v;
-      if (onLanes(x, z)) return false;
-      if (lines.some(({ line, half }) => nearestOn(line, x, z).d < half)) return false;
-    }
-    return true;
-  };
+  const clear = pierObstacles(roads, onLanes, rail.filter((r) => r.name !== NORTH_LINE));
+  const clearAt = (i: number) => clear(c[i].x, c[i].z, c[i].nx, c[i].nz);
   // Keep piers out of the channel a roadless span crosses: not on its lowest 1.5 m.
   const low = (i: number, from: number, to: number) => {
     for (let j = from; j <= to; j++) if (c[j].clear !== null) return false;
