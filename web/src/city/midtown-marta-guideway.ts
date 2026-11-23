@@ -306,3 +306,146 @@ function deckRun(body: Builder, profile: NorthLineProfile, i0: number, i1: numbe
     body.quad(s.webTopL, s.webTopR, s.botR, s.botL, GIRDER);
   }
 }
+
+type RoadLike = { cls: string; sub?: string | null; pts: P2[] };
+
+/**
+ * Pier stations along each span: single rectangular columns about 20-45 m apart
+ * (longer where carriageways leave no gore), set where neither a rendered connector lane nor a mapped road (at its
+ * drawn width plus 1 m) falls under the footprint.
+ */
+export function northLinePiers(profile: NorthLineProfile, roads: readonly RoadLike[], onLanes: (x: number, z: number) => boolean) {
+  const c = profile.centre;
+  const lines = roads.filter((r) => r.pts.length > 1).map((r) => ({ line: new Line(r.pts), half: roadHalfWidth(r) + 1 }));
+  const clearAt = (i: number) => {
+    const p = c[i];
+    for (const [u, v] of [
+      [-1.2, -1.1],
+      [1.2, -1.1],
+      [1.2, 1.1],
+      [-1.2, 1.1],
+      [0, 0],
+    ]) {
+      const x = p.x + p.nz * u + p.nx * v,
+        z = p.z - p.nx * u + p.nz * v;
+      if (onLanes(x, z)) return false;
+      if (lines.some(({ line, half }) => nearestOn(line, x, z).d < half)) return false;
+    }
+    return true;
+  };
+  const piers: number[] = [];
+  let start = -1;
+  for (let i = 0; i <= c.length; i++) {
+    const on = i < c.length && c[i].bridge;
+    if (on && start < 0) start = i;
+    if (!on && start >= 0) {
+      const end = i - 1;
+      let last = c[start].s;
+      while (c[end].s - last > 45) {
+        let pick = -1;
+        for (let j = start; j <= end; j++) {
+          const d = c[j].s - last;
+          if (d < 20 || d > 45 || c[end].s - c[j].s < 10) continue;
+          if (clearAt(j)) pick = j; // the farthest clear station keeps spans long
+        }
+        // No clear ground within 45 m: span the carriageways to the nearest clear gore.
+        if (pick < 0)
+          for (let j = start; j <= end; j++)
+            if (c[j].s - last > 45 && c[end].s - c[j].s >= 10 && clearAt(j)) {
+              pick = j;
+              break;
+            }
+        if (pick < 0) break;
+        piers.push(pick);
+        last = c[pick].s;
+      }
+      start = -1;
+    }
+  }
+  return piers;
+}
+
+function roadHalfWidth(r: RoadLike) {
+  if (r.cls === 'motorway') return r.sub === 'link' ? 3.25 : 7;
+  if (r.cls === 'trunk' || r.cls === 'primary') return 5;
+  return 3;
+}
+
+const PIER = '#9b978d',
+  RAILING = '#b9bcb8';
+
+/** Piers, railings, abutment walls and the small deck lamps of the spans. */
+export function northLineStructure(profile: NorthLineProfile, piers: number[], ground: Ground) {
+  const body = new Builder(),
+    lights = new Builder();
+  const c = profile.centre;
+  for (const i of piers) {
+    const p = c[i],
+      g = ground(p.x, p.z);
+    if (g === null) continue;
+    const soffit = profile.height[i] - 2.2;
+    // Plain rectangular column with a flared cap under the girder (from the photographs).
+    orientedBox(body, p.x, p.z, p.nz, -p.nx, g - 0.4, soffit - 1.1, 1.1, 1.0, PIER);
+    orientedBox(body, p.x, p.z, p.nz, -p.nx, soffit - 1.1, soffit - 0.5, 1.1, 1.6, PIER);
+    orientedBox(body, p.x, p.z, p.nz, -p.nx, soffit - 0.5, soffit + 0.05, 1.2, 2.2, PIER);
+  }
+  let start = -1;
+  for (let i = 0; i <= c.length; i++) {
+    const on = i < c.length && c[i].bridge;
+    if (on && start < 0) start = i;
+    if (!on && start >= 0) {
+      const i0 = Math.max(0, start - 1),
+        i1 = Math.min(c.length - 1, i);
+      // Pipe railings along both deck edges: posts every 2 m, top and mid rails.
+      for (const side of [-1, 1]) {
+        let prev: number[][] | null = null;
+        for (let j = i0; j <= i1; j++) {
+          const p = c[j],
+            w = p.half - 2.1 + 2.5,
+            top = profile.height[j] - 0.15;
+          const x = p.x + p.nx * w * side,
+            z = p.z + p.nz * w * side;
+          orientedBox(body, x, z, p.nz, -p.nx, top, top + 1.1, 0.04, 0.04, RAILING);
+          const rails = [
+            [x, top + 1.08, z],
+            [x, top + 0.55, z],
+          ];
+          if (prev)
+            for (let k = 0; k < 2; k++) {
+              const a = prev[k],
+                b = rails[k];
+              body.quad(a, b, [b[0], b[1] + 0.05, b[2]], [a[0], a[1] + 0.05, a[2]], RAILING);
+            }
+          prev = rails;
+        }
+      }
+      // Abutment end walls from the soffit down to the bank.
+      for (const j of [i0, i1]) {
+        const p = c[j],
+          w = p.half - 2.1 + 2.6,
+          top = profile.height[j] - 0.5;
+        const pts = [-w, w].map((o) => {
+          const x = p.x + p.nx * o,
+            z = p.z + p.nz * o;
+          return [x, ground(x, z), z] as const;
+        });
+        if (pts.some(([, g]) => g === null)) continue;
+        const [[ax, ag, az], [bx, bg, bz]] = pts as [number, number, number][];
+        if (top - Math.min(ag, bg) > 0.3) body.quad([ax, ag - 0.3, az], [ax, top, az], [bx, top, bz], [bx, bg - 0.3, bz], WALL);
+      }
+      // A small pole lamp on the railing at mid-span (one is visible in the photographs).
+      const m = c[Math.round((i0 + i1) / 2)],
+        w = m.half - 2.1 + 2.5,
+        top = profile.height[Math.round((i0 + i1) / 2)] - 0.15;
+      orientedBox(body, m.x + m.nx * w, m.z + m.nz * w, m.nz, -m.nx, top, top + 3.2, 0.05, 0.05, RAILING);
+      lights.box(0.35, 0.18, 0.35, m.x + m.nx * (w - 0.3), top + 3.2, m.z + m.nz * (w - 0.3), '#fff1d4');
+      start = -1;
+    }
+  }
+  const mesh = new THREE.Mesh(body.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  mesh.name = 'North Line spans';
+  mesh.castShadow = mesh.receiveShadow = true;
+  const lamps = new THREE.Mesh(lights.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#fff1d4', emissiveIntensity: 0 }));
+  lamps.name = 'North Line span lamps';
+  return { mesh, lamps };
+}
