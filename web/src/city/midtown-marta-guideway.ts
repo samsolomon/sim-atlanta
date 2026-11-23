@@ -7,8 +7,16 @@ type Ground = (x: number, z: number) => number | null;
 export const NORTH_LINE = 'MARTA North Line';
 /** Steepest designed grade on the open North Line (inferred; typical heavy-rail limit). */
 export const MAX_GRADE = 0.035;
-/** Rail level to ground beneath a span: 4.9 m clearance under the soffit, which sits 2.2 m down. */
-export const BRIDGE_CLEARANCE = 7.1;
+/** Clear height under a girder soffit over a road (16 ft interstate minimum). */
+export const SOFFIT_CLEARANCE = 4.9;
+/** Rail level above the slab top on the plinths. */
+const DECK = 0.15;
+/** Default girder depth (slab top to soffit) before span lengths are known. */
+export const GIRDER_DEPTH = 2.05;
+/** Continuous cast-in-place box girders run about span/28 deep, within these limits. */
+export function girderDepthFor(span: number) {
+  return THREE.MathUtils.clamp(span / 28, 1.85, 2.6);
+}
 /** Ballast tread top above the highest ground across its width. */
 const TREAD_LIFT = 0.13;
 const STEP = 2;
@@ -54,13 +62,19 @@ function nearestOn(line: Line, x: number, z: number) {
 /**
  * One designed profile shared by both tracks: on bare earth it rides the highest
  * ground between the outer rails, and over a span it keeps the deck at least
- * BRIDGE_CLEARANCE above the ground beneath. A grade-limited envelope joins the
+ * SOFFIT_CLEARANCE under its girder. A grade-limited envelope joins the
  * two, so bridge ends meet their banks without a step.
  */
 type Road = { cls: string; pts: P2[] };
 const UNDER = new Set(['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'service']);
 
-export function northLineProfile(tracks: Line[], runs: readonly TransportRun[], ground: Ground, roads: readonly Road[] = []) {
+export function northLineProfile(
+  tracks: Line[],
+  runs: readonly TransportRun[],
+  ground: Ground,
+  roads: readonly Road[] = [],
+  depthAt: (station: number) => number = () => GIRDER_DEPTH,
+) {
   const [a, b] = tracks;
   const spans = runs.filter((r) => r.name === NORTH_LINE && r.kind === 'bridge').map((r) => new Line(r.pts));
   const centre: { x: number; z: number; s: number; nx: number; nz: number; half: number; bridge: boolean; clear: number | null }[] = [];
@@ -74,7 +88,7 @@ export function northLineProfile(tracks: Line[], runs: readonly TransportRun[], 
     centre.push({ x, z, s, nx: -p.dz, nz: p.dx, half: q.d / 2 + 2.1, bridge, clear: null });
   }
   // Clearance applies only where a mapped road crosses under a span: stations within
-  // 6 m of the crossing take that road's ground plus BRIDGE_CLEARANCE. A road running
+  // 6 m of the crossing keep SOFFIT_CLEARANCE above that road's ground. A road running
   // alongside on the bank does not count, and a span over a creek simply joins its banks.
   const under = roads.filter((r) => UNDER.has(r.cls) && r.pts.length > 1);
   const spanRuns = runs.filter((r) => r.name === NORTH_LINE && r.kind === 'bridge');
@@ -89,8 +103,9 @@ export function northLineProfile(tracks: Line[], runs: readonly TransportRun[], 
           for (const c of centre)
             if (c.bridge && Math.hypot(c.x - hit[0], c.z - hit[1]) < 6) c.clear = Math.max(c.clear ?? -Infinity, g);
         }
-  const target = centre.map((c) => {
-    if (c.clear !== null) return c.clear + BRIDGE_CLEARANCE;
+  const depth = centre.map((_, i) => depthAt(i));
+  const target = centre.map((c, i) => {
+    if (c.clear !== null) return c.clear + SOFFIT_CLEARANCE + DECK + depth[i];
     // Inside the portal hood the grid blends in the hillside over the tunnel; the
     // mouth takes its height from the open cut beyond.
     if (c.s < MOUTH) return -Infinity;
@@ -157,6 +172,7 @@ export function northLineProfile(tracks: Line[], runs: readonly TransportRun[], 
   };
   return {
     centre,
+    depth,
     height,
     target,
     bridgeAt,
@@ -274,7 +290,7 @@ function deckRun(body: Builder, profile: NorthLineProfile, i0: number, i1: numbe
   const c = profile.centre;
   const section = (i: number) => {
     const p = c[i],
-      top = profile.height[i] - 0.15,
+      top = profile.height[i] - DECK,
       w = p.half - 2.1 + 2.6;
     const at = (o: number, y: number) => [p.x + p.nx * o, y, p.z + p.nz * o];
     return {
@@ -284,8 +300,8 @@ function deckRun(body: Builder, profile: NorthLineProfile, i0: number, i1: numbe
       edgeR: at(w, top - 0.35),
       webTopL: at(-(w - 1.5), top - 0.35),
       webTopR: at(w - 1.5, top - 0.35),
-      botL: at(-(w - 2.4), top - 2.05),
-      botR: at(w - 2.4, top - 2.05),
+      botL: at(-(w - 2.4), top - profile.depth[i]),
+      botR: at(w - 2.4, top - profile.depth[i]),
     };
   };
   for (let i = i0; i < i1; i++) {
@@ -398,7 +414,7 @@ export function northLineStructure(profile: NorthLineProfile, piers: number[], g
     const corners = [-1.1, 1.1].flatMap((u) => [-1, 1].map((v) => ground(p.x + p.nz * u + p.nx * v, p.z - p.nx * u + p.nz * v)));
     if (corners.some((g) => g === null)) continue;
     const g = Math.min(...(corners as number[]));
-    const soffit = profile.height[i] - 2.2;
+    const soffit = profile.height[i] - DECK - profile.depth[i];
     if (g >= soffit - 1.5) continue;
     // Plain rectangular column with a flared cap under the girder (from the photographs).
     orientedBox(body, p.x, p.z, p.nz, -p.nx, g - 0.4, soffit - 1.1, 1.1, 1.0, PIER);
@@ -473,4 +489,24 @@ export function northLineStructure(profile: NorthLineProfile, piers: number[], g
   const lamps = new THREE.Mesh(lights.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#fff1d4', emissiveIntensity: 0 }));
   lamps.name = 'North Line span lamps';
   return { mesh, lamps };
+}
+
+/** Girder depth at each centre station from the span between its supports. */
+export function northLineDepths(profile: NorthLineProfile, piers: number[]) {
+  const c = profile.centre;
+  const depth = c.map(() => GIRDER_DEPTH);
+  let start = -1;
+  for (let i = 0; i <= c.length; i++) {
+    const on = i < c.length && c[i].bridge;
+    if (on && start < 0) start = i;
+    if (!on && start >= 0) {
+      const supports = [Math.max(0, start - 1), ...piers.filter((j) => j > start && j < i - 1), Math.min(c.length - 1, i)];
+      for (let k = 1; k < supports.length; k++) {
+        const d = girderDepthFor(c[supports[k]].s - c[supports[k - 1]].s);
+        for (let j = supports[k - 1]; j <= supports[k]; j++) depth[j] = Math.max(j === supports[k - 1] && k > 1 ? depth[j] : 0, d);
+      }
+      start = -1;
+    }
+  }
+  return depth;
 }
