@@ -544,7 +544,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const preview = weatherChoice !== 'Auto';
     // Weather is live data: show it only when the clock is the real present.
     const wxNow = s.realTime && !preview ? weather : null;
-    const conf = confidence(s, !!wxNow, preview);
+    const loadingNote = o.loading?.() ?? null;
+    const conf = confidence(s, !!wxNow, preview, !!loadingNote);
     const night = sunPosition(now).elevation < -2;
     let svg: string;
     if (wxNow) {
@@ -573,13 +574,14 @@ export function createShellNext(o: ShellOptions): ShellApi {
     timeText.textContent = (conf.shifted ? dayTimeFmt : timeFmt).format(now);
     tierDot.className = `a2-dot a2-dot-${conf.tier}`;
     tierText.textContent = confidenceWords(conf).join(' · ');
+    tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
     tierDate.textContent = conf.shifted ? '' : dateFmt.format(now);
     tierDate.hidden = conf.shifted;
     nowBtn.hidden = !conf.shifted;
     open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
-    showNotice(areaNote ?? feedNote);
+    showNotice(loadingNote ?? areaNote ?? feedNote);
     if (!panel.hidden) renderPanel(s);
     // The camera can move under an open share panel: keep the shown link the one Copy sends.
     if (!share.hidden) renderShare();

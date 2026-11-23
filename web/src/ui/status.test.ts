@@ -95,3 +95,11 @@ describe('date picker', () => {
     expect(new Date(sameTimeOnDate(Date.parse('2026-10-30T14:00:00Z'), '2026-11-02')).toISOString()).toBe('2026-11-02T15:00:00.000Z');
   });
 });
+
+describe('loading', () => {
+  it('never reads Live while City builds, and says no scene word', () => {
+    const c = confidence({ realTime: true, rail: 'live' }, true, false, true);
+    expect(c.tier).toBe('loading');
+    expect(confidenceWords(c)).toEqual([]);
+  });
+});
