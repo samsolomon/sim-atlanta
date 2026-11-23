@@ -16,7 +16,7 @@ function roof(b: VBuilding, plan: ReturnType<typeof residential>) {
   const out = new Builder();
   const finish = plan.finishFor(b)!;
   const drawn = plan.city.buildings.find(x => x.id === b.id)!;
-  finish.dressRoof!(out, b.rings[0], drawn.h!);
+  finish.dressRoof!(out, b.rings[0], drawn.h!, new Builder());
   const ys: number[] = [];
   for (let i = 1; i < out.pos.length; i += 3) ys.push(out.pos[i]);
   return { finish, drawn, top: Math.max(...ys), count: out.pos.length / 3 };
@@ -37,7 +37,7 @@ it('infers gables, hips and pyramids from the footprint, with eave-height walls 
   }
   // The L plan's roof never reaches over its empty corner.
   const out = new Builder();
-  plan.finishFor(ell)!.dressRoof!(out, ell.rings[0], plan.city.buildings.find(x => x.id === 'ell')!.h!);
+  plan.finishFor(ell)!.dressRoof!(out, ell.rings[0], plan.city.buildings.find(x => x.id === 'ell')!.h!, new Builder());
   for (let i = 0; i < out.pos.length; i += 3) expect(out.pos[i] > 68.01 && out.pos[i + 2] > 8.01).toBe(false);
   // A one-storey cottage under 150 m² (Home Park bungalows); the same plan in Ansley Park is two storeys.
   const cottage = house('cottage', rect(11, 9));
@@ -59,7 +59,7 @@ it('keeps reported roof shapes and leaves offices, big blocks and existing finis
   // A long plan would gable, but the OSM tag says hipped: its ridge stops short of the ends.
   const ridgeEnd = (b: VBuilding, p: ReturnType<typeof residential>) => {
     const out = new Builder(), drawn = p.city.buildings.find(x => x.id === b.id)!;
-    p.finishFor(b)!.dressRoof!(out, b.rings[0], drawn.h!);
+    p.finishFor(b)!.dressRoof!(out, b.rings[0], drawn.h!, new Builder());
     // Ridge vertices sit at eave + rise (0.72 × the 4 m half-depth); chimneys stand above it.
     const ridge = drawn.h! + 2.88;
     const xs = out.pos.filter((_, i) => i % 3 === 0 && Math.abs(out.pos[i + 1] - ridge) < 1e-4 && out.pos[i + 2] > 0 && out.pos[i + 2] < 8);
@@ -90,7 +90,7 @@ it('reports how many footprints change in each row', () => {
         const finish = plan.finishFor(b);
         if (!finish?.dressRoof) continue;
         const out = new Builder();
-        finish.dressRoof(out, b.rings[0], b.h!);
+        finish.dressRoof(out, b.rings[0], b.h!, new Builder());
         total += out.pos.length / 9;
         houses++;
       }
