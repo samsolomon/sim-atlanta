@@ -1,3 +1,4 @@
+import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
@@ -15,6 +16,7 @@ import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
+import { midtownVents } from '../city/midtown-marta-vents';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
@@ -152,7 +154,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === varsityId ? createVarsity
       : techIds.has(site.id) ? createTechLandmark
       : artsCampusIds.has(site.id) ? createArtsCampusLandmark
-      : midtownLandmarkIds.has(site.id) ? createMidtownLandmark : null;
+      : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
+      : curatedIds.has(site.id) ? createCuratedLandscape : null;
     const landmark = create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
@@ -160,6 +163,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       landmarks.push(landmark);
     }
   }
+  const vents = midtownVents(city.bounds, groundAt);
+  if (vents) landmarks.push(vents);
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options);
   for (const landmark of landmarks) scenery.group.add(landmark.group);

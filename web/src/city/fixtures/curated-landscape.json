@@ -1,0 +1,13 @@
+[
+  {
+    "id": "bceafee8-656d-43a5-a274-67e51dd030f8",
+    "kind": "terrace",
+    "wall": [[-856.45, -1051.25], [-812.57, -1050.56]],
+    "evidence": [
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/20/419703/278453",
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/20/419703/278454",
+      "docs/log/ui/small-structure-floors/README.md"
+    ],
+    "note": "Planted slope behind a retaining wall on the sidewalk edge. 3DEP falls from about 306 m at the sidewalk to 300 m at the south edge. Overture's 1.44 m height is the wall, not a building."
+  }
+]

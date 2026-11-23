@@ -12,6 +12,8 @@ import {
   passengerMaterial,
 } from '../vignette/crescent-stock';
 import survey from './fixtures/brookwood.json';
+import { corridor, corridorGrade, corridorGrids } from './brookwood-corridor';
+import { createNorcrossFreight } from './brookwood-freight';
 
 const project = makeProjector({ lon: -84.3916, lat: 33.7539 });
 const main = new Line(survey.main1 as P2[]);
@@ -21,7 +23,9 @@ const depot = survey.depot as P2[];
 export const brookwoodBounds = { minX: -575, maxX: 410, minZ: -5490, maxZ: -4550 };
 
 // Open rail samples (City x, NAVD88 m). Bridge floors and rooftops are excluded.
+// The corridor anchors continue the mapped mains at grade to the board edges.
 const grade = [
+  ...corridorGrade.west,
   [-575, 271.5],
   [-370.5, 267.9],
   [-244.8, 266.5],
@@ -31,7 +35,12 @@ const grade = [
   [65.2, 263.5],
   [236.5, 261.3],
   [410, 258.9],
+  ...corridorGrade.east,
 ];
+/** Interpolated track bed (NAVD88 m) along the Brookwood corridor. */
+export function brookwoodBedNavd88M(x: number) {
+  return elevation(x);
+}
 function elevation(x: number) {
   const i = grade.findIndex((p) => p[0] >= x);
   if (i < 0) return grade[grade.length - 1][1];
@@ -46,58 +55,90 @@ function elevation(x: number) {
 export function brookwoodGrid(manifest: GroundManifest, bytes: ArrayBuffer) {
   const data = new DataView(bytes.slice(0));
   const { bounds, stepM, cols, rows, scaleM, offsetM, noData } = manifest;
-  const tracks = [survey.main1, survey.main2, survey.steelLead, survey.siding] as P2[][];
+  const tracks = [corridor.main1.pts, corridor.main2.pts, survey.steelLead as P2[], corridor.siding.pts];
+  const segments = tracks.flatMap(line => line.slice(1).map((b, i) => {
+    const a = line[i];
+    return { a, b, minX: Math.min(a[0], b[0]) - 16, maxX: Math.max(a[0], b[0]) + 16,
+      minZ: Math.min(a[1], b[1]) - 16, maxZ: Math.max(a[1], b[1]) + 16 };
+  }));
   for (let row = 0; row < rows; row++) {
     const z = bounds.minZ + row * stepM;
-    if (z < brookwoodBounds.minZ || z > brookwoodBounds.maxZ) continue;
     for (let col = 0; col < cols; col++) {
       const x = bounds.minX + col * stepM;
-      if (x < brookwoodBounds.minX || x > brookwoodBounds.maxX) continue;
+      const surveyed = x >= brookwoodBounds.minX && x <= brookwoodBounds.maxX &&
+        z >= brookwoodBounds.minZ && z <= brookwoodBounds.maxZ;
+      // Outside the survey box but within its x range the terrain is left as staged.
+      if (!surveyed && x >= brookwoodBounds.minX && x <= brookwoodBounds.maxX) continue;
       const offset = 2 * (row * cols + col),
         sample = data.getInt16(offset, true);
+      if (sample === noData) continue;
       const h = sample * scaleM + offsetM,
         bed = elevation(x) - 0.16;
-      if (sample === noData || h <= bed) continue;
+      // Inside the survey, lower terrain beneath the railway bridge is retained. The
+      // survey's open-track ends blend into the filled continuations.
+      const fills = !surveyed || x < brookwoodBounds.minX + 20 || x > brookwoodBounds.maxX - 20;
+      if (fills ? Math.abs(h - bed) < 0.01 : h <= bed) continue;
       let gap = Infinity;
-      for (const line of tracks)
-        for (let i = 1; i < line.length; i++) {
-          const a = line[i - 1],
-            b = line[i];
-          if (x < a[0] - 16 || x > b[0] + 16 || z > Math.max(a[1], b[1]) + 16 || z < Math.min(a[1], b[1]) - 16)
-            continue;
-          gap = Math.min(gap, segDist(x, z, a, b));
-        }
-      if (gap >= 16) continue;
-      const f = Math.min(1, (16 - gap) / 6);
+      for (const g of segments) {
+        if (x < g.minX || x > g.maxX || z < g.minZ || z > g.maxZ) continue;
+        gap = Math.min(gap, segDist(x, z, g.a, g.b));
+      }
+      // Beyond the survey the mapped track is at grade: fill shallow dips under the
+      // ballast as well as trimming high ground beside it. Stay within 6 m there so the
+      // parallel MARTA North Line, 10.8 m away at its closest, keeps its staged ground.
+      const reach = surveyed && !(fills && h < bed) ? 16 : 6;
+      if (gap >= reach) continue;
+      if (h < bed && !fills) continue;
+      const f = Math.min(1, (reach - gap) / (reach === 16 ? 6 : 2));
       data.setInt16(offset, Math.round((h + f * (bed - h) - offsetM) / scaleM), true);
     }
   }
-  return new GroundGrid(manifest, data.buffer);
+  const graded = new GroundGrid(manifest, data.buffer);
+  corridorGrids.add(graded);
+  return graded;
 }
 
-// Signed extension at the ends lets a long consist enter one car at a time.
+// The Crescent follows Main 1 joined to its mapped continuations. Chainage keeps the
+// survey's origin: negative values run west of x −575, values past the survey's end run
+// northeast. Signed extension past the board edges lets a consist leave one car at a time.
+const route = new Line(corridor.main1.pts);
+const westLength = route.cum[corridor.main1.west.length - 1];
+export const corridorChainage = { min: -westLength, max: route.length - westLength };
 function chainage(x: number, z: number) {
   let distance = Infinity,
     along = 0;
-  for (let i = 0; i + 1 < main.pts.length; i++) {
-    const [a, b] = main.pts[i],
-      [c, d] = main.pts[i + 1];
-    const length = main.cum[i + 1] - main.cum[i];
+  for (let i = 0; i + 1 < route.pts.length; i++) {
+    const [a, b] = route.pts[i],
+      [c, d] = route.pts[i + 1];
+    const length = route.cum[i + 1] - route.cum[i];
     const projection = ((x - a) * (c - a) + (z - b) * (d - b)) / length;
-    const t = Math.min(i + 2 === main.pts.length ? Infinity : length, Math.max(i ? 0 : -Infinity, projection));
+    const t = Math.min(i + 2 === route.pts.length ? Infinity : length, Math.max(i ? 0 : -Infinity, projection));
     const gap = Math.hypot(x - a - ((c - a) * t) / length, z - b - ((d - b) * t) / length);
     if (gap < distance) {
-      along = main.cum[i] + t;
+      along = route.cum[i] + t;
       distance = gap;
     }
   }
-  return { along, distance };
+  return { along: along - westLength, distance };
 }
-/** Keep the truck baseline rigid while the car centre crosses a surveyed endpoint. */
+/** Truck position at a Main 1 chainage. Beyond the board edges the baseline stays rigid. */
 export function brookwoodTruckAt(s: number) {
-  const p = main.at(s);
-  const beyond = s - THREE.MathUtils.clamp(s, 0, main.length);
+  const u = s + westLength, clamped = THREE.MathUtils.clamp(u, 0, route.length);
+  const p = route.at(clamped), beyond = u - clamped;
   return { x: p.x + beyond * p.dx, z: p.z + beyond * p.dz };
+}
+
+/** The train note for a camera target: the station and its berth inside the survey,
+ * the shorter running note along either continuation. */
+const continuations = [
+  { minX: -1000, maxX: -560, minZ: -4640, maxZ: -4150 },
+  { minX: 395, maxX: 760, minZ: -5700, maxZ: -5400 },
+];
+const inside = (r: typeof brookwoodBounds, x: number, z: number) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+export function brookwoodRailNote(x: number, z: number) {
+  if (inside(brookwoodBounds, x, z)) return 'Scheduled Crescent · Inferred berth · Illustrative consist and freight';
+  if (continuations.some(r => inside(r, x, z))) return 'Scheduled Crescent · Illustrative consist, freight';
+  return null;
 }
 
 const atl = chainage(...project(-84.392477, 33.799445)).along;
@@ -105,10 +146,12 @@ const platformEnd = chainage(...platform[1]).along;
 export function crescentPlacement(t: TrainState) {
   if (t.routeId !== 'amtrak:route:Crescent' || t.s.tier !== 'scheduled') return;
   const [x, z] = project(t.lon, t.lat);
-  if (x < -750 || x > 590 || z < -5650 || z > -4370) return;
+  if (x < -1300 || x > 1000 || z < -5950 || z > -3950) return;
   const { along, distance } = chainage(x, z);
-  if (distance > 35) return;
-  const p = main.at(along),
+  // Past a board edge the timetable shape bends away from the extended tangent.
+  const offBoard = along < corridorChainage.min || along > corridorChainage.max;
+  if (distance > (offBoard ? 120 : 35)) return;
+  const p = route.at(THREE.MathUtils.clamp(along + westLength, 0, route.length)),
     heading = (t.heading * Math.PI) / 180;
   const dir = Math.sin(heading) * p.dx - Math.cos(heading) * p.dz >= 0 ? 1 : -1;
 
@@ -450,8 +493,8 @@ export function createBrookwood(sceneZero: number) {
       287,
       410,
     );
-  for (const pts of [survey.main1, survey.main2, survey.steelLead, survey.siding]) {
-    const line = new Line(pts as P2[]);
+  for (const pts of [corridor.main1.pts, corridor.main2.pts, survey.steelLead as P2[], corridor.siding.pts]) {
+    const line = new Line(pts);
     b.ribbon(line, 3.6, (_, x) => bed(x) + 0.12, '#807a70');
     for (let s = 0.3; s < line.length; s += 0.72) {
       const p = line.at(s);
@@ -496,22 +539,30 @@ export function createBrookwood(sceneZero: number) {
     return { geometry, offset, length, trucks: dimensions(unit).trucks };
   });
   const northEdge = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  // The mapped mains meet the west board edge on a diagonal. Square off the ballast there.
+  const westEdge = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1000);
   for (const m of [material, lightMaterial, litSlab.material, stockMaterial, ...facades.map((f) => f.material)]) {
-    m.clippingPlanes = [northEdge];
+    m.clippingPlanes = [northEdge, westEdge];
     m.clipShadows = true;
   }
+  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, [northEdge, westEdge]);
+  group.add(freight.group);
+  let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
     lightMaterial.emissiveIntensity = dark * 1.8;
     litSlab.material.emissiveIntensity = dark * 0.35;
     for (const mesh of facades) mesh.material.emissiveIntensity = dark * 0.45;
     night.value = dark;
     let count = 0;
+    crescentOnCorridor = false;
     for (const train of states) {
       const run = crescentPlacement(train);
       if (!run) continue;
+      crescentOnCorridor = true;
       for (const { geometry, offset, length, trucks } of consist) {
         const s = run.center + run.dir * offset;
-        if (s < 0 || s > main.length) continue;
+        // Cars straddling a board edge are cut by the west and north clip planes.
+        if (s < corridorChainage.min - length || s > corridorChainage.max + length) continue;
         const fore = brookwoodTruckAt(s + (run.dir * trucks) / 2),
           aft = brookwoodTruckAt(s - (run.dir * trucks) / 2);
         let car = cars.children[count++] as THREE.Mesh | undefined;
@@ -538,6 +589,11 @@ export function createBrookwood(sceneZero: number) {
     cars,
     structure,
     update,
+    /** Advance the illustrative Main 2 freight after `update` has placed any Crescent. */
+    updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor),
+    freight: freight.group,
+    get freightCars() { return freight.visibleCars; },
+    note: brookwoodRailNote,
     bounds: brookwoodBounds,
     setNorthEdge(z: number) {
       northEdge.constant = -z;
@@ -555,6 +611,7 @@ export function createBrookwood(sceneZero: number) {
       }
       for (const g of [structure.geometry, lights.geometry, ...shapes.values()]) g.dispose();
       for (const m of [material, lightMaterial, stockMaterial]) m.dispose();
+      freight.dispose();
     },
   };
 }

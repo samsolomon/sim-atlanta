@@ -1,0 +1,79 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { Schedule } from '../sched/engine';
+import { consistLength } from '../vignette/crescent-stock';
+import { Line } from '../vignette/geom';
+import { brookwoodRailNote, corridorChainage, crescentPlacement } from './brookwood';
+import { corridor } from './brookwood-corridor';
+import { createNorcrossFreight, NORCROSS_LINE } from './brookwood-freight';
+
+const data = resolve(__dirname, '../../public/data');
+const files = ['ga/routes.json', 'ga/timetable.json', 'ga/vehicle-types.json'];
+const staged = files.every(f => existsSync(resolve(data, f)));
+const J = (f: string) => JSON.parse(readFileSync(resolve(data, f), 'utf8'));
+
+describe.skipIf(!staged)('Brookwood corridor trains', () => {
+  const schedule = staged ? new Schedule(J('ga/routes.json'), J('ga/timetable.json'), J('ga/vehicle-types.json')) : null!;
+  // 06:00 on 20 November to 06:00 the next day, every 10 s.
+  const start = Date.parse('2026-11-20T06:00:00-05:00'), end = start + 24 * 3600e3, step = 10e3;
+  const placed: { t: number; center: number; dir: number }[] = [];
+  if (staged) for (let t = start; t < end; t += step) {
+    for (const state of schedule.trainsAt(new Date(t))) {
+      const run = crescentPlacement(state);
+      if (run) placed.push({ t, ...run });
+    }
+  }
+
+  it('runs the scheduled Crescent from board edge to board edge in both directions', () => {
+    for (const dir of [1, -1]) {
+      const run = placed.filter(p => p.dir === dir);
+      expect(run.length, `dir ${dir}`).toBeGreaterThan(50);
+      const centers = run.map(p => p.center);
+      // The consist enters and leaves through the edges rather than appearing mid-corridor.
+      expect(Math.min(...centers)).toBeLessThan(corridorChainage.min + consistLength / 2);
+      expect(Math.max(...centers)).toBeGreaterThan(corridorChainage.max - consistLength / 2);
+      // It stays visible from edge to edge and moves in trip order without jumping back.
+      for (let i = 1; i < run.length; i++) {
+        expect(run[i].t - run[i - 1].t, new Date(run[i].t).toISOString()).toBe(step);
+        expect(dir * (run[i].center - run[i - 1].center)).toBeGreaterThan(-0.5);
+        expect(Math.abs(run[i].center - run[i - 1].center)).toBeLessThan(400);
+      }
+    }
+  });
+
+  it('labels every point of the corridor with the train note', () => {
+    for (const track of [corridor.main1, corridor.main2, corridor.siding]) {
+      const line = new Line(track.pts);
+      for (let s = 0; s <= line.length; s += 5) {
+        const { x, z } = line.at(s);
+        expect(brookwoodRailNote(x, z), `${x},${z}`).toMatch(/Illustrative consist,? (and )?freight/);
+      }
+    }
+  });
+
+  it('keeps the illustrative Main 2 freight clear of every Crescent near the island', () => {
+    const berth = crescentPlacement({
+      id: 'berth', routeId: 'amtrak:route:Crescent', pathId: 'berth', heading: 45, lon: -84.392477, lat: 33.799445,
+      headsign: '', vehicleType: '', s: { value: 0, tier: 'scheduled', source: 'amtrak-gtfs', asOf: '' },
+      lengthM: { value: 0, tier: 'illustrative', source: '', asOf: '' },
+    })!.center;
+    const freight = createNorcrossFreight(corridor.main2.pts, () => 0, []);
+    const byTime = new Map(placed.map(p => [p.t, p]));
+    let shown = 0, checked = 0;
+    for (let t = start; t < end; t += step) {
+      const crescent = byTime.get(t);
+      const cars = freight.update(t, !!crescent);
+      shown += cars;
+      // No freight anywhere on the corridor while a Crescent is on it, berthed or not.
+      if (crescent) {
+        expect(cars, new Date(t).toISOString()).toBe(0);
+        if (Math.abs(crescent.center - berth) < 300) checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(100);
+    expect(shown).toBeGreaterThan(1000);
+    for (const car of freight.group.children) expect(car.userData.line).toBe(NORCROSS_LINE);
+    freight.dispose();
+  });
+});

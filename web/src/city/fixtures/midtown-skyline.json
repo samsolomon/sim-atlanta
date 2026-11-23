@@ -33,5 +33,12 @@
     "x": 670,
     "z": -2090,
     "heightM": 73
+  },
+  "towerSquare": {
+    "id": "osm:way:26800371",
+    "name": "Tower Square",
+    "x": 464.9,
+    "z": -2095.8,
+    "heightM": 206
   }
 }

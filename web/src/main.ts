@@ -394,7 +394,7 @@ async function openCity() {
         selectedBus = hit?.kind === 'bus' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard());
+        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line));
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },

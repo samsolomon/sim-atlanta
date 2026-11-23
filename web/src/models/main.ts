@@ -16,6 +16,10 @@ import { figureLooks } from '../city/figure-looks';
 import { createFigurePreview } from '../city/street-figures';
 import { labTrack } from './track';
 import { createPlatformScene, type PlatformKind } from './platform-scene';
+import { createTrees, treeDims, treeTriangles, type TreePlacement } from '../trees/render';
+import { SIZE_CLASSES, calendarDoy, doyOf, type SizeClass, type Species, type TreeQuality } from '../trees/species';
+import { SPECIES as SPECIES_LIST } from '../trees/index';
+import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
 
 const el = document.getElementById('stage')!;
 const low = new URLSearchParams(location.search).get('q') === 'low';
@@ -61,7 +65,15 @@ const models = {
   ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
   cyclist: 'Cyclist and bicycle',
+  generic: 'Generic leaf-clump tree',
+  ginkgo: 'Ginkgo',
 } as const;
+// Species in the lab's Trees section; 'generic' is City's current tree, the baseline.
+const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
+const SPECIES_NOTES: Record<string, string> = {
+  generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
+  ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
+};
 type Model = keyof typeof models;
 const requested = new URLSearchParams(location.search).get('v');
 const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400' };
@@ -97,7 +109,97 @@ phase.addEventListener('input', () => {
 const platformParam = new URLSearchParams(location.search).get('platform');
 let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
 let station: ReturnType<typeof createPlatformScene> | undefined;
+let trees: { group: THREE.Object3D; setSeason(doy: number): void; dispose(): void } | null = null;
+let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
+// Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
+const labParams = new URLSearchParams(location.search);
+const clockParam = labParams.get('t');
+const clockDate = clockParam && !Number.isNaN(Date.parse(clockParam)) ? new Date(clockParam) : new Date();
+const clockDoy = calendarDoy(clockDate);
+let seasonDoy = clockDoy;
+const sizeParam = labParams.get('size');
+let treeSize: SizeClass | 'all' = sizeParam === 'all' || SIZE_CLASSES.includes(sizeParam as SizeClass) ? sizeParam as SizeClass | 'all' : 'all';
+let treeQuality: TreeQuality = labParams.get('tier') === 'low' || low ? 'low' : 'high';
 const platformReport = document.getElementById('platform-report')!;
+const treeReport = document.getElementById('tree-report')!;
+const seasonReport = document.getElementById('season-report')!;
+const SEASONS = [['Clock date', clockDoy], ['Spring', doyOf(4, 10)], ['Summer', doyOf(7, 1)], ['Fall', doyOf(11, 8)], ['Late fall', doyOf(11, 30)], ['Winter', doyOf(1, 15)]] as const;
+/** Trees in a row from smallest to largest, or one class at the origin, plus a person for scale. */
+function buildTrees() {
+  const sizes = treeSize === 'all' ? SIZE_CLASSES : [treeSize];
+  const species = SPECIES[model];
+  const spreads = sizes.map(size => species ? species.sizes[size].spreadM : GENERIC_SIZES[size].crownM * 2);
+  const heights = sizes.map(size => species ? species.sizes[size].heightM : GENERIC_SIZES[size].heightM);
+  const xs: number[] = [];
+  let x = 0;
+  sizes.forEach((_, i) => { x += (i ? spreads[i - 1] / 2 : 0) + spreads[i] / 2 + (i ? 3 : 0); xs.push(x); });
+  const mid = (xs[0] - spreads[0] / 2 + xs[xs.length - 1] + spreads[spreads.length - 1] / 2) / 2;
+  const row = sizes.map((size, i) => ({ size, x: xs[i] - mid, z: 0 }));
+  if (species) {
+    const placements: TreePlacement[] = row.map((r, i) => ({ species, size: r.size, x: r.x, z: r.z, seed: 11 + i * 7,
+      heightM: species.sizes[r.size].heightM, spreadM: species.sizes[r.size].spreadM }));
+    trees = createTrees(placements, treeQuality, () => 0);
+  } else trees = createGenericTrees(row, treeQuality);
+  scene.add(trees!.group);
+  // A walker beside the smallest tree, facing the camera.
+  scaleFigure = createFigurePreview('walker', 0);
+  scaleFigure.group.position.set(row[0].x - spreads[0] / 2 - 1.5, 0, 2);
+  scaleFigure.group.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
+  scene.add(scaleFigure.group);
+  const personM = new THREE.Box3().setFromObject(scaleFigure.group).getSize(new THREE.Vector3()).y;
+
+  ground.material = floorMaterial;
+  for (const id of ['lines', 'roles', 'platforms', 'motion']) document.getElementById(id)!.hidden = true;
+  nextLook.hidden = true;
+  track.visible = longTrack.visible = false;
+  const width = row[row.length - 1].x + spreads[spreads.length - 1] / 2 - (row[0].x - spreads[0] / 2) + 4;
+  const tall = Math.max(...heights);
+  ground.scale.setScalar(Math.max(1, width / 90));
+  const extent = Math.max(width, tall) * 0.7;
+  sun.position.set(-18, 30, 22).multiplyScalar(Math.max(1, extent / 20));
+  sun.shadow.camera.far = extent * 6;
+  sun.shadow.normalBias = 0.05;
+  Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
+  sun.shadow.camera.updateProjectionMatrix();
+  const d = Math.max(width * 1.1, tall * 2.2) + 8;
+  const cy = tall * 0.45;
+  presets = {
+    Front: { pos: [0, cy, d], target: [0, cy, 0], fov: 30 },
+    '¾ front': { pos: [-d * 0.6, cy + d * 0.2, d * 0.8], target: [0, cy, 0], fov: 30 },
+    Side: { pos: [-d, cy, 0.01], target: [0, cy, 0], fov: 30 },
+    Rear: { pos: [0, cy, -d], target: [0, cy, 0], fov: 30 },
+    Top: { pos: [0.01, d * 1.2, 0], target: [0, 0, 0], fov: 34 },
+  };
+  camera.far = Math.max(400, d * 4);
+  camera.updateProjectionMatrix();
+
+  const per = (q: TreeQuality) => species
+    ? sizes.map(size => `${size} ${treeTriangles(species, size, q).total}`).join(', ')
+    : `${genericTriangles(q).total} per tree at every size`;
+  const budget = genericTriangles(treeQuality);
+  const draws = (trees as { draws?: number }).draws ?? budget.draws;
+  treeReport.textContent = `${treeQuality === 'high' ? 'High' : 'Low'} detail. Triangles per tree: ${per(treeQuality)}`
+    + ` (budget ${budget.total}). ${draws} instanced draws. Person ${personM.toFixed(2)} m.`;
+  const dims = species ? sizes.map(size => {
+    const dd = treeDims({ species, size, x: 0, z: 0, seed: 0, heightM: species.sizes[size].heightM, spreadM: species.sizes[size].spreadM });
+    return `${size}: ${dd.heightM} m tall, ${dd.spreadM} m spread, ${Math.round(dd.calliperM * 100)} cm trunk`;
+  }).join('; ') : '';
+  document.getElementById('title')!.textContent = models[model];
+  document.title = models[model] + ' · Model Lab · Sim Atlanta';
+  const blurb = document.getElementById('blurb')!;
+  blurb.replaceChildren(SPECIES_NOTES[model] + (dims ? dims + '. ' : ''));
+  const link = document.createElement('a');
+  link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/tree-species.md';
+  link.textContent = 'Species notes and sources';
+  blurb.append(link);
+  showSeason();
+}
+function showSeason() {
+  trees?.setSeason(seasonDoy);
+  const label = new Date(Date.UTC(2026, 0, seasonDoy)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const species = SPECIES[model];
+  seasonReport.textContent = `${label}${species ? ': ' + species.foliage(seasonDoy, 0).label : ''}. Clock date from ?t= as in City.`;
+}
 function build() {
   station?.dispose();
   station = undefined;
@@ -111,6 +213,16 @@ function build() {
   cars = [];
   figure?.dispose();
   figure = undefined;
+  trees?.dispose();
+  trees = null;
+  scaleFigure?.dispose();
+  scaleFigure = undefined;
+  const isTree = model === 'generic' || Object.hasOwn(SPECIES, model);
+  for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree;
+  if (isTree) {
+    buildTrees();
+    return;
+  }
   const person = model === 'walker' || model === 'cyclist';
   ground.material = person ? figureShadow : floorMaterial;
   const extent = person ? 6 : model === 'crescent' ? 128 : 40;
@@ -120,7 +232,7 @@ function build() {
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = model === 'cq400' || model === 'cm44ac' || passenger;
+  track.visible = (model === 'cq400' || model === 'cm44ac' || passenger);
   longTrack.visible = model === 'crescent';
   if (longTrack.visible) track.visible = false;
   ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
@@ -354,12 +466,12 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = id === 'crescent' || isPassengerUnit(id) ? passengerViews : { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS }[id];
+  presets = id === 'crescent' || isPassengerUnit(id) ? passengerViews : { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS }[id];
   modelSelect.value = id;
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
   build();
-  view('¾ front');
+  view(id === 'generic' || Object.hasOwn(SPECIES, id) ? 'Front' : '¾ front');
 }
 function selectModel(id: Model) {
   const url = new URL(location.href);
@@ -367,7 +479,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
@@ -382,6 +494,19 @@ for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.k
   }
   modelSelect.append(options);
 }
+// Tree controls: size class, season and detail tier.
+const setParam = (key: string, value: string | null) => {
+  const url = new URL(location.href);
+  if (value === null) url.searchParams.delete(key); else url.searchParams.set(key, value);
+  history.replaceState(null, '', url);
+};
+for (const size of [...SIZE_CLASSES, 'all'] as const)
+  mk('tree-size', size === 'all' ? 'All sizes' : size[0].toUpperCase() + size.slice(1), () => { treeSize = size; setParam('size', size); build(); view('Front'); }, size === treeSize);
+document.getElementById('tree-size')!.append(treeReport);
+for (const [label, doy] of SEASONS) mk('season', label, () => { seasonDoy = doy; showSeason(); }, label === 'Clock date');
+document.getElementById('season')!.append(seasonReport);
+for (const tier of ['high', 'low'] as const)
+  mk('tier', tier === 'high' ? 'High' : 'Low', () => { treeQuality = tier; setParam('tier', tier); build(); }, tier === treeQuality);
 modelSelect.addEventListener('change', () => selectModel(modelSelect.value as Model));
 setModel(model);
 const nightBtn = document.getElementById('night')!;
