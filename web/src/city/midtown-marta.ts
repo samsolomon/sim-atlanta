@@ -200,6 +200,15 @@ function midtownEntrance(buildings: VBuilding[], site: VBuilding, ground: Ground
             );
           lights.box(1, 0.2, 1, x + 3.2, soffit - 0.94, z, '#fff1d7');
         }
+      // Backlit entrance headers sit below the coffer edge, visible from each plaza.
+      for (const z of [-3046.7, -3005.6]) {
+        const base = ground(482, z);
+        if (base === null) continue;
+        const sign = base + 2.95;
+        for (const x of [477.5, 486.5]) body.box(0.36, 3.2, 0.48, x, base + 1.6, z, '#b3b2a3');
+        body.box(9.4, 0.54, 0.48, 482, sign, z, '#52616a');
+        lights.box(8.8, 0.26, 0.51, 482, sign + 0.04, z, '#d9e6df');
+      }
       const lobby = ground(478, -3026);
       if (lobby !== null) body.box(20, soffit - lobby, 12, 478, (soffit + lobby) / 2, -3026, '#566563');
       for (const id of ['1283640597', '1283640598'] as const) paving(shell, plazas[id], ground);
