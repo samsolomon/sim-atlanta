@@ -6,6 +6,7 @@ import { GroundGrid } from './grid';
 import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
+import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { groundMap } from './ground-map';
 
 type Tree = [number, number, number, number];
@@ -119,7 +120,19 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const groundAt = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
-  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt, options.finishFor, options.separateBuilding);
+  let sceneryCity = city;
+  const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
+  for (const site of city.buildings) {
+    if (!midtownLandmarkIds.has(site.id)) continue;
+    const landmark = createMidtownLandmark(sceneryCity.buildings, site,
+      foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt);
+    if (landmark) {
+      sceneryCity = { ...sceneryCity, buildings: landmark.buildings };
+      landmarks.push(landmark);
+    }
+  }
+  const scenery = makeScenery(sceneryCity, trees, options.quality, grid.manifest.stepM, groundAt, options.finishFor, options.separateBuilding);
+  for (const landmark of landmarks) scenery.group.add(landmark.group);
   let fragment: World | undefined;
   if (candidate) {
     const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
@@ -137,7 +150,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
-    setNight(factor: number) { scenery.setNight(factor); fragment?.setNight(factor); },
+    setNight(factor: number) { scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);
