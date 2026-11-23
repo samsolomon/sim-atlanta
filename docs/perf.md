@@ -61,6 +61,9 @@ vehicle layers, and downtown landmarks (buildings). An object's `userData.perf` 
    (run it from `web/`).
 2. Send the coordinator the URLs. The coordinator runs each one in a fresh Chrome process on the A16
    (adb reverse plus a localhost proxy), then returns the `perf-result` JSON or the box text.
+   Chrome opened by intent shows its URL bar, so the A16's canvas is **384x692**. That size is the baseline,
+   and every result's `summary.drawingBuffer` should match it. Run each URL **twice** and report the median.
+   Rerun any result with `summary.areas` below 12.
 3. Keep the clock pinned (`t=2026-11-20T14:00:00-05:00`), which also means timetable data and clear weather.
    Use `q=low` and the default UI (no `ui=next`). Use the same four cameras every time:
 
