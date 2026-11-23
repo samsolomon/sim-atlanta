@@ -93,6 +93,13 @@ function chainage(x: number, z: number) {
   }
   return { along, distance };
 }
+/** Keep the truck baseline rigid while the car centre crosses a surveyed endpoint. */
+export function brookwoodTruckAt(s: number) {
+  const p = main.at(s);
+  const beyond = s - THREE.MathUtils.clamp(s, 0, main.length);
+  return { x: p.x + beyond * p.dx, z: p.z + beyond * p.dz };
+}
+
 const atl = chainage(...project(-84.392477, 33.799445)).along;
 const platformEnd = chainage(...platform[1]).along;
 export function crescentPlacement(t: TrainState) {
@@ -505,8 +512,8 @@ export function createBrookwood(sceneZero: number) {
       for (const { geometry, offset, length, trucks } of consist) {
         const s = run.center + run.dir * offset;
         if (s < 0 || s > main.length) continue;
-        const fore = main.at(s + (run.dir * trucks) / 2),
-          aft = main.at(s - (run.dir * trucks) / 2);
+        const fore = brookwoodTruckAt(s + (run.dir * trucks) / 2),
+          aft = brookwoodTruckAt(s - (run.dir * trucks) / 2);
         let car = cars.children[count++] as THREE.Mesh | undefined;
         if (!car) {
           car = new THREE.Mesh(geometry, stockMaterial);

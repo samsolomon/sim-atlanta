@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TrainState } from '../model/types';
 import type { GroundManifest } from '../terrain/grid';
 import { consistLength, formation, layout, passengerGeometry } from '../vignette/crescent-stock';
-import { brookwoodGrid, crescentPlacement } from './brookwood';
+import { brookwoodGrid, brookwoodTruckAt, crescentPlacement } from './brookwood';
 
 const stop: TrainState = {
   id: 'example', routeId: 'amtrak:route:Crescent', pathId: 'example', heading: 45,
@@ -22,6 +22,13 @@ describe('Brookwood placement', () => {
     // Projected ends of OSM 1180995316 on Main 1 (southwest to northeast).
     expect(north.center + consistLength / 2).toBeCloseTo(657, -1);
     expect(north.center - consistLength / 2).toBeGreaterThan(285);
+  });
+
+  it('keeps both coach trucks 18.14 m apart as the centre reaches the southwest survey endpoint', () => {
+    const front = brookwoodTruckAt(9.07), back = brookwoodTruckAt(-9.07);
+    expect(Math.hypot(front.x - back.x, front.z - back.z)).toBeCloseTo(18.14, 4);
+    expect((front.x + back.x) / 2).toBeCloseTo(-575, 4);
+    expect((front.z + back.z) / 2).toBeCloseTo(-4587.85, 4);
   });
 
   it('leaves other services, live positions, and remote train locations out of the station', () => {
