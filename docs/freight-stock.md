@@ -55,3 +55,26 @@ CSX 7257, seen in Sam's Georgia State photo, is a CM44AC: a GE AC4400CW rebuilt 
 - One locomotive is 2,608 triangles. Units share one geometry per type, so draw calls are unchanged.
 
 [Cab side, photo vs model](log/freight/cm44ac-side34.jpg) · [Front three-quarter](log/freight/cm44ac-front34.jpg) · [Night](log/freight/cm44ac-night.jpg) · [NS-like](log/freight/cm44ac-ns.jpg) · [Lab before and after](log/freight/cm44ac-lab.jpg) · [Brookwood, NS-like passage at 14:03](log/freight/brookwood-ns-day.jpg)
+
+## Codex takeover verification — 2026-11-23
+
+Complete generated data copied from the local studio-midtown-skyline worktree;
+Python dependencies installed locally. `PIPELINE_TESTS=strict pnpm test` passed:
+20 Rust, 11 Python, 918 web and 5 worker tests (one existing web skip).
+`pnpm test:perf` passed both ceilings: low 2,329,755 triangles / 533 calls;
+high 13,275,875 triangles / 1,136 calls. These are whole-City counts.
+Review (Claude via `pnpm review -- --reviewer claude`): 0 confirmed, 0 plausible,
+0 dismissed. The earlier livery-name regex follow-up remains tracked above.
+
+Fresh captures: [lab day](log/freight/codex-lab-day.jpg),
+[lab night](log/freight/codex-lab-night.jpg),
+[City day](log/freight/codex-city-day.jpg),
+[City night](log/freight/codex-city-night.jpg).
+Lab: `/models.html?v=cm44ac`, camera `[-32,12,36]`, target `[0,2,1]`;
+night uses `__lab.setNight(true)`.
+City: `cam=-92,-5054,115,55,250&dev&mindist=20&speed=0`,
+November 20, 2026 at 14:02:40 and 22:02:40 ET. The shifted time keeps the
+locomotive beside the station instead of hidden behind it.
+
+Coordinator delivery is blocked: `orca orchestration send --on air` rejects
+the saved pairing token. No merge approval received; nothing merged or deployed.
