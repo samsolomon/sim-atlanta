@@ -47,6 +47,7 @@ import { ArterialTraffic } from './arterial-traffic';
 import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
+import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -280,6 +281,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let downtownPlinth: THREE.Mesh | undefined;
   const eastController = new AbortController();
   let transport: ReturnType<typeof createSurfaceTransport> | undefined;
+  let streetcarDowntown: ReturnType<typeof buildStreetcarTrack> | undefined;
   // Elevated roads get their own structural geometry. Place lamps on ground roads.
   const groundRoads = grid ? [...vd.roads.filter(r => !r.bridge && !r.tunnel),
     ...vd.terrainTransport!.roads.filter(r => r.kind === 'ground').map(r =>
@@ -295,6 +297,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const disposeBoard = () => {
     eastController.abort();
     preparedBrookwood?.dispose();
+    streetcarDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
     mosaic?.dispose();
     eastRail?.dispose();
@@ -549,16 +552,25 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
-      await build('streets and freight', () => { transport = createSurfaceTransport(americasMart?.surfaceData(vd) ?? vd, ground, terrain!.groundAt, cut); });
+      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
       await build('streets', () => world.buildStreets());
       await build('ground', () => world.buildGround());
-      await build('freight and tram', () => { world.buildFreight(); world.buildTram(); });
+      await build('freight', () => world.buildFreight());
       await build('buildings', () => world.buildBuildings());
       await build('trees', () => world.buildTrees());
     }
+    // The Atlanta Streetcar draws its own embedded track and wire from the GTFS shapes,
+    // the geometry its vehicles run on. The OSM tram strips stopped at the downtown edge.
+    await build('streetcar', () => {
+      const flat = (x: number, z: number) => world.ground(x, z) + 0.2; // vignette road surface
+      const ground = terrain ? terrain.groundAt : flat;
+      const height = roadSurface(vd.roads, cityRoadHeight(vd, ground, transport?.deckAt), ground);
+      streetcarDowntown = buildStreetcarTrack(streetcarLines(rf, manifest.origin), b, height, poleBlocked(vd.roads, vd.buildings));
+      world.group.add(streetcarDowntown.group);
+    });
     await build('MARTA', () => {
       const lower = transport;
       const pierAllowed = lower ? (x: number, z: number) =>
@@ -837,6 +849,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
       addArea(area);
       north = area;
+      {
+        const board = area.connectorBoard;
+        const track = buildStreetcarTrack(streetcarLines(rf, manifest.origin), area.bounds,
+          roadSurface(board.city.roads, board.roadHeight, area.groundAt), poleBlocked(board.city.roads, board.city.buildings));
+        area.group.add(track.group);
+        const disposeArea = area.dispose.bind(area);
+        area.dispose = () => { track.dispose(); disposeArea(); };
+      }
       extendConnectorTraffic();
       if (!mosaic) {
         downtown.openJoin(1); king.openJoin(1); area.openJoin(); area.openJoin(1);

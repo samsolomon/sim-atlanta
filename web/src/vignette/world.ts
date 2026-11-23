@@ -816,25 +816,6 @@ export class World {
   }
 
   /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
-  buildTram() {
-    const b = new Builder();
-    for (const r of this.data.rail) {
-      if (r.cls !== 'tram' || r.flags.includes('is_tunnel') || r.pts.length < 2) continue;
-      const line = new Line(r.pts);
-      for (const off of [-0.7175, 0.7175]) {
-        const rail = line.offset(off, 1);
-        b.ribbon(rail, 0.24, (_s, x, z) => this.ground(x, z) + 0.27, '#393c40', 1);
-        b.ribbon(rail, 0.09, (_s, x, z) => this.ground(x, z) + 0.29, '#b6b5ae', 1);
-      }
-    }
-    const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({
-      vertexColors: true, side: THREE.DoubleSide,
-      polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16,
-    }));
-    mesh.receiveShadow = true;
-    this.group.add(mesh);
-  }
-
   // ---- buildings ----------------------------------------------------------------------
 
   buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
