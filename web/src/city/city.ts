@@ -120,6 +120,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   progress?: (label: string) => void;
   areaNote?: (text: string | null) => void;
   trains: () => TrainState[];
+  /** Where the timetable stops trains along a path (for platform berthing). */
+  stopDistances?: (pathId: string, stopId: string) => number[];
   clockMs: () => number;
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
@@ -605,6 +607,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(rail.mesh);
     scenery.push(rail.mesh); // occludes picking: no selecting a train hidden under the canopy
     trains.setTracks(tracks, union);
+    if (options.stopDistances) trains.setBerths(mod.kingMemorialBerths(rf, extended, pack.station?.platforms ?? [], options.stopDistances));
     trainBounds = union;
     trainRail = extended.rail;
     trainEdges[1].constant = eastBounds.maxX;
