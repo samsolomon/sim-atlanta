@@ -150,9 +150,23 @@ export class GroundSurface {
         }
       }
     }
+    // Yields may abut or overlap (a run of graded-cutting triangles). A vertex takes the
+    // lowest floor of every yield that contains it, so faces of neighbouring yields meet
+    // at the same height, and a skirt is drawn only where no yield lies beyond the edge.
+    const nearYields = (x: number, z: number) => {
+      const c = Math.floor((x - bounds.minX) / (2 * stepM)), r = Math.floor((z - bounds.minZ) / (2 * stepM));
+      const out = new Set<ReturnType<typeof yieldPlanes>>();
+      for (let rr = r - 1; rr <= r + 1; rr++) for (let cc = c - 1; cc <= c + 1; cc++)
+        if (rr >= 0 && cc >= 0 && rr < blockRows && cc < blockCols) for (const y of yieldBlocks.get(rr * blockCols + cc) ?? []) out.add(y);
+      return out;
+    };
+    const contains = (y: ReturnType<typeof yieldPlanes>, x: number, z: number, eps: number) =>
+      y.planes.every(plane => plane(x, 0, z) >= -eps);
     const lowered = new Map<number, number>();
-    const lower = (i: number, floor: (x: number, z: number) => number) => {
-      const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2], f = floor(x, z);
+    const lower = (i: number) => {
+      const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
+      let f = Infinity;
+      for (const yd of nearYields(x, z)) if (contains(yd, x, z, 1e-6)) f = Math.min(f, yd.floor(x, z));
       if (!(y > f)) return i;
       let j = lowered.get(i);
       if (j === undefined) lowered.set(i, j = add(x, f, z));
@@ -173,16 +187,21 @@ export class GroundSurface {
         faces = faces.flatMap(f => {
           const { inside, outside } = splitConvex(f, y.planes, pos, add);
           if (!inside) return outside;
-          const low = inside.map(i => lower(i, y.floor));
+          const low = inside.map(lower);
           if (low.every((j, k) => j === inside[k])) return [...outside, inside];
           emit(low);
           // Skirt each footprint edge where the inside dropped, seen from either side.
           for (let k = 0; k < inside.length; k++) {
             const n = (k + 1) % inside.length, p = inside[k], q = inside[n];
             if (low[k] === p && low[n] === q) continue;
-            const onEdge = y.planes.some(plane =>
+            const edge = y.planes.findIndex(plane =>
               Math.abs(plane(pos[3*p], 0, pos[3*p+2])) < 1e-6 && Math.abs(plane(pos[3*q], 0, pos[3*q+2])) < 1e-6);
-            if (!onEdge) continue;
+            if (edge < 0) continue;
+            // Just beyond the edge's midpoint, away from the piece's centre.
+            const cx = inside.reduce((t, i) => t + pos[3*i], 0) / inside.length, cz = inside.reduce((t, i) => t + pos[3*i+2], 0) / inside.length;
+            const mx = (pos[3*p] + pos[3*q]) / 2, mz = (pos[3*p+2] + pos[3*q+2]) / 2, d = Math.hypot(mx - cx, mz - cz) || 1;
+            const bx = mx + (mx - cx) / d * 1e-3, bz = mz + (mz - cz) / d * 1e-3;
+            if ([...nearYields(bx, bz)].some(other => other !== y && contains(other, bx, bz, 0))) continue;
             emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
             emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
           }

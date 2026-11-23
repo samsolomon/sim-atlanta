@@ -98,7 +98,7 @@ async function main() {
     const track = terrainAlignment(alignment(routes, manifest, bounds.downtown, pid), pid, manifest, grid);
     const downtown = createDowntownTerrain(grid, ctx, trees.trees, { quality, join: joins('downtown'), bottomY: -48, openings: terrainOpenings([track]) });
     let transport: ReturnType<typeof createSurfaceTransport>;
-    try { transport = createSurfaceTransport(ctx, grid, downtown.groundAt); }
+    try { transport = createSurfaceTransport(ctx, grid, downtown.groundAt); downtown.carve(transport.cutting); }
     catch (error) { downtown.dispose(); throw error; }
     areas.set('downtown', {
       ...downtown, connectorBoard: { city: ctx, roadHeight: cityRoadHeight(ctx, downtown.groundAt, transport.deckAt) },
