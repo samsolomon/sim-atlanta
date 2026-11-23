@@ -206,3 +206,98 @@ Removed for now: Street view and search. Both are follow-ups.
 - Small-text contrast over the scene.
 - The phone time sheet while dragging.
 - Judge each of these in the running app.
+
+## Appendix: board references and exact values
+
+The canvas is private, so the approved boards are copied into this branch:
+
+- `docs/ui-a2c/*.jpg`: one capture per approved board.
+- `docs/ui-a2c/source/*.dc.html`: each board's markup and CSS. These are design mockups:
+  images point at canvas uploads and `support.js` belongs to the canvas, so read them
+  for values and structure, not to run.
+
+| Board | Shows |
+|---|---|
+| `A2c-desktop` | City, live, train selected: subject card, content-height detail panel, app bar, camera column |
+| `A2c-night` | Night glass, clock shifted, radio playing ("Peachtree Drift") |
+| `A2c-menu` · `A2c-phone-menu` | Menu on desktop (opens up from the app bar) and phone (sheet) |
+| `A2c-key` · `R5-phone-key` | Key in the detail panel and as a phone sheet |
+| `A2c-about` | About & credits: full-height panel that scrolls, stopping above the camera column |
+| `A2c-models` · `R5-phone-models` | Models view: model card, Details panel, Details button on phones |
+| `A2c-models-browser` · `R5-phone-browser` | Model browser at 100+ (categories and counts are examples) |
+| `R5-time` · `R5-phone-time` | Time & weather on desktop (inside the subject card) and phone (sheet) |
+| `R5-map` · `R5-phone-map` | Map view in the same layout; Key replacing a selection with a back row; credit line |
+| `A2c-phone` | Phone, train selected: sheet, bottom bar hidden |
+
+### Glass
+
+- **Day:**
+  - background: `linear-gradient(160deg, rgba(252,250,245,.80), rgba(243,239,230,.68))`
+  - filter: `backdrop-filter: blur(22px) saturate(1.35)`
+  - shadow: `box-shadow: 0 0 0 .5px rgba(60,45,30,.18), 0 10px 28px rgba(40,30,20,.18), 0 1px 3px rgba(40,30,20,.10), inset 0 1px 0 rgba(255,255,255,.9)`
+  - Ink `#2a2722`, secondary ink `#5f5a50`, separator `rgba(60,45,30,.12)`.
+- **Night:**
+  - gradient `rgba(38,44,56,.70)` → `rgba(20,24,32,.62)`
+  - edge `0 0 0 .5px rgba(255,255,255,.16)`, inset highlight `rgba(255,255,255,.22)`
+  - shadow `0 12px 32px rgba(0,0,0,.45)`
+  - ink `#eef0f3`, secondary ink `#b7bfcb`, separator `rgba(255,255,255,.12)`
+- **Panels that hold long text** (menu, About, browser) use slightly more opaque day glass
+  (`.84–.92` / `.74–.86`).
+- **Radius:** cards and panels 16 px; phone sheets 24 px with a 40×5 px grabber; buttons
+  9–10 px.
+- **Inset:** 8 px from every edge. On phones the top items sit at `safe-area-top + 8`
+  (54 px on the 390×844 board). The app bar sits 34 px from the bottom, above the
+  home indicator.
+
+### Type and sizes
+
+System UI sans throughout.
+
+- **Subject card (desktop):**
+  - place 30 px / 700 / −0.015em
+  - time line 16 px; time bold with a ⌄ at 45% opacity
+  - tier line 12 px with a 7 px dot
+  - padding 14 / 18 / 14 / 20 px
+- **Subject card (phone):** place 22 px, time line 14 px.
+- **Panel widths:**
+  - detail panel 360 px
+  - About 384 px
+  - Models Details 312 px
+  - model browser 380 px
+  - menu 320 px
+  - Time & weather card 372 px
+- **Heights:** app bar and camera buttons 44×44 (phone app bar 52 px tall); app bar
+  48 px on desktop.
+- **Selected segment:**
+  - day: background `rgba(255,255,255,.95)`, shadow `0 1px 3px rgba(40,30,20,.16), 0 0 0 .5px rgba(60,45,30,.12)`, track `rgba(60,45,30,.12)`
+  - night: `rgba(255,255,255,.20)` on a `rgba(0,0,0,.22)` track
+  - never a dark fill
+- **Truth-tier label:** 11 px / 600, 1 px separator-colour border, fully rounded, secondary
+  ink. Fixed width (76 px) in the Key so the descriptions line up.
+- **Colour lines in the Key:** 28×5 px. Service colours come from `web/src/ui/tokens.css`.
+- **Credit line:**
+  - 12 px on desktop, 11 px on phones, colour `#4a463e`
+  - halo `text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea`
+  - no glass behind it
+- **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Every other button
+  uses the separator-tint background.
+
+### Share sheet (not redrawn in A2c, behaviour unchanged)
+
+- Title "Share this view", with the line "The link opens on this exact camera in City."
+- Two radio rows:
+  - **Live:** "Opens at whatever time it is for the viewer."
+  - **Freeze this moment:** "Fri, Nov 20 · 9:30 PM, paused. Trains from the timetable."
+- A monospace preview of the link, then "Copy link" and "Share…" (the system share sheet).
+- Desktop opens it from the share button in the camera column as a small panel; phones
+  use a sheet.
+
+### Copy to reuse verbatim
+
+| Where | Text |
+|---|---|
+| Graphics caption | "Low draws at standard resolution with simpler shadows, fewer leaves and less rain. Good for older phones." |
+| Weather caption | "Auto shows the observed weather at the present time and an illustrative sky otherwise." |
+| Key, section headings | "Colour means the kind of service", "Confidence" |
+| Menu items | "Key: What the colours and labels mean", "About & credits: How it works and where the data comes from" |
+| Credit line | "© OpenStreetMap contributors · OpenMapTiles" ("OpenStreetMap" links to openstreetmap.org/copyright) |

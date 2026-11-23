@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A2c, desktop, live, train selected</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:1296px;height:726px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.80);--gb:rgba(243,239,230,.68);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--on:#2a2722;--onfg:#fbf9f4;--sep:rgba(60,45,30,.12);color:var(--ink)}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;cursor:pointer;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px}
+.vsep{width:1px;align-self:stretch;margin:10px 4px;background:var(--sep)}
+.tier{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--sep);color:var(--ink2);white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.btn{flex:1;height:40px;border-radius:10px;border:0;padding:0 14px;font:600 14px system-ui;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--sep);color:var(--ink)}
+.btn.primary{background:var(--on);color:var(--onfg)}
+.vs{height:36px;border:0;border-radius:9px;padding:0 12px;font:600 14px system-ui;background:transparent;color:var(--ink);cursor:pointer}
+.vs[aria-pressed="true"]{background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+.pill{display:inline-flex;align-items:center;gap:3px;font-weight:700;border-radius:6px;padding:0 2px;margin:0 -2px}.pill svg{opacity:.45}.pill:hover{background:var(--sep)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;padding:11px 0;border-top:1px solid var(--sep);white-space:nowrap}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div class="root">
+  <img src="/_blob/378ac95adb6dc8c1d716b2ee8eadba49" alt="Downtown Atlanta diorama by day" style="position:absolute;inset:0;width:1296px;height:726px;object-fit:cover">
+  <div aria-hidden="true" style="position:absolute;left:447px;top:350px;width:26px;height:26px;border-radius:50%;background:#1f5fd1;border:3px solid #fff;box-sizing:border-box;box-shadow:0 0 0 7px rgba(31,95,209,.30),0 4px 10px rgba(0,0,0,.3)"></div>
+
+  <button class="g" aria-label="Castleberry Hill, 2:04 PM, 58 degrees clear, live. Opens time and weather" style="left:8px;top:8px;border:0;padding:14px 16px 14px 20px;text-align:left;color:var(--ink);cursor:pointer;display:flex;align-items:flex-start;gap:14px">
+    <span>
+      <span style="display:block;font-size:30px;font-weight:700;letter-spacing:-.015em;line-height:1.05">Castleberry Hill</span>
+      <span style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:16px"><span class="pill">2:04 PM<svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 9l6 6 6-6"></path></svg></span><span style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>58° Clear</span></span>
+      <span style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;color:var(--ink2)"><span class="dot" style="background:#2f9e44"></span>Live · Friday, Nov 20</span>
+    </span>
+  </button>
+
+  <div class="g" style="left:8px;bottom:8px;height:48px;display:flex;align-items:center;gap:2px;padding:0 4px 0 2px">
+    <button class="ib" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+    <span class="vsep"></span>
+    <span role="group" aria-label="View" style="display:flex;gap:2px;padding:2px;border-radius:11px;background:var(--sep)"><button class="vs" aria-pressed="false">Map</button><button class="vs" aria-pressed="true">City</button><button class="vs" aria-pressed="false">Models</button></span>
+    <span class="vsep"></span>
+    <button class="ib" aria-label="Play radio" style="width:40px;height:40px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 18V6l11-2v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></button>
+  </div>
+
+  <div class="g" style="right:8px;bottom:8px;width:44px;display:flex;flex-direction:column;padding:2px 0">
+    <button class="ib" aria-label="Compass"><svg viewBox="0 0 32 32" aria-hidden="true" style="width:30px;height:30px"><circle cx="16" cy="16" r="13" style="stroke-width:1.2"></circle><g transform="rotate(-21 16 16)"><path d="M16 5l3.2 11h-6.4z" style="fill:#c2255c;stroke:none"></path><path d="M16 27l3.2-11h-6.4z" style="fill:currentColor;stroke:none;opacity:.55"></path></g></svg></button>
+    <div class="sep"></div>
+    <button class="ib" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <button class="ib" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+    <div class="sep"></div>
+    <button class="ib" aria-label="Share this view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></button>
+  </div>
+
+  <aside class="g" aria-label="Selected train" style="right:8px;top:8px;width:360px;padding:16px 18px 14px">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2);font-weight:600"><span style="width:16px;height:4px;border-radius:2px;background:#1f5fd1;display:inline-block"></span>City rail · MARTA Red Line<span class="dot" style="background:#d22030"></span></div>
+        <h2 style="margin:6px 0 12px;font-size:20px;line-height:1.2">Northbound to North Springs</h2>
+      </div>
+      <button class="ib" aria-label="Close" style="width:32px;height:32px;border-radius:50%;background:var(--sep)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div style="display:flex;gap:8px"><button class="btn primary">Follow</button><button class="btn">Share</button></div>
+    <div class="row" style="margin-top:12px"><span style="color:var(--ink2)">Next stop</span><span style="display:flex;align-items:center;gap:8px"><strong>Peachtree Center · 2 min</strong><span class="tier"><span class="dot" style="background:#2f9e44"></span>Live</span></span></div>
+    <div class="row"><span style="color:var(--ink2)">Cars</span><span style="display:flex;align-items:center;gap:8px">6<span class="tier">Illustrative</span></span></div>
+    <button class="row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:none;color:var(--ink);font:600 14px system-ui;cursor:pointer;padding-bottom:2px"><span>All stops</span><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M9 6l6 6-6 6"></path></svg></button>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1296,"height":726}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
