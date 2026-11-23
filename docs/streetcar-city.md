@@ -1,0 +1,18 @@
+# Atlanta Streetcar in City
+
+## Track and overhead wire
+
+The track comes from the MARTA GTFS streetcar shapes (route `marta:route:STREETCAR`, three paths, 708 scheduled trips and 12 stops). That is the same geometry the vehicles run on. The longest path (2,616 m) is the base loop, and stretches of the other paths more than 2.5 m from track already laid are added as separate segments. The OSM tram runs in the downtown vignette sit a median 2.5 m from these shapes (11 m at worst). They stopped at the downtown board edge, so Edgewood Avenue east of the Connector showed no track at all. In terrain mode those runs are now marked `replaced`: they stay in the data, but the generic strips no longer draw them. [GTFS shapes](../web/public/data/ga/routes.json) · [Module](../web/src/city/streetcar.ts)
+
+Street View on Edgewood Avenue and Auburn Avenue shows single, one-way track embedded in a travel lane; Auburn has a lighter concrete strip. Slim grey steel poles stand at the curb on the track side, about 30–35 m apart, with cantilever arms holding a single contact wire. There is no catenary messenger. City draws:
+- two grooved rails on a 2.8 m concrete slab;
+- a contact wire 5.8 m above the rail that follows the track, held by pull-offs on curves;
+- poles every 32 m at the nearer clear curb, 3.5–7.5 m from the track, each with an arm and dropper.
+
+Poles never stand on a drawn road (its width plus 0.3 m), inside a building, or within 9 m of a junction. A test checks every downtown pole against the roads at their drawn widths and against the building footprints. The 5.8 m wire height, the pole size and the spacing are estimates.
+
+Track height follows the surface street it runs on. Under the Downtown Connector viaduct (x ≈ 1180–1235, on both Auburn and Edgewood) the track stays at street level, because motorways never set its height. The wire casts no shadow and has no lighting at night. [Street View, Edgewood Ave](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75470,-84.38160&heading=90&pitch=8&fov=90) · [Street View, Auburn Ave](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75560,-84.37640&heading=90&pitch=8&fov=90)
+
+The track spans two boards: downtown, built at City start, and Sweet Auburn, built when that board mounts and disposed with it. Stops and vehicles follow in separate changes. Vehicles will use the Siemens S70 from the model lab (#260) and run on the published schedule.
+
+Cameras: Edgewood near Hilliard at (1407, −57), bearing 250°, tilt 62°, distance 70 m. Auburn at Piedmont at (860, −185), bearing 250°, tilt 70°, distance 45 m. Woodruff Park at (320, −180), bearing 170°, tilt 55°, distance 80 m. Viaduct at (1205, −180), bearing 90°, tilt 72°, distance 70 m. [Edgewood, before and after](log/ui/streetcar/track-edgewood-before-after.jpg) · [Auburn, before and after](log/ui/streetcar/track-auburn-before-after.jpg) · [Woodruff Park, before and after](log/ui/streetcar/track-woodruff-before-after.jpg) · [Under the viaduct](log/ui/streetcar/track-viaduct.jpg) · [Night](log/ui/streetcar/track-edgewood-high-night.jpg) · [Low day](log/ui/streetcar/track-edgewood-low-day.jpg) · [Low night](log/ui/streetcar/track-edgewood-low-night.jpg)

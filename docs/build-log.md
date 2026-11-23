@@ -2469,3 +2469,7 @@ Sam asked whether the Academy of Medicine was stucco, painted brick or stone, an
 ### 2026-11-23 — Beds that are mostly plants
 
 The flower beds looked like dark holes, and the fix wasn't the soil. Real beds are mostly foliage, with the soil showing at the edges. Beds now fill about 80 % with mounded mid-green planting, with bloom clusters in drifts on top. They borrow the tree work's silhouette-only ink, so outlines stop chopping the colour into confetti. On the low tier a bed is a single mounded mass with drift patches. [Before and after, both tiers](log/ui/bed-fill/README.md)
+
+### 2026-11-23 — Streetcar track that reaches King
+
+City's streetcar rails came from OSM tram ways in the downtown vignette, and they ended at the board edge. East of the Connector, Edgewood and Auburn had no track at all. The track now comes from the GTFS shapes the vehicles will run on: three paths merged into one network, laid as two grooved rails on a concrete slab. A contact wire 5.8 m up follows the curves, and curb-side poles with cantilever arms stand about every 32 m wherever the sidewalk is clear of roads, buildings and junctions. One surprise: the Connector is a viaduct over Auburn and Edgewood. The first height lookup took the nearest road and would have lifted the track onto the motorway deck right under it, so motorways no longer count. Requires a web rebuild only. [Edgewood before and after](log/ui/streetcar/track-edgewood-before-after.jpg) · [Notes](streetcar-city.md)
