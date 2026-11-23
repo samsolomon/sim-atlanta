@@ -10,7 +10,7 @@ const porcelain = '#f3f2ed',
   glass = '#668087';
 export const artsCampusIds = new Set(Object.values(sites).map((site) => site.id));
 
-function museum(s: Shell) {
+function museum(s: Shell, landing: number) {
   const { body, lights, prism } = s;
   prism(s.ring, s.base, 2.3, '#aca9a0', coping);
 
@@ -158,8 +158,8 @@ function museum(s: Shell) {
     roof,
   );
   // Ramp walks east from the glazed quadrant toward Peachtree.
-  for (const v of [-17.6, -14.1]) body.quad([29, 5.4, v], [29, 6.4, v], [54, 1.1, v], [54, 0.1, v], coping);
-  body.quad([29, 5.45, -17.6], [29, 5.45, -14.1], [54, 0.2, -14.1], [54, 0.2, -17.6], roof);
+  for (const v of [-17.6, -14.1]) body.quad([29, 5.4, v], [29, 6.4, v], [54, landing + 1, v], [54, landing, v], coping);
+  body.quad([29, 5.45, -17.6], [29, 5.45, -14.1], [54, landing + 0.1, -14.1], [54, landing + 0.1, -17.6], roof);
 }
 
 function memorial(s: Shell) {
@@ -208,7 +208,11 @@ export function createArtsCampusLandmark(
   );
   if (!shell) return null;
   if (site.id === sites.museum.id) {
-    museum(shell);
+    const axis = Math.atan2(-0.479, 0.878);
+    const landing = groundAt(550 + 54 * Math.cos(axis) + 15.85 * Math.sin(axis),
+      -3990 + 54 * Math.sin(axis) - 15.85 * Math.cos(axis));
+    if (landing === null) return null;
+    museum(shell, landing - grade + 0.08);
     // Lay the piazza on the same rendered terrain as both entrances.
     const piazza: P2[] = [
       [-54, 0],

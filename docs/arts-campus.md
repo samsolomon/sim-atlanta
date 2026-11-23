@@ -14,3 +14,5 @@ The historic night photograph of Memorial shows light in the lobby and on the ta
 Ground ranges use bilinear samples at intervals of at most 2.5 m. In City each building takes its entrance height from the rendered terrain triangles for the selected quality and extends the foundation beneath its lowest perimeter. Both outlines require interior probes before a model can replace the generic shell. [Upper Midtown 3DEP source and grid](../pipeline/prototypes/square-board/midtown-upper/ground.json) · [Architect's published dimensions](https://www.fondazionerenzopiano.org/en/project/high-museum-of-art-expansion/)
 
 The matched camera targets (565, −3965), bearing −101°, tilt 55°, at 0.33 m/px. Clear weather, November 20, 2026, 13:00 and 23:00 Eastern. [High day](log/ui/arts-campus/high-day.jpg) · [High night](log/ui/arts-campus/high-night.jpg) · [Low day](log/ui/arts-campus/low-day.jpg) · [Low night](log/ui/arts-campus/low-night.jpg)
+
+The Peachtree end of the ramp samples its own landing. The 3DEP grid there reads roughly 291.6 m NAVD88, 2.5 m below the plaza reference.
