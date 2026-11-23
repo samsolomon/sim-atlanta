@@ -1,0 +1,40 @@
+# 250 Williams Street above Centennial Olympic Park
+
+On the east side of Centennial Olympic Park, a block of mirrored glass stands on pale concrete columns. It is broad enough to fill the view from the park lawn. Up close, the lower edge breaks open into a balcony, while the upper edge steps back at each corner. From Williams Street the grade is higher, the canopy hangs over the drop-off, and the Apparel Mart appears across the street. [Park approach before modeling](park-day-before.webp) · [April 2026 park corner](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7609417,-84.3920976&heading=45.00&pitch=26&fov=88&source=outdoor) · [Williams Street colonnade](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7617421,-84.3905616&heading=225.00&pitch=1&fov=88&source=outdoor)
+
+## Which building
+
+John Portman and Associates designed the Inforum, completed in 1989. The American Cancer Society announced its move here in 2006. The baked record retains the later American Cancer Society Center name. Mapletree Industrial Trust lists the property as **250 Williams Street NW, Atlanta**, Cushman & Wakefield markets it as **250 Williams**, and the Society now gives **270 Peachtree Street NW** as its Atlanta contact address. The model uses the street address as its name. The 2021 acquisition photograph includes high-mounted Society plaques. The broad April 2026 corner views show uninterrupted glass and coping in those views. [BOMA building history](https://bomalegacy.org/legends/tobyawards/american-cancer-society-2/) · [Society's move to the Inforum](https://pressroom.cancer.org/2006-08-09-American-Cancer-Society-Announces-Move-of-International-Headquarters-to-Downtown-Atlanta) · [Owner's listing](https://www.mapletreeindustrialtrust.com/property/250-williams-street-nw-atlanta/) · [Current leasing description](https://www.cushmanwakefield.com/en/united-states/properties/for-lease/office/ga/atlanta/250-williams-street/s92576-269398-l) · [Society's current contact page](https://www.cancer.org/about-us/online-help/contact-us.html)
+
+The 14-vertex Overture ring `b13d3a92-ab62-4c26-812f-543d3597f3dc` covers **14,418 m²**. Its sides measure approximately **117 × 123 m** along the street grid. The before view extrudes this footprint with a recorded height of 57.9 m. BOMA describes nine stories above a four-story parking garage. EPA lists 1,069,827 ft² of gross floor area. The City model reuses the museum, market, streets and existing spans around this block. [EPA's building record](https://www.energystar.gov/buildings/certified_buildings_and_plants/b_1386267) · [Before from the park](park-day-before.webp)
+
+## What the public approaches show
+
+- **Centennial Olympic Park Drive.** The older broadside photograph shows the long window grid, recessed central balcony and white rim around the lower corners. The closer September 2024 view shows the balcony rail, round posts, glazed podium and long shaded shelf below. The glass coloration in City simplifies the sky and trees reflected in the facade. [Owner's photograph, page 4](https://links.sgx.com/FileOpen/20210520_Proposed%20Acquisition%20of%20US%241.32%20Billion%20Data%20Centre%20Portfolio%20i....ashx?App=Announcement&FileID=667068#page=4) · [September 2024 park frontage](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7617061,-84.3921084&heading=123.69&pitch=17&fov=88&source=outdoor)
+- **Williams, Baker and John Portman.** The Williams drop-off has round columns, a coffered canopy, stone panels and door banks set behind the curb. On the north and south faces, open concrete beams span the recesses below the offices. The opposite sidewalk reveals the difference between these elevations even where the glass above looks similar. [Williams drop-off](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7618410,-84.3905400&heading=209.25&pitch=0&fov=88&source=outdoor) · [Baker frontage](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7623446,-84.3913404&heading=171.03&pitch=15&fov=88&source=outdoor) · [John Portman Boulevard](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7609417,-84.3913080&heading=2.60&pitch=16&fov=88&source=outdoor)
+- **After dark.** The acquisition coverage includes a street photograph from after dark. Most of the glazing is dark, interrupted by short horizontal bands of warm occupied rooms. The pale soffit, columns and recesses are brighter at street level. The model follows that distribution. The exact occupied panes, reflections, colors and intensities are illustrative. [Historical night photograph credited to Carter Validus](https://media.datacenterdynamics.com/media/images/CarterValidus.original.jpg) · [Publication and date](https://www.datacenterdynamics.com/en/news/carter-validus-acquires-atlanta-data-center-for-166-million/)
+
+## Roof and grade
+
+The 2018 USGS sample contains **32,168 returns** within the footprint at levels 7–10. The corners and the middle of the roof have different elevations. The broad north–south glazed ridge crosses a narrower east–west ridge. Their shared center rises again. Two circular rooflights appear in diagonally opposite quarters of the 2024 aerial. [Survey sections](roof-sections.webp) · [County orthophoto](https://gismaps.fultoncountyga.gov/arcgispub2/rest/services/Imagery/Pictometry2024_NAIP/MapServer/export?bbox=-9394491.347828241,3996746.082982834,-9394301.10158149,3996936.329229585&bboxSR=3857&imageSR=3857&size=1200,1200&format=jpg&f=image) · [USGS Georgia Statewide Block 2](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json)
+
+| Feature | Survey evidence and model treatment |
+| --- | --- |
+| Roof field and corners | Main roof near 351.2 m NAVD88, corner terraces near 346.8–347.2 m. The narrow parapets rise roughly another metre. |
+| Crossing skylights | Long crest around 356.3 m, cross ridge near 355 m, highest center returns near 360.1 m. City uses 356.35, 354.9 and 359.83 m. Individual glazing ribs and the center outline follow the aerial by eye. |
+| Ground and balcony | The bare-earth grid gives roughly 299 m at the northwest corner, 305 m at the southwest and 310 m along Williams. The park balcony and soffit levels use returns around 319–320 m and the photographic sightline. |
+| Fine details | The podium recess depths, column diameters, curtain-wall module, representative roof volumes and night occupancy are estimates. |
+
+## Studio verification checkpoint
+
+These baseline City views show the baked building on November 20, 2026 at 13:45, 17:22 and 20:30 EST. The modeled views and cross-model review are pending. Use high quality, a frozen clock and the following camera positions. Each eye and target gives east, south and absolute elevation in metres (NAVD88), followed by the vertical field of view.
+
+| Approach | Eye → target, field of view | Baseline |
+| --- | --- | --- |
+| Across Centennial Olympic Park | (-146, -728, 314) → (16, -850, 328), 57° | [day](park-day-before.webp) · [dusk](park-dusk-before.webp) · [night](park-night-before.webp) |
+| Pemberton Place approach | (-177, -934, 306.5) → (21, -862, 328), 56° | [day](pemberton-day-before.webp) · [dusk](pemberton-dusk-before.webp) · [night](pemberton-night-before.webp) |
+| Park frontage | (-76, -852, 306.2) → (0, -858, 318), 68° | [day](west-day-before.webp) · [dusk](west-dusk-before.webp) · [night](west-night-before.webp) |
+| Williams Street colonnade | (99, -837, 313) → (77, -861, 317.4), 78° | [day](williams-day-before.webp) · [dusk](williams-dusk-before.webp) · [night](williams-night-before.webp) |
+| John Portman Boulevard | (30, -766, 309.1) → (30, -806, 319), 68° | [day](south-day-before.webp) · [dusk](south-dusk-before.webp) · [night](south-night-before.webp) |
+| Park, roof and AmericasMart | (-99, -736, 461) → (33, -868, 327), 62° | [day](roof-day-before.webp) · [dusk](roof-dusk-before.webp) · [night](roof-night-before.webp) |
+| Baker Street corner | (-58, -946, 301) → (-24, -906, 319), 70° | [day](baker-day-before.webp) · [dusk](baker-dusk-before.webp) · [night](baker-night-before.webp) |

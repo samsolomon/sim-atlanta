@@ -70,6 +70,7 @@ import { createCitizensTrust } from './citizens-trust';
 import { createFultonGovernmentCenter } from './fulton-government-center';
 import { createGeorgiaAquarium } from './georgia-aquarium';
 import { createWorldOfCocaCola } from './world-of-coca-cola';
+import { createWilliams250 } from './250-williams';
 import { createFultonCourthouse } from './fulton-courthouse';
 import { createPeachtreeOffices } from './peachtree-offices';
 import { createWilliamOliver } from './william-oliver';
@@ -287,6 +288,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fultonGovernmentCenter: ReturnType<typeof createFultonGovernmentCenter> = null;
   let georgiaAquarium: ReturnType<typeof createGeorgiaAquarium> = null;
   let worldOfCocaCola: ReturnType<typeof createWorldOfCocaCola> = null;
+  let williams250: ReturnType<typeof createWilliams250> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
   let williamOliver: ReturnType<typeof createWilliamOliver> = null;
@@ -391,8 +393,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterGeorgiaAquarium = georgiaAquarium?.buildings ?? afterFultonGovernmentCenter;
         worldOfCocaCola = createWorldOfCocaCola(afterGeorgiaAquarium, ground);
         const afterWorldOfCocaCola = worldOfCocaCola?.buildings ?? afterGeorgiaAquarium;
-        fultonCourthouse = createFultonCourthouse(afterWorldOfCocaCola, ground);
-        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterWorldOfCocaCola;
+        williams250 = createWilliams250(afterWorldOfCocaCola, ground);
+        const afterWilliams250 = williams250?.buildings ?? afterWorldOfCocaCola;
+        fultonCourthouse = createFultonCourthouse(afterWilliams250, ground);
+        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterWilliams250;
         peachtreeOffices = createPeachtreeOffices(afterFultonCourthouse, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterFultonCourthouse;
         williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
@@ -478,6 +482,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (fultonGovernmentCenter) world.group.add(fultonGovernmentCenter.group);
         if (georgiaAquarium) world.group.add(georgiaAquarium.group);
         if (worldOfCocaCola) world.group.add(worldOfCocaCola.group);
+        if (williams250) world.group.add(williams250.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
         if (williamOliver) world.group.add(williamOliver.group);
@@ -1048,6 +1053,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     fultonGovernmentCenter?.setNight(night);
     georgiaAquarium?.setNight(night);
     worldOfCocaCola?.setNight(night);
+    williams250?.setNight(night);
     fultonCourthouse?.setNight(night);
     peachtreeOffices?.setNight(night);
     williamOliver?.setNight(night);
