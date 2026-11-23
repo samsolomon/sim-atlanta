@@ -369,7 +369,7 @@ let materialScene: ReturnType<typeof createMaterialScene> | null = null;
 function buildMaterials() {
   materialScene = createMaterialScene();
   scene.add(materialScene.group);
-  landscapeReport.textContent = `${materialScene.swatches} materials x 2 tiers, ${materialScene.draws} draw calls (one program per tier), `
+  landscapeReport.textContent = `${materialScene.swatches} materials x 2 tiers, ${materialScene.draws} draw calls plus ${materialScene.draws} shadow passes (one program per tier), `
     + `${Math.round(materialScene.triangles).toLocaleString()} triangles, 0 texture bytes.`;
   landscapeReport.hidden = false;
 }
@@ -404,6 +404,7 @@ function build() {
   eyeLevel.hidden = !isTree;
   for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree && !(isLandscape(model) && id !== 'tree-size');
   for (const b of document.getElementById('tier')!.querySelectorAll('button')) b.hidden = isMaterial(model);
+  document.querySelector('#tier legend')!.textContent = isMaterial(model) ? 'Swatches' : 'Detail';
   // The lineup is one tree per species; the cost test's counts don't apply.
   document.getElementById('count')!.hidden = !isTree || model === 'lineup';
   document.getElementById('rendering')!.hidden = !RENDERINGS[model] && model !== 'lineup';
@@ -567,7 +568,8 @@ function build() {
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 400);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number };
+/** `near` defaults to the lab's 0.1 m; the swatches' City-distance view uses City's 20 m so the ink matches. */
+type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number; near?: number };
 const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
   '¾ front': { pos: [-11, 4.2, 36], target: [0, 2.0, 18], fov: 28 },
@@ -585,6 +587,7 @@ function view(name: string) {
   camera.position.x += dx;
   controls.target.x += dx;
   camera.fov = v.fov;
+  camera.near = v.near ?? 0.1;
   camera.updateProjectionMatrix();
   controls.update();
   document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === name)));
@@ -748,7 +751,7 @@ const MATERIAL_VIEWS: Record<string, ViewPreset> = {
   Front: { pos: [0, 48, 62], target: [0, 2, 0], fov: 42 },
   '¾ front': { pos: [-24, 12, 30], target: [-24, 4, 4], fov: 40 },
   Side: { pos: [24, 12, 30], target: [24, 4, 4], fov: 40 },
-  Rear: { pos: [0, 120, 165], target: [0, 3, 0], fov: 22 },
+  Rear: { pos: [0, 120, 165], target: [0, 3, 0], fov: 22, near: 20 },
   Top: { pos: [.01, 90, 0], target: [0, 0, 0], fov: 40 },
 };
 const LANDSCAPE_VIEWS: Record<string, ViewPreset> = {

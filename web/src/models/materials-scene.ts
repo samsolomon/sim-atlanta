@@ -7,8 +7,12 @@ export const MATERIAL_KINDS = {
 } as const;
 export type MaterialKind = keyof typeof MATERIAL_KINDS;
 
-const ROOFS = new Set(['slate', 'terracotta-tile', 'asphalt-roof', 'aged-copper']);
-const COLUMNS = 6, PITCH = 7, W = 5, H = 6, RISE = 2.5;
+/** Kinds drawn on the roof; every other kind paints the walls. materials-scene.test.ts checks each kind is placed. */
+export const ROOFS = new Set<string>(['slate', 'terracotta-tile', 'asphalt-roof', 'aged-copper']);
+/** Wall materials, listed so a new kind must be placed deliberately. */
+export const WALLS = new Set<string>(['brick', 'stucco', 'ashlar', 'precast', 'granite', 'curtain-glass', 'clapboard', 'shingle', 'concrete']);
+// A 36° roof, well clear of the shader's 45° wall/roof cutoff (normal.y 0.7).
+const COLUMNS = 6, PITCH = 7, W = 5, H = 6, RISE = 1.8;
 
 /** The catalogue in swatch order, row by row from the back, left to right. */
 export function swatchList() {
