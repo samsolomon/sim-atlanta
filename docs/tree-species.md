@@ -246,6 +246,31 @@ Sam found that card crowns lose colour compared with the low-poly canopy. The fi
 
 Low detail now lands within 5%. High detail stays 8–15% brighter, mostly from the sky-lit fan tips. Lower plumes read as a deeper ochre than the low-poly octahedra's undersides; blending the normals at 70% instead of 80% would lift them. [Captioned compare](log/ui/tree-species/ginkgo-brightness.jpg)
 
+## Filling the ginkgo's centre
+
+Sam found the C4 specimen too transparent in the middle. Two changes fix it:
+
+- An inner core of shorter, flat two-triangle plumes sits near the leader through the middle of the crown: 8 at high detail, 10 at low. Each frays only at its tip.
+- Branches now run only under the two lowest tiers, so the limbs read in the lower third.
+
+The outer, ragged silhouette is unchanged. C4 fan tips drop from 100 to 96 per tree to keep the 20-tree grove under its ceiling.
+
+| Size | Triangles per tree (high / low) | Budget |
+|---|---|---|
+| Mature | 193 / 137 | 196 / 156 |
+| Specimen | 193 / 141 | 196 / 156 |
+
+Brightness and crown coverage, measured the same way as #275:
+
+| | Luminance | Change vs low-poly ginkgo | Crown coverage |
+|---|---|---|---|
+| Specimen, high | 0.545 | +8% | +21% |
+| Specimen, low | 0.549 | +3% | +46% |
+| Mature, high | 0.517 | +10% | +6% |
+| Mature, low | 0.491 | −3% | +21% |
+
+[Before and after](log/ui/tree-species/ginkgo-core.jpg)
+
 ## Next species (lab only)
 
 All six will be built in the lab with the same framework, budget and tests, and will not be placed in City until Sam decides on the rollout. Spread is a diameter. Sizes are in metres, given as class ranges. "GT" is the Georgia Tech inventory and "City 2011" the downtown census.

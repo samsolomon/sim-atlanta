@@ -27,7 +27,7 @@ const INK_MODE: Partial<Record<GinkgoVariant, InkFoliageMode>> = { C1: 1, C2: 2,
 /** C4: at most TIP_CAP trees, nearest first and within TIP_RANGE_M, carry fan tips; none at low detail. */
 export { TIP_CAP, TIP_RANGE_M };
 /** C4: fan leaves per tipped tree (three triangles each). */
-export const TIP_FANS = 100;
+export const TIP_FANS = 96;
 export const VARIANTS: Record<GinkgoVariant, string> = {
   A: 'Branch sleeves',
   B: 'Micro-fans',
@@ -212,9 +212,25 @@ export function plumeLayout(size: 'mature' | 'specimen', q: TreeQuality) {
       // The branch each plume follows, bare in winter: heavy scaffolds low, twigs above.
       const to: V3 = [base[0] + dir.x * lenM * 0.85 / R, base[1] + dir.y * lenM * 0.85 / H, base[2] + dir.z * lenM * 0.85 / R];
       // Budget: branches under the lower tiers only (three at high detail, two at low).
-      const branched = q === 'high' ? i < 2 || (i === 2 && j % 2 === 0) : i < 2 && j % 2 === 0;
+      // Branches under the two lowest tiers only: limbs read in the crown's lower third.
+      const branched = q === 'high' ? i < 2 : i < 2 && j % 2 === 0;
       if (branched) limbs.push({ from: spec ? fork : [0, base[1], 0], to, heavy: spec || i === 0 });
     }
+  }
+  // Inner core: shorter, flatter plumes close to the leader through the middle of the crown, so
+  // the centre reads as a mass with gaps and the scaffolds show mostly in the lower third. They
+  // sit inside the outer plumes, so the ragged silhouette is unchanged. depth < 0.5 marks them.
+  const core = q === 'high' ? 8 : 10;
+  for (let j = 0; j < core; j++) {
+    const t = 0.18 + 0.6 * (j + 0.5) / core;
+    const y = crownBase + (1 - crownBase) * t * 0.92;
+    const a = j * 2.39996 + 1.1 + (r() - 0.5) * 0.5;
+    const b = 0.05 + 0.08 * r();
+    const reachM = radius(t) * (0.42 + 0.12 * r()) * R;
+    const dir = new THREE.Vector3(Math.cos(a) * reachM, reachM * (0.35 + 0.5 * t), Math.sin(a) * reachM);
+    const lenM = dir.length();
+    dir.normalize();
+    sprays.push({ base: [Math.cos(a) * b, y - 0.03, Math.sin(a) * b], dir: [dir.x, dir.y, dir.z], len: lenM / L, w: lenM * 0.55 / R, depth: 0.3 });
   }
   // A leader plume at the very top.
   const topLen = 0.14 * H;
@@ -305,14 +321,16 @@ function plumeCards(sprays: Spray[], centre = new THREE.Vector3()) {
     const P: Record<string, [THREE.Vector3, number, number]> = {
       b: [p0, o, 0], l: [left, o - us, 0.42 * vs], r: [right, o + us, 0.42 * vs], m: [ridge, o, 0.42 * vs], t: [tip, o, vs],
     };
-    for (const tri of ['blm', 'bmr', 'ltm', 'mtr']) for (const key of tri) {
+    // Core plumes are flat two-triangle cards; outer plumes keep their crease (four).
+    for (const tri of sp.depth < 0.5 ? ['blt', 'btr'] : ['blm', 'bmr', 'ltm', 'mtr']) for (const key of tri) {
       const [p, u, v] = P[key];
       // Crown normal: 80% outward from the crown centre, 20% the plume's own, so the crown
       // lights like one solid mass (as the low-poly canopy does) while its edge stays ragged.
       const out = p.clone().sub(centre).normalize();
       const cn = out.multiplyScalar(0.8).addScaledVector(n, 0.2).normalize();
       pos.push(p.x, p.y, p.z); uv.push(u, v); col.push(c.r, c.g, c.b); nor.push(cn.x, cn.y, cn.z);
-      edge.push(key === 'm' ? 0 : 1);
+      // Fray the rim, not the core: a core card frays only at its tip.
+      edge.push(key === 'm' || (sp.depth < 0.5 && key !== 't') ? 0 : 1);
     }
   });
   const g = new THREE.BufferGeometry();
