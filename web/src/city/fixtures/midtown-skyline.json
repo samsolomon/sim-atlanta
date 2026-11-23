@@ -26,5 +26,12 @@
     "x": 713,
     "z": -3672,
     "heightM": 200
+  },
+  "terrace": {
+    "id": "osm:way:886041064",
+    "name": "The Georgian Terrace Hotel",
+    "x": 670,
+    "z": -2090,
+    "heightM": 73
   }
 }

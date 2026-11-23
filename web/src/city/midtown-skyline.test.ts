@@ -49,3 +49,27 @@ it.each([
   expect(model.buildings).toEqual([tower]);
   expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(height-3);
 });
+
+it('keeps the historic Georgian Terrace lower than its mapped rear addition', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const hotel: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:886041064');
+  const model = createSkylineLandmark([hotel], hotel, -5, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number,z: number) => new Raycaster(new Vector3(x,150,z),new Vector3(0,-1,0)).intersectObject(model.group)[0].point.y;
+  expect(heightAt(642,-2070)).toBeCloseTo(37.12);
+  expect(heightAt(701,-2108)).toBeCloseTo(68);
+  // Mapped three-storey podium east of the addition, and the raised Peachtree terrace.
+  expect(heightAt(712.5,-2110)).toBeGreaterThan(11);
+  expect(heightAt(712.5,-2110)).toBeLessThan(13);
+  expect(heightAt(635,-2060)).toBeCloseTo(1.35);
+});
+
+it('raises the Georgian Terrace deck to the Peachtree grade', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const hotel: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:886041064');
+  // Ground rises 2.5 m from the site centre to the Peachtree sidewalk.
+  const model = createSkylineLandmark([hotel], hotel, -5, (x) => x < 640 ? 2.5 : 0)!;
+  model.group.updateMatrixWorld(true);
+  const hit = new Raycaster(new Vector3(635,150,-2060),new Vector3(0,-1,0)).intersectObject(model.group)[0];
+  expect(hit.point.y).toBeCloseTo(2.8);
+});
