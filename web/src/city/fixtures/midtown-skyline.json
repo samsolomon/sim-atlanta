@@ -47,5 +47,12 @@
     "x": 430,
     "z": -2560,
     "heightM": 65
+  },
+  "academy": {
+    "id": "osm:way:42725820",
+    "name": "Academy of Medicine",
+    "x": 451,
+    "z": -2720,
+    "heightM": 15.5
   }
 }
