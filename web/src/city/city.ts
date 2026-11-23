@@ -1066,16 +1066,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
   // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
-  const stopGestures = options.mapGestures
-    ? mapGestures(controls, renderer.domElement, (degrees) => {
-      manualCamera();
-      glideTo = null;
-      const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
-      camera.position.copy(controls.target).add(off);
-      controls.update();
-    }, manualCamera)
-    : undefined;
+  /** Turn the view about its target; the frame loop's controls.update() applies it. */
+  const rotateBy = (degrees: number) => {
+    manualCamera();
+    glideTo = null;
+    const off = new THREE.Vector3().subVectors(camera.position, controls.target);
+    off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
+    camera.position.copy(controls.target).add(off);
+  };
+  const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera) : undefined;
+  // Maps-style input zooms on double-click instead of gliding to the clicked point.
+  if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
@@ -1436,11 +1437,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }),
     pan(dx, dy) { manualCamera(); panPx(dx, dy); },
     rotate(degrees) {
-      manualCamera();
-      glideTo = null;
-      const off = new THREE.Vector3().subVectors(camera.position, controls.target);
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
-      camera.position.copy(controls.target).add(off);
+      rotateBy(degrees);
       controls.update();
     },
     zoom(dir) {

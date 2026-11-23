@@ -25,22 +25,39 @@ export function mapGestures(
   rotate: (degrees: number) => void,
   onGesture: () => void,
 ) {
-  controls.mouseButtons = { LEFT: MOUSE.PAN, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.ROTATE }; // Ctrl/⌘/Shift + left rotates
+  // Ctrl/⌘/Shift + left rotates (OrbitControls' own PAN modifier path). Middle rotates too: three
+  // r180's middle-drag dolly reads the cursor's y from its x, which zoomToCursor would expose.
+  controls.mouseButtons = { LEFT: MOUSE.PAN, MIDDLE: MOUSE.ROTATE, RIGHT: MOUSE.ROTATE };
   controls.touches = { ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_ROTATE };
   controls.zoomToCursor = true;
+  // zoomToCursor moves only the camera when the view ray is within 20° of the horizon; keep the
+  // tilt clear of that so zooming never swings the view.
+  controls.maxPolarAngle = Math.min(controls.maxPolarAngle, (70 * Math.PI) / 180);
+
+  const touches = new Map<number, { x: number; y: number }>();
+  // Two fingers: their midpoint moving up or down tilts (OrbitControls), the twist turns (below).
+  // Sideways midpoint motion must not turn the map as well, so drop OrbitControls' azimuth share
+  // while two touches are down. `_rotateLeft` is OrbitControls' private API (three 0.180).
+  const inner = controls as unknown as { _rotateLeft?: (angle: number) => void };
+  const rotateLeft = inner._rotateLeft?.bind(controls);
+  if (rotateLeft) inner._rotateLeft = (angle: number) => { if (touches.size < 2) rotateLeft(angle); };
 
   const events = new AbortController();
   const on = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void) =>
     el.addEventListener(type, fn as EventListener, { signal: events.signal, passive: true });
 
+  // Through OrbitControls' wheel path, so the zoom keeps the point under the cursor. Deferred:
+  // OrbitControls ends its own touch state in a pointerup listener that runs after ours, and it
+  // ignores the wheel until then.
   const zoomAt = (x: number, y: number) => {
     onGesture();
-    el.dispatchEvent(new WheelEvent('wheel', { deltaY: DOUBLE_ZOOM_DELTA, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    setTimeout(() => el.dispatchEvent(new WheelEvent('wheel', { deltaY: DOUBLE_ZOOM_DELTA, clientX: x, clientY: y, bubbles: true, cancelable: true })));
   };
-  on('dblclick', (e) => zoomAt(e.clientX, e.clientY));
+  let lastTouch = -Infinity;
+  // Touch browsers can also send dblclick after a double tap; the tap detector below owns that.
+  on('dblclick', (e) => { if (e.timeStamp - lastTouch > 800) zoomAt(e.clientX, e.clientY); });
 
   // ---- twist: the change in the angle between two touches turns the view ----
-  const touches = new Map<number, { x: number; y: number }>();
   let twist: number | null = null;
   const angle = () => {
     const [a, b] = [...touches.values()];
@@ -52,7 +69,9 @@ export function mapGestures(
 
   on('pointerdown', (e) => {
     if (e.pointerType !== 'touch') return;
+    lastTouch = e.timeStamp;
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size > 1) lastTap = null; // a pinch between two taps is not a double tap
     twist = touches.size === 2 ? angle() : null;
     down = touches.size === 1 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp } : null;
   });
@@ -83,5 +102,8 @@ export function mapGestures(
   on('pointerup', lift);
   on('pointercancel', lift);
 
-  return () => events.abort();
+  return () => {
+    events.abort();
+    if (rotateLeft) inner._rotateLeft = rotateLeft;
+  };
 }
