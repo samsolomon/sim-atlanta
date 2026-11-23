@@ -2332,3 +2332,7 @@ The faceted clump that suits an oak makes a ginkgo look like balloons on sticks.
 ### 2026-11-23 — A2c: the Map keeps its credit
 
 Sam overrode the brief on one point from step 1. On the 2D Map, the "© OpenStreetMap contributors · OpenMapTiles" line now stays put and never fades. City still fades it after the first move or 5 s, and switching back to Map brings it back at once. Both names now link to their sources. At night the line uses the night secondary ink with a dark halo, because the day halo turned into a pale smudge on the dark basemap. [Map, day and night](log/ui/a2c/credit-map-persistent.jpg)
+
+### 2026-11-23 — A tunnel you cannot see through
+
+Sam's note was blunt: you could see the hillside straight through the North Line portal. The 2026-11-23 hood was a roof on two walls with a dark panel 6.7 m back, and from above it read as a canopy. The fix is a headwall set into the slope, its height taken from the rendered ground behind the mouth, with wing walls down the cut. Earth now closes over the box, and the tube runs 60 m into the hill, fading to black over its first 18 m. Trains are now clipped 5 m inside the mouth, so they enter the dark before they disappear. Two crown lamps and a faint warm glow just inside mark it at night; with no photograph to go on, both are illustrative. The earth cap first z-fought with the terrain in zig-zag stripes. Drawing only the parts that stand 0.2 m clear of the ground cured it. Requires a web rebuild only. [Before and after](log/ui/midtown-marta/portal-mouth-before-after.jpg)
