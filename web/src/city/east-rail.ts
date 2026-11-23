@@ -12,6 +12,7 @@
  * - Measured: the canopy roof (lidar).
  * - Inferred: platforms at car-floor level on the estimated bed.
  * - Illustrative: station columns, stair towers and piers.
+ * - Estimated: what is enclosed under the platforms (ENCLOSURES); the rest is an open undercroft.
  */
 import * as THREE from 'three';
 import type { RailSpan, SceneManifest } from '../core/scene-data';
@@ -41,11 +42,22 @@ export const ROOF = [-8.8, 13.0] as const;
 const LIP = MARTA_TRACK_OFFSET + CAR_WIDTH / 2 + 0.075;
 /** Platform length along the line (OSM ways 319512574 and 319512585: s 8951–9129 on 155177). */
 const PLATFORM_S: [number, number] = [8951, 9129];
-/** King Memorial's street-level station building under the platforms, OSM way 270494115 (v7,
- * building=train_station, layer 1). MARTA's station profile: "The only station entrance can be
- * accessed from Decatur Street"; its photo and the 2012 Commons photo show this enclosure under
- * the elevated platforms. Footprint sourced; wall height (ground to the platform underside) inferred. */
+/** King Memorial's station envelope, OSM way 270494115 (v7, building=train_station, layer 1). It
+ * outlines the whole station, platforms included, and the busway (OSM 287316287) and the kiss-ride
+ * drive run through it at street level, so it is not an enclosed volume. See ENCLOSURES. */
 export const STATION_BUILDING: readonly [number, number][] = [[-84.3746072, 33.7502219], [-84.374583, 33.7501668], [-84.3749974, 33.7500398], [-84.3749904, 33.7500238], [-84.3759165, 33.74974], [-84.3759214, 33.7497511], [-84.3764924, 33.7495761], [-84.3765155, 33.7496284], [-84.3765321, 33.7496662], [-84.3765508, 33.7497089], [-84.3765708, 33.7497547], [-84.3760022, 33.749929], [-84.3760227, 33.7499758], [-84.3758021, 33.7500434], [-84.3758446, 33.7501402], [-84.3760799, 33.7501021], [-84.3760909, 33.7501628], [-84.3759133, 33.7501899], [-84.3756318, 33.7502331], [-84.3756199, 33.7501779], [-84.3757425, 33.750156], [-84.3756945, 33.7500591], [-84.3750886, 33.7502448], [-84.3750778, 33.7502201], [-84.3747742, 33.7503131], [-84.3746623, 33.7503474]];
+/** What is enclosed inside that envelope, from Street View on Decatur St (Nov and Dec 2025), at
+ * Borders Dr (Mar 2025) and across the CSX tracks (Mar 2025), the 2017 photosphere under the west
+ * end, and Sam's three photos. Everything else under the platforms is an open undercroft on round
+ * columns: the busway, the kiss-ride drive and parking. s along 155177, v metres right of eastbound
+ * (north is negative). Extents about ±8 m; heights estimated.
+ * - lobby: the glazed street-level fare lobby and stair hall behind the Decatur St canopy.
+ * - mezzanine: the beige upper mass with ribbon windows, lifted over the open street level and
+ *   carrying the platforms. West and east of it the platforms stand on columns over open ground. */
+export const ENCLOSURES = {
+  lobby: { s: [9010, 9046], v: [-24, -12] },
+  mezzanine: { s: [9010, 9094], v: [-13, 14] },
+} as const;
 const EAST_IDS = ['155177', '155181', '155185', '155188', '155214', '155215', '155216', '155221', '155222', '155223'];
 
 /** Nearest s on a path to a scene point. */
@@ -165,7 +177,8 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   const sEnd = sOnPath(path, project, [1795, 350]).s;
   const b = new Builder();
   const canopyLamps: { x: number; z: number; y: number; g: number }[] = [];
-  const exterior: { stair?: { x: number; z: number; flights: number; rise: number }; canopy?: { x: number; z: number; underside: number; length: number; width: number } } = {};
+  type Stair = { x: number; z: number; flights: number; rise: number };
+  const exterior: { stair?: Stair; eastStair?: Stair; canopy?: { x: number; z: number; underside: number; length: number; width: number } } = {};
   const concrete = '#b9b4aa', deckSide = '#9c978d', track = '#5b544e', roofCol = '#cfd3d6', platformCol = '#c9c3b6', edge = '#e2bd3c';
   // A local frame point: s along, v right of travel, y up.
   const P = (s: number, v: number, y: number) => {
@@ -189,6 +202,8 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   const top = (s: number) => bed(s) + 0.25;
   strip(sSeam, sEnd, -half, half, top, concrete);
   for (const v of [-half, half]) wall(sSeam, sEnd, v, s => top(s) - 1.2, top, deckSide);
+  // Soffit, so the deck reads as a solid slab from the open street level below.
+  strip(sSeam, sEnd, -half, half, s => top(s) - 1.2, deckSide);
   for (const side of [-1, 1]) for (const r of [-0.72, 0.72]) {
     const v = side * MARTA_TRACK_OFFSET + r;
     strip(sSeam, sEnd, v - 0.05, v + 0.05, s => bed(s) + 0.56, track, 2);
@@ -215,6 +230,7 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     const [a, c] = lip < outer ? [lip, outer] : [outer, lip];
     strip(PLATFORM_S[0], PLATFORM_S[1], a, c, floor, platformCol, 3);
     for (const v of [a, c]) wall(PLATFORM_S[0], PLATFORM_S[1], v, s => floor(s) - 0.8, floor, deckSide, 3);
+    strip(PLATFORM_S[0], PLATFORM_S[1], a, c, s => floor(s) - 0.8, deckSide, 3); // soffit
     const inward = Math.sign(outer - lip);
     strip(PLATFORM_S[0], PLATFORM_S[1], Math.min(lip, lip + inward * 0.6), Math.max(lip, lip + inward * 0.6), s => floor(s) + 0.012, edge, 3);
   }
@@ -227,11 +243,29 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   for (const v of ROOF) wall(roofS[0], roofS[1], v, s => roofY(s) - 0.9, roofY, roofCol, 5);
   // Columns carry the station deck, and slimmer posts carry the roof above the platforms
   // (illustrative: the photos show round columns under the station; spacing is not surveyed).
+  // Outside the enclosed mezzanine each column row carries a transverse crosshead under both
+  // platforms and the track deck, so the open street level shows what holds the station up.
+  // Between the platforms the crosshead (like the mezzanine) stops at the deck soffit, so nothing
+  // rises into the trackway.
+  const xhead = (s: number) => ({ y0: top(s) - 2.0, y1: floor(s) - 0.8 });
+  const xbox = (s0: number, s1: number, v0: number, v1: number, y0: number, y1: number, side: string, end: string) => {
+    for (const v of [v0, v1]) b.quad(P(s0, v, y0), P(s1, v, y0), P(s1, v, y1), P(s0, v, y1), side);
+    for (const sx of [s0, s1]) b.quad(P(sx, v0, y0), P(sx, v1, y0), P(sx, v1, y1), P(sx, v0, y1), end);
+    b.quad(P(s0, v0, y0), P(s0, v1, y0), P(s1, v1, y0), P(s1, v0, y0), side);
+    b.quad(P(s0, v0, y1), P(s0, v1, y1), P(s1, v1, y1), P(s1, v0, y1), side);
+  };
   for (let s = roofS[0] + 6; s < roofS[1]; s += 18) {
+    const inMezz = s > ENCLOSURES.mezzanine.s[0] - 1 && s < ENCLOSURES.mezzanine.s[1] + 1;
+    if (!inMezz) {
+      const { y0, y1 } = xhead(s), [s0, s1] = [s - 0.7, s + 0.7];
+      xbox(s0, s1, ROOF[0] + 0.4, -half, y0, y1, deckSide, concrete);
+      xbox(s0, s1, -half, half, y0, top(s) - 1.2, deckSide, concrete);
+      xbox(s0, s1, half, ROOF[1] - 0.4, y0, y1, deckSide, concrete);
+    }
     for (const v of [ROOF[0] + 1.2, ROOF[1] - 1.2]) {
       const [x, , z] = P(s, v, 0), g = ground(x, z);
       if (g == null) continue;
-      const under = floor(s) - 0.8;
+      const under = inMezz ? floor(s) - 0.8 : xhead(s).y0;
       const col = new THREE.CylinderGeometry(0.7, 0.7, under - g, 10);
       col.translate(x, g + (under - g) / 2, z);
       b.addGeometry(col, concrete);
@@ -242,10 +276,9 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   }
   // Station exterior from Street View (Decatur St, Dec 2025) and Sam's reference photos.
   // Positions about ±8 m; dimensions estimated (illustrative).
-  // 1. The open zigzag stair at the west end by Grant St, north of the deck: switchback flights
-  //    with rounded landings on round columns, rising to the platform.
-  {
-    const sC = PLATFORM_S[0] + 12, vC = ROOF[0] - 3.0; // against the deck, north of the north platform
+  // 1. The open zigzag stairs at either end, north of the deck: switchback flights with rounded
+  //    landings on round columns, rising to the platform.
+  const zigzag = (sC: number, vC: number) => {
     const p = at(sC);
     const along = new THREE.Vector3(p.tx, 0, p.tz), up = new THREE.Vector3(0, 1, 0), right = new THREE.Vector3(-p.tz, 0, p.tx);
     const [ox, , oz] = P(sC, vC, 0);
@@ -261,12 +294,15 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
         for (const z of [z0, z1]) for (const t of [0, z > 0 ? 0.22 : -0.22]) b.quad(lp(x0, y0 - thick, z + t), lp(x1, y1 - thick, z + t), lp(x1, y1 + 1.1, z + t), lp(x0, y0 + 1.1, z + t), concrete); // solid parapets, 0.22 m thick
       };
       const basis = new THREE.Matrix4().makeBasis(along, up, right);
-      const landing = (x: number, y: number, outward: 1 | -1) => {
+      // `open`: the top landing leaves the platform-side quarter of its rounded parapet open for the bridge.
+      const landing = (x: number, y: number, outward: 1 | -1, open = false) => {
         const box = new THREE.BoxGeometry(1.2, thick, 2 * half);
         box.translate(x + outward * 0.6, y - thick / 2, 0);
         const round = new THREE.CylinderGeometry(half, half, thick, 14, 1, false, outward > 0 ? 0 : Math.PI, Math.PI);
         round.translate(x + outward * 1.2, y - thick / 2, 0);
-        const wall = new THREE.CylinderGeometry(half, half, 1.1, 14, 1, true, outward > 0 ? 0 : Math.PI, Math.PI);
+        const wall = open
+          ? new THREE.CylinderGeometry(half, half, 1.1, 7, 1, true, outward > 0 ? Math.PI / 2 : Math.PI, Math.PI / 2)
+          : new THREE.CylinderGeometry(half, half, 1.1, 14, 1, true, outward > 0 ? 0 : Math.PI, Math.PI);
         wall.translate(x + outward * 1.2, y + 0.55, 0);
         for (const geo of [box, round, wall]) { geo.applyMatrix4(basis); geo.translate(ox, 0, oz); b.addGeometry(geo, concrete); }
       };
@@ -274,13 +310,13 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
         const y0 = g + k * h, y1 = y0 + h, east = k % 2 === 0;
         const z = east ? -lane : lane;
         slab(east ? -L / 2 : L / 2, east ? L / 2 : -L / 2, y0, y1, z - lane, z + lane);
-        landing(east ? L / 2 : -L / 2, y1, east ? 1 : -1);
+        landing(east ? L / 2 : -L / 2, y1, east ? 1 : -1, k === n - 1);
       }
       // Round columns under the landings, and a short bridge from the top landing to the platform.
       for (const x of [-L / 2 - 1.6, L / 2 + 1.6]) for (const z of [-1.8, 1.8]) {
-        const col = new THREE.CylinderGeometry(0.6, 0.6, top - g, 12);
-        const [cx, , cz] = lp(x, 0, z);
-        col.translate(cx, g + (top - g) / 2, cz);
+        const [cx, , cz] = lp(x, 0, z), cg = (ground(cx, cz) ?? g) - 0.3; // each column on its own ground
+        const col = new THREE.CylinderGeometry(0.6, 0.6, top - cg, 12);
+        col.translate(cx, cg + (top - cg) / 2, cz);
         b.addGeometry(col, concrete);
       }
       const xTop = n % 2 ? L / 2 + 1.2 : -L / 2 - 1.2;
@@ -289,9 +325,14 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
       bridge.translate(xTop, top - thick / 2, half + reach / 2 - 0.3);
       bridge.applyMatrix4(basis); bridge.translate(ox, 0, oz);
       b.addGeometry(bridge, concrete);
-      exterior.stair = { x: ox, z: oz, flights: n, rise: top - g };
+      return { x: ox, z: oz, flights: n, rise: top - g };
     }
-  }
+    return undefined;
+  };
+  // West: against the deck by Grant St, north of the north platform. East: the matching stair by
+  // Borders Dr (Street View, Decatur St, Nov 2025 and Mar 2025), east of the upper mass.
+  exterior.stair = zigzag(PLATFORM_S[0] + 12, ROOF[0] - 3.0);
+  exterior.eastStair = zigzag(9108, ROOF[0] - 3.0);
   // 2. The long white entry and bus canopy on round columns along Decatur St (pano IyOLr4MeUbTilypkCjNWJg,
   //    heading 160): between the building's north face and the curb, rounded ends.
   {
@@ -327,22 +368,58 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
       }
     }
   }
-  // The station building: walls from the ground up to just under the platform deck, flat roof.
-  const ring = STATION_BUILDING.map(([lon, lat]) => project(lon, lat));
-  const grades = ring.map(([x, z]) => ground(x, z)).filter((g): g is number => g != null);
-  let building: { base: number; top: number; ring: XZ[] } | undefined;
-  if (grades.length === ring.length) {
-    const base = Math.min(...grades) - 0.5;
-    const top = Math.min(...ring.map(([x, z]) => floor(sOnPath(path, project, [x, z]).s))) - 0.8 - 0.3;
-    const wallCol = '#c8bda8', band = '#a99d88';
-    for (let i = 0; i < ring.length; i++) {
-      const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
-      b.quad([ax, base, az], [bx, base, bz], [bx, top - 0.6, bz], [ax, top - 0.6, az], wallCol);
-      b.quad([ax, top - 0.6, az], [bx, top - 0.6, bz], [bx, top, bz], [ax, top, az], band);
+  // What is enclosed under the platforms (ENCLOSURES); the rest of the envelope stays open, so the
+  // busway, drive and columns read beneath the lifted station.
+  const groundAt = (s: number, v: number) => { const [x, , z] = P(s, v, 0); return ground(x, z); };
+  const samples = (sr: readonly number[], vr: readonly number[]) => {
+    const out: number[] = [];
+    for (let s = sr[0]; s <= sr[1]; s += 6) for (let v = vr[0]; v <= vr[1]; v += 3) { const g = groundAt(s, v); if (g != null) out.push(g); }
+    return out;
+  };
+  /** A closed box in the station frame from y0 to y1, with a soffit. `face` colours the long north side. */
+  const block = (sr: readonly number[], vr: readonly number[], y0: number, y1: number, wallCol: string, soffitCol: string,
+    roofCol: string, face?: (y0: number, y1: number) => void) => {
+    const [s0, s1] = sr, [v0, v1] = vr;
+    wall(s0, s1, v0, () => y0, () => y1, wallCol, 6);
+    wall(s0, s1, v1, () => y0, () => y1, wallCol, 6);
+    for (const sx of [s0, s1]) b.quad(P(sx, v0, y0), P(sx, v1, y0), P(sx, v1, y1), P(sx, v0, y1), wallCol);
+    strip(s0, s1, v0, v1, () => y0, soffitCol, 6);
+    strip(s0, s1, v0, v1, () => y1, roofCol, 6);
+    face?.(y0, y1);
+  };
+  const enclosed: { lobby?: { base: number; top: number }; mezzanine?: { underside: number; top: number } } = {};
+  {
+    const beige = '#c8bda8', soffit = '#a79d8b', glass = '#56636c', band = '#3f4a52';
+    // Lifted mezzanine: its soffit clears the street level by at least 6.5 m on the Decatur side and
+    // 4 m on the (interpolated) south ground; its top meets the platform fascia.
+    const M = ENCLOSURES.mezzanine;
+    const north = samples(M.s, [M.v[0], M.v[0]]), south = samples(M.s, [M.v[1], M.v[1]]);
+    if (north.length && south.length) {
+      const underside = Math.max(Math.max(...north) + 6.5, Math.max(...south) + 4.0);
+      const mTop = Math.min(floor(M.s[0]), floor(M.s[1])) - 0.8;
+      // Under the track deck it stops at the deck soffit (the lowest along its length), so it never
+      // rises into the trackway; under the platforms it meets the platform fascia.
+      let soffitY = Infinity;
+      for (let s = M.s[0]; s <= M.s[1]; s += 2) soffitY = Math.min(soffitY, top(s) - 1.2);
+      block(M.s, [M.v[0], -half], underside, mTop, beige, soffit, '#9e968a', (y0, y1) => {
+        // Ribbon windows along the Decatur face (the photos' dark band), slightly proud of the wall.
+        const w0 = y0 + (y1 - y0) * 0.38, w1 = y0 + (y1 - y0) * 0.62;
+        wall(M.s[0] + 3, M.s[1] - 3, M.v[0] - 0.05, () => w0, () => w1, band, 6);
+      });
+      block(M.s, [-half, half], underside, soffitY, beige, soffit, deckSide);
+      block(M.s, [half, M.v[1]], underside, mTop, beige, soffit, '#9e968a');
+      enclosed.mezzanine = { underside, top: mTop };
     }
-    const tris = THREE.ShapeUtils.triangulateShape(ring.map(([x, z]) => new THREE.Vector2(x, z)), []);
-    for (const [i, j, k] of tris) b.tri([ring[i][0], top, ring[i][1]], [ring[j][0], top, ring[j][1]], [ring[k][0], top, ring[k][1]], '#9e968a');
-    building = { base, top, ring };
+    // Street-level glazed lobby behind the canopy, under the canopy's underside.
+    const L = ENCLOSURES.lobby;
+    const lg = samples(L.s, L.v);
+    if (lg.length) {
+      const base = Math.min(...lg) - 0.5, top = Math.min(...lg) + 4.2;
+      block(L.s, L.v, base, top, glass, soffit, '#9e968a', (y0, y1) => {
+        wall(L.s[0], L.s[1], L.v[0] - 0.05, () => y1 - 0.7, () => y1, beige, 6);
+      });
+      enclosed.lobby = { base, top };
+    }
   }
   // Platform lighting. The 2015 Commons platform photo (Gman197002, CC BY-SA 4.0) shows rows of
   // round pendant downlights under the roof trusses along each platform. Their positions here are
@@ -376,6 +453,34 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     pool.translate(l.x, l.g + 0.05, l.z);
     glow.addGeometry(pool, '#3a2e1c');
   }
+  // Undercroft downlights in the mezzanine soffit and under the deck over the busway (Street View
+  // pano under the Decatur canopy, Dec 2025, and the 2017 photosphere at the west end show soffit
+  // lights). Positions illustrative; no night photograph of the undercroft was found.
+  const mz = enclosed.mezzanine;
+  for (let s = PLATFORM_S[0] + 4; s < PLATFORM_S[1]; s += 9) for (const v of [-3, 3]) {
+    const inMezz = mz && s >= ENCLOSURES.mezzanine.s[0] && s <= ENCLOSURES.mezzanine.s[1];
+    const y = inMezz ? mz.underside - 0.05 : top(s) - 1.25;
+    const g = groundAt(s, v);
+    if (g == null) continue;
+    const [x, , z] = P(s, v, 0);
+    const disc = new THREE.CircleGeometry(0.3, 8);
+    disc.rotateX(Math.PI / 2);
+    disc.translate(x, y, z);
+    glow.addGeometry(disc, '#ffe2a8');
+    // Rest the pool on the highest ground under it, so a slope doesn't bury half of it.
+    const rim = [0, 1, 2, 3].map(k => ground(x + 2.2 * Math.cos(k * Math.PI / 2), z + 2.2 * Math.sin(k * Math.PI / 2)) ?? g);
+    const pool = new THREE.CircleGeometry(2.2, 12);
+    pool.rotateX(-Math.PI / 2);
+    pool.translate(x, Math.max(g, ...rim) + 0.05, z);
+    glow.addGeometry(pool, '#3a2e1c');
+  }
+  // The glazed lobby is open while trains run, so its Decatur St glass glows after dark. No night
+  // photograph of the station was found; brightness is illustrative.
+  const lb = enclosed.lobby;
+  if (lb) {
+    const L = ENCLOSURES.lobby, v = L.v[0] - 0.08;
+    glow.quad(P(L.s[0] + 1, v, lb.base + 0.6), P(L.s[1] - 1, v, lb.base + 0.6), P(L.s[1] - 1, v, lb.top - 0.8), P(L.s[0] + 1, v, lb.top - 0.8), '#4a3a22');
+  }
   const glowGeometry = glow.geometry();
   const glowMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
     transparent: true, depthWrite: false, forceSinglePass: true });
@@ -389,7 +494,7 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   mesh.name = 'MARTA east: guideway and King Memorial station';
   mesh.castShadow = mesh.receiveShadow = true;
   return {
-    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn, building, exterior,
+    mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn, enclosed, exterior,
     lampCount: glowGeometry.attributes.position.count,
     setNight(dark: number) {
       const d = Math.min(1, Math.max(0, dark));

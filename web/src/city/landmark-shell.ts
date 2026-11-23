@@ -15,6 +15,17 @@ export function landmarkShell(
 ) {
   const site = buildings.find((b) => b.id === id);
   if (!site || site.rings.length !== 1) return null;
+  const grades = site.rings[0].map(([x, z]) => grid.sample(x, z));
+  if (!grades.every((y): y is number => y !== null && Number.isFinite(y))) return null;
+  const base = Math.min(...grades) - 0.35;
+  return localLandmarkShell(buildings, site, name, origin, axis, probes, base, -grid.manifest.vertical.sceneZeroNavd88M);
+}
+
+/** Heights can also be measured from a local street entrance on the rendered terrain. */
+export function localLandmarkShell(
+  buildings: VBuilding[], site: VBuilding, name: string, origin: P2, axis: P2,
+  probes: P2[], base: number, originY: number,
+) {
   const angle = Math.atan2(axis[1], axis[0]),
     c = Math.cos(angle),
     s = Math.sin(angle);
@@ -23,9 +34,6 @@ export function landmarkShell(
     -(x - origin[0]) * s + (z - origin[1]) * c,
   ]);
   if (!probes.every(([x, z]) => pointInRing(x, z, ring))) return null;
-  const grades = site.rings[0].map(([x, z]) => grid.sample(x, z));
-  if (!grades.every((y): y is number => y !== null && Number.isFinite(y))) return null;
-  const base = Math.min(...grades) - 0.35;
   const body = new Builder(),
     lights = new Builder(),
     random = rng(1976);
@@ -78,10 +86,10 @@ export function landmarkShell(
         );
       }
   }
-  function finish(lightColor = '#f2d5a5') {
+  function finish(lightColor = '#f2d5a5', nightIntensity = 0.64) {
     const group = new Group();
     group.name = name;
-    group.position.set(origin[0], -grid.manifest.vertical.sceneZeroNavd88M, origin[1]);
+    group.position.set(origin[0], originY, origin[1]);
     group.rotation.y = -angle;
     const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
     shell.castShadow = shell.receiveShadow = true;
@@ -95,7 +103,7 @@ export function landmarkShell(
       group,
       buildings: buildings.filter((b) => b !== site),
       setNight(night: number) {
-        lamps.material.emissiveIntensity = night * 0.64;
+        lamps.material.emissiveIntensity = night * nightIntensity;
       },
     };
   }
