@@ -53,7 +53,8 @@ const TRAIL_KEY = 'perf-trail';
  *   &shadowstep=80 grid step (m) the shadow camera moves in (0 = follow the target)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
- *                 target and so redraws the shadow map as a dragging visitor does */
+ *                 target as a dragging visitor does. In metres that scales with orbit distance, so
+ *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
   if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null };
   const pr = Number(params.get('pr'));

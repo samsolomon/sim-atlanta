@@ -1288,9 +1288,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
-    const moved = SHADOW_STEP_M ? (sx !== shadowTarget.x || sz !== shadowTarget.z) && now - shadowDrawnAt >= SHADOW_GAP_MS
-      : t.distanceToSquared(shadowTarget) > 1;
-    if (moved || Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1) {
+    // Hysteresis: re-centre only once the target is 0.6 of a step from the current centre on an
+    // axis (a fresh centre is at most half a step away), so a target resting on a cell boundary
+    // cannot flip the shadow box back and forth.
+    const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
+    const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
+    const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
+    // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame on low.
+    if ((moved || turned) && now - shadowDrawnAt >= SHADOW_GAP_MS) {
       renderer.shadowMap.needsUpdate = true;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
