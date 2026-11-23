@@ -4,7 +4,7 @@ import { brookwoodGrid } from './brookwood';
 import railRows from './fixtures/midtown-rail.json';
 import { midtownFoundations } from './midtown-foundations';
 import * as THREE from 'three';
-import { BRIDGE_CLEARANCE, MAX_GRADE, northLineGuideway, northLinePiers, northLineProfile } from './midtown-marta-guideway';
+import { MAX_GRADE, northLineDepths, northLineGuideway, northLinePiers, northLineProfile, SOFFIT_CLEARANCE } from './midtown-marta-guideway';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { roadWidth } from '../terrain/transport-data';
 import { segDist } from '../vignette/geom';
@@ -36,7 +36,11 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
   try {
     const tracks = northLineTracks(rows, -5700);
     expect(tracks).toHaveLength(2);
-    const profile = northLineProfile(tracks, rows, area.groundAt, city.roads);
+    const lanes = (x: number, z: number) => inConnectorLanes(x, z, 1);
+    const draft = northLineProfile(tracks, rows, area.groundAt, city.roads);
+    const piers = northLinePiers(draft, city.roads, lanes, rows, area.groundAt);
+    const depths = northLineDepths(draft, piers);
+    const profile = northLineProfile(tracks, rows, area.groundAt, city.roads, (i) => depths[i]);
     let through = -Infinity,
       soffit = Infinity,
       grade = 0,
@@ -59,7 +63,7 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
     profile.centre.forEach((c, i) => {
       if (c.clear === null) return;
       spanSamples++;
-      soffit = Math.min(soffit, profile.height[i] - 2.2 - c.clear);
+      soffit = Math.min(soffit, profile.height[i] - 0.15 - profile.depth[i] - c.clear);
     });
     // Both tracks read one height across the shared deck.
     const [a, b] = tracks;
@@ -99,7 +103,6 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
       }
     const mouth = Math.max(...tracks.map((l) => profile.at(l, 0) - (area.groundAt(l.at(0).x, l.at(0).z) ?? -Infinity)));
     // Piers stand clear of every rendered lane and mapped road at its drawn width.
-    const piers = northLinePiers(profile, city.roads, (x, z) => inConnectorLanes(x, z, 1), rows, area.groundAt);
     const onA = piers.filter((i) => profile.centre[i].z > -5410);
     expect(onA.length).toBeGreaterThanOrEqual(3);
     for (const i of piers) {
@@ -113,6 +116,28 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
             expect(segDist(x, z, road.pts[k - 1], road.pts[k])).toBeGreaterThan(roadWidth(road) / 2 + 1 - 1e-6);
       }
     }
+    // Abutment walls (both span ends, full deck width) stay off every lane and drawn road.
+    const c = profile.centre;
+    for (let i = 1; i < c.length; i++) {
+      if (c[i].bridge === c[i - 1].bridge) continue;
+      const end = c[i].bridge ? i - 1 : i;
+      const w = c[end].half - 2.1 + 2.6;
+      for (let f = -1; f <= 1; f += 0.25) {
+        const x = c[end].x + c[end].nx * w * f,
+          z = c[end].z + c[end].nz * w * f;
+        expect(inConnectorLanes(x, z, 1)).toBe(false);
+        for (const road of city.roads)
+          for (let k = 1; k < road.pts.length; k++)
+            expect(segDist(x, z, road.pts[k - 1], road.pts[k])).toBeGreaterThan(roadWidth(road) / 2 + 1 - 1e-6);
+      }
+    }
+    // Every span's girder is at least 1/30 of its length deep.
+    const supports = [...piers].sort((a, b) => a - b);
+    for (let k = 1; k < supports.length; k++) {
+      const span = c[supports[k]].s - c[supports[k - 1]].s;
+      if (c.slice(supports[k - 1], supports[k]).every((q) => q.bridge))
+        expect(profile.depth[supports[k - 1] + 1] * 30).toBeGreaterThanOrEqual(span - 1e-6);
+    }
     // Bridge B's pier stays out of the Clear Creek channel (its lowest ground).
     const onB = piers.filter((i) => profile.centre[i].z < -5540);
     for (const i of onB) {
@@ -121,7 +146,7 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
     }
     expect(spanSamples).toBeGreaterThan(30);
     expect(through).toBeLessThan(0);
-    expect(soffit).toBeGreaterThan(BRIDGE_CLEARANCE - 2.2 - 0.25);
+    expect(soffit).toBeGreaterThan(SOFFIT_CLEARANCE - 0.05);
     expect(grade).toBeLessThan(MAX_GRADE + 0.005);
     expect(split).toBeLessThan(0.05);
     // Bare-earth bed stays near its ground; the approach embankments to the spans lift the 95th percentile.

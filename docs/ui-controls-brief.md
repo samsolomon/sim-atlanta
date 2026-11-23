@@ -1,0 +1,303 @@
+# UI controls and chrome: design brief
+
+Status: approved direction **A2c**, confirmed by Sam on 2026-11-23.
+Design canvas: https://claude.ai/artifact/CCsbqwgHy8fTJ2ujri2iSx (private to Sam).
+Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds are history.
+
+## Who it is for
+
+- **The main visitor follows a shared link** and has no context. Phone and desktop get
+  equal care.
+- **They need to see right away** where they are, when it is, what the weather is, and
+  how sure the data is.
+- **They should then be able to:**
+  - move the camera like a map app
+  - tap a train or building to learn about it
+  - change the time
+  - share a view
+- **The miniature leads.** The interface is a quiet frame around it.
+
+## One layout, four places
+
+Every view (Map, City and Models) uses the same four places. All glass sits **8 px**
+from the screen edges. On phones, the top elements also sit below the status bar.
+
+| Place | Contents |
+|---|---|
+| **Top-left: subject card** | **Map and City:** the neighbourhood under the camera centre, then time and weather, then a confidence line, for example "● Live · Friday, Nov 20" or "Timetable · illustrative sky · Now". **Models:** the model name with ⌄ to browse, ‹ › to step through its category, a one-line description and a position ("Vehicles · 1 of 3"). |
+| **Bottom-left: app bar** | Menu · view switch (**Map · City · Models**) · radio. It looks the same in every view. |
+| **Right: detail panel** | One slot. It holds the selected train or building, the Key, About & credits, or a model's Details. It is only as tall as its content and grows to full height only for long content such as About, which scrolls inside. |
+| **Bottom-right: camera column** | Compass, zoom in and out, share. It never moves. In Models it holds reset view, zoom and share. On Map the compass appears only once the map is rotated. |
+
+There is no "Sim Atlanta" name on screen. The name appears in the tab title, the link
+preview and About.
+
+Removed for now: Street view and search. Both are follow-ups.
+
+## Subject card and time
+
+- The neighbourhood comes from `data/ga/neighborhoods.json` at the camera centre and
+  updates when the camera settles. Past neighbourhood zoom it reads "Metro Atlanta".
+  - **Fix:** today it says "Downtown" even at metro zoom.
+- **Time is plain bold text** with a faint ⌄. A light background appears only on hover;
+  there is no pill at rest. The faint ⌄ is the tap cue on touch.
+- Tapping the card opens **Time & weather**, below the place and time on desktop and as
+  a bottom sheet on phones. It contains:
+  - **Time:** a date button, plus a slider marked −12 h · Now · +12 h that fills from
+    Now to the chosen time.
+  - **Speed:** Pause, 1× and 30×. Show only speeds the app supports.
+  - **Weather:** Auto, Clear, Rain, Fog and Storm. Auto uses the observed weather at the
+    present time and an illustrative sky otherwise.
+  - **Back to now:** a quiet button with a return arrow. It has no green dot, because it
+    is an action, not a status.
+- **Phones:** while the slider is being dragged, the sheet shrinks to just the slider and
+  the time so the city stays visible.
+- This replaces the hidden `?controls=1` panel (`web/src/main.ts:528`).
+
+## Notices
+
+- Short status notes appear as one small glass pill directly under the subject card,
+  8 px below it. Examples:
+  - the existing area note (`shell.setNote`, for example "Showing the nearest loaded
+    City area")
+  - loading
+  - live feed unavailable, showing the timetable
+- Only one note shows at a time. Its tier words must stay readable over any background
+  (see PR #204).
+
+## Detail panel
+
+- **Selected train:**
+  - line accent and service colour
+  - destination
+  - Follow and Share
+  - next stop, with a truth tier on each attribute
+  - car count, marked illustrative
+  - an "All stops ›" row
+- **Two things want the panel:** the newer one replaces the older one. A back row (for
+  example "‹ Northbound to North Springs") returns to the previous content.
+- **Camera on selection:** selecting something moves the camera so the subject sits in
+  the middle of the visible area beside the panel.
+- **Key:** two sections, each line short enough for one line.
+  - **Colour means the kind of service:** city rail, intercity, freight, bus.
+  - **Confidence:** Live (real-time feed, moments ago), Scheduled (from a published
+    timetable), Reported (an operator's reported average), Inferred (filled in from
+    nearby reports), Illustrative (typical, not observed). No status dot on the labels.
+- **About & credits:** the copy from `web/about.html`, the credits list, then "Built by
+  Sam Solomon ↗" (solomon.io), with X and Instagram links to @samuelrsolomon.
+
+## Menu
+
+- Opens upward from the app bar. On phones it is a bottom sheet.
+- Contents:
+  - Key ›
+  - About & credits ›
+  - Graphics: Auto, High, Low. Caption: "Low draws at standard resolution with simpler
+    shadows, fewer leaves and less rain. Good for older phones." This maps to the
+    existing `low` quality path in `web/src/city/city.ts`.
+  - Built by Sam Solomon ↗, X, Instagram
+  - map data credit in small print
+- The menu has no title block.
+
+## Models view (the Model lab moves in)
+
+- The Model lab becomes the third view, no longer a separate page.
+- **Details panel:** camera (Front, Side, Rear, Top), line colour, platform, and display
+  switches (Night, Ink outlines).
+- **"Compare with a photo"** is a modelling tool, so it goes behind a dev-only flag such
+  as `?dev`.
+- **Browser at scale:** tapping the model name opens a tall panel on the left, or a
+  full-height sheet on phones. It contains:
+  - search
+  - category chips with counts
+  - a Recent row, shown only once the catalogue is large
+  - a grouped list in which each row has a thumbnail coloured by service, a name and one
+    line
+- **Phones:** Details is a button on the model card, so the app bar stays identical in
+  every view.
+
+## Selected states
+
+- **Segmented controls:** the chosen option is a raised white chip inside a light grey
+  track. At night it is a soft lighter tint. Never use a dark primary fill.
+- **Night:** the glass is darker and more translucent, with a brighter edge so pieces
+  stay visible against the dark scene.
+
+## Camera: move like a map
+
+- **Mouse:**
+  - drag pans
+  - right-drag or Ctrl-drag rotates and tilts
+  - scroll zooms toward the cursor
+  - double-click zooms in
+- **Touch:**
+  - one finger pans
+  - pinch zooms
+  - twisting two fingers rotates
+  - dragging two fingers up or down tilts
+  - double-tap zooms in
+- **Keys:** arrows or WASD pan, Q/E rotate, +/− zoom, N faces north.
+- **Implementation:**
+  - In `web/src/city/city.ts`, remap the `OrbitControls` mouse buttons and touches and
+    turn on `zoomToCursor`. Twist-to-rotate and two-finger tilt need a small gesture
+    handler.
+  - Re-check the tap-versus-drag threshold in `city/pick.ts`, and Follow.
+  - Phones drop the zoom buttons, because pinch covers them.
+  - The City studios edit `city.ts`, so coordinate through the Control agent.
+- The first-visit hint uses wording that matches the view and the input, so the
+  "Drag to look around · WASD to move" hint no longer appears on Map.
+
+## Credits (OSMF attribution guidelines)
+
+- On load, show a 12 px line "© OpenStreetMap contributors · OpenMapTiles" on the bottom
+  edge, with a soft halo and no glass behind it.
+  - **Desktop:** right-aligned, just left of the camera column.
+  - **Phone:** centred under the app bar, in the home-indicator strip.
+- It fades on the first pan or zoom, or after 5 s, whichever comes first.
+- After that the credit lives in Menu › About & credits.
+- "OpenStreetMap" links to openstreetmap.org/copyright.
+
+## Share
+
+- Share copies the link, or opens the phone's share sheet, for view, camera and time.
+- **Two options:**
+  - **Live:** no time in the link, so it opens at the viewer's present.
+  - **Freeze this moment:** `t=…&speed=0`.
+- The camera goes into the URL. Today it is set only through the dev-only
+  `__city.lookAt(x, z, {bearing, tilt, metresPerPixel})`.
+
+## Radio
+
+- An icon in the app bar, off until tapped, because browsers block autoplay. While it
+  plays, the track title shows next to it.
+- Build it against a stub playlist. The music comes later: about 10 calm, SimCity-style
+  tracks, around 30 minutes in total.
+
+## Rules that do not change
+
+- **Truth tiers on every fact.** Live appears only at the real present. A shifted clock
+  reads Timetable, and its weather reads illustrative.
+- **Colour means the kind of service,** not the agency.
+- **Free to host.** No per-visitor server work.
+- **Accessibility:**
+  - touch targets of 44 px or larger
+  - visible focus rings
+  - honour reduced motion: camera jumps are instant
+  - measure text contrast on glass over busy scenes after the build
+
+## Build order (behind `?ui=next` until it replaces the current interface)
+
+1. **Shell:** the four places, glass tokens, 8 px insets, app bar, camera column, the
+   corrected hint, and the credit line. Map and City.
+2. **Camera gestures:** maps-style mouse and touch input in City, coordinated with the
+   City studios.
+3. **Subject card and Time & weather:** the neighbourhood lookup, the time panel and
+   sheet, and Back to now.
+4. **Detail panel:** train card, Key, About, the replace-and-back rule, and phone sheets.
+5. **Share** with the camera in the URL.
+6. **Menu:** Graphics quality and links.
+7. **Models view:** the Model lab merged in, Details, the browser, and `?dev` for the
+   photo overlay.
+8. **Radio shell.**
+
+## Not yet verified
+
+- The large panels at night.
+- Small-text contrast over the scene.
+- The phone time sheet while dragging.
+- Judge each of these in the running app.
+
+## Appendix: board references and exact values
+
+The canvas is private, so the approved boards are copied into this branch:
+
+- `docs/ui-a2c/*.jpg`: one capture per approved board.
+- `docs/ui-a2c/source/*.dc.html`: each board's markup and CSS. These are design mockups:
+  images point at canvas uploads and `support.js` belongs to the canvas, so read them
+  for values and structure, not to run.
+
+| Board | Shows |
+|---|---|
+| `A2c-desktop` | City, live, train selected: subject card, content-height detail panel, app bar, camera column |
+| `A2c-night` | Night glass, clock shifted, radio playing ("Peachtree Drift") |
+| `A2c-menu` · `A2c-phone-menu` | Menu on desktop (opens up from the app bar) and phone (sheet) |
+| `A2c-key` · `R5-phone-key` | Key in the detail panel and as a phone sheet |
+| `A2c-about` | About & credits: full-height panel that scrolls, stopping above the camera column |
+| `A2c-models` · `R5-phone-models` | Models view: model card, Details panel, Details button on phones |
+| `A2c-models-browser` · `R5-phone-browser` | Model browser at 100+ (categories and counts are examples) |
+| `R5-time` · `R5-phone-time` | Time & weather on desktop (inside the subject card) and phone (sheet) |
+| `R5-map` · `R5-phone-map` | Map view in the same layout; Key replacing a selection with a back row; credit line |
+| `A2c-phone` | Phone, train selected: sheet, bottom bar hidden |
+
+### Glass
+
+- **Day:**
+  - background: `linear-gradient(160deg, rgba(252,250,245,.80), rgba(243,239,230,.68))`
+  - filter: `backdrop-filter: blur(22px) saturate(1.35)`
+  - shadow: `box-shadow: 0 0 0 .5px rgba(60,45,30,.18), 0 10px 28px rgba(40,30,20,.18), 0 1px 3px rgba(40,30,20,.10), inset 0 1px 0 rgba(255,255,255,.9)`
+  - Ink `#2a2722`, secondary ink `#5f5a50`, separator `rgba(60,45,30,.12)`.
+- **Night:**
+  - gradient `rgba(38,44,56,.70)` → `rgba(20,24,32,.62)`
+  - edge `0 0 0 .5px rgba(255,255,255,.16)`, inset highlight `rgba(255,255,255,.22)`
+  - shadow `0 12px 32px rgba(0,0,0,.45)`
+  - ink `#eef0f3`, secondary ink `#b7bfcb`, separator `rgba(255,255,255,.12)`
+- **Panels that hold long text** (menu, About, browser) use slightly more opaque day glass
+  (`.84–.92` / `.74–.86`).
+- **Radius:** cards and panels 16 px; phone sheets 24 px with a 40×5 px grabber; buttons
+  9–10 px.
+- **Inset:** 8 px from every edge. On phones the top items sit at `safe-area-top + 8`
+  (54 px on the 390×844 board). The app bar sits 34 px from the bottom, above the
+  home indicator.
+
+### Type and sizes
+
+System UI sans throughout.
+
+- **Subject card (desktop):**
+  - place 30 px / 700 / −0.015em
+  - time line 16 px; time bold with a ⌄ at 45% opacity
+  - tier line 12 px with a 7 px dot
+  - padding 14 / 18 / 14 / 20 px
+- **Subject card (phone):** place 22 px, time line 14 px.
+- **Panel widths:**
+  - detail panel 360 px
+  - About 384 px
+  - Models Details 312 px
+  - model browser 380 px
+  - menu 320 px
+  - Time & weather card 372 px
+- **Heights:** app bar and camera buttons 44×44 (phone app bar 52 px tall); app bar
+  48 px on desktop.
+- **Selected segment:**
+  - day: background `rgba(255,255,255,.95)`, shadow `0 1px 3px rgba(40,30,20,.16), 0 0 0 .5px rgba(60,45,30,.12)`, track `rgba(60,45,30,.12)`
+  - night: `rgba(255,255,255,.20)` on a `rgba(0,0,0,.22)` track
+  - never a dark fill
+- **Truth-tier label:** 11 px / 600, 1 px separator-colour border, fully rounded, secondary
+  ink. Fixed width (76 px) in the Key so the descriptions line up.
+- **Colour lines in the Key:** 28×5 px. Service colours come from `web/src/ui/tokens.css`.
+- **Credit line:**
+  - 12 px on desktop, 11 px on phones, colour `#4a463e`
+  - halo `text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea`
+  - no glass behind it
+- **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Every other button
+  uses the separator-tint background.
+
+### Share sheet (not redrawn in A2c, behaviour unchanged)
+
+- Title "Share this view", with the line "The link opens on this exact camera in City."
+- Two radio rows:
+  - **Live:** "Opens at whatever time it is for the viewer."
+  - **Freeze this moment:** "Fri, Nov 20 · 9:30 PM, paused. Trains from the timetable."
+- A monospace preview of the link, then "Copy link" and "Share…" (the system share sheet).
+- Desktop opens it from the share button in the camera column as a small panel; phones
+  use a sheet.
+
+### Copy to reuse verbatim
+
+| Where | Text |
+|---|---|
+| Graphics caption | "Low draws at standard resolution with simpler shadows, fewer leaves and less rain. Good for older phones." |
+| Weather caption | "Auto shows the observed weather at the present time and an illustrative sky otherwise." |
+| Key, section headings | "Colour means the kind of service", "Confidence" |
+| Menu items | "Key: What the colours and labels mean", "About & credits: How it works and where the data comes from" |
+| Credit line | "© OpenStreetMap contributors · OpenMapTiles" ("OpenStreetMap" links to openstreetmap.org/copyright) |

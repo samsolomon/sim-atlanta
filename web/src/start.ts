@@ -1,5 +1,9 @@
 import './style.css';
 import { initialView } from './core/initial-view';
+import { uiNext } from './ui/flag';
+
+// Mark the A2c interface before anything paints, so the old chrome never flashes.
+if (uiNext(location.search)) document.documentElement.dataset.ui = 'next';
 
 const landing = initialView(location.search, location.hash);
 const city = document.getElementById('view3d')!;

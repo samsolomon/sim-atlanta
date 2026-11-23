@@ -16,9 +16,11 @@ import mapTrifold from '@phosphor-icons/core/assets/regular/map-trifold.svg?raw'
 import buildings from '@phosphor-icons/core/assets/regular/buildings.svg?raw';
 import x from '@phosphor-icons/core/assets/regular/x.svg?raw';
 import caretDown from '@phosphor-icons/core/assets/regular/caret-down.svg?raw';
+import plus from '@phosphor-icons/core/assets/regular/plus.svg?raw';
+import minus from '@phosphor-icons/core/assets/regular/minus.svg?raw';
 import type { Weather } from '../core/weather';
 
-export const ICON = { sun, moon, cloud, cloudSun, cloudMoon, cloudRain, cloudFog, cloudLightning, cloudSnow, list, mapTrifold, buildings, x, caretDown };
+export const ICON = { sun, moon, cloud, cloudSun, cloudMoon, cloudRain, cloudFog, cloudLightning, cloudSnow, list, mapTrifold, buildings, x, caretDown, plus, minus };
 
 /** The weather glyph for current conditions; `night` swaps sun for moon. */
 export function weatherIcon(w: Weather, night: boolean): string {

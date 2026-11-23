@@ -6,7 +6,7 @@ import type { TransportRun } from '../terrain/transport-data';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
-import { northLineGuideway, northLinePiers, northLineProfile, northLineStructure } from './midtown-marta-guideway';
+import { northLineDepths, northLineGuideway, northLinePiers, northLineProfile, northLineStructure } from './midtown-marta-guideway';
 import { inConnectorLanes } from '../terrain/connector-paint';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
@@ -148,11 +148,17 @@ export function createNorthLine(
   const lines = northLineTracks(rows, -5700);
   if (lines.length !== 2) return;
   const paths = northLinePaths(rf, origin, lines);
-  const profile = northLineProfile(lines, rows, area.groundAt, area.connectorBoard?.city.roads ?? []);
-  if (!profile.height.every(Number.isFinite)) return;
-  area.group.add(northLineGuideway(lines, profile, area.groundAt));
   const roads = area.connectorBoard?.city.roads ?? [];
-  const spans = northLineStructure(profile, northLinePiers(profile, roads, (x, z) => inConnectorLanes(x, z, 1), rows, area.groundAt), area.groundAt);
+  const lanes = (x: number, z: number) => inConnectorLanes(x, z, 1);
+  // Piers depend only on where the spans run, so place them first, size each girder
+  // to its span, then design the profile to keep the soffit clear over every road.
+  const draft = northLineProfile(lines, rows, area.groundAt, roads);
+  if (!draft.height.every(Number.isFinite)) return;
+  const piers = northLinePiers(draft, roads, lanes, rows, area.groundAt);
+  const depths = northLineDepths(draft, piers);
+  const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
+  area.group.add(northLineGuideway(lines, profile, area.groundAt));
+  const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
   const height = (line: Line, along: number) => profile.at(line, along);
   const darkness = { value: 0 };
