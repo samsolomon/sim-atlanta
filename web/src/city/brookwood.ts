@@ -12,6 +12,7 @@ import {
   passengerMaterial,
 } from '../vignette/crescent-stock';
 import survey from './fixtures/brookwood.json';
+import { corridor, corridorGrade } from './brookwood-corridor';
 
 const project = makeProjector({ lon: -84.3916, lat: 33.7539 });
 const main = new Line(survey.main1 as P2[]);
@@ -21,7 +22,9 @@ const depot = survey.depot as P2[];
 export const brookwoodBounds = { minX: -575, maxX: 410, minZ: -5490, maxZ: -4550 };
 
 // Open rail samples (City x, NAVD88 m). Bridge floors and rooftops are excluded.
+// The corridor anchors continue the mapped mains at grade to the board edges.
 const grade = [
+  ...corridorGrade.west,
   [-575, 271.5],
   [-370.5, 267.9],
   [-244.8, 266.5],
@@ -31,7 +34,12 @@ const grade = [
   [65.2, 263.5],
   [236.5, 261.3],
   [410, 258.9],
+  ...corridorGrade.east,
 ];
+/** Interpolated track bed (NAVD88 m) along the Brookwood corridor. */
+export function brookwoodBedNavd88M(x: number) {
+  return elevation(x);
+}
 function elevation(x: number) {
   const i = grade.findIndex((p) => p[0] >= x);
   if (i < 0) return grade[grade.length - 1][1];
@@ -46,29 +54,39 @@ function elevation(x: number) {
 export function brookwoodGrid(manifest: GroundManifest, bytes: ArrayBuffer) {
   const data = new DataView(bytes.slice(0));
   const { bounds, stepM, cols, rows, scaleM, offsetM, noData } = manifest;
-  const tracks = [survey.main1, survey.main2, survey.steelLead, survey.siding] as P2[][];
+  const tracks = [corridor.main1.pts, corridor.main2.pts, survey.steelLead as P2[], corridor.siding.pts];
+  const segments = tracks.flatMap(line => line.slice(1).map((b, i) => {
+    const a = line[i];
+    return { a, b, minX: Math.min(a[0], b[0]) - 16, maxX: Math.max(a[0], b[0]) + 16,
+      minZ: Math.min(a[1], b[1]) - 16, maxZ: Math.max(a[1], b[1]) + 16 };
+  }));
   for (let row = 0; row < rows; row++) {
     const z = bounds.minZ + row * stepM;
-    if (z < brookwoodBounds.minZ || z > brookwoodBounds.maxZ) continue;
     for (let col = 0; col < cols; col++) {
       const x = bounds.minX + col * stepM;
-      if (x < brookwoodBounds.minX || x > brookwoodBounds.maxX) continue;
+      const surveyed = x >= brookwoodBounds.minX && x <= brookwoodBounds.maxX &&
+        z >= brookwoodBounds.minZ && z <= brookwoodBounds.maxZ;
+      // Outside the survey box but within its x range the terrain is left as staged.
+      if (!surveyed && x >= brookwoodBounds.minX && x <= brookwoodBounds.maxX) continue;
       const offset = 2 * (row * cols + col),
         sample = data.getInt16(offset, true);
+      if (sample === noData) continue;
       const h = sample * scaleM + offsetM,
         bed = elevation(x) - 0.16;
-      if (sample === noData || h <= bed) continue;
+      // Inside the survey, lower terrain beneath the railway bridge is retained. The
+      // survey's open-track ends blend into the filled continuations.
+      const fills = !surveyed || x < brookwoodBounds.minX + 20 || x > brookwoodBounds.maxX - 20;
+      if (fills ? Math.abs(h - bed) < 0.01 : h <= bed) continue;
       let gap = Infinity;
-      for (const line of tracks)
-        for (let i = 1; i < line.length; i++) {
-          const a = line[i - 1],
-            b = line[i];
-          if (x < a[0] - 16 || x > b[0] + 16 || z > Math.max(a[1], b[1]) + 16 || z < Math.min(a[1], b[1]) - 16)
-            continue;
-          gap = Math.min(gap, segDist(x, z, a, b));
-        }
+      for (const g of segments) {
+        if (x < g.minX || x > g.maxX || z < g.minZ || z > g.maxZ) continue;
+        gap = Math.min(gap, segDist(x, z, g.a, g.b));
+      }
       if (gap >= 16) continue;
-      const f = Math.min(1, (16 - gap) / 6);
+      // Beyond the survey the mapped track is at grade: fill shallow dips under the
+      // ballast as well as trimming high ground beside it.
+      if (h < bed && gap >= 9) continue;
+      const f = h > bed ? Math.min(1, (16 - gap) / 6) : Math.min(1, (9 - gap) / 4);
       data.setInt16(offset, Math.round((h + f * (bed - h) - offsetM) / scaleM), true);
     }
   }
@@ -450,8 +468,8 @@ export function createBrookwood(sceneZero: number) {
       287,
       410,
     );
-  for (const pts of [survey.main1, survey.main2, survey.steelLead, survey.siding]) {
-    const line = new Line(pts as P2[]);
+  for (const pts of [corridor.main1.pts, corridor.main2.pts, survey.steelLead as P2[], corridor.siding.pts]) {
+    const line = new Line(pts);
     b.ribbon(line, 3.6, (_, x) => bed(x) + 0.12, '#807a70');
     for (let s = 0.3; s < line.length; s += 0.72) {
       const p = line.at(s);
@@ -496,8 +514,10 @@ export function createBrookwood(sceneZero: number) {
     return { geometry, offset, length, trucks: dimensions(unit).trucks };
   });
   const northEdge = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  // The mapped mains meet the west board edge on a diagonal. Square off the ballast there.
+  const westEdge = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1000);
   for (const m of [material, lightMaterial, litSlab.material, stockMaterial, ...facades.map((f) => f.material)]) {
-    m.clippingPlanes = [northEdge];
+    m.clippingPlanes = [northEdge, westEdge];
     m.clipShadows = true;
   }
   function update(states: TrainState[], dark: number) {

@@ -34,3 +34,18 @@ The matched track grade uses nine open-track DEM anchors. For the rendered surfa
 The component replaces the named generic depot and Peachtree bridge after construction succeeds. Cars use the shared `Schedule` output, follow Main 1 in both directions and ease toward the northeast end of the island as a complete consist. A timetable edition determines calls and cancellations. On selection the existing train card retains the GTFS source and tier. On-site labels identify the inferred berth and illustrative consist. [Midtown staging and tile bounds](midtown-board.md)
 
 Architect and product design reviews, 23 November. The imagery and DEM require separate street and track heights. The existing dated schedule, City train selection and shared Midtown mount support the station without a second timetable or a freestanding preview.
+
+## Corridor to the board edges
+
+The survey clip ends at x −575 and +410. The two NS Norcross mains then continue for 583–585 m to the west board edge at x −1000 (z −4190 and −4195). To the northeast they continue for 376–385 m, leaving through the north edge near x 697–703, z −5700. The siding continues another 394 m beside them to x 709. These five mapped OSM runs now join the surveyed lines end to end and are drawn in the same ballast, tie and rail style. They stay in the row data for building and tree clearance and for the road crossing, but the generic drawing is skipped. The Atlanta Terminal Subdivision stub in the northwest corner keeps its generic drawing. [Joins](../web/src/city/brookwood-corridor.ts)
+
+No mapped bridge, tunnel or overpass crosses either continuation, and the 3DEP profile is gentle, so the track runs at grade. The only crossing is an at-grade service road near (−760, −4417). The bed follows 30 open-track anchors. Each one is the median of both mains on the staged 5 m bare-earth grid within 6 m of its x. Going west the anchors climb from 271.7 m at x −600 to 277.2 m at the edge, about 1.3%. Going northeast they fall from 258.45 m at x 430 to 257.25 m at x 580, then rise to 257.9 m at the edge. Both ends meet the survey table within 0.45 m. Within 16 m of a continuation, high ground is trimmed to bed, as inside the survey. Dips within 5 m are also filled, feathered out to 9 m. The fill reaches 20 m inside each end of the survey and nowhere near the freeway rail bridge. Along every 2 m centreline sample, the rendered ground at both detail tiers stays between 0.11 and 0.28 m below bed. Ballast, tie and rail heights between anchors, and the crossing surface, are inferred. [Grade script](../pipeline/prototypes/brookwood-corridor/grade.py) · [Anchors](../web/src/city/fixtures/brookwood-corridor.json)
+
+The extension adds about 10k triangles to the existing Brookwood mesh and no draw calls. Capping takes 13–14 ms per row at mount. Trains do not yet run beyond the survey clip.
+
+| Camera | Low day / night | High day / night |
+| --- | --- | --- |
+| West, −780,−4400,300,55,700 | [Day](log/ui/brookwood-corridor/west-low-day.jpg) · [Night](log/ui/brookwood-corridor/west-low-night.jpg) | [Day](log/ui/brookwood-corridor/west-high-day.jpg) · [Night](log/ui/brookwood-corridor/west-high-night.jpg) |
+| Northeast, 550,−5550,40,55,600 | [Day](log/ui/brookwood-corridor/east-low-day.jpg) · [Night](log/ui/brookwood-corridor/east-low-night.jpg) | [Day](log/ui/brookwood-corridor/east-high-day.jpg) · [Night](log/ui/brookwood-corridor/east-high-night.jpg) |
+
+West seam [before](log/ui/brookwood-corridor/seam-west-before.jpg) · [after](log/ui/brookwood-corridor/seam-west-high-day.jpg) at `cam=-575,-4590,250,55,120`. The warehouses beside the west track show no exposed footings ([view](log/ui/brookwood-corridor/west-warehouses-high-day.jpg)).

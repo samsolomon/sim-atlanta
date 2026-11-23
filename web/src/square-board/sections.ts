@@ -3,6 +3,7 @@ import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import railRows from '../city/fixtures/midtown-rail.json';
+import { brookwoodCorridorRail } from '../city/brookwood-corridor';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
@@ -132,7 +133,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   try {
     for (const { id, grid, context } of patches) {
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
-        context.terrainTransport = { version: 1, roads: [], rail: railRows[id as MidtownRow] as TransportRun[] };
+        context.terrainTransport = { version: 1, roads: [], rail: brookwoodCorridorRail(railRows[id as MidtownRow] as TransportRun[]) };
       }
       const contextWithDecks = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
