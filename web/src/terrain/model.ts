@@ -1,3 +1,4 @@
+import { midtownFoundations } from '../city/midtown-foundations';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
@@ -128,6 +129,7 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
+  city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
