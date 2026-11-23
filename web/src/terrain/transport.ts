@@ -323,7 +323,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   }
   const sharedDecks = drawStreetBridges(city, grid.manifest.vertical.sceneZeroNavd88M, terrainGround, structures, roadTreads);
   const junctionWidths = new Map<TransportRun, number>();
-  const junctionRuns = drawJunctionDecks(city, grid.manifest.vertical.sceneZeroNavd88M, structures, roadTreads, junctionWidths);
+  const landWalks = new Map<TransportRun,P2[][]>();
+  const junctionRuns = drawJunctionDecks(city, grid.manifest.vertical.sceneZeroNavd88M, structures, roadTreads, junctionWidths, landWalks);
   for (const run of junctionRuns) sharedDecks.add(run);
   const sharedPositions = new THREE.Float32BufferAttribute(structures.pos,3);
   const junctionNodes = new Map<string,TransportRun[]>();
@@ -337,6 +338,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const h = grid.sample(x,z);
     return h === null ? null : h-sceneZero;
   }, seventeenth, roadTreads, bridgeRuns);
+  for(const [owner,parts] of landWalks) for(const pts of parts) draw({...owner,pts,kind:"ground"},"road",owner);
   for (const road of data.roads) {
     if (sharedDecks.has(road) || bridgeRuns.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;

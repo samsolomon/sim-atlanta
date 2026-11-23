@@ -71,6 +71,21 @@ for (const name of ['downtown', 'north-band', 'south-band']) {
             const hit = ray.intersectObject(transport.group, true)[0];
             expect(hit, 'missing deck tread at ' + [x, z]).toBeDefined();
             expect(Math.abs(hit.point.y - h), 'lip at ' + [x, z]).toBeLessThan(0.055);
+            if (f === 0.5) {
+              // A query on the exact surveyed edge used to fall through the
+              // float32 triangle and return ground up to 8.6 m below the street.
+              expect(Math.abs(approach.groundAt(x,z)! - y)).toBeLessThan(.13);
+              let previous = approach.groundAt(x,z)!, grade = 0;
+              for (let s=1; s<=40; s++) {
+                const height = approach.groundAt(x+dx*s,z+dz*s);
+                if(height === null) break;
+                const nextGrade=height-previous;
+                expect(Math.abs(nextGrade)).toBeLessThan(.12);
+                if(s>1) expect(Math.abs(grade-nextGrade)).toBeLessThan(.045);
+                previous=height;
+                grade=nextGrade;
+              }
+            }
             let prior = h;
             for (let s = 1; s <= 72; s++) {
               const p = approach.groundAt(x + dx * s, z + dz * s);

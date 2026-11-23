@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
 import { GroundGrid } from './grid';
 import { slotPlanes, subtractSlot, type OpenSlot } from './openings';
 
@@ -29,6 +30,10 @@ export class GroundSurface {
       heights[i] = h === null ? NaN : h - vertical.sceneZeroNavd88M;
       if (h !== null) minY = Math.min(minY, heights[i]);
     }
+    // Occluded freeway pavement is inferred from class-2 returns at its portals.
+    // Apply the exposed-pavement interpolation before tessellation at either quality.
+    const patches:Record<string,number[][]> = underpassFloors;
+    for (const [i,navd] of patches[grid.manifest.sha256] ?? []) heights[i]=navd-vertical.sceneZeroNavd88M;
     if (!Number.isFinite(minY)) throw new Error('Ground grid is empty');
     this.minY = minY;
     const joins = joinList(join);
@@ -125,6 +130,19 @@ export class GroundSurface {
     this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     this.geometry.setIndex(indices);
     this.geometry.computeVertexNormals();
+  }
+
+  /** Draw-time patches such as light pools must follow the original triangles,
+   * including voids and the low-quality terrain tessellation. */
+  trianglesNear(x: number,z: number,radius:number, visit:(a:number,b:number,c:number)=>void) {
+    const {bounds,stepM}=this.grid.manifest, size=2*stepM;
+    const index=this.geometry.index!;
+    const rows=(this.starts.length-1)/this.blockCols;
+    for(let j=Math.max(0,Math.floor((z-radius-bounds.minZ)/size));j<Math.floor(rows) && j<=Math.floor((z+radius-bounds.minZ)/size);j++)
+      for(let i=Math.max(0,Math.floor((x-radius-bounds.minX)/size));i<this.blockCols && i<=Math.floor((x+radius-bounds.minX)/size);i++) {
+        const k=j*this.blockCols+i;
+        for(let n=this.starts[k];n<this.starts[k+1];n+=3) visit(index.getX(n),index.getX(n+1),index.getX(n+2));
+      }
   }
 
   /** Scene y on the actual drawn triangle, for placement at this quality. */

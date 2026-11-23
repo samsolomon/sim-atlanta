@@ -13,6 +13,14 @@ export function triangleHeight(p: BufferAttribute, i: number, x: number, z: numb
   if (Math.abs(det) < 1e-8) return null;
   const u = ((x - ax) * cz - (z - az) * cx) / det;
   const v = (bx * (z - az) - bz * (x - ax)) / det;
-  if (u < -1e-7 || v < -1e-7 || u + v > 1 + 1e-7) return null;
+  // GPU vertex positions are float32; a source edge at City kilometre scale
+  // can round tens of micrometres away from its double-precision query.
+  const eps = 0.0001 / Math.abs(det);
+  if (
+    u < -eps * Math.hypot(cx, cz) ||
+    v < -eps * Math.hypot(bx, bz) ||
+    u + v > 1 + eps * Math.hypot(cx - bx, cz - bz)
+  )
+    return null;
   return (1 - u - v) * p.getY(i) + u * p.getY(i + 1) + v * p.getY(i + 2);
 }
