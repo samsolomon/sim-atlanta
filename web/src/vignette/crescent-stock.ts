@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Builder, loft } from './geom';
 import { CHARGER_LENGTH, CHARGER_TRUCKS, chargerBody } from './charger';
+import { AIRO_LENGTH, AIRO_TRUCKS, airoCoach } from './airo';
 
 export const stockNames = {
   charger: 'Siemens ALC-42 Charger',
@@ -13,6 +14,7 @@ export const stockNames = {
   sleeper: 'Viewliner II sleeper',
   baggageDorm: 'Viewliner II baggage-dorm',
   baggage: 'Viewliner II baggage car',
+  airoCoach: 'Siemens Airo coach (corridor)',
 } as const;
 export type PassengerUnit = keyof typeof stockNames;
 export const formation: PassengerUnit[] = [
@@ -30,6 +32,7 @@ export function dimensions(unit: PassengerUnit) {
   if (unit === 'charger' || unit === 'chargerPhase6') return { length: CHARGER_LENGTH, trucks: CHARGER_TRUCKS };
   if (unit === 'genesis') return { length: 21.03, trucks: 13.1 };
   if (isAmfleet(unit)) return { length: 26.01, trucks: 18.14 };
+  if (unit === 'airoCoach') return { length: AIRO_LENGTH, trucks: AIRO_TRUCKS };
   return { length: 25.91, trucks: 18.14 };
 }
 function isAmfleet(unit: PassengerUnit) {
@@ -71,6 +74,10 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     lamps = new Builder();
   if (unit === 'charger' || unit === 'chargerPhase6') {
     chargerBody(b, lamps, leading, trailing, unit === 'charger' ? 'phase7' : 'phase6');
+    return finish(b, windows, lamps);
+  }
+  if (unit === 'airoCoach') {
+    airoCoach(b, windows, lamps, trailing);
     return finish(b, windows, lamps);
   }
   const { length, trucks } = dimensions(unit);
