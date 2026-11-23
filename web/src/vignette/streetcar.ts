@@ -22,18 +22,24 @@ export const S70_FLOOR = 0.356;
 /** Section lengths scaled from the data-sheet side drawing (estimates); two 0.3 m articulations. */
 export const S70_SECTIONS = { end: 9.6, centre: 4.31, joint: 0.3 } as const;
 
+const JOINT = S70_SECTIONS.centre / 2 + S70_SECTIONS.joint / 2; // 2.305 m, mid-bellows
+
 /**
- * Car-frame layout for City: section extents, joints and trucks along z (car centre at 0, +z toward
- * cab A). Each section rides on two pivots: the centre section on the two joints, each end section
- * on its joint and its power truck.
+ * Car-frame layout for City, in car z (car centre at 0, +z toward cab A). Sections meet at the
+ * joints, mid-bellows, and each bellows is split between its two neighbours.
+ *
+ * Kinematics, as on the real car: the centre section C rides on its own truck. Put both of its
+ * `pivots` (the centre-truck axles) on the track and point local +z along their chord. Each end
+ * section hangs from C at its joint and rides on its power truck. Take `pivots[0]` from C's placed
+ * transform, put `pivots[1]` on the track, and aim along the line between them.
  */
 export const S70_LAYOUT = {
   sections: {
-    B: { from: -(S70_LENGTH / 2), to: -(S70_SECTIONS.centre / 2 + S70_SECTIONS.joint), pivots: [-8.2, -2.305] },
-    C: { from: -S70_SECTIONS.centre / 2, to: S70_SECTIONS.centre / 2, pivots: [-2.305, 2.305] },
-    A: { from: S70_SECTIONS.centre / 2 + S70_SECTIONS.joint, to: S70_LENGTH / 2, pivots: [2.305, 8.2] },
+    B: { from: -(S70_LENGTH / 2), to: -JOINT, pivots: [-JOINT, -8.2], hangsFrom: 'C' },
+    C: { from: -JOINT, to: JOINT, pivots: [-0.9, 0.9], hangsFrom: null },
+    A: { from: JOINT, to: S70_LENGTH / 2, pivots: [JOINT, 8.2], hangsFrom: 'C' },
   },
-  joints: [-2.305, 2.305],
+  joints: [-JOINT, JOINT],
   trucks: [
     { z: -8.2, wheelbase: 1.9, powered: true },
     { z: 0, wheelbase: 1.8, powered: false },
@@ -106,8 +112,10 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
     }
   }
   // Articulation bellows.
-  // Kept inside |z| < 2.45 so the section split assigns them to the centre section.
-  for (const sign of [-1, 1]) b.box(S70_WIDTH - 0.3, 2.9, 0.285, 0, 1.75, sign * (centre / 2 + 0.1425), C.bellows);
+  // Each bellows is split at its joint, half to each neighbour, so a bend folds it from the middle.
+  for (const sign of [-1, 1])
+    for (const [z0, z1] of [[centre / 2, JOINT - 0.004], [JOINT + 0.004, centre / 2 + joint]])
+      b.box(S70_WIDTH - 0.3, 2.9, z1 - z0, 0, 1.75, sign * (z0 + z1) / 2, C.bellows);
 
   /** Flat polygon on both side sheets from [z, y] points, lifted `eps` off the body. */
   const side = (builder: Builder, pts: [number, number][], color: string, eps: number) => {
@@ -129,7 +137,7 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
   const doorW = 1.3;
   for (const sign of [-1, 1]) {
     const a = sign * (centre / 2 + joint + 0.15),
-      c = sign * (half - 1.25);
+      c = sign * (half - 2.3); // stop short of the cab side window
     const [z0, z1] = sign > 0 ? [a, c] : [c, a];
     rect(b, z0, z1, winLo - 0.06, winHi + 0.06, C.frame, 0.012);
     // Panes between the doors.
@@ -155,6 +163,7 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
     }
     // Cab side window by the driver.
     const cw = sign * (half - 1.85);
+    rect(b, cw - 0.46, cw + 0.46, 1.24, 2.61, C.frame, 0.012);
     rect(windows, cw - 0.4, cw + 0.4, 1.3, 2.55, C.glass, 0.018);
   }
   // Centre section: a pair of windows, no doors.
@@ -174,21 +183,23 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
     side(b, Z([[D - 0.75, top], [D + 0.15, top], [D + 0.5, winHi], [D - 0.35, winHi]]), C.teal, 0.03);
     side(b, Z([[D - 0.35, winHi], [D + 0.5, winHi], [D + 0.65, winLo], [D - 0.2, winLo]]), C.teal, 0.03);
     side(b, Z([[D + 0.3, top], [D + 2.6, top], [D + 3.1, winHi + 0.04], [D + 2.2, winHi + 0.04]]), C.lime, 0.03);
-    const starts = [D + 0.5, D + 1.3, D + 2.1];
+    // One shared run from under the door to the cab, so each band hangs exactly below the last.
+    const r0 = D + 0.5,
+      r1 = flat - 0.05;
+    const tAt = (d: number) => (d - r0) / (r1 - r0);
+    const span = (t: number) => 0.2 + 0.2 * t;
+    const edge = (k: number, t: number) => Math.max(0.36, winLo - 0.04 - 0.35 * t - k * span(t)); // top of band k
+    const starts = [r0, D + 1.3, D + 2.1];
     [C.violet, C.teal, C.lime].forEach((color, k) => {
       const steps = 6;
-      const d0 = starts[k],
-        d1 = flat - 0.05;
-      const span = (t: number) => 0.2 + 0.2 * t;
-      // Each band hangs below the one before it, all falling toward the cab.
-      const upper = (t: number) => winLo - 0.04 - 0.35 * t - k * (0.24 + 0.16 * t);
       for (let i = 0; i < steps; i++) {
-        const t0 = i / steps,
-          t1 = (i + 1) / steps;
-        const za = d0 + (d1 - d0) * t0,
-          zb = d0 + (d1 - d0) * t1;
-        const lo = (t: number) => Math.max(0.36, upper(t) - span(t));
-        side(b, Z([[za, upper(t0)], [zb, upper(t1)], [zb, lo(t1)], [za, lo(t0)]]), color, 0.03 + k * 0.003);
+        const za = starts[k] + ((r1 - starts[k]) * i) / steps,
+          zb = starts[k] + ((r1 - starts[k]) * (i + 1)) / steps;
+        const [ta, tb] = [tAt(za), tAt(zb)];
+        // Band k's bottom is band k+1's top; both clamp at the skirt, so the quad never crosses itself.
+        const quad: [number, number][] = [[za, edge(k, ta)], [zb, edge(k, tb)], [zb, edge(k + 1, tb)], [za, edge(k + 1, ta)]];
+        if (edge(k, ta) - edge(k + 1, ta) < 0.005 && edge(k, tb) - edge(k + 1, tb) < 0.005) continue; // clamped away
+        side(b, Z(quad), color, 0.03 + k * 0.003);
       }
     });
     // Low white pinstripe.
@@ -223,14 +234,24 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
       (lead || tail ? lamps : b).box(0.1, 0.08, 0.05, s * 0.7, 3.28, sign * (half - 0.53), tail ? '#ff2a22' : lead ? '#fff3d6' : '#4a4f55');
     }
     (lead ? lamps : b).box(0.16, 0.16, 0.05, 0, 3.28, sign * (half - 0.53), lead ? '#fff6e0' : '#4a4f55'); // round top lamp
-    // Wiper parked diagonally across the screen, mirrors on stalks.
-    screen(0.25, 0.3, 1.7, 2.6, C.dark, b, 0.026);
+    // Single wiper parked on a slant across the screen, as in the 2016 photos; mirrors on stalks.
+    {
+      const zAt = (y: number) => zFoot + ((zTop - zFoot) * (y - 1.55)) / (3.38 - 1.55) + sign * 0.026;
+      const v = [
+        [0.62, 1.72, zAt(1.72)],
+        [0.68, 1.72, zAt(1.72)],
+        [0.3, 2.62, zAt(2.62)],
+        [0.24, 2.62, zAt(2.62)],
+      ];
+      if (sign < 0) v.reverse();
+      b.quad(v[0], v[1], v[2], v[3], C.dark);
+    }
     for (const s of [-1, 1]) b.box(0.08, 0.32, 0.12, s * (W + 0.12), 2.5, sign * (half - 0.9), C.dark);
   }
 
   // Skirts hide the trucks; wheels peek out below. Power trucks near the cabs, plain truck centred.
   const wheel = new THREE.CylinderGeometry(0.3, 0.3, 0.12, 10).rotateZ(Math.PI / 2);
-  for (const [tz, base] of [[-8.2, 1.9], [0, 1.8], [8.2, 1.9]] as const) {
+  for (const { z: tz, wheelbase: base } of S70_LAYOUT.trucks) {
     for (const x of [-0.72, 0.72])
       for (const dz of [-base / 2, base / 2]) {
         const gg = wheel.clone().translate(x, 0.3, tz + dz);
@@ -260,8 +281,10 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
 }
 
 /**
- * The car split into its three bodies, each in its own frame (railhead y = 0, section centre z = 0)
- * so City can bend the car through curves. Triangles go to a section by their centroid's car z.
+ * The car split into its three bodies so City can bend it through curves. Each `geometry` is in its
+ * own frame: railhead y = 0, z = 0 at the section's `centre`. `centre` and `pivots` are car-frame z;
+ * a pivot's section-local z is `pivot - centre`. See S70_LAYOUT for how to place them. Triangles go to
+ * a section by their centroid's car z.
  */
 export function s70Sections(opts: { leadingA?: boolean; leadingB?: boolean } = {}) {
   const whole = s70Geometry(opts);
@@ -270,7 +293,7 @@ export function s70Sections(opts: { leadingA?: boolean; leadingB?: boolean } = {
     light = whole.getAttribute('stockLight');
   const ids = ['B', 'C', 'A'] as const;
   const out = ids.map(() => ({ pos: [] as number[], col: [] as number[], light: [] as number[] }));
-  const split = S70_SECTIONS.centre / 2 + S70_SECTIONS.joint - 0.005;
+  const split = JOINT;
   for (let t = 0; t < pos.count; t += 3) {
     const cz = (pos.getZ(t) + pos.getZ(t + 1) + pos.getZ(t + 2)) / 3;
     const k = cz < -split ? 0 : cz > split ? 2 : 1;

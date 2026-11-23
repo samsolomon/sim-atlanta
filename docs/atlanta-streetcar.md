@@ -54,8 +54,8 @@ The pattern mirrors about the car centre. A thin white pinstripe runs low on the
 - `s70Material(night)`: the shared stock material. It takes a `{ value }` darkness uniform and supports clipping planes.
 - `S70_LAYOUT`: section extents, pivots and trucks.
 
-The car frame has y = 0 at the railhead, z = 0 at the car centre, and +z toward cab A. Each section geometry is centred on its own `centre` (car z). To bend the car round a curve, put a section's two `pivots` on the track and point its local +z along the chord:
-- The centre section rides on the two joints, ±2.305 m.
-- Each end section rides on its joint and its power truck at ±8.2 m.
+The car frame has y = 0 at the railhead, z = 0 at the car centre, and +z toward cab A. Each section geometry is in its own frame, centred on `centre` (car z). A pivot's section-local z is `pivot − centre`.
 
-The two bellows belong to the centre section.
+The sections meet mid-bellows at the joints, ±2.305 m. Each bellows is split there, half to each neighbour. Place them the way the real car is carried:
+- The centre section rides on its own truck: put both centre-truck axles (±0.9 m) on the track and aim along their chord.
+- Each end section hangs from the centre section's joint and rides on its power truck at ±8.2 m. Take the joint from the centre section's placed transform, put the truck on the track, and aim along the line between them.
