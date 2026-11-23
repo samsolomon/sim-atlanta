@@ -424,7 +424,8 @@ function setNight(on: boolean) {
 }
 
 let lastFrame = 0;
-const frame = (t: number) => {
+/** One render, also callable from captures when a background tab throttles requestAnimationFrame. */
+const draw = (t: number) => {
   if (figure && playing) {
     cycle = (cycle + Math.min(t - lastFrame, 100) / 1000 * figure.cyclesPerSecond) % 1;
     figure.setPhase(cycle);
@@ -438,6 +439,9 @@ const frame = (t: number) => {
   ink.uniforms.uStrength.value = inkOn ? 0.9 : 0;
   grade.uniforms.uTime.value = t / 1000;
   composer.render();
+};
+const frame = (t: number) => {
+  draw(t);
   requestAnimationFrame(frame);
 };
 requestAnimationFrame(frame);
@@ -589,4 +593,4 @@ function setPhoto(photo?: File) {
 file.addEventListener('change', () => { if (file.files?.[0]) setPhoto(file.files[0]); });
 clearPhoto.addEventListener('click', () => { setPhoto(); file.value = ''; });
 opacity.addEventListener('input', () => { ref.style.opacity = opacity.value; });
-Object.assign(window, { __lab: { view, setNight, role, scene, camera, controls, station: () => station } });
+Object.assign(window, { __lab: { view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });

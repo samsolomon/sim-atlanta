@@ -1,8 +1,10 @@
 import * as THREE from 'three';
-import { Builder } from './geom';
+import { Builder, loft } from './geom';
+import { CHARGER_LENGTH, CHARGER_TRUCKS, chargerBody } from './charger';
 
 export const stockNames = {
   charger: 'Siemens ALC-42 Charger',
+  chargerPhase6: 'ALC-42 Charger, Phase VI',
   genesis: 'GE P42DC Genesis',
   coach: 'Amfleet II coach',
   cafe: 'Amfleet II café',
@@ -24,7 +26,7 @@ export const formation: PassengerUnit[] = [
   'baggageDorm',
 ];
 export function dimensions(unit: PassengerUnit) {
-  if (unit === 'charger') return { length: 21.79, trucks: 14.0 };
+  if (unit === 'charger' || unit === 'chargerPhase6') return { length: CHARGER_LENGTH, trucks: CHARGER_TRUCKS };
   if (unit === 'genesis') return { length: 21.03, trucks: 13.1 };
   if (unit === 'coach' || unit === 'cafe') return { length: 26.01, trucks: 18.14 };
   return { length: 25.91, trucks: 18.14 };
@@ -46,30 +48,17 @@ const silver = '#bfC4c5',
 const dark = '#343c41',
   glass = '#405963';
 
-/** Faceted transverse sections with individually coloured longitudinal panels. Local +z is forward. */
-function loft(b: Builder, rings: number[][][], colors: string[], capRear = true, capFront = true) {
-  const last = rings[rings.length - 1];
-  for (let i = 1; i < last.length - 1; i++) {
-    if (capFront) b.tri(last[0], last[i], last[i + 1], colors[1]);
-    if (capRear) b.tri(rings[0][0], rings[0][i + 1], rings[0][i], colors[1]);
-  }
-  for (let k = 1; k < rings.length; k++) {
-    const a = rings[k - 1],
-      c = rings[k];
-    for (let i = 0; i < a.length; i++) {
-      const j = (i + 1) % a.length;
-      b.quad(a[i], a[j], c[j], c[i], colors[i]);
-    }
-  }
-}
-
 export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailing: boolean) {
   const b = new Builder(),
     windows = new Builder(),
     lamps = new Builder();
+  if (unit === 'charger' || unit === 'chargerPhase6') {
+    chargerBody(b, lamps, leading, unit === 'charger' ? 'phase7' : 'phase6');
+    return finish(b, windows, lamps);
+  }
   const { length, trucks } = dimensions(unit);
   const end = length / 2 - 0.32;
-  const power = unit === 'charger' || unit === 'genesis';
+  const power = unit === 'genesis';
   const amfleet = unit === 'coach' || unit === 'cafe';
   const wheel = new THREE.CylinderGeometry(0.46, 0.46, 0.18, 10).rotateZ(Math.PI / 2);
   for (const z of [-trucks / 2, trucks / 2]) {
@@ -87,7 +76,6 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
   for (const sign of [-1, 1]) b.box(0.41, 0.28, 0.55, 0, 0.89, sign * (length / 2 - 0.275), dark);
   b.box(2.34, 0.76, power ? 7.4 : 4.2, 0, 0.77, -1.8, '#525a5e');
   if (power) {
-    const charger = unit === 'charger';
     function section(z: number, w: number, h: number, bottom: number) {
       return [
         [-w + 0.18, bottom, z],
@@ -100,27 +88,27 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
         [-w, bottom + 0.38, z],
       ];
     }
-    const height = charger ? 4.37 : 4.45;
-    const brow = end - (charger ? 2.35 : 1.18),
+    const height = 4.45;
+    const brow = end - 1.18,
       chin = end - 0.22;
     const rear = section(-end, 1.52, height, 1.27);
     const cab = section(brow, 1.52, height, 1.27);
-    const windshield = section(chin, charger ? 1.25 : 1.46, 3.26, 1.27);
+    const windshield = section(chin, 1.46, 3.26, 1.27);
     const nose = section(end, 1.16, 2.65, 1.48);
-    const flank = charger ? '#305f99' : silver;
+    const flank = silver;
     loft(b, [rear, cab], [dark, flank, flank, navy, roof, navy, flank, flank], true, false);
     loft(
       b,
       [cab, windshield, nose],
       [
         dark,
-        charger ? navy : silver,
-        charger ? red : silver,
-        charger ? red : navy,
+        silver,
+        silver,
         navy,
-        charger ? red : navy,
-        charger ? red : silver,
-        charger ? navy : silver,
+        navy,
+        navy,
+        silver,
+        silver,
       ],
       false,
       true,
@@ -136,19 +124,8 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
       if (side < 0) pane.reverse();
       b.quad(pane[0], pane[1], pane[2], pane[3], '#486777');
       b.box(0.04, 0.73, 1.23, side * 1.544, 3.39, brow - 0.82, '#385260');
-      b.box(0.04, 1.92, 0.72, side * 1.53, 2.57, brow - 2.05, charger ? '#354d60' : '#a3aeb0');
-      if (charger) {
-        const x = side * 1.528;
-        const stripe = [
-          [x, 1.53, brow - 1.2],
-          [x, 1.53, brow - 2.6],
-          [x, 3.83, brow - 7.4],
-          [x, 3.83, brow - 5.9],
-        ];
-        if (side < 0) stripe.reverse();
-        b.quad(stripe[0], stripe[1], stripe[2], stripe[3], '#dde3e2');
-      }
-      b.box(0.04, 0.27, end + brow - 3, side * 1.53, 1.6, (brow - end - 3) / 2, charger ? navy : '#9fa7ac');
+      b.box(0.04, 1.92, 0.72, side * 1.53, 2.57, brow - 2.05, '#a3aeb0');
+      b.box(0.04, 0.27, end + brow - 3, side * 1.53, 1.6, (brow - end - 3) / 2, '#9fa7ac');
       b.box(0.045, 0.14, end + brow - 3, side * 1.54, 1.41, (brow - end - 3) / 2, red);
       b.box(0.05, 1.02, 5.32, side * 1.54, 3.21, -end + 3.35, '#27323b');
       for (let i = 0; i < 17; i++) b.box(0.06, 0.94, 0.07, side * 1.57, 3.21, -end + 0.9 + i * 0.3, '#59646a');
@@ -258,6 +235,11 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     }
     if (trailing) for (const x of [-1.08, 1.08]) lamps.box(0.19, 0.19, 0.06, x, 3.22, -end - 0.045, '#fa2924');
   }
+  return finish(b, windows, lamps);
+}
+
+/** Merges glazing and lamps after the body and tags them for the night shader. */
+function finish(b: Builder, windows: Builder, lamps: Builder) {
   const baseCount = b.col.length / 3,
     windowCount = windows.col.length / 3;
   b.pos.push(...windows.pos, ...lamps.pos);
