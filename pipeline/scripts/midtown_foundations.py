@@ -5,7 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 from shapely import contains_xy
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, box
 
 from pathlib import Path
 from vignette import MIDTOWN_ROWS, ROOT
@@ -52,7 +52,18 @@ def boards():
         folder = PACK / "square-board" / row
         yield folder, json.loads((folder/"context.json").read_text())["buildings"]
     folder, staged = DOWNTOWN
-    yield folder, json.loads(staged.read_text())["buildings"]
+    if not staged.exists():
+        raise SystemExit(f"{staged} is missing. Run `pnpm data` first.")
+    # Unlike the square-board contexts, staged footprints are not clipped to the grid.
+    edge = box(*(json.loads((folder/"ground.json").read_text())["bounds"][k] for k in ("minX", "minZ", "maxX", "maxZ")))
+    pieces = []
+    for b in json.loads(staged.read_text())["buildings"]:
+        shape = Polygon(b["rings"][0], b["rings"][1:]).buffer(0).intersection(edge)
+        for part in getattr(shape, "geoms", [shape]):
+            if part.geom_type == "Polygon" and not part.is_empty:
+                rings = [list(part.exterior.coords)[:-1], *(list(r.coords)[:-1] for r in part.interiors)]
+                pieces.append({**b, "rings": rings})
+    yield folder, pieces
 
 
 def bake():
@@ -64,7 +75,7 @@ def bake():
         for b in buildings:
             ident = b["id"].split("/")[0]
             low, high = footprint_heights(b["rings"], dem, m["bounds"], m["stepM"])
-            h = b["h"] or (3.6*b["floors"] if b["floors"] else 8)
+            h = b["h"] if b["h"] is not None else (3.6*b["floors"] if b["floors"] else 8)
             sites[ident].append((low, high, math.floor(low-zero) + zero + h))
     grades = {}
     for ident, pieces in sorted(sites.items()):

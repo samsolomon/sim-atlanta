@@ -87,8 +87,11 @@ function roofClearances(area: Area, buildings: Building[]) {
   return clearance;
 }
 
-it('keys every downtown grade to a staged footprint', () => {
-  if (!staged) return;
+// Without `pnpm data`, the rectangle check below covers only the ten checked-in
+// boards. Report that as a skip rather than a pass.
+it.skipIf(staged)('checks downtown, King and Auburn roofs once `pnpm data` stages them', () => {});
+
+it.skipIf(!staged)('keys every downtown grade to a staged footprint', () => {
   const ids = new Set((json(new URL('downtown/vignette.json', scene)) as TerrainCity).buildings.map(b => b.id));
   const downtown = Object.keys(grades).filter(id => !id.startsWith('osm:'));
   expect(downtown.length).toBeGreaterThanOrEqual(11);
