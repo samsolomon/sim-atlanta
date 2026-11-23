@@ -203,7 +203,9 @@ export function symphonyTower(shell: Shell) {
   // through the glass in the aerials and lit from inside at dusk.
   const lattice2 = new Builder(), line = new Builder();
   const member = (p: number[], q: number[], b: Builder, colour: string, w = .14) => {
-    const d = [q[0] - p[0], q[1] - p[1], q[2] - p[2]], len = Math.hypot(...d), u = d.map(v => v / len);
+    const d = [q[0] - p[0], q[1] - p[1], q[2] - p[2]], len = Math.hypot(...d);
+    if (len < 1e-6) return; // a zero-length member would give NaN positions
+    const u = d.map(v => v / len);
     const ref = Math.abs(u[1]) > .9 ? [1, 0, 0] : [0, 1, 0];
     const cross = (a: number[], c: number[]) => [a[1] * c[2] - a[2] * c[1], a[2] * c[0] - a[0] * c[2], a[0] * c[1] - a[1] * c[0]];
     const n1 = cross(u, ref), l1 = Math.hypot(...n1), n2 = cross(u, n1), l2 = Math.hypot(...n2);
