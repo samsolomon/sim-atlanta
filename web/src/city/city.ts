@@ -107,6 +107,7 @@ import { createEquitable } from './equitable';
 import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
+import { mapGestures } from './map-gestures';
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 
@@ -158,6 +159,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Leave scenery-tier notes (Brookwood service, inferred North Line track) out of areaNote,
    * keeping only load failures (A2c, #231: no on-screen tiers on ambient scenery). */
   failureNotesOnly?: boolean;
+  /** Maps-style input (A2c, ?ui=next): drag pans, right/Ctrl-drag rotates, zoom to cursor, twist, two-finger tilt. */
+  mapGestures?: boolean;
   trains: () => TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
@@ -1067,6 +1070,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
+  const stopGestures = options.mapGestures
+    ? mapGestures(controls, renderer.domElement, (degrees) => {
+      manualCamera();
+      glideTo = null;
+      const off = new THREE.Vector3().subVectors(camera.position, controls.target);
+      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(degrees));
+      camera.position.copy(controls.target).add(off);
+      controls.update();
+    }, manualCamera)
+    : undefined;
   if (squareButton && mosaic) {
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
@@ -1452,6 +1466,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
+      stopGestures?.();
       squareButton?.remove();
       cancelAnimationFrame(raf);
       ro.disconnect();
