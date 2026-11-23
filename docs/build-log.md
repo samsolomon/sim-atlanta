@@ -2134,3 +2134,7 @@ One Atlantic Center fits a 250 m tower on a footprint barely 52 m across. Its up
 ### 2026-11-23 — Two Promenade addresses
 
 A 2001 letterhead settled which building was Promenade I. The 36.2 m office at 1200 Peachtree now has its stepped plaza entrance and canopy. Next door, the 211 m tower at 1230 rises through five setbacks to a pale lantern. The low building crosses 9.2 m of terrain relief, nearly twice the variation around the tower. Both foundations now reach the lowest sampled edge. [Promenade evidence and day/night views](midtown-skyline.md#promenade-i-and-ii)
+
+### 2026-11-23 — A gap in the Symphony Tower crown
+
+The 126 m outline at 1180 Peachtree contains both a lower curved wing and a narrower office tower. The architect's 120-foot veil dimension accounts for more than a sixth of the 200 m height. Two bowed glass screens now rise above an exposed flat roof, with separately batched luminous panels and visible truss members between them. The night photograph makes the opening between the screens as legible as the glass. [Architect's photographs, dimensions and four City captures](midtown-skyline.md#1180-peachtree)
