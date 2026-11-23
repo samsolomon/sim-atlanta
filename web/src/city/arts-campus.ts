@@ -1,4 +1,5 @@
 import { localLandmarkShell } from './landmark-shell';
+import { mechanicalScreen, precastWall } from './midtown-culture-woodruff';
 import { enamelBox, enamelGrid, entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -242,6 +243,20 @@ function memorial(s: Shell) {
   block(-19, 76, 65, 82, 20, '#cac5ba');
   block(-14, 74, 37, 65, 27, '#bbbab4');
   block(35, 80, 50, 75, 18.2, '#afaca4');
+  // The rear stage house and fly tower carry the precast skin seen from the
+  // piazza: fins, joints and high slot windows; the fly tower is plain above.
+  const { body, lights } = s;
+  precastWall(body, lights, [-51.5, 117], [-51.5, 35], [-1, 0], 1.5, 20);
+  precastWall(body, lights, [-51.5, 35], [10, 35], [0, -1], 1.5, 20);
+  precastWall(body, lights, [10, 117], [-51.5, 117], [0, 1], 1.5, 20);
+  const tower = { fins: false, slots: false, joints: 3, bay: 6 };
+  precastWall(body, lights, [-32.5, 106.5], [-32.5, 41.5], [-1, 0], 20, 27, tower);
+  precastWall(body, lights, [-32.5, 41.5], [4.5, 41.5], [0, -1], 20, 27, tower);
+  precastWall(body, lights, [4.5, 41.5], [4.5, 106.5], [1, 0], 20, 27, tower);
+  precastWall(body, lights, [4.5, 106.5], [-32.5, 106.5], [0, 1], 20, 27, tower);
+  // Louvred mechanical screens on the stage-house roof; positions are illustrative.
+  mechanicalScreen(body, -42, 55, 12, 7, 20, 2.6);
+  mechanicalScreen(body, -42, 98, 9, 6, 20, 2.6);
   s.body.box(55, 1.25, 80, 35, 19, 80, coping);
   s.body.box(51, 0.28, 76, 35, 19.78, 80, roof);
   for (const v of [42, 118]) {

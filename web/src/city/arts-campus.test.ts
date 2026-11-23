@@ -5,6 +5,7 @@ import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing } from '../vignette/geom';
 import { createArtsCampusLandmark } from './arts-campus';
 import { entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
+import { precastWall } from './midtown-culture-woodruff';
 import sites from './fixtures/arts-campus.json';
 
 const archive = new URL('../../../pipeline/prototypes/square-board/midtown-upper/context.json', import.meta.url);
@@ -103,4 +104,18 @@ it('draws the north stair only where the ground falls', () => {
   // 3DEP falls about 3 m down the passage north of the piazza (v < -9).
   siflyPiazza(falling, piazza(sites.museum.piazza.lawn as [number, number][]), (_u, v) => (v < -15 ? -3 : 0));
   expect(count(falling)).toBeGreaterThan(count(flat));
+});
+
+it('gives the Memorial rear volumes a precast skin, and keeps the fly tower plain above the hall', () => {
+  const finned = new Builder(),
+    plain = new Builder(),
+    lit = new Builder();
+  precastWall(finned, lit, [0, 0], [42, 0], [0, -1], 1.5, 20);
+  precastWall(plain, lit, [0, 0], [42, 0], [0, -1], 20, 27, { fins: false, slots: false, joints: 3, bay: 6 });
+  // Ten 4.2 m bays: nine fins of three faces each outweigh the plain tower's joints.
+  expect(count(finned)).toBeGreaterThan(count(plain) * 2);
+  // One lit slot window per three slot bays.
+  expect(count(lit)).toBeGreaterThan(0);
+  const memorial = buildings.find((b) => b.id === sites.memorial.id)!;
+  expect(createArtsCampusLandmark(buildings, memorial, 290, () => 294.1)).not.toBeNull();
 });

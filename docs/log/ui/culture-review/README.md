@@ -14,3 +14,7 @@ Each image shows BEFORE on the left and AFTER on the right, taken from the same 
    ![Varsity night](varsity-night.jpg)
 6. **Margaret Mitchell House** (#177). Camera `/?view=city&cam=648,-3062,-113,49,150`, 13:00.
    ![Mitchell House](mitchell.jpg)
+7. **Woodruff Arts Center rear, day** (PR B). Camera `/?view=city&cam=570,-3914,70,55,150`, 13:00.
+   ![Woodruff rear](back.jpg)
+8. **Woodruff Arts Center rear, night**. Same camera, 23:00.
+   ![Woodruff rear night](back-night.jpg)
