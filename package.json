@@ -12,7 +12,7 @@
     "data:scene": ".venv/bin/python pipeline/scripts/extract_overture.py && cargo run --release --manifest-path pipeline/Cargo.toml -- scene",
     "data:vignette": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py && .venv/bin/python pipeline/scripts/vignette_traffic.py && .venv/bin/python pipeline/scripts/vignette_trees.py",
     "review": "node scripts/review.mjs",
-    "data:city": ".venv/bin/python pipeline/scripts/extract_overture.py roads rail landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py downtown && .venv/bin/python pipeline/scripts/vignette_traffic.py downtown && .venv/bin/python pipeline/scripts/vignette_trees.py downtown && .venv/bin/python pipeline/scripts/arterials.py && pnpm data:terrain",
+    "data:city": ".venv/bin/python pipeline/scripts/extract_overture.py roads rail landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py downtown && .venv/bin/python pipeline/scripts/vignette_traffic.py downtown && .venv/bin/python pipeline/scripts/vignette_trees.py downtown && .venv/bin/python pipeline/scripts/arterials.py && pnpm data:terrain && pnpm data:square-board",
     "data:places": ".venv/bin/python pipeline/scripts/neighborhoods.py",
     "data:terrain": "node scripts/stage-city-terrain.mjs",
     "data:midtown": "pnpm data:square-board && node scripts/stage-square-board.mjs --midtown",

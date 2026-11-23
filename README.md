@@ -38,7 +38,8 @@ These URL options are handy for reviewing:
 - `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the map view.
 - In local development, `/terrain-preview.html?at=cut` opens the downtown ground study. Run `pnpm data:city` first, or `pnpm data:terrain` if the downtown board and trees are already present. [Terrain measurements and camera stops](docs/downtown-ground.md)
-- `/` opens the moving downtown City. Use `?view=map` for Map or a saved Map camera
+- `/` opens the 2.8 km square City board, including King Memorial and Sweet Auburn.
+  Use `?board=downtown` for the downtown-only board. Use `?view=map` for Map or a saved Map camera
   hash. City also accepts `?view=city` and `?view=3d`. Drag to orbit, use WASD to
   move and Q/E to rotate, or tap a train or bus for its source. Phones open on the
   low tier. Use `?q=high` or `?q=low` to override the device tier.
@@ -65,7 +66,7 @@ Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Clou
 custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
 before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
 `pnpm data` includes `data:city`: City requires `scene/downtown/vignette.json`,
-`trees.json` and the retained `scene.json` profiles. In an existing checkout with Map
+`trees.json` and the retained `scene.json` profiles. It also stages the six surrounding areas. In an existing checkout with Map
 data, run `pnpm data:city` once before building this milestone. Missing City data makes
 the app fall back to Map. Vite omits the three retired downtown `.bin` meshes.
 
