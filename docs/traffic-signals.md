@@ -17,4 +17,4 @@ Downtown's and Midtown's illustrative arterial cars now stop at mapped traffic s
 
 Turns at intersections come next; HPMS has no turning counts, so turn shares will be illustrative. Requires a web rebuild only.
 
-[10th Street queue, before and after](log/ui/traffic-signals/compare-10th-queue.jpg) · [Night and low tier](log/ui/traffic-signals/compare-night-low.jpg)
+[10th Street queue (4:38 pm), before and after](log/ui/traffic-signals/compare-10th-queue.jpg) · [Night and low tier](log/ui/traffic-signals/compare-night-low.jpg)
