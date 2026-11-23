@@ -39,6 +39,8 @@ function paving(shell: Shell, ring: number[][], ground: Ground) {
 }
 
 export function createMidtownMarta(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  if (site.id === 'osm:way:235006952' || site.id === 'osm:way:235006968')
+    return midtownEntrance(buildings, site, ground);
   if (site.id !== 'osm:way:234939895' || site.rings.length !== 1) return null;
   const grade = ground(419, -1963);
   if (grade === null) return null;
@@ -143,4 +145,81 @@ export function createMidtownMarta(buildings: VBuilding[], site: VBuilding, grou
     lights.box(1.06, 0.6, 0.4, 405, signY + 4.1, -1953, '#cee2e5');
   }
   return shell.finish('#fff1d5', 0.8);
+}
+
+// Midtown's principal pavilion is archived as a station way, and therefore
+// omitted by the row's generic building extractor. Its two 10th Street stair
+// houses are ordinary building ways. Attach the pavilion once with the east stair.
+function midtownEntrance(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  const east = site.id === 'osm:way:235006952';
+  const cx = east ? 499.5 : 468;
+  const shell = localLandmarkShell(
+    buildings,
+    site,
+    'Midtown station ' + (east ? 'east' : 'west') + ' entrance',
+    [0, 0],
+    [1, 0],
+    [[cx, -3085]],
+    0,
+    0,
+  );
+  const y = ground(cx, -3085);
+  if (!shell || y === null) return null;
+  const { body, lights, prism } = shell;
+  prism(shell.ring, y + 2.97, y + 3.55, '#c8c0ac', '#cfcbba');
+  for (const z of [-3088, -3081.8]) {
+    body.box(10, 3, 0.32, cx, y + 1.5, z, '#b1ab9b');
+    lights.box(8, 0.18, 0.36, cx, y + 2.72, z, '#efead2');
+  }
+  body.box(4.3, 1.65, 0.3, cx + 1, y + 0.86, -3085, '#777e79');
+  if (east) {
+    const ring = plazas['230593407'] as P2[];
+    const grades = ring.map(([x, z]) => ground(x, z));
+    if (grades.every((g): g is number => g !== null)) {
+      const soffit = Math.max(...grades) + 4.35;
+      // Cast coffered slab, with the exposed transverse ribs continuing across
+      // the open passenger approaches on Peachtree Place and 10th Street.
+      body.box(64, 0.65, 36, 477.8, soffit + 0.35, -3026.2, '#c5c0ae');
+      for (let i = 0; i < 17; i++) body.box(1.15, 1.35, 43.2, 445.8 + i * 4, soffit - 0.15, -3026.2, '#ccc5b3');
+      for (let i = 0; i < 10; i++) body.box(66.1, 0.85, 0.79, 477.8, soffit - 0.58, -3045.2 + i * 4.2, '#a9a392');
+      for (const z of [-3043, -3009])
+        for (const x of [449, 478, 505]) {
+          const base = ground(x, z);
+          if (base === null) continue;
+          body.box(3.6, soffit - base, 3, x, (base + soffit) / 2, z, '#92937d');
+          // Abstract foliage colors recall the artist's Dogwood and Magnolia piers.
+          for (let k = 0; k < 6; k++)
+            body.box(
+              0.54,
+              1.35,
+              0.12,
+              x - 1.35 + k * 0.54,
+              base + 2 + (k % 2) * 0.6,
+              z + 1.53,
+              ['#628d69', '#c87971', '#47998b'][k % 3],
+            );
+          lights.box(1, 0.2, 1, x + 3.2, soffit - 0.94, z, '#fff1d7');
+        }
+      // Backlit entrance headers sit below the coffer edge, visible from each plaza.
+      for (const z of [-3046.7, -3005.6]) {
+        const base = ground(482, z);
+        if (base === null) continue;
+        const sign = base + 2.95;
+        for (const x of [477.5, 486.5]) body.box(0.36, 3.2, 0.48, x, base + 1.6, z, '#b3b2a3');
+        body.box(9.4, 0.54, 0.48, 482, sign, z, '#52616a');
+        lights.box(8.8, 0.26, 0.51, 482, sign + 0.04, z, '#d9e6df');
+      }
+      const lobby = ground(478, -3026);
+      if (lobby !== null) body.box(20, soffit - lobby, 12, 478, (soffit + lobby) / 2, -3026, '#566563');
+      for (const id of ['1283640597', '1283640598'] as const) paving(shell, plazas[id], ground);
+      for (const z of [-3053, -2999])
+        for (const x of [452, 468, 493, 504]) {
+          const base = ground(x, z);
+          if (base === null) continue;
+          body.box(4, 0.28, 1.3, x, base + 0.25, z, '#7d9669');
+          body.box(2.8, 0.3, 0.58, x, base + 0.47, z + 1.5, '#936d52');
+        }
+    }
+  }
+  return shell.finish('#ffefd4', 0.72);
 }
