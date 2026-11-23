@@ -35,7 +35,7 @@ VIGNETTES = {
 with open(os.path.join(ROOT, "pipeline/prototypes/square-board/midtown-rows.json")) as f:
     MIDTOWN_ROWS = json.load(f)
 for name, row in MIDTOWN_ROWS.items():
-    VIGNETTES[name] = {"x": (-1000., 1800.), "z": (row["minZ"], row["maxZ"])}
+    VIGNETTES[name] = {"x": (-1000., 1800.), "z": (float(row["minZ"]), float(row["maxZ"]))}
 
 
 

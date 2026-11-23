@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, expect, it, vi } from 'vitest';
-import { midtownBaseNavd88M } from '../city/square-mosaic';
+import { midtownBaseNavd88M, SquareMosaic } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import { addSection, bounds, midtownRows, connect, joins, type Area, type Board } from './sections';
@@ -132,6 +132,49 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       expect(fallback.children.length).toBeGreaterThan(0);
     }
   } finally { for (const area of mounted.values()) area.dispose(); }
+});
+
+it('stops a direct Brookwood camera at a failed predecessor and resumes the pending target on retry', async () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const requested: string[] = [];
+  let available = false;
+  vi.stubGlobal('fetch', async (url: string) => {
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (name === 'context.json') {
+      requested.push(id);
+      if (!available && id === 'midtown-upper') return new Response(null, { status: 503 });
+    }
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mosaic = new SquareMosaic('/data', true);
+  const downtown = createDowntownTerrain(grid('downtown'), {
+    bounds: bounds.downtown, roads: [], rail: [], buildings: [],
+  }, [], { quality: 'low', join: joins('downtown') });
+  mosaic.areas.set('downtown', downtown);
+  const signal = new AbortController().signal;
+  const target = { x: -81, z: -5065 };
+  let reached: typeof target | undefined;
+  const errors: string[] = [];
+  const advance = () => mosaic.approach(0, 0, 'low', signal, (_, point) => { if (point) reached = point; }, d => errors.push(d));
+  try {
+    advance();
+    expect(requested).toEqual([]);
+    mosaic.remember(target.x, target.z);
+    advance();
+    await vi.waitFor(() => expect(errors).toEqual(['midtown-upper']));
+    advance();
+    expect(requested).toEqual(['north-band', 'north-corner', 'midtown-south', 'midtown-central', 'midtown-upper']);
+    expect(mosaic.point(target.x, target.z).z).toBe(-3300);
+    expect(reached).toBeUndefined();
+    available = true;
+    mosaic.requestFullBoard();
+    advance();
+    await vi.waitFor(() => expect(reached).toEqual(target));
+    expect(requested.filter(id => midtownRows.some(row => row === id))).toEqual([
+      'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station',
+    ]);
+  } finally { mosaic.dispose(); downtown.dispose(); }
 });
 
 const staged = new URL('../../public/data/', import.meta.url);

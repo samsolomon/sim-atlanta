@@ -1965,3 +1965,7 @@ Looking north from Baker Street, you can now read the plaza from both ends of th
 ### 2026-11-23 — Across North Avenue
 
 The first Midtown row adds 800 metres of City north of the old square. Peachtree Street crosses the join at x = 591.09 m on both sides. All 19 other named street crossings match too. The surprise came below the streets. Downtown's elevation raster runs out diagonally partway through this row, leaving 48,018 of its 90,321 nodes empty. The neighboring USGS tile fills them, and all 561 nodes against the existing board still match to the decimetre. The new section includes the Fox Theatre and Bank of America Plaza footprints. [North Avenue camera](log/ui/midtown-board/north-avenue.jpg) · [Measured route to Brookwood](midtown-board.md)
+
+### 2026-11-23 — From North Avenue to the Peachtree Station approach
+
+Four more 800 m rows carry the City board through Midtown and past the Amtrak stop. All 82 named street crossings match across the four new joins. The ground at the low end of the station row is 239.9 m NAVD88, almost 84 m below Five Points. The downtown tabletop would have poked through Brookwood. Lowering the base for this view to 234 m keeps the original street relief all the way north. At the depot, the generic building and Peachtree Street bridge each have their own handle for the rail model to replace. [Station camera](log/ui/midtown-board/station-ground.jpg) · [Downtown to Brookwood](log/ui/midtown-board/brookwood-overview.jpg)
