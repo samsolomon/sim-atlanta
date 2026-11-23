@@ -149,13 +149,25 @@ Removed for now: Street view and search. Both are follow-ups.
 
 ## Credits (OSMF attribution guidelines)
 
-- On load, show a 12 px line "© OpenStreetMap contributors · OpenMapTiles" on the bottom
-  edge, with a soft halo and no glass behind it.
-  - **Desktop:** right-aligned, just left of the camera column.
+Both views show the same line in the same place: 12 px on desktop and 11 px on phones,
+"© OpenStreetMap contributors · OpenMapTiles", on the bottom edge with a soft halo and no
+glass behind it.
+
+- **Placement:**
+  - **Desktop:** right-aligned, just left of the camera column, with its baseline level
+    with the bottom of the app bar and camera column.
   - **Phone:** centred under the app bar, in the home-indicator strip.
-- It fades on the first pan or zoom, or after 5 s, whichever comes first.
-- After that the credit lives in Menu › About & credits.
-- "OpenStreetMap" links to openstreetmap.org/copyright.
+- **"OpenStreetMap"** links to openstreetmap.org/copyright. **"OpenMapTiles"** links to
+  openmaptiles.org.
+- **Map view (2D, OpenFreeMap tiles): the credit is permanent.** It never fades. This is
+  Sam's decision of 2026-11-23, because the basemap tiles carry their own attribution
+  terms beyond OSMF's.
+- **City view (3D diorama): the credit fades.** It goes on the first pan or zoom, or
+  after 5 s, whichever comes first. After that it lives in Menu › About & credits, as the
+  OSMF attribution guidelines allow.
+- **Switching back to Map** shows the permanent line again at once.
+- **Models view** shows no credit line, because no map data is on screen. About still
+  lists every source.
 
 ## Share
 
@@ -226,7 +238,7 @@ The canvas is private, so the approved boards are copied into this branch:
 | `A2c-models` · `R5-phone-models` | Models view: model card, Details panel, Details button on phones |
 | `A2c-models-browser` · `R5-phone-browser` | Model browser at 100+ (categories and counts are examples) |
 | `R5-time` · `R5-phone-time` | Time & weather on desktop (inside the subject card) and phone (sheet) |
-| `R5-map` · `R5-phone-map` | Map view in the same layout; Key replacing a selection with a back row; credit line |
+| `R5-map` · `R5-phone-map` | Map view in the same layout; Key replacing a selection with a back row; the permanent Map credit line |
 | `A2c-phone` | Phone, train selected: sheet, bottom bar hidden |
 
 ### Glass
@@ -279,6 +291,11 @@ System UI sans throughout.
   - 12 px on desktop, 11 px on phones, colour `#4a463e`
   - halo `text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea`
   - no glass behind it
+  - **permanent on Map; fades on City** (first pan or zoom, or 5 s); none on Models
+  - desktop: `right: 60px; bottom: 9px`, so it sits just left of the 44 px camera column at the 8 px inset
+  - phone: centred, `bottom: 11px`, below the app bar
+  - night City: use the night secondary ink with a dark halo, `text-shadow: 0 0 2px #0b1020, 0 0 6px #0b1020`
+  - the boards show the line on load; on Map it stays exactly as drawn
 - **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Every other button
   uses the separator-tint background.
 
