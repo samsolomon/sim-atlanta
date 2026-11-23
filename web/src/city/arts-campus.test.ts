@@ -111,9 +111,14 @@ it('gives the Memorial rear volumes a precast skin, and keeps the fly tower plai
     plain = new Builder(),
     lit = new Builder();
   precastWall(finned, lit, [0, 0], [42, 0], [0, -1], 1.5, 20);
-  precastWall(plain, lit, [0, 0], [42, 0], [0, -1], 20, 27, { fins: false, slots: false, joints: 3, bay: 6 });
-  // Ten 4.2 m bays: nine fins of three faces each outweigh the plain tower's joints.
-  expect(count(finned)).toBeGreaterThan(count(plain) * 2);
+  precastWall(plain, lit, [0, 0], [42, 0], [0, -1], 1.5, 20, { fins: false });
+  // Ten 4.2 m bays: nine fins of three faces replace nine single joints (12 more quads).
+  expect(count(finned) - count(plain)).toBe(9 * 2 * 6);
+  // A zero-length wall or zero joint spacing draws nothing and does not hang.
+  const none = new Builder();
+  precastWall(none, lit, [0, 0], [0, 0], [0, -1], 0, 10);
+  precastWall(none, lit, [0, 0], [5, 0], [0, -1], 0, 10, { joints: 0, fins: false, slots: false });
+  expect(count(none)).toBe(18);
   // One lit slot window per three slot bays.
   expect(count(lit)).toBeGreaterThan(0);
   const memorial = buildings.find((b) => b.id === sites.memorial.id)!;

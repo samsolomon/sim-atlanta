@@ -24,15 +24,17 @@ export function precastWall(
   const { bay = 4.2, fins = true, slots = true, joints = 2.4 } = opts;
   const dx = b[0] - a[0],
     dz = b[1] - a[1],
-    len = Math.hypot(dx, dz),
-    tx = dx / len,
+    len = Math.hypot(dx, dz);
+  if (len < 1e-6) return;
+  const tx = dx / len,
     tz = dz / len;
   const at = (t: number, y: number, out: number) => [a[0] + tx * t + n[0] * out, y, a[1] + tz * t + n[1] * out];
   const count = Math.max(1, Math.round(len / bay)),
     pitch = len / count;
   // Horizontal panel joints.
-  for (let y = lo + joints; y < hi - 0.5; y += joints)
-    body.quad(at(0, y - 0.05, 0.03), at(len, y - 0.05, 0.03), at(len, y + 0.05, 0.03), at(0, y + 0.05, 0.03), joint);
+  if (joints > 0)
+    for (let y = lo + joints; y < hi - 0.5; y += joints)
+      body.quad(at(0, y - 0.05, 0.05), at(0, y + 0.05, 0.05), at(len, y + 0.05, 0.05), at(len, y - 0.05, 0.05), joint);
   for (let k = 0; k <= count; k++) {
     const t = k * pitch;
     if (fins && k > 0 && k < count) {
@@ -49,15 +51,20 @@ export function precastWall(
         y0 = hi - 6.2,
         into = k % 6 === 1 ? lights : body;
       into.quad(
-        at(m - 0.6, y0, 0.04),
-        at(m - 0.6, y0 + 2.2, 0.04),
-        at(m + 0.6, y0 + 2.2, 0.04),
-        at(m + 0.6, y0, 0.04),
+        at(m - 0.6, y0, 0.08),
+        at(m - 0.6, y0 + 2.2, 0.08),
+        at(m + 0.6, y0 + 2.2, 0.08),
+        at(m + 0.6, y0, 0.08),
         slot,
       );
     }
   }
-  body.quad(at(0, hi - 0.4, 0.55), at(0, hi + 0.1, 0.55), at(len, hi + 0.1, 0.55), at(len, hi - 0.4, 0.55), coping);
+  // Coping: a closed band from the wall out to 0.55 m, run past each end so
+  // neighbouring walls' copings meet at the corners.
+  const e = 0.55;
+  body.quad(at(-e, hi - 0.4, e), at(-e, hi + 0.1, e), at(len + e, hi + 0.1, e), at(len + e, hi - 0.4, e), coping);
+  body.quad(at(-e, hi + 0.1, 0), at(len + e, hi + 0.1, 0), at(len + e, hi + 0.1, e), at(-e, hi + 0.1, e), coping);
+  body.quad(at(-e, hi - 0.4, e), at(len + e, hi - 0.4, e), at(len + e, hi - 0.4, 0), at(-e, hi - 0.4, 0), coping);
 }
 
 /** A louvred rooftop mechanical screen: a grey box with vertical slats. */

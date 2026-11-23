@@ -247,8 +247,9 @@ function memorial(s: Shell) {
   // piazza: fins, joints and high slot windows; the fly tower is plain above.
   const { body, lights } = s;
   precastWall(body, lights, [-51.5, 117], [-51.5, 35], [-1, 0], 1.5, 20);
-  precastWall(body, lights, [-51.5, 35], [10, 35], [0, -1], 1.5, 20);
-  precastWall(body, lights, [10, 117], [-51.5, 117], [0, 1], 1.5, 20);
+  precastWall(body, lights, [-51.5, 35], [13.5, 35], [0, -1], 1.5, 20);
+  precastWall(body, lights, [13.5, 117], [-51.5, 117], [0, 1], 1.5, 20);
+  precastWall(body, lights, [13.5, 35], [13.5, 42.5], [1, 0], 1.5, 20, { slots: false });
   const tower = { fins: false, slots: false, joints: 3, bay: 6 };
   precastWall(body, lights, [-32.5, 106.5], [-32.5, 41.5], [-1, 0], 20, 27, tower);
   precastWall(body, lights, [-32.5, 41.5], [4.5, 41.5], [0, -1], 20, 27, tower);
