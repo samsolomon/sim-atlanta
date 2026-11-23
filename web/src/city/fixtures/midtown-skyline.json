@@ -68,5 +68,12 @@
     "x": 648,
     "z": -2008,
     "heightM": 52.5
+  },
+  "fed": {
+    "id": "osm:way:28979077",
+    "name": "Federal Reserve Bank of Atlanta",
+    "x": 588,
+    "z": -3155,
+    "heightM": 48
   }
 }
