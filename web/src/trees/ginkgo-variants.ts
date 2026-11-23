@@ -14,16 +14,27 @@
  */
 import * as THREE from 'three';
 import { Builder, rng } from '../vignette/geom';
+import { inkFoliage, type InkFoliageMode } from '../vignette/ink';
 import { ginkgo, ginkgoState } from './ginkgo';
 import { treeDims, type TreePlacement } from './render';
 import { hash01, lerp3, polar, trunkRadius, type Dims, type SizeClass, type TreeQuality, type V3 } from './species';
 
-export type GinkgoVariant = 'A' | 'B' | 'C' | 'D';
+export type GinkgoVariant = 'A' | 'B' | 'C' | 'D' | 'C1' | 'C2' | 'C3' | 'C4';
+/** The leaf-card family Sam picked, by how the ink pass treats the crown (vignette/ink.ts). */
+export const C_FAMILY: GinkgoVariant[] = ['C', 'C1', 'C2', 'C3', 'C4'];
+const INK_MODE: Partial<Record<GinkgoVariant, InkFoliageMode>> = { C1: 1, C2: 2, C3: 3, C4: 2 };
+/** C4: at most this many trees, nearest first and within `tipRangeM`, carry fan tips; none at low detail. */
+export const TIP_CAP = 8;
+export const TIP_RANGE_M = 45;
 export const VARIANTS: Record<GinkgoVariant, string> = {
   A: 'Branch sleeves',
   B: 'Micro-fans',
   C: 'Leaf cards',
   D: 'Flame tufts',
+  C1: 'Cards, silhouette ink',
+  C2: 'Cards, warm silhouette ink',
+  C3: 'Cards, interior ink fades by 40 m',
+  C4: 'C2 + near fan tips',
 };
 
 // ---- skeleton and sprays -------------------------------------------------------------------
@@ -237,6 +248,10 @@ export function fanChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass = 
   }
   return chips;
 }
+/** C4: only the fan chips on the outer sprays, the branch tips a viewer sees first. */
+export function tipChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass) {
+  return fanChips(unitSprays, q, size).filter((c, i) => c.depth >= 0.7 && i % 2 === 0);
+}
 /** A ginkgo leaf as a three-triangle fan, about 1 unit across, stem at the origin. */
 export function fanGeometry() {
   const g = new THREE.BufferGeometry();
@@ -252,6 +267,8 @@ export function fanGeometry() {
 let atlas: THREE.Texture | null = null;
 function leafAtlas() {
   if (atlas) return atlas;
+  // Outside a browser (tests) there is no canvas: a 1 × 1 opaque texel stands in.
+  if (typeof document === 'undefined') return (atlas = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1));
   const c = document.createElement('canvas');
   c.width = 256; c.height = 256;
   const g = c.getContext('2d')!;
@@ -276,7 +293,7 @@ function leafAtlas() {
 /** A, C or D foliage for one size class, in unit space. */
 function foliageGeometry(v: GinkgoVariant, size: SizeClass, unitSprays: Spray[]) {
   const { sprays, toUnit } = metric(unitSprays, size);
-  return toUnit(v === 'C' ? cards(sprays) : v === 'D' ? flames(sprays) : sleeves(sprays));
+  return toUnit(v.startsWith('C') ? cards(sprays) : v === 'D' ? flames(sprays) : sleeves(sprays));
 }
 
 const tris = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3;
@@ -285,7 +302,9 @@ const tris = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attribute
 export function variantTriangles(v: GinkgoVariant, size: SizeClass, q: TreeQuality) {
   const sprays = ginkgoSprays(size, q);
   const skeleton = tris(variantSkeleton(size, q));
-  const foliage = v === 'B' ? fanChips(sprays, q, size).length * 3 : tris(foliageGeometry(v, size, sprays));
+  // B and C4 count their fans on a tree that carries them; at low detail neither draws fans.
+  const fans = q === 'low' ? 0 : v === 'B' ? fanChips(sprays, q, size).length * 3 : v === 'C4' ? tipChips(sprays, q, size).length * 3 : 0;
+  const foliage = (v === 'B' && q === 'high' ? 0 : tris(foliageGeometry(v === 'B' ? 'A' : v, size, sprays))) + fans;
   return { skeleton, foliage, carpet: 7, total: skeleton + foliage + 7 };
 }
 
@@ -322,8 +341,14 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const bark = new THREE.MeshLambertMaterial({ vertexColors: true });
   // Foliage: vertex shade times the season colour, a little self-light for the backlit glow.
   const leafMat = (opts: THREE.MeshLambertMaterialParameters = {}) => new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, emissive: '#6b4a00', emissiveIntensity: 0.25, ...opts });
-  const foliageMat = variant === 'C' ? leafMat({ map: leafAtlas(), alphaTest: 0.5 }) : leafMat({ flatShading: true });
+  const isCards = variant.startsWith('C');
+  // Cards are alpha-TESTED (discard), never blended: no sorting and no blended overdraw on phones.
+  const foliageMat = isCards ? leafMat({ map: leafAtlas(), alphaTest: 0.5 }) : leafMat({ flatShading: true });
   const chipMat = leafMat({ vertexColors: false });
+  const inkMode = INK_MODE[variant];
+  if (inkMode) { inkFoliage(foliageMat, inkMode); inkFoliage(chipMat, inkMode); }
+  const fansNear = variant === 'B' && quality === 'high';
+  const tips = variant === 'C4' && quality === 'high';
   const carpetMat = new THREE.MeshLambertMaterial({ color: '#e6b83e', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const add = (g: THREE.BufferGeometry, m: THREE.Material, n: number, name: string) => {
     const mesh = new THREE.InstancedMesh(g, m, n);
@@ -346,12 +371,14 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const foliageSets: { mesh: THREE.InstancedMesh; members: typeof trees }[] = [];
   const chipSets: { mesh: THREE.InstancedMesh; members: typeof trees; perTree: number; chips: ReturnType<typeof fanChips> }[] = [];
   const nearSwap: THREE.InstancedMesh[] = [];
+  const tipSets: { mesh: THREE.InstancedMesh; members: typeof trees; chips: ReturnType<typeof fanChips>; slots: number }[] = [];
+  let tipped: number[] = [];
   for (const size of new Set(trees.map(t => t.size))) {
     const members = trees.filter(t => t.size === size);
     const limbs = add(variantSkeleton(size, quality), bark, members.length, `${size} limbs`);
     members.forEach((t, i) => limbs.setMatrixAt(i, place(t)));
     const sprays = ginkgoSprays(size, quality);
-    if (variant === 'B') {
+    if (fansNear) {
       // Near: chips. Far: A's sleeves, swapped by distance in update().
       const chips = fanChips(sprays, quality, size);
       const mesh = add(fanGeometry(), chipMat, members.length * chips.length, `${size} fan chips`);
@@ -362,10 +389,15 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
       nearSwap.push(mesh, far);
       foliageSets.push({ mesh: far, members });
     } else {
-      const g = foliageGeometry(variant, size, sprays);
+      const g = foliageGeometry(variant === 'B' ? 'A' : variant, size, sprays);
       const mesh = add(g, foliageMat, members.length, `${size} foliage ${variant}`);
       members.forEach((t, i) => mesh.setMatrixAt(i, place(t)));
       foliageSets.push({ mesh, members });
+      if (tips) {
+        const chips = tipChips(sprays, quality, size);
+        const slots = Math.min(members.length, TIP_CAP);
+        tipSets.push({ mesh: add(fanGeometry(), chipMat, slots * chips.length, `${size} fan tips`), members, chips, slots });
+      }
     }
   }
   const carpet = add(new THREE.CircleGeometry(1, 9).rotateX(-Math.PI / 2), carpetMat, trees.length, 'carpet');
@@ -394,6 +426,7 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
       set.mesh.setMatrixAt(i, base.multiply(new THREE.Matrix4().makeScale(sk, 0.8 + 0.2 * leaves, sk)));
       set.mesh.setColorAt(i, state[k].c);
     });
+    writeTips();
     for (const set of chipSets) set.members.forEach((t, i) => {
       const k = trees.indexOf(t), keep = Math.round(set.perTree * state[k].leaves);
       const base = place(t);
@@ -418,8 +451,30 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
     for (const mesh of meshes) { mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; }
   }
 
+  /** C4: fan tips on the trees in `tipped` (indices into trees), nearest first, the rest stay cards. */
+  function writeTips() {
+    for (const set of tipSets) {
+      const mine = tipped.filter(k => set.members.includes(trees[k])).slice(0, set.slots);
+      for (let slot = 0; slot < set.slots; slot++) {
+        const k = mine[slot];
+        set.chips.forEach((ch, j) => {
+          const idx = slot * set.chips.length + j;
+          if (k === undefined || j >= Math.round(set.chips.length * state[k].leaves)) { set.mesh.setMatrixAt(idx, zero); return; }
+          const t = trees[k];
+          const p = new THREE.Vector3(...ch.p).applyMatrix4(place(t));
+          q.setFromEuler(new THREE.Euler(-ch.tilt, ch.yaw + hash01(t.seed, 4) * 6.3, 0, 'YXZ'));
+          set.mesh.setMatrixAt(idx, m.compose(p, q, s.set(ch.s, ch.s, ch.s)));
+          set.mesh.setColorAt(idx, tint.copy(state[k].c).multiplyScalar(0.95 + 0.15 * ch.depth));
+        });
+      }
+      set.mesh.instanceMatrix.needsUpdate = true;
+      if (set.mesh.instanceColor) set.mesh.instanceColor.needsUpdate = true;
+    }
+  }
+
   let clock = 0;
   const camPos = new THREE.Vector3();
+  const lastTipCam = new THREE.Vector3(Infinity, 0, 0);
   /** Per frame: falling leaves, and B's near/far swap by camera distance to each group. */
   function update(dt: number, camera?: THREE.Camera) {
     clock += dt;
@@ -443,7 +498,16 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
     });
     falling.visible = any;
     if (any) { falling.instanceMatrix.needsUpdate = true; if (falling.instanceColor) falling.instanceColor.needsUpdate = true; }
-    if (variant === 'B' && camera) {
+    if (tips && camera) {
+      camera.getWorldPosition(camPos);
+      if (camPos.distanceTo(lastTipCam) > 1) {
+        lastTipCam.copy(camPos);
+        tipped = trees.map((t, k) => ({ k, d: camPos.distanceTo(v.set(t.x, t.y + t.dims.heightM * 0.6, t.z)) }))
+          .filter(e => e.d < TIP_RANGE_M).sort((a, b) => a.d - b.d).slice(0, TIP_CAP).map(e => e.k);
+        writeTips();
+      }
+    }
+    if (fansNear && camera) {
       camera.getWorldPosition(camPos);
       const c = trees.reduce((acc, t) => acc.add(v.set(t.x, t.y, t.z)), new THREE.Vector3()).divideScalar(trees.length);
       const near = camPos.distanceTo(c) < nearM;
@@ -456,6 +520,17 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
     group,
     draws: () => meshes.filter(m => m.visible).length,
     triangles: () => meshes.filter(m => m.visible).reduce((n, mesh) => n + tris(mesh.geometry) * mesh.count, 0),
+    /** Triangles actually drawn: visible meshes, instances that aren't scaled to nothing. */
+    drawnTriangles() {
+      const mm = new THREE.Matrix4();
+      return meshes.filter(m => m.visible).reduce((n, mesh) => {
+        let live = 0;
+        for (let i = 0; i < mesh.count; i++) { mesh.getMatrixAt(i, mm); if (mm.determinant() !== 0) live++; }
+        return n + tris(mesh.geometry) * live;
+      }, 0);
+    },
+    /** Trees carrying C4 fan tips right now. */
+    tipped: () => tipped.length,
     setSeason,
     update,
     setNight(n: number) { for (const mat of [foliageMat, chipMat]) mat.emissiveIntensity = 0.25 * (1 - n); },
