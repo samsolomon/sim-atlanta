@@ -1,3 +1,4 @@
+import { HouseTile } from './house-lod';
 import { existsSync, readFileSync } from 'node:fs';
 import { Mesh, Raycaster, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -47,8 +48,11 @@ function roofClearances(area: Area, buildings: Building[]) {
   const owner = (x: number, z: number) => index.get(`${Math.floor(x/50)},${Math.floor(z/50)}`)
     ?.find(b => inside(x, z, b.rings[0]) && !b.rings.slice(1).some(hole => inside(x, z, hole)));
   const tops = new Map<string, { y: number; tris: number[][] }>();
-  // Houses draw in their own distance tiles (house-lod.ts), so look through the whole scenery.
-  // Only the far version is built until a camera comes near, so nothing is counted twice.
+  // Houses draw in their own distance tiles (house-lod.ts). Build every near version too, so both
+  // the bare far roofs and the full near roofs (with their overhangs) are checked.
+  const tiles: HouseTile[] = [];
+  area.scenery.traverse(o => { if (o instanceof HouseTile) tiles.push(o); });
+  for (const t of tiles) t.ensureNear();
   const shells: Mesh[] = [];
   area.scenery.traverse(o => { if (o instanceof Mesh && o.geometry.hasAttribute('aBase')) shells.push(o); });
   for (const mesh of shells) {

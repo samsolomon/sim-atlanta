@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import type { P2 } from '../vignette/geom';
 import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 
 /**
@@ -7,8 +6,8 @@ import { World, type BuildingFinish, type VBuilding, type VData } from '../vigne
  * bare roof) and the full near version (eaves, porches, windows, chimneys). The near version is
  * built only when the camera first comes within range of its tile, so the wide view never holds it.
  *
- * The switch sits where a 0.5 m eave is about a pixel (about 1 km with City's 22° lens), so it
- * doesn't pop; a 10 % band either side stops it flickering.
+ * The switch sits where a 0.5 m eave is about a pixel (about 1 km with City's 22° lens), measured to
+ * the nearest house in the tile, so it doesn't pop; a 10 % band either side stops it flickering.
  */
 export const SWITCH_M = 1000, TILE_M = 800;
 type Bounds = VData['bounds'];
@@ -20,6 +19,12 @@ export type HouseLodOptions = {
   force?: 'near' | 'far';
 };
 
+// One near build per frame at most, so a camera jump into Midtown never stalls a frame on every tile.
+let lastBuildFrame = -1, frame = 0;
+// Set when a tile swaps versions or gains its near houses; City redraws its (manual) shadow map.
+let changed = false;
+export function takeHouseLodChange() { const c = changed; changed = false; frame++; return c; }
+
 function build(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
   class Houses extends World {
     override ground(x: number, z: number) { return o.ground(x, z) ?? 0; }
@@ -27,28 +32,38 @@ function build(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
   const world = new Houses({ bounds: o.bounds, buildings: houses, roads: [], rail: [] } as unknown as VData, null,
     { terrain: 'flat', clumps: 3, lightMapMax: 256 } as never);
   world.buildBuildings(o.foundation, o.roofUnits, finish);
-  // Drop empty meshes (no lit glass on far houses), so they never cost a draw.
+  // Drop empty meshes (no lit glass or roof clutter on far houses), so they never cost a draw.
   for (const m of [...world.group.children]) {
-    const g = (m as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+    const mesh = m as THREE.Mesh, g = mesh.geometry as THREE.BufferGeometry | undefined;
     const n = (m as THREE.InstancedMesh).isInstancedMesh ? (m as THREE.InstancedMesh).count : g?.getAttribute('position')?.count ?? 1;
-    if (!n) { g?.dispose(); m.removeFromParent(); }
+    if (n) continue;
+    if ((m as THREE.InstancedMesh).isInstancedMesh) (m as THREE.InstancedMesh).dispose();
+    g?.dispose();
+    for (const mat of Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []) mat.dispose();
+    m.removeFromParent();
   }
   return world;
 }
 
-class HouseTile extends THREE.LOD {
+const materials = (o: THREE.Object3D) => {
+  const out: THREE.Material[] = [];
+  o.traverse(m => { const mat = (m as THREE.Mesh).material; if (mat) out.push(...(Array.isArray(mat) ? mat : [mat])); });
+  return out;
+};
+
+/** A LOD whose switch is measured to the nearest point of its houses' bounds, not to its centre. */
+export class HouseTile extends THREE.LOD {
   nearWorld: World | null = null;
   readonly near = new THREE.Group();
+  private showingNear = false;
+  private readonly box = new THREE.Box3();
   constructor(readonly houses: VBuilding[], readonly o: HouseLodOptions, readonly farWorld: World,
-    readonly centre: THREE.Vector3, readonly state: { night: number; wet: number }) {
+    readonly state: { night: number; wet: number }) {
     super();
-    // LOD measures from its own position; the geometry is in world coordinates, so offset the children.
-    this.position.copy(centre);
-    this.near.position.copy(centre).negate();
-    farWorld.group.position.copy(centre).negate();
-    this.addLevel(this.near, 0, .1);
-    this.addLevel(farWorld.group, o.force === 'near' ? Infinity : o.force === 'far' ? 0 : SWITCH_M, .1);
-    if (o.force === 'far') this.levels.shift();
+    for (const h of houses) for (const [x, z] of h.rings[0]) this.box.expandByPoint(new THREE.Vector3(x, o.ground(x, z) ?? 0, z));
+    this.box.max.y += 15;
+    this.add(this.near, farWorld.group);
+    this.near.visible = false;
     this.autoUpdate = true;
   }
   ensureNear() {
@@ -56,14 +71,25 @@ class HouseTile extends THREE.LOD {
     this.nearWorld = build(this.houses, this.o, this.o.near);
     this.nearWorld.setNight(this.state.night);
     this.nearWorld.setWet(this.state.wet);
+    // City clips the board's edges once, on load; give the new materials the far version's planes.
+    const far = materials(this.farWorld.group).find(m => m.clippingPlanes?.length);
+    if (far) for (const m of materials(this.nearWorld.group)) { m.clippingPlanes = far.clippingPlanes; m.clipShadows = far.clipShadows; }
     this.near.add(this.nearWorld.group);
+    this.near.updateMatrixWorld(true);
+    changed = true;
   }
   override update(camera: THREE.Camera) {
-    if (!this.nearWorld && this.o.force !== 'far') {
-      const d = camera.getWorldPosition(new THREE.Vector3()).distanceTo(this.getWorldPosition(new THREE.Vector3()));
-      if (this.o.force === 'near' || d < SWITCH_M * 1.1) this.ensureNear();
+    const d = this.box.distanceToPoint(camera.getWorldPosition(new THREE.Vector3()));
+    const force = this.o.force;
+    let want = force ? force === 'near' : this.showingNear ? d < SWITCH_M * 1.1 : d < SWITCH_M * .9;
+    if (want && !this.nearWorld) {
+      if (lastBuildFrame === frame && force !== 'near') want = false;
+      else { lastBuildFrame = frame; this.ensureNear(); }
     }
-    super.update(camera);
+    if (want !== this.showingNear) changed = true;
+    this.showingNear = want;
+    this.near.visible = want;
+    this.farWorld.group.visible = !want;
   }
 }
 
@@ -78,14 +104,12 @@ export function houseLod(o: HouseLodOptions) {
   }
   const group = new THREE.Group();
   group.name = 'houses';
+  // The phone-perf report (docs/perf.md) splits scene memory and triangles by this tag.
   group.userData.perf = 'buildings';
   const state = { night: 0, wet: 0 };
   const tiles: HouseTile[] = [];
   for (const houses of cells.values()) {
-    const far = build(houses, o, o.far);
-    const pts: P2[] = houses.flatMap(h => h.rings[0]);
-    const x = pts.reduce((s, p) => s + p[0], 0) / pts.length, z = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-    const tile = new HouseTile(houses, o, far, new THREE.Vector3(x, o.ground(x, z) ?? 0, z), state);
+    const tile = new HouseTile(houses, o, build(houses, o, o.far), state);
     if (o.force === 'near') tile.ensureNear();
     tiles.push(tile);
     group.add(tile);

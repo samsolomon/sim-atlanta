@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import { ORBIT_MIN, minOrbitDistance } from './dev-camera';
+import { takeHouseLodChange } from './house-lod';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
@@ -1237,6 +1238,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const elDir = Math.max(el, 4) * (Math.PI / 180);
     const az = atm.sunAz * (Math.PI / 180);
     const t = controls.target;
+    // A house tile that swapped its near and far versions changes what casts shadows.
+    if (takeHouseLodChange()) renderer.shadowMap.needsUpdate = true;
     if (t.distanceToSquared(shadowTarget) > 1 || Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1) {
       renderer.shadowMap.needsUpdate = true;
       shadowTarget.copy(t);

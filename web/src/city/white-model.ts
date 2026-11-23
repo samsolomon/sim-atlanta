@@ -107,6 +107,8 @@ export function createWhiteModel(o: {
     const off: THREE.Object3D[] = [];
     for (const x of o.hide()) if (x && x.visible) { x.visible = false; off.push(x); }
     const box = new THREE.Box3();
+    // Settle distance switches (house tiles) for this camera first, so nothing changes version mid-render in colour.
+    o.scene.traverse((m) => { if ((m as THREE.LOD).isLOD && (m as THREE.LOD).autoUpdate) (m as THREE.LOD).update(o.camera); });
     o.scene.traverseVisible((m) => {
       const mesh = m as THREE.Mesh;
       if (!mesh.isMesh) return;

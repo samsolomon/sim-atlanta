@@ -7,9 +7,9 @@ Phone performance is the priority. On a Galaxy A16 at `q=low`, the default wide 
 Each house is now drawn in one of two versions, tile by tile (800 m tiles, `web/src/city/house-lod.ts`):
 
 - **Far:** the same walls, colours and roof planes, with no overhang, fascia, soffit, windows, porch, chimney or trim. It costs 16 triangles, against about 154 for the full house on low.
-- **Near:** the full house, unchanged. It is **built only when the camera first comes within about 1.1 km of its tile**, so the wide view never holds it in memory.
+- **Near:** the full house, unchanged. It is **built only when the camera first comes within about 1 km of its nearest house**, so the wide view never holds it in memory. At most one tile builds per frame, so a jump into Midtown doesn't stall. New near houses take the board's edge clipping from their far versions, and City redraws its shadow map when a tile swaps.
 
-The switch is at 1 km, where a 0.5 m eave is about a pixel with City's 22° lens, so it doesn't pop. A 10 % band either side stops it flickering. Far houses keep siding styles 7–10, so their day colour matches. They lose their lit windows, which at the default view's distance were already sub-pixel (see the 11 pm comparison).
+The switch is at 1 km from the tile's nearest house, where a 0.5 m eave is about a pixel with City's 22° lens, so it doesn't pop. A 10 % band either side stops it flickering. Far houses keep siding styles 7–10, so their day colour matches. They lose their lit windows, which at the default view's distance were already sub-pixel (see the 11 pm comparison).
 
 **Measured in the browser** (renderer counts, default view, Nov 20 2 pm):
 
@@ -26,6 +26,7 @@ The Ansley camera at a 1,150 m orbit, where foreground tiles have already switch
 ## Views
 
 - [Default view, 2 pm](default-day-compare.jpg) · [11 pm](default-night-compare.jpg): forced near vs the new default, indistinguishable
+- [Ansley at Sam's camera](ansley-compare.jpg): `/?view=city&cam=1280,-3950,40,58,160`, near forced vs automatic, identical
 - [Just past the switch](switch-compare.jpg): `/?view=city&cam=1280,-3950,40,58,1150`, near vs far
 
 Publishing needs a web rebuild only.
