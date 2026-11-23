@@ -106,3 +106,18 @@ export function dayDiff(fromIso: string, toIso: string): number {
 const isoFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 /** The Atlanta calendar date of an instant, as yyyy-mm-dd. */
 export const atlantaDate = (ms: number) => isoFmt.format(ms);
+
+const partsFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const zoneOffset = (ms: number) => {
+  const p = Object.fromEntries(partsFmt.formatToParts(ms).map((x) => [x.type, Number(x.value)]));
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - Math.floor(ms / 1000) * 1000;
+};
+
+/** The instant on Atlanta date `iso` that keeps the wall-clock time of `ms` (DST-safe). */
+export function sameTimeOnDate(ms: number, iso: string): number {
+  const wall = ms + zoneOffset(ms); // Atlanta wall clock, as if it were UTC
+  const tod = ((wall % 86_400_000) + 86_400_000) % 86_400_000;
+  const guess = Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) + tod;
+  const first = guess - zoneOffset(guess);
+  return guess - zoneOffset(first);
+}

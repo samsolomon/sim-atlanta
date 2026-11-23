@@ -81,3 +81,16 @@ describe('subject card helpers', () => {
     expect(dayDiff('2026-11-23', '2026-11-20')).toBe(-3);
   });
 });
+
+import { sameTimeOnDate } from './status';
+
+describe('date picker', () => {
+  it('keeps the wall-clock time across DST and late-evening UTC dates', () => {
+    // 11:30 PM EST Sat Mar 7 → Mon Mar 9 (EDT) at 11:30 PM.
+    const t = sameTimeOnDate(Date.parse('2026-03-08T04:30:00Z'), '2026-03-09');
+    expect(new Date(t).toISOString()).toBe('2026-03-10T03:30:00.000Z');
+    expect(atlantaDate(t)).toBe('2026-03-09');
+    // 10:00 AM EDT Oct 30 → Nov 2 (EST) still 10:00 AM.
+    expect(new Date(sameTimeOnDate(Date.parse('2026-10-30T14:00:00Z'), '2026-11-02')).toISOString()).toBe('2026-11-02T15:00:00.000Z');
+  });
+});

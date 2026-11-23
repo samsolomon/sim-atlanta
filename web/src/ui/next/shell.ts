@@ -15,7 +15,7 @@ import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
 import { createKeyDialog } from '../key';
-import { atlantaDate, confidence, liveDetails, confidenceWords, dayDiff, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
+import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import type { ShellApi, ShellOptions } from '../shell';
 
@@ -81,7 +81,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     <p class="a2-h">Speed</p>
     <div class="a2-seg2" role="group" aria-label="Speed">
       <button type="button" data-speed="0" aria-label="Pause">${SVG('<path d="M8 5v14M16 5v14"/>')}</button>
-      <button type="button" data-speed="1">1×</button><button type="button" data-speed="30">30×</button></div>
+      <button type="button" data-speed="1">1×</button><button type="button" data-speed="30">30×</button>
+      <button type="button" class="a2-speed-custom" aria-pressed="true" hidden></button></div>
     <p class="a2-h">Weather</p>
     <div class="a2-seg2" role="group" aria-label="Weather">${['Auto', 'Clear', 'Rain', 'Fog', 'Storm'].map((w) => `<button type="button" data-wx="${w}">${w}</button>`).join('')}</div>
     <p class="a2-caption">Auto shows the observed weather at the present time and an illustrative sky otherwise.</p>
@@ -126,21 +127,38 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (v === 0 && anchorLive && clock.speed === 1) backToNow(false);
     else setTime(anchor() + v * 60_000);
   });
+  // Phones: once a drag actually moves, the sheet shrinks to the time and the slider, held so
+  // the slider stays under the finger. A plain tap doesn't collapse it.
+  let pressed = false;
   const endDrag = () => {
-    dragging = false;
+    pressed = dragging = false;
+    if (!panel.classList.contains('a2-dragging')) return;
     panel.classList.remove('a2-dragging');
+    panel.style.transform = '';
   };
-  range.addEventListener('pointerdown', () => {
-    dragging = true;
-    panel.classList.add('a2-dragging');
+  range.addEventListener('pointerdown', (e) => {
+    pressed = true;
+    try {
+      range.setPointerCapture(e.pointerId);
+    } catch {
+      /* synthetic pointers have no capture */
+    }
   });
-  range.addEventListener('pointerup', endDrag);
-  range.addEventListener('pointercancel', endDrag);
+  range.addEventListener('input', () => {
+    if (!pressed) return;
+    dragging = true;
+    if (!phone.matches || panel.classList.contains('a2-dragging')) return;
+    const before = range.getBoundingClientRect().top;
+    panel.classList.add('a2-dragging');
+    panel.style.transform = `translateY(${before - range.getBoundingClientRect().top}px)`;
+  });
+  for (const ev of ['pointerup', 'pointercancel'] as const) addEventListener(ev, endDrag);
+  range.addEventListener('lostpointercapture', endDrag);
+  range.addEventListener('change', endDrag);
   range.addEventListener('blur', endDrag);
   dateInput.addEventListener('change', () => {
     if (!dateInput.value) return;
-    const t = clock.now().getTime();
-    const ms = t + dayDiff(atlantaDate(t), dateInput.value) * 86_400_000;
+    const ms = sameTimeOnDate(clock.now().getTime(), dateInput.value);
     anchorLive = false;
     anchorMs = ms;
     setTime(ms);
@@ -391,12 +409,18 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (wxNow) {
       svg = weatherIcon(wxNow, night);
       wxText.textContent = `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`;
+    } else if (s.realTime && !preview) {
+      // At the present with no observation yet (or the fetch failed): show no condition at all,
+      // never a guessed one in the observed-weather slot.
+      svg = '';
+      wxText.textContent = '';
     } else {
       // An illustrative sky still has a condition, named without a temperature.
       const sk = skyLabel(o.sky?.() ?? { cloud: 0, rain: 0, fog: 0, snow: 0 });
       svg = weatherIcon({ kind: sk.kind, label: sk.snow ? 'snow' : sk.label, cloud: 0, rain: 0, fog: 0, live: false }, night);
       wxText.textContent = sk.label;
     }
+    wx.hidden = !wxText.textContent;
     if (wxIcon.dataset.svg !== svg) {
       wxIcon.innerHTML = svg;
       wxIcon.dataset.svg = svg;
@@ -407,7 +431,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     tierDate.textContent = conf.shifted ? '' : dateFmt.format(now);
     tierDate.hidden = conf.shifted;
     nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}, ${wxText.textContent}, ${tierText.textContent}. Time and weather`);
+    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wx.hidden ? '' : `, ${wxText.textContent}`}, ${tierText.textContent}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(areaNote ?? feedNote);
@@ -422,19 +446,25 @@ export function createShellNext(o: ShellOptions): ShellApi {
       anchorMs = sim;
     }
     const v = sliderValue(sim, anchor());
-    if (!dragging && Number(range.value) !== v) range.value = String(v);
+    const stepped = Math.round(v / 5) * 5; // the range snaps to its 5-minute step
+    if (!dragging && Number(range.value) !== stepped) range.value = String(stepped);
     const pct = ((Number(range.value) + SLIDER_MIN) / (2 * SLIDER_MIN)) * 100;
     range.style.setProperty('--a2-from', `${Math.min(50, pct)}%`);
     range.style.setProperty('--a2-to', `${Math.max(50, pct)}%`);
     range.setAttribute('aria-valuetext', `${dayTimeFmt.format(now)}${v === 0 ? '' : `, ${v > 0 ? '+' : '−'}${fmtSpan(Math.abs(v))} from the middle`}`);
     const anchorLabel = anchorLive ? `Now · ${timeFmt.format(Date.now())}` : `${shortDate.format(anchorMs)} · ${timeFmt.format(anchorMs)}`;
     anchorText.textContent = anchorLabel;
-    // Phones have no scale under the slider: the right-hand label is always the real present.
-    anchorPhone.textContent = `Now · ${timeFmt.format(Date.now())}`;
+    anchorPhone.textContent = anchorLabel;
     dateText.textContent = shortDate.format(now);
     panel.querySelector('.a2-date-time')?.replaceChildren(timeFmt.format(now));
-    dateInput.value = atlantaDate(sim);
+    // Never rewrite the date while someone is picking or typing one.
+    const iso = atlantaDate(sim);
+    if (document.activeElement !== dateInput && dateInput.value !== iso) dateInput.value = iso;
     speedBtns.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.speed) === clock.speed)));
+    // A link can carry another speed (?speed=600): show it as the pressed segment.
+    const custom = panel.querySelector<HTMLButtonElement>('.a2-speed-custom')!;
+    custom.hidden = [0, 1, 30].includes(clock.speed);
+    custom.textContent = `${clock.speed}×`;
     wxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.wx === weatherChoice)));
     const back = panel.querySelector<HTMLButtonElement>('.a2-back')!;
     back.disabled = s.realTime && weatherChoice === 'Auto';
