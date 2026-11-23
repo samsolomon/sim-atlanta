@@ -8,7 +8,7 @@ const joint = '#d6d7d2';
  * Lays enamel panel joints on the outside of every wall of a prism plan,
  * from `lo` to `hi`. Joints are 0.1 m so they hold at City's orbit floor.
  */
-export function enamelGrid(body: Builder, plan: P2[], lo: number, hi: number, skip = 0) {
+export function enamelGrid(body: Builder, plan: P2[], lo: number, hi: number, hidden: Hidden = () => false) {
   for (let i = 0; i < plan.length; i++) {
     const a = plan[i],
       b = plan[(i + 1) % plan.length];
@@ -24,12 +24,15 @@ export function enamelGrid(body: Builder, plan: P2[], lo: number, hi: number, sk
       nx = -nx;
       nz = -nz;
     }
-    enamelFace(body, a, b, [nx, nz], lo, hi, skip);
+    enamelFace(body, a, b, [nx, nz], lo, hi, hidden);
   }
 }
 
+/** Points (u, v) covered by a neighbouring volume; joints there are never seen. */
+export type Hidden = (u: number, v: number) => boolean;
+
 /** Joints on one flat wall from a to b, standing proud along normal n. */
-export function enamelFace(body: Builder, a: P2, b: P2, n: P2, lo: number, hi: number, skip = 0) {
+export function enamelFace(body: Builder, a: P2, b: P2, n: P2, lo: number, hi: number, hidden: Hidden = () => false) {
   const dx = b[0] - a[0],
     dz = b[1] - a[1],
     len = Math.hypot(dx, dz),
@@ -37,14 +40,17 @@ export function enamelFace(body: Builder, a: P2, b: P2, n: P2, lo: number, hi: n
     tz = dz / len,
     off = 0.04;
   const at = (t: number, y: number) => [a[0] + tx * t + n[0] * off, y, a[1] + tz * t + n[1] * off];
+  const seen = (t: number) => !hidden(a[0] + tx * t + n[0] * 0.3, a[1] + tz * t + n[1] * 0.3);
+  if (!seen(len / 2) && !seen(len * 0.1) && !seen(len * 0.9)) return;
   const w = 0.05;
   const cols = Math.max(1, Math.round(len / enamelModule)),
     pitch = len / cols;
   for (let k = 1; k < cols; k++) {
     const t = k * pitch;
+    if (!seen(t)) continue;
     body.quad(at(t - w, lo), at(t - w, hi), at(t + w, hi), at(t + w, lo), joint);
   }
-  for (let y = lo + enamelModule * (1 + skip); y < hi - 0.3; y += enamelModule)
+  for (let y = lo + enamelModule; y < hi - 0.3; y += enamelModule)
     body.quad(at(0, y - w), at(len, y - w), at(len, y + w), at(0, y + w), joint);
 }
 
@@ -57,18 +63,19 @@ export function enamelBox(
   x: number,
   y: number,
   z: number,
-  lo?: number,
+  lo: number,
+  hidden: Hidden = () => false,
 ) {
   const x0 = x - w / 2,
     x1 = x + w / 2,
     z0 = z - d / 2,
     z1 = z + d / 2,
-    y0 = lo ?? y - h / 2,
+    y0 = lo,
     y1 = y + h / 2;
-  enamelFace(body, [x0, z0], [x1, z0], [0, -1], y0, y1);
-  enamelFace(body, [x1, z0], [x1, z1], [1, 0], y0, y1);
-  enamelFace(body, [x1, z1], [x0, z1], [0, 1], y0, y1);
-  enamelFace(body, [x0, z1], [x0, z0], [-1, 0], y0, y1);
+  enamelFace(body, [x0, z0], [x1, z0], [0, -1], y0, y1, hidden);
+  enamelFace(body, [x1, z0], [x1, z1], [1, 0], y0, y1, hidden);
+  enamelFace(body, [x1, z1], [x0, z1], [0, 1], y0, y1, hidden);
+  enamelFace(body, [x0, z1], [x0, z0], [-1, 0], y0, y1, hidden);
 }
 
 export interface RampSpec {
@@ -154,13 +161,20 @@ export function entryRamp(
       g = ground(b[0], b[2]) ?? footY;
     body.box(0.22, 0.95, 0.22, b[0], g + 0.47, b[2], rail);
   }
-  // Head landing between the ramp, the stair and the entry wall.
-  const land = (t: number, s: number) => p(len + t, s, terrace + 0.02);
-  body.quad(land(-0.5, -half - 0.3), land(-0.5, half + 4.2), land(4.2, half + 4.2), land(4.2, -half - 0.3), deck);
-  for (const [a, b] of [
-    [land(-0.5, -half - 0.3), land(4.2, -half - 0.3)],
-    [land(4.2, -half - 0.3), land(4.2, half + 4.2)],
-  ]) {
+  // The mapped stair leaves the head landing on its own side of the ramp, outside
+  // the parapet, and drops back to the lawn toward the mapped stair foot.
+  const sv = (stairTop[0] - foot[0]) * nx + (stairTop[1] - foot[1]) * nz,
+    side = sv < 0 ? -1 : 1,
+    sw = 0.9,
+    lane = side * (half + 0.3 + sw + 0.1),
+    top = p(len - 0.3, lane, 0);
+  // Head landing: across the ramp and over the stair's head, short of the entry
+  // wall and the rounded projection on the far side.
+  const near = -side * (half + 0.3),
+    far = lane + side * (sw + 0.15),
+    land = (t: number, s: number) => p(len + t, s, terrace + 0.02);
+  body.quad(land(-1.2, near), land(-1.2, far), land(2.5, far), land(2.5, near), deck);
+  const wall = (a: number[], b: number[]) => {
     const ga = ground(a[0], a[2]) ?? footY,
       gb = ground(b[0], b[2]) ?? footY;
     body.quad(
@@ -170,24 +184,25 @@ export function entryRamp(
       [b[0], gb - 0.1, b[2]],
       white,
     );
-  }
-  // Mapped stair from the landing back down to the lawn.
-  const sx = stairFoot[0] - stairTop[0],
-    sz = stairFoot[1] - stairTop[1],
+  };
+  wall(land(-0.5, near), land(2.5, near));
+  wall(land(2.5, near), land(2.5, far));
+  wall(land(-1.2, far), land(2.5, far));
+  const sx = stairFoot[0] - top[0],
+    sz = stairFoot[1] - top[2],
     slen = Math.hypot(sx, sz),
     drop = terrace - stairY;
-  if (drop > 0.2) {
+  if (drop > 0.2 && slen > 1) {
     const n = Math.max(2, Math.round(drop / 0.17)),
       ux = sx / slen,
       uz = sz / slen,
       wx = -uz,
-      wz = ux,
-      sw = 0.9;
+      wz = ux;
+    const q = (t: number, w: number, h: number) => [top[0] + ux * t + wx * w, h, top[2] + uz * t + wz * w];
     for (let i = 0; i < n; i++) {
       const a = (slen * i) / n,
         b = (slen * (i + 1)) / n,
         y = terrace - (drop * (i + 1)) / n;
-      const q = (t: number, w: number, h: number) => [stairTop[0] + ux * t + wx * w, h, stairTop[1] + uz * t + wz * w];
       body.quad(q(a, -sw, y + 0.02), q(a, sw, y + 0.02), q(b, sw, y + 0.02), q(b, -sw, y + 0.02), deck);
       body.quad(q(a, -sw, y), q(a, sw, y), q(a, sw, y + drop / n), q(a, -sw, y + drop / n), white);
       for (const w of [-sw - 0.1, sw + 0.1]) {

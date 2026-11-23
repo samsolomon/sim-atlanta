@@ -80,14 +80,38 @@ function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => numb
   body.box(47, 23, 19, 15, 13.8, -42, porcelain);
   body.box(22, 22, 44, -1, 13.3, -28, porcelain);
   // Meier's square enamel panels, read as joints on every white Meier volume.
-  enamelBox(body, 47, 23, 19, 15, 13.8, -42, 2.3);
-  enamelBox(body, 22, 22, 44, -1, 13.3, -28, 2.3);
+  // Faces buried in a neighbouring volume or the atrium drum get no joints.
+  const projection: P2[] = [
+    [27, -32.5],
+    [38, -32.5],
+    [43, -28],
+    [45, -23],
+    [45, -19],
+    [41, -16],
+    [35, -16],
+    [32, -21],
+  ];
+  const block: P2[] = [
+    [14, -8],
+    [21, -12],
+    [35, -5],
+    [39, 0],
+    [31, 10],
+    [18, 2],
+  ];
+  const hidden = (u: number, v: number) =>
+    (u > -8.5 && u < 38.5 && v > -51.5 && v < -32.5) ||
+    (u > -12 && u < 10 && v > -50 && v < -6) ||
+    (u >= 10 && v >= -33 && Math.hypot(u - 10, v + 33) < 23) ||
+    pointInRing(u, v, projection) ||
+    pointInRing(u, v, block);
+  enamelBox(body, 47, 23, 19, 15, 13.8, -42, 2.3, hidden);
+  enamelBox(body, 22, 22, 44, -1, 13.3, -28, 2.3, hidden);
   body.box(44, 0.35, 16, 15, 25.48, -42, roof);
   body.box(20, 0.35, 23, -1, 24.48, -18, roof);
   body.box(15, 4, 4, -17, 15, -34, '#b6c4c4');
   // Punched gallery windows and enamel panel joints on the Peachtree return.
   s.facade([38.6, -51.5], [38.6, -32.5], 3.5, 14.8, 3, 3.4, 0.61, 0.62, ['#5b6771', '#606f76'], 0.18);
-  for (let y = 6; y < 24; y += 4) body.box(0.12, 0.09, 19, 38.56, y, -42, '#c7c8c6');
   prism(
     [
       [27, -32.5],
@@ -104,21 +128,7 @@ function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => numb
     porcelain,
     roof,
   );
-  enamelGrid(
-    body,
-    [
-      [27, -32.5],
-      [38, -32.5],
-      [43, -28],
-      [45, -23],
-      [45, -19],
-      [41, -16],
-      [35, -16],
-      [32, -21],
-    ],
-    2.3,
-    12.8,
-  );
+  enamelGrid(body, projection, 2.3, 12.8, hidden);
   for (const y of [4.8, 9.3]) {
     prism(
       [
@@ -202,8 +212,8 @@ function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => numb
         '#5d686b',
       );
     }
-    body.tri(arc(a, radius, 22), [10, 26, -33], arc(b, radius, 22), '#69777a');
-    body.tri(arc(a, radius, 22.08), [10, 26.1, -33], arc(a + 0.012, radius, 22.08), coping);
+    body.tri(arc(a, radius + 0.2, 22), [10, 26, -33], arc(b, radius + 0.2, 22), '#69777a');
+    body.tri(arc(a, radius + 0.2, 22.08), [10, 26.1, -33], arc(a + 0.012, radius + 0.2, 22.08), coping);
   }
   prism(
     [
@@ -219,19 +229,7 @@ function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => numb
     porcelain,
     roof,
   );
-  enamelGrid(
-    body,
-    [
-      [14, -8],
-      [21, -12],
-      [35, -5],
-      [39, 0],
-      [31, 10],
-      [18, 2],
-    ],
-    2.3,
-    12,
-  );
+  enamelGrid(body, block, 2.3, 12, hidden);
   // The diagonal Peachtree ramp climbs to the 2.3 m entry terrace.
   entryRamp(body, ramp, 2.3, ground);
 }
@@ -296,7 +294,8 @@ export function createArtsCampusLandmark(
     };
     museum(shell, ramp, (u, v) => {
       const y = groundAt(550 + u * 0.878 - v * -0.479, -3990 + u * -0.479 + v * 0.878);
-      return y === null ? null : y - grade;
+      // A small lift keeps the ramp clear of the rendered terrain triangles.
+      return y === null ? null : y - grade + 0.1;
     });
     // Lay the piazza on the same rendered terrain as both entrances.
     const piazza: P2[] = [
