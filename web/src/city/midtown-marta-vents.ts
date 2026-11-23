@@ -299,6 +299,27 @@ const FIFTH_GRATE: P2[] = [
   [505.0, -2469.3],
 ];
 export const PEACHTREE_PLACE_SHAFT_ID = 'osm:way:269843682';
+// OSM ways 1455666621 and 1455666622: grates in the planted island where West
+// Peachtree, Ted Turner Drive and Pine Street meet, between Civic Center and North
+// Avenue. A 1990s Midtown Alliance photograph shows a dark grate nearly flush in a
+// low concrete curb beside a planting bed.
+const ISLAND_GRATES: P2[][] = [
+  [
+    [364.55, -1503.4],
+    [359.56, -1503.48],
+    [359.63, -1507.73],
+    [364.62, -1507.65],
+  ],
+  [
+    [366.88, -1532.97],
+    [366.91, -1534.26],
+    [371.75, -1534.15],
+    [371.72, -1533.2],
+    [371.29, -1514.68],
+    [368.84, -1514.74],
+    [366.46, -1514.8],
+  ],
+];
 
 function inside(bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, ring: P2[]) {
   const x = ring.reduce((a, p) => a + p[0], 0) / ring.length,
@@ -375,6 +396,30 @@ function drapedGrate(body: Builder, ring: P2[], ground: Ground, proud: number) {
   return true;
 }
 
+// A low concrete curb, 0.3 m wide and 0.22 m proud, around a grate.
+function curb(body: Builder, ring: P2[], ground: Ground) {
+  for (let i = 0; i < ring.length; i++) {
+    const [ax, az] = ring[i],
+      [bx, bz] = ring[(i + 1) % ring.length];
+    const len = Math.hypot(bx - ax, bz - az);
+    if (len < 0.2) continue;
+    const dx = (bx - ax) / len,
+      dz = (bz - az) / len,
+      nx = -dz * 0.3,
+      nz = dx * 0.3;
+    const ga = ground(ax, az),
+      gb = ground(bx, bz);
+    if (ga === null || gb === null) continue;
+    const a0 = [ax, ga + 0.22, az],
+      b0 = [bx, gb + 0.22, bz],
+      a1 = [ax - nx, ga + 0.22, az - nz],
+      b1 = [bx - nx, gb + 0.22, bz - nz];
+    body.quad(a0, b0, b1, a1, '#b9b4a8');
+    body.quad([ax - nx, ga - 0.1, az - nz], a1, b1, [bx - nx, gb - 0.1, bz - nz], '#a8a397');
+  }
+  return true;
+}
+
 /** Vent structures the row data does not carry as buildings. Each row adds its own. */
 export function midtownVents(bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, ground: Ground) {
   const body = new Builder(),
@@ -382,6 +427,8 @@ export function midtownVents(bounds: { minX: number; maxX: number; minZ: number;
   let any = false;
   if (inside(bounds, FAN_HOUSE)) any = fanHouse(body, lights, ground) || any;
   if (inside(bounds, FIFTH_GRATE)) any = drapedGrate(body, FIFTH_GRATE, ground, 0.15) || any;
+  for (const ring of ISLAND_GRATES)
+    if (inside(bounds, ring)) any = (drapedGrate(body, ring, ground, 0.08) && curb(body, ring, ground)) || any;
   if (!any) return null;
   const group = new Group();
   group.name = 'Midtown MARTA vents';
