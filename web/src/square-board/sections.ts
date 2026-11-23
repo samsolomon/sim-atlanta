@@ -1,4 +1,5 @@
 import { midtownFoundations } from '../city/midtown-foundations';
+import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import railRows from '../city/fixtures/midtown-rail.json';
@@ -132,9 +133,10 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
         context.terrainTransport = { version: 1, roads: [], rail: railRows[id as MidtownRow] as TransportRun[] };
       }
-      const city = id === 'north-band' ? northConnectorTransport(context) :
+      const contextWithDecks = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) :
         id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
+      const city = id in rowBounds ? midtownConnectorDecks(contextWithDecks) : contextWithDecks;
       const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
