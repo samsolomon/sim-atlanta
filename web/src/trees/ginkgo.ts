@@ -98,14 +98,14 @@ function forked(q: TreeQuality, d: Dims): Form {
   const pads = [];
   if (q === 'high') {
     // Heavy spur growth on an old tree: tufts large enough to merge into tiers.
-    for (const tip of stems) pads.push(pad(lerp3(FORK, tip, 0.94), 0.27, 0.08));
-    for (const l of limbs) pads.push(pad(lerp3(l.from, l.to, 0.86), 0.27));
-    for (const tip of stems) pads.push(pad(lerp3(FORK, tip, 0.66), 0.25));
-    pads.push(pad([0.05, 0.98, 0.02], 0.24, 0.07), pad([-0.45, 0.66, -0.4], 0.25));
+    for (const tip of stems) pads.push(pad(lerp3(FORK, tip, 0.9), 0.4, 0.09));
+    for (const l of limbs) pads.push(pad(lerp3(l.from, l.to, 0.8), 0.38));
+    for (const tip of stems) pads.push(pad(lerp3(FORK, tip, 0.64), 0.36));
+    pads.push(pad([0.05, 0.94, 0.02], 0.34, 0.08), pad([-0.45, 0.64, -0.4], 0.36));
   } else {
-    for (const tip of stems) pads.push(pad(lerp3(FORK, tip, 0.85), 0.34, 0.1));
-    for (const l of limbs) pads.push(pad(lerp3(l.from, l.to, 0.85), 0.32));
-    pads.push(pad([0, 0.95, 0], 0.28, 0.09));
+    for (const tip of stems) pads.push(pad(lerp3(FORK, tip, 0.8), 0.48, 0.12));
+    for (const l of limbs) pads.push(pad(lerp3(l.from, l.to, 0.78), 0.44));
+    pads.push(pad([0, 0.92, 0], 0.4, 0.1));
   }
   return { segs, pads };
 }

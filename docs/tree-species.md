@@ -98,13 +98,32 @@ The class boundaries are our own synthesis, not a published standard.
 
 Only the Zenodo copy is openly licensed. We may cite individual trees as facts, but we should not redistribute the other datasets wholesale without asking their owners.
 
-**The High Museum ginkgo.**
-- **Position.** Trees Atlanta lists Atlanta's #1 ginkgo, nominated in 2012 and still Alive, at 33.789866, −84.384916. That is City (617.9, −3999.2), on the Peachtree lawn south of the entry ramp. An untagged OSM tree node lies 1.1 m away.
-- **Measured size, 2012.** 27.5 m tall, 26.2 m spread, 4.72 m circumference.
-- **Photo estimate.** The culture agent estimated 17 m tall with a 15 m spread from photographs and a leaf-off aerial.
-- **Sam's call.** A mature tree, a little larger than the photo estimate: **20 m tall with an 18 m spread, tier `inferred`**. The position is `reported`.
-- **Why between the two.** The record is fourteen years old and was measured for champion points. Atlanta Magazine (2025) reports that renovations and pollution "have stressed its health for decades".
-- **Placement.** It lands in a follow-up PR, after the culture agent's ramp rebuild. Its lowest limbs must clear the ramp by about 7.5 m on the Peachtree half.
+**The High Museum ginkgo (placed in City).** `web/src/trees/sites.ts`, tiers per attribute:
+
+| Attribute | Value | Tier | Source |
+|---|---|---|---|
+| Species | Ginkgo | `reported` | Trees Atlanta champion record |
+| Trunk position | City (617.9, −3999.2), on the Peachtree lawn south of the entry ramp | `reported` | Champion record at 33.789866, −84.384916. An untagged OSM tree node lies 1.1 m away. |
+| Size | 20 m tall, 18 m spread | `inferred` | Sam's call |
+
+**How the size was chosen.**
+- The 2012 champion record measured 27.5 m tall, 26.2 m spread and 4.72 m circumference.
+- The culture agent's photo and leaf-off aerial estimate was 17 m by 15 m.
+- The canopy height map (Meta/WRI) independently put a 17 m crown, 15 m across, 2.8 m from the trunk.
+- Sam judged the tree today to be a mature tree "a little larger than" the photo estimate. The record is fourteen years old and was measured for champion points, and Atlanta Magazine (2025) reports that renovations and pollution "have stressed its health for decades".
+- The size is set in one line in `sites.ts`.
+
+**Form.** The tree is drawn with the forked `specimen` form, because photographs show its low fork. The class's calliper scales with the spread, to 1.03 m, which matches the photo estimate of 0.9–1.0 m.
+
+**What it replaces.** It stands in the canopy map's own crown for this tree. A crown is removed when its trunk lies within the ginkgo's radius plus half its own; here that removes the 17 m crown and a 10 m neighbour 8.8 m away. Removal happens after `World.buildTrees` draws each crown's colour seed, so no other generic tree changes kind or colour (tested).
+
+**The entry ramp.** The culture agent's rebuilt ramp sits about 11.5 m from the trunk. The drawn tufts reach 10.5 m out. The nearest comes within 0.6 m of the edge of the mapped ramp footway, and the lowest hangs 9.5 m up (9.0 m at low detail). A test holds every leaf within a metre of the ramp above the 7.5 m the culture agent asked for.
+
+**Size class.** 20 m sits below the specimen class's 22–28 m range. The site uses the specimen class only for its forked form; its height and spread are per-tree overrides.
+
+[Before and after, captioned](log/ui/tree-species/city-ginkgo-review.jpg) · [Close, 23 Nov](log/ui/tree-species/city-ginkgo-nov23-high.jpg) · [Context](log/ui/tree-species/city-ginkgo-context-day.jpg) · [Night](log/ui/tree-species/city-ginkgo-night-high.jpg) · [Context at night](log/ui/tree-species/city-ginkgo-context-night.jpg) · [Low detail](log/ui/tree-species/city-ginkgo-nov23-low.jpg) · [Summer](log/ui/tree-species/city-ginkgo-summer-high.jpg). Camera: `/?view=city&cam=618,-3999,245,70,80&t=2026-11-23T12:00:00-05:00&speed=0`.
+
+**Calendar caveat.** City passes `local().doy`, which counts leap days, so in a leap year the City ginkgo runs a day behind the lab. That is within its ±3-day spread.
 
 **Ansley Park.**
 - **Records.** No inventory or photo set documents an individual large ginkgo. The only records are two young 'Shangri-La' ginkgos, planted on 17th St in 2017–18, at about (667, −4383) and (635, −4363).
