@@ -2298,3 +2298,7 @@ A 235 m concrete box girder carries the North Line over six carriageways at Broo
 ### 2026-11-23 — A garden kit in one draw call
 
 The lawns around landmarks were flat green paint. City now has a small kit of landscape pieces: flower beds with curbs and seasonal colour, clipped hedges, shrub rows, retaining edges, seat walls, stair runs and stepped terraces. They share one vertex-coloured mesh, so a whole garden is a single draw. The demo garden on a 2.4 m bank costs 1,912 triangles at high and 1,184 at low. Two things came from the first consumers before anything shipped. The High Museum team needed stairs between surveyed landings (290.4 m to 296.4 m), not just between whatever ground lay at each end. The ginkgo's Street View survey showed a raised mulch mound. [The API, triangle counts and lab views](log/ui/landscape-primitives/README.md)
+
+### 2026-11-23 — Three agents, one lawn
+
+The High's Peachtree lawn shows how the studio now splits work. The tree agent placed the champion ginkgo from Street View and wrote up what grows round it. The parks agent shipped reusable primitives for beds, hedges and stairs. This change composes them: a mulch mound under the ginkgo, shrubs along the ramp and the granite Peachtree steps, in one 1-draw mesh. Ownership turned out to be the subtle part. The oak beside the steps is a generic canopy crown and the lamp belongs to the street-light layer, so drawing either again here would double it. [Before and after](log/ui/culture-review/README.md)

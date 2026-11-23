@@ -1,7 +1,9 @@
+import { Group } from 'three';
 import { localLandmarkShell } from './landmark-shell';
+import { flowerBed, hedge, landscapeMesh, stairRun } from '../landscape/primitives';
 import { mechanicalScreen, precastWall } from './midtown-culture-woodruff';
 import { enamelBox, enamelGrid, entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
-import { pointInRing, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import sites from './fixtures/arts-campus.json';
 
@@ -347,6 +349,36 @@ export function createArtsCampusLandmark(
         return y === null ? null : y - grade + 0.1;
       },
     );
+    const finished = shell.finish('#ffdab0', 0.68);
+    // The Peachtree lawn is world-framed, so it sits beside the rotated shell.
+    const lawn = peachtreeLawn(groundAt);
+    const group = new Group();
+    group.name = finished.group.name;
+    group.add(finished.group, lawn.mesh);
+    return { ...finished, group };
   } else memorial(shell);
   return shell.finish('#ffdab0', 0.68);
+}
+
+/**
+ * The High's Peachtree lawn, from the tree agent's Street View notes: the
+ * champion ginkgo's mulch mound, a loose shrub row along the ramp's south
+ * parapet and the granite steps up to the piazza walk. Coordinates are world
+ * Five Points metres. Grass and grade come from the 3DEP terrain itself.
+ */
+function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
+  const b = new Builder();
+  const l = sites.museum.lawn;
+  const [tx, tz] = l.ginkgo;
+  const mound: P2[] = [];
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2;
+    mound.push([tx + l.moundRadius * Math.cos(a), tz + l.moundRadius * Math.sin(a)]);
+  }
+  // The mound bed carries no flowers, so its colours do not depend on the season.
+  flowerBed(b, mound, groundAt, { doy: 172, mound: 0.5, flowers: 0, seed: 'high-ginkgo' });
+  hedge(b, l.shrubs as P2[], groundAt, { clipped: false, height: 1.0, width: 1.3, seed: 'high-ramp-shrubs' });
+  const [from, to] = l.steps as [P2, P2];
+  stairRun(b, from, to, l.stepsWidth, groundAt);
+  return landscapeMesh(b);
 }

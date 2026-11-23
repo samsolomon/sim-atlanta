@@ -42,8 +42,8 @@ it('skips the ramp, not the museum, when its ground is missing', () => {
   const clipped = createArtsCampusLandmark(buildings, museum, 290, (x) => (x > 620 ? null : 294.1))!;
   expect(clipped).not.toBeNull();
   // The ramp is the only geometry east of the 588 m footprint edge.
-  expect(new Box3().setFromObject(full.group, true).max.x).toBeGreaterThan(620);
-  expect(new Box3().setFromObject(clipped.group, true).max.x).toBeLessThan(600);
+  expect(new Box3().setFromObject(full.group.children[0], true).max.x).toBeGreaterThan(620);
+  expect(new Box3().setFromObject(clipped.group.children[0], true).max.x).toBeLessThan(600);
 });
 
 it('keeps the mapped ramp outside the museum footprint, rising toward it from Peachtree', () => {
@@ -139,4 +139,22 @@ it('decks the entry notch at the ramp head at the 2.3 m entry level', () => {
   const hit = ray.intersectObject(model.group, true)[0];
   // Entry grade is 287 here, so the deck should sit 2.36 m above it.
   expect(hit.point.y).toBeCloseTo(287 + 2.36, 1);
+});
+
+it('lays the Peachtree lawn beside the museum, low within the ginkgo crown', () => {
+  const model = createArtsCampusLandmark(buildings, museum, 290, () => -32)!;
+  const lawn = model.group.children.find((o) => o.name === 'landscape') as Mesh;
+  expect(lawn).toBeDefined();
+  const pos = (lawn.geometry as BufferGeometry).getAttribute('position');
+  const [tx, tz] = sites.museum.lawn.ginkgo;
+  let near = 0;
+  for (let i = 0; i < pos.count; i++) {
+    if (Math.hypot(pos.getX(i) - tx, pos.getZ(i) - tz) > 9) continue;
+    near++;
+    // Under the 9 m crown nothing stands more than 1.5 m above the lawn.
+    expect(pos.getY(i)).toBeLessThan(-32 + 1.5);
+  }
+  expect(near).toBeGreaterThan(0);
+  // The granite steps reach out to the Peachtree sidewalk.
+  expect(new Box3().setFromObject(lawn, true).max.x).toBeGreaterThan(632);
 });
