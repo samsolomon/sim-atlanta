@@ -232,5 +232,6 @@ export function createNorthLine(
       for (let i = pool.count; i < pool.meshes.length; i++) pool.meshes[i].visible = false;
     return total;
   };
-  return Object.assign(update, { bounds: planes.size ? bounds : null });
+  const shown = () => [...pools.values()].flatMap((pool) => pool.meshes.slice(0, pool.count));
+  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown });
 }
