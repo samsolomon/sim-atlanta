@@ -1895,3 +1895,9 @@ The broad western face used to read as one banded block. A photograph taken afte
 The 1955 opening photograph gives the former Fulton National Bank a height of 295 feet. City already had the height within a tenth of a metre. What was missing from Five Points was the step across its long face. In 7,773 lidar returns the two roofs separate by about 8.5 m, and the upper one stops roughly 4 m short of Forsyth. From street level that leaves a thin strip of lower roof beyond the last tall window band. From above, the same strip distinguishes the end of the tower from the neighboring block.
 
 The period bank advertisement shows four red neon signs. Current photographs show a plain crown above the ribbons of glass, so the signs belong to the archive view. Today’s scene leaves a few windows lit after dark. [Photographs, measurements and nine matched City views](log/ui/55-marietta/README.md) · [Daylight and dusk comparison](log/ui/55-marietta/comparison.jpg)
+
+### 2026-11-23 — Below the twin crowns on Ellis Street
+
+In the hotel’s own dusk photograph, two brightly lit crowns rise over The Ritz-Carlton, Atlanta. Both belong to the office tower behind it. The hotel ends at a much lower flat roof. Inside its footprint, 4,017 lidar returns put the main roof at about 397 m NAVD88, roughly 68 m above Peachtree. The previous City block stood 94 m tall.
+
+The hotel is easiest to recognize from the corner. Its window bands fold toward the street, the dining terrace projects over the Peachtree sidewalk and the Ellis driveway disappears underneath the guest rooms. At night the occupied rooms and entrance sign carry the light. [Reference photographs, roof measurements and camera positions](log/ui/ritz-carlton-atlanta/README.md) · [Matched daylight, dusk and night](log/ui/ritz-carlton-atlanta/comparison.jpg)
