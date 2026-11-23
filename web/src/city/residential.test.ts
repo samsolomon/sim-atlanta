@@ -176,8 +176,8 @@ it('lays yards by rule: walks stop short of the roadway, nothing lands inside a 
       return c;
     };
     for (const [x, z] of points) {
-      // The street centreline is z = -6; walks and drives stop 4.5 m short of it (half-width tolerance).
-      expect(z).toBeGreaterThan(-6 + 4.5 - .7);
+      // The residential street's kerb is 3.5 m from its centreline (z = -6); yards stop 1.5 m short of it.
+      expect(z).toBeGreaterThan(-6 + 3.5 + 1.5 - .7);
       for (const h of [a, b]) expect(inside(x, z, h.rings[0].map(([px, pz]) => [px + .02 * Math.sign(px - (h.rings[0][0][0] + 5)), pz]))).toBe(false);
     }
     layer.dispose();
@@ -197,6 +197,8 @@ it('reports the yard budget per row and tier', () => {
     }
     totals[quality] = sum;
   }
-  console.log('yard triangles', JSON.stringify(totals));
+  // Measured 367,462 high and 60,122 low across these rows; ceilings catch a regression.
+  expect(totals.high).toBeLessThan(420000);
+  expect(totals.low).toBeLessThan(70000);
   expect(totals.low).toBeLessThan(totals.high);
 });
