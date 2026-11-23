@@ -52,6 +52,7 @@ import { createGeorgiaState } from './station';
 import { georgiaStateScene } from './georgia-state-geometry';
 import { createFloyd } from './floyd';
 import { createGeorgiaPacific } from './georgia-pacific';
+import { createOneParkTower } from './one-park-tower';
 import { createTwoPeachtree } from './two-peachtree';
 import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
@@ -214,6 +215,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let station: StationTrack | undefined;
   let floyd: ReturnType<typeof createFloyd> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
+  let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let twoPeachtree: ReturnType<typeof createTwoPeachtree> = null;
   let healey: ReturnType<typeof createHealey> = null;
   let flatiron: ReturnType<typeof createFlatiron> = null;
@@ -263,8 +265,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHealey = healey?.buildings ?? towerSite;
         twoPeachtree = createTwoPeachtree(afterHealey, ground);
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterHealey;
-        georgiaPacific = createGeorgiaPacific(afterTwoPeachtree, groundAt);
-        const stackSite = georgiaPacific?.buildings ?? afterTwoPeachtree;
+        oneParkTower = createOneParkTower(afterTwoPeachtree, ground);
+        const afterOnePark = oneParkTower?.buildings ?? afterTwoPeachtree;
+        georgiaPacific = createGeorgiaPacific(afterOnePark, groundAt);
+        const stackSite = georgiaPacific?.buildings ?? afterOnePark;
         const stack = createCoreyTower(stackSite, ground);
         const stadiumSite = stack?.buildings ?? stackSite;
         const stadium = createStadium(stadiumSite, ground);
@@ -295,6 +299,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (library) world.group.add(library.group);
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
+        if (oneParkTower) world.group.add(oneParkTower.group);
         if (twoPeachtree) world.group.add(twoPeachtree.group);
         if (georgiaPacific) world.group.add(georgiaPacific.group);
         if (stack) world.group.add(stack.group);
@@ -742,6 +747,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     library?.setNight(night);
     flatiron?.setNight(night);
     healey?.setNight(night);
+    oneParkTower?.setNight(night);
     twoPeachtree?.setNight(night);
     georgiaPacific?.setNight(night);
     centennial?.setNight(night);
