@@ -216,6 +216,19 @@ Caveat: an alpha-blended effect drawn over marked foliage (snow, rain sprites, a
 
 [C family compare sheet: specimen, mature, close-ups, night and low detail](log/ui/tree-species/variants-c-family.jpg)
 
+## Ginkgo as plumes along the limbs (C4, lab)
+
+Sam picked C4, then judged the rounded C4 crown generic ("could be an oak"). Ginkgo foliage pushes out in long, strand-like sprays that follow the main branches. The primary reference is now the [Virginia-Highland ginkgo, Atlanta, late Nov 2018](https://commons.wikimedia.org/wiki/File:Mature_ginkgo_tree_in_Virginia-Highland_neighborhood_of_Atlanta_in_late_November.jpg). The Frederick MD photo is demoted.
+
+- **Plumes:** mature and specimen crowns are tiers of tapered, creased plume cards whose long axis runs along a branch: 7 tiers at high detail (27 plumes), 5 at low (21). Lower tiers are longest and flattest, upper ones shorter and steeper. Gaps between tiers are left open, and the rounded silhouette comes from where the plumes sit.
+- **Ragged edge:** the rim of each plume frays away in leaf-sized chunks (`frayPlumes`). The ink mask uses the same patch through `userData.maskShader`, so the silhouette follows the drawn edge.
+- **Colour:** the atlas supplies only leaf shape (alpha). Colour is the season tint, so peak season is one saturated butter yellow, slightly brighter on the sun side. Cards don't receive self-shadow, and fan tips are lit as if they faced the sky.
+- **Young and sapling:** unchanged, narrow and gangly.
+- **Winter:** bare limbs follow only the lower tiers' plumes, to stay within budget. They are sparser than the photos' twig haze.
+- **Budget:** mature and specimen use 177 / 121 triangles per tree (high / low), within the 196 / 156 budget. Fan tips add 300 on at most 8 trees within 45 m, at high detail only. The 20-tree grove test passes.
+
+[Photo, current and new, side by side](log/ui/tree-species/ginkgo-plumes.jpg). **City rollout waits for Sam's approval.**
+
 ## Next species (lab only)
 
 All six will be built in the lab with the same framework, budget and tests, and will not be placed in City until Sam decides on the rollout. Spread is a diameter. Sizes are in metres, given as class ranges. "GT" is the Georgia Tech inventory and "City 2011" the downtown census.
