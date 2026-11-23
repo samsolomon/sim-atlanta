@@ -607,6 +607,40 @@ function closeCity() {
   map?.resize();
 }
 
+// ---- Models (A2c, ?ui=next): the Model lab as the third view -------------------------------------
+// The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
+// while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
+let labRoot: HTMLElement | null = null;
+let labView: { escape(): boolean; model(): string | null } | null = null;
+const inModels = () => !!labRoot && !labRoot.hidden;
+async function openModels() {
+  hideCard();
+  if (diorama || !view3d.hidden) closeCity();
+  if (!labRoot) {
+    labRoot = Object.assign(document.createElement('section'), { id: 'lab-root' });
+    labRoot.setAttribute('aria-label', 'Models');
+    document.body.prepend(labRoot);
+  }
+  labRoot.hidden = false;
+  setViewParam('models');
+  if (!labView) {
+    await import('./models/main');
+    const { mountModelsView } = await import('./ui/next/models-view');
+    labView = mountModelsView(labRoot, { dev: params.has('dev') });
+  }
+  (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
+}
+function leaveModels() {
+  if (labRoot) labRoot.hidden = true;
+}
+/** Zoom the model by a wheel step at the stage centre, through the lab's own OrbitControls. */
+function labZoom(dir: 1 | -1) {
+  const canvas = document.querySelector<HTMLCanvasElement>('#stage canvas');
+  if (!canvas) return;
+  const r = canvas.getBoundingClientRect();
+  canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: dir > 0 ? -250 : 250, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));
+}
+
 function setViewParam(v: View) {
   const u = new URL(location.href);
   u.searchParams.set('view', v);
@@ -616,7 +650,12 @@ function setViewParam(v: View) {
 document.getElementById('early-map')!.hidden = true;
 const shellOptions: ShellOptions = {
   view: 'map',
-  onView: (v: View) => (v === 'city' ? void openCity() : closeCity()),
+  onView(v: View) {
+    if (v !== 'models') leaveModels();
+    if (v === 'city') void openCity();
+    else if (v === 'models') void openModels();
+    else closeCity();
+  },
   center() {
     if (diorama) {
       const t = diorama.target();
@@ -626,15 +665,18 @@ const shellOptions: ShellOptions = {
     return c ? [c.lng, c.lat] : [CITY_ORIGIN.lon, CITY_ORIGIN.lat];
   },
   pan(dx, dy) {
+    if (inModels()) return; // the model turns by drag; keys don't move it
     // The shell sends a content-drag offset; both cameras move in the opposite direction.
     if (diorama) diorama.pan(-dx, -dy);
     else map?.panBy([-dx, -dy], { duration: 0 });
   },
   zoom(dir) {
+    if (inModels()) return labZoom(dir);
     if (diorama) return diorama.zoom(dir);
     map?.zoomTo(map.getZoom() + dir, { duration: 200 });
   },
   rotate(degrees) {
+    if (inModels()) return;
     diorama?.rotate(degrees);
   },
   onWeather: () => updateAtmosphere(),
@@ -683,7 +725,16 @@ const shellOptions: ShellOptions = {
     get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),
     set: (g) => void setGraphics(g),
   } : undefined,
+  resetModelView() {
+    const views = [...document.querySelectorAll<HTMLButtonElement>('#views button')];
+    (views.find((b) => b.getAttribute('aria-pressed') === 'true') ?? views[0])?.click();
+  },
+  viewEscape: () => (inModels() ? labView?.escape() ?? false : false),
   shareTarget() {
+    if (inModels()) {
+      const model = labView?.model();
+      return model ? { view: 'models' as const, model } : null;
+    }
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;
     if (diorama) {
@@ -721,4 +772,8 @@ setInterval(() => {
 document.getElementById('timectl')!.hidden = params.get('controls') !== '1' || uiNext(location.search);
 
 if (landing === 'city') shell.setView('city');
+else if (landing === 'models') {
+  openMap();
+  shell.setView('models');
+}
 else if (!openMap()) shell.setNote('Interactive graphics unavailable · MARTA rail overview');
