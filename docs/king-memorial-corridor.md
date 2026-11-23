@@ -430,14 +430,25 @@ Commons or in Street View. Every night light below is illustrative.
 | Piece | Extent | Height | Tier |
 |---|---|---|---|
 | Glazed lobby | s 9010–9046, v −24 to −12, centred on the subway entrance | 4.7 m, from 0.5 m below the lowest ground under it | Estimated |
-| Lifted mezzanine with a ribbon window band | s 9010–9094, v −13 to +14 | Its soffit is 6.5 m above the Decatur-side ground (and at least 4 m above the south side), and its top meets the platform fascia. That makes it 6.5 m deep. | Estimated |
+| Lifted mezzanine with a ribbon window band | s 9010–9094, v −13 to +14 | Its soffit is 6.5 m above the Decatur-side ground (and at least 4 m above the south side). Under the platforms its top meets the platform fascia, making it 6.5 m deep. Under the track deck it stops at the deck soffit. | Estimated |
 | Open undercroft | All other ground under the platforms | — | — |
-| Crossheads | One under each column row outside the mezzanine, spanning both platforms and the deck. Each is 1.4 m thick, running from 2 m below the deck top to the platform underside. | — | Illustrative |
+| Crossheads | One under each column row outside the mezzanine, 1.4 m thick, from 2 m below the deck top. Under the platforms they rise to the platform underside. Between the platforms they stop at the deck soffit, so nothing enters the trackway. | — | Illustrative |
 | Soffits under the deck and platforms | Close the slabs, so they don't read as hollow trays from below | — | Illustrative |
 | Second zigzag stair at the Borders Dr end (s 9108) | Three flights, 13.7 m rise. The west stair has four flights and a 16.6 m rise. | — | Estimated |
 | Undercroft downlights | Every 9 m in two rows, under the mezzanine soffit or the deck | — | Illustrative |
 
+**Trackway check:**
+- The first version ran the mezzanine top and the crossheads up to the platform underside across the full
+  width, which put them 0.3 m above the rail top between the platforms.
+- A test now probes straight down both drawn tracks every 2 m from s 8945 to 9135. The first thing it hits
+  must be rail or deck. It failed at s 9017 before the fix.
+- At 14:01, with no train berthed: `lookAt(1480, 445, { bearing: 330, metresPerPixel: 0.09, tilt: 62 })`.
+
+![Empty tracks through the station at 14:01](log/ui/king-memorial/open-under-trackway-1401.jpg)
+
 **Stair check:**
+- **East stair side.** Street View at 420 Decatur St SE (Nov 2025, heading about 190) shows the open zigzag
+  stair on the Decatur (north) side at the Borders Dr end, east of the beige mass. That is where City puts it.
 - Under each stair, the ground varies by at most 1 m, so each stair column now stands on its own sampled
   ground.
 - The top landing's rounded parapet crossed half the bridge to the north platform. Its platform-side
