@@ -28,6 +28,9 @@ export function createWhiteModel(o: {
   /** Passes to skip while white: ambient occlusion runs at CSS resolution and, against the
    * swapped materials, came out cropped on the High tier. The white model doesn't need it. */
   skipPasses?: ({ enabled: boolean } | null | undefined)[];
+  /** Low tier: skip the up-front compileAsync (it raises the memory peak); colour compiles in its
+   * first frame, under the still, as before. */
+  lowMemory?: boolean;
 }) {
   // A slightly lowered albedo keeps sunlit faces from clipping to one flat white. No board clipping
   // planes: on this material they culled every mesh. (Dev: ?whitealbedo= to tune.)
@@ -119,7 +122,8 @@ export function createWhiteModel(o: {
         const ceiling = new Promise((r) => setTimeout(r, 2500));
         // Dev: ?white=hold keeps the white model on screen, to judge it against the colour render.
         const hold = import.meta.env.DEV && new URLSearchParams(location.search).get('white') === 'hold';
-        if (!hold) void Promise.race([o.renderer.compileAsync(o.scene, o.camera).catch(() => undefined), ceiling]).then(() => {
+        if (!hold && o.lowMemory) phase = 'colour';
+        else if (!hold) void Promise.race([o.renderer.compileAsync(o.scene, o.camera).catch(() => undefined), ceiling]).then(() => {
           if (phase === 'compiling') phase = 'colour';
         });
       } else if (this.check()) {

@@ -129,6 +129,31 @@ export class Schedule {
   }
 
   /** Every train the timetables say should be on the line at `date`. */
+  /**
+   * The stops still ahead of a train, for the A2c "All stops" list. A timetable trip gives each
+   * stop's scheduled arrival (seconds from `date`); a live train has no prediction past its next
+   * stop, so its later stops come without times, in timetable order.
+   */
+  stopsAhead(t: Pick<TrainState, 'id' | 'pathId' | 'nextStop'>, date: Date): { stopId: string; name: string; inSec: number | null }[] {
+    const named = (id: string) => this.stops.get(id)?.name ?? id;
+    const m = t.id.match(/^(.+):trip:(\d+)-(\d+)-(\d+)$/);
+    const table = m && this.tables.find((x) => x.feed === m[1]);
+    if (m && table) {
+      const p = table.patterns[Number(m[2])];
+      const day = serviceDays(date, table.tz).find((d) => d.ymd === Number(m[4]));
+      if (p && day) {
+        const elapsed = day.secs - Number(m[3]);
+        const from = Math.max(0, p.stops.indexOf(t.nextStop ?? ''));
+        return p.stops.slice(from).map((id, k) => ({ stopId: id, name: named(id), inSec: Math.max(0, Math.round(p.arr[from + k] - elapsed)) }));
+      }
+    }
+    for (const table of this.tables) {
+      const p = table.patterns.find((x) => x.pathId === t.pathId && t.nextStop && x.stops.includes(t.nextStop));
+      if (p) return p.stops.slice(p.stops.indexOf(t.nextStop!)).map((id) => ({ stopId: id, name: named(id), inSec: null }));
+    }
+    return [];
+  }
+
   trainsAt(date: Date): TrainState[] {
     const out: TrainState[] = [];
     for (const t of this.tables) {

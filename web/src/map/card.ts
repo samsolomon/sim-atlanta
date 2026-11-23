@@ -20,7 +20,7 @@ const titleCase = (s: string) =>
 const OWNERS: Record<string, string> = { NS: 'Norfolk Southern', CSXT: 'CSX', GFRR: 'Georgia & Florida', GC: 'Georgia Central', GSWR: 'Georgia Southwestern', HOG: 'Heart of Georgia', GNRR: 'Georgia Northeastern', AMTK: 'Amtrak' };
 
 /** "RED SOUTHBOUND TO AIRPORT STATION" → "Airport"; "Lakewood-Ft Mcpherson Station" → "Lakewood-Ft Mcpherson". */
-const place = (s: string) => titleCase(s.replace(/^.*\bto\s+/i, '').replace(/\s+station\b.*$/i, ''));
+export const place = (s: string) => titleCase(s.replace(/^.*\bto\s+/i, '').replace(/\s+station\b.*$/i, ''));
 
 const ago = (ms: number, now = Date.now()) => {
   const s = Math.max(0, Math.round((now - ms) / 1000));
@@ -175,5 +175,6 @@ function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | unde
       ${live
         ? row('Position', `${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)} ${chip('live', 'Live')}`)
         : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
-    </dl>`;
+    </dl>
+    ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}`;
 }

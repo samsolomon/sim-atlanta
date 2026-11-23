@@ -535,3 +535,20 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 /* Once the shell is up it carries the loading state; until then (or if the app fails to start) the
    plate's own text and the Open Map link stay. */
 :root[data-ui='next'] body:has(.a2-subject) #city-loading > * { display: none !important; }
+
+/* ---- card: All stops row and the Share action beside Follow ---- */
+.a2-panel #card { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8px; }
+.a2-panel #card > :not(#train-follow, .a2-card-actions, .close) { grid-column: 1 / -1; }
+.a2-panel #card #train-follow { grid-column: 1; margin-top: 12px; }
+.a2-panel #card:has(#train-follow[hidden]) .a2-card-actions { grid-column: 1 / -1; }
+.a2-card-actions { margin-top: 12px; display: flex; align-items: flex-start; }
+.a2-card-actions .a2-btn { width: 100%; }
+#card:not(:has(.a2-kicker)) .a2-card-actions { display: none; }
+.a2-allstops { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 11px 0 2px; border: 0; border-top: 1px solid var(--a2-sep);
+  background: none; font-size: 14px !important; font-weight: 600 !important; cursor: pointer; text-align: left; }
+.a2-allstops span { color: var(--a2-ink2); font-size: 18px; }
+.a2-stops-body { padding: 14px 18px 16px; }
+.a2-stops-note { margin: 10px 0; font-size: 12px; line-height: 1.45; color: var(--a2-ink2); }
+.a2-stops { list-style: none; margin: 0; padding: 0; }
+.a2-stops li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--a2-sep); font-size: 14px; font-variant-numeric: tabular-nums; }
+.a2-stops li span:last-child { color: var(--a2-ink2); }
