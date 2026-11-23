@@ -16,6 +16,7 @@ import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
+import { midtownVents } from '../city/midtown-marta-vents';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
@@ -162,6 +163,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       landmarks.push(landmark);
     }
   }
+  const vents = midtownVents(city.bounds, groundAt);
+  if (vents) landmarks.push(vents);
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options);
   for (const landmark of landmarks) scenery.group.add(landmark.group);
