@@ -4,13 +4,13 @@ At Oak Hill, open lawn follows 10th Street between groups of mature trees. The l
 
 | Row | Classified canopy | High crowns | Low crowns |
 | --- | ---: | ---: | ---: |
-| Midtown south | 19.9% | 1,965 | 923 |
+| Midtown south | 19.9% | 1,962 | 923 |
 | Midtown central | 27.1% | 2,448 | 1,071 |
 | Midtown upper | 24.8% | 2,439 | 1,023 |
 | Brookwood south | 31.3% | 3,377 | 1,323 |
 | Brookwood station | 37.4% | 4,067 | 1,557 |
 
-Atlanta and Georgia Tech's 2023 classification reports cover. Individual stems and crown spreads are inferred from canopy interiors with enough space around mapped buildings, streets, rail and water. Low detail takes one dominant crown per occupied 32 m cell in each row. Heights of 4–33 m are estimates from Meta/WRI's canopy height model, with the square-board crown-size estimate where the height model supplies less than 4 m. Species and seasonal foliage are illustrative. [Atlanta canopy study](https://geospatial.gatech.edu/AtlantaUTC/) · [Meta/WRI heights and CC BY 4.0 attribution](https://registry.opendata.aws/dataforgood-fb-forests/)
+Atlanta and Georgia Tech's 2023 classification reports cover. Individual stems and crown spreads are inferred from canopy interiors with enough space around mapped buildings, streets, rail and water. The southern boundary respects the spacing of the existing north-band crowns. Low detail takes one dominant crown per occupied 32 m cell in each row. Heights of 4–33 m are estimates from Meta/WRI's canopy height model, with the square-board crown-size estimate where the height model supplies less than 4 m. Species and seasonal foliage are illustrative. [Atlanta canopy study](https://geospatial.gatech.edu/AtlantaUTC/) · [Meta/WRI heights and CC BY 4.0 attribution](https://registry.opendata.aws/dataforgood-fb-forests/)
 
 The five checked-in OSM extracts supply the horizontal boundaries of the lake and paved plazas. Clipping them to the board yields 41 plaza pieces, five grass or artificial-turf pedestrian areas and 16 water pieces. The ground texture paints them on the rendered 3DEP triangles. The trunk base uses the corresponding quality tier's ground sampler. The source DEM has a 5 m grid and a 323.8 m NAVD88 scene zero. Trunk positions between samples are inferred. Water colour represents the mapped extent and follows the terrain. [OSM attribution and ODbL](https://www.openstreetmap.org/copyright) · [Terrain source manifest](../../../../pipeline/prototypes/square-board/midtown-central/ground.json)
 

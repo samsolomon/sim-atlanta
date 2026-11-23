@@ -90,7 +90,7 @@ def obstacles(boards):
         yield LineString([project(*p) for p in platform["ring"]]).buffer(5), 2
 
 
-def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="expanded-square", extra_ground=None):
+def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="expanded-square", extra_ground=None, neighboring_crowns=()):
     boards = {k: json.loads((PACK / k / "context.json").read_bytes()) for k in names}
     if extra_ground:
         for ctx in boards.values():
@@ -118,6 +118,13 @@ def bake(tile, names=BOARDS, out=PACK / "expanded-canopy/crowns.json", crop="exp
         sub = occupied[a:i+separation+1, b:j+separation+1]
         yy, xx = np.ogrid[a:a+sub.shape[0], b:b+sub.shape[1]]
         sub |= (yy-i)**2 + (xx-j)**2 < separation**2
+
+    # The previously published square owns its edge crowns. Reserve their
+    # spacing across the outer seam before selecting any new centers.
+    for x, z, _, r in neighboring_crowns:
+        gap = max(7, math.ceil(1.36 * r))
+        if x0-gap <= x < x1+gap and z0-gap <= z < z1+gap:
+            reserve(math.floor(z-z0), math.floor(x-x0), gap)
 
     pack = {}
     for name, ctx in boards.items():

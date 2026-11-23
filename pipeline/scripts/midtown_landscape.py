@@ -55,5 +55,6 @@ if __name__ == "__main__":
     parser.add_argument("tile", type=Path)
     args = parser.parse_args()
     ground = {row: ground_features(row) for row in MIDTOWN_ROWS}
-    bake(args.tile, [f"square-board/{row}" for row in MIDTOWN_ROWS], OUT / "crowns.json", "midtown-rows", ground)
+    neighbors = json.loads((PACK / "expanded-canopy/crowns.json").read_text())["north-band"]["trees"]
+    bake(args.tile, [f"square-board/{row}" for row in MIDTOWN_ROWS], OUT / "crowns.json", "midtown-rows", ground, neighbors)
     (OUT / "ground.json").write_text(json.dumps(ground, separators=(",", ":")) + "\n")
