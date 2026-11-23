@@ -197,3 +197,16 @@ it('replaces the Wimbish House with its slate roof, turret and loggia', () => {
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
 });
+
+it('replaces the Ponce de Leon Apartments with belvedere towers over a curved front', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const ponce: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:208355680');
+  const model = createSkylineLandmark([ponce], ponce, -2, () => 0)!;
+  expect(model.group.name).toBe('Ponce de Leon Apartments');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(52.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});

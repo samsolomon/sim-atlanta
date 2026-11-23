@@ -61,5 +61,12 @@
     "x": 745,
     "z": -3560,
     "heightM": 20
+  },
+  "ponce": {
+    "id": "osm:way:208355680",
+    "name": "Ponce de Leon Apartments",
+    "x": 648,
+    "z": -2008,
+    "heightM": 52.5
   }
 }
