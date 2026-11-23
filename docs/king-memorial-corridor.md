@@ -313,5 +313,14 @@ The fps readings came from a background tab and are not measurements.
   5. Make follow trigger the east mount as well as the camera target. Today a followed train mounts
      it because the camera follows, but a "Train out of view" state off the board could leave it
      unmounted.
+- **Phone gate (2026-11-22, not run):** Sam freed the Galaxy A16 and Control assigned it to Rail,
+  but when tested it was not connected to this Mac. `adb devices`, run again after an adb server
+  restart, listed no devices, and the USB device list showed no Samsung or Android device. No
+  forwarding, tabs or servers were left open.
+  - **To run:** reconnect it (serial R5GL82A4SHR in the earlier benchmark) and use the existing
+    method: production preview, low tier, three foreground eight-second windows. Compare the
+    current default with `?east=king-memorial` at the opening view, the board-edge seam
+    (14:01:01) and the King Memorial station camera.
+  - **Pass:** at least 30 fps, the existing low-tier gate.
 - **Don't:** add an illustrative dwell to the timetable. King Memorial's zero dwell is the published
   schedule.
