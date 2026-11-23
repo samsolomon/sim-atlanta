@@ -52,13 +52,16 @@ export const s70Material = passengerMaterial;
 const W = S70_WIDTH / 2;
 const ROOF = 3.45;
 const BASE = 0.14; // skirt bottom, close to the rail
+const WIN_LO = 1.35,
+  WIN_HI = 2.75; // the glazing band
 const C = {
-  // Deep indigo leaning violet, sampled from car 1004 (Mar 2020). The grade crushes dark blues, so
-  // this input is lighter than the target; it renders near #28217b on a lit face.
-  body: '#5a5694',
-  violet: '#6c34bc',
-  teal: '#1aa6bf',
-  lime: '#86c23a',
+  // Vivid blue-violet as the cars read in daylight (car 1003, Jun 2017; car 1001, Aug 2016). The
+  // grade darkens and desaturates dark blues, so the input is lighter: it renders near #3329c0.
+  body: '#6660d8',
+  roofEdge: '#9894cc', // the eaves read a slightly lighter blue-grey
+  violet: '#7a3ccc',
+  teal: '#3cc8e0',
+  lime: '#8ed43c',
   white: '#e9ecea',
   glass: '#6d8194', // reflective, reads lighter than the body as in the photos
   frame: '#101219',
@@ -84,7 +87,10 @@ function ring(z: number, top = ROOF, w = W, base = BASE) {
   ];
 }
 /** Panel colours for ring(): skirt underneath, body everywhere else, `roof` on the crown. */
-const panels = (side: string, roof = side) => [C.skirt, C.skirt, side, side, side, side, roof, side, side, side, side, C.skirt];
+const panels = (side: string, roof = side) => {
+  const eave = side === C.body ? C.roofEdge : side;
+  return [C.skirt, C.skirt, side, side, eave, eave, roof === C.body ? C.roofEdge : roof, eave, eave, side, side, C.skirt];
+};
 /** Surface x of the full body section at height y (follows the rounded eave). */
 function surfaceX(y: number, top = ROOF, w = W) {
   const r = Math.min(0.42, (top - BASE) * 0.3);
@@ -144,7 +150,26 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
    * A sweep: a band whose centre follows a cubic Bézier through `p` ([d, y], d from the car centre
    * toward this cab) and whose width runs from w0 to w1. Sampled finely so it reads as one smooth curve.
    */
-  const sweep = (sign: number, p: [number, number][], w0: number, w1: number, color: string, eps: number, wMid = (w0 + w1) / 2) => {
+  /** Clip a polygon in (d, y) to lo <= y <= hi (Sutherland–Hodgman against two horizontal lines). */
+  const clipY = (poly: [number, number][], lo: number, hi: number) => {
+    const cut = (pts: [number, number][], keep: (y: number) => boolean, at: number) => {
+      const out: [number, number][] = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i],
+          c = pts[(i + 1) % pts.length];
+        const ka = keep(a[1]),
+          kc = keep(c[1]);
+        if (ka) out.push(a);
+        if (ka !== kc) {
+          const t = (at - a[1]) / (c[1] - a[1]);
+          out.push([a[0] + (c[0] - a[0]) * t, at]);
+        }
+      }
+      return out;
+    };
+    return cut(cut(poly, (y) => y >= lo, lo), (y) => y <= hi, hi);
+  };
+  const sweep = (sign: number, p: [number, number][], w0: number, w1: number, color: string, eps: number, wMid = (w0 + w1) / 2, shift = 0, yMax = ROOF - 0.04) => {
     const n = 24;
     const at = (t: number) => {
       const u = 1 - t;
@@ -164,38 +189,58 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
       const nx = -ty / len,
         ny = tx / len;
       const h = width(t) / 2;
-      const clampY = (y: number) => Math.min(ROOF - 0.04, Math.max(BASE + 0.14, y));
+      c[0] += nx * shift;
+      c[1] += ny * shift;
       const clampD = (d: number) => Math.min(flat - 0.02, d);
       edge.push([
-        [clampD(c[0] + nx * h), clampY(c[1] + ny * h)],
-        [clampD(c[0] - nx * h), clampY(c[1] - ny * h)],
+        [clampD(c[0] + nx * h), c[1] + ny * h],
+        [clampD(c[0] - nx * h), c[1] - ny * h],
       ]);
     }
+    const tint = new THREE.Color(color).lerp(new THREE.Color('#1a2030'), 0.4).getStyle();
     for (let i = 0; i < n; i++) {
       const [a0, a1] = edge[i],
         [b0, b1] = edge[i + 1];
-      skin(b, [a0, b0, b1, a1].map(([d, y]) => [sign * d, y] as [number, number]), color, eps);
+      const quad: [number, number][] = [a0, b0, b1, a1];
+      const body = clipY(quad, BASE + 0.14, yMax);
+      if (body.length >= 3) skin(b, body.map(([d, y]) => [sign * d, y] as [number, number]), color, eps);
+      // Where the band crosses the window band it is film on glass: a tinted copy sits over the glazing.
+      const glass = clipY(quad, WIN_LO, Math.min(WIN_HI, yMax));
+      if (glass.length >= 3) skin(b, glass.map(([d, y]) => [sign * d, y] as [number, number]), tint, 0.043);
     }
   };
+  /**
+   * A fan of three parallel bands (lime, teal, violet, in that order) along one gentle curve. `side`
+   * says which way the later bands step off the first: +1 or -1 along the curve's normal.
+   */
+  const fan = (sign: number, p: [number, number][], side: 1 | -1, yMax = ROOF - 0.04) => {
+    const bands: [string, number][] = [[C.lime, 0.42], [C.teal, 0.5], [C.violet, 0.66]];
+    let offset = 0;
+    bands.forEach(([color, w], k) => {
+      const shift = side * (offset + w / 2);
+      sweep(sign, p, w, w, color, 0.02 + k * 0.002, w, shift, yMax);
+      offset += w + 0.04;
+    });
+  };
 
-  // Livery, after car 1004 (Mar 2020) and car 1001 (2016); curve control points are estimates. Each
-  // end section carries the same graphic, mirrored: a broad violet swoosh and a teal band that leave
-  // the roof by the mid-section door and flow down and forward to the cab's bottom corner, a lime
-  // wedge tapering from the roof, and a lime streak low on the side near the cab.
-  const D = 6.45; // mid-section door centre
+  // Livery, after cars 1003 (Jun 2017), 1001 (Aug 2016) and 1004 (Mar 2020). Both end sections carry
+  // the same graphic, mirrored; the centre section is plain. Each has two fans of three parallel bands,
+  // lime then teal then violet: a lower fan rising from the body by the cab nose to the window line,
+  // and a larger upper fan that leaves the roof and descends behind the first double door, crossing
+  // the window band. Positions and gentle curvature are fitted to the photos (estimates).
+  const D = 6.45; // first double door from the cab
   for (const sign of [-1, 1]) {
-    sweep(sign, [[D - 1.2, 3.38], [D - 0.6, 1.35], [D + 2.2, 0.95], [flat, 0.62]], 0.18, 1.15, C.violet, 0.02, 0.85);
-    sweep(sign, [[D - 0.5, 3.38], [D + 0.1, 1.55], [D + 2.6, 1.12], [flat, 0.7]], 0.5, 0.3, C.teal, 0.024, 0.26);
-    sweep(sign, [[D + 0.35, 3.22], [D + 1.2, 3.02], [D + 2.0, 2.9], [D + 2.9, 2.82]], 0.5, 0.03, C.lime, 0.028, 0.3);
-    sweep(sign, [[D + 2.4, 1.2], [D + 3.6, 0.95], [flat - 1.0, 0.7], [flat, 0.42]], 0.02, 0.22, C.lime, 0.028, 0.14);
+    // Lower fan, about 20°, cut by the skirt below and the window sill above.
+    fan(sign, [[flat + 0.3, 0.1], [flat - 1.3, 0.72], [flat - 3.0, 1.3], [flat - 4.6, 1.85]], 1, WIN_LO - 0.04);
+    fan(sign, [[D + 0.55, ROOF - 0.03], [D - 0.05, 2.6], [D - 0.75, 1.55], [D - 1.65, 0.4]], -1);
     const [p0, p1] = sign > 0 ? [centre / 2 + joint, flat] : [-flat, -(centre / 2 + joint)];
     rect(b, p0, p1, 0.6, 0.625, C.white, 0.016); // low white pinstripe
   }
 
   // Glazing: one large, nearly continuous band with thin pillars; doors with tall glass panels and an
   // amber indicator above. Glass sits over the sweeps, as the graphics stop at the glass.
-  const winLo = 1.35,
-    winHi = 2.75,
+  const winLo = WIN_LO,
+    winHi = WIN_HI,
     pillar = 0.07;
   const doors = [3.8, D];
   const doorW = 1.3;
