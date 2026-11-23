@@ -4,7 +4,7 @@ import { anyCarInView } from './in-view';
 
 /** The City camera for `cam=x,z,bearing,tilt,distance` (setView in city.ts). */
 function cityCamera(x: number, z: number, bearing: number, tilt: number, distance: number, y = -50) {
-  const camera = new THREE.PerspectiveCamera(40, 999 / 496, 1, 20000);
+  const camera = new THREE.PerspectiveCamera(22, 999 / 496, 20, 40000); // City's lens
   const az = THREE.MathUtils.degToRad(-bearing), po = THREE.MathUtils.degToRad(tilt);
   camera.position.set(x + distance * Math.sin(po) * Math.sin(az), y + distance * Math.cos(po), z + distance * Math.sin(po) * Math.cos(az));
   camera.lookAt(x, y, z);
@@ -16,8 +16,11 @@ function car(x: number, z: number, planes?: THREE.Plane[]) {
   return mesh;
 }
 
-it('sees North Line cars from the wide Brookwood split camera, far outside the old 60 m box', () => {
-  const camera = cityCamera(-190, -4650, 10, 52, 1210);
+it('sees North Line cars from a wide Brookwood camera whose target is outside the old 60 m box', () => {
+  // Target x 150 is west of the guideway box (x 283–791). The wide split camera
+  // (-190,-4650,10,52,1210) does not frame the guideway at City's 22° lens.
+  expect(anyCarInView([car(640, -5600)], cityCamera(-190, -4650, 10, 52, 1210))).toBe(false);
+  const camera = cityCamera(150, -5300, 40, 55, 1200);
   // On the open guideway north of the portal (x 556–731, z -5550 to -5700).
   expect(anyCarInView([car(640, -5600)], camera)).toBe(true);
   // A car still behind the portal clip plane does not count.
