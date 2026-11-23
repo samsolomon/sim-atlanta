@@ -40,6 +40,7 @@ it('seats the terraced frame on the roof and lights the separate faceted obelisk
   const roof = new Box3().setFromObject(model.group.children[0]);
   const crown = model.group.getObjectByName('Terraced rose steel') as Mesh;
   const obelisk = model.group.getObjectByName('Faceted obelisk') as Mesh;
+  expect(crown.castShadow && obelisk.castShadow).toBe(true);
   const steel = new Box3().setFromObject(crown),
     tip = new Box3().setFromObject(obelisk);
   expect(steel.min.y).toBeCloseTo(roof.max.y, 1);

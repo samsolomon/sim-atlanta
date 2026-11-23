@@ -187,6 +187,7 @@ function tower(shell: Shell) {
     });
     const mesh = new Mesh(builder.geometry(), material);
     mesh.name = name;
+    mesh.castShadow = true;
     model.group.add(mesh);
     return material;
   }
