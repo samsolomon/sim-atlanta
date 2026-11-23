@@ -33,3 +33,19 @@ On a 20 m-radius curve a test holds every joint closed to within a micron, and e
 **Traffic.** For road traffic, `streetcarLanes()` gives the shapes with per-segment headings, and the controller's `occupied(x, z, margin)` reports the drawn sections. The Connector agent wires these into RoadTraffic.
 
 Cameras: Auburn Avenue at (1361, −178), bearing 20°, tilt 58°, distance 80 m, at 13:31. King Historic District at (1538, −178), bearing 250°, tilt 60°, distance 70 m, at 21:30. A Follow link: `/?view=city&follow=marta:route:STREETCAR`. [Auburn, before and after](log/ui/streetcar/cars-auburn-before-after.jpg) · [Night at King](log/ui/streetcar/cars-king-high-night.jpg) · [Low day](log/ui/streetcar/cars-auburn-low-day.jpg) · [Follow card](log/ui/streetcar/cars-follow-card.jpg)
+
+## Stops
+
+All 12 stops were surveyed in Street View between July 2024 and April 2026. Every stop uses the same prefab shelter:
+- **Platform:** a raised curb platform about 22 × 3 m and 0.33 m high for level boarding, with a red tactile band about 0.6 m wide at the boarding edge, ramps at both ends and a galvanised pipe guardrail along the back.
+- **Shelter:** a single-slope cantilevered glass canopy, about 5.5 × 1.7 m with 2.7 m clear underneath, on four bays of round silver posts. It has a glass back wall and one glass end panel.
+- **Inside, left to right:** a backlit map panel, a silver and light-blue ticket machine and a perforated bench.
+- **Name board:** a charcoal board hangs under the front edge.
+
+City draws exactly that. Navy name pylons, about 3.5 m tall, are drawn only at Park Place and Sweet Auburn Market, where they were confirmed. Centennial Olympic Park is the one free-standing island platform, so it gets railings on both long sides. Dobbs Plaza stands under the Connector viaduct beside its large sepia mural (the mural is not drawn).
+
+The side of the street comes from the survey for every stop. Inferring it from road centrelines put Sweet Auburn Market on the wrong side, because the OSM street centreline sits about a lane from the GTFS track there. Each platform centre stands 2.95 m from the track: a 1.45 m gap plus half its width.
+
+At night only the map panels glow. No canopy light was visible by day, and no night imagery was found, so the shelters are otherwise unlit. All dimensions are estimates scaled from the ticket machine (about 0.75 × 1.85 m). The name boards carry no text. [Survey notes and panoramas](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75504,-84.38821&heading=345&pitch=0&fov=90)
+
+Tests check that all 12 stops are placed 2.95 m from the track, on their surveyed side and outside buildings, and that the x = 1000 seam splits them between the boards with none lost or doubled. [All 12 stops, day](log/ui/streetcar/stops-gallery-day.jpg) · [All 12 stops, night](log/ui/streetcar/stops-gallery-night.jpg)
