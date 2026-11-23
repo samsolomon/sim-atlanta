@@ -298,6 +298,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const gfxBtns = [...menu.querySelectorAll<HTMLButtonElement>('[data-gfx]')];
   const showGraphics = () => {
     const g = o.graphics?.get() ?? 'auto';
+    // Honest about Auto: after a slow-frame-rate step-down it reads "Auto (Low)".
+    const auto = gfxBtns.find((b) => b.dataset.gfx === 'auto');
+    if (auto) auto.textContent = o.graphics?.autoResolved?.() === 'low' ? 'Auto (Low)' : 'Auto';
     gfxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.gfx === g)));
   };
   gfxBtns.forEach((b) => b.addEventListener('click', () => {
@@ -487,6 +490,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (p === menu) menuIcon(show);
     if (show) focus();
   };
+  menuBtn.addEventListener('click', () => showGraphics());
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
   shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
     // A shifted or paused clock most likely means this moment is the point of the link.

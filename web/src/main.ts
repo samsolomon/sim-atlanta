@@ -504,11 +504,12 @@ async function openCity() {
     if (load !== cityLoad) return;
   }
   try {
-    const { createCity } = await import('./city/city');
+    const { createCity, pickQuality } = await import('./city/city');
+    watchAutoGraphics(chosenQuality() ?? pickQuality(), load);
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
-      areaNote: text => { areaNote = text; shell.setNote(text); },
+      areaNote: text => { areaNote = text; autoNote = false; shell.setNote(text); },
       mapGestures: uiNext(location.search),
       whiteModel: !uiNext(location.search) ? false : overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
       trains: () => source.update(),
@@ -602,9 +603,44 @@ let graphics: Graphics = (() => {
   }
 })();
 /** undefined lets createCity pick (?q=, then the device). Only A2c offers the choice. */
-const chosenQuality = () => (uiNext(location.search) && graphics !== 'auto' && !params.has('q') ? graphics : undefined);
+const chosenQuality = () => !uiNext(location.search) || params.has('q') ? undefined
+  : graphics !== 'auto' ? graphics : autoLow ? 'low' as const : undefined;
+// Auto steps down to Low for the session when City runs under 20 fps at High (core/perf.ts
+// watchSlow). Session only, so a better moment can try High again.
+let autoLow = (() => {
+  try {
+    return sessionStorage.getItem('a2-graphics-auto') === 'low';
+  } catch {
+    return false;
+  }
+})();
+let stopWatchSlow: (() => void) | null = null;
+let autoNote = false;
+function watchAutoGraphics(quality: 'low' | 'high', load: number) {
+  stopWatchSlow?.();
+  stopWatchSlow = null;
+  if (!uiNext(location.search) || graphics !== 'auto' || params.has('q') || autoLow || quality !== 'high') return;
+  stopWatchSlow = perf.watchSlow(() => {
+    stopWatchSlow = null;
+    if (graphics !== 'auto' || load !== cityLoad || !diorama) return;
+    autoLow = true;
+    try {
+      sessionStorage.setItem('a2-graphics-auto', 'low');
+    } catch {
+      /* private mode: this page only */
+    }
+    // A quiet, short notice; an area note that arrives meanwhile keeps the slot.
+    autoNote = true;
+    shell.setNote('Switched to lighter graphics');
+    setTimeout(() => { if (autoNote) shell.setNote(null); autoNote = false; }, 6000);
+    void applyGraphics();
+  }, { belowFps: (import.meta.env.DEV && Number(params.get('slowfps'))) || 20 }); // dev: ?slowfps= to test
+}
 let keepPose: { x: number; z: number; bearing: number; tilt: number; distanceM: number } | null = null;
 async function setGraphics(g: Graphics) {
+  // A manual choice ends the watch; picking Auto again re-arms it on the next City open.
+  stopWatchSlow?.();
+  stopWatchSlow = null;
   graphics = g;
   try {
     localStorage.setItem(GRAPHICS_KEY, g);
@@ -708,6 +744,8 @@ async function leaveCityToMap() {
 }
 
 function closeCity(keepMapView = false) {
+  stopWatchSlow?.();
+  stopWatchSlow = null;
   clearTimeout(overMapTimer);
   document.body.classList.remove('city-over-map');
   keepPose = null;
@@ -894,6 +932,7 @@ const shellOptions: ShellOptions = {
   graphics: uiNext(location.search) ? {
     get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),
     set: (g) => void setGraphics(g),
+    autoResolved: () => (autoLow ? 'low' : null),
   } : undefined,
   resetModelView: () => labView?.reset(),
   viewEscape: () => (inModels() ? labView?.escape() ?? false : false),
