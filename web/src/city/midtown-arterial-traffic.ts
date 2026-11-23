@@ -4,6 +4,8 @@ import { arterialTrafficRoutes, type ArterialCorridor } from './arterial-traffic
 import { ARTERIAL_TRAFFIC_CAP } from './arterial-traffic';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 import bake from './fixtures/midtown-arterials.json';
+import signalPoints from './fixtures/midtown-signals.json';
+import { withSignals } from './traffic-signals';
 
 /** A mounted Midtown row: its drawn roads and the sampler that seats a car on them. */
 export interface MidtownTrafficBoard {
@@ -53,7 +55,7 @@ export class MidtownArterialTraffic extends RoadTraffic {
     const { corridors, heights, bounds } = midtownArterialCorridors(boards);
     const city = { ...(boards[0]?.city ?? {}), bounds: bounds ?? { minX: 0, maxX: 0, minZ: 0, maxZ: 0 } } as TerrainCity;
     super({ ...opts, city, roadHeight: (x, z, road) => heights.get(road)?.(x, z, road) ?? null },
-      bounds ? arterialTrafficRoutes(corridors, bounds) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
+      bounds ? withSignals(arterialTrafficRoutes(corridors, bounds), signalPoints as [number, number][]) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
       'Illustrative Midtown arterial traffic');
   }
 }
