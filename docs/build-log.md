@@ -2035,3 +2035,9 @@ At night, two rows of fixtures pick out the underside of the wider decks and cas
 ## November 23, 2026 — Where the exits meet 17th Street
 
 Two dark strips seemed to end in the middle of the yellow bridge. They were drawn to the correct routing nodes, but an aerial showed a single concrete turning surface at each node. The two ramp openings measure 18.37 and 18.77 metres along the bridge edge. Following the east ramp back from that edge exposed a second problem. At a split in the road data, the deck sits 11 metres above the bare-earth grid. The new ramp sections carry the measured grade through that split and the adjacent tile. Drivers arriving at either end now see two left arrows and one right arrow before the sidewalk crossing. [Both abutments](log/ui/seventeenth-street/ramp-joints-overview-day.jpg) · [West arrival](log/ui/seventeenth-street/west-ramp-day.jpg) · [East arrival](log/ui/seventeenth-street/east-ramp-day.jpg)
+
+## November 23, 2026 — Tracing eight experiments into the City
+
+Eight November 21–22 experiments looked stranded in Git. All eight could be traced into the City running at `81e715f`. The road-deck sampler arrived with the live bus work in #27, complete with a test that puts two bridges beside one another and checks which tread a vehicle can sample. The measured Connector lanes and moving traffic shipped in #28, the four Five Points tracks in #29, and the arterial lane data and street traffic in #30. The Capitol’s two entrances and highlighted gold dome shipped in #53. Even the terrain prototype’s last adjustment, widening the crossing marks enough to resolve them on the low-detail texture, was already present in #20.
+
+The release smoke check matched all 90 public assets to production. At the same downtown opening camera, City showed timetable service at both pinned times. [Downtown at 2 p.m.](log/ui/integration-sweep/production-day.jpg) · [Downtown at 11:30 p.m.](log/ui/integration-sweep/production-night.jpg)
