@@ -51,9 +51,11 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
   new DataView(badCorner.buffer).setInt16(2 * 80, -32768, true);
   const manifest = JSON.parse(file('south-corner', 'ground.json').toString());
   manifest.sha256 = createHash('sha256').update(badCorner).digest('hex');
+  let midtownUnavailable = true;
   let fault: 'checksum' | 'seam' | null = 'checksum';
   vi.stubGlobal('fetch', async (url: string) => {
     const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    if (id === 'midtown-south' && name === 'context.json' && midtownUnavailable) return new Response(null, { status: 503 });
     const data = Uint8Array.from(file(id as Board, name));
     if (fault && id === 'south-corner') {
       if (name === 'ground.i16') return new Response(badCorner.buffer);
@@ -89,7 +91,8 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       const b = bounds[id];
       boardArea += (b.maxX - b.minX) * (b.maxZ - b.minZ);
       for (const [i, edge] of joins(id).entries()) {
-        expect(area.board.getObjectByName(i ? 'joining edge ' + i : 'joining edge')?.visible).toBe(false);
+        const exterior = id === 'north-band' && 'z' in edge && edge.z === -1700;
+        expect(area.board.getObjectByName(i ? 'joining edge ' + i : 'joining edge')?.visible).toBe(exterior);
         const vertical = 'x' in edge;
         for (let v = vertical ? edge.minZ : edge.minX; v <= (vertical ? edge.maxZ : edge.maxX); v += 2.5) {
           const x = vertical ? edge.x : v, z = vertical ? v : edge.z;
@@ -99,6 +102,18 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       }
     }
     expect(boardArea).toBe(2800 ** 2);
+    const north = mounted.get('north-band')!;
+    const northWall = north.board.getObjectByName('joining edge 2')!;
+    await expect(addSection('midtown', mounted, quality, signal)).rejects.toThrow(/503/);
+    expect(northWall.visible).toBe(true);
+    expect(mounted.size).toBe(7);
+    midtownUnavailable = false;
+    const added = await addSection('midtown', mounted, quality, signal);
+    const tile = added.get('midtown-south')!;
+    for (let x = -1000; x <= 1800; x += 2.5)
+      expect(tile.groundAt(x, -1700)).toBeCloseTo(north.groundAt(x, -1700)!, 4);
+    expect(tile.board.getObjectByName('joining edge')!.visible).toBe(false);
+    expect(north.board.getObjectByName('joining edge 2')!.visible).toBe(false);
   } finally { for (const area of mounted.values()) area.dispose(); }
 });
 

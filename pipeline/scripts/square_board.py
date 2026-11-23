@@ -42,38 +42,42 @@ def south_freight(raw, bounds):
     return rails
 
 
-def bake(tile, direction):
-    for part in ("band", "corner"):
-        name = f"{direction}-{part}"
-        out = PACK / name
-        terrain.bake(tile, out, name, DOWNTOWN)
-        manifest = json.loads((out / "ground.json").read_text())
-        if manifest["noDataCount"]:
-            raise ValueError(f"{name} extends beyond the valid DEM")
-        if part == "corner":
-            import numpy as np
-            heights = np.fromfile(out / "ground.i16", dtype="<i2").reshape(manifest["rows"], manifest["cols"])
-            terrain.verify_shared_edge(heights, AUBURN if direction == "north" else KING)
-            terrain.verify_shared_edge(heights, PACK / f"{direction}-band")
-        raw = gzip.decompress((PACK / "source" / f"{name}.json.gz").read_bytes())
-        buildings, roads, ground = extract_context(raw, manifest["bounds"])
-        for road in roads:
-            if road["cls"].endswith("_link"):
-                road["cls"], road["sub"] = road["cls"][:-5], "link"
-        context = dict(name=name, bounds=manifest["bounds"], buildings=buildings, roads=roads,
-                       ground=ground, trees=[], rail=[], source=dict(
-                           attribution="© OpenStreetMap contributors", sha256=hashlib.sha256(raw).hexdigest(),
-                           url="https://api.openstreetmap.org/api/0.6/map.json?bbox="+bbox(name)))
-        if name == "south-band":
-            context["terrainTransport"] = dict(version=1, roads=[], rail=south_freight(raw, manifest["bounds"]))
-        (out / "context.json").write_text(json.dumps(context, separators=(",", ":"))+"\n")
-        print(name, len(buildings), "buildings,", len(roads), "road/path runs")
+def bake_patch(tile, name, north_tile=None):
+    out = PACK / name
+    reference = PACK / "north-band" if name == "midtown-south" else DOWNTOWN
+    terrain.bake(tile, out, name, reference, north_tile)
+    manifest = json.loads((out / "ground.json").read_text())
+    if manifest["noDataCount"]:
+        raise ValueError(f"{name} extends beyond the valid DEM")
+    if name.endswith("-corner"):
+        import numpy as np
+        heights = np.fromfile(out / "ground.i16", dtype="<i2").reshape(manifest["rows"], manifest["cols"])
+        terrain.verify_shared_edge(heights, AUBURN if name == "north-corner" else KING)
+        terrain.verify_shared_edge(heights, PACK / name.replace("-corner", "-band"))
+    raw = gzip.decompress((PACK / "source" / f"{name}.json.gz").read_bytes())
+    buildings, roads, ground = extract_context(raw, manifest["bounds"])
+    for road in roads:
+        if road["cls"].endswith("_link"):
+            road["cls"], road["sub"] = road["cls"][:-5], "link"
+    context = dict(name=name, bounds=manifest["bounds"], buildings=buildings, roads=roads,
+                   ground=ground, trees=[], rail=[], source=dict(
+                       attribution="© OpenStreetMap contributors", sha256=hashlib.sha256(raw).hexdigest(),
+                       url="https://api.openstreetmap.org/api/0.6/map.json?bbox="+bbox(name)))
+    if name == "south-band":
+        context["terrainTransport"] = dict(version=1, roads=[], rail=south_freight(raw, manifest["bounds"]))
+    (out / "context.json").write_text(json.dumps(context, separators=(",", ":"))+"\n")
+    print(name, len(buildings), "buildings,", len(roads), "road/path runs")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("tile", type=Path)
-    parser.add_argument("--section", choices=["north", "south"])
+    parser.add_argument("--section", choices=["north", "south", "midtown"])
+    parser.add_argument("--north-tile", type=Path, help="Adjacent pinned x74y375 GeoTIFF for Midtown")
     args = parser.parse_args()
+    if (args.section == "midtown") != (args.north_tile is not None):
+        parser.error("--section midtown requires --north-tile and uses it exclusively")
     for section in [args.section] if args.section else ["north", "south"]:
-        bake(args.tile, section)
+        names = ["midtown-south"] if section == "midtown" else [f"{section}-band", f"{section}-corner"]
+        for name in names:
+            bake_patch(args.tile, name, args.north_tile)

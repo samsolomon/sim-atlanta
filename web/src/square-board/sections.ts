@@ -12,12 +12,14 @@ import type { TerrainCity } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
 export type Patch = `${Direction}-${'band' | 'corner'}`;
-export type Board = Patch | 'downtown' | 'king' | 'auburn';
+export type Section = Direction | 'midtown';
+export type Board = Patch | 'midtown-south' | 'downtown' | 'king' | 'auburn';
 export type Area = ReturnType<typeof createDowntownTerrain>;
 export type TrafficArea = Area & { connectorBoard: ConnectorBoard };
 export const bounds: Record<Board, GroundManifest['bounds']> = {
   downtown: { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 },
   king: eastBounds, auburn: northBounds,
+  'midtown-south': { minX: -1000, maxX: 1800, minZ: -2500, maxZ: -1700 },
   'north-band': { minX: -1000, maxX: 1800, minZ: -1700, maxZ: -1300 },
   'north-corner': { minX: 1000, maxX: 1800, minZ: -1300, maxZ: -520 },
   'south-corner': { minX: 1000, maxX: 1800, minZ: 640, maxZ: 700 },
@@ -29,7 +31,8 @@ const neighbors: Record<Board, Board[]> = {
   downtown: ['king', 'auburn', 'north-band', 'north-corner', 'south-band', 'south-corner'],
   king: ['downtown', 'auburn', 'south-corner'],
   auburn: ['downtown', 'king', 'north-corner'],
-  'north-band': ['downtown', 'north-corner'],
+  'north-band': ['downtown', 'north-corner', 'midtown-south'],
+  'midtown-south': ['north-band'],
   'north-corner': ['north-band', 'downtown', 'auburn'],
   'south-band': ['downtown', 'south-corner'],
   'south-corner': ['south-band', 'downtown', 'king'],
@@ -96,7 +99,7 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, bytes);
 }
 
-async function readPatch(id: Patch, signal: AbortSignal, dataRoot = '/data') {
+async function readPatch(id: Patch | 'midtown-south', signal: AbortSignal, dataRoot = '/data') {
   const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band'), response(path + '/context.json', signal).then(r => r.json()),
@@ -107,8 +110,9 @@ async function readPatch(id: Patch, signal: AbortSignal, dataRoot = '/data') {
   return { id, grid, context };
 }
 
-export async function addSection(direction: Direction, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string }) {
-  const patches = await Promise.all([readPatch(`${direction}-band`, signal, options?.dataRoot), readPatch(`${direction}-corner`, signal, options?.dataRoot)]);
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string }) {
+  if (direction === 'midtown' && !mounted.has('north-band')) throw Error('Midtown requires the north band');
+  const patches = direction === 'midtown' ? [await readPatch('midtown-south', signal, options?.dataRoot)] : await Promise.all([readPatch(`${direction}-band`, signal, options?.dataRoot), readPatch(`${direction}-corner`, signal, options?.dataRoot)]);
   signal.throwIfAborted();
   const added = new Map<Board, TrafficArea>();
   try {
