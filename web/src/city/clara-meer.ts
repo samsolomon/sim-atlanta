@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import features from '../../../pipeline/prototypes/piedmont-edge/features.json';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 import { Builder, Line, type P2 } from '../vignette/geom';
+import { piedmontGates } from './piedmont-gates';
 import type { VBuilding } from '../vignette/world';
 
 /**
@@ -219,12 +220,16 @@ export function createClaraMeer(buildings: VBuilding[], site: VBuilding, _base: 
   const columnMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#ffc887', emissiveIntensity: 0 });
   make(glow, lampMaterial);
   make(lit, columnMaterial);
+  // The 12th and 14th Street gates share this board row and its landmark hook.
+  const gates = piedmontGates(ground);
+  group.add(gates.group);
   return {
     buildings: buildings.filter(b => b.id !== site.id),
     group,
     setNight(night: number) {
       // Warm acorn globes and the uplit gazebo, as in the dusk photographs.
       lampMaterial.emissiveIntensity = night * 3;
+      gates.setNight(night);
       columnMaterial.emissiveIntensity = night * .35;
     },
   };

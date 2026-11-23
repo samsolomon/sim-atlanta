@@ -45,5 +45,21 @@ it.each(['low', 'high'] as const)('lifts the Clara Meer bridge above the lake an
     }
     // Estimated 2.9 m crest above the hydro-flattened 3DEP water surface.
     expect(crest).toBeCloseTo(2.9, 1);
+    // Both Piedmont Avenue gates stand on the rendered ground, sunk at most their 0.3 m footing.
+    const gates = area.scenery.getObjectByName('piedmont-gates')!;
+    expect(gates).toBeDefined();
+    let lowest = Infinity, tallest = -Infinity;
+    for (const mesh of gates.children as Mesh[]) {
+      const q = mesh.geometry.getAttribute('position');
+      for (let i = 0; i < q.count; i++) {
+        const g = area.groundAt(q.getX(i), q.getZ(i));
+        if (g === null) continue;
+        lowest = Math.min(lowest, q.getY(i) - g);
+        tallest = Math.max(tallest, q.getY(i) - g);
+      }
+    }
+    expect(lowest).toBeGreaterThan(-.45);
+    // The 14th Street piers rise to an estimated 5.5 m with their finials.
+    expect(tallest).toBeGreaterThan(5);
   } finally { decks.dispose(); area.dispose(); }
 });
