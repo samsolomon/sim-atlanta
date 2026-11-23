@@ -1156,7 +1156,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const set = (o: THREE.Object3D | null | undefined, c: PerfCategory) => { if (o) m.set(o, c); };
       for (const v of [trains.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, midtownArterials?.group, figures?.group,
         brookwood?.cars, brookwood?.freight, (northLine as { group?: THREE.Object3D } | undefined)?.group, streetcar.group]) set(v, 'vehicles');
-      for (const a of [terrain, east, north, ...(mosaic ? mosaic.areas.values() : [])]) { set(a?.board, 'terrain'); set(a?.scenery, 'scenery'); }
+      // An area's group holds its board, scenery and surface transport; the nearer roots win.
+      for (const a of [terrain, east, north, ...(mosaic ? [...mosaic.areas.values(), ...mosaic.patches.values()] : [])]) {
+        set(a?.group, 'transport'); set(a?.board, 'terrain'); set(a?.scenery, 'scenery');
+      }
+      set(brookwood?.group, 'transport');
       set(transport?.group, 'transport');
       set(world.group, 'transport'); // streetcar track, MARTA guideway, lamps; landmarks are tagged
       return m;

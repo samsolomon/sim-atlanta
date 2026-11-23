@@ -344,6 +344,7 @@ function rendererInfo() {
     calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
     points: renderer.info.render.points, lines: renderer.info.render.lines,
     programs: renderer.info.programs?.length ?? 0,
+    programKinds: (renderer.info.programs ?? []).reduce<Record<string, number>>((o, p) => { const k = (p as { name?: string }).name || '?'; o[k] = (o[k] ?? 0) + 1; return o; }, {}),
     shadowMap: { enabled: renderer.shadowMap.enabled, autoUpdate: renderer.shadowMap.autoUpdate },
   };
 }
