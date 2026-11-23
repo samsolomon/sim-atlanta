@@ -72,6 +72,21 @@ Courtyard view: target (659, −2081), bearing 80°, tilt 62°, 0.15 m/px. [High
 
 Podium view from the northeast: target (700, −2100), bearing 250°, tilt 55°, 0.3 m/px. [High daylight](log/ui/midtown-skyline/terrace-podium-high-day.jpg) · [High night](log/ui/midtown-skyline/terrace-podium-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/terrace-podium-low-day.jpg) · [Low night](log/ui/midtown-skyline/terrace-podium-low-night.jpg)
 
+### Roofline ornament (2026-11-23)
+
+Sam pointed out that the 1911 hotel read as a plain tan block. Street photographs show its classical vocabulary:
+- pale limestone across the two base storeys
+- a projecting belt cornice above the base
+- a string course under the top storey
+- a deep crowning cornice on modillions, below a low parapet
+- that cornice wrapping the round corner bay at Peachtree and Ponce
+
+City now draws all of these on the historic wing and the corner bay as true per-edge offsets, replacing the earlier centroid-scaled bands that left inward-facing walls bare. The 1991 addition keeps plain bands, as the photographs show. [Wikimedia: hotel from Peachtree, 2009](https://commons.wikimedia.org/wiki/File:Georgian_Terrace_Hotel.jpg) · [Wikimedia: hotel and the Fox from above](https://commons.wikimedia.org/wiki/File:Hotels_around_Fabulous_Fox_Theater.JPG) · [Wikimedia: 2019 corner and addition](https://commons.wikimedia.org/wiki/File:Georgian_Terrace_Hotel_1.jpg)
+
+**Estimated:** the cornice projection of 1.05 m, the modillions at 1 m pitch, the 0.85 m parapet (the wing now tops out at 38 m), the 0.75 m rustication courses and the limestone tone. Window surrounds and keystones are under a pixel at City cameras and are not modelled. No night photograph shows the roofline lit, so the cornice stays dark at night and catches the low sun in the evening.
+
+Camera (655, −2105), bearing 20°, tilt 58°, 230 m. [Before and after, labelled](log/ui/midtown-skyline/terrace-ornament-compare-day.jpg) · [Evening and night](log/ui/midtown-skyline/terrace-ornament-evening-night.jpg) · [Low tier day](log/ui/midtown-skyline/terrace-ornament-after-low-day.jpg) · [Low tier night](log/ui/midtown-skyline/terrace-ornament-after-low-night.jpg)
+
 ## Tower Square
 
 The Digital Library of Georgia's face-on photograph shows the old BellSouth tower's rows of dark horizontal openings, shallow shoulders and pale concrete return walls. Josh Green's upward night photograph resolves the recess under each slab and the coloured light along the tall blank corner. The 1980s signage has since changed. City uses unlettered concrete and a static violet-blue wash along the return walls. Window occupancy and lighting intensity are illustrative. [Archival exterior](https://dlg.usg.edu/record/nge_ngen_m-9641) · [Night view from the corner](https://atlanta.urbanize.city/post/photos-how-lighting-additions-are-enlivening-midtown-night)
