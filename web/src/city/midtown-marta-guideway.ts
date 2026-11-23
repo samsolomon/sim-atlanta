@@ -188,6 +188,11 @@ export function northLineProfile(
 
 export type NorthLineProfile = ReturnType<typeof northLineProfile>;
 
+/** Third rail centre from the track centre: outside the running rail. */
+const THIRD_RAIL = 1.45;
+const COVER = '#d8d2bf',
+  CONDUCTOR = '#57585a',
+  BRACKET = '#3f3d3a';
 const BALLAST = '#7e7363',
   BALLAST_SIDE = '#6b6153',
   SLEEPER = '#523f33',
@@ -246,6 +251,22 @@ export function northLineGuideway(tracks: Line[], profile: NorthLineProfile, gro
           const a1 = (d: number) => [p.x + nx * (o + d), h + 0.07, p.z + nz * (o + d)];
           body.quad(a0(-w), a1(-w), a1(w), a0(w), RAIL);
         }
+      // Covered third rail on the field side, away from the other track (750 V,
+      // per OSM; the side and cover colour are inferred, never photographed).
+      if (prev) {
+        const side = innerLeft === true ? 1 : -1;
+        const at = (q: { x: number; z: number }, qnx: number, qnz: number, y: number, d: number) =>
+          [q.x + qnx * (THIRD_RAIL * side + d), y, q.z + qnz * (THIRD_RAIL * side + d)];
+        const y0 = prev.h + 0.3,
+          y1 = h + 0.3;
+        // Cover board on top, its outer skirt down to the rail.
+        body.quad(at(prev.p, prev.nx, prev.nz, y0, -0.16), at(p, nx, nz, y1, -0.16), at(p, nx, nz, y1, 0.16), at(prev.p, prev.nx, prev.nz, y0, 0.16), COVER);
+        body.quad(at(prev.p, prev.nx, prev.nz, y0 - 0.2, 0.16 * side), at(p, nx, nz, y1 - 0.2, 0.16 * side), at(p, nx, nz, y1, 0.16 * side), at(prev.p, prev.nx, prev.nz, y0, 0.16 * side), CONDUCTOR);
+        if (Math.round(along) % 4 === 0) {
+          const [bx, , bz] = at(p, nx, nz, h, 0);
+          orientedBox(body, bx, bz, p.dx, p.dz, h, h + 0.3, 0.06, 0.12, BRACKET);
+        }
+      }
       prev = { l, r, p, nx, nz, h, bridge, innerLeft };
     }
   }
