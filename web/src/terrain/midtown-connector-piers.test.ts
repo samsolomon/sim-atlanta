@@ -3,6 +3,7 @@ import { expect, it } from 'vitest';
 import { midtownConnectorDecks } from './midtown-connector-decks';
 import { midtownConnectorGround } from './midtown-connector-ground';
 import { midtownConnectorPiers } from './midtown-connector-piers';
+import { inConnectorLanes } from './connector-paint';
 import { seventeenthAccess, seventeenthPortals } from '../city/seventeenth-street';
 import { auburnTransport } from '../city/sweet-auburn-transport';
 import { brookwoodGrid } from '../city/brookwood';
@@ -14,7 +15,7 @@ import { joins } from '../square-board/sections';
 import rail from '../city/fixtures/midtown-rail.json';
 import rows from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 it('sets bents in the medians of every Midtown deck that spans the Connector', () => {
-  const counts: Record<string, number> = {}, named = new Set<string>();
+  const counts: Record<string, number> = {}, named = new Map<string, { x: number; z: number }[]>(); const all: unknown[] = [];
   for (const row of Object.keys(rows)) {
     const read = (f: string) => readFileSync(new URL(`../../../pipeline/prototypes/square-board/${row}/${f}`, import.meta.url));
     const m = JSON.parse(read('ground.json').toString()), bytes = Uint8Array.from(read('ground.i16')).buffer;
@@ -26,11 +27,18 @@ it('sets bents in the medians of every Midtown deck that spans the Connector', (
     const decks = createSurfaceTransport(city, grid, banks.groundAt);
     const p = midtownConnectorPiers(city, banks.groundAt, decks.deckAt);
     counts[row] = p?.columns ?? 0;
-    for (const b of p?.bents ?? []) if (b.name) named.add(b.name);
+    for (const b of p?.bents ?? []) { all.push([row, b.name, Math.round(b.x), Math.round(b.z), b.columns]); if (b.name) named.set(b.name, [...(named.get(b.name) ?? []), b]); }
     p?.mesh.geometry.dispose();
     decks.dispose(); surface.geometry.dispose();
   }
   for (const row of Object.keys(rows)) expect(counts[row], row).toBeGreaterThan(0);
   // North Avenue and 10th Street cross the Connector on a single median pier.
-  for (const name of ['North Avenue Northwest', '10th Street Northwest', '14th Street Northwest']) expect(named, name).toContain(name);
+  for (const name of ['14th Street Northwest']) expect(named.get(name)?.length, name).toBeGreaterThan(0);
+  for (const name of ['North Avenue Northwest', '10th Street Northwest']) {
+    const bents = named.get(name) ?? [];
+    expect(bents, name).toHaveLength(1);
+    // The axial column stands in the median, off every rendered lane.
+    expect(inConnectorLanes(bents[0].x, bents[0].z, 1), name).toBe(false);
+  }
+  if (process.env.PRINT_BENTS) throw Error('BENTS ' + JSON.stringify(all));
 });

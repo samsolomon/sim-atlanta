@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Builder, Line, type P2 } from '../vignette/geom';
+import { Builder, Line } from '../vignette/geom';
 import { PAL } from '../vignette/world';
 import { matchRibbon, type Ribbon } from './connector-corridor';
 import { inConnectorLanes } from './connector-paint';
@@ -31,12 +31,15 @@ export function deckPierStations(line: Line, bentClear: (s: number) => boolean) 
 /** Concrete bents under the measured Midtown street and freeway decks. Columns avoid every
  * rendered lane beneath (the deck's own ribbons excepted), every drawn ground road plus 1 m
  * and every railway, using the same footprint test as the North Line spans. */
-export function midtownConnectorPiers(city: TerrainCity, ground: Ground, deckAt: DeckAt) {
+export function midtownConnectorPiers(city: TerrainCity, groundAt: Ground, deckAt: DeckAt) {
   const data = city.terrainTransport;
   if (!data) return;
-  // The freeway is tested lane by lane against its rendered ribbons; its mapped centreline
-  // at a generic 14 m width would bury the medians where the piers belong.
-  const below = city.roads.filter(r => !r.bridge && !r.tunnel && r.cls !== 'motorway');
+  // The freeway is tested lane by lane against its rendered ribbons; a ribbon-covered
+  // motorway centreline at a generic 14 m width would bury the medians where piers belong.
+  // Motorway ways with no ribbon keep their drawn width.
+  const ribboned = (r: { cls: string; sub?: string | null; pts: [number, number][] }) =>
+    r.cls === 'motorway' && r.pts.length > 1 && !!matchRibbon(r.pts[0], r.pts[1], r.sub === 'link');
+  const ground = city.roads.filter(r => !r.tunnel && !ribboned(r));
   const builder = new Builder();
   let columns = 0;
   const bents: { name: string | null; x: number; z: number; columns: number }[] = [];
@@ -49,22 +52,30 @@ export function midtownConnectorPiers(city: TerrainCity, ground: Ground, deckAt:
       const r = matchRibbon(run.pts[i - 1], run.pts[i], run.sub === 'link');
       if (r) own.add(r);
     }
+    // Other bridges stay obstacles (a street deck may pass under a flyover); the deck's own
+    // street and its sidewalks, which ride on the same bents, do not.
+    const below = ground.filter(r => !r.bridge || (r.name !== run.name && !walkways.has(r.cls) && r.pts !== run.sourceAxis));
     const clear = pierObstacles(below, (x, z) => inConnectorLanes(x, z, 1, own), data.rail);
-    const width = run.crossSection?.width ?? (run.cls === 'motorway' ? (run.sub === 'link' ? 7 : 14) : roadWidth(run));
-    const count = Math.max(1, Math.round(width / 9));
+    // The width transport.ts draws: ribbon lanes plus shoulders, the inventory, or the class.
+    const lanes = Math.max(0, ...[...own].map(r => r.lanes));
+    const width = run.crossSection?.width ?? (lanes ? lanes * 3.55 + (run.sub === 'link' ? 1.4 : 3.6) : roadWidth(run));
+    // An odd count keeps one column on the axis.
+    const count = 2 * Math.round(width / 18) + 1;
     const offsets = Array.from({ length: count }, (_, i) => count === 1 ? 0 : (i / (count - 1) - .5) * (width - 3));
     const bent = (s: number) => {
       const p = line.at(s);
       const deck = deckAt(p.x, p.z, run);
       if (deck === null) return null;
-      // A bent keeps only the columns whose footprints are clear; the cap spans the rest.
-      // It needs at least half of its columns, so a wide deck is never balanced on one.
+      // A hammerhead bent: the axial column must be clear; outer columns join where clear
+      // and the cap spans the rest. A wide cap never hangs off a single edge column.
       const feet: { x: number; z: number; y: number }[] = [];
       for (const o of offsets) {
-        const x = p.x - p.dz * o, z = p.z + p.dx * o, y = ground(x, z);
-        if (y !== null && clear(x, z, p.dx, p.dz) && deck - STRUCTURE_M - y > 2.5) feet.push({ x, z, y });
+        const x = p.x - p.dz * o, z = p.z + p.dx * o, y = groundAt(x, z);
+        const ok = y !== null && clear(x, z, p.dx, p.dz) && deck - STRUCTURE_M - y > 2.5;
+        if (!ok && o === 0) return null;
+        if (ok) feet.push({ x, z, y: y! });
       }
-      return feet.length >= Math.ceil(offsets.length / 2) ? { p, deck, feet } : null;
+      return { p, deck, feet };
     };
     for (const s of deckPierStations(line, s => !!bent(s))) {
       const { p, deck, feet } = bent(s)!;

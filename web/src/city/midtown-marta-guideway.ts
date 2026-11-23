@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { roadWidth, type TransportRun } from '../terrain/transport-data';
+import type { TransportRun } from '../terrain/transport-data';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import { pierObstacles } from '../terrain/pier-clearance';
 
