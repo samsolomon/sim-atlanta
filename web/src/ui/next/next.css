@@ -75,7 +75,6 @@
 
 /* The old chrome is hidden in style.css, so it never paints before this chunk loads. */
 /* One thing in the detail-panel place at a time. */
-body:has(#city-info:popover-open) .a2-panel { display: none !important; }
 
 /* ---- subject card (top-left) ---- */
 .a2-subject {
@@ -301,15 +300,6 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 .a2-social::before { content: ''; position: absolute; inset: 6px; border-radius: 8px; background: var(--a2-sep); z-index: -1; }
 .a2-social svg { width: 15px; height: 15px; }
 
-/* ---- About this City view: shown in the detail-panel place ---- */
-:root[data-ui='next'] #city-info {
-  inset: var(--a2-top) var(--a2-right) auto auto; width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right)));
-  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h, 140px));
-  padding: 16px 18px; border: 0; border-radius: 16px; color: var(--a2-ink);
-  background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long));
-  -webkit-backdrop-filter: blur(22px) saturate(1.35); backdrop-filter: blur(22px) saturate(1.35);
-  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
-}
 
 
 /* ---- phones: top items under the status bar, the app bar above the home indicator ---- */
@@ -371,7 +361,6 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
   .a2-panel #train-follow button { min-height: 44px; }
   body:has(.a2-panel:not([hidden])) :is(.a2-appbar, .a2-hint, .a2-menu) { display: none; }
   body:has(.a2-panel:not([hidden])) .a2-credit { visibility: hidden; }
-  :root[data-ui='next'] #city-info { inset: auto var(--a2-right) calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px) var(--a2-left); width: auto; max-height: 60dvh; border-radius: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

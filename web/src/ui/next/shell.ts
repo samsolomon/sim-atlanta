@@ -18,7 +18,7 @@ import { BYLINE, createDetailPanel } from './panel';
 import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import { shareUrl } from '../share';
-import type { ShellApi, ShellOptions } from '../shell';
+import type { ShellApi, ShellOptions } from '../shell-api';
 
 const TZ = 'America/New_York';
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });

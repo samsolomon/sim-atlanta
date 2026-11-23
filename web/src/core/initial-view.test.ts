@@ -20,9 +20,8 @@ describe('landing view', () => {
 });
 
 describe('Models view', () => {
-  it('opens in A2c; the classic shell keeps the Model lab at /models.html', () => {
+  it('opens the Models view', () => {
     expect(initialView('?view=models', '')).toBe('models');
     expect(initialView('?ui=next&view=models', '')).toBe('models');
-    expect(initialView('?ui=classic&view=models', '')).toBe('city');
   });
 });

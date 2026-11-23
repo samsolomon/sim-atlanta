@@ -6,15 +6,14 @@
 export type ShareView = { view: 'city'; cam: string } | { view: 'map'; hash: string } | { view: 'models'; model: string };
 
 /** Query keys a shared link keeps from the current page; everything else (dev tools, follow) drops. */
-const KEEP = ['ui', 'board', 'site'];
+const KEEP = ['board', 'site'];
 
 export function shareUrl(page: string, target: ShareView, mode: 'live' | 'freeze', at: Date): string {
   const from = new URL(page);
   const u = new URL(from.origin + from.pathname);
   for (const k of KEEP) {
     const v = from.searchParams.get(k);
-    // A2c is the default: an old ?ui=next adds nothing to a link.
-    if (v != null && !(k === 'ui' && v === 'next')) u.searchParams.set(k, v);
+    if (v != null) u.searchParams.set(k, v);
   }
   u.searchParams.set('view', target.view);
   if (target.view === 'city') u.searchParams.set('cam', target.cam);
