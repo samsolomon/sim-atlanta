@@ -231,7 +231,7 @@ function buildTrees() {
       : (rendering === 'all' || rendering === 'allC' ? 'Left to right: ' : '') + (Object.keys(VARIANTS) as GinkgoVariant[])
         .filter(v => rendering === 'all' || rendering === 'allC' ? compareSet(rendering).includes(v) : v === rendering)
         .map(v => `${v} ${VARIANTS[v]} ${variantTriangles(v, size, treeQuality).total}`).join(', ') + ` triangles per ${size} tree.`
-        + (rendering === 'B' || rendering === 'all' ? ' B swaps to A beyond 60 m.' : '')
+        + (rendering === 'B' || rendering === 'all' ? (treeQuality === 'low' ? ' B draws no fans at low detail (it is A).' : ' B swaps to A beyond 60 m.') : '')
         + (rendering === 'C4' || rendering === 'allC' ? ` C4 counts fan tips on one tree; at most ${TIP_CAP} trees within ${TIP_RANGE_M} m carry them, none at low detail.` : '');
   }
   const per = (q: TreeQuality) => species
@@ -456,6 +456,7 @@ const composer = new EffectComposer(renderer, (() => {
 })());
 composer.addPass(new RenderPass(scene, camera));
 const ink = new ShaderPass(inkShader());
+ink.uniforms.uFoliage.value = 1; // the lab shows inkFoliage-marked leaf variants
 composer.addPass(ink);
 composer.addPass(new OutputPass());
 const grade = new ShaderPass(gradeShader());
@@ -721,21 +722,28 @@ function overdraw() {
   const saved = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
   const hidden: THREE.Object3D[] = [];
   scene.traverse(o => { if ((o as THREE.Mesh).isMesh && !leaves.includes(o as THREE.InstancedMesh) && o.visible) { o.visible = false; hidden.push(o); } });
+  // Hide every other renderable, lines and points included.
+  scene.traverse(o => { if (((o as THREE.Line).isLine || (o as THREE.Points).isPoints) && o.visible) { o.visible = false; hidden.push(o); } });
   for (const l of leaves) {
     const src = l.material as THREE.MeshLambertMaterial;
     saved.set(l, l.material);
-    l.material = new THREE.MeshBasicMaterial({ color: '#ffffff', map: src.map ?? null, alphaTest: src.alphaTest, side: THREE.DoubleSide,
-      transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, opacity: 1 });
+    // Exactly 1.0 per fragment that survives the alpha test, whatever the tint or atlas colour.
+    const counter = new THREE.MeshBasicMaterial({ map: src.map ?? null, alphaTest: src.alphaTest, side: THREE.DoubleSide,
+      transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false });
+    counter.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n gl_FragColor = vec4(1.0);'); };
+    l.material = counter;
   }
   const bgSaved = scene.background;
   scene.background = null;
   renderer.setRenderTarget(rt);
+  const clearSaved = renderer.getClearColor(new THREE.Color()), alphaSaved = renderer.getClearAlpha();
   renderer.setClearColor(0x000000, 0);
   renderer.clear();
   renderer.render(scene, camera);
   const px = new Float32Array(size.x * size.y * 4);
   renderer.readRenderTargetPixels(rt, 0, 0, size.x, size.y, px);
   renderer.setRenderTarget(null);
+  renderer.setClearColor(clearSaved, alphaSaved);
   scene.background = bgSaved;
   for (const [o, mat] of saved) { ((o as THREE.Mesh).material as THREE.Material).dispose(); (o as THREE.Mesh).material = mat; }
   for (const o of hidden) o.visible = true;

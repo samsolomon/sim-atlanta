@@ -28,6 +28,8 @@ export function inkShader() {
       uWidth: { value: 1.0 },
       uFoliageInk: { value: new THREE.Color('#5a3a12') },
       uInteriorM: { value: 40 },
+      // 1 when the scene has inkFoliage materials; 0 skips the foliage samples entirely (City today).
+      uFoliage: { value: 0 },
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -38,7 +40,7 @@ export function inkShader() {
       uniform vec2 uTexel;
       uniform float uNear, uFar, uStrength, uWidth;
       uniform vec3 uInk, uFoliageInk;
-      uniform float uInteriorM;
+      uniform float uInteriorM, uFoliage;
       // Foliage mode from alpha: 0 none, 1–3 (see inkFoliage). Opaque surfaces write 1.0.
       float mode(vec2 uv) { float a = texture2D(tDiffuse, uv).a; return a > 0.9 ? 0.0 : floor(a * 5.0 + 0.5); }
       varying vec2 vUv;
@@ -66,6 +68,7 @@ export function inkShader() {
         // Mostly silhouettes (depth); colour creases only faintly, so shapes stay clean inside.
         float line = clamp(max(edgeD, edgeC * 0.22), 0.0, 1.0) * fade * uStrength;
         vec3 ink = uInk;
+        if (uFoliage < 0.5) { gl_FragColor = vec4(mix(col.rgb, ink, line), 1.0); return; }
         float m = mode(vUv);
         float ml = mode(vUv - vec2(o.x, 0.0)), mr = mode(vUv + vec2(o.x, 0.0));
         float md = mode(vUv - vec2(0.0, o.y)), mu = mode(vUv + vec2(0.0, o.y));
@@ -74,7 +77,8 @@ export function inkShader() {
           // Foliage in the 3×3 cross: decide whether this is a crown silhouette or an interior line.
           bool inside = m > 0.5 && ml > 0.5 && mr > 0.5 && md > 0.5 && mu > 0.5;
           float keep;
-          if (inside) keep = fm > 2.5 ? 1.0 - smoothstep(uInteriorM * 0.4, uInteriorM, d) : 0.0;
+          // Inside a crown, a large depth jump is one crown in front of another: keep that edge.
+          if (inside) keep = max(fm > 2.5 ? 1.0 - smoothstep(uInteriorM * 0.4, uInteriorM, d) : 0.0, smoothstep(0.12, 0.25, jump));
           else {
             // Silhouette only if the non-foliage side stays clear 4 and 8 pixels further out (and,
             // from the outside, the crown stays solid): gaps between leaves don't qualify.

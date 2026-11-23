@@ -178,7 +178,11 @@ Sam picked C (leaf cards), with B's fans, but the ink outlines drained C's colou
 - draws a silhouette where foliage meets anything else, but **only if** the far side stays clear 4 and 8 pixels out. Crown against sky, ground or a building qualifies; a small gap between leaves does not;
 - for modes 2 and 3, uses a warm ochre-brown ink (`#5a3a12`) at 75% strength in place of near-black.
 
-Unmarked materials, buildings included, take the old code path unchanged (checked in City at `cam=618,-3999,245,70,80`). The mark needs opaque materials: alpha-tested cards are fine, alpha-blended ones are not, which also suits phones. Any species, and later the generic canopy, can opt in with one call.
+A large depth jump between two foliage pixels still draws, so one crown standing in front of another keeps its edge.
+
+The foliage logic sits behind a `uFoliage` uniform. City leaves it at 0 today, so City's ink costs and draws exactly what it did before (checked at `cam=618,-3999,245,70,80`). The lab sets it to 1.
+
+Caveat: an alpha-blended effect drawn over marked foliage (snow, rain sprites, additive lights) rewrites the mark. Before a marked species reaches City, either move the mark to its own target or keep blended effects off crowns. The mark needs opaque materials: alpha-tested cards are fine, alpha-blended ones are not, which also suits phones. Any species, and later the generic canopy, can opt in with one call.
 
 | | Ink | Triangles per tree, high / low |
 |---|---|---|
@@ -203,9 +207,9 @@ Unmarked materials, buildings included, take the old code path unchanged (checke
 | Low | All C variants | 1,620 | 4 | 3,120 triangles, 4 draws |
 
 **Measured on the Mac Studio** in the lab, with the same grove and an eye-level camera inside it (`?v=ginkgo&variant=…&n=20`, then `__lab.bench(60)` and `__lab.overdraw()`). Frame time is the wall time to submit 60 frames and `gl.finish`, which covers CPU and GPU together. Every case came in between 0.04 and 0.43 ms, inside the noise of a sub-millisecond measurement, so no variant is measurably slower than another here.
-- Foliage overdraw, the leaf layers per covered pixel with depth test off (a worst case):
-  - High: current 2.62 (max 11), cards 1.19–1.21 (max 6).
-  - Low: current 2.05, cards 1.01.
+- Foliage overdraw: alpha-tested leaf fragments per covered pixel, depth test off, which is the worst case:
+  - High: current 2.97 (max 12), cards 1.52 (max 8). C4 is 1.53.
+  - Low: current 2.31, cards 1.24.
 - Main-pass triangles for the whole lab frame: current 7,743, C–C3 7,863, C4 12,663 at high; about 3,800–4,500 at low.
 - `EXT_disjoint_timer_query_webgl2` is available in the Studio's Chrome, so a later pass can split CPU from GPU.
 - A16 and iPhone numbers are deferred until Sam has the phone.
