@@ -1957,3 +1957,7 @@ The 2018 lidar puts the Luckie Street hall at about 331 m NAVD88, but part of th
 ## 2026-11-23 — The first letter on the Georgia Aquarium entrance
 
 At sidewalk height the G in “Georgia Aquarium” straddled the fold between the curved blue entrance wall and its Baker Street return. The angle from above had hidden the distortion. We moved the name inward, aligned its lettering to 19 consecutive facade panels and reduced the gap between the letters and the cladding from 34 cm to 4 cm. The same Orca sidewalk view now shows blue on both sides of the G. We also checked it from across the plaza and after dark. [Matched sidewalk views](log/ui/georgia-aquarium/entrance-wordmark.jpg)
+
+### 2026-11-23 — A bottle across Pemberton Place
+
+Looking north from Baker Street, you can now read the plaza from both ends of the frame. The aquarium's blue bow is on the left. On the right, the museum's glass tower carries a green bottle through a silver canopy. The 2018 lidar picks out its rectangular cap at 329.1 m NAVD88 and the downward sweep of the canopy toward Baker. From the other side of the block the landmark almost disappears behind its brick service wall. One detail changed between references. The reflecting pool in the designer's night photograph had become lawn and a curved walk by the county's 2024 aerial. [Both landmarks from Baker](log/ui/world-of-coca-cola/both-day-after.webp) · [Night from the plaza](log/ui/world-of-coca-cola/pemberton-night-after.webp) · [Photographs, survey and matched City views](log/ui/world-of-coca-cola/README.md)
