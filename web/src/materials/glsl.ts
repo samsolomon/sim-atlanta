@@ -113,8 +113,8 @@ vec3 surfaceColour(vec4 s, vec3 p, vec3 n, vec3 base) {
     m += .10 * t;
     // The two tints average to white, so the roof keeps its authored colour as the mean.
     hue = mix(vec3(1), t > 0. ? vec3(.94, 1.04, 1.04) : vec3(1.06, .96, .96), min(abs(t) * 3., 1.) * a);
-    float seam = max(s.y, .2);
-    m -= .08 * sfJoint(uv.x / seam, .02 / seam, fw.x / seam);
+    // Standing seams every p1 m; 0 leaves them to the model's own geometry.
+    if (s.y > .01) { float seam = max(s.y, .2); m -= .08 * sfJoint(uv.x / seam, .02 / seam, fw.x / seam); }
   } else if (kind < 8.5) {
     // Slate: 300 mm slates in 250 mm courses, varied per slate.
     m += .03 * sfSee(3., px) * sfTone(uv * .3);

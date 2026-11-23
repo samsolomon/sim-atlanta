@@ -72,7 +72,7 @@ export const surfaces = {
   curtainGlass(o: { tint?: Of<'glass'>; mullion?: number; floor?: number; strength?: number } = {}) {
     return surface(`glass:${o.tint ?? 'blueGreen'}`, 'curtain-glass', PALETTE.glass[o.tint ?? 'blueGreen'], o.mullion ?? 1.5, o.strength ?? 1, o.floor ?? 4);
   },
-  /** Muted, uneven, streaked verdigris with standing seams every `seam` m. */
+  /** Muted, uneven, streaked verdigris with standing seams every `seam` m (0: the model draws its own). */
   agedCopper(o: { colour?: Of<'copper'>; seam?: number; strength?: number } = {}) {
     return surface(`copper:${o.colour ?? 'verdigris'}`, 'aged-copper', PALETTE.copper[o.colour ?? 'verdigris'], o.seam ?? .5, o.strength ?? 1);
   },
