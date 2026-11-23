@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map view in the same shell, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:1296px;height:726px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.86);--gb:rgba(243,239,230,.78);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);color:var(--ink);background:#eeebe4}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;cursor:pointer;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px}
+.vsep{width:1px;align-self:stretch;margin:10px 4px;background:var(--sep)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.vs{height:36px;border:0;border-radius:9px;padding:0 12px;font:600 14px system-ui;background:transparent;color:var(--ink);cursor:pointer}
+.vs[aria-pressed="true"]{background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+.pill{display:inline-flex;align-items:center;gap:3px;font-weight:700}.pill svg{opacity:.45}
+.h{margin:14px 0 8px;font-size:12px;font-weight:600;color:var(--ink2)}
+.k{display:flex;align-items:center;gap:12px;padding:6px 0;font-size:14px}
+.k small{display:block;font-size:12px;color:var(--ink2)}
+.sw{width:28px;height:5px;border-radius:3px;flex:none}
+.tier{display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--sep);color:var(--ink2);white-space:nowrap;min-width:72px;box-sizing:border-box}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div class="root">
+  <img src="/_blob/4b3203392d36bfae1107087464ae462e" alt="2D map of central Atlanta with rail lines" style="position:absolute;inset:0;width:1296px;height:726px;object-fit:cover;object-position:40% 50%">
+  <div aria-hidden="true" style="position:absolute;left:651px;top:203px;width:22px;height:22px;border-radius:50%;background:#1f5fd1;border:3px solid #fff;box-sizing:border-box;box-shadow:0 0 0 6px rgba(31,95,209,.30),0 3px 8px rgba(0,0,0,.3)"></div>
+
+  <div class="g" style="left:8px;top:8px;padding:14px 18px 14px 20px">
+    <span style="display:block;font-size:30px;font-weight:700;letter-spacing:-.015em;line-height:1.05">Downtown</span>
+    <span style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:16px"><span class="pill">2:04 PM<svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><path d="M6 9l6 6 6-6"></path></svg></span><span style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>58° Clear</span></span>
+    <span style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;color:var(--ink2)"><span class="dot" style="background:#2f9e44"></span>Live · Friday, Nov 20</span>
+  </div>
+
+  <aside class="g" aria-label="Key" style="right:8px;top:8px;width:360px;padding:8px 18px 16px">
+    <button style="display:flex;align-items:center;gap:6px;width:calc(100% + 20px);margin:0 -10px 6px;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:var(--ink2);font:600 13px system-ui;cursor:pointer;text-align:left"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M15 6l-6 6 6 6"></path></svg><span style="width:12px;height:3px;border-radius:2px;background:#1f5fd1;display:inline-block"></span>Northbound to North Springs</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <h2 style="flex:1;margin:0;font-size:20px">Key</h2>
+      <button class="ib" aria-label="Close" style="width:32px;height:32px;border-radius:50%;background:var(--sep)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <p class="h">Colour means the kind of service</p>
+    <div class="k"><span class="sw" style="background:#1f5fd1"></span><span>City rail<small>MARTA trains and the streetcar</small></span></div>
+    <div class="k"><span class="sw" style="background:#7b3fe4"></span><span>Intercity<small>Amtrak’s Crescent</small></span></div>
+    <div class="k"><span class="sw" style="background:#c2410c"></span><span>Freight<small>Freight railroads, simulated</small></span></div>
+    <div class="k"><span class="sw" style="background:#227971"></span><span>Bus<small>MARTA buses, at the present time only</small></span></div>
+    <div class="sep" style="margin:8px 0 0"></div>
+    <p class="h">Confidence</p>
+    <div class="k"><span class="tier">Live</span><span>Real-time feed, moments ago</span></div>
+    <div class="k"><span class="tier">Scheduled</span><span>From a published timetable</span></div>
+    <div class="k"><span class="tier">Reported</span><span>An operator’s reported average</span></div>
+    <div class="k"><span class="tier">Inferred</span><span>Filled in from nearby reports</span></div>
+    <div class="k"><span class="tier">Illustrative</span><span>Typical, not observed</span></div>
+  </aside>
+
+  <div class="g" style="left:8px;bottom:8px;height:48px;display:flex;align-items:center;gap:2px;padding:0 4px 0 2px">
+    <button class="ib" aria-label="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+    <span class="vsep"></span>
+    <span role="group" aria-label="View" style="display:flex;gap:2px;padding:2px;border-radius:11px;background:var(--sep)"><button class="vs" aria-pressed="true">Map</button><button class="vs" aria-pressed="false">City</button><button class="vs" aria-pressed="false">Models</button></span>
+    <span class="vsep"></span>
+    <button class="ib" aria-label="Play radio" style="width:40px;height:40px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M9 18V6l11-2v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></button>
+  </div>
+
+  <p style="position:absolute;right:60px;bottom:9px;margin:0;font-size:12px;line-height:16px;color:#4a463e;text-shadow:0 0 2px #f4f1ea,0 0 4px #f4f1ea,0 0 8px #f4f1ea">© <a href="https://www.openstreetmap.org/copyright" style="color:inherit">OpenStreetMap</a> contributors · OpenMapTiles</p>
+
+  <div class="g" style="right:8px;bottom:8px;width:44px;display:flex;flex-direction:column;padding:2px 0">
+    <button class="ib" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    <button class="ib" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+    <div class="sep"></div>
+    <button class="ib" aria-label="Share this view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="M7.5 7.5L12 3l4.5 4.5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1296,"height":726}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

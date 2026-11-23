@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Models browser, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:390px;height:844px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.92);--gb:rgba(243,239,230,.86);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);color:var(--ink);background:#efe6d2}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;cursor:pointer;flex:none}
+.chip{height:32px;border:0;border-radius:999px;padding:0 12px;font:600 13px system-ui;background:var(--sep);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex:none}
+.chip span{color:var(--ink2);font-weight:500}
+.chip[aria-pressed="true"]{background:rgba(255,255,255,.95);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+.grp{margin:14px 6px 4px;font-size:13px;font-weight:600;color:var(--ink2);display:flex;justify-content:space-between}
+.it{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:8px;border:0;border-radius:12px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+.it[aria-current="true"]{background:rgba(255,255,255,.8);box-shadow:0 0 0 .5px rgba(60,45,30,.14)}
+.th{width:52px;height:38px;border-radius:8px;flex:none;display:grid;place-items:center;color:#fff}
+.th svg{width:20px;height:20px}
+.it b{display:block;font-size:15px;font-weight:600}
+.it small{display:block;font-size:13px;color:var(--ink2)}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</helmet>
+<div class="root">
+  <img src="/_blob/318e4255c7420845bde3b621e89f944c" alt="Stadler CQ400 model behind the browser" style="position:absolute;inset:0;width:390px;height:844px;object-fit:cover">
+  <div aria-hidden="true" style="position:absolute;inset:0;background:rgba(30,24,16,.18)"></div>
+
+  <section class="g" aria-label="All models" style="left:8px;right:8px;top:54px;bottom:8px;border-radius:24px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:8px 14px 10px;border-bottom:1px solid var(--sep)">
+      <div aria-hidden="true" style="width:40px;height:5px;border-radius:3px;background:var(--sep);margin:0 auto 10px"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <h2 style="flex:1;margin:0 0 0 4px;font-size:20px">Models</h2>
+        <button class="ib" aria-label="Close" style="width:34px;height:34px;border-radius:50%;background:var(--sep)"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.75);box-shadow:inset 0 0 0 1px var(--sep)">
+        <svg viewBox="0 0 24 24" aria-hidden="true" style="width:17px;height:17px;color:var(--ink2)"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
+        <input type="search" placeholder="Search models" aria-label="Search models" style="flex:1;border:0;background:transparent;font:16px system-ui;color:var(--ink);outline:none">
+      </label>
+      <div role="group" aria-label="Category" style="display:flex;gap:6px;margin-top:10px;overflow:hidden">
+        <button class="chip" aria-pressed="true">All <span>104</span></button>
+        <button class="chip" aria-pressed="false">Trains <span>12</span></button>
+        <button class="chip" aria-pressed="false">Freight <span>14</span></button>
+        <button class="chip" aria-pressed="false">Buses <span>9</span></button>
+        <button class="chip" aria-pressed="false">Buildings <span>58</span></button>
+      </div>
+    </div>
+    <div style="flex:1;overflow:hidden;padding:2px 8px 0;position:relative">
+      <p class="grp"><span>Trains</span><span>12</span></p>
+      <button class="it" aria-current="true"><span class="th" style="background:#1f5fd1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="13" rx="3"></rect><path d="M5 11h14M8 20l2-3M16 20l-2-3"></path></svg></span><span><b>Stadler CQ400</b><small>MARTA rail car · city rail</small></span></button>
+      <button class="it"><span class="th" style="background:#1f5fd1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="13" rx="3"></rect><path d="M5 11h14M8 20l2-3M16 20l-2-3"></path></svg></span><span><b>Breda CQ312</b><small>MARTA rail car · city rail</small></span></button>
+      <button class="it"><span class="th" style="background:#7b3fe4"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="13" rx="3"></rect><path d="M5 11h14M8 20l2-3M16 20l-2-3"></path></svg></span><span><b>Siemens Charger</b><small>Amtrak locomotive · intercity</small></span></button>
+      <p class="grp"><span>Freight</span><span>14</span></p>
+      <button class="it"><span class="th" style="background:#c2410c"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="9" rx="1.5"></rect><circle cx="7" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle></svg></span><span><b>GE/Wabtec CM44AC</b><small>Six-axle locomotive · freight</small></span></button>
+      <button class="it"><span class="th" style="background:#c2410c"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="9" rx="1.5"></rect><circle cx="7" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle></svg></span><span><b>Boxcar</b><small>Illustrative freight car</small></span></button>
+      <p class="grp"><span>Buses</span><span>9</span></p>
+      <button class="it"><span class="th" style="background:#227971"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="2"></rect><path d="M4 11h16M7 19v-3M17 19v-3"></path></svg></span><span><b>New Flyer XN40</b><small>MARTA bus</small></span></button>
+      <div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(rgba(246,242,234,0),rgba(246,242,234,.96))"></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
