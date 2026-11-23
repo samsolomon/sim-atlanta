@@ -50,6 +50,7 @@ import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { createStreetcarCars } from './streetcar-cars';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
+import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -1452,6 +1453,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    if (!drive) {
+      // Tighten the depth range with the orbit distance (city/depth-range.ts).
+      const p = camera.position;
+      const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z));
+      if (Math.abs(near - camera.near) > 0.05 * camera.near) {
+        camera.near = near;
+        camera.updateProjectionMatrix();
+      }
+    }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;

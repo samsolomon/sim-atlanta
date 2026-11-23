@@ -26,6 +26,7 @@ import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
 import { groundMap } from './ground-map';
+import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
 
@@ -155,7 +156,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     top.receiveShadow = true;
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
-  const groundAt = approaches?.groundAt ?? bare;
+  // The sampler also carries the drawn triangles, so ground-following layers can drape (terrain/drape.ts).
+  const sample = approaches?.groundAt ?? bare;
+  const groundAt: DrapeGround = Object.assign((x: number, z: number) => sample(x, z), { triangles: mesh });
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];

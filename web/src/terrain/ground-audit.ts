@@ -66,6 +66,7 @@ export function cityLayer(path: string[], mesh: THREE.Mesh): string | null {
   if (mesh.geometry.hasAttribute('aStyle')) return 'building · generic';
   if (names.includes('bridge approaches')) return 'bridge approaches';
   if (names.includes('landscape')) return 'landscape primitives';
+  if (names.includes('ground-cover')) return 'ground cover';
   const curated = names.find(n => n.startsWith('curated:'));
   if (curated) return 'curated landscape';
   if (names.includes('Decks and embedded rails')) return 'streets';
@@ -147,9 +148,15 @@ export function groundAudit(root: THREE.Object3D, boards: AuditBoard[], o: Audit
       layer = named ? base + ':' + named : base;
       const span = Math.max(a.distanceTo(b), b.distanceTo(c), c.distanceTo(a));
       const k = Math.max(1, Math.ceil(span / step));
+      // Samples sit up to 2 cm in from the edges: where a surface meets higher ground at its
+      // edge (a tread meeting its landing), the edge itself is a junction, not a penetration.
+      const cx = (a.x + b.x + c.x) / 3, cy = (a.y + b.y + c.y) / 3, cz = (a.z + b.z + c.z) / 3;
+      const inset = Math.min(0.25, 0.02 / Math.max(1e-6, span));
       for (let p = 0; p <= k; p++) for (let q = 0; q <= k - p; q++) {
         const u = p / k, v = q / k, w = 1 - u - v;
-        const x = w * a.x + u * b.x + v * c.x, y = w * a.y + u * b.y + v * c.y, z = w * a.z + u * b.z + v * c.z;
+        const x = (w * a.x + u * b.x + v * c.x) * (1 - inset) + cx * inset;
+        const y = (w * a.y + u * b.y + v * c.y) * (1 - inset) + cy * inset;
+        const z = (w * a.z + u * b.z + v * c.z) * (1 - inset) + cz * inset;
         const t = terrainAt(x, z);
         if (!t) continue;
         const [board, ty] = t;

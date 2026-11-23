@@ -246,6 +246,23 @@ export class GroundSurface {
       }
   }
 
+  /** Drawn triangles whose block overlaps the box (see terrain/drape.ts). */
+  trianglesIn(minX: number, maxX: number, minZ: number, maxZ: number,
+    visit: (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number) => void) {
+    const { bounds, stepM } = this.grid.manifest, size = 2 * stepM;
+    const index = this.geometry.index!, p = this.geometry.getAttribute('position');
+    const rows = (this.starts.length - 1) / this.blockCols;
+    const j0 = Math.max(0, Math.floor((minZ - bounds.minZ) / size)), j1 = Math.min(rows - 1, Math.floor((maxZ - bounds.minZ) / size));
+    const i0 = Math.max(0, Math.floor((minX - bounds.minX) / size)), i1 = Math.min(this.blockCols - 1, Math.floor((maxX - bounds.minX) / size));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const k = j * this.blockCols + i;
+      for (let n = this.starts[k]; n < this.starts[k + 1]; n += 3) {
+        const a = index.getX(n), b = index.getX(n + 1), c = index.getX(n + 2);
+        visit(p.getX(a), p.getY(a), p.getZ(a), p.getX(b), p.getY(b), p.getZ(b), p.getX(c), p.getY(c), p.getZ(c));
+      }
+    }
+  }
+
   /** Scene y on the actual drawn triangle, for placement at this quality. */
   sampleScene(x: number, z: number): number | null {
     const { bounds, stepM, rows, cols } = this.grid.manifest;

@@ -1,0 +1,56 @@
+import { readFileSync } from 'node:fs';
+import { Group } from 'three';
+import { afterEach, expect, it, vi } from 'vitest';
+import { addSection, bounds, connect, joins, midtownRows, type Area, type Board } from '../square-board/sections';
+import { CITY_COLORS, cityLayer, groundAudit, type LayerResult } from './ground-audit';
+import { GroundGrid } from './grid';
+import { createDowntownTerrain } from './model';
+
+// Ground contact on the committed boards, at both tiers: the drawn terrain must not
+// stand more than 3 cm above a layer meant to lie on it. Built from pipeline/prototypes,
+// so it runs in every `pnpm test` without staged data.
+const source = new URL('../../../pipeline/prototypes/', import.meta.url);
+function file(id: Board, name: string) {
+  const path = id === 'downtown' ? 'downtown-ground' : id === 'king' ? 'king-memorial/ground' : id === 'auburn' ? 'sweet-auburn/ground' : 'square-board/' + id;
+  return readFileSync(new URL(path + '/' + name, source));
+}
+const grid = (id: Board) => new GroundGrid(JSON.parse(file(id, 'ground.json').toString()), Uint8Array.from(file(id, 'ground.i16')).buffer);
+afterEach(() => vi.unstubAllGlobals());
+
+/**
+ * Layers held to the 3 cm contract. Owned elsewhere and reported, not asserted:
+ * surveyed street decks and bridge approaches (profile and abutment heights, the
+ * Connector work) and soft planting (shrub clumps sunk into a bank on purpose).
+ */
+const HELD = ['rail ballast', 'ground cover', 'landscape primitives:tread', 'landscape primitives:stone'];
+
+it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging layers on %s', async quality => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  vi.stubGlobal('fetch', async (url: string) => {
+    const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
+    return new Response(Uint8Array.from(file(id as Board, name)).buffer);
+  });
+  const mounted = new Map<Board, Area>();
+  const signal = new AbortController().signal;
+  try {
+    for (const id of ['downtown', 'king', 'auburn'] as const)
+      connect(mounted, new Map([[id, createDowntownTerrain(grid(id), { bounds: bounds[id], buildings: [], roads: [], rail: [] }, [], { quality, bottomY: -48, join: joins(id) })]]));
+    await addSection('south', mounted, quality, signal);
+    await addSection('north', mounted, quality, signal);
+    for (const row of midtownRows.slice(0, 3)) await addSection(row, mounted, quality, signal);
+    const root = new Group();
+    for (const area of mounted.values()) root.add(area.group);
+    const audit = groundAudit(root, [...mounted].map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })),
+      { layer: cityLayer, colors: CITY_COLORS, step: 0.5, tolerance: 0.03 });
+    const held = (l: LayerResult) => HELD.includes(l.layer);
+    const sampled = audit.layers.filter(held);
+    // The layers under test are actually present: the High's granite steps and lawn turf
+    // (midtown-upper) and the south band's ground freight ballast.
+    for (const layer of ['rail ballast', 'ground cover', 'landscape primitives:tread'])
+      expect(sampled.some(l => l.layer === layer && l.samples > 100), layer).toBe(true);
+    const failures = sampled.filter(l => l.penetrating).map(l =>
+      `${l.board} ${l.layer}: ${l.penetrating} samples, worst ${(l.worst!.depth * 100).toFixed(1)} cm at ${l.worst!.x.toFixed(1)},${l.worst!.z.toFixed(1)}`);
+    expect(failures).toEqual([]);
+  } finally { for (const area of mounted.values()) area.dispose(); }
+}, 60_000);

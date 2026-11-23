@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { P2 } from '../vignette/geom';
 import { drapeRing, g0, type Ground, type Quality } from './primitives';
+import { drapeTriangle, type DrapeGround } from '../terrain/drape';
 
 /**
  * "Pocket nature" ground covers: a small set of draped ground materials with
@@ -28,7 +29,10 @@ export class GroundCover {
     const k = COVERS.indexOf(cover), lift = o.lift ?? .02;
     // Off-board samples reuse the sampler's last valid height (never 0, which in City is 30 m off).
     const y = (x: number, z: number) => g0(ground, x, z) + lift;
-    drapeRing(ring, o.quality === 'low' ? 2 : 1, y, (a, b, c) => { this.pos.push(...a, ...b, ...c); this.kind.push(k, k, k); }, o.holes);
+    const put = (a: number[], b: number[], c: number[]) => { this.pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); this.kind.push(k, k, k); };
+    // On a City board, split each cell along the drawn terrain so no crease shows through.
+    const drawn = (ground as DrapeGround).triangles;
+    drapeRing(ring, o.quality === 'low' ? 2 : 1, y, drawn ? (a, b, c) => drapeTriangle(drawn, a, b, c, lift, put) : put, o.holes);
   }
 
   get triangles() { return this.pos.length / 9; }

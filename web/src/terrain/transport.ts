@@ -1,6 +1,7 @@
 import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
+import { drapeTriangle, type DrapeGround } from './drape';
 import { drawJunctionDecks } from './junction-decks';
 import * as THREE from 'three';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
@@ -345,8 +346,23 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
-          (textured ? freight : structures).quad(a, b, c, d, color);
-          if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
+          const drawn = (terrainGround as DrapeGround).triangles;
+          if (textured && !bridge && drawn && run !== cut?.freight) {
+            // Ground ballast follows the drawn terrain between its 2 m stations, so a
+            // crease in the bank can't show through it (terrain/drape.ts).
+            const corners = [[a, 0, lastS], [b, 1, lastS], [c, 1, s], [d, 0, s]] as const;
+            for (const [i, j, k] of [[0, 1, 2], [0, 2, 3]]) {
+              const tri = [corners[i], corners[j], corners[k]];
+              drapeTriangle(drawn, tri[0][0], tri[1][0], tri[2][0], lift, (...vs) => {
+                freight.tri(vs[0].slice(0, 3), vs[1].slice(0, 3), vs[2].slice(0, 3), color);
+                for (const v of vs) uv.push(v[3] * tri[0][1] + v[4] * tri[1][1] + v[5] * tri[2][1],
+                  (v[3] * tri[0][2] + v[4] * tri[1][2] + v[5] * tri[2][2]) / .8);
+              });
+            }
+          } else {
+            (textured ? freight : structures).quad(a, b, c, d, color);
+            if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
+          }
           if (textured && !bridge && gradeAvailable) {
             // Close exposed ballast faces where the raised approach clears the bare earth.
             for (const [left, right] of [[a, d], [c, b]]) {

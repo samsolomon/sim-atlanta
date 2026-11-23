@@ -367,12 +367,13 @@ export function stairRun(b: Builder, from: P2, to: P2, width: number, ground: Gr
     strip(b, edge, .3, (x, z) => Math.min(g0(ground, x, z), lo) - .2,
       (x, z) => {
         const t = Math.max(0, Math.min(1, ((x - a[0]) * ux + (z - a[1]) * uz) / len));
-        return Math.max(lo + (hi - lo) * t + .35, grade(x, z) + .05);
+        return Math.max(lo + (hi - lo) * t + .35, grade(x, z) + .1);
       }, STONE, CAP, .5);
   }
-  // The yield runs inside the cheek walls (or just outside cheekless sides), and just
-  // behind the first riser, so its skirt is never coplanar with stone.
-  const half = cheeks ? h + .15 : h + .01, s0 = Math.min(.02, len / 4);
+  // The yield runs inside the cheek walls (or just outside cheekless sides), and 2 cm
+  // in front of the first riser, where a cross-slope can lift the bank above the
+  // first tread. Its skirt is never coplanar with stone.
+  const half = cheeks ? h + .15 : h + .01, s0 = -.02;
   const corner = (s: number, side: number): [number, number] => [a[0] + ux * s + nx * side, a[1] + uz * s + nz * side];
   return {
     ring: [corner(s0, -half), corner(len, -half), corner(len, half), corner(s0, half)],
