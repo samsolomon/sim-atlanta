@@ -160,6 +160,17 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
   return world;
 }
 
+/**
+ * Low-tier far ground (GroundSurface.farGeometry): 2 m error, drawn beyond 2.5 km. There a
+ * screen pixel on a phone spans over 1 m (City's 22° lens), so the 2 m bound (4 m where a
+ * cell stitches to finer ones) stays within a couple of pixels; the default (~12 km) and
+ * skyline (~4.5 km) views are well beyond it, street views well inside.
+ */
+export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
+let groundLodChanged = false;
+/** True once after any board swapped its ground; City then redraws its manual shadow map. */
+export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
+
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
@@ -208,6 +219,15 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Carve before anything else samples the ground inside their footprints.
   const yields = landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []);
   if (yields.length) mesh.carve(yields);
+  // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
+  // triangles once the camera is over 2.5 km away. Render-only: placement, the audit and
+  // every seam keep the near triangles; the rim is shared node for node. It is built from
+  // the DEM, so it does not show stair or rail carves (sub-pixel at that range), and it is
+  // built eagerly (2.9 MB across the rectangle) so a swap never stalls a frame.
+  const nearGeometry = mesh.geometry;
+  const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M) : null;
+  const bb = grid.manifest.bounds;
+  let far = false;
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
@@ -287,6 +307,19 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
+    /**
+     * Swap the board between its near and far ground by the camera's distance to the board's
+     * box: far beyond FAR_GROUND_M, near again inside 0.9 × that. Allocation-free (it runs every
+     * frame); a swap flags the manual shadow map for a redraw (takeGroundLodChange).
+     */
+    update(_dt: number, camera: THREE.Camera) {
+      if (!farGeometry) return;
+      const p = camera.position;
+      const dx = Math.max(bb.minX - p.x, 0, p.x - bb.maxX), dz = Math.max(bb.minZ - p.z, 0, p.z - bb.maxZ);
+      const d = Math.hypot(dx, dz, Math.max(0, p.y - mesh.minY));
+      const next = far ? d > 0.9 * FAR_GROUND_M : d > FAR_GROUND_M;
+      if (next !== far) { far = next; board.geometry = far ? farGeometry : nearGeometry; groundLodChanged = true; }
+    },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
@@ -305,6 +338,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }
       });
+      // The traverse disposed whichever ground is attached; release the other one.
+      (board.geometry === nearGeometry ? farGeometry : nearGeometry)?.dispose();
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();

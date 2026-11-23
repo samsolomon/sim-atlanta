@@ -301,15 +301,9 @@ export function needleStars(b: FoliageBuilder, units: Unit[], seed: number, rays
   }
 }
 
-/** Glossy leaves (magnolia): share of sunlit cards baked as silver glints, shaded cards as bronze undersides. */
-export interface Gloss { glint?: number; bronze?: number }
-/** Vertex multipliers over the dark leaf green: >1 lifts it to a pale silver-green glint or a
- *  rusty bronze, in the same draw and triangles. */
-const GLINT = new THREE.Color(4.6, 3, 6.2), BRONZE = new THREE.Color(6, 1.7, 0.55);
 /** Two crossed cards per mass: one tangent to the crown (its silhouette), one radial (its depth). */
-export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, gloss: Gloss = {}) {
+export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25) {
   const r = rng(seed);
-  const g2 = rng(seed + 77);
   for (const u of units) {
     const c = new THREE.Vector3(...u.c);
     const n = new THREE.Vector3(...u.n);
@@ -323,10 +317,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
       const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => c.clone().addScaledVector(ax, x * w).addScaledVector(ay, y * w));
       const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(cell, x, y));
       // Softer than the facets' shade: the crown normals already light the crown as a blob.
-      let col = shade(u.depth, n.y).lerp(WHITE, 0.55);
-      const roll = g2();
-      if (gloss.glint && u.depth > 0.6 && roll < gloss.glint) col = GLINT;
-      else if (gloss.bronze && u.depth < 0.7 && roll < gloss.bronze) col = BRONZE;
+      const col = shade(u.depth, n.y).lerp(WHITE, 0.55);
       b.tri([p[0], p[1], p[2]], col, u, [uv[0], uv[1], uv[2]]);
       b.tri([p[0], p[2], p[3]], col, u, [uv[0], uv[2], uv[3]]);
     }
@@ -342,7 +333,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
  * order) ignore the leaves: they show in the instance's bloom colour `aBloom.rgb` while its
  * bloom share `aBloom.a` is at least their order.
  */
-export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, sheen = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; sheen?: number }) {
+export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, specks = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; specks?: number }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   const textured = !!opts.map;
   // Which leaves exist: shared with the ink's foliage mask (userData.maskShader), so the mask
@@ -383,21 +374,47 @@ if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.
   diffuseColor.rgb *= mix(1.0, texel.r, 0.25);
 #endif`);
     }
-    if (sheen > 0) {
-      // Waxy leaves: a sharp highlight where a card's true face normal meets the sun's half
-      // vector, so glints scatter card by card and move with the view. Scaled by the sun's
-      // colour, so it is gone at night.
-      sh.fragmentShader = sh.fragmentShader.replace('#include <tonemapping_fragment>', `#if NUM_DIR_LIGHTS > 0
+    if (specks > 0 && textured) {
+      // Glossy leaves (magnolia): small sharp highlights, not lit cards. A card is far bigger
+      // than a leaf, so the gloss picks single painted leaves: a hash of each leaf's atlas
+      // value (its grey and drop order) and a half-metre cell of tree space, so every card
+      // picks its own few. A picked leaf flashes where its card's true face meets the sun's
+      // half vector, only on the crown's sun side, and is gone at night.
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vSpeckPos;')
+        .replace('#include <project_vertex>', `#include <project_vertex>
+#ifdef USE_INSTANCING
+// Tree space plus a small per-tree offset (not the world position: sin() loses precision
+// on large values far from the origin).
+vSpeckPos = mat3(instanceMatrix) * transformed + mod(instanceMatrix[3].xyz, 97.0);
+#else
+vSpeckPos = transformed;
+#endif`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vSpeckPos;')
+        .replace('#include <tonemapping_fragment>', `#if NUM_DIR_LIGHTS > 0
   {
     vec3 fN = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
     // vViewPosition points from the surface to the camera (three's geometryViewDir).
     vec3 V = normalize(vViewPosition);
     if (dot(fN, V) < 0.0) fN = -fN;
-    vec3 H = normalize(directionalLights[0].direction + V);
-    float s = pow(max(dot(fN, H), 0.0), 28.0);
+    vec3 L = directionalLights[0].direction;
+    // Cards face every way, so a broad lobe: the leaves on cards turned toward the mirror angle.
+    float s = smoothstep(0.45, 0.85, dot(fN, normalize(L + V)));
+    // The crown's sun side (the smoothed crown normal), so specks gather upper and outer.
+    float side = smoothstep(0.15, 0.6, dot(normalize(vNormal), L));
+    // Kept small so sin() stays precise on mediump-leaning GPUs.
+    vec3 cell = mod(floor(vSpeckPos * 2.0), 64.0);
+    // The leaf's value from the full-size atlas: mip-averaged texels would blend neighbouring
+    // leaves into new ids and crawl as the camera moves.
+    vec4 leaf = textureLod(map, vMapUv, 0.0);
+    float id = fract(sin(dot(vec4(floor(leaf.r * 24.0), floor(leaf.a * 48.0), cell.x + cell.z * 7.0, cell.y), vec4(12.9898, 78.233, 37.719, 4.581))) * 43758.5453);
+    float pick = step(1.0 - ${specks.toFixed(3)}, id);
     // Off at night: the lab's night sun is ~0.15 of day, City's lower still.
     float sun = smoothstep(0.35, 1.2, dot(directionalLights[0].color, vec3(0.3333)));
-    gl_FragColor.rgb += vec3(0.82, 0.88, 0.9) * s * ${sheen.toFixed(3)} * sun;
+    // Warm white over the dark green, like sun off wax.
+    // Near-binary, so a speck is a sharp point of light, not a pale wash.
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0, 0.96, 0.84), pick * smoothstep(0.3, 0.55, s * side) * 0.95 * sun);
   }
 #endif
 #include <tonemapping_fragment>`);
@@ -416,7 +433,7 @@ if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.
   vColor.xyz = blossom ? mix(color.xyz, vec3(1.0), ${bloomLift.toFixed(3)}) * aBloom.rgb : color.xyz * mix(instanceColor.xyz, aToneB, aMass.x);
 #endif`);
   };
-  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash + ':' + bloomLift + ':' + sheen;
+  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash + ':' + bloomLift + (textured && specks > 0 ? ':' + specks : '');
   m.userData.maskShader = visibility;
   m.userData.maskKey = 'species-look' + (textured ? ':map' : '');
   return m;

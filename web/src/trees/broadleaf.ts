@@ -35,6 +35,8 @@ export interface Habit {
   tiers?: Record<TreeQuality, number[]>;
   /** Pyramidal crowns (a magnolia): masses shrink toward the top by up to this share. */
   taper?: number;
+  /** 0 a domed top (half-ellipsoid), 1 a straight cone above the widest point. */
+  cone?: number;
   /** How clusters are shared among masses: 2 by area (default), 1 more evenly. */
   clusterWeight?: number;
   bark: string;
@@ -65,7 +67,26 @@ export function envelope(h: Habit, d: Dims) {
   const R = d.spreadM / 2, H = d.heightM;
   const y0 = h.crownBase * H, y1 = H;
   const yc = y0 + (y1 - y0) * h.widest;
-  return { R, H, y0, y1, yc, below: yc - y0, above: y1 - yc };
+  return { R, H, y0, y1, yc, below: yc - y0, above: y1 - yc, cone: h.cone ?? 0 };
+}
+
+/** Outward normal of the crown envelope at p: the egg's, blended toward the cone's flank above
+ *  the widest point by `cone`. */
+export function envelopeNormal(e: ReturnType<typeof envelope>, x: number, y: number, z: number) {
+  const half = y > e.yc ? e.above : e.below;
+  const egg = new THREE.Vector3(x / e.R ** 2, (y - e.yc) / half ** 2, z / e.R ** 2).normalize();
+  if (!(e.cone && y > e.yc)) return egg;
+  const h = Math.hypot(x, z) || 1;
+  const flank = new THREE.Vector3(x / h / e.R, 1 / e.above, z / h / e.R).normalize();
+  // Ramped in just above the widest point, so the lighting has no seam there.
+  const yN = (y - e.yc) / e.above;
+  return egg.lerp(flank, e.cone * Math.min(1, Math.max(0, yN / 0.2))).normalize();
+}
+
+/** The crown's radius share at height yN (−1 base, 0 widest, 1 top): an egg, or a cone on top. */
+export function ringAt(e: { cone: number }, yN: number) {
+  const dome = Math.sqrt(Math.max(0, 1 - yN * yN));
+  return yN > 0 && e.cone ? dome * (1 - e.cone) + Math.max(0, 1 - yN) * e.cone : dome;
 }
 
 /**
@@ -122,11 +143,11 @@ export function crownMasses(habit: Habit, size: SizeClass, q: TreeQuality, d: Di
   // Masses grow at low detail, where there are fewer of them (a multi-stem tree keeps its count).
   const big = h.mass.r * e.R * (q === 'high' || (h.stems ?? 1) > 1 ? 1 : 1.18);
   const onEnvelope = (a: number, yN: number, rad: number) => {
-    const ring = Math.sqrt(Math.max(0, 1 - yN * yN));
+    const ring = ringAt(e, yN);
     const half = yN > 0 ? e.above : e.below;
     const inset = (x: number, k: number) => Math.max(0, x - rad * k);
     const c: V3 = [Math.cos(a) * inset(ring * e.R, 0.8), e.yc + yN * inset(half, 0.75), Math.sin(a) * inset(ring * e.R, 0.8)];
-    const nv = new THREE.Vector3(c[0] / e.R ** 2, (c[1] - e.yc) / half ** 2, c[2] / e.R ** 2).normalize();
+    const nv = envelopeNormal(e, c[0], c[1], c[2]);
     return { c, n: [nv.x, nv.y, nv.z] as V3 };
   };
   const out: Mass[] = [];
@@ -188,8 +209,11 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
     // The leader ends inside the top mass, below its centre, tapering to almost nothing, so it
     // never pokes through the crown (Sam, sweetgum review).
     const top = masses[masses.length - 1];
-    const leaderTop = Math.min(h.trunkTop, (top.c[1] - top.r * 0.35) / e.H);
-    segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, Math.max(h.limbFrom[1], leaderTop), top.c[2] / e.R * 0.4], r0: tr, r1: tr * 0.12, sides: q === 'high' ? 5 : 4, color: habit.barkDark });
+    // A cone top pulls the tuft's leaves in and down (inEnvelope), so the leader stops lower,
+    // and is not lifted back to the limbs' top (it would show through the narrowed tip).
+    const leaderTop = Math.min(h.trunkTop, (top.c[1] - top.r * (0.35 + (h.cone ?? 0))) / e.H);
+    const leaderY = h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
+    segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * 0.12, sides: q === 'high' ? 5 : 4, color: habit.barkDark });
     const count = h.tiers ? masses.length - 1 : limbs;
     for (let i = 0; i < count; i++) {
       const f = count === 1 ? 0.5 : i / (count - 1);
@@ -197,7 +221,8 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
       if (h.tiers) {
         // One slightly ascending limb per tuft, leaving the trunk a little below it.
         const out = Math.hypot(main.c[0], main.c[2]);
-        const y0 = Math.max(h.crownBase * 0.85, (main.c[1] - Math.tan(h.limbAngle) * out) / e.H);
+        // Never above the leader's end: a limb must leave the trunk, not the air over it.
+        const y0 = Math.min(leaderY * 0.97, Math.max(h.crownBase * 0.85, (main.c[1] - Math.tan(h.limbAngle) * out) / e.H));
         segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
         continue;
       }
