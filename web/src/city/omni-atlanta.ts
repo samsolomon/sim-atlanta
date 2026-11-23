@@ -91,11 +91,27 @@ export function createOmniAtlanta(buildings: VBuilding[], grid: GroundGrid) {
   );
   if (!model) return null;
   const { base, ring, prism, facade, body } = model;
-  // These four vertices are the ends of the elevated crossing. Keep its underside clear.
-  if (ring.length !== 42) return null;
-  const north = [...ring.slice(0, 5), ...ring.slice(26)],
-    south = ring.slice(5, 26);
-  const bridge = [ring[4], ring[26], ring[25], ring[5]];
+  // Find the surveyed bridge mouths even if a bake adds vertices or reverses the ring.
+  const corners: P2[] = [
+    [3.5, 62.9],
+    [4.0, 89.5],
+    [13.3, 91.5],
+    [14.3, 62.6],
+  ];
+  function cornerIndices(plan: P2[]) {
+    return corners.map(([x, z]) => plan.findIndex(([u, v]) => Math.hypot(x - u, z - v) < 0.7));
+  }
+  const start = cornerIndices(ring)[0];
+  if (start < 0) return null;
+  const rotated = [...ring.slice(start), ...ring.slice(0, start)];
+  const order = cornerIndices(rotated);
+  if (order.includes(-1)) return null;
+  const plan = order[1] < order[3] ? rotated : [rotated[0], ...rotated.slice(1).reverse()];
+  const [, southLeft, southRight, northRight] = cornerIndices(plan);
+  if (!(southLeft < southRight && southRight < northRight)) return null;
+  const south = plan.slice(southLeft, southRight + 1),
+    north = [plan[0], ...plan.slice(northRight)];
+  const bridge = [plan[0], plan[northRight], plan[southRight], plan[southLeft]];
   const limestone = '#d6c7ad',
     iron = '#6b777a',
     blue = ['#54727e', '#667f89', '#485e67'];
@@ -106,8 +122,8 @@ export function createOmniAtlanta(buildings: VBuilding[], grid: GroundGrid) {
   prism(southCrown, 375.4, 382.62, '#404d53', '#777673');
   prism(bridge, 327.35, 332.0, iron, '#b4b4ab');
   for (const [a, b] of [
-    [ring[26], ring[25]],
-    [ring[5], ring[4]],
+    [bridge[1], bridge[2]],
+    [bridge[3], bridge[0]],
   ])
     facade(a, b, 327.75, 331.2, 1, 2.4, 0.89, 0.9, blue, 0.32);
   for (let i = 0; i < southMain.length; i++) {

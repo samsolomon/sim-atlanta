@@ -14,3 +14,5 @@ The comparison uses the high tier and a paused November 20, 2026 clock. Each pai
 | --- | --- | --- | --- | --- |
 | Park (-295, -553) | 168° / 52° / 0.47 | [Before](park-day-before.jpg) · [After](park-day-after.jpg) | [Before](park-dusk-before.jpg) · [After](park-dusk-after.jpg) | [Before](park-night-before.jpg) · [After](park-night-after.jpg) |
 | Marietta (-294, -544) | 302° / 53° / 0.47 | [Before](marietta-day-before.jpg) · [After](marietta-day-after.jpg) | [Before](marietta-dusk-before.jpg) · [After](marietta-dusk-after.jpg) | [Before](marietta-night-before.jpg) · [After](marietta-night-after.jpg) |
+
+The street-height view looks under the Marietta bridge. Eye (−269.59, −5.10, −561.06), target (−298.74, 3.60, −533.66), vertical field of view 69°. [Day before](bridge-day-before.jpg) · [After](bridge-day-after.jpg) · [Dusk before](bridge-dusk-before.jpg) · [After](bridge-dusk-after.jpg) · [Night before](bridge-night-before.jpg) · [After](bridge-night-after.jpg)

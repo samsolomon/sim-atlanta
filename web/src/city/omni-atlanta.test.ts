@@ -75,6 +75,10 @@ it('restores the north tower and leaves the street open under its bridge', () =>
     },
     new Int16Array(4).fill(3190).buffer,
   );
+  const outline = sites[0].rings[0];
+  const mid: [number, number] = [(outline[0][0] + outline[1][0]) / 2, (outline[0][1] + outline[1][1]) / 2];
+  const reordered = [...outline.slice(1), outline[0], mid].reverse();
+  expect(createOmniAtlanta([{ ...sites[0], rings: [reordered] }], grid)?.buildings).toEqual([]);
   const result = createOmniAtlanta([...sites, next], grid)!;
   expect(result.buildings).toEqual([next]);
   expect(createOmniAtlanta([next], grid)).toBeNull();
