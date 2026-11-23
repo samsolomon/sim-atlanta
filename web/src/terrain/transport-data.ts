@@ -14,6 +14,8 @@ export interface TransportRun {
   /** Original directed centerline before resampling a measured deck or its approach. */
   sourceAxis?: P2[];
   crossSection?: { width: number; lanes: number; opposing: number };
+  /** Drawn by a landmark model. Kept for placement clearance and road crossings. */
+  replaced?: boolean;
   /** Distances at these endpoints on the illustrative westbound freight route. */
   freightS?: [number, number];
 }

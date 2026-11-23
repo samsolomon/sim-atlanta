@@ -14,7 +14,11 @@ export function midtownFoundations<T extends TerrainCity>(city: T, sceneZero: nu
     const [low, high] = grade;
     const height = building.h ?? (building.floors ? building.floors * 3.6 : 8);
     // Use the middle grade, raising it only enough for a door at the uphill edge.
-    const floorY = Math.max((low + high) / 2, high - height + Math.min(height, 2.4)) - sceneZero;
+    // A structure too short for a door tucks its uphill side into the slope
+    // instead, with its roof flush with the high ground at worst.
+    const floor = height < 2.4 ? Math.max((low + high) / 2, high - height)
+      : Math.max((low + high) / 2, high - height + 2.4);
+    const floorY = floor - sceneZero;
     return { ...building, floorY };
   }) };
 }
