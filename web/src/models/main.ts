@@ -274,7 +274,7 @@ function buildLandscape() {
   landscape = createLandscapeScene(model as LandscapeKind, seasonDoy, treeQuality);
   landscape.group.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
   scene.add(landscape.group);
-  landscapeReport.textContent = `${landscape.draws} draw call for all primitives. Triangles: high ${landscape.triangles.high.toLocaleString()}, `
+  landscapeReport.textContent = `${landscape.draws} draw call${landscape.draws === 1 ? '' : 's'} (one for primitives, one for ground covers, when present). Triangles: high ${landscape.triangles.high.toLocaleString()}, `
     + `low ${landscape.triangles.low.toLocaleString()}. Showing ${treeQuality} detail.`;
   landscapeReport.hidden = false;
 }
