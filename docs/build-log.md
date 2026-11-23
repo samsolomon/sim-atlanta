@@ -2170,3 +2170,7 @@ The surprise came from the parts list. Two parts became fifteen once I searched 
 ### 2026-11-23 — Two street levels at the Crescent Apartments
 
 The ground beneath Margaret Mitchell House falls almost 3 m from the lawn toward Crescent Avenue. The Peachtree porch meets the high lawn while two separate balconies step up the Crescent elevation. The bay beneath the half-timbered gable and the brick chimney are visible above both. [Eight City views, survey and exterior photographs](margaret-mitchell-house.md)
+
+### 2026-11-23 — Red and Gold come up for air at Brookwood
+
+Between Arts Center and the board's north edge the North Line is visible for only 560 m. It leaves its tunnel in a walled cut beside the Brookwood interchange. The 3DEP grid shows 10 m of earth over the tunnel 20 m behind the mouth, which is why no train should appear south of it. City now runs Red and Gold consists along both mapped mains with each train's own tier and identity, and clips every car at a concrete portal face. The assignment of direction to track is inferred. The portal is illustrative, because the only imagery we could find was aerial. The Lindbergh short-turn paths had to be filtered out explicitly, since they share the corridor but never reach the edge. Requires a web rebuild only. [Portal notes and four City views](midtown-marta.md#north-line-portal-and-open-guideway) · [Daylight](log/ui/midtown-marta/north-line-high-day.jpg) · [Night](log/ui/midtown-marta/north-line-low-night.jpg)
