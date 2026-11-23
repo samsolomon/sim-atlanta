@@ -92,5 +92,6 @@ it('keeps the 24-story tower, suspended Forsyth bridge and former department sto
   expect(ray(-77.6, 72.74)! + 323.8).toBeCloseTo(351.25, 1);
   expect(ray(-106.34, 94.52)! + 323.8).toBeCloseTo(371.95, 1);
   expect(ray(-147.97, 88.63, 324, 1)! + 323.8).toBeCloseTo(331.3, 1);
+  expect(ray(-147.97, 88.63, 330)).toBeUndefined();
   expect(createSamNunn([sites[0], next], grid)).toBeNull();
 });
