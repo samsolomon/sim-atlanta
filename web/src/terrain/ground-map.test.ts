@@ -37,3 +37,15 @@ it('paints lot markings inside their polygon and crossing ways only once over gr
   expect(draws.indexOf(zebra[0])).toBeGreaterThan(asphalt);
   map.dispose();
 });
+
+it('keeps the rectangle ground maps within each tier budget on the GPU', async () => {
+  const { bounds } = await import('../square-board/sections');
+  const { groundMapSize } = await import('./ground-map');
+  // RGBA8 with a full mip chain, every board of the rectangle mounted (the phone default).
+  const mb = (quality: 'low' | 'high') => Object.values(bounds)
+    .reduce((sum, b) => { const { width, height } = groundMapSize(b, quality); return sum + width * height * 4 * 4 / 3; }, 0) / 2 ** 20;
+  // Low: about 1.4 m texels (was 1 m and ~110 MB). High is pinned at today's size until its own budget.
+  expect(mb('low')).toBeLessThanOrEqual(75);
+  expect(mb('low')).toBeGreaterThan(40);   // not silently blurred further
+  expect(mb('high')).toBeLessThanOrEqual(440);
+});
