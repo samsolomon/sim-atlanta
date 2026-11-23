@@ -216,7 +216,8 @@ export function createNorthLine(
   const piers = northLinePiers(draft, roads, lanes, rows, area.groundAt);
   const depths = northLineDepths(draft, piers);
   const profile = northLineProfile(lines, rows, area.groundAt, roads, (i) => depths[i]);
-  area.group.add(northLineGuideway(lines, profile, area.groundAt));
+  const guideway = northLineGuideway(lines, profile, area.groundAt);
+  area.group.add(guideway);
   const spans = northLineStructure(profile, piers, area.groundAt);
   area.group.add(spans.mesh, spans.lamps);
   const height = (line: Line, along: number) => profile.at(line, along);
@@ -308,5 +309,22 @@ export function createNorthLine(
     return total;
   };
   const shown = () => [...pools.values()].flatMap((pool) => pool.meshes.slice(0, pool.count));
-  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown });
+  /** Free everything this North Line added; the area's own dispose only clears its group. */
+  function dispose() {
+    for (const object of [guideway, spans.mesh, spans.lamps, portalParts.group]) {
+      object.removeFromParent();
+      object.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        o.geometry.dispose();
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
+      });
+    }
+    for (const pool of pools.values()) {
+      for (const car of pool.meshes) car.removeFromParent();
+      pool.geometry.dispose();
+      pool.material.dispose();
+    }
+    pools.clear();
+  }
+  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown, dispose });
 }
