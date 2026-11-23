@@ -1,3 +1,4 @@
+import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -123,7 +124,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
-  const portals = [...streetPortals(city), ...junctionPortals(city)];
+  const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
     const top = new THREE.Mesh(approaches.geometry, board.material);
