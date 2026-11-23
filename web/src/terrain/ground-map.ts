@@ -5,6 +5,7 @@ import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
 import { dividedIvanAllen, roadWidth, type TerrainCity } from './transport-data';
 import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePaths } from './westside-path';
+import { paintStreetBridgeApproaches } from './street-bridges';
 import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
 
 const landColors: Record<string, string> = {
@@ -116,6 +117,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
       stroke(r, .4, '#d8bd79');
     }
   }
+  paintStreetBridgeApproaches(ctx, data);
   paintConnector(ctx, data, texelM);
   ctx.setLineDash(zebraPattern);
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);

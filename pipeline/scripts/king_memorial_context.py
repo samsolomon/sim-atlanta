@@ -39,7 +39,7 @@ def parse_height(value):
         return None
 
 
-def extract_context(raw, bounds, *, king=False):
+def extract_context(raw, bounds, *, king=False, station_building=None, named_deck=None):
     from shapely.geometry import LineString, Polygon, box
     from shapely.ops import polygonize
 
@@ -51,7 +51,7 @@ def extract_context(raw, bounds, *, king=False):
 
     def add_area(ref, tags, outer, holes=()):
         building = tags.get("building")
-        if building in ("train_station", "roof", "no") or tags.get("railway"):
+        if building in ("roof", "no") or (building == "train_station" and ref != station_building) or tags.get("railway"):
             return
         kind = "parking" if tags.get("amenity") == "parking" else tags.get("landuse") or tags.get("leisure")
         if not building and kind not in ("parking", "grass", "park", "pitch", "garden", "cemetery"):
@@ -115,6 +115,8 @@ def extract_context(raw, bounds, *, king=False):
                 roads.append(dict(cls=t["highway"], sub=t.get("footway") or t.get("service"),
                                   name=t.get("name"), bridge=t.get("bridge", "no") != "no",
                                   tunnel=t.get("tunnel", "no") != "no" or t.get("indoor") == "yes", pts=pts))
+                if ident == named_deck:
+                    roads[-1]["id"] = f"osm:way:{ident}"
     return buildings, roads, cover
 
 

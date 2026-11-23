@@ -70,6 +70,7 @@ import { createCitizensTrust } from './citizens-trust';
 import { createFultonGovernmentCenter } from './fulton-government-center';
 import { createGeorgiaAquarium } from './georgia-aquarium';
 import { createWorldOfCocaCola } from './world-of-coca-cola';
+import { createWilliams250 } from './250-williams';
 import { createFultonCourthouse } from './fulton-courthouse';
 import { createPeachtreeOffices } from './peachtree-offices';
 import { createWilliamOliver } from './william-oliver';
@@ -288,6 +289,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fultonGovernmentCenter: ReturnType<typeof createFultonGovernmentCenter> = null;
   let georgiaAquarium: ReturnType<typeof createGeorgiaAquarium> = null;
   let worldOfCocaCola: ReturnType<typeof createWorldOfCocaCola> = null;
+  let williams250: ReturnType<typeof createWilliams250> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
   let williamOliver: ReturnType<typeof createWilliamOliver> = null;
@@ -392,8 +394,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterGeorgiaAquarium = georgiaAquarium?.buildings ?? afterFultonGovernmentCenter;
         worldOfCocaCola = createWorldOfCocaCola(afterGeorgiaAquarium, ground);
         const afterWorldOfCocaCola = worldOfCocaCola?.buildings ?? afterGeorgiaAquarium;
-        fultonCourthouse = createFultonCourthouse(afterWorldOfCocaCola, ground);
-        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterWorldOfCocaCola;
+        williams250 = createWilliams250(afterWorldOfCocaCola, ground);
+        const afterWilliams250 = williams250?.buildings ?? afterWorldOfCocaCola;
+        fultonCourthouse = createFultonCourthouse(afterWilliams250, ground);
+        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterWilliams250;
         peachtreeOffices = createPeachtreeOffices(afterFultonCourthouse, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterFultonCourthouse;
         williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
@@ -446,7 +450,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
@@ -479,6 +483,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (fultonGovernmentCenter) world.group.add(fultonGovernmentCenter.group);
         if (georgiaAquarium) world.group.add(georgiaAquarium.group);
         if (worldOfCocaCola) world.group.add(worldOfCocaCola.group);
+        if (williams250) world.group.add(williams250.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
         if (williamOliver) world.group.add(williamOliver.group);
@@ -661,13 +666,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.add(rain.mesh, snow.mesh);
 
   // ---- camera ---------------------------------------------------------------------------
-  const camera = new THREE.PerspectiveCamera(22, 1, 20, 20000);
+  const camera = new THREE.PerspectiveCamera(22, 1, 20, midtown ? 40000 : 20000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minPolarAngle = THREE.MathUtils.degToRad(20);
   controls.maxPolarAngle = THREE.MathUtils.degToRad(72);
   controls.minDistance = 150;
-  controls.maxDistance = midtown ? 15000 : mosaic ? 11000 : 6500;
+  controls.maxDistance = midtown ? 32000 : mosaic ? 11000 : 6500;
   controls.screenSpacePanning = false;
   controls.keys = { LEFT: '', UP: '', RIGHT: '', BOTTOM: '' }; // the shell owns the keyboard
   const squareButton = mosaic ? document.createElement('button') : undefined;
@@ -693,8 +698,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(area.group);
     scenery.push(area.group);
     area.setSeason(local(new Date(options.clockMs())).doy);
-    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === (midtown ? 8 : 7)
-      ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${midtown ? 8 : 7} areas loaded)`;
+    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
+      ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
     renderer.shadowMap.needsUpdate = true;
   }
   function approachMosaic(x: number, z: number) {
@@ -702,8 +707,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       for (const area of added.values()) addArea(area);
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
-      areaResult(added.has('midtown-south') ? 'midtown' : added.has('north-band') ? 'north' : 'south', null);
-      if (midtown && wholeBoardRequested && added.has('north-band')) approachMosaic(400, -2100);
+      const first = added.keys().next().value!;
+      areaResult(first === 'north-band' ? 'north' : first === 'south-band' ? 'south' : first, null);
       if (target) {
         const offset = camera.position.clone().sub(controls.target);
         controls.target.set(target.x, targetY(target.x, target.z), target.z);
@@ -954,15 +959,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = null;
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
-      mosaic.retry();
+      mosaic.requestFullBoard();
       if (east && eastRailFailed) loadKingRail(east);
       // This explicit request also works as a retry when any geographic pack is missing.
-      approachMosaic(400, midtown ? -2100 : -1500);
-      approachMosaic(400, 900);
+      approachMosaic(400, -1500);
       approachEast(1400, 0);
       approachNorth(1400, 0);
       const aspect = Math.max(.25, camera.aspect);
-      setView(-15, 35, Math.min(controls.maxDistance, Math.max(midtown ? 11700 : 9200, (midtown ? 11700 : 9600) / aspect)), 400, midtown ? -700 : -300);
+      const depth = 1100 - mosaic.northEdge;
+      const distance = midtown ? Math.max(depth * 3.25, 11700 / aspect) : Math.max(9200, 9600 / aspect);
+      setView(-15, 35, Math.min(controls.maxDistance, distance), 400, (1100 + mosaic.northEdge) / 2);
       document.getElementById('city-info')?.hidePopover?.();
     };
   }
@@ -1050,6 +1056,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     fultonGovernmentCenter?.setNight(night);
     georgiaAquarium?.setNight(night);
     worldOfCocaCola?.setNight(night);
+    williams250?.setNight(night);
     fultonCourthouse?.setNight(night);
     peachtreeOffices?.setNight(night);
     williamOliver?.setNight(night);

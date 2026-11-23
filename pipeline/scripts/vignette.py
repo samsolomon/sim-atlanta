@@ -25,13 +25,18 @@ VIGNETTES = {
     # Corridor prototype east of the board along the MARTA East Line to King Memorial. It shares
     # downtown's x = 1000 column and 5 m lattice. See docs/king-memorial-corridor.md.
     "king-memorial": {"x": (1000.0, 1800.0), "z": (280.0, 640.0)},
-    "midtown-south": {"x": (-1000., 1800.), "z": (-2500., -1700.)},
     "north-band": {"x": (-1000., 1800.), "z": (-1700., -1300.)},
     "north-corner": {"x": (1000., 1800.), "z": (-1300., -520.)},
     "south-band": {"x": (-1000., 1800.), "z": (700., 1100.)},
     "south-corner": {"x": (1000., 1800.), "z": (640., 700.)},
     "sweet-auburn": {"x": (1000.0, 1800.0), "z": (-520.0, 280.0)},
 }
+
+with open(os.path.join(ROOT, "pipeline/prototypes/square-board/midtown-rows.json")) as f:
+    MIDTOWN_ROWS = json.load(f)
+for name, row in MIDTOWN_ROWS.items():
+    VIGNETTES[name] = {"x": (-1000., 1800.), "z": (float(row["minZ"]), float(row["maxZ"]))}
+
 
 
 def project(lon, lat):
