@@ -82,7 +82,7 @@
   max-width: min(420px, calc(100vw - var(--a2-left) - var(--a2-right)));
 }
 .a2-subject-open {
-  display: block; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; border-radius: 8px;
+  display: block; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; border-radius: 4px;
   max-width: 100%;
 }
 .a2-place {
@@ -98,13 +98,14 @@
 .a2-wx-icon { display: inline-grid; width: 19px; height: 19px; }
 .a2-wx-icon:empty { display: none; }
 .a2-wx-icon svg { width: 100%; height: 100%; fill: currentColor; }
-.a2-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 7px; font-size: 12px; color: var(--a2-ink2); }
-.a2-tier > span:nth-child(2)::after { content: ' ·'; }
+.a2-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; margin-top: 7px; font-size: 12px; color: var(--a2-ink2); }
+.a2-dot { margin-right: 6px; }
+.a2-tier > span:nth-child(2)::after { content: '\00a0·\00a0'; white-space: pre; }
 .a2-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
 .a2-dot-live { background: var(--a2-live); }
 .a2-dot-timetable { background: var(--a2-timetable); }
 .a2-link {
-  border: 0; background: none; padding: 0 2px; margin: 0 -2px; min-height: 24px; cursor: pointer;
+  border: 0; background: none; padding: 0 2px; margin: 0; min-height: 24px; cursor: pointer;
   font-weight: 600; text-decoration: underline; text-underline-offset: 2px; color: var(--a2-ink) !important; border-radius: 4px;
 }
 
