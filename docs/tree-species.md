@@ -625,7 +625,25 @@ The weeping laceleaf mound (about 2 m, cascading to the ground, on Sam's ivy ban
 - Commons has no verified Atlanta or Georgia photograph of a whole loblolly pine or tulip poplar. The only Georgia Piedmont photo is a distant loblolly stand in Oconee National Forest.
 - There is no Atlanta fall-colour date per species.
 
-## City rollout (proposal, waiting for Sam)
+## Ansley Park tree patterns (Street View, illustrative)
+
+Sam asked for the feel of Ansley's trees, not a survey (23 Nov). These notes come from Google Street View, viewed and not copied, plus his own late-November walk. Anything they shape in City is `illustrative`, with no on-screen label. House types, setbacks, terracing, walls and curbs belong to the parks and houses agent.
+
+| Place, capture | What the trees do |
+|---|---|
+| [The Prado at 17th St, Jan 2020](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.79300,-84.37870&heading=10&pitch=12&fov=90) | Bare oaks two to three times the height of the two- and three-storey houses (about 25–30 m), crowns meeting over the street. One dark magnolia mass by a house. A big oak alone on the planted median. |
+| [Ansley Dr at Maddox, Feb 2022](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.79560,-84.37900&heading=200&pitch=12&fov=90) | A huge oak limb arching over the corner. A multi-stem crape myrtle vase against a two-storey house. Pines behind. Foundation shrubs. |
+| [Beverly Rd island at the golf club edge, Jan 2026](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.79730,-84.37680&heading=90&pitch=12&fov=90) | A round grass traffic island with one large hardwood at its centre (the zelkova or elm island Sam saw). Golf-course edge of scattered tall loblollies and big hardwoods. A tall pine by a stone house. |
+| [Peachtree Cir at Winn Park, Mar 2022](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78935,-84.38210&heading=300&pitch=12&fov=90) | Big oak trunks on the park lawn. A white-flowering ornamental and others in spring bloom. Trees over-topping a four-storey apartment block. |
+| [Westminster Dr at Winn Park, Mar 2025](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.79135,-84.38035&heading=40&pitch=10&fov=90) | Tall, thin, bare hardwoods rising three to four times the house height from a slope; houses sit up on the rise above stone walls. A redbud in pink. |
+
+**What this suggests for City** (proposals for Sam, nothing built):
+- **Skew sizes large in Ansley.** In yard, park and street contexts there, draw about 40% of oak and tulip-poplar crowns at the specimen class (25–35 m) and the rest at mature. Sam: "many trees are much bigger than the houses". The street views agree.
+- **Closed street canopy.** On The Prado and Peachtree Circle, street oaks are big enough for crowns to meet over the road. Place them in pairs facing each other across the street, not in a single file.
+- **Island rule.** A round grass island gets one large hardwood at its centre (oak, or elm and zelkova). Small or triangular islands get Japanese maples and crape myrtles (Sam's walk).
+- **Yard accents.** Japanese maples and crape myrtles at the front of yards, a magnolia beside about one house in several, dogwoods at yard edges, and loblollies behind the houses and along the golf-course edge.
+
+
 
 **Nothing here is built.** City still draws one generic tree everywhere except the High Museum ginkgo. Sam decides this proposal before any rollout. It has two tiers:
 
