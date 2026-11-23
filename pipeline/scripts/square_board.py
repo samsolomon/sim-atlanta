@@ -58,7 +58,8 @@ def bake_patch(tile, name, north_tile=None):
         terrain.verify_shared_edge(heights, AUBURN if name == "north-corner" else KING)
         terrain.verify_shared_edge(heights, PACK / name.replace("-corner", "-band"))
     raw = gzip.decompress((PACK / "source" / f"{name}.json.gz").read_bytes())
-    buildings, roads, ground = extract_context(raw, manifest["bounds"])
+    station = dict(station_building="osm:way:265350477", named_deck=38978515) if name == "brookwood-station" else {}
+    buildings, roads, ground = extract_context(raw, manifest["bounds"], **station)
     for road in roads:
         if road["cls"].endswith("_link"):
             road["cls"], road["sub"] = road["cls"][:-5], "link"

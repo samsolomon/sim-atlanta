@@ -5,6 +5,8 @@ import { PAL } from '../vignette/world';
 
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
+// Lowest 5 m ground node is 239.9 m NAVD88 on the station row. Keep the tabletop below it.
+export const midtownBaseNavd88M = 234;
 export const summitDowntown = '30306c74-51c3-4ae2-9a93-11f9341f87ee';
 export const summitNorth = 'osm:way:39449002';
 

@@ -124,16 +124,30 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     for (const { id, grid, context } of patches) {
       const city = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
-      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'north-band' ? options?.northBuilding : undefined });
+      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined });
+      const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
-        const decks = createSurfaceTransport(city, grid, area.groundAt);
+        const stationRoad = id === 'brookwood-station' && city.roads.find(road => road.id === 'osm:way:38978515');
+        const data = city.terrainTransport!;
+        const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
+        const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
+        const decks = createSurfaceTransport(base, grid, area.groundAt);
+        transports.push(decks);
         area.group.add(decks.group);
+        if (stationRoad && separate.length) {
+          const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
+          transports.push(stationDeck);
+          stationDeck.group.name = stationRoad.id!;
+          area.group.add(stationDeck.group);
+        }
+        const deckHeight: typeof decks.deckAt = (x, z, run) =>
+          decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
         added.set(id, {
           ...area,
-          connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, decks.deckAt) },
-          dispose() { decks.dispose(); area.dispose(); },
+          connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, deckHeight) },
+          dispose() { for (const t of transports) t.dispose(); area.dispose(); },
         });
-      } catch (error) { area.dispose(); throw error; }
+      } catch (error) { for (const t of transports) t.dispose(); area.dispose(); throw error; }
     }
     connect(mounted, added);
     return added;

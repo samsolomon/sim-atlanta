@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, expect, it, vi } from 'vitest';
+import { midtownBaseNavd88M } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import { addSection, bounds, midtownRows, connect, joins, type Area, type Board } from './sections';
@@ -121,6 +122,14 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
         expect(row.groundAt(x, row.bounds.maxZ)).toBeCloseTo(previous.groundAt(x, row.bounds.maxZ)!, 4);
       expect(previous.board.getObjectByName('joining edge 1')!.visible).toBe(false);
       expect(row.board.getObjectByName('joining edge')!.visible).toBe(false);
+      const heights = new Int16Array(Uint8Array.from(file(id, 'ground.i16')).buffer);
+      expect(heights.reduce((min, h) => Math.min(min, h), Infinity) * 0.1).toBeGreaterThan(midtownBaseNavd88M);
+    }
+    const station = mounted.get('brookwood-station')!;
+    for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
+      const fallback = station.group.getObjectByName(id)!;
+      expect(fallback.visible).toBe(true);
+      expect(fallback.children.length).toBeGreaterThan(0);
     }
   } finally { for (const area of mounted.values()) area.dispose(); }
 });
