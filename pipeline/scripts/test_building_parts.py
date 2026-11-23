@@ -100,3 +100,27 @@ class AttachPartsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DowntownPartsTest(unittest.TestCase):
+    def feature(self, ident, parent, props, x0, z0, x1, z1):
+        import math
+        def ll(x, z):
+            return [-84.3916 + x / (M_PER_DEG_LAT * math.cos(math.radians(33.7539))), 33.7539 - z / M_PER_DEG_LAT]
+        ring = [ll(x0, z0), ll(x1, z0), ll(x1, z1), ll(x0, z1), ll(x0, z0)]
+        return {"geometry": {"type": "Polygon", "coordinates": [ring]},
+                "properties": {"id": ident, "building_id": parent, **props}}
+
+    def test_overture_parts_attach_by_building_id_and_keep_the_parent(self):
+        from downtown_parts import attach
+        parent = {"id": "p", "h": 50.0, "floors": 12, "rings": [[[0, 0], [40, 0], [40, 40], [0, 40]]]}
+        vignette = {"buildings": [parent, {"id": "q", "h": 10.0, "floors": 3, "rings": [[[60, 0], [70, 0], [70, 10]]]}]}
+        features = [self.feature("t", "p", {"height": 212.0}, 0, 0, 20, 40),
+                    self.feature("u", "p", {}, 20, 0, 40, 40)]
+        self.assertEqual(attach(vignette, features), 1)
+        parts = {p["id"]: p for p in parent["parts"]}
+        self.assertEqual((parts["overture:t"]["h"], parts["overture:t"]["tier"]), (212.0, "reported"))
+        # A part with no data takes the parent's 50 m, inferred, not the 8 m default.
+        self.assertEqual((parts["overture:u"]["h"], parts["overture:u"]["tier"]), (50.0, "inferred"))
+        self.assertEqual(parent["h"], 50.0)
+        self.assertNotIn("parts", vignette["buildings"][1])
