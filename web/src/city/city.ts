@@ -49,7 +49,7 @@ import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { createStreetcarCars } from './streetcar-cars';
-import { buildStreetcarStops, platformSites, streetcarStops } from './streetcar-stops';
+import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -592,10 +592,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const ground = terrain ? terrain.groundAt : flat;
       const height = roadSurface(vd.roads, cityRoadHeight(vd, ground, transport?.deckAt), ground);
       const lines = streetcarLines(rf, manifest.origin);
-      streetcarDowntown = buildStreetcarTrack(lines, b, height, poleBlocked(vd.roads, vd.buildings));
+      const sites = platformSites(streetcarStopList(), lines, vd.roads);
+      const blocked = poleBlocked(vd.roads, vd.buildings), onPlatform = platformFootprints(sites);
+      streetcarDowntown = buildStreetcarTrack(lines, b, height, (x, z) => blocked(x, z) || onPlatform(x, z));
       streetcarSurface.push({ bounds: b, height });
       world.group.add(streetcarDowntown.group);
-      stopsDowntown = buildStreetcarStops(platformSites(streetcarStopList(), lines, vd.roads), b, height);
+      stopsDowntown = buildStreetcarStops(sites, b, height);
       world.group.add(stopsDowntown.group);
     });
     await build('MARTA', () => {
@@ -887,11 +889,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       {
         const board = area.connectorBoard;
         const surface = roadSurface(board.city.roads, board.roadHeight, area.groundAt);
-        const track = buildStreetcarTrack(streetcarLines(rf, manifest.origin), area.bounds, surface, poleBlocked(board.city.roads, board.city.buildings));
+        const lines = streetcarLines(rf, manifest.origin);
+        const sites = platformSites(streetcarStopList(), lines, board.city.roads);
+        const blocked = poleBlocked(board.city.roads, board.city.buildings), onPlatform = platformFootprints(sites);
+        const track = buildStreetcarTrack(lines, area.bounds, surface, (x, z) => blocked(x, z) || onPlatform(x, z));
         const entry = { bounds: area.bounds, height: surface };
         streetcarSurface.push(entry);
         area.group.add(track.group);
-        const stops = buildStreetcarStops(platformSites(streetcarStopList(), streetcarLines(rf, manifest.origin), board.city.roads), area.bounds, surface);
+        const stops = buildStreetcarStops(sites, area.bounds, surface);
         area.group.add(stops.group);
         northStops = stops;
         const disposeArea = area.dispose.bind(area);

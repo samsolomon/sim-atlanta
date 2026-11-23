@@ -18,7 +18,7 @@ const PYLON = new Set(['PARK PLACE', 'SWEET AUBURN MARKET']);
  * scene x east and z south). The curb-side guess from road centrelines put Sweet
  * Auburn Market on the wrong side, so the observed side wins.
  */
-const SIDE: Record<string, [number, number]> = {
+export const SIDE: Record<string, [number, number]> = {
   'DOBBS PLAZA': [0, -1],
   'AUBURN AVE @ PIEDMONT AVE': [0, -1],
   'WOODRUFF PARK': [0, -1],
@@ -38,6 +38,8 @@ const ISLAND = 'CENTENNIAL OLYMPIC PARK';
 // Street View survey, 2024-2026 (docs/streetcar-city.md). All dimensions are estimates
 // scaled from the ticket machine.
 const PLATFORM = { length: 22, width: 3, height: 0.33, gap: 1.45 };
+const RAMP = 4;
+export const PLATFORM_GAP = PLATFORM.gap;
 const SHELTER = { length: 5.5, depth: 1.7, clear: 2.7 };
 
 /** The streetcar's stops (those its timetable serves on any of its paths), in scene metres. */
@@ -98,8 +100,19 @@ export function platformSites(stops: ReturnType<typeof streetcarStops>, lines: L
     const side = seen
       ? Math.sign(seen[0] * nx + seen[1] * nz) || 1
       : (street?.side ?? (Math.sign((stop.x - t.x) * nx + (stop.z - t.z) * nz) || 1));
-    const off = side * (PLATFORM.gap + PLATFORM.width / 2);
-    return { ...stop, track: t, side, x: t.x + nx * off, z: t.z + nz * off, dx: t.dx, dz: t.dz };
+    // A straight platform beside a curving track closes in on the rails at its ends: slide
+    // it out until the boarding edge (and the ramp tips) clear the track by the full gap.
+    let off = PLATFORM.gap + PLATFORM.width / 2;
+    for (let pass = 0; pass < 6; pass++) {
+      let worst = Infinity;
+      for (let u = -PLATFORM.length / 2 - RAMP; u <= PLATFORM.length / 2 + RAMP + 1e-6; u += 1) {
+        const v = side * (off - PLATFORM.width / 2);
+        worst = Math.min(worst, nearestOnLines(lines, t.x + t.dx * u + nx * v, t.z + t.dz * u + nz * v).d);
+      }
+      if (worst >= PLATFORM.gap - 1e-3) break;
+      off += PLATFORM.gap - worst + 0.02;
+    }
+    return { ...stop, track: t, side, off, x: t.x + nx * side * off, z: t.z + nz * side * off, dx: t.dx, dz: t.dz };
   });
 }
 
@@ -111,6 +124,18 @@ const CONCRETE = '#b9b5ab',
   MACHINE = '#9cc3d6',
   RAILING = '#9aa1a4';
 
+/** True inside any platform (with its ramps) plus a margin: catenary poles keep out. */
+export function platformFootprints(sites: ReturnType<typeof platformSites>, margin = 0.5) {
+  return (x: number, z: number) =>
+    sites.some((site) => {
+      const rx = x - site.x,
+        rz = z - site.z;
+      const u = rx * site.dx + rz * site.dz,
+        v = -rx * site.dz + rz * site.dx;
+      return Math.abs(u) <= PLATFORM.length / 2 + RAMP + margin && Math.abs(v) <= PLATFORM.width / 2 + margin;
+    });
+}
+
 /** Platforms, shelters and pylons for the stops inside one board. */
 export function buildStreetcarStops(sites: ReturnType<typeof platformSites>, bounds: Bounds, height: Height) {
   const body = new Builder(),
@@ -118,38 +143,75 @@ export function buildStreetcarStops(sites: ReturnType<typeof platformSites>, bou
     lit = new Builder();
   const owns = (x: number, z: number) => x >= bounds.minX && x < bounds.maxX && z >= bounds.minZ && z < bounds.maxZ;
   const drawn: string[] = [];
+  const pylons: string[] = [];
   for (const site of sites) {
     if (!owns(site.x, site.z)) continue;
-    const g = height(site.x, site.z);
-    if (g === null) continue;
-    drawn.push(site.name);
     const { dx, dz, side } = site;
-    // Local frame: u along the track, v across (positive away from the track).
+    // Local frame: v across (positive away from the track); r along the platform as a
+    // rider on the track sees it, left to right, whichever way the track runs.
     const nx = -dz * side,
       nz = dx * side;
-    const at = (u: number, v: number): [number, number] => [site.x + dx * u + nx * v, site.z + dz * u + nz * v];
-    const top = g + PLATFORM.height;
+    const at = (r: number, v: number): [number, number] => {
+      const u = -side * r;
+      return [site.x + dx * u + nx * v, site.z + dz * u + nz * v];
+    };
     const W = PLATFORM.width / 2,
       L = PLATFORM.length / 2;
-    const box = (u: number, v: number, lo: number, hi: number, alongHalf: number, acrossHalf: number, color: string, b = body) => {
-      const [x, z] = at(u, v);
-      orientedBox(b, x, z, dx, dz, lo, hi, alongHalf, acrossHalf, color);
-    };
-    box(0, 0, g - 0.2, top, L, W, CONCRETE);
-    // Red tactile band along the boarding edge, and a ramp at each end.
-    box(0, -W + 0.3, top, top + 0.01, L, 0.3, TACTILE);
-    for (const end of [-1, 1]) {
+    const ground = (r: number, v = 0) => height(...at(r, v));
+    const gc = ground(0),
+      gl = ground(-L),
+      gr = ground(L),
+      tl = ground(-L - RAMP),
+      tr = ground(L + RAMP);
+    if (gc === null || gl === null || gr === null) continue;
+    drawn.push(site.name);
+    const top = gc + PLATFORM.height;
+    // The deck follows the street along its length: its top runs 0.33 m above each end.
+    const deck = (r: number) => (r < 0 ? gc + (gl - gc) * (-r / L) : gc + (gr - gc) * (r / L)) + PLATFORM.height;
+    const low = Math.min(gl, gr, gc) - 0.2;
+    for (const [r0, r1] of [
+      [-L, 0],
+      [0, L],
+    ]) {
+      const c = [at(r0, -W), at(r1, -W), at(r1, W), at(r0, W)];
+      const y = [deck(r0), deck(r1), deck(r1), deck(r0)];
+      body.quad([c[0][0], y[0], c[0][1]], [c[3][0], y[3], c[3][1]], [c[2][0], y[2], c[2][1]], [c[1][0], y[1], c[1][1]], CONCRETE);
+      for (const [i, j] of [
+        [0, 1],
+        [2, 3],
+      ])
+        body.quad([c[i][0], low, c[i][1]], [c[i][0], y[i], c[i][1]], [c[j][0], y[j], c[j][1]], [c[j][0], low, c[j][1]], CONCRETE);
+      // Red tactile band along the boarding edge, a few mm proud of the deck.
+      const e0 = at(r0, -W),
+        e1 = at(r1, -W),
+        e2 = at(r1, -W + 0.6),
+        e3 = at(r0, -W + 0.6);
+      body.quad([e0[0], deck(r0) + 0.012, e0[1]], [e3[0], deck(r0) + 0.012, e3[1]], [e2[0], deck(r1) + 0.012, e2[1]], [e1[0], deck(r1) + 0.012, e1[1]], TACTILE);
+    }
+    // Ramps from each end of the deck down to the street at their own tips.
+    for (const [end, tip] of [
+      [-1, tl ?? gl],
+      [1, tr ?? gr],
+    ] as const) {
       const [x0, z0] = at(end * L, -W),
         [x1, z1] = at(end * L, W),
-        [x2, z2] = at(end * (L + 4), W),
-        [x3, z3] = at(end * (L + 4), -W);
-      body.quad([x0, top, z0], [x1, top, z1], [x2, g, z2], [x3, g, z3], CONCRETE);
+        [x2, z2] = at(end * (L + RAMP), W),
+        [x3, z3] = at(end * (L + RAMP), -W);
+      const y = deck(end * L);
+      body.quad([x0, y, z0], [x1, y, z1], [x2, tip, z2], [x3, tip, z3], CONCRETE);
+      body.quad([x0, low, z0], [x0, y, z0], [x1, y, z1], [x1, low, z1], CONCRETE);
     }
+    const box = (r: number, v: number, lo: number, hi: number, alongHalf: number, acrossHalf: number, color: string, b = body) => {
+      const [x, z] = at(r, v);
+      orientedBox(b, x, z, dx, dz, lo, hi, alongHalf, acrossHalf, color);
+    };
     // Pipe guardrail along the back (both long sides on the island platform).
     for (const v of site.name === ISLAND ? [-W + 0.08, W - 0.08] : [W - 0.08]) {
-      box(0, v, top + 1.0, top + 1.05, L, 0.03, RAILING);
-      box(0, v, top + 0.5, top + 0.54, L, 0.025, RAILING);
-      for (let u = -L; u <= L; u += 2.2) box(u, v, top, top + 1.05, 0.03, 0.03, RAILING);
+      for (let r = -L; r <= L + 1e-6; r += 2.2) box(r, v, deck(r), deck(r) + 1.05, 0.03, 0.03, RAILING);
+      for (const h of [0.52, 1.03]) {
+        const [a0, a1] = [at(-L, v), at(L, v)];
+        body.quad([a0[0], deck(-L) + h - 0.02, a0[1]], [a1[0], deck(L) + h - 0.02, a1[1]], [a1[0], deck(L) + h + 0.02, a1[1]], [a0[0], deck(-L) + h + 0.02, a0[1]], RAILING);
+      }
     }
     // Shelter: four bays on round posts, single-slope glass roof cantilevered toward the track.
     const S = SHELTER.length / 2,
@@ -164,7 +226,7 @@ export function buildStreetcarStops(sites: ReturnType<typeof platformSites>, bou
       hf = top + SHELTER.clear;
     glass.quad([r0x, hb, r0z], [r1x, hb, r1z], [r2x, hf, r2z], [r3x, hf, r3z], '#c9e2ea');
     body.quad([r3x, hf - 0.12, r3z], [r2x, hf - 0.12, r2z], [r2x, hf, r2z], [r3x, hf, r3z], STEEL); // fascia
-    // Glass back wall and one end panel.
+    // Glass back wall and the end panel at the rider's left.
     const [b0x, b0z] = at(-S, back + 0.02),
       [b1x, b1z] = at(S, back + 0.02);
     glass.quad([b0x, top + 0.15, b0z], [b1x, top + 0.15, b1z], [b1x, top + 2.2, b1z], [b0x, top + 2.2, b0z], '#c9e2ea');
@@ -173,14 +235,17 @@ export function buildStreetcarStops(sites: ReturnType<typeof platformSites>, bou
     glass.quad([e0x, top + 0.15, e0z], [e1x, top + 0.15, e1z], [e1x, top + 2.2, e1z], [e0x, top + 2.2, e0z], '#c9e2ea');
     // Charcoal name board hung under the front edge.
     box(0, front + 0.05, hf - 0.42, hf - 0.12, 1.0, 0.03, CHARCOAL);
-    // Backlit map panel, ticket machine and perforated bench, left to right.
+    // Left to right as seen from the track: backlit map panel, ticket machine, bench.
     box(-S + 0.7, back - 0.08, top + 0.3, top + 2.0, 0.55, 0.05, STEEL);
     box(-S + 0.7, back - 0.14, top + 0.45, top + 1.85, 0.45, 0.02, '#f2f4f0', lit);
     box(-0.6, back - 0.3, top, top + 1.85, 0.37, 0.22, MACHINE);
     box(1.4, back - 0.35, top + 0.42, top + 0.47, 0.9, 0.22, STEEL);
-    for (const u of [0.6, 2.2]) box(u, back - 0.35, top, top + 0.42, 0.04, 0.18, STEEL);
+    for (const r of [0.6, 2.2]) box(r, back - 0.35, top, top + 0.42, 0.04, 0.18, STEEL);
     // Navy blade pylon at the platform end, where one stands.
-    if (PYLON.has(site.name)) box(L - 1, W - 0.5, top, top + 3.5, 0.15, 0.05, NAVY);
+    if (PYLON.has(site.name)) {
+      box(L - 1, W - 0.5, deck(L - 1), deck(L - 1) + 3.5, 0.15, 0.05, NAVY);
+      pylons.push(site.name);
+    }
   }
   const group = new THREE.Group();
   group.name = 'Atlanta Streetcar stops';
@@ -195,6 +260,7 @@ export function buildStreetcarStops(sites: ReturnType<typeof platformSites>, bou
   return {
     group,
     drawn,
+    pylons,
     setNight(night: number) {
       (panels.material as THREE.MeshLambertMaterial).emissiveIntensity = night * 0.8;
     },
