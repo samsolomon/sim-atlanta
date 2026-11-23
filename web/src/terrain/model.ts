@@ -131,10 +131,17 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
   const world = new TerrainScenery(city, null, options);
+  // Tag what each pass adds, so the phone-perf report (core/perf.ts on studio-phone-perf's
+  // branch) breaks memory out by category: 'buildings', 'trees' or 'landscape'.
+  const tagNew = (from: number, perf: string) => world.group.children.slice(from).forEach(o => { o.userData.perf ??= perf; });
+  let before = world.group.children.length;
   world.buildBuildings(bd => bd.id === separateBuilding ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
+  tagNew(before, 'buildings');
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
   world.replacedTree = replacedTree;
+  before = world.group.children.length;
   world.buildTrees(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
+  tagNew(before, 'trees');
   world.setSeason(180);
   return world;
 }
@@ -199,18 +206,18 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const named = treeSitesIn(city.bounds);
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options,
     named.length ? replacedBy(named) : null);
-  for (const landmark of landmarks) scenery.group.add(landmark.group);
+  for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   // Yards by rule around every house (walks, drives, foundation planting).
   const yardLayer = homes.yards();
-  if (yardLayer) scenery.group.add(yardLayer.group);
+  if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
   const oval = activeOval(city.bounds, groundAt, options.quality);
-  if (oval) scenery.group.add(oval.group);
+  if (oval) { oval.group.userData.perf = 'landscape'; scenery.group.add(oval.group); }
   // Piedmont Park furniture at mapped points, entrance map kiosks (high tier) and the 10th Street gate.
   const park = piedmontPark(city, groundAt, options.quality);
-  if (park) scenery.group.add(park.group);
+  if (park) { park.group.userData.perf = 'landscape'; scenery.group.add(park.group); }
   const species = createTrees(named, options.quality, groundAt);
-  if (species) scenery.group.add(species.group);
+  if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);

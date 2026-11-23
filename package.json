@@ -14,6 +14,7 @@
     "data:vignette": ".venv/bin/python pipeline/scripts/extract_overture.py roads landuse infra buildings && .venv/bin/python pipeline/scripts/vignette.py && .venv/bin/python pipeline/scripts/vignette_traffic.py && .venv/bin/python pipeline/scripts/vignette_trees.py",
     "review": "node scripts/review.mjs",
     "audit:ground": "node scripts/ground-audit.mjs",
+    "measure:gpu": "node scripts/gpu-meter.mjs",
     "data:city": ".venv/bin/python pipeline/scripts/extract_overture.py roads rail landuse infra buildings building_parts && .venv/bin/python pipeline/scripts/vignette.py downtown && .venv/bin/python pipeline/scripts/vignette_traffic.py downtown && .venv/bin/python pipeline/scripts/vignette_trees.py downtown && .venv/bin/python pipeline/scripts/downtown_parts.py && .venv/bin/python pipeline/scripts/arterials.py && pnpm data:terrain && pnpm data:midtown",
     "data:places": ".venv/bin/python pipeline/scripts/neighborhoods.py",
     "data:terrain": "node scripts/stage-city-terrain.mjs",
