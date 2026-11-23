@@ -508,3 +508,8 @@ body.a2-in-models :is(.a2-subject, .a2-notice, .a2-credit, .a2-panel, .a2-timepa
   .a2-browser { right: var(--a2-right); bottom: var(--a2-bottom); width: auto; border-radius: 24px; z-index: 8; }
 }
 .a2-reset svg { width: 20px; height: 20px; }
+/* Between phone and desktop, the open Time & weather card and the detail panel can't both fit:
+   the panel steps aside until the card closes. */
+@media (min-width: 601px) and (max-width: 780px) {
+  body:has(.a2-subject.a2-open) .a2-panel { display: none !important; }
+}
