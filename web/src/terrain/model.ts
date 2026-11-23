@@ -151,6 +151,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
     const top = new THREE.Mesh(approaches.geometry, board.material);
+    top.name = 'bridge approaches';
     top.receiveShadow = true;
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
@@ -220,6 +221,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   return {
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
+    /** Drawn terrain triangles only, without bridge approaches. */
+    terrainAt: bare,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); },
     setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },

@@ -1496,6 +1496,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     clampTarget();
   };
 
+  if (import.meta.env.DEV) {
+    // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
+    (window as unknown as Record<string, unknown>).__groundAudit = async (o?: object) => {
+      const { groundAudit, cityLayer, CITY_COLORS } = await import('../terrain/ground-audit');
+      const areas: [string, NonNullable<typeof terrain>][] = mosaic ? [...mosaic.areas] : [];
+      if (!mosaic && terrain) areas.push(['downtown', terrain]);
+      if (!mosaic && east) areas.push(['king', east]);
+      return groundAudit(scene, areas.map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })), { layer: cityLayer, colors: CITY_COLORS, ...o });
+    };
+  }
   console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);
   console.info('City build stages (ms)', stages);
   return {
