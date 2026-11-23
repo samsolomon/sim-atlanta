@@ -2464,3 +2464,8 @@ My first pass filled each species' crown outline with evenly spaced leaf cards. 
 
 Sam asked whether the Academy of Medicine was stucco, painted brick or stone, and the paperwork didn't say. The National Register nomination lists the metal roof, the cupola, the Tuscan columns and the caduceus, but never the walls. The answer came from zooming a 4592-pixel Wikimedia photograph to a wall in raking light: smooth stucco, no brick coursing anywhere. With that settled, the pass went into the parts people see. The teal roofs became aged copper with seams. The dark arches became sashes with surrounds, muntins and keystones. And the bare lawn became the formal 1941 garden that Georgia Tech's preservation plan says survives: boxwood, a brick walk and black-soil beds. [Close before and after](log/ui/midtown-skyline/academy2-close-compare-day.jpg)
 
+
+
+### 2026-11-23 — Beds that are mostly plants
+
+The flower beds looked like dark holes, and the fix wasn't the soil. Real beds are mostly foliage, with the soil showing at the edges. Beds now fill about 80 % with mounded mid-green planting, with bloom clusters in drifts on top. They borrow the tree work's silhouette-only ink, so outlines stop chopping the colour into confetti. On the low tier a bed is a single mounded mass with drift patches. [Before and after, both tiers](log/ui/bed-fill/README.md)

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
+import { inkFoliageMesh } from '../vignette/ink';
 
 /**
  * Reusable landscape primitives in City's low-poly, ink-lined style.
@@ -35,7 +36,8 @@ export function bloom(doy: number): string[] {
   const s = season(doy);
   if (s === 'spring') return ['#f2d24b', '#e4566b', '#f5f0e6', '#9b6ad0', '#f08a3c'];
   if (s === 'summer') return ['#e8483f', '#f7a33b', '#fbe7f0', '#d4457f', '#ffd84a'];
-  if (s === 'fall') return ['#d9822b', '#b33d2e', '#e8c547', '#8a3d6b'];
+  // Late season: bright mums, pansies and ornamental-cabbage tones.
+  if (s === 'fall') return ['#f0902c', '#d2402e', '#f4cf3c', '#b0407f', '#7a55c4'];
   return ['#6c7d5a', '#8f8a6c', '#d9d2bd'];   // winter: pansies and cabbages read as muted
 }
 
@@ -179,6 +181,15 @@ export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) =>
   }
 }
 
+// Bed planting goes in a companion builder that landscapeMesh draws as its own child mesh,
+// registered for silhouette-only ink: no outlines inside the planting, only around it.
+const plantings = new WeakMap<Builder, Builder>();
+function plantingOf(b: Builder) {
+  let planting = plantings.get(b);
+  if (!planting) plantings.set(b, planting = new Builder());
+  return planting;
+}
+
 // Off-board or in a hole, a sampler returns null. Reuse its last valid height rather than 0,
 // which in City's frame can be 30 m away from the real ground.
 const lastValid = new WeakMap<Ground, number>();
@@ -195,7 +206,7 @@ export const g0 = (ground: Ground, x: number, z: number) => {
  */
 export function flowerBed(b: Builder, ring: P2[], ground: Ground,
   o: { doy: number; quality?: Quality; curb?: number; density?: number; seed?: string; mound?: number; flowers?: number; edge?: 'spade' | 'stone';
-    soil?: 'brown' | 'rich-black' }) {
+    soil?: 'brown' | 'rich-black'; cover?: number }) {
   const quality = o.quality ?? 'high', density = (o.density ?? 1) * (quality === 'low' ? .45 : 1);
   const r = rng(hashStr(o.seed ?? ring.map(p => p.join(',')).join(';')));
   // Rich dark soil, slightly mounded (0.12 m by default), with a clean spade-cut edge where
@@ -223,21 +234,49 @@ export function flowerBed(b: Builder, ring: P2[], ground: Ground,
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
   // Crumbly dark soil draped exactly to the bed's outline, speckled per triangle.
   drapeRing(ring, quality === 'low' ? 1.2 : .5, surface, (p, q, w) => b.tri(p, q, w, speckle(SOIL[Math.floor(r() * 4)], r, crumble)));
+  // Planting fills 70–90 % of the bed as a mounded mass of mid-green foliage, with soil only at
+  // the edges and in small gaps. `flowers: 0` beds (mulch mounds, as around the High's ginkgo)
+  // stay bare unless `cover` says otherwise.
+  const coverShare = o.cover ?? (o.flowers === 0 ? 0 : .8);
+  if (coverShare <= 0) return;
+  const planting = plantingOf(b);
   // Drifts of two or three colours, not confetti: a seeded axis splits the bed into bands.
   const palette = bloom(o.doy), n = 2 + Math.floor(r() * 2), start = Math.floor(r() * palette.length);
   const drift = Array.from({ length: n }, (_, k) => palette[(start + k) % palette.length]);
-  const axis = r() * Math.PI, ax = Math.cos(axis), az = Math.sin(axis);
-  const span = reach * 2, area = Math.abs(ring.reduce((a, p, i) => { const q = ring[(i + 1) % ring.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
-  const count = Math.round(area * 2.2 * density), share = o.flowers ?? .75;
-  for (let i = 0, tries = 0; i < count && tries < count * 6; tries++) {
-    const x = Math.min(...xs) + r() * (Math.max(...xs) - Math.min(...xs)), z = Math.min(...zs) + r() * (Math.max(...zs) - Math.min(...zs));
-    if (!pointInRing(x, z, ring)) continue;
-    i++;
-    const y = surface(x, z), t = ((x - cx) * ax + (z - cz) * az) / span + .5 + (r() - .5) * .12;
-    const leaf = LEAF[Math.floor(r() * LEAF.length)];
-    const tall = .35 + r() * .25;
-    tuft(b, x, y, z, tall, quality === 'low' ? 3 : 6, leaf, r);
-    if (r() < share) blooms(b, x, y + tall * .8, z, quality === 'low' ? 2 : 3, drift[Math.min(n - 1, Math.max(0, Math.floor(t * n)))], r);
+  const axis = r() * Math.PI, ax = Math.cos(axis), az = Math.sin(axis), span = reach * 2;
+  const driftAt = (x: number, z: number) => drift[Math.min(n - 1, Math.max(0, Math.floor((((x - cx) * ax + (z - cz) * az) / span + .5 + (r() - .5) * .1) * n)))];
+  const share = (o.flowers ?? .75) * (o.density ?? 1);
+  const FOLIAGE = ['#6a9049', '#729a52', '#638a44', '#7aa058'];
+  // Shrink the ring toward its centre by 0.2 m so the soil shows as a clean margin.
+  const inner = ring.map(([x, z]): P2 => { const d = Math.hypot(x - cx, z - cz) || 1, k = Math.max(0, d - .2) / d; return [cx + (x - cx) * k, cz + (z - cz) * k]; });
+  if (quality === 'low') {
+    // One coloured, mounded mass: foliage with a speckle of bloom, never an empty dark rectangle.
+    const lift = (x: number, z: number) => surface(x, z) + .12 + .25 * Math.max(0, 1 - (Math.hypot(x - cx, z - cz) / reach) ** 2);
+    // Blooms gather in smooth drift patches (not per-triangle confetti), on a 0.6 m drape.
+    const phase = r() * 6.28;
+    drapeRing(inner, .6, lift, (a, c, d) => {
+      const x = (a[0] + c[0] + d[0]) / 3, z = (a[2] + c[2] + d[2]) / 3;
+      const bloomy = .5 + .5 * Math.sin(x * 1.3 + phase) * Math.cos(z * 1.1 - phase) > 1 - share * .55;
+      planting.tri(a, c, d, bloomy ? speckle(driftAt(x, z), r, .06) : speckle(FOLIAGE[Math.floor(r() * 4)], r, .05));
+    });
+    return;
+  }
+  // High: packed foliage mounds on a jittered 0.7 m grid, blooms riding on top in larger clusters.
+  for (let x = Math.min(...xs); x <= Math.max(...xs); x += .7) for (let z = Math.min(...zs); z <= Math.max(...zs); z += .7) {
+    if (r() > coverShare / .8) continue;
+    const px = x + (r() - .5) * .4, pz = z + (r() - .5) * .4;
+    if (!pointInRing(px, pz, inner)) continue;
+    const y = surface(px, pz), rad = .42 + r() * .16, h = .42 + r() * .2;
+    shrubMass(planting, px, y - .05, pz, rad, h, FOLIAGE[Math.floor(r() * 4)], r, 1);
+    if (r() < share) {
+      const colour = driftAt(px, pz);
+      for (let k = 0; k < 5; k++) {
+        const bx = px + (r() - .5) * rad * 1.1, bz = pz + (r() - .5) * rad * 1.1, by = y + h * .8 + r() * .08, sz = .15 + r() * .06;
+        const c = speckle(colour, r, .08);
+        planting.tri([bx - sz, by, bz], [bx + sz, by, bz], [bx, by + sz * .9, bz + sz * .3], c);
+        planting.tri([bx, by, bz - sz], [bx, by, bz + sz], [bx + sz * .3, by + sz * .9, bz], c);
+      }
+    }
   }
 }
 
@@ -391,5 +430,27 @@ export function landscapeMesh(b: Builder) {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.name = 'landscape';
-  return { mesh, triangles: b.pos.length / 9, draws: 1, dispose() { geometry.dispose(); (mesh.material as THREE.Material).dispose(); } };
+  // Bed planting: a child mesh inked at its silhouette only (one more draw when present).
+  const planting = plantings.get(b);
+  let plantMesh: THREE.Mesh | null = null, unregister = () => {};
+  if (planting && planting.pos.length) {
+    const pg = new THREE.BufferGeometry();
+    pg.setAttribute('position', new THREE.Float32BufferAttribute(planting.pos, 3));
+    pg.setAttribute('color', new THREE.Float32BufferAttribute(planting.col, 3));
+    pg.computeVertexNormals();
+    plantMesh = new THREE.Mesh(pg, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true }));
+    plantMesh.castShadow = plantMesh.receiveShadow = true;
+    plantMesh.name = 'planting';
+    mesh.add(plantMesh);
+    unregister = inkFoliageMesh(plantMesh, 1);
+  }
+  const plantTris = planting ? planting.pos.length / 9 : 0;
+  return {
+    mesh, triangles: b.pos.length / 9 + plantTris, draws: plantMesh ? 2 : 1,
+    dispose() {
+      unregister();
+      geometry.dispose(); material.dispose();
+      if (plantMesh) { plantMesh.geometry.dispose(); (plantMesh.material as THREE.Material).dispose(); }
+    },
+  };
 }

@@ -1,4 +1,4 @@
-import { Color } from 'three';
+import { Color, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { Builder, type P2 } from '../vignette/geom';
 import { bloom, flowerBed, hedge, landscapeMesh, ornamentals, retainingEdge, seatWall, stairRun, terraces } from './primitives';
@@ -43,7 +43,14 @@ it('beds drape on the ground and change colour with the season', () => {
   flowerBed(spring, ring, bank, { doy: 100, seed: 'x' });
   flowerBed(fall, ring, bank, { doy: 300, seed: 'x' });
   expect(bloom(100)).not.toEqual(bloom(300));
-  expect(spring.col).not.toEqual(fall.col);
+  // Season colours live in the planting mesh, which fills most of the bed.
+  const plantingColours = (b: Builder) => {
+    const built = landscapeMesh(b), child = built.mesh.getObjectByName('planting') as Mesh;
+    const colours = Array.from(child.geometry.getAttribute('color').array);
+    built.dispose();
+    return colours;
+  };
+  expect(plantingColours(spring)).not.toEqual(plantingColours(fall));
   expect(Math.min(...ys(spring))).toBeGreaterThan(-.2);
   // A raised mound lifts the middle of the bed, not its curb.
   const mound = new Builder();
@@ -65,9 +72,11 @@ it('the low tier is cheaper, and a whole garden is one draw', () => {
   const high = count('high'), low = count('low');
   expect(tris(low)).toBeLessThan(tris(high) * .8);
   const garden = landscapeMesh(high);
-  expect(garden.draws).toBe(1);
-  expect(garden.triangles).toBe(tris(high));
+  // One draw for the primitives, one for bed planting (inked at its silhouette only).
+  expect(garden.draws).toBe(2);
   expect(garden.mesh.geometry.getAttribute('position').count).toBe(tris(high) * 3);
+  const planting = garden.mesh.getObjectByName('planting') as Mesh;
+  expect(garden.triangles).toBe(tris(high) + planting.geometry.getAttribute('position').count / 3);
   garden.dispose();
 });
 
@@ -99,4 +108,29 @@ it('offers a rich-black soil for formal beds, darker than the brown default and 
   };
   expect(mean('high', 'rich-black')).toBeLessThan(mean('high') * .7);
   expect(mean('low', 'rich-black')).toBeGreaterThan(mean('high', 'rich-black'));
+});
+
+it('fills a bed with planting, leaves flowers:0 mounds bare, and keeps the low tier a single mass', () => {
+  const ring: P2[] = [[0, 0], [6, 0], [6, 4], [0, 4]];
+  const area = (b: Builder) => {
+    const built = landscapeMesh(b), child = built.mesh.getObjectByName('planting') as Mesh | undefined;
+    if (!child) { built.dispose(); return 0; }
+    // Coverage seen from above: vertical rays on a 0.25 m grid over the bed that hit the planting.
+    child.updateMatrixWorld(true);
+    const ray = new Raycaster();
+    let hits = 0;
+    for (let x = .125; x < 6; x += .25) for (let z = .125; z < 4; z += .25) {
+      ray.set(new Vector3(x, 10, z), new Vector3(0, -1, 0));
+      if (ray.intersectObject(child, false).length) hits++;
+    }
+    built.dispose();
+    return hits * .0625;
+  };
+  const high = new Builder(), low = new Builder(), bare = new Builder();
+  flowerBed(high, ring, () => 0, { doy: 330, seed: 'fill' });
+  flowerBed(low, ring, () => 0, { doy: 330, seed: 'fill', quality: 'low' });
+  flowerBed(bare, ring, () => 0, { doy: 330, seed: 'fill', flowers: 0 });
+  expect(area(high)).toBeGreaterThan(24 * .6);
+  expect(area(low)).toBeGreaterThan(24 * .6);
+  expect(area(bare)).toBe(0);
 });
