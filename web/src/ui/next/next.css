@@ -73,8 +73,9 @@
 .a2-sep { height: 1px; background: var(--a2-sep); margin: 0 8px; }
 .a2-vsep { width: 1px; align-self: stretch; margin: 10px 4px; background: var(--a2-sep); flex: none; }
 
-/* ---- the old chrome stays out of the way ---- */
-:root[data-ui='next'] :is(.maplibregl-ctrl-attrib, .city-info-toggle) { display: none !important; }
+/* The old chrome is hidden in style.css, so it never paints before this chunk loads. */
+/* One thing in the detail-panel place at a time. */
+body:has(#city-info:popover-open) #card { display: none !important; }
 
 /* ---- subject card (top-left) ---- */
 .a2-subject {

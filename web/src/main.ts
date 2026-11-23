@@ -522,6 +522,11 @@ const shellOptions: ShellOptions = {
     map?.easeTo({ bearing: 0, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300 });
   },
   onNow() {
+    // Back to the present also drops a pinned ?t / ?speed, so a reload or a copied link stays live.
+    const u = new URL(location.href);
+    u.searchParams.delete('t');
+    u.searchParams.delete('speed');
+    history.replaceState(null, '', u);
     clock.reset();
     scrub.value = '0';
     setSpeed(1);

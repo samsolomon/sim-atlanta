@@ -49,8 +49,13 @@ export function createKeyboard(o: KeyboardOptions) {
     advanceMovement(t);
     raf = held.size ? requestAnimationFrame(step) : 0;
   };
+  // Escape closes only the topmost surface: a consumed Escape stops before the page's own
+  // listeners (which close the detail card) see it.
   addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && o.escape()) return;
+    if (e.key === 'Escape' && o.escape()) e.stopImmediatePropagation();
+  }, true);
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') return;
     if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey || o.blocked()) return;
     const k = e.key.toLowerCase();
     if (MOVE[k] || ((k === 'q' || k === 'e') && o.rotate)) {
