@@ -7,7 +7,7 @@ import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import { createShell, type View } from './ui/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
-import { mapMetresPerPixel, mapZoomForScale } from './core/camera';
+import { mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
 import { busCard, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
@@ -420,7 +420,10 @@ async function openCity() {
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
   // Arriving from Map keeps its camera within the loaded City board.
-  if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
+  const cameraLink = opening && parseCityCamera(params.get('cam'));
+  if (cameraLink) {
+    diorama.lookAt(cameraLink.x, cameraLink.z, cameraLink);
+  } else if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
     diorama.lookAt(95.5, -1701.8, { bearing: 0, tilt: 46, metresPerPixel: .32 });
   } else if (!opening && map) {
     // Read the current Map camera after loading: keyboard movement may have continued.

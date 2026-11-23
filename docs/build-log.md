@@ -2096,3 +2096,7 @@ The archived OSM extracts contribute 24 surface rail runs. Mapped tunnels stay h
 Cross-review identified a short unsurveyed span where propagating a clearance all the way to the bank could raise the abutment. The approach now returns to each bank. A 36 m regression span checks both endpoints and 5 m of clear roadway beneath the crossing. [Square and downtown bridges at both tiers](log/ui/city-rectangle/square-bridges.jpg)
 
 A second review pointed out a distinction in the mapped street geometry. A side path ends on the campus bridge at (−933.90, −2643.57). The bridge now meets the path at that shared vertex. A regression uses the archived campus geometry to keep the junction at the approach height.
+
+### 2026-11-23 — Share a City camera by URL
+
+A five-number camera link can open the same ground target, bearing, tilt and distance on a production build. The museum test jumped nearly four kilometres north of Five Points and retained its 421 m orbit distance as the Midtown terrain arrived. A malformed camera still opened the Williams preset, and an off-board target stopped at the edge of the loaded terrain. Requires a web rebuild. [Low-tier camera-link check](log/ui/city-camera-query.jpg)
