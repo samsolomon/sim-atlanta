@@ -1,4 +1,4 @@
-import { Box3, Mesh, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
+import { AdditiveBlending, Box3, Mesh, MeshBasicMaterial, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { GroundGrid } from '../terrain/grid';
@@ -84,4 +84,25 @@ it('raises the Georgian Terrace deck to the Peachtree grade', () => {
   model.group.updateMatrixWorld(true);
   const hit = new Raycaster(new Vector3(635,150,-2060),new Vector3(0,-1,0)).intersectObject(model.group)[0];
   expect(hit.point.y).toBeCloseTo(2.8);
+});
+
+it('lights the Promenade crown cool white at night and keeps its offices warm', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:269637575');
+  const model = createSkylineLandmark([building], building, -8, () => -3)!;
+  const neon = model.group.getObjectByName('Promenade crown neon') as Mesh;
+  const offices = (model.group.children[1] as Mesh).material as MeshLambertMaterial;
+  expect(neon.visible).toBe(false);
+  model.setNight(1);
+  expect(neon.visible).toBe(true);
+  const colour = neon.geometry.getAttribute('color');
+  // Blue at least matches red on every neon vertex: cool white, not amber.
+  for (let i = 0; i < colour.count; i++) expect(colour.getZ(i)).toBeGreaterThanOrEqual(colour.getX(i));
+  expect(offices.emissive.r).toBeGreaterThan(offices.emissive.b);
+  // Additive, so twilight fades the neon in instead of drawing dark lines.
+  const glow = neon.material as MeshBasicMaterial;
+  expect(glow.blending).toBe(AdditiveBlending);
+  model.setNight(.1);
+  expect(glow.color.r).toBeCloseTo(.1);
+  model.setNight(0);
+  expect(neon.visible).toBe(false);
 });
