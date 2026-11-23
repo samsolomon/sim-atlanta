@@ -49,3 +49,13 @@ it.each([
   expect(model.buildings).toEqual([tower]);
   expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(height-3);
 });
+
+it('keeps the historic Georgian Terrace lower than its mapped rear addition', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const hotel: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:886041064');
+  const model = createSkylineLandmark([hotel], hotel, -5, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number,z: number) => new Raycaster(new Vector3(x,150,z),new Vector3(0,-1,0)).intersectObject(model.group)[0].point.y;
+  expect(heightAt(642,-2070)).toBeCloseTo(37);
+  expect(heightAt(701,-2108)).toBeCloseTo(68);
+});
