@@ -2242,3 +2242,7 @@ At Lake Clara Meer, City had drawn the restored gazebo as an 8 m brick box risin
 ### 2026-11-23 — Granite at the park gates
 
 Piedmont Park's two Piedmont Avenue entrances now stand at their OSM gate nodes. At 14th Street, tall rough-granite piers with stepped pyramid caps frame black iron leaves, and low walls sweep out to smaller end piers. At 12th Street, shorter slab-capped piers carry the cut-out PIEDMONT PARK beam, with acorn lamps just inside. Nobody seems to have photographed either gate at night, so the only lights drawn are the documented path lamps. Every dimension is an estimate scaled from the people in the photographs. [References, estimates and day and night views](log/ui/piedmont-gates/README.md)
+
+### 2026-11-23 — Paving Sifly Piazza, minus the lawn
+
+The piazza had been one beige slab. It now has 1.5 × 3 m white concrete slabs with dark joints, café tables along the Memorial and a curb round the lawn. The surprise was the lawn itself. The old slab covered a 330 m² grass plot that OSM maps and the aerial shows tan with dormant turf. The model had paved over it. A mapped stair also leaves the piazza northward and drops 3 m. 3DEP confirms the fall, although the skybridge overhead hides most of the stair. [Sources and City views](arts-campus.md)
