@@ -472,3 +472,21 @@ viewport 1296 × 726.
 
 **Release:** this is a web rebuild only. No data or `pnpm data` change is needed, and the King Memorial
 area still loads only with `?east=king-memorial` or the square board.
+
+### Freight past King Memorial (2026-11-23)
+
+Sam spotted an empty grass strip south-east of the East Line where the CSX tracks should run. The cause was simple: the board's context (`king_memorial_context.py`) bakes `rail: []` and no `terrainTransport`, and `loadEast` never built surface transport. Downtown's six freight tracks stopped dead at x = 1000. The data was never the problem: `freight.geojson` holds the CSXT NARN arcs 454399, 454402, 455784, 463493, 463496 and 464140–464144 across the board.
+
+`pipeline/scripts/king_memorial_rail.py` archives every surface `railway=rail` way inside the board from OSM (Overpass, cached in `data/raw/osm_king_memorial_rail.json`) into `web/src/city/fixtures/king-rail.json`, the same pattern as `midtown_rail.py`. `loadEast` draws it with the shared surface transport: ground ballast with graded cuttings, like the rest of the freight. The fixture holds 11 runs:
+- **Two main tracks**: the CSX Atlanta Terminal Subdivision (the old Georgia Railroad corridor), as OSM ways 973262182 and 973262183, continuing as 539939093 and 144595771 past x 1328. NARN agrees: `tracks: 2` on the M arcs.
+- **Seven Hulsey Yard tracks**: four yard leads from downtown (539939595, 539939596, 539939602, 905879528), plus 539939594, 539939598 and the Fuel Pad track 973262184.
+
+At x = 1000 the fixture meets downtown's terrain-transport ends node for node, at z 556.47, 561.99, 566.02, 575.72, 580.15 and 584.87. The tracks run at grade beside the MARTA viaduct and station, clear of its piers and canopy. There are no freight trains on this stretch yet. Any that are added stay `illustrative`.
+
+Tests in `king-rail.test.ts`:
+- the six-track handoff at x = 1000;
+- drawn ballast under every fixture run;
+- a mount through `loadEast` that must carry a freight mesh;
+- with `pnpm data`, drawn track within 12 m of every CSX/NS NARN arc in the board.
+
+[Before and after](log/ui/freight/king-csx.jpg) · camera `/?view=city&cam=1350,480,45,55,550`

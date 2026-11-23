@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import type { TerrainCity } from '../terrain/transport-data';
+import { createSurfaceTransport } from '../terrain/transport';
+import type { TerrainCity, TransportRun } from '../terrain/transport-data';
+import kingRail from './fixtures/king-rail.json';
 import { marchonFinishes } from './marchon-frontage';
 import { cityRoadHeight } from './road-height';
 import { PAL } from '../vignette/world';
@@ -71,7 +73,28 @@ export async function loadEast(
     join: extraJoin ? [eastJoin, ...(Array.isArray(extraJoin) ? extraJoin : [extraJoin])] : eastJoin,
     finishFor: marchonFinishes(context.buildings),
   });
-  return { ...area, connectorBoard: { city: context, roadHeight: cityRoadHeight(context, area.groundAt) } };
+  const freight = kingFreight(context, grid, area);
+  return {
+    ...area,
+    connectorBoard: { city: context, roadHeight: cityRoadHeight(context, area.groundAt) },
+    setNight(factor: number) { area.setNight(factor); freight.setNight?.(factor); },
+    dispose() { freight.dispose(); area.dispose(); },
+  };
+}
+
+/**
+ * The CSX Atlanta Terminal Subdivision (the Georgia Railroad corridor) and its Hulsey
+ * Yard leads across the board, from the archived OSM fixture (king_memorial_rail.py):
+ * two main tracks and the yard tracks that continue downtown's six at x = 1000. The
+ * board's context carries no rail, so without this City drew no freight east of the
+ * downtown edge. Ground ballast like the rest, with graded cuttings carved under it.
+ */
+export function kingFreight(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>) {
+  const rail = kingRail as unknown as TransportRun[];
+  const transport = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, area.groundAt);
+  area.carve(transport.cutting);
+  area.group.add(transport.group);
+  return transport;
 }
 
 /** One walnut base under the L-shaped board, with the original eight-metre outside lip. */
