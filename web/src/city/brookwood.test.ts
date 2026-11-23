@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TrainState } from '../model/types';
 import type { GroundManifest } from '../terrain/grid';
 import { consistLength, formation, layout, passengerGeometry } from '../vignette/crescent-stock';
-import { brookwoodGrid, brookwoodTruckAt, crescentPlacement } from './brookwood';
+import { brookwoodGrid, brookwoodTruckAt, corridorChainage, crescentPlacement } from './brookwood';
 
 const stop: TrainState = {
   id: 'example', routeId: 'amtrak:route:Crescent', pathId: 'example', heading: 45,
@@ -24,11 +24,17 @@ describe('Brookwood placement', () => {
     expect(north.center - consistLength / 2).toBeGreaterThan(285);
   });
 
-  it('keeps both coach trucks 18.14 m apart as the centre reaches the southwest survey endpoint', () => {
-    const front = brookwoodTruckAt(9.07), back = brookwoodTruckAt(-9.07);
+  it('keeps both coach trucks 18.14 m apart across the survey joint and the west board edge', () => {
+    // The survey endpoint is now a joint with the mapped continuation (a 0.3 mm bend).
+    let front = brookwoodTruckAt(9.07), back = brookwoodTruckAt(-9.07);
+    expect(Math.hypot(front.x - back.x, front.z - back.z)).toBeCloseTo(18.14, 2);
+    expect((front.x + back.x) / 2).toBeCloseTo(-575, 2);
+    expect((front.z + back.z) / 2).toBeCloseTo(-4587.85, 2);
+    // Past the board edge the baseline stays rigid along the end tangent.
+    front = brookwoodTruckAt(corridorChainage.min + 9.07);
+    back = brookwoodTruckAt(corridorChainage.min - 9.07);
     expect(Math.hypot(front.x - back.x, front.z - back.z)).toBeCloseTo(18.14, 4);
-    expect((front.x + back.x) / 2).toBeCloseTo(-575, 4);
-    expect((front.z + back.z) / 2).toBeCloseTo(-4587.85, 4);
+    expect((front.x + back.x) / 2).toBeCloseTo(-1000, 4);
   });
 
   it('leaves other services, live positions, and remote train locations out of the station', () => {
