@@ -342,7 +342,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
  * order) ignore the leaves: they show in the instance's bloom colour `aBloom.rgb` while its
  * bloom share `aBloom.a` is at least their order.
  */
-export function twoToneFoliage({ bloomWash = 0, sheen = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; sheen?: number }) {
+export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, sheen = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; sheen?: number }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   const textured = !!opts.map;
   // Which leaves exist: shared with the ink's foliage mask (userData.maskShader), so the mask
@@ -412,10 +412,11 @@ if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.
   // Flower chips take the bloom colour; in flower, the leaf clusters with the highest tone turn
   // wholly to it too (bloomWash), as patches of blossom rather than a brown mix.
   bool blossom = aMass.z > 0.0 || aMass.x > 1.0 - ${bloomWash.toFixed(3)} * aBloom.a;
-  vColor.xyz = color.xyz * (blossom ? aBloom.rgb : mix(instanceColor.xyz, aToneB, aMass.x));
+  // bloomLift: blossom keeps less of the interior shade than leaves (white bracts read white).
+  vColor.xyz = blossom ? mix(color.xyz, vec3(1.0), ${bloomLift.toFixed(3)}) * aBloom.rgb : color.xyz * mix(instanceColor.xyz, aToneB, aMass.x);
 #endif`);
   };
-  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash + ':' + sheen;
+  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash + ':' + bloomLift + ':' + sheen;
   m.userData.maskShader = visibility;
   m.userData.maskKey = 'species-look' + (textured ? ':map' : '');
   return m;

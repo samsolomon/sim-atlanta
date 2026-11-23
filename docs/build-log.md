@@ -2641,3 +2641,10 @@ The red Japanese maple is Sam's addition from his walk through Ansley Park, wher
 ### 2026-11-23 — Auto graphics that notices a slow device
 
 Graphics › Auto used to settle on a tier once, from the screen and pointer type, and never reconsider. Now, when Auto opens City at High, the phone-perf agent's `perf.watchSlow` waits for City to be ready and its areas to go quiet, then samples 10 s of frames. Under 20 fps, City rebuilds at Low at the exact camera (565, −3965, −101°, 55°, 421 m before and after), shows "Switched to lighter graphics" for a few seconds, and the menu reads **Auto (Low)** with High still on offer. The step-down lasts for the session only (sessionStorage), so a better moment can try High again. A manual Graphics choice cancels the watch. Testing it was awkward because a background browser tab draws next to nothing, so the sampler rightly discarded those samples. A dev-only `?slowfps=60` raised the bar instead. It needs only a web rebuild. [Menu after the step-down](log/ui/a2c/auto-low-menu.png)
+
+### 2026-11-23 — A vase and a festival
+
+The American elm and the flowering dogwood are pair 5. The elm is the old street vase: a short trunk forking into erect limbs that arch out like a fountain. The proposal is for City's street mixes to map Atlanta's actual street elms, lacebark elm and zelkova, to it once Sam picks an option; City draws none of it yet.
+
+The dogwood was the harder one. Its identity is a crown of white bracts on bare twigs in early April, the week of the Atlanta Dogwood Festival. On the lab's first pass the leaves were still mostly dropped on that date, so the flower chips sat in an empty crown and barely registered. A dogwood in bloom reads as a white crown, so during bloom the leaf clusters now stay present and turn white, with a little early green between, then go back to leaves as the bracts fall. Its lower branches grow in level layers, drawn as three horizontal tiers of flat masses. [Elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg)
+
