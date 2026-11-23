@@ -766,7 +766,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
       const atl = added.get('brookwood-station');
-      if (atl) northLine = createNorthLine(atl.group, rf, manifest.origin, trains.group);
+      if (atl) northLine = createNorthLine(atl, rf, manifest.origin, trains.group);
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());

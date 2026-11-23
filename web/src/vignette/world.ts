@@ -28,6 +28,10 @@ export interface BuildingFinish {
   roof: string;
   plainWalls?: boolean;
   fallbackHeight?: number;
+  /** Overrides the 1.1 m parapet on buildings taller than 6 m (0 for pitched roofs). */
+  parapet?: number;
+  /** Shader window pattern for the walls; 3 is punched residential sash windows. */
+  windowStyle?: number;
   /** Supplies roof fixtures in place of the generic rooftop equipment. */
   dressRoof?: (builder: Builder, outer: P2[], roof: number) => void;
   drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
@@ -854,7 +858,7 @@ export class World {
         continue;
       }
       // Walls (run to h + parapet), roof slightly below the parapet top.
-      const parapet = h > 6 ? 1.1 : 0;
+      const parapet = finish?.parapet ?? (h > 6 ? 1.1 : 0);
       const shop = woodruffLot(bd);
       for (const [ringIndex, ring] of bd.rings.entries()) {
         if (finish?.drawRing) {
@@ -871,7 +875,7 @@ export class World {
             for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
             continue;
           }
-          const wallKind = finish?.plainWalls ? -1 : finish ? 0 : kind;
+          const wallKind = finish?.plainWalls ? -1 : finish?.windowStyle ?? (finish ? 0 : kind);
           style.push(wallKind, wallKind, wallKind, wallKind, wallKind, wallKind);
           b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
@@ -1424,7 +1428,11 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           vec3 frame = diffuseColor.rgb * 0.82;
           float st = floor(vStyle + 0.5);
           float win = 0.0;
-          if (y < 4.2 && y > 0.4) {
+          if (st > 2.5) {
+            // Houses: punched sash windows on every 3.05 m storey, none below the floor.
+            vec2 f = fract(vec2(u / 3.0, (y - 0.9) / 3.05));
+            win = step(0.9, y) * step(0.34, f.x) * step(f.x, 0.66) * step(0.18, f.y) * step(f.y, 0.66);
+          } else if (y < 4.2 && y > 0.4) {
             // Storefront: tall panes with mullions, a band above.
             float f = fract(u / 3.2);
             win = step(0.08, f) * step(f, 0.92) * step(0.5, y) * step(y, 3.4);
@@ -1449,8 +1457,9 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           win = mix(0.4, win, clarity);
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
-          float cellH = hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
-          litWin = win * (y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
+          float cellH = st > 2.5 ? hh(floor(vec2(u / 3.0, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
+          // Homes: about a third of rooms lit on every storey; offices as before, shopfronts mostly lit.
+          litWin = win * (st > 2.5 ? step(0.66, cellH) : y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
           litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
           diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4));
