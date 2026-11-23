@@ -9,6 +9,7 @@ import { towerSquare } from './midtown-skyline-square';
 import { georgianTerrace } from './midtown-skyline-terrace';
 import { biltmore } from './midtown-skyline-biltmore';
 import { academyOfMedicine } from './midtown-skyline-academy';
+import { wimbishHouse } from './midtown-skyline-wimbish';
 import { symphonyTower } from './midtown-skyline-symphony';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 
@@ -97,6 +98,7 @@ function oneAtlantic(shell: Shell) {
 const landmarks = [
   { site, axis: [1,0], probes: [[-24,0],[24,0],[0,-24],[0,24]], build: oneAtlantic },
   { site: sites.towerSquare, axis: [1,.083], probes: [[-25,0],[25,0],[0,-32],[0,32]], build: towerSquare },
+  { site: sites.wimbish, axis: [1,0], probes: [[15,-5],[-15,-5],[22,-14],[0,-10]], build: wimbishHouse },
   { site: sites.academy, axis: [1,0], probes: [[0,0],[-10,-15],[-10,15],[18,0]], build: academyOfMedicine },
   { site: sites.biltmore, axis: [1,0], probes: [[-10,0],[0,-50],[-10,50],[20,45]], build: biltmore },
   { site: sites.terrace, axis: [1,0], probes: [[-31,28],[-12,-25],[36,-20],[29,10]], build: georgianTerrace },

@@ -185,3 +185,15 @@ it('replaces the Academy of Medicine with its portico temple and lantern', () =>
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
 });
+
+it('replaces the Wimbish House with its slate roof, turret and loggia', () => {
+  const house: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:885325356');
+  const model = createSkylineLandmark([house], house, -2, () => 0)!;
+  expect(model.group.name).toBe('Wimbish House');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(20.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});

@@ -54,5 +54,12 @@
     "x": 451,
     "z": -2720,
     "heightM": 15.5
+  },
+  "wimbish": {
+    "id": "osm:way:885325356",
+    "name": "Wimbish House",
+    "x": 745,
+    "z": -3560,
+    "heightM": 20
   }
 }
