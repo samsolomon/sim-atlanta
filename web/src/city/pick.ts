@@ -39,7 +39,7 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
       consider(vehicle, material.clippingPlanes ?? edges);
     }
   }
-  for (const car of trains.children) railCar(car, CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
+  for (const car of trains.children) railCar(car, car.userData.lengthM ?? CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
   for (const car of freight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight' });
   for (const bus of buses) {
     const dx = Math.sin(bus.a) * BUS_LENGTH / 2, dz = Math.cos(bus.a) * BUS_LENGTH / 2;
