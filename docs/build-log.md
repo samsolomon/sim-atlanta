@@ -2501,3 +2501,8 @@ Sam's note on the houses was "something feels funny", and the single biggest cau
 ### 2026-11-23 — Trains under downtown, accounted for
 
 Following a Blue Line train under downtown used to end in a shrug: "Train out of view". The Midtown North Line had OSM tunnel ways, and downtown had nothing. Downtown now has all 60 of its mapped subway ways, classed as tunnel, building passage, bridge or open, and Follow reads the mapped cover of the train's own line. That last detail matters at Five Points, where the north–south and east–west tunnels cross on different levels. The surprise was the unnamed pieces: two platform tracks beside the West Line took its name from the same layer, but three connector tracks a metre above the South Line correctly stayed off it. Requires a web rebuild only. [Before and after](log/ui/follow-downtown/compare-blue-underground.jpg)
+
+### 2026-11-23 — Measuring the Fed instead of guessing
+
+My first Federal Reserve made the long slab the tallest part and stepped it toward a crown. Sam's photographs said the corner tower at Peachtree and 10th rises above everything else. Rather than trade one guess for another, I pulled 160,000 USGS lidar returns over the block. The corner tower's crown sits at 360.2 m NAVD88, 61.9 m above the site, and steps once at 357.2 m. The slab tops out at a 47.5 m cornice with a 53.7 m recessed top floor. Those numbers rebuilt the massing. Then came the entrance Sam asked for: a portico with the eagle column on a granite plaza, lawn terraces down the Peachtree front, and a crown floodlit white at night. [Aerial before and after](log/ui/midtown-skyline/fed2-aerial-compare-day.jpg)
+

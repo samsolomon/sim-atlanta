@@ -216,7 +216,16 @@ it('replaces the Federal Reserve Bank with its stepped marble tower and forecour
   const fed: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:28979077');
   const model = createSkylineLandmark([fed], fed, -2, () => 0)!;
   expect(model.group.name).toBe('Federal Reserve Bank of Atlanta');
-  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(48, 0);
+  model.group.updateMatrixWorld(true);
+  const top = (x: number, z: number) => new Raycaster(new Vector3(x, 200, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
+  // Lidar: the corner tower crown stands above the slab cornice and its recessed top floor.
+  expect(top(588 + 54, -3155 + 24)).toBeCloseTo(61.9, 0);
+  expect(top(588 + 24, -3155 - 50)).toBeCloseTo(47.5, 0);
+  expect(top(588 + 45, -3155 - 20)).toBeCloseTo(53.7, 0);
+  expect(top(588 - 60, -3155 + 30)).toBeCloseTo(14.2, 0);
+  const crown = model.group.getObjectByName('Fed crown') as Mesh;
+  model.setNight(1);
+  expect((crown.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   model.group.traverse(o => {
     if (!(o instanceof Mesh)) return;
     o.geometry.computeVertexNormals();
