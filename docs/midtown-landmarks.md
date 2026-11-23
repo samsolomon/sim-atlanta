@@ -12,7 +12,9 @@ The first North Avenue tile covers City x −1000…1800 and z −2500…−1700
 | 1180 Peachtree | [885660351](https://www.openstreetmap.org/way/885660351) | 3,920 m² | −3690…−3655 | Same row, east of One Atlantic. Resolve the tower over its 126 m-wide mapped base before sizing the two sweeping crown fins. The architect describes a 120 ft steel-and-glass veil. [Architect's gallery](https://www.pickardchilton.com/work/1180-peachtree) |
 | Promenade Tower | [269637575](https://www.openstreetmap.org/way/269637575) | 2,528 m² | −3813…−3742 | Secondary skyline candidate, north of 14th. Keep the 211 m tower separate from Promenade Central and the parking deck. |
 
-Upper Midtown footprints were checked against the November 23 OSM map extract. Their final tile IDs, foundation samples, street-facing podiums and night lighting still need validation when the −4100…−3300 row is baked. Peachtree Summit and 250 Williams remain with their respective owners.
+All three upper Midtown way IDs match single-ring buildings in the baked −4100…−3300 row. Sampling the 5 m bare-earth grid bilinearly at intervals of at most 2.5 m around each perimeter gave 281.6–283.1 m NAVD88 at One Atlantic Center (92 samples), 292.9–297.4 m at 1180 Peachtree (147), and 293.8–298.5 m at Promenade Tower (104). All samples had elevation data. The 4.5 m grade change around 1180 makes its entrance elevation worth checking against street photographs before placing the podium. Street-facing podiums, finished floor elevations and night lighting remain open for modeling. [Baked upper Midtown footprints and terrain](https://github.com/samsolomon/sim-atlanta/tree/68629e6/pipeline/prototypes/square-board/midtown-upper)
+
+Peachtree Summit and 250 Williams remain with their respective owners.
 
 ## Bank of America Plaza
 
