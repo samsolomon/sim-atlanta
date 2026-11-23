@@ -197,5 +197,20 @@ def main(refresh=False):
         print("  rejected", k, v)
 
 
+def signals():
+    """Every OSM highway=traffic_signals node in the five rows (City metres), for the stop lines."""
+    scale = math.pi * 6371008.8 / 180
+    pts = {}
+    for row in rows:
+        with gzip.open(BOARD / "source" / (row + ".json.gz")) as f:
+            for e in json.load(f)["elements"]:
+                if e["type"] == "node" and e.get("tags", {}).get("highway") == "traffic_signals":
+                    pts[e["id"]] = [round((e["lon"] + 84.3916) * scale * math.cos(math.radians(33.7539)), 2), round((33.7539 - e["lat"]) * scale, 2)]
+    out = HERE.parents[2] / "web/src/city/fixtures/midtown-signals.json"
+    out.write_text(json.dumps([pts[k] for k in sorted(pts)], separators=(",", ":")) + "\n")
+    print(len(pts), "mapped traffic signals")
+
+
 if __name__ == "__main__":
+    signals()
     main("--refresh" in sys.argv)
