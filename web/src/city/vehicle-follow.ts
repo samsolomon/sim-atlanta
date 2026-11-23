@@ -1,4 +1,6 @@
+import * as THREE from 'three';
 import { railSpanAt, type SceneManifest } from '../core/scene-data';
+import { CAR_LENGTH } from '../vignette/cq400';
 import type { Tier } from '../model/types';
 import tunnelRuns from './fixtures/midtown-tunnel.json';
 
@@ -92,6 +94,23 @@ export class VehicleFollow {
     this.requested = false;
     return this.focus = goal;
   }
+}
+
+const front = new THREE.Vector3(), rear = new THREE.Vector3();
+/** A car counts as drawn while any part of it is on the kept side of every clipping plane on
+ * its material: a board edge, or a tunnel mouth such as the North Line portal, which clips
+ * NORTH_LINE_VANISH_DEPTH inside the mouth. Follow's "Underground" therefore starts exactly
+ * when the last car vanishes and ends when the first car reappears. */
+export function drawnCar(car: THREE.Object3D): Point | null {
+  if (!car.visible) return null;
+  const material = (car as THREE.Mesh).material;
+  const planes = (Array.isArray(material) ? material[0] : material)?.clippingPlanes ?? [];
+  const half = (car.userData.lengthM ?? CAR_LENGTH) / 2;
+  car.updateWorldMatrix(true, false);
+  front.set(0, 2, half).applyMatrix4(car.matrixWorld);
+  rear.set(0, 2, -half).applyMatrix4(car.matrixWorld);
+  if (!planes.every(p => Math.max(p.distanceToPoint(front), p.distanceToPoint(rear)) > 0)) return null;
+  return { x: (front.x + rear.x) / 2, z: (front.z + rear.z) / 2 };
 }
 
 type Run = { pts: number[][] };

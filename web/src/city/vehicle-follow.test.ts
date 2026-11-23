@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { RailData } from '../core/scene-data';
 import tunnelRuns from './fixtures/midtown-tunnel.json';
-import { inMappedTunnel, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
+import { BoxGeometry, Mesh, MeshBasicMaterial, Plane, Vector3 } from 'three';
+import { CAR_LENGTH } from '../vignette/cq400';
+import { NORTH_LINE_VANISH_DEPTH } from './midtown-marta-rail';
+import { drawnCar, inMappedTunnel, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
 
 const bounds = {minX:0,maxX:500,minZ:0,maxZ:100};
 const train: Followed = {kind:'train',id:'trip-1',pathId:'blue-east',tier:'scheduled'};
@@ -147,4 +150,17 @@ describe('mapped North Line tunnel', () => {
     // The Crescent passes beside the portal; it is never in the North Line tunnel.
     expect(trainHidden(rail,'amtrak:route:Crescent','x',60,482,-3063)).toBeNull();
   });
+});
+
+it('switches to underground exactly where the North Line portal clips the last car', () => {
+  // The mouth faces +z; the portal plane keeps everything less than NORTH_LINE_VANISH_DEPTH inside it.
+  const face = new Plane(new Vector3(0, 0, 1), NORTH_LINE_VANISH_DEPTH);
+  const car = new Mesh(new BoxGeometry(3, 4, CAR_LENGTH), new MeshBasicMaterial({ clippingPlanes: [face] }));
+  const at = (frontDepth: number) => { car.position.set(0, 0, -frontDepth - CAR_LENGTH / 2); return drawnCar(car); };
+  expect(at(NORTH_LINE_VANISH_DEPTH - 0.5)).not.toBeNull();
+  expect(at(NORTH_LINE_VANISH_DEPTH + 0.5)).toBeNull();
+  // A car whose centre is already past the vanish point still counts while its front shows.
+  expect(at(NORTH_LINE_VANISH_DEPTH - CAR_LENGTH / 2 + 1)).not.toBeNull();
+  car.visible = false;
+  expect(at(0)).toBeNull();
 });

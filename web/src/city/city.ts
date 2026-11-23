@@ -19,7 +19,7 @@ import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
-import { FOLLOW_CAMERA, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
+import { drawnCar, FOLLOW_CAMERA, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -1248,13 +1248,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const driveStart = performance.now();
   // A car counts as drawn only when it is visible and inside its own clipping planes, so
   // follow never frames a consist that a board edge or tunnel mouth has cut away.
-  const drawnAt = (o: THREE.Object3D) => {
-    if (!o.visible) return null;
-    const material = (o as THREE.Mesh).material;
-    const planes = (Array.isArray(material) ? material[0] : material)?.clippingPlanes ?? [];
-    const p = o.getWorldPosition(new THREE.Vector3());
-    return planes.every(plane => plane.distanceToPoint(p) >= -1) ? { x: p.x, z: p.z } : null;
-  };
   const busDrawn = (x: number, z: number) => edges.every(plane => plane.distanceToPoint(new THREE.Vector3(x, 0, z)) >= 0);
   function locate(v: Followed, states: ReturnType<typeof options.trains>): Fix | null {
     if (v.kind === 'train') {
@@ -1262,7 +1255,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (!t) return null;
       const [x, z] = project(t.lon, t.lat);
       const cars = [...trains.group.children, ...(brookwood?.cars.children ?? [])]
-        .filter(c => c.userData.trainId === t.id).flatMap(c => drawnAt(c) ?? []);
+        .filter(c => c.userData.trainId === t.id).flatMap(c => drawnCar(c) ?? []);
       return { id: t.id, pathId: t.pathId, tier: t.s.tier, x, z, cars, hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
     if (v.kind === 'bus') {
