@@ -54,3 +54,25 @@ Sam saw a void from above where the ramp meets the museum. The notch between the
 |---|---|---|
 | Entry, top-down, cam=577,-4017,0,5,150 | [Day](log/ui/arts-campus/entry-top-high-day.jpg) · [Night](log/ui/arts-campus/entry-top-high-night.jpg) | [Day](log/ui/arts-campus/entry-top-low-day.jpg) · [Night](log/ui/arts-campus/entry-top-low-night.jpg) |
 | Entry, oblique, cam=580,-4016,-60,50,150 | [Day](log/ui/arts-campus/entry-high-day.jpg) · [Night](log/ui/arts-campus/entry-high-night.jpg) | [Day](log/ui/arts-campus/entry-low-day.jpg) · [Night](log/ui/arts-campus/entry-low-night.jpg) |
+
+## The ginkgo lawn on Peachtree (Street View)
+
+These notes record the landscaping around the champion ginkgo, at City (612.5, −4001.2), for the lawn and landscape builders. They come from Google Street View, which is cited here and not copied:
+- [Peachtree, Dec 2025, heading 252°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55)
+- [The same spot, Nov 2019](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=70), using "See more dates"
+- [South, from the café terrace, Sep 2024, heading 300°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78972,-84.38478&heading=300&pitch=10&fov=45)
+
+| Element | What the photos show | Where (estimated) |
+|---|---|---|
+| Ginkgo bed | Raised mound of dark hardwood mulch, no grass, rising gently from the sidewalk to the trunk. The trunk forks low into several upright stems. | Centred on the trunk, about 12–14 m across |
+| Sidewalk edge | Low curb or edging between the sidewalk and the bed. A black lamp post on the sidewalk in front of the bed. | Along Peachtree, x ≈ 630 |
+| Shrubs | Low green shrub mass between the bed and the ramp, and along the ramp's south parapet toward the museum | North edge of the bed, z ≈ −4006 to −4010 |
+| Entry ramp | White parapet rising west to the Stent wing, with steel handrails | Its centreline runs (625.1, −4010.5) to (577.2, −4017.0) |
+| Peachtree steps | Wide granite steps with metal handrails, rising from the sidewalk to the piazza walk | (633.4, −3995.6) to (619.6, −3987.8), south of the bed |
+| Lawn | Open grass west of the bed, rising toward the museum | Between the bed and *The Shade* |
+| *The Shade* (Rodin) | Bronze on a dark stone pedestal on a round paved pad | (603.6, −4003.4) |
+| Lawn path | Short footway from the steps' top that dead-ends in the grass near the bed | Ends at (607.5, −3997.4) |
+| Other trees | An oak beside the steps, holding brown leaves in December, and glossy magnolias at the café to the south | Oak at about (619.5, −3990.5) |
+| Dec 2025 only | Temporary construction fencing along the Peachtree sidewalk | Do not model |
+
+The sizes and bed extents are estimates from the photographs. None of them is measured.

@@ -103,8 +103,17 @@ Only the Zenodo copy is openly licensed. We may cite individual trees as facts, 
 | Attribute | Value | Tier | Source |
 |---|---|---|---|
 | Species | Ginkgo | `reported` | Trees Atlanta champion record |
-| Trunk position | City (617.9, −3999.2), on the Peachtree lawn south of the entry ramp | `reported` | Champion record at 33.789866, −84.384916. An untagged OSM tree node lies 1.1 m away. |
+| Trunk position | City (612.5, −4001.2) ±3 m, on the mulched bed of the Peachtree lawn south of the entry ramp, 6 m from where the lawn path ends | `inferred` | Triangulated from two Street View panoramas, each calibrated on Rodin's *The Shade* at (603.6, −4003.4): [Peachtree, Dec 2025, heading 252°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55) and [café to the south, Sep 2024, heading 300°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78972,-84.38478&heading=300&pitch=10&fov=45). |
 | Size | 20 m tall, 18 m spread | `inferred` | Sam's call |
+
+**How the position was chosen.**
+- The champion record's point, 33.789866, −84.384916, is City (617.9, −3999.2). An untagged OSM tree node lies 1.1 m from it. #203 placed the tree there.
+- In both panoramas the pano heading reads about 7–11° short of the bearing to *The Shade*. After correcting for that, the two sight lines to the forked grey trunk cross at (612.5, −4001.2), 5.7 m WSW of the record point.
+- Street View from Nov 2019 at the same spot shows the same upright, forked tree in leaf. That makes it the ginkgo.
+- The culture agent's leaf-on aerial pick was (615, −4005). All three agree within about 6 m. Street View is the only source that sees the trunk itself, so the tree uses it.
+- **Kept, not thinned:** the canopy-map crown at (619.5, −3990.5), 12.8 m south, matches a real tree beside the Peachtree steps in both panoramas.
+
+[Before and after, top-down and from Peachtree](log/ui/tree-species/city-ginkgo-position.jpg)
 
 **How the size was chosen.**
 - The 2012 champion record measured 27.5 m tall, 26.2 m spread and 4.72 m circumference.
