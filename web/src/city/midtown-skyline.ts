@@ -1,6 +1,8 @@
-import type { P2 } from '../vignette/geom';
+import { BufferGeometry, Float32BufferAttribute, Mesh, MeshLambertMaterial } from 'three';
+import { Builder, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
+import { ashlarCoursing, graniteWindowAtlas, withStonePosition } from './johnson-burgee';
 import sites from './fixtures/midtown-skyline.json';
 
 import { georgianTerrace } from './midtown-skyline-terrace';
@@ -13,7 +15,8 @@ export type LocalGround = (u: number, v: number) => number | null;
 const site = sites.oneAtlantic;
 
 function oneAtlantic(shell: Shell) {
-  const granite = '#c0a298', trim = '#d7c1ae', glass = ['#485768', '#546577', '#435363'];
+  const granite = '#ccaea0', trim = '#d7c1ae', glass = ['#485768', '#546577', '#435363'];
+  const shaftGlass = new Builder(), shaftUv: number[] = [];
   shell.prism(shell.ring, shell.base, 201, granite, trim);
   for (let face = 0; face < 4; face++) {
     const angle = face * Math.PI / 2;
@@ -31,16 +34,14 @@ function oneAtlantic(shell: Shell) {
         point(4.4 * Math.cos(b), 11 + 4.4 * Math.sin(b), 26.3), glass[0]);
     }
     for (const side of [-1, 1]) panel(side * 10 - 1.6, side * 10 + 1.6, 1, 13, 26.3, glass[1]);
-    // Tall continuous strips separated by narrow granite ribs on the projecting wings.
-    for (const [left, right, depth] of [[-14, 14, 26.3], [-19, -15, 24.2], [15, 19, 24.2]]) {
-      const count = Math.round((right - left) / 4);
-      for (let bay = 0; bay < count; bay++) {
-        const u = left + bay * (right - left) / count + .5;
-        const v = left + (bay + 1) * (right - left) / count - .5;
-        panel(u, v, 18, 201, depth, glass[0]);
-        const a = point(u, 0, depth), b = point(v, 0, depth);
-        shell.facade([a[0], a[2]], [b[0], b[2]], 18, 201, 46, 9, .96, .82, glass, .13);
-      }
+    // Grouped multi-pane strips between granite piers, in the shared
+    // Johnson/Burgee granite atlas (see johnson-burgee.ts). Each face starts
+    // at a different atlas bay so lit offices do not repeat around the tower.
+    for (const [left, right, depth, start, bays] of [[-14, 14, 26.3, 0, 7], [-19, -15, 24.2, 7, 1], [15, 19, 24.2, 8, 1]]) {
+      const u0 = (start + 2 * face) / 9, u1 = u0 + bays / 9;
+      shaftGlass.quad(point(left, 18, depth + .02), point(right, 18, depth + .02),
+        point(right, 201, depth + .02), point(left, 201, depth + .02), '#ffffff');
+      shaftUv.push(u0,0, u1,0, u1,1, u0,0, u1,1, u0,1);
     }
     // Floodlit pointed pinnacles stand clear of the sloping copper planes.
     for (const u of [-18, -9, 0, 9, 18]) {
@@ -64,7 +65,28 @@ function oneAtlantic(shell: Shell) {
     shell.lights.quad([x*1.002,202,z*1.002],[x*1.002,208,z*1.002],[a*1.002,208,b*1.002],[a*1.002,202,b*1.002], trim);
     shell.lights.tri([x*.065,242,z*.065],[a*.065,242,b*.065],[0,site.heightM,0], '#d9ac64');
   });
-  return shell.finish('#ffe2af', .85);
+  const model = shell.finish('#ffe2af', .85);
+  // The pink Spanish granite is the same flame-finished ashlar as 191
+  // Peachtree's Rosa Dante, with a three-floor band module (photo estimate).
+  const strips = graniteWindowAtlas({ bays: Array.from({length: 9}, () => ({panes: 4, width: 16, grouped: true})),
+    floors: 45, bayWidth: 24, floorHeight: 12, granite: [204, 174, 160], frame: [214, 206, 196],
+    groupFloors: 3, bandHeight: 3, punchedSill: 2, punchedHead: 9, occupancy: .16, seed: 1987 });
+  const coursing = ashlarCoursing(1.5, .75, 'diffuseColor.r > 0.45 && diffuseColor.g < 0.56', .08);
+  const stone = model.group.children[0] as Mesh<BufferGeometry, MeshLambertMaterial>;
+  for (const material of [strips, stone.material]) {
+    material.onBeforeCompile = shader => withStonePosition(shader, coursing);
+    material.customProgramCacheKey = () => 'one-atlantic-ashlar';
+  }
+  const geometry = shaftGlass.geometry();
+  geometry.setAttribute('uv', new Float32BufferAttribute(shaftUv, 2));
+  const shaft = new Mesh(geometry, strips);
+  shaft.name = 'One Atlantic shaft';
+  shaft.castShadow = shaft.receiveShadow = true;
+  model.group.add(shaft);
+  return {...model, setNight(night: number) {
+    model.setNight(night);
+    strips.emissiveIntensity = 2 * night;
+  }};
 }
 
 const landmarks = [

@@ -32,6 +32,10 @@ it('mounts the 250 m landmark on terrain and suppresses the generic roof', () =>
     expect(ray.intersectObjects(area.scenery.children.filter(child => child !== model))).toHaveLength(0);
     area.setNight(1);
     expect(((model.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+    // The shaft wears the shared Johnson/Burgee granite atlas, lit at night.
+    const shaft = (model.getObjectByName('One Atlantic shaft') as Mesh).material as MeshLambertMaterial;
+    expect(shaft.map).not.toBeNull();
+    expect(shaft.emissiveIntensity).toBeGreaterThan(0);
   } finally {
     area.dispose();
     vi.unstubAllGlobals();
