@@ -8,7 +8,7 @@ import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atm
 import { createShell, type ShellOptions, type View } from './ui/shell';
 import { uiNext } from './ui/flag';
 import { lonLatToScene, sceneToLonLat } from './core/places';
-import { mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
+import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
 import { busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard, type DrawnAt } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
@@ -622,6 +622,18 @@ const shellOptions: ShellOptions = {
     return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
   },
   sky: () => lastAtm,
+  shareTarget() {
+    // Decide by the view on screen: City still loading has no camera to share yet.
+    if (!view3d.hidden && !diorama) return null;
+    if (diorama) {
+      const t = diorama.target(), c = diorama.camera();
+      return { view: 'city' as const, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
+    }
+    if (!map) return null;
+    const c = map.getCenter();
+    const b = Math.round(map.getBearing());
+    return { view: 'map' as const, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
+  },
 };
 // ?ui=next: the A2c interface (docs/ui-controls-brief.md), loaded only behind the flag.
 const shell = uiNext(location.search)

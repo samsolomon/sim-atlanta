@@ -126,6 +126,8 @@ export interface CityView {
    * the board once every area has mounted. */
   onBoard(x: number, z: number, eventually?: boolean): boolean;
   camera(): GroundCamera & { tilt: number };
+  /** Orbit distance in metres, the last field of a `cam` link. */
+  distance(): number;
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
   pan(dxPx: number, dyPx: number): void;
   /** Turn the view by degrees (Q/E). */
@@ -1429,6 +1431,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.update();
     },
     target: () => ({ x: controls.target.x, z: controls.target.z }),
+    distance: () => camera.position.distanceTo(controls.target),
     onBoard(x, z, eventually = false) {
       if (eventually && mosaic) {
         const r = mosaic.bounds;
