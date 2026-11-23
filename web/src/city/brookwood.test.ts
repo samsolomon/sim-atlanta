@@ -62,7 +62,7 @@ describe('illustrative Crescent equipment', () => {
   it('couples the documented formation end to end and emits markers only on exposed ends', () => {
     const cars = layout(formation);
     expect(cars.map(car => car.unit)).toEqual([
-      'charger', 'genesis', 'coach', 'coach', 'coach', 'cafe', 'diner', 'sleeper', 'baggageDorm',
+      'charger', 'genesis', 'coachPhase7', 'coachPhase7', 'coach', 'cafe', 'diner', 'sleeper', 'baggageDorm',
     ]);
     expect(consistLength).toBeCloseTo(224.59);
     for (const [i, car] of cars.entries()) {
