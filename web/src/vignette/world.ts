@@ -1457,13 +1457,15 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           vec3 frame = diffuseColor.rgb * 0.82;
           float st = floor(vStyle + 0.5);
           float win = 0.0;
+          // Houses at 7–10 draw their own windows; keep the shader's off even after the distance fade.
+          float hasWin = 1.0;
           if (st > 2.5) {
             // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle). Fine siding lines fade
             // to their average once a course is under a couple of pixels, so walls never shimmer.
             float px = fwidth(y);
             float lap = 1.0;
             // 7–10 are the same sidings with the windows drawn as geometry instead.
-            float hasWin = step(st, 6.5);
+            hasWin = step(st, 6.5);
             st = st > 6.5 ? st - 4.0 : st;
             if (st < 3.5) {
               lap = mix(0.95, 0.84 + 0.16 * step(0.2, fract(y / 0.2)), 1.0 - smoothstep(0.06, 0.16, px));
@@ -1522,7 +1524,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           // Where windows shrink below ~2 px, fade the pattern to its average so walls don't shimmer.
           vec2 fw = fwidth(vec2(u / 2.6, y / 3.4));
           float clarity = 1.0 - smoothstep(0.25, 0.6, max(fw.x, fw.y));
-          win = mix(0.4, win, clarity);
+          win = mix(0.4, win, clarity) * hasWin;
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
           float cellH = st > 2.5 ? hh(floor(vec2(u / 3.6, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);

@@ -41,7 +41,9 @@ it('infers gables, hips and pyramids from the footprint, with eave-height walls 
   // The L plan's roof never reaches over its empty corner.
   const out = new Builder();
   plan.finishFor(ell)!.dressRoof!(out, ell.rings[0], plan.city.buildings.find(x => x.id === 'ell')!.h!, new Builder());
-  for (let i = 0; i < out.pos.length; i += 3) expect(out.pos[i] > 68.01 && out.pos[i + 2] > 8.01).toBe(false);
+  // Roof vertices sit at or above the eave; inner-corner windows below it now face into the notch, as they should.
+  const ellEave = plan.city.buildings.find(x => x.id === 'ell')!.h!;
+  for (let i = 0; i < out.pos.length; i += 3) if (out.pos[i + 1] >= ellEave - 1e-6) expect(out.pos[i] > 68.01 && out.pos[i + 2] > 8.01).toBe(false);
   // A one-storey cottage under 150 m² (Home Park bungalows); the same plan in Ansley Park is two storeys.
   const cottage = house('cottage', rect(11, 9));
   expect(residential(city([cottage]), undefined, undefined, undefined, 'high', pin('cottage')).city.buildings[0].h).toBeCloseTo(3.2, 5);

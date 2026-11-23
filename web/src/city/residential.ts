@@ -17,7 +17,7 @@ type Shape = 'gabled' | 'hipped' | 'pyramidal';
 export type HouseStyle = 'colonial' | 'craftsman' | 'tudor';
 /** Lab and test overrides: pin a footprint's style, siding, wall colour or storeys. */
 export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number }>;
-type Plan = { style: HouseStyle; storeys: number; storeyTier: 'reported' | 'inferred'; doorS: number; id: string;
+type Plan = { style: HouseStyle; storeys: number; doorS: number; id: string; wind: number;
   concave: boolean; porchFoot?: number; front: P2[] | null; frontFoot?: number; siding: Siding; doorColor: string;
   crossGable: boolean; dormers: number; quality: 'high' | 'low'; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
   wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean };
@@ -120,17 +120,17 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const style: HouseStyle = f.style ?? (ansley ? (pickStyle < .35 ? 'colonial' : pickStyle < .65 ? 'tudor' : 'craftsman')
     : (pickStyle < .65 ? 'craftsman' : pickStyle < .9 ? 'colonial' : 'tudor'));
   // Tudor revival is a steep gabled house.
-  if (style === 'tudor' && !concave) shape = 'gabled';
+  if (style === 'tudor' && !concave && !shapeTag) shape = 'gabled';
   // Pitch by style: low Craftsman roofs, steep Tudor ones.
   const rise = style === 'craftsman' ? Math.min(3.2, Math.max(1.4, box.half * .5))
     : style === 'tudor' ? Math.min(6, Math.max(2.2, box.half * 1.1)) : Math.min(4.5, Math.max(1.6, box.half * .72));
   // Storeys: OSM levels or height are reported; otherwise inferred from style, size and place.
   // A half storey (1.5) is a one-storey eave with dormers in the roof.
-  const tagged = b.floors || (b.h ? Math.max(1, Math.round((b.h - rise) / 3)) : 0);
+  const tagged = b.floors || (b.h ? Math.max(1, Math.round(Math.max(3, b.h - rise) / 3)) : 0);
   const storeys = f.storeys ?? (tagged || (style === 'craftsman' ? (size > 110 ? 1.5 : 1)
     : style === 'tudor' ? (ansley ? 2 : 1.5) : ansley || size >= 150 ? 2 : 1));
-  const storeyTier = tagged && !f.storeys ? 'reported' : 'inferred';
-  const eave = Math.floor(storeys) * 3 + .2;
+  // A reported height sets the eave (height is the ridge); storeys then only place windows.
+  const eave = b.h && !f.storeys ? Math.max(3, b.h - rise) : Math.floor(storeys) * 3 + .2;
   const pick = r();
   const kind: Siding = f.siding ?? (material === 'brick' ? 'brick' : material === 'wood' ? 'clapboard'
     : style === 'tudor' ? (pick < .7 ? 'brick' : 'stucco')
@@ -168,7 +168,9 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const wall = f.wall ?? palette[Math.floor(r() * palette.length)];
   // Trim: white or cream on siding; contrasting on brick (cream on red and brown, dark on painted white).
   const trim = kind === 'brick' ? (wall === '#e6e2d8' ? '#2f3a34' : '#efe7d2') : r() < .7 ? '#f6f3ea' : '#ece2c8';
-  return { style, storeys, storeyTier, doorS, id: b.id, concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half, front, siding: kind,
+  // Ring winding, so each wall's outward normal is exact even on L and T plans.
+  const wind = ring.reduce((a, q, i) => { const n = ring[(i + 1) % ring.length]; return a + q[0] * n[1] - n[0] * q[1]; }, 0) > 0 ? 1 : -1;
+  return { style, storeys, doorS, id: b.id, wind, concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half, front, siding: kind,
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall, roof: roofs[Math.floor(r() * roofs.length)],
     trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick' };
@@ -247,8 +249,8 @@ function relief(ring: P2[], ground: (x: number, z: number) => number | null) {
 function frontFrame(p: Plan, edge: P2[] = p.front!) {
   const [a, d] = edge, len = Math.hypot(d[0] - a[0], d[1] - a[1]);
   const e: P2 = [(d[0] - a[0]) / len, (d[1] - a[1]) / len], m: P2 = [(a[0] + d[0]) / 2, (a[1] + d[1]) / 2];
-  let n: P2 = [-e[1], e[0]];
-  if ((m[0] - p.centre[0]) * n[0] + (m[1] - p.centre[1]) * n[1] < 0) n = [-n[0], -n[1]];
+  // The left normal of an anticlockwise ring points inside, so outward is its reverse.
+  const n: P2 = [e[1] * p.wind, -e[0] * p.wind];
   const at = (s: number, o: number, y: number) => [m[0] + e[0] * s + n[0] * o, y, m[1] + e[1] * s + n[1] * o];
   return { len, e, n, m, at };
 }
@@ -287,18 +289,21 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
       if (Math.abs(s) + total / 2 > len / 2 - .3) return;
       const y0 = base + sill, y1 = y0 + h;
       b.quad(at(s - total / 2 - .1, .03, y0 - .1), at(s + total / 2 + .1, .03, y0 - .1), at(s + total / 2 + .1, .03, y1 + .1), at(s - total / 2 - .1, .03, y1 + .1), p.trim);
+      // Lit and dark panes share a colour by day; only the night glow tells them apart.
       const glass = r() < .33 ? lit : b;
       for (const c of paired ? [s - (w + .12) / 2, s + (w + .12) / 2] : [s])
-        glass.quad(at(c - w / 2, .045, y0), at(c + w / 2, .045, y0), at(c + w / 2, .045, y1), at(c - w / 2, .045, y1), glass === lit ? '#6b7a80' : '#4c5a60');
+        glass.quad(at(c - w / 2, .045, y0), at(c + w / 2, .045, y0), at(c + w / 2, .045, y1), at(c - w / 2, .045, y1), '#4c5a60');
       if (high) b.quad(at(s - total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .47), at(s + total / 2, .05, y0 + h * .53), at(s - total / 2, .05, y0 + h * .53), p.trim);
       const w0 = total;
-      if (shutters && role === 'front') for (const side of [-1, 1]) {
+      if (shutters && high && role === 'front') for (const side of [-1, 1]) {
         const x0 = s + side * (w0 / 2 + .12), x1 = s + side * (w0 / 2 + .5);
         b.quad(at(Math.min(x0, x1), .04, y0), at(Math.max(x0, x1), .04, y0), at(Math.max(x0, x1), .04, y1), at(Math.min(x0, x1), .04, y1), '#26302b');
       }
     };
     for (let k = 0; k < floors; k++) {
-      const sill = k * 3 + .9 + (k === 0 && p.porch && role === 'front' ? .4 : 0);
+      // Under a porch the ground-floor lights sit on the deck and stop below its roof (2.85 m).
+      const porchRow = k === 0 && !!p.porch && role === 'front';
+      const sill = k * 3 + .9 + (porchRow ? .4 : 0), cap = porchRow ? 2.75 - sill : Infinity;
       if (role === 'front') {
         const door = p.doorS;
         const avoid = (s: number) => Math.abs(s - door) < 1.3 && k === 0 ? null : s;
@@ -311,13 +316,15 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
           const s = avoid(t * len);
           if (s === null) continue;
           // Colonial pairs; Craftsman ribbons and Tudor clusters are narrower lights set close together.
-          if (p.style === 'colonial') win(s, sill, .85, 1.7, len > 7);
-          else win(s, sill, p.style === 'tudor' ? .7 : .85, p.style === 'tudor' ? 1.45 : 1.6);
+          if (p.style === 'colonial') win(s, sill, .85, Math.min(1.7, cap), len > 7);
+          else win(s, sill, p.style === 'tudor' ? .7 : .85, Math.min(p.style === 'tudor' ? 1.45 : 1.6, cap));
         }
       } else if (role === 'side') {
+        // The low tier keeps ground-floor side windows only, and no rear windows.
+        if (!high && k > 0) continue;
         const count = len > 9 ? 2 : 1;
         for (let j = 0; j < count; j++) win((count === 1 ? 0 : j ? .22 : -.22) * len, sill, .8, 1.55, p.style === 'colonial');
-      } else {
+      } else if (high) {
         win(-.25 * len, sill + .3, .75, 1.2);
         if (k === 0 && len > 8) win(.25 * len, sill + .3, .75, 1.2);
       }
@@ -328,7 +335,9 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
       b.quad(at(-len / 2, .035, y), at(len / 2, .035, y), at(len / 2, .035, y + .14), at(-len / 2, .035, y + .14), belt);
     }
     // Attic window in each gable end (walls across the ridge on a gabled roof).
-    if (p.shape === 'gabled' && !p.concave && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len < .3 && len < p.half * 2.2)
+    // ...only where the gable is still at least a metre wide at the window's top.
+    if (p.shape === 'gabled' && !p.concave && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len < .3 && len < p.half * 2.2
+      && p.half * (1 - (p.rise * .3 + .9) / p.rise) >= .5)
       win(0, eave - base + p.rise * .3, .7, .8);
   }
 }

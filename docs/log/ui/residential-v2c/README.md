@@ -51,7 +51,7 @@ About a third of rooms glow at night; the glass goes to the building batch's lit
 
 The **Houses** section (`/models.html?v=houses` and `?v=materials`) uses the same `residential()` finish as City:
 
-- [Style × storey grid, high vs low](styles-tiers.jpg) and [day vs night](styles-night.jpg): 189 / 149 triangles per house.
+- [Style × storey grid, high vs low](styles-tiers.jpg) and [day vs night](styles-night.jpg): 189 / 123 triangles per house, including walls.
 - [Siding swatch sheet, high vs low](swatches-tiers.jpg) and [day vs night](swatches-night.jpg).
 
 ## City views
@@ -65,6 +65,6 @@ All views are at 14:00 and 23:00 Eastern on 20 November 2026.
 
 ## Budget
 
-House detail drawn by the finish (roofs, gables, dormers, porches, doors, windows, belts and trim) across the nine square-board rows: 638,773 triangles at high (194 per house) and 465,949 at low (142 per house). It's all in the existing building batch, so no draws are added. Windows as geometry roughly double v2a's 102 / 80 per house. The composition needs per-wall placement, which the shader can't do. Publishing needs a web rebuild only.
+House detail drawn by the finish (roofs, gables, dormers, porches, doors, windows, belts and trim) across the nine square-board rows: 637,009 triangles at high (194 per house) and 402,271 at low (122 per house). The low tier keeps front windows and ground-floor side windows, and drops rear windows, upper side windows, shutters, meeting rails, dormers and corner boards. It's all in the existing building batch, so no draws are added. Windows as geometry roughly double v2a's 102 / 80 per house. The composition needs per-wall placement, which the shader can't do. Publishing needs a web rebuild only.
 
 The same PR fixes a closed-ring bug in `drapeRing` (hole indices were off by one when rings repeated their first vertex), with a test.
