@@ -4,7 +4,7 @@ One-time setup:  python3 -m venv .venv && .venv/bin/pip install duckdb
 Run:             .venv/bin/python pipeline/scripts/extract_overture.py
 
 Reads the public Overture S3 bucket directly (no account). Writes
-data/raw/overture_downtown_{buildings,rail,roads,landuse,infra}.geojson for `railprep scene`
+data/raw/overture_downtown_{buildings,building_parts,rail,roads,landuse,infra}.geojson for `railprep scene`
 and the vignette scripts. Pass names to extract only some, e.g. `landuse infra`.
 """
 
@@ -42,6 +42,11 @@ def main() -> None:
         "buildings": f"""
             SELECT id, height, num_floors, class, names.primary AS name, sources[1].dataset AS src, ST_AsGeoJSON(geometry) AS g
             FROM read_parquet('{theme('buildings', 'building')}', hive_partitioning=1)
+            WHERE {where}""",
+        # Mapped building parts (towers over podiums), linked to their parent by building_id.
+        "building_parts": f"""
+            SELECT id, building_id, height, min_height, num_floors, min_floor, ST_AsGeoJSON(geometry) AS g
+            FROM read_parquet('{theme('buildings', 'building_part')}', hive_partitioning=1)
             WHERE {where}""",
         "rail": f"""
             SELECT id, class, to_json(rail_flags) AS rail_flags, to_json(level_rules) AS level_rules,
