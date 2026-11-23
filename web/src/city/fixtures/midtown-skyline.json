@@ -40,5 +40,12 @@
     "x": 464.9,
     "z": -2095.8,
     "heightM": 206
+  },
+  "biltmore": {
+    "id": "osm:way:886034013",
+    "name": "Atlanta Biltmore",
+    "x": 430,
+    "z": -2560,
+    "heightM": 65
   }
 }

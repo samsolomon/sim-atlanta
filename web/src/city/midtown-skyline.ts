@@ -7,6 +7,7 @@ import sites from './fixtures/midtown-skyline.json';
 
 import { towerSquare } from './midtown-skyline-square';
 import { georgianTerrace } from './midtown-skyline-terrace';
+import { biltmore } from './midtown-skyline-biltmore';
 import { symphonyTower } from './midtown-skyline-symphony';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 
@@ -95,6 +96,7 @@ function oneAtlantic(shell: Shell) {
 const landmarks = [
   { site, axis: [1,0], probes: [[-24,0],[24,0],[0,-24],[0,24]], build: oneAtlantic },
   { site: sites.towerSquare, axis: [1,.083], probes: [[-25,0],[25,0],[0,-32],[0,32]], build: towerSquare },
+  { site: sites.biltmore, axis: [1,0], probes: [[-10,0],[0,-50],[-10,50],[20,45]], build: biltmore },
   { site: sites.terrace, axis: [1,0], probes: [[-31,28],[-12,-25],[36,-20],[29,10]], build: georgianTerrace },
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
