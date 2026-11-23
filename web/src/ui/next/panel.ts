@@ -41,6 +41,11 @@ function keyNode(): HTMLElement {
   return n;
 }
 
+/** "Built by Sam Solomon ↗" with X and Instagram, shared by About and the menu. */
+export const BYLINE = `<a class="a2-by" href="https://solomon.io">Built by Sam Solomon${OUT}</a>
+      <a class="a2-social" href="https://x.com/samuelrsolomon" aria-label="Sam Solomon on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zM17.61 20.64h2.04L6.49 3.24H4.3z"/></svg></a>
+      <a class="a2-social" href="https://www.instagram.com/samuelrsolomon" aria-label="Sam Solomon on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.8" cy="7.2" r=".6" fill="currentColor"/></svg></a>`;
+
 function aboutNode(): HTMLElement {
   const n = document.createElement('div');
   n.className = 'a2-about';
@@ -70,11 +75,7 @@ function aboutNode(): HTMLElement {
       </dl>
       <p class="a2-quiet">An unofficial project, not affiliated with MARTA, Amtrak or the City of Atlanta. Vehicles use real livery colours but no operator logos. Free to use, no ads, no tracking.</p>
     </div>
-    <div class="a2-about-foot">
-      <a class="a2-by" href="https://solomon.io">Built by Sam Solomon${OUT}</a>
-      <a class="a2-social" href="https://x.com/samuelrsolomon" aria-label="Sam Solomon on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zM17.61 20.64h2.04L6.49 3.24H4.3z"/></svg></a>
-      <a class="a2-social" href="https://www.instagram.com/samuelrsolomon" aria-label="Sam Solomon on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.8" cy="7.2" r=".6" fill="currentColor"/></svg></a>
-    </div>`;
+    <div class="a2-about-foot">${BYLINE}</div>`;
   return n;
 }
 
