@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import { S70_LAYOUT } from '../vignette/streetcar';
-import { alongAt, createStreetcarCars, pointAlong, pointAt, streetcarPaths } from './streetcar-cars';
+import { alongAt, createStreetcarCars, pointAlong, pointAt, streetcarCovers, streetcarPaths } from './streetcar-cars';
 
 afterEach(() => vi.unstubAllGlobals());
 const origin = { lon: -84.3916, lat: 33.7539 };
@@ -129,4 +129,31 @@ it('is found by Follow and by a tap on any of its sections', async () => {
   expect(hit).toEqual({ kind: 'train', id: 'sc-1' });
   // And with no streetcar group, nothing is picked there.
   expect(pickVehicle(400, 400, 800, 800, camera, new THREE.Group(), [], [], [])).toBeNull();
+});
+
+it('hides a car in the streetcar lane or crossing it, and keeps the next lane drawn', () => {
+  // A 24 m streetcar on z = 0 from x = 0 to 24, with the same 1.4 m half width as occupied().
+  const tram = { occupied: (x: number, z: number, margin: number, y = 0) =>
+    Math.abs(y) < 2.5 && Math.hypot(x - Math.max(0, Math.min(24, x)), z) < 1.4 + margin };
+  const east = Math.PI / 2, north = 0;
+  expect(streetcarCovers(tram, 12, 0, 0, 4.5, east)).toBe(true); // sharing the lane
+  expect(streetcarCovers(tram, 12, 0, 3.3, 4.5, east)).toBe(false); // the next lane over
+  expect(streetcarCovers(tram, 12, 0, -3.3, 4.5, east)).toBe(false);
+  expect(streetcarCovers(tram, 12, 0, 3.5, 4.5, north)).toBe(true); // nose across the rail
+  expect(streetcarCovers(tram, 27, 0, 0, 4.5, east)).toBe(true); // rear bumper at its end
+  expect(streetcarCovers(tram, 30, 0, 0, 4.5, east)).toBe(false); // clear behind it
+  expect(streetcarCovers(tram, 12, 8, 0, 4.5, north)).toBe(false); // on a bridge overhead
+});
+
+it('yields only on the streetcar’s own level', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx, width: 1, height: 1 }) });
+  const cars = createStreetcarCars(rf, origin, () => 0, []);
+  const state = { id: 't', pathId: 'p', routeId: 'marta:route:STREETCAR', s: { value: 30, tier: 'scheduled' }, lengthM: { value: 24 } } as TrainState;
+  expect(cars.update([state], 0)).toBe(1);
+  const [, C] = cars.cars();
+  const { x, y, z } = C.position;
+  expect(cars.occupied(x, z, 0)).toBe(true);
+  expect(cars.occupied(x, z, 0, y)).toBe(true);
+  expect(cars.occupied(x, z, 0, y + 8)).toBe(false);
 });

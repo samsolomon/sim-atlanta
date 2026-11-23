@@ -48,7 +48,7 @@ import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
-import { createStreetcarCars } from './streetcar-cars';
+import { createStreetcarCars, streetcarCovers } from './streetcar-cars';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
 import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
@@ -700,7 +700,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const hourly = trafficData?.hourly;
   const trafficOptions = terrain && Array.isArray(hourly?.weekday) && Array.isArray(hourly?.weekend)
     ? { city: vd, quality, hourly, clippingPlanes: edges,
-        busOccupies: buses.occupies.bind(buses),
+        // A model car never drives through a live bus or a drawn streetcar: it skips that frame.
+        busOccupies: (x: number, y: number, z: number, lengthM: number, headingRad: number) =>
+          buses.occupies(x, y, z, lengthM, headingRad) || streetcarCovers(streetcar, x, y, z, lengthM, headingRad),
         roadHeight: cityRoadHeight(vd, terrain.groundAt, transport?.deckAt) }
     : undefined;
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
