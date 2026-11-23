@@ -2138,3 +2138,7 @@ A 2001 letterhead settled which building was Promenade I. The 36.2 m office at 1
 ### 2026-11-23 — A gap in the Symphony Tower crown
 
 The 126 m outline at 1180 Peachtree contains both a lower curved wing and a narrower office tower. The architect's 120-foot veil dimension accounts for more than a sixth of the 200 m height. Two bowed glass screens now rise above an exposed flat roof, with separately batched luminous panels and visible truss members between them. The night photograph makes the opening between the screens as legible as the glass. [Architect's photographs, dimensions and four City captures](midtown-skyline.md#1180-peachtree)
+
+### 2026-11-23 — From North Avenue to the Flats
+
+The west stand at Bobby Dodd climbs a 17.7 m grade difference. One generic roof had disappeared 5.65 m into the hillside. Its replacement has two seating decks above the field with a press box at the high side. Across the campus path, the 40-vertex Evans Administration Building now carries the four illuminated TECH signs under a slate spire. [Terrain readings, references and eight City views](tech-campus.md)

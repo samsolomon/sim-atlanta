@@ -1,0 +1,5 @@
+{
+  "tower":{"id":"osm:way:42706709","name":"Tech Tower","origin":[-285,-2060],"probes":[[0,7],[0,-21],[-13,-8]]},
+  "west":{"id":"osm:way:42706712","name":"Bobby Dodd west stands","origin":[-118,-2068],"probes":[[-75,-54],[-50,50]]},
+  "bowl":{"id":"osm:way:245699027","name":"Bobby Dodd Stadium","origin":[-118,-2068],"probes":[[59,30],[-26,-102]]}
+}

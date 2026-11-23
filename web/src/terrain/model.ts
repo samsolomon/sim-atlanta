@@ -7,6 +7,7 @@ import { GroundGrid } from './grid';
 import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
+import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
@@ -143,6 +144,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
   for (const site of city.buildings) {
     const create = skylineIds.has(site.id) ? createSkylineLandmark
+      : techIds.has(site.id) ? createTechLandmark
       : artsCampusIds.has(site.id) ? createArtsCampusLandmark
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark : null;
     const landmark = create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
