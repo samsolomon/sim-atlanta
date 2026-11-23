@@ -1937,3 +1937,7 @@ At Five Points an unnamed 72.7 m extrusion stood between two historic buildings.
 ### 2026-11-23 — Two courtyards at different heights
 
 The two One12 Courtland footprints looked like a pair of flat extrusions. The architect’s photographs explained why the lidar gave three roof levels. An older eight-story building surrounds a court at street grade, while the sixteen-story Courtland tower steps back around a pool on the garage roof. That terrace sits near 333.6 m NAVD88, nearly 30 m below the taller roof. City now follows the five folded canopies along Dobbs, the louvered garage entrance, the Courtland corner and the string lights over the pool. [Architect’s photographs, lidar measurements and matched City views](log/ui/one12-courtland/README.md)
+
+### 2026-11-23 — The narrow office slab above the old Citizens Trust lobby
+
+From Auburn Avenue the pale fins at 75 Piedmont carry the eye up to the university lettering. At the front door, the same building reads as a low portico set back from the sidewalk. The former bank’s footprint spans about 51 × 74 m, but the tall slab uses only 19 × 68 m of it. The 2018 lidar puts the main roof 51–52 m above Piedmont and the east podium about 42 m below that roof. Modeling the two heights separately opens the view from Dobbs toward J Deck. [Street photographs, measurements and 15 matched City views](log/ui/citizens-trust/README.md) · [Comparison sheet](log/ui/citizens-trust/comparison.jpg)
