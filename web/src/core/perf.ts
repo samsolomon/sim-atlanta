@@ -27,6 +27,8 @@ export interface PerfContext {
   roots(): Map<THREE.Object3D, PerfCategory>;
   /** Post-processing owners: composer, passes, targets. Scanned one level deep for render targets. */
   post(): unknown[];
+  /** Turn the view by degrees (for ?perf=run&motion=orbit). */
+  rotate?(degrees: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
   quality: string;
@@ -45,7 +47,9 @@ const TRAIL_KEY = 'perf-trail';
  *   &post=off     render straight to the canvas, no composer
  *   &hide=trees,scenery,terrain,transport,buildings,vehicles   hide whole categories (fps upper
  *                 bounds per category). `trees` means every instanced mesh in area scenery.
- *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never) */
+ *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never)
+ *   &motion=orbit ?perf=run turns the camera 12°/s through the sample, so per-move work such as
+ *                 shadow-map redraws is measured too (a static camera hides it) */
 export const perfOverrides = (() => {
   if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null };
   const pr = Number(params.get('pr'));
@@ -433,7 +437,19 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;
+  let turning = params.get('motion') === 'orbit';
+  if (turning) {
+    let last = performance.now();
+    const turn = (now: number) => {
+      if (!turning) return;
+      ctx?.rotate?.(((now - last) / 1000) * 12);
+      last = now;
+      requestAnimationFrame(turn);
+    };
+    requestAnimationFrame(turn);
+  }
   await sleep(sampleMs);
+  turning = false;
   const full = report(true);
   const f = frames(sampleMs);
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
@@ -446,6 +462,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     cpuMB: full.memory?.total.cpuMB ?? null, shadowUpdatesInSample: shadowUpdates - shadowBefore,
     dataMs: at('city:data'), rendererMs: at('city:renderer'), firstFrameMs: at('city:first-frame'), readyMs: at('ready'),
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
+    motion: params.get('motion') ?? 'static',
   };
   const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;

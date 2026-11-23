@@ -1149,6 +1149,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   resize();
   perf.attach({
     renderer, scene, quality,
+    rotate: degrees => { rotateBy(degrees); controls.update(); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
@@ -1552,10 +1553,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const areas = [terrain, east, north, ...(mosaic ? [...mosaic.areas.values(), ...mosaic.patches.values()] : [])];
     const d = camera.position.distanceTo(controls.target);
     const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    if (far === farTrees && areas.length === detailAreas) return;
+    // Off the mosaic the list is always [terrain, east, north]; count the mounted ones, so an
+    // area that arrives later still gets the current detail.
+    const mounted = areas.filter(Boolean).length;
+    if (far === farTrees && mounted === detailAreas) return;
     farTrees = far;
-    detailAreas = areas.length;
-    const detail = { farTrees: far, branchShadows: !low };
+    detailAreas = mounted;
+    // Limb shadows stay on until a moving-camera A16 run shows they cost something.
+    const detail = { farTrees: far };
     world.setDetail(detail);
     for (const a of areas) a?.setDetail(detail);
   }
