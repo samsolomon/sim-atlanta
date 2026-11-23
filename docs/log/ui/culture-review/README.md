@@ -26,3 +26,7 @@ Each image shows BEFORE on the left and AFTER on the right, taken from the same 
    ![High turf](turf.jpg)
 12. **High Museum Peachtree lawn, manicured**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 14:00.
    ![High manicured lawn](manicured.jpg)
+13. **Arts Center loading dock** (Arts Center Way). Camera `/?view=city&cam=500,-3897,70,62,150`, zoomed 2.5× with `__setView`, 13:00.
+   ![Loading dock](dock.jpg)
+14. **Woodruff Arts Center, 15th Street face**. Camera `/?view=city&cam=585,-3870,10,38,150`, zoomed 1.6×, 13:00.
+   ![15th Street face](south15.jpg)
