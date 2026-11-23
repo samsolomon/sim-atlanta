@@ -47,7 +47,7 @@ describe.skipIf(!staged)('Brookwood corridor trains', () => {
       const line = new Line(track.pts);
       for (let s = 0; s <= line.length; s += 5) {
         const { x, z } = line.at(s);
-        expect(brookwoodRailNote(x, z), `${x},${z}`).toMatch(/Illustrative consist,? (and )?freight/);
+        expect(brookwoodRailNote(x, z), `${x},${z}`).toMatch(/Illustrative consist & freight/);
       }
     }
   });

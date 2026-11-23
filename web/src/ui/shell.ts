@@ -129,6 +129,19 @@ export function createShell(o: ShellOptions) {
   const details = el('div');
   more.append(conditions, details);
   const note = el('p', { class: 'bar-note glass', hidden: '' });
+  function placeNote() {
+    if (note.hidden) return;
+    note.classList.remove('below');
+    note.style.top = '';
+    const left = menuBtn.getBoundingClientRect(), right = statusBtn.getBoundingClientRect();
+    const room = Math.min(innerWidth / 2 - left.right, right.left - innerWidth / 2) - 10;
+    if (note.getBoundingClientRect().width / 2 <= room) return;
+    note.classList.add('below');
+    note.style.top = `${Math.max(left.bottom, right.bottom) + 8}px`;
+  }
+  addEventListener('resize', placeNote);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(placeNote).observe(statusBtn);
+  document.fonts?.ready.then(placeNote);
 
   const closeDrops = (except?: HTMLElement) => {
     if (except !== menu) {
@@ -366,10 +379,12 @@ export function createShell(o: ShellOptions) {
       if (document.documentElement.dataset.theme !== theme) document.documentElement.dataset.theme = theme;
     },
     setView: (v: View) => setView(v),
-    /** A one-line note under the status card; null hides it. */
+    /** The area note: centred on the top row when it fits between the menu button and the
+     * status card, otherwise below them and wrapped. Truth-tier words are never clipped. */
     setNote(text: string | null) {
       note.hidden = !text;
       note.textContent = text ?? '';
+      placeNote();
     },
   };
 }

@@ -24,6 +24,8 @@ import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
 import { groundMap } from './ground-map';
+import { createTrees } from '../trees/render';
+import { replacedBy, treeSitesIn } from '../trees/sites';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -118,7 +120,8 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
 }
 
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {}) {
+  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {},
+  replacedTree: World['replacedTree'] = null) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
@@ -126,6 +129,7 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
   const world = new TerrainScenery(city, null, options);
   world.buildBuildings(bd => bd.id === separateBuilding ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
+  world.replacedTree = replacedTree;
   world.buildTrees(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
   world.setSeason(180);
   return world;
@@ -171,8 +175,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
-  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options);
+  // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
+  const named = treeSitesIn(city.bounds);
+  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options,
+    named.length ? replacedBy(named) : null);
   for (const landmark of landmarks) scenery.group.add(landmark.group);
+  const species = createTrees(named, options.quality, groundAt);
+  if (species) scenery.group.add(species.group);
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
@@ -196,11 +205,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
-    setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
+    setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); },
     setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);
+      species?.setWet(factor);
     },
     dispose() {
       group.removeFromParent();
@@ -210,6 +220,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       });
       fragment?.group.removeFromParent();
       fragment?.dispose();
+      species?.dispose();
       scenery.dispose();
       group.clear();
     },

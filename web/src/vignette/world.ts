@@ -181,6 +181,11 @@ export class World {
   readonly trees: { x: number; y: number; z: number; s: number; c: number; th?: number }[] = [];
   /** Real trees from a canopy height map: [x, z, height m, crown radius m]. */
   realTrees: [number, number, number, number][] | null = null;
+  /**
+   * Canopy crowns a named species tree replaces (x, z, crown radius m). They are skipped only
+   * after their colour seed is drawn, so every other tree keeps its kind and colour.
+   */
+  replacedTree: ((x: number, z: number, crownM: number) => boolean) | null = null;
 
   readonly opts: WorldOptions;
   constructor(
@@ -956,9 +961,11 @@ export class World {
       for (const [x, z, h, cr] of this.realTrees) {
         if (!this.inBounds(x, z, 1)) continue;
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
+        const c = r();
+        if (this.replacedTree?.(x, z, cr)) continue;
         const sz = Math.min(4.5, Math.max(0.7, cr / 2.3));
         const y = this.ground(x, z);
-        this.trees.push({ x, y, z, s: sz, c: r(), th: Math.max(1.2, h - 4.2 * sz) });
+        this.trees.push({ x, y, z, s: sz, c, th: Math.max(1.2, h - 4.2 * sz) });
       }
     } else {
     // Street trees along the sidewalks of city streets.
