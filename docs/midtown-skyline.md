@@ -8,6 +8,32 @@ Mary Ann Sullivan's street views show tall arched entrances on four sides, a rec
 
 The matched City cameras target (450, −3785) at bearing 25°, tilt 47° and 0.81 m/px, on 20 November at 11:30 and 23:30 EST. [High daylight](log/ui/midtown-skyline/one-atlantic-high-day.jpg) · [High night](log/ui/midtown-skyline/one-atlantic-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/one-atlantic-low-day.jpg) · [Low night](log/ui/midtown-skyline/one-atlantic-low-night.jpg)
 
+### Shared Johnson/Burgee facade (2026-11-23)
+
+Sam pointed out that One Atlantic Center (1987) and 191 Peachtree (1990) are both late Johnson/Burgee towers and should share their facade details. Photographs confirm it. Mary Ann Sullivan's close views of One Atlantic show flame-finished granite laid in coursed ashlar, with deep reveals and light-framed, four-pane-wide glass strips between continuous piers. A Wikimedia close-up of 191 shows the same flamed ashlar and light gridded glass, grouped over several floors between granite bands, beside narrow punched windows. [One Atlantic street, base and shaft](https://homepages.bluffton.edu/~SULLIVANM/atlanta/johnsonburgee2/atlantic.html) · [One Atlantic with its banded shaft and lit crown materials](https://commons.wikimedia.org/wiki/File:4_One_Atlantic_Center.jpg) · [191 Peachtree base and shaft](https://commons.wikimedia.org/wiki/File:191_Peachtree_Tower,_Atlanta,_GA_(47421491822).jpg) · [Owner's dusk photographs](https://www.1ac.com/pdfs/1ac_brochure.pdf)
+
+**Shared:**
+- Flamed granite ashlar, running bond.
+- Light mullion grids in dark grey-tinted glass.
+- Glass grouped over several floors, with a granite band on the first floor of each group.
+- Deep reveals.
+
+**Different:**
+- One Atlantic's granite is pink Spanish stone; 191's is cream Rosa Dante.
+- One Atlantic's strips run between continuous piers on all four faces, while 191 mixes grouped bays with punched windows in its slot.
+- The crowns differ: One Atlantic has a copper pyramid with pale pinnacles and a gilded finial, and 191 has paired domed temple lanterns.
+
+`web/src/city/johnson-burgee.ts` now holds the granite window atlas and the ashlar-coursing shader. 191 calls it with its previous parameters, and a hash of its geometry, textures, shader source and night response is unchanged by the refactor. One Atlantic uses the same atlas: 36 bays of four-pane strips, nine per face so lit offices never repeat, over 45 floors from 18 to 201 m, a granite band every third floor and 16% occupied offices. It adds 1.5 × 0.75 m coursing on the stone of the shaft and base.
+
+**Estimated:**
+- The three-floor band module.
+- The strip width, at two thirds of each 4 m bay.
+- The course size.
+- The paler granite tone, #ccaea0, matched by eye to sunlit photographs.
+- The occupancy.
+
+Close facade camera: target (391, −3690), bearing 200°, tilt 62°, 170 m. [High daylight](log/ui/midtown-skyline/one-atlantic-facade-high-day.jpg) · [High night](log/ui/midtown-skyline/one-atlantic-facade-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/one-atlantic-facade-low-day.jpg) · [Low night](log/ui/midtown-skyline/one-atlantic-facade-low-night.jpg)
+
 ## Promenade I and II
 
 An AT&T letterhead gives the historical name Promenade I and the address 1200 Peachtree. Today's Promenade Central gallery identifies that same address. The plaza photograph shows deeply framed repetitive windows and the side approach shows a white blade canopy with slim supports beside the glazed lobby. The model uses the present exterior of the low building. Its 36.2 m height is mapped. The upper floor plate, 6.4 m terrace, glazing, blade spacing and column spacing are estimates. The measured perimeter ranges from 292.9 to 302.1 m NAVD88 on 3DEP. No full-night exterior of the current 1200 facade was established from those galleries. The adjacent garden's visible warm entrance lights guide an illustrative, restrained lobby treatment. [Archival address](https://psc.ky.gov/pscecf/2001-00105/AT%26T/070901/ATT_RT_SEN_Data_Integrity_070901.pdf) · [Current plaza and canopy](https://www.promenadecentral.com/gallery) · [Landscape architect's reverse views](https://spacecraftla.com/projects/promenade/) · [Dusk plaza and canopy lighting](https://www.turnerconstruction.com/projects/1230-peachtree-promenade-repositioning-project)

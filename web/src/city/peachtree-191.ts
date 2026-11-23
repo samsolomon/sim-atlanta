@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
+import { ashlarCoursing, graniteWindowAtlas, withStonePosition } from './johnson-burgee';
 
 const footprintId = 'cca22dcb-b333-4b2a-9371-869465370bda';
 // Survey-independent plan from OSM parts 537432531–33, in City's east/south metres.
@@ -34,48 +35,14 @@ function walls(b: Builder, ring: P2[], low: number, high: number, color: string)
 
 // A single atlas fits a whole outer elevation and three punched bays in the slot.
 function facade() {
-  const bayWidth = 24, floorHeight = 12, floors = 46;
-  const w = 9 * bayWidth, h = floors * floorHeight;
-  const day = new Uint8Array(w * h * 4), night = new Uint8Array(day.length);
-  const random = rng(191);
-  const granite = [218, 207, 193], frame = [122, 127, 127];
-  function windowBay(bay: number, panes: number, width: number, grouped: boolean) {
-    const left = (bayWidth - width) / 2;
-    for (let floor = 0; floor < floors; floor++) {
-      const lit = random() < .19 ? .28 + .48 * random() : 0;
-      const sill = grouped ? (floor % 4 === 0 ? 3 : 0) : 2;
-      for (let y = 0; y < floorHeight; y++) for (let x = 0; x < bayWidth; x++) {
-        const dx = x - left;
-        const pane = dx >= 0 && dx < width && y >= sill && y < (grouped ? 12 : 9);
-        const mullion = pane && ((dx % (width / panes)) < 1 || y === 0);
-        const shade = 68 + 4 * (Math.floor(dx * panes / width) % 3);
-        const i = 4 * ((floor * floorHeight + y) * w + bay * bayWidth + x);
-        day.set(!pane ? granite : mullion ? frame : [shade, shade + 13, shade + 22], i);
-        day[i+3] = 255;
-        const glow = pane && !mullion ? lit : 0;
-        night.set([255*glow, 195*glow, 123*glow, 255], i);
-      }
-    }
-  }
-  for (let bay = 0; bay < 9; bay++) {
+  const bays = Array.from({length: 9}, (_, bay) => {
     const grouped = bay >= 1 && bay <= 4;
     const broad = bay === 2 || bay === 3;
-    windowBay(bay, broad ? 4 : 2, broad ? 20 : grouped ? 14 : 12, grouped);
-  }
-  function texture(bytes: Uint8Array<ArrayBuffer>) {
-    const t = new THREE.DataTexture(bytes, w, h);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.wrapS = THREE.RepeatWrapping;
-    t.magFilter = THREE.LinearFilter;
-    t.minFilter = THREE.LinearMipmapLinearFilter;
-    t.generateMipmaps = true;
-    t.needsUpdate = true;
-    return t;
-  }
-  const map = texture(day), emissiveMap = texture(night);
-  const material = new THREE.MeshLambertMaterial({ map, emissiveMap, emissive: 0xffffff,
-    emissiveIntensity: 0, side: THREE.DoubleSide });
-  material.addEventListener('dispose', () => { map.dispose(); emissiveMap.dispose(); });
+    return { panes: broad ? 4 : 2, width: broad ? 20 : grouped ? 14 : 12, grouped };
+  });
+  const material = graniteWindowAtlas({ bays, floors: 46, bayWidth: 24, floorHeight: 12,
+    granite: [218, 207, 193], frame: [122, 127, 127], groupFloors: 4, bandHeight: 3,
+    punchedSill: 2, punchedHead: 9, occupancy: .19, seed: 191 });
   const b = new Builder(), uv: number[] = [];
   walls(b, shaft, podiumTop, shaftTop, '#ffffff');
   for (let i = 0; i < shaft.length; i++) {
@@ -183,19 +150,9 @@ export function createPeachtree191(buildings: VBuilding[], groundAt: (x: number,
   // Model floodlights at the feet of the lower arcade and lantern. Keep
   // the dark glazed arches dark even when their stone surrounds are lit.
   lights.onBeforeCompile = shader => {
-    shader.vertexShader = 'varying vec3 vStonePos;\n' + shader.vertexShader.replace(
-      '#include <begin_vertex>', '#include <begin_vertex>\n vStonePos = position;');
-    shader.fragmentShader = 'varying vec3 vStonePos;\n' + shader.fragmentShader.replace(
-      '#include <color_fragment>', `#include <color_fragment>
-        vec2 tile = vec2((vStonePos.x + vStonePos.z) / 2.3, vStonePos.y / 1.45);
-        vec2 footprint = max(fwidth(tile), vec2(0.001));
-        tile.x += 0.5 * mod(floor(tile.y), 2.0);
-        vec2 edge = 0.5 - abs(fract(tile) - 0.5);
-        vec2 seam = 1.0 - smoothstep(vec2(0.01), 0.035 + footprint, edge);
-        seam *= 1.0 - smoothstep(vec2(0.12), vec2(0.65), footprint);
-        if (vStonePos.y < 219.2 && diffuseColor.r > 0.5 && diffuseColor.r < 0.8) {
-          diffuseColor.rgb *= 1.0 - 0.13 * max(seam.x, seam.y);
-        }`).replace(
+    withStonePosition(shader, ashlarCoursing(2.3, 1.45,
+      'vStonePos.y < 219.2 && diffuseColor.r > 0.5 && diffuseColor.r < 0.8'));
+    shader.fragmentShader = shader.fragmentShader.replace(
       '#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float lift = vStonePos.y < 219.0 ? vStonePos.y - 205.0 : vStonePos.y - 219.0;
         float wash = 0.19 + 1.1 * exp(-0.16 * max(lift, 0.0));
