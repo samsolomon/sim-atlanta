@@ -238,13 +238,48 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     for (const [i, j, k] of tris) b.tri([ring[i][0], top, ring[i][1]], [ring[j][0], top, ring[j][1]], [ring[k][0], top, ring[k][1]], '#9e968a');
     building = { base, top, ring };
   }
+  // Platform lighting. The 2015 Commons platform photo (Gman197002, CC BY-SA 4.0) shows rows of
+  // round pendant downlights under the roof trusses along each platform. Their positions here are
+  // illustrative: two rows per platform, every 6 m. Each light is a lamp disc under the roof and a
+  // warm pool on the platform, shown only after dark.
+  const glow = new Builder();
+  const lampY = (s: number) => roofY(s) - 1.6;
+  for (const p of platforms) {
+    const [a, c] = p.lip < p.outer ? [p.lip, p.outer] : [p.outer, p.lip];
+    for (const v of [a + (c - a) * 0.3, a + (c - a) * 0.7]) {
+      for (let s = PLATFORM_S[0] + 3; s < PLATFORM_S[1]; s += 6) {
+        const disc = new THREE.CircleGeometry(0.32, 8);
+        disc.rotateX(Math.PI / 2);
+        const [x, , z] = P(s, v, 0);
+        disc.translate(x, lampY(s), z);
+        glow.addGeometry(disc, '#ffe2a8');
+        const pool = new THREE.CircleGeometry(1.7, 12);
+        pool.rotateX(-Math.PI / 2);
+        pool.translate(x, floor(s) + 0.03, z);
+        glow.addGeometry(pool, '#3a2e1c');
+      }
+    }
+  }
+  const glowGeometry = glow.geometry();
+  const glowMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false, forceSinglePass: true });
+  const lights = new THREE.Mesh(glowGeometry, glowMaterial);
+  lights.name = 'King Memorial platform lights';
+  lights.visible = false;
   const geometry = b.geometry();
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const mesh = new THREE.Mesh(geometry, material);
+  mesh.add(lights);
   mesh.name = 'MARTA east: guideway and King Memorial station';
   mesh.castShadow = mesh.receiveShadow = true;
   return {
     mesh, bed, floor, sSeam, sEnd, stationS: PLATFORM_S, roofS, platforms, roofDrawn, building,
-    dispose() { mesh.removeFromParent(); geometry.dispose(); material.dispose(); },
+    lampCount: glowGeometry.attributes.position.count,
+    setNight(dark: number) {
+      const d = Math.min(1, Math.max(0, dark));
+      lights.visible = d > 0.01;
+      glowMaterial.color.setScalar(d);
+    },
+    dispose() { mesh.removeFromParent(); geometry.dispose(); material.dispose(); glowGeometry.dispose(); glowMaterial.dispose(); },
   };
 }
