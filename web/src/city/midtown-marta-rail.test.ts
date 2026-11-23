@@ -1,11 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { Group, Mesh, MeshBasicMaterial, PlaneGeometry } from 'three';
+import { Group } from 'three';
 import { expect, it } from 'vitest';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import type { TransportRun } from '../terrain/transport-data';
 import rows from './fixtures/midtown-rail.json';
 import { createNorthLine, northCar, northLinePaths, northLineTracks, portalFrame } from './midtown-marta-rail';
+import { northLineProfile } from './midtown-marta-guideway';
 
 const origin = { lon: -84.3916, lat: 33.7539 };
 const tracks = northLineTracks(rows['brookwood-station'] as TransportRun[], -5700);
@@ -52,16 +53,9 @@ it('draws the same source identity at a live or scheduled fix and retires cars w
   } as unknown as RoutesFile;
   const area = new Group(),
     cars = new Group();
-  const tread = new Mesh(
-    new PlaneGeometry(2000, 2000)
-      .toNonIndexed()
-      .rotateX(-Math.PI / 2)
-      .translate(500, -8, -5400),
-    new MeshBasicMaterial(),
-  );
-  tread.name = 'Freight track';
-  area.add(tread);
-  const update = createNorthLine(area, rf, origin, cars)!;
+  const ground = () => -8.13;
+  const update = createNorthLine({ group: area, groundAt: ground }, rf, origin, cars)!;
+  const profile = northLineProfile(tracks, rows['brookwood-station'] as TransportRun[], ground);
   for (const tier of ['scheduled', 'live'] as const) {
     const state = {
       id: tier + '-train',
@@ -73,7 +67,9 @@ it('draws the same source identity at a live or scheduled fix and retires cars w
     const snapshot = JSON.stringify(state);
     expect(update([state], 1)).toBe(4);
     expect(
-      cars.children.filter((c) => c.visible).every((c) => c.userData.trainId === state.id && c.position.y === -8),
+      cars.children
+        .filter((c) => c.visible)
+        .every((c) => c.userData.trainId === state.id && c.position.y >= -8 - 1e-6 && c.position.y <= Math.max(...profile.height) + 1e-6),
     ).toBe(true);
     expect(JSON.stringify(state)).toBe(snapshot);
   }

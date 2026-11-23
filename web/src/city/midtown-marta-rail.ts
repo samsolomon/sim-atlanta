@@ -2,12 +2,11 @@ import * as THREE from 'three';
 import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import { nearestOnPath } from '../sched/engine';
-import { triangleHeight } from '../terrain/tread-height';
 import type { TransportRun } from '../terrain/transport-data';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { Builder, Line, type P2 } from '../vignette/geom';
-import { PlacementIndex } from '../vignette/spatial';
 import railRows from './fixtures/midtown-rail.json';
+import { northLineGuideway, northLineProfile } from './midtown-marta-guideway';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
 type Origin = { lon: number; lat: number };
@@ -35,24 +34,6 @@ export function northLineTracks(runs: readonly TransportRun[], northEdge: number
     tracks.push(new Line(points.reverse()));
   }
   return tracks.sort((a, b) => a.pts[0][0] - b.pts[0][0]);
-}
-
-// The track mesh contains the actual banked abutments and bridge decks. Query
-// the top triangles through a static spatial index, independently of the earth below.
-function treadHeights(mesh: THREE.Mesh): Height {
-  const pos = mesh.geometry.getAttribute('position') as THREE.BufferAttribute;
-  const index = new PlacementIndex<number>(16);
-  for (let i = 0; i < pos.count; i += 3) {
-    const pts: P2[] = [0, 1, 2].map((j) => [pos.getX(i + j), pos.getZ(i + j)]);
-    index.add(i, pts);
-  }
-  return (x, z) => {
-    for (const i of index.at(x, z)) {
-      const h = triangleHeight(pos, i, x, z);
-      if (h !== null) return h;
-    }
-    return null;
-  };
 }
 
 export function northLinePaths(rf: Pick<RoutesFile, 'paths'>, origin: Origin, tracks: Line[]) {
@@ -152,30 +133,30 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number) {
   return mesh;
 }
 
-export function createNorthLine(area: THREE.Group, rf: RoutesFile, origin: Origin, cars: THREE.Group) {
-  const mesh = area.getObjectByName('Freight track');
-  if (!(mesh instanceof THREE.Mesh)) return;
-  const lines = northLineTracks(railRows['brookwood-station'] as TransportRun[], -5700);
-  const paths = northLinePaths(rf, origin, lines),
-    height = treadHeights(mesh);
+export function createNorthLine(
+  area: { group: THREE.Group; groundAt: (x: number, z: number) => number | null },
+  rf: RoutesFile,
+  origin: Origin,
+  cars: THREE.Group,
+) {
+  const rows = railRows['brookwood-station'] as TransportRun[];
+  const lines = northLineTracks(rows, -5700);
+  if (lines.length !== 2) return;
+  const paths = northLinePaths(rf, origin, lines);
+  const profile = northLineProfile(lines, rows, area.groundAt);
+  area.group.add(northLineGuideway(lines, profile, area.groundAt));
+  const height = (line: Line, along: number) => profile.at(line, along);
   const darkness = { value: 0 };
   const planes = new Map<Line, THREE.Plane[]>();
-  if (lines.length === 2) {
+  {
     const frame = portalFrame(lines),
-      base = Math.min(
-        ...lines.map((l) => {
-          const p = l.at(0.05);
-          return height(p.x, p.z) ?? Infinity;
-        }),
-      );
-    if (Number.isFinite(base)) {
-      area.add(portal(frame, base));
-      const clip = [
-        new THREE.Plane(new THREE.Vector3(frame.dx, 0, frame.dz), -frame.dx * frame.x - frame.dz * frame.z),
-        new THREE.Plane(new THREE.Vector3(0, 0, 1), 5700),
-      ];
-      for (const line of lines) planes.set(line, clip);
-    }
+      base = Math.min(...lines.map((l) => height(l, 0.05)));
+    area.group.add(portal(frame, base));
+    const clip = [
+      new THREE.Plane(new THREE.Vector3(frame.dx, 0, frame.dz), -frame.dx * frame.x - frame.dz * frame.z),
+      new THREE.Plane(new THREE.Vector3(0, 0, 1), 5700),
+    ];
+    for (const line of lines) planes.set(line, clip);
   }
   const colors = new Map(rf.routes.map((r) => [r.id, r.color]));
   const pools = new Map<
@@ -202,14 +183,13 @@ export function createNorthLine(area: THREE.Group, rf: RoutesFile, origin: Origi
       for (let i = 0; i < n; i++) {
         const place = northCar(run, t.s.value + ((n - 1) / 2 - i) * (CAR_LENGTH + CAR_GAP));
         if (!place) continue;
-        const sample = (along: number) => run.line.at(THREE.MathUtils.clamp(along, 0.05, run.line.length - 2));
-        const p = sample(place.along),
-          ahead = sample(place.along + run.dir * 2),
-          back = sample(place.along - run.dir * 2);
-        const y = height(p.x, p.z),
-          front = height(ahead.x, ahead.z),
-          rear = height(back.x, back.z);
-        if (y === null || front === null || rear === null) continue;
+        const clamp = (along: number) => THREE.MathUtils.clamp(along, 0.05, run.line.length - 2);
+        const p = run.line.at(clamp(place.along)),
+          ahead = run.line.at(clamp(place.along + run.dir * 2)),
+          back = run.line.at(clamp(place.along - run.dir * 2));
+        const y = height(run.line, clamp(place.along)),
+          front = height(run.line, clamp(place.along + run.dir * 2)),
+          rear = height(run.line, clamp(place.along - run.dir * 2));
         const role = i === 0 ? 1 : i === n - 1 ? -1 : 0,
           key = [t.routeId, run.dir, role].join('/');
         let pool = pools.get(key);
