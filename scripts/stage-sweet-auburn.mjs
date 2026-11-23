@@ -1,4 +1,5 @@
 // Stage only the opt-in northern section; King has its own release step.
+import { withCanopy } from './stage-canopy.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 const src = new URL('../pipeline/prototypes/sweet-auburn/', import.meta.url);
@@ -10,5 +11,5 @@ const m = JSON.parse(manifest);
 if (data.length !== 2 * m.rows * m.cols || createHash('sha256').update(data).digest('hex') !== m.sha256)
   throw new Error('Sweet Auburn ground does not match its manifest');
 await mkdir(dest, { recursive: true });
-for (const [name, bytes] of [['ground.json', manifest], ['ground.i16', data], ['context.json', ctx]])
+for (const [name, bytes] of [['ground.json', manifest], ['ground.i16', data], ['context.json', withCanopy(ctx)]])
   await writeFile(new URL(name, dest), bytes);

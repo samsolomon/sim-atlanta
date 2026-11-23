@@ -32,6 +32,12 @@ VIGNETTES = {
     "sweet-auburn": {"x": (1000.0, 1800.0), "z": (-520.0, 280.0)},
 }
 
+with open(os.path.join(ROOT, "pipeline/prototypes/square-board/midtown-rows.json")) as f:
+    MIDTOWN_ROWS = json.load(f)
+for name, row in MIDTOWN_ROWS.items():
+    VIGNETTES[name] = {"x": (-1000., 1800.), "z": (float(row["minZ"]), float(row["maxZ"]))}
+
+
 
 def project(lon, lat):
     return (round((lon - LON0) * math.radians(1) * R * K, 2), round(-(lat - LAT0) * math.radians(1) * R, 2))

@@ -1,10 +1,12 @@
 import * as THREE from 'three';
-import { addSection, bounds, connect, joins, type Area, type Board, type Direction, type TrafficArea } from '../square-board/sections';
+import { addSection, bounds, midtownRows, connect, joins, type Area, type Board, type Direction, type Section, type TrafficArea } from '../square-board/sections';
 import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
 type Rect = Area['bounds'];
 type Point = { x: number; z: number };
+// Lowest 5 m ground node is 239.9 m NAVD88 on the station row. Keep the tabletop below it.
+export const midtownBaseNavd88M = 234;
 export const summitDowntown = '30306c74-51c3-4ae2-9a93-11f9341f87ee';
 export const summitNorth = 'osm:way:39449002';
 
@@ -53,12 +55,15 @@ export function mosaicPlinth(rects: Rect[], bottom: number) {
 }
 
 export class SquareMosaic {
-  constructor(private readonly dataRoot: string) {}
+  constructor(private readonly dataRoot: string, readonly midtown = false) {}
+  get areaCount() { return 7 + (this.midtown ? midtownRows.length : 0); }
+  get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
+  private fullBoard = false;
   readonly areas = new Map<Board, Area>();
   readonly patches = new Map<Board, TrafficArea>();
   readonly joins = joins;
-  private loading = new Set<Direction>();
-  private failed = new Set<Direction>();
+  private loading = new Set<Section>();
+  private failed = new Set<Section>();
   private wanted?: Point;
 
   mount(id: 'king' | 'auburn', area: TrafficArea) {
@@ -72,20 +77,35 @@ export class SquareMosaic {
 
   remember(x: number, z: number) {
     this.wanted = undefined;
+    if (this.midtown && midtownRows.some(id => !this.patches.has(id) && inside(bounds[id], x, z))) {
+      this.wanted = { x, z };
+      return;
+    }
     for (const d of ['north', 'south'] as const) {
       if (!this.patches.has(`${d}-band`) && (inside(bounds[`${d}-band`], x, z) || inside(bounds[`${d}-corner`], x, z))) {
         this.wanted = { x, z }; break;
       }
     }
   }
-  retry() { this.failed.clear(); }
-  cancelTarget() { this.wanted = undefined; }
+  requestFullBoard() { this.fullBoard = true; this.failed.clear(); }
+  cancelTarget() { this.wanted = undefined; this.fullBoard = false; }
 
   approach(x: number, z: number, quality: TerrainQuality, signal: AbortSignal,
-    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Direction) => void) {
-    for (const direction of ['north', 'south'] as const) {
-      if (!nearSection(direction, x, z)) { this.failed.delete(direction); continue; }
-      if (this.patches.has(`${direction}-band`) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;
+    mounted: (areas: Map<Board, TrafficArea>, target?: Point) => void, failure: (d: Section) => void) {
+    const target = this.wanted ?? { x, z };
+    const lastRow = this.midtown ? (this.fullBoard ? midtownRows.length - 1 :
+      midtownRows.reduce((last, id, i) => inside(bounds[id], target.x, target.z, 100) ? i : last, -1)) : -1;
+    const requested: Section[] = [];
+    if (lastRow >= 0 || this.fullBoard || nearSection('north', x, z)) requested.push('north');
+    if (this.fullBoard || nearSection('south', x, z)) requested.push('south');
+    if (lastRow >= 0 && this.areas.has('north-band')) {
+      const next = midtownRows.slice(0, lastRow + 1).find(id => !this.areas.has(id));
+      if (next) requested.push(next);
+    }
+    for (const id of this.failed) if (!requested.includes(id)) this.failed.delete(id);
+    for (const direction of requested) {
+      const id = direction === 'north' || direction === 'south' ? `${direction}-band` as const : direction;
+      if (this.patches.has(id) || this.loading.has(direction) || this.failed.has(direction) || signal.aborted) continue;
       this.loading.add(direction);
       void addSection(direction, this.areas, quality, signal, { northBuilding: summitNorth, dataRoot: this.dataRoot }).then(added => {
         if (signal.aborted) { for (const area of added.values()) area.dispose(); return; }
@@ -94,6 +114,7 @@ export class SquareMosaic {
         const reached = p && [...added.values()].some(a => inside(a.bounds, p.x, p.z));
         if (reached) this.wanted = undefined;
         mounted(added, reached ? p : undefined);
+        if (this.fullBoard || this.wanted) this.approach(x, z, quality, signal, mounted, failure);
       }).catch(error => {
         if (!signal.aborted) {
           this.failed.add(direction);
