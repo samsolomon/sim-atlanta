@@ -55,3 +55,34 @@ export function subtractSlot(face: number[], planes: Plane[], positions: number[
   }
   return kept;
 }
+
+/** Split one convex terrain face by a convex region: the part inside every plane
+ * (distance >= 0) and the pieces outside, sharing their cut vertices. Split
+ * vertices stay on the face's own plane. */
+export function splitConvex(face: number[], planes: Plane[], positions: number[],
+  add: (x: number, y: number, z: number) => number): { inside: number[] | null; outside: number[][] } {
+  let inside = face;
+  const outside: number[][] = [];
+  for (const plane of planes) {
+    const distances = inside.map(i => plane(positions[3*i], positions[3*i+1], positions[3*i+2]));
+    if (distances.every(d => d <= 0)) return { inside: null, outside: [face] };
+    if (distances.every(d => d >= 0)) continue;
+    const positive: number[] = [], negative: number[] = [];
+    for (let i = 0; i < inside.length; i++) {
+      const j = (i + 1) % inside.length;
+      const a = inside[i], b = inside[j], da = distances[i], db = distances[j];
+      if (da >= 0) positive.push(a);
+      if (da <= 0) negative.push(a);
+      if (da * db < 0) {
+        const t = da / (da - db);
+        const mix = (axis: number) => positions[3*a+axis] + t * (positions[3*b+axis] - positions[3*a+axis]);
+        const cut = add(mix(0), mix(1), mix(2));
+        positive.push(cut);
+        negative.push(cut);
+      }
+    }
+    if (negative.length >= 3) outside.push(negative);
+    inside = positive;
+  }
+  return { inside: inside.length >= 3 ? inside : null, outside };
+}

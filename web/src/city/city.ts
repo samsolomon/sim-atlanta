@@ -50,6 +50,7 @@ import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { createStreetcarCars } from './streetcar-cars';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
+import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
@@ -1452,6 +1453,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    if (!drive) {
+      // Tighten the depth range with the orbit distance (city/depth-range.ts).
+      const p = camera.position;
+      const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z));
+      if (Math.abs(near - camera.near) > 0.05 * camera.near) {
+        camera.near = near;
+        camera.updateProjectionMatrix();
+      }
+    }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
@@ -1496,6 +1506,25 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     clampTarget();
   };
 
+  if (import.meta.env.DEV) {
+    // Dev-only: frame a camera link (bearing, tilt, distance, x, z) without a reload.
+    // zoom > 1 narrows the lens from the same position, for close-up evidence shots.
+    (window as unknown as Record<string, unknown>).__setView = (bearing: number, tilt: number, dist: number, x: number, z: number, zoom = 1) => {
+      manualCamera();
+      setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z);
+      camera.zoom = zoom;
+      camera.updateProjectionMatrix();
+    };
+    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas };
+    // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
+    (window as unknown as Record<string, unknown>).__groundAudit = async (o?: object) => {
+      const { groundAudit, cityLayer, CITY_COLORS } = await import('../terrain/ground-audit');
+      const areas: [string, NonNullable<typeof terrain>][] = mosaic ? [...mosaic.areas] : [];
+      if (!mosaic && terrain) areas.push(['downtown', terrain]);
+      if (!mosaic && east) areas.push(['king', east]);
+      return groundAudit(scene, areas.map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })), { layer: cityLayer, colors: CITY_COLORS, ...o });
+    };
+  }
   console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);
   console.info('City build stages (ms)', stages);
   return {

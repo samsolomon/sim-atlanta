@@ -9,7 +9,7 @@ import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
-import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from './surface';
+import { GroundSurface, joinList, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { createMitchellHouse, mitchellId } from '../city/midtown-culture-mitchell';
@@ -26,6 +26,7 @@ import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
 import { groundMap } from './ground-map';
+import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
 
@@ -151,10 +152,17 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
     const top = new THREE.Mesh(approaches.geometry, board.material);
+    top.name = 'bridge approaches';
     top.receiveShadow = true;
     board.add(top, new THREE.Mesh(approaches.walls, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
   }
-  const groundAt = approaches?.groundAt ?? bare;
+  // On the high tier the sampler also carries the drawn triangles, so ground-following
+  // layers can drape (terrain/drape.ts). The low tier skips the drape until the phone
+  // memory budget is known: it adds ~100k triangles across the board.
+  // Forward the optional road: unconnected motorways must keep sampling bare earth.
+  type Road = Parameters<NonNullable<typeof approaches>['groundAt']>[2];
+  const groundAt = Object.assign((x: number, z: number, road?: Road) => approaches ? approaches.groundAt(x, z, road) : bare(x, z),
+    { triangles: options.quality === 'high' ? mesh : undefined }) satisfies DrapeGround;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
@@ -174,6 +182,10 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       landmarks.push(landmark);
     }
   }
+  // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
+  // Carve before anything else samples the ground inside their footprints.
+  const yields = landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []);
+  if (yields.length) mesh.carve(yields);
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
@@ -220,6 +232,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   return {
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
+    /** Drawn terrain triangles only, without bridge approaches. */
+    terrainAt: bare,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); },
     setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },

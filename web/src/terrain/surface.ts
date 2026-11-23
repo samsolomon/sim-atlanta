@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
 import { GroundGrid } from './grid';
-import { slotPlanes, subtractSlot, type OpenSlot } from './openings';
+import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
 export type TerrainJoins = JoiningEdge | JoiningEdge[];
@@ -9,15 +9,71 @@ export const joinList = (join?: TerrainJoins): JoiningEdge[] => Array.isArray(jo
 
 export type TerrainQuality = 'low' | 'high';
 
+/**
+ * A hard surface the drawn terrain must yield to, such as a stair run cut into a
+ * slope. Inside the convex `ring` the terrain is lowered, never raised, to at most
+ * `floor(x, z)`. A vertical skirt closes the step at the ring. The floor must be
+ * linear (or concave) over the ring, so the drawn triangles stay below it between
+ * vertices too, at both tiers.
+ */
+export interface GroundYield {
+  ring: readonly (readonly [number, number])[];
+  floor(x: number, z: number): number;
+}
+
+function yieldPlanes(y: GroundYield) {
+  const ring = y.ring;
+  let area = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [ax, az] = ring[i], [bx, bz] = ring[(i + 1) % ring.length];
+    area += ax * bz - bx * az;
+  }
+  if (ring.length < 3 || !Number.isFinite(area) || Math.abs(area) < 1e-6) throw new Error('Invalid ground yield ring');
+  const sign = area > 0 ? 1 : -1;
+  const planes = ring.map(([ax, az], i) => {
+    const [bx, bz] = ring[(i + 1) % ring.length], len = Math.hypot(bx - ax, bz - az);
+    return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
+  });
+  const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
+  return { planes, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+}
+
 // Each block is at most 2 × 2 source cells. High keeps all four; low merges flat
 // blocks and stitches their shared edges to any neighbour that needs 5 m detail.
 export class GroundSurface {
   readonly geometry = new THREE.BufferGeometry();
-  readonly minY: number;
-  private readonly starts: Uint32Array;
-  private readonly blockCols: number;
+  minY!: number;
+  private starts!: Uint32Array;
+  private blockCols!: number;
+  private yields: GroundYield[] = [];
 
-  constructor(readonly grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] = [], join?: TerrainJoins) {
+  constructor(readonly grid: GroundGrid, private readonly quality: TerrainQuality,
+    private readonly openings: readonly OpenSlot[] = [], private readonly join?: TerrainJoins) {
+    this.build();
+  }
+
+  /**
+   * Lower the drawn terrain under hard-surface footprints and rebuild the mesh.
+   * Call before the first render: earlier `sampleScene` results inside a footprint
+   * are superseded. Board edges never move, so a yield must stay inside the board.
+   */
+  carve(yields: readonly GroundYield[]) {
+    const { bounds, stepM } = this.grid.manifest;
+    // Seams must match the neighbouring board node for node, so a yield near an edge is
+    // skipped (the stair still draws, uncarved) rather than failing the whole board.
+    const inside = yields.filter(y => {
+      const { minX, maxX, minZ, maxZ } = yieldPlanes(y);
+      const ok = minX > bounds.minX + stepM && maxX < bounds.maxX - stepM && minZ > bounds.minZ + stepM && maxZ < bounds.maxZ - stepM;
+      if (!ok) console.warn('Ground yield skipped: within a cell of the board edge', y.ring);
+      return ok;
+    });
+    if (!inside.length) return;
+    this.yields = [...this.yields, ...inside];
+    this.build();
+  }
+
+  private build() {
+    const { grid, quality, openings, join } = this;
     const { rows, cols, stepM, bounds, vertical } = grid.manifest;
     const blockCols = this.blockCols = Math.ceil((cols - 1) / 2);
     const blockRows = Math.ceil((rows - 1) / 2);
@@ -81,20 +137,64 @@ export class GroundSurface {
       }
       return remap[i];
     };
+    // Hard-surface yields, indexed by block like the openings.
+    const yieldBlocks = new Map<number, ReturnType<typeof yieldPlanes>[]>();
+    for (const y of this.yields.map(yieldPlanes)) {
+      const col = (x: number) => Math.floor((x - bounds.minX) / (2 * stepM));
+      const row = (z: number) => Math.floor((z - bounds.minZ) / (2 * stepM));
+      for (let r = Math.max(0, row(y.minZ)); r <= Math.min(blockRows - 1, row(y.maxZ)); r++) {
+        for (let c = Math.max(0, col(y.minX)); c <= Math.min(blockCols - 1, col(y.maxX)); c++) {
+          const key = r * blockCols + c;
+          if (!yieldBlocks.has(key)) yieldBlocks.set(key, []);
+          yieldBlocks.get(key)!.push(y);
+        }
+      }
+    }
+    const lowered = new Map<number, number>();
+    const lower = (i: number, floor: (x: number, z: number) => number) => {
+      const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2], f = floor(x, z);
+      if (!(y > f)) return i;
+      let j = lowered.get(i);
+      if (j === undefined) lowered.set(i, j = add(x, f, z));
+      return j;
+    };
+    const emit = (f: number[]) => { for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]); };
     let blockSlots: ReturnType<typeof slotPlanes>[] | undefined;
+    let blockYields: ReturnType<typeof yieldPlanes>[] | undefined;
     const tri = (a: number, b: number, c: number) => {
       const ia = vertex(a), ib = vertex(b), ic = vertex(c);
-      if (!blockSlots) {
+      if (!blockSlots && !blockYields) {
         indices.push(ia, ib, ic);
         return;
       }
       let faces = [[ia, ib, ic]];
-      for (const slot of blockSlots) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
-      for (const f of faces) for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]);
+      for (const slot of blockSlots ?? []) faces = faces.flatMap(f => subtractSlot(f, slot.planes, pos, add));
+      for (const y of blockYields ?? []) {
+        faces = faces.flatMap(f => {
+          const { inside, outside } = splitConvex(f, y.planes, pos, add);
+          if (!inside) return outside;
+          const low = inside.map(i => lower(i, y.floor));
+          if (low.every((j, k) => j === inside[k])) return [...outside, inside];
+          emit(low);
+          // Skirt each footprint edge where the inside dropped, seen from either side.
+          for (let k = 0; k < inside.length; k++) {
+            const n = (k + 1) % inside.length, p = inside[k], q = inside[n];
+            if (low[k] === p && low[n] === q) continue;
+            const onEdge = y.planes.some(plane =>
+              Math.abs(plane(pos[3*p], 0, pos[3*p+2])) < 1e-6 && Math.abs(plane(pos[3*q], 0, pos[3*q+2])) < 1e-6);
+            if (!onEdge) continue;
+            emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
+            emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
+          }
+          return outside;
+        });
+      }
+      for (const f of faces) emit(f);
     };
     for (let k = 0; k < detail.length; k++) {
       starts[k] = indices.length;
       blockSlots = slots.get(k);
+      blockYields = yieldBlocks.get(k);
       const bx = k % blockCols, bz = Math.floor(k / blockCols);
       const x = 2 * bx, z = 2 * bz;
       if (detail[k]) {
@@ -126,6 +226,10 @@ export class GroundSurface {
       }
     }
     starts[detail.length] = indices.length;
+    // A rebuild (carve) changes the vertex count. computeVertexNormals would reuse a
+    // stale normal attribute of the old length, and cached bounds would be stale too.
+    this.geometry.deleteAttribute('normal');
+    this.geometry.boundingBox = this.geometry.boundingSphere = null;
     this.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     this.geometry.setIndex(indices);
@@ -145,6 +249,23 @@ export class GroundSurface {
       }
   }
 
+  /** Drawn triangles whose block overlaps the box (see terrain/drape.ts). */
+  trianglesIn(minX: number, maxX: number, minZ: number, maxZ: number,
+    visit: (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number) => void) {
+    const { bounds, stepM } = this.grid.manifest, size = 2 * stepM;
+    const index = this.geometry.index!, p = this.geometry.getAttribute('position');
+    const rows = (this.starts.length - 1) / this.blockCols;
+    const j0 = Math.max(0, Math.floor((minZ - bounds.minZ) / size)), j1 = Math.min(rows - 1, Math.floor((maxZ - bounds.minZ) / size));
+    const i0 = Math.max(0, Math.floor((minX - bounds.minX) / size)), i1 = Math.min(this.blockCols - 1, Math.floor((maxX - bounds.minX) / size));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const k = j * this.blockCols + i;
+      for (let n = this.starts[k]; n < this.starts[k + 1]; n += 3) {
+        const a = index.getX(n), b = index.getX(n + 1), c = index.getX(n + 2);
+        visit(p.getX(a), p.getY(a), p.getZ(a), p.getX(b), p.getY(b), p.getZ(b), p.getX(c), p.getY(c), p.getZ(c));
+      }
+    }
+  }
+
   /** Scene y on the actual drawn triangle, for placement at this quality. */
   sampleScene(x: number, z: number): number | null {
     const { bounds, stepM, rows, cols } = this.grid.manifest;
@@ -162,6 +283,8 @@ export class GroundSurface {
           const dx = pos.getX(b) - ax, dz = pos.getZ(b) - az;
           const ex = pos.getX(c) - ax, ez = pos.getZ(c) - az;
           const det = dx * ez - dz * ex;
+          // Vertical faces (yield skirts) have no plan area.
+          if (Math.abs(det) < 1e-9) continue;
           const wb = ((x - ax) * ez - (z - az) * ex) / det;
           const wc = (dx * (z - az) - dz * (x - ax)) / det;
           const wa = 1 - wb - wc;
