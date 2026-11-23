@@ -1,3 +1,4 @@
+import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
@@ -107,10 +108,10 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
 
 async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
   const path = dataRoot + '/scene/square-board/' + id;
-  const [grid, context]: [GroundGrid, TerrainCity & { name: string }] = await Promise.all([
+  const [grid, context]: [GroundGrid, TerrainCity & NeighborhoodCanopy & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band', id === 'brookwood-station' || id === 'brookwood-south' ? brookwood : undefined), response(path + '/context.json', signal).then(r => r.json()),
   ]);
-  if (context.name !== id || Object.entries(bounds[id]).some(([k, v]) =>
+  if (context.name !== id || !Array.isArray(context.trees) || Object.entries(bounds[id]).some(([k, v]) =>
     grid.manifest.bounds[k as keyof typeof context.bounds] !== v || context.bounds?.[k as keyof typeof context.bounds] !== v) || !context.roads.length || !context.buildings.length)
     throw Error('Wrong or incomplete square-board patch ' + id);
   return { id, grid, context };
@@ -127,7 +128,11 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     for (const { id, grid, context } of patches) {
       const city = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
-      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined });
+      const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+        quality, simpleLeafClumps: context.treeLowCount !== undefined,
+        bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
+        separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
+      });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
         const stationRoad = id === 'brookwood-station' && city.roads.find(road => road.id === 'osm:way:38978515');

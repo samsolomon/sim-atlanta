@@ -12,6 +12,7 @@ type Tree = [number, number, number, number];
 type Contours = { value: number };
 export interface DowntownTerrainOptions {
   quality: TerrainQuality;
+  simpleLeafClumps?: boolean;
   join?: TerrainJoins;
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
@@ -98,7 +99,7 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
 }
 
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null, finishFor?: DowntownTerrainOptions['finishFor'], separateBuilding?: string) {
+  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {}) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
@@ -106,7 +107,7 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
   const world = new TerrainScenery(city, null, options);
   world.buildBuildings(bd => bd.id === separateBuilding ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
-  world.buildTrees();
+  world.buildTrees(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
   world.setSeason(180);
   return world;
 }
@@ -119,13 +120,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const groundAt = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
-  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt, options.finishFor, options.separateBuilding);
+  const scenery = makeScenery(city, trees, options.quality, grid.manifest.stepM, groundAt, options);
   let fragment: World | undefined;
   if (candidate) {
     const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
     if (rings.length) {
       fragment = makeScenery({ ...city, buildings: [{ ...candidate, rings }], roads: [], rail: [] }, [],
-        options.quality, grid.manifest.stepM, groundAt, options.finishFor);
+        options.quality, grid.manifest.stepM, groundAt, { finishFor: options.finishFor });
       fragment.group.name = candidate.id;
       scenery.group.add(fragment.group);
     }
