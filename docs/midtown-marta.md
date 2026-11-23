@@ -48,7 +48,7 @@ OSM way 269843688 gives a 25.5 × 12.9 m footprint (`building=service`, `materia
 
 The camera targets (468, −3148), bearing 320°, tilt 48°, distance 48 m, at 13:30 and 23:30 ET on November 20. [High day](log/ui/midtown-marta/electric-saturation-high-day.jpg) · [High night](log/ui/midtown-marta/electric-saturation-high-night.jpg) · [Low day](log/ui/midtown-marta/electric-saturation-low-day.jpg) · [Low night](log/ui/midtown-marta/electric-saturation-low-night.jpg)
 
-### North Line bed between the portal and the north edge
+## North Line bed between the portal and the north edge
 
 North of the portal the 3DEP grid shows the North Line riding a crest narrower than its 4.2 m tread. The generic freight strip took its height only from its two edges, so the rendered terrain rose through the middle of the tread. Before the fix, sampling every metre at nine offsets across both mains found 1,605 breakthroughs in brookwood-station on both tiers. The worst was 0.71 m at (723, −5698), and 291 were deeper than 0.2 m. Each MARTA ground section now levels onto the highest rendered ground across its full width. Ballast faces close its raised sides. The lift fades out over the last 6 m before a bridge abutment or the tunnel mouth, so those joints and the portal sill keep their previous heights. Joint steps stay under 0.35 m, against up to 0.20 m before, measured 0.3 m either side of each node. Away from the fades no sample breaks through. Inside them the worst is 0.19 m, down from 0.71 m. The bed sits 0.67 m above the centreline ground at the 95th percentile. The levelled section is an inference from bare earth, not a surveyed bed. [Regression test](../web/src/city/midtown-marta-bed.test.ts)
 
