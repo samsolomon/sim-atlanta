@@ -1,5 +1,6 @@
 // Copy the King Memorial corridor prototype (pipeline/prototypes/king-memorial) into Vite's
 // static data tree for the dev-only corridor preview. Verifies the ground checksum.
+import { withCanopy } from './stage-canopy.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
@@ -15,5 +16,5 @@ await mkdir(dest, { recursive: true });
 await writeFile(new URL('ground.i16', dest), grid);
 await writeFile(new URL('ground.json', dest), metadata);
 await writeFile(new URL('corridor.json', dest), await readFile(new URL('corridor.json', source)));
-await writeFile(new URL('context.json', dest), await readFile(new URL('context.json', source)));
+await writeFile(new URL('context.json', dest), withCanopy(await readFile(new URL('context.json', source))));
 console.log(`Staged ${m.cols} × ${m.rows} corridor terrain nodes, context and corridor.json`);

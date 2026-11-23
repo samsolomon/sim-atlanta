@@ -62,11 +62,11 @@ def scene_to_lonlat(x, z):
     return LON0 + x / (DEG * K), LAT0 - z / DEG
 
 
-def fetch_crop(name, bx, bz):
+def fetch_crop(name, bx, bz, quadkey=QUADKEY):
     """Return (chm uint8, valid bool, transform) for the padded patch, cached on disk."""
     os.makedirs(CACHE, exist_ok=True)
-    chm_path = os.path.join(CACHE, f"{name}_{QUADKEY}_chm.tif")
-    msk_path = os.path.join(CACHE, f"{name}_{QUADKEY}_valid.npy")
+    chm_path = os.path.join(CACHE, f"{name}_{quadkey}_chm.tif")
+    msk_path = os.path.join(CACHE, f"{name}_{quadkey}_valid.npy")
     if os.path.exists(chm_path) and os.path.exists(msk_path):
         with rasterio.open(chm_path) as d:
             return d.read(1), np.load(msk_path), d.transform
@@ -76,7 +76,7 @@ def fetch_crop(name, bx, bz):
     lons, lats = zip(*[scene_to_lonlat(x, z) for x in xs for z in zs])
     mx, my = to3857.transform(lons, lats)
     with rasterio.Env(GDAL_HTTP_USERAGENT=UA, GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"):
-        with rasterio.open(f"/vsicurl/{BASE}/chm/{QUADKEY}.tif") as src:
+        with rasterio.open(f"/vsicurl/{BASE}/chm/{quadkey}.tif") as src:
             assert src.crs.to_epsg() == 3857, src.crs
             r0, c0 = src.index(min(mx), max(my))
             r1, c1 = src.index(max(mx), min(my))
@@ -89,7 +89,7 @@ def fetch_crop(name, bx, bz):
         # says False = NODATA, but empirically the tile is ~97% 0 with sparse 255 while the CHM has
         # data everywhere, so 255 is treated as the cloud flag and 0 as valid.
         try:
-            with rasterio.open(f"/vsicurl/{BASE}/msk/{QUADKEY}.tif.msk") as m:
+            with rasterio.open(f"/vsicurl/{BASE}/msk/{quadkey}.tif.msk") as m:
                 valid = m.read(1, window=win) != 255
         except Exception as e:  # noqa: BLE001 - mask is advisory
             print(f"warning: cloud mask unavailable ({e}); assuming all valid")

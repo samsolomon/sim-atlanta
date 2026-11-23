@@ -1,3 +1,4 @@
+import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
@@ -41,7 +42,7 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   const [manifest, bytes, context] = await Promise.all([
     asset('ground.json').then(r => r.json() as Promise<GroundManifest>),
     asset('ground.i16').then(r => r.arrayBuffer()),
-    asset('context.json').then(r => r.json() as Promise<TerrainCity & { trees: [number,number,number,number][] }>),
+    asset('context.json').then(r => r.json() as Promise<TerrainCity & NeighborhoodCanopy>),
   ]);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   signal.throwIfAborted();
@@ -53,7 +54,8 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   const ids=new Set(context.buildings.filter(b => (b.id===heritageId || b.id===bigBethelId)
     && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
   const city = auburnTransport({ ...context, buildings: context.buildings.filter(b=>!ids.has(b.id)) });
-  const area = createDowntownTerrain(grid, city, context.trees, {
+  const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+    simpleLeafClumps: context.treeLowCount !== undefined,
     quality, bottomY, join: [northWestJoin, northSouthJoin, ...extraJoins],
     finishFor: b => b.id === wheatStreetId ? wheatStreetTower : oddFellowsFinish(b) ?? edgewoodFinish(b) ?? irwinHouseFinish(b),
   });
