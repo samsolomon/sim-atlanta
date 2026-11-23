@@ -43,8 +43,17 @@ export const destination = (headsign: string) => {
   return `${dir ? `${dir.charAt(0).toUpperCase()}${dir.slice(1).toLowerCase()} to` : 'To'} ${place(headsign)}`;
 };
 
-export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city = false, a2c = false) {
-  if (a2c) return trainCardA2c(t, route, next, vt, city);
+/** Where City drew the tapped car: on the North Line open cut, whose alignment is inferred,
+ * or on the Brookwood model, whose berth is inferred. Tier words live on cards, never as
+ * ambient scene notes (#231). */
+export interface DrawnAt { inferredTrack?: boolean; inferredBerth?: boolean }
+const drawnRows = (city: boolean, drawn: DrawnAt, row: (k: string, v: string) => string) =>
+  (city && drawn.inferredBerth ? row('Brookwood berth', `Main 1 beside the island ${chip('inferred', 'inferred berth')}`) : '') +
+  (city && drawn.inferredTrack ? row('Track', `North Line open cut ${chip('inferred', 'inferred track')}`) : '');
+
+export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city = false, a2c = false,
+  drawn: DrawnAt = {}) {
+  if (a2c) return trainCardA2c(t, route, next, vt, city, drawn);
   const color = route ? routeColor(route) : '#333';
   const name = route?.mode === 'heavy_rail' ? `${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
   let model: string | undefined;
@@ -60,6 +69,7 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
     <dl>
       ${nextRow(t, next)}
       ${units ? `<dt>${model ? 'City model' : 'Looks like'}</dt><dd>${esc(units)} ${chip('illustrative', model ? undefined : 'typical')}</dd>` : ''}
+      ${drawnRows(city, drawn, (k, v) => `<dt>${esc(k)}</dt><dd>${v}</dd>`)}
       ${
         live
           ? `<dt class="position-report">Position</dt><dd class="position-report">${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)}</dd>`
@@ -144,7 +154,7 @@ export function cityFreightCard(line = 'Atlanta Terminal Subdivision', a2c = fal
 
 /** The A2c detail panel's train card: service and line, destination, then one row per fact,
  * each with its own truth tier. */
-function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city: boolean) {
+function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city: boolean, drawn: DrawnAt) {
   const line = route?.mode === 'heavy_rail' ? `${route.operator ?? 'MARTA'} ${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
   const service = route ? SERVICE[route.mode] ?? 'Rail' : 'Rail';
   const swatch = route ? MODE_COLOR[route.mode] : '#495057';
@@ -161,6 +171,7 @@ function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | unde
     <dl class="a2-facts">
       ${name ? row('Next stop', `<strong>${esc(place(name))}${eta}</strong> ${chip(t.s.tier, TIER_WORD[t.s.tier])}`) : ''}
       ${units ? row(route?.mode === 'heavy_rail' ? 'Cars' : 'Consist', `${esc(units)} ${chip('illustrative')}`) : ''}
+      ${drawnRows(city, drawn, row)}
       ${live
         ? row('Position', `${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)} ${chip('live', 'Live')}`)
         : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}

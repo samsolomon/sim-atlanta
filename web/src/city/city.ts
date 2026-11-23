@@ -44,7 +44,6 @@ import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
 import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
-import { anyCarInView } from './in-view';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { CityFreight } from './freight';
@@ -1245,8 +1244,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let frames = 0;
   let fpsT = performance.now();
   let fps = 0;
-  let showingBrookwoodNote: string | null = null;
-  let showingNorthLineNote = false;
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
@@ -1313,22 +1310,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
-      // Near the corridor, or with any Crescent or freight car in the frame.
-      const note = brookwood.note(controls.target.x, controls.target.z) ??
-        (anyCarInView([...brookwood.cars.children, ...brookwood.freight.children], camera) ? brookwood.runningNote : null);
-      if (note !== showingBrookwoodNote) {
-        showingBrookwoodNote = note;
-        areaResult('brookwood-service', note);
-      }
-    }
-    if (northLine?.bounds) {
-      const { x, z } = controls.target, r = northLine.bounds;
-      // Near the open guideway, or with any North Line car out of the portal and in the frame.
-      const near = (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) || anyCarInView(northLine.cars(), camera);
-      if (near !== showingNorthLineNote) {
-        showingNorthLineNote = near;
-        areaResult('north-line', near ? 'Inferred MARTA track' : null);
-      }
     }
     const followed = options.follow?.vehicle;
     const fix = followed ? locate(followed, states) : null;
