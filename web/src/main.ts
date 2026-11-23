@@ -375,12 +375,13 @@ async function openCity() {
   cityProgress.textContent = 'Loading buildings, streets and trees…';
   document.body.classList.add('in3d');
   shell.setNote(null);
+  let areaNote: string | null = null;
   try {
     const { createCity } = await import('./city/city');
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
-      areaNote: text => shell.setNote(text),
+      areaNote: text => { areaNote = text; shell.setNote(text); },
       trains: () => source.update(),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
@@ -418,7 +419,7 @@ async function openCity() {
     return;
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
-  // Opening on City frames downtown; arriving from the Map keeps the place you were looking at.
+  // Arriving from Map keeps its camera within the loaded City board.
   if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
     diorama.lookAt(95.5, -1701.8, { bearing: 0, tilt: 46, metresPerPixel: .32 });
   } else if (!opening && map) {
@@ -431,7 +432,7 @@ async function openCity() {
       tilt: cityTilt,
     });
     const target = diorama.target();
-    shell.setNote(Math.hypot(target.x - mx, target.z - mz) > 1 ? 'City view covers downtown for now' : null);
+    if (!areaNote && Math.hypot(target.x - mx, target.z - mz) > 1) shell.setNote('Showing the nearest loaded City area');
   }
   opening = false;
   cityLoading.hidden = true;

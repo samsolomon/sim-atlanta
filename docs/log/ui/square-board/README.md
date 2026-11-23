@@ -62,11 +62,11 @@ In desktop Orca at 1296 × 726, normal City opening requested seven downtown sce
 
 ## Orbit the square in City
 
-Open `/?view=city&board=square` after staging the data above. Pan toward a boundary to load the adjoining neighborhoods. To see everything from one camera, open **About this City view** (the **i** button) and choose **Show full board**. The same button retries missing sections and returns the camera to the overview. Regular City, the existing King Memorial and Sweet Auburn URLs, and the standalone coverage study remain available. The square uses City's landmark, lighting, weather, road traffic and MARTA passes. [Opening and full board on both desktop quality settings](../city-square/board.jpg) · [Scheduled train at King Memorial](../city-square/station.jpg)
+The original opt-in square used `/?view=city&board=square`. Pan toward a boundary to load the adjoining neighborhoods. To see everything from one camera, open **About this City view** (the **i** button) and choose **Show full board**. The same button retries missing sections and returns the camera to the overview. Regular City, the existing King Memorial and Sweet Auburn URLs, and the standalone coverage study remain available. The square uses City's landmark, lighting, weather, road traffic and MARTA passes. [Opening and full board on both desktop quality settings](../city-square/board.jpg) · [Scheduled train at King Memorial](../city-square/station.jpg)
 
 The opening fetched seven downtown scene assets. From a north-first or south-first pan, the first direction brought the total to 13 and the second to 19. King Memorial, its rail and Sweet Auburn brought it to 26 unique scene assets. Each direction validates both tiles before mounting. A failed south tile left the other five areas navigable. Retrying reached all seven and reopening the overview made zero further scene requests. The camera, picking surface and walnut base follow the union of the mounted areas. Connector traffic uses one instanced layer across those areas.
 
-At the matched station camera with all seven areas mounted, desktop Orca recorded 133 draw calls and 2.99 million triangles at high detail, and 67 calls and 1.05 million triangles at low detail. The clock is paused on the scheduled eastbound Blue train on 2026-11-20 at 14:02 EST. Pan, orbit and double-click work in the preview. Both detail settings reached all four outer corners. Default activation awaits target-device checks.
+At the matched station camera with all seven areas mounted, desktop Orca recorded 133 draw calls and 2.99 million triangles at high detail, and 67 calls and 1.05 million triangles at low detail. The clock is paused on the scheduled eastbound Blue train on 2026-11-20 at 14:02 EST. Pan, orbit and double-click work in the preview. Both detail settings reached all four outer corners. These counts describe the original opt-in preview.
 
 Peachtree Summit's two fallback pieces have separate handles in the square preview. In the successful north-section callback in `city.ts`, `terrain.buildingFragment` and `added.get('north-band').buildingFragment` identify them. The landmark owner can mount one complete model from the original downtown ring, sample its foundation across both grids, then hide both handles. Before north arrives, the clipped downtown fragment stays visible through delay or failure.
 
@@ -77,3 +77,24 @@ On November 23, desktop Orca checked the deployed square near Spring Street, bot
 The archived south-band OpenStreetMap extract contains three Griffin District ways (54032227, 471970106, 471970107) and two NS Atlanta South District ways (874501032, 874501033). At z = 700 m they meet the downtown endpoints at x = −747.94, −742.82, −751.86, −767.22 and −773.15 m respectively. Each continues 343–381 m to the west edge. The bake clips each mapped centerline separately. Horizontal position is reported from OSM. Ballast and rail heights follow the local terrain and are illustrative. The source supplies no surveyed railhead heights. The extra geometry costs 1,100 bytes raw or 370 bytes at gzip-9 in the existing south-band context request. [Archived OSM input](../../../../pipeline/prototypes/square-board/source/south-band.json.gz) · [Matched high and low City views](freight-seam.jpg)
 
 To repeat the visual check, open the pinned map camera, then choose **City** and wait for the south section. The five tracks cross the middle of the view on their way toward the southwest. Run the south bake twice and compare the six output file hashes to check reproducibility. On a populated checkout, run `pnpm data:square-board` and `pnpm build`, then deploy the static bundle and data together. [Pinned Castleberry Hill camera](https://atlanta.solomon.io/?view=map&board=square&q=high&t=2026-11-20T14:02:00-05:00&speed=0#17.23990/33.7476048/-84.3997665/5) · [North and south inspection cameras](seam-audit.jpg)
+
+
+## Default board candidate, November 23
+
+Opening City requests all seven areas and frames the 2.8 km square. The downtown-only URL is `/?board=downtown`. The joined-board studies still use `?east=king-memorial` and `?east=king-memorial&north=sweet-auburn`; Midtown uses `?board=midtown`. **Show full board** retries missing areas. A fresh checkout stages the square with `pnpm data`. The deployed 81e715f data already contains all seven areas.
+
+The table records matched Studio Orca cameras at 14:02 and 23:02 EST on November 20, 2026. Detail was high and the clock was paused. Coordinates are metres east and south of Five Points.
+
+| Camera | x, z (m) | Bearing, tilt | Scale | Day | Night |
+|---|---|---|---|---|---|
+| Default square | 400, −300 | 15°, 35° | Opening overview | [Day](default-day.jpg) | [Night](default-night.jpg) |
+| King Memorial guideway | 1280, 520 | 81°, 57° | 0.90 m/px | [Day](default-king-day.jpg) | [Night](default-king-night.jpg) |
+| Downtown–Sweet Auburn join | 1050, 20 | 18°, 43° | 1.20 m/px | [Day](default-auburn-day.jpg) | [Night](default-auburn-night.jpg) |
+| Wheat Street Towers, Sweet Auburn | 1515, −142 | 140°, 55° | 0.38 m/px | [Day](default-wheat-street-day.jpg) | [Night](default-wheat-street-night.jpg) |
+| Castleberry Hill freight crossing | −750, 700 | 5°, 53° | 0.55 m/px | [Day](default-south-seam-day.jpg) | [Night](default-south-seam-night.jpg) |
+
+Targets pushed 500 m beyond each corner clamped to x = −1000 or 1800 and z = −1700 or 1100 under both clocks. With King's ground grid withheld, five areas mounted, downtown still panned and zoomed, and the status named the missing area. Restoring the file and pressing **Show full board** loaded King and Sweet Auburn and cleared the notice.
+
+At low quality, a 390 × 844 CSS-pixel viewport framed all four corners with the same 15° bearing and 35° tilt. The scale was 9.57 m/px. These desktop Orca captures check portrait framing; the physical phone performance check is deferred. [Portrait day](default-portrait-day.jpg) · [Portrait night](default-portrait-night.jpg)
+
+For a LAN preview use HTTPS or forward the port to localhost. Plain HTTP on a LAN IP lacks the Web Crypto digest used to verify the area grids, so only downtown opens. [MacBook Air timings and release decision](../../../build-log.md#2026-11-23--opening-city-on-the-full-square)

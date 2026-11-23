@@ -197,7 +197,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const query = new URLSearchParams(location.search);
-  const midtown = query.get('board') === 'midtown';
+  const board = query.get('board');
+  const midtown = board === 'midtown';
+  const joinedEast = board !== 'downtown' && query.get('east') === 'king-memorial';
   const brookwoodStudy = midtown && query.get('site') === 'brookwood';
   let brookwood: ReturnType<typeof import('./brookwood').createBrookwood> | undefined;
   let preparedBrookwood: typeof brookwood;
@@ -217,15 +219,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     return mod ? mod.brookwoodGrid(spec, bytes) : new GroundGrid(spec, bytes);
   }
   const replaced: {parent: THREE.Object3D; object: THREE.Object3D}[] = [];
-  const requestedSquare = midtown || query.get('board') === 'square';
+  const requestedSquare = midtown || board === 'square' || (board === null && !joinedEast);
   const square = grid && requestedSquare ? await import('./square-mosaic').catch(error => {
-    console.warn('Square City preview unavailable', error);
+    console.warn('City square unavailable', error);
     return undefined;
   }) : undefined;
   options.signal?.throwIfAborted();
-  if (requestedSquare && !square) options.areaNote?.('Square preview unavailable. Downtown is available.');
+  if (requestedSquare && !square) options.areaNote?.('Square unavailable. Downtown is available.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
-  const previewEast = !!mosaic || (!!grid && query.get('east') === 'king-memorial');
+  const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
   const b = vd.bounds;
@@ -973,6 +975,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!w || !h) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
+    if (mosaic && !midtown && !drive) {
+      controls.maxDistance = Math.max(11000, 9600 / Math.max(.25, camera.aspect));
+      camera.far = Math.max(20000, controls.maxDistance + 4000);
+    }
     camera.updateProjectionMatrix();
     composer.setSize(w, h);
     // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
@@ -1017,9 +1023,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     squareButton.type = 'button';
     squareButton.textContent = 'Show full board';
     document.getElementById('city-info')?.append(squareButton);
-    squareButton.onclick = () => {
-      manualCamera();
-      glideTo = null;
+    const loadFullBoard = () => {
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
       mosaic.requestFullBoard();
@@ -1028,10 +1032,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       approachMosaic(400, -1500);
       approachEast(1400, 0);
       approachNorth(1400, 0);
+    };
+    const frameFullBoard = () => {
       const aspect = Math.max(.25, camera.aspect);
       const depth = 1100 - mosaic.northEdge;
       const distance = midtown ? Math.max(depth * 3.25, 11700 / aspect) : Math.max(9200, 9600 / aspect);
       setView(-15, 35, Math.min(controls.maxDistance, distance), 400, (1100 + mosaic.northEdge) / 2);
+    };
+    if (!midtown) {
+      loadFullBoard();
+      if (!drive && !Object.hasOwn(profileCameras, profile)) frameFullBoard();
+    }
+    squareButton.onclick = () => {
+      manualCamera();
+      glideTo = null;
+      loadFullBoard();
+      frameFullBoard();
       document.getElementById('city-info')?.hidePopover?.();
     };
   }
