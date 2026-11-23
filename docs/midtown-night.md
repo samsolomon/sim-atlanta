@@ -11,7 +11,7 @@ Lamp positions, spacing, heights and colour are illustrative; only the lit tag a
 
 | Camera | Low day / night | High day / night |
 | --- | --- | --- |
-| Peachtree at 10th, 350,−3050,0,55,300 | [Day](log/ui/midtown-night/peach-low-day.jpg) · [Night](log/ui/midtown-night/peach-low-night.jpg) | [Day](log/ui/midtown-night/peach-high-day.jpg) · [Night](log/ui/midtown-night/peach-high-night.jpg) |
+| West Peachtree at 10th, 350,−3050,0,55,300 | [Day](log/ui/midtown-night/peach-low-day.jpg) · [Night](log/ui/midtown-night/peach-low-night.jpg) | [Day](log/ui/midtown-night/peach-high-day.jpg) · [Night](log/ui/midtown-night/peach-high-night.jpg) |
 | Midtown wide, 300,−3300,0,55,900 | [Day](log/ui/midtown-night/wide-low-day.jpg) · [Night](log/ui/midtown-night/wide-low-night.jpg) | [Day](log/ui/midtown-night/wide-high-day.jpg) · [Night](log/ui/midtown-night/wide-high-night.jpg) |
 
-[Wide view before](log/ui/midtown-night/wide-before-high-night.jpg) · [Tech campus paths](log/ui/midtown-night/tech-high-night.jpg) · [Piedmont Park](log/ui/midtown-night/park-high-night.jpg)
+[Before and after, wide](log/ui/midtown-night/compare-wide-night.jpg) · [West Peachtree by day and night](log/ui/midtown-night/compare-west-peachtree.jpg) · [Tech campus and Piedmont Park](log/ui/midtown-night/compare-paths-park.jpg) · [Wide view before](log/ui/midtown-night/wide-before-high-night.jpg) · [Tech campus paths](log/ui/midtown-night/tech-high-night.jpg) · [Piedmont Park](log/ui/midtown-night/park-high-night.jpg)
