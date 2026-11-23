@@ -437,11 +437,14 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 .a2-menu .a2-fine { margin: 0; padding: 0; border: 0; font-size: 11px; color: var(--a2-ink2); }
 .a2-menu .a2-fine a, .a2-menu .a2-by { color: inherit; }
 .a2-menu .a2-by { color: var(--a2-ink); }
+.a2-menu-close { display: none; }
 
 @media (max-width: 600px) {
   /* Phones: the menu is a bottom sheet over the app bar (A2c-phone-menu). */
   .a2-menu { left: var(--a2-left); right: var(--a2-right); bottom: var(--a2-bottom); width: auto; z-index: 8; border-radius: 24px; padding: 14px 10px 18px; }
   body:has(.a2-menu:not([hidden])) :is(.a2-appbar, .a2-hint) { display: none; }
   .a2-menu .a2-seg2 button { height: 38px; }
+  .a2-menu-close { display: grid; position: absolute; top: 10px; right: 10px; z-index: 1; width: 36px; height: 36px; }
+  .a2-menu .a2-menu-rows { padding-right: 40px; }
 }
 .a2-ic-x svg { fill: none; }

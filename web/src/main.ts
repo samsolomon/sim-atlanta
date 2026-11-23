@@ -490,6 +490,7 @@ async function openCity() {
     document.getElementById('city-ground-source')!.textContent = d.measuredGround ? 'USGS terrain' : 'Flat board';
   } catch (err) {
     if (load !== cityLoad) return;
+    keepPose = null;
     console.error(err);
     view3d.hidden = true;
     document.body.classList.remove('in3d');
@@ -520,6 +521,7 @@ async function openCity() {
   }
   opening = false;
   cityLoading.hidden = true;
+  void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
 }
@@ -545,14 +547,19 @@ async function setGraphics(g: Graphics) {
   } catch {
     /* private mode: the choice lasts for this page */
   }
-  // A menu choice replaces a ?q= from the link.
-  if (params.has('q')) {
+  // A menu choice that differs from the link's ?q= replaces it.
+  if (params.has('q') && params.get('q') !== g) {
     params.delete('q');
     const u = new URL(location.href);
     u.searchParams.delete('q');
     history.replaceState(null, '', u);
   }
-  if (!diorama) return;
+  await applyGraphics();
+}
+/** Rebuild City if the tier on screen isn't the chosen one. Also runs after every City load, so a
+ * choice made while City was loading still lands. */
+async function applyGraphics() {
+  if (!diorama || !uiNext(location.search)) return;
   const { pickQuality } = await import('./city/city');
   if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
   // Rebuild City at the same camera with the new tier.
@@ -567,6 +574,7 @@ async function setGraphics(g: Graphics) {
 }
 
 function closeCity() {
+  keepPose = null;
   document.getElementById('city-info')!.hidePopover?.();
   hideCard();
   cityLoad++;
@@ -666,7 +674,11 @@ const shellOptions: ShellOptions = {
     return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
   },
   sky: () => lastAtm,
-  graphics: uiNext(location.search) ? { get: () => graphics, set: (g) => void setGraphics(g) } : undefined,
+  // A link's ?q= decides the tier until the viewer picks one, so the menu shows that.
+  graphics: uiNext(location.search) ? {
+    get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),
+    set: (g) => void setGraphics(g),
+  } : undefined,
   shareTarget() {
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;

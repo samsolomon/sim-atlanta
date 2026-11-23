@@ -14,7 +14,7 @@ import { loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
-import { createDetailPanel } from './panel';
+import { BYLINE, createDetailPanel } from './panel';
 import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import { shareUrl } from '../share';
@@ -246,6 +246,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   // No title block (A2c-menu): rows, Graphics, then the byline and the map-data credit.
   const chev = `<span class="a2-chev">${SVG('<path d="M9 6l6 6-6 6"/>')}</span>`;
   menu.innerHTML = `
+    <button type="button" class="a2-x a2-menu-close" aria-label="Close menu">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
     <div class="a2-menu-rows">
       <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
@@ -258,11 +259,14 @@ export function createShellNext(o: ShellOptions): ShellApi {
     </div>
     <div class="a2-sep"></div>
     <div class="a2-menu-foot">
-      <div class="a2-menu-by"><a class="a2-by" href="https://solomon.io">Built by Sam Solomon${SVG('<path d="M7 17L17 7M9 7h8v8"/>')}</a>
-        <a class="a2-social" href="https://x.com/samuelrsolomon" aria-label="Sam Solomon on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.47l8.6-9.83L0 1.15h7.59l5.24 6.93zM17.61 20.64h2.04L6.49 3.24H4.3z"/></svg></a>
-        <a class="a2-social" href="https://www.instagram.com/samuelrsolomon" aria-label="Sam Solomon on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="16.8" cy="7.2" r=".6" fill="currentColor"/></svg></a></div>
-      <p class="a2-fine">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · Overture · MARTA</p>
+      <div class="a2-menu-by">${BYLINE}</div>
+      <p class="a2-fine">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · OpenFreeMap · Overture · MARTA</p>
     </div>`;
+  // Phones: the sheet covers the app bar's ×, so it carries its own close.
+  menu.querySelector('.a2-menu-close')!.addEventListener('click', () => {
+    closePops();
+    menuBtn.focus();
+  });
   const gfxBtns = [...menu.querySelectorAll<HTMLButtonElement>('[data-gfx]')];
   const showGraphics = () => {
     const g = o.graphics?.get() ?? 'auto';
