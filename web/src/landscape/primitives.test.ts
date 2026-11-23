@@ -87,3 +87,16 @@ it('guards degenerate input and never drops to zero when the ground is missing',
   terraces(t, [0, -9], [0, 9], 6, 3, bank, { toY: 5 });
   expect(Math.max(...ys(t))).toBeGreaterThan(5);
 });
+
+it('offers a rich-black soil for formal beds, darker than the brown default and lifted on low', () => {
+  const ring: P2[] = [[0, 0], [6, 0], [6, 4], [0, 4]];
+  const mean = (quality: 'high' | 'low', soil?: 'rich-black') => {
+    const b = new Builder();
+    flowerBed(b, ring, () => 0, { doy: 10, flowers: 0, density: 0, seed: 's', quality, soil });
+    let sum = 0;
+    for (let i = 0; i < b.col.length; i += 3) sum += b.col[i] + b.col[i + 1] + b.col[i + 2];
+    return sum / b.col.length;
+  };
+  expect(mean('high', 'rich-black')).toBeLessThan(mean('high') * .7);
+  expect(mean('low', 'rich-black')).toBeGreaterThan(mean('high', 'rich-black'));
+});
