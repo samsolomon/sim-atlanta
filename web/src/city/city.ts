@@ -121,6 +121,7 @@ const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.se
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
+import { perf, perfOverrides, type PerfCategory } from '../core/perf';
 
 export type Quality = 'low' | 'high';
 
@@ -219,6 +220,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     optionalJSON<Pick<TrafficData, 'hourly'>>('traffic.json'),
     optionalJSON<unknown>('arterials.json'),
   ]);
+  perf.phase('city:data');
   let grid: GroundGrid | undefined;
   if (manifest.rail?.version === 1 && vd.terrainTransport?.version === 1) {
     try {
@@ -281,6 +283,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const start = performance.now();
     fn();
     stages[name] = Math.round(performance.now() - start);
+    perf.phase(`stage:${name}`);
   };
   // The night light map is 2 m texels on low (7 MB instead of 28 MB for downtown's 2 km board).
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048 };
@@ -524,6 +527,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
+        const landmarksFrom = world.group.children.length;
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
         if (marquis) world.group.add(marquis.group);
@@ -578,6 +582,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
+        for (const c of world.group.children.slice(landmarksFrom)) c.userData.perf = 'buildings';
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); });
@@ -633,8 +638,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   renderer.info.autoReset = false;
   renderer.localClippingEnabled = true;
-  renderer.setPixelRatio(low ? 1 : Math.min(devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
+  renderer.setPixelRatio(perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2)));
+  renderer.shadowMap.enabled = perfOverrides.shadow !== 'off';
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.type = low ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
@@ -642,6 +647,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.toneMappingExposure = 1.05;
   container.appendChild(renderer.domElement);
   renderer.domElement.style.display = 'block';
+  perf.phase('city:renderer');
 
   const scene = new THREE.Scene();
   const bg = new THREE.Color('#e7e2d8');
@@ -776,7 +782,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   sc.bottom = -SH;
   sc.near = 100;
   sc.far = 4000;
-  sun.shadow.mapSize.set(low ? 1024 : 4096, low ? 1024 : 4096);
+  const shadowSize = typeof perfOverrides.shadow === 'number' ? perfOverrides.shadow : low ? 1024 : 4096;
+  sun.shadow.mapSize.set(shadowSize, shadowSize);
   sun.shadow.bias = -0.0016;
   sun.shadow.normalBias = 1.2;
   scene.add(hemi, sun, sun.target);
@@ -853,6 +860,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachMosaic(x: number, z: number) {
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
+      perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
       if (atl) {
         const line = createNorthLine(atl, rf, manifest.origin, trains.group);
@@ -1129,12 +1137,39 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     for (const p of [hts, vts]) {
       p.uniforms.uTexel.value.set(1 / w, 1 / h);
       p.uniforms.uStrength.value = tilt;
-      p.enabled = tilt > 0.01;
+      p.enabled = tilt > 0.01 && !perfOverrides.nopass.has('tilt');
     }
+  }
+  if (perfOverrides.nopass.size) {
+    for (const p of composer.passes) if (p instanceof FoliageMaskPass && perfOverrides.nopass.has('ink')) p.enabled = false;
+    ink.enabled = !perfOverrides.nopass.has('ink');
+    grade.enabled = !perfOverrides.nopass.has('grade');
+    if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);
   resize();
+  perf.attach({
+    renderer, scene, quality,
+    rotate: degrees => { rotateBy(degrees); controls.update(); },
+    pan: (dx, dy) => panPx(dx, dy),
+    post: () => [sceneTarget, composer, ...composer.passes],
+    areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
+    roots: () => {
+      const m = new Map<THREE.Object3D, PerfCategory>();
+      const set = (o: THREE.Object3D | null | undefined, c: PerfCategory) => { if (o) m.set(o, c); };
+      for (const v of [trains.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, midtownArterials?.group, figures?.group,
+        brookwood?.cars, brookwood?.freight, (northLine as { group?: THREE.Object3D } | undefined)?.group, streetcar.group]) set(v, 'vehicles');
+      // An area's group holds its board, scenery and surface transport; the nearer roots win.
+      for (const a of [terrain, east, north, ...(mosaic ? [...mosaic.areas.values(), ...mosaic.patches.values()] : [])]) {
+        set(a?.group, 'transport'); set(a?.board, 'terrain'); set(a?.scenery, 'scenery');
+      }
+      set(brookwood?.group, 'transport');
+      set(transport?.group, 'transport');
+      set(world.group, 'transport'); // streetcar track, MARTA guideway, lamps; landmarks are tagged
+      return m;
+    },
+  });
 
   // Double-click glides to the board surface, ignoring trains, trees and buildings.
   let glideTo: THREE.Vector3 | null = null;
@@ -1317,7 +1352,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     northStops?.setNight(night);
     if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     bloom.strength = 0.55 * night;
-    bloom.enabled = !low && night > 0.02;
+    bloom.enabled = !low && night > 0.02 && !perfOverrides.nopass.has('bloom');
 
     const ease = 1 - Math.exp(-dt * 2);
     wx.cloud += (atm.cloud - wx.cloud) * ease;
@@ -1386,6 +1421,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
+    const frameStart = performance.now();
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -1480,9 +1516,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     grade.uniforms.uAmount.value = 1;
     grade.uniforms.uTime.value = ts / 1000;
     renderer.info.reset();
+    const renderStart = performance.now();
+    // Count only redraws that render: with shadows off, needsUpdate is set but no pass runs.
+    if (renderer.shadowMap.enabled && renderer.shadowMap.needsUpdate) perf.shadowUpdate();
     whiteModel?.before();
-    if (!whiteModel?.holding) composer.render();
+    if (perfOverrides.postOff) renderer.render(scene, camera);
+    else if (!whiteModel?.holding) composer.render();
     whiteModel?.after();
+    const renderEnd = performance.now();
+    perf.frame(ts, renderStart - frameStart, renderEnd - renderStart);
+    if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
     frames++;
     if (ts - fpsT > 1000) {
       fps = (frames * 1000) / (ts - fpsT);
@@ -1504,6 +1548,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
+  let firstFrame = false;
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
@@ -1625,6 +1670,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      perf.detach();
       whiteModel?.dispose();
       stopGestures?.();
       squareButton?.remove();
