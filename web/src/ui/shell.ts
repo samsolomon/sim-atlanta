@@ -45,6 +45,8 @@ export interface ShellOptions {
   onClock?(): void;
   /** Horizontal scale at the view centre, for "Metro Atlanta" past neighbourhood zoom. */
   metresPerPixel?(): number | null;
+  /** What a share link should reopen: City's camera, or the Map's hash (A2c share). */
+  shareTarget?(): import('./share').ShareView | null;
   /** The sky on screen (observed, typical or previewed), to name an illustrative condition. */
   sky?(): { cloud: number; rain: number; fog: number; snow: number } | null;
 }

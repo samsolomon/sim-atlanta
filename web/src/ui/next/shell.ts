@@ -17,6 +17,7 @@ import { createKeyboard } from '../keyboard';
 import { createDetailPanel } from './panel';
 import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
+import { shareUrl } from '../share';
 import type { ShellApi, ShellOptions } from '../shell';
 
 const TZ = 'America/New_York';
@@ -255,7 +256,68 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const zoomIn = el('button', { type: 'button', class: 'a2-ib a2-zoom', 'aria-label': 'Zoom in', title: 'Zoom in (+)' }, `<span class="a2-ic">${ICON.plus}</span>`);
   const zoomOut = el('button', { type: 'button', class: 'a2-ib a2-zoom', 'aria-label': 'Zoom out', title: 'Zoom out (−)' }, `<span class="a2-ic">${ICON.minus}</span>`);
   const camSep = el('div', { class: 'a2-sep a2-compass-sep', 'aria-hidden': 'true' });
-  cam.append(compass, camSep, zoomIn, zoomOut);
+  const shareSep = el('div', { class: 'a2-sep a2-share-sep', 'aria-hidden': 'true' });
+  const shareBtn = el('button', { type: 'button', class: 'a2-ib a2-share', 'aria-label': 'Share this view', 'aria-expanded': 'false', 'aria-controls': 'a2-share', title: 'Share this view' },
+    SVG('<path d="M12 3v12"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'));
+  cam.append(compass, camSep, zoomIn, zoomOut, shareSep, shareBtn);
+
+  // ---- share: live (no time) or freeze this moment (t=…&speed=0), camera in the link ----------
+  const share = el('section', { class: 'a2-share-panel a2-g a2-long', id: 'a2-share', hidden: '', 'aria-label': 'Share this view' });
+  share.innerHTML = `
+    <div class="a2-panel-head"><h2>Share this view</h2><button type="button" class="a2-x" data-close aria-label="Close">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <p class="a2-share-lede"></p>
+    <fieldset class="a2-share-modes"><legend class="a2-sr">Time in the link</legend>
+      <label><input type="radio" name="a2-share-mode" value="live"><span><b>Live</b><small>Opens at whatever time it is for the viewer.</small></span></label>
+      <label><input type="radio" name="a2-share-mode" value="freeze"><span><b>Freeze this moment</b><small class="a2-freeze-text"></small></span></label>
+    </fieldset>
+    <output class="a2-share-url" aria-label="Link"></output>
+    <div class="a2-share-actions"><button type="button" class="a2-btn" data-copy>Copy link</button><button type="button" class="a2-btn" data-native hidden>Share…</button></div>`;
+  const shareUrlOut = share.querySelector<HTMLOutputElement>('.a2-share-url')!;
+  const modeInputs = [...share.querySelectorAll<HTMLInputElement>('input[name=a2-share-mode]')];
+  const copyBtn = share.querySelector<HTMLButtonElement>('[data-copy]')!;
+  const nativeBtn = share.querySelector<HTMLButtonElement>('[data-native]')!;
+  nativeBtn.hidden = typeof navigator.share !== 'function';
+  let shareMode: 'live' | 'freeze' = 'live';
+  const currentLink = () => {
+    const target = o.shareTarget?.();
+    return target ? shareUrl(location.href, target, shareMode, clock.now()) : location.href;
+  };
+  const renderShare = () => {
+    const target = o.shareTarget?.();
+    share.querySelector('.a2-share-lede')!.textContent = target?.view === 'city'
+      ? 'The link opens on this exact camera in City.' : 'The link opens on this exact view of the Map.';
+    const t = clock.now();
+    share.querySelector('.a2-freeze-text')!.textContent =
+      `${shortDate.format(t)} · ${timeFmt.format(t)}, paused. Trains from the timetable.`;
+    modeInputs.forEach((i) => (i.checked = i.value === shareMode));
+    shareUrlOut.textContent = currentLink();
+  };
+  modeInputs.forEach((i) => i.addEventListener('change', () => {
+    shareMode = i.value as 'live' | 'freeze';
+    renderShare();
+  }));
+  copyBtn.addEventListener('click', async () => {
+    const link = currentLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      copyBtn.textContent = 'Copied';
+    } catch {
+      // No clipboard access (an insecure origin, say): select the link so it can be copied by hand.
+      const r = document.createRange();
+      r.selectNodeContents(shareUrlOut);
+      getSelection()?.removeAllRanges();
+      getSelection()?.addRange(r);
+      copyBtn.textContent = 'Select and copy';
+    }
+    setTimeout(() => (copyBtn.textContent = 'Copy link'), 1800);
+  });
+  nativeBtn.addEventListener('click', () => {
+    navigator.share?.({ title: document.title, url: currentLink() }).catch(() => { /* dismissed */ });
+  });
+  share.querySelector('[data-close]')!.addEventListener('click', () => {
+    closePops();
+    shareBtn.focus();
+  });
   compass.addEventListener('click', () => o.north?.());
   zoomIn.addEventListener('click', () => o.zoom(1));
   zoomOut.addEventListener('click', () => o.zoom(-1));
@@ -329,11 +391,11 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }
 
   const panelHost = createDetailPanel();
-  document.body.append(subject, notice, bar, menu, cam, credit, panelHost.host, ...(hint ? [hint] : []));
+  document.body.append(subject, notice, bar, menu, cam, share, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 
   // ---- pop-overs ---------------------------------------------------------------------------
-  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open]];
+  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open], [share, shareBtn]];
   const closePops = (except?: HTMLElement) => {
     for (const [p, b] of pops)
       if (p !== except && !p.hidden) {
@@ -351,6 +413,12 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (show) focus();
   };
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-row')?.focus()));
+  shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
+    // A shifted or paused clock most likely means this moment is the point of the link.
+    shareMode = clock.isRealTime() ? 'live' : 'freeze';
+    renderShare();
+    copyBtn.focus();
+  }));
   open.addEventListener('click', () => toggle(panel, open, () => {
     lastTick = -Infinity;
     tick(clock.now());
@@ -370,7 +438,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (![subject, panel, bar, menu].some((c) => c.contains(t))) closePops();
+    if (![subject, panel, bar, menu, share, cam].some((c) => c.contains(t))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
 
