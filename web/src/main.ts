@@ -9,7 +9,7 @@ import { createShell, type ShellOptions, type View } from './ui/shell';
 import { uiNext } from './ui/flag';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
-import { busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard, type DrawnAt } from './map/card';
+import { busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
 import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
@@ -115,7 +115,6 @@ recenter.addEventListener('click', () => follow?.recenter());
 let lastCardHTML = '';
 let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
-let selectedDrawn: DrawnAt = {};
 function showCard(html: string, canFollow = false) {
   followPanel.hidden = !canFollow;
   if (canFollow) updateFollowPanel();
@@ -138,20 +137,18 @@ function hideCard() {
   card.hidden = true;
   selectedBus = null;
   selectedTrain = null;
-  selectedDrawn = {};
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 
 function renderTrainCard() {
   if (!selectedTrain) return;
   // After a tier handoff the card describes the vehicle now followed (or the one whose follow
-  // just ended). It is a continuation, not a new tap: drop the old trip's drawn-track facts and
-  // keep the A2c panel where the user left it.
+  // just ended). It is a continuation, not a new tap: keep the A2c panel where the user left it.
+  // Drawn-track facts are recomputed below from the train City draws now.
   const lineage = follow?.active ? follow.lineage : follow?.endedLineage ?? [];
   const current = follow?.vehicle ?? follow?.ended;
   if (current?.kind === 'train' && current.id !== selectedTrain && lineage.includes(selectedTrain)) {
     selectedTrain = current.id;
-    selectedDrawn = {};
     shownKey = current.id;
   }
   const t = source.find(selectedTrain);
@@ -161,7 +158,7 @@ function renderTrainCard() {
   }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
-      !view3d.hidden, uiNext(location.search), selectedDrawn),
+      !view3d.hidden, uiNext(location.search), (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
     !!follow && !view3d.hidden,
   );
 }
@@ -181,7 +178,6 @@ function followFromLink() {
       followBus = null;
       selectedBus = bus.id;
       selectedTrain = null;
-      selectedDrawn = {};
       follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
       renderBusCard();
     }
@@ -209,7 +205,6 @@ function followFromLink() {
   if (!train) return;
   followRoute = null;
   selectedTrain = train.id;
-  selectedDrawn = {};
   selectedBus = null;
   follow.start({ kind: 'train', id: train.id, pathId: train.pathId, tier: train.s.tier });
   renderTrainCard();
@@ -362,7 +357,6 @@ function addMapLayers(map: maplibregl.Map) {
     selectedBus = null;
     if (train) {
       selectedTrain = train;
-      selectedDrawn = {};
       return renderTrainCard();
     }
     const box: [maplibregl.PointLike, maplibregl.PointLike] = [
@@ -372,7 +366,6 @@ function addMapLayers(map: maplibregl.Map) {
     const f = directBus ?? map.queryRenderedFeatures(box, { layers: ['buses', 'crossings', 'freight-hit'] })[0];
     if (!f) return hideCard();
     selectedTrain = null;
-    selectedDrawn = {};
     if (f.layer.id === 'buses') {
       const bus = visibleBuses.get(f.properties.id);
       if (!bus || !clock.isRealTime()) return hideCard();
@@ -481,7 +474,6 @@ async function openCity() {
       selectVehicle: hit => {
         follow?.stop();
         selectedTrain = hit?.kind === 'train' ? hit.id : null;
-        selectedDrawn = hit?.kind === 'train' ? { inferredTrack: hit.inferredTrack, inferredBerth: hit.inferredBerth } : {};
         selectedBus = hit?.kind === 'bus' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();

@@ -131,6 +131,11 @@ export function brookwoodTruckAt(s: number) {
 
 const atl = chainage(...project(-84.392477, 33.799445)).along;
 const platformEnd = chainage(...platform[1]).along;
+/** Where a dwelling consist's centre stands: its head at the northeast end of the island. */
+export const berthCentre = platformEnd - consistLength / 2;
+/** A consist is berthed while its centre is within a few metres of the berth. On either
+ * continuation, or still easing in, the card makes no berth claim. */
+export const isBerthed = (centre: number) => Math.abs(centre - berthCentre) < 3;
 export function crescentPlacement(t: TrainState) {
   if (t.routeId !== 'amtrak:route:Crescent' || t.s.tier !== 'scheduled') return;
   const [x, z] = project(t.lon, t.lat);
@@ -564,6 +569,7 @@ export function createBrookwood(sceneZero: number) {
         car.visible = true;
         car.userData.trainId = train.id;
         car.userData.lengthM = length;
+        car.userData.berthed = isBerthed(run.center);
         car.position.set((fore.x + aft.x) / 2, (bed(fore.x) + bed(aft.x)) / 2 + 0.32, (fore.z + aft.z) / 2);
         car.rotation.y = Math.atan2(fore.x - aft.x, fore.z - aft.z);
         car.rotation.x = -Math.atan2(bed(fore.x) - bed(aft.x), Math.hypot(fore.x - aft.x, fore.z - aft.z));
