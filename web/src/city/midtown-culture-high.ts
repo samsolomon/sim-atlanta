@@ -50,8 +50,16 @@ export function enamelFace(body: Builder, a: P2, b: P2, n: P2, lo: number, hi: n
     if (!seen(t)) continue;
     body.quad(at(t - w, lo), at(t - w, hi), at(t + w, hi), at(t + w, lo), joint);
   }
+  // Horizontal joints run only across the visible panel columns.
+  const runs: [number, number][] = [];
+  for (let k = 0; k < cols; k++) {
+    if (!seen((k + 0.5) * pitch)) continue;
+    const last = runs[runs.length - 1];
+    if (last && last[1] === k * pitch) last[1] = (k + 1) * pitch;
+    else runs.push([k * pitch, (k + 1) * pitch]);
+  }
   for (let y = lo + enamelModule; y < hi - 0.3; y += enamelModule)
-    body.quad(at(0, y - w), at(len, y - w), at(len, y + w), at(0, y + w), joint);
+    for (const [t0, t1] of runs) body.quad(at(t0, y - w), at(t1, y - w), at(t1, y + w), at(t0, y + w), joint);
 }
 
 /** Joints on the four walls of an axis-aligned box given as body.box arguments. */
