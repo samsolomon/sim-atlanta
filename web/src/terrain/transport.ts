@@ -465,7 +465,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
     draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from),deckWeight:road.deckWeight?.slice(from)} : road,'road',road);
   }
-  for (const r of data.rail) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
+  for (const r of data.rail) if (!r.replaced) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
   const bridgeNight = { value: 0 };
