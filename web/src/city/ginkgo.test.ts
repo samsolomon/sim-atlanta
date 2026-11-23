@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { GINKGO_CLUMPS, createGinkgos, ginkgoOffset, ginkgoState, ginkgoTriangles, type GinkgoQuality } from './ginkgo';
+import { GINKGO_CLUMPS, createGinkgos, ginkgoOffset, ginkgoPads, ginkgoState, ginkgoTriangles, type GinkgoQuality } from './ginkgo';
 
 const tris = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3;
 
@@ -60,12 +60,18 @@ describe('ginkgo budget', () => {
     });
   }
 
-  it('draws every ginkgo in three instanced meshes', () => {
-    const trees = Array.from({ length: 40 }, (_, i) => ({ x: i * 20, z: 0, heightM: 17, crownM: 7, age: 1, seed: i }));
+  it('gives each form exactly one leaf clump per instance slot', () => {
+    for (const q of ['high', 'low'] as const) for (const f of ['young', 'mature'] as const)
+      expect(ginkgoPads(f, q)).toHaveLength(GINKGO_CLUMPS[q]);
+  });
+
+  it('draws every ginkgo in at most four instanced meshes, young and old together', () => {
+    const trees = Array.from({ length: 40 }, (_, i) => ({ x: i * 20, z: 0, heightM: 17, crownM: 7, age: i % 2, seed: i }));
     for (const q of ['high', 'low'] as const) {
       const grove = createGinkgos(trees, q, () => 0)!;
       const meshes = grove.group.children as THREE.InstancedMesh[];
-      expect(meshes).toHaveLength(3);
+      expect(meshes).toHaveLength(4);
+      expect(meshes.filter(m => m.name.endsWith('limbs')).map(m => m.count)).toEqual([20, 20]);
       expect(meshes.every(m => m instanceof THREE.InstancedMesh)).toBe(true);
       expect(meshes.find(m => m.name === 'ginkgo leaves')!.count).toBe(40 * GINKGO_CLUMPS[q]);
       grove.dispose();
