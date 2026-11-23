@@ -2097,6 +2097,10 @@ Cross-review identified a short unsurveyed span where propagating a clearance al
 
 A second review pointed out a distinction in the mapped street geometry. A side path ends on the campus bridge at (−933.90, −2643.57). The bridge now meets the path at that shared vertex. A regression uses the archived campus geometry to keep the junction at the approach height.
 
+### 2026-11-23 — North Avenue comes above ground
+
+The low concrete building at North Avenue hides a surprisingly long roof. Its diagonal ends span almost 59 m north to south, enough for two rows of six skylights. The plaza now follows the row's 3DEP triangles past four planters to the performance stage. One block north, the three mapped entrances to Tower Square needed separate ground samples. Their nearby DEM nodes differ by almost five metres. We checked the same camera in daylight and full night at both City quality settings. [Sources, estimates and matched views](midtown-marta.md) · [Daylight](log/ui/midtown-marta/north-avenue-high-day.jpg) · [Night](log/ui/midtown-marta/north-avenue-high-night.jpg)
+
 ### 2026-11-23 — Share a City camera by URL
 
 A five-number camera link can open the same ground target, bearing, tilt and distance on a production build. The museum test jumped nearly four kilometres north of Five Points and retained its 421 m orbit distance as the Midtown terrain arrived. A malformed camera still opened the Williams preset, and an off-board target stopped at the edge of the loaded terrain. Requires a web rebuild. [Low-tier camera-link check](log/ui/city-camera-query.jpg)
