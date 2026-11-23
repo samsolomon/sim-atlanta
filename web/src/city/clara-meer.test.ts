@@ -8,7 +8,7 @@ import { createSurfaceTransport } from '../terrain/transport';
 import { joins } from '../square-board/sections';
 import { auburnTransport } from './sweet-auburn-transport';
 import { seventeenthAccess } from './seventeenth-street';
-import { gazeboId } from './clara-meer';
+import { centre, gazeboId } from './clara-meer';
 import { Line, type P2 } from '../vignette/geom';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -32,7 +32,11 @@ it.each(['low', 'high'] as const)('lifts the Clara Meer bridge above the lake an
     for (let i = 0; i < p.count; i++) expect(Math.hypot(p.getX(i) - 1659.3, p.getZ(i) + 3465.2)).toBeGreaterThan(6);
     const path = features.bridge.pts as P2[];
     const run = city.terrainTransport!.roads.find(r => Math.hypot(r.pts[0][0] - path[0][0], r.pts[0][1] - path[0][1]) < .05)!;
-    const line = new Line(path), water = area.groundAt(1659.3, -3465.2)!;
+    const line = new Line(path), water = area.groundAt(...centre)!;
+    // The hydro-flattened 3DEP lake surface, measured at 267.4 m NAVD88.
+    expect(water + grid.manifest.vertical.sceneZeroNavd88M).toBeCloseTo(267.4, 1);
+    expect(centre[0]).toBeCloseTo(1659.33, 1);
+    expect(centre[1]).toBeCloseTo(-3465.2, 1);
     let crest = -Infinity;
     for (let s = .5; s < line.length; s += .5) {
       const q = line.at(s), deck = decks.deckAt(q.x, q.z, run)!, ground = area.groundAt(q.x, q.z)!;

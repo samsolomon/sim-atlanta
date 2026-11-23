@@ -11,12 +11,24 @@ import type { VBuilding } from '../vignette/world';
  * gazebo dimensions are estimated from photographs; see docs/log/ui/clara-meer.
  */
 export const gazeboId = features.gazebo.osm;
+function same(a: P2, b: P2) { return Math.hypot(a[0] - b[0], a[1] - b[1]) < .05; }
 const path = features.bridge.pts as P2[];
 const line = new Line(path);
-const gazebo = features.gazebo.pts as P2[];
-const centre: P2 = [gazebo.reduce((a, p) => a + p[0], 0) / gazebo.length, gazebo.reduce((a, p) => a + p[1], 0) / gazebo.length];
+// Closed OSM ways repeat their first vertex.
+const open = (ring: P2[]) => same(ring[0], ring.at(-1)!) ? ring.slice(0, -1) : ring;
+const gazebo = open(features.gazebo.pts as P2[]);
+export const centre: P2 = [gazebo.reduce((a, p) => a + p[0], 0) / gazebo.length, gazebo.reduce((a, p) => a + p[1], 0) / gazebo.length];
 const radius = Math.max(...gazebo.map(p => Math.hypot(p[0] - centre[0], p[1] - centre[1])));
 
+const spurStart = features.spur.pts[0] as P2;
+const spurAt = (() => {
+  let best = 0, d = Infinity;
+  for (let s = 0; s <= line.length; s += .05) { const q = line.at(s), e = Math.hypot(q.x - spurStart[0], q.z - spurStart[1]); if (e < d) { d = e; best = s; } }
+  return best;
+})();
+// The spur leaves the bridge on the gazebo's side; keep that bay open.
+const spurSide = (() => { const q = line.at(spurAt); return Math.sign((centre[0] - q.x) * q.nx + (centre[1] - q.z) * q.nz); })();
+const opening = (s: number, side: number) => side === spurSide && Math.abs(s - spurAt) < 1.6;
 const CREST = 2.9;          // deck above water, estimated
 const HALF = 2.25;          // half the 4.5 m deck, estimated
 const RAMP = 9;             // length over which the deck meets each bank
@@ -39,7 +51,6 @@ export function deckHeight(s: number, ground: Ground) {
   return Math.max(y, floor === null ? -Infinity : floor + .12);
 }
 
-const same = (a: P2, b: P2) => Math.hypot(a[0] - b[0], a[1] - b[1]) < .05;
 function runFor(city: TerrainCity, pts: P2[]) {
   return city.terrainTransport?.roads.find(r => r.pts.length === pts.length && same(r.pts[0], pts[0]) && same(r.pts.at(-1)!, pts.at(-1)!));
 }
@@ -49,7 +60,11 @@ export function drawClaraMeerBridge(city: TerrainCity, _zero: number, ground: Gr
   treads: Map<TransportRun, number[]>, drawn: Set<TransportRun>) {
   const bridge = runFor(city, path), spur = runFor(city, features.spur.pts as P2[]);
   const level = water(ground);
-  if (!bridge || level === null) return;
+  if (!bridge || !spur || level === null) {
+    // The generic footbridge would show inside the granite parapets; re-run piedmont_edge.py.
+    console.warn('Lake Clara Meer bridge no longer matches pipeline/prototypes/piedmont-edge/features.json');
+    return;
+  }
   const top: number[] = [];
   for (let s = 0; s < line.length; s += 1) {
     const t = Math.min(line.length, s + 1), a = line.at(s), b = line.at(t);
@@ -60,15 +75,9 @@ export function drawClaraMeerBridge(city: TerrainCity, _zero: number, ground: Gr
   }
   treads.set(bridge, top);
   drawn.add(bridge);
-  if (spur) {
+  {
     // The spur walks onto the round platform, level with the crest.
     const y = level + CREST, ring: number[] = [];
-    for (let i = 0; i < 16; i++) {
-      const a = i / 16 * Math.PI * 2, b = (i + 1) / 16 * Math.PI * 2;
-      ring.push(mesh.pos.length / 3);
-      mesh.tri([centre[0], y, centre[1]], [centre[0] + Math.cos(b) * (radius + .6), y, centre[1] + Math.sin(b) * (radius + .6)],
-        [centre[0] + Math.cos(a) * (radius + .6), y, centre[1] + Math.sin(a) * (radius + .6)], PAVING);
-    }
     const s0 = (spur.pts[0] as P2), s1 = (spur.pts.at(-1) as P2), dx = s1[0] - s0[0], dz = s1[1] - s0[1], n = Math.hypot(dx, dz);
     const ox = -dz / n * 1.6, oz = dx / n * 1.6;
     ring.push(mesh.pos.length / 3, mesh.pos.length / 3 + 3);
@@ -102,6 +111,7 @@ export function createClaraMeer(buildings: VBuilding[], site: VBuilding, _base: 
     const ya = deckHeight(s, ground)!, yc = deckHeight(t, ground)!;
     const ba = soffit(s) ?? level - .3, bc = soffit(t) ?? level - .3;
     for (const side of [1, -1]) {
+      if (opening(s, side) || opening(t, side)) continue;
       const o = side * HALF;
       const p = [a.x + a.nx * o, a.z + a.nz * o], q = [c.x + c.nx * o, c.z + c.nz * o];
       stone.quad([p[0], ba, p[1]], [q[0], bc, q[1]], [q[0], yc + .35, q[1]], [p[0], ya + .35, p[1]], GRANITE);
@@ -126,10 +136,16 @@ export function createClaraMeer(buildings: VBuilding[], site: VBuilding, _base: 
       prism(stone, x, z, .65, y, y + 1.4, GRANITE);
       prism(stone, x, z, .8, y + 1.4, y + 1.55, COPING);
       const here = new THREE.Vector3(x, y, z);
+      // Rails follow the deck between pier tops, broken where the spur leaves.
       if (prev) for (const h of [.25, 1.0]) {
-        const d = here.clone().sub(prev), m = prev.clone().addScaledVector(d, .5);
-        const bar = new THREE.Matrix4().makeRotationY(-Math.atan2(d.z, d.x)).setPosition(m.x, m.y + h, m.z);
-        stone.box(d.length(), .05, .05, 0, 0, 0, RAIL, bar);
+        const s0 = piers[i - 1];
+        for (let k = 0; k < 8; k++) {
+          const u = s0 + (s - s0) * k / 8, v = s0 + (s - s0) * (k + 1) / 8;
+          if (opening(u, side) || opening(v, side)) continue;
+          const a = line.at(u), c = line.at(v), ya = deckHeight(u, ground)! + h, yc = deckHeight(v, ground)! + h;
+          const pa = [a.x + a.nx * side * HALF, a.z + a.nz * side * HALF], pc = [c.x + c.nx * side * HALF, c.z + c.nz * side * HALF];
+          stone.quad([pa[0], ya - .03, pa[1]], [pc[0], yc - .03, pc[1]], [pc[0], yc + .03, pc[1]], [pa[0], ya + .03, pa[1]], RAIL);
+        }
       }
       prev = here;
       if (i === 0 || i === piers.length - 1) {
@@ -141,10 +157,14 @@ export function createClaraMeer(buildings: VBuilding[], site: VBuilding, _base: 
   }
   // Round granite drum under the gazebo platform.
   const deck = level + CREST, r = radius + .6;
+  const toward = Math.atan2(spurStart[1] - centre[1], spurStart[0] - centre[0]);
   for (let i = 0; i < 24; i++) {
     const a = i / 24 * Math.PI * 2, b = (i + 1) / 24 * Math.PI * 2;
     const p = [centre[0] + Math.cos(a) * r, centre[1] + Math.sin(a) * r], q = [centre[0] + Math.cos(b) * r, centre[1] + Math.sin(b) * r];
-    stone.quad([p[0], level - .3, p[1]], [q[0], level - .3, q[1]], [q[0], deck + .35, q[1]], [p[0], deck + .35, p[1]], GRANITE);
+    const facing = Math.abs(Math.atan2(Math.sin((a + b) / 2 - toward), Math.cos((a + b) / 2 - toward))) < 1.6 / r;
+    stone.quad([p[0], level - .3, p[1]], [q[0], level - .3, q[1]], [q[0], deck + (facing ? 0 : .35), q[1]], [p[0], deck + (facing ? 0 : .35), p[1]], GRANITE);
+    // Platform cap, so the drum is closed even if the transport tread is missing.
+    stone.tri([centre[0], deck - .01, centre[1]], [q[0], deck - .01, q[1]], [p[0], deck - .01, p[1]], PAVING);
   }
   // Gazebo: eight white columns, entablature and a grey standing-seam pyramid.
   const cr = Math.max(1.5, radius - .5);
@@ -166,7 +186,7 @@ export function createClaraMeer(buildings: VBuilding[], site: VBuilding, _base: 
   }
   prism(stone, centre[0], centre[1], .14, apex, apex + .7, '#9aa0a3');
   // Dockside: the shoreline boardwalk band and the pier, with four stone posts.
-  const dock = features.dock.pts as P2[];
+  const dock = open(features.dock.pts as P2[]);
   const shape = THREE.ShapeUtils.triangulateShape(dock.map(([x, z]) => new THREE.Vector2(x, z)), []);
   const dockY = ([x, z]: P2) => Math.max(level + .5, (ground(x, z) ?? level) + .12);
   for (const [a, b, c] of shape) stone.tri([dock[a][0], dockY(dock[a]), dock[a][1]], [dock[c][0], dockY(dock[c]), dock[c][1]], [dock[b][0], dockY(dock[b]), dock[b][1]], WOOD);
@@ -174,8 +194,13 @@ export function createClaraMeer(buildings: VBuilding[], site: VBuilding, _base: 
     const p = dock[i], q = dock[(i + 1) % dock.length];
     stone.quad([p[0], level - .2, p[1]], [q[0], level - .2, q[1]], [q[0], dockY(q), q[1]], [p[0], dockY(p), p[1]], '#5c4a38');
   }
-  for (const [x, z] of [[1355.5, -3350.4], [1370.5, -3349.8], [1370.9, -3358.5], [1355.1, -3358.6]] as P2[])
-    prism(stone, x + (x > 1360 ? -.4 : .4), z + (z > -3354 ? -.4 : .4), .55, level + .5, level + 1.25, GRANITE);
+  // Four stone posts at the pier's corners (OSM vertices 0, 6, 7 and 27), inset toward its middle.
+  const corners = [0, 6, 7, 27].map(i => dock[i]);
+  const mid = [corners.reduce((a, p) => a + p[0], 0) / 4, corners.reduce((a, p) => a + p[1], 0) / 4];
+  for (const [x, z] of corners) {
+    const d = Math.hypot(mid[0] - x, mid[1] - z);
+    prism(stone, x + (mid[0] - x) / d * .55, z + (mid[1] - z) / d * .55, .55, level + .5, level + 1.25, GRANITE);
+  }
 
   const group = new THREE.Group();
   group.name = 'clara-meer';
