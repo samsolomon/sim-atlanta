@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import { addSection, bounds, connect, joins, type Area, type Board } from './sections';
+import { addSection, bounds, midtownRows, connect, joins, type Area, type Board } from './sections';
 
 import { buildEastRail, extendRail } from '../city/east-rail';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
@@ -104,16 +104,24 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
     expect(boardArea).toBe(2800 ** 2);
     const north = mounted.get('north-band')!;
     const northWall = north.board.getObjectByName('joining edge 2')!;
-    await expect(addSection('midtown', mounted, quality, signal)).rejects.toThrow(/503/);
+    await expect(addSection('midtown-south', mounted, quality, signal)).rejects.toThrow(/503/);
     expect(northWall.visible).toBe(true);
     expect(mounted.size).toBe(7);
     midtownUnavailable = false;
-    const added = await addSection('midtown', mounted, quality, signal);
+    const added = await addSection('midtown-south', mounted, quality, signal);
     const tile = added.get('midtown-south')!;
     for (let x = -1000; x <= 1800; x += 2.5)
       expect(tile.groundAt(x, -1700)).toBeCloseTo(north.groundAt(x, -1700)!, 4);
     expect(tile.board.getObjectByName('joining edge')!.visible).toBe(false);
     expect(north.board.getObjectByName('joining edge 2')!.visible).toBe(false);
+    for (const [index, id] of midtownRows.slice(1).entries()) {
+      const previous = mounted.get(midtownRows[index])!;
+      const row = (await addSection(id, mounted, quality, signal)).get(id)!;
+      for (let x = -1000; x <= 1800; x += 2.5)
+        expect(row.groundAt(x, row.bounds.maxZ)).toBeCloseTo(previous.groundAt(x, row.bounds.maxZ)!, 4);
+      expect(previous.board.getObjectByName('joining edge 1')!.visible).toBe(false);
+      expect(row.board.getObjectByName('joining edge')!.visible).toBe(false);
+    }
   } finally { for (const area of mounted.values()) area.dispose(); }
 });
 

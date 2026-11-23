@@ -9,7 +9,7 @@ from pathlib import Path
 import downtown_terrain as terrain
 from king_memorial_context import extract_context
 from terrain_transport import clip_runs
-from vignette import K, LAT0, LON0, R, ROOT, VIGNETTES, project
+from vignette import K, LAT0, LON0, MIDTOWN_ROWS, R, ROOT, VIGNETTES, project
 
 PACK = Path(ROOT) / "pipeline/prototypes/square-board"
 DOWNTOWN = PACK.parent / "downtown-ground"
@@ -44,7 +44,10 @@ def south_freight(raw, bounds):
 
 def bake_patch(tile, name, north_tile=None):
     out = PACK / name
-    reference = PACK / "north-band" if name == "midtown-south" else DOWNTOWN
+    reference = DOWNTOWN
+    if name in MIDTOWN_ROWS:
+        previous = next((key for key, row in MIDTOWN_ROWS.items() if row["minZ"] == MIDTOWN_ROWS[name]["maxZ"]), "north-band")
+        reference = PACK / previous
     terrain.bake(tile, out, name, reference, north_tile)
     manifest = json.loads((out / "ground.json").read_text())
     if manifest["noDataCount"]:
@@ -74,10 +77,13 @@ if __name__ == "__main__":
     parser.add_argument("tile", type=Path)
     parser.add_argument("--section", choices=["north", "south", "midtown"])
     parser.add_argument("--north-tile", type=Path, help="Adjacent pinned x74y375 GeoTIFF for Midtown")
+    parser.add_argument("--row", choices=list(MIDTOWN_ROWS), help="Bake a single Midtown row against its predecessor")
     args = parser.parse_args()
+    if args.row and args.section != "midtown":
+        parser.error("--row requires --section midtown")
     if (args.section == "midtown") != (args.north_tile is not None):
         parser.error("--section midtown requires --north-tile and uses it exclusively")
     for section in [args.section] if args.section else ["north", "south"]:
-        names = ["midtown-south"] if section == "midtown" else [f"{section}-band", f"{section}-corner"]
+        names = ([args.row] if args.row else list(MIDTOWN_ROWS)) if section == "midtown" else [f"{section}-band", f"{section}-corner"]
         for name in names:
             bake_patch(args.tile, name, args.north_tile)

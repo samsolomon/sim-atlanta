@@ -1,0 +1,4 @@
+{
+  "midtown-south": { "minZ": -2500, "maxZ": -1700 },
+  "midtown-central": { "minZ": -3300, "maxZ": -2500 }
+}
