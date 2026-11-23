@@ -57,7 +57,7 @@ of every material. The defaults are tuned for that.
 | Precast concrete panels | `precast` | `width`, `height` (m) | panels, reveals | ~130 / ~80 |
 | Granite: pink, grey | `granite` | `course` (m) | courses, tone | ~145 / ~90 |
 | Glass curtain wall: blue-green, silver, bronze, blue | `curtainGlass` | `mullion`, `floor` (m) | mullions, spandrels | ~45 / ~45 |
-| Aged copper (muted, uneven, streaked verdigris) | `agedCopper` | `seam` (m) | seams, streaks | ~160 / ~110 |
+| Aged copper (muted, uneven, streaked verdigris) | `agedCopper` | `seam` (m; 0 = model draws its own) | seams, streaks | ~160 / ~110 |
 | Slate | `slate` | | tone only | ~100 far, ~140 near / ~50 |
 | Terracotta barrel tile | `terracottaTile` | | tone only | ~100 far, ~140 near / ~50 |
 | Clapboard | `clapboard` | | tone only | ~100 / ~50 |
@@ -65,7 +65,7 @@ of every material. The defaults are tuned for that.
 | Concrete | `concrete` | `lift` (m) | lift lines, tone | ~120 / ~70 |
 | Asphalt roofing | `asphaltRoof` | | tone only | ~100 far, ~120 near / ~50 |
 
-The costs are static estimates; measured frame times come with the proof sheets. All
+The costs are static estimates. Measured frame times are in the proof section below. All
 materials share one program per tier, `…|surfaces-high` or `…|surfaces-low`.
 
 ## Texture budget
@@ -104,3 +104,61 @@ The scene holds 64 textures, about 464 MB of estimated GPU memory, and 81 progra
 - **Geometry, not texture:** classical ornament (cornices, modillions, rustication, quoins) and
   Woodruff precast (joints, fins, slots). These cost triangles, not memory.
 - **Mirrored glass:** Phong shading plus a borrowed 128×64 skyline panorama.
+
+## Proof (2026-11-23, Studio, M5 Ultra, Chrome 157 with ANGLE on Metal, 1600×1000)
+
+Four landmarks were painted on a proof branch and compared with `?surfaces=off` at matched
+cameras, at 1 pm and 9 pm on both tiers:
+
+- Academy of Medicine: aged copper with `seam: 0`, since the model draws its own seams, plus
+  stucco. Camera `&cam=451,-2722,70,62,150`.
+- Atlanta Biltmore: common red brick. Camera `&cam=432,-2560,60,56,300`.
+- Hurt Building: buff brick. Camera `&cam=405,-32,340,58,240`.
+- Promenade Tower: curtain glass over pink granite. Camera `&cam=596,-3779,250,56,260`.
+
+The sheets are in `docs/log/ui/materials/` (`materials-proof-*.jpg`, `materials-gain-study.jpg`).
+
+**What reads at City distance.** The City camera never orbits closer than 150 m, and its lens
+is 22°, so a pixel covers 6 to 15 cm.
+
+- **Brick:** courses (75 mm) never resolve. Even the 2.5 m tone mottle hardly shows, because
+  the brick between windows is only a few pixels wide. The honest answer to "does brick need
+  texture?" is no, not in the City. Brick shows only in the model lab and in close views.
+- **Curtain glass:** the pane grid shows faintly. The landmark's own window quads already
+  carry most of the look.
+- **Aged copper and stucco:** these gain the most. A gain study at 1×, 2.5× and 4× showed the
+  first pass (1×) was almost invisible, 2.5× reads as uneven, streaked verdigris and soft
+  trowel mottle while staying calm, and 4× turns noisy. The defaults are now set at 2.5×.
+
+**Cost.** The FLAT and library builds were each timed over 7 × 30 scene renders, with a
+`readPixels` sync after every batch. Each figure below is the best median of 2 page loads.
+
+| View | Tier | FLAT ms | Library ms | Δ |
+|---|---|---|---|---|
+| Academy | high | 0.70 | 0.74 | +0.04 |
+| Academy | low | 0.50 | 0.64 | +0.14 |
+| Biltmore | high | 0.87 | 0.81 | −0.06 |
+| Biltmore | low | 0.86 | 0.65 | −0.21 |
+| Hurt | high | 0.90 | 0.89 | −0.01 |
+| Hurt | low | 0.66 | 0.95 | +0.29 |
+| Promenade | high | 0.82 | 0.79 | −0.03 |
+| Promenade | low | 0.55 | 0.94 | +0.39 |
+
+The deltas have no consistent sign, so the library's fragment cost on the Studio is below
+the run-to-run noise of this scene pass, about ±0.4 ms. Memory:
+
+- Texture bytes: unchanged (+0).
+- Programs: +2, one per painted material type (shell and lamps) per tier.
+- Vertex data: `aSurface` was 1.6 MB as float32 over the 5 painted meshes and is now half
+  that as float16.
+
+Phone timing is deferred.
+
+## Proposals (not done)
+
+- **Brookwood painted masonry:** about 15 MB of canvases at 64 px/m. The walls could become
+  `stucco` or painted `brick` surfaces. The lettering and window glow would move to a much
+  smaller canvas, or the lettering to geometry. Expected saving: most of the 15 MB.
+- **Generic facades:** the residential siding GLSL in `patchFacades` could move into the
+  library unchanged, with a byte-identical shader test, so houses and landmarks share one
+  brick, clapboard, stucco and shingle definition.
