@@ -929,7 +929,7 @@ export class World {
 
   // ---- trees --------------------------------------------------------------------------
 
-  buildTrees() {
+  buildTrees(leafGeometry: THREE.BufferGeometry = new THREE.DodecahedronGeometry(1, 0)) {
     const r = rng(20261120);
     const drivable = this.data.roads.filter((x) => DRIVABLE.has(x.cls) || x.cls === 'pedestrian' || x.cls === 'footway');
     const rails = this.data.rail.map((x) => x.pts);
@@ -989,7 +989,7 @@ export class World {
     const n = this.trees.length;
     const leafMat = new THREE.MeshLambertMaterial({ flatShading: true });
     // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
-    this.canopy = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), leafMat, n * this.opts.clumps);
+    this.canopy = new THREE.InstancedMesh(leafGeometry, leafMat, n * this.opts.clumps);
     // Pines: two stacked five-sided cones.
     const pine = new THREE.ConeGeometry(1, 1.6, 7);
     pine.translate(0, 0.8, 0);
