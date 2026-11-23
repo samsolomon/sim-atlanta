@@ -5,7 +5,14 @@ import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import { seventeenthAccess } from './seventeenth-street';
 import { auburnTransport } from './sweet-auburn-transport';
-import { createElectricSaturation, ELECTRIC_SATURATION_ID, WALL_ABOVE_HIGH_GRADE } from './midtown-marta-vents';
+import {
+  createElectricSaturation,
+  createPeachtreePlaceShaft,
+  ELECTRIC_SATURATION_ID,
+  midtownVents,
+  PEACHTREE_PLACE_SHAFT_ID,
+  WALL_ABOVE_HIGH_GRADE,
+} from './midtown-marta-vents';
 
 const directory = new URL('../../../pipeline/prototypes/square-board/midtown-central/', import.meta.url);
 const read = (name: string) => readFileSync(new URL(name, directory));
@@ -52,4 +59,28 @@ it('removes the generic building it replaces and ignores other sites', () => {
   expect(made.buildings).not.toContain(site);
   expect(made.buildings).toHaveLength(city.buildings.length - 1);
   expect(createElectricSaturation(city.buildings, other, () => 0)).toBeNull();
+});
+
+it('mounts each inferred vent in exactly one Midtown row', () => {
+  const zs = JSON.parse(
+    readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-rows.json', import.meta.url)).toString(),
+  ) as Record<string, { minZ: number; maxZ: number }>;
+  const rows = Object.fromEntries(Object.entries(zs).map(([id, z]) => [id, { minX: -1000, maxX: 1800, ...z }]));
+  const mounted = Object.entries(rows).filter(([, bounds]) => midtownVents(bounds, () => 0) !== null).map(([id]) => id);
+  expect(mounted.sort()).toEqual(['midtown-south', 'midtown-upper']);
+  const vents = midtownVents(rows['midtown-upper'], () => 10)!;
+  const box = new Box3().setFromObject(vents.group);
+  // The fan house parapet stands 5 m above its highest corner and its footings go below.
+  expect(box.min.y).toBeLessThan(10);
+  expect(box.max.y).toBeGreaterThan(15);
+});
+
+it('replaces the generic box over the Peachtree Place shaft with a low grated box', () => {
+  const city = JSON.parse(read('context.json').toString());
+  const site = city.buildings.find((b: { id: string }) => b.id === PEACHTREE_PLACE_SHAFT_ID);
+  expect(site).toBeDefined();
+  const made = createPeachtreePlaceShaft(city.buildings, site, () => 20)!;
+  expect(made.buildings).not.toContain(site);
+  const box = new Box3().setFromObject(made.group);
+  expect(box.max.y).toBeCloseTo(21.1, 5);
 });

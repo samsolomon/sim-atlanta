@@ -279,3 +279,113 @@ export function createElectricSaturation(buildings: VBuilding[], site: VBuilding
     },
   };
 }
+
+// Ventilation structures over the North Line known only from OSM outlines and
+// aerial imagery; no ground-level photograph was found. Forms are inferred.
+// OSM way 1035352568: one-storey MARTA fan house at 1075 Peachtree Walk.
+const FAN_HOUSE: P2[] = [
+  [455.4, -3378.9],
+  [455.5, -3397.3],
+  [471.0, -3397.2],
+  [470.8, -3375.2],
+  [459.2, -3375.3],
+  [459.2, -3378.9],
+];
+// OSM way 1035352566: plaza grate on 5th Street at Cypress Street.
+const FIFTH_GRATE: P2[] = [
+  [494.5, -2470.2],
+  [494.9, -2474.3],
+  [505.3, -2473.6],
+  [505.0, -2469.3],
+];
+export const PEACHTREE_PLACE_SHAFT_ID = 'osm:way:269843682';
+
+function inside(bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, ring: P2[]) {
+  const x = ring.reduce((a, p) => a + p[0], 0) / ring.length,
+    z = ring.reduce((a, p) => a + p[1], 0) / ring.length;
+  return x >= bounds.minX && x < bounds.maxX && z >= bounds.minZ && z < bounds.maxZ;
+}
+
+function slab(body: Builder, ring: P2[], lo: number, hi: number, wall: string, roof: string) {
+  for (let i = 0; i < ring.length; i++) {
+    const [x, z] = ring[i],
+      [a, b] = ring[(i + 1) % ring.length];
+    body.quad([x, lo, z], [x, hi, z], [a, hi, b], [a, lo, b], wall);
+  }
+  for (let i = 1; i < ring.length - 1; i++)
+    body.tri([ring[0][0], hi, ring[0][1]], [ring[i + 1][0], hi, ring[i + 1][1]], [ring[i][0], hi, ring[i][1]], roof);
+}
+
+function grade(ring: P2[], ground: Ground) {
+  const g = ring.map(([x, z]) => ground(x, z));
+  return g.every((v): v is number => v !== null) ? { lo: Math.min(...g), hi: Math.max(...g) } : null;
+}
+
+function fanHouse(body: Builder, lights: Builder, ground: Ground) {
+  const g = grade(FAN_HOUSE, ground);
+  if (!g) return false;
+  const base = g.lo - 0.4,
+    roof = g.hi + 5,
+    annex = g.hi + 3.4;
+  // Main block north of the step, the lighter annex strip along the south edge.
+  slab(body, [FAN_HOUSE[0], FAN_HOUSE[1], FAN_HOUSE[2], [470.9, -3378.9]], base, roof, '#a39a8a', '#8a735a');
+  slab(body, [[459.2, -3378.9], [470.9, -3378.9], FAN_HOUSE[3], FAN_HOUSE[4]], base, annex, '#b3ab9c', '#c4bcae');
+  // Three round fan hoods in a darker recessed band along the north edge.
+  body.box(15, 0.12, 4.6, 463.2, roof + 0.02, -3394.6, '#4f4a44');
+  for (const x of [458.6, 463.2, 467.8]) {
+    for (let k = 0; k < 12; k++) {
+      const a0 = (k / 12) * Math.PI * 2,
+        a1 = ((k + 1) / 12) * Math.PI * 2,
+        r = 1.75;
+      const p = (a: number, y: number) => [x + Math.cos(a) * r, y, -3394.6 + Math.sin(a) * r];
+      body.quad(p(a0, roof), p(a0, roof + 0.9), p(a1, roof + 0.9), p(a1, roof), '#77736c');
+      body.tri([x, roof + 0.88, -3394.6], p(a1, roof + 0.88), p(a0, roof + 0.88), '#2b2b2c');
+    }
+  }
+  // A single door lamp on the annex, as on other MARTA service doors (inferred).
+  lights.box(0.25, 0.2, 0.2, 465, g.hi + 2.6, -3375.0, '#fff1d4');
+  return true;
+}
+
+function flushGrate(body: Builder, ring: P2[], ground: Ground, height: number) {
+  const g = grade(ring, ground);
+  if (!g) return false;
+  slab(body, ring, g.lo - 0.2, g.hi + height, '#8f8d86', '#5f6062');
+  return true;
+}
+
+/** Vent structures the row data does not carry as buildings. Each row adds its own. */
+export function midtownVents(bounds: { minX: number; maxX: number; minZ: number; maxZ: number }, ground: Ground) {
+  const body = new Builder(),
+    lights = new Builder();
+  let any = false;
+  if (inside(bounds, FAN_HOUSE)) any = fanHouse(body, lights, ground) || any;
+  if (inside(bounds, FIFTH_GRATE)) any = flushGrate(body, FIFTH_GRATE, ground, 0.15) || any;
+  if (!any) return null;
+  const group = new Group();
+  group.name = 'Midtown MARTA vents';
+  const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  shell.castShadow = shell.receiveShadow = true;
+  const lamps = new Mesh(lights.geometry(), new MeshLambertMaterial({ vertexColors: true, emissive: '#fff1d4', emissiveIntensity: 0 }));
+  group.add(shell, lamps);
+  return {
+    group,
+    buildings: [] as VBuilding[],
+    setNight(night: number) {
+      lamps.material.emissiveIntensity = night * 0.9;
+    },
+  };
+}
+
+/** The low grated shaft box against the Nine15 garage, mapped as a generic building. */
+export function createPeachtreePlaceShaft(buildings: VBuilding[], site: VBuilding, ground: Ground) {
+  if (site.id !== PEACHTREE_PLACE_SHAFT_ID || site.rings.length !== 1) return null;
+  const body = new Builder();
+  if (!flushGrate(body, site.rings[0] as P2[], ground, 1.1)) return null;
+  const group = new Group();
+  group.name = 'Peachtree Place vent shaft';
+  const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  shell.castShadow = shell.receiveShadow = true;
+  group.add(shell);
+  return { group, buildings: buildings.filter((b) => b !== site), setNight() {} };
+}
