@@ -2,6 +2,7 @@
 import { ginkgo } from './ginkgo';
 import { waterOak, willowOak } from './oaks';
 import { loblollyPine, tulipPoplar } from './pine-poplar';
+import { redMaple, sweetgum } from './maple-sweetgum';
 import type { Species } from './species';
 
-export const SPECIES: Species[] = [ginkgo, willowOak, waterOak, loblollyPine, tulipPoplar];
+export const SPECIES: Species[] = [ginkgo, willowOak, waterOak, loblollyPine, tulipPoplar, redMaple, sweetgum];

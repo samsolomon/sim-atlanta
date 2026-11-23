@@ -90,6 +90,8 @@ const SPECIES_NOTES: Record<string, string> = {
   'water-oak': 'The yard and woods oak: a short trunk splitting into big ascending leaders under a wider, more open crown of small spatulate leaves; a yellow week in late fall, and some leaves held into winter. ',
   'loblolly-pine': 'The tall pine of Atlanta’s yards and woods: a long clear red-brown trunk under a high, open, irregular crown, its needles in tufts at the tips of bare twigs. Evergreen; the inner needles brown and drop in fall. ',
   'tulip-poplar': 'The city’s tallest tree: a straight column of trunk under a narrow oval crown of big square-tipped leaves, golden yellow early in the fall and bare by mid-November. ',
+  'red-maple': 'A rounded, ascending crown on a smooth grey trunk: a red haze of flowers in the bare crown in late winter, and scarlet to orange early in the fall. ',
+  sweetgum: 'A straight leader under a crown of glossy star leaves, pyramidal when young and oval later; late in the fall it turns purple, red, orange and yellow at once. ',
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };

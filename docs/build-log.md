@@ -2529,3 +2529,12 @@ We have no lot lines, so every yard comes from one fact: which wall of the house
 ### 2026-11-23 — Three stripes are enough
 
 The third streetcar pass tried to reproduce every flourish on the car as two fans of curved bands. Sam's verdict was that it read as more complicated than the car, and the brighter body colour was worse than the deep indigo before it. His markup of a side photo reduced the graphic to its gesture: three broad parallel stripes, lime, light cyan and violet, rising across each cab section from the low front to the roof line behind the first door. Straight stripes, each 0.7 m wide, now do exactly that, mirrored at the other end. The detail work moved to the edges. A flat polygon laid over the curved eave came out ragged, so the stripes now stop where the side meets the eave, which reads as the roof line from the side. They also run over the doors, as the vinyl does, and turn into tinted film where they cross the windows. Lab only; web rebuild. [Car 1003 compare](log/streetcar/s70-stripes-1003.jpg) · [Lab before and after](log/streetcar/s70-stripes-lab.jpg)
+
+### 2026-11-23 — The fall-colour pair
+
+**Red maple** is a rounded crown on ascending limbs, scarlet to orange by late October. It reddens a second time in late winter, when its flowers fill the bare crown. The lab draws that red haze with the leaf-thinning machinery the oaks use for leaf drop. In February a red maple's crown is about 16% "in leaf", and every visible leaf is a red flower.
+
+**Sweetgum** colours last and keeps its leaves into December. Its trick is that one tree shows purple, red, orange and yellow at once. Each tree carries two seasonal tones, yellow-orange and purple. Every leaf cluster mixes them in its own proportion, so the colours scatter through the crown with no extra triangles.
+
+Both options A came in within 5% of the generic canopy's brightness. Their summer greens were tuned with `__lab.crownStats()`, the same way as the first two pairs. [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [All species, 15 Nov](log/ui/tree-species/lineup-15nov.jpg)
+
