@@ -106,3 +106,22 @@ it('lights the Promenade crown cool white at night and keeps its offices warm', 
   model.setNight(0);
   expect(neon.visible).toBe(false);
 });
+
+it('mounts Tower Square at 206 m and feeds night lighting to its return walls', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const office: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:26800371');
+  const model = createSkylineLandmark([office],office,-3,() => -1)!;
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(205);
+  const mesh = model.group.getObjectByName('Tower Square wash') as Mesh;
+  const wash = mesh.material as MeshBasicMaterial;
+  model.setNight(1);
+  expect(wash.opacity).toBeGreaterThan(0);
+  expect(mesh.visible).toBe(true);
+  model.setNight(0);
+  expect(wash.opacity).toBe(0);
+  expect(mesh.visible).toBe(false);
+  // Each storey's recess is backed 0.8 m behind the long south face, not a hollow shaft.
+  model.group.updateMatrixWorld(true);
+  const ray = new Raycaster(new Vector3(467.7, 12.5, -2200), new Vector3(0, 0, 1));
+  expect(ray.intersectObject(model.group)[0].point.z).toBeLessThan(-2095.8 - 32);
+});
