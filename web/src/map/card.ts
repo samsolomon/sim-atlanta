@@ -163,6 +163,6 @@ function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | unde
       ${units ? row(route?.mode === 'heavy_rail' ? 'Cars' : 'Consist', `${esc(units)} ${chip('illustrative')}`) : ''}
       ${live
         ? row('Position', `${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)} ${chip('live', 'Live')}`)
-        : row('Position', `From the ${esc(route?.operator)} timetable; a delayed train will be elsewhere ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
+        : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
     </dl>`;
 }
