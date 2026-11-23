@@ -24,3 +24,5 @@ Each image shows BEFORE on the left and AFTER on the right, taken from the same 
    ![High lawn](lawn.jpg)
 11. **High Museum Peachtree turf**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 14:00.
    ![High turf](turf.jpg)
+12. **High Museum Peachtree lawn, manicured**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 14:00.
+   ![High manicured lawn](manicured.jpg)
