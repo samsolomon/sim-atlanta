@@ -4,6 +4,8 @@ import type { TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { wheatStreetId, wheatStreetTower } from './wheat-street-towers';
+import { bigBethelId, heritageId, sanctuaryShells } from './auburn-sanctuaries';
+import { auburnSigns } from './auburn-signs';
 import { irwinHouseFinish } from './irwin-houses';
 import { edgewoodFinish } from './edgewood-block';
 import { northBounds, northSouthJoin, northWestJoin } from './board-footprint';
@@ -45,7 +47,9 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   const grid = new GroundGrid(manifest, bytes);
   verifyNorth(west, south, grid);
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees)) throw new Error('Missing Sweet Auburn context');
-  const area = createDowntownTerrain(grid, context, context.trees, {
+  const ids=new Set(context.buildings.filter(b => (b.id===heritageId || b.id===bigBethelId)
+    && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
+  const area = createDowntownTerrain(grid, {...context,buildings:context.buildings.filter(b=>!ids.has(b.id))}, context.trees, {
     quality, bottomY, join: [northWestJoin, northSouthJoin],
     finishFor: b => b.id === wheatStreetId ? wheatStreetTower : edgewoodFinish(b) ?? irwinHouseFinish(b),
   });
@@ -54,8 +58,15 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
       kind: 'bridge' as const, cls: r.cls, name: r.name, sub: r.sub ?? undefined, pts: r.pts,
     }));
     const decks = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads, rail: [] } }, grid, area.groundAt);
-    area.group.add(decks.group);
-    return { ...area, dispose() { decks.dispose(); area.dispose(); } };
+    const signs=auburnSigns(ids,manifest.vertical.sceneZeroNavd88M);
+    const shells=sanctuaryShells(ids,manifest.vertical.sceneZeroNavd88M);
+    area.scenery.add(shells.group);
+    area.group.add(decks.group,signs.group);
+    return {
+      ...area,
+      setNight(n:number) { area.setNight(n); shells.setNight(n); signs.setNight(n); },
+      dispose() { signs.dispose(); shells.dispose(); decks.dispose(); area.dispose(); },
+    };
   } catch (error) {
     area.dispose();
     throw error;

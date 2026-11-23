@@ -84,7 +84,7 @@ it.each(['high', 'low'] as const)('keeps the Irwin porch decks above their slopi
   } finally { area.dispose(); }
 });
 
-it.each(['high', 'low'] as const)('puts both arms and the rooftop volumes of Wheat Street Towers on lidar heights on %s', async quality => {
+it.each(['high', 'low'] as const)('places the Wheat Street and Auburn church roofs on their lidar heights on %s', async quality => {
   const root = new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url);
   vi.stubGlobal('fetch', async (url: string) => {
     const name = url.split('/').pop()!;
@@ -103,6 +103,16 @@ it.each(['high', 'low'] as const)('puts both arms and the rooftop volumes of Whe
       const hit = ray.intersectObject(area.scenery,true)[0];
       expect(hit.point.y + area.grid.manifest.vertical.sceneZeroNavd88M).toBeCloseTo(navd, 2);
     }
+    for (const [x, z, navd] of [
+      [1608.45, -148, 320.1], [1625, -148, 312.8], // Heritage nave and education wing
+      [1027.175, -226, 315.65], [1017.85, -198.3, 315.85], [1031.7, -198.6, 336.72], // Big Bethel
+    ]) {
+      const ray = new Raycaster(new Vector3(x, 80, z), new Vector3(0, -1, 0));
+      const hit = ray.intersectObject(area.scenery, true)[0];
+      expect(hit.point.y + area.grid.manifest.vertical.sceneZeroNavd88M).toBeCloseTo(navd, 2);
+    }
+    const lightwell = new Raycaster(new Vector3(1617.7, 80, -146), new Vector3(0, -1, 0));
+    expect(lightwell.intersectObject(area.scenery, true).every(hit => hit.point.y < -18)).toBe(true);
     const courtyard = new Raycaster(new Vector3(1508,80,-146),new Vector3(0,-1,0));
     expect(courtyard.intersectObject(area.scenery,true).every(hit => hit.point.y < 10)).toBe(true);
   } finally { area.dispose(); }
