@@ -1492,6 +1492,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
+    treeDetail();
     const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
     freight?.update(sceneTime);
@@ -1551,6 +1552,39 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
   let firstFrame = false;
+  // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
+  // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
+  const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
+  let farTrees = false;
+  // Areas (and the downtown World) that already carry the current detail; a newly mounted or
+  // swapped area is caught here without allocating every frame.
+  let detailed = new WeakSet<object>();
+  function treeDetail() {
+    const d = camera.position.distanceTo(controls.target);
+    const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
+    if (far !== farTrees) { farTrees = far; detailed = new WeakSet(); }
+    // Limb shadows stay on until a moving-camera A16 run shows they cost something.
+    const detail = { farTrees: far };
+    let applied = false;
+    const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
+      if (!a || detailed.has(a)) return;
+      a.setDetail(detail);
+      detailed.add(a);
+      applied = true;
+    };
+    apply(world);
+    apply(terrain);
+    apply(east);
+    apply(north);
+    if (mosaic) {
+      for (const a of mosaic.areas.values()) apply(a);
+      for (const a of mosaic.patches.values()) apply(a);
+    }
+    if (!applied) return;
+    // Limbs cast shadows, and the low shadow map only redraws on camera steps.
+    renderer.shadowMap.needsUpdate = true;
+    if (perfOverrides.hide.size) perf.applyHide();
+  }
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
