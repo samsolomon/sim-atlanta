@@ -9,6 +9,7 @@ export async function assertBoardExterior() {
 
   // Capture the same scene, shadow map and materials that painted the City frame.
   const original = Scene.prototype.onBeforeRender;
+  const own = Object.hasOwn(Scene.prototype, 'onBeforeRender');
   let timer;
   try {
     const [renderer, scene] = await new Promise((resolve, reject) => {
@@ -21,7 +22,8 @@ export async function assertBoardExterior() {
     return compareExterior(renderer, scene);
   } finally {
     clearTimeout(timer);
-    Scene.prototype.onBeforeRender = original;
+    if (own) Scene.prototype.onBeforeRender = original;
+    else delete Scene.prototype.onBeforeRender;
   }
 }
 
