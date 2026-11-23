@@ -2059,6 +2059,10 @@ Three square openings finished in 6.28–6.45 seconds. Low daylight took 19.83 s
 
 Use HTTPS or a localhost proxy for smoke testing. On plain HTTP at a LAN IP, the browser withholds Web Crypto’s SHA-256 digest. Area verification then fails and City displays the available downtown board. Production uses HTTPS.
 
+### November 23, 2026 — Walking the rectangle from Five Points to Brookwood
+
+We photographed all 12 City areas from the same cameras at noon and 11 p.m. The five northern rows already contained 4,629 building pieces, yet just three had bespoke replacements and none had trees. The abrupt change at North Avenue survived a check of every shared ground edge. All 16 joins matched at 2.5 m intervals. The more revealing height problems lay inside the blocks. At Arts Center, one corner of the generic station roof sat 3.3 m below the uphill ground. The inventory gives the five detail teams matched views and a camera for each elevation measurement. [Upper Midtown in daylight](log/rectangle-detail/midtown-upper-day.jpg) · [Same camera at night](log/rectangle-detail/midtown-upper-night.jpg) · [Rectangle detail plan](rectangle-detail-plan.md)
+
 
 ## 2026-11-23 — One board from Five Points to Brookwood
 
