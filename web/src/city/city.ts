@@ -590,21 +590,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (terrain && transport) scene.add(terrain.group, transport.group);
   if (cut && grid) scene.add(cutFloor(grid));
   // Trim content to the board, retaining the ground, cut edge and walnut lip.
-  const edges = [
-    new THREE.Plane(new THREE.Vector3(1, 0, 0), -b.minX),
-    new THREE.Plane(new THREE.Vector3(-1, 0, 0), b.maxX),
-    new THREE.Plane(new THREE.Vector3(0, 0, 1), -b.minZ),
-    new THREE.Plane(new THREE.Vector3(0, 0, -1), b.maxZ),
+  const edgePlanes = (box: typeof b) => [
+    new THREE.Plane(new THREE.Vector3(1, 0, 0), -box.minX),
+    new THREE.Plane(new THREE.Vector3(-1, 0, 0), box.maxX),
+    new THREE.Plane(new THREE.Vector3(0, 0, 1), -box.minZ),
+    new THREE.Plane(new THREE.Vector3(0, 0, -1), box.maxZ),
   ];
+  const edges = edgePlanes(b);
+  const perimeter = mosaic && edgePlanes(mosaic.bounds);
+  function clipScenery(group: THREE.Object3D, planes: THREE.Plane[]) {
+    group.traverse(o => {
+      const material = (o as THREE.Mesh).material;
+      for (const mat of Array.isArray(material) ? material : material ? [material] : []) {
+        mat.clippingPlanes = planes;
+        mat.clipShadows = true;
+      }
+    });
+  }
   const clipped = world.group.children.slice(terrain ? 1 : 3);
   if (terrain && transport) clipped.push(terrain.scenery, transport.group);
-  for (const child of clipped) child.traverse((o) => {
-    const material = (o as THREE.Mesh).material;
-    for (const mat of Array.isArray(material) ? material : material ? [material] : []) {
-      mat.clippingPlanes = edges;
-      mat.clipShadows = true;
-    }
-  });
+  for (const child of clipped) clipScenery(child, edges);
   const colors = new Map(rf.routes.filter(r => r.mode === 'heavy_rail').map(r => [r.id, r.color]));
   // Trains clip to their own copy of the board edges, so the east area can open them alone.
   const trainEdges = edges.map(p => p.clone());
@@ -666,7 +671,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const table = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), tableMat);
   table.rotation.x = -Math.PI / 2;
   table.position.set(cx, (terrain?.bottomY ?? -18) - 6.05, cz);
-  table.receiveShadow = true;
+  table.name = 'Studio table';
+  // The plinth ends the model. Keep distant city shadows off the studio backdrop.
+  table.receiveShadow = false;
   scene.add(table);
 
   const hemi = new THREE.HemisphereLight('#e4ecf7', '#a48d72', 1.5);
@@ -721,6 +728,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     return square!.mosaicPlinth(Array.from(mosaic!.areas.values(), a => a.bounds), terrain!.bottomY);
   }
   function addArea(area: NonNullable<typeof east>) {
+    // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
+    if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
     scenery.push(area.group);
     area.setSeason(local(new Date(options.clockMs())).doy);

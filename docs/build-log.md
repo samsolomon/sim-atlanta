@@ -2146,3 +2146,9 @@ The 126 m outline at 1180 Peachtree contains both a lower curved wing and a narr
 ### 2026-11-23 — From North Avenue to the Flats
 
 The west stand at Bobby Dodd climbs a 17.7 m grade difference. One generic roof had disappeared 5.65 m into the hillside. Its replacement has two seating decks above the field with a press box at the high side. Across the campus path, the 40-vertex Evans Administration Building now carries the four illuminated TECH signs under a slate spire. [Terrain readings, references and eight City views](tech-campus.md)
+
+## 2026-11-23 — The shadow beyond the west edge
+
+At 08:50 Eastern the Midtown skyline appeared a second time outside the west edge. The studio table was receiving the directional shadow map, leaving dark shapes detached from the buildings that cast them. Turning off shadow reception on the table cleared the silhouettes while retaining shadows on the terrain and plinth. The new canopy also had three sampled pixels of foliage beyond the plinth. Scenery now clips to the four outer edges of the mosaic, allowing crowns to cross interior row joins. [Production and corrected morning camera](log/ui/city-perimeter/morning.jpg)
+
+The browser regression renders the full scene from overhead and compares the exterior to the table alone. At 2 m per pixel, the 200 m band around all four edges had 26,737 affected pixels in the original shadow comparison. The staged detail batch returned zero at both tiers. With Chrome and the staged Midtown data present, the test runs under `pnpm test`. The production review camera is `/?view=city&q=high&t=2026-11-23T08:50:00-05:00&speed=0`. This renderer change requires a web rebuild. The accompanying canopy release also requires `pnpm data:midtown`.
