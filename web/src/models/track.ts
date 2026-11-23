@@ -18,18 +18,21 @@ const box = (w: number, [y0, y1]: readonly [number, number], l: number, color: s
   return mesh;
 };
 
-export function labTrack() {
+export function labTrack(length = 60) {
   const track = new THREE.Group();
-  track.add(box(3.6, LEVELS.ballast, 60, '#8d877d'));
+  track.add(box(3.6, LEVELS.ballast, length, '#8d877d'));
   for (const x of [-0.72, 0.72]) {
-    const rail = box(0.1, LEVELS.rail, 60, '#6b625b');
+    const rail = box(0.1, LEVELS.rail, length, '#6b625b');
     rail.position.x = x;
     track.add(rail);
   }
-  for (let z = -30; z < 30; z += 0.7) {
-    const tie = box(2.6, LEVELS.sleeper, 0.26, '#9b968c');
-    tie.position.z = z;
-    track.add(tie);
+  const tie = box(2.6, LEVELS.sleeper, 0.26, '#9b968c');
+  const count = Math.floor(length / .7);
+  const sleepers = new THREE.InstancedMesh(tie.geometry, tie.material, count);
+  const matrix = new THREE.Matrix4();
+  for (let i=0; i<count; i++) {
+    sleepers.setMatrixAt(i, matrix.makeTranslation(0,tie.position.y,(i-(count-1)/2)*.7));
   }
+  track.add(sleepers);
   return track;
 }

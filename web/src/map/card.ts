@@ -40,8 +40,7 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
   let model: string | undefined;
   if (city && vt && route?.mode === 'heavy_rail') model = `${vt.typicalUnits} × Stadler CQ400`;
   if (city && t.routeId === 'amtrak:route:Crescent') {
-    const coaches = Math.max(0, Math.round(t.lengthM.value / 26) - 1);
-    model = coaches ? `Locomotive and ${coaches} ${coaches === 1 ? 'coach' : 'coaches'}` : 'Locomotive';
+    model = 'Two locomotives, three coaches, café, diner, sleeper and baggage-dorm';
   }
   const units = model ?? (vt ? `${vt.typicalUnits} × ${vt.name}` : '');
   const live = t.s.tier === 'live';
