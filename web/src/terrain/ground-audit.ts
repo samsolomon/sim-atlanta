@@ -28,6 +28,8 @@ export interface AuditOptions {
   layer?: (path: string[], mesh: THREE.Mesh) => string | null;
   /** Vertex-colour names that split one merged mesh into layers, such as tread or mulch. */
   colors?: Record<string, string>;
+  /** Named, known sites to leave out (handed to another owner), by layer and position. */
+  exclude?: (layer: string, x: number, z: number) => boolean;
 }
 
 export interface Penetration { layer: string; board: string; x: number; y: number; z: number; depth: number; path: string }
@@ -73,6 +75,7 @@ export function cityLayer(path: string[], mesh: THREE.Mesh): string | null {
   if (curated) return 'curated landscape';
   if (names.includes('Decks and embedded rails')) return 'streets';
   if (names.includes('Freight track')) return 'rail ballast';
+  if (names.includes('Atlanta Streetcar track')) return 'streetcar track';
   const own = defaultLayer(path, mesh);
   return own && !own.startsWith('unnamed') ? 'landmark · ' + own : own;
 }
@@ -161,7 +164,7 @@ export function groundAudit(root: THREE.Object3D, boards: AuditBoard[], o: Audit
         const y = (w * a.y + u * b.y + v * c.y) * (1 - inset) + cy * inset;
         const z = (w * a.z + u * b.z + v * c.z) * (1 - inset) + cz * inset;
         const t = terrainAt(x, z);
-        if (!t) continue;
+        if (!t || o.exclude?.(layer, x, z)) continue;
         const [board, ty] = t;
         const key = layer + '\u0000' + board.id;
         let r = results.get(key);

@@ -349,7 +349,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           const drawn = (terrainGround as DrapeGround).triangles;
           if (textured && !bridge && drawn && run !== cut?.freight) {
             // Ground ballast follows the drawn terrain between its 2 m stations, so a
-            // crease in the bank can't show through it (terrain/drape.ts).
+            // crease in the bank can't show through it (terrain/drape.ts). The raise is
+            // capped at 25 cm: a graded cut sits below its bank on purpose, and the
+            // freight treads (and trains) keep the station heights.
             const corners = [[a, 0, lastS], [b, 1, lastS], [c, 1, s], [d, 0, s]] as const;
             for (const [i, j, k] of [[0, 1, 2], [0, 2, 3]]) {
               const tri = [corners[i], corners[j], corners[k]];
@@ -357,7 +359,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
                 freight.tri(vs[0].slice(0, 3), vs[1].slice(0, 3), vs[2].slice(0, 3), color);
                 for (const v of vs) uv.push(v[3] * tri[0][1] + v[4] * tri[1][1] + v[5] * tri[2][1],
                   (v[3] * tri[0][2] + v[4] * tri[1][2] + v[5] * tri[2][2]) / .8);
-              });
+              }, .25);
             }
           } else {
             (textured ? freight : structures).quad(a, b, c, d, color);

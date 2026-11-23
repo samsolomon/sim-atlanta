@@ -9,6 +9,9 @@
  * to at least `terrain + lift`. On each piece both the surface and the terrain
  * are planar, so the linear interpolation of that max stays at or above both
  * everywhere: nothing can poke through, and a raised surface never moves down.
+ * `maxRaise` bounds the lift to crease-sized bulges for surfaces whose height is
+ * deliberate (a graded rail cut); deeper sites keep their height and stay visible
+ * to the ground audit.
  */
 
 /** Drawn terrain triangles, as GroundSurface exposes them. */
@@ -32,7 +35,7 @@ type V = readonly number[];
  * a void or off the board, abc is emitted unchanged: there is no terrain to clear.
  */
 export function drapeTriangle(src: TriangleSource, a: V, b: V, c: V, lift: number,
-  emit: (p: DrapedVertex, q: DrapedVertex, r: DrapedVertex) => void) {
+  emit: (p: DrapedVertex, q: DrapedVertex, r: DrapedVertex) => void, maxRaise = Infinity) {
   const area = (b[0] - a[0]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[0] - a[0]);
   const whole = () => emit([a[0], a[1], a[2], 1, 0, 0], [b[0], b[1], b[2], 0, 1, 0], [c[0], c[1], c[2], 0, 0, 1]);
   if (Math.abs(area) < 1e-9) { whole(); return; }
@@ -79,7 +82,7 @@ export function drapeTriangle(src: TriangleSource, a: V, b: V, c: V, lift: numbe
     };
     pieces.push(poly.map(([x, z]) => {
       const w = weights(x, z), own = w[0] * a[1] + w[1] * b[1] + w[2] * c[1];
-      return [x, Math.max(own, terrain(x, z) + lift), z, ...w];
+      return [x, Math.min(own + maxRaise, Math.max(own, terrain(x, z) + lift)), z, ...w];
     }));
   });
   // Shared edges and float rounding leave slivers; demand near-complete cover.
