@@ -158,6 +158,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
         const decks = createSurfaceTransport(base, grid, area.groundAt);
         transports.push(decks);
+        area.carve(decks.cutting);
         area.group.add(decks.group);
         if (stationRoad && separate.length) {
           const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);

@@ -261,6 +261,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     /** Drawn terrain triangles only, without bridge approaches. */
     terrainAt: bare,
+    /** Lower the drawn terrain under hard surfaces placed after the board was built,
+     * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
+    carve(yields: readonly GroundYield[]) { if (yields.length) mesh.carve(yields); },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); },

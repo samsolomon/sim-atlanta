@@ -24,12 +24,11 @@ afterEach(() => vi.unstubAllGlobals());
  */
 const HELD = ['rail ballast', 'ground cover', 'landscape primitives:tread', 'landscape primitives:stone'];
 /**
- * Graded freight cuts, where the track sits below its bank on purpose. The ballast
- * drape lifts at most 25 cm, so these need the bank carved by the rail owner
- * (handed off in #282): south-band west of the Gulch, and midtown-south's cut.
+ * Graded cuttings (terrain/cutting.ts) now carve the bank under ground ballast. One
+ * site remains: on midtown-south the ballast drops about 6 m over 6 m where the DEM
+ * dips to a road under the tracks. That needs a rail structure or profile, not a cut.
  */
 const GRADED_CUTS = [
-  { minX: -1020, maxX: -870, minZ: 870, maxZ: 980 },
   { minX: -840, maxX: -760, minZ: -1935, maxZ: -1820 },
 ];
 const exclude = (layer: string, x: number, z: number) => layer === 'rail ballast' &&

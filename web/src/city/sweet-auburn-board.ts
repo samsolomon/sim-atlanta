@@ -61,6 +61,7 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   });
   try {
     const decks = createSurfaceTransport(city, grid, area.groundAt);
+    area.carve(decks.cutting);
     const walls = leonardTateWalls(city, new GroundGrid(manifest, bytes), grid);
     const signs=auburnSigns(ids,manifest.vertical.sceneZeroNavd88M);
     const shells=sanctuaryShells(ids,manifest.vertical.sceneZeroNavd88M);

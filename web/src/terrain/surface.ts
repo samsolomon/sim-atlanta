@@ -19,6 +19,9 @@ export type TerrainQuality = 'low' | 'high';
 export interface GroundYield {
   ring: readonly (readonly [number, number])[];
   floor(x: number, z: number): number;
+  /** Ring edges (edge k runs from ring[k] to ring[k + 1]) shared with another yield of
+   * the same floor. They get no skirt, so adjacent yields carve one surface without fins. */
+  open?: readonly boolean[];
 }
 
 function yieldPlanes(y: GroundYield) {
@@ -35,7 +38,7 @@ function yieldPlanes(y: GroundYield) {
     return (x: number, _y: number, z: number) => sign * ((bx - ax) * (z - az) - (bz - az) * (x - ax)) / len;
   });
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
-  return { planes, floor: y.floor, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+  return { planes, floor: y.floor, open: y.open, minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
 }
 
 // Each block is at most 2 × 2 source cells. High keeps all four; low merges flat
@@ -180,9 +183,9 @@ export class GroundSurface {
           for (let k = 0; k < inside.length; k++) {
             const n = (k + 1) % inside.length, p = inside[k], q = inside[n];
             if (low[k] === p && low[n] === q) continue;
-            const onEdge = y.planes.some(plane =>
+            const edge = y.planes.findIndex(plane =>
               Math.abs(plane(pos[3*p], 0, pos[3*p+2])) < 1e-6 && Math.abs(plane(pos[3*q], 0, pos[3*q+2])) < 1e-6);
-            if (!onEdge) continue;
+            if (edge < 0 || y.open?.[edge]) continue;
             emit([p, q, low[n], low[k]].filter((v, i, all) => all.indexOf(v) === i));
             emit([low[k], low[n], q, p].filter((v, i, all) => all.indexOf(v) === i));
           }

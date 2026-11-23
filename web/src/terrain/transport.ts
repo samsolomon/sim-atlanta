@@ -1,7 +1,9 @@
 import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
+import { cuttingYields, type BallastQuad } from './cutting';
 import { drapeTriangle, type DrapeGround } from './drape';
+import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
 import * as THREE from 'three';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
@@ -25,6 +27,9 @@ export interface SurfaceTransport {
   /** Scene y on the specified road deck, or null outside its visible tread. */
   deckAt(x: number, z: number, run: TransportRun): number | null;
   clearOfFreight(x: number, z: number): boolean;
+  /** Graded cuttings for ground ballast the terrain stands over. Carve the board with them
+   * (`area.carve`) once the transport is built: they only lower the terrain. */
+  cutting: GroundYield[];
   group: THREE.Group;
   setNight?(factor: number): void;
   structuralTier: 'illustrative';
@@ -69,6 +74,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
+  const ballastRuns: BallastQuad[][] = [];
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
   const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
@@ -293,6 +299,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }) : [];
       let prev: number[][] | null = null, lastS = 0;
       let tread: FreightTreadPoint[] | undefined;
+      let ballast: BallastQuad[] | null = null;
       const range = textured ? run.freightS : undefined;
       function midpoint(s: number, a: number[], b: number[]) {
         const distance = range![0] + (range![1] - range![0]) * s / line.length;
@@ -331,7 +338,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           if (textured) y = freightGrade(x, z, y);
           section.push([x, y + lift, z]);
         }
-        if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; continue; }
+        if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; ballast = null; continue; }
         if (range && range.every(Number.isFinite)) {
           if (!prev) {
             tread = [];
@@ -347,6 +354,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           const drawn = (terrainGround as DrapeGround).triangles;
+          if (textured && !bridge) {
+            if (!ballast) ballastRuns.push(ballast = []);
+            ballast.push([a, b, c, d]);
+          }
           if (textured && !bridge && drawn && run !== cut?.freight) {
             // Ground ballast follows the drawn terrain between its 2 m stations, so a
             // crease in the bank can't show through it (terrain/drape.ts). The raise is
@@ -523,7 +534,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     group.add(mesh);
     meshes.push(mesh);
   }
-  return { group, freightTreads, deckAt, clearOfFreight, structuralTier: 'illustrative',
+  const { stepM } = grid.manifest;
+  const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z),
+    { minX: bounds.minX + stepM + .01, maxX: bounds.maxX - stepM - .01, minZ: bounds.minZ + stepM + .01, maxZ: bounds.maxZ - stepM - .01 });
+  return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
     setNight: seventeenth.pos.length ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
