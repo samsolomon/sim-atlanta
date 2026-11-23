@@ -56,6 +56,7 @@ import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
 import { createOneParkTower } from './one-park-tower';
 import { createPeachtreeOffices } from './peachtree-offices';
+import { createWilliamOliver } from './william-oliver';
 import { createOmniAtlanta } from './omni-atlanta';
 import { createFivePointsPlaza } from './five-points-plaza';
 import { createTwoPeachtree } from './two-peachtree';
@@ -255,6 +256,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let footballHall: ReturnType<typeof createFootballHall> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
+  let williamOliver: ReturnType<typeof createWilliamOliver> = null;
   let omniAtlanta: ReturnType<typeof createOmniAtlanta> = null;
   let fivePointsPlaza: ReturnType<typeof createFivePointsPlaza> = null;
   let twoPeachtree: ReturnType<typeof createTwoPeachtree> = null;
@@ -327,8 +329,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHealey = healey?.buildings ?? towerSite;
         peachtreeOffices = createPeachtreeOffices(afterHealey, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterHealey;
-        omniAtlanta = createOmniAtlanta(afterPeachtreeOffices, ground);
-        const afterOmniAtlanta = omniAtlanta?.buildings ?? afterPeachtreeOffices;
+        williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
+        const afterWilliamOliver = williamOliver?.buildings ?? afterPeachtreeOffices;
+        omniAtlanta = createOmniAtlanta(afterWilliamOliver, ground);
+        const afterOmniAtlanta = omniAtlanta?.buildings ?? afterWilliamOliver;
         fivePointsPlaza = createFivePointsPlaza(afterOmniAtlanta, ground);
         const afterFivePointsPlaza = fivePointsPlaza?.buildings ?? afterOmniAtlanta;
         twoPeachtree = createTwoPeachtree(afterFivePointsPlaza, ground);
@@ -392,6 +396,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (footballHall) world.group.add(footballHall.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
+        if (williamOliver) world.group.add(williamOliver.group);
         if (omniAtlanta) world.group.add(omniAtlanta.group);
         if (fivePointsPlaza) world.group.add(fivePointsPlaza.group);
         if (twoPeachtree) world.group.add(twoPeachtree.group);
@@ -944,6 +949,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     footballHall?.setNight(night);
     oneParkTower?.setNight(night);
     peachtreeOffices?.setNight(night);
+    williamOliver?.setNight(night);
     omniAtlanta?.setNight(night);
     fivePointsPlaza?.setNight(night);
     twoPeachtree?.setNight(night);
