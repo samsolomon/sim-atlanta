@@ -296,9 +296,9 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
 
-**Sam's picks.** A, branch-mass cards, for the oaks and generally for broadleaves (23 Nov). C4 for the ginkgo.
+**Sam's picks (23 Nov).** A for willow oak, water oak, tulip poplar and red maple, and generally for broadleaves. C4 for the ginkgo. Loblolly pine is being reworked (below). Sweetgum awaits his pick.
 
 Each species after the ginkgo gets two or three rendering options in the lab (`/models.html?v=willow-oak&variant=all`) for Sam to pick from. **City draws none of them until he does.** The lab's Trees section lists each species, its options with Compare all, and **All species** (`?v=lineup&variant=default`), every species at mature size side by side in one season. "Default" is Sam's pick where he has made one (ginkgo C4), otherwise a species' option A.
 
@@ -405,14 +405,20 @@ The tree-species agent made the ink change: foliage silhouettes are inked only o
 | Option A | High: luminance / saturation | Low |
 |---|---|---|
 | Generic tree (baseline) | 0.248 / 0.806 | 0.239 / 0.833 |
-| Willow oak | 0.250 / 0.781 | 0.232 / 0.825 |
-| Water oak | 0.239 / 0.823 | 0.242 / 0.817 |
-| Tulip poplar | 0.244 / 0.815 | 0.231 / 0.816 |
-| Loblolly pine | 0.152 / 0.949 | 0.180 / 0.885 |
-| Red maple | 0.241 / 0.803 | 0.229 / 0.809 |
-| Sweetgum | 0.237 / 0.829 | 0.238 / 0.829 |
+| Willow oak | 0.256 / 0.775 | 0.233 / 0.803 |
+| Water oak | 0.239 / 0.826 | 0.249 / 0.811 |
+| Tulip poplar | 0.240 / 0.819 | 0.234 / 0.820 |
+| Red maple | 0.243 / 0.801 | 0.241 / 0.795 |
+| Sweetgum | 0.255 / 0.820 | 0.240 / 0.839 |
+| Southern magnolia | 0.234 / 0.832 | 0.218 / 0.836 |
+| Crape myrtle | 0.247 / 0.789 | 0.228 / 0.818 |
+| Loblolly pine (tiered) | 0.211 / 0.929 | 0.201 / 0.924 |
 
-All broadleaves are within 5% of the baseline luminance. The loblolly follows City's darker pine green (`#355f3c`), whose sRGB luminance is about two thirds of the broadleaf green's, so its expected crown luminance is about 0.165. The grade pushes such dark greens to high saturation.
+**A measurement bug, fixed.** When the edge-on fade went in, the crown mask did not apply it, so faded cards counted the bright background behind them as crown. Every card crown then looked about 20–30% brighter than it was, and I darkened palettes to compensate. The mask now runs the same visibility patch as the material, edge-on fade included, so it counts only drawn leaves. The palettes were reset to their pre-bias values and re-measured. A side lesson: screen-space derivatives (`dFdx`) are undefined after a `discard`, so the shader takes the face normal first.
+
+Re-measured after the crown-top, edge-on and envelope fixes. Taking out the dark edge-on slivers brightened every card crown, so each palette was retuned.
+
+Every broadleaf is within 5% of the baseline luminance except the southern magnolia, which is 6–9% darker by design (City's magnolia green is a dark `#2f5c3a`). The tiered loblolly sits between City's dark pine green and the broadleaves, lighter on its sunlit tops as Sam asked, and the grade pushes dark greens to high saturation.
 
 ### Loblolly pine
 
@@ -503,6 +509,68 @@ The [Athens grove](https://commons.wikimedia.org/wiki/File:Olympic_Grove_of_12_R
 Each tree's two tones run from yellow-orange to purple, mixed per leaf cluster.
 
 **Not drawn yet:** the dark gumballs that hang all winter. They are a candidate near-range extra under the same caps as leaf tips.
+
+### Crown tops, leaders, edge-on cards and outliers (all species)
+
+Sam's sweetgum and lineup review found four problems, fixed once in `broadleaf.ts` and `foliage-kit.ts`:
+- **A full crown top.** The top mass is now a crowning tuft centred over the leader, just under the crown top and larger than the branch masses (smaller on tiered and pyramidal crowns). It used to sit off-axis at a random angle, leaving the leader as a spike.
+- **The leader stays inside.** It ends inside the crowning tuft, below its centre, and tapers to 12% of the trunk, so it never pokes through the crown.
+- **No edge-on streaks.** A card seen edge-on fades out: alpha falls with |face normal · view| below about 0.35, using the true face normal, not the crown normal used for lighting. The fade sits in the shared visibility patch, so the ink's foliage mask and `crownStats` see exactly the leaves that are drawn.
+- **No floating leaves.** Clusters are pulled in so their outer edge stays within the crown envelope plus 6%, and near leaf tips sit within each cluster's card extent.
+
+[Sweetgum before and after](log/ui/tree-species/fix-sweetgum-before-after.jpg)
+
+### Loblolly pine rework
+
+Sam asked for "less dense, more layered" (23 Nov). His references were an illustration with distinct horizontal tufted tiers and an open-grown lawn loblolly: a clean trunk to about 40%, long, slightly ascending, fairly bare limbs ending in separate needle clumps, loose layers with sky between, and an irregular open top. Option A is now:
+- **Tiered:** separate needle tufts at the ends of their own visible limbs, in four loose horizontal tiers (three at low detail) evenly spaced in height. The `Habit.tiers` setting gives 3, 3, 3 and 2 tufts, with the upper tiers fuller.
+- **Sparser:** 22 cards against 26 before, on 11 tufts.
+- **Lit like Sam's photo:** each tuft's tone follows how far it faces up (`toneByLight`), yellow-green on sunlit tops over a deeper green underside.
+
+Options B (needle stars) and C (tiered pads) share the tiers. Crown luminance is now 0.211 / 0.201 (high / low), lighter than City's dark pine green, as Sam asked.
+
+### Bloom
+
+Flowers and bracts are small chips on the outer, upper side of the leaf clusters, painted with the atlas so they read as florets.
+- Each chip has a bloom order. A tree's bloom share, from its calendar, opens them a few at a time.
+- Chips ignore the leaves, so dogwood bracts can open on bare twigs.
+- A species can carry several bloom colours, and each tree takes one by its seed (crape myrtle).
+- Chips face outward rather than skyward, so they are never edge-on from the street.
+- Chip sizes are exaggerated, about 1–1.5 m, so a crown in flower reads at City distances.
+
+### Southern magnolia
+
+`web/src/trees/magnolia-crape.ts`. "A dense (more open in the shade), dark green pyramidal shape, the lower branches often bending to the ground" ([UF ST371](https://ask.ifas.ufl.edu/publication/ST371/pdf)). The leaves are leathery and glossy, 13–25 cm long, with rusty undersides. Bark is grey and smooth, developing scaly plates with age. The crown is built as dense tiers of branch masses (`Habit.tiers` 3, 3, 3, 2), down to the ground and shrinking toward the top (`taper` 0.4). Sunlit tops are bright over a near-black interior (`toneByLight`).
+
+**Options:** A · glossy branch-mass cards with flowers; B · cored masses; C · faceted clusters. All stay within 196 / 156.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–6 | 1.2–3.5 | 0.04–0.15 | 4.5 / 2.2 / 0.08 | GT under 15 cm DBH: median 5.5 m by 2.9 m |
+| Young | 5–12 | 2.5–6.5 | 0.15–0.3 | 9.1 / 4.4 / 0.22 | GT 15–30 cm medians |
+| Mature | 12–24.4 | 7–15.2 | 0.3–0.91 | 15.7 / 11.2 / 0.7 | NC State and UF 18.3–24.4 m by 9.1–15.2 m; GT 30–91 cm medians 12.6–15.7 m by 7.4–11.2 m |
+| Specimen | 19.9–24.5 | 17.1–20.1 | 0.9–1.38 | 23.8 / 19.8 / 1.37 | Champions: 2021, 23.8 × 19.8 m; Oakland Cemetery (2012), 19.9 × 20.1 m |
+
+GT holds 433 active magnolias. Their median crown base is only 0.9–2.6 m, and 379 have one stem.
+
+**Calendar.** Evergreen, with "no color change" (UF). The GA USA-NPN medians are thin (3–4 tree-years): young leaves Apr 13–28, open flowers May 22 to Jun 6, and red seeds in October. NC State adds "sparse continued flowering throughout the summer". The lab opens the creamy-white flowers (chips about 1.5 m across, exaggerated so they read) from 12 May, peaks on 28 May, and thins through June, with a few into July.
+
+**Brightness.** Option A sits 6–9% below the generic broadleaf. City's own magnolia colour is a dark `#2f5c3a`, so this is by design.
+
+### Crape myrtle
+
+`web/src/trees/magnolia-crape.ts`. Multi-stem: GT's 861 crape myrtles have a median of 4 stems, p90 6. The vase crown has bark that is "smooth, tan orange, and flakes off in patches to reveal shades of brown, green, and reddish brown" ([UF ST342](https://ask.ifas.ufl.edu/publication/ST342/pdf)). Each stem leans out from the base into its own branch mass (`Habit.stems`: 4, or 3 for saplings and 5 for specimens). The stems alternate tan and grey-brown.
+
+**Bloom.** Panicles 15–46 cm long in white, pink, red or purple (NC State), July to September. Each tree takes one of four colours by its seed. No source says which colours are most common in Atlanta, so the four are equally likely. Topped "crape murder" forms are not drawn.
+
+| Class | Height (m) | Spread (m) | Largest stem (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 1.8–4.5 | 1–4 | 0.025–0.08 | 3 / 2 / 0.05 | NC State 1.8–9.1 m overall; GT under 15 cm equivalent DBH: median 4.3 m |
+| Young | 4.5–7 | 3–6 | 0.06–0.15 | 5.5 / 4.5 / 0.1 | GT 15–30 cm medians: 7.0 m by 5.0 m |
+| Mature | 6–9.8 | 4.3–7.6 | 0.1–0.3 | 7.3 / 5.8 / 0.18 | UF 3.0–9.1 m by 4.6–7.6 m; GT 30–61 cm medians: 7.3 m by 5.8 m |
+| Specimen | 8–10.4 | 6–9.1 | 0.2–0.42 | 10.1 / 7.8 / 0.3 | Champion: Georgia Beer Garden, 420 Edgewood Ave, 10.1 × 7.8 m (2018) |
+
+**Calendar.** Crape myrtle is not in USA-NPN. Bloom runs "from July to September" (NC State), and the fall colour is "yellow, orange, or red". **Inferred:** leaf-out in April, full bloom in late July, colour in late October, bare by mid-November with the mottled stems showing.
 
 ### Pair 2 gaps
 

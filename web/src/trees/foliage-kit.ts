@@ -223,15 +223,16 @@ export function shade(depth: number, up: number) {
 /** Collects triangles with colour, UV and the per-mass tone and drop attributes. */
 export class FoliageBuilder {
   pos: number[] = []; col: number[] = []; uv: number[] = []; mass: number[] = [];
-  tri(p: THREE.Vector3[], c: THREE.Color, u: Unit, uvs: [number, number][] = [cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5)]) {
-    p.forEach((v, i) => { this.pos.push(v.x, v.y, v.z); this.col.push(c.r, c.g, c.b); this.uv.push(...uvs[i]); this.mass.push(u.tone, u.drop); });
+  /** `bloom` > 0 marks a flower chip: its bloom order (0–1], shown while the tree's bloom share is at least that. */
+  tri(p: THREE.Vector3[], c: THREE.Color, u: Unit, uvs: [number, number][] = [cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5)], bloom = 0) {
+    p.forEach((v, i) => { this.pos.push(v.x, v.y, v.z); this.col.push(c.r, c.g, c.b); this.uv.push(...uvs[i]); this.mass.push(u.tone, u.drop, bloom); });
   }
   geometry() {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
-    g.setAttribute('aMass', new THREE.Float32BufferAttribute(this.mass, 2));
+    g.setAttribute('aMass', new THREE.Float32BufferAttribute(this.mass, 3));
     g.computeVertexNormals();
     return g;
   }
@@ -328,24 +329,38 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
 /**
  * Lambert foliage with two tones per tree: instance colour is tone A, `aToneB` tone B, and each
  * leaf mass mixes them by its own `aMass.x`. A mass whose drop order `aMass.y` is above the
- * tree's leaf share `aLeaves` collapses to nothing.
+ * tree's leaf share `aLeaves` collapses to nothing. Flower chips (`aMass.z` > 0, their bloom
+ * order) ignore the leaves: they show in the instance's bloom colour `aBloom.rgb` while its
+ * bloom share `aBloom.a` is at least their order.
  */
-export function twoToneFoliage(opts: THREE.MeshLambertMaterialParameters) {
+export function twoToneFoliage({ bloomWash = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   const textured = !!opts.map;
   // Which leaves exist: shared with the ink's foliage mask (userData.maskShader), so the mask
   // traces only the leaves actually drawn.
   const visibility = (sh: { vertexShader: string; fragmentShader: string }) => {
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec2 aMass;\nattribute float aLeaves;\nvarying float vLeaves;')
-      .replace('#include <begin_vertex>', textured
-        ? '#include <begin_vertex>\nvLeaves = aLeaves;'
-        : '#include <begin_vertex>\nvLeaves = aLeaves;\nif (aMass.y > aLeaves) transformed = vec3(0.0);');
+      .replace('#include <common>', '#include <common>\nattribute vec3 aMass;\nattribute float aLeaves;\nattribute vec4 aBloom;\nvarying float vLeaves;\nvarying float vChip;\nvarying vec3 vFacePos;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvFacePos = mvPosition.xyz;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+vLeaves = aLeaves;
+vChip = aMass.z > 0.0 ? 1.0 : 0.0;
+if (aMass.z > 0.0) { if (aMass.z > aBloom.a) transformed = vec3(0.0); }
+${textured ? '' : 'else if (aMass.y > aLeaves) transformed = vec3(0.0);'}`);
     // Textured cards thin leaf by leaf: each painted leaf's alpha (0.56–1) is its drop order.
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vLeaves;')
+      .replace('#include <common>', '#include <common>\nvarying float vLeaves;\nvarying float vChip;\nvarying vec3 vFacePos;')
       .replace('#include <alphatest_fragment>', textured
-        ? '#include <alphatest_fragment>\nif (diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.005) discard;'
+        // Leaves thin by drop order and vanish on a bare tree (flowers stay); a card seen
+        // edge-on is a streak, so it fades out at grazing angles (true face normal). The ink
+        // mask runs this same patch, so it outlines exactly what is drawn. Derivatives come
+        // first: they are undefined after a discard.
+        // The fade lowers alpha before the alpha test and the drop-order cut, as it always has
+        // (it also clears dark, steeply angled cards from the crown's interior).
+        ? `float facing = abs(dot(normalize(cross(dFdx(vFacePos), dFdy(vFacePos))), normalize(vFacePos)));
+if (vChip < 0.5) diffuseColor.a *= smoothstep(0.12, 0.35, facing);
+#include <alphatest_fragment>
+if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.005)) discard;`
         : '#include <alphatest_fragment>');
   };
   m.onBeforeCompile = (sh) => {
@@ -366,13 +381,62 @@ export function twoToneFoliage(opts: THREE.MeshLambertMaterialParameters) {
       .replace('#include <common>', '#include <common>\nattribute vec3 aToneB;')
       .replace('#include <color_vertex>', `#include <color_vertex>
 #ifdef USE_INSTANCING_COLOR
-  vColor.xyz = color.xyz * mix(instanceColor.xyz, aToneB, aMass.x);
+  // Flower chips take the bloom colour; in flower, the leaf clusters with the highest tone turn
+  // wholly to it too (bloomWash), as patches of blossom rather than a brown mix.
+  bool blossom = aMass.z > 0.0 || aMass.x > 1.0 - ${bloomWash.toFixed(3)} * aBloom.a;
+  vColor.xyz = color.xyz * (blossom ? aBloom.rgb : mix(instanceColor.xyz, aToneB, aMass.x));
 #endif`);
   };
-  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '');
+  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash;
   m.userData.maskShader = visibility;
   m.userData.maskKey = 'species-look' + (textured ? ':map' : '');
   return m;
+}
+
+/**
+ * Flowers or bracts: `total` small two-triangle chips spread over the outer, upper sides of
+ * the leaf clusters, `size` metres across. Each takes a bloom order, so a tree's bloom share
+ * opens them a few at a time, whatever the leaves are doing (dogwood bracts before leaves).
+ */
+export function blooms(b: FoliageBuilder, units: Unit[], total: number, seed: number, size = 0.5) {
+  const r = rng(seed);
+  const outer = units.filter(u => u.depth >= 0.45);
+  const pool = outer.length ? outer : units;
+  for (let k = 0; k < total; k++) {
+    const u = pool[k % pool.length];
+    const n = new THREE.Vector3(...u.n);
+    {
+      const dir = new THREE.Vector3(r() - 0.5, r() * 0.6, r() - 0.5).normalize().addScaledVector(n, 1.3).normalize();
+      // On the cluster's surface, just proud of its cards, so flowers read over the leaves.
+      const c = new THREE.Vector3(...u.c).addScaledVector(dir, u.r * (1.25 + r() * 0.15));
+      // Face outward and a little up, not skyward: seen from the street a flower is never
+      // edge-on (edge-on cards fade out).
+      const face = new THREE.Vector3(dir.x, 0.35, dir.z);
+      if (face.lengthSq() < 0.2) face.set(Math.cos(k * 2.4), 0.35, Math.sin(k * 2.4));
+      face.normalize();
+      const t1 = new THREE.Vector3(0, 1, 0).cross(face).normalize().applyAxisAngle(face, r() * Math.PI);
+      const t2 = new THREE.Vector3().crossVectors(face, t1).normalize();
+      const s = size * (0.8 + r() * 0.4) / 2;
+      const p = [c.clone().addScaledVector(t1, s), c.clone().addScaledVector(t2, s), c.clone().addScaledVector(t1, -s), c.clone().addScaledVector(t2, -s)];
+      const order = 0.05 + 0.95 * r();
+      // Painted with the atlas's coarse leaf cell, so a truss reads as florets, not a square.
+      const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(0, x, y));
+      b.tri([p[0], p[1], p[2]], WHITE, u, [uv[0], uv[1], uv[2]], order);
+      b.tri([p[0], p[2], p[3]], WHITE, u, [uv[0], uv[2], uv[3]], order);
+    }
+  }
+}
+
+/**
+ * A shadow-pass material for a twoToneFoliage material: the same map, alpha test and
+ * visibility patch, so shadows fall only from leaves and flowers that are drawn.
+ */
+export function foliageDepth(src: THREE.MeshLambertMaterial) {
+  const d = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: src.map, alphaTest: src.alphaTest, side: src.side });
+  const patch = src.userData.maskShader as ((sh: THREE.WebGLProgramParametersWithUniforms) => void) | undefined;
+  if (patch) d.onBeforeCompile = sh => patch(sh);
+  d.customProgramCacheKey = () => 'foliage-depth:' + (src.userData.maskKey ?? '');
+  return d;
 }
 
 /** Leaf length and width in metres for near leaf tips, by leaf shape. */
@@ -393,7 +457,8 @@ export function leafTips(b: FoliageBuilder, units: Unit[], shape: LeafShape, per
     for (let k = 0; k < perUnit; k++) {
       // On the mass's outward half, just proud of the cards.
       const dir = new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize().addScaledVector(n, 1.2).normalize();
-      const c = new THREE.Vector3(...u.c).addScaledVector(dir, u.r * (1.05 + r() * 0.2));
+      // Within the cluster's card extent: no leaf floats outside the crown's silhouette.
+      const c = new THREE.Vector3(...u.c).addScaledVector(dir, u.r * (0.75 + r() * 0.2));
       const along = new THREE.Vector3(r() - 0.5, r() - 0.2, r() - 0.5).normalize();
       const across = new THREE.Vector3().crossVectors(along, dir).normalize();
       const s = 0.8 + r() * 0.5;

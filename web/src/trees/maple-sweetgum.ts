@@ -44,7 +44,7 @@ const maplePalette = keyedCalendar([
   { m: 1, d: 28, leaves: 0.16, a: '#b23a36', b: '#c8503c', label: 'red flowers in the bare crown' },
   { m: 3, d: 5, leaves: 0.22, a: '#a8443c', b: '#c4684c', label: 'red seed keys, first leaves' },
   { m: 3, d: 28, leaves: 0.55, a: '#86a462', b: '#b07052', label: 'leafing out among red keys' },
-  { m: 4, d: 22, leaves: 1, a: '#6a9b68', b: '#7aa870', label: 'summer green' },
+  { m: 4, d: 22, leaves: 1, a: '#6fa06c', b: '#80ad74', label: 'summer green' },
   { m: 9, d: 18, leaves: 1, a: '#639262', b: '#9a6a46', label: 'green, the first red leaves' },
   { m: 10, d: 24, leaves: 1, a: '#c23a2c', b: '#d6782e', label: 'scarlet to orange' },
   { m: 11, d: 8, leaves: 0.5, a: '#b03a2e', b: '#c98c3a', carpet: 0.7, label: 'red and yellow, dropping' },
@@ -75,7 +75,7 @@ export const redMaple = broadleafSpecies({
   palette: maplePalette,
 });
 export const redMapleLook: Look = {
-  species: redMaple, habit: mapleHabit, leaf: 'palmate', palette: maplePalette, lowLift: -0.035,
+  species: redMaple, habit: mapleHabit, leaf: 'palmate', palette: maplePalette, lowLift: -0.025,
   options: OPTIONS('dense, rounded clusters on ascending limbs'),
 };
 
@@ -88,7 +88,7 @@ const gumHabit: Habit = {
   trunkTop: 0.94, crownBase: 0.27, widest: 0.38,
   limbs: { high: 4, low: 3 }, limbAngle: 0.5, limbFrom: [0.3, 0.75], limbReach: 0.8,
   ragged: 0.14, bark: '#7a6e62', barkDark: '#5e544a',
-  mass: { r: 0.66, low: -0.65, high: 0.4 },
+  mass: { r: 0.66, low: -0.65, high: 0.62 },
   bySize: {
     sapling: { crownBase: 0.12, widest: 0.22, limbFrom: [0.18, 0.75], mass: { r: 0.7, low: -0.85, high: 0.3 } },
     young: { crownBase: 0.15, widest: 0.25, limbFrom: [0.2, 0.78], mass: { r: 0.68, low: -0.8, high: 0.35 } },
@@ -105,8 +105,8 @@ const gumPalette = keyedCalendar([
   { m: 2, d: 1, leaves: 0, a: '#6e6052', b: '#6e6052', carpet: 0, label: 'bare, dark gumballs hanging' },
   { m: 3, d: 30, leaves: 0.08, a: '#a9c86c', b: '#b8d07a', label: 'buds breaking' },
   { m: 4, d: 20, leaves: 0.7, a: '#86b462', b: '#98c06a', label: 'leafing out' },
-  { m: 5, d: 5, leaves: 1, a: '#6aa56e', b: '#7ab078', label: 'glossy deep green' },
-  { m: 10, d: 18, leaves: 1, a: '#609c66', b: '#7a9a58', label: 'glossy deep green' },
+  { m: 5, d: 5, leaves: 1, a: '#5c955f', b: '#6aa16a', label: 'glossy deep green' },
+  { m: 10, d: 18, leaves: 1, a: '#58905c', b: '#728f52', label: 'glossy deep green' },
   { m: 11, d: 5, leaves: 1, a: '#9c9c40', b: '#9a4848', label: 'turning, green to red' },
   { m: 11, d: 22, leaves: 0.95, a: '#dca434', b: '#7a2e54', label: 'purple, red, orange and yellow' },
   { m: 12, d: 8, leaves: 0.55, a: '#c8742e', b: '#7c3248', carpet: 0.6, label: 'red-orange and purple, dropping' },
@@ -137,6 +137,6 @@ export const sweetgum = broadleafSpecies({
   palette: gumPalette,
 });
 export const sweetgumLook: Look = {
-  species: sweetgum, habit: gumHabit, leaf: 'star', palette: gumPalette, lowLift: -0.035,
+  species: sweetgum, habit: gumHabit, leaf: 'star', palette: gumPalette, lowLift: -0.03,
   options: OPTIONS('glossy star leaves in rounded masses along a straight leader'),
 };

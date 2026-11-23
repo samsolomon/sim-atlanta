@@ -94,6 +94,8 @@ const SPECIES_NOTES: Record<string, string> = {
   'tulip-poplar': 'The city’s tallest tree: a straight column of trunk under a narrow oval crown of big square-tipped leaves, golden yellow early in the fall and bare by mid-November. ',
   'red-maple': 'A rounded, ascending crown on a smooth grey trunk: a red haze of flowers in the bare crown in late winter, and scarlet to orange early in the fall. ',
   sweetgum: 'A straight leader under a crown of glossy star leaves, pyramidal when young and oval later; late in the fall it turns purple, red, orange and yellow at once. ',
+  'southern-magnolia': 'A dense, dark, glossy evergreen pyramid branched to the ground, with big creamy-white flowers in May and June. ',
+  'crape-myrtle': 'A small multi-stem vase of smooth, mottled, peeling bark, in flower all summer (pink, red, white or purple) and yellow to red in the fall. ',
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
