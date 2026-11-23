@@ -8,7 +8,7 @@ import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atm
 import { createShell, type ShellOptions, type View } from './ui/shell';
 import { uiNext } from './ui/flag';
 import { lonLatToScene, sceneToLonLat } from './core/places';
-import { mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
+import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
 import { busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard, type DrawnAt } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
@@ -455,7 +455,7 @@ async function openCity() {
   let areaNote: string | null = null;
   try {
     const { createCity } = await import('./city/city');
-    const d = await createCity(document.getElementById('view3d-canvas')!, rf, undefined, {
+    const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; shell.setNote(text); },
@@ -490,6 +490,7 @@ async function openCity() {
     document.getElementById('city-ground-source')!.textContent = d.measuredGround ? 'USGS terrain' : 'Flat board';
   } catch (err) {
     if (load !== cityLoad) return;
+    keepPose = null;
     console.error(err);
     view3d.hidden = true;
     document.body.classList.remove('in3d');
@@ -499,7 +500,9 @@ async function openCity() {
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
   // Arriving from Map keeps its camera within the loaded City board.
-  const cameraLink = opening && parseCityCamera(params.get('cam'));
+  // A Graphics change rebuilds City where it was; otherwise a link's camera opens it.
+  const cameraLink = keepPose ?? (opening && parseCityCamera(params.get('cam')));
+  keepPose = null;
   if (cameraLink) {
     diorama.lookAt(cameraLink.x, cameraLink.z, cameraLink);
   } else if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
@@ -518,11 +521,60 @@ async function openCity() {
   }
   opening = false;
   cityLoading.hidden = true;
+  void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
 }
 
+// ---- Graphics (A2c menu): Auto, High or Low for City, remembered per viewer ----------------------
+type Graphics = 'auto' | 'high' | 'low';
+const GRAPHICS_KEY = 'a2-graphics';
+let graphics: Graphics = (() => {
+  try {
+    const g = localStorage.getItem(GRAPHICS_KEY);
+    return g === 'high' || g === 'low' ? g : 'auto';
+  } catch {
+    return 'auto';
+  }
+})();
+/** undefined lets createCity pick (?q=, then the device). Only ?ui=next offers the choice. */
+const chosenQuality = () => (uiNext(location.search) && graphics !== 'auto' && !params.has('q') ? graphics : undefined);
+let keepPose: { x: number; z: number; bearing: number; tilt: number; distanceM: number } | null = null;
+async function setGraphics(g: Graphics) {
+  graphics = g;
+  try {
+    localStorage.setItem(GRAPHICS_KEY, g);
+  } catch {
+    /* private mode: the choice lasts for this page */
+  }
+  // A menu choice that differs from the link's ?q= replaces it.
+  if (params.has('q') && params.get('q') !== g) {
+    params.delete('q');
+    const u = new URL(location.href);
+    u.searchParams.delete('q');
+    history.replaceState(null, '', u);
+  }
+  await applyGraphics();
+}
+/** Rebuild City if the tier on screen isn't the chosen one. Also runs after every City load, so a
+ * choice made while City was loading still lands. */
+async function applyGraphics() {
+  if (!diorama || !uiNext(location.search)) return;
+  const { pickQuality } = await import('./city/city');
+  if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
+  // Rebuild City at the same camera with the new tier.
+  const t = diorama.target(), c = diorama.camera();
+  keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
+  hideCard();
+  cityLoad++;
+  cityAbort?.abort();
+  diorama.dispose();
+  diorama = null;
+  await openCity();
+}
+
 function closeCity() {
+  keepPose = null;
   document.getElementById('city-info')!.hidePopover?.();
   hideCard();
   cityLoad++;
@@ -622,6 +674,23 @@ const shellOptions: ShellOptions = {
     return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
   },
   sky: () => lastAtm,
+  // A link's ?q= decides the tier until the viewer picks one, so the menu shows that.
+  graphics: uiNext(location.search) ? {
+    get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),
+    set: (g) => void setGraphics(g),
+  } : undefined,
+  shareTarget() {
+    // Decide by the view on screen: City still loading has no camera to share yet.
+    if (!view3d.hidden && !diorama) return null;
+    if (diorama) {
+      const t = diorama.target(), c = diorama.camera();
+      return { view: 'city' as const, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
+    }
+    if (!map) return null;
+    const c = map.getCenter();
+    const b = Math.round(map.getBearing());
+    return { view: 'map' as const, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
+  },
 };
 // ?ui=next: the A2c interface (docs/ui-controls-brief.md), loaded only behind the flag.
 const shell = uiNext(location.search)

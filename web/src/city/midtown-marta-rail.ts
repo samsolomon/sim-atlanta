@@ -143,14 +143,18 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number) {
   // from 2.2 m outside the face) and down each tube, so no
   // ground can show between the rails and the walls where a track's mapped mouth
   // sits behind the shared face.
-  for (const [x0, x1] of [
-    [-half - 0.75, -0.2],
-    [0.2, half + 0.75],
-  ])
+  for (const [x0, x1] of [[-half - 0.19, half + 0.19]])
     for (let z = 2.2; z > -24; z -= 2) {
       const z1 = Math.max(-24, z - 2);
       body.quad([x0, -0.08, z], [x0, -0.08, z1], [x1, -0.08, z1], [x1, -0.08, z], z > -2 ? '#4e463d' : shade(z1));
     }
+  // Outside the walls the cut's floor is grassed to match the terrain, so it reads
+  // as ground, not as a dark outline around the hood.
+  for (const [x0, x1] of [
+    [-half - 0.75, -half - 0.19],
+    [half + 0.19, half + 0.75],
+  ])
+    body.quad([x0, -0.08, 2.2], [x0, -0.08, -12.2], [x1, -0.08, -12.2], [x1, -0.08, 2.2], '#97a183');
   // Beyond the hood the tube runs underground: an outer shell keeps it closed where
   // the slot leaves the terrain open, without showing above the hill.
   for (const x of [-half - 0.19, half + 0.19]) body.quad([x, -0.4, -7.9], [x, 5.25, -7.9], [x, 5.25, -24], [x, -0.4, -24], concrete);

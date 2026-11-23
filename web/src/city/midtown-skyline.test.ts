@@ -172,3 +172,41 @@ it('replaces the Biltmore with its masts and night-lit BILTMORE letters', () => 
   model.setNight(1);
   expect(letters.visible).toBe(true);
 });
+
+it('replaces the Academy of Medicine with its portico temple and lantern', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const academy: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:42725820');
+  const model = createSkylineLandmark([academy], academy, -2, () => 0)!;
+  expect(model.group.name).toBe('Academy of Medicine');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(15.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
+
+it('replaces the Wimbish House with its slate roof, turret and loggia', () => {
+  const house: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:885325356');
+  const model = createSkylineLandmark([house], house, -2, () => 0)!;
+  expect(model.group.name).toBe('Wimbish House');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(20.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
+
+it('replaces the Ponce de Leon Apartments with belvedere towers over a curved front', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const ponce: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:208355680');
+  const model = createSkylineLandmark([ponce], ponce, -2, () => 0)!;
+  expect(model.group.name).toBe('Ponce de Leon Apartments');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(52.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});

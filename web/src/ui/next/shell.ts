@@ -14,9 +14,10 @@ import { loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
-import { createDetailPanel } from './panel';
+import { BYLINE, createDetailPanel } from './panel';
 import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
+import { shareUrl } from '../share';
 import type { ShellApi, ShellOptions } from '../shell';
 
 const TZ = 'America/New_York';
@@ -242,12 +243,41 @@ export function createShellNext(o: ShellOptions): ShellApi {
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg);
 
   const menu = el('section', { class: 'a2-menu a2-g a2-long', id: 'a2-menu', hidden: '', 'aria-label': 'Menu' });
+  // No title block (A2c-menu): rows, Graphics, then the byline and the map-data credit.
+  const chev = `<span class="a2-chev">${SVG('<path d="M9 6l6 6-6 6"/>')}</span>`;
   menu.innerHTML = `
-    <button type="button" class="a2-row" data-act="key"><span><b>Key</b><small>What the colours and labels mean</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <button type="button" class="a2-row" data-act="city-info"><span><b>About this City view</b><small>What is illustrative in the miniature</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <button type="button" class="a2-row" data-act="about"><span><b>About &amp; credits</b><small>How it works and where the data comes from</small></span><span class="a2-chev" aria-hidden="true">›</span></button>
-    <p class="a2-fine">Unofficial. Rail data: MARTA, Amtrak GTFS; FRA; BTS NARN. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · OpenMapTiles · OpenFreeMap.</p>`;
-  const cityInfoRow = menu.querySelector<HTMLButtonElement>('[data-act=city-info]')!;
+    <button type="button" class="a2-x a2-menu-close" aria-label="Close menu">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
+    <div class="a2-menu-rows">
+      <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
+      <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
+    </div>
+    <div class="a2-sep"></div>
+    <div class="a2-menu-gfx">
+      <p class="a2-h" id="a2-gfx-label">Graphics</p>
+      <div class="a2-seg2" role="group" aria-labelledby="a2-gfx-label">${['Auto', 'High', 'Low'].map((q) => `<button type="button" data-gfx="${q.toLowerCase()}">${q}</button>`).join('')}</div>
+      <p class="a2-caption">Low draws at standard resolution with simpler shadows, fewer leaves and less rain. Good for older phones.</p>
+    </div>
+    <div class="a2-sep"></div>
+    <div class="a2-menu-foot">
+      <div class="a2-menu-by">${BYLINE}</div>
+      <p class="a2-fine">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · <a href="https://openmaptiles.org/">OpenMapTiles</a> · OpenFreeMap · Overture · MARTA</p>
+    </div>`;
+  // Phones: the sheet covers the app bar's ×, so it carries its own close.
+  menu.querySelector('.a2-menu-close')!.addEventListener('click', () => {
+    closePops();
+    menuBtn.focus();
+  });
+  const gfxBtns = [...menu.querySelectorAll<HTMLButtonElement>('[data-gfx]')];
+  const showGraphics = () => {
+    const g = o.graphics?.get() ?? 'auto';
+    gfxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.gfx === g)));
+  };
+  gfxBtns.forEach((b) => b.addEventListener('click', () => {
+    o.graphics?.set(b.dataset.gfx as 'auto' | 'high' | 'low');
+    showGraphics();
+  }));
+  showGraphics();
+  menu.querySelector('.a2-menu-gfx')!.toggleAttribute('hidden', !o.graphics);
 
   // ---- camera column (bottom-right) -------------------------------------------------------
   const cam = el('div', { class: 'a2-camera a2-g', role: 'group', 'aria-label': 'Camera' });
@@ -255,7 +285,74 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const zoomIn = el('button', { type: 'button', class: 'a2-ib a2-zoom', 'aria-label': 'Zoom in', title: 'Zoom in (+)' }, `<span class="a2-ic">${ICON.plus}</span>`);
   const zoomOut = el('button', { type: 'button', class: 'a2-ib a2-zoom', 'aria-label': 'Zoom out', title: 'Zoom out (−)' }, `<span class="a2-ic">${ICON.minus}</span>`);
   const camSep = el('div', { class: 'a2-sep a2-compass-sep', 'aria-hidden': 'true' });
-  cam.append(compass, camSep, zoomIn, zoomOut);
+  const shareSep = el('div', { class: 'a2-sep a2-share-sep', 'aria-hidden': 'true' });
+  const shareBtn = el('button', { type: 'button', class: 'a2-ib a2-share', 'aria-label': 'Share this view', 'aria-expanded': 'false', 'aria-controls': 'a2-share', title: 'Share this view' },
+    SVG('<path d="M12 3v12"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'));
+  cam.append(compass, camSep, zoomIn, zoomOut, shareSep, shareBtn);
+
+  // ---- share: live (no time) or freeze this moment (t=…&speed=0), camera in the link ----------
+  const share = el('section', { class: 'a2-share-panel a2-g a2-long', id: 'a2-share', hidden: '', 'aria-label': 'Share this view' });
+  share.innerHTML = `
+    <div class="a2-panel-head"><h2>Share this view</h2><button type="button" class="a2-x" data-close aria-label="Close">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <p class="a2-share-lede"></p>
+    <fieldset class="a2-share-modes"><legend class="a2-sr">Time in the link</legend>
+      <label><input type="radio" name="a2-share-mode" value="live"><span><b>Live</b><small>Opens at whatever time it is for the viewer.</small></span></label>
+      <label><input type="radio" name="a2-share-mode" value="freeze"><span><b>Freeze this moment</b><small class="a2-freeze-text"></small></span></label>
+    </fieldset>
+    <output class="a2-share-url" aria-label="Link"></output>
+    <div class="a2-share-actions"><button type="button" class="a2-btn" data-copy>Copy link</button><button type="button" class="a2-btn" data-native hidden>Share…</button></div>`;
+  const shareUrlOut = share.querySelector<HTMLOutputElement>('.a2-share-url')!;
+  const modeInputs = [...share.querySelectorAll<HTMLInputElement>('input[name=a2-share-mode]')];
+  const copyBtn = share.querySelector<HTMLButtonElement>('[data-copy]')!;
+  const nativeBtn = share.querySelector<HTMLButtonElement>('[data-native]')!;
+  nativeBtn.hidden = typeof navigator.share !== 'function';
+  let shareMode: 'live' | 'freeze' = 'live';
+  // The frozen moment is taken once, when the panel opens, so the label and the copied link agree.
+  let frozenAt = clock.now();
+  /** null while there is nothing to reopen yet (City still loading, or no renderer at all). */
+  const currentLink = () => {
+    const target = o.shareTarget?.();
+    return target ? shareUrl(location.href, target, shareMode, frozenAt) : null;
+  };
+  const renderShare = () => {
+    const target = o.shareTarget?.();
+    share.querySelector('.a2-share-lede')!.textContent = !target ? 'This view is still loading.'
+      : target.view === 'city' ? 'The link opens on this exact camera in City.' : 'The link opens on this exact view of the Map.';
+    share.querySelector('.a2-freeze-text')!.textContent =
+      `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. Trains from the timetable.`;
+    modeInputs.forEach((i) => (i.checked = i.value === shareMode));
+    const link = currentLink();
+    if (shareUrlOut.textContent !== (link ?? '')) shareUrlOut.textContent = link ?? '';
+    copyBtn.disabled = nativeBtn.disabled = !link;
+  };
+  modeInputs.forEach((i) => i.addEventListener('change', () => {
+    shareMode = i.value as 'live' | 'freeze';
+    renderShare();
+  }));
+  copyBtn.addEventListener('click', async () => {
+    const link = currentLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      copyBtn.textContent = 'Copied';
+    } catch {
+      // No clipboard access (an insecure origin, say): select the link so it can be copied by hand.
+      const r = document.createRange();
+      r.selectNodeContents(shareUrlOut);
+      getSelection()?.removeAllRanges();
+      getSelection()?.addRange(r);
+      copyBtn.textContent = 'Select and copy';
+    }
+    setTimeout(() => (copyBtn.textContent = 'Copy link'), 1800);
+  });
+  nativeBtn.addEventListener('click', () => {
+    const link = currentLink();
+    if (link) navigator.share?.({ title: document.title, url: link }).catch(() => { /* dismissed */ });
+  });
+  share.querySelector('[data-close]')!.addEventListener('click', () => {
+    closePops();
+    shareBtn.focus();
+  });
   compass.addEventListener('click', () => o.north?.());
   zoomIn.addEventListener('click', () => o.zoom(1));
   zoomOut.addEventListener('click', () => o.zoom(-1));
@@ -329,18 +426,24 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }
 
   const panelHost = createDetailPanel();
-  document.body.append(subject, notice, bar, menu, cam, credit, panelHost.host, ...(hint ? [hint] : []));
+  document.body.append(subject, notice, bar, menu, cam, share, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 
   // ---- pop-overs ---------------------------------------------------------------------------
-  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open]];
+  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open], [share, shareBtn]];
   const closePops = (except?: HTMLElement) => {
     for (const [p, b] of pops)
       if (p !== except && !p.hidden) {
         p.hidden = true;
         b.setAttribute('aria-expanded', 'false');
         if (p === panel) subject.classList.remove('a2-open');
+        if (p === menu) menuIcon(false);
       }
+  };
+  // The menu button shows × while the menu is open (A2c-menu).
+  const menuIcon = (open: boolean) => {
+    menuBtn.innerHTML = open ? `<span class="a2-ic a2-ic-x">${SVG('<path d="M6 6l12 12M18 6L6 18"/>')}</span>` : `<span class="a2-ic">${ICON.list}</span>`;
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
   };
   const toggle = (p: HTMLElement, b: HTMLButtonElement, focus: () => void) => {
     const show = p.hidden;
@@ -348,9 +451,17 @@ export function createShellNext(o: ShellOptions): ShellApi {
     p.hidden = !show;
     b.setAttribute('aria-expanded', String(show));
     if (p === panel) subject.classList.toggle('a2-open', show);
+    if (p === menu) menuIcon(show);
     if (show) focus();
   };
-  menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-row')?.focus()));
+  menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
+  shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
+    // A shifted or paused clock most likely means this moment is the point of the link.
+    shareMode = clock.isRealTime() ? 'live' : 'freeze';
+    frozenAt = clock.now();
+    renderShare();
+    copyBtn.focus();
+  }));
   open.addEventListener('click', () => toggle(panel, open, () => {
     lastTick = -Infinity;
     tick(clock.now());
@@ -364,13 +475,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
     closePops();
     panelHost.show('about');
   });
-  cityInfoRow.addEventListener('click', () => {
-    closePops();
-    document.getElementById('city-info')?.showPopover?.();
-  });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (![subject, panel, bar, menu].some((c) => c.contains(t))) closePops();
+    if (![subject, panel, bar, menu, share, shareBtn].some((c) => c.contains(t))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
 
@@ -443,6 +550,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(areaNote ?? feedNote);
     if (!panel.hidden) renderPanel(s);
+    // The camera can move under an open share panel: keep the shown link the one Copy sends.
+    if (!share.hidden) renderShare();
   }
 
   function renderPanel(s: ReturnType<ShellOptions['live']>) {
@@ -487,7 +596,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
   // ---- views --------------------------------------------------------------------------------
   function setView(v: View, fromUser = false) {
     viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
-    cityInfoRow.hidden = v !== 'city';
     if (hint) hint.textContent = hintText(v, coarse.matches);
     if (v === view && !fromUser) return;
     const changed = v !== view;
@@ -499,7 +607,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
   }
   viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
-  cityInfoRow.hidden = view !== 'city';
 
   // ---- keyboard -----------------------------------------------------------------------------
   const { advanceMovement } = createKeyboard({

@@ -128,3 +128,33 @@ The ornament reuses the Georgian Terrace template, now shared as `classical-orna
 
 Cameras: front `/?view=city&cam=395,-2565,75,62,330` · context `/?view=city&cam=430,-2560,75,60,640` · masts `/?view=city&cam=470,-2560,75,52,430`. [Front before and after](log/ui/midtown-skyline/biltmore-front-compare-day.jpg) · [Context before and after](log/ui/midtown-skyline/biltmore-context-compare-day.jpg) · [Night](log/ui/midtown-skyline/biltmore-context-compare-night.jpg) · [Masts at night](log/ui/midtown-skyline/biltmore-masts-after-high-night.jpg) · [Low tier](log/ui/midtown-skyline/biltmore-front-after-low-day.jpg)
 
+## The Academy of Medicine
+
+The 1941 Academy of Medicine at 875 West Peachtree (Hentz, Adler & Shutze; now a Georgia Tech event venue) was drawn as a generic two-storey brick box. Three Wikimedia photographs from two angles show a cream stucco temple on a raised base. It has a six-column pedimented portico facing West Peachtree with ACADEMY OF MEDICINE across the frieze, verdigris copper hipped roofs over the wings, a square central lantern with arched thermal windows, and tall arched windows set in blind arches. The mapped outline (osm:way:42725820) already traces the portico, the stepped wings and the rounded rear. City draws them with the shared classical ornament: a base course, an eave band on brackets and a cornice. [Wikimedia, 2008, CC BY 3.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine.jpg) · [Wikimedia, 2011, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine_(Atlanta).JPG) · [Wikimedia, oblique, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine_875_West_Peachtree_Street_NE_Atlanta_Georgia.JPG) · [Wikimedia, frontal, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine,_Atlanta.jpg)
+
+**Estimated:** the 8.4 m eave, the 15.5 m lantern, the roof pitches, the column spacing and the window positions. The frieze lettering is a band of glyph blocks. **Gap:** no night photograph was found, so only an illustrative warm lamp behind the portico doors is lit.
+
+Camera `/?view=city&cam=452,-2721,60,45,150`. [Before and after](log/ui/midtown-skyline/academy-compare-day.jpg) · [Night](log/ui/midtown-skyline/academy-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/academy-after-low-day.jpg) · [Wider](log/ui/midtown-skyline/academy-wide-after-high-day.jpg)
+
+## The Wimbish House
+
+The 1898 Wimbish House at 1150 Peachtree (W. T. Downing), home of the Atlanta Woman's Club, was drawn as a generic two-storey box. Wikimedia photographs from the street and from the garden show buff stone under a steep slate hip roof. A round drum bay and a conical turret frame an arched loggia on the south front, two pinnacled dormers rise between them, and a tall chimney stands at the back. The OSM building parts give the plan: the house at the east end, the porch, and the club's later two-storey wing to the west. The mapped 7.2 m height fits the wing, not the three-storey house, so the house is raised to an inferred 11.5 m eave and an 18 m ridge. The turret cap is at 19.6 m and the chimney at 20.5 m. [Wikimedia, 2019, front, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House.jpg) · [Wikimedia, 2019, oblique, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House_3.jpg) · [Wikimedia, 2013, from Peachtree, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Atlanta_Women%27s_Club_2013_09_28_7845.JPG)
+
+**Estimated:** all heights, the roof pitch, the turret and drum radii, the dormers, the arch count and the stone tone. **Gap:** no night photograph was found, so only an illustrative lamp in the loggia is lit.
+
+Camera `/?view=city&cam=762,-3556,335,55,120`. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg) · [Night](log/ui/midtown-skyline/wimbish-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/wimbish-after-low-day.jpg)
+
+## The Ponce de Leon Apartments
+
+The 1913 Ponce de Leon Apartments (William L. Stoddart), now The Ponce condominiums, at the southeast corner of Peachtree and Ponce, are mapped as "Ponce Condominium" (osm:way:208355680, `old_name` Ponce de Leon Apartments, `start_date` 1913). They had been a generic 43–50 m block. Wikimedia photographs from the corner and the side show:
+- buff brick on a curved front that faces the intersection, over a two-storey white terra-cotta colonnade
+- a deep green bracketed cornice
+- stacked round iron balconies where the curve meets two square corner towers
+- an open arched belvedere on each tower, under a green tile hip roof
+
+The rear walls are plainer brick. The OSM building parts give the curved main block (43.2 m) and both towers (50.4 m). City draws the base, the cornice and its brackets with the shared classical ornament. The evening photograph shows warm lit windows and lanterns at the colonnade. [Wikimedia, 2017, corner, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Ponce_Condominiums_(formerly_Ponce_de_Leon_Apartments),_Atlanta.jpg) · [Wikimedia, evening, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Ponce_de_Leon_Apartments,_Atlanta,_Georgia.jpg) · [Wikimedia, 2013, side, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Ponce_de_Leon_Apartments_(side_view),_Midtown_Atlanta.JPG)
+
+**Estimated:** the 52.5 m belvedere roof peak, the arch proportions, the column pitch (2.6 m), the balcony radius and spacing, and the brick and green tones.
+
+Camera `/?view=city&cam=655,-2000,135,58,230`. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg) · [Night](log/ui/midtown-skyline/ponce-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/ponce-dusk-after-day.jpg) · [Low tier](log/ui/midtown-skyline/ponce-after-low-day.jpg)
+
