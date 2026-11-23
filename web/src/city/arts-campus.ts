@@ -1,4 +1,5 @@
 import { localLandmarkShell } from './landmark-shell';
+import { enamelBox, enamelGrid, entryRamp, type RampSpec } from './midtown-culture-high';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import sites from './fixtures/arts-campus.json';
@@ -10,7 +11,7 @@ const porcelain = '#f3f2ed',
   glass = '#668087';
 export const artsCampusIds = new Set(Object.values(sites).map((site) => site.id));
 
-function museum(s: Shell, landing: number) {
+function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => number | null) {
   const { body, lights, prism } = s;
   prism(s.ring, s.base, 2.3, '#aca9a0', coping);
 
@@ -78,6 +79,9 @@ function museum(s: Shell, landing: number) {
   // Stent gallery bars enclose the atrium on the north and west.
   body.box(47, 23, 19, 15, 13.8, -42, porcelain);
   body.box(22, 22, 44, -1, 13.3, -28, porcelain);
+  // Meier's square enamel panels, read as joints on every white Meier volume.
+  enamelBox(body, 47, 23, 19, 15, 13.8, -42, 2.3);
+  enamelBox(body, 22, 22, 44, -1, 13.3, -28, 2.3);
   body.box(44, 0.35, 16, 15, 25.48, -42, roof);
   body.box(20, 0.35, 23, -1, 24.48, -18, roof);
   body.box(15, 4, 4, -17, 15, -34, '#b6c4c4');
@@ -99,6 +103,21 @@ function museum(s: Shell, landing: number) {
     12.8,
     porcelain,
     roof,
+  );
+  enamelGrid(
+    body,
+    [
+      [27, -32.5],
+      [38, -32.5],
+      [43, -28],
+      [45, -23],
+      [45, -19],
+      [41, -16],
+      [35, -16],
+      [32, -21],
+    ],
+    2.3,
+    12.8,
   );
   for (const y of [4.8, 9.3]) {
     prism(
@@ -125,21 +144,64 @@ function museum(s: Shell, landing: number) {
     y,
     centre[1] + r * Math.sin(angle),
   ];
+  // The quarter-round atrium: glass panes set back inside a white frame of
+  // mullions and floor bands, under a solid crown with small square windows.
   for (let i = 0; i < 16; i++) {
     const a = (i * Math.PI) / 32,
-      b = ((i + 1) * Math.PI) / 32;
-    lights.quad(arc(a, radius, 4), arc(a, radius, 20), arc(b, radius, 20), arc(b, radius, 4), glass);
-    for (const y of [4, 9.4, 14.7, 20, 21.3])
+      b = ((i + 1) * Math.PI) / 32,
+      m = (a + b) / 2;
+    lights.quad(
+      arc(a, radius - 0.25, 4),
+      arc(a, radius - 0.25, 20),
+      arc(b, radius - 0.25, 20),
+      arc(b, radius - 0.25, 4),
+      '#83999e',
+    );
+    for (const [y, h] of [
+      [3.6, 0.9],
+      [9.0, 0.8],
+      [14.3, 0.8],
+      [19.6, 0.9],
+    ] as const)
       body.quad(
         arc(a, radius + 0.2, y),
-        arc(a, radius + 0.2, y + 0.48),
-        arc(b, radius + 0.2, y + 0.48),
+        arc(a, radius + 0.2, y + h),
+        arc(b, radius + 0.2, y + h),
         arc(b, radius + 0.2, y),
         porcelain,
       );
-    const p = arc(a, radius + 0.3, 12);
-    body.box(i % 4 === 0 ? 0.65 : 0.19, 17, 0.4, p[0], 12, p[2], porcelain);
-    body.quad(arc(a, radius, 20), arc(a, radius, 22), arc(b, radius, 22), arc(b, radius, 20), porcelain);
+    for (const y of [6.6, 11.9, 17.2])
+      body.quad(
+        arc(a, radius + 0.05, y),
+        arc(a, radius + 0.05, y + 0.18),
+        arc(b, radius + 0.05, y + 0.18),
+        arc(b, radius + 0.05, y),
+        porcelain,
+      );
+    for (const t of [a, m]) {
+      const p = arc(t, radius + 0.1, 12),
+        wide = t === a && i % 4 === 0;
+      const box = (w: number) => body.box(w, 16.4, w, p[0], 12, p[2], porcelain);
+      box(wide ? 0.7 : t === a ? 0.42 : 0.2);
+    }
+    body.quad(
+      arc(a, radius + 0.2, 20.5),
+      arc(a, radius + 0.2, 22),
+      arc(b, radius + 0.2, 22),
+      arc(b, radius + 0.2, 20.5),
+      porcelain,
+    );
+    if (i % 2 === 1) {
+      const c0 = m - 0.012,
+        c1 = m + 0.012;
+      body.quad(
+        arc(c0, radius + 0.26, 20.85),
+        arc(c0, radius + 0.26, 21.65),
+        arc(c1, radius + 0.26, 21.65),
+        arc(c1, radius + 0.26, 20.85),
+        '#5d686b',
+      );
+    }
     body.tri(arc(a, radius, 22), [10, 26, -33], arc(b, radius, 22), '#69777a');
     body.tri(arc(a, radius, 22.08), [10, 26.1, -33], arc(a + 0.012, radius, 22.08), coping);
   }
@@ -157,9 +219,21 @@ function museum(s: Shell, landing: number) {
     porcelain,
     roof,
   );
-  // Ramp walks east from the glazed quadrant toward Peachtree.
-  for (const v of [-17.6, -14.1]) body.quad([29, 5.4, v], [29, 6.4, v], [54, landing + 1, v], [54, landing, v], coping);
-  body.quad([29, 5.45, -17.6], [29, 5.45, -14.1], [54, landing + 0.1, -14.1], [54, landing + 0.1, -17.6], roof);
+  enamelGrid(
+    body,
+    [
+      [14, -8],
+      [21, -12],
+      [35, -5],
+      [39, 0],
+      [31, 10],
+      [18, 2],
+    ],
+    2.3,
+    12,
+  );
+  // The diagonal Peachtree ramp climbs to the 2.3 m entry terrace.
+  entryRamp(body, ramp, 2.3, ground);
 }
 
 function memorial(s: Shell) {
@@ -208,11 +282,22 @@ export function createArtsCampusLandmark(
   );
   if (!shell) return null;
   if (site.id === sites.museum.id) {
-    const axis = Math.atan2(-0.479, 0.878);
-    const landing = groundAt(550 + 54 * Math.cos(axis) + 15.85 * Math.sin(axis),
-      -3990 + 54 * Math.sin(axis) - 15.85 * Math.cos(axis));
-    if (landing === null) return null;
-    museum(shell, landing - grade + 0.08);
+    const local = (x: number, z: number): P2 => [
+      (x - 550) * 0.878 + (z + 3990) * -0.479,
+      (x - 550) * 0.479 + (z + 3990) * 0.878,
+    ];
+    const r = sites.museum.ramp;
+    const ramp: RampSpec = {
+      foot: local(r.foot[0], r.foot[1]),
+      head: local(r.head[0], r.head[1]),
+      stairTop: local(r.stairTop[0], r.stairTop[1]),
+      stairFoot: local(r.stairFoot[0], r.stairFoot[1]),
+      width: r.width,
+    };
+    museum(shell, ramp, (u, v) => {
+      const y = groundAt(550 + u * 0.878 - v * -0.479, -3990 + u * -0.479 + v * 0.878);
+      return y === null ? null : y - grade;
+    });
     // Lay the piazza on the same rendered terrain as both entrances.
     const piazza: P2[] = [
       [-54, 0],
