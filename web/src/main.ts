@@ -382,6 +382,7 @@ async function openCity() {
       beforeFrame: shell.advanceMovement,
       areaNote: text => shell.setNote(text),
       trains: () => source.update(),
+      stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
       buses: () => (clock.isRealTime() ? buses.current() : null),

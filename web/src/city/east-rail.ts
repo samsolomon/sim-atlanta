@@ -21,9 +21,11 @@ import type { GroundGrid } from '../terrain/grid';
 import { CAR_FLOOR, CAR_WIDTH } from '../vignette/cq400';
 import { Builder } from '../vignette/geom';
 import { MARTA_TRACK_OFFSET } from '../vignette/world';
+import type { Berth } from './trains';
 
 type XZ = [number, number];
 export interface CorridorPack {
+  station?: { platforms: { osm: string; ring: [number, number][] }[] };
   guideway: { s: number; x: number; z: number; top: number | null; roof: number | null; status: string }[];
   crossings: { s: number; x: number; z: number; kind: string }[];
 }
@@ -95,6 +97,34 @@ export function extendRail(manifest: SceneManifest, rf: RoutesFile): SceneManife
     spans.splice(i, 1, ...parts.filter(sp => sp.s1 - sp.s0 >= 1));
   }
   return { ...manifest, rail };
+}
+
+/**
+ * King Memorial berths per East Line path: the GTFS stop's distance on the path and the usable
+ * platform ends, from the OSM platform rings in the corridor pack. Only a path whose stop and both
+ * platform ends lie within 15 m of it gets a berth (low-confidence geometry gets none). The ends
+ * are the stretch both platforms share.
+ */
+export function kingMemorialBerths(rf: RoutesFile, manifest: SceneManifest,
+  platforms: { ring: [number, number][] }[], stopDistances: (pathId: string, stopId: string) => number[]): Map<string, Berth[]> {
+  const project = makeProjector(manifest.origin);
+  const stops = ['marta:stop:908436', 'marta:stop:908693'].map(id => rf.stops.find(s => s.id === id)).filter(Boolean);
+  const out = new Map<string, Berth[]>();
+  if (platforms.length !== 2 || stops.length !== 2) return out;
+  for (const id of EAST_IDS) {
+    const path = rf.paths.find(p => p.id === `marta:path:${id}`);
+    if (!path) continue;
+    const ranges = platforms.map(pl => pl.ring.map(([lon, lat]) => sOnPath(path, project, project(lon, lat))));
+    if (ranges.some(r => r.some(q => q.d > 15))) continue;
+    const p0 = Math.max(...ranges.map(r => Math.min(...r.map(q => q.s))));
+    const p1 = Math.min(...ranges.map(r => Math.max(...r.map(q => q.s))));
+    // Where the timetable stops this path's trains at King Memorial (pattern distance), not the
+    // stop coordinate: they can differ by tens of metres. A stop far off the platform is skipped.
+    const at = stops.flatMap(st => stopDistances(path.id, st!.id)).filter(s => s > p0 - 60 && s < p1 + 60);
+    if (!at.length || p1 - p0 < 50) continue;
+    out.set(path.id, at.map(stopS => ({ stopS, p0, p1 })));
+  }
+  return out;
 }
 
 /** Ground over downtown and the east area, for terrainAlignment (only `sample` and the vertical zero are used). */

@@ -350,3 +350,35 @@ both platforms. No night photo of King Memorial turned up on Commons.
 Lamp positions and brightness are **illustrative**. The street-level building stays unlit.
 
 ![Night before (top left) and after (top right); day unchanged (bottom left); Decatur St at night (bottom right)](log/ui/king-memorial/city-station-lights.jpg)
+
+### Train berthing at King Memorial (2026-11-23)
+
+City centres each drawn consist on its timetable position. A six-car CQ400 set is 141.9 m long;
+the platforms share about 177 m (OSM rings projected onto each path).
+
+| Path, stop (timetable) | Platform (path s) | Six cars at the stop, before | After |
+|---|---|---|---|
+| 155177 eastbound, 9031.4 (Sam's 14:02:00 still) | 8951.3–9128.4 | 8959.9–9102.2: **fits** | unchanged |
+| 155188 westbound, 15086.6 (14:08:00) | 14958.6–15136.2 | 15015.7–**15158.2**: the nose is **22 m past** the platform end | 14994.8–15136.3 |
+| 155221 and 155223 westbound | as for 155188 | about 21 m over | inside |
+| 155214 Green, terminating eastbound | 6383–6561 | fits | unchanged |
+
+**Cause:** the westbound GTFS stop distance sits about 21 m west of a centred berth. The timetable's
+pattern distance for 155188 (15086.6) also differs by 30 m from the stop *coordinate* projected onto
+the path (15056.1). Berths therefore use the timetable's own stop distances (`Schedule.stopDistances`),
+which is where scheduled trains actually stop.
+
+**Fix** (`berthShift` in `trains.ts`, opt-in through the east attach):
+- **Scheduled positions only:** a consist is drawn forward or back so it fits the platform at the stop,
+  and only as far as needed. Live positions are drawn as reported.
+- **Smooth:** the shift eases in and out with distance (a smoothstep over 200 m either side of the
+  stop), so there are no jumps, no early stop and no reversal. A test steps through every 0.5 m.
+- **Too long:** a consist longer than the platform is centred on it.
+- **Low confidence:** no berth is created unless both platform rings lie within 15 m of the path and
+  a timetable stop falls within 60 m of the platform.
+- **Unchanged:** the timetable, the card's tier and the stop's time.
+
+The renderer test builds the real `CityTrains` and `Schedule` at 14:02 and 14:08 and checks every drawn
+car against the platform ends.
+
+![West end at 14:08: before (top left), after (top right); 14:02 eastbound (bottom)](log/ui/king-memorial/berthing-before-after.jpg)
