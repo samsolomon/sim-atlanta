@@ -21,7 +21,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
-import { broadleafForm, crownMasses, envelope, habitFor, massClusters, type Habit, type Unit } from './broadleaf';
+import { broadleafForm, crownMasses, envelope, envelopeNormal, habitFor, ringAt, massClusters, type Habit, type Unit } from './broadleaf';
 import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, blooms, crownNormals, foliageDepth, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
 import { skeletonGeometry, treeDims, type TreePlacement } from './render';
 import { doyOf, hash01, type Foliage, type SizeClass, type Species, type TreeQuality, type V3 } from './species';
@@ -35,10 +35,8 @@ export interface LookOption {
   technique: Technique;
   /** Leaf clusters per tree, per tier: cards (cards, cored) or faceted lobes. */
   units: Record<TreeQuality, number>;
-  /** Glossy leaves: specular sheen strength, and baked glint and bronze shares (cards only). */
-  sheen?: number;
-  glint?: number;
-  bronze?: number;
+  /** Glossy leaves (cards only): the share of painted leaves that can flash in the sun. */
+  specks?: number;
   /** Tufts: 0 round clusters, 1 flat pads facing up (a pine's needle tufts). */
   flat?: number;
   /** Lobes only: vertical squash (pads). */
@@ -138,27 +136,39 @@ export function broadleafSpecies(s: Omit<Species, 'form' | 'foliage' | 'leaf'> &
 }
 
 /** The crown envelope's outward normal at a point, metres: what crownNormals bends cards toward. */
-const outwardOf = (e: ReturnType<typeof envelope>) => (p: THREE.Vector3) => {
-  const half = p.y > e.yc ? e.above : e.below;
-  return new THREE.Vector3(p.x / e.R ** 2, (p.y - e.yc) / half ** 2, p.z / e.R ** 2);
-};
+const outwardOf = (e: ReturnType<typeof envelope>) => (p: THREE.Vector3) => envelopeNormal(e, p.x, p.y, p.z);
 
 /**
  * Pull clusters in so each one's outer edge stays within the crown envelope plus a small
  * ragged margin: no tuft floats outside the species' outline.
  */
 function inEnvelope(units: Unit[], e: ReturnType<typeof envelope>, margin = 1.06) {
+  // Envelope metric: 1 on the outline. A cone top measures against its radius at each height,
+  // continuous through the tip.
+  const metric = (p: THREE.Vector3) => {
+    const yN = (p.y - e.yc) / (p.y > e.yc ? e.above : e.below), horiz = Math.hypot(p.x, p.z) / e.R;
+    if (yN > 0 && e.cone) return Math.max(yN, horiz / Math.max(0.05, ringAt(e, Math.min(yN, 0.99))));
+    return Math.hypot(horiz, yN);
+  };
   return units.map(u => {
     const n = new THREE.Vector3(...u.n);
-    const edge = new THREE.Vector3(...u.c).addScaledVector(n, u.r);
-    const metric = (p: THREE.Vector3) => Math.hypot(p.x / e.R, (p.y - e.yc) / (p.y > e.yc ? e.above : e.below), p.z / e.R);
-    const mEdge = metric(edge);
-    if (mEdge <= margin) return u;
-    // Move the centre in until its edge (centre + n·r) sits on the margin.
-    const centre = new THREE.Vector3(...u.c), mC = metric(centre), rN = Math.max(0, mEdge - mC);
-    const k = Math.max(0, margin - rN) / Math.max(1e-6, mC);
-    const c: V3 = [u.c[0] * k, e.yc + (u.c[1] - e.yc) * k, u.c[2] * k];
-    return { ...u, c };
+    const at = (k: number) => new THREE.Vector3(u.c[0] * k, e.yc + (u.c[1] - e.yc) * k, u.c[2] * k);
+    if (metric(at(1).addScaledVector(n, u.r)) <= margin) return u;
+    if (!e.cone) {
+      // The egg: the linear pull every approved species was tuned with.
+      const centre = at(1), mC = metric(centre), rN = Math.max(0, metric(at(1).addScaledVector(n, u.r)) - mC);
+      const c = at(Math.max(0, margin - rN) / Math.max(1e-6, mC));
+      return { ...u, c: [c.x, c.y, c.z] as V3 };
+    }
+    // A cone: pull the centre toward the crown's core until its edge (centre + n·r) sits within
+    // the margin, by bisection, as the cone's metric is not linear in the pull.
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 14; i++) {
+      const k = (lo + hi) / 2;
+      if (metric(at(k).addScaledVector(n, u.r)) <= margin) lo = k; else hi = k;
+    }
+    const c = at(lo);
+    return { ...u, c: [c.x, c.y, c.z] as V3 };
   });
 }
 
@@ -185,7 +195,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {
-    unitCards(b, clusters, seed, 1.25, { glint: opt.glint, bronze: opt.bronze });
+    unitCards(b, clusters, seed, 1.25);
   }
   let g = b.geometry();
   if (opt.technique !== 'lobes' && opt.technique !== 'stars') crownNormals(g, outwardOf(e));
@@ -246,7 +256,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
     ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
-    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, sheen: opt.sheen, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
+    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, specks: opt.specks, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
   const depthMat = foliageDepth(leafMat);
   // Foliage meshes registered with the ink's foliage mask: outlined at the crown's silhouette only.

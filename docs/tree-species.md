@@ -296,7 +296,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [American elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Flowering dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Magnolia gloss round 2 sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [American elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Flowering dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
 
 **Sam's picks (23 Nov).**
 - Option A for willow oak, water oak, tulip poplar and red maple, and generally for broadleaves.
@@ -304,7 +304,8 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - Loblolly pine: A, tiered needle tufts.
 - Ginkgo: C4.
 - Sweetgum: A ("looks good").
-- Still to pick: the magnolia, among A and its gloss variants A1–A3.
+- American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
+- Still to pick: the magnolia (gloss round 2: A and speck densities A1–A3) and the dogwood (round 2 pending).
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -549,9 +550,9 @@ Flowers and bracts are small chips on the outer, upper side of the leaf clusters
 
 ### Southern magnolia
 
-`web/src/trees/magnolia-crape.ts`. "A dense (more open in the shade), dark green pyramidal shape, the lower branches often bending to the ground" ([UF ST371](https://ask.ifas.ufl.edu/publication/ST371/pdf)). The leaves are leathery and glossy, 13–25 cm long, with rusty undersides. Bark is grey and smooth, developing scaly plates with age. The crown is built as dense tiers of branch masses (`Habit.tiers` 3, 3, 3, 2), down to the ground and shrinking toward the top (`taper` 0.4). Sunlit tops are bright over a near-black interior (`toneByLight`).
+`web/src/trees/magnolia-crape.ts`. "A dense (more open in the shade), dark green pyramidal shape, the lower branches often bending to the ground" ([UF ST371](https://ask.ifas.ufl.edu/publication/ST371/pdf)). The leaves are leathery and glossy, 13–25 cm long, with rusty undersides. Bark is grey and smooth, developing scaly plates with age. The crown is built as dense tiers of branch masses down to the ground, shrinking toward the top (since gloss round 2: `Habit.tiers` 3, 3, 2, 2, 2, `taper` 0.6, `cone` 0.8, widest 0.24; see below). Sunlit tops are bright over a near-black interior (`toneByLight`).
 
-**Options:** A · glossy branch-mass cards with flowers; B · cored masses; C · faceted clusters. All stay within 196 / 156.
+**Options:** A · glossy branch-mass cards with flowers; B · cored masses (dropped in gloss round 2); C · faceted clusters. All stay within 196 / 156.
 
 | Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
 |---|---|---|---|---|---|
@@ -589,6 +590,16 @@ Sam on option A: "this is the right shape. I don't know that I get the sense of 
 - **A3 · sheen and bronze:** A1 plus about 15% rusty-bronze cards on the shaded side.
 
 Crown luminance / saturation (Front, 1 Jul): A 0.232 / 0.832, A1 0.299 / 0.726, A2 0.312 / 0.721, A3 0.300 / 0.726. Gloss lifts the crown 30–35% over the dark base, and the bronze undersides are subtle in front light. At 300 m through ink and grade all three still read: A1 and A3 as a pale silvery patch on the sun side, A2 as pale flecks. (A first build had the sheen's half vector reversed and lit backlit cards; the code review caught it.)
+
+### Magnolia gloss, round 2 (specks on a dark cone)
+
+[Sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg). The coordinator's read of round 1: whole lit cards read as frost or mildew, the baked flecks as sun-bleached patches, and the crown as too round and too light at the top. In the reference, gloss is hundreds of tiny sharp highlights over a near-black cone. A card is far bigger than a leaf, so per-card lighting cannot make that.
+- **Shape.** A new habit option, `cone` (0 to 1), straightens the envelope above its widest point. The masses (`ringAt`) and the outline clamp follow it, and the leader stops lower so it never shows through the pulled-in top. The magnolia uses `cone` 0.8, `taper` 0.6, widest at 0.24, and tiers 3, 3, 2, 2, 2 to a filled top. Its top tone is darker. Above the widest point the crown normals follow the cone's flank (`envelopeNormal`), and the outline clamp pulls clusters in by bisection, since the cone's metric is not linear.
+- **Specks** (`LookOption.specks`, cards only). The shader picks single painted leaves by hashing each leaf's atlas value with a half-metre cell of tree space, so every card picks its own few. A picked leaf turns warm white where its card faces the sun's half vector, on the crown's sun side (the smoothed crown normal) only. The step is near-binary, so it reads as a point and not a wash. It scales with the sun, so it is off at night. A1, A2 and A3 let about 1 leaf in 20, 10 and 6 flash.
+- **Dropped:** the whole-card sheen, the baked silver glints and the bronze undersides.
+- **Cost:** none added. A and its variants are 193 / 113 per tree, plus 90 in near tips. C rises to 13 clusters so every mass keeps one. B (cored) is dropped for the magnolia: a core per mass on 13 masses cannot fit 196 with cards on every mass, and Sam's direction is A.
+
+Crown luminance / saturation (Front, 1 Jul, high): A 0.201 / 0.862, A1 0.205, A2 0.210, A3 0.218 / 0.845; low A 0.211. The specks add 2–8%, not round 1's 30%. The pick reads the atlas at full size (`textureLod`), so mipmaps cannot blend neighbouring leaves into new ids at range, and it hashes tree space, not world position, to keep `sin()` precise far from the origin. Other species measure as before (willow oak 0.256, tulip poplar 0.240, sweetgum 0.255, crape myrtle 0.246, elm 0.249). The cone is deliberately darker than the generic canopy (0.248), as the reference is. At eye level the specks are subtle; they show best in the day row and at 300 m as a faint sun-side sparkle.
 
 ### Japanese maple
 
