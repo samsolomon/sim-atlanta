@@ -10,7 +10,8 @@ interface Deck {
   flat: string;
   occupancy: number;
   elevationAboveFoundation?: number;
-  facade?: 'market' | 'hackney' | 'piedmont' | 'm';
+  facade?: 'market' | 'hackney' | 'piedmont' | 'm' | 'peachtree';
+  axisDegrees?: number;
   rampCenters?: number[];
   // Roof-local centre, width, depth and height of visible curbs or stair heads.
   fittings?: [number, number, number, number, number][];
@@ -18,6 +19,20 @@ interface Deck {
 }
 
 const decks = new Map<string, Deck>([
+  [
+    '10389dea-9cd3-4d48-afe6-c077296e0724',
+    {
+      levels: 8,
+      elevationAboveFoundation: 31.6,
+      colour: '#d9d6cd',
+      flat: '#a19c92',
+      occupancy: 0.42,
+      facade: 'peachtree',
+      axisDegrees: 1,
+      acrossRows: true,
+      fittings: [[-22, -14, 8, 6, 2.4]],
+    },
+  ],
   [
     '72f23ef4-84a0-4567-9af7-4478de81418f',
     {
@@ -130,7 +145,7 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
     return false;
   const outer = building.rings[0];
   if (outer.length < 3) return false;
-  const axis = (41 * Math.PI) / 180,
+  const axis = ((deck?.axisDegrees ?? 41) * Math.PI) / 180,
     c = Math.cos(axis),
     s = Math.sin(axis);
   // Roof striping is parallel to Jesse Hill. Work around the footprint's bounding
@@ -176,6 +191,24 @@ export function appendParkingDeck(b: Builder, building: VBuilding, foot: number,
     ];
     const face = (a: number, end: number, low: number, high: number, colour: string, inset = 0) =>
       b.quad(p(a, low, inset), p(end, low, inset), p(end, high, inset), p(a, high, inset), colour);
+    if (deck.facade === 'peachtree') {
+      // The pale screen runs vertically past the recessed horizontal decks.
+      const bays = Math.max(1, Math.round(length / 3.6));
+      const width = length / bays;
+      face(0, length, foot, crown, '#494b4b', 0.65);
+      for (let level = 1; level < deck.levels; level++) {
+        const y = base + level * pitch;
+        face(0, length, y - slab, y + 0.5, '#918e84', 0.45);
+      }
+      face(0, length, foot, base + pitch, deck.colour);
+      face(0, length, roof - 0.55, crown, deck.colour);
+      for (let bay = 0; bay < bays; bay++) {
+        const start = (bay + 0.2) * width, end = (bay + 0.8) * width;
+        face(start, end, base + pitch, roof - 0.55, deck.colour);
+      }
+      b.quad(p(0, crown), p(length, crown), p(length, crown, 0.28), p(0, crown, 0.28), deck.colour);
+      continue;
+    }
     if (deck.facade === 'piedmont') {
       const [u, v] = uv((x + ex) / 2, (z + ez) / 2);
       piedmontWall(face, length, foot, base, crown, v < -20, u < -30);
