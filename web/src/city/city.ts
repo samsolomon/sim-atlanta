@@ -43,6 +43,7 @@ import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
+import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import { anyCarInView } from './in-view';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
@@ -658,6 +659,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     traffic = joined;
     scene.add(joined.group);
   }
+  // Midtown's arterials join as their rows mount: HPMS volumes, illustrative positions.
+  let midtownArterials: import('./midtown-arterial-traffic').MidtownArterialTraffic | undefined;
+  let midtownBuild = 0;
+  async function extendMidtownArterials(added: Iterable<string>) {
+    if (!trafficOptions || !mosaic || ![...added].some(id => Object.hasOwn(midtownRowBounds, id))) return;
+    const build = ++midtownBuild;
+    const { MidtownArterialTraffic } = await import('./midtown-arterial-traffic');
+    if (build !== midtownBuild || eastController.signal.aborted) return;
+    const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
+      .map(([row, a]) => ({ row, ...a.connectorBoard }));
+    const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
+    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: [] }, boards);
+    midtownArterials?.dispose();
+    midtownArterials = next;
+    scene.add(next.group);
+  }
   const corridors = trafficOptions && loadArterials(arterialData, vd).corridors;
   const arterials = trafficOptions && corridors?.length
     ? new ArterialTraffic({ ...trafficOptions, arterials: corridors })
@@ -772,6 +789,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
+      void extendMidtownArterials(added.keys());
       const first = added.keys().next().value!;
       areaResult(first === 'north-band' ? 'north' : first === 'south-band' ? 'south' : first, null);
       if (target) {
@@ -1306,6 +1324,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     brookwood?.updateFreight(sceneTime);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
+    midtownArterials?.update(sceneTime, atm.dark);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
@@ -1343,7 +1362,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hasFreight: !!freight,
     hasPeople: !!figures,
     buses,
-    get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length); },
+    get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length || midtownArterials?.group.children.length); },
     bounds: b,
     quality,
     lookAt(x, z, view) {
@@ -1402,7 +1421,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       north?.setSeason(day);
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
     },
-    stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0), arterialCars: arterials?.visibleCars ?? 0, freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       squareButton?.remove();
       cancelAnimationFrame(raf);
@@ -1417,6 +1436,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       buses.dispose();
       traffic?.dispose();
       arterials?.dispose();
+      midtownArterials?.dispose();
       disposeBoard();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
