@@ -21,6 +21,7 @@ import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
+import { houseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
@@ -123,9 +124,16 @@ function foundation(rings: P2[][], sceneY: (x: number, z: number) => number | nu
   return Number.isFinite(base) ? Math.floor(base) : null;
 }
 
+/** Dev only: `?houses=near|far` pins every house tile to one version, for before-and-after checks. */
+function houseLodForce() {
+  if (!import.meta.env.DEV || typeof location === 'undefined') return undefined;
+  const v = new URLSearchParams(location.search).get('houses');
+  return v === 'near' || v === 'far' ? v : undefined;
+}
+
 function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {},
-  replacedTree: World['replacedTree'] = null) {
+  replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
@@ -135,7 +143,8 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
   // branch) breaks memory out by category: 'buildings', 'trees' or 'landscape'.
   const tagNew = (from: number, perf: string) => world.group.children.slice(from).forEach(o => { o.userData.perf ??= perf; });
   let before = world.group.children.length;
-  world.buildBuildings(bd => bd.id === separateBuilding ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
+  // Houses stay in the data (lamps and trees keep clear of them) but are drawn by house-lod.ts.
+  world.buildBuildings(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
   tagNew(before, 'buildings');
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
   world.replacedTree = replacedTree;
@@ -205,7 +214,14 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options,
-    named.length ? replacedBy(named) : null);
+    named.length ? replacedBy(named) : null, bd => homes.isHouse(bd.id));
+  // Houses by distance: a bare far version for wide views, the full house when the camera comes close.
+  const houses = houseLod({
+    houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
+    foundation: bd => foundation(bd.rings, groundAt, grid.manifest.stepM / 2), near: homes.finishFor, far: homes.farFinishFor,
+    roofUnits: options.quality === 'low' ? 3 : 8, force: houseLodForce(),
+  });
+  scenery.group.add(houses.group);
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   // Yards by rule around every house (walks, drives, foundation planting).
   const yardLayer = homes.yards();
@@ -249,10 +265,11 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); },
-    setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); },
+    setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);
+      houses.setWet(factor);
       species?.setWet(factor);
     },
     dispose() {
@@ -268,6 +285,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       yardLayer?.dispose();
       oval?.dispose();
       park?.dispose();
+      houses.dispose();
       scenery.dispose();
       group.clear();
     },
