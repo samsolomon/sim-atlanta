@@ -105,6 +105,7 @@ it('lights the Promenade crown cool white at night and keeps its offices warm', 
   expect(glow.color.r).toBeCloseTo(.1);
   model.setNight(0);
   expect(neon.visible).toBe(false);
+});
 
 it('mounts Tower Square at 206 m and feeds night lighting to its return walls', () => {
   const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));

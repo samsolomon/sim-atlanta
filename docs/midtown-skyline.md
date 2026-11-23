@@ -79,3 +79,12 @@ The Digital Library of Georgia's face-on photograph shows the old BellSouth towe
 The footprint reports concrete, a flat roof, 47 storeys and a 206 m height. Its recessed corners leave four projecting window banks, roughly 53 × 67 m overall. The 3DEP perimeter spans 304.3–306.2 m NAVD88 with 304.5 m at the centre. The 9 m base, 197 m top window line, 5 m mechanical cap and 0.8 m recess depth are estimated. The tower has a separate identity from the station and its plaza. [Mapped tower](https://www.openstreetmap.org/way/26800371)
 
 Camera (470, −2180), bearing 8°, tilt 45°, 0.73 m/px. [High daylight](log/ui/midtown-skyline/tower-square-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-low-night.jpg)
+
+A self-review found three geometry problems, all now fixed:
+- Each storey's recess opened into a 6 m hollow behind the glazing. A solid bank now backs every window row, so the recess is a true 0.8 m.
+- The end mullions stuck out into the corner notches.
+- The window banks sat up to 0.7 m inside the mapped outline, leaving a ledge at the base and an open overhang at the cap.
+
+The bank faces now sit on the measured outline: ±33.7 m on the long axis and ±26.3 m across. The violet-blue wash is hidden by day.
+
+Close camera from the northwest: target (470, −2110), bearing 330°, tilt 60°, 260 m. [High daylight](log/ui/midtown-skyline/tower-square-close-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-close-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-close-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-close-low-night.jpg)
