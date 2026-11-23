@@ -7,9 +7,10 @@ import { SIZE_CLASSES, doyOf } from './species';
 const BUDGET = { high: 196, low: 156 } as const;
 
 describe.each(LOOKS.map(l => [l.species.id, l] as const))('%s rendering options (lab only)', (_, look) => {
-  it('has two or three options', () => {
-    expect(look.options.length).toBeGreaterThanOrEqual(2);
-    expect(look.options.length).toBeLessThanOrEqual(3);
+  it('has two or three options, plus variants of a picked one (A1, A2…)', () => {
+    const base = look.options.filter(o => /^[A-Z]$/.test(o.id));
+    expect(base.length).toBeGreaterThanOrEqual(2);
+    expect(base.length).toBeLessThanOrEqual(3);
   });
 
   for (const opt of look.options) {

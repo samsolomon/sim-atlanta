@@ -4,6 +4,7 @@ import { waterOak, willowOak } from './oaks';
 import { loblollyPine, tulipPoplar } from './pine-poplar';
 import { redMaple, sweetgum } from './maple-sweetgum';
 import { crapeMyrtle, southernMagnolia } from './magnolia-crape';
+import { japaneseMaple } from './japanese-maple';
 import type { Species } from './species';
 
-export const SPECIES: Species[] = [ginkgo, willowOak, waterOak, loblollyPine, tulipPoplar, redMaple, sweetgum, southernMagnolia, crapeMyrtle];
+export const SPECIES: Species[] = [ginkgo, willowOak, waterOak, loblollyPine, tulipPoplar, redMaple, sweetgum, southernMagnolia, crapeMyrtle, japaneseMaple];

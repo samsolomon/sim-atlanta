@@ -296,9 +296,18 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Southern magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework sheet](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg) · [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov-all.jpg) · [Lineup, 25 Jul](log/ui/tree-species/lineup-25jul.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
 
-**Sam's picks (23 Nov).** A for willow oak, water oak, tulip poplar and red maple, and generally for broadleaves. C4 for the ginkgo. Loblolly pine is being reworked (below). Sweetgum awaits his pick.
+**Sam's picks (23 Nov).**
+- Option A for willow oak, water oak, tulip poplar and red maple, and generally for broadleaves.
+- Crape myrtle: A, vase of branch-mass cards.
+- Loblolly pine: A, tiered needle tufts.
+- Ginkgo: C4.
+- Sweetgum: A ("looks good").
+- Still to pick: the magnolia, among A and its gloss variants A1–A3.
+- The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
+
+All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
 
 Each species after the ginkgo gets two or three rendering options in the lab (`/models.html?v=willow-oak&variant=all`) for Sam to pick from. **City draws none of them until he does.** The lab's Trees section lists each species, its options with Compare all, and **All species** (`?v=lineup&variant=default`), every species at mature size side by side in one season. "Default" is Sam's pick where he has made one (ginkgo C4), otherwise a species' option A.
 
@@ -571,6 +580,45 @@ GT holds 433 active magnolias. Their median crown base is only 0.9–2.6 m, and 
 | Specimen | 8–10.4 | 6–9.1 | 0.2–0.42 | 10.1 / 7.8 / 0.3 | Champion: Georgia Beer Garden, 420 Edgewood Ave, 10.1 × 7.8 m (2018) |
 
 **Calendar.** Crape myrtle is not in USA-NPN. Bloom runs "from July to September" (NC State), and the fall colour is "yellow, orange, or red". **Inferred:** leaf-out in April, full bloom in late July, colour in late October, bare by mid-November with the mottled stems showing.
+
+### Magnolia gloss (A1–A3)
+
+Sam on option A: "this is the right shape. I don't know that I get the sense of glossiness on the leaves." The reference shows many individual leaves catching the sky as small silvery glints on the sunlit side, and a few rusty-bronze undersides. Option A was tightened (bigger, denser cards; the habit's less ragged outline also applies to B, C and the clump model), and three variants sit beside it (`?v=southern-magnolia&variant=allA`). None adds a draw or a triangle: each is 187 / 113, plus 90 in near tips.
+- **A1 · sheen:** a sharp specular term (`twoToneFoliage({ sheen })`). Each card's true face normal is lit against the sun's half vector, so glints scatter card by card and move with the view. It fades out with the sun's intensity, so it is off at night. Near leaf tips stay matte.
+- **A2 · baked glints:** about 10% of the sunlit-side cards carry a pale silver vertex multiplier over the dark green.
+- **A3 · sheen and bronze:** A1 plus about 15% rusty-bronze cards on the shaded side.
+
+Crown luminance / saturation (Front, 1 Jul): A 0.232 / 0.832, A1 0.299 / 0.726, A2 0.312 / 0.721, A3 0.300 / 0.726. Gloss lifts the crown 30–35% over the dark base, and the bronze undersides are subtle in front light. At 300 m through ink and grade all three still read: A1 and A3 as a pale silvery patch on the sun side, A2 as pale flecks. (A first build had the sheen's half vector reversed and lit backlit cards; the code review caught it.)
+
+### Japanese maple
+
+`web/src/trees/japanese-maple.ts`, Sam's request (23 Nov). Red Japanese maples are "everywhere in front yards and on the traffic islands" of Ansley Park: low, wide, layered, umbrella-shaped, on several leaning trunks. They are "the colour accents". The sources describe a "low, dense, rounded top and spreading branches" ([NC State](https://plants.ces.ncsu.edu/plants/acer-palmatum/)) that is "typically multi-trunked", with "muscular-looking, picturesque, grey" trunks ([UF ST023](https://ask.ifas.ufl.edu/publication/ST023/pdf)).
+
+**Colourways.** Each tree takes one by its seed (`Look.varieties`):
+- **Scarlet-crimson** (3 in 5, the dominant look): bronze-red in summer heat. Red cultivars green and bronze in southern summers (NC State, UF).
+- **Bloodgood burgundy:** "deep burgundy spring and summer foliage", "bright crimson in fall" (NC State).
+- **Orange-red:** green in summer.
+
+**Calendar** (inferred near Atlanta):
+- Early leaf-out (UF, Missouri Botanical Garden).
+- Peak colour about 14 Nov. Gibbs Gardens in Ball Ground, Georgia, holds its Japanese maple Colorfest Nov 1–17.
+- Bare by early December. No dated Georgia leaf-drop source was found.
+
+**Options.** All well within budget:
+- A · layered branch-mass cards: 135 / 71, plus 102 in tips.
+- B · cored: 133 / 87.
+- C · faceted layers: 143 / 103.
+
+The weeping laceleaf mound (about 2 m, cascading to the ground, on Sam's ivy bank) is not built. It would be a second habit on the same species.
+
+| Class | Height (m) | Spread (m) | Largest stem (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 1.5–3 | 1–3 | 0.02–0.08 | 2.4 / 2.4 / 0.05 | GT under 4 in DBH: median 2.4 m by 3.0 m |
+| Young | 2.5–5 | 2–5 | 0.06–0.18 | 4.2 / 4 / 0.12 | GT 4–8 in medians: 4.3 m by 4.1 m |
+| Mature | 4.5–7.6 | 3.7–7.6 | 0.12–0.3 | 5 / 5.5 / 0.2 | NC State 4.6–7.6 m; 'Bloodgood' 4.6–6.1 m by 3.7–6.1 m; GT 8–12 in medians 4.9 m by 5.6 m |
+| Specimen | 6–9.4 | 6–10.2 | 0.2–0.57 | 7.5 / 8 / 0.35 | GT 12–18 in medians 7.5 m by 6.0 m; GT maximums 9.4 m and 10.2 m. No Atlanta champion *A. palmatum* is recorded |
+
+**Proposed placement** (for Sam; nothing is placed): front yards, side yards and traffic islands in Ansley Park and Midtown residential blocks, as a small share of the yard mix (taken from "other broadleaf") and a larger share on the planted islands. Never as street trees. Trees Atlanta's plant inventory has only 23 alive (Candler Park 6, Midtown 2, Ansley 0), because most are private plantings, so the share rests on Sam's walk. City placements would be `illustrative`.
 
 ### Pair 2 gaps
 
