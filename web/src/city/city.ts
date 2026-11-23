@@ -1265,6 +1265,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const wx = { cloud: 0, rain: 0, snow: 0, fog: 0 }; // eased toward the atmosphere's weather
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const shadowTarget = new THREE.Vector3(Infinity, 0, Infinity);
+  // Low: the shadow camera moves in 80 m grid steps, so a pan redraws the map a few times
+  // instead of every frame (each redraw re-renders every caster in the ±520 m box). Snapping
+  // also keeps shadow edges still while panning. The light sits over the snapped point so the
+  // stored map and the light matrix always agree. High keeps following the target.
+  const SHADOW_STEP_M = perfOverrides.shadowStepM ?? (low ? 80 : 0);
+  // ...and at most one move-driven redraw per 250 ms; the last step lands once the pan settles.
+  const SHADOW_GAP_MS = SHADOW_STEP_M ? 250 : 0;
+  let shadowDrawnAt = -Infinity;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
 
@@ -1277,14 +1285,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     if (takeHouseLodChange()) renderer.shadowMap.needsUpdate = true;
-    if (t.distanceToSquared(shadowTarget) > 1 || Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1) {
+    const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
+    const sx = snap(t.x), sz = snap(t.z);
+    const now = performance.now();
+    // Hysteresis: re-centre only once the target is 0.6 of a step from the current centre on an
+    // axis (a fresh centre is at most half a step away), so a target resting on a cell boundary
+    // cannot flip the shadow box back and forth.
+    const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
+    const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
+    const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
+    // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame on low.
+    if ((moved || turned) && now - shadowDrawnAt >= SHADOW_GAP_MS) {
       renderer.shadowMap.needsUpdate = true;
-      shadowTarget.copy(t);
+      shadowDrawnAt = now;
+      shadowTarget.set(sx, t.y, sz);
       shadowElev = el;
       shadowAz = atm.sunAz;
     }
-    sun.position.set(t.x + Math.sin(az) * Math.cos(elDir) * 2000, Math.sin(elDir) * 2000, t.z - Math.cos(az) * Math.cos(elDir) * 2000);
-    sun.target.position.set(t.x, 0, t.z);
+    const lx = SHADOW_STEP_M ? shadowTarget.x : t.x, lz = SHADOW_STEP_M ? shadowTarget.z : t.z;
+    sun.position.set(lx + Math.sin(az) * Math.cos(elDir) * 2000, Math.sin(elDir) * 2000, lz - Math.cos(az) * Math.cos(elDir) * 2000);
+    sun.target.position.set(lx, 0, lz);
     sun.intensity = 2.9 * sm(-1, 7, el);
     sun.color.copy(pal.sunHigh).lerp(pal.sunLow, gold);
     hemi.color.copy(pal.skyNight).lerp(pal.skyDay, day);
