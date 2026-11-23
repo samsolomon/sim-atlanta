@@ -39,12 +39,15 @@ export function createMitchellHouse(
   ];
   prism(main, 0.6, 9.3, brick, slate);
   // Hipped main roof with a perpendicular gabled bay toward the Peachtree lawn.
+  // The roof is centred on the wall prism (v -6.7…6.3) with equal overhangs.
   const eave = 9.4,
-    ridge = 14.8;
+    ridge = 14.8,
+    mid = -0.2,
+    half = 6.85;
   for (const sign of [-1, 1]) {
-    body.quad([-9.6, eave, sign * 6.9], [8.8, eave, sign * 6.9], [3, ridge, 0], [-4, ridge, 0], slate);
+    body.quad([-9.6, eave, mid + sign * half], [8.8, eave, mid + sign * half], [3, ridge, mid], [-4, ridge, mid], slate);
     const end = sign < 0 ? -9.6 : 8.8;
-    body.tri([end, eave, -6.9], [end, eave, 6.9], [sign < 0 ? -4 : 3, ridge, 0], slate);
+    body.tri([end, eave, mid - half], [end, eave, mid + half], [sign < 0 ? -4 : 3, ridge, mid], slate);
   }
   body.box(18.4, 0.3, 13.7, -0.4, 9.25, -0.2, cream);
   const bay: P2[] = [
@@ -63,6 +66,8 @@ export function createMitchellHouse(
       shell.facade(a, b, y - 1.65, y, 1, 2, 0.88, 0.96, [glass], 0.12);
     }
   body.tri([10.9, 10.4, -0.7], [10.9, 13.9, 2], [10.9, 10.4, 4.7], cream);
+  // Close the gable's back where its ridge stands above the main roof slope.
+  body.tri([3, 10.42, -0.9], [3, 14.05, 2], [3, 10.42, 4.9], slate);
   for (const sign of [-1, 1]) {
     body.quad([10.95, 10.42, 2 + sign * 2.9], [3, 10.42, 2 + sign * 2.9], [3, 14.05, 2], [10.95, 14.05, 2], slate);
     body.quad(
@@ -75,10 +80,16 @@ export function createMitchellHouse(
   }
   body.box(0.86, 4.2, 1.22, 5.5, 13.4, -1.1, brick);
   body.box(1.08, 0.35, 1.44, 5.5, 15.6, -1.1, '#995a49');
-  // Windows show the lower apartment on the Crescent side of the slope.
+  // Windows show the lower apartment on the Crescent side of the slope. Where
+  // the lawn rises past a sill, that window stays in the brick.
+  const clear = (u: number, v: number, y: number) => {
+    const g = groundAt(x + u, z + v);
+    return g !== null && y - 1 > g - grade + 0.15;
+  };
   for (const wall of [-6.76, 6.36])
     for (const u of [-7.6, -4.8, -1.2, 2.9, 6.7])
       for (const y of [2, 5.2, 8]) {
+        if (!clear(u, wall, y)) continue;
         body.box(1.22, 1.96, 0.14, u, y, wall, cream);
         const sash = y === 5.2 && u === -4.8 ? lights : body;
         sash.box(0.99, 1.7, 0.17, u, y, wall, glass);
@@ -87,6 +98,7 @@ export function createMitchellHouse(
   for (const u of [-9.25, 8.45])
     for (const v of [-4.85, -2.75, 1.7, 4.45])
       for (const y of [2, 5.2, 8]) {
+        if (!clear(u, v, y)) continue;
         body.box(0.14, 2, 1.25, u, y, v, cream);
         body.box(0.17, 1.76, 1.03, u, y, v, glass);
         body.box(0.19, 0.09, 1.07, u, y, v, cream);
@@ -127,9 +139,13 @@ export function createMitchellHouse(
     }
   porch(-10.7, 0.15, 2.95, 8.8, 0.8, 3.75);
   porch(-10.7, 0.15, 2.95, 8.8, 3.86, 6.9);
+  // Garden lamps stand on their own ground, not on a porch datum.
   for (const u of [-11.9, 11.35]) {
-    body.box(0.16, 2.75, 0.16, u, u < 0 ? 2.2 : 4.9, -3.85, '#414742');
-    lights.box(0.32, 0.42, 0.32, u, u < 0 ? 3.7 : 6.4, -3.85, '#ffdfb1');
+    const foot = groundAt(x + u, z - 3.85);
+    if (foot === null) continue;
+    const y0 = foot - grade;
+    body.box(0.16, 2.75, 0.16, u, y0 + 1.375, -3.85, '#414742');
+    lights.box(0.32, 0.42, 0.32, u, y0 + 2.875, -3.85, '#ffdfb1');
   }
   return shell.finish('#ffd7a2', 0.52);
 }
