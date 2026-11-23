@@ -115,4 +115,16 @@ it('preserves the Dobbs light well, the pool deck and the staggered tower roof o
   expect(roof(638, -408)).toBeCloseTo(363.15);
   expect(roof(658, -397)).toBeCloseTo(363.15);
   expect(roof(615.4, -407)).toBeCloseTo(344.55);
+  // The southern string crosses the water at this bulb, above the 333.88 m water surface.
+  expect(roof(626.85, -389)).toBeCloseTo(336.435, 2);
+  function dobbsBandProjection(x: number) {
+    const wallZ = -369.2 + ((-369.65 + 369.2) * (665.17 - x)) / (665.17 - 633.43);
+    const hits = new Raycaster(new Vector3(x, 320.5 - 323.8, -366), new Vector3(0, 0, -1)).intersectObject(
+      result.group,
+      true,
+    );
+    return hits[0].point.z - wallZ;
+  }
+  expect(dobbsBandProjection(661)).toBeCloseTo(0.085, 2);
+  expect(dobbsBandProjection(637)).toBeLessThan(0.05);
 });

@@ -1,4 +1,15 @@
-import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } from 'three';
+import {
+  AdditiveBlending,
+  Float32BufferAttribute,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  DoubleSide,
+  Group,
+  Mesh,
+  MeshLambertMaterial,
+  ShapeUtils,
+  Vector2,
+} from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -157,7 +168,14 @@ function sign(f: Face) {
   }
 }
 
-function towerFace(f: Face, base: number, bays: number, street: boolean, wrap: boolean, seed: number) {
+function towerFace(
+  f: Face,
+  base: number,
+  bays: number,
+  street: boolean,
+  wrap: 'start' | 'end' | 'both' | 'none',
+  seed: number,
+) {
   const rand = rng(seed);
   const w = f.width,
     pitch = w / bays,
@@ -177,7 +195,7 @@ function towerFace(f: Face, base: number, bays: number, street: boolean, wrap: b
   for (let i = 0; i < bays; i++) {
     const l = i * pitch,
       r = l + pitch,
-      end = wrap && i >= bays - 2;
+      end = wrap === 'both' || (wrap === 'start' && i < 2) || (wrap === 'end' && i >= bays - 2);
     const brown = !end && i % 5 === 2;
     f.panel(l + 0.16, r - 0.16, start, 362.47, 0.025, brown ? bronze : end ? '#68787b' : '#b7b6aa');
     for (let j = 0; j < 14; j++) {
@@ -227,7 +245,14 @@ function poolCourt(mesh: Builder, lights: Builder) {
     mesh.box(1.25, 0.22, 1.95, 630.5, deckHeight + 0.3, z, '#d7cfb8');
     mesh.box(1.25, 0.48, 0.28, 630.5, deckHeight + 0.5, z - 0.88, '#b8ad96');
   }
-  for (const z of [-408, -400]) {
+  for (const x of [622, 630]) {
+    mesh.box(2.05, 0.15, 1.15, x, deckHeight + 0.79, -400.7, '#ae9e80');
+    for (const offset of [-0.7, 0.7]) {
+      mesh.box(1.98, 0.14, 0.35, x, deckHeight + 0.44, -400.7 + offset, '#798e86');
+      mesh.box(0.18, 0.75, 1.65, x + offset, deckHeight + 0.375, -400.7, '#76776b');
+    }
+  }
+  for (const z of [-400, -389]) {
     for (const x of [619.7, 634]) {
       mesh.box(0.15, 3.2, 0.15, x, deckHeight + 1.6, z, '#69675c');
     }
@@ -241,6 +266,35 @@ function poolCourt(mesh: Builder, lights: Builder) {
       if (i > 0) lights.box(0.14, 0.19, 0.14, x, y - 0.11, z, '#ffe7b6');
     }
   }
+}
+
+// A vertex-colored patch gives the string lights a local pool of light on the paving.
+function terraceLight() {
+  const geometry = new PlaneGeometry(16, 24, 12, 18);
+  geometry.rotateX(-Math.PI / 2);
+  const vertices = geometry.getAttribute('position'),
+    colors: number[] = [];
+  for (let i = 0; i < vertices.count; i++) {
+    const x = Math.abs(vertices.getX(i)),
+      z = vertices.getZ(i);
+    const fade =
+      Math.max(0, 1 - (x / 8) ** 4) * Math.max(0, 1 - (Math.min(Math.abs(z - 5.5), Math.abs(z + 5.5)) / 6.5) ** 2);
+    colors.push(0.47 * fade, 0.3 * fade, 0.14 * fade);
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+  const material = new MeshBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    opacity: 0,
+  });
+  const glow = new Mesh(geometry, material);
+  glow.position.set(626.7, deckHeight + 0.025, -394.5);
+  glow.visible = false;
+  // A lighting overlay is neither a roof nor a walkable surface.
+  glow.raycast = () => {};
+  return glow;
 }
 
 export function createOne12Courtland(buildings: VBuilding[], grid: GroundGrid) {
@@ -308,7 +362,9 @@ export function createOne12Courtland(buildings: VBuilding[], grid: GroundGrid) {
       b = wing[(i + 1) % wing.length],
       f = face(mesh, lights, a, b);
     const street = i <= 6;
-    towerFace(f, base, Math.max(1, Math.round(f.width / 3.7)), street, i === 1 || i === 6, 125 + i);
+    // Follow the ribbons across the Courtland jogs and back along the Dobbs corner.
+    const wrap = i === 1 ? 'end' : i === 6 ? 'start' : i >= 2 && i <= 5 ? 'both' : 'none';
+    towerFace(f, base, Math.max(1, Math.round(f.width / 3.7)), street, wrap, 125 + i);
     if (i === 1) sign(f);
   }
   cap(mesh, wing, [], towerRoof, '#bbbab1');
@@ -352,12 +408,15 @@ export function createOne12Courtland(buildings: VBuilding[], grid: GroundGrid) {
     lights.geometry(),
     new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: '#ffe1af', emissiveIntensity: 0 }),
   );
-  group.add(illuminated);
+  const glow = terraceLight();
+  group.add(illuminated, glow);
   return {
     group,
     buildings: buildings.filter((b) => b !== west && b !== east && b !== link),
     setNight(night: number) {
       illuminated.material.emissiveIntensity = night * 0.61;
+      glow.visible = night > 0.001;
+      glow.material.opacity = night * 0.31;
     },
   };
 }
