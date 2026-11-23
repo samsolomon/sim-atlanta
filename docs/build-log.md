@@ -1929,3 +1929,7 @@ From above, the lidar reveals an unexpected drop inside the roof. The western eq
 ### 2026-11-23 — A roof court behind the M at Five Points
 
 At 20 Marietta, the cream M sign hangs where shoppers coming up Broad first meet the dark condominium tower. The named footprint looked like a simple 62.7 m extrusion. In 2,139 lidar returns the street wing rose to 386 m NAVD88, but one rear corner stopped at 342 m. A single roof would have filled 44 vertical metres of open space. City now follows that cutout, the higher equipment shelf, and the turn from the shorter Marietta storefront to the longer Broad Street face. [Street photographs, roof measurements and matched City views](log/ui/metropolitan/README.md) · [Day, dusk and night comparison](log/ui/metropolitan/comparison.jpg)
+
+### 2026-11-23 — The tower that belonged to the next roof
+
+At Five Points an unnamed 72.7 m extrusion stood between two historic buildings. From across Marietta the photographs showed a low shopfront. Of 104 laser returns in a narrow strip along the shared Metropolitan wall, 87 were above 375 m NAVD88. Moving the sample inside the footprint dropped the median to 332.3 m, about 13 m above the sidewalk. The correction restores the view over the shops while keeping the higher rear service roof and the three neighboring footprints separate. [Street photographs, survey and Five Points comparisons](log/ui/marietta-backdrop/README.md)
