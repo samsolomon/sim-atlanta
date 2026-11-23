@@ -14,6 +14,8 @@ Sam’s private detail provided the proportions. Sullivan’s street photograph 
 
 City used the Studio bake, high quality and a stopped clock on November 20, 2026, at 14:12:45 or 22:00 EST. The tower still uses three meshes. The crowns contribute 3,592 triangles. Both mipmapped facade textures together occupy 0.91 MiB before mipmaps (216 × 552 RGBA each). The masonry joints fade at distance. A web build and coordinator deployment pick up the geometry with the existing data.
 
+Sam spotted the inner footings crossing the recessed facade in the daylight view. The two crowns now sit over the centres of the load-bearing wings at x = 426.8 and 471.5 m. The 6 m footings span 29.5 m east to west. Eight daylight views at 45° intervals checked the front and back notches. The regression test projects every crown vertex onto the modelled shaft roof. [Opposite side at 160°](footings-reverse.jpg)
+
 ## Earlier City replacement
 
 

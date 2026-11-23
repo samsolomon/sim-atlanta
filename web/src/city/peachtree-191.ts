@@ -7,7 +7,13 @@ const footprintId = 'cca22dcb-b333-4b2a-9371-869465370bda';
 const shaft: P2[] = [[486.8,-548.9],[487.2,-585.1],[456.2,-585.5],[456.2,-580.5],
   [442.7,-580.6],[442.7,-585.7],[411.8,-586],[411.4,-549.8],[441.8,-549.4],
   [441.9,-554.5],[455.8,-554.3],[455.8,-549.3]];
-const crowns: P2[] = [[429.5,-567.7],[469,-567.2]];
+// Fit the complete crown on each load-bearing wing. The opposing notch
+// corners bound the wings more tightly than the mapped roof-part centres.
+const crowns: P2[] = [
+  [(shaft[6][0] + shaft[8][0]) / 2, -567.7],
+  [(shaft[2][0] + shaft[0][0]) / 2, -567.2],
+];
+const shoulderOffsetX = 11.75; // 6 m footings on wings ~30 m wide
 const stone = '#d4c5b5', cornice = '#e2d3c2', glazing = '#46515a';
 const podiumTop = 17, shaftTop = 203;
 
@@ -131,7 +137,7 @@ function crown(b: Builder, x: number, z: number, top: number) {
     b.box(nx ? 2.1 : 3.7,.85,nz ? 2.1 : 3.7,x+nx*8,230.8,z+nz*8,cornice);
   }
   for (const dx of [-1,1]) for (const dz of [-1,1]) {
-    const sx = x+dx*12.8, sz = z+dz*12.8;
+    const sx = x+dx*shoulderOffsetX, sz = z+dz*12.8;
     b.box(6,10.3,6,sx,208.15,sz,stone);
     b.box(5.5,1.3,5.5,sx,213.95,sz,cornice);
     const dome = new THREE.SphereGeometry(2.68,12,4,0,2*Math.PI,0,Math.PI/2);

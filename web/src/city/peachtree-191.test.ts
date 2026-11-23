@@ -17,10 +17,10 @@ it('places two open lanterns on the mapped roof parts and leaves the western ent
   site.group.updateMatrixWorld(true);
   const roof = (x: number, z: number) =>
     new Raycaster(new Vector3(x,300,z),new Vector3(0,-1,0)).intersectObject(site.group,true)[0]?.point.y;
-  for (const [x,z] of [[429.5,-567.7],[469,-567.2]]) {
+  for (const [x,z] of [[426.8,-567.7],[471.5,-567.2]]) {
     expect(roof(x,z)).toBeCloseTo(ground+232,2);
     expect(roof(x+7.3,z+7.3)).toBeCloseTo(ground+234.7,2);
-    expect(roof(x+12.8,z+12.8)).toBeCloseTo(ground+217.28,2);
+    expect(roof(x+11.75,z+12.8)).toBeCloseTo(ground+217.28,2);
   }
   expect(roof(449,-567.5)).toBeCloseTo(ground+203);
   expect(roof(400,-567)).toBeCloseTo(ground+17);
@@ -28,6 +28,20 @@ it('places two open lanterns on the mapped roof parts and leaves the western ent
   const through = new Raycaster(new Vector3(414,ground+224,-563.8),new Vector3(1,0,0),0,29);
   expect(through.intersectObject(site.group,true)).toHaveLength(0);
   expect(site.group.children.filter(child => child instanceof Mesh)).toHaveLength(3);
+});
+
+it('supports both complete crown footprints at the 203 m shaft roof', () => {
+  const site = createPeachtree191([tower], () => 0)!;
+  const [shaft, , crowns] = site.group.children as Mesh[];
+  const vertices = crowns.geometry.getAttribute('position');
+  const down = new Raycaster(new Vector3(), new Vector3(0,-1,0), 0, 1);
+  // Every projected vertex must land on the shaft roof, including the four
+  // recess-facing corners. A missed roof would fall through to the podium.
+  expect(vertices.count).toBeGreaterThan(0);
+  for (let i = 0; i < vertices.count; i++) {
+    down.ray.origin.set(vertices.getX(i), 203.5, vertices.getZ(i));
+    expect(down.intersectObject(shaft).length).toBeGreaterThan(0);
+  }
 });
 
 it('retains generic geometry when the footprint or its terrain support is missing', () => {
