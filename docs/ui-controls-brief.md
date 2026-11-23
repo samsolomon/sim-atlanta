@@ -25,9 +25,9 @@ from the screen edges. On phones, the top elements also sit below the status bar
 | Place | Contents |
 |---|---|
 | **Top-left: subject card** | **Map and City:** the neighbourhood under the camera centre, then time and weather, then a confidence line, for example "● Live · Friday, Nov 20" or "Timetable · illustrative sky · Now". **Models:** the model name with ⌄ to browse, ‹ › to step through its category, a one-line description and a position ("Vehicles · 1 of 3"). |
-| **Bottom-left: app bar** | Menu · view switch (**Map · City · Models**) · radio. It looks the same in every view. |
+| **Bottom-left: app bar** | Menu · radio. There is no view switch: the **3D** control in the camera column moves between Map and City, and the Model lab opens from the menu (see "3D is City"). It looks the same in every view. |
 | **Right: detail panel** | One slot. It holds the selected train or building, the Key, About & credits, or a model's Details. It is only as tall as its content and grows to full height only for long content such as About, which scrolls inside. |
-| **Bottom-right: camera column** | Compass, zoom in and out, share. It never moves. In Models it holds reset view, zoom and share. On Map the compass appears only once the map is rotated. |
+| **Bottom-right: camera column** | Separate glass pieces, top to bottom: share · zoom + and − · the **3D** button over the tilt slider · a round compass. It never moves. Phones: compass, 3D button, share (no slider, no zoom). In Models it holds reset view, zoom and share. |
 
 There is no "Sim Atlanta" name on screen. The name appears in the tab title, the link
 preview and About.
@@ -90,6 +90,7 @@ Removed for now: Street view and search. Both are follow-ups.
 
 - Opens upward from the app bar. On phones it is a bottom sheet.
 - Contents:
+  - Model lab › "The trains, buildings and trees, up close" (opens the Models view)
   - Key ›
   - About & credits ›
   - Graphics: Auto, High, Low. Caption: "Low draws at standard resolution with simpler
@@ -101,7 +102,9 @@ Removed for now: Street view and search. Both are follow-ups.
 
 ## Models view (the Model lab moves in)
 
-- The Model lab becomes the third view, no longer a separate page.
+- The Model lab is a view in the same shell, no longer a separate page. It opens from the
+  menu (Model lab ›), not a view switch. In Models, the subject card gets a ‹ back control
+  that returns to the Map or City you came from.
 - **Details panel:** camera (Front, Side, Rear, Top), line colour, platform, and display
   switches (Night, Ink outlines).
 - **"Compare with a photo"** is a modelling tool, so it goes behind a dev-only flag such
@@ -136,6 +139,15 @@ Removed for now: Street view and search. Both are follow-ups.
   - twisting two fingers rotates
   - dragging two fingers up or down tilts
   - double-tap zooms in
+- **Trackpad (desktop):**
+  - click-drag pans
+  - two-finger scroll up or down tilts; sideways turns
+  - pinch zooms
+  - twist turns, in Safari only (its gesture events; other browsers don't receive it)
+  - A mouse wheel still zooms. Tell the two apart per gesture: trackpads send small,
+    fractional, often sideways deltas; wheels send fixed notches (or `deltaMode` lines).
+    A wrong guess only means a smooth-scrolling mouse tilts; + and − still zoom.
+  - Two-finger tilt stops at City's top (20°). It never switches between Map and City.
 - **Keys:** arrows or WASD pan, Q/E rotate, +/− zoom, N faces north.
 - **Implementation:**
   - In `web/src/city/city.ts`, remap the `OrbitControls` mouse buttons and touches and
@@ -144,8 +156,36 @@ Removed for now: Street view and search. Both are follow-ups.
   - Re-check the tap-versus-drag threshold in `city/pick.ts`, and Follow.
   - Phones drop the zoom buttons, because pinch covers them.
   - The City studios edit `city.ts`, so coordinate through the Control agent.
-- The first-visit hint uses wording that matches the view and the input, so the
+- The first-visit hint uses wording that matches the view and the input (trackpad:
+  "Two-finger scroll to tilt and turn · pinch to zoom · drag to move"; touch: "Two
+  fingers: drag up or down to tilt, twist to turn, pinch to zoom"), so the
   "Drag to look around · WASD to move" hint no longer appears on Map.
+
+## 3D is City (Sam chose C, 2026-11-23)
+
+Boards: the canvas section "B and C — 3D is City" (C rows) and "Camera column — tilt you
+can see". The site already opens in City (#297), so first impressions don't change.
+
+- **No view switch.** The app bar is menu · radio.
+- **3D button** (top of the tilt piece in the camera column). On = City, drawn as a dark
+  chip with light "3D". Off = the flat Map. Turning it on plays the Map → City switch below;
+  turning it off plays City → Map.
+- **Tilt slider** under the button, one range across both views:
+  - top = flat Map (0°); a notch at 20° = City's highest angle; bottom = 70°.
+  - In Map, dragging down tilts the map with the pointer. Crossing the notch (it catches
+    briefly) starts City. Dragging back up past it returns to Map.
+  - The first time, City still has to build, so the switch plays at its own pace like a
+    tap. Once City is built this session, the cross-fade follows the pointer.
+  - While dragging, the angle shows beside the thumb ("38°").
+  - City's default tilt stays 55°.
+- **Compass:** round, its own piece. Tap faces north; drag turns.
+- **Phones:** compass, 3D button, share. No slider (two-finger drag tilts) and no zoom
+  buttons (pinch).
+- **Outside City's area** (or zoomed out past City's scale): the 3D button and slider dim.
+  Hover or tap shows "3D covers downtown and Midtown." with **Take me there**, which flies to
+  City's opening view and plays the normal switch.
+- **URLs:** `?view=city` and `?view=map` keep working; 3D on/off is the same state.
+- **Models** opens from the menu (see Models view).
 
 ## Credits (OSMF attribution guidelines)
 
@@ -233,11 +273,11 @@ References:
   phone data. Measure on the Galaxy A16 before changing it. The white-model treatment works
   either way.
 
-### Map to City (Sam chose option B, 2026-11-23)
+### Map to City (Sam chose option B, 2026-11-23; triggered by the 3D button or slider)
 
 Reference: canvas board 9 (`docs/ui-a2c/source/L9-map-b.dc.html`), built from real captures.
 
-1. **Tap City: the map tilts first.** MapLibre eases from its current pitch to City's tilt
+1. **Turn on 3D: the map tilts first.** MapLibre eases from its current pitch to City's tilt
    over about 1 s, keeping centre and bearing, while City's data downloads. Nothing heavy
    runs yet, so the tilt stays smooth.
 2. **White buildings stand on the map.** City draws only buildings (ground, roads, decks and
@@ -324,6 +364,11 @@ out, then the map flattens.
 9. **Loading and arrival:** the white model, colour fade-in, areas arriving as white model,
    and the registered Map to City switch (see the section above). Sequence it with the City
    studios.
+10. **3D is City (option C):** drop the view switch from the app bar, add Model lab to the
+    menu and ‹ back in Models, the new camera column (3D button, tilt slider, round
+    compass, share on its own), trackpad two-finger tilt, the off-area state, and the new
+    hints. The slider crossing into Map comes after option B's switch has landed, since it
+    drives that same transition.
 
 ## Not yet verified
 
@@ -397,6 +442,13 @@ System UI sans throughout.
   - day: background `rgba(255,255,255,.95)`, shadow `0 1px 3px rgba(40,30,20,.16), 0 0 0 .5px rgba(60,45,30,.12)`, track `rgba(60,45,30,.12)`
   - night: `rgba(255,255,255,.20)` on a `rgba(0,0,0,.22)` track
   - never a dark fill
+- **Camera column (desktop):** 44 px wide pieces, 8 px apart, radius 14 px (compass
+  fully round). 3D button 36×30 px, 13 px / 700; on = `#2a2722` fill with `#fbf9f4` text
+  (a toggle, not a segment, so the no-dark-fill segment rule doesn't apply); off = ink
+  text, no fill. Slider track 4×96 px in the separator colour, filled above the thumb in
+  ink at 55%; thumb 18 px white with `0 1px 4px rgba(40,30,20,.35)`; notch 2 px in
+  secondary ink. Angle label 12 px / 600 on ink, 30 px left of the thumb.
+  Off-area: button and track at 40% opacity; tooltip 13 px on ink, to the left.
 - **Truth-tier label:** 11 px / 600, 1 px separator-colour border, fully rounded, secondary
   ink. Fixed width (76 px) in the Key so the descriptions line up.
 - **Colour lines in the Key:** 28×5 px. Service colours come from `web/src/ui/tokens.css`.
