@@ -27,8 +27,10 @@ def roads(row):
             # The existing 17th Street model already owns these ramps and mouths.
             if road["sub"] == "link" and np.any((xy[:, 1] < -3900) & (xy[:, 1] > -4260)):
                 continue
+        elif row == "brookwood-station" and road["pts"][0] in ([-14.46,-4988.95], [-55.72,-5109.21]):
+            pass  # Sidewalks flanking the Peachtree road bridge.
         elif road["name"] not in streets:
-            if road["cls"] != "footway" or not any(
+            if road["cls"] not in ("footway", "cycleway") or not any(
                     np.min(np.linalg.norm(xy[:, None] - span[None, :], axis=2)) < 26 for span in named):
                 continue
         yield road

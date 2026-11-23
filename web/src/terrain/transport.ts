@@ -167,7 +167,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const ribbon = use === 'road' && run.cls === 'motorway'
       ? matchRibbon(run.pts[0],run.pts[1],run.sub==='link') : undefined;
     const travelWidth = ribbon ? ribbon.lanes*3.55 : 0;
-    const width = ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2;
+    const width = run.crossSection?.width ?? (ribbon ? travelWidth + (ribbon.link ? 1.4 : 3.6) : sidepath ? pathWidth : use === 'road' ? roadWidth(run) : 4.2);
     // Keep original corners as well as intermediate terrain samples. A structural
     // tread follows a single chord between its two DEM endpoint proxies.
     const stations = [0];
@@ -382,6 +382,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         for (let i=0;i<=ribbon.lanes;i++) {
           const offset=travelWidth*(.5-i/ribbon.lanes);
           strip(offset+.14,offset-.14,.15,i===0 && !ribbon.link ? PAL.lineYellow : PAL.lineWhite,0,false,i>0 && i<ribbon.lanes);
+        }
+      } else if (run.crossSection) {
+        for (let lane=1; lane<run.crossSection.lanes; lane++) {
+          const off = width * (.5 - lane/run.crossSection.lanes);
+          const center = lane === run.crossSection.opposing;
+          strip(off+.09,off-.09,.15,center ? PAL.lineYellow : PAL.lineWhite,0,false,!center);
         }
       } else if (!walkway && width >= 9) strip(.1, -.1, .15, PAL.lineYellow);
     }

@@ -48,6 +48,10 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
     if (!candidates) {
       candidates = parts.filter(part => part.cls === road.cls && (part.sub ?? null) === (road.sub ?? null) &&
         (part.sourceAxis ? sharesAxis(part.sourceAxis,road.pts) : part.pts.some(p => nearest(p,road.pts).distance < .08)));
+      // A mapped sidewalk can share both its endpoint and heading with a
+      // neighboring deck. Its original geometry owns the shared point.
+      candidates.sort((a,b) => Number(b.pts === road.pts || b.sourceAxis === road.pts) -
+        Number(a.pts === road.pts || a.sourceAxis === road.pts));
       cache.set(road,candidates);
     }
     if (!candidates.length) return ground ? groundAt(x,z,road) : null;

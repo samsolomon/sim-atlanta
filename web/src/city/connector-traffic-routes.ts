@@ -8,6 +8,7 @@ import {
   successors,
   type LaneEnd,
 } from '../terrain/connector-corridor';
+import { midtownThroughLane, trafficLaneFraction } from '../terrain/midtown-connector-lanes';
 import type { ConnectorDirection } from '../terrain/connector-lanes';
 import type { TerrainCity } from '../terrain/transport-data';
 
@@ -92,14 +93,9 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
       pts: ribbon.pts,
     };
     for (let lane = 0; lane < ribbon.lanes; lane++) {
-      // Traffic entering from I-75 occupies the outside lanes of the merged
-      // Connector. A through driver moves one lane inward south of 14th,
-      // before the outer auxiliary lane becomes exit-only at Williams.
-      const exitLane = ribbon.id === 337901433 && lane === 6 ? 5 : lane;
-      const points = ribbon.rows.map(row => {
-        const shift = Math.max(0, Math.min(1, (row.s - 90) / 160));
-        return stripePoint(row, (lane + (exitLane - lane) * shift + .5) / ribbon.lanes);
-      });
+      const exitLane = midtownThroughLane(ribbon, lane);
+      const points = ribbon.rows.map(row =>
+        stripePoint(row, trafficLaneFraction(lane, exitLane, ribbon.lanes, row.s)));
       for (const pts of clipped(points, boxes)) {
         const p: Piece = {
           ribbon,

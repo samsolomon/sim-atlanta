@@ -14,6 +14,7 @@ it('carries traffic in both directions between the downtown mainline and both Br
 });
 
 import { readFileSync } from 'node:fs';
+import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { GroundGrid } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
@@ -24,13 +25,13 @@ import { seventeenthAccess, seventeenthPortals } from './seventeenth-street';
 import { bridgeApproaches } from '../terrain/bridge-approaches';
 import { brookwoodGrid } from './brookwood';
 import { cityRoadHeight } from './road-height';
-import { Line } from '../vignette/geom';
+import { Line, segDist } from '../vignette/geom';
 
 it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s detail', quality => {
   const scene = midtownRows.map(row => {
     const read = (file: string) => readFileSync(new URL('../../../pipeline/prototypes/square-board/'+row+'/'+file, import.meta.url));
     const manifest = JSON.parse(read('ground.json').toString()), bytes = Uint8Array.from(read('ground.i16')).buffer;
-    const grid = row.startsWith('brookwood') ? brookwoodGrid(manifest, bytes) : new GroundGrid(manifest,bytes);
+    const grid = row.startsWith('brookwood') ? brookwoodGrid(manifest, midtownConnectorGround(manifest, bytes)) : new GroundGrid(manifest,bytes);
     const city = midtownConnectorDecks(seventeenthAccess(auburnTransport(JSON.parse(read('context.json').toString()))));
     const surface = new GroundSurface(grid, quality);
     const banks = bridgeApproaches(seventeenthPortals(city), 323.8, surface.sampleScene.bind(surface), city.bounds, city.roads);
@@ -50,6 +51,22 @@ it.each(['high', 'low'] as const)('samples the mounted Midtown surfaces at %s de
         }
       }
       console.log(midtownRows[i],minimum,worst);
+    }
+    if (quality === 'low') {
+      const csv=readFileSync(new URL('../../../docs/rectangle-elevation.csv',import.meta.url),'utf8');
+      for(const record of csv.split('\n')){
+        const [row,kind,feature,rawX,rawZ,,,]=record.split(',');
+        const idx=midtownRows.indexOf(row as typeof midtownRows[number]);
+        if(idx<0||!(kind==='crossing tread separation'||kind==='buried bridge tread'))continue;
+        const {city,height,banks}=scene[idx],x=Number(rawX),z=Number(rawZ);
+        const [up,down]=feature.split(' over ');
+        const near=(road:typeof city.roads[number])=> Math.min(...road.pts.slice(1).map((q,j)=>segDist(x,z,road.pts[j],q)));
+        const find=(label:string,bridge:boolean)=>city.roads.filter((r,j)=>r.bridge===bridge && (r.name===label || 'road '+j===label || !r.name&&r.cls===label)).sort((a,b)=>near(a)-near(b))[0];
+        const upper=find(up,true), lower=down&&find(down,false);
+        if(feature==='road 701' && upper) console.log('701',upper,scene[idx].city.terrainTransport!.roads.filter(r=>r.pts===upper.pts).map(r=>scene[idx].decks.deckAt(x,z,r)),banks.groundAt(x,z,upper),banks.groundAt(x,z));
+        const H=upper &&height(x,z,upper),L=lower?height(x,z,lower):banks.groundAt(x,z);
+        console.log('AUDIT',row,feature,rawX,rawZ,H!=null&&L!=null?(H-L).toFixed(2):'NA');
+      }
     }
     const routes=connectorTrafficRoutes(scene[0].city,scene.slice(1).map(b=>b.city));
     const missing=new Map<string,number>(); const jumps=new Map<string,number>();

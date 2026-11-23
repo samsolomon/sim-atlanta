@@ -1,4 +1,5 @@
 import { midtownFoundations } from '../city/midtown-foundations';
+import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
@@ -106,8 +107,9 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   if (Array.from(digest, b => b.toString(16).padStart(2, '0')).join('') !== manifest.sha256)
     throw Error('Ground checksum mismatch at ' + path);
-  if (brookwood) return brookwood(manifest, bytes);
-  return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, bytes);
+  const terrain = midtownConnectorGround(manifest, bytes);
+  if (brookwood) return brookwood(manifest, terrain);
+  return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, terrain);
 }
 
 async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
