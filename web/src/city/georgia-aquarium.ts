@@ -412,6 +412,8 @@ function graphic(
   hi: number,
   draw: (c: CanvasRenderingContext2D) => void,
   light: number,
+  segments = 32,
+  offset = 0.38,
 ) {
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
@@ -433,7 +435,7 @@ function graphic(
   mat.addEventListener('dispose', () => map.dispose());
   const position: number[] = [],
     uv: number[] = [];
-  for (let i = 0; i < 32; i++)
+  for (let i = 0; i < segments; i++)
     for (const [j, v] of [
       [i, 0],
       [i, 1],
@@ -442,8 +444,8 @@ function graphic(
       [i + 1, 1],
       [i + 1, 0],
     ]) {
-      const f = j / 32;
-      position.push(...p(a + (b - a) * f, lo + (hi - lo) * v, 0.38));
+      const f = j / segments;
+      position.push(...p(a + (b - a) * f, lo + (hi - lo) * v, offset));
       uv.push(f, v);
     }
   const g = new BufferGeometry();
@@ -525,7 +527,8 @@ export function createGeorgiaAquarium(buildings: VBuilding[], grid: GroundGrid) 
     }
   }
   const result = m.finish('#b3d2ef');
-  const name = graphic(result.group, bow, 0.041, 0.415, 319.1, 320.8, wordmark, 0.62);
+  // Start beyond the folded corner and follow the same 19 panels as the blue fascia.
+  const name = graphic(result.group, bow, 6 / 60, 25 / 60, 319.1, 320.8, wordmark, 0.62, 19, 0.08);
   const emblem = graphic(result.group, lantern, 0.1, 0.35, 328.45, 331.55, fishG, 0.88);
   const roofMark: Point = (t, y, d = 0) => {
     const x = 111 - (y - 310) * 1.85,

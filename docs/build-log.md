@@ -1953,3 +1953,7 @@ The north and south additions met downtown at exactly the same ground height. In
 ### 2026-11-23 — Two bows at Georgia Aquarium
 
 The 2018 lidar puts the Luckie Street hall at about 331 m NAVD88, but part of the current aquarium footprint looked like bare plaza. The building changed in between surveys. In 2020 a lower blue bow wrapped the old glass lantern, bringing the entrance and a silver wave wall out toward Pemberton Place. The 2024 county aerial locates that new edge and the large painted fish on the older roof. City now follows both bows, the window and portholes on Luckie, and the screen turning the Baker corner. The L-shaped parking deck still occupies its own footprint. [Photographs, 64,028 lidar returns and matched City views](log/ui/georgia-aquarium/README.md) · [Day, dusk and night comparison](log/ui/georgia-aquarium/comparison.jpg)
+
+## 2026-11-23 — The first letter on the Georgia Aquarium entrance
+
+At sidewalk height the G in “Georgia Aquarium” straddled the fold between the curved blue entrance wall and its Baker Street return. The angle from above had hidden the distortion. We moved the name inward, aligned its lettering to 19 consecutive facade panels and reduced the gap between the letters and the cladding from 34 cm to 4 cm. The same Orca sidewalk view now shows blue on both sides of the G. We also checked it from across the plaza and after dark. [Matched sidewalk views](log/ui/georgia-aquarium/entrance-wordmark.jpg)
