@@ -117,7 +117,7 @@ export interface CityView {
   hasPeople: boolean;
   bounds: VData['bounds'];
   /** Centre the view on scene metres (x east, z −north). */
-  lookAt(x: number, z: number, camera?: GroundCamera & { tilt?: number }): void;
+  lookAt(x: number, z: number, camera?: (GroundCamera | { bearing: number; distanceM: number }) & { tilt?: number }): void;
   target(): { x: number; z: number };
   camera(): GroundCamera & { tilt: number };
   /** Pan by a screen offset in CSS pixels (keyboard movement). */
@@ -1329,7 +1329,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       approachNorth(x, z);
       const point = pointOnBoard(x, z);
       if (view) {
-        const dist = view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+        const dist = 'distanceM' in view ? view.distanceM : view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
         const tilt = THREE.MathUtils.clamp(view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()),
           THREE.MathUtils.radToDeg(controls.minPolarAngle), THREE.MathUtils.radToDeg(controls.maxPolarAngle));
         setView(-view.bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance),

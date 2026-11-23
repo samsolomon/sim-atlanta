@@ -52,6 +52,7 @@ reproducible:
 
 - `?t=2026-11-20T14:00:00-05:00` pins the clock, and `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the 2D map view, and `?view=3d` opens the downtown diorama.
+- `/?view=city&cam=565,-3965,-101,55,421` targets Five Points x and z (metres), bearing clockwise from north and tilt from vertical (degrees), and orbit distance (metres). City samples ground height and clamps the view to its board and orbit limits.
 - `/vignette.html?at=<ISO>&weather=rain|fog|storm|overcast|clear&speed=600`, plus `?clean`
   and `?scatter`.
 
