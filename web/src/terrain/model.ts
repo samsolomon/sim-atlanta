@@ -1,3 +1,4 @@
+import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
@@ -152,7 +153,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === varsityId ? createVarsity
       : techIds.has(site.id) ? createTechLandmark
       : artsCampusIds.has(site.id) ? createArtsCampusLandmark
-      : midtownLandmarkIds.has(site.id) ? createMidtownLandmark : null;
+      : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
+      : curatedIds.has(site.id) ? createCuratedLandscape : null;
     const landmark = create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
