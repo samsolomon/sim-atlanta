@@ -25,21 +25,45 @@ const STONE = '#a29c90', CAP = '#bdb7ab', CURB = '#b6b0a4', MULCH = '#5b4535';
 const LEAF = ['#4d6b3a', '#5b7a44', '#45613a', '#628048'];
 const CLIPPED = '#4a6838';
 
+/** Atlanta's garden seasons by day of year, shared by beds and ornamentals. */
+export function season(doy: number): 'spring' | 'summer' | 'fall' | 'winter' {
+  return doy >= 60 && doy < 140 ? 'spring' : doy >= 140 && doy < 260 ? 'summer' : doy >= 260 && doy < 335 ? 'fall' : 'winter';
+}
+
 /** Seasonal flower colours for a day of year (Atlanta: tulips and pansies in spring, annuals in summer, mums in fall). */
 export function bloom(doy: number): string[] {
-  if (doy >= 60 && doy < 140) return ['#f2d24b', '#e4566b', '#f5f0e6', '#9b6ad0', '#f08a3c'];
-  if (doy >= 140 && doy < 260) return ['#e8483f', '#f7a33b', '#fbe7f0', '#d4457f', '#ffd84a'];
-  if (doy >= 260 && doy < 335) return ['#d9822b', '#b33d2e', '#e8c547', '#8a3d6b'];
+  const s = season(doy);
+  if (s === 'spring') return ['#f2d24b', '#e4566b', '#f5f0e6', '#9b6ad0', '#f08a3c'];
+  if (s === 'summer') return ['#e8483f', '#f7a33b', '#fbe7f0', '#d4457f', '#ffd84a'];
+  if (s === 'fall') return ['#d9822b', '#b33d2e', '#e8c547', '#8a3d6b'];
   return ['#6c7d5a', '#8f8a6c', '#d9d2bd'];   // winter: pansies and cabbages read as muted
 }
 
 function along(line: P2[], step: number) {
   const out: { x: number; z: number; nx: number; nz: number }[] = [];
-  for (let i = 1; i < line.length; i++) {
-    const [a, c] = [line[i - 1], line[i]], len = Math.hypot(c[0] - a[0], c[1] - a[1]);
-    if (len < 1e-6) continue;
-    const n = Math.max(1, Math.ceil(len / step)), nx = -(c[1] - a[1]) / len, nz = (c[0] - a[0]) / len;
-    for (let k = i === 1 ? 0 : 1; k <= n; k++) out.push({ x: a[0] + (c[0] - a[0]) * k / n, z: a[1] + (c[1] - a[1]) * k / n, nx, nz });
+  const segs = line.slice(1).map((c, i) => {
+    const a = line[i], len = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    return { a, c, len, nx: len ? -(c[1] - a[1]) / len : 0, nz: len ? (c[0] - a[0]) / len : 0 };
+  }).filter(s => s.len > 1e-6);
+  // Interior corners take a mitred normal, so curbs and hedges turn without twisting.
+  const mitre = (p: typeof segs[number], q: typeof segs[number]) => {
+    let mx = p.nx + q.nx, mz = p.nz + q.nz;
+    const m = Math.hypot(mx, mz) || 1;
+    mx /= m; mz /= m;
+    const k = 1 / Math.max(.3, mx * q.nx + mz * q.nz);
+    return { nx: mx * k, nz: mz * k };
+  };
+  segs.forEach((s, i) => {
+    const n = Math.max(1, Math.ceil(s.len / step));
+    for (let k = i === 0 ? 0 : 1; k <= n; k++) out.push({ x: s.a[0] + (s.c[0] - s.a[0]) * k / n, z: s.a[1] + (s.c[1] - s.a[1]) * k / n, nx: s.nx, nz: s.nz });
+    if (i + 1 < segs.length) Object.assign(out[out.length - 1], mitre(s, segs[i + 1]));
+  });
+  // A closed ring mitres its start and end too.
+  const first = segs[0], last = segs[segs.length - 1];
+  if (segs.length > 1 && Math.hypot(first.a[0] - last.c[0], first.a[1] - last.c[1]) < 1e-6) {
+    const m = mitre(last, first);
+    Object.assign(out[0], m);
+    Object.assign(out[out.length - 1], m);
   }
   return out;
 }
@@ -71,7 +95,14 @@ function clump(b: Builder, x: number, y: number, z: number, r: number, h: number
   }
 }
 
-const g0 = (ground: Ground, x: number, z: number, fallback = 0) => ground(x, z) ?? fallback;
+// Off-board or in a hole, a sampler returns null. Reuse its last valid height rather than 0,
+// which in City's frame can be 30 m away from the real ground.
+const lastValid = new WeakMap<Ground, number>();
+const g0 = (ground: Ground, x: number, z: number) => {
+  const y = ground(x, z);
+  if (y !== null) { lastValid.set(ground, y); return y; }
+  return lastValid.get(ground) ?? 0;
+};
 
 /**
  * Planting bed: a curbed edge, mulch draped on the ground and a low fill of
@@ -87,10 +118,12 @@ export function flowerBed(b: Builder, ring: P2[], ground: Ground,
   const r = rng(hashStr(o.seed ?? ring.map(p => p.join(',')).join(';')));
   strip(b, [...ring, ring[0]], .15, (x, z) => g0(ground, x, z) - .1, (x, z) => g0(ground, x, z) + curb, CURB, CURB, quality === 'low' ? 4 : 2);
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]), cell = quality === 'low' ? 2 : 1;
-  // Draped cells wholly inside the bed, over the bed's own outline just beneath, so mulch never spills past the curb.
+  // Draped cells wholly inside the bed (corners, centre and edge midpoints), over the bed's own
+  // outline just beneath, so mulch stays inside the curb even on notched beds.
   for (let x = Math.min(...xs); x < Math.max(...xs); x += cell) for (let z = Math.min(...zs); z < Math.max(...zs); z += cell) {
     const corners = [[x, z], [x + cell, z], [x + cell, z + cell], [x, z + cell]] as P2[];
-    if (!corners.every(([u, v]) => pointInRing(u, v, ring))) continue;
+    const h = cell / 2, probes: P2[] = [...corners, [x + h, z + h], [x + h, z], [x + cell, z + h], [x + h, z + cell], [x, z + h]];
+    if (!probes.every(([u, v]) => pointInRing(u, v, ring))) continue;
     const c = corners.map(([u, v]) => [u, g0(ground, u, v) + curb * .6 + dome(u, v), v]);
     b.quad(c[0], c[3], c[2], c[1], MULCH);
   }
@@ -153,9 +186,10 @@ export function seatWall(b: Builder, line: P2[], ground: Ground, o: { height?: n
 export function stairRun(b: Builder, from: P2, to: P2, width: number, ground: Ground,
   o: { riser?: number; cheeks?: boolean; fromY?: number; toY?: number } = {}) {
   // Elevations default to the ground at each end; pass fromY/toY (scene metres) for surveyed landings.
+  if (Math.hypot(to[0] - from[0], to[1] - from[1]) < 1e-6 || !(width > 0)) return;
   const y0 = o.fromY ?? g0(ground, ...from), y1 = o.toY ?? g0(ground, ...to);
   const [lo, hi, a, c] = y0 <= y1 ? [y0, y1, from, to] : [y1, y0, to, from];
-  const steps = Math.max(1, Math.round((hi - lo) / (o.riser ?? .16)));
+  const steps = Math.min(400, Math.max(1, Math.round((hi - lo) / Math.max(.05, o.riser ?? .16))));
   const len = Math.hypot(c[0] - a[0], c[1] - a[1]), ux = (c[0] - a[0]) / len, uz = (c[1] - a[1]) / len, nx = -uz, nz = ux;
   const go = len / steps, rise = (hi - lo) / steps, h = width / 2;
   for (let k = 0; k < steps; k++) {
@@ -178,16 +212,26 @@ export function stairRun(b: Builder, from: P2, to: P2, width: number, ground: Gr
  */
 export function terraces(b: Builder, from: P2, to: P2, width: number, levels: number, ground: Ground,
   o: { doy?: number; quality?: Quality; surface?: string; fromY?: number; toY?: number } = {}) {
-  const len = Math.hypot(to[0] - from[0], to[1] - from[1]), ux = (to[0] - from[0]) / len, uz = (to[1] - from[1]) / len, nx = -uz, nz = ux, h = width / 2;
+  levels = Math.floor(levels);
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1]);
+  if (levels < 1 || len < 1e-6 || !(width > 0)) return;
+  const ux = (to[0] - from[0]) / len, uz = (to[1] - from[1]) / len, nx = -uz, nz = ux, h = width / 2;
   const pt = (s: number, side: number): P2 => [from[0] + ux * s + nx * side, from[1] + uz * s + nz * side];
   const cut = (k: number) => len * k / levels;
-  // Each level sits on the highest ground under it, so nothing pokes through.
-  // With fromY/toY the levels step evenly between the two surveyed elevations;
-  // otherwise each level sits on the highest ground under it, so nothing pokes through.
-  const ys = o.fromY !== undefined && o.toY !== undefined
-    ? Array.from({ length: levels }, (_, k) => o.fromY! + (o.toY! - o.fromY!) * (levels === 1 ? 1 : k / (levels - 1)))
-    : Array.from({ length: levels }, (_, k) => Math.max(...[cut(k), (cut(k) + cut(k + 1)) / 2, cut(k + 1)]
-      .flatMap(s => [-h, 0, h].map(side => g0(ground, ...pt(s, side))))) + .05);
+  // Highest ground under a level, sampled on a 1 m grid so nothing pokes through.
+  const highest = (k: number) => {
+    let top = -Infinity;
+    const ns = Math.max(2, Math.ceil((cut(k + 1) - cut(k)))), nw = Math.max(2, Math.ceil(width));
+    for (let i = 0; i <= ns; i++) for (let j = 0; j <= nw; j++)
+      top = Math.max(top, g0(ground, ...pt(cut(k) + (cut(k + 1) - cut(k)) * i / ns, -h + width * j / nw)));
+    return top + .05;
+  };
+  // With fromY and/or toY the levels step evenly between the surveyed elevations
+  // (a missing end takes its level's own ground); otherwise each sits on its highest ground.
+  const surveyed = o.fromY !== undefined || o.toY !== undefined;
+  const first = o.fromY ?? highest(0), last = o.toY ?? highest(levels - 1);
+  const ys = Array.from({ length: levels }, (_, k) => surveyed
+    ? first + (last - first) * (levels === 1 ? 0 : k / (levels - 1)) : highest(k));
   for (let k = 0; k < levels; k++) {
     const y = ys[k], q = [pt(cut(k), -h), pt(cut(k + 1), -h), pt(cut(k + 1), h), pt(cut(k), h)].map(([x, z]) => [x, y, z]);
     b.quad(q[0], q[3], q[2], q[1], o.surface ?? '#8aa266');
@@ -207,13 +251,14 @@ export function terraces(b: Builder, from: P2, to: P2, width: number, levels: nu
 /** A small cluster of specimen ornamentals (multi-stem shrubs and grasses, not trees): seasonal tint, seeded layout. */
 export function ornamentals(b: Builder, centre: P2, radius: number, ground: Ground, o: { doy: number; count?: number; quality?: Quality; seed?: string }) {
   const r = rng(hashStr(o.seed ?? centre.join(','))), n = Math.max(2, Math.round((o.count ?? 7) * (o.quality === 'low' ? .5 : 1)));
-  const fall = o.doy >= 280 && o.doy < 340, winter = o.doy >= 340 || o.doy < 60;
+  const fall = season(o.doy) === 'fall', winter = season(o.doy) === 'winter';
   for (let i = 0; i < n; i++) {
     const a = r() * Math.PI * 2, d = radius * Math.sqrt(r()), x = centre[0] + Math.cos(a) * d, z = centre[1] + Math.sin(a) * d, y = g0(ground, x, z);
     const grass = r() < .4, size = grass ? .5 + r() * .3 : .7 + r() * .6;
     const tone = grass ? (winter ? '#b9a57a' : fall ? '#c9a95a' : '#8fa36a') : winter ? '#6d6450' : fall ? ['#b8452f', '#d0782f', '#9c3b3b'][Math.floor(r() * 3)] : LEAF[Math.floor(r() * 4)];
     if (grass) for (let k = 0; k < 3; k++) clump(b, x + (r() - .5) * .3, y, z + (r() - .5) * .3, size * .35, size * 1.6, tone, r() * 3);
-    else { clump(b, x, y + size * .3, z, size, size * 1.3, tone, r() * 3); clump(b, x + size * .5, y + size * .2, z - size * .3, size * .7, size * .9, tone, r() * 3); }
+    // Shrub mounds stand on the turf (base just below grade), so no gap shows underneath.
+    else { clump(b, x, y - .05, z, size, size * 1.6, tone, r() * 3); clump(b, x + size * .5, y - .05, z - size * .3, size * .7, size * 1.1, tone, r() * 3); }
   }
 }
 

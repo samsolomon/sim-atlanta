@@ -250,6 +250,7 @@ function build() {
     ground.visible = false;
     sun.position.set(-18, 30, 22);
     Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 120 });
+    sun.shadow.normalBias = .05;
     sun.shadow.camera.updateProjectionMatrix();
     document.getElementById('title')!.textContent = models[model];
     document.title = models[model] + ' · Model Lab · Sim Atlanta';

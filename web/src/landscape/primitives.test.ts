@@ -70,3 +70,20 @@ it('the low tier is cheaper, and a whole garden is one draw', () => {
   expect(garden.mesh.geometry.getAttribute('position').count).toBe(tris(high) * 3);
   garden.dispose();
 });
+
+it('guards degenerate input and never drops to zero when the ground is missing', () => {
+  const b = new Builder();
+  stairRun(b, [0, 0], [0, 0], 2, bank);
+  stairRun(b, [0, 4], [0, -4], 2, bank, { riser: 0, cheeks: false });
+  terraces(b, [0, -9], [0, 9], 6, 0, bank);
+  expect(b.pos.every(Number.isFinite)).toBe(true);
+  // A sampler that is null east of x = 2 (off the board) at City's -30 m frame.
+  const edge = (x: number) => x > 2 ? null : -30;
+  const w = new Builder();
+  retainingEdge(w, [[-4, 0], [4, 0]], edge);
+  expect(Math.max(...ys(w))).toBeLessThan(-29);
+  // One surveyed end is honoured on its own.
+  const t = new Builder();
+  terraces(t, [0, -9], [0, 9], 6, 3, bank, { toY: 5 });
+  expect(Math.max(...ys(t))).toBeGreaterThan(5);
+});
