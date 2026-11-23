@@ -69,7 +69,16 @@ it('draws the same source identity at a live or scheduled fix and retires cars w
     expect(
       cars.children
         .filter((c) => c.visible)
-        .every((c) => c.userData.trainId === state.id && c.position.y >= -8 - 1e-6 && c.position.y <= Math.max(...profile.height) + 1e-6),
+        .every((c) => {
+          // Cars sit on the profile at their own distance along the track.
+          let best = { d: Infinity, u: 0 };
+          for (let u = 0; u <= tracks[1].length; u += 0.25) {
+            const q = tracks[1].at(u),
+              d = Math.hypot(q.x - c.position.x, q.z - c.position.z);
+            if (d < best.d) best = { d, u };
+          }
+          return c.userData.trainId === state.id && Math.abs(c.position.y - profile.at(tracks[1], best.u)) < 0.02;
+        }),
     ).toBe(true);
     expect(JSON.stringify(state)).toBe(snapshot);
   }

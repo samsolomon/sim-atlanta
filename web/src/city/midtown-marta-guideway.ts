@@ -7,11 +7,13 @@ type Ground = (x: number, z: number) => number | null;
 export const NORTH_LINE = 'MARTA North Line';
 /** Steepest designed grade on the open North Line (inferred; typical heavy-rail limit). */
 export const MAX_GRADE = 0.035;
-/** Deck top to ground beneath a span: 4.9 m road clearance plus the ~2 m box girder. */
-export const BRIDGE_CLEARANCE = 6.9;
+/** Rail level to ground beneath a span: 4.9 m clearance under the soffit, which sits 2.2 m down. */
+export const BRIDGE_CLEARANCE = 7.1;
 /** Ballast tread top above the highest ground across its width. */
 const TREAD_LIFT = 0.13;
 const STEP = 2;
+/** Metres from the tunnel mouth still inside the portal hood. */
+const MOUTH = 6;
 
 /**
  * North of the portal the guideway draws the North Line itself, so the generic
@@ -20,6 +22,16 @@ const STEP = 2;
 export function northLineRail(row: string, rail: TransportRun[]) {
   if (row !== 'brookwood-station') return rail;
   return rail.map((run) => (run.name === NORTH_LINE ? { ...run, replaced: true } : run));
+}
+
+function crossing(a: P2, b: P2, c: P2, d: P2): P2 | null {
+  const r = [b[0] - a[0], b[1] - a[1]],
+    q = [d[0] - c[0], d[1] - c[1]];
+  const den = r[0] * q[1] - r[1] * q[0];
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((c[0] - a[0]) * q[1] - (c[1] - a[1]) * q[0]) / den,
+    u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / den;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [a[0] + t * r[0], a[1] + t * r[1]] : null;
 }
 
 function nearestOn(line: Line, x: number, z: number) {
@@ -41,31 +53,65 @@ function nearestOn(line: Line, x: number, z: number) {
 
 /**
  * One designed profile shared by both tracks: on bare earth it rides the highest
- * ground across both treads, and over a span it keeps the deck at least
+ * ground between the outer rails, and over a span it keeps the deck at least
  * BRIDGE_CLEARANCE above the ground beneath. A grade-limited envelope joins the
  * two, so bridge ends meet their banks without a step.
  */
-export function northLineProfile(tracks: Line[], runs: readonly TransportRun[], ground: Ground) {
+type Road = { cls: string; pts: P2[] };
+const UNDER = new Set(['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'service']);
+
+export function northLineProfile(tracks: Line[], runs: readonly TransportRun[], ground: Ground, roads: readonly Road[] = []) {
   const [a, b] = tracks;
   const spans = runs.filter((r) => r.name === NORTH_LINE && r.kind === 'bridge').map((r) => new Line(r.pts));
-  const centre: { x: number; z: number; s: number; nx: number; nz: number; half: number; bridge: boolean }[] = [];
+  const centre: { x: number; z: number; s: number; nx: number; nz: number; half: number; bridge: boolean; clear: number | null }[] = [];
   for (let s = 0; s <= a.length; s += STEP) {
     const p = a.at(s),
       q = nearestOn(b, p.x, p.z);
     const x = (p.x + q.x) / 2,
       z = (p.z + q.z) / 2;
-    const bridge = spans.some((l) => nearestOn(l, x, z).d < 3.2);
-    centre.push({ x, z, s, nx: -p.dz, nz: p.dx, half: q.d / 2 + 2.1, bridge });
+    const near = spans.map((l) => ({ l, n: nearestOn(l, x, z) })).filter(({ n }) => n.d < 3.2);
+    const bridge = near.some(({ l, n }) => n.s > 0.5 && n.s < l.length - 0.5);
+    centre.push({ x, z, s, nx: -p.dz, nz: p.dx, half: q.d / 2 + 2.1, bridge, clear: null });
   }
+  // Clearance applies only where a mapped road crosses under a span: stations within
+  // 6 m of the crossing take that road's ground plus BRIDGE_CLEARANCE. A road running
+  // alongside on the bank does not count, and a span over a creek simply joins its banks.
+  const under = roads.filter((r) => UNDER.has(r.cls) && r.pts.length > 1);
+  const spanRuns = runs.filter((r) => r.name === NORTH_LINE && r.kind === 'bridge');
+  for (const road of under)
+    for (let i = 1; i < road.pts.length; i++)
+      for (const span of spanRuns)
+        for (let j = 1; j < span.pts.length; j++) {
+          const hit = crossing(road.pts[i - 1], road.pts[i], span.pts[j - 1], span.pts[j]);
+          if (!hit) continue;
+          const g = ground(hit[0], hit[1]);
+          if (g === null) continue;
+          for (const c of centre)
+            if (c.bridge && Math.hypot(c.x - hit[0], c.z - hit[1]) < 6) c.clear = Math.max(c.clear ?? -Infinity, g);
+        }
   const target = centre.map((c) => {
+    if (c.clear !== null) return c.clear + BRIDGE_CLEARANCE;
+    // Inside the portal hood the grid blends in the hillside over the tunnel; the
+    // mouth takes its height from the open cut beyond.
+    if (c.s < MOUTH) return -Infinity;
+    // The crest is taken between the outer rails plus 1 m: an embankment crest lies
+    // there, while a cut's side slopes (smeared into the 5 m grid) lie beyond it.
     let top = -Infinity;
-    const half = c.bridge ? c.half + 0.6 : c.half;
+    const half = c.half - 1.1;
+    const samples: { o: number; h: number }[] = [];
     for (let k = 0; k <= 10; k++) {
       const o = -half + (2 * half * k) / 10;
       const h = ground(c.x + c.nx * o, c.z + c.nz * o);
-      if (h !== null) top = Math.max(top, h);
+      if (h !== null) samples.push({ o, h });
     }
-    return top + (c.bridge ? BRIDGE_CLEARANCE : TREAD_LIFT);
+    if (!samples.length) return -Infinity;
+    // In a walled cut both shoulders stand above the track floor; take the crest
+    // only between each track's running rails there.
+    const tracksOnly = samples.filter(({ o }) => Math.abs(Math.abs(o) - (c.half - 2.1)) <= 0.75);
+    const floor = Math.max(...(tracksOnly.length ? tracksOnly : samples).map(({ h }) => h));
+    const cut = samples[0].h > floor + 0.5 && samples[samples.length - 1].h > floor + 0.5;
+    top = cut ? floor : Math.max(...samples.map(({ h }) => h));
+    return top + TREAD_LIFT;
   });
   // Grade-limited upper envelope, a 20 m moving average for vertical curves, then the
   // envelope again: an upper envelope of cones is itself grade-limited and never
@@ -139,22 +185,33 @@ const BALLAST = '#7e7363',
 export function northLineGuideway(tracks: Line[], profile: NorthLineProfile, ground: Ground) {
   const body = new Builder();
   for (const line of tracks) {
-    let prev: { l: number[]; r: number[]; bridge: boolean } | null = null;
-    for (let s = 0; s <= line.length + 1e-6; s += 1) {
-      const along = Math.min(s, line.length);
+    const other = tracks.find((t) => t !== line)!;
+    const stations: number[] = [];
+    for (let s = 0; s < line.length; s += 1) stations.push(s);
+    stations.push(line.length);
+    let prev: { l: number[]; r: number[]; p: { x: number; z: number }; nx: number; nz: number; h: number; bridge: boolean; innerLeft: boolean | null } | null = null;
+    for (const along of stations) {
       const p = line.at(along),
         h = profile.at(line, along),
         bridge = profile.bridgeAt(line, along);
       const nx = -p.dz,
         nz = p.dx;
-      const l = [p.x - nx * 2.1, h, p.z - nz * 2.1],
-        r = [p.x + nx * 2.1, h, p.z + nz * 2.1];
+      // Where the other track is close, widen the inner edge to meet its bed, so the
+      // two lifted strips read as one double-track embankment with no slot between.
+      const q = nearestOn(other, p.x, p.z);
+      const shared = q.d < 7;
+      const innerLeft = shared ? (q.x - p.x) * nx + (q.z - p.z) * nz < 0 : null;
+      const inner = shared ? Math.max(2.1, q.d / 2 + 0.02) : 2.1;
+      const left = innerLeft === true ? inner : 2.1,
+        right = innerLeft === false ? inner : 2.1;
+      const l = [p.x - nx * left, h, p.z - nz * left],
+        r = [p.x + nx * right, h, p.z + nz * right];
       if (prev && !bridge && !prev.bridge) {
         body.quad(prev.l, l, r, prev.r, BALLAST);
-        for (const [e0, e1] of [
-          [prev.l, l],
-          [r, prev.r],
-        ]) {
+        const sides: [number[], number[]][] = [];
+        if (!(shared && innerLeft === true)) sides.push([prev.l, l]);
+        if (!(shared && innerLeft === false)) sides.push([r, prev.r]);
+        for (const [e0, e1] of sides) {
           const g0 = ground(e0[0], e0[2]),
             g1 = ground(e1[0], e1[2]);
           if (g0 !== null && g1 !== null && (e0[1] - g0 > 0.05 || e1[1] - g1 > 0.05))
@@ -166,21 +223,14 @@ export function northLineGuideway(tracks: Line[], profile: NorthLineProfile, gro
       // A sleeper every metre on ballast; on a span the rails sit on concrete plinths.
       if (!bridge) orientedBox(body, p.x, p.z, p.dx, p.dz, h - 0.02, h + 0.04, 0.125, 1.3, SLEEPER);
       else orientedBox(body, p.x, p.z, p.dx, p.dz, h - 0.2, h, 0.5, 1.15, CONCRETE);
-      if (prev) {
+      if (prev)
         for (const o of [-0.7175, 0.7175]) {
-          const a0 = [prev.l[0] + (prev.r[0] - prev.l[0]) * (0.5 + o / 4.2), prev.l[1] + 0.07, prev.l[2] + (prev.r[2] - prev.l[2]) * (0.5 + o / 4.2)];
-          const a1 = [l[0] + (r[0] - l[0]) * (0.5 + o / 4.2), l[1] + 0.07, l[2] + (r[2] - l[2]) * (0.5 + o / 4.2)];
           const w = 0.04;
-          body.quad(
-            [a0[0] - nx * w, a0[1], a0[2] - nz * w],
-            [a1[0] - nx * w, a1[1], a1[2] - nz * w],
-            [a1[0] + nx * w, a1[1], a1[2] + nz * w],
-            [a0[0] + nx * w, a0[1], a0[2] + nz * w],
-            RAIL,
-          );
+          const a0 = (d: number) => [prev!.p.x + prev!.nx * (o + d), prev!.h + 0.07, prev!.p.z + prev!.nz * (o + d)];
+          const a1 = (d: number) => [p.x + nx * (o + d), h + 0.07, p.z + nz * (o + d)];
+          body.quad(a0(-w), a1(-w), a1(w), a0(w), RAIL);
         }
-      }
-      prev = { l, r, bridge };
+      prev = { l, r, p, nx, nz, h, bridge, innerLeft };
     }
   }
   // Shared deck and box girder along the centre over each span.

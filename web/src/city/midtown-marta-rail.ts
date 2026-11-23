@@ -134,7 +134,11 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number) {
 }
 
 export function createNorthLine(
-  area: { group: THREE.Group; groundAt: (x: number, z: number) => number | null },
+  area: {
+    group: THREE.Group;
+    groundAt: (x: number, z: number) => number | null;
+    connectorBoard?: { city: { roads: { cls: string; pts: [number, number][] }[] } };
+  },
   rf: RoutesFile,
   origin: Origin,
   cars: THREE.Group,
@@ -143,7 +147,8 @@ export function createNorthLine(
   const lines = northLineTracks(rows, -5700);
   if (lines.length !== 2) return;
   const paths = northLinePaths(rf, origin, lines);
-  const profile = northLineProfile(lines, rows, area.groundAt);
+  const profile = northLineProfile(lines, rows, area.groundAt, area.connectorBoard?.city.roads ?? []);
+  if (!profile.height.every(Number.isFinite)) return;
   area.group.add(northLineGuideway(lines, profile, area.groundAt));
   const height = (line: Line, along: number) => profile.at(line, along);
   const darkness = { value: 0 };

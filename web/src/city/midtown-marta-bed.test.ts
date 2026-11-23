@@ -3,7 +3,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { brookwoodGrid } from './brookwood';
 import railRows from './fixtures/midtown-rail.json';
 import { midtownFoundations } from './midtown-foundations';
-import { BRIDGE_CLEARANCE, MAX_GRADE, northLineProfile } from './midtown-marta-guideway';
+import * as THREE from 'three';
+import { BRIDGE_CLEARANCE, MAX_GRADE, northLineGuideway, northLineProfile } from './midtown-marta-guideway';
 import { northLineTracks } from './midtown-marta-rail';
 import { auburnTransport } from './sweet-auburn-transport';
 import { joins } from '../square-board/sections';
@@ -27,11 +28,12 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
   const context = midtownFoundations(JSON.parse(read('context.json').toString()), grid.manifest.vertical.sceneZeroNavd88M);
   const rows = railRows[row] as TransportRun[];
   context.terrainTransport = { version: 1, roads: [], rail: rows };
-  const area = createDowntownTerrain(grid, midtownConnectorDecks(auburnTransport(context)), [], { quality, join: joins(row) });
+  const city = midtownConnectorDecks(auburnTransport(context));
+  const area = createDowntownTerrain(grid, city, [], { quality, join: joins(row) });
   try {
     const tracks = northLineTracks(rows, -5700);
     expect(tracks).toHaveLength(2);
-    const profile = northLineProfile(tracks, rows, area.groundAt);
+    const profile = northLineProfile(tracks, rows, area.groundAt, city.roads);
     let through = -Infinity,
       soffit = Infinity,
       grade = 0,
@@ -43,19 +45,18 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
           h = profile.at(line, s);
         const gr = Math.abs(profile.at(line, s + 1) - h);
         grade = Math.max(grade, gr);
-        if (profile.bridgeAt(line, s)) continue;
-        for (let o = -2; o <= 2.01; o += 0.5) {
+        // The first 6 m lie inside the portal hood, over the smeared hillside.
+        if (profile.bridgeAt(line, s) || s < 6) continue;
+        // Rail to rail plus 0.3 m; cut slopes may rise beside the ballast shoulder.
+        for (let o = -1; o <= 1.01; o += 0.25) {
           const g = area.groundAt(p.x - p.dz * o, p.z + p.dx * o);
           if (g !== null) through = Math.max(through, g - h);
         }
       }
     profile.centre.forEach((c, i) => {
-      if (!c.bridge) return;
+      if (c.clear === null) return;
       spanSamples++;
-      for (let o = -c.half; o <= c.half + 0.01; o += 1) {
-        const g = area.groundAt(c.x + c.nx * o, c.z + c.nz * o);
-        if (g !== null) soffit = Math.min(soffit, profile.height[i] - 2.2 - g);
-      }
+      soffit = Math.min(soffit, profile.height[i] - 2.2 - c.clear);
     });
     // Both tracks read one height across the shared deck.
     const [a, b] = tracks;
@@ -70,11 +71,39 @@ it.each(['low', 'high'] as const)('keeps the North Line guideway on its terrain 
       }
       split = Math.max(split, Math.abs(profile.at(a, s) - profile.at(b, best.u)));
     }
-    expect(spanSamples).toBeGreaterThan(100);
+    // How far the bed floats above the centreline ground on bare earth.
+    const lifts: number[] = [];
+    for (const line of tracks)
+      for (let s = 0; s < line.length; s += 1) {
+        if (profile.bridgeAt(line, s)) continue;
+        const p = line.at(s),
+          g = area.groundAt(p.x, p.z);
+        if (g !== null) lifts.push(profile.at(line, s) - g);
+      }
+    lifts.sort((x, y) => x - y);
+    const p95 = lifts[Math.floor(lifts.length * 0.95)];
+    // The rendered mesh carries the same rail level as the profile trains read.
+    const mesh = northLineGuideway(tracks, profile, area.groundAt);
+    const ray = new THREE.Raycaster();
+    let meshGap = 0;
+    for (const line of tracks)
+      for (let s = 10; s < line.length - 10; s += 37) {
+        const p = line.at(s);
+        // Between the rails, so the ray meets ballast or the plinth.
+        ray.set(new THREE.Vector3(p.x - p.dz * 0.35, 900, p.z + p.dx * 0.35), new THREE.Vector3(0, -1, 0));
+        const top = ray.intersectObject(mesh)[0]?.point.y;
+        if (top !== undefined) meshGap = Math.max(meshGap, Math.abs(top - profile.at(line, s)));
+      }
+    const mouth = Math.max(...tracks.map((l) => profile.at(l, 0) - (area.groundAt(l.at(0).x, l.at(0).z) ?? -Infinity)));
+    expect(spanSamples).toBeGreaterThan(30);
     expect(through).toBeLessThan(0);
     expect(soffit).toBeGreaterThan(BRIDGE_CLEARANCE - 2.2 - 0.25);
     expect(grade).toBeLessThan(MAX_GRADE + 0.005);
     expect(split).toBeLessThan(0.05);
+    // Bare-earth bed stays near its ground; the approach embankments to the spans lift the 95th percentile.
+    expect(p95).toBeLessThan(2.5);
+    expect(meshGap).toBeLessThan(0.05);
+    expect(mouth).toBeLessThan(0.5);
   } finally {
     area.dispose();
   }
