@@ -2104,3 +2104,7 @@ The low concrete building at North Avenue hides a surprisingly long roof. Its di
 ### 2026-11-23 — Share a City camera by URL
 
 A five-number camera link can open the same ground target, bearing, tilt and distance on a production build. The museum test jumped nearly four kilometres north of Five Points and retained its 421 m orbit distance as the Midtown terrain arrived. A malformed camera still opened the Williams preset, and an off-board target stopped at the edge of the loaded terrain. Requires a web rebuild. [Low-tier camera-link check](log/ui/city-camera-query.jpg)
+
+### 2026-11-23 — The High and Memorial Arts Building
+
+Across Sifly Piazza, Meier's atrium and Piano's rows of daylight scoops now read as two different buildings. Their roofs share one 126-vertex map outline. Walking its perimeter on the 3DEP grid revealed 7.8 m of relief, enough to expose a basement on the service side. Both museum wings rise from the piazza grade while the foundation drops to the hillside. Across the square, the Memorial Arts Building's illuminated lobby sits behind the tall Peachtree piers. Uses the existing Midtown tile and requires a web rebuild. [Daylight, full night, camera and survey](arts-campus.md)

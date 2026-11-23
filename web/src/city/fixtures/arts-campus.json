@@ -1,0 +1,4 @@
+{
+  "museum": { "id": "osm:way:28961738", "name": "High Museum of Art", "entrance": [515, -3967], "probes": [[0,-40],[-40,-35],[-80,60]] },
+  "memorial": { "id": "osm:way:28961767", "name": "Woodruff Arts Center", "entrance": [642,-3948], "probes": [[55,55],[-45,110]] }
+}
