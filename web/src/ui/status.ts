@@ -43,16 +43,17 @@ export function liveDetails(s: LiveState, view: View, weather: Weather | null, w
 
 export interface Confidence {
   /** `live`: real present and the MARTA feed is up. Otherwise trains come from the timetable. */
-  tier: 'live' | 'timetable';
+  tier: 'live' | 'timetable' | 'loading';
   /** The sky on screen was observed (live weather, no preview override). */
   skyObserved: boolean;
   /** The clock is shifted, paused or sped up: offer a way back to now. */
   shifted: boolean;
 }
 
-export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeather: boolean, preview = false): Confidence {
+export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeather: boolean, preview = false, loading = false): Confidence {
   return {
-    tier: s.realTime && s.rail === 'live' ? 'live' : 'timetable',
+    // While City builds the scene isn't on screen yet: no word, a grey dot, never Live.
+    tier: loading ? 'loading' : s.realTime && s.rail === 'live' ? 'live' : 'timetable',
     skyObserved: s.realTime && observedWeather && !preview,
     shifted: !s.realTime,
   };
@@ -61,6 +62,7 @@ export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeat
 /** The one scene-wide word (Sam, 2026-11-23, #231): Live or Timetable. Ambient scenery, the
  * sky included, carries no on-screen tier; the Key and About explain it. */
 export function confidenceWords(c: Confidence): string[] {
+  if (c.tier === 'loading') return [];
   return [c.tier === 'live' ? 'Live' : 'Timetable'];
 }
 

@@ -527,3 +527,11 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
   .a2-radio { width: 44px; height: 44px; }
   .a2-radio-title { display: none; }
 }
+
+/* ---- loading (A2c step 9): the frame over paper, the white model, then colour ---- */
+.a2-dot-loading { background: #a8a296; }
+.a2-tier-quiet .a2-tier-date::before { content: none; }
+:root[data-ui='next'] body:has(.a2-subject) #city-loading { background: transparent; }
+/* Once the shell is up it carries the loading state; until then (or if the app fails to start) the
+   plate's own text and the Open Map link stay. */
+:root[data-ui='next'] body:has(.a2-subject) #city-loading > * { display: none !important; }

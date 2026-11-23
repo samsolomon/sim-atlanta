@@ -53,6 +53,8 @@ export interface ShellOptions {
   graphics?: { get(): 'auto' | 'high' | 'low'; set(q: 'auto' | 'high' | 'low'): void };
   /** What a share link should reopen: City's camera, or the Map's hash (A2c share). */
   shareTarget?(): import('./share').ShareView | null;
+  /** While City builds (A2c step 9): the notice text; the scene word waits for the reveal. */
+  loading?(): string | null;
   /** The sky on screen (observed, typical or previewed), to name an illustrative condition. */
   sky?(): { cloud: number; rain: number; fog: number; snow: number } | null;
 }

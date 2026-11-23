@@ -111,6 +111,9 @@ import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
+import { createWhiteModel } from './white-model';
+/** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
+const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
@@ -149,6 +152,10 @@ export interface CityView {
   drawnAt(trainId: string): { inferredTrack: boolean; inferredBerth: boolean };
   stats(): { roadVehicles: number; arterialCars: number; freightCars: number; surfaceCars: number; buses: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
+  /** Resolves when colour starts to show (at once without the white model). */
+  revealed: Promise<void>;
+  /** The host has placed the camera and set the atmosphere: start the white-model reveal. */
+  beginReveal(): void;
 }
 
 /** Phones and small touch screens get the light tier; `?q=low|high` overrides. */
@@ -168,6 +175,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   areaNote?: (text: string | null) => void;
   /** Maps-style input (A2c, ?ui=next): drag pans, right/Ctrl-drag rotates, zoom to cursor, twist, two-finger tilt. */
   mapGestures?: boolean;
+  /** Arrive as a white study model, then fade colour in (A2c step 9). */
+  whiteModel?: boolean;
   trains: () => TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
@@ -1045,7 +1054,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
   sceneTarget.depthTexture = new THREE.DepthTexture(1, 1);
   const composer = new EffectComposer(renderer, sceneTarget);
-  composer.addPass(new RenderPass(scene, camera));
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
   const ink = new ShaderPass(inkShader());
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
@@ -1427,7 +1437,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     grade.uniforms.uAmount.value = 1;
     grade.uniforms.uTime.value = ts / 1000;
     renderer.info.reset();
-    composer.render();
+    whiteModel?.before();
+    if (!whiteModel?.holding) composer.render();
+    whiteModel?.after();
     frames++;
     if (ts - fpsT > 1000) {
       fps = (frames * 1000) / (ts - fpsT);
@@ -1435,6 +1447,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       fpsT = ts;
     }
   };
+  // The first frames: a white study model of this exact scene, then colour (white-model.ts).
+  const whiteModel = options.whiteModel ? createWhiteModel({
+    renderer, scene, camera, container,
+    // Read each frame: some vehicle layers arrive after createCity returns.
+    hide: () => [trains.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, midtownArterials?.group, figures?.group,
+      brookwood?.cars, (northLine as { group?: THREE.Object3D } | undefined)?.group, rain.mesh, snow.mesh],
+    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+    inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
+    skipPasses: [gtao],
+  }) : undefined;
+  if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
   raf = requestAnimationFrame(frame);
 
   const panPx = (dxPx: number, dyPx: number) => {
@@ -1523,7 +1546,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, [...(brookwood?.cars.children ?? []), ...streetcar.cars()]),
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
+    revealed: whiteModel?.revealed ?? Promise.resolve(),
+    beginReveal: () => whiteModel?.begin(),
     dispose() {
+      whiteModel?.dispose();
       stopGestures?.();
       squareButton?.remove();
       cancelAnimationFrame(raf);

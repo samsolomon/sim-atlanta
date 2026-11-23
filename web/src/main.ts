@@ -465,6 +465,7 @@ async function openCity() {
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; shell.setNote(text); },
       mapGestures: uiNext(location.search),
+      whiteModel: uiNext(location.search),
       trains: () => source.update(),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
@@ -523,6 +524,10 @@ async function openCity() {
     const target = diorama.target();
     if (!areaNote && Math.hypot(target.x - mx, target.z - mz) > 1) shell.setNote('Showing the nearest loaded City area');
   }
+  // A2c: the white model holds until colour starts; only then is City "here" (Live, credit, vehicles).
+  diorama.beginReveal();
+  await diorama.revealed;
+  if (load !== cityLoad) return;
   opening = false;
   cityLoading.hidden = true;
   void applyGraphics();
@@ -739,6 +744,7 @@ const shellOptions: ShellOptions = {
     return map && c ? mapMetresPerPixel(c.lat, map.getZoom()) : null;
   },
   sky: () => lastAtm,
+  loading: () => (!view3d.hidden && !cityLoading.hidden ? 'Building the city…' : null),
   // A link's ?q= decides the tier until the viewer picks one, so the menu shows that.
   graphics: uiNext(location.search) ? {
     get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),

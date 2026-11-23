@@ -169,6 +169,96 @@ glass behind it.
 - **Models view** shows no credit line, because no map data is on screen. About still
   lists every source.
 
+## Loading and arrival: the white model
+
+Sam chose this on 2026-11-23 (canvas boards 7 and 8). City arrives as a neutral **white
+study model** of the real scene, then colour and everything else fades in on top. Nothing
+moves while it loads: no zoom, no stretching, no rising buildings.
+
+References:
+- `docs/ui-a2c/loading/white-model.jpg` and `colour.jpg`: the same camera rendered both ways
+  from the real scene
+- `docs/ui-a2c/loading/areas.jpg`: areas still arriving as white model
+- `docs/ui-a2c/source/L7-white.dc.html` and `L8-areas-white.dc.html`: the playable timing
+  mockups
+
+### What the white model is
+
+- **A render mode of the live scene, not a picture.** Draw the scene with one override
+  material: matte paper white `#f4efe4`, `MeshLambertMaterial`, no maps or vertex colours.
+  Keep the scene's lighting, shadows, ink, ambient occlusion, tilt-shift and grade passes.
+  - The quick test set `RenderPass.overrideMaterial` on the composer's first pass.
+    Setting `scene.overrideMaterial` does not work, because `RenderPass` overwrites it.
+- **It works from any camera,** including shared links, and lines up exactly with the
+  coloured scene because it is the same geometry.
+- **Trees** kept their colour in the test because their instanced colours bypass the
+  override. Make them white too, or leave them out until colour arrives.
+- **Ink:** with everything one colour, the ink pass mostly draws silhouettes, so creases
+  are faint. Optional refinements: roofs one tone darker than walls, or a stronger ink
+  setting while in white-model mode. Judge this in the browser.
+- **Night:** the same white model under the night lighting. Add window lights only when
+  colour arrives.
+
+### Sequence on first open
+
+1. **Under half a second:** the frame (place card, app bar, camera column) appears over the
+   paper background. The notice under the place card reads "Building the city…". The place
+   card's tier line shows the date with a grey dot, and does not say Live yet.
+2. **As soon as building footprints and heights have loaded:** draw the white model and
+   fade it in over about 300 ms. This needs only the small scene data, not textures or
+   terrain detail.
+3. **As the remaining stages finish:** cross-fade from the white render to the full-colour
+   render over about 1 s. Render both, or render colour into a target and blend in a final
+   pass.
+4. **Live:** vehicles appear only after colour has arrived. The tier line turns to the
+   green "Live" dot, the notice goes away, and the City credit line appears. Its 5 s fade
+   timer starts here, at the reveal, not during loading.
+
+### Why nothing moves
+
+- The build blocks the main thread for up to about 2 s per stage (terrain is the longest).
+  Any motion would visibly stall.
+- A still white model doesn't show a stall.
+- Each fade runs only after a stage has finished, while the thread is free.
+
+### Areas that arrive later
+
+- An area whose detail hasn't loaded yet stays white model.
+- The notice names it, for example "Building Midtown…". When its data is ready, colour
+  fades in over that area only.
+- Never scale, rise or stretch geometry into place.
+- Whether to load only the areas in view first (progressive) or everything at once (eager)
+  is a separate decision. The build log chose eager after desktop measurements and has no
+  phone data. Measure on the Galaxy A16 before changing it. The white-model treatment works
+  either way.
+
+### Map to City
+
+- **Target:** City opens looking straight down at exactly the Map's centre and scale, so
+  the white model lands on top of the map's streets. Colour then fades in.
+- **After colour:** the camera eases to the normal City tilt, or waits for the user to
+  tilt. Never zoom during the switch.
+- **City to Map:** the reverse. Colour fades back to the white model, then the map fades
+  in at the matching view.
+- This one is not mocked yet. Matching the map view precisely needs the real renderer.
+  Judge it in the browser.
+
+### Other states
+
+- **Switching back to Map mid-load** cancels the build (this already works). There is no
+  white flash; return straight to Map.
+- **City fails to load:** fall back to Map with the existing notice.
+- **No 3D graphics:** go straight to Map.
+- **Reduced motion:** the same sequence with instant swaps in place of fades.
+- **Truth:** the white model shows no vehicles, and nothing reads "Live" until the live
+  scene is on screen.
+
+### Ownership
+
+- This changes `web/src/city/city.ts` (the build stages and render passes), so the City
+  studios should sequence it.
+- It comes after the camera-gesture step and its seam with the Follow agent.
+
 ## Share
 
 - Share copies the link, or opens the phone's share sheet, for view, camera and time.
@@ -211,6 +301,9 @@ glass behind it.
 7. **Models view:** the Model lab merged in, Details, the browser, and `?dev` for the
    photo overlay.
 8. **Radio shell.**
+9. **Loading and arrival:** the white model, colour fade-in, areas arriving as white model,
+   and the registered Map to City switch (see the section above). Sequence it with the City
+   studios.
 
 ## Not yet verified
 
