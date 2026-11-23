@@ -2521,6 +2521,7 @@ Sam picked option A, leaf cards hung on branch masses, for the oaks and for broa
 ### 2026-11-23 — Streetcars that bend
 
 The Atlanta Streetcar now runs in City on the published timetable: one three-section Siemens S70 per trip, on the track built from the same GTFS shapes. Placing a rigid 24 m car on a 20 m-radius corner would have cut across the sidewalk. Each car is instead placed the way the real one rides. The short centre section sits between its own axles, and each end section hangs from a joint on it and swings to its power truck. A test holds every joint closed and every truck within 5 cm of the rail through the tightest curve. One check came back empty: MARTA's bus feed, which the worker already caches, has no streetcar positions, so the cars are scheduled and say so on the card. Requires a web rebuild only. [Auburn before and after](log/ui/streetcar/cars-auburn-before-after.jpg)
+
 ### 2026-11-23 — Yards without parcels
 
 We have no lot lines, so every yard comes from one fact: which wall of the house faces the nearest street. From there it's rules. A walk runs from each door toward the street, a driveway runs along the side away from the door, and shrubs sit on a pine-straw strip under the front windows. Some houses get a small bed or a clipped hedge near the sidewalk. Anything that would cross another building is dropped. The yards cost about 18 triangles a house on the low tier, and they stay quiet from above, which is the point. [Before and after views](log/ui/yards/README.md)
