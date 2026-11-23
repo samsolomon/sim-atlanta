@@ -118,7 +118,7 @@ function renderTrainCard() {
   }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
-      view3d.hidden ? undefined : 'Stadler CQ400'),
+      !view3d.hidden),
     !!follow && !view3d.hidden && t.routeId === BLUE,
   );
 }
