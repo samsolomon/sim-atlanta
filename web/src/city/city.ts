@@ -19,6 +19,7 @@ import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
+import { drawnAt } from './drawn-at';
 import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
@@ -139,6 +140,10 @@ export interface CityView {
   quality: Quality;
   /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
   buses: Pick<CityBuses, 'occupies' | 'summary'>;
+  /** Where City draws this train right now, for its card: a car out on the North Line open
+   * cut (inferred track) or a Crescent berthed on the Brookwood model (inferred berth).
+   * Recomputed on every call, so it follows the train into a tunnel or along a corridor. */
+  drawnAt(trainId: string): { inferredTrack: boolean; inferredBerth: boolean };
   stats(): { roadVehicles: number; arterialCars: number; freightCars: number; surfaceCars: number; buses: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   dispose(): void;
 }
@@ -1472,6 +1477,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       north?.setSeason(day);
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
     },
+    drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, brookwood?.cars.children ?? []),
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
       stopGestures?.();

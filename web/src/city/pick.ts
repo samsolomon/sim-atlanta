@@ -3,7 +3,7 @@ import { CAR_LENGTH } from '../vignette/cq400';
 import { BUS_LENGTH } from '../vignette/xcelsior';
 import type { CityBuses } from './buses';
 
-export type VehicleSelection = { kind: 'train'; id: string; inferredTrack?: boolean; inferredBerth?: boolean } | { kind: 'bus'; id: string } | { kind: 'freight'; line?: string };
+export type VehicleSelection = { kind: 'train'; id: string } | { kind: 'bus'; id: string } | { kind: 'freight'; line?: string };
 
 /** Work only on a tap. Project the visible length of each drawn car into CSS pixels.
  * Comparing screen distances gives the same touch radius on both quality tiers. */
@@ -39,9 +39,8 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
       consider(vehicle, material.clippingPlanes ?? edges);
     }
   }
-  for (const car of trains.children) railCar(car, CAR_LENGTH, { kind: 'train', id: car.userData.trainId, ...(car.userData.inferredTrack ? { inferredTrack: true } : {}) });
-  // Intercity cars are drawn only by the Brookwood model, at its inferred berth or corridor.
-  for (const car of intercity?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'train', id: car.userData.trainId, inferredBerth: true });
+  for (const car of trains.children) railCar(car, CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
+  for (const car of intercity?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'train', id: car.userData.trainId });
   for (const car of freight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight' });
   for (const car of corridorFreight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight', line: car.userData.line });
   for (const bus of buses) {
