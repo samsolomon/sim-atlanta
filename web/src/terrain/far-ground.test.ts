@@ -78,3 +78,42 @@ it('builds a far ground mesh per board that is crack-free and within its error b
     `far geometry at E=2 m: ${mb.toFixed(1)} MB (position, normal, uv, index)`].join('\n'));
   expect(totals[2]).toBeLessThan(totals.near * 0.4);
 }, 120_000);
+
+it('keeps joins and openings exact in the far mesh', async () => {
+  const { bounds, joins } = await import('../square-board/sections');
+  const b = bounds['midtown-south'];
+  // A synthetic open cut across the board, like a rail opening, 10 m wide.
+  const z = (b.minZ + b.maxZ) / 2;
+  const slot = { start: [b.minX + 300, 230, z] as const, end: [b.minX + 700, 228, z + 40] as const, halfWidthM: 5 };
+  const near = new GroundSurface(grid('square-board/midtown-south'), 'low', [slot], joins('midtown-south'));
+  const far = near.farGeometry(2);
+  expect(Math.abs(openLength(far) - openLength(near.geometry))).toBeLessThan(1);
+  expect(far.index!.count).toBeLessThan(near.geometry.index!.count * 0.4);
+});
+
+it('swaps a low board to its far ground by distance, with hysteresis, and flags the shadow map', async () => {
+  const { vi } = await import('vitest');
+  const { PerspectiveCamera } = await import('three');
+  const { createDowntownTerrain, takeGroundLodChange, FAR_GROUND_M } = await import('./model');
+  const { bounds } = await import('../square-board/sections');
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  try {
+    const b = bounds['south-corner'];
+    const area = createDowntownTerrain(grid('square-board/south-corner'), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const near = area.board.geometry, camera = new PerspectiveCamera();
+    takeGroundLodChange();
+    const at = (d: number) => { camera.position.set(b.maxX + d, 0, b.minZ); area.update(0, camera); return area.board.geometry; };
+    expect(at(FAR_GROUND_M - 10)).toBe(near);
+    const far = at(FAR_GROUND_M + 10);
+    expect(far).not.toBe(near);
+    expect(takeGroundLodChange()).toBe(true);
+    expect(at(FAR_GROUND_M * 0.95)).toBe(far);          // inside the band: stays far
+    expect(takeGroundLodChange()).toBe(false);
+    expect(at(FAR_GROUND_M * 0.85)).toBe(near);
+    // Placement keeps the near triangles whatever is drawn.
+    at(FAR_GROUND_M + 10);
+    expect(area.groundAt(b.minX + 50, b.minZ + 20)).toBe(area.terrainAt(b.minX + 50, b.minZ + 20));
+    area.dispose();
+  } finally { vi.unstubAllGlobals(); }
+});
