@@ -14,15 +14,26 @@ const HOMES = new Set(['house', 'detached', 'semidetached_house', 'bungalow', 't
 const tags = tagged as unknown as Record<string, [string | null, string | null, string | null]>;
 
 type Shape = 'gabled' | 'hipped' | 'pyramidal';
-type Plan = { concave: boolean; porchFoot?: number; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
+type Plan = { concave: boolean; porchFoot?: number; front: P2[] | null; frontFoot?: number; siding: Siding; doorColor: string;
+  crossGable: boolean; dormers: number; quality: 'high' | 'low'; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
   wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean };
 
 // Early twentieth-century Atlanta streets: red and brown brick, painted
 // clapboard and a little stucco; slate-grey and brown asphalt roofs.
+type Siding = 'clapboard' | 'brick' | 'stucco' | 'shingle';
 const BRICK = ['#8c4a3b', '#9a5a44', '#7e4637', '#a3654e', '#86503f'];
-const CLAPBOARD = ['#e6e0cf', '#d8d1bd', '#c3c9b6', '#cbbfa3', '#9aa592', '#b8c4c9', '#e3d6b4'];
-const STUCCO = ['#d6c4a2', '#cdb894', '#e0d2b6'];
-const ROOFS = ['#77706a', '#6b625a', '#857664', '#646a6e', '#7d6f63', '#5f5a55'];
+const CLAPBOARD = ['#e6e0cf', '#d8d1bd', '#c3c9b6', '#cbbfa3', '#9aa592', '#b8c4c9', '#e3d6b4', '#7f8a6c', '#a7b3b8'];
+const STUCCO = ['#d6c4a2', '#cdb894', '#e0d2b6', '#ece4d4'];
+// Cedar shake, stained or weathered, as on Ansley Park's Westminster Drive.
+const SHINGLE = ['#7a5a40', '#8b6a4c', '#7c3b32', '#7f7d74', '#6d5a48'];
+// Asphalt in charcoal, weathered wood, driftwood, slate-grey and green-grey; slate and terracotta by era.
+const ASPHALT = ['#4e4b48', '#5d5650', '#6e6359', '#827566', '#626a6e', '#5b6358', '#73706a', '#3f4246'];
+const SLATE = ['#55606b', '#4d5862'];
+const TERRACOTTA = ['#94604c', '#9d6a52', '#87574a'];
+const DOORS = ['#2f3a34', '#5b2a24', '#2b2f3a', '#3b2c22', '#6a5d4b', '#1f2224'];
+const STYLE: Record<Siding, number> = { clapboard: 3, brick: 4, stucco: 5, shingle: 6 };
+/** Ansley Park, roughly Peachtree Street to Piedmont Park and 15th Street to I-85, in scene metres. */
+const inAnsley = (x: number, z: number) => x > 800 && x < 1750 && z > -4750 && z < -3700;
 
 function area(ring: P2[]) {
   let a = 0;
@@ -73,7 +84,7 @@ function roadIndex(city: TerrainCity) {
   };
 }
 
-function plan(b: VBuilding, street: (x: number, z: number) => number): Plan | null {
+function plan(b: VBuilding, street: (x: number, z: number) => number, quality: 'high' | 'low'): Plan | null {
   const ring = b.rings[0];
   // Pieces clipped at a board seam (`id/n`) keep the generic box on both sides,
   // since neither half can be roofed as one house.
@@ -92,25 +103,40 @@ function plan(b: VBuilding, street: (x: number, z: number) => number): Plan | nu
   const shape: Shape = !concave && (shapeTag === 'gabled' || shapeTag === 'hipped' || shapeTag === 'pyramidal') ? shapeTag
     : !concave && aspect > 1.3 ? 'gabled' : aspect < 1.12 ? 'pyramidal' : 'hipped';
   const rise = Math.min(4.5, Math.max(1.6, box.half * .72));
-  const storeys = b.floors || (b.cls === 'bungalow' || size < 95 ? 1 : 2);
+  // Ansley Park's houses are two storeys (Street View, Westminster Drive); elsewhere,
+  // small bungalows (Home Park) are one. OSM levels or height win where tagged.
+  const ansley = inAnsley(...box.centre);
+  const storeys = b.floors || (b.cls === 'bungalow' ? 1 : ansley ? 2 : size < 150 ? 1 : 2);
   const eave = b.h ? Math.max(3, b.h - rise) : storeys * 3.05 + .4;
-  const kind = material === 'brick' ? 'brick' : material === 'wood' ? 'clapboard' : r() < .45 ? 'brick' : r() < .85 ? 'clapboard' : 'stucco';
-  const palette = kind === 'brick' ? BRICK : kind === 'clapboard' ? CLAPBOARD : STUCCO;
-  // The porch faces the nearest street from the footprint's longer frontage.
-  let porch: P2[] | null = null;
-  // Terrace and semi-detached halves share frontage, so they get no porch of their own.
-  if (b.cls !== 'terrace' && b.cls !== 'semidetached_house' && r() < .7) {
-    let best = Infinity;
-    for (let i = 0; i < ring.length; i++) {
-      const a = ring[i], c = ring[(i + 1) % ring.length], len = Math.hypot(c[0] - a[0], c[1] - a[1]);
-      if (len < 4) continue;
-      const d = street((a[0] + c[0]) / 2, (a[1] + c[1]) / 2);
-      if (d < best) { best = d; porch = [a, c]; }
-    }
-    if (best > 40) porch = null;
+  const pick = r();
+  const kind: Siding = material === 'brick' ? 'brick' : material === 'wood' ? 'clapboard'
+    : ansley ? (pick < .35 ? 'brick' : pick < .6 ? 'shingle' : pick < .85 ? 'clapboard' : 'stucco')
+    : (pick < .6 ? 'clapboard' : pick < .85 ? 'brick' : pick < .95 ? 'shingle' : 'stucco');
+  const palette = { brick: BRICK, clapboard: CLAPBOARD, stucco: STUCCO, shingle: SHINGLE }[kind];
+  const roofs = kind === 'stucco' && r() < .6 ? TERRACOTTA : kind === 'brick' && ansley && r() < .25 ? SLATE : ASPHALT;
+  // The front is the frontage nearest a mapped street; door, stoop or porch face it.
+  let front: P2[] | null = null, best = Infinity;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], c = ring[(i + 1) % ring.length], len = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    if (len < 3) continue;
+    const d = street((a[0] + c[0]) / 2, (a[1] + c[1]) / 2);
+    if (d < best) { best = d; front = [a, c]; }
   }
-  return { concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half,
-    wall: palette[Math.floor(r() * palette.length)], roof: ROOFS[Math.floor(r() * ROOFS.length)],
+  if (best > 40) front = null;
+  // Terrace and semi-detached halves share frontage, so they get no porch of their own.
+  const porch = front && Math.hypot(front[1][0] - front[0][0], front[1][1] - front[0][1]) >= 4
+    && b.cls !== 'terrace' && b.cls !== 'semidetached_house' && r() < .7 ? front : null;
+  // A long street front on a pitched roof gets a cross gable; tall gables get dormers.
+  const along = front ? Math.abs((front[1][0] - front[0][0]) * box.u[0] + (front[1][1] - front[0][1]) * box.u[1])
+    / Math.hypot(front[1][0] - front[0][0], front[1][1] - front[0][1]) : 0;
+  const crossGable = !concave && shape !== 'pyramidal' && along > .7 && box.long > 4.5 && r() < .65;
+  // Both dormer rolls are always drawn, so a house keeps its colours on either tier.
+  // Under a 2.7 m rise a dormer's roof would cross the main ridge.
+  const dormerRoll = r(), pairRoll = r();
+  const dormers = !concave && shape === 'gabled' && along > .7 && rise >= 2.7 && quality === 'high' ? (dormerRoll < .5 ? 0 : pairRoll < .6 ? 1 : 2) : 0;
+  return { concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half, front, siding: kind,
+    doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
+    wall: palette[Math.floor(r() * palette.length)], roof: roofs[Math.floor(r() * roofs.length)],
     trim: kind === 'brick' ? '#e4ddca' : '#f1ece0', porch, chimney: !concave && (kind === 'brick' ? r() < .8 : r() < .45), brick: kind === 'brick' };
 }
 
@@ -183,31 +209,119 @@ function relief(ring: P2[], ground: (x: number, z: number) => number | null) {
   return heights.length ? [Math.min(...heights), Math.max(...heights)] : null;
 }
 
+/** Frame on a wall edge (the front by default): s along it, o outward. */
+function frontFrame(p: Plan, edge: P2[] = p.front!) {
+  const [a, d] = edge, len = Math.hypot(d[0] - a[0], d[1] - a[1]);
+  const e: P2 = [(d[0] - a[0]) / len, (d[1] - a[1]) / len], m: P2 = [(a[0] + d[0]) / 2, (a[1] + d[1]) / 2];
+  let n: P2 = [-e[1], e[0]];
+  if ((m[0] - p.centre[0]) * n[0] + (m[1] - p.centre[1]) * n[1] < 0) n = [-n[0], -n[1]];
+  const at = (s: number, o: number, y: number) => [m[0] + e[0] * s + n[0] * o, y, m[1] + e[1] * s + n[1] * o];
+  return { len, e, n, m, at };
+}
+
+/** A gable on a sloping wall edge at `s` along it: gable wall, two roof planes into the main slope, a gable window. */
+function crossGable(p: Plan, b: Builder, edge: P2[], s: number, eave: number) {
+  const { len, at } = frontFrame(p, edge);
+  const gw = Math.min(len * .22, 2.6), ga = Math.min(p.rise * .9, gw * .95), t = ga * p.half / p.rise;
+  const l = at(s - gw, .02, eave), r = at(s + gw, .02, eave), apex = at(s, .02, eave + ga), ridge = at(s, -t, eave + ga);
+  b.tri(l, r, apex, p.wall);
+  b.tri(l, apex, ridge, p.roof);
+  b.tri(r, ridge, apex, p.roof);
+  b.quad(at(s - .45, .04, eave + ga * .25), at(s + .45, .04, eave + ga * .25), at(s + .45, .04, eave + ga * .62), at(s - .45, .04, eave + ga * .62), '#56656d');
+}
+
+/** Door, stoop, corner boards, cross gables and dormers. */
+function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: number) {
+  if (p.front) {
+    const { len, at } = frontFrame(p);
+    // Front door with a white surround; under the porch, or on a stoop with steps.
+    // Under a porch the door stands on the deck (0.55 m up); otherwise on the floor, above a stoop.
+    const s = p.porch ? 0 : len * .18, sill = p.porch ? .55 : 0;
+    b.quad(at(s - .62, .03, base + sill + .05), at(s + .62, .03, base + sill + .05), at(s + .62, .03, base + sill + 2.4), at(s - .62, .03, base + sill + 2.4), p.trim);
+    b.quad(at(s - .48, .05, base + sill + .1), at(s + .48, .05, base + sill + .1), at(s + .48, .05, base + sill + 2.2), at(s - .48, .05, base + sill + 2.2), p.doorColor);
+    if (!p.porch) {
+      const foot = Math.min(base - .2, p.frontFoot ?? base - .2), rise = base - foot;
+      const box = (s0: number, s1: number, o0: number, o1: number, y0: number, y1: number, c: string) => {
+        const q = [at(s0, o0, 0), at(s1, o0, 0), at(s1, o1, 0), at(s0, o1, 0)];
+        b.quad(...q.map(v => [v[0], y1, v[2]]) as [number[], number[], number[], number[]], c);
+        for (let k = 0; k < 4; k++) b.quad([q[k][0], y0, q[k][2]], [q[(k + 1) % 4][0], y0, q[(k + 1) % 4][2]], [q[(k + 1) % 4][0], y1, q[(k + 1) % 4][2]], [q[k][0], y1, q[k][2]], c);
+      };
+      box(s - .85, s + .85, 0, 1.3, foot - .2, base, '#9a948a');
+      const steps = Math.min(6, Math.ceil(rise / .18));
+      for (let k = 1; k < steps; k++) box(s - .75, s + .75, 1.3 + (k - 1) * .3, 1.3 + k * .3, foot - .2, base - rise * k / steps, '#9a948a');
+    }
+  }
+  if (p.quality === 'high' && (p.siding === 'clapboard' || p.siding === 'shingle')) {
+    // White corner boards on painted and shingled walls, 2 cm proud of each wall along its own outward normal.
+    for (let i = 0; i < outer.length; i++) {
+      const v = outer[i], prev = outer[(i + outer.length - 1) % outer.length], next = outer[(i + 1) % outer.length];
+      for (const o of [prev, next]) {
+        const l = Math.hypot(o[0] - v[0], o[1] - v[1]) || 1, ux = (o[0] - v[0]) / l, uz = (o[1] - v[1]) / l;
+        let nx = -uz, nz = ux;
+        const mx = (v[0] + o[0]) / 2, mz = (v[1] + o[1]) / 2;
+        if ((mx - p.centre[0]) * nx + (mz - p.centre[1]) * nz < 0) { nx = -nx; nz = -nz; }
+        const ox = nx * .02, oz = nz * .02;
+        b.quad([v[0] + ox, base + .75, v[1] + oz], [v[0] + ux * .16 + ox, base + .75, v[1] + uz * .16 + oz], [v[0] + ux * .16 + ox, eave, v[1] + uz * .16 + oz], [v[0] + ox, eave, v[1] + oz], p.trim);
+      }
+    }
+  }
+  // Long plans read as barns under one ridge: break them with side gables, staggered
+  // toward opposite ends, on both long walls.
+  if (!p.concave && p.shape !== 'pyramidal' && p.long > 2 * p.half && p.long > 4.5) {
+    const sides = outer.map((a, i) => [a, outer[(i + 1) % outer.length]] as P2[]).filter(([a, d]) => {
+      const len = Math.hypot(d[0] - a[0], d[1] - a[1]);
+      const isFront = p.front && Math.hypot(a[0] - p.front[0][0], a[1] - p.front[0][1]) < 1e-6 && Math.hypot(d[0] - p.front[1][0], d[1] - p.front[1][1]) < 1e-6;
+      return len > p.long * 1.6 && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len > .9 && !isFront;
+    });
+    sides.forEach((edge, k) => crossGable(p, b, edge, (k % 2 ? .25 : -.25) * Math.hypot(edge[1][0] - edge[0][0], edge[1][1] - edge[0][1]), eave));
+  }
+  if (!p.front) return;
+  const { len, at } = frontFrame(p);
+  // The front slope climbs `rise` over `half` metres inward from the front wall.
+  const roofAt = (t: number) => eave + p.rise * Math.min(1, t / p.half);
+  if (p.crossGable) crossGable(p, b, p.front, 0, eave);
+  for (let k = 0; k < p.dormers; k++) {
+    // Gabled dormers on the front slope, set back a third of the way up.
+    // Beside a cross gable, dormers move out toward the ends rather than colliding with it.
+    const spread = p.crossGable ? .32 : .26;
+    const s = (p.dormers === 1 ? (p.crossGable ? spread : 0) : k ? spread : -spread) * len, t0 = p.half * .35, y0 = roofAt(t0), top = y0 + 1.25, w = .85;
+    if (p.crossGable && Math.abs(s) < 2.8) continue;
+    const t1 = (top + .5 - eave) * p.half / p.rise;
+    b.quad(at(s - w, -t0, y0), at(s + w, -t0, y0), at(s + w, -t0, top), at(s - w, -t0, top), p.wall);
+    b.quad(at(s - .45, -t0 + .02, y0 + .25), at(s + .45, -t0 + .02, y0 + .25), at(s + .45, -t0 + .02, top - .2), at(s - .45, -t0 + .02, top - .2), '#56656d');
+    const tTop = (top - eave) * p.half / p.rise;
+    for (const side of [-w, w]) b.tri(at(s + side, -t0, y0), at(s + side, -t0, top), at(s + side, -tTop, top), p.wall);
+    b.tri(at(s - w - .1, -t0 + .15, top), at(s + w + .1, -t0 + .15, top), at(s, -t0 + .15, top + .5), p.wall);
+    b.quad(at(s - w - .1, -t0 + .15, top), at(s, -t0 + .15, top + .5), at(s, -t1, top + .5), at(s - w - .1, -tTop, top), p.roof);
+    b.quad(at(s, -t0 + .15, top + .5), at(s + w + .1, -t0 + .15, top), at(s + w + .1, -tTop, top), at(s, -t1, top + .5), p.roof);
+  }
+}
+
 /**
  * Residential finishes plus the eave-height adjustment, for one board's city.
  * `ground` (the rendered surface, scene metres) lets a lowered eave keep clear of a hillside:
  * such houses get the hillside floor rule from midtown-foundations.
  */
 export function residential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
-  ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null) {
+  ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high') {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
   const buildings = city.buildings.map(b => {
     if (existing?.(b)) return b;
-    const p = plan(b, street);
+    const p = plan(b, street, quality);
     if (!p) return b;
     plans.set(b.id, p);
     // Walls stop at the eave; the pitched roof carries the rest of the height.
     const range = ground && relief(b.rings[0], ground);
-    if (p.porch && ground) {
-      // The porch deck runs down to the lowest ground under it; drop it if it would stand on stilts.
-      const [a, d] = p.porch, len = Math.hypot(d[0] - a[0], d[1] - a[1]);
+    if (p.front && ground) {
+      // Porch decks and stoops run down to the lowest ground in front; a porch on stilts is dropped.
+      const [a, d] = p.front, len = Math.hypot(d[0] - a[0], d[1] - a[1]);
       let nx = -(d[1] - a[1]) / len, nz = (d[0] - a[0]) / len;
       const mx = (a[0] + d[0]) / 2, mz = (a[1] + d[1]) / 2;
       if ((mx - p.centre[0]) * nx + (mz - p.centre[1]) * nz < 0) { nx = -nx; nz = -nz; }
       const under = [0, .5, 1].flatMap(t => [0, 2.3].map(o => ground(a[0] + (d[0] - a[0]) * t + nx * o, a[1] + (d[1] - a[1]) * t + nz * o)))
         .filter((h): h is number => h !== null);
-      p.porchFoot = under.length ? Math.min(...under) : undefined;
+      p.porchFoot = p.frontFoot = under.length ? Math.min(...under) : undefined;
     }
     // World stands walls on `footing` unless a floor is already fitted.
     const base = b.floorY ?? footing?.(b) ?? range?.[0];
@@ -227,7 +341,7 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     const p = plans.get(b.id);
     if (!p) return undefined;
     return {
-      wall: p.wall, roof: p.roof, parapet: 0, windowStyle: 3,
+      wall: p.wall, roof: p.roof, parapet: 0, windowStyle: STYLE[p.siding],
       dressRoof(builder, outer, eave) {
         roofFor(p, builder, outer, eave);
         const base = eave - p.eave;
@@ -236,6 +350,7 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
           const t = p.shape === 'pyramidal' ? 0 : p.long * .55, x = p.centre[0] + p.u[0] * t, z = p.centre[1] + p.u[1] * t;
           builder.box(.7, p.rise + 1.6, .9, x, eave - .5 + (p.rise + 1.6) / 2, z, p.brick ? '#6e3b30' : '#8a5444');
         }
+        houseDetail(p, builder, outer, eave, base);
         if (p.porch) {
           const [a, d] = p.porch, len = Math.hypot(d[0] - a[0], d[1] - a[1]);
           const ex: P2 = [(d[0] - a[0]) / len, (d[1] - a[1]) / len];
