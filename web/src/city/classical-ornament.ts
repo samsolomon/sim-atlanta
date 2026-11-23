@@ -58,7 +58,7 @@ export function classicalOrnament(shell: Shell, colours: { stone: string; shade:
         shell.body.quad(at(0,y,.07),at(length,y,.07),at(length,y+.07,.07),at(0,y+.07,.07),joint);
     }
   }
-  /** Stone strips `width` wide on both faces of every outward corner longer than `min` metres. */
+  /** Stone strips `width` wide at both ends of every wall longer than `min` metres (all corners, including notches). */
   function quoins(plan: P2[],lo: number,hi: number,width = 1.2,min = 6,tint = limestone) {
     const list = edges(plan);
     list.forEach(e => {

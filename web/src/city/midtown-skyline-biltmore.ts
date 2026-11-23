@@ -104,7 +104,8 @@ export function biltmore(shell: Shell) {
       const top = base + 41 - n * pitch;
       GLYPHS[ch].forEach((row, r) => [...row].forEach((on, c) => {
         if (on !== '1') return;
-        const y = top - r * cell, zc = cz + (c - 2) * cell;
+        // Letters narrow with the taper so they stay on the lattice face.
+        const y = top - r * cell, zc = cz + (c - 2) * cell * Math.min(1, half((top - base) / height) / 1.2);
         for (const side of [-1, 1]) {
           const x = cx + side * (half((y - base) / height) + .05);
           const quad = (b: Builder, o: number, colour: string) => b.quad([x + side * o, y - cell, zc - cell / 2], [x + side * o, y - cell, zc + cell / 2],
