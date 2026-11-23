@@ -56,8 +56,10 @@ export function federalReserve(shell: Shell) {
     }
     // Two-storey loggia on the Peachtree (east) front: square piers carrying a deep lintel.
     const lx = x1 + .02, lz0 = z0 + 10, lz1 = z1 - 10;
-    for (let z = lz0; z <= lz1 + .01; z += (lz1 - lz0) / 10)
+    for (let k = 0; k <= 10; k++) {
+      const z = lz0 + k * (lz1 - lz0) / 10;
       shell.prism([[lx, z - .5], [lx + 2.4, z - .5], [lx + 2.4, z + .5], [lx, z + .5]], shell.base, 7.6, marble, marble);
+    }
     shell.prism([[lx, lz0 - .5], [lx + 2.6, lz0 - .5], [lx + 2.6, lz1 + .5], [lx, lz1 + .5]], 7.6, 8.6, marble, marble);
     shell.body.quad([lx + .01, .4, lz0], [lx + .01, .4, lz1], [lx + .01, 7.2, lz1], [lx + .01, 7.2, lz0], '#3b454e');
     shell.lights.quad([lx + .03, .6, lz0 + 1], [lx + .03, .6, lz1 - 1], [lx + .03, 6.8, lz1 - 1], [lx + .03, 6.8, lz0 + 1], '#e9cf9f');
