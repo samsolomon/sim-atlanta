@@ -54,3 +54,35 @@ describe('branch instances', () => {
     expect(branches().count).toBe(0);
   });
 });
+
+describe('named crown sizes', () => {
+  it('enlarge broadleaves past the usual cap without changing any colour seed', () => {
+    const build = (big: boolean) => {
+      const w = new World({ bounds: { minX: 0, maxX: 400, minZ: 0, maxZ: 400 }, buildings: [], roads: [], rail: [] }, null, { terrain: 'flat', clumps: 3, lightMapMax: 64 });
+      w.realTrees = Array.from({ length: 30 }, (_, i) => [20 + (i % 6) * 60, 20 + Math.floor(i / 6) * 70, 12, 4] as [number, number, number, number]);
+      if (big) w.crownSize = () => ({ h: 30, r: 13 });
+      w.buildTrees();
+      return w.trees;
+    };
+    const plain = build(false), big = build(true);
+    expect(big.map(t => t.c)).toEqual(plain.map(t => t.c));
+    big.forEach((t, i) => {
+      if (t.c >= 0.26) {
+        expect(t.s).toBeGreaterThan(4.5);
+        // A real trunk: at least a quarter of the 30 m height.
+        expect(t.th!).toBeGreaterThanOrEqual(30 * 0.25 - 1e-9);
+      } else {
+        expect(t.s).toBe(plain[i].s);
+        expect(t.th).toBe(plain[i].th);
+      }
+    });
+  });
+
+  it('make a planted broadleaf deciduous whatever seed it drew', () => {
+    const w = new World({ bounds: { minX: 0, maxX: 400, minZ: 0, maxZ: 400 }, buildings: [], roads: [], rail: [] }, null, { terrain: 'flat', clumps: 3, lightMapMax: 64 });
+    w.realTrees = Array.from({ length: 40 }, (_, i) => [10 + (i % 8) * 45, 20 + Math.floor(i / 8) * 70, 20, 8] as [number, number, number, number]);
+    w.crownSize = () => ({ h: 24, r: 9, broadleaf: true });
+    w.buildTrees();
+    for (const t of w.trees) expect(t.c).toBeGreaterThanOrEqual(0.26);
+  });
+});

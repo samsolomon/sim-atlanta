@@ -205,6 +205,11 @@ export class World {
    * after their colour seed is drawn, so every other tree keeps its kind and colour.
    */
   replacedTree: ((x: number, z: number, crownM: number) => boolean) | null = null;
+  /**
+   * Crowns drawn at a named height and crown radius (metres): deciduous broadleaves only, or any
+   * crown marked `broadleaf` (made deciduous). Used by the tree rollout (trees/rollout.ts).
+   */
+  crownSize: ((x: number, z: number) => { h: number; r: number; broadleaf?: boolean } | null | undefined) | null = null;
 
   readonly opts: WorldOptions;
   constructor(
@@ -979,9 +984,18 @@ export class World {
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const c = r();
         if (this.replacedTree?.(x, z, cr)) continue;
-        const sz = Math.min(4.5, Math.max(0.7, cr / 2.3));
+        // A named size (the tree rollout's large Ansley crowns) applies to broadleaves only, after
+        // the seed is drawn, with room above the usual 4.5 scale cap.
+        const big = this.crownSize?.(x, z);
+        // Deciduous only: a named crown that drew a pine or magnolia seed keeps its canopy-map size,
+        // unless it is a planted broadleaf (the rollout's pairs and island trees), which is made
+        // deciduous here, deterministically from its own seed.
+        const kindC = big?.broadleaf && c < 0.26 ? 0.26 + c * 0.74 / 0.26 * 0.999 : c;
+        const named = big && kindC >= 0.26 ? big : null;
+        // The crown takes at most three quarters of the height, so a big tree keeps a real trunk.
+        const sz = named ? Math.min(6, named.h * 0.75 / 4.2, Math.max(0.7, named.r / 2.3)) : Math.min(4.5, Math.max(0.7, cr / 2.3));
         const y = this.ground(x, z);
-        this.trees.push({ x, y, z, s: sz, c, th: Math.max(1.2, h - 4.2 * sz) });
+        this.trees.push({ x, y, z, s: sz, c: kindC, th: Math.max(1.2, (named?.h ?? h) - 4.2 * sz) });
       }
     } else {
     // Street trees along the sidewalks of city streets.
