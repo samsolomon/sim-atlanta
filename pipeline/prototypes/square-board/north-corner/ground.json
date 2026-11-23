@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "file": "ground.i16",
+  "sha256": "908a98706fa753b532f4f50df6c3af502aab945820bf9368cad52276f491fa73",
+  "attribute": "bare-earth ground elevation",
+  "tier": "inferred",
+  "source": {
+    "name": "USGS 3DEP 1 m DEM",
+    "url": "https://prd-tnm.s3.us-west-2.amazonaws.com/StagedProducts/Elevation/1m/Projects/GA_Statewide_2018_B18_DRRA/TIFF/USGS_1M_16_x74y374_GA_Statewide_2018_B18_DRRA.tif",
+    "metadata": "https://prd-tnm.s3.us-west-2.amazonaws.com/StagedProducts/Elevation/1m/Projects/GA_Statewide_2018_B18_DRRA/metadata/USGS_1M_16_x74y374_GA_Statewide_2018_B18_DRRA.xml",
+    "sha256": "a75e0cd22d4c673b9bf2f93caa714065b16a2f9695065c28714881d436f64140",
+    "tileTimeRange": [
+      "2018-11-27",
+      "2019-04-24"
+    ],
+    "published": "2022-05-31",
+    "horizontal": "EPSG:26916",
+    "resolutionM": 1,
+    "noData": -999999.0
+  },
+  "horizontal": {
+    "originLon": -84.3916,
+    "originLat": 33.7539,
+    "lonLatCrs": "OGC:CRS84",
+    "radiusM": 6371008.8,
+    "axes": "x east, z south; local equirectangular metres"
+  },
+  "vertical": {
+    "datum": "NAVD88",
+    "crs": "EPSG:5703",
+    "units": "metres",
+    "sceneZeroNavd88M": 323.8
+  },
+  "bounds": {
+    "minX": 1000.0,
+    "maxX": 1800.0,
+    "minZ": -1300.0,
+    "maxZ": -520.0
+  },
+  "stepM": 5,
+  "rows": 157,
+  "cols": 161,
+  "layout": "inclusive nodes, row-major from minZ and minX; x varies fastest",
+  "encoding": "signed int16 little-endian",
+  "scaleM": 0.1,
+  "offsetM": 0,
+  "noData": -32768,
+  "noDataCount": 0,
+  "sampling": "nearest native pixel at node; bilinear between valid nodes",
+  "box": "north-corner",
+  "read": "local pinned tile"
+}
