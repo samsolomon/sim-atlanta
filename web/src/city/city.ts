@@ -196,14 +196,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
   }
   const query = new URLSearchParams(location.search);
-  const requestedSquare = query.get('board') === 'square';
+  const midtown = query.get('board') === 'midtown';
+  const requestedSquare = midtown || query.get('board') === 'square';
   const square = grid && requestedSquare ? await import('./square-mosaic').catch(error => {
     console.warn('Square City preview unavailable', error);
     return undefined;
   }) : undefined;
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Square preview unavailable. Downtown is available.');
-  const mosaic = square && new square.SquareMosaic(DATA);
+  const mosaic = square && new square.SquareMosaic(DATA, midtown);
   const previewEast = !!mosaic || (!!grid && query.get('east') === 'king-memorial');
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -449,7 +450,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
@@ -665,13 +666,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.add(rain.mesh, snow.mesh);
 
   // ---- camera ---------------------------------------------------------------------------
-  const camera = new THREE.PerspectiveCamera(22, 1, 20, 20000);
+  const camera = new THREE.PerspectiveCamera(22, 1, 20, midtown ? 40000 : 20000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minPolarAngle = THREE.MathUtils.degToRad(20);
   controls.maxPolarAngle = THREE.MathUtils.degToRad(72);
   controls.minDistance = 150;
-  controls.maxDistance = mosaic ? 11000 : 6500;
+  controls.maxDistance = midtown ? 32000 : mosaic ? 11000 : 6500;
   controls.screenSpacePanning = false;
   controls.keys = { LEFT: '', UP: '', RIGHT: '', BOTTOM: '' }; // the shell owns the keyboard
   const squareButton = mosaic ? document.createElement('button') : undefined;
@@ -697,8 +698,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(area.group);
     scenery.push(area.group);
     area.setSeason(local(new Date(options.clockMs())).doy);
-    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === 7
-      ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/7 areas loaded)`;
+    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
+      ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
     renderer.shadowMap.needsUpdate = true;
   }
   function approachMosaic(x: number, z: number) {
@@ -706,7 +707,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       for (const area of added.values()) addArea(area);
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
-      areaResult(added.has('north-band') ? 'north' : 'south', null);
+      const first = added.keys().next().value!;
+      areaResult(first === 'north-band' ? 'north' : first === 'south-band' ? 'south' : first, null);
       if (target) {
         const offset = camera.position.clone().sub(controls.target);
         controls.target.set(target.x, targetY(target.x, target.z), target.z);
@@ -957,15 +959,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = null;
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
-      mosaic.retry();
+      mosaic.requestFullBoard();
       if (east && eastRailFailed) loadKingRail(east);
       // This explicit request also works as a retry when any geographic pack is missing.
       approachMosaic(400, -1500);
-      approachMosaic(400, 900);
       approachEast(1400, 0);
       approachNorth(1400, 0);
       const aspect = Math.max(.25, camera.aspect);
-      setView(-15, 35, Math.min(controls.maxDistance, Math.max(9200, 9600 / aspect)), 400, -300);
+      const depth = 1100 - mosaic.northEdge;
+      const distance = midtown ? Math.max(depth * 3.25, 11700 / aspect) : Math.max(9200, 9600 / aspect);
+      setView(-15, 35, Math.min(controls.maxDistance, distance), 400, (1100 + mosaic.northEdge) / 2);
       document.getElementById('city-info')?.hidePopover?.();
     };
   }
