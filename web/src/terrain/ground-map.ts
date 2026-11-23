@@ -8,6 +8,7 @@ import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePat
 import { paintJunctionApproaches } from './junction-decks';
 import { paintStreetBridgeApproaches } from './street-bridges';
 import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
+import { paintActiveOval } from '../city/active-oval';
 
 const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
@@ -85,6 +86,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
     if (g.kind === 'swimming_pool') { ctx.lineWidth = .45; ctx.strokeStyle = '#dbd9c9'; ctx.stroke(); }
     if (g.kind === 'pitch') { ctx.lineWidth = .45; ctx.strokeStyle = '#e9e7db'; ctx.stroke(); }
   }
+  paintActiveOval(ctx, data.bounds);
 
   const roads: PaintRoad[] = [...data.roads.filter(r => !r.bridge && !r.tunnel),
     ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
