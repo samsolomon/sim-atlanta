@@ -7,7 +7,7 @@ from vignette import ROOT, project
 
 PACK = Path(ROOT) / "pipeline/prototypes"
 WAYS = {"dock": 1089189870, "gazebo": 269747513, "bridge": 102679938, "spur": 146304988}
-GATES = {"12th Street": 316638596, "14th Street": 5674178517}
+GATES = {"12th Street": 316638596, "14th Street": 5674178517, "10th Street": 1595736690}
 
 
 def bake():
