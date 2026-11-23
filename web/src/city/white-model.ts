@@ -72,14 +72,27 @@ export function createWhiteModel(o: {
     c.opacity = String(to);
   };
   // In 'map' mode the canvas stays hidden until colour, so the still sits beside it, not inside.
-  const overlayHost = () => (mode === 'map' ? o.container.parentElement ?? o.container : o.container);
+  const place = () => (mode === 'map' ? o.container.after(overlay) : o.container.append(overlay));
 
   /** Buildings only, in white, over a transparent background (the map shows through). */
+  // A landmark is a group of parts (podium, tower, canopy): judge the largest building-sized
+  // ancestor, so its short parts stay with it. World's merged buildings are tagged.
+  const sizes = new Map<THREE.Object3D, boolean>();
+  const buildingSized = (x: THREE.Object3D, box: THREE.Box3) => {
+    let v = sizes.get(x);
+    if (v === undefined) {
+      box.setFromObject(x);
+      const size = box.getSize(new THREE.Vector3());
+      v = size.y > 6 && Math.max(size.x, size.z) < 600;
+      sizes.set(x, v);
+    }
+    return v;
+  };
   const isBuilding = (mesh: THREE.Mesh, box: THREE.Box3) => {
-    if (mesh.userData.building) return true;
-    box.setFromObject(mesh);
-    const size = box.getSize(new THREE.Vector3());
-    return size.y > 6 && Math.max(size.x, size.z) < 600;
+    for (let x: THREE.Object3D | null = mesh; x && x !== o.scene; x = x.parent) {
+      if (x.userData.building || buildingSized(x, box)) return true;
+    }
+    return false;
   };
   const LUT = new Uint8Array(256).map((_, i) => {
     const v = i / 255;
@@ -191,7 +204,7 @@ export function createWhiteModel(o: {
         if (mode === 'map') {
           // White buildings stand on the tilted map; the colour frames so far warmed the shaders.
           drawBuildingsOnly(overlay);
-          overlayHost().append(overlay);
+          place();
           fade(1200);
           requestAnimationFrame(() => (overlay.style.opacity = '1'));
         } else {
@@ -200,7 +213,7 @@ export function createWhiteModel(o: {
           overlay.width = c.width;
           overlay.height = c.height;
           overlay.getContext('2d')!.drawImage(c, 0, 0);
-          overlayHost().append(overlay);
+          place();
           // The canvas already shows the white model, so the still goes on at full strength.
           fade(0);
           overlay.style.opacity = '1';
@@ -225,11 +238,20 @@ export function createWhiteModel(o: {
         // The first colour frame is drawn; now let colour show through.
         phase = 'done';
         const ms = mode === 'paper' ? 1000 : 1400;
-        if (mode !== 'paper') requestAnimationFrame(() => fadeCanvas(1, ms));
-        if (overlay.isConnected) {
+        if (mode === 'paper') {
           fade(ms);
           requestAnimationFrame(() => (overlay.style.opacity = '0'));
           setTimeout(() => overlay.remove(), o.reducedMotion ? 0 : ms + 100);
+        } else {
+          // Colour fades in over the still, which stays opaque underneath until colour covers it,
+          // so the map never ghosts through both half-faded layers.
+          if (overlay.isConnected) o.container.after(overlay);
+          o.container.style.zIndex = '2'; // the canvas container is already positioned
+          requestAnimationFrame(() => fadeCanvas(1, ms));
+          setTimeout(() => {
+            overlay.remove();
+            o.container.style.zIndex = '';
+          }, o.reducedMotion ? 0 : ms + 100);
         }
         finish();
         resolveRevealed();

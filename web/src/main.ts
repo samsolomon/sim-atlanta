@@ -475,7 +475,10 @@ let cityLoad = 0; // bumped whenever City opens or closes, so a load that finish
 let cityTilt = 57; // retain the user's City tilt while Map remains flat
 let opening = landing === 'city';
 async function openCity() {
-  if (diorama) return;
+  if (diorama) {
+    leaving++; // cancels a City → Map fade in progress
+    return;
+  }
   hideCard();
   const load = ++cityLoad;
   cityAbort?.abort();
@@ -578,7 +581,7 @@ async function openCity() {
   cityLoading.hidden = true;
   cityBuiltOnce = true;
   // The colour cross-fade (1.4 s) covers the map; then paper goes back behind City.
-  if (overMap) setTimeout(() => { if (load === cityLoad) document.body.classList.remove('city-over-map'); }, reducedMotion() ? 0 : 1500);
+  if (overMap) overMapTimer = window.setTimeout(() => { if (load === cityLoad) document.body.classList.remove('city-over-map'); }, reducedMotion() ? 0 : 1500);
   void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
@@ -634,6 +637,9 @@ async function applyGraphics() {
 // ---- Map ↔ City camera match (A2c) -------------------------------------------------------------
 const CITY_FOV = 22; // City's vertical field of view; the map takes it while they overlap
 let mapFov: number | null = null; // MapLibre's own, restored when the map flattens
+let mapMaxPitch: number | null = null;
+let overMapTimer = 0;
+let leaving = 0; // bumped when City → Map starts, so a City click during the fade can cancel it
 let cityBuiltOnce = false;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** City can open exactly on the map's view only near City's scale (its orbit limit). */
@@ -641,10 +647,14 @@ function mapOnCityScale(m: maplibregl.Map) {
   const mpp = mapMetresPerPixel(m.getCenter().lat, m.getZoom());
   return (mpp * innerHeight) / (2 * Math.tan((CITY_FOV / 2) * Math.PI / 180)) <= 6000;
 }
-function tiltMapTo(m: maplibregl.Map, pitch: number): Promise<void> {
+function matchCityLens(m: maplibregl.Map) {
   mapFov ??= m.getVerticalFieldOfView();
+  mapMaxPitch ??= m.getMaxPitch();
   m.setMaxPitch(80);
   m.setVerticalFieldOfView(CITY_FOV);
+}
+function tiltMapTo(m: maplibregl.Map, pitch: number): Promise<void> {
+  matchCityLens(m);
   return new Promise((done) => {
     const t = setTimeout(done, 1300);
     m.once('moveend', () => { clearTimeout(t); done(); });
@@ -654,7 +664,8 @@ function tiltMapTo(m: maplibregl.Map, pitch: number): Promise<void> {
 function flattenMap(m: maplibregl.Map, animate: boolean) {
   const restore = () => {
     if (mapFov != null) m.setVerticalFieldOfView(mapFov);
-    mapFov = null;
+    if (mapMaxPitch != null) m.setMaxPitch(mapMaxPitch);
+    mapFov = mapMaxPitch = null;
   };
   if (!animate) {
     m.jumpTo({ pitch: 0 });
@@ -671,12 +682,12 @@ async function leaveCityToMap() {
   const m = map;
   if (!uiNext(location.search) || !diorama || !m || reducedMotion()) return closeCity();
   const load = cityLoad;
+  const leave = ++leaving;
+  clearTimeout(overMapTimer);
   const t = diorama.target(), camera = diorama.camera();
   const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
   cityTilt = camera.tilt;
-  mapFov ??= m.getVerticalFieldOfView();
-  m.setMaxPitch(80);
-  m.setVerticalFieldOfView(CITY_FOV);
+  matchCityLens(m);
   m.jumpTo({ center: [lon, lat], bearing: camera.bearing, pitch: camera.tilt, zoom: mapZoomForScale(lat, camera.metresPerPixel) });
   if (lastAtm) paintMapAtmosphere?.(lastAtm);
   document.body.classList.add('city-over-map');
@@ -685,11 +696,16 @@ async function leaveCityToMap() {
   canvas.style.opacity = '0';
   await new Promise((r) => setTimeout(r, 720));
   canvas.style.transition = canvas.style.opacity = '';
-  if (load !== cityLoad || !diorama) return; // City reopened meanwhile
+  // City was chosen again during the fade: stay.
+  if (leave !== leaving || load !== cityLoad || !diorama) {
+    document.body.classList.remove('city-over-map');
+    return;
+  }
   closeCity(true);
 }
 
 function closeCity(keepMapView = false) {
+  clearTimeout(overMapTimer);
   document.body.classList.remove('city-over-map');
   keepPose = null;
   document.getElementById('city-info')!.hidePopover?.();
@@ -704,6 +720,7 @@ function closeCity(keepMapView = false) {
   diorama = null;
   const map = openMap();
   if (keepMapView && map) flattenMap(map, true);
+  else if (!pose && map && (mapFov != null || map.getPitch() !== 0)) flattenMap(map, false); // City never arrived
   else if (pose && map) {
     // Keep the same centre, direction and horizontal scale; only the tilt changes.
     const { target: t, camera } = pose;
