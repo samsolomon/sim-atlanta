@@ -210,3 +210,16 @@ it('replaces the Ponce de Leon Apartments with belvedere towers over a curved fr
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
 });
+
+it('replaces the Federal Reserve Bank with its stepped marble tower and forecourt', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const fed: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:28979077');
+  const model = createSkylineLandmark([fed], fed, -2, () => 0)!;
+  expect(model.group.name).toBe('Federal Reserve Bank of Atlanta');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(48, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
