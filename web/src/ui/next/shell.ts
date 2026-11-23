@@ -578,7 +578,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     tierDate.textContent = conf.shifted ? '' : dateFmt.format(now);
     tierDate.hidden = conf.shifted;
     nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent}. Time and weather`);
+    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(loadingNote ?? areaNote ?? feedNote);

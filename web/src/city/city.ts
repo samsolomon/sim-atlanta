@@ -1450,7 +1450,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // The first frames: a white study model of this exact scene, then colour (white-model.ts).
   const whiteModel = options.whiteModel ? createWhiteModel({
     renderer, scene, camera, container,
-    hide: [trains.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, figures?.group, rain.mesh, snow.mesh],
+    // Read each frame: some vehicle layers arrive after createCity returns.
+    hide: () => [trains.group, buses.mesh, freight?.group, traffic?.group, arterials?.group, midtownArterials?.group, figures?.group,
+      brookwood?.cars, (northLine as { group?: THREE.Object3D } | undefined)?.group, rain.mesh, snow.mesh],
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
     skipPasses: [gtao],

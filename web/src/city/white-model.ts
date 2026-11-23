@@ -21,7 +21,7 @@ export function createWhiteModel(o: {
   camera: THREE.Camera;
   container: HTMLElement;
   /** Vehicles, people, rain and snow: they appear only with colour. */
-  hide: (THREE.Object3D | undefined | false | null)[];
+  hide: () => (THREE.Object3D | undefined | false | null)[];
   reducedMotion: boolean;
   /** With everything one colour the ink mostly draws silhouettes: strengthen it while white. */
   inkBoost?: () => void;
@@ -39,6 +39,14 @@ export function createWhiteModel(o: {
   // and take the still from the last.
   const SETTLE = 6;
   let whiteFrames = 0;
+  const skipped: [{ enabled: boolean }, boolean][] = [];
+  let ro: ResizeObserver | undefined;
+  // The still is only true for the camera and canvas it was taken with.
+  const stillCamera = new THREE.Matrix4();
+  const finish = () => {
+    ro?.disconnect();
+    ro = undefined;
+  };
   let resolveRevealed!: () => void;
   const revealed = new Promise<void>((r) => (resolveRevealed = r));
   const overlay = document.createElement('canvas');
@@ -55,7 +63,7 @@ export function createWhiteModel(o: {
   // scene themselves, then disagreed with it.)
   const swapped = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
   const conceal = () => {
-    for (const h of o.hide) if (h && h.visible) { h.visible = false; hiddenNow.push(h); }
+    for (const h of o.hide()) if (h && h.visible) { h.visible = false; hiddenNow.push(h); }
     o.scene.traverseVisible((m) => {
       const mesh = m as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -82,14 +90,15 @@ export function createWhiteModel(o: {
     before() {
       if (phase !== 'white') return;
       o.inkBoost?.();
-      for (const p of o.skipPasses ?? []) if (p) p.enabled = false;
+      skipped.length = 0;
+      for (const p of o.skipPasses ?? []) if (p) { skipped.push([p, p.enabled]); p.enabled = false; }
       conceal();
     },
     /** Call just after the composer renders (the drawing buffer is still valid in this task). */
     after() {
       if (phase === 'white') {
         restore();
-        for (const p of o.skipPasses ?? []) if (p) p.enabled = true;
+        for (const [p, was] of skipped) p.enabled = was;
         if (++whiteFrames < SETTLE) return;
         // Hold the white frame as a still, fade it in over the paper, and warm up colour behind it.
         const c = o.renderer.domElement;
@@ -98,12 +107,8 @@ export function createWhiteModel(o: {
         overlay.getContext('2d')!.drawImage(c, 0, 0);
         o.container.append(overlay);
         // A resize would stretch the still out of register with the scene: drop it instead.
-        const ro = new ResizeObserver(() => {
-          if (overlay.isConnected && (o.renderer.domElement.width !== overlay.width || o.renderer.domElement.height !== overlay.height)) {
-            ro.disconnect();
-            this.cancel();
-          }
-        });
+        stillCamera.copy(o.camera.matrixWorld);
+        ro = new ResizeObserver(() => this.check());
         ro.observe(o.container);
         // The canvas already shows the white model, so the still goes on at full strength.
         fade(0);
@@ -117,14 +122,26 @@ export function createWhiteModel(o: {
         if (!hold) void Promise.race([o.renderer.compileAsync(o.scene, o.camera).catch(() => undefined), ceiling]).then(() => {
           if (phase === 'compiling') phase = 'colour';
         });
+      } else if (this.check()) {
+        // dropped
       } else if (phase === 'colour') {
         // The first colour frame is drawn under the still; now let colour show through.
         phase = 'done';
         fade(1000);
         requestAnimationFrame(() => (overlay.style.opacity = '0'));
         setTimeout(() => overlay.remove(), o.reducedMotion ? 0 : 1100);
+        finish();
         resolveRevealed();
       }
+    },
+    /** Keys, Follow or a resize moved things under the still: drop it rather than slide. */
+    check(): boolean {
+      if ((phase === 'compiling' || phase === 'colour') && overlay.isConnected &&
+        (o.renderer.domElement.width !== overlay.width || o.renderer.domElement.height !== overlay.height || !o.camera.matrixWorld.equals(stillCamera))) {
+        this.cancel();
+        return true;
+      }
+      return false;
     },
     /** True while frames would draw colour that the still hides: skip the expensive draw. */
     get holding() { return phase === 'waiting' || phase === 'compiling'; },
@@ -144,6 +161,7 @@ export function createWhiteModel(o: {
     /** A user gesture during the fade would slide the scene under a still: drop the still. */
     cancel() {
       if (phase !== 'white' && phase !== 'waiting') {
+        finish();
         overlay.remove();
         if (phase !== 'done') {
           phase = 'done';
@@ -152,6 +170,7 @@ export function createWhiteModel(o: {
       }
     },
     dispose() {
+      finish();
       o.container.style.opacity = '';
       o.container.style.transition = '';
       overlay.remove();
