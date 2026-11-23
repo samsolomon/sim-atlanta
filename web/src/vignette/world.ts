@@ -1052,6 +1052,23 @@ export class World {
   private pines?: THREE.InstancedMesh;
   private trunks?: THREE.InstancedMesh;
   private branches?: THREE.InstancedMesh;
+  /** True while some broadleaf crown is thin enough to show the limbs inside it. */
+  private branchesShow = true;
+  private detail = { farTrees: false, branchShadows: true };
+  /**
+   * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
+   * bare-branch skeletons, which are a few pixels at long orbit distances; `branchShadows`
+   * lets low quality stop them casting shadows. Call whenever a threshold changes.
+   */
+  setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) {
+    Object.assign(this.detail, d);
+    this.applyBranchVisibility();
+  }
+  private applyBranchVisibility() {
+    if (!this.branches) return;
+    this.branches.visible = this.branchesShow && !this.detail.farTrees;
+    this.branches.castShadow = this.detail.branchShadows;
+  }
   private seasonDoy = -1;
 
   /**
@@ -1079,6 +1096,8 @@ export class World {
     const tint = new THREE.Color();
     const v = new THREE.Vector3();
     const sc3 = new THREE.Vector3();
+    // Under full leaf the bare-branch crowns sit hidden inside every canopy: skip drawing them.
+    let thinnest = 1;
     this.trees.forEach((t) => {
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
@@ -1110,6 +1129,7 @@ export class World {
         else if (st.stage === 'turning') c.set(green).lerp(new THREE.Color(species), Math.min(1, st.t * 1.3));
         else if (st.stage === 'dropping') c.set(species).lerp(brown, st.t * 0.6);
         canopyLeft = st.canopy;
+        thinnest = Math.min(thinnest, canopyLeft);
       }
       // A rounded crown of clumps: top clumps catch the sun, lower ones sit in shade.
       const R = 2.3 * t.s;
@@ -1141,6 +1161,8 @@ export class World {
       }
     });
     pines.count = kp;
+    this.branchesShow = thinnest < 0.97;
+    this.applyBranchVisibility();
     for (const im of [canopy, pines]) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
