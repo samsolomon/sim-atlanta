@@ -111,7 +111,7 @@ export function busCard(bus: LiveBus, now: number, model?: string) {
   const name = bus.routeId?.value.slice('marta:route:'.length);
   return `<h2><span class="dot" style="background:${MODE_COLOR.bus}"></span>MARTA bus ${esc(bus.id.slice('marta:bus:'.length))}</h2>
     <p class="sub">${name ? 'Route ' + esc(name) : 'Route unavailable'}</p>
-    <dl><dt>Position</dt><dd>${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd>
+    <dl><dt class="position-report">Position</dt><dd class="position-report">${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd>
       ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>`;
 }
 
