@@ -89,9 +89,9 @@ function tower(s: Shell) {
           side % 2 ? 0.12 : 0.32,
           0.32,
           side % 2 ? 0.32 : 0.12,
-          x + (side % 2 ? sign * 4.4 : u * sign),
+          x + (side % 2 ? sign * 4.65 : u * sign),
           y,
-          z + (side % 2 ? -u * sign : sign * 4.4),
+          z + (side % 2 ? -u * sign : sign * 4.65),
           '#ffeac6',
         );
       }
