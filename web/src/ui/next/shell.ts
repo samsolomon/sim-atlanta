@@ -15,7 +15,7 @@ import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
 import { BYLINE, createDetailPanel } from './panel';
-import { atlantaDate, confidence, liveDetails, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
+import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import { shareUrl } from '../share';
 import type { ShellApi, ShellOptions } from '../shell';
@@ -87,8 +87,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     <p class="a2-h">Weather</p>
     <div class="a2-seg2" role="group" aria-label="Weather">${['Auto', 'Clear', 'Rain', 'Fog', 'Storm'].map((w) => `<button type="button" data-wx="${w}">${w}</button>`).join('')}</div>
     <p class="a2-caption">Auto shows the observed weather at the present time and an illustrative sky otherwise.</p>
-    <button type="button" class="a2-back">${SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>')}Back to now</button>
-    <details class="a2-sources"><summary>Each feed right now</summary><div class="a2-sources-body"></div></details>`;
+    <button type="button" class="a2-back">${SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>')}Back to now</button>`;
   const range = panel.querySelector<HTMLInputElement>('.a2-range')!;
   const dateInput = panel.querySelector<HTMLInputElement>('.a2-date-input')!;
   const dateText = panel.querySelector<HTMLElement>('.a2-date-text')!;
@@ -215,11 +214,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
   };
   phone.addEventListener('change', placePanel);
-  const sourcesBox = panel.querySelector<HTMLDetailsElement>('.a2-sources')!;
-  sourcesBox.addEventListener('toggle', () => {
-    panel.querySelector<HTMLElement>('.a2-sources-body')!.dataset.open = sourcesBox.open ? '1' : '';
-    clockChanged();
-  });
   placePanel();
 
   // One notice at a time, 8 px under the subject card. Tier words wrap; they never truncate.
@@ -496,7 +490,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
   void loadPlaces();
 
   let now = new Date();
-  const sources = panel.querySelector<HTMLElement>('.a2-sources-body')!;
 
   let lastTick = 0;
   let areaNote: string | null = null;
@@ -584,7 +577,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
     wxBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.wx === weatherChoice)));
     const back = panel.querySelector<HTMLButtonElement>('.a2-back')!;
     back.disabled = s.realTime && weatherChoice === 'Auto';
-    if (sources.dataset.open === '1') sources.innerHTML = liveDetails(s, view, weather, weatherAt);
   }
   const fmtSpan = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`);
 
