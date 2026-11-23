@@ -1,5 +1,24 @@
 # 191 Peachtree Tower in City
 
+## Crown and facade study · November 23
+
+At City scale the twin lanterns mark the skyline. Up close the roofline has three distinct silhouettes. Each square lantern ends in four stone balls, four pale hemispheres sit lower on corner pavilions, and the tall glazed arches rise between those pavilions. The shafts have a continuous vertical order too. Four grouped glass bays sit between two stacks of square windows on each broad face. The recessed link has three punched bays.
+
+Sam’s private detail provided the proportions. Sullivan’s street photograph confirms the shoulder domes and corner finials from below. The public night view shows warm light concentrated on the shoulders and open lanterns with scattered lit rooms below. The model estimates the lighting, stone courses and panel divisions. The 234.7 m height and shaft plan come from the existing bake and mapped outline. Estimated dimensions include 5.36 m diameter shoulder domes, 2.5 m finials, a 20 m drum, and 5.2 m wide glazed arches. [Daylight crown detail](https://homepages.bluffton.edu/~sullivanm/atlanta/johnsonburgee/top.jpg) · [Architect’s evening approach](https://www.kendall-heaton.com/wp-content/uploads/2014/12/191-peachtree-tower-1.jpg) · [Night skyline](https://commons.wikimedia.org/wiki/File:191_Peachtree_Tower_(8564151340).jpg)
+
+| City view | Camera at 999 × 496 CSS pixels |
+| --- | --- |
+| [Earlier replacement, looking south](polish-before.jpg) | (547, −288), bearing 160°, tilt 62°, 0.68 m/px |
+| [Daylight detail](polish-day.jpg) · [Full-night detail](polish-night.jpg) | (325, −905), bearing 340°, tilt 60°, 0.51 m/px |
+| [Skyline](polish-far.jpg) | Same target, bearing and tilt, 1.30 m/px |
+
+City used the Studio bake, high quality and a stopped clock on November 20, 2026, at 14:12:45 or 22:00 EST. The tower still uses three meshes. The crowns contribute 3,592 triangles. Both mipmapped facade textures together occupy 0.91 MiB before mipmaps (216 × 552 RGBA each). The masonry joints fade at distance. A web build and coordinator deployment pick up the geometry with the existing data.
+
+Sam spotted the inner footings crossing the recessed facade in the daylight view. The two crowns now sit over the centres of the load-bearing wings at x = 426.8 and 471.5 m. The 6 m footings span 29.5 m east to west. Eight daylight views at 45° intervals checked the front and back notches. The regression test projects every crown vertex onto the modelled shaft roof. [Opposite side at 160°](footings-reverse.jpg)
+
+## Earlier City replacement
+
+
 **Keep the tower.** At the normal 1280 × 900 desktop opening, the two crowns appear about 14 CSS pixels apart to the right of the Westin’s round roof. From the north the narrow recess between shafts reads down the facade. At dusk the open lanterns pick up a warm wash. The neighbouring tall parking extrusion obscures part of the south face in the current bake.
 
 ![Same crop of the normal opening, enlarged three times. The previous block is on the left and the two crowns are on the right.](opening-detail.png)
