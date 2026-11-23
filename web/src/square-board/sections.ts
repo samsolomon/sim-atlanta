@@ -1,11 +1,13 @@
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
+import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
 import railRows from '../city/fixtures/midtown-rail.json';
 import { brookwoodCorridorRail } from '../city/brookwood-corridor';
 import { midtownLights } from '../city/midtown-night';
 import { northLineRail } from '../city/midtown-marta-guideway';
+import { northLinePortalSlots } from '../city/midtown-marta-rail';
 import rowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import type { ConnectorBoard } from '../city/connector-traffic';
 import { cityRoadHeight } from '../city/road-height';
@@ -146,6 +148,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
         lights: id in rowBounds ? midtownLights : undefined,
+        openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
@@ -164,11 +167,18 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         }
         const deckHeight: typeof decks.deckAt = (x, z, run) =>
           decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
+        const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
+        if (piers) area.group.add(piers.mesh);
         added.set(id, {
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
           connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, deckHeight) },
-          dispose() { for (const t of transports) t.dispose(); area.dispose(); },
+          dispose() {
+            for (const t of transports) t.dispose();
+            piers?.mesh.geometry.dispose();
+            (piers?.mesh.material as { dispose(): void } | undefined)?.dispose();
+            area.dispose();
+          },
         });
       } catch (error) { for (const t of transports) t.dispose(); area.dispose(); throw error; }
     }

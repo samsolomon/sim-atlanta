@@ -5,7 +5,15 @@ import { sceneToLonLat } from '../core/places';
 import type { RoutesFile, TrainState } from '../model/types';
 import type { TransportRun } from '../terrain/transport-data';
 import rows from './fixtures/midtown-rail.json';
-import { createNorthLine, NORTH_LINE_VANISH_DEPTH, northCar, northLinePaths, northLineTracks, portalFrame } from './midtown-marta-rail';
+import {
+  createNorthLine,
+  NORTH_LINE_VANISH_DEPTH,
+  northCar,
+  northLinePaths,
+  northLinePortalSlots,
+  northLineTracks,
+  portalFrame,
+} from './midtown-marta-rail';
 import { CAR_LENGTH } from '../vignette/cq400';
 import { northLineProfile } from './midtown-marta-guideway';
 
@@ -123,4 +131,18 @@ it('keeps cars visible a few metres into the dark tube, then clips them', () => 
   const inside = (d: number) => face.distanceToPoint(new Vector3(f.x - f.dx * d, 0, f.z - f.dz * d));
   expect(inside(NORTH_LINE_VANISH_DEPTH - 1)).toBeGreaterThan(0);
   expect(inside(NORTH_LINE_VANISH_DEPTH + 1)).toBeLessThan(0);
+});
+
+it('cuts the terrain inside the portal hood only, just under the rail', () => {
+  const f = portalFrame(tracks);
+  const grid = { sample: () => 264.3, manifest: { vertical: { sceneZeroNavd88M: 323.8 } } };
+  const [slot] = northLinePortalSlots(grid);
+  expect(northLinePortalSlots(grid)).toHaveLength(1);
+  // Bed 0.4 m under the cut floor's rail level, so the hood's dark interior has no terrain in it.
+  expect(slot.start[1]).toBeCloseTo(264.3 - 323.8 - 0.4, 6);
+  // From 0.5 m outside the face to 10 m in, within the hood's outer walls.
+  const along = (p: readonly number[]) => (p[0] - f.x) * f.dx + (p[2] - f.z) * f.dz;
+  expect(along(slot.start)).toBeCloseTo(0.5, 6);
+  expect(along(slot.end)).toBeCloseTo(-10, 6);
+  expect(slot.halfWidthM).toBeLessThan(f.spacing / 2 + 2.72 + 0.2);
 });

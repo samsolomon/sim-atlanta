@@ -369,7 +369,9 @@ function build() {
     const blurb = document.getElementById('blurb')!;
     blurb.textContent = model === 'crescent'
       ? 'Illustrative formation · two locomotives, three coaches, café, diner, sleeper and baggage-dorm. '
-      : 'Illustrative Crescent equipment. ';
+      : model === 'airoCoach'
+        ? 'Siemens Airo corridor coach in Amtrak’s east-coast scheme. Airo does not run on the Crescent; this is a look study for future corridor service. '
+        : 'Illustrative Crescent equipment. ';
     const link = document.createElement('a');
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/crescent-stock.md';
     link.textContent = 'Equipment notes and reference photos';

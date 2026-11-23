@@ -68,10 +68,14 @@ uses the timetable.
 
 ## Rules that matter
 
-- **Honesty about data.** Every fact users see carries a truth tier: `live`, `scheduled`,
-  `reported`, `inferred` or `illustrative`. Tiers apply per attribute, not per train.
-  Freight positions are simulated and must say `illustrative`. Never present a schedule or a
-  guess as live.
+- **Honesty about data.** Every value carries a truth tier in the data: `live`,
+  `scheduled`, `reported`, `inferred` or `illustrative`, per attribute, not per train.
+  Show it where people would read something as fact. That means a selected train, bus,
+  freight or traffic card, plus one scene-wide word (`Live` or `Timetable`). Don't label
+  ambient scenery on screen: weather, trees, building heights, landscaping or area notes.
+  Those tiers live in Key and About. Freight is still `illustrative` on its card. Never
+  present a schedule or a guess as live, and never show a guessed weather condition as
+  real (decided by Sam on 2026-11-23; see `docs/data-model.md`).
 - **Colour means the kind of service, not the agency.** City rail is blue, intercity is
   violet, and freight is rust. Agency line colours are accents only. Use generic look-alike
   liveries, never operator logos.

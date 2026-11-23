@@ -14,22 +14,25 @@ import {
 } from './connector-corridor';
 import { connectorLanes, connectorPoint } from './connector-lanes';
 
-const bands = new PlacementIndex<P2[]>();
+const bands = new PlacementIndex<{ ring: P2[]; ribbon: Ribbon }>();
 for (const r of ribbons) {
   for (let i = 1; i < r.rows.length; i++) {
     const a = r.rows[i - 1],
       b = r.rows[i];
     const ring = [a.inner, b.inner, b.outer, a.outer];
-    bands.add(ring, ring, 4);
+    bands.add({ ring, ribbon: r }, ring, 4);
   }
 }
-export function inConnectorLanes(x: number, z: number, margin = 0) {
+/** Whether (x, z) lies on a rendered Connector lane. `except` ignores a deck's own ribbons,
+ * so a flyover can ask only about the lanes that pass beneath it. */
+export function inConnectorLanes(x: number, z: number, margin = 0, except?: ReadonlySet<Ribbon>) {
   return bands
     .at(x, z)
     .some(
-      (ring) =>
-        pointInRing(x, z, ring) ||
-        (margin > 0 && ring.some((a, i) => segDist(x, z, a, ring[(i + 1) % 4]) < margin)),
+      ({ ring, ribbon }) =>
+        !except?.has(ribbon) &&
+        (pointInRing(x, z, ring) ||
+          (margin > 0 && ring.some((a, i) => segDist(x, z, a, ring[(i + 1) % 4]) < margin))),
     );
 }
 
