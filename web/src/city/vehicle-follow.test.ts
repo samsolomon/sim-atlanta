@@ -4,7 +4,7 @@ import tunnelRuns from './fixtures/midtown-tunnel.json';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Plane, Vector3 } from 'three';
 import { CAR_LENGTH } from '../vignette/cq400';
 import { NORTH_LINE_VANISH_DEPTH } from './midtown-marta-rail';
-import { drawnCar, inMappedTunnel, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
+import { drawnCar, inMappedTunnel, needsHandoff, pickHandoff, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
 
 const bounds = {minX:0,maxX:500,minZ:0,maxZ:100};
 const train: Followed = {kind:'train',id:'trip-1',pathId:'blue-east',tier:'scheduled'};
@@ -163,4 +163,79 @@ it('switches to underground exactly where the North Line portal clips the last c
   expect(at(NORTH_LINE_VANISH_DEPTH - CAR_LENGTH / 2 + 1)).not.toBeNull();
   car.visible = false;
   expect(at(0)).toBeNull();
+});
+
+describe('tier handoff', () => {
+  const red = 'marta:route:RED';
+  const sched: Fix = {id:'marta:trip:1',pathId:'p-north',tier:'scheduled',routeId:red,heading:0,x:100,z:-2000,cars:[],hidden:'underground'};
+  const live = (over: Partial<Fix>): Fix => ({id:'marta:train:401',pathId:'p-north',tier:'live',routeId:red,heading:5,x:140,z:-2150,cars:[],hidden:'underground',...over});
+
+  it('hands a timetable trip replaced by live rail to the nearest live train, marked as a match', () => {
+    const f = new VehicleFollow(); f.start({kind:'train',id:sched.id,pathId:sched.pathId,tier:'scheduled'});
+    f.frame(sched,bounds2,0,false);
+    const next = f.handoff([live({id:'far',x:900}), live({})])!;
+    expect(next.id).toBe('marta:train:401');
+    expect(f.vehicle).toMatchObject({id:'marta:train:401',tier:'live'});
+    expect(f.tier).toBe('live');
+    expect(f.matched).toBe(true);
+    expect(f.frame(next,bounds2,16,false)).toBeDefined();
+    expect(f.phase).toBe('underground');
+    f.stop();
+    expect(f.matched).toBe(false);
+  });
+
+  it('does not hand off to another route, the same tier, the opposite direction or a distant train', () => {
+    for (const c of [live({routeId:'marta:route:GOLD'}), live({tier:'scheduled'}), live({heading:180}), live({heading:100}),
+      live({x:100,z:-5000}), live({pathId:''})]) expect(pickHandoff(sched,[c])).toBeNull();
+    expect(pickHandoff(sched,[live({heading:350})])?.id).toBe('marta:train:401');
+    expect(pickHandoff(sched,[live({heading:80})])?.id).toBe('marta:train:401');
+  });
+
+  it('hands off only when the trip is gone or its tier changed, never on a same-tier path change', () => {
+    const v: Followed = {kind:'train',id:sched.id,pathId:sched.pathId,tier:'scheduled'};
+    expect(needsHandoff(v,null)).toBe(true);
+    expect(needsHandoff(v,{...sched,tier:'live'})).toBe(true);
+    expect(needsHandoff(v,{...sched,pathId:'other'})).toBe(false);
+    expect(needsHandoff({kind:'bus',id:'b',tier:'live'},null)).toBe(false);
+  });
+
+  it('glides to a distant match instead of jumping, and keeps the lineage for the card', () => {
+    const f = new VehicleFollow(); f.start({kind:'train',id:sched.id,pathId:sched.pathId,tier:'scheduled'});
+    f.frame(sched,bounds2,0,false);
+    const far = f.handoff([live({x:100,z:-4000})])!;
+    const step = f.frame(far,bounds2,16,false,{x:100,z:-2000})!;
+    expect(Math.hypot(step.x-100, step.z+2000)).toBeLessThan(400);
+    expect(f.lineage).toEqual([sched.id,'marta:train:401']);
+    f.stop('outside');
+    expect(f.endedLineage).toEqual([sched.id,'marta:train:401']);
+    expect(f.ended?.id).toBe('marta:train:401');
+  });
+
+  it('keeps following a live train that the feed re-snaps to a sibling path', () => {
+    const f = new VehicleFollow(); f.start({kind:'train',id:'marta:train:401',pathId:'a',tier:'live'});
+    expect(f.frame(live({pathId:'b'}),bounds2,0,false)).toBeDefined();
+    expect(f.vehicle?.pathId).toBe('b');
+  });
+
+  it('still ends a trip that simply finished, and records which vehicle ended', () => {
+    const f = new VehicleFollow(); f.start({kind:'train',id:sched.id,pathId:sched.pathId,tier:'scheduled'});
+    f.frame(sched,bounds2,0,false);
+    expect(f.handoff([])).toBeNull();
+    f.frame(null,bounds2,16,false);
+    expect(f.phase).toBe('lost');
+    expect(f.ended?.id).toBe(sched.id);
+    // A new selection is not mistaken for the ended vehicle.
+    f.start({kind:'bus',id:'marta:bus:1',tier:'live'}); f.stop();
+    expect(f.ended).toBeUndefined();
+  });
+});
+const bounds2 = {minX:-5000,maxX:5000,minZ:-9000,maxZ:5000};
+
+it('does not count a car as drawn when two planes leave none of its length', () => {
+  const keepFront = new Plane(new Vector3(0, 0, 1), -5);   // z >= 5
+  const keepRear = new Plane(new Vector3(0, 0, -1), -5);   // z <= -5
+  const car = new Mesh(new BoxGeometry(3, 4, CAR_LENGTH), new MeshBasicMaterial({ clippingPlanes: [keepFront, keepRear] }));
+  expect(drawnCar(car)).toBeNull();
+  car.material.clippingPlanes = [keepFront, new Plane(new Vector3(0, 0, -1), 8)];   // 5 <= z <= 8
+  expect(drawnCar(car)).not.toBeNull();
 });

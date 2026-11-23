@@ -9,3 +9,4 @@ Each sheet is captioned, and its subject is outlined or ringed. Captured over lo
 5. [Live MARTA bus at the real clock](bus-live.jpg): `/?view=city&q=high&cam=<x>,<z>,30,50,400&follow=marta:bus:<vehicle>`. Bus ids are live, so pick one that is currently reporting.
 
 The underground claim comes from OSM `tunnel=yes` ways for the MARTA North Line, baked into `web/src/city/fixtures/midtown-tunnel.json` by `pipeline/scripts/midtown_tunnel.py`. It covers 20 runs from the downtown edge (z −1300) to the Brookwood portal (z −5140).
+6. [Timetable-to-live handoff](live-handoff.jpg): at the real clock, with the live feed delayed so Follow starts on a timetable trip: `/?view=city&q=high&cam=482,-3063,-83,63,600&follow=marta:route:RED`
