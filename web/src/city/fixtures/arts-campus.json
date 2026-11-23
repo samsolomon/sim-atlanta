@@ -1,4 +1,5 @@
 {
-  "museum": { "id": "osm:way:28961738", "name": "High Museum of Art", "entrance": [515, -3967], "probes": [[0,-40],[-40,-35],[-80,60]] },
+  "museum": { "id": "osm:way:28961738", "name": "High Museum of Art", "entrance": [515, -3967], "probes": [[0,-40],[-40,-35],[-80,60]],
+    "ramp": { "foot": [625.1,-4010.5], "head": [577.2,-4017.0], "stairTop": [578.9,-4015.0], "stairFoot": [591.1,-4011.4], "width": 2.6 } },
   "memorial": { "id": "osm:way:28961767", "name": "Woodruff Arts Center", "entrance": [642,-3948], "probes": [[55,55],[-45,110]] }
 }
