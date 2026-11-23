@@ -6,6 +6,7 @@ import { PAL } from '../vignette/world';
 import type { GroundGrid } from './grid';
 import { roadWidth, type TerrainCity, type TransportRun } from './transport-data';
 import { connectorMedians, inConnectorLanes } from './connector-paint';
+import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
 type GroundAt = (x: number, z: number) => number | null;
@@ -80,7 +81,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   function deckAt(x: number, z: number, run: TransportRun) {
     const quads = roadTreads.get(run);
     if (quads) for (const i of quads) {
-      const h = triangleHeight(structurePositions, i, x, z) ?? triangleHeight(structurePositions, i + 3, x, z);
+      const h = triangleHeight(structurePositions, i, x, z);
       if (h !== null) return h;
     }
     return null;
@@ -245,7 +246,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         if (prev && (!dashed || (lastS+s)/2 % 12 < 3)) {
           const [a, b] = prev, [d, c] = section;
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
-          if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3);
+          if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           (textured ? freight : structures).quad(a, b, c, d, color);
           if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
           if (textured && !bridge && gradeAvailable) {
@@ -313,7 +314,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       previous=section;
     }
   }
+  const sharedDecks = drawStreetBridges(city, grid.manifest.vertical.sceneZeroNavd88M, terrainGround, structures, roadTreads);
   for (const road of data.roads) {
+    if (sharedDecks.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
     // Lidar spans may cross a junction internal to one OSM way. Give each
     // carriageway piece its own width and keep the original deck lookup key.

@@ -1,0 +1,146 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
+import { GroundGrid } from './grid';
+import { createSurfaceTransport } from './transport';
+import type { TerrainCity, TransportRun } from './transport-data';
+
+const root = new URL('../../../pipeline/prototypes/', import.meta.url);
+const read = (path: string) => readFileSync(new URL(path, root));
+const loadGrid = (path: string) =>
+  new GroundGrid(
+    JSON.parse(read(path + '/ground.json').toString()),
+    Uint8Array.from(read(path + '/ground.i16')).buffer,
+  );
+const grid = loadGrid('downtown-ground'),
+  zero = grid.manifest.vertical.sceneZeroNavd88M;
+const ground = (x: number, z: number) => {
+  const h = grid.sample(x, z);
+  return h === null ? null : h - zero;
+};
+const decatur: TransportRun = {
+  cls: 'secondary',
+  kind: 'bridge',
+  pts: [
+    [803.92, 449.42],
+    [817.68, 452.25],
+    [833.03, 453.64],
+    [857.01, 454],
+    [920.09, 454.95],
+  ],
+};
+const north: TransportRun = {
+  cls: 'footway',
+  sub: 'sidewalk',
+  kind: 'bridge',
+  pts: [
+    [921.92, 446.53],
+    [878.91, 444.3],
+    [837.59, 443.31],
+    [809.96, 440.02],
+    [802.52, 437.55],
+  ],
+};
+const south: TransportRun = {
+  cls: 'footway',
+  sub: 'sidewalk',
+  kind: 'bridge',
+  pts: [
+    [801.87, 457.66],
+    [815.7, 460.5],
+    [843.92, 462.35],
+    [900.08, 461.96],
+    [917.54, 461.97],
+  ],
+};
+const city = (roads: TransportRun[], bounds = grid.manifest.bounds): TerrainCity => ({
+  bounds,
+  roads: [],
+  rail: [],
+  buildings: [],
+  terrainTransport: { version: 1, roads, rail: [] },
+});
+
+describe('Decatur Street beam deck', () => {
+  it('carries both curbs and every interval between them above the freeway', () => {
+    const deck = createSurfaceTransport(city([decatur, north, south]), grid, ground);
+    try {
+      deck.group.updateMatrixWorld(true);
+      for (let z = 442.5; z <= 462; z += 0.25) {
+        const x = 856,
+          ray = new THREE.Raycaster(new THREE.Vector3(x, 100, z), new THREE.Vector3(0, -1, 0));
+        const hit = ray.intersectObject(deck.group, true)[0];
+        expect(hit?.point.y, 'open slot at z=' + z).toBeGreaterThan(ground(x, z)! + 7);
+      }
+      for (const [z, owner] of [
+        [443.8, north],
+        [454, decatur],
+        [462, south],
+      ] as const) {
+        const y = deck.deckAt(856, z, owner);
+        expect(y).not.toBeNull();
+        expect(y! + zero).toBeCloseTo(310.9, 0);
+      }
+      expect(deck.deckAt(856, 454, north)).toBeNull();
+      expect(deck.deckAt(856, 443.8, decatur)).toBeNull();
+      expect(deck.deckAt(856, 437, north)).toBeNull();
+    } finally {
+      deck.dispose();
+    }
+  });
+
+  it('keeps an independent pedestrian span on its own grade', () => {
+    const separate: TransportRun = {
+      cls: 'footway',
+      kind: 'bridge',
+      pts: [
+        [598.95, 490.2],
+        [636.76, 446.54],
+      ],
+    };
+    const deck = createSurfaceTransport(city([decatur, north, south, separate]), grid, ground);
+    try {
+      expect(deck.deckAt(617.855, 468.37, separate)).not.toBeNull();
+      expect(deck.deckAt(617.855, 468.37, decatur)).toBeNull();
+      expect(deck.deckAt(854, 450, separate)).toBeNull();
+    } finally {
+      deck.dispose();
+    }
+  });
+});
+
+it('shares the Peachtree grade across the downtown and north-band cut', () => {
+  const peer = loadGrid('square-board/north-band');
+  const mount = (g: GroundGrid, pts: TransportRun['pts']) => {
+    const road: TransportRun = { cls: 'secondary', kind: 'bridge', pts };
+    const groundAt = (x: number, z: number) => {
+      const h = g.sample(x, z);
+      return h === null ? null : h - zero;
+    };
+    return { road, deck: createSurfaceTransport(city([road], g.manifest.bounds), g, groundAt) };
+  };
+  const a = mount(grid, [
+    [557.97, -1234.74],
+    [559.66, -1241.96],
+    [562.2, -1254.51],
+    [564.42, -1267.12],
+    [566.08, -1278.79],
+    [567.47, -1300],
+  ]);
+  const b = mount(peer, [
+    [567.47, -1300],
+    [567.83, -1305.47],
+    [567.99, -1321.2],
+  ]);
+  try {
+    for (const x of [560, 564, 570, 574]) {
+      const ay = a.deck.deckAt(x, -1300, a.road),
+        by = b.deck.deckAt(x, -1300, b.road);
+      expect(ay).not.toBeNull();
+      expect(by).toBeCloseTo(ay!, 4);
+    }
+  } finally {
+    a.deck.dispose();
+    b.deck.dispose();
+  }
+});
