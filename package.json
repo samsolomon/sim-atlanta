@@ -20,6 +20,7 @@
     "data:midtown": "pnpm data:square-board && node scripts/stage-square-board.mjs --midtown",
     "data:square-board": "pnpm data:sweet-auburn && node scripts/stage-square-board.mjs",
     "data:sweet-auburn": "node scripts/stage-corridor.mjs && node scripts/stage-sweet-auburn.mjs",
-    "data:corridor": ".venv/bin/python pipeline/scripts/king_memorial_corridor.py && node scripts/stage-corridor.mjs"
+    "data:corridor": ".venv/bin/python pipeline/scripts/king_memorial_corridor.py && node scripts/stage-corridor.mjs",
+    "test:perf": "node scripts/perf-budget.mjs"
   }
 }

@@ -73,3 +73,33 @@ vehicle layers, and downtown landmarks (buildings). An object's `userData.perf` 
 
 A Studio dry run at the A16 viewport (fps there is meaningless, but counts and memory hold):
 `node scripts/perf-run.mjs --out <dir> [--eval '__perf.top(30)'] URL...`. It starts a fresh headless Chrome per URL.
+
+## Budgets (`pnpm test:perf`)
+
+`web/src/core/perf-budget.json` holds two levels per tier, for the default open view with all 12 areas loaded:
+
+- **Ceiling:** about 10% above the 2026-11-23 measurement, enforced as a regression guard.
+- **Target:** the goal, reported but not enforced. When a cut reaches a target, lower the ceiling.
+
+`scripts/perf-budget.mjs` builds `web/`, serves it, runs both tiers in headless Chrome, and fails if any ceiling is exceeded.
+The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and the A16's ready time come only from the device runs.
+
+| Low (phone) | 2026-11-23 | Target |
+| --- | --- | --- |
+| Triangles | 3.83M (4.77M before the far-tree LOD) | 2.0M |
+| Draw calls | 475 | 500 |
+| Programs | 76 | 80 |
+| Texture MB | 160 | 100 |
+| Geometry MB | 259 | 200 |
+| JS heap after GC | 471 MB | 400 MB |
+| A16 fps (default view) | 12.8 | 30 |
+| A16 ready | 20 s | 8 s |
+
+| High (desktop) | 2026-11-23 | Target |
+| --- | --- | --- |
+| Triangles | 17.3M | 12M |
+| Draw calls | 1,018 | 1,000 |
+| Programs | 138 | 140 |
+| Texture MB | 808 | 500 |
+| Geometry MB | 373 | 350 |
+| JS heap after GC | 611 MB | 600 MB |

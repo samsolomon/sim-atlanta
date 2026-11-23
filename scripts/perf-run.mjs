@@ -89,6 +89,12 @@ for (const [n, url] of urls.entries()) {
     try { if (await evaluate('document.title') === 'PERF_DONE') { done = true; break; } } catch { /* navigating */ }
   }
   const result = done ? await evaluate('JSON.parse(localStorage.getItem("perf-result"))') : { url, error: 'timeout', logs: [...logs] };
+  if (done) {
+    // performance.memory swings with GC timing; a forced collection gives a stable heap figure.
+    await send('HeapProfiler.enable');
+    await send('HeapProfiler.collectGarbage');
+    result.summary.heapAfterGcMB = await evaluate('Math.round(performance.memory.usedJSHeapSize / 1048576)');
+  }
   if (done && extra) result.eval = await evaluate(extra);
   results.push(result);
   if (out) {
@@ -97,7 +103,8 @@ for (const [n, url] of urls.entries()) {
   }
   const r = result;
   if (r.error) console.log(`#${n + 1} TIMEOUT ${url}\n  ${logs.slice(-5).join('\n  ')}`);
-  else console.log(`#${n + 1} ${r.fps10s.fps} fps p50 ${r.fps10s.p50} p95 ${r.fps10s.p95} | cpu upd ${r.fps10s.updateP50} rnd ${r.fps10s.renderP50} | calls ${r.renderer.calls} tris ${r.renderer.triangles} progs ${r.renderer.programs} | heap ${r.heap?.usedMB} MB | tex ${r.memory.total.textureMB} geo ${r.memory.total.geometryMB} cpu ${r.memory.total.cpuMB} MB | ready ${(r.phases.find(p => p.name === 'ready')?.ms / 1000).toFixed(1)} s | areas ${r.areas.length}`);
+  else console.log(`#${n + 1} ${r.fps10s.fps} fps p50 ${r.fps10s.p50} p95 ${r.fps10s.p95} | cpu upd ${r.fps10s.updateP50} rnd ${r.fps10s.renderP50} | calls ${r.renderer.calls} tris ${r.renderer.triangles} progs ${r.renderer.programs} | heap ${r.heap?.usedMB} (gc ${r.summary.heapAfterGcMB}) MB | tex ${r.memory.total.textureMB} geo ${r.memory.total.geometryMB} cpu ${r.memory.total.cpuMB} MB | ready ${(r.phases.find(p => p.name === 'ready')?.ms / 1000).toFixed(1)} s | areas ${r.areas.length}`);
   close();
 }
 if (out) writeFileSync(join(out, 'results.json'), JSON.stringify(results, null, 1));
+if (process.env.PERF_JSON) writeFileSync(process.env.PERF_JSON, JSON.stringify(results));
