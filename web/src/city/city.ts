@@ -729,10 +729,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function mosaicBase() {
     const rects = Array.from(mosaic!.areas.values(), a => a.bounds);
     // Follow the mounted footprint, so a row that is missing or failed leaves no crowns over the table.
-    if (perimeter) edgePlanes({
-      minX: Math.min(...rects.map(r => r.minX)), maxX: Math.max(...rects.map(r => r.maxX)),
-      minZ: Math.min(...rects.map(r => r.minZ)), maxZ: Math.max(...rects.map(r => r.maxZ)),
-    }).forEach((plane, i) => perimeter[i].copy(plane));
+    if (perimeter) edgePlanes(square!.mountedBounds(rects)).forEach((plane, i) => perimeter[i].copy(plane));
     return square!.mosaicPlinth(rects, terrain!.bottomY);
   }
   function addArea(area: NonNullable<typeof east>) {
