@@ -11,22 +11,24 @@ export type SurfaceTier = 'high' | 'low';
  */
 export const surfaceDefaults: { tier: SurfaceTier; enabled: boolean } = { tier: 'high', enabled: true };
 
-/** Remembers which vertices of a builder were drawn with which surface. */
+/** Remembers which vertices of one builder were drawn with which surface. */
 export class SurfacePainter {
   private ranges: { start: number; end: number; surface: Surface }[] = [];
 
-  /** Everything `draw` adds to `builder` gets `surface`. Nested paints: the innermost wins. */
-  paint<T>(builder: { pos: number[] }, surface: Surface, draw: () => T): T {
-    const start = builder.pos.length / 3, result = draw();
-    this.ranges.push({ start, end: builder.pos.length / 3, surface });
+  constructor(private readonly builder: { pos: number[] }) {}
+
+  /** Everything `draw` adds to this painter's builder gets `surface`. Nested paints: the innermost wins. */
+  paint<T>(surface: Surface, draw: () => T): T {
+    const start = this.builder.pos.length / 3, result = draw();
+    this.ranges.push({ start, end: this.builder.pos.length / 3, surface });
     return result;
   }
 
   /** True once any vertex has a real pattern (FLAT alone does not count). */
   get painted() { return this.ranges.some(r => r.end > r.start && r.surface.data[0] !== 0); }
 
-  /** The `aSurface` attribute for a geometry of `count` vertices; unpainted vertices stay 0 (flat). */
-  attribute(count: number) {
+  /** The `aSurface` attribute for the builder's geometry; unpainted vertices stay 0 (flat). */
+  attribute(count = this.builder.pos.length / 3) {
     const data = new Float32Array(count * 4), done = new Uint8Array(count);
     for (const { start, end, surface } of this.ranges)
       for (let i = start; i < Math.min(end, count); i++) if (!done[i]) { data.set(surface.data, i * 4); done[i] = 1; }

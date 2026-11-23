@@ -38,10 +38,11 @@ export function localLandmarkShell(
   const body = new Builder(),
     lights = new Builder(),
     random = rng(1976),
-    painter = new SurfacePainter();
+    painter = new SurfacePainter(body),
+    lightPainter = new SurfacePainter(lights);
   /** Draws with a library material: everything `draw` adds to the body gets `surface`. */
   function paint<T>(surface: Surface, draw: () => T): T {
-    return painter.paint(body, surface, draw);
+    return painter.paint(surface, draw);
   }
   /** `materials` optionally paints the walls and the roof with library surfaces. */
   function prism(plan: P2[], lo: number, hi: number, wall: string, roof: string, materials: { wall?: Surface; roof?: Surface } = {}) {
@@ -78,6 +79,8 @@ export function localLandmarkShell(
     verticalFill: number,
     colors: readonly string[],
     occupancy: number,
+    /** The panes' library surface. FLAT by default, so panes stay plain inside a painted wall. */
+    glass: Surface = FLAT,
   ) {
     const dx = b[0] - a[0],
       dz = b[1] - a[1],
@@ -92,8 +95,7 @@ export function localLandmarkShell(
         const y = lo + (j + (1 - verticalFill) / 2) * pitch,
           top = y + verticalFill * pitch;
         const batch = random() < occupancy ? lights : body;
-        // Window glass stays flat even when the wall around it is painted.
-        painter.paint(batch, FLAT, () => batch.quad(
+        (batch === body ? painter : lightPainter).paint(glass, () => batch.quad(
           point(l, y),
           point(l, top),
           point(r, top),
@@ -108,9 +110,9 @@ export function localLandmarkShell(
     group.position.set(origin[0], originY, origin[1]);
     group.rotation.y = -angle;
     const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
-    // Only painted shells change program; the rest stay exactly as they were.
+    // Only painted meshes change program; the rest stay exactly as they were.
     if (painter.painted && surfaceDefaults.enabled) {
-      shell.geometry.setAttribute('aSurface', painter.attribute(body.pos.length / 3));
+      shell.geometry.setAttribute('aSurface', painter.attribute());
       applySurfaces(shell.material);
     }
     shell.castShadow = shell.receiveShadow = true;
@@ -119,6 +121,10 @@ export function localLandmarkShell(
       lights.geometry(),
       new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: lightColor, emissiveIntensity: 0 }),
     );
+    if (lightPainter.painted && surfaceDefaults.enabled) {
+      lamps.geometry.setAttribute('aSurface', lightPainter.attribute());
+      applySurfaces(lamps.material);
+    }
     group.add(lamps);
     return {
       group,

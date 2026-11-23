@@ -60,13 +60,13 @@ describe('library', () => {
 
 describe('SurfacePainter', () => {
   it('tags painted vertices, leaves the rest flat, and lets the innermost paint win', () => {
-    const b = new Builder(), painter = new SurfacePainter(), copper = surfaces.agedCopper(), stucco = surfaces.stucco();
+    const b = new Builder(), painter = new SurfacePainter(b), copper = surfaces.agedCopper(), stucco = surfaces.stucco();
     b.tri([0, 0, 0], [1, 0, 0], [0, 1, 0], '#fff');
-    painter.paint(b, stucco, () => {
+    painter.paint(stucco, () => {
       b.tri([0, 0, 0], [1, 0, 0], [0, 1, 0], '#fff');
-      painter.paint(b, copper, () => b.tri([0, 0, 0], [1, 0, 0], [0, 1, 0], '#fff'));
+      painter.paint(copper, () => b.tri([0, 0, 0], [1, 0, 0], [0, 1, 0], '#fff'));
     });
-    const a = painter.attribute(b.pos.length / 3);
+    const a = painter.attribute();
     const kindAt = (i: number) => a.getX(i);
     expect([0, 3, 6].map(kindAt)).toEqual([0, stucco.data[0], copper.data[0]]);
     expect(painter.painted).toBe(true);
@@ -135,5 +135,15 @@ describe('landmark shells', () => {
     const a = mesh.geometry.attributes.aSurface;
     expect(a.getX(0)).toBe(brick.data[0]);
     expect(a.getX(a.count - 1)).toBe(0); // the last window pane
+  });
+
+  it('paint glass on lit and unlit panes without mixing up the two meshes', () => {
+    const s = shell(), glass = surfaces.curtainGlass();
+    s.prism(s.ring, 0, 10, '#826e68', '#817d78');
+    s.facade([-10, -10], [10, -10], 1, 9, 4, 2.5, .9, .8, ['#5a525c'], .5, glass);
+    const [body, lamps] = s.finish().group.children as unknown as { geometry: { attributes: { aSurface?: { getX(i: number): number; count: number } } } }[];
+    expect(body.geometry.attributes.aSurface!.getX(0)).toBe(0); // the unpainted wall
+    expect(body.geometry.attributes.aSurface!.getX(body.geometry.attributes.aSurface!.count - 1)).toBe(glass.data[0]);
+    expect(lamps.geometry.attributes.aSurface!.getX(0)).toBe(glass.data[0]);
   });
 });
