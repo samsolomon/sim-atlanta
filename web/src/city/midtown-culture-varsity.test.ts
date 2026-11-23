@@ -43,8 +43,8 @@ it('lights the neon and the warm glazing together at night and darkens both by d
 
 it('stands the V sign on its own ground', () => {
   const flat = new Box3().setFromObject(createVarsity(buildings, site, 297, () => 300)!.group);
-  // Only the sign samples around x 176, z -1946; a mound there must lift the whole sign.
-  const raised = createVarsity(buildings, site, 297, (x, z) => (Math.abs(x - 176) < 1 && Math.abs(z + 1946) < 1 ? 320 : 300))!;
+  // Only the sign samples around x 176, z -1943.9; a mound there must lift the whole sign.
+  const raised = createVarsity(buildings, site, 297, (x, z) => (Math.abs(x - 176) < 1 && Math.abs(z + 1943.9) < 1 ? 320 : 300))!;
   expect(new Box3().setFromObject(raised.group).max.y - flat.max.y).toBeGreaterThan(15);
 });
 
