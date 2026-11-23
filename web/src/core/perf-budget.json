@@ -3,7 +3,7 @@
   "low": {
     "viewport": "phone",
     "ceiling": {
-      "triangles": 4100000,
+      "triangles": 3700000,
       "calls": 600,
       "programs": 90,
       "textureMB": 125,
