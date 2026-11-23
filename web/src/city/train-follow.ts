@@ -16,6 +16,8 @@ export class TrainFollow {
   private requested = false;
   phase: Phase = 'idle';
   get active() { return !!this.trip; }
+  /** The followed trip's id, so City can load the area it is heading into. */
+  get tripId() { return this.trip?.id; }
 
   start(train: TrainState) {
     this.stop();

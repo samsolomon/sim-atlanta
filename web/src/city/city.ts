@@ -57,6 +57,7 @@ import { createTwoPeachtree } from './two-peachtree';
 import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
 import { createCentralLibrary } from './central-library';
+import { createPeachtreeCenter } from './peachtree-center';
 import { createPeachtree191 } from './peachtree-191';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createTwelveCentennial } from './twelve-centennial';
@@ -180,6 +181,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: ReturnType<typeof createDowntownTerrain> | undefined;
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
+  let eastRailFailed = false;
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
   let trainRail = manifest.rail;
@@ -221,6 +223,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let healey: ReturnType<typeof createHealey> = null;
   let flatiron: ReturnType<typeof createFlatiron> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
+  let peachtreeCenter: ReturnType<typeof createPeachtreeCenter> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
@@ -256,8 +259,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         westin = createWestin(buildings, groundAt);
         peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
         const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
-        marquis = createMarriottMarquis(remaining, ground);
-        const hotelSite = marquis?.buildings ?? remaining;
+        peachtreeCenter = createPeachtreeCenter(remaining, ground);
+        const afterCenter = peachtreeCenter?.buildings ?? remaining;
+        marquis = createMarriottMarquis(afterCenter, ground);
+        const hotelSite = marquis?.buildings ?? afterCenter;
         twelve = createTwelveCentennial(hotelSite, ground);
         const afterTwelve = twelve?.buildings ?? hotelSite;
         truist = createTruistPlaza(afterTwelve, groundAt);
@@ -300,6 +305,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (twelve) world.group.add(twelve.group);
         if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
+        if (peachtreeCenter) world.group.add(peachtreeCenter.group);
         if (peachtree) world.group.add(peachtree.group);
         if (library) world.group.add(library.group);
         if (flatiron) world.group.add(flatiron.group);
@@ -541,7 +547,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       area.openJoin();
       downtown.openJoin();
       east = area;
-      void attachEastRail(area).catch(err => console.warn('MARTA east of the board unavailable', err));
+      void attachEastRail(area).catch(err => { eastRailFailed = true; console.warn('MARTA east of the board unavailable', err); });
       const next = pendingNorthTarget ?? controls.target;
       approachNorth(next.x, next.z);
       options.areaNote?.(null);
@@ -750,6 +756,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     twelve?.setNight(night);
     truist?.setNight(night);
     westin?.setNight(night);
+    peachtreeCenter?.setNight(night);
     peachtree?.setNight(night);
     library?.setNight(night);
     flatiron?.setNight(night);
@@ -823,7 +830,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     trains.update(states, atm.dark);
-    const focus = options.follow?.frame(states, trains.group.children, project, trainBounds, trainRail, ts, !!motionPreference?.matches);
+    // A followed train heading east loads the King Memorial area itself, without a manual pan,
+    // and follow keeps the trip (as "out of view") while that area and its rail are loading.
+    // If the pack is missing or fails, follow falls back to downtown and ends at the edge.
+    let followBounds = trainBounds;
+    if (options.follow?.active && previewEast) {
+      const t = states.find(s => s.id === options.follow!.tripId);
+      if (t) {
+        const [fx, fz] = project(t.lon, t.lat);
+        approachEast(fx, fz);
+        if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
+      }
+    }
+    const focus = options.follow?.frame(states, trains.group.children, project, followBounds, trainRail, ts, !!motionPreference?.matches);
     if (focus) {
       glideTo = null;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
