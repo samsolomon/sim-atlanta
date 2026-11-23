@@ -49,6 +49,9 @@ function curtainWall() {
   return { material, width: bays * BAY, height: floors * FLOOR };
 }
 
+/** Night emissive strengths for the crown (Kendall/Heaton night skyline: a lit pale wash, never clipped). */
+export const CROWN_NIGHT = { veil: .82, lattice: .78, frames: .75, edge: .75 };
+
 export function symphonyTower(shell: Shell) {
   /** Terrace crape myrtles in the landmark's local frame (u, v and terrace height). */
   const terraceTrees: { u: number; v: number; y: number }[] = [];
@@ -241,10 +244,10 @@ export function symphonyTower(shell: Shell) {
   return { ...model, terraceTrees, setNight(night: number) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
-    veilMaterial.emissiveIntensity = .82 * night;
-    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = .78 * night;
-    lineMaterial.color.setScalar(.75 * Math.min(1, night));
+    veilMaterial.emissiveIntensity = CROWN_NIGHT.veil * night;
+    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = CROWN_NIGHT.lattice * night;
+    lineMaterial.color.setScalar(CROWN_NIGHT.edge * Math.min(1, night));
     edgeLine.visible = night > .001;
-    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = .75 * night;
+    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = CROWN_NIGHT.frames * night;
   } };
 }
