@@ -1954,6 +1954,10 @@ The north and south additions met downtown at exactly the same ground height. In
 
 The apartment blocks around Renaissance Way looked bare from the skyline camera. In a 280 m square of the City’s 2023 canopy map, crowns cover 38.4% of that block. An equally sized sample around Grant and Woodward covers 23.8%, mostly in smaller pockets around houses. Those differences now show up across the expanded board. The bake places 3,225 inferred crowns on high detail, with a 1,578-crown subset on low. The six existing neighborhood requests cost another 21,030 compressed bytes together. [Skyline before and after](log/ui/expanded-canopy/skyline.jpg) · [Aerial comparisons, coverage and rendering cost](log/ui/expanded-canopy/README.md)
 
+### 2026-11-23 — Counting the leaves from Old Fourth Ward
+
+On the Studio skyline camera, changing each deciduous leaf clump from 36 triangles to eight took 1.44 million triangles out of a high-detail frame. The apartment blocks still have a belt of trees. At low detail the saving was smaller, about 132,000 triangles, and the individual crowns along the cemetery paths looked more pointed. The sleeping display made even a seven-second timing window misleading, so we also timed the GPU work for City’s render passes directly. [Matched Studio views and timings](log/ui/expanded-canopy/README.md#mac-studio-results)
+
 ### 2026-11-23 — Two bows at Georgia Aquarium
 
 The 2018 lidar puts the Luckie Street hall at about 331 m NAVD88, but part of the current aquarium footprint looked like bare plaza. The building changed in between surveys. In 2020 a lower blue bow wrapped the old glass lantern, bringing the entrance and a silver wave wall out toward Pemberton Place. The 2024 county aerial locates that new edge and the large painted fish on the older roof. City now follows both bows, the window and portholes on Luckie, and the screen turning the Baker corner. The L-shaped parking deck still occupies its own footprint. [Photographs, 64,028 lidar returns and matched City views](log/ui/georgia-aquarium/README.md) · [Day, dusk and night comparison](log/ui/georgia-aquarium/comparison.jpg)

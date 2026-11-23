@@ -94,6 +94,11 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       mesh => mesh instanceof InstancedMesh && mesh.geometry.type === 'CylinderGeometry',
     ) as InstancedMesh;
     expect(trunks.count).toBe(quality === 'high' ? 3 : 1);
+    const hasLeafMesh = (id: Board, geometry: string) => mounted.get(id)!.scenery.children.some(
+      mesh => mesh instanceof InstancedMesh && mesh.geometry.type === geometry,
+    );
+    expect(hasLeafMesh('north-band', 'OctahedronGeometry')).toBe(true);
+    expect(hasLeafMesh('downtown', 'DodecahedronGeometry')).toBe(true);
     let boardArea = 0;
     for (const [id, area] of mounted) {
       const b = bounds[id];

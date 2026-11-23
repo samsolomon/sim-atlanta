@@ -58,9 +58,9 @@ pnpm data:square-board
 pnpm build
 ```
 
-## Mac Studio handoff
+## Air checkpoint and reproduction
 
-The photographs, crown bake, clearance audit, payload figures and screenshot pairs above are complete. The screenshots show the first canopy implementation using City's existing 36-triangle deciduous leaf clumps. The branch also contains an **unverified eight-triangle clump variant** for the expanded packs, preserving their crown placements and seasonal color. The last full test suite and build passed before the mesh substitution. Repeat the tests, build, skyline and close-up visual verification, frame timings and cross-model review on the Studio before opening a PR.
+The Air screenshots above show City’s original 36-triangle deciduous leaf clumps. The Studio comparison below uses the same crown placements and seasonal colors to test eight-triangle clumps.
 
 Two interleaved seven-second desktop windows per condition on the M5 Air used an active Orca tab at 1296 × 726 CSS px, DPR 2, all seven areas mounted, the same pinned October clock and a three-second camera settle. Each cell gives mean frame time and effective FPS. High's second canopy run had a 650 ms p95 interval; desktop load varied materially. The slower low-detail runs and the high outlier warrant the simpler-mesh comparison. These measurements do not establish mobile performance.
 
@@ -78,3 +78,35 @@ Start Vite on loopback port 5377. Run the following from the checkout root. The 
 ```sh
 python3 docs/log/ui/expanded-canopy/skyline-timing.py high/old high/full high/simple low/simple low/full low/old low/old low/full low/simple high/simple high/full high/old
 ```
+
+## Mac Studio results
+
+The eight-triangle clumps keep the tree belt around Renaissance Way and the smaller groups along Grant Street recognizable. From the skyline, the largest difference between high and low is the number of crowns around the apartments. Up close, the eight-triangle silhouette is more pointed, especially on isolated low-detail trees in Oakland Cemetery. The King Memorial platforms and guideway remain clear at both settings. Each comparison shows the original mesh on the left and the lighter mesh on the right. [Skyline](studio-skyline.jpg) · [Renaissance Way and Grant Street](studio-north-south.jpg) · [King Memorial and Old Wheat Street](studio-east.jpg)
+
+The M5 Ultra Mac Studio used the Air’s 40 public data files, the pinned October clock and the five cameras above. Each skyline run loaded all seven areas in Orca at 999 × 496 CSS pixels and DPR 2. The two seven-second windows per condition ran in forward and reverse order. The desktop was locked and the display asleep during the initial sweep. Even with a visible tab, 11 of the 12 windows recorded a p95 interval of at least one second. Those callback intervals cannot establish interactive FPS or Galaxy A16 performance.
+
+| Skyline condition | Triangles per frame | Draw calls | Mean frame interval, ms (two windows) |
+|---|---:|---:|---:|
+| High, earlier 128 crowns | 3,785,279 | 433 | 179.9 / 74.7 |
+| High, 3,225 crowns, 36 triangles per clump | 6,432,495 | 459 | 104.5 / 134.6 |
+| High, 3,225 crowns, 8 triangles per clump | 4,988,591 | 459 | 1,009.5 / 116.9 |
+| Low, earlier 128 crowns | 1,446,308 | 218 | 1,009.5 / 597.1 |
+| Low, 1,578 crowns, 36 triangles per clump | 1,804,192 | 231 | 438.6 / 1,009.7 |
+| Low, 1,578 crowns, 8 triangles per clump | 1,671,724 | 231 | 104.4 / 163.1 |
+
+The lighter mesh removes 1,443,904 submitted triangles per skyline frame on high (22.4% of the full scene) and 132,468 on low (7.3%). The counts include the rest of City and its render passes.
+
+We also timed 20 complete City render passes per window with WebGL’s disjoint timer query, bracketing the compositor and checking for disjoint results. Two windows per condition ran in reverse order on the second pass. These GPU times exclude the wait for a display refresh, browser compositing and the application’s CPU updates. [All 20 windows and renderer counters](studio-timings.csv)
+
+| Quality | 36 triangles per clump, median GPU ms | 8 triangles per clump, median GPU ms |
+|---|---:|---:|
+| High | 6.08 / 3.35 | 3.65 / 3.16 |
+| Low | 1.21 / 2.01 | 1.12 / 1.23 |
+
+To repeat the GPU sweep, append these arguments to the timing harness command in place of the initial sweep’s conditions.
+
+```sh
+python3 docs/log/ui/expanded-canopy/skyline-timing.py --gpu high/full high/simple low/simple low/full low/full low/simple high/simple high/full
+```
+
+A Studio bake with the Air’s geospatial libraries (Rasterio 1.4.3 / GDAL 3.9.3, Shapely 2.0.7 / GEOS 3.11.4 and pyproj 3.6.1 / PROJ 9.3.0) reproduced the checked-in SHA-256 byte for byte. A second bake with Rasterio 1.5.2, Shapely 2.2.0 and pyproj 3.8.0 reproduced all 3,225 centers and heights and the 1,578 low-detail selections. One south-band radius at (1619.5, 861.5) measured 3.7 m on this toolchain and 4.0 m in the checked-in Air bake. The latter is used for these comparisons. An independent vector check on the Studio found zero blocked centers and positive clearance around every checked-in radius enlarged by 30%. At that south-band center the nearest hard obstacle was 5.68 m away.
