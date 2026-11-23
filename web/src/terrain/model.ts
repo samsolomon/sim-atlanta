@@ -177,7 +177,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
-  const homes = residential(sceneryCity, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2));
+  const homes = residential(sceneryCity, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
   const streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));

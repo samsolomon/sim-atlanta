@@ -43,7 +43,7 @@ export interface BuildingFinish {
   fallbackHeight?: number;
   /** Overrides the 1.1 m parapet on buildings taller than 6 m (0 for pitched roofs). */
   parapet?: number;
-  /** Shader window pattern for the walls; 3 is punched residential sash windows. */
+  /** Shader wall pattern; 3–6 are house facades (clapboard, brick, stucco, shingle) with double-hung windows. */
   windowStyle?: number;
   /** Supplies roof fixtures in place of the generic rooftop equipment. */
   dressRoof?: (builder: Builder, outer: P2[], roof: number) => void;
@@ -1457,9 +1457,44 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           float st = floor(vStyle + 0.5);
           float win = 0.0;
           if (st > 2.5) {
-            // Houses: punched sash windows on every 3.05 m storey, none below the floor.
-            vec2 f = fract(vec2(u / 3.0, (y - 0.9) / 3.05));
-            win = step(0.9, y) * step(0.34, f.x) * step(f.x, 0.66) * step(0.18, f.y) * step(f.y, 0.66);
+            // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle). Fine siding lines fade
+            // to their average once a course is under a couple of pixels, so walls never shimmer.
+            float px = fwidth(y);
+            float lap = 1.0;
+            if (st < 3.5) {
+              lap = mix(0.95, 0.84 + 0.16 * step(0.2, fract(y / 0.2)), 1.0 - smoothstep(0.06, 0.16, px));
+            } else if (st < 4.5) {
+              float row = floor(y / 0.075);
+              float joint = step(fract(y / 0.075), 0.16) + step(fract(u / 0.21 + 0.5 * mod(row, 2.0)), 0.05);
+              float brick = mix(0.82, 0.95 + 0.1 * hh(vec2(floor(u / 0.21), row)), 1.0 - min(joint, 1.0));
+              lap = mix(0.93, brick, 1.0 - smoothstep(0.02, 0.06, px));
+            } else if (st < 5.5) {
+              lap = 0.97 + 0.05 * hh(floor(vec2(u * 2.0, y * 2.0)));
+            } else {
+              float row = floor(y / 0.3);
+              float joint = step(fract(y / 0.3), 0.12) + step(fract(u / 0.25 + 0.37 * row), 0.06);
+              float shingle = mix(0.8, 0.9 + 0.14 * hh(vec2(floor(u / 0.25 + 0.37 * row), row)), 1.0 - min(joint, 1.0));
+              lap = mix(0.9, shingle, 1.0 - smoothstep(0.08, 0.2, px));
+            }
+            diffuseColor.rgb *= lap;
+            // Masonry foundation band below the first floor.
+            if (y < 0.75) diffuseColor.rgb = vec3(0.47, 0.44, 0.41) * (0.92 + 0.08 * hh(floor(vec2(u / 0.4, y / 0.2))));
+            // Double-hung windows in 3.6 m bays on each 3.05 m storey: some paired, white trim,
+            // a meeting rail, and shutters on some bays.
+            float bay = floor(u / 3.6), storey = floor((y - 0.9) / 3.05);
+            vec2 f = vec2(fract(u / 3.6), fract((y - 0.9) / 3.05));
+            float pair = step(0.45, hh(vec2(bay, storey) + 3.0));
+            float halfW = mix(0.13, 0.23, pair);
+            float above = step(0.9, y);
+            float inY = step(0.12, f.y) * step(f.y, 0.62);
+            float trim = step(0.5 - halfW, f.x) * step(f.x, 0.5 + halfW) * inY * above;
+            float glassX = step(0.5 - halfW + 0.025, f.x) * step(f.x, 0.5 + halfW - 0.025) * (1.0 - pair * step(abs(f.x - 0.5), 0.012));
+            float glassY = step(0.145, f.y) * step(f.y, 0.595) * (1.0 - step(abs(f.y - 0.37), 0.009));
+            win = glassX * glassY * above;
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.92, 0.88), trim * (1.0 - win));
+            float shutters = step(0.62, hh(vec2(bay, 7.0))) * inY * above
+              * (step(0.5 - halfW - 0.085, f.x) * step(f.x, 0.5 - halfW - 0.012) + step(0.5 + halfW + 0.012, f.x) * step(f.x, 0.5 + halfW + 0.085));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.15, 0.2, 0.17), shutters);
           } else if (y < 4.2 && y > 0.4) {
             // Storefront: tall panes with mullions, a band above.
             float f = fract(u / 3.2);
@@ -1485,7 +1520,7 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           win = mix(0.4, win, clarity);
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
-          float cellH = st > 2.5 ? hh(floor(vec2(u / 3.0, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
+          float cellH = st > 2.5 ? hh(floor(vec2(u / 3.6, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
           // Homes: about a third of rooms lit on every storey; offices as before, shopfronts mostly lit.
           litWin = win * (st > 2.5 ? step(0.66, cellH) : y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
           litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
