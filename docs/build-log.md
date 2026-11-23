@@ -2394,3 +2394,8 @@ Sam's new rule (#231) takes truth-tier words out of the scene. The ambient notes
 
 Sam's third note on 1180 Peachtree moved from shape to life. The 68 m garden gained mounded beds, ornamental grasses, a louvred drum and a row of crape myrtles. The trees are stand-ins tagged for the tree lab's species model, which Sam hasn't approved yet. Inside the crown, a white lattice now sits behind the veil glass. At night the crown glows cool white-green and the lattice shows through, which also tamed the earlier blown-out white wedges. A thin light line climbs each veil's curved edge. [Night before and after](log/ui/midtown-skyline/garden2-sam-compare-night.jpg)
 
+
+
+### 2026-11-23 — Turning the ground down
+
+The new ground covers were a hit, but Sam found them "almost strenuous to look at". The fix was to measure them: the default lawn's luminance spread was 4 % of its value, and the earth and pine straw ran over 15 %. Now every cover is lighter, in the board ground's own colour family, and the everyday lawn varies by about 1.6 %. Mow stripes moved to a separate "manicured" turf, kept for the few lawns that really are striped. The lesson: ground texture should be felt, not seen. Buildings, trains and trees carry the picture. [Measurements and before/after views](log/ui/ground-calm/README.md)

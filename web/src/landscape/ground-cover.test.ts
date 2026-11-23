@@ -39,3 +39,9 @@ it('cuts holes out of a patch', () => {
   }
   expect(area).toBeCloseTo(400 - 36, 3);
 });
+
+it('keeps manicured turf last, so existing cover indices do not move', () => {
+  expect(COVERS.indexOf('turf')).toBe(0);
+  expect(COVERS.indexOf('leaf-litter')).toBe(5);
+  expect(COVERS[COVERS.length - 1]).toBe('manicured');
+});
