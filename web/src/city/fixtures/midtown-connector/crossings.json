@@ -1,0 +1,6 @@
+{
+  "North Avenue Northwest": { "width": 21.3, "lanes": 4, "opposing": 2 },
+  "10th Street Northwest": { "width": 25.6, "lanes": 7, "opposing": 4 },
+  "14th Street Northwest": { "width": 11.6, "lanes": 3, "opposing": 0 },
+  "Deering Road Northwest": { "width": 8.5, "lanes": 2, "opposing": 1 }
+}

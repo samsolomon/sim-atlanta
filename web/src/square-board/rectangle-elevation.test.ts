@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
+import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
+import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { brookwoodGrid } from '../city/brookwood';
 import { auburnTransport } from '../city/sweet-auburn-transport';
 import railRows from '../city/fixtures/midtown-rail.json';
@@ -19,7 +21,7 @@ function read(row: string, name: string) {
 function ground(row: string) {
   const manifest = JSON.parse(read(row, 'ground.json').toString());
   const bytes = Uint8Array.from(read(row, 'ground.i16')).buffer;
-  return row.startsWith('brookwood') ? brookwoodGrid(manifest, bytes) : new GroundGrid(manifest, bytes);
+  return row.startsWith('brookwood') ? brookwoodGrid(manifest, midtownConnectorGround(manifest, bytes)) : new GroundGrid(manifest, bytes);
 }
 
 it('keeps the Brookwood rail cut continuous across both rendered rows', () => {
@@ -40,7 +42,7 @@ it.each(['low','high'] as const)('audits rendered road tread against terrain at 
   for (const row of midtownRows) {
     const context = JSON.parse(read(row, 'context.json').toString());
     context.terrainTransport = {version: 1, roads: [], rail: railRows[row] as TransportRun[]};
-    const city = seventeenthAccess(auburnTransport(context));
+    const city = midtownConnectorDecks(seventeenthAccess(auburnTransport(context)));
     const grid = ground(row), surface = new GroundSurface(grid, quality, undefined, joins(row));
     const bare = surface.sampleScene.bind(surface);
     const banks = bridgeApproaches(seventeenthPortals(city), grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads);
