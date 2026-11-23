@@ -7,12 +7,14 @@ import { World, type VBuilding } from '../vignette/world';
 export const HOUSE_KINDS = {
   houses: 'House styles by storey',
   materials: 'Siding swatches',
+  ansley: 'Ansley Park forms',
 } as const;
 export type HouseKind = keyof typeof HOUSE_KINDS;
 
 export const HOUSE_NOTES: Record<HouseKind, string> = {
   houses: 'Rows, front to back: Colonial, Craftsman and Tudor revival. Columns, left to right: one, two and three storeys. Each faces the street in front of its row. Windows are composed per wall, and a trim belt marks each floor. ',
-  materials: 'Rows, front to back: lap siding, brick, cedar shingle and stucco, each in every colour of its family, as two-storey Colonials. ',
+  materials: 'Rows, front to back: lap siding, brick, cedar shingle, stucco and limestone ashlar, each in every colour of its family, as two-storey Colonials. ',
+  ansley: 'Left to right: an American Foursquare (hipped, full-width porch with a white balustrade, centre dormer), a newer limestone house and a white-painted brick one, both under dark slate with black steel windows. ',
 };
 
 const rect = (x: number, z: number, w: number, d: number): P2[] => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
@@ -31,8 +33,12 @@ function layout(kind: HouseKind) {
       roads.push(road(z + 12));
       [1, 2, 3].forEach((storeys, col) => house(`lab-${style}-${storeys}`, rect(-20 + col * 15, z, 11, 9), { style, storeys }));
     });
+  } else if (kind === 'ansley') {
+    roads.push(road(12));
+    (['foursquare', 'limestone', 'white-brick'] as const).forEach((form, col) =>
+      house(`lab-ansley-${form}`, rect(-24 + col * 17, 0, 12, 10), { style: form === 'foursquare' ? 'colonial' : 'tudor', storeys: 2, form }));
   } else {
-    const families: Siding[] = ['clapboard', 'brick', 'shingle', 'stucco'];
+    const families: Siding[] = ['clapboard', 'brick', 'shingle', 'stucco', 'ashlar'];
     families.forEach((siding, row) => {
       const z = 20 - row * 15, colours = [...new Set(FAMILIES[siding])];
       roads.push(road(z + 10));

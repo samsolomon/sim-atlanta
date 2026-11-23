@@ -19,7 +19,7 @@ const tags = tagged as unknown as Record<string, [string | null, string | null, 
 type Shape = 'gabled' | 'hipped' | 'pyramidal';
 export type HouseStyle = 'colonial' | 'craftsman' | 'tudor' | 'apartment';
 /** Lab and test overrides: pin a footprint's style, siding, wall colour or storeys. */
-export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number }>;
+export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number; form: 'foursquare' | 'limestone' | 'white-brick' }>;
 type Plan = { style: HouseStyle; storeys: number; doorS: number; doors: number[]; id: string; wind: number; overhang: number; dormerEdge: P2[] | null;
   concave: boolean; porchFoot?: number; front: P2[] | null; frontFoot?: number; siding: Siding; doorColor: string;
   crossGable: boolean; dormers: number; quality: 'high' | 'low'; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
@@ -31,7 +31,7 @@ type Plan = { style: HouseStyle; storeys: number; doorS: number; doors: number[]
 
 // Material families, each with its own colour range (Sam's notes, checked against Street View
 // in Ansley Park and Home Park). Repeated entries weight the common colours.
-export type Siding = 'clapboard' | 'brick' | 'stucco' | 'shingle';
+export type Siding = 'clapboard' | 'brick' | 'stucco' | 'shingle' | 'ashlar';
 export const FAMILIES: Record<Siding, string[]> = {
   // Lap siding: white, cream, pale yellow, sage, grey-blue, muted green; the occasional deep red or navy.
   // Values sit a little above Street View so they survive the City colour grade.
@@ -43,18 +43,20 @@ export const FAMILIES: Record<Siding, string[]> = {
   shingle: ['#8e7055', '#9d8467', '#9c9990', '#88867e', '#8d9cab', '#8d9cab', '#5a6b58'],
   // Stucco: cream, pink-beige, pale ochre.
   stucco: ['#f1e9d4', '#ebd2bd', '#e6cd98'],
+  // Limestone ashlar (newer Ansley houses): pale warm cream.
+  ashlar: ['#e4dccb', '#e8e0cf', '#ddd4c1'],
 };
 // Weathered mid-greys and warm browns, with a little muted green and red: roofs no longer dominate.
 const ASPHALT = ['#8f8a83', '#857e76', '#9a8d7e', '#8a7a6a', '#7c8a80', '#8e6f63', '#99938b', '#7e858a', '#7a8a72'];
 const SLATE = ['#6f7880', '#68727b'];
 // Newer Ansley houses: cream limestone or white-painted brick under dark slate, with black steel windows.
-const LIMESTONE = '#ece4d0', WHITE_BRICK = '#efebe2', DARK_SLATE = ['#545b63', '#4c535b'], STEEL = '#22262a';
+const LIMESTONE = '#e4dccb', WHITE_BRICK = '#efebe2', DARK_SLATE = ['#545b63', '#4c535b'], STEEL = '#22262a';
 // Foursquares and Colonial Revival: white or pale-grey clapboard.
 const FOURSQUARE = ['#f5f2ea', '#f5f2ea', '#e4e5e0', '#eef0ee'];
 const TERRACOTTA = ['#94604c', '#9d6a52', '#87574a'];
 const DOORS = ['#2f3a34', '#5b2a24', '#2b2f3a', '#3b2c22', '#6a5d4b', '#1f2224'];
 // Shader sidings 7–10: the 3–6 textures without shader windows; houses draw their own windows.
-const STYLE: Record<Siding, number> = { clapboard: 7, brick: 8, stucco: 9, shingle: 10 };
+const STYLE: Record<Siding, number> = { clapboard: 7, brick: 8, stucco: 9, shingle: 10, ashlar: 12 };
 
 function area(ring: P2[]) {
   let a = 0;
@@ -214,7 +216,7 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall, roof: roofs[Math.floor(r() * roofs.length)],
     trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick', frame: trim, foursquare: false };
-  return ansley && !f.style && !f.siding && !f.wall ? ansleyForms(plan, b, size, frontLen, !!shapeTag, !!tagged) : plan;
+  return f.form || (ansley && !f.style && !f.siding && !f.wall) ? ansleyForms(plan, b, size, frontLen, !!shapeTag, !!tagged, f.form) : plan;
 }
 
 /**
@@ -222,9 +224,12 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
  * house keeps its look: American Foursquares among the Colonials, and newer limestone or
  * white-brick houses with slate roofs and black steel windows among the Tudors. Illustrative.
  */
-function ansleyForms(p: Plan, b: VBuilding, size: number, frontLen: number, roofTagged: boolean, storeysTagged: boolean): Plan {
+function ansleyForms(p: Plan, b: VBuilding, size: number, frontLen: number, roofTagged: boolean, storeysTagged: boolean,
+  form?: 'foursquare' | 'limestone' | 'white-brick'): Plan {
   const r = rng(hashStr(b.id + ':ansley'));
-  const four = r(), fresh = r(), colour = r(), slate = r();
+  let four = r(), fresh = r(), colour = r();
+  const slate = r();
+  if (form) { four = form === 'foursquare' ? 0 : 1; fresh = form === 'foursquare' ? 1 : 0; colour = form === 'limestone' ? 0 : .9; }
   if (p.style === 'colonial' && !p.concave && p.front && frontLen >= 7 && size >= 90 && four < .45) {
     const shape: Shape = roofTagged ? p.shape : 'hipped';
     const rise = Math.min(3.6, Math.max(2.2, p.half * .6)), storeys = storeysTagged ? p.storeys : 2;
@@ -234,9 +239,9 @@ function ansleyForms(p: Plan, b: VBuilding, size: number, frontLen: number, roof
       // One hipped centre dormer on the front slope (high tier).
       dormerEdge: shape === 'hipped' ? p.front : p.dormerEdge, dormers: p.quality === 'high' ? 1 : 0, crossGable: false, overhang: .5 };
   }
-  if (p.style === 'tudor' && fresh < .3) {
+  if ((p.style === 'tudor' || form) && fresh < .3) {
     const limestone = colour < .55;
-    return { ...p, siding: limestone ? 'stucco' : 'brick', brick: !limestone, wall: limestone ? LIMESTONE : WHITE_BRICK,
+    return { ...p, siding: limestone ? 'ashlar' : 'brick', brick: !limestone, wall: limestone ? LIMESTONE : WHITE_BRICK,
       roof: DARK_SLATE[Math.floor(slate * DARK_SLATE.length)], frame: STEEL, trim: limestone ? '#e2d9c3' : '#f2efe8', doorColor: '#2a2f33' };
   }
   return p;
