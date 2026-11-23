@@ -57,6 +57,7 @@ import { createTwoPeachtree } from './two-peachtree';
 import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
 import { createCentralLibrary } from './central-library';
+import { createPeachtreeCenter } from './peachtree-center';
 import { createPeachtree191 } from './peachtree-191';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createTwelveCentennial } from './twelve-centennial';
@@ -221,6 +222,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let healey: ReturnType<typeof createHealey> = null;
   let flatiron: ReturnType<typeof createFlatiron> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
+  let peachtreeCenter: ReturnType<typeof createPeachtreeCenter> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
@@ -256,8 +258,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         westin = createWestin(buildings, groundAt);
         peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
         const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
-        marquis = createMarriottMarquis(remaining, ground);
-        const hotelSite = marquis?.buildings ?? remaining;
+        peachtreeCenter = createPeachtreeCenter(remaining, ground);
+        const afterCenter = peachtreeCenter?.buildings ?? remaining;
+        marquis = createMarriottMarquis(afterCenter, ground);
+        const hotelSite = marquis?.buildings ?? afterCenter;
         twelve = createTwelveCentennial(hotelSite, ground);
         const afterTwelve = twelve?.buildings ?? hotelSite;
         truist = createTruistPlaza(afterTwelve, groundAt);
@@ -300,6 +304,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (twelve) world.group.add(twelve.group);
         if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
+        if (peachtreeCenter) world.group.add(peachtreeCenter.group);
         if (peachtree) world.group.add(peachtree.group);
         if (library) world.group.add(library.group);
         if (flatiron) world.group.add(flatiron.group);
@@ -749,6 +754,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     twelve?.setNight(night);
     truist?.setNight(night);
     westin?.setNight(night);
+    peachtreeCenter?.setNight(night);
     peachtree?.setNight(night);
     library?.setNight(night);
     flatiron?.setNight(night);
