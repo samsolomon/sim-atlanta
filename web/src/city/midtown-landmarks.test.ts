@@ -35,6 +35,26 @@ it.each(sites)('replaces only the validated $name footprint at scene grade', (si
     expect(hits(100, 1)).toBeGreaterThan(0);
   }
 });
+it('seats the terraced frame on the roof and lights the separate faceted obelisk at night', () => {
+  const model = createMidtownLandmark(sites, sites[0], -1, () => 0)!;
+  const roof = new Box3().setFromObject(model.group.children[0]);
+  const crown = model.group.getObjectByName('Terraced rose steel') as Mesh;
+  const obelisk = model.group.getObjectByName('Faceted obelisk') as Mesh;
+  const steel = new Box3().setFromObject(crown),
+    tip = new Box3().setFromObject(obelisk);
+  expect(steel.min.y).toBeCloseTo(roof.max.y, 1);
+  expect(tip.min.y).toBeCloseTo(285.2);
+  expect(tip.max.y - tip.min.y).toBeCloseTo(26.6);
+  const frameLight = crown.material as MeshLambertMaterial,
+    tipLight = obelisk.material as MeshLambertMaterial;
+  model.setNight(0);
+  expect(frameLight.emissiveIntensity).toBe(0);
+  expect(tipLight.emissiveIntensity).toBe(0);
+  model.setNight(1);
+  expect(frameLight.emissiveIntensity).toBeGreaterThan(1);
+  expect(tipLight.emissiveIntensity).toBeGreaterThan(1);
+  expect(tipLight.emissive.b).toBeGreaterThan(frameLight.emissive.b);
+});
 it.each(sites)('keeps the generic building when the $name source or terrain is incomplete', (site) => {
   expect(createMidtownLandmark(sites, site, null, () => 0)).toBeNull();
   expect(createMidtownLandmark(sites, site, 0, () => null)).toBeNull();

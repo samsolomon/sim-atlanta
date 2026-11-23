@@ -20,7 +20,7 @@ Peachtree Summit and 250 Williams remain with their respective owners.
 
 The 20-vertex footprint places the tower between Peachtree and West Peachtree. The mapped 311.8 m tip and the owner's 55-story count constrain its proportions. The daytime long view shows copper-colored piers and recessed vertical window strips at three shoulders. The architect's close view resolves horizontal steel ties inside the broad lower lattice. The owner's dusk view shows the cage lit gold against a darker shaft with scattered office lights. [Daylight skyline photograph](https://commons.wikimedia.org/wiki/File:BOA_Plaza_ATL_GA.jpg) · [Architect's detail photographs](https://www.architectmagazine.com/project-gallery/bank-of-america-plaza/) · [Owner's dusk cover](https://www.bankofamericaplaza.com/wp-content/uploads/2023/12/CPGroup-BankofAmericaPlaza-Atlanta-Brochure.pdf)
 
-The office setbacks at 153 and 216 m, the steel cage from 240 to 286 m, mast taper, bay spacing and lit-window pattern are illustrative estimates. The footprint belongs to the tower itself. The surrounding plaza and neighboring buildings use the tile's own geometry.
+The revised model follows the continuous dark glazing between narrow rose masonry piers on each broad face and the punched windows on the outer returns. The shoulders step in at 151 and 216 m. The top of the roof coping is 238.65 m above local grade. Short columns and braces support the rim at 242.4 m and leave an open band beneath it. The four lattice tiers follow the articulated plan and taper to the foot of the obelisk at 285.2 m. A folded shoulder, long shaft and pointed tip complete the final 26.6 m. These intermediate dimensions, bay spacing and occupied-window patterns are photographic estimates. The daylight scaffold uses rose steel. Night illumination is independently graded for the amber cage, pale obelisk and office windows. The footprint belongs to the tower itself. The surrounding plaza and neighboring buildings use the tile's own geometry.
 
 ## Fox Theatre
 
@@ -37,6 +37,7 @@ On a populated checkout with coverage integrated, stage the tile with `pnpm data
 | View | Target x, z | Bearing | Tilt | m/px | City renders |
 |---|---|---:|---:|---:|---|
 | Bank of America Plaza | 565, −2050 | 20° | 50° | 0.53 | [Day](log/ui/midtown-landmarks/plaza-day.jpg) · [Night](log/ui/midtown-landmarks/plaza-night.jpg) |
+| Plaza roof joint and obelisk, lower angle | −171, −2298 | −59° | 70° | 0.54 | [Day](log/ui/midtown-landmarks/plaza-crown-day.jpg) · [Night](log/ui/midtown-landmarks/plaza-crown-night.jpg) |
 | Fox Theatre from Ponce | 542, −2085 | 24° | 37° | 0.14 | [Day](log/ui/midtown-landmarks/theatre-day.jpg) · [Night](log/ui/midtown-landmarks/theatre-night.jpg) |
 | Peachtree marquee | 606, −2092 | −18° | 57° | 0.076 | [Day](log/ui/midtown-landmarks/marquee-day.jpg) · [Night](log/ui/midtown-landmarks/marquee-night.jpg) |
 

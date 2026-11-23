@@ -1,5 +1,5 @@
-import { CylinderGeometry, Vector3 } from 'three';
-import { type Builder, type P2 } from '../vignette/geom';
+import { CylinderGeometry, DoubleSide, Mesh, MeshLambertMaterial, Vector3 } from 'three';
+import { Builder, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { localLandmarkShell } from './landmark-shell';
 
@@ -19,95 +19,187 @@ function rod(batch: Builder, a: Point, b: Point, radius: number, color: string) 
 }
 
 function tower(shell: Shell) {
-  const { ring, prism, lights, facade } = shell;
-  const copper = '#985e4f',
-    shadow = '#513e43';
-  // The survey picks up the four stair-stepped wings at 45 degrees to North Avenue.
-  const plan = [...ring];
+  const { body, lights, prism } = shell;
+  const rose = '#b58070',
+    pier = '#c58d79',
+    glass = '#505061';
+  const plan = [...shell.ring];
   const signed = plan.reduce((sum, [x, z], i) => {
     const next = plan[(i + 1) % plan.length];
     return sum + x * next[1] - z * next[0];
   }, 0);
   if (signed < 0) plan.reverse();
-  prism(plan, shell.base, 8, '#63545a', shadow);
-  for (const [lo, hi, scale, floors] of [
-    [8, 153, 1, 33],
-    [153, 216, 0.96, 14],
-    [216, 240, 0.91, 6],
+  const outline = (scale: number): P2[] =>
+    plan.map(([x, z]) => {
+      // The broad central wings run to the roof. Only the intermediate shoulders step inward.
+      return Math.max(Math.abs(x), Math.abs(z)) > 21 ? [x, z] : [scale * x, scale * z];
+    });
+  prism(plan, shell.base, 8, '#68595b', '#71615d');
+  const random = rng(1992);
+  for (const [lo, hi, scale, rows] of [
+    [8, 151, 1, 33],
+    [151, 216, 0.94, 15],
+    [216, 238, 0.89, 5],
   ]) {
-    const outline: P2[] = plan.map(([x, z]) => [x * scale, z * scale]);
-    prism(outline, lo, hi, copper, shadow);
-    outline.forEach((a, i) => {
-      const b = outline[(i + 1) % outline.length];
-      const dx = b[0] - a[0],
+    const walls = outline(scale);
+    prism(walls, lo, hi, rose, '#8e6c62');
+    walls.forEach((a, i) => {
+      const b = walls[(i + 1) % walls.length],
+        dx = b[0] - a[0],
         dz = b[1] - a[1],
-        length = Math.hypot(dx, dz);
-      // Paired projecting piers frame the broad window banks of each wing.
-      if (length > 17) {
-        for (const t of [0.06, 0.94]) {
-          const x = a[0] + t * dx,
-            z = a[1] + t * dz;
-          shell.body.box(
-            1.3,
-            hi - lo,
-            1.3,
-            x + (0.48 * dz) / length,
-            (hi + lo) / 2,
-            z - (0.48 * dx) / length,
-            '#b07b65',
+        len = Math.hypot(dx, dz);
+      const pt = (u: number, y: number, depth: number): Point => [
+        a[0] + (dx * u + depth * dz) / len,
+        y,
+        a[1] + (dz * u - depth * dx) / len,
+      ];
+      function panel(batch: Builder, u: number, v: number, y: number, top: number, depth: number, color: string) {
+        batch.quad(pt(u, y, depth), pt(v, y, depth), pt(v, top, depth), pt(u, top, depth), color);
+      }
+      if (len > 15) {
+        // One uninterrupted glass ribbon per bay. Projecting jambs shade its edges.
+        const count = 8,
+          margin = 1.15,
+          pitch = (len - 2 * margin) / count;
+        for (let bay = 0; bay < count; bay++) {
+          const u = margin + bay * pitch,
+            v = u + pitch - 0.48;
+          panel(body, u, v, lo, hi, 0.07, glass);
+          panel(body, v, u + pitch, lo, hi, 0.48, pier);
+          body.quad(pt(v, lo, 0.07), pt(v, hi, 0.07), pt(v, hi, 0.48), pt(v, lo, 0.48), '#805a54');
+          body.quad(
+            pt(u + pitch, lo, 0.48),
+            pt(u + pitch, hi, 0.48),
+            pt(u + pitch, hi, 0.07),
+            pt(u + pitch, lo, 0.07),
+            '#93675e',
           );
+          for (let floor = 0; floor < rows; floor++) {
+            if (random() > 0.065) continue;
+            const y = lo + ((floor + 0.16) * (hi - lo)) / rows;
+            panel(lights, u + 0.1, v - 0.1, y, y + 2.4, 0.09, glass);
+          }
+        }
+      } else if (
+        Math.abs(dx * (a[0] + b[0]) + dz * (a[1] + b[1])) > Math.abs(dz * (a[0] + b[0]) - dx * (a[1] + b[1]))
+      ) {
+        // Narrow glass slots rise between successive punched masonry piers.
+        panel(body, 0.58, len - 0.58, lo, hi, 0.07, glass);
+        for (let floor = 0; floor < rows; floor++) {
+          if (random() > 0.09) continue;
+          const y = lo + ((floor + 0.18) * (hi - lo)) / rows;
+          panel(lights, 0.72, len - 0.72, y, y + 2.1, 0.09, glass);
+        }
+      } else {
+        // A single square punched opening on each short return separates the window banks.
+        const half = Math.min(1.13, len * 0.22);
+        for (let floor = 0; floor < rows; floor++) {
+          const y = lo + ((floor + 0.22) * (hi - lo)) / rows;
+          panel(random() < 0.09 ? lights : body, len / 2 - half, len / 2 + half, y, y + 2 * half, 0.07, '#50444b');
         }
       }
-      facade(
-        a,
-        outline[(i + 1) % outline.length],
-        lo,
-        hi,
-        floors,
-        2.8,
-        0.78,
-        0.89,
-        ['#413d48', '#504450', '#56474e'],
-        0.075,
-      );
     });
   }
-  // Open, tiered steel lattice. Horizontal ties and diagonal braces remain visible through it.
-  const tiers = [
-    [240, 20],
-    [246, 19],
-    [259, 14.6],
-    [274, 8.8],
-    [286, 4.4],
+
+  // A dark roof and a short open bearing frame keep the cage visibly above the occupied shaft.
+  const roof = outline(0.89);
+  prism(roof, 238, 238.65, '#875f58', '#55464a');
+  const steel = new Builder(),
+    finial = new Builder();
+  for (const [x, z] of roof) rod(steel, [x * 0.97, 238.65, z * 0.97], [x * 0.97, 242.4, z * 0.97], 0.48, rose);
+  // The projecting ledges at each break follow all twenty reentrant corners of the footprint.
+  for (let i = 0; i < roof.length; i++) {
+    const a = roof[i],
+      b = roof[(i + 1) % roof.length];
+    if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 15) continue;
+    for (const t of [0.14, 0.86]) {
+      const x = a[0] + (b[0] - a[0]) * t,
+        z = a[1] + (b[1] - a[1]) * t;
+      const foot = t < 0.5 ? a : b;
+      rod(steel, [foot[0] * 0.97, 238.94, foot[1] * 0.97], [x * 0.98, 242.4, z * 0.98], 0.36, rose);
+    }
+  }
+  const profile = [
+    [242.4, 0.98],
+    [251, 0.83],
+    [265, 0.585],
+    [277, 0.345],
+    [285.2, 0.168],
   ];
-  const face = (side: number, t: number, y: number, r: number): Point => {
-    const k = (2 * t - 1) * r;
-    return [
-      [k, y, -r],
-      [r, y, k],
-      [-k, y, r],
-      [-r, y, -k],
-    ][side] as Point;
-  };
-  for (let i = 1; i < tiers.length; i++) {
-    const [lo, r] = tiers[i - 1],
-      [hi, s] = tiers[i];
-    for (let side = 0; side < 4; side++) {
-      for (let j = 0; j < 5; j++) {
-        rod(lights, face(side, j / 5, lo, r), face(side, j / 5, hi, s), 0.52, '#c29954');
-        rod(lights, face(side, j / 5, lo, r), face(side, (j + 1) / 5, hi, s), 0.27, '#bc8e4a');
+  for (let tier = 1; tier < profile.length; tier++) {
+    const [lo, s0] = profile[tier - 1],
+      [hi, s1] = profile[tier];
+    for (let side = 0; side < roof.length; side++) {
+      const a = roof[side],
+        b = roof[(side + 1) % roof.length];
+      const point = (t: number, s: number, y: number): Point => [
+        (a[0] + (b[0] - a[0]) * t) * s,
+        y,
+        (a[1] + (b[1] - a[1]) * t) * s,
+      ];
+      const bays = Math.max(1, Math.round((Math.hypot(b[0] - a[0], b[1] - a[1]) * s0) / 4.6));
+      rod(steel, point(0, s0 + 0.012, lo), point(1, s0 + 0.012, lo), 0.64, '#c79684');
+      for (let bay = 0; bay < bays; bay++) {
+        const u = bay / bays,
+          v = (bay + 1) / bays;
+        rod(steel, point(u, s0, lo), point(u, s1, hi), 0.3, '#bc8d82');
+        rod(steel, point(u, s0, lo), point(v, s1, hi), 0.19, '#af847d');
       }
-      for (let j = 0; j < 4; j++) {
-        const h = lo + ((hi - lo) * j) / 4,
-          w = r + ((s - r) * j) / 4;
-        rod(lights, face(side, 0, h, w), face(side, 1, h, w), j === 0 ? 0.6 : 0.3, '#d4a75f');
+      const courses = Math.ceil((hi - lo) / 1.25);
+      for (let course = 1; course <= courses; course++) {
+        const t = course / courses,
+          y = lo + t * (hi - lo),
+          s = s0 + t * (s1 - s0);
+        rod(steel, point(0, s, y), point(1, s, y), 0.27, '#ceaaa0');
       }
     }
   }
-  const spire = new CylinderGeometry(0.22, 3.8, 25.8, 4);
-  spire.translate(0, 298.9, 0);
-  lights.addGeometry(spire, '#d9ad66');
-  return shell.finish('#ffb742', 1.25);
+  // Square-to-diamond transitions form the shoulders and folded highlights of the obelisk.
+  const stations = [
+    [285.2, 3.2, 0],
+    [288.8, 3.0, 0],
+    [292.5, 2.18, Math.PI / 4],
+    [296.2, 1.72, 0],
+    [308.6, 1.45, 0],
+    [311.8, 0.04, 0],
+  ];
+  const corner = (side: number, [y, r, turn]: number[]): Point => [
+    Math.cos((side * Math.PI) / 2 + Math.PI / 4 + turn) * r,
+    y,
+    Math.sin((side * Math.PI) / 2 + Math.PI / 4 + turn) * r,
+  ];
+  for (let i = 1; i < stations.length; i++)
+    for (let side = 0; side < 4; side++) {
+      const a = corner(side, stations[i - 1]),
+        b = corner(side + 1, stations[i - 1]),
+        c = corner(side + 1, stations[i]),
+        d = corner(side, stations[i]);
+      finial.tri(a, b, c, '#d1c1ab');
+      finial.tri(a, c, d, i === 2 || i === 3 ? '#b8a48f' : '#d1c1ab');
+    }
+  const model = shell.finish('#ffe2b6', 0.75);
+  function glowing(builder: Builder, name: string, emissive: string) {
+    const material = new MeshLambertMaterial({
+      vertexColors: true,
+      side: DoubleSide,
+      emissive,
+      emissiveIntensity: 0,
+    });
+    const mesh = new Mesh(builder.geometry(), material);
+    mesh.name = name;
+    model.group.add(mesh);
+    return material;
+  }
+  const crown = glowing(steel, 'Terraced rose steel', '#ffae41');
+  const obelisk = glowing(finial, 'Faceted obelisk', '#ffebba');
+  return {
+    ...model,
+    setNight(night: number) {
+      model.setNight(night);
+      crown.emissiveIntensity = night * 1.45;
+      obelisk.emissiveIntensity = night * 1.2;
+    },
+  };
 }
 
 function theatre(shell: Shell) {
