@@ -2045,3 +2045,16 @@ The release smoke check matched all 90 public assets to production. At the same 
 ### 2026-11-23 — Opening City on the full square
 
 Seven pieces make a 2.8 km square around Five Points. At the opening camera the curve of the Downtown Connector runs nearly the length of the board. Zoom in at Castleberry Hill and five freight tracks cross the southern join. We also tried taking away King Memorial’s ground grid. Downtown and both outer bands still opened, and one retry brought the station and Sweet Auburn back without resetting the scene. [Day and night views, cameras and clamp checks](log/ui/square-board/README.md#default-board-candidate-november-23)
+
+The MacBook Air measured the production bundles in a focused Orca tab at 1438 × 726 CSS pixels and DPR 2. Each row used a cold navigation, two seconds of settling and three consecutive two-second frame-rate windows. The square used a localhost proxy. The downtown baseline used the LAN IP. Through localhost, baseline first-ready times were 4,018–5,805 ms and its frame windows did not complete.
+
+| Detail and clock | Downtown ready (ms) | Downtown fps windows | Square first ready (ms) | All seven ready (ms) | Square fps windows |
+|---|---:|---|---:|---:|---|
+| High, day | 5935 | 20.5 / 22.6 / 25.0 | 4999 | 6395 | 26.5 / 18.5 / 27.5 |
+| High, night | 3868 | 4.0 / 1.7 / 1.7 | 5162 | 6276 | 19.5 / 15.4 / 18.0 |
+| Low, day | 5417 | 32.5 / 40 / 49 | 18838 | 19827 | 53.5 / 30.7 / 19.5 |
+| Low, night | 5770 | 60 / 60 / 60 | 5071 | 6446 | 3.2 / 6.6 / 3.8 |
+
+Three square openings finished in 6.28–6.45 seconds. Low daylight took 19.83 seconds with a slow cold fetch. Frame rates varied under concurrent Orca and agent work. The measurements do not establish a sustained 30 fps. Sam approved shipping with performance verification and the physical phone check deferred.
+
+Use HTTPS or a localhost proxy for smoke testing. On plain HTTP at a LAN IP, the browser withholds Web Crypto’s SHA-256 digest. Area verification then fails and City displays the available downtown board. Production uses HTTPS.

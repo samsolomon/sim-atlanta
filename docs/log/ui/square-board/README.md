@@ -96,3 +96,5 @@ The table records matched Studio Orca cameras at 14:02 and 23:02 EST on November
 Targets pushed 500 m beyond each corner clamped to x = −1000 or 1800 and z = −1700 or 1100 under both clocks. With King's ground grid withheld, five areas mounted, downtown still panned and zoomed, and the status named the missing area. Restoring the file and pressing **Show full board** loaded King and Sweet Auburn and cleared the notice.
 
 At low quality, a 390 × 844 CSS-pixel viewport framed all four corners with the same 15° bearing and 35° tilt. The scale was 9.57 m/px. These desktop Orca captures check portrait framing; the physical phone performance check is deferred. [Portrait day](default-portrait-day.jpg) · [Portrait night](default-portrait-night.jpg)
+
+For a LAN preview use HTTPS or forward the port to localhost. Plain HTTP on a LAN IP lacks the Web Crypto digest used to verify the area grids, so only downtown opens. [MacBook Air timings and release decision](../../../build-log.md#2026-11-23--opening-city-on-the-full-square)
