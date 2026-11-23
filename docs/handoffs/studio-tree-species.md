@@ -1,3 +1,24 @@
+## Codex continuation — 2026-11-23
+
+Current main d1411a9e is merged. Terrace placement verified in City; the actual loop
+exports eight trees, correcting the earlier seven. Captioned day/night Prado and
+1180 sheets, plus low Prado and winter far-detail comparisons, are under
+`docs/log/ui/tree-species/rollout/`. Current measurements and cameras are in
+`docs/tree-species.md`; they supersede the original numbers below.
+
+Cross-review round 1 found the preview omitted the batch; fixed in preview.ts.
+Round 2 has no blocking findings. It retains a plausible plantings-only lifecycle
+case; document it in the PR. The preview page itself stalls at loading with the
+available staged data, so its rendered check remains an explicit visual risk.
+
+Phone-perf successor dd052a89 accepts the paired current-main count gate; full
+sign-off awaits the winter evidence and final PR. Coordinator reply route is
+`orca orchestration reply --id msg_243e0a655e24 --from orca_session_id:752c9656-15cc-4501-99e1-e59257d6fdcb`.
+Direct `--on air` send rejects the pairing token. No merge until phone-perf's
+PR-thread sign-off, coordinator A16 check and Sam seeing the sheets. No deployment.
+
+---
+
 # Handoff: studio-tree-species (Claude, orca session 6b76e039) — 2026-11-23
 
 ## State
