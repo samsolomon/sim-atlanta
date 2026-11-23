@@ -296,7 +296,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 
 ## Species options (lab only)
 
-[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Lineup, 5 Nov](log/ui/tree-species/lineup-fall.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
+[Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [Loblolly pine sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [Lineup, 15 Nov](log/ui/tree-species/lineup-15nov.jpg) · [Lineup, 1 Jul](log/ui/tree-species/lineup-summer.jpg)
 
 **Sam's picks.** A, branch-mass cards, for the oaks and generally for broadleaves (23 Nov). C4 for the ginkgo.
 
@@ -409,8 +409,10 @@ The tree-species agent made the ink change: foliage silhouettes are inked only o
 | Water oak | 0.239 / 0.823 | 0.242 / 0.817 |
 | Tulip poplar | 0.244 / 0.815 | 0.231 / 0.816 |
 | Loblolly pine | 0.152 / 0.949 | 0.180 / 0.885 |
+| Red maple | 0.241 / 0.803 | 0.229 / 0.809 |
+| Sweetgum | 0.237 / 0.829 | 0.238 / 0.829 |
 
-All broadleaves are within 4% of the baseline luminance. The loblolly follows City's darker pine green (`#355f3c`), whose sRGB luminance is about two thirds of the broadleaf green's, so its expected crown luminance is about 0.165. The grade pushes such dark greens to high saturation.
+All broadleaves are within 5% of the baseline luminance. The loblolly follows City's darker pine green (`#355f3c`), whose sRGB luminance is about two thirds of the broadleaf green's, so its expected crown luminance is about 0.165. The grade pushes such dark greens to high saturation.
 
 ### Loblolly pine
 
@@ -457,6 +459,50 @@ GT holds 957 active loblollies. Median height is 3.5 times spread, and median cr
 - Golden yellow by mid-October.
 - Dropping in early November, bare by about 18 Nov.
 - The pale "tulip" fruit on winter twigs is not drawn.
+
+### Red maple
+
+`web/src/trees/maple-sweetgum.ts`. "A rounded crown and ascending branches" ([NC State](https://plants.ces.ncsu.edu/plants/acer-rubrum/)), oval to round with medium texture (UF ST041). Bark is smooth and light grey when young, and the twigs are "slender, red, and shiny". The crown is drawn as dense rounded clusters on ascending limbs, with reddish limbs on a grey trunk.
+
+**Options:** A · branch-mass cards (palmate leaf atlas), 193 / 81 plus 120 in tips; B · cored masses, 191 / 97; C · faceted clusters, 193 / 105.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–6.5 | 1.2–3 | 0.04–0.1 | 4.5 / 2 / 0.06 | GT under 15 cm DBH: median 6.4 m by 2.6 m |
+| Young | 6–12 | 3–7 | 0.1–0.3 | 10.7 / 5.6 / 0.2 | GT 15–30 cm medians |
+| Mature | 12.2–22.9 | 7.6–15.2 | 0.3–0.76 | 15 / 10 / 0.45 | NC State "more commonly" 12.2–21.3 m; UF 18.3–22.9 m by 7.6–10.7 m; GT 30–91 cm medians 12.8–14.6 m by 8.2–12.0 m |
+| Specimen | 18.9–33.3 | 12–18.3 | 0.76–0.97 | 22 / 17 / 0.9 | Champion: McLendon Ave, 33.3 × 16.0 m, 0.89 m DBH (2011). Two 2020 rows are flagged "location is not accurate". GT over 91 cm: 18.9 m by 18.3 m |
+
+**Calendar.** Georgia USA-NPN has 8 sites. Open flowers run January to April. Of 28 October records, 23 were coloured; none of 3 December records was in leaf. In North Carolina, red maple flowers from January to March (NC State). Colour "may vary from tree to tree". **Inferred** for Atlanta:
+- A thin red crown of flowers from late January, then red keys with the first leaves in March.
+- Leafing out through late March, full by about 22 Apr.
+- Scarlet to orange by late October.
+- Dropping in mid-November, bare by about 22 Nov; trees spread ±8 days, so none is in leaf in December.
+
+The [Athens grove](https://commons.wikimedia.org/wiki/File:Olympic_Grove_of_12_Red_Maples.JPG) was nearly bare on 21 Nov 2012.
+
+### Sweetgum
+
+`web/src/trees/maple-sweetgum.ts`. "Grows in a narrow pyramid … developing a more oval or rounded canopy as it grows older", on a trunk that "is normally straight and does not divide" (UF ST358). The leaves are glossy five- to seven-pointed stars, and the bark is grey-brown and deeply furrowed.
+
+**Options:** A · branch-mass cards (star leaf atlas), 193 / 81 plus 84 in tips; B · cored masses, 191 / 97; C · faceted clusters, 193 / 105.
+
+| Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
+|---|---|---|---|---|---|
+| Sapling | 3–8.7 | 1.2–3 | 0.04–0.1 | 5 / 2 / 0.07 | GT under 15 cm DBH: median 8.7 m by 2.7 m |
+| Young | 7–15 | 3–7 | 0.1–0.3 | 13 / 4.3 / 0.2 | GT 15–30 cm medians: narrow and pyramidal |
+| Mature | 18.3–30.5 | 10.7–16.7 | 0.3–0.91 | 24 / 13 / 0.7 | NC State 18.3–30.5 m by 12.2–15.2 m; UF ST358 10.7–15.2 m spread; GT 30–91 cm medians 24.7–25.0 m by 12.2–15.2 m |
+| Specimen | 27.9–42.2 | 16.7–27.4 | 0.91–1.25 | 36.6 / 27.4 / 1.25 | Champions: Peachtree Battle, 36.6 × 27.4 m, 1.25 m DBH (2025); Parkwood Park, Decatur, 42.2 m (2014) |
+
+**Calendar.** Sweetgum colours late and holds its leaves "for a long time" (NC State). UF says the colour comes in early winter in USDA zones 8–9. The Georgia Forestry Commission saw "purple to yellow and some red" in northeast Georgia on 11 Nov 2021. USA-NPN has too few Georgia records to use. **Inferred** for Atlanta:
+- Leafing out in April.
+- Turning from early November.
+- Every colour at once around 22 Nov.
+- Dropping into December, bare by about 22 Dec.
+
+Each tree's two tones run from yellow-orange to purple, mixed per leaf cluster.
+
+**Not drawn yet:** the dark gumballs that hang all winter. They are a candidate near-range extra under the same caps as leaf tips.
 
 ### Pair 2 gaps
 

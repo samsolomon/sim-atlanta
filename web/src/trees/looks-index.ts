@@ -2,5 +2,6 @@
 import type { Look } from './looks';
 import { waterOakLook, willowOakLook } from './oaks';
 import { loblollyPineLook, tulipPoplarLook } from './pine-poplar';
+import { redMapleLook, sweetgumLook } from './maple-sweetgum';
 
-export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook];
+export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook];
