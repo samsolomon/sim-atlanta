@@ -5,7 +5,7 @@ import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import { seventeenthAccess } from './seventeenth-street';
 import { auburnTransport } from './sweet-auburn-transport';
-import { WALL_ABOVE_HIGH_GRADE } from './midtown-marta-vents';
+import { createElectricSaturation, ELECTRIC_SATURATION_ID, WALL_ABOVE_HIGH_GRADE } from './midtown-marta-vents';
 
 const directory = new URL('../../../pipeline/prototypes/square-board/midtown-central/', import.meta.url);
 const read = (name: string) => readFileSync(new URL(name, directory));
@@ -40,4 +40,16 @@ it.each(['low', 'high'] as const)('replaces the generic box at Electric Saturati
   } finally {
     terrain.dispose();
   }
+});
+
+it('removes the generic building it replaces and ignores other sites', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const city = JSON.parse(read('context.json').toString());
+  const site = city.buildings.find((b: { id: string }) => b.id === ELECTRIC_SATURATION_ID);
+  const other = city.buildings.find((b: { id: string }) => b.id !== ELECTRIC_SATURATION_ID);
+  const made = createElectricSaturation(city.buildings, site, () => 0)!;
+  expect(made.buildings).not.toContain(site);
+  expect(made.buildings).toHaveLength(city.buildings.length - 1);
+  expect(createElectricSaturation(city.buildings, other, () => 0)).toBeNull();
 });

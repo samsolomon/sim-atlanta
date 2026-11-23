@@ -24,6 +24,7 @@ const PALETTE = [
   '#e0262b',
   '#d42a8a',
   '#7a3fb0',
+  '#f0eee6',
 ];
 export const WALL_ABOVE_HIGH_GRADE = 5.6;
 
@@ -32,14 +33,18 @@ export const WALL_ABOVE_HIGH_GRADE = 5.6;
  * diagonal triangles, crescents and vertical bands. The arrangement is
  * illustrative; the palette and vocabulary follow the photographs.
  */
-function paintMural(widthM: number, heightM: number, seed: number) {
+// The north end is mostly navy with blue arcs and one orange vertical stripe.
+const NORTH = ['#1e2240', '#1e2240', '#2a5fd0', '#35b5e5', '#1e2240', '#2a5fd0'];
+
+function paintMural(widthM: number, heightM: number, seed: number, north = false) {
   const ppm = 36;
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(64, Math.round(widthM * ppm));
   canvas.height = Math.max(64, Math.round(heightM * ppm));
   const ctx = canvas.getContext('2d')!;
   const random = rng(seed);
-  const pick = () => PALETTE[Math.floor(random() * PALETTE.length)];
+  const colors = north ? NORTH : PALETTE;
+  const pick = () => colors[Math.floor(random() * colors.length)];
   const H = canvas.height;
   let x = 0;
   while (x < canvas.width) {
@@ -50,7 +55,7 @@ function paintMural(widthM: number, heightM: number, seed: number) {
     ctx.clip();
     ctx.fillStyle = pick();
     ctx.fillRect(x, 0, w, H);
-    const kind = Math.floor(random() * 5);
+    const kind = north ? Math.floor(random() * 2) : Math.floor(random() * 5);
     const cx = x + w / 2;
     if (kind === 0) {
       // Concentric rainbow arcs rising from the base or hanging from the parapet.
@@ -58,7 +63,7 @@ function paintMural(widthM: number, heightM: number, seed: number) {
         r0 = Math.max(w, H * 0.8);
       for (let i = 0; i < 6; i++) {
         ctx.beginPath();
-        ctx.fillStyle = PALETTE[(i * 3 + Math.floor(random() * 2)) % PALETTE.length];
+        ctx.fillStyle = colors[(i * 3 + Math.floor(random() * 2)) % colors.length];
         ctx.arc(cx, up ? H : 0, r0 * (1 - i / 6.5), 0, Math.PI * 2);
         ctx.fill();
       }
@@ -108,6 +113,10 @@ function paintMural(widthM: number, heightM: number, seed: number) {
     ctx.restore();
     x += w;
   }
+  if (north) {
+    ctx.fillStyle = '#f5791f';
+    ctx.fillRect(Math.round(canvas.width * 0.62), 0, Math.round(0.5 * ppm), H);
+  }
   // Board-formed concrete grain shows through the paint as faint vertical lines.
   ctx.fillStyle = 'rgba(0,0,0,0.08)';
   for (let px = 0; px < canvas.width; px += Math.round(0.3 * ppm)) ctx.fillRect(px, 0, 1, H);
@@ -124,12 +133,14 @@ function paintMural(widthM: number, heightM: number, seed: number) {
 export function createElectricSaturation(buildings: VBuilding[], site: VBuilding, ground: Ground) {
   if (site.id !== ELECTRIC_SATURATION_ID || site.rings.length !== 1) return null;
   const ring = site.rings[0];
-  const corner = (x: number, z: number) => ring.find(([a, b]) => Math.hypot(x - a, z - b) < 1);
-  const sw = corner(460.1, -3139.9),
-    se = corner(473.1, -3139.6),
-    ne = corner(473.6, -3165.2),
-    nw = corner(460.6, -3165.5);
-  if (!sw || !se || !ne || !nw) return null;
+  // Take the four corners from the ring's extremes so a small re-survey still matches.
+  const extreme = (fx: number, fz: number) =>
+    ring.reduce((best, p) => (p[0] * fx + p[1] * fz > best[0] * fx + best[1] * fz ? p : best));
+  const sw = extreme(-1, 1),
+    se = extreme(1, 1),
+    ne = extreme(1, -1),
+    nw = extreme(-1, -1);
+  if (new Set([sw, se, ne, nw]).size !== 4) return null;
   const grades = [sw, se, ne, nw].map(([x, z]) => ground(x, z));
   if (!grades.every((g): g is number => g !== null)) return null;
   // The footings reach below the lowest corner; the parapet is level.
@@ -149,10 +160,9 @@ export function createElectricSaturation(buildings: VBuilding[], site: VBuilding
   body.tri([sw[0], top - 0.12, sw[1]], [nw[0], top - 0.12, nw[1]], [ne[0], top - 0.12, ne[1]], '#a7a397');
   const group = new Group();
   group.name = 'Electric Saturation';
-  const materials: MeshLambertMaterial[] = [];
   // Mural panels: south, east (Peachtree Walk) and north faces. The west face, beside
   // the garage, was not visible in any photograph and stays plain concrete.
-  function panel(a: P2, b: P2, seed: number) {
+  function panel(a: P2, b: P2, seed: number, north = false) {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const dx = (b[0] - a[0]) / len,
       dz = (b[1] - a[1]) / len;
@@ -163,11 +173,16 @@ export function createElectricSaturation(buildings: VBuilding[], site: VBuilding
       gb = ground(b[0], b[1])!;
     const lo = Math.min(ga, gb) - 0.2,
       h = top - 0.05 - lo;
-    const material = new MeshLambertMaterial({ map: paintMural(len, h, seed), side: DoubleSide });
+    const material = new MeshLambertMaterial({
+      map: paintMural(len, h, seed, north),
+      side: DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -4,
+    });
     material.addEventListener('dispose', () => material.map?.dispose());
-    materials.push(material);
     const mesh = new Mesh(new PlaneGeometry(len, h), material);
-    mesh.position.set((a[0] + b[0]) / 2 + nx * 0.04, lo + h / 2, (a[1] + b[1]) / 2 + nz * 0.04);
+    mesh.position.set((a[0] + b[0]) / 2 + nx * 0.06, lo + h / 2, (a[1] + b[1]) / 2 + nz * 0.06);
     mesh.rotation.y = Math.atan2(nx, nz); // Front face outward.
     mesh.name = 'Electric Saturation mural';
     mesh.receiveShadow = true;
@@ -176,7 +191,7 @@ export function createElectricSaturation(buildings: VBuilding[], site: VBuilding
   }
   const south = panel(se, sw, 11),
     east = panel(ne, se, 23);
-  panel(nw, ne, 37);
+  panel(nw, ne, 37, true);
   // High horizontal louvres on the south face (painted over, so slightly darker bands).
   const louvreY = top - 1.9;
   for (let i = 0; i < 6; i++) {
@@ -232,13 +247,22 @@ export function createElectricSaturation(buildings: VBuilding[], site: VBuilding
     body.tri([SHAFT[0][0], sTop, SHAFT[0][1]], [SHAFT[3][0], sTop, SHAFT[3][1]], [SHAFT[2][0], sTop, SHAFT[2][1]], '#3a3c40');
   }
   // Black welded-mesh fence, about 1.2 m, enclosing the paved apron along the Walk.
-  const fenceX = Math.max(ne[0], se[0]) + 3.2;
-  for (let z = ne[1] + 0.5; z < SHAFT[1][1] - 0.3; z += 2.4) {
-    const g = ground(fenceX, z);
+  // The mapped Walk footway runs at x 476.1-476.6, so the fence stands on the apron's
+  // outer edge just west of it and stops at the shaft.
+  const fenceX = Math.max(ne[0], se[0]) + 2,
+    z0 = ne[1] + 0.5,
+    z1 = SHAFT[1][1] - 0.3;
+  const posts = Math.max(1, Math.round((z1 - z0) / 2.4)),
+    step = (z1 - z0) / posts;
+  for (let i = 0; i <= posts; i++) {
+    const z = z0 + i * step,
+      g = ground(fenceX, z);
     if (g === null) continue;
     body.box(0.06, 1.2, 0.06, fenceX, g + 0.6, z, '#1c1d1f');
-    body.box(0.03, 0.05, 2.4, fenceX, g + 1.17, z + 1.2, '#1c1d1f');
-    body.box(0.03, 0.05, 2.4, fenceX, g + 0.15, z + 1.2, '#1c1d1f');
+    if (i === posts) break;
+    const gm = ground(fenceX, z + step / 2) ?? g;
+    body.box(0.03, 0.05, step, fenceX, gm + 1.17, z + step / 2, '#1c1d1f');
+    body.box(0.03, 0.05, step, fenceX, gm + 0.15, z + step / 2, '#1c1d1f');
   }
   const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
   shell.castShadow = shell.receiveShadow = true;
