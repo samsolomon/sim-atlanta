@@ -29,6 +29,8 @@ export interface PerfContext {
   post(): unknown[];
   /** Turn the view by degrees (for ?perf=run&motion=orbit). */
   rotate?(degrees: number): void;
+  /** Pan by a screen offset in CSS px (for ?perf=run&motion=pan). */
+  pan?(dxPx: number, dyPx: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
   quality: string;
@@ -47,8 +49,9 @@ const TRAIL_KEY = 'perf-trail';
  *   &post=off     render straight to the canvas, no composer
  *   &hide=trees,scenery,terrain,transport,buildings,vehicles   hide whole categories (fps upper
  *                 bounds per category). `trees` means every instanced mesh in area scenery.
- *   &motion=orbit ?perf=run turns the camera 12°/s through the sample, so per-move work such as
- *                 shadow-map redraws is measured too (a static camera hides it) */
+ *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
+ *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
+ *                 target and so redraws the shadow map as a dragging visitor does */
 export const perfOverrides = (() => {
   if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>() };
   const pr = Number(params.get('pr'));
@@ -435,12 +438,20 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;
-  let turning = params.get('motion') === 'orbit';
+  const motion = params.get('motion');
+  let turning = motion === 'orbit' || motion === 'pan';
   if (turning) {
-    let last = performance.now();
+    const t0 = performance.now();
+    let last = t0;
+    let x = 0;
     const turn = (now: number) => {
       if (!turning) return;
-      ctx?.rotate?.(((now - last) / 1000) * 12);
+      if (motion === 'orbit') ctx?.rotate?.(((now - last) / 1000) * 12);
+      else {
+        const next = 150 * Math.sin(((now - t0) / 4000) * 2 * Math.PI);
+        ctx?.pan?.(next - x, 0);
+        x = next;
+      }
       last = now;
       requestAnimationFrame(turn);
     };

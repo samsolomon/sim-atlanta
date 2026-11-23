@@ -1150,6 +1150,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   perf.attach({
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
+    pan: (dx, dy) => panPx(dx, dy),
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
