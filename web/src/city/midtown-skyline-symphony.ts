@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
-import { hedge } from '../landscape/primitives';
+import { flowerBed, hedge, ornamentals } from '../landscape/primitives';
 import type { localLandmarkShell } from './landmark-shell';
 import sites from './fixtures/midtown-skyline.json';
 import plan from './fixtures/midtown-skyline/1180-peachtree.json';
@@ -96,14 +96,61 @@ export function symphonyTower(shell: Shell) {
   hedge(shell.body, [...oval(15, 12.2, 32), oval(15, 12.2, 32)[0]], ground, { height: .9, width: .9, seed: '1180' });
   const disc = (x: number, z: number, r: number, n = 20): P2[] =>
     Array.from({ length: n }, (_, i) => [x + r * Math.cos(i * 2 * Math.PI / n), z + r * Math.sin(i * 2 * Math.PI / n)]);
-  shell.prism(disc(-59, 0, 6.5), top, top + 3.6, '#eef0ec', '#f4f4f0');
-  shell.prism(disc(-59, 0, 5.2), top + 3.6, (pavilion?.h ?? top + 5) , '#cfe0e2', '#f4f4f0');
+  // The pavilion: a smooth white drum with a stepped top edge and a louvred service panel.
+  const drum = disc(-59, 0, 6.2, 40);
+  shell.prism(drum, top, top + 4.2, '#f2f2ee', '#f4f4f0');
+  shell.prism(disc(-59, 0, 6.45, 40), top + 4.2, top + 4.55, '#e6e6e1', '#f4f4f0');
+  shell.prism(disc(-59, 0, 5.4, 40), top + 4.55, Math.max(top + 5.3, pavilion?.h ?? 0), '#ecece7', '#f4f4f0');
+  for (let k = 0; k < 7; k++) {
+    const y = top + .8 + k * .42, a0 = Math.PI * .9, a1 = Math.PI * 1.1, r = 6.24;
+    const at = (a: number, yy: number) => [-59 + r * Math.cos(a), yy, r * Math.sin(a)];
+    shell.body.quad(at(a0, y), at(a1, y), at(a1, y + .22), at(a0, y + .22), '#9aa1a2');
+  }
+  // Mounded beds of ornamental grasses and low shrubs either side of the lawn.
+  const doy = 324; // City's season is not passed to landmarks; a late-November look (illustrative).
+  for (const z of [-1, 1]) {
+    const bed: P2[] = Array.from({ length: 14 }, (_, i) => [-72 + 3.4 * Math.cos(i * Math.PI / 7), z * 5.5 + 2.2 * Math.sin(i * Math.PI / 7)]);
+    const lawn = () => top + .18;
+    flowerBed(shell.body, bed, lawn, { doy, mound: .35, seed: `1180-bed-${z}` });
+    ornamentals(shell.body, [-53, z * 7], 2, lawn, { doy, count: 6, seed: `1180-grass-${z}` });
+  }
+  // Two cypress cones at the tower end, as before.
   for (const z of [-8, 8]) {
     const base = disc(-38, z, 1.3, 10);
     base.forEach(([x, zz], i) => {
       const [a, b] = base[(i + 1) % base.length];
       shell.body.tri([x, top, zz], [a, top, b], [-38, top + 6.5, z], '#3f6a3c');
     });
+  }
+  // A row of small multi-stem crape myrtles along the curved west edge, inside the rail.
+  wing.ring.forEach(([x, z], i) => {
+    const [a, b] = wing.ring[(i + 1) % wing.ring.length];
+    const len = Math.hypot(a - x, b - z);
+    if (Math.min(x, a) > -72 || len < 1) return;
+    const nx = -(b - z) / len, nz = (a - x) / len; // inward for this ring's winding, checked below
+    const mx = (x + a) / 2, mz = (z + b) / 2;
+    const inward = Math.hypot(mx + nx * 2.4 + 63, mz + nz * 2.4) < Math.hypot(mx - nx * 2.4 + 63, mz - nz * 2.4) ? 2.4 : -2.4;
+    crapeMyrtleStandIn(mx + nx * inward, mz + nz * inward, top, `${i}`);
+  });
+  // TODO(tree-lab): swap for the tree lab's crape myrtle (createLook, web/src/trees/looks.ts)
+  // once Sam picks its rendering. Multi-stem, about 4.5 m, fall canopy (illustrative).
+  function crapeMyrtleStandIn(x: number, z: number, y: number, seed: string) {
+    const r = (k: number) => { const h = Math.sin((x * 12.9 + z * 78.2 + k * 37.7) + seed.length) * 43758.5; return h - Math.floor(h); };
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + r(k), lean = .5, h = 2.6;
+      const foot = [x + Math.cos(a) * .15, y, z + Math.sin(a) * .15], head = [x + Math.cos(a) * lean, y + h, z + Math.sin(a) * lean];
+      shell.body.quad([foot[0] - .06, foot[1], foot[2]], [foot[0] + .06, foot[1], foot[2]], [head[0] + .05, head[1], head[2]], [head[0] - .05, head[1], head[2]], '#c7ad92');
+      shell.body.quad([foot[0], foot[1], foot[2] - .06], [foot[0], foot[1], foot[2] + .06], [head[0], head[1], head[2] + .05], [head[0], head[1], head[2] - .05], '#c7ad92');
+    }
+    const canopy = ['#c4532f', '#d27a34', '#b8402e'];
+    for (let k = 0; k < 3; k++) {
+      const cx = x + (r(k + 9) - .5) * 1.2, cz = z + (r(k + 19) - .5) * 1.2, cy = y + 3.1 + r(k + 29) * .8, s = 1.1;
+      const ring = [[s, 0], [0, s], [-s, 0], [0, -s]].map(([u, v]) => [cx + u, cy, cz + v]);
+      for (let q = 0; q < 4; q++) {
+        shell.body.tri(ring[q], ring[(q + 1) % 4], [cx, cy + .9, cz], canopy[k % 3]);
+        shell.body.tri(ring[(q + 1) % 4], ring[q], [cx, cy - .6, cz], canopy[(k + 1) % 3]);
+      }
+    }
   }
   wing.ring.forEach(([x, z], i) => {
     const [a, b] = wing.ring[(i + 1) % wing.ring.length];
@@ -152,14 +199,51 @@ export function symphonyTower(shell: Shell) {
     }
   }
 
+  // Behind the glazing the crown is framed by white steel lattice trusses, read
+  // through the glass in the aerials and lit from inside at dusk.
+  const lattice2 = new Builder(), line = new Builder();
+  const member = (p: number[], q: number[], b: Builder, colour: string, w = .14) => {
+    const d = [q[0] - p[0], q[1] - p[1], q[2] - p[2]], len = Math.hypot(...d), u = d.map(v => v / len);
+    const ref = Math.abs(u[1]) > .9 ? [1, 0, 0] : [0, 1, 0];
+    const cross = (a: number[], c: number[]) => [a[1] * c[2] - a[2] * c[1], a[2] * c[0] - a[0] * c[2], a[0] * c[1] - a[1] * c[0]];
+    const n1 = cross(u, ref), l1 = Math.hypot(...n1), n2 = cross(u, n1), l2 = Math.hypot(...n2);
+    for (const n of [n1.map(v => w * v / l1), n2.map(v => w * v / l2)])
+      b.quad(p.map((v, i) => v - n[i]), p.map((v, i) => v + n[i]), q.map((v, i) => v + n[i]), q.map((v, i) => v - n[i]), colour);
+  };
+  for (const side of [-1, 1]) {
+    const face = side > 0 ? 17.3 : -17.6;
+    const inner = (u: number, t: number) => [x0 + (x1 - x0) * u, ROOF + (VEIL - 3) * t, face - side * (7.8 * Math.pow(t, 1.6) + 1.6)];
+    const cols2 = 8, rows2 = 4;
+    for (let c = 0; c <= cols2; c++) member(inner(c / cols2, 0), inner(c / cols2, 1), lattice2, '#f2f4f1');
+    for (let r = 0; r <= rows2; r++) for (let c = 0; c < cols2; c++) {
+      member(inner(c / cols2, r / rows2), inner((c + 1) / cols2, r / rows2), lattice2, '#f2f4f1', .1);
+      if (r < rows2) member(inner((c + (r + c) % 2) / cols2, r / rows2), inner((c + 1 - (r + c) % 2) / cols2, (r + 1) / rows2), lattice2, '#f2f4f1', .1);
+    }
+    // A thin light line runs up the curved west edge of each veil, from the wing roof to the tip.
+    const wingTop = parts.find(p => p.id === 'osm:way:885660381')?.h ?? ROOF;
+    const edge = (t: number) => [x0 - .2, ROOF + (VEIL - 1.5) * t, face - side * (7.8 * Math.pow(t, 1.6) - .15)];
+    member([x0 - .2, wingTop, face + side * .15], edge(0), line, '#f4fff8', .12);
+    for (let k = 0; k < 12; k++) member(edge(k / 12), edge((k + 1) / 12), line, '#f4fff8', .12);
+  }
+
   const model = shell.finish('#ffe0b0', .7);
+  const crownFrame = new THREE.Mesh(lattice2.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
+    emissive: '#dcffee', emissiveIntensity: 0 }));
+  crownFrame.name = '1180 crown lattice';
+  model.group.add(crownFrame);
+  const lineMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false });
+  const edgeLine = new THREE.Mesh(line.geometry(), lineMaterial);
+  edgeLine.name = '1180 edge light';
+  edgeLine.visible = false;
+  model.group.add(edgeLine);
   const geometry = skin.geometry();
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   const glass = new THREE.Mesh(geometry, wall.material);
   glass.name = '1180 curtain wall';
   // Light shows through the veils: thin glass, lit cool white at night.
   const veilMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true,
-    opacity: .88, depthWrite: false, emissive: '#eaf6ff', emissiveIntensity: 0 });
+    opacity: .88, depthWrite: false, emissive: '#e2fff0', emissiveIntensity: 0 });
   // One mesh per veil, so three.js sorts the near one over the far one.
   const veil = veilSides.map((b, i) => { const m = new THREE.Mesh(b.geometry(), veilMaterial); m.name = `1180 veil ${i}`; return m; });
   const lattice = new THREE.Mesh(frame.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
@@ -171,6 +255,9 @@ export function symphonyTower(shell: Shell) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
     veilMaterial.emissiveIntensity = 1.8 * night;
+    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = 1.6 * night;
+    lineMaterial.color.setScalar(Math.min(1, night));
+    edgeLine.visible = night > .001;
     (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = 1.4 * night;
   } };
 }
