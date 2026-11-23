@@ -51,7 +51,16 @@ Sam's reference frame of "#1405" comes from a USA Today video credited to Amtrak
 
 [Amtrak paint schemes](https://en.wikipedia.org/wiki/Amtrak_paint_schemes) · [#20 on 24 May 2025](https://neworleansrailroads.com/blog/2025/06/17/crescent-20-phase-vii-expansion/) · [25067, Phase VI](https://commons.wikimedia.org/wiki/File:AMTK_25067.jpg) · [25003, Phase VII](https://commons.wikimedia.org/wiki/File:Amtrak_Phase_VII_Amfleet_II.jpg) · [Baggage-dorm 69006](https://commons.wikimedia.org/wiki/File:AMTK_69006.jpg) · [Sleeper 62506](https://commons.wikimedia.org/wiki/File:Viewliner_II_2025a.jpg) · [Café and diner 68007 at DeLand](https://commons.wikimedia.org/wiki/File:Amtrak_Cafe_%26_Dining_Cars_@_DeLand_SunRail_Station.jpg)
 
-**AIRO** is a corridor trainset. Its assigned routes are Northeast Regional, Keystone, Carolinian, Palmetto, Piedmont, Cascades and others; none is the Crescent. Airo graphics are not used here.
+**AIRO** is a corridor trainset. Its assigned routes are Northeast Regional, Keystone, Carolinian, Palmetto, Piedmont, Cascades and others; none is the Crescent. Airo graphics are not used on the Crescent. The lab carries one Airo coach, `/models.html?v=airoCoach`, so Sam's references are represented and ready for corridor service:
+- **Envelope (Siemens Airo data sheet):** 85 ft (25.91 m) long, 10 ft 6 in wide, 4.436 m overall with HVAC housings over a 4.36 m roof crown, floor 51 in, truck centres 59 ft 6 in.
+- **East-coast scheme:** taken from Amtrak's promotional renders, the USA Today frames Sam sent. They are reference only and not committed.
+  - Midnight-blue door zones at both ends.
+  - Two white diagonals that lean the same way.
+  - Lighter blue panels above and below a continuous near-black window strip.
+  - White over red at floor level, and a silver roof.
+  - Green class bars beside each plug door.
+- **Estimated:** diagonal positions and lean, door spacing and the window pitch. No free photograph of an east-coast Airo car was found.
+- **Proportions:** checked against the first Cascades delivery at Seattle, 16 May 2026. [Data sheet](https://assets.new.siemens.com/siemens/assets/api/uuid:f7972216-fd02-46aa-9428-1874f489bdba/SIE-RS-Amtrak-Airo-Venture-Trainsets-Sheet.pdf) · [Seattle delivery](https://commons.wikimedia.org/wiki/File:First_Siemens_Airo_delivery_in_Seattle_-_May_2026_-_01.jpg) · [Lab views](log/crescent/airo/airo-lab.jpg) · [Proportions](log/crescent/airo/airo-proportions.jpg)
 
 [Roof step, photo and labelled lab](log/crescent/cars/roof-step.jpg) · [Roof step, three-quarter](log/crescent/cars/roof-step-34.jpg) · [Full consist](log/crescent/cars/consist.jpg) · [Full consist, side](log/crescent/cars/consist-side.jpg) · [Phase VI coach](log/crescent/cars/coach-phase6.jpg) · [Phase VII coach](log/crescent/cars/coach-phase7.jpg) · [Café](log/crescent/cars/cafe.jpg) · [Diner](log/crescent/cars/diner.jpg) · [Sleeper](log/crescent/cars/sleeper.jpg) · [Baggage-dorm](log/crescent/cars/baggage-dorm.jpg) · [Brookwood by day](log/crescent/cars/brookwood-day.jpg) · [Brookwood at night](log/crescent/cars/brookwood-night.jpg). Night reference: sleeper 62506 under platform light at Charlottesville, 12 Nov 2025, in the sleeper plate. At night the bands drop into the dark and the lit window rows carry the train, as in that photo.
 
