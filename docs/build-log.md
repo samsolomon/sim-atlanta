@@ -1941,3 +1941,7 @@ The two One12 Courtland footprints looked like a pair of flat extrusions. The ar
 ### 2026-11-23 — The narrow office slab above the old Citizens Trust lobby
 
 From Auburn Avenue the pale fins at 75 Piedmont carry the eye up to the university lettering. At the front door, the same building reads as a low portico set back from the sidewalk. The former bank’s footprint spans about 51 × 74 m, but the tall slab uses only 19 × 68 m of it. The 2018 lidar puts the main roof 51–52 m above Piedmont and the east podium about 42 m below that roof. Modeling the two heights separately opens the view from Dobbs toward J Deck. [Street photographs, measurements and 15 matched City views](log/ui/citizens-trust/README.md) · [Comparison sheet](log/ui/citizens-trust/comparison.jpg)
+
+### 2026-11-23 — Following four glass gables across the Government Center
+
+The landmark at 141 Pryor looks different from each street. MLK Jr. Drive has a nearly 97 m office ridge. Pryor has a small signed portico and a plaza beneath four much larger glass gables. Only two of those glass ridges continue all the way to the Peachtree side. In 23,462 lidar returns across the two named footprints, the tower peaked near 366 m NAVD88 while the smallest roof group reached only 327.5 m. Giving each wing its own height opens up the view from Mitchell to the lettered bridge and the courthouse across Pryor. [Street photographs, lidar and eight matched City cameras](log/ui/fulton-government-center/README.md) · [Day, dusk and night comparison](log/ui/fulton-government-center/comparison.jpg)

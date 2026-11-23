@@ -67,6 +67,7 @@ import { createMetropolitan } from './metropolitan';
 import { createMariettaBackdrop } from './marietta-backdrop';
 import { createOne12Courtland } from './one12-courtland';
 import { createCitizensTrust } from './citizens-trust';
+import { createFultonGovernmentCenter } from './fulton-government-center';
 import { createFultonCourthouse } from './fulton-courthouse';
 import { createPeachtreeOffices } from './peachtree-offices';
 import { createWilliamOliver } from './william-oliver';
@@ -281,6 +282,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let mariettaBackdrop: ReturnType<typeof createMariettaBackdrop> = null;
   let one12Courtland: ReturnType<typeof createOne12Courtland> = null;
   let citizensTrust: ReturnType<typeof createCitizensTrust> = null;
+  let fultonGovernmentCenter: ReturnType<typeof createFultonGovernmentCenter> = null;
   let fultonCourthouse: ReturnType<typeof createFultonCourthouse> = null;
   let peachtreeOffices: ReturnType<typeof createPeachtreeOffices> = null;
   let williamOliver: ReturnType<typeof createWilliamOliver> = null;
@@ -379,8 +381,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterOne12Courtland = one12Courtland?.buildings ?? afterMariettaBackdrop;
         citizensTrust = createCitizensTrust(afterOne12Courtland, ground);
         const afterCitizensTrust = citizensTrust?.buildings ?? afterOne12Courtland;
-        fultonCourthouse = createFultonCourthouse(afterCitizensTrust, ground);
-        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterCitizensTrust;
+        fultonGovernmentCenter = createFultonGovernmentCenter(afterCitizensTrust, ground);
+        const afterFultonGovernmentCenter = fultonGovernmentCenter?.buildings ?? afterCitizensTrust;
+        fultonCourthouse = createFultonCourthouse(afterFultonGovernmentCenter, ground);
+        const afterFultonCourthouse = fultonCourthouse?.buildings ?? afterFultonGovernmentCenter;
         peachtreeOffices = createPeachtreeOffices(afterFultonCourthouse, ground);
         const afterPeachtreeOffices = peachtreeOffices?.buildings ?? afterFultonCourthouse;
         williamOliver = createWilliamOliver(afterPeachtreeOffices, ground);
@@ -463,6 +467,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (mariettaBackdrop) world.group.add(mariettaBackdrop.group);
         if (one12Courtland) world.group.add(one12Courtland.group);
         if (citizensTrust) world.group.add(citizensTrust.group);
+        if (fultonGovernmentCenter) world.group.add(fultonGovernmentCenter.group);
         if (fultonCourthouse) world.group.add(fultonCourthouse.group);
         if (peachtreeOffices) world.group.add(peachtreeOffices.group);
         if (williamOliver) world.group.add(williamOliver.group);
@@ -1030,6 +1035,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mariettaBackdrop?.setNight(night);
     one12Courtland?.setNight(night);
     citizensTrust?.setNight(night);
+    fultonGovernmentCenter?.setNight(night);
     fultonCourthouse?.setNight(night);
     peachtreeOffices?.setNight(night);
     williamOliver?.setNight(night);
