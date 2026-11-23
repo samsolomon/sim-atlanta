@@ -89,7 +89,9 @@ function updateFollowPanel() {
   const text = reduced && follow.active ? [note, 'Camera stays still until you recenter.'].filter(Boolean).join(' · ') : note;
   // The position's own tier stays beside the status while following, also in the compact card.
   // The chip is the position's tier, labelled as such: it does not vouch for the tunnel or cover note.
-  const html = text ? `${text}${follow.active && follow.tier ? ' · position ' + chip(follow.tier) : ''}` : '';
+  const matched = follow.active && follow.matched
+    ? ` · matched to the nearest ${follow.tier === 'live' ? 'live' : 'timetable'} train ${chip('inferred')}` : '';
+  const html = text ? `${text}${matched}${follow.active && follow.tier ? ' · position ' + chip(follow.tier) : ''}` : '';
   if (lastStatusHTML !== html) followStatus.innerHTML = lastStatusHTML = html;
   followStatus.hidden = !text;
   followAction.hidden = follow.phase === 'lost' || follow.phase === 'outside';
@@ -142,9 +144,19 @@ document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 
 function renderTrainCard() {
   if (!selectedTrain) return;
+  // After a tier handoff the card describes the vehicle now followed (or the one whose follow
+  // just ended). It is a continuation, not a new tap: drop the old trip's drawn-track facts and
+  // keep the A2c panel where the user left it.
+  const lineage = follow?.active ? follow.lineage : follow?.endedLineage ?? [];
+  const current = follow?.vehicle ?? follow?.ended;
+  if (current?.kind === 'train' && current.id !== selectedTrain && lineage.includes(selectedTrain)) {
+    selectedTrain = current.id;
+    selectedDrawn = {};
+    shownKey = current.id;
+  }
   const t = source.find(selectedTrain);
   if (!t) {
-    if (follow?.phase === 'lost') return showCard('<h2>Train no longer available</h2><p class="sub">Tap another train.</p>', true);
+    if (follow?.ended?.id === selectedTrain) return showCard('<h2>Train no longer available</h2><p class="sub">Tap another train.</p>', true);
     return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
   }
   showCard(
@@ -157,7 +169,7 @@ function renderTrainCard() {
 function renderBusCard() {
   const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
   if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
-  else if (follow?.phase === 'lost' || follow?.phase === 'outside') showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
+  else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
   else hideCard();
 }
 

@@ -19,7 +19,7 @@ import type { GroundCamera } from '../core/camera';
 import type { RoutesFile, TrainState } from '../model/types';
 import { makeProjector, type SceneManifest } from '../core/scene-data';
 import { createNorthLine } from './midtown-marta-rail';
-import { drawnCar, FOLLOW_CAMERA, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
+import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Followed, type VehicleFollow } from './vehicle-follow';
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
@@ -1280,7 +1280,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const [x, z] = project(t.lon, t.lat);
       const cars = [...trains.group.children, ...(brookwood?.cars.children ?? [])]
         .filter(c => c.userData.trainId === t.id).flatMap(c => drawnCar(c) ?? []);
-      return { id: t.id, pathId: t.pathId, tier: t.s.tier, x, z, cars, hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
+      return { id: t.id, pathId: t.pathId, tier: t.s.tier, routeId: t.routeId, heading: t.heading, x, z, cars,
+        hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
     if (v.kind === 'bus') {
       const bus = options.buses?.()?.find(b => b.id === v.id);
@@ -1334,7 +1335,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       trains.surfaceCars += brookwood.update(states, atm.dark);
     }
     const followed = options.follow?.vehicle;
-    const fix = followed ? locate(followed, states) : null;
+    let fix = followed ? locate(followed, states) : null;
+    // A timetable trip replaced by live rail (or the reverse) hands off to its nearest match.
+    if (followed && needsHandoff(followed, fix)) {
+      const others = states.filter(s => s.s.tier !== followed.tier).flatMap(s => locate({ kind: 'train', id: s.id, tier: s.s.tier }, states) ?? []);
+      fix = options.follow!.handoff(others) ?? fix;
+    }
     // A followed vehicle loads the area it is heading into, without a manual pan. On the full
     // board follow runs to the mounted edge. Off the mosaic, a train heading east keeps its trip
     // (as "out of view") while King Memorial and its rail load, then falls back to downtown.

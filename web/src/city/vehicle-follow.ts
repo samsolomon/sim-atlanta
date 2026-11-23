@@ -19,6 +19,8 @@ export type Followed = { kind: FollowKind; id: string; tier: Tier; pathId?: stri
 /** One frame of the followed vehicle, from its source position and its drawn cars. */
 export type Fix = {
   id: string; pathId?: string; tier: Tier;
+  /** Trains only: the route and heading (degrees clockwise from north), used to match a handoff. */
+  routeId?: string; heading?: number;
   /** Source position in scene metres. */
   x: number; z: number;
   /** Cars that are drawn and inside their own clipping planes this frame. */
@@ -34,6 +36,16 @@ export class VehicleFollow {
   phase: FollowPhase = 'idle';
   /** The followed vehicle's last known tier, kept after the follow ends for the card's last line. */
   tier?: Tier;
+  /** The vehicle whose follow ended at an edge or on loss, so a card can tell it apart from a new selection. */
+  ended?: Followed;
+  /** True after a tier handoff: the vehicle now followed is an inferred match, not the same trip id. */
+  matched = false;
+  /** Ids followed since start, oldest first: one, or more after tier handoffs. */
+  lineage: string[] = [];
+  /** The lineage of the follow that ended, so a card can recognise any of its ids. */
+  endedLineage: string[] = [];
+  private last?: Fix;
+  private easing = false;
   get active() { return !!this.followed; }
   get vehicle(): Followed | undefined { return this.followed; }
 
@@ -41,11 +53,19 @@ export class VehicleFollow {
     this.stop();
     this.followed = { ...vehicle };
     this.tier = vehicle.tier;
+    this.lineage = [vehicle.id];
     this.requested = true;
   }
 
   stop(phase: FollowPhase = 'idle') {
+    const ended = phase === 'lost' || phase === 'outside';
+    this.ended = ended ? this.followed : undefined;
+    this.endedLineage = ended ? this.lineage : [];
+    this.lineage = [];
+    this.easing = false;
     this.followed = undefined;
+    this.matched = false;
+    this.last = undefined;
     this.focus = undefined;
     this.lastTime = undefined;
     this.requested = false;
@@ -54,12 +74,32 @@ export class VehicleFollow {
 
   recenter() { this.requested = this.active; }
 
+  /** When the followed trip disappears because its source changed tier (a timetable trip replaced
+   * by live MARTA rail, or live rail falling back to the timetable), hand the camera to the nearest
+   * train of the other tier on the same route, heading the same way and close by. The live feed
+   * carries no trip ids, so this is an inferred match, and `matched` says so. Returns the new fix. */
+  handoff(candidates: readonly Fix[]): Fix | null {
+    const v = this.followed, last = this.last;
+    if (!v || v.kind !== 'train' || !last) return null;
+    const next = pickHandoff(last, candidates);
+    if (!next) return null;
+    this.followed = { kind: 'train', id: next.id, pathId: next.pathId, tier: next.tier };
+    this.tier = next.tier;
+    this.matched = true;
+    this.lineage.push(next.id);
+    // The match can be up to 2.5 km away: glide there instead of jumping in one frame.
+    this.easing = true;
+    return next;
+  }
+
   /** Returns the camera target for this frame, or undefined to leave the camera alone.
    * `current` is the camera's actual target, so anything else that moved the camera
    * (an area finishing its load, a board clamp) is corrected on the next frame. */
   frame(fix: Fix | null, bounds: Bounds | ((p: Point) => boolean), now: number, reducedMotion: boolean, current?: Point): Point | undefined {
     const v = this.followed;
     if (!v) return;
+    // A live train keeps its id while the feed re-snaps it to a sibling path variant.
+    if (fix && fix.id === v.id && fix.tier === v.tier && v.tier === 'live' && fix.pathId !== v.pathId) v.pathId = fix.pathId;
     // A trip that changes path or tier is a different claim. End rather than relabel it.
     if (!fix || fix.id !== v.id || fix.pathId !== v.pathId || fix.tier !== v.tier ||
         !Number.isFinite(fix.x) || !Number.isFinite(fix.z)) {
@@ -74,6 +114,7 @@ export class VehicleFollow {
       this.stop('outside');
       return;
     }
+    this.last = fix;
     this.phase = cars.length ? 'drawn' : fix.hidden ?? 'unseen';
     const goal = cars.length
       ? { x: cars.reduce((s, c) => s + c.x, 0) / cars.length, z: cars.reduce((s, c) => s + c.z, 0) / cars.length }
@@ -84,16 +125,40 @@ export class VehicleFollow {
     const previous = this.focus && (current ?? this.focus);
     if (!this.requested && previous) {
       const gap = Math.hypot(previous.x - goal.x, previous.z - goal.z);
+      if (gap < 8) this.easing = false;
       if (gap < .02) return;
       // A fast clock or scrub can cross a whole block in one frame. Keep the
       // selected vehicle in shot without flying through all the intervening streets.
-      const k = Math.max(-Math.expm1(-dt / 160), 1 - 8 / gap);
+      // After a handoff the target is a different train, so ease over to it instead.
+      const k = this.easing ? -Math.expm1(-dt / 160) : Math.max(-Math.expm1(-dt / 160), 1 - 8 / gap);
       goal.x = previous.x + (goal.x - previous.x) * k;
       goal.z = previous.z + (goal.z - previous.z) * k;
     }
     this.requested = false;
     return this.focus = goal;
   }
+}
+
+/** Hand off only when the followed train is gone or its source changed tier, never on a
+ * same-tier path change, which is a different claim. */
+export function needsHandoff(v: Followed | undefined, fix: Fix | null) {
+  return v?.kind === 'train' && (!fix || fix.tier !== v.tier);
+}
+
+/** The nearest other-tier train on the same route within 2.5 km whose heading is within 90°
+ * (opposite directions differ by about 180°, curves by less than 90°). A
+ * timetable position can be a minute or two off the real train; same-direction trains on one
+ * route run roughly 10 km apart, so 2.5 km tolerates the drift without reaching the next train. */
+export function pickHandoff(last: Fix, candidates: readonly Fix[]): Fix | null {
+  let best: Fix | null = null, distance = 2500;
+  for (const c of candidates) {
+    if (c.routeId !== last.routeId || c.tier === last.tier || !c.pathId) continue;
+    if (last.heading !== undefined && c.heading !== undefined &&
+        Math.abs(((c.heading - last.heading + 540) % 360) - 180) > 90) continue;
+    const d = Math.hypot(c.x - last.x, c.z - last.z);
+    if (d <= distance) { best = c; distance = d; }
+  }
+  return best;
 }
 
 const front = new THREE.Vector3(), rear = new THREE.Vector3();
@@ -109,7 +174,16 @@ export function drawnCar(car: THREE.Object3D): Point | null {
   car.updateWorldMatrix(true, false);
   front.set(0, 2, half).applyMatrix4(car.matrixWorld);
   rear.set(0, 2, -half).applyMatrix4(car.matrixWorld);
-  if (!planes.every(p => Math.max(p.distanceToPoint(front), p.distanceToPoint(rear)) > 0)) return null;
+  // Clip the car's length against every plane together: two planes can each keep one end
+  // while nothing between them survives.
+  let t0 = 0, t1 = 1;
+  for (const p of planes) {
+    const a = p.distanceToPoint(rear), b = p.distanceToPoint(front);
+    if (a < 0 && b < 0) return null;
+    if (a < 0) t0 = Math.max(t0, a / (a - b));
+    else if (b < 0) t1 = Math.min(t1, a / (a - b));
+  }
+  if (t0 >= t1) return null;
   return { x: (front.x + rear.x) / 2, z: (front.z + rear.z) / 2 };
 }
 
