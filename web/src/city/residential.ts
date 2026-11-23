@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import tagged from '../../../pipeline/prototypes/residential/tags.json';
 import type { TerrainCity } from '../terrain/transport-data';
 import { hashStr, pointInRing, rng, type Builder, type P2 } from '../vignette/geom';
@@ -17,7 +18,7 @@ type Shape = 'gabled' | 'hipped' | 'pyramidal';
 export type HouseStyle = 'colonial' | 'craftsman' | 'tudor';
 /** Lab and test overrides: pin a footprint's style, siding, wall colour or storeys. */
 export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number }>;
-type Plan = { style: HouseStyle; storeys: number; doorS: number; id: string; wind: number;
+type Plan = { style: HouseStyle; storeys: number; doorS: number; id: string; wind: number; overhang: number;
   concave: boolean; porchFoot?: number; front: P2[] | null; frontFoot?: number; siding: Siding; doorColor: string;
   crossGable: boolean; dormers: number; quality: 'high' | 'low'; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
   wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean };
@@ -170,7 +171,9 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const trim = kind === 'brick' ? (wall === '#e6e2d8' ? '#2f3a34' : '#efe7d2') : r() < .7 ? '#f6f3ea' : '#ece2c8';
   // Ring winding, so each wall's outward normal is exact even on L and T plans.
   const wind = ring.reduce((a, q, i) => { const n = ring[(i + 1) % ring.length]; return a + q[0] * n[1] - n[0] * q[1]; }, 0) > 0 ? 1 : -1;
-  return { style, storeys, doorS, id: b.id, wind, concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half, front, siding: kind,
+  // Eave and rake overhang by style: deep Craftsman eaves, tighter Tudor ones.
+  const overhang = style === 'craftsman' ? .6 : style === 'tudor' ? .3 : .4;
+  return { style, storeys, doorS, id: b.id, wind, overhang, concave, shape, eave, rise, centre: box.centre, u: box.u, long: box.long, half: box.half, front, siding: kind,
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall, roof: roofs[Math.floor(r() * roofs.length)],
     trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick' };
@@ -198,35 +201,53 @@ function inset(ring: P2[], d: number): P2[] {
 
 function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
   const { centre: c, u, long, half, rise } = p;
+  // Eaves and rakes overhang the walls (0.3–0.6 m by style), with a fascia board and a soffit, so
+  // every wall gets a shadow line under the roof edge. The roof plane simply extends outward and
+  // down, so gables and dormers built on it stay on the same plane.
+  const ov = p.overhang, low = eave - ov * rise / half, ring = inset(outer, -ov);
+  const soffit = '#' + new THREE.Color(p.roof).multiplyScalar(.7).getHexString();
+  const edge = (a: P2, d: P2, oa: P2, od: P2) => {
+    b.quad([a[0], low - .2, a[1]], [d[0], low - .2, d[1]], [d[0], low, d[1]], [a[0], low, a[1]], p.trim);
+    b.quad([oa[0], eave, oa[1]], [od[0], eave, od[1]], [d[0], low - .2, d[1]], [a[0], low - .2, a[1]], soffit);
+  };
   if (p.concave) {
     // Low hip skirt to an inset deck: it stays over the walls on L and T plans.
     const d = Math.min(1.6, half * .45), top = eave + Math.min(1.4, d * .9), inner = inset(outer, d);
-    for (let i = 0; i < outer.length; i++) {
-      const j = (i + 1) % outer.length;
-      b.quad([outer[i][0], eave, outer[i][1]], [outer[j][0], eave, outer[j][1]], [inner[j][0], top, inner[j][1]], [inner[i][0], top, inner[i][1]], p.roof);
+    for (let i = 0; i < ring.length; i++) {
+      const j = (i + 1) % ring.length;
+      b.quad([ring[i][0], low, ring[i][1]], [ring[j][0], low, ring[j][1]], [inner[j][0], top, inner[j][1]], [inner[i][0], top, inner[i][1]], p.roof);
+      edge(ring[i], ring[j], outer[i], outer[j]);
     }
     for (let i = 1; i + 1 < inner.length; i++) b.tri([inner[0][0], top, inner[0][1]], [inner[i][0], top, inner[i][1]], [inner[i + 1][0], top, inner[i + 1][1]], p.roof);
     return;
   }
-  const reach = p.shape === 'gabled' ? long + .01 : p.shape === 'pyramidal' ? 0 : Math.max(0, long - half);
-  const ridge = (x: number, z: number): number[] => {
+  const reachAt = (extra: number) => p.shape === 'gabled' ? long + extra + .01 : p.shape === 'pyramidal' ? 0 : Math.max(0, long - half);
+  const ridge = (x: number, z: number, reach: number): number[] => {
     const t = Math.max(-reach, Math.min(reach, (x - c[0]) * u[0] + (z - c[1]) * u[1]));
     return [c[0] + u[0] * t, eave + rise, c[1] + u[1] * t];
   };
-  // Clockwise or anticlockwise, every eave edge rises to its nearest ridge point.
-  for (let i = 0; i < outer.length; i++) {
-    const a = outer[i], d = outer[(i + 1) % outer.length];
-    const ea = [a[0], eave, a[1]], ed = [d[0], eave, d[1]], ra = ridge(...a), rd = ridge(...d);
-    // A gable end is a vertical wall triangle; everything else is roof.
-    const vertical = Math.abs(ra[0] - rd[0]) < 1e-3 && Math.abs(ra[2] - rd[2]) < 1e-3 && p.shape === 'gabled';
-    const color = vertical ? p.wall : p.roof;
-    if (Math.hypot(ra[0] - rd[0], ra[2] - rd[2]) < 1e-3) b.tri(ea, ed, ra, color);
-    else b.quad(ea, ed, rd, ra, color);
+  const reach = reachAt(ov);
+  // Every overhanging eave edge rises to its nearest ridge point; gable ends get no roof face.
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], d = ring[(i + 1) % ring.length], ra = ridge(...a, reach), rd = ridge(...d, reach);
+    const end = Math.hypot(ra[0] - rd[0], ra[2] - rd[2]) < 1e-3;
+    if (end && p.shape === 'gabled') continue;
+    const ea = [a[0], low, a[1]], ed = [d[0], low, d[1]];
+    if (end) b.tri(ea, ed, ra, p.roof);
+    else b.quad(ea, ed, rd, ra, p.roof);
+    edge(a, d, outer[i], outer[(i + 1) % outer.length]);
   }
-  if (p.shape === 'gabled') for (const s of [-1, 1]) {
-    // Trim the ridge so the rake reads in the ink pass.
-    const e = [c[0] + u[0] * s * reach, eave + rise, c[1] + u[1] * s * reach];
-    b.box(.12, .12, .12, e[0], e[1], e[2], p.trim);
+  if (p.shape === 'gabled') {
+    // Gable walls stand on the wall plane under the rake overhang.
+    for (let i = 0; i < outer.length; i++) {
+      const a = outer[i], d = outer[(i + 1) % outer.length], ra = ridge(...a, long), rd = ridge(...d, long);
+      if (Math.hypot(ra[0] - rd[0], ra[2] - rd[2]) < 1e-3) b.tri([a[0], eave, a[1]], [d[0], eave, d[1]], ra, p.wall);
+    }
+    for (const s of [-1, 1]) {
+      // Trim the ridge ends so the rake reads in the ink pass.
+      const e = [c[0] + u[0] * s * reach, eave + rise, c[1] + u[1] * s * reach];
+      b.box(.14, .14, .14, e[0], e[1], e[2], p.trim);
+    }
   }
 }
 
