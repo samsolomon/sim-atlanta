@@ -32,7 +32,7 @@ export function inkShader() {
       uStrength: { value: 0.75 },
       uInk: { value: new THREE.Color('#1c1820') },
       uWidth: { value: 1.0 },
-      uFoliageInk: { value: new THREE.Color('#5a3a12') },
+      uFoliageInk: { value: new THREE.Color('#7a5520') },
       uInteriorM: { value: 40 },
       // 1 when the scene has inkFoliage materials; 0 skips the foliage samples entirely (City today).
       uFoliage: { value: 0 },
@@ -99,7 +99,10 @@ export function inkShader() {
             keep = clear;
           }
           line *= keep;
-          if (fm > 1.5) { ink = uFoliageInk; line *= 0.75; }
+          // Never ink a leaf pixel at a crown's outer edge: the line goes on the sky or ground
+          // side only, one pixel wide, so the crown keeps its full colour to the edge.
+          if (!inside && m > 0.5) line = 0.0;
+          if (fm > 1.5) { ink = uFoliageInk; line *= 0.6; }
         }
         gl_FragColor = vec4(mix(col.rgb, ink, line), 1.0);
       }`,

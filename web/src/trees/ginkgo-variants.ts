@@ -272,7 +272,7 @@ function shade(depth: number, up: number) {
 
 /** Card shade: a near-uniform butter yellow, the sun side a touch brighter; no brown core. */
 function cardShade(depth: number, up: number) {
-  const k = 0.92 + 0.1 * Math.min(1, Math.max(0, depth * 0.6 + up * 0.4));
+  const k = 0.8 + 0.1 * Math.min(1, Math.max(0, depth * 0.6 + up * 0.4));
   return new THREE.Color(k, k * 0.98, k * 0.92);
 }
 
@@ -281,7 +281,7 @@ function cardShade(depth: number, up: number) {
  * halfway, then narrows to a pointed, slightly upturned tip. Four triangles; the fan-leaf atlas
  * and alpha test cut its edge into leaves.
  */
-function plumeCards(sprays: Spray[]) {
+function plumeCards(sprays: Spray[], centre = new THREE.Vector3()) {
   const pos: number[] = [], uv: number[] = [], col: number[] = [], nor: number[] = [], edge: number[] = [];
   sprays.forEach((sp, k) => {
     const fr = frame(sp);
@@ -307,7 +307,11 @@ function plumeCards(sprays: Spray[]) {
     };
     for (const tri of ['blm', 'bmr', 'ltm', 'mtr']) for (const key of tri) {
       const [p, u, v] = P[key];
-      pos.push(p.x, p.y, p.z); uv.push(u, v); col.push(c.r, c.g, c.b); nor.push(n.x, n.y, n.z);
+      // Crown normal: 80% outward from the crown centre, 20% the plume's own, so the crown
+      // lights like one solid mass (as the low-poly canopy does) while its edge stays ragged.
+      const out = p.clone().sub(centre).normalize();
+      const cn = out.multiplyScalar(0.8).addScaledVector(n, 0.2).normalize();
+      pos.push(p.x, p.y, p.z); uv.push(u, v); col.push(c.r, c.g, c.b); nor.push(cn.x, cn.y, cn.z);
       edge.push(key === 'm' ? 0 : 1);
     }
   });
@@ -400,7 +404,12 @@ function leafAtlas() {
 /** A, C or D foliage for one size class, in unit space. */
 function foliageGeometry(v: GinkgoVariant, size: SizeClass, unitSprays: Spray[]) {
   const { sprays, toUnit } = metric(unitSprays, size);
-  if (v.startsWith('C')) return toUnit(plumed(size) ? plumeCards(sprays) : sprayCards(sprays, cardShade));
+  if (v.startsWith('C')) {
+    const d = ginkgo.sizes[size];
+    // Metric crown centre: about 60% up a mature crown, a little lower on the broad specimen.
+    const centre = new THREE.Vector3(0, d.heightM * (size === 'specimen' ? 0.55 : 0.6), 0);
+    return toUnit(plumed(size) ? plumeCards(sprays, centre) : sprayCards(sprays, cardShade));
+  }
   return toUnit(v === 'D' ? flames(sprays, shade) : sleeves(sprays, shade));
 }
 
@@ -448,7 +457,11 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
   const meshes: THREE.InstancedMesh[] = [];
   const bark = new THREE.MeshLambertMaterial({ vertexColors: true });
   // Foliage: vertex shade times the season colour, a little self-light for the backlit glow.
-  const leafMat = (opts: THREE.MeshLambertMaterialParameters = {}) => new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, emissive: '#6b4a00', emissiveIntensity: 0.25, ...opts });
+  // A little warm self-light for the backlit glow. Cards carry less: with crown normals they
+  // already light like the low-poly canopy, and the lab's crown measurement keeps them within
+  // about 5% of its brightness (docs/tree-species.md).
+  const SELF_LIGHT = variant.startsWith('C') ? 0.06 : 0.25;
+  const leafMat = (opts: THREE.MeshLambertMaterialParameters = {}) => new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, emissive: '#6b4a00', emissiveIntensity: SELF_LIGHT, ...opts });
   const isCards = variant.startsWith('C');
   // Cards are alpha-TESTED (discard), never blended: no sorting and no blended overdraw on phones.
   const foliageMat = isCards ? leafMat({ map: leafAtlas(), alphaTest: 0.5 }) : leafMat({ flatShading: true });
@@ -671,7 +684,7 @@ export function createGinkgoVariant(placements: TreePlacement[], variant: Ginkgo
     tipped: () => tipped.length,
     setSeason,
     update,
-    setNight(n: number) { for (const mat of [foliageMat, chipMat]) mat.emissiveIntensity = 0.25 * (1 - n); },
+    setNight(n: number) { for (const mat of [foliageMat, chipMat]) mat.emissiveIntensity = SELF_LIGHT * (1 - n); },
     setWet(f: number) { for (const mat of [bark, foliageMat, chipMat, carpetMat]) mat.color.setScalar(1 - 0.3 * f); },
     dispose() {
       for (const u of unregister) u();
