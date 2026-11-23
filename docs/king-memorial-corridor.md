@@ -257,3 +257,61 @@ built or changed.**
 - **Green terminators** (155214 arriving, 155221 departing): their trips end and begin at the King
   Memorial stop, and the schedule never advances them past it. So no position falls on the 799 m
   chord. I have not checked a terminating train visually.
+
+### Station correction: the street-level building (2026-11-22)
+
+| Reference | What it shows |
+|---|---|
+| MARTA *King Memorial Station TOD profile* (rev. 2017-11-03), [PDF](https://itsmarta.com/uploadedFiles/More/Transit_Oriented_Development/Station%20Profile%20Rev%202017-11-03%20King%20Memorial.pdf) | "The only station entrance can be accessed from Decatur Street." Its entrance photo shows a concrete stair tower at the Decatur St corner. Its aerial outlines the station building beneath and along the platforms. |
+| Commons *King Memorial.JPG* (Keizers, 2012, CC BY-SA 3.0) | Elevated platforms on columns above an enclosed street-level building, with a stair tower and the sculpture at the corner. |
+| OSM [way 270494115](https://www.openstreetmap.org/way/270494115) (v7, 2025-11-15) | `building=train_station`, a 26-vertex footprint from x 1389 to 1573 under and north of the tracks. |
+
+**The most visible gap.** City drew open ground and columns under the platforms. Marlin's
+context deliberately leaves out this OSM building, so the real enclosure was missing from every
+street and Decatur St view.
+
+**The correction:** `east-rail.ts` now draws the building on its OSM footprint.
+- **Walls** run from the lowest perimeter ground up to 0.3 m below the platform underside, with a
+  darker band at the top.
+- **Footprint:** sourced (OSM).
+- **Wall height:** inferred (ground to the platform underside).
+- **Stair towers:** still illustrative.
+- **Lighting:** none at night (no station lighting yet).
+
+![Decatur St before (open), after by day, after at night](log/ui/king-memorial/city-station-building.jpg)
+
+### When the joined board could become the default
+
+Measured in Orca on desktop, at the same station camera, at 14:01:30 on 2026-11-20. "Mounted" is
+after the camera reaches the station and the east area and rail attach.
+
+| | High tier | Low tier |
+|---|---|---|
+| Draw calls at the station camera, downtown only → with east mounted | 79 → 95 (+16) | 36 → 48 (+12) |
+| Triangles in view, same comparison | 2.03 M → 2.19 M (+0.16 M) | 0.68 M → 0.75 M (+0.07 M) |
+| Time from the camera reaching the area to rail attached | 0.25 s | 0.26 s |
+| JS heap after mount (noisy) | +19 MB | +35 MB |
+
+The fps readings came from a background tab and are not measurements.
+
+**Bytes for the east area:**
+- **Data:** 143,755 raw and 32,467 gzipped, across `ground.i16`, `ground.json`, `context.json` and
+  `corridor.json`.
+- **Code:** two lazy chunks, `king-memorial-board` (2.9 KB gzipped) and `east-rail` (3.1 KB gzipped).
+- **For comparison:** downtown's data is 1.44 MB gzipped, so the east area adds about 2.2 % plus about
+  6 KB of code. It loads only near the seam.
+
+**Recommendation:**
+- **Ready for the default, kept lazy.** The cost is small and is paid only by visitors who pan or
+  follow a train toward x 1000. No change is needed to the initial download.
+- **Before switching:**
+  1. Merge #86 and this station building.
+  2. Light the station: it is an unlit silhouette at night.
+  3. Check a phone (low tier) on a real device. These numbers are desktop Orca.
+  4. Keep the opening camera and bounds on downtown. The east area should mount on approach and
+     never change the first frame.
+  5. Make follow trigger the east mount as well as the camera target. Today a followed train mounts
+     it because the camera follows, but a "Train out of view" state off the board could leave it
+     unmounted.
+- **Don't:** add an illustrative dwell to the timetable. King Memorial's zero dwell is the published
+  schedule.
