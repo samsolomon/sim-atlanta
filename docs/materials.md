@@ -26,6 +26,9 @@ shell.prism(part, base, h, brick, roof, { wall: surfaces.brick({ colour: 'deepRe
   are nested, the innermost one wins.
 - `prism(..., { wall, roof })` paints walls and roof separately.
 - `facade()` window panes stay flat inside a painted wall.
+- **Tuning:** there is no strength slider in the lab. Pass `strength` to a factory, for
+  example `surfaces.stucco({ strength: 1.5 })`, or edit the amplitudes in `glsl.ts`, then check
+  the result in the lab swatches and at the City orbit.
 - Code that sets its own `onBeforeCompile` on a painted shell's material after `finish()`
   (as One Atlantic does for its ashlar) must chain the existing hook and cache key, or the
   surfaces disappear.
@@ -104,6 +107,18 @@ The scene holds 64 textures, about 464 MB of estimated GPU memory, and 81 progra
 - **Geometry, not texture:** classical ornament (cornices, modillions, rustication, quoins) and
   Woodruff precast (joints, fins, slots). These cost triangles, not memory.
 - **Mirrored glass:** Phong shading plus a borrowed 128×64 skyline panorama.
+- **Other shader and geometry finishes, 0 texture bytes:**
+  - `city/apartment-facade.ts`: apartment finishes built as vertex-coloured geometry.
+  - `city/auburn-sanctuaries.ts`: a per-vertex `aWash` attribute adds warm night floodlight
+    on the church fronts.
+  - `city/station.ts`: Georgia State platforms. The emissive is scaled by vertex colour so
+    warm brick and pale concrete stay distinct at dusk.
+  - `city/stadium.ts`: pillow-rib seams on the roof membrane, with an fwidth fade (the same
+    idea as the library's joints).
+  These are lighting and one-off effects, not reusable materials, so they stay where they are.
+
+The low tier was counted on the four proof views: 23 to 29 textures, against 31 to 35 on high.
+The ~420 MB terrain figure was measured on the high tier only.
 
 ## Proof (2026-11-23, Studio, M5 Ultra, Chrome 157 with ANGLE on Metal, 1600×1000)
 
@@ -126,8 +141,8 @@ is 22°, so a pixel covers 6 to 15 cm.
   texture?" is no, not in the City. Brick shows only in the model lab and in close views.
 - **Curtain glass:** the pane grid shows faintly. The landmark's own window quads already
   carry most of the look.
-- **Aged copper and stucco:** these gain the most. A gain study at 1×, 2.5× and 4× showed the
-  first pass (1×) was almost invisible, 2.5× reads as uneven, streaked verdigris and soft
+- **Aged copper and stucco:** these gain the most. The first pass (1×) matched FLAT in the crops, and a gain study (FLAT, 2.5×, 4×)
+  showed that 2.5× reads as uneven, streaked verdigris and soft
   trowel mottle while staying calm, and 4× turns noisy. The defaults are now set at 2.5×.
 
 **Cost.** The FLAT and library builds were each timed over 7 × 30 scene renders, with a
