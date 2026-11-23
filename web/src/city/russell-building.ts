@@ -102,22 +102,59 @@ export function createRussellBuilding(buildings: VBuilding[], grid: GroundGrid) 
   }
   box(12.9, 32.7, 8.8, 12.2, 426.55, 432.8, '#b0afa4');
   box(21.7, 33.3, 13, 11.2, 426.55, 429.55, '#a8a99f');
-  // The tower and curved pavilion share one Overture outline. Isolate the outer arc
-  // in map order so a reversed winding or a different start vertex still gives a closed roof.
-  const first = local.findIndex(([u]) => u > 59);
-  if (first < 0) return null;
-  let start = first;
-  while (local[(start - 1 + local.length) % local.length][0] > 59) start = (start - 1 + local.length) % local.length;
-  const pavilion: P2[] = [];
-  for (let i = 0; i < local.length; i++) {
-    const p = local[(start + i) % local.length];
-    if (p[0] <= 59) break;
-    pavilion.push(p);
-  }
-  if (pavilion.length < 4) return null;
-  box(50.5, 22, 12, 5.8, base, 330.2, '#879899');
-  const floor = 326.45,
+  // The plaza deck stands above the DEM's bare rail grade. The returns on both
+  // sides of the pavilion cluster at 324 m. Keep the approaches at that level.
+  const plaza = 324.1,
+    floor = 327.45,
     roof = 339.1;
+  box(49.8, 13.5, 30.5, 24.6, base, plaza, '#b5b0a5');
+  // Feather the planted perimeter into City's bare-earth surface. Its rail-level
+  // DEM omits the raised plaza recorded in the building returns and street photos.
+  const lawn: P2[] = [
+    [50, 13.5],
+    [80.3, 13.5],
+    [80.3, 38.1],
+    [50, 38.1],
+  ];
+  const toe: P2[] = [
+    [50, 6.5],
+    [93, 6.5],
+    [93, 46.0],
+    [50, 46.0],
+  ];
+  const toePoints = toe.map(([u, v]) => {
+    const x = -399.36 + u * cos - v * sin,
+      z = 17.54 + u * sin + v * cos;
+    return [u, (grid.sample(x, z) ?? base) - 0.08, v];
+  });
+  for (let i = 0; i < 3; i++) {
+    const j = i + 1;
+    shell.quad(
+      [lawn[i][0], plaza - 0.06, lawn[i][1]],
+      [lawn[j][0], plaza - 0.06, lawn[j][1]],
+      toePoints[j],
+      toePoints[i],
+      '#89976c',
+    );
+  }
+  box(50.5, 22, 12, 5.8, plaza, 330.2, '#879899');
+  // The mapped ground outline catches small projections. The renovated upper
+  // volume has a continuous convex flank and a single tall glazed street end.
+  const pavilion: P2[] = [
+    [59.7, 22.4],
+    [62.1, 19.4],
+    [69, 19.25],
+    [74.3, 19.9],
+    [77.25, 21.4],
+    [78.3, 22.6],
+    [78.3, 29.1],
+    [76.4, 30.45],
+    [73.1, 31.55],
+    [69, 31.85],
+    [65, 31.05],
+    [61.6, 29.75],
+    [59.7, 28.0],
+  ];
   for (const [a, b, c] of ShapeUtils.triangulateShape(
     pavilion.map(([u, v]) => new Vector2(u, v)),
     [],
@@ -129,10 +166,20 @@ export function createRussellBuilding(buildings: VBuilding[], grid: GroundGrid) 
     const [u, v] = pavilion[i],
       [x, z] = pavilion[(i + 1) % pavilion.length];
     const at = (t: number, y: number) => [u + (x - u) * t, y, v + (z - v) * t];
-    shell.quad(at(0, base), at(1, base), at(1, floor), at(0, floor), '#667b80');
-    const front = (u + x) / 2 > 76.9;
-    shell.quad(at(0, floor), at(1, floor), at(1, roof), at(0, roof), front ? '#869ca1' : '#deded5');
-    if (front) continue;
+    shell.quad(at(0, plaza), at(1, plaza), at(1, floor), at(0, floor), '#667b80');
+    const front = u === 78.3 && x === 78.3;
+    shell.quad(at(0, floor), at(1, floor), at(1, roof), at(0, roof), '#deded5');
+    if (front) {
+      const face = (t: number, y: number) => [u + 0.07, y, v + (z - v) * t];
+      for (let bay = 0; bay < 4; bay++)
+        for (let row = 0; row < 5; row++) {
+          const l = 0.095 + bay * 0.203,
+            r = l + 0.19,
+            lo = plaza + 0.25 + row * 2.53;
+          shell.quad(face(l, lo), face(r, lo), face(r, lo + 2.45), face(l, lo + 2.45), '#81999e');
+        }
+      continue;
+    }
     const dx = x - u,
       dz = z - v,
       length = Math.hypot(dx, dz);
