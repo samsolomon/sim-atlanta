@@ -15,7 +15,7 @@ const magnoliaHabit: Habit = {
   // Dense pyramidal evergreen, branched to the ground; smooth grey bark.
   trunkTop: 0.9, crownBase: 0.03, widest: 0.3,
   limbs: { high: 4, low: 3 }, limbAngle: 0.45, limbFrom: [0.1, 0.6], limbReach: 0.85,
-  ragged: 0.1, bark: '#7a776f', barkDark: '#6a675f',
+  ragged: 0.05, bark: '#7a776f', barkDark: '#6a675f',
   // Dense tiers to the ground, shrinking toward the top: a pyramid, not a column.
   mass: { r: 0.66, low: -0.88, high: 0.96 },
   tiers: { high: [3, 3, 3, 2], low: [2, 2, 2, 1] },
@@ -40,9 +40,17 @@ const magnoliaPalette = keyedCalendar([
   { m: 8, d: 15, leaves: 1, a: '#3a6e4c', b: '#709e64', carpet: 0.15, bloom: 0, label: 'evergreen, glossy' },
 ]);
 
+const A_BASE = { technique: 'cards' as const, ink: 2 as const, tips: 3, units: { high: 20, low: 10 }, blooms: { high: 12, low: 8 }, cover: 1.0 };
 const MAGNOLIA_OPTIONS: LookOption[] = [
-  { id: 'A', label: 'Glossy branch-mass cards', technique: 'cards', ink: 2, tips: 3, units: { high: 20, low: 10 }, blooms: { high: 12, low: 8 }, cover: 0.85,
-    note: 'The ginkgo C4 technique on a dense evergreen pyramid branched to the ground: big glossy leaves, sunlit tops bright over a dark interior, creamy-white flowers in May and June; warm silhouette ink and leaf tips close up.' },
+  // A and its gloss variants share one tighter crown (bigger cards, less ragged), Sam 23 Nov.
+  { id: 'A', label: 'Branch-mass cards', ...A_BASE,
+    note: 'The ginkgo C4 technique on a dense evergreen pyramid branched to the ground: big leaves, sunlit tops bright over a near-black interior, creamy-white flowers in May and June; warm silhouette ink and leaf tips close up.' },
+  { id: 'A1', label: 'A + sheen', ...A_BASE, sheen: 0.9,
+    note: 'A with a sharp specular glint on each card where its face meets the sun’s half vector: glints scatter over the sunlit side and move with the view. No extra draws or triangles; off at night.' },
+  { id: 'A2', label: 'A + baked glints', ...A_BASE, glint: 0.1,
+    note: 'A with about 10% of the sunlit-side cards baked pale silver: fixed glints that read at any angle. No extra draws or triangles.' },
+  { id: 'A3', label: 'A + sheen + bronze', ...A_BASE, sheen: 0.9, bronze: 0.15,
+    note: 'A1 plus about 15% of shaded-side cards in the rusty bronze of the leaf undersides. No extra draws or triangles.' },
   { id: 'B', label: 'Cored masses', technique: 'cored', ink: 2, units: { high: 7, low: 7 }, blooms: { high: 4, low: 4 }, cover: 0.95,
     note: 'The same masses with a dark faceted core under the cards: the most solid, the darkest mass.' },
   // At least as many clusters as masses, so no limb ends in bare air.

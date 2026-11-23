@@ -35,6 +35,10 @@ export interface LookOption {
   technique: Technique;
   /** Leaf clusters per tree, per tier: cards (cards, cored) or faceted lobes. */
   units: Record<TreeQuality, number>;
+  /** Glossy leaves: specular sheen strength, and baked glint and bronze shares (cards only). */
+  sheen?: number;
+  glint?: number;
+  bronze?: number;
   /** Tufts: 0 round clusters, 1 flat pads facing up (a pine's needle tufts). */
   flat?: number;
   /** Lobes only: vertical squash (pads). */
@@ -63,6 +67,9 @@ export interface Look {
   /** Leaf paint: base lightness range for the atlas (cards multiply the season colour). */
   options: LookOption[];
   palette(doy: number, offset: number): Palette;
+  /** Cultivar colourways (a Japanese maple's scarlet, Bloodgood burgundy, orange-red): each tree
+   *  takes one by its seed; repeat an entry to weight it. `palette` stays the species default. */
+  varieties?: Look['palette'][];
   /** Extra lightness for card options at low detail, measured to match the generic canopy. */
   lowLift?: number;
   /** Tone B is the sunlit colour: each cluster's tone follows how far it faces up (a pine's
@@ -176,7 +183,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {
-    unitCards(b, clusters, seed);
+    unitCards(b, clusters, seed, 1.25, { glint: opt.glint, bronze: opt.bronze });
   }
   let g = b.geometry();
   if (opt.technique !== 'lobes' && opt.technique !== 'stars') crownNormals(g, outwardOf(e));
@@ -237,7 +244,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
     ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
-    : twoToneFoliage({ bloomWash: look.bloomWash, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
+    : twoToneFoliage({ bloomWash: look.bloomWash, sheen: opt.sheen, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
   const depthMat = foliageDepth(leafMat);
   // Foliage meshes registered with the ink's foliage mask: outlined at the crown's silhouette only.
@@ -271,6 +278,8 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const bloomColours = new Map(trees.map(t => [t, new THREE.Color(look.bloomColours
     ? look.bloomColours[Math.floor(hash01(t.seed, 13) * look.bloomColours.length)] : look.bloomColour ?? '#ffffff')]));
   const bloomOf = (t: (typeof trees)[number]) => bloomColours.get(t)!;
+  const paletteOf = (t: (typeof trees)[number]) => look.varieties
+    ? look.varieties[Math.floor(hash01(t.seed, 14) * look.varieties.length)] : look.palette;
   for (const size of new Set(trees.map(t => t.size))) {
     const members = trees.filter(t => t.size === size);
     const limbs = add(skeletonGeometry(look.species, size, quality), bark, members.length, `${size} limbs`);
@@ -332,7 +341,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   }
 
   function setSeason(doy: number) {
-    pal = new Map(trees.map(t => [t, look.palette(doy, (hash01(t.seed, 2) * 2 - 1) * look.species.offsetDays)]));
+    pal = new Map(trees.map(t => [t, paletteOf(t)(doy, (hash01(t.seed, 2) * 2 - 1) * look.species.offsetDays)]));
     for (const set of foliageSets) set.members.forEach((t, i) => {
       // A small per-tree shift in lightness and hue: no two trees in a row match exactly.
       const { p, a, b } = tones(t);

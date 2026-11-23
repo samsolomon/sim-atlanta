@@ -96,6 +96,7 @@ const SPECIES_NOTES: Record<string, string> = {
   sweetgum: 'A straight leader under a crown of glossy star leaves, pyramidal when young and oval later; late in the fall it turns purple, red, orange and yellow at once. ',
   'southern-magnolia': 'A dense, dark, glossy evergreen pyramid branched to the ground, with big creamy-white flowers in May and June. ',
   'crape-myrtle': 'A small multi-stem vase of smooth, mottled, peeling bark, in flower all summer (pink, red, white or purple) and yellow to red in the fall. ',
+  'japanese-maple': 'The colour accent of Ansley and Midtown yards and traffic islands: a low, wide, layered umbrella on several leaning trunks, deep red-purple in summer and scarlet to crimson late in the fall (one colourway per tree). ',
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
@@ -170,7 +171,11 @@ const lookRenderings = (look: Look): Renderings => ({
   ids: look.options.map(o => o.id),
   preferred: look.options[0].id,
   label: id => look.options.find(o => o.id === id)?.label ?? id,
-  compares: [{ id: 'all', label: 'Compare all', set: look.options.map(o => o.id) }],
+  compares: [
+    { id: 'all', label: 'Compare all', set: look.options.filter(o => /^[A-Z]$/.test(o.id)).map(o => o.id) },
+    // Variants of a picked option (magnolia gloss A1–A3) get their own row beside it.
+    ...look.options.some(o => /^A\d$/.test(o.id)) ? [{ id: 'allA', label: 'Compare A variants', set: look.options.filter(o => /^A\d?$/.test(o.id)).map(o => o.id) }] : [],
+  ],
   create: (p, id, q) => createLook(p, look, id, q, () => 0)!,
   report: (ids, size, q) => ids.map(id => {
     const o = look.options.find(x => x.id === id)!, t = lookTriangles(look, o, size, q);
