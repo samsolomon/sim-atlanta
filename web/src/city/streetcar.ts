@@ -67,8 +67,9 @@ export function streetcarLines(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
 export function roadSurface(roads: readonly RoadLike[], roadHeight: (x: number, z: number, road: never) => number | null, ground: Height): Height {
   const index = new PlacementIndex<{ road: RoadLike; a: P2; b: P2 }>(16);
   for (const road of roads) {
-    // The streetcar runs only on surface streets; it passes under the Connector viaduct.
-    if (road.tunnel || road.cls === 'motorway' || ['footway', 'path', 'steps', 'pedestrian', 'cycleway'].includes(road.cls)) continue;
+    // The streetcar runs only on surface streets: it passes under the Connector viaduct
+    // and runs on no bridge, so neither can set its height.
+    if (road.tunnel || road.bridge || road.cls === 'motorway' || ['footway', 'path', 'steps', 'pedestrian', 'cycleway'].includes(road.cls)) continue;
     for (let i = 1; i < road.pts.length; i++) index.add({ road, a: road.pts[i - 1], b: road.pts[i] }, [road.pts[i - 1], road.pts[i]], 8);
   }
   return (x, z) => {
@@ -115,78 +116,87 @@ const RAIL = '#b6b5ae',
 export function buildStreetcarTrack(lines: Line[], bounds: Bounds, height: Height, blocked: (x: number, z: number) => boolean) {
   const body = new Builder(),
     wire = new Builder();
-  const inside = (x: number, z: number) => x >= bounds.minX && x <= bounds.maxX && z >= bounds.minZ && z <= bounds.maxZ;
+  // Half-open bounds: a segment or pole on the seam between two boards belongs to
+  // exactly one of them, by its midpoint. Heights are read at the clamped point.
+  const owns = (x: number, z: number) => x >= bounds.minX && x < bounds.maxX && z >= bounds.minZ && z < bounds.maxZ;
+  const at = (x: number, z: number) =>
+    height(THREE.MathUtils.clamp(x, bounds.minX, bounds.maxX), THREE.MathUtils.clamp(z, bounds.minZ, bounds.maxZ));
+  const stations = (line: Line, step: number) => {
+    const out: number[] = [];
+    for (let s = 0; s < line.length; s += step) out.push(s);
+    out.push(line.length);
+    return out;
+  };
   const poles: P2[] = [];
   for (const line of lines) {
     let prev: { x: number; z: number; nx: number; nz: number; h: number } | null = null;
-    for (let s = 0; s <= line.length + 1e-6; s += 1) {
-      const p = line.at(Math.min(s, line.length));
-      const h = height(p.x, p.z);
+    for (const s of stations(line, 1)) {
+      const p = line.at(s);
+      const h = at(p.x, p.z);
       const nx = -p.dz,
         nz = p.dx;
-      if (h === null || !inside(p.x, p.z)) {
+      if (h === null) {
         prev = null;
         continue;
       }
-      if (prev) {
+      if (prev && owns((prev.x + p.x) / 2, (prev.z + p.z) / 2)) {
+        const q = prev;
         const strip = (o0: number, o1: number, lift: number, color: string) =>
           body.quad(
-            [prev!.x + prev!.nx * o0, prev!.h + lift, prev!.z + prev!.nz * o0],
+            [q.x + q.nx * o0, q.h + lift, q.z + q.nz * o0],
             [p.x + nx * o0, h + lift, p.z + nz * o0],
             [p.x + nx * o1, h + lift, p.z + nz * o1],
-            [prev!.x + prev!.nx * o1, prev!.h + lift, prev!.z + prev!.nz * o1],
+            [q.x + q.nx * o1, q.h + lift, q.z + q.nz * o1],
             color,
           );
-        strip(-1.4, 1.4, 0.035, SLAB);
+        // Above the drawn asphalt (+0.12 on terrain) and the flat board's markings.
+        strip(-1.4, 1.4, 0.15, SLAB);
         for (const o of [-0.7175, 0.7175]) {
-          strip(o - 0.12, o + 0.12, 0.045, GROOVE);
-          strip(o - 0.04, o + 0.04, 0.055, RAIL);
+          strip(o - 0.12, o + 0.12, 0.16, GROOVE);
+          strip(o - 0.04, o + 0.04, 0.17, RAIL);
         }
       }
       prev = { x: p.x, z: p.z, nx, nz, h };
     }
-    // Poles about every 32 m, at the nearer clear curb, with an arm to the wire.
-    let last = -Infinity;
-    for (let s = 0; s <= line.length; s += 2) {
-      const p = line.at(s),
-        h = height(p.x, p.z);
-      if (h === null || !inside(p.x, p.z)) continue;
-      if (s - last < POLE_SPACING && s < line.length - 1) continue;
-      const nx = -p.dz,
-        nz = p.dx;
-      let spot: P2 | null = null;
-      for (const off of [3.5, -3.5, 4.5, -4.5, 5.5, -5.5, 6.5, -6.5, 7.5, -7.5]) {
-        const x = p.x + nx * off,
-          z = p.z + nz * off;
-        if (!blocked(x, z)) {
-          spot = [x, z];
-          break;
+    // A pole for every 32 m of track, at the first clear curb within 12 m after the
+    // mark. Both boards find the same spots; only the owner draws each one.
+    for (let k = 0; k * POLE_SPACING <= line.length; k++) {
+      let placed: { p: ReturnType<Line['at']>; spot: P2 } | null = null;
+      for (let s = k * POLE_SPACING; s <= Math.min(line.length, k * POLE_SPACING + 12) && !placed; s += 2) {
+        const p = line.at(s);
+        for (const off of [3.5, -3.5, 4.5, -4.5, 5.5, -5.5, 6.5, -6.5, 7.5, -7.5]) {
+          const x = p.x - p.dz * off,
+            z = p.z + p.dx * off;
+          if (!blocked(x, z)) {
+            placed = { p, spot: [x, z] };
+            break;
+          }
         }
       }
-      if (!spot) continue;
-      last = s;
+      if (!placed || !owns(placed.spot[0], placed.spot[1])) continue;
+      const { p, spot } = placed;
+      if (poles.some(([x, z]) => Math.hypot(x - spot[0], z - spot[1]) < 20)) continue;
+      const h = at(p.x, p.z);
+      if (h === null) continue;
       poles.push(spot);
-      const g = height(spot[0], spot[1]) ?? h;
+      const g = at(spot[0], spot[1]) ?? h;
       const top = h + WIRE_HEIGHT + 0.9;
       body.box(0.22, top - g, 0.22, spot[0], (top + g) / 2, spot[1], POLE);
       // Cantilever arm from the pole across to the wire, with a short dropper.
-      const ax = spot[0],
-        az = spot[1];
-      body.quad([ax, top - 0.25, az], [p.x, h + WIRE_HEIGHT + 0.35, p.z], [p.x, h + WIRE_HEIGHT + 0.45, p.z], [ax, top - 0.1, az], POLE);
+      body.quad([spot[0], top - 0.25, spot[1]], [p.x, h + WIRE_HEIGHT + 0.35, p.z], [p.x, h + WIRE_HEIGHT + 0.45, p.z], [spot[0], top - 0.1, spot[1]], POLE);
       body.box(0.04, 0.4, 0.04, p.x, h + WIRE_HEIGHT + 0.2, p.z, POLE);
     }
-    // The contact wire follows the track (pull-offs hold it over the rails on curves),
-    // sampled every 4 m inside the board.
+    // The contact wire follows the track (pull-offs hold it over the rails on curves).
     let wprev: { x: number; y: number; z: number } | null = null;
-    for (let s = 0; s <= line.length + 1e-6; s += 4) {
-      const p = line.at(Math.min(s, line.length)),
-        h = height(p.x, p.z);
-      if (h === null || !inside(p.x, p.z)) {
+    for (const s of stations(line, 4)) {
+      const p = line.at(s),
+        h = at(p.x, p.z);
+      if (h === null) {
         wprev = null;
         continue;
       }
       const cur = { x: p.x, y: h + WIRE_HEIGHT, z: p.z };
-      if (wprev) {
+      if (wprev && owns((wprev.x + cur.x) / 2, (wprev.z + cur.z) / 2)) {
         const a = wprev,
           b = cur;
         const len = Math.hypot(b.x - a.x, b.z - a.z) || 1;
@@ -219,11 +229,6 @@ export function buildStreetcarTrack(lines: Line[], bounds: Bounds, height: Heigh
       }
     },
   };
-}
-
-/** Embedded track lanes for road traffic: scene polylines and the lane half-width. */
-export function streetcarLanes(lines: Line[]) {
-  return lines.map((l) => ({ pts: l.pts, halfWidth: 1.6 }));
 }
 
 /** The streetcar draws its own track: keep tram runs in the data, skip their generic strips. */

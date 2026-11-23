@@ -51,3 +51,19 @@ it('keeps tram runs in the data but marks them for the streetcar to draw', () =>
   expect(out.terrainTransport.rail.map((r) => (r as { replaced?: boolean }).replaced ?? false)).toEqual([true, false]);
   expect(city.terrainTransport.rail[0]).not.toHaveProperty('replaced');
 });
+
+it.skipIf(!ready)('draws the seam between two boards exactly once, with no gap', () => {
+  const rf: RoutesFile = JSON.parse(readFileSync(data('ga/routes.json')).toString());
+  const lines = streetcarLines(rf, origin);
+  const open = () => false;
+  const whole = buildStreetcarTrack(lines, { minX: -1000, maxX: 1800, minZ: -1300, maxZ: 700 }, () => 0, open);
+  const west = buildStreetcarTrack(lines, { minX: -1000, maxX: 1000, minZ: -1300, maxZ: 700 }, () => 0, open);
+  const east = buildStreetcarTrack(lines, { minX: 1000, maxX: 1800, minZ: -1300, maxZ: 700 }, () => 0, open);
+  const count = (t: typeof whole, i: number) => (t.group.children[i] as import('three').Mesh).geometry.getAttribute('position').count;
+  // Wires: the halves add up exactly to the whole.
+  expect(count(west, 1) + count(east, 1)).toBe(count(whole, 1));
+  // Track and poles too: no segment or pole is lost or drawn twice at x = 1000.
+  expect(count(west, 0) + count(east, 0)).toBe(count(whole, 0));
+  expect(west.poles.length + east.poles.length).toBe(whole.poles.length);
+  for (const t of [whole, west, east]) t.dispose();
+});
