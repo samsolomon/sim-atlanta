@@ -58,6 +58,7 @@ export class SquareMosaic {
   constructor(private readonly dataRoot: string, readonly midtown = false, private readonly brookwood?: BrookwoodGrid) {}
   get areaCount() { return 7 + (this.midtown ? midtownRows.length : 0); }
   get northEdge() { return this.midtown ? bounds[midtownRows.at(-1)!].minZ : bounds['north-band'].minZ; }
+  get bounds(): Rect { return { ...bounds['south-band'], minZ: this.northEdge }; }
   private fullBoard = false;
   readonly areas = new Map<Board, Area>();
   readonly patches = new Map<Board, TrafficArea>();

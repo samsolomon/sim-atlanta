@@ -2135,6 +2135,10 @@ Across Sifly Piazza, Meier's atrium and Piano's rows of daylight scoops now read
 
 One Atlantic Center fits a 250 m tower on a footprint barely 52 m across. Its upper Midtown ground samples span only 1.5 m, but its skyline depends on the last 49 m above the shaft. The owner's night photograph shows a dark copper face between illuminated ridges. City now draws those ridges, the collar, pinnacles and finial separately. The shaft follows the mapped footprint down to the local 3DEP grade. [Photographs, dimensions and matched City views on both tiers](midtown-skyline.md#one-atlantic-center)
 
+### 2026-11-23 — Arts Center's two street levels
+
+At Arts Center the lower bus loop and the east entrance look like a single low station on a plan. The nearest ground nodes around its main footprint span 7.2 m. Building the roof from the low end had buried it by 3.3 m at the east entrance. The model now brings a mezzanine out to the plaza, with separate pier lengths down to bus level. A ray through the audited point clears the ground by more than three metres on both terrain meshes. [Sources and elevations](midtown-marta.md#arts-center) · [Daylight](log/ui/midtown-marta/arts-center-high-day.jpg) · [Night](log/ui/midtown-marta/arts-center-high-night.jpg)
+
 ### 2026-11-23 — Two Promenade addresses
 
 A 2001 letterhead settled which building was Promenade I. The 36.2 m office at 1200 Peachtree now has its stepped plaza entrance and canopy. Next door, the 211 m tower at 1230 rises through five setbacks to a pale lantern. The low building crosses 9.2 m of terrain relief, nearly twice the variation around the tower. Both foundations now reach the lowest sampled edge. [Promenade evidence and day/night views](midtown-skyline.md#promenade-i-and-ii)
@@ -2146,6 +2150,16 @@ The 126 m outline at 1180 Peachtree contains both a lower curved wing and a narr
 ### 2026-11-23 — From North Avenue to the Flats
 
 The west stand at Bobby Dodd climbs a 17.7 m grade difference. One generic roof had disappeared 5.65 m into the hillside. Its replacement has two seating decks above the field with a press box at the high side. Across the campus path, the 40-vertex Evans Administration Building now carries the four illuminated TECH signs under a slate spire. [Terrain readings, references and eight City views](tech-campus.md)
+
+## 2026-11-23 — The shadow beyond the west edge
+
+At 08:50 Eastern the Midtown skyline appeared a second time outside the west edge. The studio table was receiving the directional shadow map, leaving dark shapes detached from the buildings that cast them. Turning off shadow reception on the table cleared the silhouettes while retaining shadows on the terrain and plinth. The new canopy also had three sampled pixels of foliage beyond the plinth. Scenery now clips to the four outer edges of the mosaic, allowing crowns to cross interior row joins. The clip follows the rows that have actually mounted, so with the northmost row missing it closes at z = −4900 instead of −5700, and no crowns hang over the table. [Production and corrected morning camera](log/ui/city-perimeter/morning.jpg)
+
+The browser regression renders the full scene from overhead and compares the exterior to the table alone. At 2 m per pixel, the 200 m band around all four edges had 26,737 affected pixels in the original shadow comparison. The staged detail batch returned zero at both tiers. With Chrome and the staged Midtown data present, the test runs under `pnpm test`. The production review camera is `/?view=city&q=high&t=2026-11-23T08:50:00-05:00&speed=0`. This renderer change requires a web rebuild. The accompanying canopy release also requires `pnpm data:midtown`.
+
+### 2026-11-23 — Lifting the Kendeda Canopy Walk out of the hill
+
+The Botanical Garden's canopy walk crosses the seam between two Midtown rows, and City had buried it about 4 m under the hillside as a generic footbridge. USGS 3DEP returned 721 lidar points along the mapped walk but no classified bridge-deck points. The deck appeared instead as a continuous band that descends 6.3 m through the trees, between the canopy above and the bare earth below. I picked the band out of the cross-sections by eye, and the returns confirm a continuous surface along it, so the deck profile is inferred rather than measured. Two published numbers check the pick: the drawn walk is 178.9 m long against the Garden's 600 ft (182.9 m), and it peaks 11.4 m above the ground against "nearly 40 feet". The two row halves now meet on the seam to within 0.1 mm. The surprise was that the walk carries no permanent lights at all. At night it is a dark ribbon among trunks that the Garden wraps in lights each winter. [References, truth tiers and matched day and night views at both tiers](log/ui/kendeda-walk/README.md)
 
 ### 2026-11-23 — Two street levels at the Crescent Apartments
 
