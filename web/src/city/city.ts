@@ -171,8 +171,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       console.warn('City ground grid unavailable. Using the flat board.');
     }
   }
-  const previewEast = new URLSearchParams(location.search).get('east') === 'king-memorial' && !!grid;
-  const previewNorth = previewEast && new URLSearchParams(location.search).get('north') === 'sweet-auburn';
+  const query = new URLSearchParams(location.search);
+  const requestedSquare = query.get('board') === 'square';
+  const square = grid && requestedSquare ? await import('./square-mosaic').catch(error => {
+    console.warn('Square City preview unavailable', error);
+    return undefined;
+  }) : undefined;
+  options.signal?.throwIfAborted();
+  if (requestedSquare && !square) options.areaNote?.('Square preview unavailable. Downtown is available.');
+  const mosaic = square && new square.SquareMosaic(DATA);
+  const previewEast = !!mosaic || (!!grid && query.get('east') === 'king-memorial');
+  const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
   const b = vd.bounds;
 
@@ -193,6 +202,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let east: (ReturnType<typeof createDowntownTerrain> & { connectorBoard: ConnectorBoard }) | undefined;
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
+  const areaFailures = new Map<string, string>();
+  function areaResult(key: string, note: string | null) {
+    if (!mosaic) { options.areaNote?.(note); return; }
+    if (note) areaFailures.set(key, note);
+    else areaFailures.delete(key);
+    options.areaNote?.([...areaFailures.values()].join(' ') || null);
+  }
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
   let trainRail = manifest.rail;
@@ -215,6 +231,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const world = new DowntownWorld({ ...vd, roads: groundRoads }, null, worldOptions);
   const disposeBoard = () => {
     eastController.abort();
+    mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
     east?.dispose();
@@ -336,7 +353,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
@@ -470,10 +488,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     : undefined;
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
   function extendConnectorTraffic() {
-    if (!trafficOptions || !east) return;
+    if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
-    clippingPlanes[1].constant = east.bounds.maxX;
-    const neighbors = north ? [east.connectorBoard, north.connectorBoard] : [east.connectorBoard];
+    if (east) clippingPlanes[1].constant = east.bounds.maxX;
+    const neighbors = [east, north, ...(mosaic?.patches.values() ?? [])].flatMap(a => a ? [a.connectorBoard] : []);
+    if (mosaic) {
+      for (const { bounds: r } of mosaic.areas.values()) {
+        clippingPlanes[1].constant = Math.max(clippingPlanes[1].constant, r.maxX);
+        clippingPlanes[2].constant = Math.max(clippingPlanes[2].constant, -r.minZ);
+        clippingPlanes[3].constant = Math.max(clippingPlanes[3].constant, r.maxZ);
+      }
+    }
     const joined = new ConnectorTraffic({ ...trafficOptions, neighbors, clippingPlanes });
     traffic?.dispose();
     traffic = joined;
@@ -526,18 +551,54 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   controls.minPolarAngle = THREE.MathUtils.degToRad(20);
   controls.maxPolarAngle = THREE.MathUtils.degToRad(72);
   controls.minDistance = 150;
-  controls.maxDistance = 6500;
+  controls.maxDistance = mosaic ? 11000 : 6500;
   controls.screenSpacePanning = false;
   controls.keys = { LEFT: '', UP: '', RIGHT: '', BOTTOM: '' }; // the shell owns the keyboard
+  const squareButton = mosaic ? document.createElement('button') : undefined;
   let eastLoading = false;
   let eastFailed = false;
   let pendingEastTarget: { x: number; z: number } | undefined;
   let northLoading = false, northFailed = false;
+  let wholeBoardRequested = false;
   let pendingNorthTarget: { x: number; z: number } | undefined;
+  function updatePlinth(next: NonNullable<typeof eastPlinth>) {
+    if (eastPlinth) {
+      eastPlinth.removeFromParent();
+      eastPlinth.geometry.dispose(); eastPlinth.material.dispose();
+    }
+    if (downtownPlinth) downtownPlinth.visible = false;
+    eastPlinth = next;
+    scene.add(next);
+  }
+  function mosaicBase() {
+    return square!.mosaicPlinth(Array.from(mosaic!.areas.values(), a => a.bounds), terrain!.bottomY);
+  }
+  function addArea(area: NonNullable<typeof east>) {
+    scene.add(area.group);
+    scenery.push(area.group);
+    area.setSeason(local(new Date(options.clockMs())).doy);
+    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === 7
+      ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/7 areas loaded)`;
+    renderer.shadowMap.needsUpdate = true;
+  }
+  function approachMosaic(x: number, z: number) {
+    mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+      for (const area of added.values()) addArea(area);
+      updatePlinth(mosaicBase());
+      extendConnectorTraffic();
+      areaResult(added.has('north-band') ? 'north' : 'south', null);
+      if (target) {
+        const offset = camera.position.clone().sub(controls.target);
+        controls.target.set(target.x, targetY(target.x, target.z), target.z);
+        camera.position.copy(controls.target).add(offset);
+        controls.update();
+      }
+    }, direction => areaResult(direction, `Could not load the ${direction} section. Pan away and return to retry.`));
+  }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
     if (!nearNorth(x, z)) {
-      if (northFailed) options.areaNote?.(null);
+      if (northFailed && !mosaic) options.areaNote?.(null);
       northFailed = false;
       return;
     }
@@ -546,26 +607,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const downtown = terrain, king = east, westGrid = grid, signal = eastController.signal;
     void Promise.all([import('./sweet-auburn-board'), import('./king-memorial-board')]).then(async ([{ loadNorth }, { joinedPlinth }]) => {
       signal.throwIfAborted();
-      const area = await loadNorth(DATA, westGrid, king.grid, quality, downtown.bottomY, signal);
+      const area = await loadNorth(DATA, westGrid, king.grid, quality, downtown.bottomY, signal, mosaic?.joins('auburn').slice(2));
       if (signal.aborted) { area.dispose(); return; }
-      const plinth = joinedPlinth(b, downtown.bottomY, northBounds.minZ);
-      scene.add(plinth, area.group);
-      scenery.push(area.group);
-      area.setSeason(local(new Date(options.clockMs())).doy);
-      if (eastPlinth) {
-        eastPlinth.removeFromParent();
-        eastPlinth.geometry.dispose();
-        eastPlinth.material.dispose();
-        eastPlinth = undefined;
-      }
+      mosaic?.mount('auburn', area);
+      updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY, northBounds.minZ));
+      addArea(area);
       north = area;
       extendConnectorTraffic();
-      downtown.openJoin(1);
-      king.openJoin(1);
-      area.openJoin();
-      area.openJoin(1);
+      if (!mosaic) {
+        downtown.openJoin(1); king.openJoin(1); area.openJoin(); area.openJoin(1);
+      }
       renderer.shadowMap.needsUpdate = true;
-      options.areaNote?.(null);
+      areaResult('auburn', null);
       if (pendingNorthTarget) {
         const { x, z } = pendingNorthTarget;
         const offset = camera.position.clone().sub(controls.target);
@@ -576,7 +629,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }).catch(err => {
       if (!signal.aborted) {
         northFailed = true;
-        options.areaNote?.('Sweet Auburn could not load. Downtown and King Memorial are available.');
+        areaResult('auburn', 'Sweet Auburn could not load. Downtown and King Memorial are available.');
         console.warn('Sweet Auburn board unavailable', err);
       }
     }).finally(() => { northLoading = false; pendingNorthTarget = undefined; });
@@ -584,7 +637,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachEast(x: number, z: number) {
     if (!previewEast || east || !terrain || !grid) return;
     if (!nearEast(x, z) && !(previewNorth && nearNorth(x, z))) {
-      if (eastFailed) options.areaNote?.(null);
+      if (eastFailed && !mosaic) options.areaNote?.(null);
       eastFailed = false;
       pendingEastTarget = undefined;
       return;
@@ -595,21 +648,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const westGrid = grid;
     void import('./king-memorial-board').then(async ({ loadEast, joinedPlinth }) => {
       eastController.signal.throwIfAborted();
-      const area = await loadEast(DATA, westGrid, quality, downtown.bottomY, eastController.signal, previewNorth ? northSouthJoin : undefined);
+      const area = await loadEast(DATA, westGrid, quality, downtown.bottomY, eastController.signal, mosaic ? mosaic.joins('king').slice(1) : previewNorth ? northSouthJoin : undefined);
       if (eastController.signal.aborted) { area.dispose(); return; }
-      const plinth = eastPlinth = joinedPlinth(b, downtown.bottomY);
-      scene.add(plinth, area.group);
-      scenery.push(area.group);
-      area.setSeason(local(new Date(options.clockMs())).doy);
-      if (downtownPlinth) downtownPlinth.visible = false;
-      area.openJoin();
-      downtown.openJoin();
+      mosaic?.mount('king', area);
+      updatePlinth(mosaic ? mosaicBase() : joinedPlinth(b, downtown.bottomY));
+      addArea(area);
+      if (!mosaic) { area.openJoin(); downtown.openJoin(); }
       east = area;
       extendConnectorTraffic();
-      void attachEastRail(area).catch(err => { eastRailFailed = true; console.warn('MARTA east of the board unavailable', err); });
+      loadKingRail(area);
       const next = pendingNorthTarget ?? controls.target;
-      approachNorth(next.x, next.z);
-      options.areaNote?.(null);
+      if (wholeBoardRequested) approachNorth(1400, 0);
+      else approachNorth(next.x, next.z);
+      areaResult('king', null);
       renderer.shadowMap.needsUpdate = true;
       if (pendingEastTarget) {
         const { x, z } = pendingEastTarget;
@@ -621,12 +672,23 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }).catch(err => {
       if (!eastController.signal.aborted) {
         eastFailed = true;
-        options.areaNote?.('King Memorial could not load. Downtown is available.');
+        areaResult('king', 'King Memorial could not load. Downtown is available.');
         console.warn('King Memorial board unavailable', err);
       }
     }).finally(() => { eastLoading = false; pendingEastTarget = undefined; });
   }
   // MARTA through the east area (track, station, trains). Rail owns this; the area mount calls it.
+  function loadKingRail(area: NonNullable<typeof east>) {
+    eastRailFailed = false;
+    void attachEastRail(area).then(() => {
+      if (mosaic && !eastController.signal.aborted) areaResult('rail', null);
+    }).catch(err => {
+      if (eastController.signal.aborted) return;
+      eastRailFailed = true;
+      if (mosaic) areaResult('rail', 'King Memorial rail could not load. Show full board to retry.');
+      console.warn('MARTA east of the board unavailable', err);
+    });
+  }
   async function attachEastRail(area: { groundAt(x: number, z: number): number | null }) {
     if (!grid || eastRail) return;
     const ground = grid;
@@ -656,12 +718,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     eastRail = rail;
     renderer.shadowMap.needsUpdate = true;
   }
-  const targetY = (x: number, z: number) => north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
+  function patchY(x: number, z: number) {
+    if (mosaic) for (const a of mosaic.patches.values()) {
+      const y = a.groundAt(x, z);
+      if (y !== null) return y;
+    }
+    return null;
+  }
+  const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
+  const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
     const t = controls.target;
+    approachMosaic(t.x, t.z);
     approachEast(t.x, t.z);
     approachNorth(t.x, t.z);
-    const point = boardPoint(b, !!east, t.x, t.z, !!north);
+    const point = pointOnBoard(t.x, t.z);
     const dx = point.x - t.x, dz = point.z - t.z;
     const dy = grid ? targetY(point.x, point.z) - t.y : 0;
     if (dx || dy || dz) {
@@ -747,7 +818,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
     if (terrain) {
-      const surface = ray.intersectObjects(east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
+      const surface = ray.intersectObjects(mosaic ? Array.from(mosaic.areas.values(), a => a.board) : east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
       if (surface) {
         glideTo = surface.point;
         glideTo.y = targetY(glideTo.x, glideTo.z);
@@ -755,8 +826,29 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     } else if (ray.ray.intersectPlane(groundPlane, hit) && world.inBounds(hit.x, hit.z)) glideTo = hit;
   };
   renderer.domElement.addEventListener('dblclick', onDbl);
-  const manualCamera = () => { pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
+  const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  if (squareButton && mosaic) {
+    squareButton.type = 'button';
+    squareButton.textContent = 'Show full board';
+    document.getElementById('city-info')?.append(squareButton);
+    squareButton.onclick = () => {
+      manualCamera();
+      glideTo = null;
+      wholeBoardRequested = true;
+      eastFailed = northFailed = false;
+      mosaic.retry();
+      if (east && eastRailFailed) loadKingRail(east);
+      // This explicit request also works as a retry when any geographic pack is missing.
+      approachMosaic(400, -1500);
+      approachMosaic(400, 900);
+      approachEast(1400, 0);
+      approachNorth(1400, 0);
+      const aspect = Math.max(.25, camera.aspect);
+      setView(-15, 35, Math.min(controls.maxDistance, Math.max(9200, 9600 / aspect)), 400, -300);
+      document.getElementById('city-info')?.hidePopover?.();
+    };
+  }
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
@@ -841,6 +933,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     terrain?.setNight(night);
     east?.setNight(night);
     north?.setNight(night);
+    if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02;
 
@@ -860,6 +953,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     terrain?.setWet(wx.rain);
     east?.setWet(wx.rain);
     north?.setWet(wx.rain);
+    if (mosaic) for (const a of mosaic.patches.values()) a.setWet(wx.rain);
     const dist = camera.position.distanceTo(controls.target);
     const f = Math.max(wx.fog, wx.rain * 0.5);
     const fog = scene.fog as THREE.Fog;
@@ -967,9 +1061,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         z >= eastBounds.minZ && z <= eastBounds.maxZ ? { x, z } : undefined;
       pendingNorthTarget = previewNorth && !north && x > b.maxX && x <= northBounds.maxX &&
         z >= northBounds.minZ && z < northBounds.maxZ ? { x, z } : undefined;
+      mosaic?.remember(x, z);
+      approachMosaic(x, z);
       approachEast(x, z);
       approachNorth(x, z);
-      const point = boardPoint(b, !!east, x, z, !!north);
+      const point = pointOnBoard(x, z);
       if (view) {
         const dist = view.metresPerPixel * Math.max(1, container.clientHeight) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
         const tilt = THREE.MathUtils.clamp(view.tilt ?? THREE.MathUtils.radToDeg(controls.getPolarAngle()),
@@ -1013,9 +1109,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
       north?.setSeason(day);
+      if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
     },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0), arterialCars: arterials?.visibleCars ?? 0, freightCars: freight?.visibleCars ?? 0, surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     dispose() {
+      squareButton?.remove();
       cancelAnimationFrame(raf);
       ro.disconnect();
       stopPicking();

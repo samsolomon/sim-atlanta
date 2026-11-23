@@ -96,8 +96,8 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
   return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, bytes);
 }
 
-async function readPatch(id: Patch, signal: AbortSignal) {
-  const path = '/data/scene/square-board/' + id;
+async function readPatch(id: Patch, signal: AbortSignal, dataRoot = '/data') {
+  const path = dataRoot + '/scene/square-board/' + id;
   const [grid, context]: [GroundGrid, TerrainCity & { name: string }] = await Promise.all([
     gridAt(path, signal, id === 'north-band'), response(path + '/context.json', signal).then(r => r.json()),
   ]);
@@ -107,15 +107,15 @@ async function readPatch(id: Patch, signal: AbortSignal) {
   return { id, grid, context };
 }
 
-export async function addSection(direction: Direction, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal) {
-  const patches = await Promise.all([readPatch(`${direction}-band`, signal), readPatch(`${direction}-corner`, signal)]);
+export async function addSection(direction: Direction, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string }) {
+  const patches = await Promise.all([readPatch(`${direction}-band`, signal, options?.dataRoot), readPatch(`${direction}-corner`, signal, options?.dataRoot)]);
   signal.throwIfAborted();
   const added = new Map<Board, TrafficArea>();
   try {
     for (const { id, grid, context } of patches) {
       const city = id === 'north-band' ? northConnectorTransport(context) :
         id === 'south-band' ? southConnectorTransport(context) : auburnTransport(context);
-      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id) });
+      const area = createDowntownTerrain(grid, city, [], { quality, bottomY: mounted.get('downtown')!.bottomY, join: joins(id), separateBuilding: id === 'north-band' ? options?.northBuilding : undefined });
       try {
         const decks = createSurfaceTransport(city, grid, area.groundAt);
         area.group.add(decks.group);
