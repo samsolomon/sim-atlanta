@@ -206,7 +206,8 @@ References:
    paper background. The notice under the place card reads "Building the city…". The place
    card's tier line shows the date with a grey dot, and does not say Live yet.
 2. **As soon as building footprints and heights have loaded:** draw the white model and
-   fade it in over about 300 ms. This needs only the small scene data, not textures or
+   fade it in over about 1.2 s with an ease-in-out curve, so it settles in rather than
+   flashing (Sam, 2026-11-23). This needs only the small scene data, not textures or
    terrain detail.
 3. **As the remaining stages finish:** cross-fade from the white render to the full-colour
    render over about 1 s. Render both, or render colour into a target and blend in a final
@@ -233,16 +234,35 @@ References:
   phone data. Measure on the Galaxy A16 before changing it. The white-model treatment works
   either way.
 
-### Map to City
+### Map to City (Sam chose option B, 2026-11-23)
 
-- **Target:** City opens looking straight down at exactly the Map's centre and scale, so
-  the white model lands on top of the map's streets. Colour then fades in.
-- **After colour:** the camera eases to the normal City tilt, or waits for the user to
-  tilt. Never zoom during the switch.
-- **City to Map:** the reverse. Colour fades back to the white model, then the map fades
-  in at the matching view.
-- This one is not mocked yet. Matching the map view precisely needs the real renderer.
-  Judge it in the browser.
+Reference: canvas board 9 (`docs/ui-a2c/source/L9-map-b.dc.html`), built from real captures.
+
+1. **Tap City: the map tilts first.** MapLibre eases from its current pitch to City's tilt
+   over about 1 s, keeping centre and bearing, while City's data downloads. Nothing heavy
+   runs yet, so the tilt stays smooth.
+2. **White buildings stand on the map.** City draws only buildings (ground, roads, decks and
+   table hidden) in the white material, over a transparent background, with the tilted map
+   still visible underneath. Fade in over about 1.2 s, ease-in-out. The map is the ground.
+3. **Colour replaces the map ground.** When the full scene is ready, the complete coloured
+   City, ground included, cross-fades in over about 1.4 s and covers the map. Then live.
+4. **Never zoom** during the switch.
+
+**Camera match** (verified by overlaying the captures):
+- the same centre, bearing and tilt
+- the MapLibre vertical field of view set to City's 22° (`map.setVerticalFieldOfView(22)`)
+- the same ground scale. MapLibre zoom uses 512 px tiles, so
+  `zoom = log2(78271.517 · cos(lat) / metresPerPixel)`.
+
+**City to Map:** the reverse. Colour fades to white buildings on the map, the buildings fade
+out, then the map flattens.
+
+**Edge cases:**
+- **Zoomed out past City's scale, or centred off the board:** use a plain cross-fade to
+  City's opening view (with the existing area notice).
+- **City already built this session:** skip the white stage and cross-fade from the tilted
+  map to colour.
+- **Reduced motion:** no tilt animation; the map is replaced by City directly.
 
 ### Other states
 
