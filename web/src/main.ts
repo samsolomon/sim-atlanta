@@ -611,7 +611,9 @@ function closeCity() {
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
 // while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
 let labRoot: HTMLElement | null = null;
-let labView: { escape(): boolean; model(): string | null } | null = null;
+let labView: { escape(): boolean; model(): string | null; reset(): void } | null = null;
+let labReady: Promise<void> | null = null;
+let sceneTitle = document.title;
 const inModels = () => !!labRoot && !labRoot.hidden;
 async function openModels() {
   hideCard();
@@ -619,19 +621,35 @@ async function openModels() {
   if (!labRoot) {
     labRoot = Object.assign(document.createElement('section'), { id: 'lab-root' });
     labRoot.setAttribute('aria-label', 'Models');
+    // The A2c layout classes go on before the lab loads, so its first resize sees the full stage.
+    labRoot.classList.add('lab', 'a2-lab');
     document.body.prepend(labRoot);
   }
+  if (labRoot.hidden !== false) sceneTitle = document.title;
   labRoot.hidden = false;
   setViewParam('models');
-  if (!labView) {
+  // One mount, however often Models is chosen while the lab is still loading.
+  labReady ??= (async () => {
     await import('./models/main');
     const { mountModelsView } = await import('./ui/next/models-view');
-    labView = mountModelsView(labRoot, { dev: params.has('dev') });
+    labView = mountModelsView(labRoot!, { dev: params.has('dev') });
+  })();
+  try {
+    await labReady;
+  } catch (err) {
+    console.error(err);
+    labReady = null;
+    leaveModels();
+    shell.setView('map');
+    shell.setNote('Models couldn’t load here, so this is the map');
+    return;
   }
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }
 function leaveModels() {
-  if (labRoot) labRoot.hidden = true;
+  if (!labRoot || labRoot.hidden) return;
+  labRoot.hidden = true;
+  document.title = sceneTitle; // the lab names the tab after its model
 }
 /** Zoom the model by a wheel step at the stage centre, through the lab's own OrbitControls. */
 function labZoom(dir: 1 | -1) {
@@ -694,6 +712,7 @@ const shellOptions: ShellOptions = {
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
   north() {
+    if (inModels()) return;
     if (diorama) return diorama.rotate(diorama.camera().bearing);
     map?.easeTo({ bearing: 0, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300 });
   },
@@ -725,10 +744,7 @@ const shellOptions: ShellOptions = {
     get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),
     set: (g) => void setGraphics(g),
   } : undefined,
-  resetModelView() {
-    const views = [...document.querySelectorAll<HTMLButtonElement>('#views button')];
-    (views.find((b) => b.getAttribute('aria-pressed') === 'true') ?? views[0])?.click();
-  },
+  resetModelView: () => labView?.reset(),
   viewEscape: () => (inModels() ? labView?.escape() ?? false : false),
   shareTarget() {
     if (inModels()) {

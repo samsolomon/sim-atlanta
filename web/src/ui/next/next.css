@@ -449,13 +449,15 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 .a2-lab .sidebar, .a2-lab .model-heading { display: none !important; }
 .a2-lab .preview { position: absolute; inset: 0; display: block; }
 .a2-lab #stage { position: absolute; inset: 0; }
-body.a2-in-models :is(.a2-subject, .a2-notice, .a2-credit, .a2-panel, .a2-timepanel) { display: none !important; }
+body.a2-in-models :is(.a2-subject, .a2-notice, .a2-credit, .a2-timepanel) { display: none !important; }
+/* Key and About still open over Models; a scene selection never shows there. */
+body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 
 .a2-model-card { left: var(--a2-left); top: var(--a2-top); padding: 14px 16px 14px 20px; max-width: min(440px, calc(100vw - var(--a2-left) - var(--a2-right) - 52px)); }
 .a2-model-head { display: flex; align-items: center; gap: 8px; }
 .a2-model-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 0 4px; margin: 0 -4px; border: 0; border-radius: 8px; background: none; text-align: left; cursor: pointer; }
 .a2-model-name:hover { background: var(--a2-sep); }
-.a2-model-name h2 { margin: 0; font-size: 26px !important; font-weight: 700; letter-spacing: -0.015em !important; line-height: 1.1 !important; }
+.a2-model-title { margin: 0; font-size: 26px !important; font-weight: 700; letter-spacing: -0.015em !important; line-height: 1.1 !important; }
 .a2-model-name[aria-expanded='true'] .a2-caret { transform: rotate(180deg); }
 .a2-model-steps { display: inline-flex; margin-left: auto; }
 .a2-step { width: 36px; height: 36px; }
@@ -497,7 +499,7 @@ body.a2-in-models :is(.a2-subject, .a2-notice, .a2-credit, .a2-panel, .a2-timepa
 
 @media (max-width: 600px) {
   .a2-model-card { right: calc(var(--a2-right) + 44px + 8px); max-width: none; padding: 12px 14px; }
-  .a2-model-name h2 { font-size: 20px !important; }
+  .a2-model-title { font-size: 20px !important; }
   .a2-model-card #blurb { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .a2-details-btn { display: block; height: 44px; }
   .a2-model-details { display: none; }

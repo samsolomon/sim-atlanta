@@ -40,8 +40,15 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
 
   // ---- model card (top-left) ----
   const card = el('section', { class: 'a2-model-card a2-g', 'aria-label': 'Model' });
+  // The lab writes the model name into its <h2 id="title">. A heading can't sit inside a button,
+  // so the heading stays (visually hidden) and the button mirrors its text.
   const nameBtn = el('button', { type: 'button', class: 'a2-model-name', 'aria-expanded': 'false', 'aria-controls': 'a2-browser' });
-  nameBtn.append(title, el('span', { class: 'a2-caret', 'aria-hidden': 'true' }, SVG('<path d="M6 9l6 6 6-6"/>')));
+  const nameText = el('span', { class: 'a2-model-title' });
+  nameBtn.append(nameText, el('span', { class: 'a2-caret', 'aria-hidden': 'true' }, SVG('<path d="M6 9l6 6 6-6"/>')));
+  title.classList.add('a2-sr');
+  const mirror = () => { nameText.textContent = title.textContent; nameBtn.setAttribute('aria-label', `${title.textContent}. Browse models`); };
+  new MutationObserver(mirror).observe(title, { childList: true, characterData: true, subtree: true });
+  mirror();
   const prev = el('button', { type: 'button', class: 'a2-ib a2-step', 'aria-label': 'Previous model in this category' }, SVG('<path d="M15 6l-6 6 6 6"/>'));
   const next = el('button', { type: 'button', class: 'a2-ib a2-step', 'aria-label': 'Next model in this category' }, SVG('<path d="M9 6l6 6-6 6"/>'));
   const head = el('div', { class: 'a2-model-head' });
@@ -49,7 +56,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   head.lastElementChild!.append(prev, next);
   const pos = el('p', { class: 'a2-model-pos' });
   const detailsBtn = el('button', { type: 'button', class: 'a2-btn a2-details-btn', 'aria-expanded': 'false', 'aria-controls': 'a2-model-details' }, 'Details');
-  card.append(head, blurb, pos, detailsBtn);
+  card.append(title, head, blurb, pos, detailsBtn);
 
   // ---- Details (right): the lab's controls, re-homed ----
   const details = el('aside', { class: 'a2-model-details a2-g a2-long', id: 'a2-model-details', 'aria-label': 'Details' });
@@ -139,6 +146,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     const same = buttons().filter((b) => groupOf(b) === groupOf(cur));
     pos.textContent = `${groupOf(cur)} · ${same.indexOf(cur) + 1} of ${same.length}`;
     prev.hidden = next.hidden = same.length < 2;
+    if (!browser.hidden) list.querySelectorAll<HTMLElement>('.a2-model-row').forEach((r) => r.setAttribute('aria-current', String(r.textContent === cur.textContent)));
   };
   new MutationObserver(renderPos).observe(root.querySelector('.library')!, { subtree: true, attributes: true, attributeFilter: ['aria-pressed'], childList: true });
   renderPos();
@@ -170,5 +178,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
       return false;
     },
     model: () => current()?.dataset.model ?? null,
+    /** Reset view: choose the current model again, which returns to its opening view. */
+    reset: () => current()?.click(),
   };
 }
