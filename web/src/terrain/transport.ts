@@ -1,3 +1,4 @@
+import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
 import { drawJunctionDecks } from './junction-decks';
@@ -447,6 +448,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   }
   const sharedDecks = drawStreetBridges(city, grid.manifest.vertical.sceneZeroNavd88M, terrainGround, structures, roadTreads);
   drawKendedaWalk(city, sceneZero, terrainGround, structures, roadTreads, sharedDecks);
+  drawClaraMeerBridge(city, sceneZero, terrainGround, structures, roadTreads, sharedDecks);
   const junctionWidths = new Map<TransportRun, number>();
   const landWalks = new Map<TransportRun,P2[][]>();
   const junctionRuns = drawJunctionDecks(city, grid.manifest.vertical.sceneZeroNavd88M, structures, roadTreads, junctionWidths, landWalks);
