@@ -3,7 +3,15 @@ import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import type { TerrainCity } from '../terrain/transport-data';
+import { createSurfaceTransport } from '../terrain/transport';
+import type { TerrainCity, TransportRun } from '../terrain/transport-data';
+import kingRail from './fixtures/king-rail.json';
+import { segDist, type P2 } from '../vignette/geom';
+
+/** The board's freight track (king_memorial_rail.py); `sub` is the OSM service (yard, siding). */
+const rail: TransportRun[] = kingRail.map(run => ({ ...run, kind: run.kind as TransportRun['kind'], sub: run.sub ?? undefined, pts: run.pts as P2[] }));
+/** Half the ballast width (terrain/transport.ts draws 4.2 m). */
+const BALLAST_HALF = 2.1;
 import { marchonFinishes } from './marchon-frontage';
 import { cityRoadHeight } from './road-height';
 import { PAL } from '../vignette/world';
@@ -64,14 +72,44 @@ export async function loadEast(
   verifyJoin(west, grid);
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees))
     throw new Error('Missing King Memorial neighborhood');
-  const area = createDowntownTerrain(grid, context, neighborhoodTrees(context, quality), {
+  // The context was baked without rail, so its canopy never kept off the freight corridor:
+  // drop crowns that would stand on the ballast.
+  const onTrack = ([x, z, , radius]: [number, number, number, number]) => rail.some(run =>
+    run.pts.some((p, i) => i > 0 && segDist(x, z, run.pts[i - 1], p) < Math.min(radius, 3) + BALLAST_HALF));
+  const trees = context.trees.filter(t => !onTrack(t));
+  // The low tier draws the first treeLowCount crowns; keep that set, less the removed ones.
+  const treeLowCount = context.treeLowCount === undefined ? undefined
+    : context.trees.slice(0, context.treeLowCount).filter(t => !onTrack(t)).length;
+  const area = createDowntownTerrain(grid, context, neighborhoodTrees({ ...context, trees, treeLowCount }, quality), {
     simpleLeafClumps: context.treeLowCount !== undefined,
     quality,
     bottomY,
     join: extraJoin ? [eastJoin, ...(Array.isArray(extraJoin) ? extraJoin : [extraJoin])] : eastJoin,
     finishFor: marchonFinishes(context.buildings),
   });
-  return { ...area, connectorBoard: { city: context, roadHeight: cityRoadHeight(context, area.groundAt) } };
+  let freight: ReturnType<typeof kingFreight>;
+  try { freight = kingFreight(context, grid, area); }
+  catch (error) { area.dispose(); throw error; }
+  return {
+    ...area,
+    connectorBoard: { city: context, roadHeight: cityRoadHeight(context, area.groundAt) },
+    setNight(factor: number) { area.setNight(factor); freight.setNight?.(factor); },
+    dispose() { freight.dispose(); area.dispose(); },
+  };
+}
+
+/**
+ * The CSX Atlanta Terminal Subdivision (the Georgia Railroad corridor) and its Hulsey
+ * Yard leads across the board, from the archived OSM fixture (king_memorial_rail.py):
+ * two main tracks and the yard tracks that continue downtown's six at x = 1000. The
+ * board's context carries no rail, so without this City drew no freight east of the
+ * downtown edge. Ground ballast like the rest, with graded cuttings carved under it.
+ */
+export function kingFreight(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>) {
+  const transport = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, area.groundAt);
+  area.carve(transport.cutting);
+  area.group.add(transport.group);
+  return transport;
 }
 
 /** One walnut base under the L-shaped board, with the original eight-metre outside lip. */

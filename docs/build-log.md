@@ -2669,6 +2669,14 @@ The first try showed nothing at all. A debug pass that painted the pick, side an
 
 The crown also became a cone: a new `cone` habit option straightens the envelope above its widest point, and the outline clamp and leader follow it. [Sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg).
 
+### 2026-11-23 — The freight line that stopped at the board edge
+
+Sam drew a red line along an empty grass strip past King Memorial: "missing freight tracks." The data had them all along. The NARN arcs for CSX's Atlanta Terminal Subdivision cross the King board, and so do the OSM tracks. The board's context simply baked `rail: []`, and its loader never built surface transport, so downtown's six freight tracks ended in a clean cut at x = 1000.
+
+The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX mains and 7 Hulsey Yard tracks. Those runs meet downtown's six track ends at the edge to the centimetre, and the board draws them with the same ballast and graded cuttings as everywhere else. On the high tier the ground audit finds no ballast under terrain on the board. On the low tier, which has no drape, the worst is 5 cm. The new test is the part I care about most: with the generated data present, every CSX or NS arc inside the board must have drawn track within 12 m. So the next time a board silently drops a railroad, a test will say so, not Sam. Release: web rebuild only; no `pnpm data` change.
+
+![CSX past King Memorial, before and after](log/ui/freight/king-csx.jpg)
+
 ### 2026-11-23 — The loading dock was next door
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
