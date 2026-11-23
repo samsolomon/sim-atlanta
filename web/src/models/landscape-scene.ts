@@ -17,7 +17,7 @@ export const LANDSCAPE_KINDS = {
 export type LandscapeKind = keyof typeof LANDSCAPE_KINDS;
 
 export const LANDSCAPE_NOTES: Record<LandscapeKind, string> = {
-  bed: 'A curbed bed with mulch draped on the ground and a low fill of flower clumps in the season’s colours. ',
+  bed: 'Left: the default bed, dark-brown soil behind a spade edge. Right: the formal variant, rich black soil behind a stone curb, for landmark gardens and formal beds. ',
   hedge: 'A clipped box hedge that follows the grade, beside a loose row of shrubs. ',
   terraces: 'Level lawns stepping down a 2.4 m slope, each held by capped retaining edges, with a planted strip on each level. ',
   walls: 'A retaining edge that holds the higher grade, a level seat wall and a stair run with cheek walls up the slope. ',
@@ -37,6 +37,8 @@ const slope = (x: number, z: number): number => {
 function plot(b: Builder, kind: LandscapeKind, doy: number, quality: Quality) {
   const bed: P2[] = [[-7, 8], [-2, 7.5], [0, 10.5], [-5, 12]];
   if (kind === 'bed' || kind === 'garden') flowerBed(b, bed, slope, { doy, quality });
+  // The formal variant beside the brown default: rich black soil, a stone curb, fewer blooms.
+  if (kind === 'bed') flowerBed(b, [[2, 8], [7, 7.5], [9, 10.5], [4, 12]], slope, { doy, quality, soil: 'rich-black', edge: 'stone', flowers: .5, seed: 'formal' });
   if (kind === 'hedge' || kind === 'garden') {
     hedge(b, [[-12, 10], [-12, -10]], slope, { quality });
     hedge(b, [[-9, 10], [-9, -10]], slope, { clipped: false, quality, height: 1.3 });

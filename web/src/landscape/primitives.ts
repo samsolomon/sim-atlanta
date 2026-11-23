@@ -194,7 +194,8 @@ export const g0 = (ground: Ground, x: number, z: number) => {
  * blade tufts topped by blooms in drifts of two or three of the season's colours.
  */
 export function flowerBed(b: Builder, ring: P2[], ground: Ground,
-  o: { doy: number; quality?: Quality; curb?: number; density?: number; seed?: string; mound?: number; flowers?: number; edge?: 'spade' | 'stone' }) {
+  o: { doy: number; quality?: Quality; curb?: number; density?: number; seed?: string; mound?: number; flowers?: number; edge?: 'spade' | 'stone';
+    soil?: 'brown' | 'rich-black' }) {
   const quality = o.quality ?? 'high', density = (o.density ?? 1) * (quality === 'low' ? .45 : 1);
   const r = rng(hashStr(o.seed ?? ring.map(p => p.join(',')).join(';')));
   // Rich dark soil, slightly mounded (0.12 m by default), with a clean spade-cut edge where
@@ -213,10 +214,15 @@ export function flowerBed(b: Builder, ring: P2[], ground: Ground,
     }
   }
   // Dark beds, but dark brown rather than black: they never weigh heavily on the board.
-  const SOIL = ['#4a3a2e', '#523f31', '#45362b', '#574535'];
+  // 'rich-black' is freshly mulched or composted formal-bed soil, for landmark gardens and formal
+  // beds only; its crumble is calmer, and the low tier lifts it a little so it never reads as a hole.
+  const SOIL = o.soil === 'rich-black'
+    ? quality === 'low' ? ['#352f2b', '#3a332e', '#322c28', '#3d3631'] : ['#272320', '#2c2724', '#24201e', '#2f2926']
+    : ['#4a3a2e', '#523f31', '#45362b', '#574535'];
+  const crumble = o.soil === 'rich-black' ? .06 : .1;
   const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
   // Crumbly dark soil draped exactly to the bed's outline, speckled per triangle.
-  drapeRing(ring, quality === 'low' ? 1.2 : .5, surface, (p, q, w) => b.tri(p, q, w, speckle(SOIL[Math.floor(r() * 4)], r, .1)));
+  drapeRing(ring, quality === 'low' ? 1.2 : .5, surface, (p, q, w) => b.tri(p, q, w, speckle(SOIL[Math.floor(r() * 4)], r, crumble)));
   // Drifts of two or three colours, not confetti: a seeded axis splits the bed into bands.
   const palette = bloom(o.doy), n = 2 + Math.floor(r() * 2), start = Math.floor(r() * palette.length);
   const drift = Array.from({ length: n }, (_, k) => palette[(start + k) % palette.length]);
@@ -370,7 +376,19 @@ export function landscapeMesh(b: Builder) {
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
   geometry.computeVertexNormals();
-  const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true }));
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true });
+  // Far away, only the darkest colours (rich-black soil) lift toward a dark grey-brown,
+  // so a bed never reads as a hole in the board. Everything brighter is untouched.
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vFar;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvFar = smoothstep(60., 260., -mvPosition.z);');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vFar;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+      diffuseColor.rgb = max(diffuseColor.rgb, mix(diffuseColor.rgb, vec3(.035, .029, .024), vFar));`);
+  };
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = mesh.receiveShadow = true;
   mesh.name = 'landscape';
   return { mesh, triangles: b.pos.length / 9, draws: 1, dispose() { geometry.dispose(); (mesh.material as THREE.Material).dispose(); } };

@@ -2432,3 +2432,7 @@ Sam's verdict on the textured houses was "a dormitory": every wall carried the s
 ### 2026-11-23 — Handing a timetable trip to the live train
 
 MARTA's live rail feed names vehicles (`marta:train:407`), not trips. So when live data replaced the timetable, a followed trip simply vanished, and Follow ended with "trip unavailable". It now hands off to the nearest train of the other tier on the same route, within 60° of its heading and 2.5 km of its last position. Red trains in one direction run about 10 km apart, so that radius absorbs a minute or two of timetable drift without reaching the next train. In a real-clock test with the feed held back 25 s, a southbound timetable trip handed to live #407, 450 m north of it, and skipped a northbound live train only slightly farther away. Because nothing in the feed proves it is the same train, the card says "matched to the nearest live train" with an Inferred chip. [Review sheet](log/ui/follow/live-handoff.jpg)
+
+### 2026-11-23 — Black soil that isn't a hole
+
+Formal beds want freshly composted, almost black soil, and almost black is exactly what reads as a missing triangle from across the board. The new `rich-black` soil keeps a calm crumble up close, uses a slightly lifted set on the low tier, and lifts only the darkest colours toward a dark grey-brown with distance. [Near, far and both tiers](log/ui/rich-black-soil/README.md)
