@@ -232,7 +232,7 @@ export function fanChips(unitSprays: Spray[], q: TreeQuality, size: SizeClass = 
       const spread = s.w * (0.4 + 0.8 * Math.sin(Math.PI * Math.min(1, f)));
       const p = at(s, f, (r() - 0.5) * 2 * spread, (r() - 0.5) * 1.4 * spread, fr);
       // Chip size in metres: a spur-shoot cluster of fan leaves, about 0.3–0.5 m across.
-      chips.push({ p: [p.x / R, p.y / H, p.z / R], yaw: r() * 6.3, tilt: 0.3 + r() * 0.9, s: 0.55 + r() * 0.35 + Math.min(0.4, R * 0.03), depth: s.depth });
+      chips.push({ p: [p.x / R, p.y / H, p.z / R], yaw: r() * 6.3, tilt: 0.3 + r() * 0.9, s: Math.min(0.9, Math.max(0.18, R * 0.12)) * (0.8 + r() * 0.5), depth: s.depth });
     }
   }
   return chips;

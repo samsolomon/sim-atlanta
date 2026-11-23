@@ -160,7 +160,7 @@ function buildTrees() {
     // Compare all: A–D left to right at one class (mature when "All sizes" is chosen).
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     const spread = species!.sizes[size].spreadM;
-    const gap = Math.max(spread + 3, 9);
+    const gap = Math.max(spread + 3, size === 'sapling' ? 5 : 9);
     const parts = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) =>
       createGinkgoVariant([{ species: species!, size, x: (i - 1.5) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
     const group = new THREE.Group();
@@ -684,4 +684,20 @@ function setPhoto(photo?: File) {
 file.addEventListener('change', () => { if (file.files?.[0]) setPhoto(file.files[0]); });
 clearPhoto.addEventListener('click', () => { setPhoto(); file.value = ''; });
 opacity.addEventListener('input', () => { ref.style.opacity = opacity.value; });
-Object.assign(window, { __lab: { view, setNight, role, scene, camera, controls, station: () => station } });
+/** Render `frames` frames back to back (ink, grade and shadows on) and report the mean cost; finish() flushes the GPU. */
+function bench(frames = 60) {
+  const gl = renderer.getContext();
+  composer.render(); gl.finish();
+  renderer.info.autoReset = false;
+  const t0 = performance.now();
+  let tri = 0, calls = 0;
+  for (let i = 0; i < frames; i++) {
+    trees?.update?.(1 / 60, camera);
+    renderer.info.reset();
+    composer.render();
+    tri = renderer.info.render.triangles; calls = renderer.info.render.calls;
+  }
+  gl.finish();
+  return { msPerFrame: (performance.now() - t0) / frames, triangles: tri, calls };
+}
+Object.assign(window, { __lab: { bench, view, setNight, role, scene, camera, controls, station: () => station } });
