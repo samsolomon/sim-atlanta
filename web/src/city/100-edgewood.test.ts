@@ -110,6 +110,7 @@ it('keeps the parking deck separate and sets the colonnade, sunken fan well and 
   };
   expect(h(54, 26)).toBeCloseTo(376.3, 1);
   expect(h(0.15, 25)).toBeCloseTo(377.55, 1);
+  expect(h(4.2, 0.76)).toBeCloseTo(377.55, 1);
   expect(h(10.8, 12.2)).toBeCloseTo(374.8, 1);
   expect(h(9.91, 16)).toBeCloseTo(381.7, 1);
   expect(h(14.08, 16.25)).toBeCloseTo(381.53, 1);

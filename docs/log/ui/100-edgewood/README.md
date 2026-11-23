@@ -49,3 +49,5 @@ The Hurt Park camera stands at City (557, −17), 2.1 m above local grade, looki
 | Edgewood entrance, 13:45 EST | (553, −61, 310.82) → (555, −85, 314.8) | 66° | [Before](entrance-before.webp) · [After](entrance-after.webp) |
 | Peachtree Center Avenue at Edgewood, 20:30 EST | (508, −52, 312.30) → (551, −94, 342.5) | 83° | [Before](corner-before.webp) · [After](corner-after.webp) |
 | Rooftop equipment, 13:45 EST | (522, −72, 427) → (557, −95, 377) | 46° | [Before](roof-before.webp) · [After](roof-after.webp) |
+
+The lowest modeled tread sits on the sidewalk, 1.0–1.6 m from the edge of City’s 11 m Edgewood carriageway. The nearest modeled lamp is approximately 1.7 m west of the stairs. The daylight entrance frame shows the treads meeting the sloped paving.

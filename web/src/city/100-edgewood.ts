@@ -191,7 +191,8 @@ function roofPlant(m: Shell, outline: P2[]) {
     m.body.quad(p(outline[i], roofDeck), p(outline[j], roofDeck), p(well[j], roofDeck), p(well[i], roofDeck), roof);
     m.body.quad(p(well[i], 374.8), p(well[j], 374.8), p(well[j], roofDeck), p(well[i], roofDeck), '#9c9e95');
     const { plan, width } = streetFrame(outline[i], outline[j]);
-    m.prism([plan(0, 0), plan(width, 0), plan(width, -0.33), plan(0, -0.33)], roofDeck, parapet, concrete, concrete);
+    // The concrete coping returns past the inset glazing on the roof side.
+    m.prism([plan(0, 0), plan(width, 0), plan(width, -0.82), plan(0, -0.82)], roofDeck, parapet, concrete, concrete);
   }
   m.prism(rect(17, 10.4, 49.2, 25.8), roofDeck, 381.8, '#adb0a5', '#bebeb1');
   // The louvered west end screens an open well around the fans. Lidar reaches both
