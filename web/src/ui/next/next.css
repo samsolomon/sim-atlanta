@@ -537,10 +537,20 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 :root[data-ui='next'] body:has(.a2-subject) #city-loading > * { display: none !important; }
 
 /* ---- card: All stops row and the Share action beside Follow ---- */
-.a2-panel #card { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8px; }
-.a2-panel #card > :not(#train-follow, .a2-card-actions, .close) { grid-column: 1 / -1; }
-.a2-panel #card #train-follow { grid-column: 1; margin-top: 12px; }
-.a2-panel #card:has(#train-follow[hidden]) .a2-card-actions { grid-column: 1 / -1; }
+/* The card's facts scroll; the Follow status and the Follow · Share row stay pinned at the
+   bottom, so a short viewport (600–700 px) never cuts them off. */
+.a2-panel-body:has(> #card.a2-shown) { overflow: hidden; display: flex; flex-direction: column; }
+.a2-panel #card { flex: 0 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto; column-gap: 8px; }
+.a2-panel #card > :not(#train-follow, .a2-card-actions, .close) { grid-column: 1 / -1; grid-row: 1; }
+.a2-panel #card #card-content { min-height: 0; overflow-y: auto; margin: 0 -18px; padding: 0 18px; overscroll-behavior: contain; }
+.a2-panel #card #train-follow { display: contents; }
+.a2-panel #card #train-follow[hidden] { display: none !important; }
+.a2-panel #card #train-follow .follow-status { grid-row: 2; grid-column: 1 / -1; margin-top: 10px; }
+.a2-panel #card #train-follow [data-follow] { grid-row: 3; grid-column: 1; margin-top: 12px; }
+.a2-panel #card #train-follow [data-recenter] { grid-row: 4; grid-column: 1 / -1; margin-top: 8px; }
+.a2-panel #card #train-follow [data-follow][hidden] ~ * { grid-column: 1 / -1; }
+.a2-panel #card .a2-card-actions { grid-row: 3; grid-column: 2; }
+.a2-panel #card:has(#train-follow[hidden]) .a2-card-actions, .a2-panel #card:has([data-follow][hidden]) .a2-card-actions { grid-column: 1 / -1; }
 .a2-card-actions { margin-top: 12px; display: flex; align-items: flex-start; }
 .a2-card-actions .a2-btn { width: 100%; }
 #card:not(:has(.a2-kicker)) .a2-card-actions { display: none; }
