@@ -50,16 +50,28 @@ export function georgianTerrace(shell: Shell) {
   roof(terrace,7.4,8.25,stone);
   for (let i=0;i<6;i++) {
     const z=-4+i*5.3, x=-34.3-i*.16;
-    const wallX = -29.1 - .075*z;
-    const pane = (u: number,y: number) => [wallX,y,z+u];
-    shell.body.quad(pane(-1.4,1),pane(-1.4,5.2),pane(1.4,5.2),pane(1.4,1),'#4b5758');
-    for (let arc=0;arc<8;arc++) {
-      const a=arc*Math.PI/8, b=(arc+1)*Math.PI/8;
-      shell.body.tri(pane(0,5.2),pane(1.4*Math.cos(a),5.2+1.4*Math.sin(a)),pane(1.4*Math.cos(b),5.2+1.4*Math.sin(b)),'#5d6866');
-    }
     roof(circle(x,z,.61),1.4,7.4,stone);
     roof(circle(x,z,.83),7.0,7.4,'#e2d4bd');
     shell.lights.quad([x-.63,1.6,z-.25],[x-.63,4.1,z-.25],[x-.63,4.1,z+.25],[x-.63,1.6,z+.25],'#bb9e78');
   }
+  // Lay each arched pane directly on a long west-facing segment. The
+  // recessed court and the projecting end bays have different setbacks.
+  historic.forEach(([x,z],i) => {
+    const [a,b]=historic[(i+1)%historic.length];
+    const length=Math.hypot(a-x,b-z);
+    if (x>-26 || a>-26 || b>=z || length<7) return;
+    const bays=Math.max(1,Math.round(length/5));
+    for (let bay=0;bay<bays;bay++) {
+      const pane=(u: number,y: number) => {
+        const t=(bay+.5)/bays+u/length;
+        return [x+(a-x)*t+(b-z)*.08/length,y,z+(b-z)*t-(a-x)*.08/length];
+      };
+      shell.body.quad(pane(-1.4,1.1),pane(-1.4,5.2),pane(1.4,5.2),pane(1.4,1.1),'#4b5758');
+      for(let arc=0;arc<8;arc++) {
+        const a=arc*Math.PI/8,b=(arc+1)*Math.PI/8;
+        shell.body.tri(pane(0,5.2),pane(1.4*Math.cos(a),5.2+1.4*Math.sin(a)),pane(1.4*Math.cos(b),5.2+1.4*Math.sin(b)),'#5d6866');
+      }
+    }
+  });
   return shell.finish('#f9d8a1',.68);
 }
