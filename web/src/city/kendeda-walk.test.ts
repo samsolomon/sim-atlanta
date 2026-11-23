@@ -21,9 +21,13 @@ it.each(['high','low'] as const)('joins the measured-band walk across the row se
     const deck = (x: number, z: number) => decks.deckAt(x,z,run)!;
     try {
       const line = new Line(run.pts);
-      for (let s=0; s<line.length; s++) {
+      for (let s=0; s<line.length; s+=.5) {
         const p=line.at(s);
-        expect(deck(p.x,p.z)).toBeGreaterThanOrEqual(ground(p.x,p.z)!-.05);
+        // Both deck edges, past the square corner of the first station.
+        for (const o of s ? [-1.75,0,1.75] : [0]) {
+          const x=p.x+o*p.nx, z=p.z+o*p.nz;
+          expect(deck(x,z)).toBeGreaterThanOrEqual(ground(x,z)!-.05);
+        }
       }
       seams.push([-1.6,0,1.6].map(dx => deck(1712.36+dx,-4100)));
       if (row === 'brookwood-south') {

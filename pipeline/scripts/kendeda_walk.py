@@ -18,7 +18,7 @@ def bake():
     path = []
     for row in ("midtown-upper", "brookwood-south"):
         context = json.loads((PACK / f"square-board/{row}/context.json").read_text())
-        pts = next(r["pts"] for r in context["roads"] if r["name"] == NAME)
+        pts = next(r["pts"] for r in context["roads"] if r["name"] == NAME and r.get("bridge"))
         if path and pts[0] != path[-1]:
             raise ValueError("The adjoining walk centerlines must meet")
         path.extend(pts[1:] if path else pts)

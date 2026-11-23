@@ -32,16 +32,22 @@ export function drawKendedaWalk(city: TerrainCity, zero: number, ground: (x: num
   mesh: Builder, treads: Map<TransportRun,number[]>, drawn: Set<TransportRun>) {
   const run = city.terrainTransport?.roads.find(r => r.name === 'Kendeda Canopy Walk' && r.kind === 'bridge');
   if (!run) return;
-  const stationOf = (p: P2) => survey.path.findIndex(([x,z]) => x === p[0] && z === p[1]);
+  const stationOf = (p: P2) => survey.path.findIndex(([x,z]) => Math.hypot(x-p[0], z-p[1]) < .01);
   const first = stationOf(run.pts[0]), last = stationOf(run.pts.at(-1)!);
-  if (first < 0 || last <= first || last-first+1 !== run.pts.length) return;
+  if (first < 0 || last <= first || last-first+1 !== run.pts.length) {
+    // The generic tread would bury the walk in the hillside again; re-bake the profile.
+    console.warn('Kendeda Canopy Walk no longer matches pipeline/prototypes/kendeda-walk/profile.json');
+    return;
+  }
+  const { minZ, maxZ } = city.bounds;
   const start = center.cum[first], end = center.cum[last];
   function at(s: number, offset: number, lift=0) {
     const c = center.at(s), left = center.at(Math.max(0,s-.2)), right = center.at(Math.min(length,s+.2));
     const dx=right.x-left.x, dz=right.z-left.z, norm=Math.hypot(dx,dz);
     const x=c.x+offset*dz/norm;
     // Match the entire width on the row clipping plane.
-    const z=c.z === -4100 ? c.z : c.z-offset*dx/norm;
+    const seam = Math.abs(c.z-minZ) < 1e-6 || Math.abs(c.z-maxZ) < 1e-6;
+    const z=seam ? c.z : c.z-offset*dx/norm;
     let y=measuredBand(s)-zero;
     const toe = s < length/2 ? 0 : length;
     const blend = 1-Math.min(1,Math.abs(s-toe)/9);
@@ -74,7 +80,8 @@ export function drawKendedaWalk(city: TerrainCity, zero: number, ground: (x: num
     foot.y=floor-.12;
     const peak=at(s,side*2.5,7.5);
     bar(mesh,foot,peak,.20,'#66695f');
-    for(const ds of [-12,-7,7,12]) bar(mesh,peak,at(s+ds,-side*1.35,-.18),.035,'#777a73');
+    // Stays meet the near deck edge from outside, clear of the walking surface.
+    for(const ds of [-12,-7,7,12]) bar(mesh,peak,at(s+ds,side*(halfWidth+.08),-.18),.035,'#777a73');
   }
   drawn.add(run);
   treads.set(run,top);
