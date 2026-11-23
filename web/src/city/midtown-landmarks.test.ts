@@ -1,12 +1,14 @@
 import { Box3, Mesh, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import { GroundGrid } from '../terrain/grid';
+import { createDowntownTerrain } from '../terrain/model';
 import type { VBuilding } from '../vignette/world';
 import fixtures from './fixtures/midtown-landmarks.json';
 import { createMidtownLandmark } from './midtown-landmarks';
 
-const sites: VBuilding[] = fixtures.map(site => ({
+const sites: VBuilding[] = fixtures.map((site) => ({
   ...site,
-  rings: site.rings.map(ring => ring.map(([x,z]) => [x,z])),
+  rings: site.rings.map((ring) => ring.map(([x, z]) => [x, z])),
 }));
 it.each(sites)('replaces only the validated $name footprint at scene grade', (site) => {
   const model = createMidtownLandmark(sites, site, -6, () => -2)!;
@@ -47,4 +49,49 @@ it.each(sites)('keeps the generic building when the $name source or terrain is i
     ],
   } as VBuilding;
   expect(createMidtownLandmark([cropped], cropped, 0, () => 0)).toBeNull();
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+it('mounts both models in terrain, suppresses their generic roofs and forwards night lighting', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const bounds = { minX: 450, maxX: 650, minZ: -2150, maxZ: -1850 };
+  const grid = new GroundGrid(
+    {
+      version: 1,
+      rows: 61,
+      cols: 41,
+      stepM: 5,
+      bounds,
+      scaleM: 0.1,
+      offsetM: 0,
+      encoding: 'signed int16 little-endian',
+      noData: -32768,
+      vertical: { crs: 'EPSG:5703', sceneZeroNavd88M: 300 },
+      sha256: '',
+    },
+    new Int16Array(61 * 41).fill(3000).buffer,
+  );
+  const area = createDowntownTerrain(grid, { bounds, buildings: sites, roads: [], rail: [] }, [], {
+    quality: 'low',
+  });
+  try {
+    area.setNight(1);
+    const bank = area.scenery.getObjectByName('Bank of America Plaza')!;
+    const fox = area.scenery.getObjectByName('Fox Theatre')!;
+    const generic = area.scenery.children.filter((child) => child !== bank && child !== fox);
+    area.group.updateMatrixWorld(true);
+    for (const [model, x, z] of [
+      [bank, 505, -1886],
+      [fox, 555, -2080],
+    ] as const) {
+      const ray = new Raycaster(new Vector3(x, 500, z), new Vector3(0, -1, 0));
+      expect(ray.intersectObject(model).length).toBeGreaterThan(0);
+      expect(ray.intersectObjects(generic)).toHaveLength(0);
+      expect(((model.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+    }
+  } finally {
+    area.dispose();
+  }
 });
