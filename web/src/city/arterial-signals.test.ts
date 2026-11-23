@@ -58,14 +58,14 @@ describe.skipIf(!staged)('signals on the downtown arterials', () => {
     expect(crossings).toBeGreaterThan(10);
   });
 
-  it('finishes every trip inside its delay budget, even behind a queue', () => {
+  it("finishes every trip inside its delay budget, even behind a ten-car queue", () => {
     for (const c of courses) {
       if (!c.signals?.length) continue;
-      const budget = (c.line.length + (c.offstageM ?? 0)) / c.speedMps + c.signals.length * (SIGNAL_MAX_WAIT_S + 12);
+      const budget = (c.line.length + (c.offstageM ?? 0)) / c.speedMps + c.signals.length * (SIGNAL_MAX_WAIT_S + 30);
       for (let k = 0; k < 40; k++) {
         const start = k * 37.3;
         // Five cars arriving together: the last waits longest.
-        const trips = [0, 1, 2, 3, 4].map(i => ({ start: start + i * 0.8, length: 4.5 }));
+        const trips = Array.from({ length: 10 }, (_, i) => ({ start: start + i * 0.8, length: 4.5 }));
         const at = signalPositions(c.signals, c.line.length, c.speedMps, trips, start + 4 + budget);
         expect(at.every(p => p === null)).toBe(true);
       }

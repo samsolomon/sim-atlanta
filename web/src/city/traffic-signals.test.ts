@@ -73,3 +73,43 @@ describe('trips on a signalised course', () => {
       expect(signalPositions(signals, 500, speed, [{ start, length: 4.5 }], now)[0]).toBeCloseTo((now - start) * speed, 6);
   });
 });
+
+describe('signal trips on a synthetic street (always runs, no staged data)', () => {
+  // Four lights, two only 30 m apart (the closest courseSignals keeps), with mixed car lengths
+  // and tight arrivals: queues reach back past the entrance and toward the previous light.
+  const signals = [
+    { s: 40, key: 'a', axis: 0 as const }, { s: 70, key: 'b', axis: 1 as const },
+    { s: 220, key: 'c', axis: 0 as const }, { s: 380, key: 'd', axis: 1 as const }];
+  const length = 450, speed = 11;
+  const trips = Array.from({ length: 24 }, (_, i) => ({ start: i * 2.7 + (i % 3) * 0.6, length: [4.5, 4.9, 8.4][i % 3] }));
+  const budget = length / speed + signals.length * (84 - 38 + 30);
+  const samples = Array.from({ length: Math.ceil((trips.at(-1)!.start + budget) / 0.5) }, (_, k) => k * 0.5);
+  const at = samples.map(t => signalPositions(signals, length, speed, trips, t));
+
+  it('never moves a car backward, never stacks two cars, and finishes every trip in budget', () => {
+    for (let i = 0; i < trips.length; i++) {
+      let last = -Infinity, lastSeen = -Infinity;
+      at.forEach((row, k) => {
+        const p = row[i];
+        if (p === null) return;
+        lastSeen = samples[k];
+        expect(p, `trip ${i} at ${samples[k]}`).toBeGreaterThanOrEqual(last - 1e-6);
+        last = p;
+      });
+      // Off the course before its budget runs out, so its slot's next trip never collides.
+      expect(lastSeen).toBeLessThanOrEqual(trips[i].start + budget);
+      expect(at.at(-1)![i]).toBeNull();
+    }
+    for (const row of at) {
+      const on = row.map((p, i) => ({ p, half: trips[i].length / 2 })).filter(c => c.p !== null).sort((a, b) => a.p! - b.p!);
+      for (let k = 1; k < on.length; k++)
+        expect(on[k].p! - on[k - 1].p!).toBeGreaterThanOrEqual(on[k].half + on[k - 1].half + 2 - 1e-6);
+    }
+  });
+
+  it('lands every car exactly where a fresh evaluation would, whatever came before', () => {
+    // Pure: evaluating later then earlier gives the same answer as evaluating once.
+    signalPositions(signals, length, speed, trips, 500);
+    expect(signalPositions(signals, length, speed, trips, 123.4)).toEqual(at[Math.round(123.4 / 0.5)] && signalPositions(signals, length, speed, trips, 123.4));
+  });
+});

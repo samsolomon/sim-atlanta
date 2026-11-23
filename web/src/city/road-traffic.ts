@@ -24,7 +24,8 @@ export interface RoadTrafficOptions {
 /** Offstage metres for one course. A signalised course adds the longest it can be held,
  * so a trip delayed at every light still leaves before its slot's next trip begins. */
 function offstage(lane: TrafficCourse) {
-  const budget = lane.signals?.length && !lane.closed ? lane.signals.length * (SIGNAL_MAX_WAIT_S + 12) : 0;
+  // The full red, plus headway for a 15-car queue, at every light.
+  const budget = lane.signals?.length && !lane.closed ? lane.signals.length * (SIGNAL_MAX_WAIT_S + 30) : 0;
   return (lane.offstageM ?? 0) + budget * lane.speedMps;
 }
 export interface TrafficCourse {
@@ -117,6 +118,9 @@ export class RoadTraffic {
     const profiles = [opts.hourly.weekday, opts.hourly.weekend];
     const usable = profiles.every(p => p.length === 24 && p.every(n => Number.isFinite(n) && n >= 0));
     this.peak = usable ? Math.max(...profiles.flat()) : 0;
+    // Heads first: a stop line whose head cannot be placed is dropped, so no car waits at a
+    // light it cannot see.
+    courses = this.buildHeads(courses);
     this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed) : [];
     this.material.clippingPlanes = opts.clippingPlanes ?? [];
     const fade = courses.some(course => course.fadeStartM || course.fadeEndM);
@@ -134,7 +138,6 @@ export class RoadTraffic {
           .replace('#include <alphahash_fragment>', 'diffuseColor.a *= vTripOpacity;\n#include <alphahash_fragment>');
       };
     }
-    this.buildHeads(courses);
     for (const kind of models) {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
@@ -150,18 +153,23 @@ export class RoadTraffic {
     }
   }
 
-  private buildHeads(courses: TrafficCourse[]) {
+  private buildHeads(courses: TrafficCourse[]): TrafficCourse[] {
     const placed: { m: THREE.Matrix4; sig: CourseSignal }[] = [];
-    for (const course of courses) for (const sig of course.signals ?? []) {
-      const p = course.line.at(sig.s);
-      const run = course.roads[Math.min(course.roads.length - 1, Math.floor(course.line.vertexAt(sig.s)))];
-      const y = this.opts.roadHeight(p.x, p.z, run);
-      if (y === null || !Number.isFinite(y)) continue;
-      // On the approach's right, just beyond the lane, facing the oncoming driver.
-      const x = p.x - p.dz * 5, z = p.z + p.dx * 5;
-      placed.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(-p.dx, -p.dz)).setPosition(x, y, z), sig });
-    }
-    if (!placed.length) return;
+    const kept = courses.map(course => {
+      if (!course.signals?.length) return course;
+      const signals = course.signals.filter(sig => {
+        const p = course.line.at(sig.s);
+        const run = course.roads[Math.min(course.roads.length - 1, Math.floor(course.line.vertexAt(sig.s)))];
+        const y = this.opts.roadHeight(p.x, p.z, run);
+        if (y === null || !Number.isFinite(y)) return false;
+        // On the approach's right, just beyond the lane, facing the oncoming driver.
+        const x = p.x - p.dz * 5, z = p.z + p.dx * 5;
+        placed.push({ m: new THREE.Matrix4().makeRotationY(Math.atan2(-p.dx, -p.dz)).setPosition(x, y, z), sig });
+        return true;
+      });
+      return { ...course, signals };
+    });
+    if (!placed.length) return kept;
     const masts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 5.2, 0.22).translate(0, 2.6, 0),
       new THREE.MeshLambertMaterial({ color: '#3d4247', clippingPlanes: this.material.clippingPlanes }), placed.length);
     // Unlit, so the lamp reads at night; illustrative timing at a mapped signal.
@@ -171,6 +179,7 @@ export class RoadTraffic {
     masts.name = 'Signal masts'; mesh.name = 'Signal heads';
     this.group.add(masts, mesh);
     this.heads = { mesh, masts, signals: placed.map(p => p.sig) };
+    return kept;
   }
 
   update(clockMs: number, darkness: number) {
@@ -196,7 +205,8 @@ export class RoadTraffic {
     const byLane = new Map<TrafficCourse, Slot[]>();
     for (const slot of this.slots) {
       if (slot.threshold >= this.share || !slot.lane.signals?.length || slot.lane.closed) continue;
-      byLane.set(slot.lane, [...(byLane.get(slot.lane) ?? []), slot]);
+      const list = byLane.get(slot.lane);
+      if (list) list.push(slot); else byLane.set(slot.lane, [slot]);
     }
     for (const [lane, slots] of byLane) {
       const period = lane.line.length + offstage(lane), v = lane.speedMps;
