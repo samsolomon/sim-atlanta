@@ -2680,3 +2680,32 @@ The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX
 ### 2026-11-23 — The loading dock was next door
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
+
+### 2026-11-23 — Arterial cars turn on their incoming green
+
+The illustrative arterial fleet can now turn between permitted directed roads at
+mapped signal junctions. Midtown supplies 20 eligible turn courses. A cubic curve
+joins the lanes, and each turn keeps the incoming signal phase rather than choosing
+one from the curve's tangent. Spring stays southbound and West Peachtree northbound.
+The turning courses reuse approach signal heads and the original route endpoints.
+
+Cross-review caught a useful mistake: slowing an entire turn course to 6 m/s made
+through cars catch it well before the junction, where overlap suppression hid one
+of them. Turns now keep their approach speed and exclude exits differing by more
+than 0.1 m/s. They take an illustrative 15% of incoming flow, divided among available
+turns, rather than scaling demand by the parent route's length. Separate queues can
+still overlap; the existing footprint guard hides conflicting cars. Protected left
+phases and shared queues remain future work.
+
+The frozen Spring/10th comparison uses `cam=222,-3075,0,45,110`, high tier,
+`t=2026-11-20T19:02:49.250Z&speed=0&dev&mindist=20`. The downtown check is Washington
+at Trinity: `cam=122,670,0,45,110`, high tier, `t=2026-11-20T19:01:51Z&speed=0`.
+Screenshots are in [arterial-turns](log/ui/arterial-turns/). A clock-seek regression
+also removed an hourly-demand cache that retained the first visited time within a
+minute. This needs a web rebuild only, with no new data or server work.
+
+The second review also found a signal-location edge case: at 17th Street the turn
+stop was 11.95 m beyond the through stop. Turns now stop no later than their through
+course, and one ambiguous twin-controller junction is excluded. All 20 remaining
+Midtown courses have a shared controller, ordered stops and no second stop within
+30 m. [Spring/10th before and after](log/ui/arterial-turns/compare-spring-10th.jpg).
