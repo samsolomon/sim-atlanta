@@ -21,7 +21,7 @@ import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 export type Ground = (x: number, z: number) => number | null;
 export type Quality = 'high' | 'low';
 
-const STONE = '#a29c90', CAP = '#bdb7ab', CURB = '#b6b0a4', MULCH = '#5b4535';
+const STONE = '#a29c90', CAP = '#bdb7ab', CURB = '#b6b0a4';
 const LEAF = ['#4d6b3a', '#5b7a44', '#45613a', '#628048'];
 const CLIPPED = '#4a6838';
 
@@ -84,7 +84,8 @@ function strip(b: Builder, line: P2[], width: number, bottom: (x: number, z: num
 }
 
 /** Low faceted clump (octahedron): shrubs, flower drifts and ornamental tufts. */
-function clump(b: Builder, x: number, y: number, z: number, r: number, h: number, color: string, twist = 0) {
+// Kept for the octahedron look of City's tree canopies, should a caller want it.
+export function clump(b: Builder, x: number, y: number, z: number, r: number, h: number, color: string, twist = 0) {
   const c = Math.cos(twist), s = Math.sin(twist);
   const ring: number[][] = [[r, 0], [0, r], [-r, 0], [0, -r]].map(([u, v]) => [x + u * c - v * s, y + h * .4, z + u * s + v * c]);
   const top = [x, y + h, z], bot = [x, y, z];
@@ -95,67 +96,160 @@ function clump(b: Builder, x: number, y: number, z: number, r: number, h: number
   }
 }
 
+/** Vary a colour per vertex or face for a crumbly, leafy speckle that survives the ink pass. */
+function speckle(color: string, r: () => number, amount: number) {
+  const c = new THREE.Color(color), k = 1 + (r() - .5) * 2 * amount;
+  return '#' + c.multiplyScalar(k).getHexString();
+}
+
+/**
+ * A tuft of blades rooted at one point, as in the trail-planting study: each blade is
+ * one triangle with two fixed feet on the ground, leaning outward, heights varied.
+ */
+function tuft(b: Builder, x: number, y: number, z: number, height: number, blades: number, color: string, r: () => number) {
+  for (let i = 0; i < blades; i++) {
+    const a = (i + r() * .6) / blades * Math.PI * 2, lean = .25 + r() * .35, h = height * (.65 + r() * .5);
+    const fx = Math.cos(a), fz = Math.sin(a), w = .035;
+    b.tri([x - fz * w, y - .02, z + fx * w], [x + fz * w, y - .02, z - fx * w],
+      [x + fx * h * lean, y + h, z + fz * h * lean], speckle(color, r, .12));
+  }
+}
+
+/** Small blooms: crossed petal pairs clustered above a foliage tuft. */
+function blooms(b: Builder, x: number, y: number, z: number, count: number, color: string, r: () => number) {
+  for (let i = 0; i < count; i++) {
+    const bx = x + (r() - .5) * .3, bz = z + (r() - .5) * .3, by = y + r() * .12, s = .12 + r() * .07;
+    const c = speckle(color, r, .1);
+    b.tri([bx - s, by, bz], [bx + s, by, bz], [bx, by + s * 1.2, bz + s * .3], c);
+    b.tri([bx, by, bz - s], [bx, by, bz + s], [bx + s * .3, by + s * 1.2, bz], c);
+  }
+}
+
+// One shared unit icosahedron (already non-indexed) for every shrub lump.
+const ICOSA = new THREE.IcosahedronGeometry(1, 0);
+
+/** A rounded shrub mass: a few jittered icosahedra with leafy per-face colour. */
+function shrubMass(b: Builder, x: number, y: number, z: number, radius: number, height: number, color: string, r: () => number, lumps: number) {
+  for (let k = 0; k < lumps; k++) {
+    const a = r() * Math.PI * 2, d = k ? radius * (.35 + r() * .3) : 0;
+    const rad = radius * (k ? .6 + r() * .25 : .85), cx = x + Math.cos(a) * d, cz = z + Math.sin(a) * d;
+    const pos = ICOSA.getAttribute('position');
+    // Jitter shared corners identically, so faces stay closed.
+    const jitter = (vx: number, vy: number, vz: number) => {
+      const h = Math.sin(vx * 12.9 + vy * 78.2 + vz * 37.7 + k * 9.1) * 43758.5;
+      return 1 + (h - Math.floor(h) - .5) * .28;
+    };
+    for (let i = 0; i < pos.count; i += 3) {
+      const c = speckle(color, r, .14), tri: number[][] = [];
+      for (let v = i; v < i + 3; v++) {
+        const j = jitter(pos.getX(v), pos.getY(v), pos.getZ(v));
+        // Flatten the underside so masses sit on the ground.
+        const vy = Math.max(-.35, pos.getY(v));
+        tri.push([cx + pos.getX(v) * rad * j, y + (vy + .35) * height / 1.35 * (k ? .8 : 1), cz + pos.getZ(v) * rad * j]);
+      }
+      b.tri(tri[0], tri[1], tri[2], c);
+    }
+  }
+}
+
+/**
+ * Drapes a ring on the ground: its triangulation, each triangle subdivided to about `cell`
+ * metres, with a height sampled at every vertex. The edge is exactly the ring, and the surface
+ * follows any slope, which a flat outline fill or a cell grid alone does not.
+ */
+export function drapeRing(ring: P2[], cell: number, y: (x: number, z: number) => number, emit: (a: number[], b: number[], c: number[]) => void) {
+  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(ring.map(([x, z]) => new THREE.Vector2(x, z)), [])) {
+    const A = ring[i], B = ring[k], C = ring[j];
+    const n = Math.max(1, Math.ceil(Math.max(Math.hypot(B[0] - A[0], B[1] - A[1]), Math.hypot(C[0] - B[0], C[1] - B[1]), Math.hypot(A[0] - C[0], A[1] - C[1])) / cell));
+    const at = (u: number, v: number) => {
+      const x = A[0] + (B[0] - A[0]) * u / n + (C[0] - A[0]) * v / n, z = A[1] + (B[1] - A[1]) * u / n + (C[1] - A[1]) * v / n;
+      return [x, y(x, z), z];
+    };
+    for (let u = 0; u < n; u++) for (let v = 0; v < n - u; v++) {
+      emit(at(u, v), at(u + 1, v), at(u, v + 1));
+      if (u + v + 1 < n) emit(at(u + 1, v), at(u + 1, v + 1), at(u, v + 1));
+    }
+  }
+}
+
 // Off-board or in a hole, a sampler returns null. Reuse its last valid height rather than 0,
 // which in City's frame can be 30 m away from the real ground.
 const lastValid = new WeakMap<Ground, number>();
-const g0 = (ground: Ground, x: number, z: number) => {
+export const g0 = (ground: Ground, x: number, z: number) => {
   const y = ground(x, z);
   if (y !== null) { lastValid.set(ground, y); return y; }
   return lastValid.get(ground) ?? 0;
 };
 
 /**
- * Planting bed: a curbed edge, mulch draped on the ground and a low fill of
- * flower clumps in the season's colours, with shrubs at the back if asked.
+ * Planting bed: dark, crumbly soil, slightly mounded (`mound`, 0.12 m by default), behind a
+ * clean spade-cut edge (or a stone curb with `edge: 'stone'` or a `curb` height), filled with
+ * blade tufts topped by blooms in drifts of two or three of the season's colours.
  */
 export function flowerBed(b: Builder, ring: P2[], ground: Ground,
-  o: { doy: number; quality?: Quality; curb?: number; density?: number; seed?: string; mound?: number; flowers?: number }) {
-  const quality = o.quality ?? 'high', curb = o.curb ?? .15, density = (o.density ?? 1) * (quality === 'low' ? .35 : 1);
-  // A raised mound (m at the centre) domes the mulch; `flowers` is the share of clumps in bloom (default 0.75).
+  o: { doy: number; quality?: Quality; curb?: number; density?: number; seed?: string; mound?: number; flowers?: number; edge?: 'spade' | 'stone' }) {
+  const quality = o.quality ?? 'high', density = (o.density ?? 1) * (quality === 'low' ? .45 : 1);
+  const r = rng(hashStr(o.seed ?? ring.map(p => p.join(',')).join(';')));
+  // Rich dark soil, slightly mounded (0.12 m by default), with a clean spade-cut edge where
+  // the turf meets it, or a stone curb when asked.
+  const lift = .06, edge = o.edge ?? (o.curb ? 'stone' : 'spade');
   const cx = ring.reduce((a, p) => a + p[0], 0) / ring.length, cz = ring.reduce((a, p) => a + p[1], 0) / ring.length;
   const reach = Math.max(...ring.map(p => Math.hypot(p[0] - cx, p[1] - cz)));
-  const dome = (x: number, z: number) => (o.mound ?? 0) * Math.max(0, 1 - (Math.hypot(x - cx, z - cz) / reach) ** 2);
-  const r = rng(hashStr(o.seed ?? ring.map(p => p.join(',')).join(';')));
-  strip(b, [...ring, ring[0]], .15, (x, z) => g0(ground, x, z) - .1, (x, z) => g0(ground, x, z) + curb, CURB, CURB, quality === 'low' ? 4 : 2);
-  const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]), cell = quality === 'low' ? 2 : 1;
-  // Draped cells wholly inside the bed (corners, centre and edge midpoints), over the bed's own
-  // outline just beneath, so mulch stays inside the curb even on notched beds.
-  for (let x = Math.min(...xs); x < Math.max(...xs); x += cell) for (let z = Math.min(...zs); z < Math.max(...zs); z += cell) {
-    const corners = [[x, z], [x + cell, z], [x + cell, z + cell], [x, z + cell]] as P2[];
-    const h = cell / 2, probes: P2[] = [...corners, [x + h, z + h], [x + h, z], [x + cell, z + h], [x + h, z + cell], [x, z + h]];
-    if (!probes.every(([u, v]) => pointInRing(u, v, ring))) continue;
-    const c = corners.map(([u, v]) => [u, g0(ground, u, v) + curb * .6 + dome(u, v), v]);
-    b.quad(c[0], c[3], c[2], c[1], MULCH);
+  const dome = (x: number, z: number) => (o.mound ?? .12) * Math.max(0, 1 - (Math.hypot(x - cx, z - cz) / reach) ** 2);
+  const surface = (x: number, z: number) => g0(ground, x, z) + lift + dome(x, z);
+  if (edge === 'stone') strip(b, [...ring, ring[0]], .15, (x, z) => g0(ground, x, z) - .1, (x, z) => g0(ground, x, z) + (o.curb ?? .15), CURB, CURB, quality === 'low' ? 4 : 2);
+  else {
+    const rim = along([...ring, ring[0]], quality === 'low' ? 2 : 1);
+    for (let i = 1; i < rim.length; i++) {
+      const a = rim[i - 1], c = rim[i];
+      b.quad([a.x, g0(ground, a.x, a.z) - .03, a.z], [c.x, g0(ground, c.x, c.z) - .03, c.z], [c.x, surface(c.x, c.z), c.z], [a.x, surface(a.x, a.z), a.z], '#231a15');
+    }
   }
-  for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(ring.map(([x, z]) => new THREE.Vector2(x, z)), [])) {
-    const v = [ring[i], ring[k], ring[j]].map(([x, z]) => [x, g0(ground, x, z) + curb * .55 + dome(x, z), z]);
-    b.tri(v[0], v[1], v[2], MULCH);
-  }
-  const colours = bloom(o.doy), area = Math.abs(ring.reduce((a, p, i) => { const q = ring[(i + 1) % ring.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
-  const count = Math.round(area * 1.8 * density);
+  const SOIL = ['#2c221c', '#33281f', '#261d18', '#3a2d22'];
+  const xs = ring.map(p => p[0]), zs = ring.map(p => p[1]);
+  // Crumbly dark soil draped exactly to the bed's outline, speckled per triangle.
+  drapeRing(ring, quality === 'low' ? 1.2 : .5, surface, (p, q, w) => b.tri(p, q, w, speckle(SOIL[Math.floor(r() * 4)], r, .18)));
+  // Drifts of two or three colours, not confetti: a seeded axis splits the bed into bands.
+  const palette = bloom(o.doy), n = 2 + Math.floor(r() * 2), start = Math.floor(r() * palette.length);
+  const drift = Array.from({ length: n }, (_, k) => palette[(start + k) % palette.length]);
+  const axis = r() * Math.PI, ax = Math.cos(axis), az = Math.sin(axis);
+  const span = reach * 2, area = Math.abs(ring.reduce((a, p, i) => { const q = ring[(i + 1) % ring.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+  const count = Math.round(area * 2.2 * density), share = o.flowers ?? .75;
   for (let i = 0, tries = 0; i < count && tries < count * 6; tries++) {
     const x = Math.min(...xs) + r() * (Math.max(...xs) - Math.min(...xs)), z = Math.min(...zs) + r() * (Math.max(...zs) - Math.min(...zs));
     if (!pointInRing(x, z, ring)) continue;
     i++;
-    const y = g0(ground, x, z) + curb * .6 + dome(x, z), rad = .3 + r() * .25;
-    clump(b, x, y, z, rad, .35 + r() * .3, r() < (o.flowers ?? .75) ? colours[Math.floor(r() * colours.length)] : LEAF[Math.floor(r() * LEAF.length)], r() * 3);
+    const y = surface(x, z), t = ((x - cx) * ax + (z - cz) * az) / span + .5 + (r() - .5) * .12;
+    const leaf = LEAF[Math.floor(r() * LEAF.length)];
+    const tall = .35 + r() * .25;
+    tuft(b, x, y, z, tall, quality === 'low' ? 3 : 6, leaf, r);
+    if (r() < share) blooms(b, x, y + tall * .8, z, quality === 'low' ? 2 : 3, drift[Math.min(n - 1, Math.max(0, Math.floor(t * n)))], r);
   }
 }
 
 /** Clipped hedge (a squared box run that follows the ground) or a loose shrub row. */
 export function hedge(b: Builder, line: P2[], ground: Ground, o: { height?: number; width?: number; clipped?: boolean; quality?: Quality; seed?: string } = {}) {
-  const height = o.height ?? 1.1, width = o.width ?? .8;
+  const height = o.height ?? 1.1, width = o.width ?? .8, quality = o.quality ?? 'high';
+  const r = rng(hashStr(o.seed ?? line.map(p => p.join(',')).join(';')));
   if (o.clipped ?? true) {
-    strip(b, line, width, (x, z) => g0(ground, x, z) - .05, (x, z) => g0(ground, x, z) + height, CLIPPED, '#577a42', o.quality === 'low' ? 4 : 2);
+    // Clipped box with a soft, slightly irregular top: sides, chamfered shoulders and a crown.
+    const pts = along(line, quality === 'low' ? 2 : 1), hw = width / 2, sh = Math.min(.18, height * .2, width * .4);
+    const tops = pts.map(() => (r() - .5) * .08);
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i - 1], q = pts[i];
+      const at = (pt: typeof p, side: number, y: number) => [pt.x + pt.nx * side, y, pt.z + pt.nz * side];
+      const gp = g0(ground, p.x, p.z), gq = g0(ground, q.x, q.z), hp = gp + height + tops[i - 1], hq = gq + height + tops[i];
+      for (const side of [1, -1]) {
+        b.quad(at(p, side * hw, gp - .05), at(q, side * hw, gq - .05), at(q, side * hw, hq - sh), at(p, side * hw, hp - sh), speckle(CLIPPED, r, .1));
+        b.quad(at(p, side * hw, hp - sh), at(q, side * hw, hq - sh), at(q, side * (hw - sh), hq), at(p, side * (hw - sh), hp), speckle('#557a40', r, .1));
+      }
+      b.quad(at(p, hw - sh, hp), at(q, hw - sh, hq), at(q, -(hw - sh), hq), at(p, -(hw - sh), hp), speckle('#5d8446', r, .12));
+    }
     return;
   }
-  const r = rng(hashStr(o.seed ?? line.map(p => p.join(',')).join(';')));
-  for (const p of along(line, o.quality === 'low' ? 1.6 : .9)) {
-    // Squat, overlapping mounds read as shrubs rather than cones.
-    const rad = width * (.75 + r() * .35), x = p.x + (r() - .5) * .3, z = p.z + (r() - .5) * .3, y = g0(ground, p.x, p.z) - .05;
-    const tone = LEAF[Math.floor(r() * LEAF.length)];
-    clump(b, x, y, z, rad, height * (.75 + r() * .3), tone, r() * 3);
-    clump(b, x, y + height * .25, z, rad * .8, height * (.6 + r() * .25), tone, r() * 3 + .8);
+  for (const p of along(line, quality === 'low' ? 1.6 : 1)) {
+    const rad = width * (.6 + r() * .3), x = p.x + (r() - .5) * .3, z = p.z + (r() - .5) * .3;
+    shrubMass(b, x, g0(ground, p.x, p.z) - .05, z, rad, height * (.85 + r() * .3), LEAF[Math.floor(r() * LEAF.length)], r, quality === 'low' ? 1 : 3);
   }
 }
 
@@ -256,9 +350,9 @@ export function ornamentals(b: Builder, centre: P2, radius: number, ground: Grou
     const a = r() * Math.PI * 2, d = radius * Math.sqrt(r()), x = centre[0] + Math.cos(a) * d, z = centre[1] + Math.sin(a) * d, y = g0(ground, x, z);
     const grass = r() < .4, size = grass ? .5 + r() * .3 : .7 + r() * .6;
     const tone = grass ? (winter ? '#b9a57a' : fall ? '#c9a95a' : '#8fa36a') : winter ? '#6d6450' : fall ? ['#b8452f', '#d0782f', '#9c3b3b'][Math.floor(r() * 3)] : LEAF[Math.floor(r() * 4)];
-    if (grass) for (let k = 0; k < 3; k++) clump(b, x + (r() - .5) * .3, y, z + (r() - .5) * .3, size * .35, size * 1.6, tone, r() * 3);
-    // Shrub mounds stand on the turf (base just below grade), so no gap shows underneath.
-    else { clump(b, x, y - .05, z, size, size * 1.6, tone, r() * 3); clump(b, x + size * .5, y - .05, z - size * .3, size * .7, size * 1.1, tone, r() * 3); }
+    // Ornamental grasses are tall blade fountains; shrubs are rounded masses on the turf.
+    if (grass) tuft(b, x, y, z, size * 1.5, o.quality === 'low' ? 5 : 9, tone, r);
+    else shrubMass(b, x, y - .05, z, size, size * 1.2, tone, r, o.quality === 'low' ? 1 : 3);
   }
 }
 

@@ -1,6 +1,7 @@
 import { Group } from 'three';
 import { localLandmarkShell } from './landmark-shell';
 import { flowerBed, hedge, landscapeMesh, stairRun } from '../landscape/primitives';
+import { GroundCover } from '../landscape/ground-cover';
 import { mechanicalScreen, precastWall } from './midtown-culture-woodruff';
 import { enamelBox, enamelGrid, entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -354,7 +355,7 @@ export function createArtsCampusLandmark(
     const lawn = peachtreeLawn(groundAt);
     const group = new Group();
     group.name = finished.group.name;
-    group.add(finished.group, lawn.mesh);
+    group.add(finished.group, lawn.mesh, lawn.turf);
     return { ...finished, group };
   } else memorial(shell);
   return shell.finish('#ffdab0', 0.68);
@@ -380,5 +381,10 @@ function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   hedge(b, l.shrubs as P2[], groundAt, { clipped: false, height: 1.0, width: 1.3, seed: 'high-ramp-shrubs' });
   const [from, to] = l.steps as [P2, P2];
   stairRun(b, from, to, l.stepsWidth, groundAt);
-  return landscapeMesh(b);
+  // Mown turf over the open lawn between the ramp, Peachtree, the steps and the museum
+  // (outline estimated from the City view and the tree agent's Street View notes; illustrative).
+  const turf = new GroundCover();
+  turf.patch([[601, -4009.5], [624, -4007.5], [633, -4005.5], [634.5, -3999.5], [631.5, -3997], [620, -3989.5], [607, -3995], [601, -4000]], groundAt, 'turf');
+  const lawn = landscapeMesh(b), cover = turf.mesh();
+  return { ...lawn, turf: cover.mesh, dispose() { lawn.dispose(); cover.dispose(); } };
 }

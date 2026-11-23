@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Builder, type P2 } from '../vignette/geom';
+import { COVERS, GroundCover } from '../landscape/ground-cover';
 import { flowerBed, hedge, landscapeMesh, ornamentals, retainingEdge, seatWall, stairRun, terraces, type Ground, type Quality } from '../landscape/primitives';
 
 export const LANDSCAPE_KINDS = {
@@ -8,6 +9,7 @@ export const LANDSCAPE_KINDS = {
   terraces: 'Stepped terraces',
   walls: 'Retaining edge, seat wall and stairs',
   ornamentals: 'Specimen ornamentals',
+  ground: 'Ground covers',
   garden: 'Garden on a slope',
 } as const;
 export type LandscapeKind = keyof typeof LANDSCAPE_KINDS;
@@ -18,6 +20,7 @@ export const LANDSCAPE_NOTES: Record<LandscapeKind, string> = {
   terraces: 'Level lawns stepping down a 2.4 m slope, each held by capped retaining edges, with a planted strip on each level. ',
   walls: 'A retaining edge that holds the higher grade, a level seat wall and a stair run with cheek walls up the slope. ',
   ornamentals: 'Small clusters of multi-stem shrubs and grasses for specimen planting; trees stay with the tree-species module. ',
+  ground: 'Six draped ground materials in one draw, left to right: mown turf, meadow grass, worn earth, mulch, pine straw and leaf litter. ',
   garden: 'All of them together on one slope: the kind of lawn edge a landmark sits in. ',
 };
 
@@ -48,6 +51,19 @@ function plot(b: Builder, kind: LandscapeKind, doy: number, quality: Quality) {
   }
 }
 
+const sq = (x: number, z: number, w: number, d: number): P2[] => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
+function covers(c: GroundCover, kind: LandscapeKind, quality: Quality) {
+  if (kind === 'ground') COVERS.forEach((cover, i) => c.patch(sq(-14 + i * 4.8, -2, 4.2, 12), slope, cover, { quality }));
+  if (kind === 'garden') {
+    c.patch(sq(-16, -16, 32, 32), slope, 'turf', { quality });
+    c.patch(sq(-16, -16, 32, 5), slope, 'meadow', { quality, lift: .03 });
+    c.patch(sq(10.5, 4, 3, 2.5), slope, 'earth', { quality, lift: .03 });
+    c.patch([[-5.4, -10], [-.8, -10.4], [-.4, -6], [-5, -5.6]], slope, 'pine-straw', { quality, lift: .03 });
+    c.patch([[.4, 7.2], [3.6, 7.4], [3.4, 10.8], [.6, 10.6]], slope, 'pine-straw', { quality, lift: .03 });
+    c.patch(sq(-13.5, -10, 6, 20), slope, 'leaf-litter', { quality, lift: .03 });
+  }
+}
+
 export function createLandscapeScene(kind: LandscapeKind, doy: number, quality: Quality) {
   const group = new THREE.Group();
   // The sloped ground patch, so every primitive shows how it follows grade.
@@ -63,12 +79,17 @@ export function createLandscapeScene(kind: LandscapeKind, doy: number, quality: 
   plot(b, kind, doy, quality);
   const built = landscapeMesh(b);
   group.add(built.mesh);
-  // Count both tiers for the report.
-  const other = new Builder();
-  plot(other, kind, doy, quality === 'high' ? 'low' : 'high');
-  const triangles = { [quality]: built.triangles, [quality === 'high' ? 'low' : 'high']: other.pos.length / 9 } as Record<Quality, number>;
+  const cover = new GroundCover();
+  covers(cover, kind, quality);
+  const coverMesh = cover.triangles ? cover.mesh() : null;
+  if (coverMesh) group.add(coverMesh.mesh);
+  // Count both tiers for the report: primitives plus ground covers.
+  const other = new Builder(), otherCover = new GroundCover(), otherTier = quality === 'high' ? 'low' : 'high';
+  plot(other, kind, doy, otherTier);
+  covers(otherCover, kind, otherTier);
+  const triangles = { [quality]: built.triangles + cover.triangles, [otherTier]: other.pos.length / 9 + otherCover.triangles } as Record<Quality, number>;
   return {
-    group, draws: built.draws, triangles,
-    dispose() { built.dispose(); ground.dispose(); turf.material.dispose(); },
+    group, draws: (built.triangles ? built.draws : 0) + (coverMesh ? 1 : 0), triangles,
+    dispose() { built.dispose(); coverMesh?.dispose(); ground.dispose(); turf.material.dispose(); },
   };
 }
