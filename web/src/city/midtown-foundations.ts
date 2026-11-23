@@ -3,7 +3,10 @@ import type { TerrainCity } from '../terrain/transport-data';
 
 const sites: Record<string, number[]> = grades;
 
-/** Fit one inferred finished floor to all clipped pieces of a buried hillside building. */
+/**
+ * Fit one inferred finished floor to all clipped pieces of a buried hillside
+ * building. The grades cover the Midtown rows, the north band and downtown.
+ */
 export function midtownFoundations<T extends TerrainCity>(city: T, sceneZero: number): T {
   return { ...city, buildings: city.buildings.map(building => {
     const grade = sites[building.id.split('/')[0]];
