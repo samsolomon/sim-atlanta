@@ -5,7 +5,7 @@
  *   - bottom-left: the app bar (menu, Map · City · Models)
  *   - right: the detail panel (#card, positioned by next.css)
  *   - bottom-right: the camera column (compass, zoom); on phones it moves top-right
- * Plus the fading OpenStreetMap credit line and a first-visit hint. See docs/ui-controls-brief.md.
+ * Plus the OpenStreetMap credit line (persistent on Map, fading in City) and a first-visit hint. See docs/ui-controls-brief.md.
  */
 import './next.css';
 import type { AtmosphereOverride } from '../../core/atmosphere';
@@ -157,19 +157,26 @@ export function createShellNext(o: ShellOptions): ShellApi {
   requestAnimationFrame(watchBearing);
 
   // ---- credit line (OSMF attribution guidelines) ------------------------------------------
-  // Shown on load; fades on the first pan or zoom, or after 5 s. Then it lives in the menu.
-  const credit = el('p', { class: 'a2-credit' }, '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · OpenMapTiles');
-  const fadeCredit = () => {
-    if (credit.classList.contains('a2-gone')) return;
-    credit.classList.add('a2-gone');
-    setTimeout(() => credit.remove(), reducedMotion.matches ? 0 : 700);
+  // Map keeps it on screen (Sam, 2026-11-23). City fades it on the first pan or zoom, or 5 s
+  // after the scene shows; then the full credits live in the menu and About.
+  const credit = el('p', { class: 'a2-credit' }, '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · <a href="https://openmaptiles.org/">OpenMapTiles</a>');
+  let cityCreditDone = false;
+  let creditTimer = 0;
+  const showCredit = () => credit.classList.toggle('a2-gone', view === 'city' && cityCreditDone);
+  const fadeCityCredit = () => {
+    if (view !== 'city' || cityCreditDone) return;
+    cityCreditDone = true;
+    showCredit();
   };
   // The 5 s count starts once the scene is on screen, not while City's loading plate shows.
-  const armCredit = () => setTimeout(() => (document.getElementById('city-loading')?.hidden === false ? armCredit() : fadeCredit()), 5000);
-  armCredit();
+  const armCredit = () => {
+    clearTimeout(creditTimer);
+    creditTimer = window.setTimeout(() => (document.getElementById('city-loading')?.hidden === false ? armCredit() : fadeCityCredit()), 5000);
+  };
+  if (view === 'city') armCredit();
   const scene = () => [document.getElementById('map'), document.getElementById('view3d-canvas')];
   for (const ev of ['pointerdown', 'wheel'] as const)
-    addEventListener(ev, (e) => scene().some((s) => s?.contains(e.target as Node)) && fadeCredit(), { passive: true });
+    addEventListener(ev, (e) => scene().some((s) => s?.contains(e.target as Node)) && fadeCityCredit(), { passive: true });
 
   // ---- first-visit hint ---------------------------------------------------------------------
   let hint: HTMLElement | null = null;
@@ -311,7 +318,11 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (v === view && !fromUser) return;
     const changed = v !== view;
     view = v;
-    if (changed) o.onView(v);
+    if (changed) {
+      if (v === 'city' && !cityCreditDone) armCredit();
+      showCredit();
+      o.onView(v);
+    }
   }
   viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
   cityInfoRow.hidden = view !== 'city';
