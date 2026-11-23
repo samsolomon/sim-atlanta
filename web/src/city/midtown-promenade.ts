@@ -1,4 +1,4 @@
-import { DoubleSide, Mesh, MeshBasicMaterial } from 'three';
+import { AdditiveBlending, DoubleSide, Mesh, MeshBasicMaterial } from 'three';
 import { Builder, type P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
 import sites from './fixtures/midtown-skyline.json';
@@ -34,7 +34,7 @@ export function promenadeTower(shell: Shell) {
   ]) {
     const plan = chamfered(width,depth,notch);
     glazed(shell,plan,lo,hi,rows);
-    outline(plan,hi+1.5);
+    outline(plan,hi);
     for (const [x,z] of plan) {
       const r = .42;
       const fin: P2[] = [[x-r,z-r],[x+r,z-r],[x+r,z+r],[x-r,z+r]];
@@ -56,7 +56,9 @@ export function promenadeTower(shell: Shell) {
     });
   }
   const model = shell.finish('#fff0ce',.84);
-  const material = new MeshBasicMaterial({vertexColors: true, side: DoubleSide});
+  // Additive, so the neon fades in through twilight rather than darkening the stone.
+  const material = new MeshBasicMaterial({vertexColors: true, side: DoubleSide, blending: AdditiveBlending,
+    depthWrite: false, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2});
   const crown = new Mesh(neon.geometry(), material);
   crown.name = 'Promenade crown neon';
   crown.visible = false;

@@ -1,4 +1,4 @@
-import { Box3, Mesh, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
+import { AdditiveBlending, Box3, Mesh, MeshBasicMaterial, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { GroundGrid } from '../terrain/grid';
@@ -98,4 +98,11 @@ it('lights the Promenade crown cool white at night and keeps its offices warm', 
   // Blue at least matches red on every neon vertex: cool white, not amber.
   for (let i = 0; i < colour.count; i++) expect(colour.getZ(i)).toBeGreaterThanOrEqual(colour.getX(i));
   expect(offices.emissive.r).toBeGreaterThan(offices.emissive.b);
+  // Additive, so twilight fades the neon in instead of drawing dark lines.
+  const glow = neon.material as MeshBasicMaterial;
+  expect(glow.blending).toBe(AdditiveBlending);
+  model.setNight(.1);
+  expect(glow.color.r).toBeCloseTo(.1);
+  model.setNight(0);
+  expect(neon.visible).toBe(false);
 });
