@@ -55,7 +55,7 @@ export function georgianTerrace(shell: Shell, ground: LocalGround) {
     for (const {x,z,tx,tz,nx,nz,length} of edges(plan)) {
       const at = (t: number,y: number,o: number) => [x+tx*t+nx*o,y,z+tz*t+nz*o];
       shell.body.quad(at(0,lo,.05),at(length,lo,.05),at(length,hi,.05),at(0,hi,.05),limestone);
-      for (let y = .9; y < hi-.3; y += .75)
+      for (let y = Math.ceil((lo+.3)/.75)*.75; y < hi-.3; y += .75)
         shell.body.quad(at(0,y,.07),at(length,y,.07),at(length,y+.07,.07),at(0,y+.07,.07),joint);
     }
   }
