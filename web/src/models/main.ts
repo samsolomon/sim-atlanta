@@ -10,7 +10,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type MartaLine } from '../vignette/cq400';
 import { gradeShader } from '../vignette/grade';
 import { busGeometry, busMaterial } from '../vignette/xcelsior';
-import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
+import { FREIGHT_LENGTH, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
 import { s70Geometry } from '../vignette/streetcar';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -71,7 +71,9 @@ const models = {
   cq400: 'Stadler CQ400',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
-  cm44ac: 'GE/Wabtec CM44AC',
+  cm44ac: 'GE/Wabtec CM44AC, CSX-like',
+  es44acNs: 'GE ES44AC, NS-like',
+  freightCars: 'Freight cars',
   ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
   cyclist: 'Cyclist and bicycle',
@@ -427,17 +429,18 @@ function build() {
   }
   const person = model === 'walker' || model === 'cyclist';
   ground.material = person ? figureShadow : floorMaterial;
-  const extent = person ? 6 : model === 'crescent' ? 128 : 40;
-  sun.position.set(-18,30,22).multiplyScalar(model === 'crescent' ? 4 : 1);
-  sun.shadow.camera.far = model === 'crescent' ? 380 : 120;
+  const long = model === 'crescent' || model === 'freightCars';
+  const extent = person ? 6 : model === 'crescent' ? 128 : model === 'freightCars' ? 80 : 40;
+  sun.position.set(-18,30,22).multiplyScalar(long ? 4 : 1);
+  sun.shadow.camera.far = long ? 380 : 120;
   Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent });
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 's70' || passenger);
-  longTrack.visible = model === 'crescent';
+  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 'es44acNs' || model === 's70' || passenger);
+  longTrack.visible = long;
   if (longTrack.visible) track.visible = false;
-  ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
+  ground.scale.setScalar(long ? 2.25 : 1);
   document.getElementById('lines')!.hidden = model !== 'cq400';
   document.getElementById('roles')!.hidden = model !== 'cq400';
   document.getElementById('platforms')!.hidden = model !== 'cq400';
@@ -492,11 +495,26 @@ function build() {
     blurb.append(link);
     return;
   }
-  if (model === 'cm44ac') {
-    document.getElementById('blurb')!.textContent = 'CSX 7257, seen at Georgia State, is a modernized GE AC4400CW. This scale study pairs the six-axle locomotive with an illustrative boxcar.';
-    cars = (['locomotive', 'boxcar'] as const).map(unit => {
+  if (model === 'cm44ac' || model === 'es44acNs' || model === 'freightCars') {
+    const units: FreightUnit[] = model === 'cm44ac' ? ['locomotiveCsx', 'hopper']
+      : model === 'es44acNs' ? ['locomotive', 'intermodal']
+      : ['boxcar', 'boxcarBlue', 'tank', 'hopper', 'gondola', 'autorack', 'intermodal'];
+    const blurb = document.getElementById('blurb')!;
+    blurb.textContent = model === 'cm44ac'
+      ? 'CSX 7257, seen at Georgia State, is a modernized GE AC4400CW. Here in a CSX-like blue-grey and yellow scheme without marks, with a covered hopper. '
+      : model === 'es44acNs'
+        ? 'A GE ES44AC-style unit in an NS-like scheme: black with white nose stripes, no marks. Shown with a double-stack well car. '
+        : 'The freight car mix on Atlanta lines: boxcars, tank car, covered hopper, gondola, autorack and double-stack. Generic paints, no marks. ';
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/freight-stock.md';
+    link.textContent = 'Freight notes and reference photos';
+    blurb.append(link);
+    const total = units.reduce((sum, u) => sum + FREIGHT_LENGTH[u] + .3, 0);
+    let front = total / 2;
+    cars = units.map(unit => {
       const mesh = new THREE.Mesh(freightGeometry(unit), new THREE.MeshLambertMaterial({ vertexColors: true }));
-      mesh.position.set(0, .125, (unit === 'locomotive' ? 1 : -1) * (FREIGHT_LENGTH[unit] / 2 + .15));
+      mesh.position.set(0, .125, front - FREIGHT_LENGTH[unit] / 2);
+      front -= FREIGHT_LENGTH[unit] + .3;
       mesh.castShadow = mesh.receiveShadow = true;
       scene.add(mesh);
       return mesh;
@@ -733,15 +751,16 @@ function setModel(id: Model) {
     Top: { pos: [.01,49,0], target: [0,0,0], fov: 36 },
     '¾ front': { pos: [-19,6.8,18], target: [0,2,0], fov: 38 },
   };
-  if (id === 'crescent') {
+  if (id === 'crescent' || id === 'freightCars') {
+    const k = id === 'crescent' ? 8.65 : 5.2;
     for (const preset of Object.values(passengerViews)) {
-      const scale = 8.65 / Math.min(1, camera.aspect);
+      const scale = k / Math.min(1, camera.aspect);
       preset.pos = preset.pos.map(n => n * scale) as ViewPreset['pos'];
-      preset.target[2] *= 8.65;
+      preset.target[2] *= k;
     }
   }
-  camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  camera.far = id === 'crescent' || id === 'freightCars' ? 1800 : 400;
+  presets = isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 'freightCars' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, es44acNs: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -755,7 +774,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', 'es44acNs', 'freightCars', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
