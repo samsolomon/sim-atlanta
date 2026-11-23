@@ -6,6 +6,7 @@ import type { TerrainCity } from '../terrain/transport-data';
 import { wheatStreetId, wheatStreetTower } from './wheat-street-towers';
 import { bigBethelId, heritageId, sanctuaryShells } from './auburn-sanctuaries';
 import { auburnSigns } from './auburn-signs';
+import { oddFellowsFinish } from './odd-fellows';
 import { irwinHouseFinish } from './irwin-houses';
 import { edgewoodFinish } from './edgewood-block';
 import { northBounds, northSouthJoin, northWestJoin } from './board-footprint';
@@ -51,7 +52,7 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
     && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
   const area = createDowntownTerrain(grid, {...context,buildings:context.buildings.filter(b=>!ids.has(b.id))}, context.trees, {
     quality, bottomY, join: [northWestJoin, northSouthJoin],
-    finishFor: b => b.id === wheatStreetId ? wheatStreetTower : edgewoodFinish(b) ?? irwinHouseFinish(b),
+    finishFor: b => b.id === wheatStreetId ? wheatStreetTower : oddFellowsFinish(b) ?? edgewoodFinish(b) ?? irwinHouseFinish(b),
   });
   try {
     const roads = context.roads.filter(r => r.bridge && !r.tunnel).map(r => ({
