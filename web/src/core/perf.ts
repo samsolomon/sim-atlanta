@@ -50,11 +50,12 @@ const TRAIL_KEY = 'perf-trail';
  *   &hide=trees,scenery,terrain,transport,buildings,vehicles   hide whole categories (fps upper
  *                 bounds per category). `trees` means every instanced mesh in area scenery.
  *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never)
+ *   &shadowstep=80 grid step (m) the shadow camera moves in (0 = follow the target)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
  *                 target and so redraws the shadow map as a dragging visitor does */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -64,6 +65,7 @@ export const perfOverrides = (() => {
     postOff: params.get('post') === 'off',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
     farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
+    shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
   };
 })();
 
