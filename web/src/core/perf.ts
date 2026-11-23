@@ -98,8 +98,12 @@ const previousRun = (() => {
   } catch { return null; }
 })();
 const startedAt = new Date().toISOString();
-function saveTrail(done = false) {
+function saveTrail() {
   if (!perfEnabled) return;
+  // Done once the latest City open has reached ready; later area mounts keep it done.
+  let openAt = 0;
+  for (let i = phases.length - 1; i >= 0; i--) if (phases[i].name === 'city:open') { openAt = i; break; }
+  const done = phases.slice(openAt).some(p => p.name === 'ready');
   try {
     localStorage.setItem(TRAIL_KEY, JSON.stringify({ url: location.href, at: startedAt, phases, done }));
   } catch { /* private mode */ }
@@ -114,7 +118,7 @@ function phase(name: string) {
   phases.push(p);
   if (perfEnabled) {
     console.info('PERF_PHASE', name, p.ms, p.heapMB);
-    saveTrail(name === 'ready');
+    saveTrail();
   }
   // Ready: colour is revealed and a frame has drawn (without the white model, revealed comes first).
   // Per City open: only phases since the latest city:open count, so a reopen gets its own ready.
@@ -408,6 +412,7 @@ function startOverlay() {
 function paintOverlay() {
   if (!overlay) return;
   if (lastResult) return;
+  if (!ctx) { overlay.textContent = 'perf: City closed'; return; }
   const now = performance.now();
   if (ctx && now - invAt > 15000) { inv = inventory(); invAt = now; }
   const a = frames(1000), b = frames(10000);
@@ -485,7 +490,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   const line = 'PERF_RESULT ' + JSON.stringify(r);
   console.info(line);
   try { localStorage.setItem('perf-result', JSON.stringify(r)); } catch { /* private mode */ }
-  saveTrail(true);
+  saveTrail();
   if (overlay) {
     const m = r.memory;
     overlay.style.background = 'rgba(10,40,20,.88)';
@@ -539,9 +544,16 @@ function watchSlow(onSlow: (fps: number) => void, { belowFps = 20, sampleMs = 10
 /** Wire the renderer and scene (call once City has a renderer). */
 function attach(c: PerfContext) {
   ctx = c;
+  inv = null;
+  invAt = 0;
   if (perfEnabled) startOverlay();
 }
-function detach() { ctx = null; }
+/** Release `c`; a context that was already replaced leaves the live one alone. */
+function detach(c?: PerfContext) {
+  if (c && ctx !== c) return;
+  ctx = null;
+  inv = null;
+}
 
 export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow,

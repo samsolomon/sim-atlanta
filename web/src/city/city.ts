@@ -1149,7 +1149,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const ro = new ResizeObserver(resize);
   ro.observe(container);
   resize();
-  perf.attach({
+  const perfContext: Parameters<typeof perf.attach>[0] = {
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
@@ -1169,7 +1169,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       set(world.group, 'transport'); // streetcar track, MARTA guideway, lamps; landmarks are tagged
       return m;
     },
-  });
+  };
+  // A load cancelled while building must not take over from the City that replaced it.
+  if (!options.signal?.aborted) perf.attach(perfContext);
 
   // Double-click glides to the board surface, ignoring trains, trees and buildings.
   let glideTo: THREE.Vector3 | null = null;
@@ -1383,7 +1385,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Keep the centre readable while fog softens the edges, matching the Map atmosphere.
     for (const pass of [hts, vts]) {
       pass.uniforms.uStrength.value = tilt + wx.fog * 4;
-      pass.enabled = tilt + wx.fog * 4 > 0.01;
+      pass.enabled = tilt + wx.fog * 4 > 0.01 && !perfOverrides.nopass.has('tilt');
     }
   }
 
@@ -1670,7 +1672,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
-      perf.detach();
+      perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();
       squareButton?.remove();

@@ -37,8 +37,8 @@
       "calls": 1000,
       "programs": 140,
       "textureMB": 500,
-      "geometryMB": 350,
-      "heapAfterGcMB": 600,
+      "geometryMB": 250,
+      "heapAfterGcMB": 500,
       "readyMs": 3000
     }
   }

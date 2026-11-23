@@ -6,7 +6,7 @@
  * this for scene counts and memory, and the A16 runs (docs/perf.md) for fps.
  */
 import { spawn } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -74,37 +74,52 @@ else {
   await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 }
 
-  return { send, evaluate, logs, close() { ws.close(); chrome.kill(); } };
+  return { send, evaluate, logs, async close() {
+    try { ws.close(); } catch { /* closed */ }
+    // Delete the profile only once Chrome has exited, or it writes the folder back.
+    const exited = new Promise(r => chrome.once('exit', r));
+    chrome.kill();
+    await Promise.race([exited, sleep(5000)]);
+    rmSync(profile, { recursive: true, force: true });
+  } };
 }
 
 const results = [];
 for (const [n, url] of urls.entries()) {
   // A fresh browser per URL, so one run's heap and shader cache never leak into the next.
   const { send, evaluate, logs, close } = await session();
-  await send('Page.navigate', { url });
-  const t0 = Date.now();
-  let done = false;
-  while (Date.now() - t0 < 240000) {
-    await sleep(1000);
-    try { if (await evaluate('document.title') === 'PERF_DONE') { done = true; break; } } catch { /* navigating */ }
+  try {
+    await send('Page.navigate', { url });
+    const t0 = Date.now();
+    let done = false;
+    while (Date.now() - t0 < 240000) {
+      await sleep(1000);
+      try { if (await evaluate('document.title') === 'PERF_DONE') { done = true; break; } } catch { /* navigating */ }
+    }
+    let result = done ? await evaluate('JSON.parse(localStorage.getItem("perf-result"))') : { url, error: 'timeout', logs: [...logs] };
+    // perf.ts sets PERF_DONE even when storage refuses the result; fall back to its console line.
+    if (done && !result) {
+      const line = logs.find(l => l.startsWith('PERF_RESULT '));
+      result = line ? JSON.parse(line.slice('PERF_RESULT '.length)) : { url, error: 'no stored result', logs: [...logs] };
+    }
+    if (done && result.summary) {
+      // performance.memory swings with GC timing; a forced collection gives a stable heap figure.
+      await send('HeapProfiler.enable');
+      await send('HeapProfiler.collectGarbage');
+      result.summary.heapAfterGcMB = await evaluate('Math.round(performance.memory.usedJSHeapSize / 1048576)');
+    }
+    if (done && extra && !result.error) result.eval = await evaluate(extra);
+    results.push(result);
+    if (out) {
+      const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 70 });
+      writeFileSync(join(out, `cam${n + 1}.jpg`), Buffer.from(shot.data, 'base64'));
+    }
+    const r = result;
+    if (r.error) console.log(`#${n + 1} TIMEOUT ${url}\n  ${logs.slice(-5).join('\n  ')}`);
+    else console.log(`#${n + 1} ${r.fps10s.fps} fps p50 ${r.fps10s.p50} p95 ${r.fps10s.p95} | cpu upd ${r.fps10s.updateP50} rnd ${r.fps10s.renderP50} | calls ${r.renderer.calls} tris ${r.renderer.triangles} progs ${r.renderer.programs} | heap ${r.heap?.usedMB} (gc ${r.summary.heapAfterGcMB}) MB | tex ${r.memory.total.textureMB} geo ${r.memory.total.geometryMB} cpu ${r.memory.total.cpuMB} MB | ready ${(r.phases.find(p => p.name === 'ready')?.ms / 1000).toFixed(1)} s | areas ${r.areas.length}`);
+  } finally {
+    await close();
   }
-  const result = done ? await evaluate('JSON.parse(localStorage.getItem("perf-result"))') : { url, error: 'timeout', logs: [...logs] };
-  if (done) {
-    // performance.memory swings with GC timing; a forced collection gives a stable heap figure.
-    await send('HeapProfiler.enable');
-    await send('HeapProfiler.collectGarbage');
-    result.summary.heapAfterGcMB = await evaluate('Math.round(performance.memory.usedJSHeapSize / 1048576)');
-  }
-  if (done && extra) result.eval = await evaluate(extra);
-  results.push(result);
-  if (out) {
-    const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 70 });
-    writeFileSync(join(out, `cam${n + 1}.jpg`), Buffer.from(shot.data, 'base64'));
-  }
-  const r = result;
-  if (r.error) console.log(`#${n + 1} TIMEOUT ${url}\n  ${logs.slice(-5).join('\n  ')}`);
-  else console.log(`#${n + 1} ${r.fps10s.fps} fps p50 ${r.fps10s.p50} p95 ${r.fps10s.p95} | cpu upd ${r.fps10s.updateP50} rnd ${r.fps10s.renderP50} | calls ${r.renderer.calls} tris ${r.renderer.triangles} progs ${r.renderer.programs} | heap ${r.heap?.usedMB} (gc ${r.summary.heapAfterGcMB}) MB | tex ${r.memory.total.textureMB} geo ${r.memory.total.geometryMB} cpu ${r.memory.total.cpuMB} MB | ready ${(r.phases.find(p => p.name === 'ready')?.ms / 1000).toFixed(1)} s | areas ${r.areas.length}`);
-  close();
 }
 if (out) writeFileSync(join(out, 'results.json'), JSON.stringify(results, null, 1));
 if (process.env.PERF_JSON) writeFileSync(process.env.PERF_JSON, JSON.stringify(results));

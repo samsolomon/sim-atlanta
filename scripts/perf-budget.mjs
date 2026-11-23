@@ -6,7 +6,7 @@
  * staged data (`pnpm data`). Pass --no-build to reuse web/dist.
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,15 +21,18 @@ const dist = noBuild ? join(web, 'dist') : outDir;
 
 if (!noBuild) {
   const b = spawnSync('npx', ['vite', 'build', '--outDir', outDir, '--emptyOutDir'], { cwd: web, stdio: 'inherit' });
-  if (b.status !== 0) process.exit(b.status ?? 1);
+  if (b.status !== 0) { rmSync(tmp, { recursive: true, force: true }); process.exit(b.status ?? 1); }
 }
 const port = 4700 + Math.floor(Math.random() * 200);
 // The vite binary itself, not npx, so kill() stops the server and not just a wrapper.
 const server = spawn(join(web, 'node_modules/.bin/vite'), ['preview', '--outDir', dist, '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { cwd: web, stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// --strictPort makes vite exit if the port is taken; never measure another worktree's server.
+let exited = false;
+server.on('exit', () => { exited = true; });
 let up = false;
-for (let i = 0; i < 120 && !up; i++) { try { up = (await fetch(`http://127.0.0.1:${port}/`)).ok; } catch { await sleep(250); } }
-if (!up) { server.kill(); console.error(`vite preview did not answer on :${port}`); process.exit(1); }
+for (let i = 0; i < 120 && !up && !exited; i++) { try { up = (await fetch(`http://127.0.0.1:${port}/`)).ok; } catch { await sleep(250); } }
+if (!up || exited) { server.kill(); rmSync(tmp, { recursive: true, force: true }); console.error(`vite preview did not answer on :${port}`); process.exit(1); }
 
 let failed = false;
 try {
@@ -56,5 +59,6 @@ try {
   }
 } finally {
   server.kill();
+  rmSync(tmp, { recursive: true, force: true });
 }
 process.exit(failed ? 1 : 0);
