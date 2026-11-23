@@ -1,111 +1,226 @@
 import { pointInRing, segDist, type P2 } from '../vignette/geom';
+import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
-import footprint from '../../../pipeline/prototypes/connector-footprint/sections.json';
-import { connectorLanes, connectorPoint, type ConnectorDirection } from './connector-lanes';
 import type { TerrainCity } from './transport-data';
+import {
+  alongOn,
+  matchRibbon,
+  mix,
+  ribbons,
+  sectionAt,
+  stripePoint,
+  type Ribbon,
+  type Section,
+} from './connector-corridor';
+import { connectorLanes, connectorPoint } from './connector-lanes';
 
-const [a, b] = footprint.sections;
-// At 60 m beyond A/B these offsets meet the existing 14 m mainline and 6.5 m link
-// paint. South of A the two NB feeder lanes have a separate pavement edge.
-// The outside two SB lanes include the shared option lane at the I-20 split.
-const south = a.alongM - 60, north = b.alongM + 60;
-const joins = {
-  northbound: { main: [-18.6, -4.3], auxiliary: [-3.2, 3.4], north: [-3.7, 10.4] },
-  southbound: { main: [-33.0, -42.6], auxiliary: [-42.6, -49.4], north: [-23.7, -37.9] },
-};
-
-function path(ctx: CanvasRenderingContext2D, points: P2[]) {
-  ctx.beginPath();
-  ctx.moveTo(...points[0]);
-  for (const p of points.slice(1)) ctx.lineTo(...p);
-}
-
-// Interior geometry always comes from the same sampler used for vehicle positions.
-// Only the unmeasured ends narrow to the generic City road strokes.
-function carriageway(direction: ConnectorDirection) {
-  const lower = connectorLanes(direction, a.alongM)!.edges;
-  const upper = connectorLanes(direction, b.alongM)!.edges;
-  const join = joins[direction], lanes = lower.length - 1;
-  function stripe(index: number, auxiliary = false): P2[] {
-    const group = auxiliary ? join.auxiliary : join.main;
-    const fraction = auxiliary ? (index - 5) / 2 : index / 5;
-    return [
-      connectorPoint(south, group[0] + (group[1] - group[0]) * fraction),
-      lower[index], upper[index],
-      connectorPoint(north, join.north[0] + (join.north[1] - join.north[0]) * index / lanes),
-    ];
+const bands = new PlacementIndex<P2[]>();
+for (const r of ribbons) {
+  for (let i = 1; i < r.rows.length; i++) {
+    const a = r.rows[i - 1],
+      b = r.rows[i];
+    const ring = [a.inner, b.inner, b.outer, a.outer];
+    bands.add(ring, ring, 4);
   }
-  return { stripe, lanes };
 }
-
-// Lamps and viaduct columns must clear both mainline and feeder lanes.
-// The space between a diverging feeder and mainline is open.
-const travelBands = (['southbound', 'northbound'] as const).flatMap(direction => {
-  const { stripe, lanes } = carriageway(direction);
-  return [[...stripe(0), ...stripe(5).reverse()], [...stripe(5, true), ...stripe(lanes, true).reverse()]];
-});
-
 export function inConnectorLanes(x: number, z: number, margin = 0) {
-  return travelBands.some(ring => pointInRing(x, z, ring) || (margin > 0 && ring.some((a, i) =>
-    segDist(x, z, a, ring[(i + 1) % ring.length]) < margin)));
+  return bands
+    .at(x, z)
+    .some(
+      (ring) =>
+        pointInRing(x, z, ring) ||
+        (margin > 0 && ring.some((a, i) => segDist(x, z, a, ring[(i + 1) % 4]) < margin)),
+    );
 }
 
-/** Overlay on the existing downtown ground texture, once during the terrain bake. */
-export function paintConnector(ctx: CanvasRenderingContext2D, data: TerrainCity, texelM: number) {
-  if (!('name' in data) || data.name !== 'downtown') return;
-  const start = connectorPoint(south, 0), end = connectorPoint(north, 0);
-  const fade = (color: string) => {
-    const gradient = ctx.createLinearGradient(...start, ...end);
-    gradient.addColorStop(0, color + '00');
-    gradient.addColorStop((a.alongM - south) / (north - south), color);
-    gradient.addColorStop((b.alongM - south) / (north - south), color);
-    gradient.addColorStop(1, color + '00');
-    return gradient;
-  };
-  ctx.save();
-  const asphalt = fade(PAL.asphaltHwy), white = fade(PAL.lineWhite), yellow = fade('#dfba6d');
-  const shoulder = fade('#616168'), divider = fade('#a9a394');
-  function fillBand(left: P2[], right: P2[], color: CanvasGradient) {
-    path(ctx, [...left, ...right.slice().reverse()]);
+function path(ctx: CanvasRenderingContext2D, pts: P2[]) {
+  ctx.beginPath();
+  ctx.moveTo(...pts[0]);
+  for (const p of pts.slice(1)) ctx.lineTo(...p);
+}
+
+export function isConnectorCity(city: TerrainCity) {
+  return (
+    'name' in city &&
+    [
+      'downtown',
+      'king-memorial',
+      'sweet-auburn',
+      'north-band',
+      'north-corner',
+      'south-band',
+      'south-corner',
+    ].includes(String(city.name))
+  );
+}
+
+type Road = { cls: string; sub?: string | null; pts: P2[] };
+export function surveyedRoad(road: Road) {
+  return (
+    road.cls === 'motorway' &&
+    road.pts.length > 1 &&
+    !!matchRibbon(road.pts[0], road.pts[1], road.sub === 'link')
+  );
+}
+
+function groundStrips(city: TerrainCity) {
+  const covered = new Map<Ribbon, [number, number][]>();
+  for (const part of city.terrainTransport?.roads ?? []) {
+    if (part.kind !== 'bridge' || part.cls !== 'motorway') continue;
+    for (let i = 1; i < part.pts.length; i++) {
+      const a = part.pts[i - 1],
+        b = part.pts[i];
+      const r = matchRibbon(a, b, part.sub === 'link');
+      if (!r || r.kind !== 'ground') continue;
+      const ranges = covered.get(r) ?? [];
+      ranges.push([alongOn(r, a).s, alongOn(r, b).s]);
+      covered.set(r, ranges);
+    }
+  }
+  const box = city.bounds,
+    strips: { r: Ribbon; rows: Section[] }[] = [];
+  for (const r of ribbons) {
+    if (
+      r.kind !== 'ground' ||
+      !r.rows.some(
+        (row) =>
+          row.inner[0] > box.minX - 38 &&
+          row.inner[0] < box.maxX + 38 &&
+          row.inner[1] > box.minZ - 38 &&
+          row.inner[1] < box.maxZ + 38,
+      )
+    )
+      continue;
+    const intervals = covered.get(r);
+    if (!intervals) {
+      strips.push({ r, rows: r.rows });
+      continue;
+    }
+    const add = (a: number, b: number) => {
+      if (b - a > 0.05)
+        strips.push({
+          r,
+          rows: [sectionAt(r, a), ...r.rows.filter((p) => p.s > a && p.s < b), sectionAt(r, b)],
+        });
+    };
+    let end = 0;
+    for (const [a, b] of intervals.sort((a, b) => a[0] - b[0])) {
+      add(end, a);
+      end = Math.max(end, b);
+    }
+    add(end, r.line.length);
+  }
+  return strips;
+}
+
+// The narrow concrete median follows both inside stripes. Where the carriageways
+// separate at Freedom Parkway the paved shoulders end and the median stays open.
+const oppositeEdge = new PlacementIndex<[P2, P2]>();
+for (const r of ribbons)
+  if (!r.link && r.direction === 'southbound' && r.kind === 'ground') {
+    for (let i = 1; i < r.rows.length; i++) {
+      const seg: [P2, P2] = [r.rows[i - 1].inner, r.rows[i].inner];
+      oppositeEdge.add(seg, seg, 12);
+    }
+  }
+function medianAt(p: P2) {
+  let nearest: P2 | undefined,
+    distance = 10;
+  for (const [a, b] of oppositeEdge.at(...p)) {
+    const dx = b[0] - a[0],
+      dz = b[1] - a[1];
+    const t = Math.max(
+      0,
+      Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / (dx * dx + dz * dz || 1)),
+    );
+    const q = mix(a, b, t),
+      d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (d < distance) {
+      distance = d;
+      nearest = q;
+    }
+  }
+  return nearest;
+}
+
+export function connectorMedians(city: TerrainCity, strips = groundStrips(city)) {
+  const runs: Section[][] = [];
+  if (!isConnectorCity(city)) return runs;
+  for (const {r,rows} of strips) {
+    if (r.link || r.direction !== 'northbound') continue;
+    let run: Section[] | undefined;
+    for (const row of rows) {
+      const opposite = medianAt(row.inner);
+      const middle = opposite && mix(row.inner,opposite,.5);
+      // The median may carry an independently mapped exit or entrance.
+      if (!opposite || !middle || inConnectorLanes(...middle,.6)) { run=undefined; continue; }
+      if (!run) { run=[]; runs.push(run); }
+      run.push({s:row.s,inner:row.inner,outer:opposite});
+    }
+  }
+  return runs.filter(rows=>rows.length>1);
+}
+
+export function paintConnector(ctx: CanvasRenderingContext2D, city: TerrainCity, texelM: number) {
+  if (!isConnectorCity(city)) return;
+  const box = city.bounds;
+  const visible = groundStrips(city);
+  function fill(rows: Section[], left: number, right: number, color: string) {
+    path(ctx, [
+      ...rows.map((r) => stripePoint(r, left)),
+      ...rows.map((r) => stripePoint(r, right)).reverse(),
+    ]);
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
   }
-  for (const direction of ['southbound', 'northbound'] as const) {
-    const { stripe, lanes } = carriageway(direction);
-    const inside = stripe(0), outside = stripe(lanes, true);
-    const sign = footprint.directions[direction].travelSign;
-    const insideShoulder = [...inside], outsideShoulder = [...outside];
-    for (const [i, section] of [a, b].entries()) {
-      const median = (section.northbound.insideM + section.southbound.insideM) / 2;
-      // Leave a narrow separator between the two inside shoulders.
-      insideShoulder[i + 1] = connectorPoint(section.alongM, median + sign * .35);
-      outsideShoulder[i + 1] = connectorPoint(section.alongM, section[direction].outsideM + sign * 3);
+  function stroke(rows: Section[], i: number, n: number, edge: boolean, color: string) {
+    path(
+      ctx,
+      rows.map((r) => stripePoint(r, i / n)),
+    );
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(edge ? 0.35 : 0.24, texelM * (edge ? 0.85 : 0.65));
+    ctx.setLineDash(edge ? [] : [3, 9]);
+    ctx.stroke();
+  }
+  ctx.save();
+  // Paint shoulders first so a joining pavement always owns its travel surface.
+  for (const rows of connectorMedians(city, visible)) {
+    fill(rows,0,1,'#66666c');
+    fill(rows,.44,.56,'#aaa596');
+  }
+  for (const { r, rows } of visible) {
+    const w = 3.55 * r.lanes;
+    fill(rows, -(r.link ? 0.6 : 2.2) / w, 1 + (r.link ? 0.8 : 2.8) / w, '#66666c');
+  }
+  for (const { rows } of visible) fill(rows, 0, 1, PAL.asphaltHwy);
+  for (const { r, rows } of visible)
+    for (let i = 0; i <= r.lanes; i++) {
+      stroke(rows, i, r.lanes, i === 0 || i === r.lanes, i === 0 && !r.link ? '#dfba6d' : PAL.lineWhite);
     }
-    if (direction === 'southbound') {
-      // The detached MLK exit passes closest between the two measured sections.
-      const middleShoulder = [-24, 30].map(s => {
-        const outsideEdge = connectorLanes(direction, s)!.edges[lanes];
-        return [outsideEdge[0] - footprint.acrossXZ[0], outsideEdge[1] - footprint.acrossXZ[1]] as P2;
+  // Through the rail crossing two branches temporarily occupy adjoining lanes.
+  // Redraw this measured continuous surface and the narrow concrete divider over
+  // the overlapping link shoulders. Its eight stripes are shared with traffic.
+  if (box.minX < 850 && box.maxX > 650 && box.minZ < 610 && box.maxZ > 460) {
+    for (const dir of ['southbound', 'northbound'] as const) {
+      const rows = [-76, 77].map((s) => {
+        const edges = connectorLanes(dir, s)!.edges;
+        return { s, inner: edges[0], outer: edges[7] };
       });
-      outsideShoulder.splice(2, 0, ...middleShoulder);
-      const medianEdge = insideShoulder.map(([x, z], i): P2 =>
-        i === 1 || i === 2 ? [x + .7 * footprint.acrossXZ[0], z + .7 * footprint.acrossXZ[1]] : [x, z]);
-      fillBand(insideShoulder, medianEdge, divider);
+      fill(rows, 0, 1, PAL.asphaltHwy);
+      for (let i = 0; i <= 7; i++)
+        stroke(rows, i, 7, i === 0 || i === 7, i === 0 ? '#dfba6d' : PAL.lineWhite);
     }
-    fillBand(insideShoulder, inside, shoulder);
-    fillBand(outside, outsideShoulder, shoulder);
-    fillBand(inside, stripe(5), asphalt);
-    fillBand(stripe(5, true), outside, asphalt);
-
-    for (let i = 0; i <= lanes; i++) {
-      const edge = i === 0 || i === lanes;
-      ctx.lineWidth = Math.max(edge ? .35 : .24, texelM * (edge ? .85 : .65));
-      ctx.strokeStyle = i === 0 ? yellow : white;
-      ctx.setLineDash(edge ? [] : [3, 9]);
-      path(ctx, stripe(i, i >= 5));
-      ctx.stroke();
-    }
+    const median = [
+      [-76, -13.2],
+      [77, -6.2],
+    ].map(([s, u]) => ({
+      s,
+      inner: connectorPoint(s, u - 0.35),
+      outer: connectorPoint(s, u + 0.35),
+    }));
+    fill(median, 0, 1, '#a9a394');
   }
   ctx.restore();
 }

@@ -1,6 +1,6 @@
 # The Downtown Connector at Georgia State
 
-City paints a **14 m mainline in each direction**. On either side of the rail bridges, edge-line to edge-line, the aerial reads **about 24–25 m per direction before shoulders**. The model also opens a 15–18 m gap between the mainlines where the two inner shoulders and divider together occupy about 6 m. For M2b, align the inner and outer edge lines first, then connect the changing outer lanes to their ramps. [Annotated comparison](log/2026-11-21-connector-footprint.png)
+At the November 21 baseline (revision ff92f13), City painted a **14 m mainline in each direction**. On either side of the rail bridges, edge-line to edge-line, the aerial reads **about 24–25 m per direction before shoulders**. That baseline also opened a 15–18 m gap between the mainlines where the two inner shoulders and divider together occupy about 6 m. The November 22 corridor model uses these two transects through Georgia State and continues onto the surrounding measured approaches. [Annotated comparison](log/2026-11-21-connector-footprint.png)
 
 ## Two identifiable cross-sections
 
@@ -42,3 +42,5 @@ To repeat the aerial picks, start at City (x, z) = (760, 545) m. Move along (0.8
 [Measured sections](../pipeline/prototypes/connector-footprint/sections.json) supplies the figure and the [City-coordinate sampler](../web/src/terrain/connector-lanes.ts). Call `connectorLanes('northbound', alongM)` or `connectorLanes('southbound', alongM)` from −76 m through +77 m inclusive. Each result has eight stripe-edge points and seven lane centres in City (x, z) metres, ordered from the median outwards. Northbound follows increasing `alongM`, southbound decreasing. The sampler returns `null` beyond the two sections. Detached ramps lie outside its coverage.
 
 The outer and inner stripe locations at A and B are aerial picks. Intermediate edges are linearly interpolated, and individual lane centres and dividers are inferred by equal subdivision. For lane index 0 through 6, draw the dividers from the corresponding `edges` and place traffic on `centres[index]`. Keep index 0 on the median side in both directions. A southbound car approaches the shared exit choice in index 5 and the exit-only lane in index 6. On the northbound approach at A, the two outside positions are the feeder.
+
+The wider corridor now uses the [southern](connector-south-survey.md) and [northern](connector-north-survey.md) section registers. [Current traffic and rendering](connector-traffic.md)

@@ -4,6 +4,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import type { TerrainCity } from '../terrain/transport-data';
 import { marchonFinishes } from './marchon-frontage';
+import { cityRoadHeight } from './road-height';
 import { PAL } from '../vignette/world';
 
 import { eastBounds, eastJoin } from './board-footprint';
@@ -62,12 +63,13 @@ export async function loadEast(
   verifyJoin(west, grid);
   if (!context.buildings?.length || !context.roads?.length || !Array.isArray(context.trees))
     throw new Error('Missing King Memorial neighborhood');
-  return createDowntownTerrain(grid, context, context.trees, {
+  const area = createDowntownTerrain(grid, context, context.trees, {
     quality,
     bottomY,
     join: extraJoin ? [eastJoin, ...(Array.isArray(extraJoin) ? extraJoin : [extraJoin])] : eastJoin,
     finishFor: marchonFinishes(context.buildings),
   });
+  return { ...area, connectorBoard: { city: context, roadHeight: cityRoadHeight(context, area.groundAt) } };
 }
 
 /** One walnut base under the L-shaped board, with the original eight-metre outside lip. */

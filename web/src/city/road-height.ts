@@ -24,19 +24,23 @@ export function cityRoadHeight(city: TerrainCity, groundAt: (x: number, z: numbe
   const parts = city.terrainTransport?.roads ?? [];
   const cache = new WeakMap<VRoad, TransportRun[]>();
   return (x: number, z: number, road: VRoad) => {
-    if (!road.bridge && !road.tunnel) return groundAt(x,z);
+    const ground = !road.bridge && !road.tunnel;
+    // The directed OSM lane owner can be tagged ground even where the Sweet
+    // Auburn lidar measured a deck. Test its scoped intervals there too.
+    if (ground && road.cls !== 'motorway') return groundAt(x,z);
     let candidates = cache.get(road);
     if (!candidates) {
       candidates = parts.filter(part => part.cls === road.cls && (part.sub ?? null) === (road.sub ?? null) &&
         part.pts.some(p => nearest(p,road.pts).distance < .08));
       cache.set(road,candidates);
     }
+    if (!candidates.length) return ground ? groundAt(x,z) : null;
     const onRoad = nearest([x,z],road.pts);
     for (const part of candidates) {
       const near = nearest([onRoad.x,onRoad.z],part.pts);
       if (near.distance > .08 || near.ux*onRoad.ux + near.uz*onRoad.uz < .98) continue;
       return part.kind === 'ground' ? groundAt(x,z) : deckAt?.(x,z,part) ?? null;
     }
-    return null;
+    return ground ? groundAt(x,z) : null;
   };
 }
