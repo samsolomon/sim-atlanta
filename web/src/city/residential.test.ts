@@ -136,3 +136,21 @@ it('composes a modest set of windows and lights about a third of rooms', () => {
   expect(glowing / total).toBeGreaterThan(.2);
   expect(glowing / total).toBeLessThan(.5);
 });
+
+it('orients ridges by style: Craftsman front gables run back from the street, Tudor ridges along it', () => {
+  // The street runs along x at z = -6, so each front is the z = 0 edge.
+  const craftsman = house('craft', rect(10, 14)), tudor = house('tudor', rect(14, 10, 30));
+  const plan = residential(city([craftsman, tudor]), undefined, undefined, undefined, 'high', { craft: { style: 'craftsman' }, tudor: { style: 'tudor' } });
+  const c = plan.planOf('craft')!, t = plan.planOf('tudor')!;
+  expect(c.shape).toBe('gabled');
+  expect(Math.abs(c.ridge[1])).toBeCloseTo(1, 5);
+  expect(t.shape).toBe('gabled');
+  expect(Math.abs(t.ridge[0])).toBeCloseTo(1, 5);
+  // A deep Colonial (front narrower than the house) never collapses into an untagged pyramid.
+  // (Deep lots face the same street, so the front-derived axis is the one under test.)
+  for (let i = 0; i < 10; i++) {
+    const deep = house(`deep-${i}`, rect(8, 12, -45 + i * 9, 0));
+    const one = residential(city([deep]), undefined, undefined, undefined, 'high', { [deep.id]: { style: 'colonial' } }).planOf(deep.id)!;
+    expect(one.shape).not.toBe('pyramidal');
+  }
+});

@@ -10,6 +10,8 @@ Sam on #259: better, but "something still feels funny". Changes, in order of imp
 4. **Windows.** About 0.9 × 1.5 m double-hungs in sky-toned blue-grey glass with a white frame and meeting rail. They never touch: each unit keeps at least its own width of wall from the next, except a deliberate pair, a Craftsman grouped triple or a Tudor grouped pair. Fronts have two or three windows per floor plus the door.
 5. **Porches.** Deep (2.4 m) porches with square white columns (four across a full porch, three on a half porch), a shed roof with a fascia, and steps down from the door. Craftsman porches are full-front, and about half of Colonials get a half-front porch.
 6. **Colour.** Wall families are lighter (white, cream and pale siding; warmer brick), lifted slightly above Street View so they survive the City grade. Shutters stay dark for contrast.
+Also: rake boards along every gable overhang. Front-gabled Craftsman half storeys put their dormers on the side slopes, sized to the pitch, and porch roofs stay under the main fascia line. Craftsman fronts fall back from a triple to a pair or a single so a window always clears the door. Deep Colonial fronts turn their ridge so a hip never collapses into an untagged pyramid.
+
 7. **Apartments.** Long or large "house" footprints (over 220 m² and more than 1.8:1, or over 330 m²) are period apartment buildings, not giant houses. They are two or three storeys, mostly brick, under a low hip, with single windows in regular bays on every wall and an entry at each end of the front.
 
 ## Views (captioned BEFORE | AFTER)
@@ -24,6 +26,6 @@ Sam on #259: better, but "something still feels funny". Changes, in order of imp
 
 ## Budget
 
-House detail across the nine square-board rows (roofs, eaves, fascia and soffits, porches, doors, windows and trim) is 826,385 triangles at high, or 251 per house, and 505,553 at low, or 154 per house. It all sits in the existing building batch, so no draws are added. The low tier keeps the fascia and drops soffits; porches get two columns and two steps. In the lab, including walls: 207–216 per house at high and about 141 at low.
+House detail across the nine square-board rows (roofs, eaves, fascia and soffits, rake boards, porches, doors, windows and trim) is 861,206 triangles at high, or 262 per house, and 525,001 at low, or 160 per house. It all sits in the existing building batch, so no draws are added. The low tier keeps the fascia and drops soffits; porches get two columns and two steps. In the lab, including walls: 219–226 per house at high and 145–148 at low.
 
 Choices are `illustrative` and deterministic per id. OSM levels, height, `roof:shape` and `building:material` win where tagged. Publishing needs a web rebuild only.

@@ -18,7 +18,7 @@ type Shape = 'gabled' | 'hipped' | 'pyramidal';
 export type HouseStyle = 'colonial' | 'craftsman' | 'tudor' | 'apartment';
 /** Lab and test overrides: pin a footprint's style, siding, wall colour or storeys. */
 export type HouseForce = Partial<{ style: HouseStyle; siding: Siding; wall: string; storeys: number }>;
-type Plan = { style: HouseStyle; storeys: number; doorS: number; doors: number[]; id: string; wind: number; overhang: number;
+type Plan = { style: HouseStyle; storeys: number; doorS: number; doors: number[]; id: string; wind: number; overhang: number; dormerEdge: P2[] | null;
   concave: boolean; porchFoot?: number; front: P2[] | null; frontFoot?: number; siding: Siding; doorColor: string;
   crossGable: boolean; dormers: number; quality: 'high' | 'low'; shape: Shape; eave: number; rise: number; centre: P2; u: P2; long: number; half: number;
   wall: string; roof: string; trim: string; porch: P2[] | null; chimney: boolean; brick: boolean };
@@ -146,6 +146,9 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
     const ca = (Math.min(...a) + Math.max(...a)) / 2, cc = (Math.min(...c) + Math.max(...c)) / 2;
     axis = { u, long: (Math.max(...a) - Math.min(...a)) / 2, half: (Math.max(...c) - Math.min(...c)) / 2,
       centre: [u[0] * ca + v[0] * cc, u[1] * ca + v[1] * cc], area: box.area };
+    // A side-gabled or hipped roof on a front narrower than the house is deep: the ridge then runs
+    // back from the street instead (otherwise a hip would collapse into an untagged pyramid).
+    if (style !== 'craftsman' && axis.long < axis.half) axis = { ...axis, u: v, long: axis.half, half: axis.long };
   }
   // Pitch by style: Craftsman about 7/12, steep Tudor, low apartment hips.
   const rise = style === 'craftsman' ? Math.min(3.6, Math.max(1.5, axis.half * .58))
@@ -183,7 +186,12 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   // Half storeys always get dormers; under a 2.7 m rise a dormer's roof would cross the main ridge.
   const dormerRoll = r(), pairRoll = r();
   const halfStorey = storeys % 1 !== 0;
-  const dormers = !concave && shape === 'gabled' && along > .7 && rise >= 2.7 && quality === 'high'
+  // Front-gabled half storeys put their dormers on the side slopes instead of the front.
+  const dormerEdge: P2[] | null = !concave && shape === 'gabled' ? (along > .7 ? front
+    : halfStorey ? ring.map((a, i) => [a, ring[(i + 1) % ring.length]] as P2[])
+      .filter(([a, d]) => Math.abs((d[0] - a[0]) * axis.u[0] + (d[1] - a[1]) * axis.u[1]) / (Math.hypot(d[0] - a[0], d[1] - a[1]) || 1) > .9)
+      .sort((x, y) => Math.hypot(y[1][0] - y[0][0], y[1][1] - y[0][1]) - Math.hypot(x[1][0] - x[0][0], x[1][1] - x[0][1]))[0] ?? null : null) : null;
+  const dormers = dormerEdge && rise >= (halfStorey ? 2 : 2.7) && quality === 'high'
     ? (halfStorey ? (pairRoll < .5 ? 1 : 2) : dormerRoll < .5 ? 0 : pairRoll < .6 ? 1 : 2) : 0;
   const wall = f.wall ?? palette[Math.floor(r() * palette.length)];
   // Trim: white or cream on siding; contrasting on brick (cream on red and brown, dark on painted white).
@@ -192,7 +200,7 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const wind = ring.reduce((a, q, i) => { const n = ring[(i + 1) % ring.length]; return a + q[0] * n[1] - n[0] * q[1]; }, 0) > 0 ? 1 : -1;
   // Eave and rake overhang by style: deep Craftsman eaves, tighter Tudor ones.
   const overhang = style === 'craftsman' ? .6 : style === 'tudor' || style === 'apartment' ? .3 : .45;
-  return { style, storeys, doorS, doors, id: b.id, wind, overhang, concave, shape, eave, rise, centre: axis.centre, u: axis.u, long: axis.long, half: axis.half, front, siding: kind,
+  return { style, storeys, doorS, doors, id: b.id, wind, overhang, dormerEdge, concave, shape, eave, rise, centre: axis.centre, u: axis.u, long: axis.long, half: axis.half, front, siding: kind,
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall, roof: roofs[Math.floor(r() * roofs.length)],
     trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick' };
@@ -224,7 +232,8 @@ function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
   // every wall gets a shadow line under the roof edge. The roof plane simply extends outward and
   // down, so gables and dormers built on it stay on the same plane.
   const ov = p.overhang, low = eave - ov * rise / half, ring = inset(outer, -ov);
-  const soffit = '#' + new THREE.Color(p.roof).multiplyScalar(.7).getHexString();
+  // 0.7 × the roof colour in display (sRGB) terms, so the shadow under the eave reads.
+  const soffit = '#' + [1, 3, 5].map(i => Math.round(parseInt(p.roof.slice(i, i + 2), 16) * .7).toString(16).padStart(2, '0')).join('');
   const edge = (a: P2, d: P2, oa: P2, od: P2) => {
     b.quad([a[0], low - .2, a[1]], [d[0], low - .2, d[1]], [d[0], low, d[1]], [a[0], low, a[1]], p.trim);
     // The low tier keeps the fascia (the shadow line) and drops the soffit.
@@ -258,6 +267,12 @@ function roofFor(p: Plan, b: Builder, outer: P2[], eave: number) {
     edge(a, d, outer[i], outer[(i + 1) % outer.length]);
   }
   if (p.shape === 'gabled') {
+    // Rake fascia: a trim board along each sloping roof edge past the gable wall.
+    for (let i = 0; i < ring.length; i++) {
+      const a = ring[i], d = ring[(i + 1) % ring.length], ra = ridge(...a, reach), rd = ridge(...d, reach);
+      if (Math.hypot(ra[0] - rd[0], ra[2] - rd[2]) >= 1e-3) continue;
+      for (const q of [a, d]) b.quad([q[0], low - .2, q[1]], [q[0], low, q[1]], [ra[0], ra[1], ra[2]], [ra[0], ra[1] - .2, ra[2]], p.trim);
+    }
     // Gable walls stand on the wall plane under the rake overhang.
     for (let i = 0; i < outer.length; i++) {
       const a = outer[i], d = outer[(i + 1) % outer.length], ra = ridge(...a, long), rd = ridge(...d, long);
@@ -304,7 +319,7 @@ function crossGable(p: Plan, b: Builder, edge: P2[], s: number, eave: number) {
   b.tri(l, r, apex, p.wall);
   b.tri(l, apex, ridge, p.roof);
   b.tri(r, ridge, apex, p.roof);
-  b.quad(at(s - .45, .04, eave + ga * .25), at(s + .45, .04, eave + ga * .25), at(s + .45, .04, eave + ga * .62), at(s - .45, .04, eave + ga * .62), '#56656d');
+  b.quad(at(s - .45, .04, eave + ga * .25), at(s + .45, .04, eave + ga * .25), at(s + .45, .04, eave + ga * .62), at(s - .45, .04, eave + ga * .62), '#8fa4b2');
 }
 
 /**
@@ -366,7 +381,14 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
           const pair = len > 10 ? 2 : 1;
           for (const t of k === 0 ? [-.3, .3] : len > 8 ? [-.3, 0, .3] : [-.25, .25]) win(t * len, sill, .9, h, k === 0 ? pair : 1);
         } else if (p.style === 'craftsman') {
-          if (k === 0) win(.22 * len, sill, .8, h, len > 7 ? 3 : 2);
+          // The grouped triple, else a pair, else a single, moving out until it clears the door.
+          if (k === 0) {
+            const before = placed.length;
+            for (const n of len > 7 ? [3, 2, 1] : [2, 1]) {
+              for (const t of [.22, .28, .33]) { win(t * len, sill, .8, h, n); if (placed.length > before) break; }
+              if (placed.length > before) break;
+            }
+          }
           else for (const t of [-.22, .22]) win(t * len, sill, .9, h);
         } else {
           win(-.22 * len, sill, .8, h, k === 0 ? 2 : 1);
@@ -387,8 +409,9 @@ function windows(p: Plan, b: Builder, lit: Builder, outer: P2[], base: number, e
     }
     // Attic window in each gable end (walls across the ridge on a gabled roof).
     // ...only where the gable is still at least a metre wide at the window's top.
+    // (The spacing record is per storey: the attic light sits above all of it.)
     if (p.shape === 'gabled' && !p.concave && Math.abs((d[0] - a[0]) * p.u[0] + (d[1] - a[1]) * p.u[1]) / len < .3 && len < p.half * 2.2
-      && p.half * (1 - (p.rise * .3 + .9) / p.rise) >= .5)
+      && p.half * (1 - (p.rise * .3 + .9) / p.rise) >= .5 && (placed.length = 0) === 0)
       win(0, eave - base + p.rise * .3, .7, .8);
   }
 }
@@ -439,20 +462,23 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
     });
     sides.forEach((edge, k) => crossGable(p, b, edge, (k % 2 ? .25 : -.25) * Math.hypot(edge[1][0] - edge[0][0], edge[1][1] - edge[0][1]), eave));
   }
-  if (!p.front) return;
-  const { len, at } = frontFrame(p);
-  // The front slope climbs `rise` over `half` metres inward from the front wall.
+  if (p.front && p.crossGable) crossGable(p, b, p.front, 0, eave);
+  if (!p.dormerEdge) return;
+  // Dormers sit on the slope above `dormerEdge`: the front, or a side slope on front-gabled houses.
+  const { len, at } = frontFrame(p, p.dormerEdge);
+  // That slope climbs `rise` over `half` metres inward from its wall.
   const roofAt = (t: number) => eave + p.rise * Math.min(1, t / p.half);
-  if (p.crossGable) crossGable(p, b, p.front, 0, eave);
+  const onFront = !!p.front && p.dormerEdge === p.front;
   for (let k = 0; k < p.dormers; k++) {
     // Gabled dormers on the front slope, set back a third of the way up.
     // Beside a cross gable, dormers move out toward the ends rather than colliding with it.
-    const spread = p.crossGable ? .32 : .26;
-    const s = (p.dormers === 1 ? (p.crossGable ? spread : 0) : k ? spread : -spread) * len, t0 = p.half * .35, y0 = roofAt(t0), top = y0 + 1.25, w = .85;
-    if (p.crossGable && Math.abs(s) < 2.8) continue;
+    const gable = p.crossGable && onFront, spread = gable ? .32 : .26;
+    // Dormer height scales with the pitch, so it stays under the ridge on lower roofs.
+    const s = (p.dormers === 1 ? (gable ? spread : 0) : k ? spread : -spread) * len, t0 = p.half * .35, y0 = roofAt(t0), top = y0 + Math.min(1.25, p.rise * .45), w = .85;
+    if (gable && Math.abs(s) < 2.8) continue;
     const t1 = (top + .5 - eave) * p.half / p.rise;
     b.quad(at(s - w, -t0, y0), at(s + w, -t0, y0), at(s + w, -t0, top), at(s - w, -t0, top), p.wall);
-    b.quad(at(s - .45, -t0 + .02, y0 + .25), at(s + .45, -t0 + .02, y0 + .25), at(s + .45, -t0 + .02, top - .2), at(s - .45, -t0 + .02, top - .2), '#56656d');
+    b.quad(at(s - .45, -t0 + .02, y0 + .25), at(s + .45, -t0 + .02, y0 + .25), at(s + .45, -t0 + .02, top - .2), at(s - .45, -t0 + .02, top - .2), '#8fa4b2');
     const tTop = (top - eave) * p.half / p.rise;
     for (const side of [-w, w]) b.tri(at(s + side, -t0, y0), at(s + side, -t0, top), at(s + side, -tTop, top), p.wall);
     b.tri(at(s - w - .1, -t0 + .15, top), at(s + w + .1, -t0 + .15, top), at(s, -t0 + .15, top + .5), p.wall);
@@ -542,12 +568,14 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
           const cols = p.quality === 'low' ? 2 : full ? 4 : 3;
           for (let k = 0; k < cols; k++) {
             const s = -w / 2 + .2 + (w - .4) * k / (cols - 1);
-            quadBox(s - .14, s + .14, depth - .32, depth - .04, base + .55, base + 2.95, p.trim);
+            quadBox(s - .14, s + .14, depth - .32, depth - .04, base + .55, Math.min(base + 2.95, eave - p.overhang * p.rise / p.half - .65), p.trim);
           }
           // Shed roof falling from the wall to the porch front, with a fascia.
+          // It starts under the main fascia line, so a one-storey eave never cuts through it.
+          const top = Math.min(base + 3.35, eave - p.overhang * p.rise / p.half - .25), front = top - .4;
           const p0 = at(-w / 2 - .2, -.05), p1 = at(w / 2 + .2, -.05), p2 = at(w / 2 + .2, depth + .35), p3 = at(-w / 2 - .2, depth + .35);
-          builder.quad([p0[0], base + 3.35, p0[1]], [p1[0], base + 3.35, p1[1]], [p2[0], base + 2.95, p2[1]], [p3[0], base + 2.95, p3[1]], p.roof);
-          builder.quad([p3[0], base + 2.75, p3[1]], [p2[0], base + 2.75, p2[1]], [p2[0], base + 2.95, p2[1]], [p3[0], base + 2.95, p3[1]], p.trim);
+          builder.quad([p0[0], top, p0[1]], [p1[0], top, p1[1]], [p2[0], front, p2[1]], [p3[0], front, p3[1]], p.roof);
+          builder.quad([p3[0], front - .2, p3[1]], [p2[0], front - .2, p2[1]], [p2[0], front, p2[1]], [p3[0], front, p3[1]], p.trim);
           // Steps from the deck down to the yard at the door.
           const ds = p.doorS - c0, drop = base + .55 - (p.porchFoot ?? base - .3);
           const steps = p.quality === 'low' ? 2 : Math.max(2, Math.min(5, Math.ceil(drop / .18)));
@@ -556,5 +584,9 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
       },
     };
   };
-  return { city: { ...city, buildings }, finishFor, count: plans.size };
+  return {
+    city: { ...city, buildings }, finishFor, count: plans.size,
+    /** Read-only view of a house's plan (style, roof shape, ridge direction), for tests and the lab. */
+    planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys }; },
+  };
 }
