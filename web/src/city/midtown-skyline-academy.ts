@@ -30,7 +30,7 @@ export function academyOfMedicine(shell: Shell, ground: LocalGround) {
   for (const e of edges(ring)) {
     if (e.length < 3) continue;
     for (let t = 1.1; t < e.length - .6; t += 2.9 + ((e.x * 7 + t * 13) % 1.7)) {
-      const len = 1.4 + ((e.z * 5 + t * 11) % 1.9);
+      const len = 1.4 + (((e.z * 5 + t * 11) % 1.9) + 1.9) % 1.9;
       const at = (u: number, y: number) => [e.x + e.tx * u + e.nx * .03, y, e.z + e.tz * u + e.nz * .03];
       shell.body.quad(at(t, EAVE - .55 - len), at(t + .35, EAVE - .55 - len), at(t + .35, EAVE - .55), at(t, EAVE - .55), stain);
     }
