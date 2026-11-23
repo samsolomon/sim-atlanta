@@ -34,7 +34,17 @@ function nextRow(t: TrainState, next: Stop | undefined) {
   return `<dt>Next stop</dt><dd>${esc(place(name))}${eta}</dd>`;
 }
 
-export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city = false) {
+const TIER_WORD: Record<Tier, string> = { live: 'Live', scheduled: 'Scheduled', reported: 'Reported', inferred: 'Inferred', illustrative: 'Illustrative' };
+const SERVICE: Record<string, string> = { heavy_rail: 'City rail', light_rail: 'City rail', streetcar: 'City rail', intercity: 'Intercity', freight: 'Freight', bus: 'Bus' };
+
+/** "RED SOUTHBOUND TO AIRPORT STATION" → "Southbound to Airport"; no direction → "To Airport". */
+export const destination = (headsign: string) => {
+  const dir = headsign.match(/\b(north|south|east|west)bound\b/i)?.[0];
+  return `${dir ? `${dir.charAt(0).toUpperCase()}${dir.slice(1).toLowerCase()} to` : 'To'} ${place(headsign)}`;
+};
+
+export function trainCard(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city = false, a2c = false) {
+  if (a2c) return trainCardA2c(t, route, next, vt, city);
   const color = route ? routeColor(route) : '#333';
   const name = route?.mode === 'heavy_rail' ? `${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
   let model: string | undefined;
@@ -115,9 +125,44 @@ export function busCard(bus: LiveBus, now: number, model?: string) {
       ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>`;
 }
 
-export function cityFreightCard(line = 'Atlanta Terminal Subdivision') {
+export function cityFreightCard(line = 'Atlanta Terminal Subdivision', a2c = false) {
+  if (a2c) {
+    const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
+    return `<p class="a2-kicker"><span class="a2-svc" style="background:${MODE_COLOR.freight}"></span>Freight · ${esc(line)}</p>
+      <h2>Freight train</h2>
+      <dl class="a2-facts">
+        ${row('Position', `Simulated on the mapped track ${chip('illustrative')}`)}
+        ${row('Timing', `A typical pattern, not a timetable ${chip('illustrative')}`)}
+        ${row('Consist', `GE/Wabtec CM44AC locomotives and boxcars ${chip('illustrative')}`)}
+      </dl>`;
+  }
   return `<h2><span class="dot" style="background:${MODE_COLOR.freight}"></span>Freight train</h2>
     <p class="sub">${esc(line)} ${chip('illustrative')}</p>
     <dl><dt>City model</dt><dd>GE/Wabtec CM44AC locomotives and boxcars</dd></dl>
     <p class="tip">This train follows the mapped track in a simulated pattern. Its position, timing and consist are illustrative.</p>`;
+}
+
+/** The A2c detail panel's train card: service and line, destination, then one row per fact,
+ * each with its own truth tier. */
+function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | undefined, vt: VehicleType | undefined, city: boolean) {
+  const line = route?.mode === 'heavy_rail' ? `${route.operator ?? 'MARTA'} ${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
+  const service = route ? SERVICE[route.mode] ?? 'Rail' : 'Rail';
+  const swatch = route ? MODE_COLOR[route.mode] : '#495057';
+  const live = t.s.tier === 'live';
+  const name = t.nextStopName ?? next?.name;
+  const eta = t.nextInSec != null ? ` · ${t.nextInSec < 60 ? 'arriving' : `${Math.round(t.nextInSec / 60)} min`}` : '';
+  let units = '';
+  if (city && t.routeId === 'amtrak:route:Crescent') units = 'Two locomotives, three coaches, café, diner, sleeper and baggage-dorm';
+  else if (vt) units = route?.mode === 'heavy_rail' ? `${vt.typicalUnits}` : `${vt.typicalUnits} × ${vt.name}`;
+  const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
+  return `
+    <p class="a2-kicker"><span class="a2-svc" style="background:${esc(swatch)}"></span>${esc(service)} · ${esc(line)}${route ? `<span class="dot" style="background:${esc(routeColor(route))}"></span>` : ''}</p>
+    <h2>${esc(destination(t.headsign))}</h2>
+    <dl class="a2-facts">
+      ${name ? row('Next stop', `<strong>${esc(place(name))}${eta}</strong> ${chip(t.s.tier, TIER_WORD[t.s.tier])}`) : ''}
+      ${units ? row(route?.mode === 'heavy_rail' ? 'Cars' : 'Consist', `${esc(units)} ${chip('illustrative')}`) : ''}
+      ${live
+        ? row('Position', `${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)} ${chip('live', 'Live')}`)
+        : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
+    </dl>`;
 }

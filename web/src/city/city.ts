@@ -156,6 +156,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   signal?: AbortSignal;
   progress?: (label: string) => void;
   areaNote?: (text: string | null) => void;
+  /** Leave scenery-tier notes (Brookwood service, inferred North Line track) out of areaNote,
+   * keeping only load failures (A2c, #231: no on-screen tiers on ambient scenery). */
+  failureNotesOnly?: boolean;
   trains: () => TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
@@ -257,7 +260,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   const areaFailures = new Map<string, string>();
+  const SCENERY_NOTES = new Set(['brookwood-service', 'north-line']);
   function areaResult(key: string, note: string | null) {
+    if (options.failureNotesOnly && SCENERY_NOTES.has(key)) return;
     if (!mosaic) { options.areaNote?.(note); return; }
     if (note) areaFailures.set(key, note);
     else areaFailures.delete(key);
