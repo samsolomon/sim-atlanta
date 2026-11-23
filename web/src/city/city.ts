@@ -121,6 +121,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
+import { deviceFacts, deviceTier } from '../core/device-tier';
 
 export type Quality = 'low' | 'high';
 
@@ -165,13 +166,12 @@ export interface CityView {
   glide(x: number, z: number): void;
 }
 
-/** Phones and small touch screens get the light tier; `?q=low|high` overrides. */
+/** Phones, mobile GPUs and small-memory devices get the light tier (core/device-tier.ts);
+ * `?q=low|high` overrides. */
 export function pickQuality(): Quality {
   const q = new URLSearchParams(location.search).get('q');
   if (q === 'low' || q === 'high') return q;
-  const touch = matchMedia('(pointer: coarse)').matches;
-  const small = Math.min(screen.width, screen.height) < 820;
-  return touch && small ? 'low' : 'high';
+  return deviceTier(deviceFacts()).tier;
 }
 
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');

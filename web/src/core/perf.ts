@@ -477,6 +477,29 @@ function applyHide() {
   });
 }
 
+let hiddenAt = -1;
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) hiddenAt = performance.now(); });
+/**
+ * Runtime fallback: once the City open that follows this call is ready and its areas have gone
+ * quiet, sample `sampleMs` of frames and call `onSlow(fps)` if the rate is under `belowFps`.
+ * A sample the page spent hidden is discarded. Returns a cancel function.
+ */
+function watchSlow(onSlow: (fps: number) => void, { belowFps = 20, sampleMs = 10000, quietMs = 5000 } = {}) {
+  let stopped = false;
+  const from = phases.length;
+  void (async () => {
+    while (!stopped && !phases.slice(from).some(p => p.name === 'ready')) await sleep(500);
+    while (!stopped && performance.now() - (phases[phases.length - 1]?.ms ?? 0) < quietMs) await sleep(500);
+    if (stopped) return;
+    const start = performance.now();
+    await sleep(sampleMs);
+    if (stopped || document.hidden || hiddenAt >= start) return;
+    const f = frames(sampleMs);
+    if (f.frames > 2 && f.fps < belowFps) onSlow(f.fps);
+  })();
+  return () => { stopped = true; };
+}
+
 /** Wire the renderer and scene (call once City has a renderer). */
 function attach(c: PerfContext) {
   ctx = c;
@@ -485,7 +508,7 @@ function attach(c: PerfContext) {
 function detach() { ctx = null; }
 
 export const perf = {
-  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide,
+  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
   get phases() { return phases.map(p => ({ ...p })); },
