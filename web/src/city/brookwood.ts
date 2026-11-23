@@ -134,10 +134,11 @@ const continuations = [
   { minX: -1000, maxX: -560, minZ: -4640, maxZ: -4150 },
   { minX: 395, maxX: 760, minZ: -5700, maxZ: -5400 },
 ];
+export const brookwoodRunningNote = 'Scheduled Crescent · Illustrative consist & freight';
 const inside = (r: typeof brookwoodBounds, x: number, z: number) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
 export function brookwoodRailNote(x: number, z: number) {
   if (inside(brookwoodBounds, x, z)) return 'Scheduled Crescent · Inferred berth · Illustrative consist & freight';
-  if (continuations.some(r => inside(r, x, z))) return 'Scheduled Crescent · Illustrative consist & freight';
+  if (continuations.some(r => inside(r, x, z))) return brookwoodRunningNote;
   return null;
 }
 
@@ -594,6 +595,7 @@ export function createBrookwood(sceneZero: number) {
     freight: freight.group,
     get freightCars() { return freight.visibleCars; },
     note: brookwoodRailNote,
+    runningNote: brookwoodRunningNote,
     bounds: brookwoodBounds,
     setNorthEdge(z: number) {
       northEdge.constant = -z;

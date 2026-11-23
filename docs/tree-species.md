@@ -103,17 +103,20 @@ Only the Zenodo copy is openly licensed. We may cite individual trees as facts, 
 | Attribute | Value | Tier | Source |
 |---|---|---|---|
 | Species | Ginkgo | `reported` | Trees Atlanta champion record |
-| Trunk position | City (612.5, −4001.2) ±3 m, on the mulched bed of the Peachtree lawn south of the entry ramp, 6 m from where the lawn path ends | `inferred` | Triangulated from two Street View panoramas, each calibrated on Rodin's *The Shade* at (603.6, −4003.4): [Peachtree, Dec 2025, heading 252°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55) and [café to the south, Sep 2024, heading 300°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78972,-84.38478&heading=300&pitch=10&fov=45). |
+| Trunk position | City (607.2, −3998.6), on the lawn 1.2 m past the dead end of the little lawn path, 14 m south of the ramp centreline | `inferred` | Local observation (Sam), checked against [Street View from Peachtree, Dec 2025, heading 252°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55) |
 | Size | 20 m tall, 18 m spread | `inferred` | Sam's call |
 
 **How the position was chosen.**
-- The champion record's point, 33.789866, −84.384916, is City (617.9, −3999.2). An untagged OSM tree node lies 1.1 m from it. #203 placed the tree there.
-- In both panoramas the pano heading reads about 7–11° short of the bearing to *The Shade*. After correcting for that, the two sight lines to the forked grey trunk cross at (612.5, −4001.2), 5.7 m WSW of the record point.
-- Street View from Nov 2019 at the same spot shows the same upright, forked tree in leaf. That makes it the ginkgo.
-- The culture agent's leaf-on aerial pick was (615, −4005). All three agree within about 6 m. Street View is the only source that sees the trunk itself, so the tree uses it.
-- **Kept, not thinned:** the canopy-map crown at (619.5, −3990.5), 12.8 m south, matches a real tree beside the Peachtree steps in both panoramas.
+- **Champion record.** It gives 33.789866, −84.384916, which is City (617.9, −3999.2). #203 placed the tree there.
+- **#210, wrong.** #210 moved the tree 5.7 m to a two-panorama triangulation. Sam saw that this still crowded the ramp's Peachtree end.
+- **Sam's spot, current.** Sam knows the site and puts the trunk at the dead end of the lawn path, (607.5, −3997.4). The trunk is drawn 1.2 m past it on the lawn.
+- **The check.** Bearings are measured against Rodin's *The Shade* in the same frame, which cancels the panorama's heading error. The Peachtree panorama shows the trunk 5.1° left of the sculpture. Sam's spot comes out 8.5° left, about 2 m apart at 37 m. That is no clear contradiction.
+- **Dropped panorama.** #210's second panorama (the café, Sep 2024) was dropped. Its foreground tree looks like a magnolia, so it probably sighted the wrong trunk.
+- **Departure from the record.** The champion point is 11 m away. Champion coordinates are often taken from the sidewalk.
+- **Ramp clearance.** The crown keeps its leaves 2.6 m outside the ramp edge in plan and at least 9.5 m up.
+- **Kept, not thinned.** The canopy-map crown 14.7 m away, by the Peachtree steps, matches a real oak.
 
-[Before and after, top-down and from Peachtree](log/ui/tree-species/city-ginkgo-position.jpg)
+[Before and after, from the same two cameras, with the Street View check](log/ui/tree-species/city-ginkgo-path-end.jpg)
 
 **How the size was chosen.**
 - The 2012 champion record measured 27.5 m tall, 26.2 m spread and 4.72 m circumference.

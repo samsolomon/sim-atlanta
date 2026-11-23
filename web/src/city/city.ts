@@ -43,6 +43,7 @@ import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
+import { anyCarInView } from './in-view';
 import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { CityFreight } from './freight';
@@ -1265,7 +1266,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
-      const note = brookwood.note(controls.target.x, controls.target.z);
+      // Near the corridor, or with any Crescent or freight car in the frame.
+      const note = brookwood.note(controls.target.x, controls.target.z) ??
+        (anyCarInView([...brookwood.cars.children, ...brookwood.freight.children], camera) ? brookwood.runningNote : null);
       if (note !== showingBrookwoodNote) {
         showingBrookwoodNote = note;
         areaResult('brookwood-service', note);
@@ -1273,7 +1276,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     if (northLine?.bounds) {
       const { x, z } = controls.target, r = northLine.bounds;
-      const near = x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
+      // Near the open guideway, or with any North Line car out of the portal and in the frame.
+      const near = (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) || anyCarInView(northLine.cars(), camera);
       if (near !== showingNorthLineNote) {
         showingNorthLineNote = near;
         areaResult('north-line', near ? 'Inferred MARTA track' : null);

@@ -6,7 +6,8 @@ import type { TransportRun } from '../terrain/transport-data';
 import { CAR_GAP, CAR_LENGTH, cq400Geometry, cq400Material } from '../vignette/cq400';
 import { Builder, Line, type P2 } from '../vignette/geom';
 import railRows from './fixtures/midtown-rail.json';
-import { northLineGuideway, northLineProfile } from './midtown-marta-guideway';
+import { northLineGuideway, northLinePiers, northLineProfile, northLineStructure } from './midtown-marta-guideway';
+import { inConnectorLanes } from '../terrain/connector-paint';
 
 const service = new Set(['marta:route:RED', 'marta:route:GOLD']);
 type Origin = { lon: number; lat: number };
@@ -137,7 +138,7 @@ export function createNorthLine(
   area: {
     group: THREE.Group;
     groundAt: (x: number, z: number) => number | null;
-    connectorBoard?: { city: { roads: { cls: string; pts: [number, number][] }[] } };
+    connectorBoard?: { city: { roads: { cls: string; sub?: string | null; pts: [number, number][] }[] } };
   },
   rf: RoutesFile,
   origin: Origin,
@@ -150,6 +151,9 @@ export function createNorthLine(
   const profile = northLineProfile(lines, rows, area.groundAt, area.connectorBoard?.city.roads ?? []);
   if (!profile.height.every(Number.isFinite)) return;
   area.group.add(northLineGuideway(lines, profile, area.groundAt));
+  const roads = area.connectorBoard?.city.roads ?? [];
+  const spans = northLineStructure(profile, northLinePiers(profile, roads, (x, z) => inConnectorLanes(x, z, 1), rows, area.groundAt), area.groundAt);
+  area.group.add(spans.mesh, spans.lamps);
   const height = (line: Line, along: number) => profile.at(line, along);
   const darkness = { value: 0 };
   const planes = new Map<Line, THREE.Plane[]>();
@@ -173,6 +177,7 @@ export function createNorthLine(
   const bounds = { minX: Math.min(...xs) - 60, maxX: Math.max(...xs) + 60, minZ: Math.min(...zs), maxZ: Math.max(...zs) + 60 };
   const update = (states: TrainState[], dark: number) => {
     darkness.value = dark;
+    (spans.lamps.material as THREE.MeshLambertMaterial).emissiveIntensity = dark * 0.9;
     for (const pool of pools.values()) pool.count = 0;
     let total = 0;
     for (const t of states) {
@@ -232,5 +237,6 @@ export function createNorthLine(
       for (let i = pool.count; i < pool.meshes.length; i++) pool.meshes[i].visible = false;
     return total;
   };
-  return Object.assign(update, { bounds: planes.size ? bounds : null });
+  const shown = () => [...pools.values()].flatMap((pool) => pool.meshes.slice(0, pool.count));
+  return Object.assign(update, { bounds: planes.size ? bounds : null, cars: shown });
 }

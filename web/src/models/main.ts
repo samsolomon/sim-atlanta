@@ -21,6 +21,7 @@ import { SIZE_CLASSES, calendarDoy, doyOf, type SizeClass, type Species, type Tr
 import { SPECIES as SPECIES_LIST } from '../trees/index';
 import { GENERIC_SIZES, createGenericTrees, genericTriangles } from '../trees/generic';
 import { VARIANTS, createGinkgoVariant, variantTriangles, type GinkgoVariant } from '../trees/ginkgo-variants';
+import { LANDSCAPE_KINDS, LANDSCAPE_NOTES, createLandscapeScene, type LandscapeKind } from './landscape-scene';
 
 const el = document.getElementById('stage')!;
 const low = new URLSearchParams(location.search).get('q') === 'low';
@@ -68,6 +69,7 @@ const models = {
   cyclist: 'Cyclist and bicycle',
   generic: 'Generic leaf-clump tree',
   ginkgo: 'Ginkgo',
+  ...LANDSCAPE_KINDS,
 } as const;
 // Species in the lab's Trees section; 'generic' is City's current tree, the baseline.
 const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
@@ -158,8 +160,9 @@ function buildTrees() {
     // Compare all: A–D left to right at one class (mature when "All sizes" is chosen).
     const size: SizeClass = treeSize === 'all' ? 'mature' : treeSize;
     const spread = species!.sizes[size].spreadM;
+    const gap = Math.max(spread + 3, 9);
     const parts = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) =>
-      createGinkgoVariant([{ species: species!, size, x: (i - 1.5) * (spread + 3), z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
+      createGinkgoVariant([{ species: species!, size, x: (i - 1.5) * gap, z: 0, seed: 11, heightM: species!.sizes[size].heightM, spreadM: spread }], v, treeQuality, () => 0, { nearM: 400 })!);
     const group = new THREE.Group();
     parts.forEach(p => group.add(p.group));
     trees = {
@@ -170,9 +173,9 @@ function buildTrees() {
       dispose: () => { parts.forEach(p => p.dispose()); group.removeFromParent(); },
       draws: () => parts.reduce((n, p) => n + p.draws(), 0),
     };
-    row = parts.map((_, i) => ({ size, x: (i - 1.5) * (spread + 3), z: 0 }));
+    row = parts.map((_, i) => ({ size, x: (i - 1.5) * gap, z: 0 }));
     compareLabels = (Object.keys(VARIANTS) as GinkgoVariant[]).map((v, i) => ({ text: `${v} · ${VARIANTS[v]}`, at: new THREE.Vector3(row[i].x, species!.sizes[size].heightM * 1.04, 0) }));
-    spreads.splice(0, spreads.length, ...row.map(() => spread));
+    spreads.splice(0, spreads.length, ...row.map(() => gap - 3));
     heights.splice(0, heights.length, ...row.map(() => species!.sizes[size].heightM));
   } else if (ginkgoVariant) {
     const placements: TreePlacement[] = row.map((r, i) => ({ species: species!, size: r.size, x: r.x, z: r.z, seed: 11 + i * 7,
@@ -250,12 +253,32 @@ function buildTrees() {
   showSeason();
 }
 function showSeason() {
+  if (isLandscape(model)) buildLandscape();
   trees?.setSeason(seasonDoy);
   const label = new Date(Date.UTC(2026, 0, seasonDoy)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const species = SPECIES[model];
   seasonReport.textContent = `${label}${species ? ': ' + species.foliage(seasonDoy, 0).label : ''}. Clock date from ?t= as in City.`;
 }
+const isLandscape = (id: string): id is LandscapeKind => Object.hasOwn(LANDSCAPE_KINDS, id);
+let landscape: ReturnType<typeof createLandscapeScene> | null = null;
+const landscapeReport = document.createElement('p');
+landscapeReport.className = 'platform-report';
+/** A primitive (or the whole garden) on a sloped test plot, with draw and triangle counts for both tiers. */
+function buildLandscape() {
+  landscape?.dispose();
+  landscape?.group.removeFromParent();
+  landscape = createLandscapeScene(model as LandscapeKind, seasonDoy, treeQuality);
+  landscape.group.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = o.receiveShadow = true; });
+  scene.add(landscape.group);
+  landscapeReport.textContent = `${landscape.draws} draw call for all primitives. Triangles: high ${landscape.triangles.high.toLocaleString()}, `
+    + `low ${landscape.triangles.low.toLocaleString()}. Showing ${treeQuality} detail.`;
+  landscapeReport.hidden = false;
+}
 function build() {
+  landscape?.dispose();
+  landscape?.group.removeFromParent();
+  landscape = null;
+  landscapeReport.hidden = true;
   station?.dispose();
   station = undefined;
   platformReport.hidden = true;
@@ -273,9 +296,27 @@ function build() {
   compareLabels = [];
   scaleFigure?.dispose();
   scaleFigure = undefined;
+  ground.visible = true;
   const isTree = model === 'generic' || Object.hasOwn(SPECIES, model);
-  for (const id of ['tree-size', 'season', 'tier', 'count']) document.getElementById(id)!.hidden = !isTree;
+  for (const id of ['tree-size', 'season', 'tier']) document.getElementById(id)!.hidden = !isTree && !(isLandscape(model) && id !== 'tree-size');
+  document.getElementById('count')!.hidden = !isTree;
   document.getElementById('rendering')!.hidden = model !== 'ginkgo';
+  if (isLandscape(model)) {
+    for (const id of ['lines', 'roles', 'platforms', 'motion']) document.getElementById(id)!.hidden = true;
+    nextLook.hidden = true;
+    track.visible = longTrack.visible = false;
+    // The test plot brings its own sloped ground; the lab's flat floor would show through it.
+    ground.visible = false;
+    sun.position.set(-18, 30, 22);
+    Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 120 });
+    sun.shadow.normalBias = .05;
+    sun.shadow.camera.updateProjectionMatrix();
+    document.getElementById('title')!.textContent = models[model];
+    document.title = models[model] + ' · Model Lab · Sim Atlanta';
+    document.getElementById('blurb')!.textContent = LANDSCAPE_NOTES[model] + 'Planting and seasonal colour are illustrative; the season buttons change the flowers.';
+    showSeason();
+    return;
+  }
   if (isTree) {
     buildTrees();
     return;
@@ -535,6 +576,13 @@ const FIGURE_VIEWS: Record<string, ViewPreset> = {
 };
 const FREIGHT_VIEWS = { ...TRAIN_VIEWS, '¾ front': { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 } } satisfies Record<string, ViewPreset>;
 let presets: Record<string, ViewPreset>;
+const LANDSCAPE_VIEWS: Record<string, ViewPreset> = {
+  Front: { pos: [0, 8, 26], target: [0, 1.2, 0], fov: 40 },
+  '¾ front': { pos: [-17, 11, 19], target: [0, 1.2, 0], fov: 40 },
+  Side: { pos: [-26, 6, 0], target: [0, 1.2, 0], fov: 40 },
+  Rear: { pos: [0, 10, -26], target: [0, 1.2, 0], fov: 40 },
+  Top: { pos: [.01, 36, 0], target: [0, 0, 0], fov: 40 },
+};
 const modelSelect = document.querySelector<HTMLSelectElement>('#model-select')!;
 function setModel(id: Model) {
   model = id;
@@ -553,7 +601,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = id === 'crescent' || isPassengerUnit(id) ? passengerViews : { cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS }[id];
+  presets = isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.model === id)));
@@ -566,7 +614,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 'xn40', 'cm44ac', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo']], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
@@ -600,6 +648,7 @@ for (const n of [1, 50, 300])
 document.getElementById('count')!.append(document.getElementById('perf-report')!);
 for (const tier of ['high', 'low'] as const)
   mk('tier', tier === 'high' ? 'High' : 'Low', () => { treeQuality = tier; setParam('tier', tier); build(); }, tier === treeQuality);
+document.getElementById('tier')!.append(landscapeReport);
 modelSelect.addEventListener('change', () => selectModel(modelSelect.value as Model));
 setModel(model);
 const nightBtn = document.getElementById('night')!;
