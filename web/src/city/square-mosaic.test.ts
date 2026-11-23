@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { bounds } from '../square-board/sections';
-import { mosaicPlinth, nearestPoint, nearSection } from './square-mosaic';
+import { mosaicPlinth, mountedBounds, nearestPoint, nearSection } from './square-mosaic';
 
 it('clamps the camera and walnut base to the same available ground during a partial load', () => {
   const rects = [bounds.downtown, bounds['north-band'], bounds['north-corner']];
@@ -22,6 +22,23 @@ it('clamps the camera and walnut base to the same available ground during a part
       expect(nearestPoint(Object.values(bounds), x, z)).toEqual({ x, z });
     }
   } finally { base.geometry.dispose(); base.material.dispose(); }
+});
+
+it('clips canopy to the mounted rows, so a missing north row leaves no crowns past the walnut lip', () => {
+  const lip = 8;
+  const full = Object.values(bounds);
+  // Brookwood station failed to load: the board, and its canopy, end at brookwood-south.
+  const partial = full.filter(r => r !== bounds['brookwood-station']);
+  for (const [rects, north] of [[full, -5700], [partial, -4900]] as const) {
+    const clip = mountedBounds([...rects]);
+    expect(clip).toEqual({ minX: -1000, maxX: 1800, minZ: north, maxZ: 1100 });
+    const base = mosaicPlinth([...rects], -48);
+    const box = new THREE.Box3().setFromObject(base);
+    try {
+      expect(box.min.x).toBe(clip.minX - lip); expect(box.max.x).toBe(clip.maxX + lip);
+      expect(box.min.z).toBe(clip.minZ - lip); expect(box.max.z).toBe(clip.maxZ + lip);
+    } finally { base.geometry.dispose(); base.material.dispose(); }
+  }
 });
 
 it('requests only the section within reach of the camera, including the short King corner', () => {

@@ -1,10 +1,12 @@
 // Run in the localhost Vite City view at the default morning camera:
 // await (await import('/tests/board-exterior.js')).assertBoardExterior()
+// Pass { north: -4900 } when brookwood-station is withheld and eleven areas have mounted.
 import { OrthographicCamera, Scene, WebGLRenderTarget } from 'three';
 
-export async function assertBoardExterior() {
-  if (document.querySelector('#city-info button:last-child')?.textContent !== 'Frame the full board') {
-    throw Error('Open the full rectangle and wait for all twelve areas.');
+export async function assertBoardExterior({ north = -5700 } = {}) {
+  const label = document.querySelector('#city-info button:last-child')?.textContent;
+  if (north === -5700 ? label !== 'Frame the full board' : !label?.includes('(11/12 areas loaded)')) {
+    throw Error('Wait for every area that can mount: ' + label);
   }
 
   // Capture the same scene, shadow map and materials that painted the City frame.
@@ -19,7 +21,7 @@ export async function assertBoardExterior() {
         if (this.getObjectByName('Studio table')) resolve([renderer, this]);
       };
     });
-    return compareExterior(renderer, scene);
+    return compareExterior(renderer, scene, north);
   } finally {
     clearTimeout(timer);
     if (own) Scene.prototype.onBeforeRender = original;
@@ -27,15 +29,30 @@ export async function assertBoardExterior() {
   }
 }
 
-function compareExterior(renderer, scene) {
+// Crowns overhang a row edge by at most ~8.5 m, inside the 8 m lip plus one 2 m pixel, so a missing
+// row's overhang is too thin to count. Check the clip itself: nothing may keep geometry north of the mounted edge.
+function clippedPastNorth(scene, north) {
+  const stale = new Set();
+  scene.traverse(o => {
+    for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) {
+      for (const p of m.clippingPlanes ?? []) {
+        if (p.normal.z === 1 && p.normal.x === 0 && -p.constant < north - 0.5) stale.add(-p.constant);
+      }
+    }
+  });
+  if (stale.size) throw Error('Clip planes keep geometry north of the mounted edge ' + north + ': ' + [...stale]);
+}
+
+function compareExterior(renderer, scene, north) {
+  clippedPastNorth(scene, north);
   const table = scene.getObjectByName('Studio table');
   const margin = 200, step = 2, lip = 8;
-  const width = (2800 + 2 * margin) / step, height = (6800 + 2 * margin) / step;
+  const width = (2800 + 2 * margin) / step, height = (1100 - north + 2 * margin) / step;
   // In plan view a tall building inside the board cannot occlude the exterior.
   const camera = new OrthographicCamera(-width, width, height, -height, 1, 8000);
   camera.up.set(0, 0, -1);
-  camera.position.set(400, 4000, -2300);
-  camera.lookAt(400, 0, -2300);
+  camera.position.set(400, 4000, (1100 + north) / 2);
+  camera.lookAt(400, 0, (1100 + north) / 2);
 
   const target = new WebGLRenderTarget(width, height);
   const previous = renderer.getRenderTarget();
@@ -59,11 +76,11 @@ function compareExterior(renderer, scene) {
         const i = 4 * (row * width + col);
         if (city[i] === emptyTable[i] && city[i+1] === emptyTable[i+1] && city[i+2] === emptyTable[i+2]) continue;
         const x = -1000 - margin + (col + .5) * step, z = 1100 + margin - (row + .5) * step;
-        if (x < -1000-lip || x > 1800+lip || z < -5700-lip || z > 1100+lip) outside++;
+        if (x < -1000-lip || x > 1800+lip || z < north-lip || z > 1100+lip) outside++;
         else inside++;
       }
     }
-    if (inside < 4500000) throw Error('Missing board in the control render');
+    if (inside < 0.94 * 2800 * (1100 - north) / step ** 2) throw Error('Missing board in the control render');
     if (outside) throw Error(outside + ' scenery or shadow pixels outside the plinth');
     return { outside, inside };
   } finally {

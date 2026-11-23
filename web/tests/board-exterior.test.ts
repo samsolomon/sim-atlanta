@@ -11,7 +11,12 @@ const chrome = [process.env.CHROME_BIN, '/Applications/Google Chrome.app/Content
 const staged = existsSync('public/data/scene/square-board/brookwood-station/ground.i16');
 
 // Use an isolated localhost origin so Web Crypto can verify the real row assets.
-it.skipIf(!chrome || !staged)('keeps City scenery and shadows inside the plinth in the morning render', async () => {
+// The second case withholds the northmost row: canopy must stop at the mounted edge, not the finished one.
+it.skipIf(!chrome || !staged).each([
+  { name: 'all twelve areas', withhold: undefined, north: -5700, ready: "label === 'Frame the full board'" },
+  { name: 'brookwood-station withheld', withhold: '/square-board/brookwood-station/', north: -4900,
+    ready: "label?.includes('(11/12 areas loaded)')" },
+])('keeps City scenery and shadows inside the plinth in the morning render with $name', async ({ withhold, north, ready }) => {
   const dir = mkdtempSync(join(tmpdir(), 'city-exterior-'));
   let report: (value: string) => void;
   const result = new Promise<string>(resolve => { report = resolve; });
@@ -26,10 +31,10 @@ it.skipIf(!chrome || !staged)('keeps City scenery and shadows inside the plinth 
           async function check() {
             let result;
             try {
-              while (document.querySelector('#city-info button:last-child')?.textContent !== 'Frame the full board')
+              for (let label; label = document.querySelector('#city-info button:last-child')?.textContent, !(${ready});)
                 await new Promise(resolve => setTimeout(resolve, 100));
               await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-              result = JSON.stringify(await assertBoardExterior());
+              result = JSON.stringify(await assertBoardExterior({ north: ${north} }));
             } catch (e) { result = String(e); }
             await fetch('/__exterior-result', {method: 'POST', body: result});
           }
@@ -37,6 +42,11 @@ it.skipIf(!chrome || !staged)('keeps City scenery and shadows inside the plinth 
         ` }];
       },
       configureServer(dev) {
+        if (withhold) dev.middlewares.use((req, res, next) => {
+          if (!req.url?.includes(withhold)) return next();
+          res.statusCode = 404;
+          res.end();
+        });
         dev.middlewares.use('/__exterior-result', async (req, res) => {
           let body = '';
           for await (const chunk of req) body += chunk;
