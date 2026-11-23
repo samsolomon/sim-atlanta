@@ -1889,3 +1889,9 @@ From Woodruff Park, the former Trust Company tower reads as a white grid. Turn t
 ### 2026-11-23 — The two atriums at 55 Park Place
 
 The broad western face used to read as one banded block. A photograph taken after the office lights came on showed what the bands had hidden. Two glazed halls sit one above the other between matching three-bay wings. The roof above them climbs in four steps of about four metres apiece. Across the same footprint, the eastern service block rises another six metres above the office roof. From Auburn, its mostly blank wall gives the building a different profile. [Reference photographs, elevations and matched City views](log/ui/55-park-place/README.md)
+
+### 2026-11-23 — The last four metres of 55 Marietta
+
+The 1955 opening photograph gives the former Fulton National Bank a height of 295 feet. City already had the height within a tenth of a metre. What was missing from Five Points was the step across its long face. In 7,773 lidar returns the two roofs separate by about 8.5 m, and the upper one stops roughly 4 m short of Forsyth. From street level that leaves a thin strip of lower roof beyond the last tall window band. From above, the same strip distinguishes the end of the tower from the neighboring block.
+
+The period bank advertisement shows four red neon signs. Current photographs show a plain crown above the ribbons of glass, so the signs belong to the archive view. Today’s scene leaves a few windows lit after dark. [Photographs, measurements and nine matched City views](log/ui/55-marietta/README.md) · [Daylight and dusk comparison](log/ui/55-marietta/comparison.jpg)
