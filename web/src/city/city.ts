@@ -57,12 +57,14 @@ import { createHealey } from './healey';
 import { createFlatiron } from './flatiron';
 import { createCentralLibrary } from './central-library';
 import { createPeachtree191 } from './peachtree-191';
+import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
 import { createCentennialTower } from './centennial-tower';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
+import { createEquitable } from './equitable';
 import { createGrady } from './grady';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
@@ -217,9 +219,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let flatiron: ReturnType<typeof createFlatiron> = null;
   let library: ReturnType<typeof createCentralLibrary> = null;
   let peachtree: ReturnType<typeof createPeachtree191> = null;
+  let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
   let arena: ReturnType<typeof createStateFarmArena> = null;
+  let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
@@ -248,8 +252,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         westin = createWestin(buildings, groundAt);
         peachtree = createPeachtree191(westin?.buildings ?? buildings, groundAt);
         const remaining = peachtree?.buildings ?? westin?.buildings ?? buildings;
-        truist = createTruistPlaza(remaining, groundAt);
-        const librarySite = truist?.buildings ?? remaining;
+        twelve = createTwelveCentennial(remaining, ground);
+        const afterTwelve = twelve?.buildings ?? remaining;
+        truist = createTruistPlaza(afterTwelve, groundAt);
+        const librarySite = truist?.buildings ?? afterTwelve;
         library = createCentralLibrary(librarySite, groundAt);
         flatiron = createFlatiron(library?.buildings ?? librarySite, groundAt);
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
@@ -275,11 +281,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         arena = createStateFarmArena(arenaSite, groundAt);
         const hospitalSite = arena?.buildings ?? arenaSite;
         grady = createGrady(hospitalSite, ground);
-        const city = { ...vd, buildings: grady?.buildings ?? hospitalSite,
+        const afterGrady = grady?.buildings ?? hospitalSite;
+        equitable = createEquitable(afterGrady, ground);
+        const city = { ...vd, buildings: equitable?.buildings ?? afterGrady,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, join: previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         if (floyd) world.group.add(floyd.group);
+        if (twelve) world.group.add(twelve.group);
         if (truist) world.group.add(truist.group);
         if (westin) world.group.add(westin.group);
         if (peachtree) world.group.add(peachtree.group);
@@ -294,6 +303,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
+        if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
@@ -725,6 +735,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     world.setNight(night);
     platforms?.setNight(night);
     floyd?.setNight(night);
+    twelve?.setNight(night);
     truist?.setNight(night);
     westin?.setNight(night);
     peachtree?.setNight(night);
@@ -736,6 +747,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     centennial?.setNight(night);
     capitol?.setNight(night);
     arena?.setNight(night);
+    equitable?.setNight(night);
     grady?.setNight(night);
     terrain?.setNight(night);
     east?.setNight(night);

@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs';
-import type { Mesh } from 'three';
+import { Raycaster, Vector3, type Mesh } from 'three';
+import type { VBuilding } from '../vignette/world';
+import { irwinHouseFinish } from './irwin-houses';
 import { afterEach, expect, it, vi } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge } from '../terrain/surface';
 import { boardPoint, eastJoin, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
-import { verifyNorth } from './sweet-auburn-board';
+import { loadNorth, verifyNorth } from './sweet-auburn-board';
 
 function baked(folder: string) {
   const base = new URL('../../../pipeline/prototypes/' + folder + '/', import.meta.url);
@@ -58,4 +60,50 @@ it('rejects a tile with a changed south seam node before opening either wall', (
   const original = south.sample.bind(south);
   vi.spyOn(south,'sample').mockImplementation((x,z) => x === 1150 && z === 280 ? null : original(x,z));
   expect(() => verifyNorth(baked('downtown-ground'), south, north)).toThrow(/shared ground/);
+});
+
+
+it.each(['high', 'low'] as const)('keeps the Irwin porch decks above their sloping front yards on %s', quality => {
+  const grid = baked('sweet-auburn/ground');
+  const url = new URL('../../../pipeline/prototypes/sweet-auburn/context.json', import.meta.url);
+  const context = JSON.parse(readFileSync(url, 'utf8')) as { buildings: VBuilding[] };
+  const buildings = context.buildings.filter(b => irwinHouseFinish(b));
+  expect(buildings.map(b => b.id).sort()).toEqual(['osm:way:270493826', 'osm:way:270493832', 'osm:way:270493845']);
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () =>
+    ({ scale() {}, translate() {}, fillRect() {}, setLineDash() {} }) }) });
+  const area = createDowntownTerrain(grid, { bounds: grid.manifest.bounds, buildings, roads: [], rail: [] }, [],
+    { quality, finishFor: irwinHouseFinish });
+  try {
+    for (const [x,z] of [[1420,-406], [1444,-407], [1451,-407], [1510,-407]]) {
+      const grade = area.groundAt(x,z)!;
+      // Start below the porch roof, between the posts and the front door.
+      const ray = new Raycaster(new Vector3(x,grade+2.2,z), new Vector3(0,-1,0));
+      const hit = ray.intersectObject(area.scenery,true)[0];
+      expect(hit?.point.y).toBeGreaterThan(grade+.35);
+    }
+  } finally { area.dispose(); }
+});
+
+it.each(['high', 'low'] as const)('puts both arms and the rooftop volumes of Wheat Street Towers on lidar heights on %s', async quality => {
+  const root = new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url);
+  vi.stubGlobal('fetch', async (url: string) => {
+    const name = url.split('/').pop()!;
+    const file = new URL(name === 'context.json' ? name : 'ground/' + name, root);
+    return new Response(Uint8Array.from(readFileSync(file)).buffer);
+  });
+  const ctx = new Proxy({}, { get: () => () => undefined });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const area = await loadNorth('/data', baked('downtown-ground'), baked('king-memorial/ground'),
+    quality, -45, new AbortController().signal);
+  try {
+    // These points are inside the two flat roof runs, the two service volumes,
+    // and the open entrance court inside the L.
+    for (const [x,z,navd] of [[1524,-151,343.05], [1501,-128,343.05], [1516,-134,346.12], [1523,-128,348.74]]) {
+      const ray = new Raycaster(new Vector3(x,80,z),new Vector3(0,-1,0));
+      const hit = ray.intersectObject(area.scenery,true)[0];
+      expect(hit.point.y + area.grid.manifest.vertical.sceneZeroNavd88M).toBeCloseTo(navd, 2);
+    }
+    const courtyard = new Raycaster(new Vector3(1508,80,-146),new Vector3(0,-1,0));
+    expect(courtyard.intersectObject(area.scenery,true).every(hit => hit.point.y < 10)).toBe(true);
+  } finally { area.dispose(); }
 });
