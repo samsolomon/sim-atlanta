@@ -177,6 +177,19 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
       carried++;
     }
     expect(carried).toBeGreaterThanOrEqual(5);
+    // Nothing under the station (crossheads, mezzanine) rises into the trackway: straight down each
+    // drawn track from 3 m above the bed, the first thing hit is the rail or the deck.
+    let probed = 0;
+    for (let s = 8945; s <= 9135; s += 2) for (const v of [-MARTA_TRACK_OFFSET, MARTA_TRACK_OFFSET]) {
+      const f = frame(s), bedY = rail.bed(s);
+      ray.set(new THREE.Vector3(f.x + f.nx * v, bedY + 3, f.z + f.nz * v), new THREE.Vector3(0, -1, 0));
+      ray.far = 10;
+      const hit = ray.intersectObject(rail.mesh, false)[0];
+      expect(hit, `s ${s} v ${v}`).toBeDefined();
+      expect(hit.point.y, `s ${s} v ${v}`).toBeLessThanOrEqual(bedY + 0.56 + 0.01);
+      probed++;
+    }
+    expect(probed).toBeGreaterThan(150);
     // The station envelope is still the OSM footprint, and the enclosures sit inside it.
     expect(STATION_BUILDING).toHaveLength(26);
     rail.dispose();

@@ -245,14 +245,22 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
   // (illustrative: the photos show round columns under the station; spacing is not surveyed).
   // Outside the enclosed mezzanine each column row carries a transverse crosshead under both
   // platforms and the track deck, so the open street level shows what holds the station up.
+  // Between the platforms the crosshead (like the mezzanine) stops at the deck soffit, so nothing
+  // rises into the trackway.
   const xhead = (s: number) => ({ y0: top(s) - 2.0, y1: floor(s) - 0.8 });
+  const xbox = (s0: number, s1: number, v0: number, v1: number, y0: number, y1: number, side: string, end: string) => {
+    for (const v of [v0, v1]) b.quad(P(s0, v, y0), P(s1, v, y0), P(s1, v, y1), P(s0, v, y1), side);
+    for (const sx of [s0, s1]) b.quad(P(sx, v0, y0), P(sx, v1, y0), P(sx, v1, y1), P(sx, v0, y1), end);
+    b.quad(P(s0, v0, y0), P(s0, v1, y0), P(s1, v1, y0), P(s1, v0, y0), side);
+    b.quad(P(s0, v0, y1), P(s0, v1, y1), P(s1, v1, y1), P(s1, v0, y1), side);
+  };
   for (let s = roofS[0] + 6; s < roofS[1]; s += 18) {
     const inMezz = s > ENCLOSURES.mezzanine.s[0] - 1 && s < ENCLOSURES.mezzanine.s[1] + 1;
     if (!inMezz) {
-      const { y0, y1 } = xhead(s), [s0, s1] = [s - 0.7, s + 0.7], [v0, v1] = [ROOF[0] + 0.4, ROOF[1] - 0.4];
-      for (const v of [v0, v1]) b.quad(P(s0, v, y0), P(s1, v, y0), P(s1, v, y1), P(s0, v, y1), deckSide);
-      for (const sx of [s0, s1]) b.quad(P(sx, v0, y0), P(sx, v1, y0), P(sx, v1, y1), P(sx, v0, y1), concrete);
-      b.quad(P(s0, v0, y0), P(s0, v1, y0), P(s1, v1, y0), P(s1, v0, y0), deckSide);
+      const { y0, y1 } = xhead(s), [s0, s1] = [s - 0.7, s + 0.7];
+      xbox(s0, s1, ROOF[0] + 0.4, -half, y0, y1, deckSide, concrete);
+      xbox(s0, s1, -half, half, y0, top(s) - 1.2, deckSide, concrete);
+      xbox(s0, s1, half, ROOF[1] - 0.4, y0, y1, deckSide, concrete);
     }
     for (const v of [ROOF[0] + 1.2, ROOF[1] - 1.2]) {
       const [x, , z] = P(s, v, 0), g = ground(x, z);
@@ -388,13 +396,19 @@ export function buildEastRail(manifest: SceneManifest, rf: RoutesFile, pack: Cor
     const north = samples(M.s, [M.v[0], M.v[0]]), south = samples(M.s, [M.v[1], M.v[1]]);
     if (north.length && south.length) {
       const underside = Math.max(Math.max(...north) + 6.5, Math.max(...south) + 4.0);
-      const top = Math.min(floor(M.s[0]), floor(M.s[1])) - 0.8;
-      block(M.s, M.v, underside, top, beige, soffit, '#9e968a', (y0, y1) => {
+      const mTop = Math.min(floor(M.s[0]), floor(M.s[1])) - 0.8;
+      // Under the track deck it stops at the deck soffit (the lowest along its length), so it never
+      // rises into the trackway; under the platforms it meets the platform fascia.
+      let soffitY = Infinity;
+      for (let s = M.s[0]; s <= M.s[1]; s += 2) soffitY = Math.min(soffitY, top(s) - 1.2);
+      block(M.s, [M.v[0], -half], underside, mTop, beige, soffit, '#9e968a', (y0, y1) => {
         // Ribbon windows along the Decatur face (the photos' dark band), slightly proud of the wall.
         const w0 = y0 + (y1 - y0) * 0.38, w1 = y0 + (y1 - y0) * 0.62;
         wall(M.s[0] + 3, M.s[1] - 3, M.v[0] - 0.05, () => w0, () => w1, band, 6);
       });
-      enclosed.mezzanine = { underside, top };
+      block(M.s, [-half, half], underside, soffitY, beige, soffit, deckSide);
+      block(M.s, [half, M.v[1]], underside, mTop, beige, soffit, '#9e968a');
+      enclosed.mezzanine = { underside, top: mTop };
     }
     // Street-level glazed lobby behind the canopy, under the canopy's underside.
     const L = ENCLOSURES.lobby;
