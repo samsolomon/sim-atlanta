@@ -21,6 +21,7 @@ ways = {}
 # open-sided underpasses. Draw pavement and cars below the separate upper
 # decks. The Capitol Gateway cap farther south still conceals its lower road.
 open_underpasses = {
+    1051688674, 1051688675, 1051688672, 963910432,  # Baker/Piedmont mainlines and ramps
     492215616, 525603074, 1467383125, 1467383127, 1467383128,
     1467383129, 1467383131, 1467386396, 1467386398,
 }
@@ -33,9 +34,9 @@ for w in root.findall("way"):
     if not any(-1100 < x < 1900 and -1850 < z < 1300 for x, z in pts):
         continue
     way = int(w.get("id"))
-    concealed = tags.get("covered") == "yes" and way not in open_underpasses
+    concealed = (tags.get("covered") == "yes" or tags.get("tunnel") in ("yes", "building_passage")) and way not in open_underpasses
     ways[way] = dict(version=int(w.get("version")), lanes=int(tags.get("lanes", 1)),
-        link=link, kind="tunnel" if concealed or tags.get("tunnel") in ("yes", "building_passage")
+        link=link, kind="tunnel" if concealed
         else "bridge" if tags.get("bridge") == "yes" else "ground",
         hov=tags.get("hov") == "designated", pts=pts)
 

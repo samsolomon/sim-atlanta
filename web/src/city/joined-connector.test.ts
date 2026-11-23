@@ -143,7 +143,7 @@ it('carries the seven Midtown approach lanes across the 249C split and the low-t
   } finally { for (const b of boards) b.surface.geometry.dispose(); }
 });
 
-it.skipIf(!existsSync(downtown))('carries both illustrative mainline routes below Courtland and Peachtree', () => {
+it.skipIf(!existsSync(downtown))('carries both illustrative mainline routes below Baker, Courtland and Peachtree', () => {
   const city: TerrainCity = JSON.parse(readFileSync(downtown, 'utf8'));
   const dir = new URL('../../../pipeline/prototypes/downtown-ground/', import.meta.url);
   const manifest = JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8'));
@@ -158,7 +158,7 @@ it.skipIf(!existsSync(downtown))('carries both illustrative mainline routes belo
     const routes = connectorTrafficRoutes(city);
     const peachtree = streetDecks.find(d => d.name === 'Peachtree Street Northeast')!;
     const courtland = junctionDecks.find(d => d.outlineId === 875253220)!;
-    for (const site of [courtland, peachtree]) {
+    for (const site of [junctionDecks.find(d => d.outlineId === 953207661)!, courtland, peachtree]) {
       const streets = city.terrainTransport!.roads.filter(r => r.kind === 'bridge' &&
         ['secondary', 'tertiary'].includes(r.cls) && follows(r.pts, site.roads));
       const directions = new Set<string>();

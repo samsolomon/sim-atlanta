@@ -66,9 +66,12 @@ function mountedDecks(city: TerrainCity) {
 export function streetPortals(city: TerrainCity) {
   return mountedDecks(city).flatMap(({ deck }) => deck.approaches.map((approach, i) => {
     const row = i === 0 ? deck.rows[0] : deck.rows.at(-1)!;
+    const inner = i === 0 ? deck.rows[1] : deck.rows.at(-2)!;
+    const run = distance(position(row, .5), position(inner, .5));
+    const slope = ((row[2]+row[5])-(inner[2]+inner[5]))/(2*run);
     const [a, b] = approach.centre;
     const len = distance(a, b);
-    return { edge: [row.slice(0, 3), row.slice(3, 6)], curbs: [row[6], row[8]],
+    return { slope, edge: [row.slice(0, 3), row.slice(3, 6)], curbs: [row[6], row[8]],
       direction: [(b[0]-a[0])/len, (b[1]-a[1])/len] };
   }));
 }
@@ -205,6 +208,18 @@ export function paintStreetBridgeApproaches(ctx: CanvasRenderingContext2D, city:
       ctx.lineWidth = 0.24;
       path(approach.centre);
       ctx.stroke();
+    }
+  }
+}
+
+// The slab bottom follows the same surveyed rows and board clipping as its fascia.
+export function streetSoffits(city: TerrainCity, zero: number, out: Builder) {
+  for (const {deck} of mountedDecks(city)) {
+    const edge = (row:number[], i:number):Point => [row[i],row[i+2]-zero-.8,row[i+1]];
+    for (let i=1;i<deck.rows.length;i++) {
+      const a=deck.rows[i-1], b=deck.rows[i];
+      const poly=clip([edge(a,0),edge(a,3),edge(b,3),edge(b,0)], city.bounds);
+      for(let j=1;j+1<poly.length;j++) out.tri(poly[0],poly[j],poly[j+1],'#928b7d');
     }
   }
 }
