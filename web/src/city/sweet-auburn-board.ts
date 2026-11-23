@@ -1,6 +1,6 @@
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
-import type { TerrainQuality } from '../terrain/surface';
+import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { wheatStreetId, wheatStreetTower } from './wheat-street-towers';
@@ -30,7 +30,7 @@ export function verifyNorth(west: GroundGrid, south: GroundGrid, north: GroundGr
   for (let x = b.minX; x <= b.maxX; x += m.stepM) match(south, x, b.maxZ);
 }
 
-export async function loadNorth(base: string, west: GroundGrid, south: GroundGrid, quality: TerrainQuality, bottomY: number, signal: AbortSignal) {
+export async function loadNorth(base: string, west: GroundGrid, south: GroundGrid, quality: TerrainQuality, bottomY: number, signal: AbortSignal, extraJoins: JoiningEdge[] = []) {
   async function asset(name: string) {
     const response = await fetch(base + '/scene/sweet-auburn/' + name, { signal });
     if (!response.ok) throw new Error('Missing Sweet Auburn asset ' + name);
@@ -51,7 +51,7 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   const ids=new Set(context.buildings.filter(b => (b.id===heritageId || b.id===bigBethelId)
     && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
   const area = createDowntownTerrain(grid, {...context,buildings:context.buildings.filter(b=>!ids.has(b.id))}, context.trees, {
-    quality, bottomY, join: [northWestJoin, northSouthJoin],
+    quality, bottomY, join: [northWestJoin, northSouthJoin, ...extraJoins],
     finishFor: b => b.id === wheatStreetId ? wheatStreetTower : oddFellowsFinish(b) ?? edgewoodFinish(b) ?? irwinHouseFinish(b),
   });
   try {
