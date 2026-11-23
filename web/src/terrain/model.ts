@@ -199,7 +199,10 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (candidate) {
     const rings = candidate.rings.map(r => clipRing(r, city.bounds)).filter(r => r.length >= 3);
     if (rings.length) {
-      fragment = makeScenery({ ...city, buildings: [{ ...candidate, rings }], roads: [], rail: [] }, [],
+      // A part whose outer ring clips away is dropped, so a hole never becomes its wall.
+      const parts = candidate.parts?.map(part => ({ ...part, rings: part.rings.map(r => clipRing(r, city.bounds)) }))
+        .filter(part => part.rings[0].length >= 3).map(part => ({ ...part, rings: part.rings.filter(r => r.length >= 3) }));
+      fragment = makeScenery({ ...city, buildings: [{ ...candidate, rings, parts }], roads: [], rail: [] }, [],
         options.quality, grid.manifest.stepM, groundAt, { finishFor: options.finishFor });
       fragment.group.name = candidate.id;
       scenery.group.add(fragment.group);

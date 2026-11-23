@@ -14,6 +14,17 @@ import { PlacementIndex } from './spatial';
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
 export const MARTA_TRACK_OFFSET = 2.1;
 
+/** One mapped OSM building:part, or the podium the parts leave of their parent. */
+export interface VBuildingPart {
+  /** `osm:way:<part>`, or `podium` for the uncovered remainder of the parent. */
+  id: string;
+  rings: P2[][];
+  /** Roof and underside in metres above the building's floor. */
+  h: number;
+  minH?: number;
+  /** Height source: a `height` tag is reported, levels are inferred, defaults are illustrative. */
+  tier: 'reported' | 'inferred' | 'illustrative';
+}
 export interface VBuilding {
   /** Inferred finished floor in scene metres on a sloped site. */
   floorY?: number;
@@ -22,6 +33,8 @@ export interface VBuilding {
   h: number | null;
   floors: number | null;
   rings: P2[][];
+  /** Mapped building parts drawn in place of the whole footprint. */
+  parts?: VBuildingPart[];
 }
 export interface BuildingFinish {
   wall: string;
@@ -838,7 +851,12 @@ export class World {
       if (footing === null) continue;
       const originY = bd.floorY ?? footing;
       const finish = finishFor?.(bd);
-      const h = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
+      const whole = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
+      // Mapped building:parts replace the whole footprint, each with its own roof and base.
+      const masses = bd.parts?.length
+        ? bd.parts.map((part) => ({ rings: part.rings, h: part.h, minH: part.minH ?? 0 }))
+        : [{ rings: bd.rings, h: whole, minH: 0 }];
+      const h = Math.max(...masses.map((mass) => mass.h));
       const r = rng(hashStr(bd.id));
       // Massing class decides the material: brick low-rise, stone/concrete mid-rise, glass towers.
       // Mid-rises mix brick, stone with punched windows, and ribbon-window offices.
@@ -848,20 +866,28 @@ export class World {
       let foot = footing;
       if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
       const y0 = foot - 0.5;
-      const roofY = originY + h;
       const before = b.pos.length / 3;
-      if (appendParkingDeck(b, bd, y0, originY, roofY)) {
+      if (!bd.parts?.length && appendParkingDeck(b, bd, y0, originY, originY + h)) {
         for (let i = before; i < b.pos.length / 3; i++) {
           style.push(-1);
           base.push(0);
         }
         continue;
       }
+      const shop = bd.parts?.length ? null : woodruffLot(bd);
+      for (const mass of masses) {
+      const outer = mass.rings[0];
+      if (!outer || outer.length < 3) continue;
+      const before = b.pos.length / 3;
+      const h = mass.h;
+      const roofY = originY + h;
+      // A part with a mapped underside (an overhang or canopy) starts above the floor.
+      const wallBase = mass.minH > 0 ? originY + mass.minH : y0;
       // Walls (run to h + parapet), roof slightly below the parapet top.
-      const parapet = finish?.parapet ?? (h > 6 ? 1.1 : 0);
-      const shop = woodruffLot(bd);
-      for (const [ringIndex, ring] of bd.rings.entries()) {
-        if (finish?.drawRing) {
+      const parapet = finish?.parapet ?? (h - mass.minH > 6 ? 1.1 : 0);
+      for (const [ringIndex, ring] of mass.rings.entries()) {
+        // Finishes describe a whole footprint; mapped parts use the plain walls.
+        if (finish?.drawRing && !bd.parts?.length) {
           const first = b.pos.length / 3;
           finish.drawRing(b, ring, ringIndex > 0, foot, roofY + parapet, shopLights);
           for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
@@ -877,27 +903,28 @@ export class World {
           }
           const wallKind = finish?.plainWalls ? -1 : finish?.windowStyle ?? (finish ? 0 : kind);
           style.push(wallKind, wallKind, wallKind, wallKind, wallKind, wallKind);
-          b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
+          b.quad([a[0], wallBase, a[1]], [c[0], wallBase, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
       }
       const wallVerts = b.pos.length / 3 - before;
       const contour = outer.map((p) => new THREE.Vector2(p[0], p[1]));
-      const holes = bd.rings.slice(1).map((ring) => ring.map((p) => new THREE.Vector2(p[0], p[1])));
+      const holes = mass.rings.slice(1).map((ring) => ring.map((p) => new THREE.Vector2(p[0], p[1])));
       const tris = THREE.ShapeUtils.triangulateShape(contour, holes);
       const all = [...contour, ...holes.flat()];
       // Roofs: white membrane, gravel, tar and the odd green roof.
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
-      finish?.dressRoof?.(b, outer, roofY);
+      if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
+      if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
-        base.push(foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
+        base.push(mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
       }
       for (let i = 0; i < roofVerts; i++) {
         style.push(-1);
         base.push(0);
       }
-      if (finish?.dressRoof) continue;
+      if ((finish?.dressRoof && !bd.parts?.length) || mass.minH > 0) continue;
       // Rooftop clutter: HVAC units, vents and a stair/elevator penthouse on bigger roofs.
       const area = ringArea(outer);
       const xs = outer.map((p) => p[0]);
@@ -916,6 +943,7 @@ export class World {
         clutter.push(m4.clone());
         clutterCol.push(new THREE.Color(big ? wallCol : r() < 0.7 ? PAL.hvac : '#8f9498'));
         placed++;
+      }
       }
     }
     // Painted shop glass shares the building draw. Only this glass receives the

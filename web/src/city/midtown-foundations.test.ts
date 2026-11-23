@@ -127,6 +127,12 @@ it.each(['low', 'high'] as const)('keeps every rendered generic roof in the rect
       await addSection(row, mounted, quality, signal, { brookwood: async (m, b) => brookwoodGrid(m, b) });
     for (const id of ['north-band', 'north-corner', 'south-band', 'south-corner', ...midtownRows] as const)
       footprints.set(id, json(new URL(`square-board/${id}/context.json`, proto)).buildings);
+    // Each mapped building:part is its own roof, so a buried podium beside a
+    // tower is caught rather than masked by the tower's higher roof.
+    // Raised parts (canopies and bridges, with a mapped underside) are left out:
+    // like the real ones they meet a sloping street at one end.
+    for (const [board, list] of footprints) footprints.set(board, list.flatMap((b: Building) => b.parts?.length
+      ? b.parts.flatMap((part, i) => part.minH ? [] : [{ ...b, id: `${b.id}#${i}`, rings: part.rings }]) : [b]));
     expect(mounted.size).toBe(staged ? 12 : 10);
     const buried: string[] = [];
     let roofs = 0;
