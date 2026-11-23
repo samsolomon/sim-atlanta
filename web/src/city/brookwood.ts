@@ -494,6 +494,18 @@ export function createBrookwood(sceneZero: number) {
   const headlampGeometry = new THREE.BoxGeometry(0.32, 0.26, 0.08);
   const headlampMaterial = new THREE.MeshBasicMaterial({ color: '#fff0cb' });
   const stockMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [] });
+  const northEdge = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  for (const m of [
+    material,
+    lightMaterial,
+    litSlab.material,
+    stockMaterial,
+    headlampMaterial,
+    ...facades.map((f) => f.material),
+  ]) {
+    m.clippingPlanes = [northEdge];
+    m.clipShadows = true;
+  }
   function update(states: TrainState[], dark: number) {
     lightMaterial.emissiveIntensity = dark * 1.8;
     litSlab.material.emissiveIntensity = dark * 0.35;
@@ -538,6 +550,9 @@ export function createBrookwood(sceneZero: number) {
     structure,
     update,
     bounds: brookwoodBounds,
+    setNorthEdge(z: number) {
+      northEdge.constant = -z;
+    },
 
     dispose() {
       group.removeFromParent();

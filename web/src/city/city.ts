@@ -723,9 +723,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       areaResult('brookwood-rail', 'Brookwood station model unavailable.');
       return;
     }
-    brookwood = preparedBrookwood;
-    scene.add(brookwood.group);
-    scenery.push(brookwood.structure);
+    if (!brookwood) {
+      brookwood = preparedBrookwood;
+      scene.add(brookwood.group);
+      scenery.push(brookwood.structure);
+    }
+    brookwood.setNorthEdge(area.bounds.minZ);
     for (const id of ['osm:way:265350477', 'osm:way:38978515']) {
       const object = area.group.getObjectByName(id);
       if (object?.parent) {
@@ -739,7 +742,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
       const atl = added.get('brookwood-station');
-      if (atl) attachBrookwood(atl);
+      const railArea = atl ?? added.get('brookwood-south');
+      if (railArea) attachBrookwood(railArea);
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       const first = added.keys().next().value!;

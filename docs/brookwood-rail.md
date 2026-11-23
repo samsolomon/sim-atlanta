@@ -25,7 +25,7 @@ The North Bridge carries two major gateway arches 30 ft (9.14 m) high, and 20 mi
 
 ## City integration and inspection
 
-Stage the existing Midtown data with `pnpm data:midtown` and rebuild the web bundle with `pnpm build`. Opening `/?view=city&board=midtown&site=brookwood&q=high&t=2026-11-23T08:50:00-05:00&speed=0` mounts the connected rows and frames Brookwood. Change the hour to `23:10:00` for the northbound call. On an ordinary Midtown visit the component mounts when the station row loads. No additional feeds or server requests per train are required.
+Stage the existing Midtown data with `pnpm data:midtown` and rebuild the web bundle with `pnpm build`. Opening `/?view=city&board=midtown&site=brookwood&q=high&t=2026-11-23T08:50:00-05:00&speed=0` mounts the connected rows and frames Brookwood. Change the hour to `23:10:00` for the northbound call. On an ordinary Midtown visit the south row shows the southwest rail approach. Its clipping plane opens northward as the station row loads. No additional feeds or server requests per train are required.
 
 Both captures use City target (−92, −5054), bearing −65°, tilt 66°, camera distance 165 m, 0.1293 m per CSS pixel at 999 × 496. [Day](log/ui/brookwood/station-day.jpg) · [Night](log/ui/brookwood/station-night.jpg)
 
