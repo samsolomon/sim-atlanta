@@ -4,7 +4,7 @@ import tunnelRuns from './fixtures/midtown-tunnel.json';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Plane, Vector3 } from 'three';
 import { CAR_LENGTH } from '../vignette/cq400';
 import { NORTH_LINE_VANISH_DEPTH } from './midtown-marta-rail';
-import { drawnCar, inMappedTunnel, needsHandoff, pickHandoff, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
+import { downtownCoverAt, drawnCar, inMappedTunnel, needsHandoff, pickHandoff, trainHidden, VehicleFollow, type Fix, type Followed } from './vehicle-follow';
 
 const bounds = {minX:0,maxX:500,minZ:0,maxZ:100};
 const train: Followed = {kind:'train',id:'trip-1',pathId:'blue-east',tier:'scheduled'};
@@ -146,9 +146,38 @@ describe('mapped North Line tunnel', () => {
     const red = 'marta:route:RED';
     expect(trainHidden(rail,red,'blue-east',20,482,-3063)).toBe('covered');
     expect(trainHidden(rail,red,'blue-east',60,482,-3063)).toBe('underground');
-    expect(trainHidden(rail,red,'blue-east',60,0,0)).toBeNull();
+    // Away from any mapped MARTA way (Five Points itself is now a mapped tunnel downtown).
+    expect(trainHidden(rail,red,'blue-east',60,900,-900)).toBeNull();
     // The Crescent passes beside the portal; it is never in the North Line tunnel.
     expect(trainHidden(rail,'amtrak:route:Crescent','x',60,482,-3063)).toBeNull();
+  });
+});
+
+describe('mapped downtown MARTA cover', () => {
+  const [red, blue] = ['marta:route:RED', 'marta:route:BLUE'];
+  it('claims a tunnel only on the service\'s own line', () => {
+    // South Line tunnel south of Five Points (layer -2) and West Line tunnel (layer -3).
+    expect(trainHidden(rail, red, 'x', 60, -180, 276)).toBe('underground');
+    expect(trainHidden(rail, blue, 'x', 60, -180, 276)).toBeNull();
+    expect(trainHidden(rail, blue, 'x', 60, -560, -265)).toBe('underground');
+    expect(trainHidden(rail, red, 'x', 60, -560, -265)).toBeNull();
+    expect(downtownCoverAt('marta:route:GREEN', -560, -265)).toBe('tunnel');
+  });
+  it('lets a baked span decide where one exists, open included', () => {
+    // The Five Points east cut is baked open; OSM's tunnel beside it must not override that.
+    const baked: RailData = {version:1,datum:'track-bed',evidence:{},paths:{p:[
+      {s0:0,s1:100,cover:'open',form:'cut',base:'ground',rel:0,height:'schematic',ev:'fixture'}]}};
+    expect(downtownCoverAt(blue, -560, -265)).toBe('tunnel');
+    expect(trainHidden(baked, blue, 'p', 50, -560, -265)).toBeNull();
+    expect(trainHidden(baked, blue, 'p', 150, -560, -265)).toBe('underground');
+  });
+  it('reads a building passage as covered, and open or elevated track as no claim', () => {
+    expect(trainHidden(rail, blue, 'x', 60, 531, 426)).toBe('covered');
+    expect(trainHidden(rail, blue, 'x', 60, 427, 330)).toBeNull();
+    expect(downtownCoverAt(blue, 1425, 456)).toBe('bridge');
+    expect(trainHidden(rail, blue, 'x', 60, 1425, 456)).toBeNull();
+    // Streetcar and Amtrak make no downtown claim.
+    expect(downtownCoverAt('marta:route:STREETCAR', -180, 276)).toBeNull();
   });
 });
 

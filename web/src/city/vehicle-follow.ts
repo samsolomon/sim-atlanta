@@ -3,6 +3,7 @@ import { railSpanAt, type SceneManifest } from '../core/scene-data';
 import { CAR_LENGTH } from '../vignette/cq400';
 import type { Tier } from '../model/types';
 import tunnelRuns from './fixtures/midtown-tunnel.json';
+import downtownCover from './fixtures/downtown-rail-cover.json';
 
 export const FOLLOW_CAMERA = { bearing: -148, tilt: 26, distance: 300 };
 export type FollowKind = 'train' | 'bus' | 'freight';
@@ -209,11 +210,53 @@ export function inMappedTunnel(x: number, z: number, reach = 20, runs: readonly 
   return false;
 }
 
-/** Why a followed train has no drawn car. Downtown's baked rail cover comes first; the
- * North Line's mapped tunnel covers Midtown, where no rail cover is baked. */
+/** The OSM lines each MARTA service runs on inside the board (downtown-rail-cover.json). */
+const LINES: Record<string, readonly string[]> = {
+  'marta:route:RED': ['MARTA North Line', 'MARTA South Line'],
+  'marta:route:GOLD': ['MARTA North Line', 'MARTA South Line'],
+  'marta:route:BLUE': ['MARTA East Line', 'MARTA West Line', 'King Memorial Crossover'],
+  'marta:route:GREEN': ['MARTA East Line', 'MARTA West Line', 'King Memorial Crossover'],
+};
+/** `ends` says whether each end is the way's own end (a mouth) or a cut at the board edge. */
+type CoverRun = Run & { line: string | null; kind: string; ends?: readonly boolean[] };
+
+/** The mapped cover of the service's own line at (x, z), from the nearest of its OSM ways
+ * within `reach` metres (3 m past a way's ends): 'tunnel', 'covered', 'bridge' or 'open'.
+ * Matching only the service's own line keeps a Red train at Five Points off the Blue tunnel
+ * that crosses it, and the nearest way decides, so an open way beside a portal wins there. */
+export function downtownCoverAt(routeId: string, x: number, z: number, reach = 20,
+  runs: readonly CoverRun[] = downtownCover as CoverRun[]) {
+  const lines = LINES[routeId];
+  if (!lines) return null;
+  let best: { kind: string; d: number } | null = null;
+  for (const run of runs) {
+    if (!run.line || !lines.includes(run.line)) continue;
+    const { pts } = run;
+    for (let i = 1; i < pts.length; i++) {
+      const [ax, az] = pts[i - 1], [bx, bz] = pts[i];
+      const dx = bx - ax, dz = bz - az;
+      const raw = ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1);
+      const t = Math.max(0, Math.min(1, raw));
+      const d = Math.hypot(x - ax - t * dx, z - az - t * dz);
+      // Only a way's own ends (its mouths) limit the reach; a cut at the board edge does not.
+      const end = (raw < 0 && i === 1 && run.ends?.[0] !== false) || (raw > 1 && i === pts.length - 1 && run.ends?.[1] !== false);
+      if (d <= (end ? 3 : reach) && (!best || d < best.d)) best = { kind: run.kind, d };
+    }
+  }
+  return best?.kind ?? null;
+}
+
+/** Why a followed train has no drawn car. Downtown's baked rail cover comes first, then the
+ * OSM-mapped cover of the service's own line downtown, then the North Line's mapped tunnel
+ * in Midtown. Follow consults this only when no car is drawn, so the claim is keyed to where
+ * City actually hides the train. */
 export function trainHidden(rail: SceneManifest['rail'], routeId: string, pathId: string, s: number, x: number, z: number): Hidden {
-  const cover = railSpanAt(rail, pathId, s)?.cover;
-  if (cover === 'covered' || cover === 'roofed') return 'covered';
+  // A baked span is surveyed evidence for this exact position: it decides, open included.
+  const span = railSpanAt(rail, pathId, s);
+  if (span) return span.cover === 'covered' || span.cover === 'roofed' ? 'covered' : null;
+  const mapped = downtownCoverAt(routeId, x, z);
+  if (mapped === 'tunnel') return 'underground';
+  if (mapped === 'covered') return 'covered';
   // Only North Line services run in that tunnel; the Crescent and freight pass beside its portal.
   return NORTH_LINE.has(routeId) && inMappedTunnel(x, z) ? 'underground' : null;
 }
