@@ -2194,3 +2194,7 @@ Two Johnson/Burgee towers stand 3.1 km apart on Peachtree, and City had drawn th
 ### 2026-11-23 — Neon on North Avenue
 
 City drew the Varsity as a flat beige box. The rebuild works from Jules Gray's façade grammar: a 28.7 m cream tile front with a wavy maroon parapet, a porthole, and a marquee under a 15 m tapered blade. Each side wall carries 34 accordion panels, every one with a maroon triangle at top and bottom. Across the service lane, a 44 m curb-service canopy follows a 2 m fall in the lot, and the highway "V" faces the Connector. The surprise came from the aerial: the canopy runs parallel to the building, not out toward the street. At night a second emissive mesh lights the red neon apart from the warm storefront, so one building carries two light colours. [Sources, estimates and eight City views](varsity.md)
+
+### 2026-11-23 — A garden wall is not a building
+
+The tallest downhill wall left by the roof fix belonged to a "building" 1.44 m tall, on a footprint with 6.3 m of 3DEP relief. Zoom-20 aerials show a planted terrace behind a retaining wall along the sidewalk, which explains the Overture height. Structures shorter than a door now tuck their uphill side into the slope, with the roof flush with the high ground, so the wall drops from 7.7 m to 6.3 m. The roof test still holds everywhere. No flat-roofed box can be shorter than the slope it sits on, though. The honest next step is to draw this footprint as landscape. [Aerials, rule and before/after views](log/ui/small-structure-floors/README.md)
