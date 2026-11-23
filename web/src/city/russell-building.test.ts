@@ -71,4 +71,6 @@ it('separates the roof of the main block from the low projecting pavilion', () =
   expect(ray(-394.08, 49.67)! + 323.8).toBeCloseTo(426.55, 1);
   expect(ray(-393.18, 26.36)! + 323.8).toBeCloseTo(421.82, 1);
   expect(ray(-352.23, 77.03)! + 323.8).toBeCloseTo(339.1, 1);
+  // The neighboring circular structure retains its own footprint.
+  expect(ray(-344.93, 63.6)).toBeUndefined();
 });

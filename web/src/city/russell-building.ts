@@ -107,35 +107,19 @@ export function createRussellBuilding(buildings: VBuilding[], grid: GroundGrid) 
   const plaza = 324.1,
     floor = 327.45,
     roof = 339.1;
-  box(49.8, 13.5, 30.5, 24.6, base, plaza, '#b5b0a5');
-  // Feather the planted perimeter into City's bare-earth surface. Its rail-level
-  // DEM omits the raised plaza recorded in the building returns and street photos.
-  const lawn: P2[] = [
-    [50, 13.5],
-    [80.3, 13.5],
-    [80.3, 38.1],
-    [50, 38.1],
-  ];
-  const toe: P2[] = [
-    [50, 6.5],
-    [93, 6.5],
-    [93, 46.0],
-    [50, 46.0],
-  ];
-  const toePoints = toe.map(([u, v]) => {
-    const x = -399.36 + u * cos - v * sin,
-      z = 17.54 + u * sin + v * cos;
-    return [u, (grid.sample(x, z) ?? base) - 0.08, v];
-  });
-  for (let i = 0; i < 3; i++) {
-    const j = i + 1;
-    shell.quad(
-      [lawn[i][0], plaza - 0.06, lawn[i][1]],
-      [lawn[j][0], plaza - 0.06, lawn[j][1]],
-      toePoints[j],
-      toePoints[i],
-      '#89976c',
-    );
+  // Keep the deck on the surveyed footprint. Adjacent steps, paths and the
+  // low circular structure have their own records in the City bake.
+  for (let i = 0; i < local.length; i++) {
+    const [u, v] = local[i],
+      [x, z] = local[(i + 1) % local.length];
+    shell.quad([u, base, v], [x, base, z], [x, plaza, z], [u, plaza, v], '#bdb8aa');
+  }
+  for (const [a, b, c] of ShapeUtils.triangulateShape(
+    local.map(([u, v]) => new Vector2(u, v)),
+    [],
+  )) {
+    const at = (i: number) => [local[i][0], plaza, local[i][1]];
+    shell.tri(at(a), at(c), at(b), '#bebbb1');
   }
   box(50.5, 22, 12, 5.8, plaza, 330.2, '#879899');
   // The mapped ground outline catches small projections. The renovated upper
