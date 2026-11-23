@@ -180,6 +180,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: ReturnType<typeof createDowntownTerrain> | undefined;
   let eastRail: { dispose(): void } | undefined;
+  let eastRailFailed = false;
   // Where trains are drawn and followed, and the rail cover they follow: downtown until the east area joins.
   let trainBounds = b;
   let trainRail = manifest.rail;
@@ -541,7 +542,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       area.openJoin();
       downtown.openJoin();
       east = area;
-      void attachEastRail(area).catch(err => console.warn('MARTA east of the board unavailable', err));
+      void attachEastRail(area).catch(err => { eastRailFailed = true; console.warn('MARTA east of the board unavailable', err); });
       const next = pendingNorthTarget ?? controls.target;
       approachNorth(next.x, next.z);
       options.areaNote?.(null);
@@ -822,7 +823,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
     trains.update(states, atm.dark);
-    const focus = options.follow?.frame(states, trains.group.children, project, trainBounds, trainRail, ts, !!motionPreference?.matches);
+    // A followed train heading east loads the King Memorial area itself, without a manual pan,
+    // and follow keeps the trip (as "out of view") while that area and its rail are loading.
+    // If the pack is missing or fails, follow falls back to downtown and ends at the edge.
+    let followBounds = trainBounds;
+    if (options.follow?.active && previewEast) {
+      const t = states.find(s => s.id === options.follow!.tripId);
+      if (t) {
+        const [fx, fz] = project(t.lon, t.lat);
+        approachEast(fx, fz);
+        if (!eastFailed && !eastRailFailed && !eastRail && (eastLoading || east)) followBounds = { ...b, maxX: eastBounds.maxX };
+      }
+    }
+    const focus = options.follow?.frame(states, trains.group.children, project, followBounds, trainRail, ts, !!motionPreference?.matches);
     if (focus) {
       glideTo = null;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
