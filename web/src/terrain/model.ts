@@ -8,6 +8,7 @@ import { GroundSurface, joinList, type TerrainJoins, type TerrainQuality } from 
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
+import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
@@ -124,6 +125,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
+  const lighting = underpassLights(city,mesh,board.material.map);
+  if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
@@ -164,7 +167,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); },
-    setNight(factor: number) { scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },
+    setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); },
     setWet(factor: number) {
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);

@@ -2025,3 +2025,9 @@ Baker and Piedmont share a single 9,113-square-metre deck. Its 14,961 accepted l
 ### November 23, 2026 — The hump in the yellow bridge
 
 The yellow 17th Street Bridge fits inside Midtown with just 27 metres to spare at the closest sidewalk corner. Seen from the Connector it looks almost level, but the lidar puts the middle more than four metres above either end. Thirty-seven sections follow that rise across the freeway. At street scale the two walks tell different stories. A pale canopy curls over benches along the south edge, while the north promenade has open sky and a line of planters. [Survey and matched City views](seventeenth-street.md) · [Daylight broadside](log/ui/seventeenth-street/skyline-day.jpg) · [Full night](log/ui/seventeenth-street/skyline-night.jpg)
+
+### 2026-11-23 · Driving beneath Folk Art Park
+
+At driver height the Baker overpass looked like a wall. The two lower carriageways and both ramps had disappeared, and the terrain came within 3.24 m of the upper road at one northbound sample. The fix used 24 pairs of exposed pavement windows across seven crossings to infer the lower grade between the portals. An 18 m model vehicle also found a sidewalk ribbon hanging into Courtland and terrain intruding into the Decatur ramps. It now clears the structures in 1,779 lane poses on each terrain tier.
+
+At night, two rows of fixtures pick out the underside of the wider decks and cast short pools across the lane markings. Up top, the first 40 m of Baker’s west approach once reached a 29.8% centre-line grade. The new curve peaks at 6.3% there. [Baker night drives and daylight profile](log/ui/underpasses/baker.jpg) · [All seven crossings, profiles and sources](connector-underpasses.md)

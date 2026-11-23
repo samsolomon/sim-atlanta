@@ -10,6 +10,7 @@ export interface Portal {
   edge: number[][];
   direction: number[];
   curbs: number[];
+  slope?: number;
 }
 
 // The gridded bare earth may continue at freeway level several cells beyond
@@ -45,6 +46,7 @@ export function bridgeApproaches(
     edge: [a, b],
     direction: [dx, dz],
     curbs,
+    slope,
   } of portals) {
     const xy = (f: number, s: number): P2 => [
       a[0] + (b[0] - a[0]) * f + dx * s,
@@ -54,20 +56,55 @@ export function bridgeApproaches(
     const bands = [0, curbs[0], 0.5, curbs[1], 1];
     if (bands.some((f) => bare(...xy(f, 0)) === null)) continue;
     let length = 0;
-    for (let s = 4; s <= 72; s += 4) {
+    for (let s = 4; s <= (slope === undefined ? 72 : 100); s += 4) {
       const ys = bands.map((f) => bare(...xy(f, s)));
       if (ys.some((y) => y === null)) break;
       length = s;
-      if (s >= 12 && ys.every((y, i) => Math.abs(y! - deck(bands[i])) <= 0.55 + 0.035 * s)) break;
+      if (slope === undefined) {
+        if (s >= 12 && ys.every((y, i) => Math.abs(y! - deck(bands[i])) <= 0.55 + 0.035 * s)) break;
+      } else if (s >= 40 && ys.every((y, i) => Math.abs(y! - deck(bands[i]) - slope * s) <= 0.35 + 0.025 * s))
+        break;
     }
     if (length === 0) continue;
     const toe = bands.map((f) => bare(...xy(f, length))!);
+    // Hermite vertical curves meet the deck tangent and the land-side street
+    // tangent. Estimate the latter over several DEM cells to suppress quantization.
+    const toeSlope = bands.map((f, k) => {
+      const far = bare(...xy(f, length + 10));
+      return far === null ? (toe[k] - bare(...xy(f, length - 4))!) / 4 : (far - toe[k]) / 10;
+    });
+    const step = 4;
+    const profiles = bands.map((f, k) => {
+      const heights = Array.from({ length: length / step + 1 }, (_, j) => {
+        const t = (j * step) / length;
+        const blend = t * t * (3 - 2 * t);
+        const tangent =
+          (1 - t) * Math.max(-0.11, Math.min(0.11, slope ?? 0)) -
+          t * Math.max(-0.11, Math.min(0.11, toeSlope[k]));
+        const curve =
+          slope === undefined
+            ? deck(f) + (toe[k] - deck(f)) * t
+            : deck(f) + (toe[k] - deck(f)) * blend + length * t * (1 - t) * tangent;
+        return slope === undefined || j === 0 ? curve : Math.max(curve, bare(...xy(f, j * step)) ?? curve);
+      });
+      // Fair the upper envelope of the road and existing terrain. Keep both
+      // endpoints fixed while easing short DEM ridges into neighbouring rows.
+      if (slope !== undefined)
+        for (let pass = 0; pass < 28; pass++) {
+          for (let j = 1; j < heights.length - 1; j++)
+            heights[j] = Math.max(heights[j], (heights[j - 1] + heights[j + 1]) / 2 - 0.004);
+        }
+      return heights;
+    });
     function vertex(k: number, s: number, lift: number): [number, number, number] {
-      const f = bands[k],
-        [x, z] = xy(f, s),
+      const [x, z] = xy(bands[k], s),
         t = s / length;
-      const grade = deck(f) + (toe[k] - deck(f)) * t;
-      return [x, Math.max(grade + lift * (1 - t), (bare(x, z) ?? grade) + 0.003 * (1 - t)), z];
+      const remaining = slope === undefined ? 1 - t : 1 - t * t * (3 - 2 * t);
+      return [
+        x,
+        Math.max(profiles[k][s / step] + lift * remaining, (bare(x, z) ?? -Infinity) + 0.003 * (1 - t)),
+        z,
+      ];
     }
     for (let s = 0; s < length; s += 4) {
       for (let k = 0; k < bands.length - 1; k++) {
@@ -124,19 +161,27 @@ export function bridgeApproaches(
       connected.add(road.pts);
       const line = new Line(pts),
         half = roadWidth(road) / 2;
-      const length = Math.min(line.length, Math.max(16, 8 * (h - terrain)));
+      const length = Math.min(line.length, 72, Math.max(24, 14 * (h - terrain)));
       const end = line.at(length),
         toe = bare(end.x, end.z);
       if (toe === null || !length) continue;
+      const start = line.at(0);
+      const bank = [-half, half].map(
+        (off) => sample(bankPositions, start.x + off * start.nx, start.z + off * start.nz) ?? h,
+      );
       const row = (s: number) => {
         const v = line.at(s);
-        return [-half, half].map((off) => {
+        return [-half, half].map((off, side) => {
           const x = v.x + off * v.nx,
             z = v.z + off * v.nz;
           const ground = bare(x, z) ?? toe;
           return [
             x,
-            Math.max(ground, sample(bankPositions, x, z) ?? ground, h + ((toe - h) * s) / length),
+            Math.max(
+              ground,
+              sample(bankPositions, x, z) ?? ground,
+              bank[side] + (toe - bank[side]) * (s / length) ** 2 * (3 - (2 * s) / length),
+            ),
             z,
           ];
         });

@@ -9,6 +9,43 @@ const concrete = '#b4aaa0',
   sidewalk = '#c9c0af',
   park = '#bab1a1';
 type Site = (typeof sites)[number];
+// A transport run may concatenate a bridge sidewalk and its adjoining land way.
+function outsideWalk(points: P2[], ring: P2[]) {
+  const pieces: P2[][] = [];
+  let active: P2[] | undefined;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1],
+      b = points[i],
+      dx = b[0] - a[0],
+      dz = b[1] - a[1],
+      cuts = [0, 1];
+    for (let j = 0; j < ring.length; j++) {
+      const c = ring[j],
+        d = ring[(j + 1) % ring.length],
+        ex = d[0] - c[0],
+        ez = d[1] - c[1],
+        det = dx * ez - dz * ex;
+      if (Math.abs(det) < 1e-8) continue;
+      const t = ((c[0] - a[0]) * ez - (c[1] - a[1]) * ex) / det;
+      const u = ((c[0] - a[0]) * dz - (c[1] - a[1]) * dx) / det;
+      if (t > 0 && t < 1 && u >= 0 && u <= 1) cuts.push(t);
+    }
+    cuts.sort((a, b) => a - b);
+    const xy = (t: number): P2 => [a[0] + t * dx, a[1] + t * dz];
+    for (let j = 1; j < cuts.length; j++) {
+      if (pointInRing(...xy((cuts[j - 1] + cuts[j]) / 2), ring)) {
+        active = undefined;
+        continue;
+      }
+      if (!active) {
+        active = [xy(cuts[j - 1])];
+        pieces.push(active);
+      }
+      active.push(xy(cuts[j]));
+    }
+  }
+  return pieces;
+}
 type Member = { site: Site; roads: TransportRun[]; walks: TransportRun[] };
 const mounted = new WeakMap<TerrainCity, Member[]>();
 function junctions(city: TerrainCity) {
@@ -21,9 +58,20 @@ function junctions(city: TerrainCity) {
     const near = runs.filter((r) =>
       r.pts.every(([x, z]) => x >= xmin - 0.15 && x <= xmax + 0.15 && z >= zmin - 0.15 && z <= zmax + 0.15),
     );
-    const roads = near.filter((r) => r.cls === 'secondary' && site.roads.some((line) => follows(r.pts, [line])));
+    const roads = near.filter(
+      (r) => r.cls === 'secondary' && site.roads.some((line) => follows(r.pts, [line])),
+    );
     if (!roads.length) continue;
-    const walks = near.filter((r) => (r.cls === 'footway' || r.cls === 'path') && follows(r.pts, site.walks));
+    const walks = runs.filter(
+      (r) =>
+        (r.cls === 'footway' || r.cls === 'path') &&
+        r.pts.some(([x, z]) => x >= xmin - 0.2 && x <= xmax + 0.2 && z >= zmin - 0.2 && z <= zmax + 0.2) &&
+        r.pts.some(
+          (p) =>
+            pointInRing(...p, site.outline as P2[]) &&
+            site.walks.some((line) => line.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < 0.09)),
+        ),
+    );
     result.push({ site, roads, walks });
   }
   mounted.set(city, result);
@@ -41,7 +89,7 @@ export function junctionPortals(city: TerrainCity) {
         [dx, dz] = p.direction;
       const width = Math.abs((b[0] - a[0]) * dz - (b[1] - a[1]) * dx);
       const side = (1 - p.pavedWidth / width) / 2;
-      return { ...p, curbs: [side, 1 - side] };
+      return { ...p, slope: dx * site.plane[0] + dz * site.plane[1], curbs: [side, 1 - side] };
     }),
   );
 }
@@ -80,13 +128,18 @@ export function drawJunctionDecks(
   batch: Builder,
   treads: Map<TransportRun, number[]>,
   limits = new Map<TransportRun, number>(),
+  landWalks = new Map<TransportRun, P2[][]>(),
 ) {
   return junctions(city).flatMap((member) => {
     for (const run of member.roads) {
       const i = member.site.roads.findIndex((line) => follows(run.pts, [line]));
       limits.set(run, member.site.roadWidths[i] / 2);
     }
-    for (const run of member.walks) limits.set(run, 2.5);
+    for (const run of member.walks) {
+      limits.set(run, 2.5);
+      const outside = outsideWalk(run.pts, member.site.outline as P2[]);
+      if (outside.length) landWalks.set(run, outside);
+    }
     return drawJunction(member, zero, batch, treads);
   });
 }
@@ -201,4 +254,21 @@ function drawJunction(
   }
   box(858.3, -975.5, 0.85, 0.7, 15.75, 3.55, '#c16450');
   return all;
+}
+
+export function junctionSoffits(city: TerrainCity, zero: number, out: Builder) {
+  for (const { site } of junctions(city)) {
+    const poly = site.outline.map(([x, z]) => new THREE.Vector2(x, z));
+    const vertices = site.outline.map(([x, z]) => [
+      x,
+      site.plane[2] -
+        zero -
+        0.85 +
+        (x - site.origin[0]) * site.plane[0] +
+        (z - site.origin[1]) * site.plane[1],
+      z,
+    ]);
+    for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(poly, []))
+      out.tri(vertices[i], vertices[j], vertices[k], '#928b7d');
+  }
 }

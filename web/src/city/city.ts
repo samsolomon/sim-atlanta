@@ -31,6 +31,7 @@ import { World, type Alignment, type VData } from '../vignette/world';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain } from '../terrain/model';
+import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { terrainAlignment, terrainOpenings } from './terrain-rail';
@@ -687,7 +688,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.add(rain.mesh, snow.mesh);
 
   // ---- camera ---------------------------------------------------------------------------
-  const camera = new THREE.PerspectiveCamera(22, 1, 20, midtown ? 40000 : 20000);
+  const drive = underpassDrive(query, vd);
+  const camera = new THREE.PerspectiveCamera(drive ? 66 : 22, 1, drive ? 0.18 : 20, midtown ? 40000 : 20000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minPolarAngle = THREE.MathUtils.degToRad(20);
@@ -895,6 +897,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
   const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
+    if (drive) return;
     const t = controls.target;
     approachMosaic(t.x, t.z);
     approachEast(t.x, t.z);
@@ -924,6 +927,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Opening view: downtown at a glance from the southwest — the Gulch in front, Five Points,
   // and the Peachtree Center towers behind.
   setView(-28, 57, 5500, -40, -260);
+  const profileCameras:Record<string,[number,number,number,number,number]> = {
+    baker:[878,-936,-38,52,.32],courtland:[690,-1162,84,72,.26],peachtree:[563,-1274,-50,48,.23],
+    turner:[320,-1445,85,72,.26],capitol:[354,1050,85,72,.26],mlk:[595,626,9,72,.26],decatur:[855,452,3,72,.26],
+  };
+  const profile=query.get('bridgeProfile') ?? '';
+  if (Object.hasOwn(profileCameras,profile)) {
+    const [x,z,bearing,tilt,scale]=profileCameras[profile];
+    mosaic?.remember(x,z);
+    approachMosaic(x,z);
+    setView(-bearing,tilt,Math.max(150,scale*container.clientHeight/(2*Math.tan(THREE.MathUtils.degToRad(11)))),x,z);
+  }
   if (brookwoodStudy) {
     mosaic?.remember(-92,-5054);
     approachMosaic(-92,-5054);
@@ -1174,6 +1188,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let lastFrame = performance.now();
   const project = makeProjector(manifest.origin);
   const motionPreference = options.follow ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
+  const driveStart = performance.now();
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     options.beforeFrame?.(ts);
@@ -1185,7 +1200,29 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       camera.position.add(step);
       if (step.length() < 0.05) glideTo = null;
     }
-    controls.update();
+    if (drive) {
+      controls.enabled = false;
+      const {eye,ahead} = drive((ts-driveStart)/1000);
+      approachMosaic(eye.x,eye.z);
+      approachEast(eye.x,eye.z);
+      approachNorth(eye.x,eye.z);
+      const floor = (p:typeof eye) => {
+        const boards = [trafficOptions, east?.connectorBoard, north?.connectorBoard,
+          ...Array.from(mosaic?.patches.values() ?? [], a=>a.connectorBoard)];
+        for (const board of boards) {
+          if(!board)continue;
+          const b=board.city.bounds;
+          if(p.x<b.minX || p.x>b.maxX || p.z<b.minZ || p.z>b.maxZ)continue;
+          const y=board.roadHeight(p.x,p.z,p.road);
+          if(y!==null) return y;
+        }
+        return targetY(p.x,p.z);
+      };
+      camera.position.set(eye.x, floor(eye)+1.55, eye.z);
+      controls.target.set(ahead.x,floor(ahead)+1.65,ahead.z);
+      camera.lookAt(controls.target);
+      if (scene.fog instanceof THREE.Fog) { scene.fog.near=110; scene.fog.far=800; }
+    } else controls.update();
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
