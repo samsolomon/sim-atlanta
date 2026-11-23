@@ -156,8 +156,13 @@ export function createMetropolitan(buildings: VBuilding[], grid: GroundGrid) {
   const inner: P2 = [14.4, 20.1];
   const shaft = [corner, east, eastCut, inner, rearCut, jog, west, mid];
   m.prism([inner, eastCut, rear, rearCut], m.base, 342.0, '#908b7f', '#aaa496');
-  const podiumCore: P2[] = shaft.map(([x, z]) => [x + (11 - x) * 0.08, z + (17 - z) * 0.062]);
-  m.prism(podiumCore, m.base, shaftBase, '#696863', '#bbb6a8');
+  // The storefronts are recessed on Broad and Marietta. The party walls meet the
+  // rear court at the lot line, with no setback underneath the upper floors.
+  const insetCorner = atV(corner, west, 1);
+  insetCorner[0] += 0.8;
+  const podiumCore = [insetCorner, atV(east, rear, 1), eastCut, inner, rearCut, jog, atV(west, jog, west[1] - 0.19)];
+  m.prism(podiumCore, m.base, shaftBase - 0.14, '#696863', '#bbb6a8');
+  m.prism(shaft, shaftBase - 0.14, shaftBase, '#bbb6a8', '#b6b1a7');
   m.prism(shaft, shaftBase, mainRoof, metal, '#a2a39c');
   for (let i = 0; i < shaft.length; i++) {
     const rim = elevation(m, shaft[i], shaft[(i + 1) % shaft.length]);

@@ -13,7 +13,7 @@ From the Five Points station plaza, Broad Street leads to the Metropolitan’s p
 
 [The four buildings in City daylight](shortlist.webp)
 
-The comparison covers central and eastern downtown outside the northern skyline work. Heights in the table are extrusion attributes from the existing downtown file. The Metropolitan’s named ring shares a boundary with the unnamed 72.7 m record to its southeast. The neighbor has its own profile in the lidar and remains a separate City building.
+The comparison covers central and eastern downtown outside the northern skyline work. Heights in the table are extrusion attributes from the existing downtown file. The Metropolitan’s named ring shares a boundary with the unnamed 72.7 m record to its southeast. That ring’s median sampled elevation is 332.7 m NAVD88 and its 98th percentile is 389.1 m. Its generic full-height wall affects views toward Five Points. It remains a separate study.
 
 ## Photographs and ground measurements
 
@@ -52,3 +52,5 @@ Street cameras use an eye and aim point in City (x, z, elevation in m NAVD88). E
 | Corner storefront | (94, −115, 322) → (92, −92, 328), 67° | [Before](entrance-before.webp) · [after](entrance-after.webp) |
 | Roof court | (51, −70, 418) → (86, −77, 383), 51° | [Before](roof-before.webp) · [after](roof-after.webp) |
 | Marietta at night | (113, −109, 322) → (90, −83, 347), 80° | [Before](corner-before.webp) · [after](corner-after.webp) |
+
+At the south end of the Broad frontage, the stone storefront recess stops where the upper shaft meets the party wall. The low view looks from (65, −74.1, 322.95) toward (70.05, −73.1, 335), with a 72° field of view. The City building on the adjoining lot screens much of this corner. [Initial return](broad-return-first.webp) · [Finished return](broad-return-final.webp)

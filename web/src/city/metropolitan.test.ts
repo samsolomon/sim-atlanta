@@ -62,6 +62,12 @@ it('keeps the rear court open below the two roof housings and preserves the adjo
     const hits = new Raycaster(origin, new Vector3(0, -1, 0)).intersectObject(result.group, true);
     return hits[0]?.point.y + 323.8;
   }
+  // Approach the rear party wall below the upper shaft. Its outer face follows
+  // the same oblique boundary as the roof above the court.
+  const eye = result.group.localToWorld(new Vector3(10, 330, 32));
+  const aim = result.group.localToWorld(new Vector3(10, 330, 25));
+  const rearHit = new Raycaster(eye, aim.sub(eye).normalize()).intersectObject(result.group, true)[0];
+  expect(result.group.worldToLocal(rearHit.point.clone()).z).toBeCloseTo(29.71, 1);
   expect(roof(4, 17)).toBeCloseTo(386.2);
   expect(roof(20, 23)).toBeCloseTo(342);
   expect(roof(12, 7)).toBeCloseTo(388.15);
