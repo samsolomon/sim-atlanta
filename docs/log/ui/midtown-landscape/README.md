@@ -22,3 +22,12 @@ The Orca cameras use a 999 × 496 viewport. Oak Hill targets (1365, −3160), be
 | Jack Guynn Plaza | [Day](midtown-plaza-low-day.jpg) | [Night](midtown-plaza-low-night.jpg) | [Day](midtown-plaza-high-day.jpg) | [Night](midtown-plaza-high-night.jpg) |
 
 To reproduce the fixtures, run `python pipeline/scripts/midtown_landscape.py path/to/UTCMosaic2023.tif` with the canopy bake's Python dependencies. Stage the checked-in fixtures with `pnpm data:midtown` and rebuild the web bundle. Baking uses the height source over the network. Visitors receive the fixture with the existing row context request.
+
+The outer-row checks target Brookwood station (−90, −5100), bearing 32°, 48° tilt, 0.70 m/pixel, 17th Street (−250, −4190), bearing 20°, 44° tilt, 0.75 m/pixel, and North Avenue (580, −1860), bearing −20°, 45° tilt, 0.65 m/pixel.
+
+[station low day](station-low-day.jpg) · [station low night](station-low-night.jpg) · [station high day](station-high-day.jpg) · [station high night](station-high-night.jpg)
+
+[seventeenth low day](seventeenth-low-day.jpg) · [seventeenth low night](seventeenth-low-night.jpg) · [seventeenth high day](seventeenth-high-day.jpg) · [seventeenth high night](seventeenth-high-night.jpg)
+
+[north-avenue low day](north-avenue-low-day.jpg) · [north-avenue low night](north-avenue-low-night.jpg) · [north-avenue high day](north-avenue-high-day.jpg) · [north-avenue high night](north-avenue-high-night.jpg)
+
