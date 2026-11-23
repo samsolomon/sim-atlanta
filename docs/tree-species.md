@@ -229,6 +229,23 @@ Sam picked C4, then judged the rounded C4 crown generic ("could be an oak"). Gin
 
 [Photo, current and new, side by side](log/ui/tree-species/ginkgo-plumes.jpg). **City rollout waits for Sam's approval.**
 
+## Crown brightness against the low-poly trees
+
+Sam found that card crowns lose colour compared with the low-poly canopy. The fix is shared. The tree-lab agent owns the builders (`crownNormals`, core fill, palette, `__lab.crownStats`). Tree-species owns the ink and the ginkgo.
+
+- **Ink:** at a foliage silhouette, the line now goes on the sky or ground pixel only, never on a leaf pixel, and the warm foliage ink is lighter (`#7a5520` at 60%). Crowns keep full colour to the edge.
+- **Ginkgo plume normals:** 80% outward from the crown centre and 20% the plume's own, so the crown shades like a solid mass. Self-light on cards drops from 0.25 to 0.06, and card albedo from 0.92–1.02 to 0.80–0.90.
+- **Measured** in the lab on the composited frame (ink and grade on), using mean crown-pixel luminance and HSV saturation. Crown pixels come from a foliage-only mask. Mature at 42 m, specimen at 70 m, noon. Baseline is the low-poly octahedron ginkgo.
+
+| | Low-poly lum | C4 lum (before → after) | Saturation, low-poly / C4 |
+|---|---|---|---|
+| Mature, high, 23 Nov | 0.472 | 0.647 → 0.522 (+11%) | 0.994 / 0.991 |
+| Mature, low, 23 Nov | 0.506 | 0.627 → 0.488 (−4%) | 0.995 / 0.986 |
+| Specimen, high / low, 23 Nov | 0.504 / 0.532 | 0.61 / 0.60 → 0.544 / 0.545 (+8% / +2%) | 0.99 / 0.98–0.99 |
+| Mature, high / low, 1 Jul | 0.327 / 0.355 | 0.502 / 0.484 → 0.375 / 0.345 (+15% / −3%) | 0.92 / 0.95–0.96 |
+
+Low detail now lands within 5%. High detail stays 8–15% brighter, mostly from the sky-lit fan tips. Lower plumes read as a deeper ochre than the low-poly octahedra's undersides; blending the normals at 70% instead of 80% would lift them. [Captioned compare](log/ui/tree-species/ginkgo-brightness.jpg)
+
 ## Next species (lab only)
 
 All six will be built in the lab with the same framework, budget and tests, and will not be placed in City until Sam decides on the rollout. Spread is a diameter. Sizes are in metres, given as class ranges. "GT" is the Georgia Tech inventory and "City 2011" the downtown census.
