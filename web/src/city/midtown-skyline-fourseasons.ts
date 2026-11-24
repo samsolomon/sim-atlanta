@@ -14,7 +14,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // 95th percentile matches (see docs/four-seasons.md).
 
 const GRANITE = '#cfbcb0', RUSTIC = '#c2ada0', ROOF = '#b2a197', GOLD = '#d6ad4a', COPPER = '#8fbcab';
-const GLASS = ['#3f4b59', '#475465', '#4f5b6a'];
+const GLASS = ['#4b5868', '#53606f', '#5b6776'];
 const ARCH_GLASS = ['#45546a', '#4d5d72'];
 
 export const FOUR_SEASONS = {

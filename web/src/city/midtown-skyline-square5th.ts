@@ -18,7 +18,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // spacing and the base height are estimated from photographs (see docs/square-on-5th.md).
 
 const BASE = 8, ROOF = 86, PARAPET = 88, FRAME = 89.5, FLOORS = 23;
-const BRICK = '#a65a43', GLASS = '#4f8a86', PUNCHED = '#3f6662', BAND = '#d9dedb', CONCRETE = '#c9c9c3';
+const BRICK = '#a65a43', GLASS = '#558c88', PUNCHED = '#3f6662', BAND = '#d9dedb', CONCRETE = '#c9c9c3';
 const SHOP = '#3d4b52', CANOPY = '#8b9196';
 
 export function squareOn5th(shell: Shell) {
