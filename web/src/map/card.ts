@@ -148,11 +148,13 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
     ${model ? seeModel(model) : ''}`;
 }
 
-export function timetableBusCard(trip: { headsign: string; start: number }) {
-    const hour = Math.floor(trip.start / 3600), minute = String(Math.floor(trip.start / 60) % 60).padStart(2, '0');
+export function timetableBusCard(trip: { headsign: string; start: number; serviceDate:number }) {
+  const service = String(trip.serviceDate);
+  const date = new Date(Date.UTC(+service.slice(0,4), +service.slice(4,6)-1, +service.slice(6)+Math.floor(trip.start/86400))).toISOString().slice(0,10);
+  const hour = Math.floor(trip.start / 3600) % 24, minute = String(Math.floor(trip.start / 60) % 60).padStart(2, '0');
   return `<h2>MARTA bus 49</h2><p class="sub">${esc(trip.headsign)}</p><dl>
       <dt>Position</dt><dd>Simulated on route ${chip('inferred')}</dd>
-      <dt>Trip start</dt><dd>${hour}:${minute} Atlanta time ${chip('scheduled')}</dd>
+      <dt>Trip start</dt><dd>${date} at ${hour}:${minute} Atlanta time ${chip('scheduled')}</dd>
       <dt>Stop dwell</dt><dd>15 seconds ${chip('illustrative')}</dd>
       <dt>City model</dt><dd>New Flyer Xcelsior XN40 ${chip('illustrative')}</dd></dl>`;
 }

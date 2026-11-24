@@ -1,3 +1,4 @@
+import { busTimetableStatus } from '../status';
 /**
  * The A2c shell (behind ?ui=next until it replaces ui/shell.ts). Four fixed glass places,
  * 8 px from the edges, the same in every view:
@@ -522,7 +523,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     for (const target of scene()) for (const ev of ['pointerdown', 'wheel']) target?.addEventListener(ev, dismiss, { once: true, passive: true, capture: true });
   }
 
-  const panelHost = createDetailPanel({ allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
+  const panelHost = createDetailPanel({ busCalendar: () => view === 'city' && !o.live().realTime ? busTimetableStatus(o.live()) : null, allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
   document.body.append(subject, notice, bar, menu, cam, share, radioPanel, resultsPanel, areaPop, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 

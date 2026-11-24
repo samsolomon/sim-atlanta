@@ -29,7 +29,8 @@ function keyNode(): HTMLElement {
     ${swatch('--city-rail', 'City rail', 'MARTA trains and the streetcar')}
     ${swatch('--intercity', 'Intercity', 'Amtrak’s Crescent')}
     ${swatch('--freight', 'Freight', 'Freight railroads, simulated')}
-    ${swatch('--bus', 'Bus', 'MARTA buses, at the present time only')}
+    ${swatch('--bus', 'Bus', 'GPS at the present time. City also simulates Route 49 from its timetable.')}
+    <p class="a2-k-note" data-bus-calendar hidden></p>
     <div class="a2-sep a2-k-sep"></div>
     <p class="a2-h">Confidence</p>
     ${tier('Live', 'Real-time feed, moments ago')}
@@ -57,11 +58,11 @@ function aboutNode(): HTMLElement {
       <p>The City view is a hand-built model of downtown, drawn like a tabletop diorama. The Map view zooms out to the region’s rail: subway, streetcar, Amtrak and the freight lines that cross the state. Both show the same moment, Atlanta time.</p>
       <p class="a2-quiet">Nothing here is for planning a trip. It’s a window, not a timetable.</p>
       <p class="a2-h">How true is it?</p>
-      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. The corner says Live only when the clock shows the real present and MARTA’s feed is up; otherwise it says Timetable.</p>
+      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. City infers Route 49 bus positions from scheduled trips, stops and simulated signals. The corner says Live only when the clock shows the real present and MARTA’s feed is up; otherwise it says Timetable.</p>
       <p>Scenery carries no label. The sky away from the present, trees and their species, building heights, landscaping, walkers and road traffic are illustrative or inferred: drawn to look right, not measured. Freight train movements are simulated.</p>
       <p class="a2-h">Credits</p>
       <dl class="a2-credits">
-        ${credit('MARTA', 'Live rail and bus positions, and the rail timetable (GTFS)')}
+        ${credit('MARTA', 'Live rail and bus positions, rail timetables and the Route 49 timetable (GTFS)')}
         ${credit('Amtrak', 'Intercity timetable (GTFS)')}
         ${credit('FRA &amp; BTS', 'The national rail network and grade crossings')}
         ${credit('Overture Maps', 'Building footprints and heights, streets and track for the City view')}
@@ -81,6 +82,7 @@ function aboutNode(): HTMLElement {
 
 export interface PanelHooks {
   /** The selected train's stops ahead, as HTML, or null when there's no list. */
+  busCalendar?(): string | null;
   allStops?(): string | null;
   /** Open the share panel (the card's Share button). */
   share?(): void;
@@ -181,6 +183,11 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
 
   function render() {
     const cur = current();
+    if (cur?.id === 'key') {
+      const note = cur.node.querySelector<HTMLElement>('[data-bus-calendar]')!;
+      note.textContent = hooks.busCalendar?.() ?? '';
+      note.hidden = !note.textContent;
+    }
     host.hidden = !cur;
     host.classList.toggle('a2-selection', cur?.id === 'selection');
     for (const e of Object.values(entries)) e.node.classList.toggle('a2-shown', e === cur);

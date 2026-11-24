@@ -161,7 +161,8 @@ export interface CityView {
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
   /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
-  timetableBus(id: string): { headsign:string; start:number } | undefined;
+  busCalendar?: {first:number;last:number};
+  timetableBus(id: string): { headsign:string; start:number; serviceDate:number } | undefined;
   buses: Pick<CityBuses, 'occupies' | 'summary'>;
   /** Where City draws this train right now, for its card: a car out on the North Line open
    * cut (inferred track) or a Crescent berthed on the Brookwood model (inferred berth).
@@ -1746,6 +1747,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hasFreight: !!freight,
     hasPeople: !!figures,
     buses,
+    busCalendar: timetable?.calendar,
     timetableBus: id => scheduledPoses.find(p => p.id === id),
     get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length || midtownArterials?.group.children.length); },
     bounds: b,

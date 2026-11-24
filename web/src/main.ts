@@ -18,6 +18,7 @@ import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcP
 import { Schedule } from './sched/engine';
 import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
+import { atlantaDate } from './ui/status';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
 import type { CityView } from './city/city';
@@ -71,7 +72,7 @@ card.querySelector('.close')!.addEventListener('click', hideCard);
 const followParam = params.get('follow');
 const follow = followParam === '0' ? undefined : new VehicleFollow();
 let followRoute = followParam?.includes(':route:') ? followParam : null;
-let followBus = followParam?.startsWith('marta:bus:') ? followParam : null;
+let followBus = (followParam?.startsWith('marta:bus:') || followParam?.startsWith('marta:bus-trip:')) ? followParam : null;
 let followLinkAt: number | undefined;
 let followLinkOpened: number | undefined;
 const followPanel = document.getElementById('train-follow')!;
@@ -91,6 +92,7 @@ function updateFollowPanel() {
     covered: reduced ? `${Noun} under cover` : 'Under cover · following the route above ground',
     unseen: reduced ? `${Noun} out of view` : `${Noun} out of view · following its position above ground`,
     lost: selectedFreight ? 'Follow ended · freight no longer drawn' : noun !== 'bus' ? 'Follow ended · trip unavailable'
+      : selectedBus?.startsWith('marta:bus-trip:') ? 'Follow ended · timetable bus no longer drawn'
       : clock.isRealTime() ? 'Follow ended · bus stopped reporting' : 'Follow ended · live buses show only at the present time',
     outside: `Follow ended · ${noun} left the board`,
   }[follow.phase];
@@ -220,6 +222,15 @@ function renderBusCard() {
 
 // A review link names a route, not a trip id, which changes with each timetable refresh.
 function followFromLink() {
+  if (followBus && follow && diorama && !clock.isRealTime() && diorama.timetableBus(followBus)) {
+    selectedBus = followBus;
+    followBus = null;
+    selectedTrain = null;
+    selectedFreight = null;
+    follow.start({kind:'bus', id:selectedBus, tier:'inferred'});
+    renderBusCard();
+    return;
+  }
   if (followBus && follow && diorama && clock.isRealTime()) {
     const bus = buses.current().find(b => b.id === followBus);
     if (bus) {
@@ -925,6 +936,8 @@ const shellOptions: ShellOptions = {
     trains: live.count,
     cityFreight: diorama?.hasFreight ?? false,
     cityTraffic: diorama?.hasTraffic ?? false,
+    busCalendar: diorama?.busCalendar,
+    cityBusDay: diorama && !clock.isRealTime() ? Number(atlantaDate(clock.now().getTime()).replaceAll('-','')) : undefined,
     buses: buses.unavailable ? null : buses.current().length,
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),

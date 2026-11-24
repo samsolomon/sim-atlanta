@@ -68,3 +68,8 @@ it('keeps yesterday’s added after-midnight trip on its owned deck, with a stab
   expect(model.posesAt(time)).toEqual(poses);
   streets.dispose();
 });
+
+it('shows a 25:15 scheduled start on the next Atlanta date', async () => {
+  const { timetableBusCard } = await import('../map/card');
+  expect(timetableBusCard({headsign:'North',start:25*3600+15*60,serviceDate:20261130})).toContain('2026-12-01 at 1:15');
+});

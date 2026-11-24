@@ -104,6 +104,7 @@ export function createTimetableBuses(
       id: string;
       path: ReturnType<typeof directedPath>;
       points: ReturnType<typeof busTimeline>;
+      serviceDate: number;
       headsign: string;
       start: number;
     }[]
@@ -125,6 +126,7 @@ export function createTimetableBuses(
           if (!path) continue;
           trips.push({
             id: `marta:bus-trip:49-${day.ymd}-${i}`,
+            serviceDate: day.ymd,
             headsign: pattern.headsign,
             start,
             path,
@@ -138,7 +140,7 @@ export function createTimetableBuses(
       for (const trip of trips) {
         const s = busDistance(trip.points, seconds);
         const point = s === null ? null : trip.path.at(s);
-        if (point) active.push({ id: trip.id, point, headsign: trip.headsign, start: trip.start });
+        if (point) active.push({ id: trip.id, point, headsign: trip.headsign, start: trip.start, serviceDate:trip.serviceDate });
       }
     }
     return active;
@@ -199,6 +201,10 @@ export function createTimetableBuses(
     };
   }
   return {
+    calendar: {
+      first: Math.min(...table.services.flatMap(s => [s.start,...s.added]).filter(Boolean)),
+      last: Math.max(...table.services.flatMap(s => [s.end,...s.added])),
+    },
     posesAt,
     blocksFor,
     observe,

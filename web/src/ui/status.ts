@@ -12,7 +12,20 @@ export interface LiveState {
   trains: number;
   cityFreight: boolean;
   cityTraffic: boolean;
+  cityBusDay?: number;
+  busCalendar?: {first:number;last:number};
   buses: number | null; // null: bus feed unavailable or not shown
+}
+
+export function busTimetableStatus(state: Pick<LiveState,'busCalendar'|'cityBusDay'>) {
+  const calendar = state.busCalendar;
+  if (!calendar) return 'Timetable unavailable.';
+  const format = (day:number) => String(day).replace(/^(....)(..)(..)$/, '$1-$2-$3');
+  const range = `Service dates ${format(calendar.first)} through ${format(calendar.last)}.`;
+  if (state.cityBusDay && (state.cityBusDay < calendar.first || state.cityBusDay > calendar.last)) {
+    return `Selected date is outside the published service calendar. ${range}`;
+  }
+  return `City infers Route 49 positions from its timetable and simulated traffic. ${range}`;
 }
 
 export interface Confidence {

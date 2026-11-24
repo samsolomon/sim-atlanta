@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confidence, confidenceWords, hintText } from './status';
+import { busTimetableStatus, confidence, confidenceWords, hintText } from './status';
 
 const live = { realTime: true, rail: 'live' as const };
 
@@ -84,4 +84,10 @@ describe('loading', () => {
     expect(c.tier).toBe('loading');
     expect(confidenceWords(c)).toEqual([]);
   });
+});
+
+it('names the expired Route 49 calendar at a shifted City clock', () => {
+  const state = { realTime:false, rail:'live' as const, trains:0, cityFreight:true, cityTraffic:true, buses:0,
+    cityBusDay:20261218, busCalendar:{first:20260822,last:20261211} };
+  expect(busTimetableStatus(state)).toContain('outside the published service calendar');
 });
