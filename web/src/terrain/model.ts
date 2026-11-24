@@ -293,7 +293,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
-      : site.id === crestOnPeachtreeId ? createCrestOnPeachtree(sceneryCity.buildings, site, grid)
+      : site.id === crestOnPeachtreeId ? createCrestOnPeachtree(sceneryCity.buildings, site, grid, options.quality)
       : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
       : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
       : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)

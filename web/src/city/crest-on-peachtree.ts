@@ -1,4 +1,5 @@
 import type { GroundGrid } from '../terrain/grid';
+import type { TerrainQuality } from '../terrain/surface';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
@@ -17,7 +18,9 @@ const slabCentre: P2[] = [[-33, -10.9], [7, -7.9], [5.6, 9.9], [-33.9, 7.3]];
 // green and blue on the walls that rise above the deck.
 const mural = ['#d9568f', '#e88a3a', '#e9c845', '#5fb06a', '#4f86c6', '#8e6cc0'];
 
-export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
+export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, grid: GroundGrid, quality: TerrainQuality) {
+  // Low tier groups windows in pairs, halves the mural bands and keeps the street glass coarse.
+  const high = quality === 'high';
   const parts = site.parts ?? [];
   const slab = parts.find(p => p.id === slabId);
   const wings = wingIds.map(id => parts.find(p => p.id === id));
@@ -71,15 +74,15 @@ export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, 
       const lo = covered(a, b, length);
       if (top - lo < 1) return;
       if (!tower) {
-        // Garage podium: dark screen with the lobby glass at the street.
-        litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 4.2, 1, 3.4, 0.82, 0.84, storefront, 0.35);
-        litFacade(shell, seed, face++, a, b, datum + 4.6, top - 0.6, 2, 3.2, 0.9, 0.55, ['#3e4547'], 0);
+        // Garage podium: plain decks, one dark opening band per level, lobby glass at the street.
+        litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 4.2, 1, high ? 3.4 : 12, 0.82, 0.84, storefront, 0.35);
+        litFacade(shell, seed, face++, a, b, datum + 4.6, top - 0.6, 2, 1e4, 0.96, 0.5, ['#3e4547'], 0);
         return;
       }
       // An east-facing wall above the deck carries the mural behind its windows.
       const nx = (b[1] - a[1]) / length;
       if (nx > 0.7 && lo <= deck + 0.01) {
-        const bands = Math.max(2, Math.round(length / 6));
+        const bands = Math.max(2, Math.round(length / (high ? 6 : 12)));
         const out = (t: number, y: number): [number, number, number] =>
           [a[0] + t * (b[0] - a[0]) + 0.035 * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - 0.035 * (b[0] - a[0]) / length];
         for (let k = 0; k < bands; k++) {
@@ -91,8 +94,8 @@ export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, 
         }
       }
       const from = lo <= datum + 0.01 ? datum + 4.6 : lo + 0.3;
-      if (lo <= datum + 0.01) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 4.2, 1, 3.4, 0.8, 0.84, storefront, 0.35);
-      litFacade(shell, seed, face++, a, b, from, top - 0.8, Math.max(1, Math.round((top - 0.8 - from) / 3)), 2.6, 0.5, 0.56, windows, 0.32);
+      if (lo <= datum + 0.01) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 4.2, 1, high ? 3.4 : 12, 0.8, 0.84, storefront, 0.35);
+      litFacade(shell, seed, face++, a, b, from, top - 0.8, Math.max(1, Math.round((top - 0.8 - from) / 3)), high ? 2.6 : 5.2, high ? 0.5 : 0.62, 0.56, windows, 0.32);
     });
   }
   // The slab's 64 m centre: penthouse floors and plant over the middle of the slab.
@@ -100,7 +103,7 @@ export function createCrestOnPeachtree(buildings: VBuilding[], site: VBuilding, 
   shell.prism(centre, datum + 58, datum + 64, white, roofColor);
   centre.forEach((a, i) => {
     const b = centre[(i + 1) % centre.length];
-    litFacade(shell, seed, face++, a, b, datum + 58.3, datum + 63.3, 2, 2.6, 0.5, 0.56, windows, 0.32);
+    litFacade(shell, seed, face++, a, b, datum + 58.3, datum + 63.3, 2, high ? 2.6 : 5.2, high ? 0.5 : 0.62, 0.56, windows, 0.32);
   });
   // Residents' deck on the garage roof: paving, cabanas and planters.
   shell.prism(ccw([[14, -20], [34, -18.5], [32, 22], [14, 21]]), deck, deck + 0.15, '#b3a58f', '#b3a58f');
