@@ -4,6 +4,7 @@
  */
 import type { TrainState } from '../model/types';
 import { nearestOnPath, pointAt, type Schedule } from '../sched/engine';
+import { freshness, serverDate } from './freshness';
 
 interface LiveTrain {
   id: string;
@@ -38,12 +39,13 @@ const GLIDE_MS = 8_000;
 /** A fix further than this from every candidate path is drawn where reported, unsnapped. */
 const MAX_SNAP_M = 250;
 /** Live data older than this is treated as unavailable (fall back to the timetable). */
-const STALE_MS = 3 * 60_000;
+export const STALE_MS = 3 * 60_000;
 
 export class LiveMarta {
   private tracked = new Map<string, Tracked>();
   private lastFetch = -Infinity;
   private lastOk = 0;
+  firstPollComplete = false;
   error: string | null = null;
   onUpdate: () => void = () => {};
 
@@ -74,15 +76,26 @@ export class LiveMarta {
     if (performance.now() - this.lastFetch < 5_000) return;
     this.lastFetch = performance.now();
     try {
-      const r = await fetch(this.url);
+      // Never from the browser cache: a cached 200 would replay an old snapshot as live.
+      const r = await fetch(this.url, { cache: 'no-store' });
       const body = await r.json();
       if (!r.ok) throw new Error(body?.error ?? `HTTP ${r.status}`);
-      this.ingest(body as Feed);
-      this.lastOk = Date.now();
-      this.error = null;
+      const feed = body as Feed;
+      // The feed itself must be current. A stale or future snapshot drops every tracked train,
+      // so the scene falls back to the timetable rather than freezing old positions as live.
+      const fresh = freshness(feed.fetched, serverDate(r), Date.now(), STALE_MS);
+      if (fresh !== 'fresh') {
+        this.tracked.clear();
+        this.error = fresh;
+      } else {
+        this.ingest(feed);
+        this.lastOk = Date.now();
+        this.error = null;
+      }
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
     }
+    this.firstPollComplete = true;
     this.onUpdate();
   }
 

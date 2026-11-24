@@ -6,11 +6,76 @@ import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
 import { LENGTH, PAINT, vehicleGeometry, vehicleMaterial } from '../vignette/vehicles';
 import type { TerrainCity } from '../terrain/transport-data';
+import { perf, perfOverrides } from '../core/perf';
+import { legacySignalPositions } from './traffic-signals-legacy';
 import { signalPhase, signalPositions, SIGNAL_MAX_WAIT_S, type CourseSignal } from './traffic-signals';
 
 const LAMP = { red: new THREE.Color('#ff3b30'), amber: new THREE.Color('#ffb020'), green: new THREE.Color('#34d058') };
+const PHASES = ['red', 'amber', 'green'] as const;
+/** Spacing (m) of each lane's cached road-height profile. */
+const HEIGHT_STEP = 2;
+/** A profile sample whose road surface is missing (a hole, a tunnel or off the board). */
+const NO_ROAD = -Infinity;
+/** Largest gap (m) allowed between a step's interpolation and the drawn road at its midpoint. */
+const PROFILE_TOLERANCE = .005;
+/** Fractions of a step checked against the drawn road before it may interpolate. */
+const CHECKS = [.5, .25, .75, .125, .375, .625, .875];
+/** Metres around a car's footprint that still count as on screen: its long low-sun shadow, and
+ * an off-screen car that would block a visible one at the same spot. */
+const CULL_MARGIN = 30;
+/** Scene heights a car can occupy, for culling before its height is known. */
+const CULL_Y = [-80, 150] as const;
 
-const models = ['sedan', 'suv', 'box'] as const;
+/** For each profile step of a line: the single vertex strictly inside it, -1, or -2 for several. */
+function corners(line: Line, steps: number) {
+  const out = new Int32Array(steps).fill(-1);
+  for (let v = 1; v < line.pts.length - 1; v++) {
+    const at = line.cum[v], i = Math.floor(at / HEIGHT_STEP);
+    if (at === i * HEIGHT_STEP || i >= steps) continue; // on a sample: already exact
+    out[i] = out[i] === -1 ? v : -2;
+  }
+  return out;
+}
+
+/** `line.at` without allocating: writes x, z into `out`. */
+function pointAt(line: Line, s: number, out: { x: number; z: number }) {
+  const vertex = line.vertexAt(s), pts = line.pts;
+  const i = Math.min(Math.floor(vertex), pts.length - 2), f = vertex - i;
+  const a = pts[i], b = pts[i + 1];
+  out.x = a[0] + (b[0] - a[0]) * f;
+  out.z = a[1] + (b[1] - a[1]) * f;
+  return out;
+}
+
+/** One course's per-frame state, built once so the frame loop allocates nothing. */
+interface LaneState {
+  course: TrafficCourse;
+  slots: Slot[];
+  /** Placed together with signals or a moving queue (positions depend on each other). */
+  timed: boolean;
+  queue?: MovingQueue;
+  period: number;
+  active: Slot[];
+  brakes: boolean[];
+  trips: { start: number; length: number }[];
+  bounds: THREE.Box3;
+  /** Road height every HEIGHT_STEP metres (NaN until first sampled), and the source road index there. */
+  heights: Float64Array;
+  runs: Int32Array;
+  /** Per step: the one lane vertex strictly inside it (its index), -1 for none, -2 for several. */
+  corner: Int32Array;
+  /** Road height at each lane vertex (NaN until first sampled), for corners inside a step. */
+  vertexHeights: Float64Array;
+  /** Per step: 0 untested, 1 interpolates within PROFILE_TOLERANCE, 2 sample exactly (a deck
+   * edge, a step in the drawn surface or a terrain fold inside it). */
+  smooth: Uint8Array;
+}
+
+/** Every kind City may draw. Low keeps sedan, SUV and box truck; high adds hatch, pickup, van and the
+ * semi (illustrative mix, picked once per slot in slotsFor). */
+const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'van', 'semi'] as const;
+/** High-tier car mix, as cumulative shares of the non-truck slots. */
+const CAR_MIX: [Kind, number][] = [['sedan', .40], ['suv', .67], ['hatch', .79], ['pickup', .92], ['van', 1]];
 type Kind = typeof models[number];
 type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
 export interface RoadTrafficOptions {
@@ -38,6 +103,8 @@ export interface TrafficCourse {
   speedMps: number;
   dailyFlow: number;
   truckShare: number;
+  /** High tier: share of trucks drawn as tractor-trailers instead of box trucks (default 0.15). */
+  semiShare?: number;
   /** Extra time offstage between trips with separate endpoints. */
   offstageM?: number;
   /** Replay allowance for moving queues; excluded from visible-car demand. */
@@ -45,6 +112,7 @@ export interface TrafficCourse {
   closed?: boolean;
   /** Stop lines at mapped traffic signals (opt-in; courses without them run unchanged). */
   signals?: CourseSignal[];
+  rush?: { center: number; radius: number; hour: number };
   /** Explicit incoming stop line for a turning course. */
   turnSignal?: Omit<CourseSignal, 'axis'> & { dx: number; dz: number };
   /** Dissolve near unresolved interior endpoints; board edges use the City's clipping. */
@@ -57,6 +125,16 @@ interface Slot {
   threshold: number;
   kind: Kind;
   color: THREE.Color;
+}
+
+// A monotone distance map concentrates existing cars at a bottleneck. Value and
+// slope match free flow at both ends; slots keep their original trip periods.
+function rushDistance(s: number, course: TrafficCourse, hour: number) {
+  const rush = course.rush;
+  if (!rush) return s;
+  const u = (s - rush.center) / rush.radius;
+  const demand = Math.max(0, 1 - Math.abs(hour - rush.hour) / 2);
+  return Math.abs(u) < 1 ? s - .92 * demand * (s - rush.center) * (1 - u * u) ** 2 : s;
 }
 
 function hourShare(hourly: TrafficData['hourly'], clockMs: number) {
@@ -76,7 +154,7 @@ function visibleLength(lane: TrafficCourse) {
   return lane.line.length + (lane.offstageM ?? 0) + delay * lane.speedMps;
 }
 
-function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number) {
+export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number, quality: 'low' | 'high' = 'low') {
   const random = rng(seed);
   const demand = routes.map(r => r.dailyFlow * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
   const visible = routes.map(r => r.dailyFlow * peak / 3600 * visibleLength(r) / r.speedMps);
@@ -90,9 +168,20 @@ function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: numb
     const offset = random();
     for (let j = 0; j < count; j++) {
       const u = random();
-      slots.push({ lane, phase: (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane)),
-        threshold: random(), kind: u < lane.truckShare ? 'box' : u < lane.truckShare + .35 ? 'suv' : 'sedan',
-        color: new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]) });
+      const phase = (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane));
+      const threshold = random();
+      const color = new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]);
+      let kind: Kind;
+      if (u < lane.truckShare) {
+        kind = quality === 'high' && u < lane.truckShare * (lane.semiShare ?? .15) ? 'semi' : 'box';
+      } else if (quality === 'high') {
+        // Reuse the passenger portion of this draw to preserve every slot's phase, threshold and paint.
+        const passenger = (u - lane.truckShare) / (1 - lane.truckShare);
+        kind = CAR_MIX.find(([, upTo]) => passenger < upTo)?.[0] ?? 'van';
+      } else {
+        kind = u < lane.truckShare + .35 ? 'suv' : 'sedan';
+      }
+      slots.push({ lane, phase, threshold, kind, color });
     }
   }
   return slots;
@@ -108,13 +197,18 @@ export class RoadTraffic {
   /** Signalised cars the footprint check dropped behind another car on their own course this
    * frame. A queue should never need it; opposing lanes pinching at a node are not counted. */
   signalOverlaps = 0;
-  private readonly material = vehicleMaterial(this.night);
+  private readonly material = vehicleMaterial(this.night, true);
   private readonly meshes = new Map<Kind, THREE.InstancedMesh>();
   private readonly slots: Slot[];
   private readonly movingQueues = new Map<TrafficCourse, MovingQueue>();
   private readonly peak: number;
   private share = 0;
   private pose = new THREE.Object3D();
+  private lanes: LaneState[] = [];
+  private headPhases: Uint8Array = new Uint8Array(0);
+  private readonly frustumBox = new THREE.Box3();
+  private readonly axles = [{ x: 0, z: 0, y: 0 }, { x: 0, z: 0, y: 0 }, { x: 0, z: 0, y: 0 }];
+  private readonly point = { x: 0, z: 0 };
   private readonly visible: { x: number; z: number; y: number; half: number; ux: number; uz: number; lane?: TrafficCourse }[] = [];
   /** One mast and head per stop line, coloured from the shared controller every frame. */
   private heads?: { mesh: THREE.InstancedMesh; masts: THREE.InstancedMesh; signals: CourseSignal[] };
@@ -136,7 +230,9 @@ export class RoadTraffic {
       this.movingQueues.set(queued, new MovingQueue(queued.signals ?? [], queued.line.length, queued.speedMps, blocks));
       return queued;
     });
-    this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed) : [];
+    this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed, opts.quality) : [];
+    this.lanes = this.buildLanes(courses);
+    if (this.heads) this.headPhases = new Uint8Array(this.heads.signals.length).fill(255);
     this.material.clippingPlanes = opts.clippingPlanes ?? [];
     const fade = courses.some(course => course.fadeStartM || course.fadeEndM);
     if (fade) {
@@ -157,9 +253,14 @@ export class RoadTraffic {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
       const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
+      mesh.geometry.setAttribute('braking', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
+        .setUsage(THREE.DynamicDrawUsage));
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      // Allocate per-instance colour now. setColorAt would create it on a kind's first visible car, so a
+      // kind the boot prewarm drew before then compiled a separate program without instance colour.
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3).setUsage(THREE.DynamicDrawUsage);
       mesh.frustumCulled = false;
       mesh.receiveShadow = true;
       mesh.count = 0;
@@ -200,13 +301,277 @@ export class RoadTraffic {
     return kept;
   }
 
-  update(clockMs: number, darkness: number) {
+  private buildLanes(courses: TrafficCourse[]): LaneState[] {
+    const byCourse = new Map<TrafficCourse, Slot[]>();
+    for (const slot of this.slots) {
+      const list = byCourse.get(slot.lane);
+      if (list) list.push(slot); else byCourse.set(slot.lane, [slot]);
+    }
+    // Slots are generated course by course, so this keeps the original placement priority.
+    return courses.flatMap(course => {
+      const slots = byCourse.get(course);
+      if (!slots) return [];
+      const queue = this.movingQueues.get(course);
+      const bounds = new THREE.Box3();
+      for (const [x, z] of course.line.pts) bounds.expandByPoint(new THREE.Vector3(x, 0, z));
+      bounds.min.set(bounds.min.x - CULL_MARGIN, CULL_Y[0], bounds.min.z - CULL_MARGIN);
+      bounds.max.set(bounds.max.x + CULL_MARGIN, CULL_Y[1], bounds.max.z + CULL_MARGIN);
+      const n = Math.ceil(course.line.length / HEIGHT_STEP) + 2;
+      return [{
+        course, slots, queue, bounds,
+        timed: !course.closed && (!!course.signals?.length || !!queue),
+        period: course.line.length + offstage(course),
+        active: [], brakes: [], trips: slots.map(() => ({ start: 0, length: 0 })),
+        heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
+        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
+      }];
+    });
+  }
+
+  /** Forget cached road heights, for when the ground under existing courses changes. */
+  refreshHeights() {
+    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); }
+  }
+
+  /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
+  private heightAt(lane: LaneState, s: number, x: number, z: number): number | null {
+    const i = Math.floor(s / HEIGHT_STEP), length = lane.course.line.length;
+    // The last step is shorter: its upper sample sits at the lane's end, not a full step on.
+    const s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+    if (!(span > 0) || s <= s0) {
+      const a = this.profile(lane, i);
+      return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
+    }
+    let smooth = lane.smooth[i];
+    if (!smooth) {
+      // First use of this step: keep interpolating only if the drawn road agrees at its eighths,
+      // which catches deck edges, steps in the surface and terrain folds.
+      smooth = 1;
+      for (const t of CHECKS) {
+        const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
+        const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
+        if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
+      }
+      lane.smooth[i] = smooth;
+    }
+    return smooth === 1 ? this.interpolate(lane, i, s0, span, s) : this.exactHeight(lane, s, x, z);
+  }
+
+  /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
+  private interpolate(lane: LaneState, i: number, s0: number, span: number, s: number): number | null {
+    const a = this.profile(lane, i), b = this.profile(lane, i + 1);
+    const roads = lane.course.roads, corner = lane.corner[i];
+    if (a === NO_ROAD || b === NO_ROAD || corner === -2 || roads[lane.runs[i]] !== roads[lane.runs[i + 1]]) return null;
+    if (corner >= 0) {
+      // The lane turns inside this step: interpolate to the corner's own height on each side,
+      // so a bend never cuts a chord below the road.
+      const at = lane.course.line.cum[corner];
+      let h = lane.vertexHeights[corner];
+      if (h !== h) {
+        const [vx, vz] = lane.course.line.pts[corner];
+        const y = this.opts.roadHeight(vx, vz, roads[Math.min(roads.length - 1, corner)]);
+        h = lane.vertexHeights[corner] = y === null || !Number.isFinite(y) ? NO_ROAD : y;
+      }
+      if (h === NO_ROAD) return null;
+      return s <= at ? a + (h - a) * ((s - s0) / (at - s0)) : h + (b - h) * ((s - at) / (s0 + span - at));
+    }
+    return a + (b - a) * ((s - s0) / span);
+  }
+
+  private exactHeight(lane: LaneState, s: number, x: number, z: number) {
+    const { line, roads } = lane.course;
+    const y = this.opts.roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(line.vertexAt(s)))]);
+    return y === null || !Number.isFinite(y) ? null : y;
+  }
+
+  private profile(lane: LaneState, i: number) {
+    const h = lane.heights;
+    if (i >= h.length) return NO_ROAD;
+    let y = h[i];
+    if (y !== y) { // NaN: not sampled yet
+      const { line, roads } = lane.course;
+      const s = Math.min(i * HEIGHT_STEP, line.length);
+      const run = Math.min(roads.length - 1, Math.floor(line.vertexAt(s)));
+      const p = pointAt(line, s, this.point);
+      const sampled = this.opts.roadHeight(p.x, p.z, roads[run]);
+      y = h[i] = sampled === null || !Number.isFinite(sampled) ? NO_ROAD : sampled;
+      lane.runs[i] = run;
+    }
+    return y;
+  }
+
+  /**
+   * Pose this frame's cars. `view` (the camera frustum) skips cars that cannot be seen; without
+   * it every car is placed. Signalised and queued lanes are placed only while any part of them
+   * is in view, except moving queues, which step every frame to keep their replay continuous.
+   */
+  update(clockMs: number, darkness: number, view?: THREE.Frustum) {
+    const started = performance.now();
+    if (perfOverrides.trafficLegacy) this.stepLegacy(clockMs, darkness);
+    else this.step(clockMs, darkness, perfOverrides.trafficNoCull ? undefined : view);
+    perf.traffic(performance.now() - started);
+  }
+
+  private step(clockMs: number, darkness: number, view?: THREE.Frustum) {
+    this.night.value = darkness;
+    const counts = this.meshCounts;
+    counts.clear();
+    for (const [kind, mesh] of this.meshes) counts.set(kind, mesh.count), mesh.count = 0;
+    this.visibleCars = 0;
+    this.signalOverlaps = 0;
+    if (!this.slots.length || !Number.isFinite(clockMs)) return this.finish(counts, false);
+    this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
+    const localTime = local(new Date(clockMs));
+    const rushHour = localTime.weekend ? -24 : localTime.hour + (clockMs % 60000) / 3600000;
+    const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
+    if (this.heads) {
+      const { mesh, signals } = this.heads, last = this.headPhases;
+      let changed = false;
+      for (let i = 0; i < signals.length; i++) {
+        const phase = signalPhase(signals[i].key, signals[i].axis, seconds);
+        const k = phase === 'red' ? 0 : phase === 'amber' ? 1 : 2;
+        if (last[i] === k) continue;
+        last[i] = k;
+        mesh.setColorAt(i, LAMP[PHASES[k]]);
+        changed = true;
+      }
+      if (changed) mesh.instanceColor!.needsUpdate = true;
+    }
+    const box = this.opts.city.bounds;
+    let dirty = false;
+    for (const lane of this.lanes) {
+      const { course, slots, active, trips } = lane;
+      const inView = !view || view.intersectsBox(lane.bounds);
+      if (!inView && !lane.queue) continue;
+      active.length = 0;
+      for (const slot of slots) if (slot.threshold < this.share) active.push(slot);
+      if (!active.length) continue;
+      const v = course.speedMps, period = lane.period;
+      let positions: readonly (number | null)[] | null = null;
+      if (lane.timed) {
+        trips.length = active.length;
+        for (let i = 0; i < active.length; i++) {
+          const trip = trips[i] ??= { start: 0, length: 0 };
+          trip.start = (Math.floor((seconds * v + active[i].phase) / period) * period - active[i].phase) / v;
+          trip.length = LENGTH[active[i].kind];
+        }
+        positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds, lane.brakes);
+      }
+      if (!inView) continue;
+      const line = course.line;
+      for (let i = 0; i < active.length; i++) {
+        const slot = active[i];
+        const timed = positions ? positions[i] : undefined;
+        if (timed === null) continue;
+        const free = THREE.MathUtils.euclideanModulo(seconds * v + slot.phase, period);
+        const s = timed ?? rushDistance(free, course, rushHour);
+        const length = LENGTH[slot.kind], half = length / 2;
+        if (!course.closed && (s < half || s > line.length - half)) continue;
+        if (view) {
+          const c = pointAt(line, course.closed ? THREE.MathUtils.euclideanModulo(s, line.length) : s, this.point);
+          this.frustumBox.min.set(c.x - CULL_MARGIN, CULL_Y[0], c.z - CULL_MARGIN);
+          this.frustumBox.max.set(c.x + CULL_MARGIN, CULL_Y[1], c.z + CULL_MARGIN);
+          if (!view.intersectsBox(this.frustumBox)) continue;
+        }
+        const [front, rear, centre] = this.axles;
+        if (!this.axle(lane, s + half, box, front) || !this.axle(lane, s - half, box, rear) || !this.axle(lane, s, box, centre)) continue;
+        const { x, y, z } = centre;
+        const dx = front.x - rear.x, dz = front.z - rear.z, horizontal = Math.hypot(dx, dz);
+        if (!horizontal) continue;
+        const heading = Math.atan2(dx, dz);
+        if (this.opts.busOccupies?.(x, y, z, length, heading)) continue;
+        const ux = dx / horizontal, uz = dz / horizontal, end = half + .75;
+        const blocked = this.blocked(x, y, z, ux, uz, end);
+        if (blocked) {
+          if (timed != null && blocked === course) this.signalOverlaps++;
+          continue;
+        }
+        const place = this.visible[this.visibleCars] ??= { x, y, z, half: end, ux, uz };
+        place.x = x; place.y = y; place.z = z; place.half = end; place.ux = ux; place.uz = uz; place.lane = course;
+        this.visibleCars++;
+        const mesh = this.meshes.get(slot.kind)!;
+        const index = mesh.count++;
+        const brake = mesh.geometry.getAttribute('braking') as THREE.InstancedBufferAttribute;
+        const braking = timed != null ? (lane.queue?.brakes ?? lane.brakes)[i] : course.rush && free < course.rush.center &&
+          rushDistance(free + 1, course, rushHour) - s < .65;
+        const lamp = braking ? 1 : 0;
+        if (brake.getX(index) !== lamp) { brake.setX(index, lamp); brake.needsUpdate = true; }
+        // Rotation YXZ: heading about y, then pitch about x, written straight into the matrix.
+        const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);
+        const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
+        const m = mesh.instanceMatrix.array as Float32Array, o = index * 16;
+        dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
+          x, (front.y + rear.y) * .5 + .03, z) || dirty;
+        const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
+        if (opacity) {
+          const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;
+          const toEnd = course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1;
+          const a = Math.min(1, fromStart, toEnd), arr = opacity.array as Float32Array;
+          if (arr[index] !== Math.fround(a)) { arr[index] = a; opacity.needsUpdate = true; }
+        }
+        const colors = mesh.instanceColor?.array as Float32Array | undefined, c = slot.color;
+        if (!colors || colors[index * 3] !== Math.fround(c.r) || colors[index * 3 + 1] !== Math.fround(c.g) ||
+            colors[index * 3 + 2] !== Math.fround(c.b)) {
+          mesh.setColorAt(index, c);
+          mesh.instanceColor!.needsUpdate = true;
+        }
+      }
+    }
+    this.finish(counts, dirty);
+  }
+
+  private readonly meshCounts = new Map<Kind, number>();
+
+  /** Upload instance matrices only when a pose or the drawn count changed. */
+  private finish(previous: Map<Kind, number>, dirty: boolean) {
+    for (const [kind, mesh] of this.meshes) {
+      if (!dirty && mesh.count === previous.get(kind)) continue;
+      mesh.instanceMatrix.clearUpdateRanges();
+      mesh.instanceMatrix.addUpdateRange(0, mesh.count * 16);
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  /** One axle on the lane's drawn road, or false where the road is missing or off the board. */
+  private axle(lane: LaneState, at: number, box: TerrainCity['bounds'], out: { x: number; z: number; y: number }) {
+    const line = lane.course.line;
+    if (lane.course.closed) at = THREE.MathUtils.euclideanModulo(at, line.length);
+    const p = pointAt(line, at, out);
+    if (p.x <= box.minX || p.x >= box.maxX || p.z <= box.minZ || p.z >= box.maxZ) return false;
+    const y = this.heightAt(lane, Math.min(Math.max(at, 0), line.length), p.x, p.z);
+    if (y === null) return false;
+    out.y = y;
+    return true;
+  }
+
+  /** The course of an already placed car whose footprint this car's would overlap, if any.
+   * Both oriented footprints are checked: two crossing cars can touch even when neither
+   * centre is inside the other's lane, or pass on different levels. */
+  private blocked(x: number, y: number, z: number, ux: number, uz: number, end: number) {
+    const side = 1.1;
+    for (let i = 0; i < this.visibleCars; i++) {
+      const prev = this.visible[i], vx = prev.x - x, vz = prev.z - z;
+      if (Math.abs(prev.y - y) >= 2.5 || Math.abs(vx) > end + prev.half + 2 * side ||
+          Math.abs(vz) > end + prev.half + 2 * side) continue;
+      const dot = Math.abs(ux * prev.ux + uz * prev.uz), cross = Math.abs(ux * prev.uz - uz * prev.ux);
+      if (Math.abs(vx * ux + vz * uz) < end + prev.half * dot + side * cross &&
+          Math.abs(vx * uz - vz * ux) < side + prev.half * cross + side * dot &&
+          Math.abs(vx * prev.ux + vz * prev.uz) < prev.half + end * dot + side * cross &&
+          Math.abs(vx * prev.uz - vz * prev.ux) < side + end * cross + side * dot) return prev.lane ?? true;
+    }
+    return null;
+  }
+
+  /** The pre-2026-11-24 path, kept for `?perf&traffic=legacy` A/B runs on a device. */
+  private stepLegacy(clockMs: number, darkness: number) {
     this.night.value = darkness;
     for (const mesh of this.meshes.values()) mesh.count = 0;
     this.visibleCars = 0;
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return;
     this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
+    const localTime = local(new Date(clockMs));
+    const rushHour = localTime.weekend ? -24 : localTime.hour + (clockMs % 60000) / 3600000;
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads;
@@ -227,7 +592,7 @@ export class RoadTraffic {
       const trips = slots.map(sl => ({
         start: (Math.floor((seconds * v + sl.phase) / period) * period - sl.phase) / v, length: LENGTH[sl.kind] }));
       const pos = this.movingQueues.get(lane)?.at(trips, seconds)
-        ?? signalPositions(lane.signals!, lane.line.length, v, trips, seconds);
+        ?? legacySignalPositions(lane.signals!, lane.line.length, v, trips, seconds);
       slots.forEach((sl, i) => signalled.set(sl, pos[i]));
     }
     for (const slot of this.slots) {
@@ -235,7 +600,8 @@ export class RoadTraffic {
       const { line, roads } = slot.lane;
       const timed = signalled.get(slot);
       if (timed === null) continue;
-      const s = timed ?? THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, line.length + offstage(slot.lane));
+      const free = THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, line.length + offstage(slot.lane));
+      const s = timed ?? rushDistance(free, slot.lane, rushHour);
       const length = LENGTH[slot.kind], half = length / 2;
       if (!slot.lane.closed && (s < half || s > line.length - half)) continue;
       const axle = (at: number) => {
@@ -313,4 +679,20 @@ export class RoadTraffic {
     this.material.dispose();
     this.group.clear();
   }
+}
+
+/** Write a pose (rotation columns, then position) at `o` of a column-major matrix array; true
+ * if any element changed. */
+function write(m: Float32Array, o: number, e0: number, e1: number, e2: number, e4: number, e5: number, e6: number,
+  e8: number, e9: number, e10: number, x: number, y: number, z: number) {
+  const before = m[o] !== Math.fround(e0) || m[o + 1] !== Math.fround(e1) || m[o + 2] !== Math.fround(e2) ||
+    m[o + 4] !== Math.fround(e4) || m[o + 5] !== Math.fround(e5) || m[o + 6] !== Math.fround(e6) ||
+    m[o + 8] !== Math.fround(e8) || m[o + 9] !== Math.fround(e9) || m[o + 10] !== Math.fround(e10) ||
+    m[o + 12] !== Math.fround(x) || m[o + 13] !== Math.fround(y) || m[o + 14] !== Math.fround(z) || m[o + 15] !== 1;
+  if (!before) return false;
+  m[o] = e0; m[o + 1] = e1; m[o + 2] = e2; m[o + 3] = 0;
+  m[o + 4] = e4; m[o + 5] = e5; m[o + 6] = e6; m[o + 7] = 0;
+  m[o + 8] = e8; m[o + 9] = e9; m[o + 10] = e10; m[o + 11] = 0;
+  m[o + 12] = x; m[o + 13] = y; m[o + 14] = z; m[o + 15] = 1;
+  return true;
 }

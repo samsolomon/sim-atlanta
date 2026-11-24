@@ -1,4 +1,4 @@
-import { Raycaster, Vector3 } from 'three';
+import { Material, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
@@ -27,6 +27,9 @@ it('stands both towers at their lidar roofs over the sky-garden base, with the s
   expect(result.buildings).toEqual([other]);
   expect(result.group.children.every(m => m.receiveShadow)).toBe(true);
   result.group.updateMatrixWorld(true);
+  // Batchable: no hooked (library-painted) material.
+  for (const m of result.group.children as Mesh[])
+    expect((m.material as Material).onBeforeCompile).toBe(Material.prototype.onBeforeCompile);
   const roof = (x: number, z: number) =>
     new Raycaster(new Vector3(x, 500, z), new Vector3(0, -1, 0)).intersectObject(result.group)[0]?.point.y + 300;
   const floor = 285;

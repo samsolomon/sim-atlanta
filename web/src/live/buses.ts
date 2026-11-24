@@ -7,6 +7,7 @@ export class LiveBuses {
   private buses: LiveBus[] = [];
   private nextPoll = 0;
   unavailable = false;
+  firstPollComplete = false;
   private pending = false;
   private serverOffset = 0;
 
@@ -19,7 +20,7 @@ export class LiveBuses {
     this.nextPoll = performance.now() + POLL_MS;
     this.pending = true;
     try {
-      const response = await fetch('/api/marta/bus');
+      const response = await fetch('/api/marta/bus', { cache: 'no-store' });
       if (!response.ok) throw new Error('MARTA bus feed unavailable');
       const feed: BusFeed = await response.json();
       const served = Date.parse(response.headers.get('Date') ?? '');
@@ -39,6 +40,7 @@ export class LiveBuses {
       this.unavailable = true;
       // Keep showing the previous observations until their individual fixes expire.
     } finally {
+      this.firstPollComplete = true;
       this.pending = false;
     }
   }

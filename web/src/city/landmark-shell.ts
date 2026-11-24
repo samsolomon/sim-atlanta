@@ -5,6 +5,13 @@ import type { VBuilding } from '../vignette/world';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import { applySurfaces, FLAT, surfaceDefaults, SurfacePainter, type Surface } from '../materials';
 
+/** `?perf&lampshadow=off` restores unshadowed lit panes, for A/B runs from one build. */
+const lampShadowsOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('lampshadow') === 'off';
+})();
+
 /** A footprint in its street frame, with roof heights in NAVD88 metres. */
 export function landmarkShell(
   buildings: VBuilding[],
@@ -118,20 +125,30 @@ export function localLandmarkShell(
     }
     shell.castShadow = shell.receiveShadow = true;
     group.add(shell);
-    const lamps = new Mesh(
-      lights.geometry(),
-      new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: lightColor, emissiveIntensity: 0 }),
-    );
-    if (lightPainter.painted && surfaceDefaults.enabled) {
-      lamps.geometry.setAttribute('aSurface', lightPainter.attribute());
-      applySurfaces(lamps.material);
-    }
-    group.add(lamps);
+    // A building with no lit panes (none photographed at night, or lit through its own material)
+    // gets no lamps mesh: an empty one still costs a draw every frame.
+    const lampGeometry = lights.geometry();
+    let lamps: Mesh<typeof lampGeometry, MeshLambertMaterial> | null = null;
+    if (lampGeometry.getAttribute('position')?.count) {
+      lamps = new Mesh(
+        lampGeometry,
+        new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: lightColor, emissiveIntensity: 0 }),
+      );
+      if (lightPainter.painted && surfaceDefaults.enabled) {
+        lamps.geometry.setAttribute('aSurface', lightPainter.attribute());
+        applySurfaces(lamps.material);
+      }
+      // Lit panes shade like the panes and walls around them (a neighbour's shadow by day), and
+      // share the body's batch class, so by day they draw with it.
+      lamps.castShadow = shell.castShadow && !lampShadowsOff;
+      lamps.receiveShadow = shell.receiveShadow && !lampShadowsOff;
+      group.add(lamps);
+    } else lampGeometry.dispose();
     return {
       group,
       buildings: buildings.filter((b) => b !== site),
       setNight(night: number) {
-        lamps.material.emissiveIntensity = night * nightIntensity;
+        if (lamps) lamps.material.emissiveIntensity = night * nightIntensity;
       },
     };
   }

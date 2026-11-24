@@ -31,6 +31,9 @@ export interface PerfContext {
   rotate?(degrees: number): void;
   /** Pan by a screen offset in CSS px (for ?perf=run&motion=pan). */
   pan?(dxPx: number, dyPx: number): void;
+  /** Frame a camera target (metres) at a distance, bearing clockwise from north and tilt from
+   * vertical, in degrees (for ?perf=run&motion=route:<name>). */
+  view?(x: number, z: number, dist: number, bearing: number, tilt: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
   quality: string;
@@ -38,6 +41,9 @@ export interface PerfContext {
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
 const mode = params.get('perf');
+/** ?perf=silent: ?perf=run's automatic sample with no overlay DOM, repaint or timer on screen, so a
+ * device measures City alone (the overlay's repaint under CSS glass cost the A16 frames). */
+const silent = mode === 'silent';
 /** `?perf` or `?perf=run`; off otherwise. */
 export const perfEnabled = mode !== null && mode !== '0' && mode !== 'off';
 const TRAIL_KEY = 'perf-trail';
@@ -51,12 +57,15 @@ const TRAIL_KEY = 'perf-trail';
  *                 bounds per category). `trees` means every instanced mesh in area scenery.
  *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never)
  *   &shadowstep=80 grid step (m) the shadow camera moves in (0 = follow the target)
+ *   &traffic=legacy  road traffic's pre-2026-11-24 update path (every car posed and height-sampled
+ *                 every frame), for A/B update-ms runs on a device; &traffic=nocull keeps the new
+ *                 path but poses off-screen cars too (to compare drawn cars with legacy)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false, farShadowM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -64,15 +73,25 @@ export const perfOverrides = (() => {
     shadow: sh === 'off' ? 'off' as const : Number(sh) >= 64 ? Number(sh) : null,
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
+    prewarmOff: params.get('prewarm') === '0',
+    /** &farshadow=3500: low's shadow casters stop past this orbit distance in metres (0: never). */
+    farShadowM: params.has('farshadow') ? (Number(params.get('farshadow')) || Infinity) : null,
+    /** &shadowgap=old: low's shadow map redraws on every LOD swap and on fixed 80 m steps (before 2026-11-24). */
+    shadowGapOld: params.get('shadowgap') === 'old',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
     farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
+    trafficLegacy: params.get('traffic') === 'legacy',
+    trafficNoCull: params.get('traffic') === 'nocull',
   };
 })();
 
 const N = 2048; // ~34 s at 60 fps
 const stamps = new Float64Array(N);
 const updateMs = new Float32Array(N);
+/** CPU ms the road-traffic layers spent in update() during each frame (all instances summed). */
+const trafficMs = new Float32Array(N);
+let trafficNow = 0;
 const renderMs = new Float32Array(N);
 const tris = new Float32Array(N);
 let head = 0;
@@ -81,6 +100,7 @@ let shadowUpdates = 0;
 const phases: Phase[] = [];
 let ctx: PerfContext | null = null;
 let lastResult: unknown = null;
+const prewarmSteps: number[] = [];
 
 function heapMB(): number | null {
   const m = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
@@ -137,6 +157,8 @@ function phase(name: string) {
  * triangles it drew (all passes, shadow redraws included). */
 function frame(ts: number, update: number, render: number, triangles = 0) {
   stamps[head] = ts;
+  trafficMs[head] = trafficNow;
+  trafficNow = 0;
   updateMs[head] = update;
   renderMs[head] = render;
   tris[head] = triangles;
@@ -165,18 +187,21 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 
 function frames(windowMs: number) {
   const idx = recent(windowMs);
-  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
   const up = idx.map(i => updateMs[i]);
   const rn = idx.map(i => renderMs[i]);
   const tr = idx.map(i => tris[i]);
+  const tf = idx.map(i => trafficMs[i]);
   return {
     fps: r1(((idx.length - 1) * 1000) / Math.max(1, span)), frames: idx.length,
     p50: r1(pct(dts, 0.5)), p95: r1(pct(dts, 0.95)), max: r1(Math.max(...dts)),
     updateP50: r1(pct(up, 0.5)), renderP50: r1(pct(rn, 0.5)), renderP95: r1(pct(rn, 0.95)),
     trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
+    trafficMean: Math.round(tf.reduce((a, b) => a + b, 0) / tf.length * 1000) / 1000,
+    trafficP50: Math.round(pct(tf, 0.5) * 1000) / 1000, trafficP95: Math.round(pct(tf, 0.95) * 1000) / 1000,
   };
 }
 
@@ -382,15 +407,23 @@ function top(n = 25) {
   return rows.sort((a, b) => b.tris - a.tris).slice(0, n);
 }
 
+let gpuOf: { renderer: THREE.WebGLRenderer; gpu: string | null } | null = null;
 function rendererInfo() {
   if (!ctx) return null;
   const { renderer } = ctx;
-  const gl = renderer.getContext();
-  let gpu: string | null = null;
-  try {
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : String(gl.getParameter(gl.RENDERER));
-  } catch { /* blocked */ }
+  // gl.getParameter is a synchronous round trip to the GPU process that waits for queued work: called
+  // from the overlay every 0.5 s it made every 30th-or-so frame a long one. The renderer string
+  // never changes, so read it once per context.
+  if (gpuOf?.renderer !== renderer) {
+    let gpu: string | null = null;
+    try {
+      const gl = renderer.getContext();
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : String(gl.getParameter(gl.RENDERER));
+    } catch { /* blocked */ }
+    gpuOf = { renderer, gpu };
+  }
+  const gpu = gpuOf.gpu;
   const canvas = renderer.domElement;
   return {
     gpu, pixelRatio: renderer.getPixelRatio(), drawingBuffer: [canvas.width, canvas.height],
@@ -428,7 +461,10 @@ function report(withInventory = true) {
 let overlay: HTMLPreElement | null = null;
 let inv: ReturnType<typeof inventory> = null;
 let invAt = 0;
+/** True while ?perf=run samples frames. */
+let sampling = false;
 function startOverlay() {
+  if (silent) return;
   if (overlay || typeof document === 'undefined') return;
   overlay = document.createElement('pre');
   overlay.id = 'perf-overlay';
@@ -445,7 +481,8 @@ function paintOverlay() {
   if (lastResult) return;
   if (!ctx) { overlay.textContent = 'perf: City closed'; return; }
   const now = performance.now();
-  if (ctx && now - invAt > 15000) { inv = inventory(); invAt = now; }
+  // The scene inventory walks everything (a long frame), so never inside a ?perf=run sample.
+  if (ctx && !sampling && now - invAt > 15000) { inv = inventory(); invAt = now; }
   const a = frames(1000), b = frames(10000);
   const r = rendererInfo();
   const h = heap();
@@ -467,20 +504,58 @@ function paintOverlay() {
 }
 
 // ---- ?perf=run ---------------------------------------------------------------------------
+/** Main-thread long tasks (over 50 ms, the browser's PerformanceObserver 'longtask'), recorded under
+ * ?perf: a frame that blocks is what a visitor feels as a stall while moving. */
+const longTasks: { start: number; ms: number }[] = [];
+if (perfEnabled && typeof PerformanceObserver !== 'undefined') {
+  try {
+    new PerformanceObserver(list => { for (const e of list.getEntries()) longTasks.push({ start: Math.round(e.startTime), ms: Math.round(e.duration) }); })
+      .observe({ type: 'longtask', buffered: true });
+  } catch { /* longtask unsupported */ }
+}
+/** Camera routes for ?perf=run&motion=route:<name>, flown out and back over a 20 s sample. `north`
+ * runs Five Points to Brookwood at 700 m (areas and rings change under it); `zoomout` eases from a
+ * 3 km to a 25 km orbit over Midtown, crossing the 10 km build distance early (far-level builds and swaps). */
+const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: [number, number] }> = {
+  north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
+  zoomout: { dist: 3000, bearing: 0, tilt: 35, path: [[400, -2300], [400, -2300]], dists: [3000, 25000] },
+};
+function routeAt(path: [number, number][], u: number): [number, number] {
+  const seg = path.slice(1).map((p, i) => Math.hypot(p[0] - path[i][0], p[1] - path[i][1]));
+  let d = u * seg.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < seg.length; i++) {
+    if (d <= seg[i] || i === seg.length - 1) {
+      const f = seg[i] ? Math.min(1, d / seg[i]) : 0;
+      return [path[i][0] + (path[i + 1][0] - path[i][0]) * f, path[i][1] + (path[i + 1][1] - path[i][1]) * f];
+    }
+    d -= seg[i];
+  }
+  return path[path.length - 1];
+}
+/** City registers its shader prewarm's queue here, so a run settles only once it is empty. */
+let prewarmPending: (() => number) | null = null;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
-  // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
+  // Areas mount as the camera approaches, the shader prewarm runs after colour, and house and ground
+  // LOD swaps log a phase: wait for the prewarm to finish, then until no phase has landed for quietMs.
   const settleStart = performance.now();
+  // False when maxWaitMs ran out first: the sample then measures a scene still loading (invalid).
+  let settled = false;
   while (performance.now() - settleStart < maxWaitMs) {
     const last = phases[phases.length - 1]?.ms ?? 0;
-    if (performance.now() - last > quietMs) break;
+    // The first prewarm has finished and nothing is queued now: a later area mount starts another.
+    const prewarmed = perfOverrides.prewarmOff || (phases.some(p => p.name === 'city:prewarmed') && (prewarmPending?.() ?? 0) === 0);
+    if (prewarmed && performance.now() - last > quietMs) { settled = true; break; }
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;
+  const sampleStart = performance.now();
   const motion = params.get('motion');
-  let turning = motion === 'orbit' || motion === 'pan';
+  const route = motion?.startsWith('route:') ? ROUTES[motion.slice(6)] : undefined;
+  if (route) sampleMs = 20000;
+  let turning = motion === 'orbit' || motion === 'pan' || !!route;
   if (turning) {
     const t0 = performance.now();
     let last = t0;
@@ -488,7 +563,14 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     const turn = (now: number) => {
       if (!turning) return;
       if (motion === 'orbit') ctx?.rotate?.(((now - last) / 1000) * 12);
-      else {
+      else if (route) {
+        // Out and back: u runs 0 -> 1 -> 0 over the sample; a dolly eases its distance geometrically.
+        const k = Math.min(1, (now - t0) / sampleMs);
+        const u = k < 0.5 ? k * 2 : 2 - k * 2;
+        const [x, z] = routeAt(route.path, u);
+        const dist = route.dists ? route.dists[0] * Math.pow(route.dists[1] / route.dists[0], u) : route.dist;
+        ctx?.view?.(x, z, dist, route.bearing, route.tilt);
+      } else {
         const next = 150 * Math.sin(((now - t0) / 4000) * 2 * Math.PI);
         ctx?.pan?.(next - x, 0);
         x = next;
@@ -498,7 +580,9 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     };
     requestAnimationFrame(turn);
   }
+  sampling = true;
   await sleep(sampleMs);
+  sampling = false;
   turning = false;
   const full = report(true);
   const f = frames(sampleMs);
@@ -506,6 +590,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
   const summary = {
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
+    trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
@@ -515,6 +600,11 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     dataMs: at('city:data'), rendererMs: at('city:renderer'), firstFrameMs: at('city:first-frame'), readyMs: at('ready'),
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
     motion: params.get('motion') ?? 'static',
+    settled,
+    // Longest main-thread task during the sample, and how many passed 100 ms.
+    longestTaskMs: Math.max(0, ...longTasks.filter(l => l.start >= sampleStart).map(l => l.ms)),
+    longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,
+    longTasks: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).map(l => [l.start, l.ms]),
   };
   const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;
@@ -545,7 +635,10 @@ function applyHide() {
     let cat: string | undefined;
     for (let p: THREE.Object3D | null = o; p && !cat; p = p.parent) cat = (p.userData?.perf as string | undefined) ?? roots.get(p);
     const tree = cat === 'scenery' && (o as THREE.InstancedMesh).isInstancedMesh;
-    if ((cat && hide.has(cat) && (o as THREE.Mesh).isMesh) || (tree && hide.has('trees'))) o.visible = false;
+    // Off render layer 0 rather than visible=false: owners flip visibility every frame (landmark
+    // batches' sync() picks day or night ranges), which undid about 450k triangles of &hide=buildings.
+    // Layer 0 is what the main and shadow cameras draw.
+    if ((cat && hide.has(cat) && (o as THREE.Mesh).isMesh) || (tree && hide.has('trees'))) o.layers.disable(0);
   });
 }
 
@@ -590,10 +683,125 @@ export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
+  setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
+  /** Add CPU ms spent in road-traffic update() to the current frame. */
+  traffic(ms: number) { trafficNow += ms; },
+  /**
+   * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
+   * count (drawRange, material group and instance count, as three.js computes it), its pass (main,
+   * shadow depth, or post: a full-screen quad outside the scene) and its owner. Answers "what draws
+   * these triangles" where the category sums (all registered geometry) can't.
+   */
+  captureDraws(o: { shadow?: boolean } = {}): Promise<unknown> {
+    if (!ctx) return Promise.resolve(null);
+    // { shadow: true } forces a shadow-map redraw in the captured frame, to measure the shadow pass.
+    const forceShadow = !!o.shadow;
+    const { renderer, scene } = ctx;
+    const roots = ctx.roots();
+    const original = renderer.renderBufferDirect;
+    type Rec = { path: string; cat: string; pass: string; material: string; tri: number; calls: number };
+    const recs = new Map<string, Rec>();
+    const owner = (o: THREE.Object3D) => {
+      let cat = '';
+      const names: string[] = [];
+      let inScene = false;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) {
+        if (!cat) cat = (p.userData?.perf as string | undefined) ?? roots.get(p) ?? '';
+        if (p.name && names.length < 4) names.push(p.name);
+        if (p === scene) inScene = true;
+      }
+      // Unnamed owners get their parent's name, or their object id, so they don't merge into one row.
+      const label = names.reverse().join(' / ') || (o.parent?.name ? `${o.parent.name} / (unnamed ${o.type})` : `(unnamed ${o.type} #${o.id})`);
+      return { cat: cat || (inScene ? 'untagged' : 'post'), path: label, inScene };
+    };
+    renderer.renderBufferDirect = function (camera, sc, geometry, material, object, group) {
+      const g = geometry as THREE.BufferGeometry;
+      const count = g.index ? g.index.count : (g.attributes.position?.count ?? 0);
+      let start = g.drawRange.start, end = Math.min(count, g.drawRange.start + g.drawRange.count);
+      if (group) { start = Math.max(start, group.start); end = Math.min(end, group.start + group.count); }
+      const m = object as THREE.InstancedMesh & { isPoints?: boolean; isLine?: boolean };
+      const inst = m.isInstancedMesh ? m.count : (g as THREE.InstancedBufferGeometry).isInstancedBufferGeometry ? (g as THREE.InstancedBufferGeometry).instanceCount : 1;
+      const tri = m.isPoints || m.isLine ? 0 : Math.max(0, Math.floor((end - start) / 3)) * (Number.isFinite(inst) ? inst : 1);
+      const o = owner(object);
+      const depth = (material as THREE.Material).type === 'MeshDepthMaterial' || (material as THREE.Material).type === 'MeshDistanceMaterial';
+      const pass = !o.inScene ? 'post' : depth ? 'shadow' : 'main';
+      // Category is part of the key: unnamed meshes in different categories share the path '(unnamed Mesh)'.
+      const key = `${pass}|${o.cat}|${o.path}|${(material as THREE.Material).type}`;
+      const r = recs.get(key) ?? { path: o.path, cat: o.cat, pass, material: (material as THREE.Material).type, tri: 0, calls: 0 };
+      r.tri += tri; r.calls++;
+      recs.set(key, r);
+      return original.call(this, camera, sc, geometry, material, object, group);
+    };
+    return new Promise(resolve => {
+      // Wait for a frame to start, record the whole next one, then put the renderer back. A hidden
+      // page runs no frames, so a timeout restores the renderer and resolves empty-handed.
+      let done = false;
+      const fallback = setTimeout(() => { if (done) return; done = true; renderer.renderBufferDirect = original; resolve(null); }, 1000);
+      requestAnimationFrame(() => { recs.clear(); if (forceShadow) renderer.shadowMap.needsUpdate = true; requestAnimationFrame(() => {
+        if (done) return;
+        done = true;
+        clearTimeout(fallback);
+        renderer.renderBufferDirect = original;
+        const all = [...recs.values()];
+        const sum = (rs: Rec[]) => ({ tri: rs.reduce((a, r) => a + r.tri, 0), calls: rs.reduce((a, r) => a + r.calls, 0) });
+        const by = (k: 'pass' | 'cat') => Object.fromEntries([...new Set(all.map(r => r[k]))].map(v => [v, sum(all.filter(r => r[k] === v))]));
+        // Meshes City hid because they have no vertices (city/empty-draws.ts): their owners should check why.
+        const hiddenEmpty: string[] = [];
+        scene.traverse(o => { if (o.userData.emptyHidden) hiddenEmpty.push(owner(o).path); });
+        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80), hiddenEmpty });
+      }); });
+    });
+  },
+  /** One prewarm step's main-thread ms (a never-drawn object's first draw, usually one compile). */
+  prewarmStep(ms: number) { prewarmSteps.push(Math.round(ms * 10) / 10); },
+  get prewarmSteps() { return [...prewarmSteps]; },
+  /** Frame intervals (ms) for frames that ended between two page times, oldest first: the long frames
+   * just after ready, for instance, where a boot-time prewarm would show. */
+  frameTimes(fromMs: number, toMs: number) {
+    const out: number[] = [];
+    for (let k = 1; k < N; k++) {
+      const i = (head - k + N) % N, j = (head - k - 1 + N) % N;
+      const t = stamps[i], prev = stamps[j];
+      if (!t || !prev || t < fromMs) break;
+      if (t <= toMs) out.push(Math.round((t - prev) * 10) / 10);
+    }
+    return out.reverse();
+  },
+  /** Which objects use which program: the path (up to four named ancestors), material type and name,
+   * and whether the object would draw now. For finding the owners of programs that compile late. */
+  programOwners() {
+    if (!ctx) return [];
+    const props = (ctx.renderer as unknown as { properties: { get(m: THREE.Material): { currentProgram?: { id: number } } } }).properties;
+    const out: { program: number; path: string; type: string; name: string; visible: boolean; object: string }[] = [];
+    const seen = new Set<string>();
+    ctx.scene.traverse(o => {
+      const mat = (o as THREE.Mesh).material;
+      if (!mat) return;
+      let visible = true;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) { visible = false; break; }
+      const names: string[] = [];
+      for (let p: THREE.Object3D | null = o; p && names.length < 4; p = p.parent) if (p.name) names.push(p.name);
+      for (const m of Array.isArray(mat) ? mat : [mat]) {
+        const id = props.get(m).currentProgram?.id;
+        if (id === undefined) continue;
+        const path = names.reverse().join(' / ');
+        const k = `${id}|${path}|${m.type}|${m.name}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push({ program: id, path, type: m.type, name: m.name, visible, object: o.type });
+      }
+    });
+    return out;
+  },
+  /** Compiled programs, with three.js's cache key (the defines that split a material into programs). */
+  programs() {
+    const list = (ctx?.renderer.info.programs ?? []) as unknown as { id: number; name?: string; cacheKey?: string; usedTimes?: number }[];
+    return list.map(p => ({ id: p.id, name: p.name ?? '', key: p.cacheKey ?? '', used: p.usedTimes ?? 0 }));
+  },
   get phases() { return phases.map(p => ({ ...p })); },
   get result() { return lastResult; },
 };
 
 Object.assign(globalThis, { __perf: perf });
 phase('boot');
-if (perfEnabled && mode === 'run') void run();
+if (perfEnabled && (mode === 'run' || silent)) void run();

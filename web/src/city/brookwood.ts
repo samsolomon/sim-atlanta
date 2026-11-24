@@ -534,11 +534,21 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
   const northEdge = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
   // The mapped mains meet the west board edge on a diagonal. Square off the ballast there.
   const westEdge = new THREE.Plane(new THREE.Vector3(1, 0, 0), 1000);
+  // Padded to four planes with two that never clip (10,000 km below the board): three.js compiles a
+  // program per clip-plane count, and the rest of City clips to four, so Brookwood's two-plane
+  // materials (and their shadow-depth variant) used to cost the phone four programs of its own.
+  const clip = [northEdge, westEdge, ...neverClip(2)];
   for (const m of [material, lightMaterial, litSlab.material, stockMaterial, ...facades.map((f) => f.material)]) {
-    m.clippingPlanes = [northEdge, westEdge];
+    m.clippingPlanes = clip;
     m.clipShadows = true;
   }
-  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, [northEdge, westEdge], instanceFreight);
+  // A hidden Crescent car so City's boot prewarm compiles the night-lit stock program before the
+  // Crescent first enters after ready. It sits outside `cars`, which picking and follow read.
+  const stockTemplate = new THREE.Mesh(consist[0].geometry, stockMaterial);
+  stockTemplate.name = 'crescent prewarm template';
+  stockTemplate.visible = false;
+  group.add(stockTemplate);
+  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, clip, instanceFreight);
   group.add(freight.group);
   let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
@@ -608,4 +618,10 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
       freight.dispose();
     },
   };
+}
+
+/** Clipping planes that never clip anything in City (their distance is positive everywhere), for
+ * padding a material's plane count to match a shared program. */
+export function neverClip(count: number) {
+  return Array.from({ length: count }, () => new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e7));
 }

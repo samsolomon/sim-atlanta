@@ -1,3 +1,5 @@
+import { junctionStop } from '../terrain/junction-markings';
+import type { VRoad } from '../vignette/world';
 import { hashStr, type Line, type P2 } from '../vignette/geom';
 
 /** Signal timing shared by every City traffic layer, matching the vignette's: an 84 s cycle,
@@ -55,7 +57,7 @@ export function clusterSignals(points: readonly P2[], radius = 25): SignalCluste
  * the controller, which spans a wide intersection's approaches): 8 m before the point nearest
  * the cluster centre, with the unit heading there. The axis is provisional (north–south 0,
  * east–west 1); `withSignals` settles it per intersection. */
-export function courseSignals(line: Line, clusters: readonly SignalCluster[], reach = 20): (CourseSignal & { dx: number; dz: number })[] {
+export function courseSignals(line: Line, clusters: readonly SignalCluster[], reach = 20, roads?: readonly VRoad[]): (CourseSignal & { dx: number; dz: number })[] {
   const out: (CourseSignal & { dx: number; dz: number })[] = [];
   for (const c of clusters) {
     let best = { d: Infinity, s: 0, dx: 0, dz: 0 };
@@ -66,7 +68,7 @@ export function courseSignals(line: Line, clusters: readonly SignalCluster[], re
       const d = Math.hypot(ax + t * dx - c.x, az + t * dz - c.z);
       if (d < best.d) best = { d, s: line.cum[i - 1] + t * Math.sqrt(l2), dx, dz };
     }
-    const s = best.s - 8;
+    const s = junctionStop(line, roads, best.s, [c.x,c.z]) ?? best.s - 8;
     if (best.d > reach || s < 2 || s > line.length - 4) continue;
     const n = Math.hypot(best.dx, best.dz) || 1;
     out.push({ s, key: c.key, axis: Math.abs(best.dz) >= Math.abs(best.dx) ? 0 : 1, dx: best.dx / n, dz: best.dz / n });
@@ -78,11 +80,11 @@ export function courseSignals(line: Line, clusters: readonly SignalCluster[], re
 }
 
 /** Give every open course its stop lines at the mapped signals. Closed loops stay unsignalled. */
-export function withSignals<C extends { line: Line; closed?: boolean; turnSignal?: { key: string; s: number; dx: number; dz: number } }>(courses: C[], points: readonly P2[]) {
+export function withSignals<C extends { line: Line; roads?: VRoad[]; closed?: boolean; turnSignal?: { key: string; s: number; dx: number; dz: number } }>(courses: C[], points: readonly P2[]) {
   const clusters = clusterSignals(points);
   const hits = courses.map(c => {
     if (c.closed) return [];
-    const hits = courseSignals(c.line, clusters);
+    const hits = courseSignals(c.line, clusters, 20, c.roads);
     if (c.turnSignal) {
       const turn = c.turnSignal;
       return [...hits.filter(h => h.key !== turn.key), { ...turn, axis: 0 as const }].sort((a,b) => a.s-b.s);
@@ -113,22 +115,27 @@ export function withSignals<C extends { line: Line; closed?: boolean; turnSignal
  * box). Pure: the result depends only on the inputs, so scrubbing the clock lands every car
  * where a fresh load would. Returns each trip's chainage, or null when it is off the course. */
 export function signalPositions(signals: readonly CourseSignal[], length: number, speed: number,
-  trips: readonly { start: number; length: number }[], now: number): (number | null)[] {
-  let hold = new Map<string, number>();
-  let result = signalPass(signals, length, speed, trips, now, hold);
-  for (let pass = 0; pass < 6 && result.spills.size; pass++) {
+  trips: readonly { start: number; length: number }[], now: number, brakes?: boolean[]): (number | null)[] {
+  const n = trips.length;
+  // Holds and spills are keyed by stop line k and trip i as k * n + i.
+  let hold = new Map<number, number>();
+  let result = signalPass(signals, length, speed, trips, now, hold, brakes);
+  for (let pass = 0; pass < 6 && result.spills?.size; pass++) {
     let changed = false;
     const next = new Map(hold);
     for (const [key, t] of result.spills) if (!(next.get(key)! >= t)) { next.set(key, t); changed = true; }
     if (!changed) break;
     hold = next;
-    result = signalPass(signals, length, speed, trips, now, hold);
+    result = signalPass(signals, length, speed, trips, now, hold, brakes);
   }
   // Final guard: no follower closer than the car ahead allows. Each trip's position never
   // decreases with time, and neither does the minimum of such positions, so this keeps every
   // car moving forward, stays pure, and rules out two cars of one course overlapping.
   const pos = result.pos;
-  const order = pos.map((p, i) => i).filter(i => pos[i] !== null).sort((a, b) => pos[b]! - pos[a]!);
+  const order = scratch.order;
+  order.length = 0;
+  for (let i = 0; i < n; i++) if (pos[i] !== null) order.push(i);
+  order.sort((a, b) => pos[b]! - pos[a]!);
   let lead = -1;
   for (const i of order) {
     if (lead >= 0) {
@@ -140,29 +147,40 @@ export function signalPositions(signals: readonly CourseSignal[], length: number
   return pos;
 }
 
+/** Working arrays reused by every call (the frame loop runs this for each signalised course). */
+const scratch = { depart: [] as number[], from: [] as number[], arrive: [] as number[], order: [] as number[],
+  settled: [] as boolean[], offstage: [] as boolean[] };
+
+const byArrival = (a: number, b: number) => scratch.arrive[a] - scratch.arrive[b];
+
 function signalPass(signals: readonly CourseSignal[], length: number, speed: number,
-  trips: readonly { start: number; length: number }[], now: number, hold: ReadonlyMap<string, number>) {
+  trips: readonly { start: number; length: number }[], now: number, hold: ReadonlyMap<number, number>, brakes?: boolean[]) {
   const n = trips.length;
   // Each trip's departure time and position from its previous stop line.
-  const depart = trips.map(t => t.start), from = trips.map(() => 0);
-  const pos: (number | null)[] = trips.map(() => null);
-  const settled = trips.map(() => false);
-  const offstage = trips.map(() => false);
-  const spills = new Map<string, number>();
-  signals.forEach((sig, k) => {
-    const arrive = trips.map((_, i) => depart[i] + (sig.s - from[i]) / speed);
+  const { depart, from, arrive, order, settled, offstage } = scratch;
+  depart.length = from.length = arrive.length = order.length = settled.length = offstage.length = n;
+  const pos: (number | null)[] = new Array(n);
+  for (let i = 0; i < n; i++) {
+    depart[i] = trips[i].start; from[i] = 0; pos[i] = null; settled[i] = false; offstage[i] = false;
+  }
+  if (brakes) brakes.fill(false, 0, n);
+  let spills: Map<number, number> | undefined;
+  for (let k = 0; k < signals.length; k++) {
+    const sig = signals[k];
+    for (let i = 0; i < n; i++) { arrive[i] = depart[i] + (sig.s - from[i]) / speed; order[i] = i; }
     // Queue order: arrival time at this stop line.
-    const order = [...Array(n).keys()].sort((a, b) => arrive[a] - arrive[b]);
+    order.sort(byArrival);
     // lastClear: when the car ahead has rolled clear of the line, not merely been released.
     let back = 0, lastLeave = -Infinity, lastClear = -Infinity, lastStop = 0, leaderHalf = 0;
-    for (const i of order) {
+    for (let q = 0; q < n; q++) {
+      const i = order[q];
       const green = nextGreen(sig.key, sig.axis, arrive[i]);
       const half = trips[i].length / 2;
       // Times are for car centres at the line, so a follower may cross only once the leader's
       // centre has passed it by both half lengths and the gap.
       const clear = lastClear + (leaderHalf + half + QUEUE_GAP_M) / speed;
       const red = green > arrive[i];
-      const held = hold.get(`${k}:${i}`) ?? -Infinity;
+      const held = hold.size ? hold.get(k * n + i) ?? -Infinity : -Infinity;
       let leave = arrive[i], stopAt = sig.s;
       if (red || arrive[i] < clear || held > arrive[i]) {
         if (arrive[i] >= clear) back = 0; // the previous queue has cleared: a new one starts
@@ -180,7 +198,7 @@ function signalPass(signals: readonly CourseSignal[], length: number, speed: num
           // The queue reaches back past where this leg began. Past the entrance the rest wait
           // offstage; past an earlier light, hold this car there until the one ahead leaves.
           if (from[i] === 0 && k === 0) offstage[i] = true;
-          else if (k > 0) spills.set(`${k - 1}:${i}`, lastLeave);
+          else if (k > 0) (spills ??= new Map()).set((k - 1) * n + i, lastLeave);
           stopAt = from[i];
         }
         // The next car queues behind this one: both half lengths and the gap behind its centre.
@@ -195,7 +213,7 @@ function signalPass(signals: readonly CourseSignal[], length: number, speed: num
         const reach = depart[i] + (stopAt - from[i]) / speed;
         if (now < depart[i]) { pos[i] = null; settled[i] = true; }
         else if (now < reach) { pos[i] = from[i] + (now - depart[i]) * speed; settled[i] = true; }
-        else if (now < leave) { pos[i] = offstage[i] ? null : stopAt; settled[i] = true; }
+        else if (now < leave) { if (brakes) brakes[i] = true; pos[i] = offstage[i] ? null : stopAt; settled[i] = true; }
       }
       offstage[i] = false;
       // The next leg starts where and when the car pulls away: a queued car rolls on from its
@@ -203,7 +221,7 @@ function signalPass(signals: readonly CourseSignal[], length: number, speed: num
       depart[i] = leave;
       from[i] = stopAt;
     }
-  });
+  }
   for (let i = 0; i < n; i++) {
     if (settled[i]) continue;
     const s = from[i] + (now - depart[i]) * speed;

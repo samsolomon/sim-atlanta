@@ -3,12 +3,15 @@ import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
-const precast = '#cbc3b2',
-  bands = '#bcb5a7',
-  glass = '#4c5659',
+// Light precast piers against deep, dark recessed windows: the towers read by vertical rhythm.
+const precast = '#d9d3c6',
+  bands = '#d8d2c4',
+  glass = '#66706f',
+  recess = '#555e5e',
   // Double-width panes on Marquis Two's north wall catch more sky than the narrow ones.
-  wideGlass = '#7d8f95';
+  wideGlass = '#5d6e74';
 
 /** Mapped Overture height, which the 2018 USGS lidar puts on the centre bar's crown. */
 export const MARQUIS_HEIGHT = 115.2;
@@ -80,7 +83,6 @@ interface MarquisSpec {
   centre: [number, number];
   /** Double-width panes in elongated Vs on the north (−v) wall. */
   northVs?: boolean;
-  seed: number;
 }
 
 /**
@@ -111,7 +113,7 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
   s.prism(ring, start, sideGlass, glass, '#8c8980');
   s.prism(ring, sideGlass, sideTop, precast, '#96938a');
   s.prism(centre, sideGlass, centreGlass, glass, '#8c8980');
-  s.prism(centre, centreGlass, crown, precast, '#a8a398');
+  s.prism(centre, centreGlass, crown, precast, '#bdb8ad');
 
   const face = (a: P2, b: P2) => {
     const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
@@ -125,11 +127,13 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
         point(r, hi, depth), point(r, lo, depth), color);
     return { length, panel, bays: Math.max(1, Math.round(length / BAY)), normal: [dz / length, -dx / length] };
   };
-  const lit = (floor: number, bay: number, edge: number) =>
-    (floor * 29 + bay * 17 + edge * 41 + spec.seed) % 83 === 0;
-  const pier = 0.25, band = pitch * 0.355;
+  // The shared lit-pane hash at the old density (1 in 83 panes); a linear modulus drew diagonals.
+  const seed = seedOf(spec.id);
+  const lit = (floor: number, bay: number, edge: number) => litHash(seed, edge, floor, bay) < 1 / 83;
+  // Piers fill a little over half of each 1.55 m bay; the dark slot between them is the window.
+  const pier = 0.44, band = pitch * 0.2;
 
-  // Spandrels cross continuous piers; each run draws one strip per pier and floor.
+  // Continuous piers over the dark glass; only Marquis Two's V panes break them.
   wallRuns(ring).forEach(([a, b], edge) => {
     const { length, panel, bays, normal } = face(a, b);
     if (length < 3) return; // The glazed strips between the three bays.
@@ -149,11 +153,11 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
     }
     for (let floor = 0; floor < FLOORS; floor++) {
       const y = start + floor * pitch;
-      panel(0, 1, y, y + band, 0.14, bands);
       const wide = vs ? vLines(bays, floor) : new Set<number>();
       for (const line of wide) {
         const l = (line - 1) / bays + half, r = (line + 1) / bays - half;
         panel(l, r, y + band, y + pitch, 0.03, wideGlass, lit(floor, line, edge));
+        panel(l, r, y, y + band, 0.03, recess);
       }
       for (let bay = 0; bay < bays; bay++) {
         if (wide.has(bay) || wide.has(bay + 1) || !lit(floor, bay, edge)) continue;
@@ -174,7 +178,7 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
     }
     for (let bay = 0; bay < bays; bay++) {
       panel(bay / bays + 0.28 / length, (bay + 1) / bays - 0.28 / length,
-        centreGlass + 1.2, crown - 1.1, 0.02, '#5d5f5b');
+        centreGlass + 1.2, crown - 1.1, 0.02, recess);
     }
   }
   return { s, shaft, start, pitch, crown };
@@ -184,7 +188,7 @@ export function createMarquisOne(buildings: VBuilding[], grid: GroundGrid) {
   const tower = marquisTower(buildings, grid, {
     id: 'd36a5d7e-165d-4008-a4be-6d32c4c55f0b', name: 'Marquis One',
     origin: [552, -810], axis: [1, 0.015], probes: [[0, 0], [-25, -12], [25, 12]],
-    centre: [-5.55, 3.7], seed: 0,
+    centre: [-5.55, 3.7],
   });
   if (!tower) return null;
   const { s, shaft } = tower;
@@ -222,7 +226,7 @@ export function createMarquisTwo(buildings: VBuilding[], grid: GroundGrid) {
   const tower = marquisTower(buildings, grid, {
     id: '2b0270ee-9f6a-44c9-bf0d-e6fb20e6c47c', name: 'Marquis Two',
     origin, axis, probes: [[0, 0], [-25, -13], [25, 14]],
-    centre: [-5.08, 4.17], northVs: true, seed: 37,
+    centre: [-5.08, 4.17], northVs: true,
   });
   if (!tower) return null;
   const { s, shaft } = tower;

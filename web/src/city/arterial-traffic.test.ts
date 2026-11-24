@@ -79,7 +79,8 @@ it.each(['low','high'] as const)('draws repeatable %s traffic within its cap and
   const first = snapshot(fleet);
   expect(fleet.visibleCars).toBeGreaterThan(0);
   expect(fleet.visibleCars).toBeLessThanOrEqual(ARTERIAL_TRAFFIC_CAP[quality]);
-  expect(fleet.group.children.length).toBeLessThanOrEqual(3);
+  // One instanced draw per vehicle kind: low keeps sedan, SUV and box truck; high adds hatch, pickup, van and semi.
+  expect(fleet.group.children.length).toBeLessThanOrEqual(quality === 'low' ? 3 : 7);
   expect(fleet.group.userData.positionTier).toBe('illustrative');
   fleet.update(noon+7000,1);
   expect(snapshot(fleet)).not.toEqual(first);
@@ -177,4 +178,16 @@ it('draws a moving-obstacle queue and reproduces it after clock seeks',()=>{
   fleet.update(noon+120000,0);fleet.update(noon+125,0);fresh.update(noon+125,0);
   expect(snapshot(fleet)).toEqual(snapshot(fresh));
   fleet.dispose();fresh.dispose();
+});
+
+it('gives every traffic mesh per-instance colour from construction, so prewarm compiles the drawn program', () => {
+  // core/prewarm.ts draws never-drawn meshes at boot. A mesh without instanceColor then compiles a
+  // program without USE_INSTANCING_COLOR, and the first coloured car compiles a second one.
+  for (const quality of ['low', 'high'] as const) {
+    const fleet = new ArterialTraffic({...base, quality});
+    const meshes = fleet.group.children.filter((o): o is InstancedMesh => (o as InstancedMesh).isInstancedMesh && !o.name.startsWith('Signal'));
+    expect(meshes.length).toBeGreaterThan(0);
+    for (const mesh of meshes) expect(mesh.instanceColor, mesh.name).not.toBeNull();
+    fleet.dispose();
+  }
 });

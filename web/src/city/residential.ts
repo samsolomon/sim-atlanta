@@ -1,3 +1,4 @@
+import { runSync } from '../core/slice';
 import landuse from '../../../pipeline/prototypes/residential/landuse.json';
 import { pradoYieldSigns } from '../terrain/ansley-street-edge';
 import * as THREE from 'three';
@@ -575,7 +576,8 @@ const WALK = '#cbc6ba', DRIVE = '#b2ada3';
  * or mulch strip along the front, and on some houses a small bed by the walk and a clipped hedge
  * near the street. The low tier keeps walks and driveways. All `illustrative`.
  */
-function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
+/** Yard landscaping as a build that yields once per house (core/slice.ts). */
+function* yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
   street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[]) {
   const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
   if (high) pradoYieldSigns(b,city.bounds,ground);
@@ -671,6 +673,8 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
   };
   for (const p of plans.values()) {
     if (!p.front || p.concave) continue;
+    // One house per step: each lot draws from its own seeded stream, so yielding never reorders it.
+    yield 'yard';
     const { len, e, n, m } = frontFrame(p);
     const at = (s: number, o: number): P2 => [m[0] + e[0] * s + n[0] * o, m[1] + e[1] * s + n[1] * o];
     const r = rng(hashStr(p.id + '/yard'));
@@ -735,12 +739,17 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
  * `ground` (the rendered surface, scene metres) lets a lowered eave keep clear of a hillside:
  * such houses get the hillside floor rule from midtown-foundations.
  */
-export function residential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
+export function residential(...args: Parameters<typeof buildResidential>) {
+  return runSync(buildResidential(...args));
+}
+
+/** residential() as a build that yields every few houses (core/slice.ts). */
+export function* buildResidential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
   ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high',
   force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = []) {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
-  const buildings = city.buildings.map(b => {
+  const toHouse = (b: (typeof city.buildings)[number]) => {
     if (existing?.(b)) return b;
     const p = plan(b, street, quality, force?.[b.id]);
     if (!p) return b;
@@ -768,7 +777,13 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     const floor = floorY ?? b.floorY ?? base ?? undefined;
     if (p.porch && floor !== undefined && p.porchFoot !== undefined && floor + .55 - p.porchFoot > 1.5) p.porch = null;
     return floorY === undefined ? { ...b, h: p.eave, floors: null } : { ...b, h: p.eave, floors: null, floorY };
-  });
+  };
+  const buildings: ReturnType<typeof toHouse>[] = [];
+  for (const b of city.buildings) {
+    buildings.push(toHouse(b));
+    // Each house's plan reads only its own footprint and the shared street index.
+    if (buildings.length % 8 === 0) yield 'residential';
+  }
   const finishFor = (b: VBuilding): BuildingFinish | undefined => {
     const own = existing?.(b);
     if (own) return own;
@@ -851,12 +866,20 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     /** Whether a building is one of the planned houses. */
     isHouse: (id: string) => plans.has(id),
     /** Read-only view of a house's plan (style, roof shape, ridge direction), for tests and the lab. */
-    planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys }; },
+    planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys, roof: p.roof }; },
+    /** A house as one box (its plan's oriented rectangle, eave, half the roof rise, wall and roof
+     *  colours), for the far-far form (city/house-lod.ts). */
+    boxOf(id: string) { const p = plans.get(id); return p ? { centre: p.centre, u: p.u, long: p.long, half: p.half, height: p.eave + p.rise / 2, wall: p.wall, roof: p.roof } : null; },
     /** Yard landscaping for every planned house: one primitives draw and one ground-cover draw. */
-    yards() {
+    yards() { return runSync(buildYards()); },
+    /** yards() as a build that yields once per house, for sliced area builds. */
+    buildYards,
+  };
+  function* buildYards() {
       if (!ground || !plans.size) return null;
       // Every footprint blocks yards, including landmark sites already removed from `city`.
-      const { b, cover, yields, terraceSites } = yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks);
+      const { b, cover, yields, terraceSites } = yield* yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks);
+      yield;
       const group = new THREE.Group();
       group.name = 'yards';
       group.userData.perf = 'landscape';
@@ -864,6 +887,5 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
       group.add(land.mesh);
       if (covers) group.add(covers.mesh);
       return { group, yields, terraceSites, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
-    },
-  };
+  }
 }

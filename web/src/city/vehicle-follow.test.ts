@@ -43,11 +43,14 @@ describe('vehicle follow', () => {
 
   it('holds the camera in reduced motion until explicitly recentered, including after reacquisition', () => {
     const f = new VehicleFollow(); f.start(train);
+    expect(f.framingRequested).toBe(true);
     expect(f.frame(fix(20,[car(25)]),bounds,0,true)).toEqual({x:25,z:36});
+    expect(f.framingRequested).toBe(false);
     expect(f.frame(fix(30,[],'covered'),bounds,200,true)).toBeUndefined();
     expect(f.phase).toBe('covered');
     expect(f.frame(fix(90,[car(90)]),bounds,400,true)).toBeUndefined();
     f.recenter();
+    expect(f.framingRequested).toBe(true);
     expect(f.frame(fix(95,[car(95)]),bounds,500,true)).toEqual({x:95,z:36});
     expect(f.phase).toBe('drawn');
   });

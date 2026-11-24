@@ -5,7 +5,13 @@
  *   everything else      → static site (web/dist) via the ASSETS binding
  *
  * The MARTA key is a Worker secret (MARTA_API_KEY). It only ever appears in the
- * upstream request made here, never in a response or log.
+ * upstream request made here, never in a cache key, response or log.
+ *
+ * Live responses are never cacheable by browsers. The edge keeps one copy in caches.default
+ * under a short internal max-age, and every response is a rewritten copy with
+ * `Cache-Control: no-store` and the current `Date`. Cloudflare otherwise serves an edge hit
+ * with the zone's Browser Cache TTL (4 h), and a tab would keep a 4-hour-old snapshot as
+ * though it were live.
  */
 import { MARTA_RAIL_URL, normalize, type MartaRow } from './marta';
 
@@ -29,36 +35,37 @@ const json = (body: unknown, status = 200, maxAge = CACHE_SECONDS) =>
     },
   });
 
+// Give every client a current server clock, including when the snapshot came from the edge
+// cache, and forbid browser caching. The tab controls its own polling cadence.
+export function serveSnapshot(snapshot: Response) {
+  const response = new Response(snapshot.body, snapshot);
+  response.headers.set('Date', new Date().toUTCString());
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
+
 async function martaRail(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  if (!env.MARTA_API_KEY) return json({ error: 'live MARTA data not configured' }, 503, 60);
+  if (!env.MARTA_API_KEY) return serveSnapshot(json({ error: 'live MARTA data not configured' }, 503, 60));
   const cache = caches.default;
+  // The key is our own path only; the upstream URL carrying the API key is never cached.
   const cacheKey = new Request(new URL('/api/marta/rail', req.url).toString());
   const hit = await cache.match(cacheKey);
-  if (hit) return hit;
+  if (hit) return serveSnapshot(hit);
 
   const upstream = new URL(MARTA_RAIL_URL);
   upstream.searchParams.set('apiKey', env.MARTA_API_KEY);
   let rows: MartaRow[];
   try {
     const r = await fetch(upstream, { headers: { accept: 'application/json' } });
-    if (!r.ok) return json({ error: `MARTA responded ${r.status}` }, 502, 15);
+    if (!r.ok) return serveSnapshot(json({ error: `MARTA responded ${r.status}` }, 502, 15));
     rows = await r.json();
-    if (!Array.isArray(rows)) return json({ error: 'unexpected MARTA response' }, 502, 15);
+    if (!Array.isArray(rows)) return serveSnapshot(json({ error: 'unexpected MARTA response' }, 502, 15));
   } catch {
-    return json({ error: 'MARTA unreachable' }, 502, 15);
+    return serveSnapshot(json({ error: 'MARTA unreachable' }, 502, 15));
   }
   const res = json(normalize(rows, Date.now()));
   ctx.waitUntil(cache.put(cacheKey, res.clone()));
-  return res;
-}
-
-// Give every client a current server clock, including when the snapshot came
-// from the edge cache. The tab controls its own 30-second polling cadence.
-function serveBusSnapshot(snapshot: Response) {
-  const response = new Response(snapshot.body, snapshot);
-  response.headers.set('Date', new Date().toUTCString());
-  response.headers.set('Cache-Control', 'no-store');
-  return response;
+  return serveSnapshot(res);
 }
 
 async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -66,7 +73,7 @@ async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<
   const key = new Request(new URL('/api/marta/bus', req.url));
   const cache = caches.default;
   const hit = await cache.match(key);
-  if (hit) return serveBusSnapshot(hit);
+  if (hit) return serveSnapshot(hit);
   let response: Response;
   try {
     const [upstream, routes] = await Promise.all([
@@ -80,20 +87,20 @@ async function martaBus(req: Request, env: Env, ctx: ExecutionContext): Promise<
     response = json({ error: 'MARTA bus feed unavailable' }, 503, 30);
   }
   ctx.waitUntil(cache.put(key, response.clone()));
-  return serveBusSnapshot(response);
+  return serveSnapshot(response);
 }
 
 // Open-Meteo's current conditions for downtown Atlanta. One upstream call per edge location
 // every 10 minutes, however many visitors; phones that can't reach Open-Meteo directly in time
 // still get the weather.
 const WEATHER_URL =
-  'https://api.open-meteo.com/v1/forecast?latitude=33.755&longitude=-84.38&current=weather_code,cloud_cover,precipitation,visibility,temperature_2m&temperature_unit=fahrenheit&timezone=America%2FNew_York';
+  'https://api.open-meteo.com/v1/forecast?latitude=33.755&longitude=-84.38&current=weather_code,cloud_cover,precipitation,visibility,temperature_2m&temperature_unit=fahrenheit&timezone=America%2FNew_York&timeformat=unixtime';
 
 async function weather(req: Request, ctx: ExecutionContext): Promise<Response> {
   const key = new Request(new URL('/api/weather', req.url));
   const cache = caches.default;
   const hit = await cache.match(key);
-  if (hit) return hit;
+  if (hit) return serveSnapshot(hit);
   let response: Response;
   try {
     const r = await fetch(WEATHER_URL, { headers: { accept: 'application/json' } });
@@ -105,7 +112,7 @@ async function weather(req: Request, ctx: ExecutionContext): Promise<Response> {
     response = json({ error: 'weather unavailable' }, 503, 120);
   }
   ctx.waitUntil(cache.put(key, response.clone()));
-  return response;
+  return serveSnapshot(response);
 }
 
 export default {
@@ -114,7 +121,7 @@ export default {
     if (url.pathname === '/api/marta/bus') return martaBus(req, env, ctx);
     if (url.pathname === '/api/marta/rail') return martaRail(req, env, ctx);
     if (url.pathname === '/api/weather') return weather(req, ctx);
-    if (url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404, 60);
+    if (url.pathname.startsWith('/api/')) return serveSnapshot(json({ error: 'not found' }, 404, 60));
     return env.ASSETS ? env.ASSETS.fetch(req) : new Response('not found', { status: 404 });
   },
 } satisfies ExportedHandler<Env>;

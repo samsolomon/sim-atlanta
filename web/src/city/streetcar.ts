@@ -4,6 +4,8 @@ import type { RoutesFile } from '../model/types';
 import { roadWidth } from '../terrain/transport-data';
 import { Builder, Line, pointInRing, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
+import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
+import { streetcarShapes } from './streetcar-shape';
 
 export const STREETCAR_ROUTE = 'marta:route:STREETCAR';
 type Origin = { lon: number; lat: number };
@@ -22,13 +24,9 @@ const POLE_SPACING = 32;
  * 2.5 m from track already taken are added as their own segments.
  */
 export function streetcarLines(rf: Pick<RoutesFile, 'paths'>, origin: Origin) {
-  const paths = rf.paths
-    .filter((p) => p.routeId === STREETCAR_ROUTE)
-    .map((p) => {
-      const pts: P2[] = [];
-      for (let i = 0; i + 1 < p.coords.length; i += 2) pts.push(lonLatToScene(origin, p.coords[i], p.coords[i + 1]));
-      return new Line(pts);
-    })
+  // The filleted shape the cars run on (streetcar-shape.ts), not the raw GTFS corners.
+  const paths = streetcarShapes(rf, origin, STREETCAR_ROUTE)
+    .map((shape) => new Line(shape.pts))
     .sort((a, b) => b.length - a.length);
   const lines: Line[] = [];
   const near = (x: number, z: number) =>
@@ -218,6 +216,11 @@ export function buildStreetcarTrack(lines: Line[], bounds: Bounds, height: Heigh
   track.castShadow = true;
   const wires = new THREE.Mesh(wire.geometry(), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   wires.castShadow = false;
+  // Far form (terrain/far-form.ts): the slab stays; rails, grooves, poles and wire are sub-pixel.
+  registerFar(track, orderForFar(track.geometry, colourDrop(track.geometry, [RAIL, GROOVE, POLE])).keep, { shadow: 'low' });
+  registerFar(wires, 0);
+  track.name = 'Streetcar slab and rails';
+  wires.name = 'Streetcar wire';
   group.add(track, wires);
   return {
     group,

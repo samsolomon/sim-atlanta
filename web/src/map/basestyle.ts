@@ -204,6 +204,14 @@ export interface Sky {
   fog: number;
 }
 
+/** True when the map's ground is dark enough that the glass over it should be night glass. The Map's
+ * palette follows the sun's elevation, not the scene's darkness, so at dawn and dusk it stays light
+ * after City has gone dark: the glass reads what the Map actually paints. */
+export function paletteIsDark(p: Palette): boolean {
+  const [r, g, b] = hexToLin(p.ground);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18; // about mid-grey in sRGB
+}
+
 export function paletteFor(a: Sky): Palette {
   // 1. time of day: find the keyframe segment the sun is in
   const e = Math.min(KEYS[KEYS.length - 1][0], Math.max(KEYS[0][0], a.sunElev));

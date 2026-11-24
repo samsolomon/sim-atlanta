@@ -11,7 +11,10 @@ import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type Ma
 import { gradeShader } from '../vignette/grade';
 import { xe60Geometry, xe60Material, xe60DepthMaterial, xe60Pose } from '../vignette/xe60';
 import { busGeometry, RAPID_LIVERY, busMaterial } from '../vignette/xcelsior';
-import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { FREIGHT_LENGTH, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { FreightBatches, freightMaterial } from '../city/freight-batches';
+import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-consist';
+import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -81,6 +84,18 @@ const models = {
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
   freightGrainHopper: 'Three-bay covered grain hopper',
+  freightTank: 'General-service tank car, DOT-117 family',
+  freightCoalLoaded: 'Aluminum coal hopper · loaded',
+  freightCoalEmpty: 'Aluminum coal hopper · empty',
+  freightAutorack: 'Enclosed bi-level autorack',
+  freightCenterbeamLumber: '73-foot centerbeam · lumber',
+  freightCenterbeamEmpty: '73-foot centerbeam · empty',
+  freightGondolaScrap: '52-foot mill gondola · scrap',
+  freightGondolaEmpty: '52-foot mill gondola · empty',
+  freightIntermodal: 'Intermodal train · 20 cars',
+  freightWellA: '53-foot double-stack well car',
+  freightWellB: '53-foot well car · blue over grey',
+  freightWellC: '53-foot well car · single stack',
   freightBoxcar: '50-foot boxcar',
   freightBoxcarFaded: '50-foot boxcar · faded',
   freightBoxcarBlue: '50-foot boxcar · blue',
@@ -126,7 +141,7 @@ const SPECIES_NOTES: Record<string, string> = {
 };
 const freightModels = {
   cm44ac: 'locomotive', cm44acNs: 'locomotiveNs', es44acNs: 'es44acNs',
-  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar', freightBoxcarFaded: 'boxcarFaded', freightBoxcarBlue: 'boxcarBlue', freightGrainHopper: 'grainHopper',
+  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar', freightBoxcarFaded: 'boxcarFaded', freightBoxcarBlue: 'boxcarBlue', freightGrainHopper: 'grainHopper', freightTank: 'tank', freightCoalLoaded: 'coalLoaded', freightCoalEmpty: 'coalEmpty', freightAutorack: 'autorack', freightCenterbeamLumber: 'centerbeamLumber', freightCenterbeamEmpty: 'centerbeamEmpty', freightGondolaScrap: 'gondolaScrap', freightGondolaEmpty: 'gondolaEmpty', freightWellA: 'wellA', freightWellB: 'wellB', freightWellC: 'wellC',
 } as const satisfies Record<string, FreightUnit>;
 function isFreightModel(id: string): id is keyof typeof freightModels {
   return Object.hasOwn(freightModels, id);
@@ -168,6 +183,39 @@ phase.addEventListener('input', () => {
 const platformParam = new URLSearchParams(location.search).get('platform');
 let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
 let station: ReturnType<typeof createPlatformScene> | undefined;
+/** The intermodal strip's batches, which `build()` tears down like `cars`. */
+let strip: { group: THREE.Group; dispose(): void } | undefined;
+const STRIP_CARS = 20;
+
+/**
+ * A 20-car NS-like intermodal consist on straight track, built exactly as City builds it: the seeded
+ * planner (forced to its intermodal recipe) and FreightBatches. `&slot=` picks the passage; by
+ * default the first slot with at least 20 cars, so the same strip comes back on every load.
+ */
+function buildIntermodalStrip() {
+  const profile: LineProfile = { ...NORCROSS_PROFILE, recipes: { manifest: 0, intermodal: 1, unit: 0 } };
+  const lineId = 'ns:norcross:main2';
+  let slot = Number(labParams.get('slot'));
+  if (!labParams.has('slot') || !Number.isFinite(slot)) for (slot = 0; planPassage(profile, slot, lineId).cars < STRIP_CARS; slot++);
+  const units = planPassage(profile, slot, lineId).units.filter((u) => !u.power).slice(0, STRIP_CARS);
+  const batches = new FreightBatches(treeQuality === 'low');
+  const material = freightMaterial([]);
+  const total = units.reduce((sum, u) => sum + FREIGHT_LENGTH[u.kind] + COUPLER_GAP, -COUPLER_GAP);
+  let front = total / 2;
+  batches.begin();
+  for (const unit of units) {
+    const length = FREIGHT_LENGTH[unit.kind];
+    const pose = batches.createPose(material);
+    pose.position.set(0, .125, front - length / 2);
+    if (unit.flip) pose.rotation.y = Math.PI;
+    batches.append(unit.kind, pose, unit.load);
+    front -= length + COUPLER_GAP;
+  }
+  const draws = batches.finish();
+  scene.add(batches.group);
+  strip = { group: batches.group, dispose() { batches.dispose(); material.dispose(); } };
+  return { slot, draws, length: total };
+}
 type LabTrees = { group: THREE.Object3D; setSeason(doy: number): void; dispose(): void; update?(dt: number, camera: THREE.Camera): void; setNight?(n: number): void; draws?: number | (() => number) };
 let trees: LabTrees | null = null;
 // Captions over each tree in "Compare all", projected every frame so screenshots label themselves.
@@ -426,6 +474,8 @@ jointSlider.oninput = setJoint;
 document.getElementById('joint-reset')!.onclick = () => { jointSlider.value = '0'; setJoint(); };
 function build() {
   trailer = undefined;
+  strip?.dispose();
+  strip = undefined;
   document.getElementById('articulation')!.hidden = model !== 'xe60';
   houseScene?.dispose();
   houseScene = null;
@@ -574,9 +624,17 @@ function build() {
     blurb.append(link);
     return;
   }
+  if (model === 'freightIntermodal') {
+    track.visible = longTrack.visible = false;
+    ground.scale.setScalar(6);
+    document.getElementById('tier')!.hidden = false;
+    const { slot, draws, length } = buildIntermodalStrip();
+    document.getElementById('blurb')!.textContent = `Slot ${slot} of the Norcross District's intermodal recipe, ${STRIP_CARS} wells and ${length.toFixed(0)} m, laid out as City draws them: ${draws} instanced draw${draws === 1 ? '' : 's'}. Containers are generic look-alikes with no marks; illustrative. `;
+    return;
+  }
   if (isFreightModel(model)) {
     const unit = freightModels[model];
-    if (unit === 'grainHopper') document.getElementById('tier')!.hidden = false;
+    if (unit === 'grainHopper' || unit === 'tank' || unit.startsWith('well') || unit.startsWith('gondola') || unit.startsWith('centerbeam') || unit === 'autorack' || unit.startsWith('coal')) document.getElementById('tier')!.hidden = false;
     const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: true, low: treeQuality === 'low' }), passengerMaterial(night));
     mesh.position.y = .125;
     mesh.castShadow = mesh.receiveShadow = true;
@@ -586,6 +644,17 @@ function build() {
       cm44ac: 'CSX 7257, seen at Georgia State, is a CM44AC: a GE AC4400CW rebuilt by Wabtec with a new cab. Modelled in CSX-like blue-grey and yellow. ',
       cm44acNs: 'The same GE body in an NS-like scheme, with a black hood and white nose stripes. ',
       freightGrainHopper: 'Illustrative grain car with a continuous trough hatch and three gravity outlets. ',
+      freightCoalLoaded: 'Open-top aluminum coal hopper with a heaped load and longitudinal bottom chutes. ',
+      freightCoalEmpty: 'The same coal hopper returning empty. ',
+      freightAutorack: 'Enclosed autorack on an 89-foot flat: screened sides, an arched roof and end doors. ',
+      freightCenterbeamLumber: 'Centerbeam flat with wrapped lumber bundles stacked against both faces of the beam. ',
+      freightCenterbeamEmpty: 'The same centerbeam running empty, its truss and end bulkheads in the open. ',
+      freightGondolaScrap: 'Open mill gondola with a low, illustrative scrap load. ',
+      freightGondolaEmpty: 'The same gondola running empty. ',
+      freightTank: 'Illustrative black jacketed tank car with head shields and a protected top-fittings housing. ',
+      freightWellA: 'Single-unit well car carrying two 53-foot domestic containers, one above the other. ',
+      freightWellB: 'The same well car with a different pair of containers. ',
+      freightWellC: 'The same well car with a single container and the upper slot empty. ',
       freightBoxcar: 'Illustrative steel boxcar with a sliding door and two four-wheel trucks. ',
       freightBoxcarFaded: 'The same boxcar sun-bleached, with darker paint over removed markings. ',
       freightBoxcarBlue: 'The same boxcar in a dark blue common on CSX-family cars. ',
@@ -595,7 +664,7 @@ function build() {
       gp382: 'Compact EMD road-switcher with a narrow short hood and four-axle Blomberg trucks, in a CSX-like scheme. ',
     })[model] + 'Lab study; no logos or numbers. ';
     const link = document.createElement('a');
-    const notes = unit.startsWith('boxcar') || unit === 'grainHopper' ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
+    const notes = unit.startsWith('boxcar') || unit.startsWith('well') || unit === 'grainHopper' || unit === 'tank' || unit.startsWith('gondola') || unit.startsWith('centerbeam') || unit === 'autorack' || unit.startsWith('coal') ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/' + notes;
     link.textContent = 'Dimensions and reference photos'; blurb.append(link);
     return;
@@ -658,6 +727,19 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 /** `near` defaults to the lab's 0.1 m; the swatches' City-distance view uses City's 20 m so the ink matches. */
 type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number; near?: number };
+/**
+ * The 20-well intermodal strip, keyed by the Lab's View buttons: ¾ front (the initial view) is a
+ * close run of cars, Front and Rear are each half of the train side-on, Side is the whole train
+ * and Top looks down on it.
+ */
+const STRIP_VIEWS: Record<string, ViewPreset> = {
+  'Front': { pos: [-150, 60, 118], target: [0, 2, 118], fov: 40 },
+  '¾ front': { pos: [-55, 22, 150], target: [0, 2.5, 175], fov: 42 },
+  'Side': { pos: [-230, 150, 0], target: [0, 2, 0], fov: 50 },
+  'Rear': { pos: [-150, 60, -118], target: [0, 2, -118], fov: 40 },
+  // Every preset keeps the whole 473 m train inside the Lab's 400 m far plane.
+  'Top': { pos: [0.01, 260, 0], target: [0, 0, 0], fov: 60 },
+};
 const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
   '¾ front': { pos: [-11, 4.2, 36], target: [0, 2.0, 18], fov: 28 },
@@ -686,7 +768,7 @@ function fitModel(animate: boolean) {
   const right = !phone && details ? details.left : stage.right;
   const top = !browser && card ? card.bottom : stage.top;
   const bottom = Math.min(dock?.top ?? stage.bottom, phone && details ? details.top : stage.bottom,
-    visibleRect('.a2-details-btn')?.top ?? stage.bottom);
+    phone ? visibleRect('.a2-details-btn')?.top ?? stage.bottom : stage.bottom);
   const width = right - left, height = bottom - top;
   if (width < 44 || height < 44) return;
 
@@ -702,18 +784,26 @@ function fitModel(animate: boolean) {
       box.min.z = box.max.z - .35 * (box.max.z - box.min.z);
     }
   } else {
-    for (const part of [...cars, figure?.group, houseScene?.group, materialScene?.group, landscape?.group, trees?.group])
+    for (const part of [...cars, strip?.group, figure?.group, houseScene?.group, materialScene?.group, landscape?.group, trees?.group])
       if (part) box.expandByObject(part);
   }
   if (box.isEmpty()) return;
   const preset = presets[activePreset];
   const direction = new THREE.Vector3(...preset.pos).sub(new THREE.Vector3(...preset.target)).normalize();
+  const stripLength = strip && activePreset === '¾ front' ? box.max.z - box.min.z : 0;
+  if (stripLength) {
+    // Frame the leading wells at +Z; the following cars recede behind this group.
+    box.min.z = Math.max(box.min.z, box.max.z - 4 * (FREIGHT_LENGTH.wellA + COUPLER_GAP));
+    direction.set(-0.7, 0.35, 1).normalize();
+  }
   const horizontal = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
   const vertical = direction.clone().cross(horizontal);
   const centre = box.getCenter(new THREE.Vector3());
   // Perspective makes the near cab wider than the far end. Fit the projected
   // rectangle and centre its silhouette, instead of centring the 3D box midpoint.
   const pixels = stage.height / (2 * Math.tan(THREE.MathUtils.degToRad(preset.fov / 2)));
+  // Keep room to zoom the full strip into the available panel space from the lead-end target.
+  if (stripLength) camera.far = Math.max(camera.far, stripLength * (2 + 4 * pixels / width));
   const corners: THREE.Vector3[] = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
     const corner = new THREE.Vector3(x, y, z).sub(centre);
@@ -957,7 +1047,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -972,7 +1062,7 @@ function selectModel(id: Model) {
   history.replaceState(history.state, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;

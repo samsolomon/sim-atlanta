@@ -100,20 +100,28 @@ export function busCard(bus: LiveBus, now: number, model?: string) {
       ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>${model ? seeModel('xn40') : ''}`;
 }
 
-export function cityFreightCard(line = 'Atlanta Terminal Subdivision') {
-  // Look-alike schemes only: CSX-like on the CSX line downtown, NS-like on Norfolk Southern track.
-  const ns = /\bNS\b|Norfolk/.test(line);
-  const consist = ns
-    ? 'GE AC44-type locomotives in an NS-like scheme, with covered hoppers and boxcars'
-    : 'GE/Wabtec CM44AC locomotives in a CSX-like scheme, with boxcars';
+/** Lab entries for each look-alike lead unit, for "See the model". */
+const LEAD_MODEL: Record<string, string> = {
+  locomotive: 'cm44ac', locomotiveNs: 'cm44acNs', es44acNs: 'es44acNs', es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382',
+};
+const LEAD_NAME: Record<string, string> = {
+  locomotive: 'GE/Wabtec CM44AC', locomotiveNs: 'GE AC44-type', es44acNs: 'GE ES44AC', es44ah: 'GE ES44AH', sd70ace: 'EMD SD70ACe', gp382: 'EMD GP38-2',
+};
+
+/** City freight: an illustrative passage. Railroad, consist and lead come from the passage record. */
+export function cityFreightCard(hit: { line?: string; railroad?: 'csx' | 'ns'; consist?: string; lead?: string } = {}) {
+  const line = hit.line ?? 'Atlanta Terminal Subdivision';
+  const scheme = hit.railroad === 'ns' ? 'an NS-like scheme' : 'a CSX-like scheme';
+  const lead = hit.lead && LEAD_NAME[hit.lead] ? `${LEAD_NAME[hit.lead]} lead in ${scheme}` : `Look-alike power in ${scheme}`;
+  const consist = hit.consist ? `${hit.consist}. ${lead}` : lead;
   const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
   return `<p class="a2-kicker"><span class="a2-svc" style="background:${MODE_COLOR.freight}"></span>Freight · ${esc(line)}</p>
     <h2>Freight train</h2>
     <dl class="a2-facts">
       ${row('Position', `Simulated on the mapped track ${chip('illustrative')}`)}
       ${row('Timing', `A typical pattern, not a timetable ${chip('illustrative')}`)}
-      ${row('Consist', `${esc(consist)} ${chip('illustrative')}`)}
-    </dl>${seeModel(ns ? 'cm44acNs' : 'cm44ac')}`;
+      ${row('Consist', `${esc(consist)}. Modelled for this passage ${chip('illustrative')}`)}
+    </dl>${seeModel(LEAD_MODEL[hit.lead ?? ''] ?? (hit.railroad === 'ns' ? 'cm44acNs' : 'cm44ac'))}`;
 }
 
 /** The A2c detail panel's train card: service and line, destination, then one row per fact,

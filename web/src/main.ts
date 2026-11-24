@@ -4,7 +4,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { initialView } from './core/initial-view';
 import { showRailOverview } from './map/overview';
-import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
+import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, paletteIsDark, type Palette } from './map/basestyle';
 import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import type { ShellOptions, View } from './ui/shell-api';
@@ -20,8 +20,11 @@ import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
+import { railStatus } from './ui/status';
 import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
+import { carries, followLabel, inCityArea, type Selection } from './core/carry';
+import { mountGlassDebug, setGlassMode } from './ui/glass';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -81,6 +84,18 @@ const followStatus = followPanel.querySelector<HTMLElement>('.follow-status')!;
 let lastStatusHTML = '';
 function updateFollowPanel() {
   if (!follow) return;
+  if (view3d.hidden) {
+    // Map: the button opens City following this vehicle ("Follow in 3D"); nothing is followed here.
+    card.classList.remove('following-trip');
+    followStatus.hidden = true;
+    recenter.hidden = true;
+    const label = followLabel('map', false, selectedInCityArea());
+    followAction.hidden = !label;
+    followAction.removeAttribute('aria-disabled');
+    if (label && followAction.textContent !== label) followAction.textContent = label;
+    followPanel.hidden = !label;
+    return;
+  }
   card.classList.toggle('following-trip', follow.active);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const noun = selectedBus ? 'bus' : 'train';
@@ -103,12 +118,22 @@ function updateFollowPanel() {
   if (lastStatusHTML !== html) followStatus.innerHTML = lastStatusHTML = html;
   followStatus.hidden = !text;
   followAction.hidden = follow.phase === 'lost' || follow.phase === 'outside';
-  const action = follow.active ? 'Stop following' : `Follow ${noun}`;
+  // Before City has drawn the vehicle (Follow in 3D, City still loading), the follow is pending.
+  const action = pendingFollow ? 'Opening City…' : followLabel('city', follow.active, true)!;
   if (followAction.textContent !== action) followAction.textContent = action;
+  // aria-disabled, not disabled: a keyboard user's focus stays on the button while City opens.
+  if (pendingFollow) followAction.setAttribute('aria-disabled', 'true');
+  else followAction.removeAttribute('aria-disabled');
   recenter.hidden = !(reduced && follow.active);
 }
 followAction.addEventListener('click', () => {
-  if (!follow || !diorama) return;
+  if (!follow || pendingFollow) return;
+  // Map: open City; the selection carries and City starts following it once it can.
+  if (view3d.hidden) {
+    if (selectedTrain || selectedBus) shell.setView('city');
+    return;
+  }
+  if (!diorama) return;
   if (follow.active) follow.stop();
   else if (selectedTrain) {
     const train = source.find(selectedTrain);
@@ -126,6 +151,17 @@ let lastCardHTML = '';
 let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
 let selectedFreight: string | null = null;
+/** The passage the open freight card describes; the same id draws a new train each slot. */
+let freightCardKey = '';
+function refreshFreightCard() {
+  if (!selectedFreight || !diorama) return;
+  const hit = diorama.freightPassage(selectedFreight);
+  if (!hit) return;
+  const key = `${hit.consist}|${hit.lead}`;
+  if (key !== freightCardKey) { freightCardKey = key; showCard(cityFreightCard(hit), !!follow); }
+}
+let selectedMapFeature: { kind: 'crossing' | 'arc'; id: string } | undefined;
+let keepSharedCamera = false;
 function showCard(html: string, canFollow = false) {
   followPanel.hidden = !canFollow;
   if (canFollow) updateFollowPanel();
@@ -137,20 +173,22 @@ function showCard(html: string, canFollow = false) {
   if (key !== shownKey) {
     shownKey = key;
     card.dispatchEvent(new Event('a2-select'));
-    requestAnimationFrame(focusSelection);
+    if (!keepSharedCamera) requestAnimationFrame(focusSelection);
   }
 }
 let shownKey = '';
 /** A2c: move the camera so a new selection sits in the middle of the open area beside the detail
  * panel (above it on phones). Follow, when it runs, drives the camera itself. */
 function focusSelection() {
-  if (follow?.active) return;
-  const t = selectedTrain ? source.find(selectedTrain) : null;
-  const b = !t && selectedBus ? buses.current().find((x) => x.id === selectedBus) : null;
-  const at = t ? { lon: t.lon, lat: t.lat } : b ? b.position.value : null;
+  if (follow?.active || pendingFollow) return;
+  const at = selectedAt();
   if (!at) return;
   const phone = innerWidth <= 600;
-  const r = document.querySelector('.a2-panel')?.getBoundingClientRect();
+  const panel = document.querySelector<HTMLElement>('.a2-panel');
+  const r = panel?.getBoundingClientRect();
+  // Desktop: the open area is left of the camera group, which rides 12 px from the panel's left
+  // edge (8 px screen edge + panel + 12 px + 44 px group). offsetWidth ignores the panel's slide-in.
+  const besidePanel = panel && panel.offsetWidth ? 8 + panel.offsetWidth + 12 + 44 : 0;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (diorama) {
     const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
@@ -160,13 +198,13 @@ function focusSelection() {
     // desktop (the panel is on the right), below it on phones (the sheet is at the bottom).
     // Vertical screen pixels cover more ground in a tilted view (about 1/cos of the tilt).
     const tiltStretch = 1 / Math.max(0.35, Math.cos((c.tilt * Math.PI) / 180));
-    const off = (((phone ? r?.height ?? 0 : r?.width ?? 0) + 16) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
+    const off = ((phone ? (r?.height ?? 0) + 16 : besidePanel) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
     const [dx, dz] = phone ? [-Math.sin(br) * off, Math.cos(br) * off] : [Math.cos(br) * off, Math.sin(br) * off];
     diorama.glide(x + dx, z + dz);
   } else if (map) {
     // Offset the centre by projection rather than MapLibre's padding, which would persist as
     // camera state and skew the map's centre (and share links) after the panel closes.
-    const half = ((r?.[phone ? 'height' : 'width'] ?? 0) + 16) / 2;
+    const half = (phone ? (r?.height ?? 0) + 16 : besidePanel) / 2;
     const p = map.project([at.lon, at.lat]);
     const centre = map.unproject([p.x + (phone ? 0 : half), p.y + (phone ? half : 0)]);
     map.easeTo({ center: centre, duration: reduced ? 0 : 450 });
@@ -174,6 +212,8 @@ function focusSelection() {
 }
 function hideCard() {
   shownKey = '';
+  selectedMapFeature = undefined;
+  pendingFollow = null;
   follow?.stop();
   card.classList.remove('following-trip');
   followPanel.hidden = true;
@@ -183,6 +223,57 @@ function hideCard() {
   selectedFreight = null;
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
+
+/** The selection as the view switch sees it. */
+function selection(): Selection {
+  if (selectedTrain) return { kind: 'train', id: selectedTrain };
+  if (selectedBus) return { kind: 'bus', id: selectedBus };
+  if (selectedFreight) return { kind: 'freight', id: selectedFreight };
+  return card.hidden ? null : { kind: 'other' };
+}
+/** Where the selected train or bus is now, or null. */
+function selectedAt(): { lon: number; lat: number } | null {
+  const t = selectedTrain ? source.find(selectedTrain) : null;
+  if (t && Number.isFinite(t.lon) && Number.isFinite(t.lat)) return { lon: t.lon, lat: t.lat };
+  const b = !t && selectedBus && clock.isRealTime() ? buses.current().find((x) => x.id === selectedBus) : null;
+  return b ? b.position.value : null;
+}
+function selectedInCityArea() {
+  const at = selectedAt();
+  if (!at) return false;
+  const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
+  return inCityArea(x, z);
+}
+/** A vehicle carried into City, followed once City is up and its area has mounted. */
+let pendingFollow: { kind: 'train' | 'bus'; id: string; since?: number } | null = null;
+function startPendingFollow() {
+  if (!pendingFollow || !follow || !diorama || !cityLoading.hidden) return;
+  const p = pendingFollow;
+  if (p.kind === 'train' ? selectedTrain !== p.id : selectedBus !== p.id) {
+    pendingFollow = null; // the selection changed or closed while City loaded
+    return;
+  }
+  const at = selectedAt();
+  if (!at) {
+    pendingFollow = null;
+    return;
+  }
+  // As for a review link: wait (up to 20 s) for the vehicle's area to mount, so the follow does not
+  // end at a loading edge.
+  const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
+  p.since ??= performance.now();
+  if (!diorama.onBoard(x, z) && performance.now() - p.since < 20_000) return;
+  pendingFollow = null;
+  if (p.kind === 'train') {
+    const t = source.find(p.id);
+    if (t) follow.start({ kind: 'train', id: t.id, pathId: t.pathId, tier: t.s.tier });
+    renderTrainCard();
+  } else {
+    const b = clock.isRealTime() && buses.current().find((x) => x.id === p.id);
+    if (b) follow.start({ kind: 'bus', id: b.id, tier: b.position.tier });
+    renderBusCard();
+  }
+}
 
 function renderTrainCard() {
   if (!selectedTrain) return;
@@ -198,20 +289,34 @@ function renderTrainCard() {
   const t = source.find(selectedTrain);
   if (!t) {
     if (follow?.ended?.id === selectedTrain) return showCard('<h2>Train no longer available</h2><p class="sub">Tap another train.</p>', true);
+    if (selectedTrain === params.get('train')) {
+      if (selectedTrain.startsWith('marta:train:') && clock.isRealTime() && !live.firstPollComplete) {
+        return showCard('<h2>Checking train location…</h2>');
+      }
+      return showCard('<h2>Train location unavailable</h2><p class="sub">This train has no position for the shared time.</p>');
+    }
     return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
   }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
       !view3d.hidden, (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
-    !!follow && !view3d.hidden,
+    !!follow,
   );
 }
 
 function renderBusCard() {
   const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
-  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
+  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow);
   else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
-  else hideCard();
+  else if (selectedBus && selectedBus === params.get('bus')) {
+    if (clock.isRealTime() && !buses.firstPollComplete) return showCard('<h2>Checking bus location…</h2>');
+    showCard('<h2>Bus location unavailable</h2><p class="sub">This bus has no current position for the shared time.</p>');
+  } else hideCard();
+}
+
+function cancelDeferredFollowLink() {
+  followRoute = null;
+  followBus = null;
 }
 
 // A review link names a route, not a trip id, which changes with each timetable refresh.
@@ -272,6 +377,10 @@ if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
 const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
 if (import.meta.env.DEV) Object.assign(window, { __source: source, __follow: follow });
+// The Map may still be waiting for tiles when the shared train's first live fix arrives.
+live.onUpdate = () => {
+  if (selectedTrain && selectedTrain === params.get('train')) source.update();
+};
 live.start();
 
 let override: AtmosphereOverride | null = null;
@@ -281,11 +390,14 @@ let paintMapAtmosphere: ((atm: Atmosphere) => void) | null = null;
  * sits on the lab's studio, which is daylight unless its own Night switch is on, so there the switch
  * decides. (Reads the DOM, not labRoot, because this runs before that binding exists.) */
 let clockTheme: 'dark' | 'light' = 'light';
+/** The Map's own: night glass only once its painted ground is dark (paletteIsDark). */
+let mapTheme: 'dark' | 'light' | null = null;
 function applyTheme() {
   const lab = document.getElementById('lab-root');
   const inLab = !!lab && !lab.hidden;
   const labNight = lab?.querySelector('#night')?.getAttribute('aria-pressed') === 'true';
-  shell.setTheme(inLab ? (labNight ? 'dark' : 'light') : clockTheme);
+  const onMap = !!document.getElementById('view3d')?.hidden && !!mapTheme;
+  shell.setTheme(inLab ? (labNight ? 'dark' : 'light') : onMap ? mapTheme! : clockTheme);
 }
 const updateAtmosphere = () => {
   const w = clock.isRealTime() ? shell.weather() : null;
@@ -298,6 +410,13 @@ const updateAtmosphere = () => {
   applyTheme();
   if (view3d.hidden) paintMapAtmosphere?.(atm);
 };
+// ?perf only: move the clock and the scene's weather from a script, the same way the time slider and
+// the weather menu do, so a harness can find shaders that first compile after ready.
+if (perf.enabled) Object.assign(window, { __scene: (o: { offsetMin?: number; conditions?: AtmosphereOverride }) => {
+  if (o.offsetMin !== undefined) clock.offsetMin = o.offsetMin;
+  if (o.conditions) sceneConditions = o.conditions;
+  updateAtmosphere();
+} });
 let atmRealTime = true; // the clock state the atmosphere was last computed for
 let atmAt = 0; // the simulated time it was computed for
 // Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;
@@ -342,6 +461,8 @@ function addMapLayers(map: maplibregl.Map) {
     setFog(local.fog, atm.dark);
     onScreen = pinned ?? paletteFor(local);
     applyPalette(map, onScreen);
+    mapTheme = paletteIsDark(onScreen) ? 'dark' : 'light';
+    applyTheme();
   };
   paintMapAtmosphere = (atm) => {
     sky.set(atm);
@@ -406,7 +527,24 @@ function addMapLayers(map: maplibregl.Map) {
       map.queryRenderedFeatures([[e.point.x - 6, e.point.y - 6], [e.point.x + 6, e.point.y + 6]], { layers: ['buses', 'crossings', 'freight-hit'] }).length > 0;
     map.getCanvas().style.cursor = hit ? 'pointer' : '';
   });
+  const showMapFeature = (kind: 'crossing' | 'arc', props: Record<string, unknown>) => {
+    selectedMapFeature = { kind, id: String(props.id) };
+    if (kind === 'crossing') return showCard(crossingCard(props as unknown as CrossingProps));
+    const rights = typeof props.rights === 'string' ? JSON.parse(props.rights) : (props.rights ?? []);
+    showCard(freightCard({ ...props, rights } as TrackArcProps));
+  };
+  if (landing === 'map' && (params.has('crossing') || params.has('arc'))) {
+    const kind = params.has('crossing') ? 'crossing' : 'arc';
+    const id = params.get(kind);
+    const layer = map.getSource<maplibregl.GeoJSONSource>(kind === 'crossing' ? 'crossings' : 'freight');
+    void layer?.getData().then(data => {
+      if (!view3d.hidden || !card.hidden || data.type !== 'FeatureCollection') return;
+      const feature = data.features.find(f => f.properties?.id === id);
+      if (feature?.properties) showMapFeature(kind, feature.properties);
+    }).catch(() => { /* The source can disappear if the view changes during loading. */ });
+  }
   map.on('click', (e) => {
+    selectedMapFeature = undefined;
     const directBus = map.queryRenderedFeatures(e.point, { layers: ['buses'] })[0];
     const train = directBus ? nearestTrain(e.point, 5) : nearestTrain(e.point);
     selectedBus = null; selectedFreight = null;
@@ -426,13 +564,7 @@ function addMapLayers(map: maplibregl.Map) {
       if (!bus || !clock.isRealTime()) return hideCard();
       selectedBus = bus.id;
       renderBusCard();
-    } else if (f.layer.id === 'crossings') {
-      showCard(crossingCard(f.properties as unknown as CrossingProps));
-    } else {
-      const p = { ...f.properties } as Record<string, unknown>;
-      p.rights = typeof p.rights === 'string' ? JSON.parse(p.rights) : (p.rights ?? []);
-      showCard(freightCard(p as unknown as TrackArcProps));
-    }
+    } else showMapFeature(f.layer.id === 'crossings' ? 'crossing' : 'arc', f.properties);
   });
 
   // ---- animation loop: ~30 Hz is plenty for trains moving a few px/sec --------
@@ -462,6 +594,20 @@ let diorama: CityView | null = null;
 let parkedCity: CityView | null = null;
 let lastAtm: Atmosphere | null = null;
 const view3d = document.getElementById('view3d')!;
+/** The tier City is loading or showing, known as soon as openCity picks it. */
+let cityQuality: 'low' | 'high' | null = null;
+/** Low-tier City drops CSS backdrop-filter so the canvas is presented directly ("flat" glass). */
+function applyGlassMode() {
+  const cityShown = !view3d.hidden && document.body.classList.contains('in3d');
+  if (!cityShown) setGlassMode('css');
+  else if ((diorama?.quality ?? cityQuality) === 'low') setGlassMode('flat');
+  else setGlassMode(document.body.classList.contains('city-over-map') ? 'css' : 'canvas');
+}
+new MutationObserver(applyGlassMode).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+new MutationObserver(applyGlassMode).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
+// Map ↔ City: the glass theme follows whichever scene is on screen.
+new MutationObserver(applyTheme).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
+if (params.has('glassdebug')) mountGlassDebug(document.getElementById('view3d-canvas')!);
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
 const cityLoading = document.getElementById('city-loading')!;
 const cityProgress = document.getElementById('city-progress')!;
@@ -481,6 +627,8 @@ async function openCity() {
       if (keepPose) city.lookAt(keepPose.x, keepPose.z, keepPose);
       keepPose = null;
       if (lastAtm) city.setAtmosphere(lastAtm, clock.now());
+      cityQuality = city.quality;
+      applyGlassMode();
       watchAutoGraphics(city.quality, cityLoad);
       setViewParam('city');
       await applyGraphics();
@@ -489,11 +637,24 @@ async function openCity() {
     city.dispose();
   }
   if (diorama) {
-    leaving++; // cancels a City → Map fade in progress
+    if (mapExitActive) {
+      cancelMapExit();
+      await applyGraphics();
+    }
     return;
   }
   perf.phase('city:open');
-  hideCard();
+  // A selected train or bus carries into City, which follows it once it can (Follow in 3D);
+  // anything else closes.
+  const carried = selection();
+  if (follow && carries(carried, 'city', clock.isRealTime()) && (carried?.kind === 'train' || carried?.kind === 'bus') && selectedInCityArea()) {
+    follow.stop();
+    // The vehicle chosen on the Map supersedes even a link target that has yet to arrive.
+    cancelDeferredFollowLink();
+    pendingFollow = { kind: carried.kind, id: carried.id };
+    updateFollowPanel();
+  } else hideCard();
+  const carriedAt = pendingFollow ? selectedAt() : null;
   const load = ++cityLoad;
   cityAbort?.abort();
   const abort = cityAbort = new AbortController();
@@ -509,12 +670,15 @@ async function openCity() {
   const overMap = !opening && !keepPose && !!map && !reducedMotion() && mapOnCityScale(map);
   if (overMap) {
     document.body.classList.add('city-over-map');
-    await tiltMapTo(map!, cityTilt);
+    // City opens on the carried vehicle: the map moves there in the same ease as its tilt.
+    await tiltMapTo(map!, cityTilt, carriedAt);
     if (load !== cityLoad) return;
   }
   try {
     const { createCity, pickQuality } = await import('./city/city');
-    watchAutoGraphics(chosenQuality() ?? pickQuality(), load);
+    cityQuality = chosenQuality() ?? pickQuality();
+    applyGlassMode();
+    watchAutoGraphics(cityQuality, load);
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
@@ -535,7 +699,7 @@ async function openCity() {
         selectedFreight = hit?.kind === 'freight' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line), !!follow);
+        else if (hit?.kind === 'freight') { freightCardKey = `${hit.consist}|${hit.lead}`; showCard(cityFreightCard(hit), !!follow); }
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
@@ -569,7 +733,10 @@ async function openCity() {
   } else if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
     diorama.lookAt(95.5, -1701.8, { bearing: 0, tilt: 46, metresPerPixel: .32 });
   } else if (!opening && map) {
-    // Read the current Map camera after loading: keyboard movement may have continued.
+    // Read the current Map camera after loading: keyboard movement may have continued. A carried
+    // vehicle that City reached without the over-map ease puts the map on it first.
+    const at = pendingFollow && !overMap ? selectedAt() : null;
+    if (at) map.jumpTo({ center: [at.lon, at.lat] });
     const c = map.getCenter();
     const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
     diorama.lookAt(mx, mz, {
@@ -594,11 +761,21 @@ async function openCity() {
   opening = false;
   cityLoading.hidden = true;
   cityBuiltOnce = true;
-  // The colour cross-fade (1.4 s) covers the map; then paper goes back behind City.
-  if (overMap) overMapTimer = window.setTimeout(() => { if (load === cityLoad) document.body.classList.remove('city-over-map'); }, reducedMotion() ? 0 : 1500);
+  // WhiteModel starts the colour transition in rAF. Wait for that actual transition,
+  // including an immediate or cancelled reveal, before handing the backing to City.
+  if (overMap && !offBoard) {
+    const arrival = leaving;
+    requestAnimationFrame(async () => {
+      const container = document.getElementById('view3d-canvas')!;
+      await Promise.allSettled(container.getAnimations().map(a => a.finished));
+      if (load === cityLoad && arrival === leaving && !mapExitActive)
+        document.body.classList.remove('city-over-map');
+    });
+  }
   void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
+  startPendingFollow();
 }
 
 // ---- Graphics (A2c menu): Auto, High or Low for City, remembered per viewer ----------------------
@@ -669,13 +846,20 @@ async function setGraphics(g: Graphics) {
 /** Rebuild City if the tier on screen isn't the chosen one. Also runs after every City load, so a
  * choice made while City was loading still lands. */
 async function applyGraphics() {
-  if (!diorama) return;
+  // The saved choice applies on the next City entry, including a reversed exit.
+  if (!diorama || mapExitActive) return;
+  const city = diorama;
   const { pickQuality } = await import('./city/city');
-  if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
+  if (diorama !== city || mapExitActive || city.quality === (chosenQuality() ?? pickQuality())) return;
   // Rebuild City at the same camera with the new tier.
   const t = diorama.target(), c = diorama.camera();
   keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
-  hideCard();
+  // A follow carries through the rebuild (Auto can step down to Low seconds after a follow starts);
+  // openCity resumes it. Other selections close.
+  const followed = follow?.vehicle ?? pendingFollow ?? undefined;
+  if (!followed || followed.kind === 'freight') hideCard();
+  else if (followed.kind === 'train') { selectedTrain = followed.id; selectedBus = selectedFreight = null; }
+  else { selectedBus = followed.id; selectedTrain = selectedFreight = null; }
   cityLoad++;
   cityAbort?.abort();
   diorama.dispose();
@@ -687,7 +871,15 @@ async function applyGraphics() {
 const CITY_FOV = 22; // City's vertical field of view; the map takes it while they overlap
 let mapFov: number | null = null; // MapLibre's own, restored when the map flattens
 let mapMaxPitch: number | null = null;
-let overMapTimer = 0;
+let mapExitActive = false;
+function cancelMapExit() {
+  if (!mapExitActive) return;
+  mapExitActive = false;
+  leaving++;
+  const container = document.getElementById('view3d-canvas')!;
+  container.style.transition = container.style.opacity = '';
+  document.body.classList.remove('city-over-map');
+}
 let leaving = 0; // bumped when City → Map starts, so a City click during the fade can cancel it
 let cityBuiltOnce = false;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -702,12 +894,12 @@ function matchCityLens(m: maplibregl.Map) {
   m.setMaxPitch(80);
   m.setVerticalFieldOfView(CITY_FOV);
 }
-function tiltMapTo(m: maplibregl.Map, pitch: number): Promise<void> {
+function tiltMapTo(m: maplibregl.Map, pitch: number, center?: { lon: number; lat: number } | null): Promise<void> {
   matchCityLens(m);
   return new Promise((done) => {
     const t = setTimeout(done, 1300);
     m.once('moveend', () => { clearTimeout(t); done(); });
-    m.easeTo({ pitch, duration: 1000 });
+    m.easeTo({ pitch, duration: 1000, ...(center ? { center: [center.lon, center.lat] as [number, number] } : {}) });
   });
 }
 function flattenMap(m: maplibregl.Map, animate: boolean) {
@@ -733,7 +925,7 @@ async function leaveCityToMap() {
   if (!diorama || !m || reducedMotion()) return closeCity();
   const load = cityLoad;
   const leave = ++leaving;
-  clearTimeout(overMapTimer);
+  mapExitActive = true;
   const t = diorama.target(), camera = diorama.camera();
   const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
   cityTilt = camera.tilt;
@@ -745,22 +937,29 @@ async function leaveCityToMap() {
   canvas.style.transition = 'opacity 700ms cubic-bezier(.45,0,.55,1)';
   canvas.style.opacity = '0';
   await new Promise((r) => setTimeout(r, 720));
-  canvas.style.transition = canvas.style.opacity = '';
-  // City was chosen again during the fade: stay.
-  if (leave !== leaving || load !== cityLoad || !diorama) {
-    document.body.classList.remove('city-over-map');
-    return;
-  }
+  if (leave !== leaving || load !== cityLoad || !diorama) return;
   closeCity(true);
 }
 
 function closeCity(keepMapView = false, writeUrl = true) {
   stopWatchSlow?.();
   stopWatchSlow = null;
-  clearTimeout(overMapTimer);
+  cancelMapExit();
   document.body.classList.remove('city-over-map');
   keepPose = null;
-  hideCard();
+  // A train or bus carries back to the Map (its card stays, the map centres on it); a City freight
+  // train is not drawn there, so its card closes.
+  // A tier handoff since the last card refresh followed a new trip id: adopt it before the follow ends.
+  const followed = follow?.vehicle;
+  if (followed?.kind === 'train' && selectedTrain && selectedTrain !== followed.id && follow!.lineage.includes(selectedTrain)) {
+    selectedTrain = followed.id;
+    shownKey = followed.id;
+  }
+  const keep = carries(selection(), 'map', clock.isRealTime());
+  if (keep) {
+    follow?.stop();
+    pendingFollow = null;
+  } else hideCard();
   cityLoad++;
   cityAbort?.abort();
   cityAbort = null;
@@ -788,6 +987,13 @@ function closeCity(keepMapView = false, writeUrl = true) {
   shell.setNote(null);
   if (writeUrl) setViewParam('map');
   map?.resize();
+  if (keep) {
+    if (selectedTrain) renderTrainCard();
+    else if (selectedBus) renderBusCard();
+    // After the flatten (1 s) so the two eases don't cut each other short.
+    if (map && keepMapView && !reducedMotion()) map.once('moveend', () => requestAnimationFrame(focusSelection));
+    else requestAnimationFrame(focusSelection);
+  }
 }
 
 // ---- Models (A2c): the Model lab as the third view -------------------------------------
@@ -803,7 +1009,7 @@ async function openModels() {
   hideCard();
   if (diorama && cityLoading.hidden) {
     leaving++;
-    clearTimeout(overMapTimer);
+    cancelMapExit();
     stopWatchSlow?.();
     stopWatchSlow = null;
     diorama.pause();
@@ -936,7 +1142,7 @@ const shellOptions: ShellOptions = {
   },
   live: () => ({
     realTime: clock.isRealTime(),
-    rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',
+    rail: railStatus(source.liveActive, live.error),
     trains: live.count,
     cityFreight: diorama?.hasFreight ?? false,
     cityTraffic: diorama?.hasTraffic ?? false,
@@ -944,7 +1150,76 @@ const shellOptions: ShellOptions = {
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
   searchModels: () => labView?.openBrowser(),
-  async goToPlace(lon, lat) { await mapArrival; if (!view3d.hidden || inModels()) return; map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
+  async goToPlace(lon, lat) {
+    const flatten = mapExitActive;
+    await mapArrival;
+    if (!view3d.hidden || inModels()) return;
+    // A search flight replaces the flattening animation started by the City exit.
+    map?.flyTo({ center: [lon, lat], zoom: 15, ...(flatten && { pitch: 0 }), duration: reducedMotion() ? 0 : 500 });
+  },
+  search: {
+    stations() {
+      // MARTA rail and streetcar stops, and Amtrak's within the metro (its feed runs to New York).
+      const out: { name: string; lon: number; lat: number }[] = [];
+      for (const s of schedule.stops.values()) {
+        const amtrak = s.id.startsWith('amtrak:');
+        if (amtrak && Math.hypot((s.lon - CITY_ORIGIN.lon) * 92.6, (s.lat - CITY_ORIGIN.lat) * 111.2) > 45) continue;
+        out.push({ name: amtrak ? `${stationName(s.name)} (Amtrak)` : stationName(s.name), lon: s.lon, lat: s.lat });
+      }
+      return out;
+    },
+    viewAt(cam) {
+      const c = parseCityCamera(cam)!;
+      const [lon, lat] = sceneToLonLat(CITY_ORIGIN, c.x, c.z);
+      return { lon, lat };
+    },
+    inCity(lon, lat) {
+      const [x, z] = lonLatToScene(CITY_ORIGIN, lon, lat);
+      return diorama ? diorama.onBoard(x, z, true) : inCityArea(x, z);
+    },
+    pick(hit) {
+      cancelDeferredFollowLink();
+      // A View opens City on its camera (from the Map, as a link's camera would).
+      if (hit.view) {
+        hideCard(); // a carried vehicle would start a follow and take the camera off the View
+        const cam = parseCityCamera(hit.view.cam)!;
+        if (diorama) diorama.lookAt(cam.x, cam.z, cam);
+        else keepPose = cam;
+        // During the fade, Map already owns the shell. Re-select City to cancel its disposal.
+        shell.setView('city');
+        return;
+      }
+      const [x, z] = lonLatToScene(CITY_ORIGIN, hit.lon, hit.lat);
+      // In City: move City's camera, keeping its angle. A place City can't show opens on the Map.
+      if (!mapExitActive && !view3d.hidden && !inModels()) {
+        pendingFollow = null; // a Follow in 3D still waiting would take the camera back
+        updateFollowPanel();
+        if (diorama?.onBoard(x, z, true)) {
+          // The search takes the camera: a follow would pull it straight back to the vehicle.
+          if (follow?.active) {
+            follow.stop();
+            updateFollowPanel();
+          }
+          // Glide at the current scale into a mounted area. Into an area still loading, lookAt
+          // keeps the target and arrives once it mounts (glide would stop at the loaded edge). From
+          // far out (the whole board), come in to 600 m so the place is what you see.
+          if (diorama.distance() <= 900 && diorama.onBoard(x, z)) return diorama.glide(x, z);
+          const c = diorama.camera();
+          return diorama.lookAt(x, z, { bearing: c.bearing, tilt: c.tilt, distanceM: Math.min(diorama.distance(), 600) });
+        }
+        // Still building: City opens on the result (openCity reads keepPose once it is built).
+        if (!diorama && inCityArea(x, z)) {
+          keepPose = { x, z, bearing: map?.getBearing() ?? 0, tilt: cityTilt, distanceM: 600 };
+          return;
+        }
+      }
+      // A Map result supersedes the vehicle selection. Clear it before closeCity can carry
+      // it, or before an already queued focusSelection reads it after the Map flattens.
+      hideCard();
+      if (!mapExitActive && !view3d.hidden) shell.setView('map');
+      void shellOptions.goToPlace?.(hit.lon, hit.lat);
+    },
+  },
   outsideCity() {
     const c = map?.getCenter();
     if (!c) return false;
@@ -978,6 +1253,7 @@ const shellOptions: ShellOptions = {
     updateClock(clock.now());
     if (selectedTrain) renderTrainCard();
     else if (selectedBus) renderBusCard();
+    else refreshFreightCard();
   },
   metresPerPixel() {
     if (diorama) return diorama.camera().metresPerPixel;
@@ -1016,14 +1292,16 @@ const shellOptions: ShellOptions = {
     }
     // Decide by the view on screen: City still loading has no camera to share yet.
     if (!view3d.hidden && !diorama) return null;
+    const selection = selectedTrain ? { kind: 'train', id: selectedTrain }
+      : selectedBus ? { kind: 'bus', id: selectedBus } : selectedFreight ? { kind: 'freight', id: selectedFreight } : undefined;
     if (diorama) {
       const t = diorama.target(), c = diorama.camera();
-      return { view: 'city' as const, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
+      return { view: 'city' as const, selection, cam: formatCityCamera({ x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() }) };
     }
     if (!map) return null;
     const c = map.getCenter();
     const b = Math.round(map.getBearing());
-    return { view: 'map' as const, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
+    return { view: 'map' as const, selection: selection ?? selectedMapFeature, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
   },
 };
 // The A2c interface (docs/ui-controls-brief.md).
@@ -1045,6 +1323,9 @@ if (import.meta.env.DEV) Object.assign(window, {
   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
   __selectTrain(id: string) { selectedTrain = id; selectedBus = null; selectedFreight = null; renderTrainCard(); },
   __trains: () => source.current,
+  // Dev: select a live bus as a tap would (both views); __buses() lists ids and positions.
+  __selectBus(id: string) { selectedBus = id; selectedTrain = null; selectedFreight = null; renderBusCard(); },
+  __buses: () => buses.current(),
 });
 
 // City and its status card must keep time even while remote Map tiles are unavailable.
@@ -1052,14 +1333,32 @@ updateAtmosphere();
 updateClock(clock.now());
 shell.tick(clock.now());
 setInterval(updateAtmosphere, 60_000);
+let restoreSelection = params.has('train') || params.has('bus') || params.has('freight');
 setInterval(() => {
   const now = clock.now();
   updateClock(now);
   shell.tick(now);
+  if (restoreSelection && (landing === 'city' ? diorama : map)) {
+    restoreSelection = false;
+    keepSharedCamera = true;
+    if (params.has('train')) {
+      selectedTrain = params.get('train');
+      source.update(now);
+    }
+    else if (params.has('bus')) selectedBus = params.get('bus');
+    else if (diorama && ['illustrative:freight:downtown', 'illustrative:freight:norcross'].includes(params.get('freight') ?? '')) {
+      selectedFreight = params.get('freight');
+      const norcross = selectedFreight === 'illustrative:freight:norcross';
+      showCard(cityFreightCard(norcross ? { line: 'NS Norcross District', railroad: 'ns' } : undefined), !!follow);
+      freightCardKey = ''; // Refresh with this passage's consist when it is on the board.
+    }
+  }
   followFromLink();
+  startPendingFollow();
   if (selectedTrain) renderTrainCard();
   else if (selectedBus) renderBusCard();
-  else if (selectedFreight && follow) updateFollowPanel();
+  else if (selectedFreight) { refreshFreightCard(); if (follow) updateFollowPanel(); }
+  keepSharedCamera = false;
 }, 500);
 
 

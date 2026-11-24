@@ -1,7 +1,7 @@
 import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
-import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
+import { midtownConnectorDecks, withoutLandBridgeTrees } from '../terrain/midtown-connector-decks';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
@@ -23,9 +23,33 @@ import { auburnTransport } from '../city/sweet-auburn-transport';
 import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { createDowntownTerrain } from '../terrain/model';
+import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
+import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
+import { GroundSurface } from '../terrain/surface';
+import { prebuildSurface } from '../terrain/surface-prebuild';
+
+/**
+ * ?worker=1 builds ground surfaces in a Worker (the sliced-build work; off by default).
+ * The +13 MB it used to add on low was the prebuilt near arrays kept reachable after a deck
+ * carve replaced them (fixed: takeSurface); heap after GC now matches the main-thread path.
+ */
+/**
+ * ?slice=1 spreads each section's build over frames: 4 ms of work per frame on low, 8 ms on
+ * high, half that while the camera is dragged (the sliced-build gate: no long task while an
+ * area mounts). Off by default.
+ */
+function sliceBudget(quality: TerrainQuality): (() => number) | null {
+  if (typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') !== '1') return null;
+  const ms = quality === 'low' ? 4 : 8;
+  // Half the share while the user drags, so a moving camera stays smooth.
+  return () => sliceInput.dragging ? ms / 2 : ms;
+}
+/** Sliced-build stats across every section this page loaded (?slice=1), for the perf harness. */
+export const sliceStats = emptySliceStats();
+if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
+function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import { createSurfaceTransport } from '../terrain/transport';
+import { buildSurfaceTransport, type createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
@@ -146,9 +170,22 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     Promise.resolve().then(() => loadPlaces((options?.dataRoot ?? '/data') + '/ga/neighborhoods.json')).catch(() => undefined),
   ]);
   signal.throwIfAborted();
+  // ?worker=1: every patch's ground surface is built in a Worker, in parallel, before the
+  // synchronous area build, which then adopts it. Same triangles (terrain/surface.test.ts).
+  const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid }) => prebuildSurface(grid, quality,
+    terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
+    joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined, FAR_GROUND_SETTLED))) : undefined;
+  signal.throwIfAborted();
+  // Hand each prebuilt surface over once and drop it here: the area's closures keep this scope
+  // alive, and a deck carve replaces the near arrays, which must not stay reachable (+13 MB on
+  // low, all typed-array stores, in a heap snapshot diff).
+  const takeSurface = (i: number) => { const s = surfaces?.[i]; if (surfaces) surfaces[i] = undefined as never; return s; };
+  const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();
+  // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
+  function* buildPatches(): Build<Map<Board, TrafficArea>> {
   try {
-    for (const { id, grid, context } of patches) {
+    for (const [patchIndex, { id, grid, context }] of patches.entries()) {
       if (!context.terrainTransport && Object.hasOwn(railRows, id)) {
         context.terrainTransport = { version: 1, roads: [], rail: northLineRail(id, brookwoodCorridorRail(railRows[id as MidtownRow] as TransportRun[], grid)) };
       }
@@ -156,7 +193,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         id === 'south-band' ? southConnectorTransport(context) :
         id === 'brookwood-south' || id === 'midtown-upper' ? seventeenthAccess(auburnTransport(context)) : auburnTransport(context);
       const city = id in rowBounds ? midtownConnectorDecks(contextWithDecks) : contextWithDecks;
-      const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+      const canopy = id in rowBounds ? withoutLandBridgeTrees(context) : context;
+      const area = yield* buildDowntownTerrain(grid, city, neighborhoodTrees(canopy, quality), {
         quality, simpleLeafClumps: context.treeLowCount !== undefined,
         bottomY: mounted.get('downtown')!.bottomY, join: joins(id),
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
@@ -164,7 +202,12 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         underpass: id === 'midtown-south' ? northAvenue : undefined,
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
-        rollout: context.treeLowCount !== undefined ? { row: id, lowCount: context.treeLowCount, allCrowns: context.trees, inAnsley } : undefined,
+        rollout: canopy.treeLowCount !== undefined ? { row: id, lowCount: canopy.treeLowCount, allCrowns: canopy.trees, inAnsley } : undefined,
+        surface: takeSurface(patchIndex),
+        // Trees join the City-wide batch only when the whole section mounts.
+        deferTrees: true,
+        // Sliced: dress the trees for today now, not in one pass when the section mounts.
+        dayOfYear: budget ? sliceInput.dayOfYear : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
@@ -172,12 +215,13 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const data = city.terrainTransport!;
         const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
         const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
-        const decks = createSurfaceTransport(base, grid, area.groundAt);
+        const decks = yield* buildSurfaceTransport(base, grid, area.groundAt);
         transports.push(decks);
-        area.carve(decks.cutting);
+        yield* area.carveSteps(decks.cutting);
         area.group.add(decks.group);
+        yield 'decks';
         if (stationRoad && separate.length) {
-          const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
+          const stationDeck = yield* buildSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
           transports.push(stationDeck);
           stationDeck.group.name = stationRoad.id!;
           area.group.add(stationDeck.group);
@@ -187,6 +231,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
         const roadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
+        yield 'piers and road heights';
         added.set(id, {
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
@@ -207,10 +252,23 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         });
       } catch (error) { for (const t of transports) t.dispose(); area.dispose(); throw error; }
     }
-    connect(mounted, added);
     return added;
   } catch (error) {
     for (const area of added.values()) area.dispose();
     throw error;
   }
+  }
+  // A sliced build that is abandoned still runs to completion in the background and is then
+  // disposed: nothing half-built is registered or left behind (the area is not in the scene).
+  const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
+  try {
+    signal.throwIfAborted();
+    connect(mounted, built);
+  } catch (error) {
+    // Aborted, or a seam failed validation: nothing of this section survives.
+    for (const area of built.values()) area.dispose();
+    throw error;
+  }
+  for (const area of built.values()) area.commitTrees();
+  return built;
 }

@@ -64,3 +64,35 @@ it('stitches a 10 m patch to its 5 m neighbour without an interior T-junction', 
   }
   expect(sharedEdges.sort()).toEqual([[0,5],[5,0],[5,10],[10,5]].sort());
 });
+
+it.each(['low', 'high'] as const)('a surface built from typed arrays (the Worker path) matches the main-thread one exactly on %s', async quality => {
+  const { buildSurfaceArrays, nodeHeights } = await import('./surface-build');
+  const { surfaceSpec } = await import('./surface');
+  const openings = [{ start: [300, -5, 100] as const, end: [420, -8, 160] as const, halfWidthM: 6 }];
+  const join = { x: 1000, minZ: -1300, maxZ: 700 };
+  const main = new GroundSurface(grid, quality, openings, join);
+  const spec = surfaceSpec(grid);
+  const { heights, minY } = nodeHeights(spec, (r, c) => grid.node(r, c));
+  const built = buildSurfaceArrays({ spec, heights, minY, quality, openings, join, farErrorM: 2 });
+  const worker = new GroundSurface(grid, quality, openings, join, built);
+  for (const name of ['position', 'uv', 'normal'] as const) {
+    const a = main.geometry.getAttribute(name).array, b = worker.geometry.getAttribute(name).array;
+    expect(b.length).toBe(a.length);
+    expect(Array.from(b)).toEqual(Array.from(a));
+  }
+  expect(worker.geometry.index!.array.constructor).toBe(main.geometry.index!.array.constructor);
+  expect(Array.from(worker.geometry.index!.array)).toEqual(Array.from(main.geometry.index!.array));
+  expect(worker.minY).toBe(main.minY);
+  for (const [x, z] of [[0, 0], [412.3, -655.1], [999.9, 699.9], [350, 120]]) expect(worker.sampleScene(x, z)).toBe(main.sampleScene(x, z));
+  const farMain = main.farGeometry(2), farWorker = worker.farGeometry(2);
+  for (const name of ['position', 'uv', 'normal'] as const)
+    expect(Array.from(farWorker.getAttribute(name).array)).toEqual(Array.from(farMain.getAttribute(name).array));
+  expect(Array.from(farWorker.index!.array)).toEqual(Array.from(farMain.index!.array));
+  // The settled far level adopts from the Worker the same way (sections.ts passes farLower).
+  const settledBuilt = buildSurfaceArrays({ spec, heights: nodeHeights(spec, (r, c) => grid.node(r, c)).heights, minY, quality, openings, join, farErrorM: 2, farLower: true });
+  const settledWorker = new GroundSurface(grid, quality, openings, join, settledBuilt);
+  expect(settledWorker.hasPrebuiltFar(2, true)).toBe(true);
+  expect(settledWorker.hasPrebuiltFar(2, false)).toBe(false);
+  expect(Array.from(settledWorker.farGeometry(2, 160, true).getAttribute('position').array))
+    .toEqual(Array.from(main.farGeometry(2, 160, true).getAttribute('position').array));
+});

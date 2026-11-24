@@ -1,5 +1,87 @@
 # Handoff: studio-amtrak-livery (rolling stock)
 
+## Current state: Claude → Codex, 2026-11-24 (read this first)
+
+This section is written by the Claude Opus session **`orca_session_id:bceb5cfc-138b-456e-a77d-4537701e21ef`**. Read its history with `orca agent read`. Everything below this section is earlier history, kept for reference.
+
+### Open PRs I own
+
+| PR | Branch (base) | Status |
+| --- | --- | --- |
+| [#424](https://github.com/samsolomon/sim-atlanta/pull/424) | `intermodal-well` (main) | Freight stack 1/8: City consists, FreightBatches, wells. **Held for Sam.** |
+| [#436](https://github.com/samsolomon/sim-atlanta/pull/436) | `tank-car` (#424) | Stack 2/8, tank car. **Held for Sam.** |
+| [#443](https://github.com/samsolomon/sim-atlanta/pull/443) | `mill-gondola` (#436) | Stack 3/8. **Held for Sam.** |
+| [#456](https://github.com/samsolomon/sim-atlanta/pull/456) | `centerbeam` (#443) | Stack 4/8. **Held for Sam.** |
+| [#492](https://github.com/samsolomon/sim-atlanta/pull/492) | `autorack` (#456) | Stack 5/8. **Held for Sam.** |
+| [#496](https://github.com/samsolomon/sim-atlanta/pull/496) | `coal-hopper` (#492) | Stack 6/8. **Held for Sam.** |
+| [#565](https://github.com/samsolomon/sim-atlanta/pull/565) | `downtown-freight-lift` (#496) | Stack 7/8: autoracks and double-stacks downtown, `freight-clearance.ts` (curve swing ≤ 0.35 m, overhead ≥ 0.5 m), `CONSIST_VERSION` 7. **Held for Sam.** |
+| [#639](https://github.com/samsolomon/sim-atlanta/pull/639) | `well-colours` (#565) | Stack 8/8: per-container seeded colours and lengths, `freightMaterial()` (one patched freight program), the Lab entry `freightIntermodal`, `CONSIST_VERSION` 8. **Held for Sam**; the coordinator agreed the plan. |
+| [#404](https://github.com/samsolomon/sim-atlanta/pull/404) | `xpress-coach` (main) | MCI D4500 Xpress coach, Lab only, pass 2 done. **Held for Sam.** |
+| [#541](https://github.com/samsolomon/sim-atlanta/pull/541) | `road-vehicle-variety` (main) | Hatch, pickup, van and semi on high; semis on the Connector. **Held for Sam.** Its instanceColor fix merged separately as #545. Needs a rebase on main (the connector owner's `traffic-frame-cost-2` restructures `road-traffic.ts`; whoever merges second rebases). |
+
+The stack was last merged up to main **`27b5e506`** with **merge commits, not rebases**. Every PR still shows only its own files. Main has moved since, so merge it up again before Sam reviews: intermodal-well first, then each branch into the next. Take main's `perf-budget.json`, then drop the "Illustrative freight" late-compile entry, which #424 closes. Use the keep-both resolver for `docs/build-log.md`. Measured on #639: test:perf low 82/82 and high 94/94 programs, 0 late compiles.
+
+Not mine, but my work:
+- #625 (streetcar fillets, **merged**) and `samsolomon/cq400-bogies` (`a7a95322`; the MARTA owner `54bca5c0` opens that PR, and the coordinator approves it as a fix). I probed both, shot the frames and reviewed #625.
+- Evidence is on the docs-only branch `samsolomon/passenger-swing-evidence` (`772bb993`, no PR): `docs/passenger-curve-swing.md` and `docs/log/passenger-swing/`.
+
+### Sam's decisions that affect this area
+- **Rolling stock:**
+  - Colour by service: freight is rust and stays `illustrative` on its card.
+  - Generic look-alike liveries with no logos or marks; containers are unmarked palette boxes.
+  - The ink, grade, film-grain and tilt-shift style.
+- **From today (2026-11-24, as the coordinator relayed them):**
+  - flat glass;
+  - far-board;
+  - landmark LOD;
+  - far shadows;
+  - tree far form;
+  - the streaming flag;
+  - the 0.45 shade floor;
+  - 1075 glass B;
+  - **expansion paused**;
+  - **generic buildings as the priority**.
+
+  None of these change freight or rail code directly. For new work they mean: no new far-board or expansion scope, and keep freight off the far shadow pass (freight casts no shadows today).
+- **Freight specifically:**
+  - Sam's well-car note ("a lot of times they're the same colour") is answered by #639.
+  - The Xpress coach pass-2 notes (steel wheels, the sill bar, night artefacts, no back door, larger than city buses) are all addressed in #404.
+
+### Coordinator rulings still in force
+- **Merges:** nothing in the freight stack, #404 or #541 merges without Sam's OK relayed by the coordinator. Merge slots come from the skyline lead (`47b1a596`). Run `pnpm build` on the final head before every merge, and quote `gh pr view <n> --json state,mergeCommit` after.
+- **Freight clearance:**
+  - curve swing ≤ 0.35 m for every kind on every chain;
+  - overhead clearance ≥ 0.5 m above the tallest car;
+  - the ballast margin is information only, not a rule;
+  - Brookwood's 3.6 m bed is a note for Sam, with option (b) to widen it to 4.2 m as a separate PR if he wants matching beds.
+- **Streetcar:** a 1.0 m swing limit, from the real S70 kinematics at its 18 m minimum radius. Site 9's 1 m pavement overhang is on ground-contact's paving list.
+- **Freight clip planes:** `FREIGHT_CLIP_PLANES` stays 6. When phone-perf's #551 lands, merge it into the stack, pad with brookwood's `neverClip()`, and expect `program-sweep --q low` at 81/82 + 0.
+- **Idle work:** slice it to a few ms per call, and report the longest single task at 6× throttle. None of my PRs add idle work.
+- **Shared Studio:** never pkill or killall by pattern. Drive only a Chrome you launched (`scripts/chrome-cdp.mjs` `launchChrome`). Kill only the PIDs you recorded.
+
+### Next steps, in order
+1. Merge main up the freight stack again (see above), re-run `pnpm test`, build and test:perf on the top (#639), and push all eight branches.
+2. When #551 lands, merge it into the stack, apply the `neverClip()` padding and run the low program sweep.
+3. Rebase #541 on main once the connector owner's traffic restructure has landed or been sequenced.
+4. When Sam reviews the stack, respond to his notes per PR. Optional (b), the Brookwood 4.2 m ballast, only if he asks.
+
+### Gotchas
+- **zsh:** write `"${SHA}:path"`, never `$SHA:path`. The `:w` modifier emptied `perf-budget.json` once during a merge-up.
+- **Recorder classification:** the Crescent's cars also set `userData.lengthM`, so classify cars by train id, not by `lengthM`.
+- **CQ400 centre tolerance:** bogie-seated cars sit about 0.27 m off their line on curves, so the probe's centre tolerance for them is 1 m.
+- **Freight program:** a freight material must come from `freightMaterial()`, so all of them share the patched program and the `freight-containers-1` key. Every freight shape must bind `aSlot`, `aShade` and `aLoad`, which `freightGeometry` and `FreightBatches` already do.
+- **Unit-test timeouts:** wall-clock assertions under the parallel suite flake. Give long tests an explicit timeout, as `freight-clearance.test.ts` does with 30 s.
+- **Passenger swing probe:** the tools are in `docs/handoffs/studio-amtrak-livery-tools/`.
+  - `devprobe-main.patch` is a temporary dev-only registry of the rail lines plus a `__clock` hook. It applies to main as of today. Apply it with `git apply --3way` and never commit it. It already registers the Crescent's brookwood `route` line.
+  - `recorder.js` is injected into City and records each car's swing against the line it rides.
+  - `run.mjs <url> <minutes> <out.json>` runs the recorder in a Chrome it launches.
+  - `cap.mjs shots.json` captures City or Lab frames (`ready`, `eval` and `canvas` options; `CAP_W` and `CAP_H` set the size).
+  - The method is in `docs/passenger-curve-swing.md`.
+
+---
+
+## Earlier history
+
 Claude agent `orca_session_id:e5348118-da22-4978-9d69-ad882db9e7a9` → Codex, 2026-11-23. The full history is readable with `orca agent read`; this note covers only what is not obvious from it.
 
 ## State
@@ -216,3 +298,166 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 - Next: boxcar variants on `samsolomon/boxcar-variants`, stacked on #394 (retarget to main before merging #394's base).
 - Capture: `orca tab create --json --url ...`, `orca eval --page <id>`, `orca screenshot --page <id>`;
   Lab canvas via `__lab.setNight/view/render` + `toDataURL`.
+
+### Update — 2026-11-23 late (Opus session bceb5cfc)
+
+- **Merged:**
+  - #394, covered hopper: `82d49b85`.
+  - #396, boxcar paints oxide/faded/blue: `64a207c2`. Navy was greyed to `#3b4859` on review.
+- **#404 Xpress coach pass 1** (`samsolomon/xpress-coach`), Lab only, **held for Sam**. It is an MCI D45 CRT LE look-alike at 4,124 high / 814 low triangles on the shared `busMaterial`.
+  - Pass 2 follows Sam's notes: refine proportions, then check the low tier.
+  - Plausible: far-night Lab speckle. The XN40 shows the same; recheck in City.
+  - Sources: `docs/xpress-coach.md`.
+- **#391 freed 5 low programs (85/90).** Low-tier freight instancing for the City consists PR may use one. Each instanced and clipped material costs one program.
+- **Next:** intermodal well car (plan order 3) on `samsolomon/intermodal-well`.
+- **Cameras:**
+  - Downtown freight: `/?view=city&q=high&cam=-445,-790,290,45,150&dev&mindist=20&t=2026-11-23T14:05:00-05:00&speed=0`. Night is `T22:08:18`; the downtown cycle differs from Brookwood's.
+  - Brookwood: `cam=-140,-5010,115,58,110` at `14:03` and `22:03`.
+- **Captures:** Lab captures use `__lab.camera` / `__lab.controls` set directly. The view presets glide, so they render mid-transition. City captures use `orca screenshot` after the scene draws.
+- **Perf:** park your City tab on `about:blank` before `pnpm test:perf`. One low run timed out while a City tab was rendering.
+
+### Update — 2026-11-23 night (Opus session bceb5cfc)
+
+**Held for Sam:**
+- **#404** Xpress coach, pass 2. It is now an MCI D4500 (`samsolomon/xpress-coach`). The coordinator says it reads well; Sam looks in the morning.
+- **#424** City freight consists plus the 53 ft well car (`samsolomon/intermodal-well`).
+
+**Merged:** #394 hopper (`82d49b85`), #396 boxcar paints (`64a207c2`).
+
+**Standing rules from the coordinator:**
+- Screenshots go inline in each PR, with the cam under each image; image URLs go in the reply.
+- Run `pnpm build` on the final rebased head right before merging.
+- Kill only PIDs you started. `pkill -f perf-budget` kills other worktrees' perf runs; I did this once and apologised.
+
+**Consists design.** `web/src/city/freight-consist.ts` holds the pure planner. `FreightBatches` is always instanced, and poses change kind per passage.
+- Downtown uses fixed 15-minute slots from `ENTRY_MS` and alternates direction.
+- Brookwood uses 20-minute slots.
+- The card refreshes through `CityView.freightPassage()`.
+- A new car type goes into `MANIFEST_CARS` or a recipe. Watch `MAX_CAR_KINDS`.
+
+**Perf findings:**
+- Low instancing costs +2 programs.
+- A swept night clock (`t=…22:02&speed=60`) already reaches 91 low programs before this change.
+
+**Lab:** the near plane is adaptive beyond 60 m (`fitNearPlane` in `models/main.ts`).
+
+**Next in plan order:** tank (DOT-117 family), open mill gondola, centerbeam, autorack, open coal hopper. Add each to the manifest or unit recipes. The downtown double-stack clearance check is still open.
+
+### Update — 2026-11-24 early (Opus session bceb5cfc)
+
+**Held for Sam.** The coordinator has seen all three:
+- **#404**: Xpress coach, pass 2 (MCI D4500).
+- **#424**: City freight consists, the 53 ft well car, and the clip-plane padding.
+- **#436**: DOT-117 tank car. It is stacked on #424, so retarget it to `main` after #424 merges.
+
+**Clip-plane padding.** `FREIGHT_CLIP_PLANES = 6` saves 1–2 low programs at every clock, and the night sweep now passes (85/85). Road traffic is a padding candidate but has not been changed.
+
+**`CONSIST_VERSION = 2`** since the tank landed. Bump it whenever a recipe or car list changes.
+
+**Camera recipe.** Pick review times by listing passages with a throwaway vitest that calls `norcrossPassage(slot)` and `planPassage(DOWNTOWN_PROFILE, slot, 'csx:downtown')`, then reuse the same phase:
+- Downtown:
+  - cam `640,450,150,50,230`, slot start +2 min;
+  - "up" slots look like 15:12 ET.
+- Brookwood:
+  - cam `-330,-4830,115,58,230`;
+  - "down" slots at +4 min (as at 14:44);
+  - "up" slots at +2.5 min (as at 22:22:30).
+
+**Flaky tests under perf load:** `east-rail` and `square-board/sections` hit 5 s timeouts. Both pass alone.
+
+**Next in plan order:** open mill gondola, centerbeam, autorack, open coal hopper; DPU after those. The downtown double-stack clearance check is still open.
+
+**Environment:** no dev server is running; vite on :5647 stopped at its 2 h limit. One Orca tab, `004ae663`, is parked on about:blank.
+
+### Update — 2026-11-24 morning (Opus session bceb5cfc)
+
+**Freight plan complete.** All eight cars are built. Everything is held for Sam unless marked otherwise.
+
+| PR | Contents | Branch |
+| --- | --- | --- |
+| #424 | Consists, 53 ft well, clip padding, freight boot template; closes `Illustrative freight` | `intermodal-well` |
+| #436 | Tank | `tank-car` |
+| #443 | Gondola | `mill-gondola` |
+| #456 | Centerbeam | `centerbeam` |
+| #492 | Autorack, Brookwood only | `autorack` |
+| #496 | Coal hopper | `coal-hopper` |
+| #404 | Xpress coach, MCI D4500, pass 2 | `xpress-coach` |
+| #467 | Crescent and CQ400 boot templates; CQ400 padded to 5 clip planes; closes `stockNight` and `cq400` | `prewarm-stock`, held for the coordinator |
+
+**Merge order.** The freight PRs are a stack: #424 → #436 → #443 → #456 → #492 → #496.
+- Retarget each to `main` as its base merges.
+- Keep the stack rebased on `main`.
+- #424 and #467 both set program ceilings in `perf-budget.json`, so whichever merges second must rebase and re-measure.
+
+**Perf baseline** (#424 on `main` `cd33324b`):
+
+| Tier | Programs | Calls |
+| --- | --- | --- |
+| Low | 85/87 (main 84 to 85) | 415/460 |
+| High | 98/100 (main 101) | — |
+| High-night | 97/99 | — |
+
+- The extra low program is the instanced freight Lambert. Nothing else can share it, and it saves about 30 draws.
+- If you hit `__scene hook missing` in `program-sweep`, rerun until #480 lands.
+
+**`CONSIST_VERSION` is 6.**
+- `DOWNTOWN_PROFILE` excludes autoracks.
+- Downtown intermodal weight is 0.
+- The reason is the 41–70 m kinks in the downtown cut, at (−372, −605) and (−8, −54). That follow-up is recorded in #492.
+
+**Next:**
+- Road-vehicle variety: City uses 3 of the 8 types in `vignette/vehicles.ts`. Alternatively, do the downtown curvature follow-up first; I asked the coordinator which.
+- Distributed power (DPU) remains deferred.
+
+### Update — 2026-11-24, after #467 and #512 (Opus session bceb5cfc)
+
+- **#467 merged** as `23cc47a0`. It added Crescent and CQ400 boot templates, padded CQ400 to 5 clip planes, and set program ceilings to low 86 and high/high-night 100. #424 must rebase onto it and re-measure, because both touch `perf-budget.json`.
+- **#512: freight curvature, held for the coordinator. Needs `pnpm data`.**
+  - `bake()` now fillets the `freightS` runs to a 150 m minimum radius.
+  - Pinned: run ends and shared vertices.
+  - The largest shift is 0.16 m.
+  - Ground-contact (a761d59f) owns `web/src/terrain` and approved it.
+  - The raw Overture extracts came from `studio-rectangle-default/data/raw` and were copied into this worktree's gitignored `data/raw`.
+  - This worktree's scene data is back to main's original. Regenerate the smoothed data with `.venv/bin/python pipeline/scripts/terrain_transport.py`.
+- **Once #512 lands:** drop `DOWNTOWN_PROFILE.exclude` (autorack) and set the downtown intermodal weight above 0 in the stack, after re-measuring car-pose curvature.
+- **Merge queue:** the skyline lead (studio-midtown-skyline) hands out merge slots. Ask for one and wait for "your turn".
+- **Next:** road-vehicle variety.
+
+### Update — 2026-11-24 morning, later (Opus session bceb5cfc)
+
+- **#512 merged** (`6f994bfa`): freight centreline smoothing. **Needs `pnpm data`.**
+  - The only generated change is `scene/downtown/vignette.json` `terrainTransport.rail[].pts` for the 13 `freightS` runs.
+  - The curvature test skips on stale data (79 freight vertices on stale data against 176 after).
+  - Once release data includes this, lift `DOWNTOWN_PROFILE.exclude` and turn downtown intermodal back on in the stack, after re-measuring car-pose curvature.
+- **#541: high-tier road-vehicle variety, held for Sam.**
+  - Adds hatch, pickup and van, plus a rigid 19.16 m semi, with `semiShare` 0.7 on the Connector.
+  - Trucks appear only above 25% of the hourly share.
+  - `instanceColor` is now allocated at build (fixes the prewarm program).
+  - Low is unchanged.
+  - The road-traffic owner (studio-midtown-connector) has been told.
+- **MARTA/streetcar radius note** sent to 54bca5c0 for the morning.
+- **Rules (coordinator):**
+  - No pattern kills.
+  - Use your own Chrome via `scripts/chrome-cdp.mjs launchChrome`, and check the URL before navigating.
+  - Merge slots come from the skyline lead.
+- **Held for Sam:** #404, #424 → #436 → #443 → #456 → #492 → #496, #541.
+- **Gotchas:**
+  - `origin/main` moves under you, because fetches are shared across worktrees. Pin the main SHA when you compare builds.
+  - #424 must rebase onto `23cc47a0` or later (#467) and re-measure the ceilings.
+
+### Update — 2026-11-24, late morning (Opus session bceb5cfc)
+
+- **#545 merged** (`95565515`, in train #559): road-traffic `instanceColor` is allocated at build.
+- **Freight stack merged up to main `27b5e506`** by merge commits, as before. #424 now drops the freight late-compile allowlist entry; the allowlist on the stack is empty.
+- **PR #565** `samsolomon/downtown-freight-lift` (base `samsolomon/coal-hopper`): lifts the downtown autorack and intermodal exclusions. It adds `freight-clearance.ts` (curve swing ≤ 0.35 m; overhead clearance ≥ 0.5 m under the tallest car) with tests. `CONSIST_VERSION` 7. Held for Sam with the stack. test:perf: low 82/82, high 94/94, no late compiles.
+- **Open:** after phone-perf's #551 lands, merge it into the stack, switch `freightClipPlanes` padding to brookwood's `neverClip()`, and run `program-sweep --q low` (expect 81/82 + 0). Optional (b) for Sam: widen Brookwood's ballast from 3.6 to 4.2 m.
+
+### Update — 2026-11-24, midday (Opus session bceb5cfc)
+
+- **Passenger curve swing.** The MARTA owner built both fixes; I probed, shot frames and reviewed.
+  - #625 (streetcar 18 m fillets): streetcar worst 5.07 → 0.94 m. Approved and queued.
+  - `samsolomon/cq400-bogies`: CQ400 cells over 0.35 m 34 → 2, both a recorder artefact at the east-cut mouth.
+  - Evidence is on the docs-only branch `samsolomon/passenger-swing-evidence` (`docs/passenger-curve-swing.md`).
+  - The probe (registry patch and recorder) is in my session scratchpad, not in the repo. Its method is in that doc.
+- **PR #639** `samsolomon/well-colours` (base #565): a seeded colour and length per container. It adds `freightMaterial()` (one patched freight program) and the Lab entry `freightIntermodal`. `CONSIST_VERSION` 8. Held for Sam with the stack.
+- **Still open:** merge #551 into the stack when it lands (switch `freightClipPlanes` padding to brookwood's `neverClip()`), and the optional Brookwood 4.2 m ballast (b).

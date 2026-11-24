@@ -12,6 +12,11 @@
   - Low costs +4,922 triangles and +2 calls against main 2569d35c.
   - Before merging: rebase, then run `pnpm build`, `test:release` and `test:perf`, then quote `gh pr view`.
 
+- **PR #500** `samsolomon/transport-far`: transport far form, approved after the A16 run (+1 fps, -272k triangles). **#509** `samsolomon/north-line-far` (North Line far form, owner 54bca5c0 OK'd) is stacked on it, also approved. They merge together in the slot the skyline lead (47b1a596) booked after #499+#501; wait for its call. Then: rebase, run one build, test:release and test:perf on the stacked head, merge #500, retarget #509 to main, merge it, and quote gh pr view for both.
+- **PR #514** `samsolomon/transport-shadow` (stacked on #509): far prefix in shadow redraws. Held for the coordinator's review. Retarget it after #509 merges.
+- **#512** (studio-amtrak-livery freight fillets): ground-contact OK given.
+- Deck cell split for the shadow camera: phone-perf said skip it after #514 (+15-25 main-pass calls cost more on the A16). If it comes back, use the landmark-batch grid: 500 m cells, floor(x/500), floor(z/500), origin at scene 0,0.
+
 ## Next steps
 1. Wait for Sam's OK on #418.
 2. Whitehall and RDA decks climb 30–40% from their landings: the 15% minimum propagation in `draw()`'s inference. Two attempts failed (see PR #418), so this needs a design pass.
@@ -23,6 +28,8 @@
 - "Dark band" at a deck landing usually means a steep tread facing away from the sun, not slab sides. Check the deck grade with `deckAt` first.
 - Surveyed deck profiles (`deckNavd88M`) must keep their ends. Easing them onto the board broke the I-20 and Spring/Techwood tests by 4–16 m.
 - Low is triangle-bound: banding whole deck spans cost +134k triangles; banding only the seam costs +35.7k.
+- Pixel-diff City frames only with `?perf&nopass=grade` (animated grain), and on high also `gtao`; otherwise identical runs differ.
+- Perf baselines with swapped files: use `git merge-base HEAD origin/main`, never `origin/main`.
 - **Camera targets inside a slot aim 26 m high.** City's `targetY` returns 0 where the board has no ground, so the view centres far beyond the point you asked for. Aim just outside the opening. The old `north-east`/`north-west` cams have this problem.
 - `__setView` zoom has no `cam=` equivalent; record both.
 - Capture helpers live in the session scratchpad (`shots.mjs`, `compose.mjs`); `/tmp/join-shots.mjs` is the original.

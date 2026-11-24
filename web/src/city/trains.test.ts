@@ -25,7 +25,8 @@ describe('City train placement', () => {
     trains.update([{ id: 'trip', routeId: 'blue', pathId: 'track', heading: 90, lon: 0, lat: 0,
       s: { value: 100, tier: 'scheduled', source: 'test', asOf: '' }, headsign: 'East', vehicleType: 'rail',
       lengthM: { value: 23, tier: 'illustrative', source: 'test', asOf: '' } }], 0);
-    const forward = trains.group.children[0].getWorldDirection(new Vector3());
+    // The group also holds hidden prewarm templates; cars carry a trainId.
+    const forward = trains.group.children.find(c => c.userData.trainId)!.getWorldDirection(new Vector3());
     expect(forward.x).toBeCloseTo(1);
     expect(forward.y).toBeCloseTo(0);
   });

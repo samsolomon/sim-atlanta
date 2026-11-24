@@ -1,3 +1,4 @@
+import { streetProfile, throughLane } from '../terrain/street-profile';
 import { Line, type P2 } from '../vignette/geom';
 import type { VRoad } from '../vignette/world';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -17,7 +18,7 @@ interface ArterialTraversal {
   to: string;
   road: VRoad;
   reverse: boolean;
-  twoWay: boolean;
+  offset: number;
   dailyFlow: number;
   speedMps: number;
   truckShare: number;
@@ -51,7 +52,7 @@ function makeCourse(edges: Edge[], bounds: TerrainCity['bounds']): TrafficCourse
       vehicles += delta * traversal.dailyFlow;
       trucks += delta * traversal.dailyFlow * traversal.truckShare;
       roads.push(traversal.road);
-      offsets.push(traversal.twoWay ? 2 : 0);
+      offsets.push(traversal.offset);
       axis.push(pts[i]);
     }
   }
@@ -148,8 +149,12 @@ export function arterialTrafficRoutes(corridors: readonly ArterialCorridor[], bo
           ? Math.min(12, run.speedMph * .44704) : 9;
         const truckShare = run.truckShare !== null && Number.isFinite(run.truckShare)
           ? Math.max(0,Math.min(1,run.truckShare)) : .04;
+        const profile = streetProfile(run.road);
+        const lane = profile && throughLane(profile, direction);
+        if (profile && !lane) continue;
+        const offset = lane ? lane.offset * (reverse ? -1 : 1) : run.allow === 'both' ? 2 : 0;
         traversals.push({road:run.road, from:reverse ? run.to : run.from, to:reverse ? run.from : run.to,
-          reverse, twoWay:run.allow==='both', dailyFlow, speedMps, truckShare});
+          reverse, offset, dailyFlow, speedMps, truckShare});
       }
     }
     return joinArterialRuns(traversals,bounds);

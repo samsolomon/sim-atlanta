@@ -148,7 +148,7 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
         const t = k / bays;
         const l = Math.max(0, t - half), r = Math.min(1, t + half);
         if (proud) fin(f, l, r, lo, hi, 0.35, pier, pierShade);
-        else panel(f, l, r, lo, hi, 0.3, pier);
+        else panel(f, l, r, lo, hi, 0.12, pier); // flush enough to touch the wall (no returns)
       }
       // Long faces carry stacked balconies in alternate bays; the ends carry one each side.
       const long = f.length > 40, end = f.length > 15 && !long;

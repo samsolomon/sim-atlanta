@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { VBuilding } from '../vignette/world';
+import { pointInRing } from '../vignette/geom';
 import { createSkylineLandmark } from './midtown-skyline';
 
 const row = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-upper/context.json', import.meta.url), 'utf8'));
@@ -303,9 +304,16 @@ it('draws the Campanile as its present-day stripped frame at the lidar roof, unl
   expect(box.max.y).toBeCloseTo(95.4 + 4, 0);
   const top = new Raycaster(new Vector3(833, 300, -3571), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
   expect(top).toBeCloseTo(95.4, 0);
-  // A stalled construction site: no photographed lighting, so nothing glows.
+  // A stalled construction site: no photographed lighting, so nothing glows (and no lamps mesh is
+  // built at all: an empty one would still cost a draw).
   model.setNight(1);
-  expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
+  const glowing: string[] = [];
+  model.group.traverse(o => {
+    const m = (o as Mesh).material as MeshLambertMaterial | undefined;
+    if ((o as Mesh).isMesh && m?.emissiveIntensity && m.emissive?.getHex()) glowing.push(o.name || o.type);
+  });
+  expect(glowing).toEqual([]);
+  expect(model.group.children.filter(c => (c as Mesh).isMesh && !(c as Mesh).geometry.getAttribute('position')?.count)).toEqual([]);
   expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
 
@@ -328,4 +336,147 @@ it('stacks 1072 West Peachtree as podium, office block and glass tower, with a d
   // Nothing above the residential roof lights at night (the crown was unlit in August 2026).
   const y = lamps.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(219);
+});
+
+it('replaces Square on 5th at its lidar roof, with fins carrying the roof frame', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:536884432');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Square on 5th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(219.5, -2681.5)).toBeCloseTo(89.5, 0); // roof frame, the lidar maximum
+  expect(heightAt(245, -2681.5)).toBeGreaterThan(87.5); // east penthouse above the 88 m roof
+  expect(heightAt(195, -2681.5)).toBeCloseTo(88, 0); // the lidar 95th-percentile roof
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(86);
+});
+
+it('gives Two Midtown Plaza its lidar roofs, a lit lobby drum and dark offices above', () => {
+  const brookwood = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/brookwood-south/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = brookwood.buildings.find((b: VBuilding) => b.id === 'osm:way:269636880');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Two Midtown Plaza');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(405, -4195)).toBeCloseTo(78, 0); // the straight slab, lidar 95th percentile
+  expect(heightAt(375, -4190)).toBeCloseTo(73, 0); // the half-round end
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(78);
+});
+
+it('crowns Mayfair Tower with four lit-lantern cones at the lidar heights', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536728181');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Mayfair Tower Condominiums');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(1005.9 - 12, -3588.6)).toBeCloseTo(92, 0); // main roof, near the lidar median
+  const cone = heightAt(988.1 + 5.7, -3606.6 + 5.7);
+  expect(cone).toBeGreaterThan(100); // lantern finial, at the 102 m lidar maximum
+  expect(cone).toBeLessThan(102.5);
+  const meshes = model.group.children as Mesh[];
+  expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+});
+
+it('replaces Alexan on 8th at its lidar roof', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:789975430');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Alexan on 8th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(372, -2800)).toBeCloseTo(74.5, 0); // the slab, lidar 95th percentile
+  expect(heightAt(350, -2830)).toBeCloseTo(74.5, 0); // the south-west leg is full height too
+  const meshes = model.group.children as Mesh[];
+  expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = meshes[1].geometry.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(71);
+});
+
+it('puts The M by Radius at its lidar roof with the arched crown on the south face', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536899754');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('The M by Radius');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(285, -3415)).toBeCloseTo(76.5, 0); // roof edge, lidar
+  // The arch's crest stands on the south wall (south is +z), up to the lidar crown: a ray from the
+  // south hits it at 78 m but passes clear over it at 78.8 m.
+  const fromSouth = (y: number) => new Raycaster(new Vector3(302.4, y, -3300), new Vector3(0, 0, -1)).intersectObject(model.group)[0]?.point.z;
+  expect(fromSouth(78)).toBeCloseTo(-3420 + 12.1, 0);
+  expect(fromSouth(78.8)).toBeUndefined();
+  expect(heightAt(-28.4 + 302.4, -3420)).toBeCloseTo(8, 0); // one-storey west wing
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  // No lit pane stands above the 76.5 m roof.
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(76.5);
+});
+
+it('keeps every part of Alexan on 8th on its footprint, within the 1.75 m balcony depth', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:789975430');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const ring = building.rings[0] as [number, number][];
+  const outside = (x: number, z: number) => pointInRing(x, z, ring) ? 0 : Math.min(...ring.map(([ax, az], k) => {
+    const [bx, bz] = ring[(k + 1) % ring.length], dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  }));
+  let worst = 0, inNotch = 0;
+  const v = new Vector3();
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    const p = o.geometry.getAttribute('position');
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+      const d = outside(v.x, v.z);
+      worst = Math.max(worst, d);
+      // The L's inside corner (west of the slab, north of the south-west leg) gets no balconies.
+      if (d > .2 && v.x > 345 && v.x < 360 && v.z > -2818 && v.z < -2812) inNotch++;
+    }
+  });
+  expect(worst).toBeLessThanOrEqual(1.75);
+  expect(inNotch).toBe(0);
+});
+
+it('attaches every Mayfair balcony rail to the wall by its floor slab', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536728181');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const body = (model.group.children[0] as Mesh).geometry.getAttribute('position');
+  const v = new Vector3(), ring = building.rings[0] as [number, number][];
+  const out = (x: number, z: number) => pointInRing(x, z, ring) ? 0 : Math.min(...ring.map(([ax, az], k) => {
+    const [bx, bz] = ring[(k + 1) % ring.length], dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  }));
+  // Every triangle standing out from the wall must connect, through shared vertices, to one that
+  // touches it (rails reach the wall through their slab); none may float.
+  const n = body.count / 3, key = (i: number) => { v.fromBufferAttribute(body, i).applyMatrix4(model.group.matrixWorld); return `${v.x.toFixed(2)},${v.y.toFixed(2)},${v.z.toFixed(2)}`; };
+  const keys = Array.from({ length: n }, (_, t) => [0, 1, 2].map(k => key(3 * t + k)));
+  const off = Array.from({ length: n }, (_, t) => Math.min(...[0, 1, 2].map(k => {
+    v.fromBufferAttribute(body, 3 * t + k).applyMatrix4(model.group.matrixWorld);
+    return v.y < 92 ? out(v.x, v.z) : 0;
+  })) > .1);
+  const reached = new Set<string>();
+  keys.forEach((ks, t) => { if (!off[t]) ks.forEach(k => reached.add(k)); });
+  for (let grew = true; grew;) {
+    grew = false;
+    keys.forEach((ks, t) => { if (off[t] && ks.some(k => reached.has(k)) && !ks.every(k => reached.has(k))) { ks.forEach(k => reached.add(k)); grew = true; } });
+  }
+  const floating = keys.filter((ks, t) => off[t] && !ks.some(k => reached.has(k))).length;
+  expect(floating).toBe(0);
+  expect(body.count / 3).toBeLessThanOrEqual(2400);
 });

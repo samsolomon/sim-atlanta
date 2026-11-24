@@ -5,7 +5,7 @@ import type { TrainState } from '../model/types';
 import { Line } from '../vignette/geom';
 import { ServiceTrack } from './east-cut';
 import { CityTrains } from './trains';
-import { CityFreight } from './freight';
+import { CityFreight, DOWNTOWN_ENTRY_MS } from './freight';
 import { createSurfaceTransport } from '../terrain/transport';
 import { GroundGrid } from '../terrain/grid';
 import { existsSync, readFileSync } from 'node:fs';
@@ -26,11 +26,13 @@ describe('attached City passenger stock', () => {
       fleet.update([stock(s)],0);
       const cars = fleet.group.children.filter(c=>c.visible) as Mesh[];
       expect(cars.length).toBe(3);
-      const clipped = cars.filter(c=>(c.material as MeshLambertMaterial).clippingPlanes?.length);
+      // cq400Material pads clip sets with planes that never clip; count only real ones.
+      const real = (c: Mesh) => (c.material as MeshLambertMaterial).clippingPlanes?.filter(p => p.constant < 1e5) ?? [];
+      const clipped = cars.filter(c=>real(c).length);
       expect(clipped.length).toBe(1);
       const pose = route.car(s,0)!;
       expect(clipped[0].position.distanceTo(new Vector3(pose.x,-7,pose.z))).toBeLessThan(.00001);
-      expect((clipped[0].material as MeshLambertMaterial).clippingPlanes![0]).toBe(pose.plane);
+      expect(real(clipped[0])[0]).toBe(pose.plane);
     }
     fleet.update([stock(590)],0);
     expect(fleet.surfaceCars).toBe(0);
@@ -41,7 +43,7 @@ describe('attached City passenger stock', () => {
     const fleet = new CityTrains([{line,elev:()=>5}],manifest,bounds,colors,[]);
     fleet.update([stock(700)],0);
     expect(fleet.surfaceCars).toBe(5);
-    for (const car of fleet.group.children) expect(car.position.y).toBeCloseTo(5.55);
+    for (const car of fleet.group.children.filter(c=>c.userData.trainId)) expect(car.position.y).toBeCloseTo(5.55);
   });
 });
 
@@ -60,7 +62,7 @@ it.skipIf(!staged)('keeps freight suppressed on the old unsupported tread if rou
   expect(Math.abs(run.at(-1)!.s - run[0].s)).toBeCloseTo(106.23);
   expect(run.every(p=>Math.abs(p.position.y-cut.treadY)<1e-6)).toBe(true);
   const loop = new CityFreight(transport.freightTreads,[]);
-  loop.update(Date.parse('2026-11-20T14:15:31-05:00'));
+  loop.update(DOWNTOWN_ENTRY_MS + 50 / 4.5 * 1000); // slot 0, lead 50 m into the run
   expect(loop.visibleCars).toBeGreaterThan(0);
   delete spec.rail.paths['marta:path:155177'];
   const missing = prepareEastCut(routes,spec,grid,city.terrainTransport.rail);
