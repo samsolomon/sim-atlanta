@@ -131,5 +131,12 @@
     "x": 361.5,
     "z": -2800,
     "heightM": 74.5
+  },
+  "mByRadius": {
+    "id": "osm:way:536899754",
+    "name": "The M by Radius",
+    "x": 302.4,
+    "z": -3420,
+    "heightM": 78.4
   }
 }

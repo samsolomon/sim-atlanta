@@ -3604,3 +3604,19 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+### 2026-11-24 — Downtown's Museum Tower and Midtown's SkyHouse
+
+Museum Tower at Centennial Hill is the first of my skins mounted downtown, so it
+goes in the batcher's listed array.
+- Its red-brown brick shaft has glass corner bays and a cream crown band whose
+  piers carry amber uplights. The source is one 2012 photograph, marked reported.
+- The lidar puts its planted roof deck at 84 m and the penthouse at 94 m.
+
+The M by Radius opened in 2013 as SkyHouse Midtown.
+- It is mapped at 90 m, but the 2019 lidar reads 77 m at the roof edge.
+- It keeps the series' arched crown screen with a teal edge, over pale glass and
+  silver piers.
+
+Neither skin adds a draw on the low tier, and each adds about 0.2 MB of geometry.
+[Museum Tower](museum-tower.md) · [The M by Radius](m-by-radius.md)
+
