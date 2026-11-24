@@ -105,7 +105,6 @@ const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:28961738': 3, // High Museum of Art, midtown-upper, worst 1.39 m off
   'osm:way:38977297': 2, // The Varsity, midtown-south, worst 7.9 m off
   'osm:way:269636921': 2, // Promenade Central, midtown-upper, worst 0.88 m off
-  'osm:way:269542078': 1, // The Atlantic, brookwood-south, worst 0.3 m off
   'osm:way:28979077': 1, // Federal Reserve Bank of Atlanta, midtown-central, worst 0.6 m off
   'osm:way:269843688': 1, // Electric Saturation, midtown-central, worst 0.31 m off
   'osm:way:536884432': 1, // Square on 5th, midtown-central, worst 0.55 m off
