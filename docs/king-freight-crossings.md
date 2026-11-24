@@ -44,4 +44,6 @@ Matched City views use camera `1382,525,0,82,60`, high tier, dev minimum distanc
 | Day | [Grant Street](log/grant-street/before-14.jpg) | [Grant Street](log/grant-street/after-14.jpg) |
 | Night | [Grant Street](log/grant-street/before-23.jpg) | [Grant Street](log/grant-street/after-23.jpg) |
 
+The [300 m yard view](log/grant-street/yard-wide.jpg) uses camera `1390,505,0,55,300` and shows the embankment shoulders beside the station and parking lot.
+
 Release requires rebuilding the web bundle and deploying it. The staged data is unchanged.
