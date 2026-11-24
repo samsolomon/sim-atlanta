@@ -7,6 +7,7 @@ export class LiveBuses {
   private buses: LiveBus[] = [];
   private nextPoll = 0;
   unavailable = false;
+  firstPollComplete = false;
   private pending = false;
   private serverOffset = 0;
 
@@ -39,6 +40,7 @@ export class LiveBuses {
       this.unavailable = true;
       // Keep showing the previous observations until their individual fixes expire.
     } finally {
+      this.firstPollComplete = true;
       this.pending = false;
     }
   }

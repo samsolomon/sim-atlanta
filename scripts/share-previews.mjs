@@ -103,7 +103,8 @@ try {
 } finally { await server.close(); }
 for (const [id,{name,cam}] of pages) {
   const title=escape(name+' · Sim Atlanta');
-  const html=template.replaceAll('content="Sim Atlanta"', 'content="'+title+'"').replace('<title>Sim Atlanta</title>', '<title>'+title+'</title>').replaceAll('/previews/default.jpg','/previews/'+(cam?id:'default')+'.jpg');
+  const html=template.replaceAll('"https://atlanta.solomon.io/"', '"https://atlanta.solomon.io/s/'+id+'/"')
+    .replaceAll('content="Sim Atlanta"', 'content="'+title+'"').replace('<title>Sim Atlanta</title>', '<title>'+title+'</title>').replaceAll('/previews/default.jpg','/previews/'+(cam?id:'default')+'.jpg');
   const dir=join(dist,'s',id);
   await mkdir(dir,{recursive:true});
   await writeFile(join(dir,'index.html'),html);

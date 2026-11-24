@@ -203,6 +203,12 @@ function renderTrainCard() {
   const t = source.find(selectedTrain);
   if (!t) {
     if (follow?.ended?.id === selectedTrain) return showCard('<h2>Train no longer available</h2><p class="sub">Tap another train.</p>', true);
+    if (selectedTrain === params.get('train')) {
+      if (selectedTrain.startsWith('marta:train:') && clock.isRealTime() && !live.firstPollComplete) {
+        return showCard('<h2>Checking train location…</h2>');
+      }
+      return showCard('<h2>Train location unavailable</h2><p class="sub">This train has no position for the shared time.</p>');
+    }
     return showCard('<h2>That train has finished its trip</h2><p class="sub">Tap another train.</p>');
   }
   showCard(
@@ -217,6 +223,7 @@ function renderBusCard() {
   if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
   else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
   else if (selectedBus && selectedBus === params.get('bus')) {
+    if (clock.isRealTime() && !buses.firstPollComplete) return showCard('<h2>Checking bus location…</h2>');
     showCard('<h2>Bus location unavailable</h2><p class="sub">This bus has no current position for the shared time.</p>');
   } else hideCard();
 }
@@ -279,6 +286,10 @@ if (import.meta.env.DEV) Object.assign(window, { __schedule: schedule });
 const live = new LiveMarta(schedule);
 const source = new TrainSource(schedule, live);
 if (import.meta.env.DEV) Object.assign(window, { __source: source, __follow: follow });
+// The Map may still be waiting for tiles when the shared train's first live fix arrives.
+live.onUpdate = () => {
+  if (selectedTrain && selectedTrain === params.get('train')) source.update();
+};
 live.start();
 
 let override: AtmosphereOverride | null = null;
@@ -1100,7 +1111,10 @@ setInterval(() => {
   if (restoreSelection && (landing === 'city' ? diorama : map)) {
     restoreSelection = false;
     keepSharedCamera = true;
-    if (params.has('train')) selectedTrain = params.get('train');
+    if (params.has('train')) {
+      selectedTrain = params.get('train');
+      source.update(now);
+    }
     else if (params.has('bus')) selectedBus = params.get('bus');
     else if (diorama && ['illustrative:freight:downtown', 'illustrative:freight:norcross'].includes(params.get('freight') ?? '')) {
       selectedFreight = params.get('freight');
