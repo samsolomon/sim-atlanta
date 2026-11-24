@@ -6,7 +6,7 @@ import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, type FreightUnit } from '../vign
 /** An illustrative Norfolk Southern passage on Main 2 of the Norcross District.
  * Timing, direction, speed and consist are all invented. The Crescent keeps Main 1. */
 export const NORCROSS_LINE = 'NS Norcross District';
-const CONSIST: FreightUnit[] = ['locomotiveNs', 'locomotiveNs', ...Array<FreightUnit>(8).fill('boxcar')];
+const CONSIST: FreightUnit[] = ['locomotiveNs', 'locomotiveNs', 'grainHopper', 'grainHopper', 'grainHopper', ...Array<FreightUnit>(5).fill('boxcar')];
 const GAP = 0.3;
 export const FREIGHT_SPEED_MPS = 6.7;
 /** One passage may begin every 20 minutes, alternating direction. */
@@ -25,9 +25,9 @@ export function freightPass(clockMs: number, lineLength: number): FreightPass | 
   return { slot, dir, head: dir === 1 ? travelled : lineLength - travelled };
 }
 
-export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], instanced = true) {
+export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], highDetail = true) {
   const line = new Line(pts);
-  const batches = new FreightBatches(CONSIST, instanced);
+  const batches = new FreightBatches(CONSIST, true, !highDetail);
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: planes, clipShadows: true });
   const cars = CONSIST.map((kind, i) => {
     const car = batches.createCar(kind, material);
