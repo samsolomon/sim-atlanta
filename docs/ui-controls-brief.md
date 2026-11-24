@@ -445,6 +445,10 @@ out, then the map flattens.
     the clock next time
 - The audio and covers are excluded from the code licence and not for reuse; keep the
   README in `web/public/music/`.
+- **Loading and cost** (coordinator, 2026-11-24): nothing under `web/public/music/` is
+  requested until the radio is first opened; only the current and next track are fetched,
+  never a whole station; MP3s are served as static assets (range requests, never through
+  the worker), so the radio adds no per-visitor server cost.
 
 ## Follow-ups (not in this build)
 
