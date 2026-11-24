@@ -24,7 +24,7 @@
 | BORDERLINE | Modera Parkside (#473) | medium | skins-2 | Later pass |
 | BORDERLINE | SkyHouse South (#504) | medium | skins-3 | Later pass |
 | BORDERLINE | Nine15 Midtown (#511) | medium | skins-3 | Later pass |
-| BORDERLINE | 1072 West Peachtree (#445) | small | lead | Later pass |
+| PASS (plain, photo-backed; pending 8b) | 1072 West Peachtree (#445) | small | skins-6 | #604: photo-measured balcony slots; photos show a plain reflective shaft, identity is its height |
 | BORDERLINE | Hard Rock Cafe building (#508) | small | skins-7 | Needs a 400–600 m shot |
 | PASS, dark glass | Promenade Tower (#164) | medium | lead | Untouched tonight; listed in glass-palette.md for Sam |
 
