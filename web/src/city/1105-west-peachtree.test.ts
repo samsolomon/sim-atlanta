@@ -45,6 +45,6 @@ it('stands the blue frame clear of the glass and up to 125 m, inside the landmar
   expect(box.max.z).toBeCloseTo(-3424.6 + 1.4, 1); // south frame off the south glass
   expect(box.min.z).toBeCloseTo(-3478.8 - 1.4, 1); // north frame off the north glass
   result.setNight(1);
-  expect(led.material.emissiveIntensity).toBeCloseTo(0.7);
+  expect(led.material.emissiveIntensity).toBeCloseTo(0.45);
   expect(led.material.emissive.getHexString()).toBe('2f5cff');
 });

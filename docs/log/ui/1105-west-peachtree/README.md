@@ -38,7 +38,7 @@ The podium's secondary exoskeleton is left out: its location along the podium is
 
 ## Lighting
 
-- **Exoskeleton:** the only ordinary-night evidence, the August 2026 SKYDB photo, shows the frame and the crown's top edge lit solid cobalt blue. The model makes that the night state, in its own lit material. The LEDs are programmable, and event colours (Pride, Fourth of July, Falcons) need separate evidence, so they are not modelled. The blue is a separate lit material (same program as the window lamps), set only in `setNight` at 0.7 intensity, which keeps it under clipping.
+- **Exoskeleton:** the only ordinary-night evidence, the August 2026 SKYDB photo, shows the frame and the crown's top edge lit solid cobalt blue. The model makes that the night state, in its own lit material. The LEDs are programmable, and event colours (Pride, Fourth of July, Falcons) need separate evidence, so they are not modelled. The blue is a separate lit material (same program as the window lamps), set only in `setNight` at 0.45 intensity, which keeps it under clipping.
 - **Offices:** about 7% of panes are lit at 23:30. The photo shows a scatter of lit floors.
 - **Hotel and condominium:** about 30% of rooms are lit, the residential and hotel share.
 - All of it is `illustrative` ambient scenery and is not labelled on screen.

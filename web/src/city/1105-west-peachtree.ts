@@ -188,7 +188,7 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
     ...built,
     setNight(night: number) {
       built.setNight(night);
-      ledMesh.material.emissiveIntensity = night * 0.7;
+      ledMesh.material.emissiveIntensity = night * 0.45;
     },
   };
 }
