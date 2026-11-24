@@ -49,6 +49,9 @@ function curtainWall() {
   return { material, width: bays * BAY, height: floors * FLOOR };
 }
 
+/** Night emissive strengths for the crown (Kendall/Heaton night skyline: a lit pale wash, never clipped). */
+export const CROWN_NIGHT = { veil: .82, lattice: .78, frames: .75, edge: .75 };
+
 export function symphonyTower(shell: Shell) {
   /** Terrace crape myrtles in the landmark's local frame (u, v and terrace height). */
   const terraceTrees: { u: number; v: number; y: number }[] = [];
@@ -221,6 +224,8 @@ export function symphonyTower(shell: Shell) {
     transparent: true, depthWrite: false });
   const edgeLine = new THREE.Mesh(line.geometry(), lineMaterial);
   edgeLine.name = '1180 edge light';
+  // Composite the light after the depth-writing glass, retaining normal occlusion.
+  edgeLine.renderOrder = 1;
   edgeLine.visible = false;
   model.group.add(edgeLine);
   const geometry = skin.geometry();
@@ -230,9 +235,31 @@ export function symphonyTower(shell: Shell) {
   // Kendall/Heaton's night skyline: the veil glass is a soft pale grey-green wash,
   // dimmer than the white lattice behind it; nothing on the crown clips to white.
   const veilMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true,
-    opacity: .88, depthWrite: false, emissive: '#9dbcb2', emissiveIntensity: 0 });
+    opacity: .88, depthWrite: true, emissive: '#d5dfdc', emissiveIntensity: 0 });
+  // The ink pass needs the veil's own depth, rather than the lattice/scene behind it.
+  // A single smooth wash rises gently towards the crest; no window atlas or texture.
+  veilMaterial.onBeforeCompile = shader => {
+    shader.vertexShader = 'varying float vVeilHeight;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>',
+      `#include <begin_vertex>\nvVeilHeight = clamp((position.y - ${ROOF.toFixed(3)}) / ${VEIL.toFixed(3)}, 0.0, 1.0);`);
+    shader.fragmentShader = 'varying float vVeilHeight;\n' + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= mix(0.72, 1.0, vVeilHeight);');
+  };
+  veilMaterial.customProgramCacheKey = () => '1180-veil-wash-v1';
   // One mesh per veil, so three.js sorts the near one over the far one.
-  const veil = veilSides.map((b, i) => { const m = new THREE.Mesh(b.geometry(), veilMaterial); m.name = `1180 veil ${i}`; return m; });
+  const veil = veilSides.map((b, i) => {
+    const geometry = b.geometry();
+    geometry.computeBoundingBox();
+    const centre = geometry.boundingBox!.getCenter(new THREE.Vector3());
+    // Transparent sorting uses object origins. Separate those origins across the crown;
+    // keep local y intact for the emission gradient.
+    geometry.translate(-centre.x, 0, -centre.z);
+    const m = new THREE.Mesh(geometry, veilMaterial);
+    m.position.set(centre.x, 0, centre.z);
+    m.name = `1180 veil ${i}`;
+    return m;
+  });
   const lattice = new THREE.Mesh(frame.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
     emissive: '#d8e6e1', emissiveIntensity: 0 }));
   lattice.name = '1180 veil frames';
@@ -241,10 +268,11 @@ export function symphonyTower(shell: Shell) {
   return { ...model, terraceTrees, setNight(night: number) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
-    veilMaterial.emissiveIntensity = .82 * night;
-    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = .78 * night;
-    lineMaterial.color.setScalar(.75 * Math.min(1, night));
+    veilMaterial.emissiveIntensity = CROWN_NIGHT.veil * night;
+    veilMaterial.opacity = .88 + .12 * Math.min(1, Math.max(0, night));
+    (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = CROWN_NIGHT.lattice * night;
+    lineMaterial.color.setScalar(CROWN_NIGHT.edge * Math.min(1, night));
     edgeLine.visible = night > .001;
-    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = .75 * night;
+    (lattice.material as THREE.MeshLambertMaterial).emissiveIntensity = CROWN_NIGHT.frames * night;
   } };
 }
