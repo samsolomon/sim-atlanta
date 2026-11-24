@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { confidence, confidenceWords, hintText, liveDetails } from './status';
-import { uiNext } from './flag';
+import { confidence, confidenceWords, hintText } from './status';
 
 const live = { realTime: true, rail: 'live' as const };
 
@@ -36,24 +35,7 @@ describe('first-visit hint', () => {
   });
 });
 
-describe('live details', () => {
-  it('shows no live positions or weather at a shifted clock', () => {
-    const html = liveDetails({ realTime: false, rail: 'live', trains: 12, cityFreight: true, cityTraffic: true, buses: 40 }, 'city',
-      { kind: 'clear', cloud: 0, rain: 0, fog: 0, label: 'clear', tempF: 60, live: true }, 0);
-    expect(html).not.toMatch(/live positions/);
-    expect(html).toMatch(/timetable/);
-    expect(html).not.toMatch(/60°F/);
-  });
-});
 
-describe('interface flag', () => {
-  it('is A2c by default and for old ?ui=next links; ?ui=classic opts out', () => {
-    expect(uiNext('')).toBe(true);
-    expect(uiNext('?ui=next')).toBe(true);
-    expect(uiNext('?view=city')).toBe(true);
-    expect(uiNext('?ui=classic')).toBe(false);
-  });
-});
 
 import { atlantaDate, dayDiff, placeLabel, skyLabel, sliderValue } from './status';
 

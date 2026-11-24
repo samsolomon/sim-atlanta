@@ -32,7 +32,6 @@ describe('model links', () => {
     expect(url.searchParams.get('view')).toBe('models');
     expect(url.searchParams.get('v')).toBe('cq400');
     expect(url.searchParams.has('ui')).toBe(false);
-    expect(new URL(shareUrl('https://sim.example/?ui=classic&view=map', { view: 'map', hash: '#14/33.7/-84.4' }, 'live', at)).searchParams.get('ui')).toBe('classic');
     expect(url.searchParams.has('t')).toBe(false);
   });
 });

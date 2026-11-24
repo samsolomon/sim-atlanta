@@ -3,7 +3,6 @@
  * Live only at the real present with the live feed up; anything else reads Timetable, and a
  * sky that wasn't observed says so.
  */
-import type { Weather } from '../core/weather';
 
 export type View = 'map' | 'city' | 'models';
 
@@ -14,31 +13,6 @@ export interface LiveState {
   cityFreight: boolean;
   cityTraffic: boolean;
   buses: number | null; // null: bus feed unavailable or not shown
-}
-
-const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
-
-/** The per-feed list behind the status card: each feed with its tier and source. */
-export function liveDetails(s: LiveState, view: View, weather: Weather | null, weatherAt: number, nowMs = Date.now()): string {
-  const rail = !s.realTime
-    ? '<b>MARTA rail</b> timetable (the clock isn’t set to now)'
-    : s.rail === 'live'
-      ? `<b>MARTA rail</b> ${s.trains} MARTA trains, live positions`
-      : s.rail === 'connecting'
-        ? '<b>MARTA rail</b> connecting to MARTA…'
-        : '<b>MARTA rail</b> MARTA live feed unavailable, showing the timetable';
-  const bus = !s.realTime ? '<b>Buses</b> shown only at the present time' : s.buses == null ? '<b>Buses</b> live feed unavailable' : `<b>Buses</b> ${s.buses} MARTA buses, live positions`;
-  const freight = view === 'city'
-    ? s.cityFreight ? 'Train positions, timing and consists are illustrative.' : 'No freight simulation available in this scene.'
-    : 'Track traffic comes from reported or inferred daily counts.';
-  const traffic = view === 'city' && s.cityTraffic
-    ? '<li><b>Road traffic</b> Illustrative vehicles follow a typical hourly pattern.</li>' : '';
-  const wx = !s.realTime
-    ? '<b>Atlanta weather</b> observations are available at the present time'
-    : weather
-    ? `<b>Atlanta weather</b> ${cap(weather.label)}${weather.tempF != null ? `, ${Math.round(weather.tempF)}°F` : ''} · Open-Meteo, ${Math.max(0, Math.round((nowMs - weatherAt) / 60000))} min ago`
-    : '<b>Atlanta weather</b> unavailable right now';
-  return `<ul><li>${rail}${view === 'city' ? '. MARTA visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> ${freight}</li>${traffic}<li>${wx}</li></ul>`;
 }
 
 export interface Confidence {

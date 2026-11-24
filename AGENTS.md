@@ -62,7 +62,6 @@ reproducible:
 - `/?view=models&v=cq400` opens a model in the Models view (the Model lab inside the app;
   `&dev` shows the photo overlay). `/models.html` still serves the lab on its own; new lab
   controls go in `web/src/models/lab-markup.ts`.
-- `?ui=classic` shows the pre-A2c interface. It is an escape hatch for one release only.
 - `/vignette.html?at=<ISO>&weather=rain|fog|storm|overcast|clear&speed=600`, plus `?clean`
   and `?scatter`.
 
