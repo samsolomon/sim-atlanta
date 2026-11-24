@@ -1818,6 +1818,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
   if (!perfOverrides.prewarmOff) {
     prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    perf.setPrewarmPending(() => prewarmer?.pending ?? 0);
     const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
     requestPrewarm = () => setTimeout(rescan, 500);
     // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
@@ -1994,6 +1995,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     dispose() {
       prewarmer?.dispose();
+      perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();

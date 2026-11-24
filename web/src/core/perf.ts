@@ -497,6 +497,8 @@ function paintOverlay() {
 }
 
 // ---- ?perf=run ---------------------------------------------------------------------------
+/** City registers its shader prewarm's queue here, so a run settles only once it is empty. */
+let prewarmPending: (() => number) | null = null;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
@@ -508,7 +510,8 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   let settled = false;
   while (performance.now() - settleStart < maxWaitMs) {
     const last = phases[phases.length - 1]?.ms ?? 0;
-    const prewarmed = perfOverrides.prewarmOff || phases.some(p => p.name === 'city:prewarmed');
+    // The first prewarm has finished and nothing is queued now: a later area mount starts another.
+    const prewarmed = perfOverrides.prewarmOff || (phases.some(p => p.name === 'city:prewarmed') && (prewarmPending?.() ?? 0) === 0);
     if (prewarmed && performance.now() - last > quietMs) { settled = true; break; }
     await sleep(250);
   }
@@ -631,6 +634,7 @@ export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
+  setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
   /** Add CPU ms spent in road-traffic update() to the current frame. */
   traffic(ms: number) { trafficNow += ms; },
   /**
