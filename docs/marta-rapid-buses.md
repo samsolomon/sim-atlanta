@@ -74,12 +74,14 @@ A uniform is used for the lab. The bellows use the same bend in the directional 
 | [XE60 alternate curb-side photograph, CBS](https://www.cbsnews.com/atlanta/news/marta-hosting-open-houses-to-educate-riders-on-upcoming-nextgen-bus-network/) | ![XE60 at +35 degrees](log/rapid-buses/xe60-bent.jpg) ![XE60 at −35 degrees](log/rapid-buses/xe60-opposite.jpg) |
 | ![XN40 7108, MARTA](https://itsmarta.com/uploadedImages/Get_to_Know_MARTA/System_Information/A-Line/rapid-a-line-bus.jpg) | ![XN40 Rapid](log/rapid-buses/xn40-rapid.jpg) |
 
+[Side-by-side roof profiles in daylight and at night](log/rapid-buses/roof-profiles.jpg). Both buses use the same 36 cm fairing crown, shoulder bevel and curved end profile. The XE60 deck height and equipment locations are visual estimates.
+
 All captures use camera position `[-16,5.8,12]`, target `[0,1.6,0]`, vertical FOV 38°, high detail.
 
 | Geometry | Triangles | Attribute bytes | Meshes per preview |
 | --- | ---: | ---: | ---: |
-| XE60 low | 1,350 | 178,200 | 3 |
-| XE60 high | 2,622 | 346,104 | 3 |
+| XE60 low | 1,286 | 169,752 | 3 |
+| XE60 high | 2,766 | 365,112 | 3 |
 | XN40 Rapid | 6,060 | 727,200 | 1 |
 
 Counts exclude shadow passes. The low XE60 fits the proposed 1,500-triangle phone budget. Future instanced draws can share one batch per section. Phone frame rate is unmeasured.
