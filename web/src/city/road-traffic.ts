@@ -56,6 +56,7 @@ interface LaneState {
   queue?: MovingQueue;
   period: number;
   active: Slot[];
+  brakes: boolean[];
   trips: { start: number; length: number }[];
   bounds: THREE.Box3;
   /** Road height every HEIGHT_STEP metres (NaN until first sampled), and the source road index there. */
@@ -105,6 +106,7 @@ export interface TrafficCourse {
   closed?: boolean;
   /** Stop lines at mapped traffic signals (opt-in; courses without them run unchanged). */
   signals?: CourseSignal[];
+  rush?: { center: number; radius: number; hour: number };
   /** Explicit incoming stop line for a turning course. */
   turnSignal?: Omit<CourseSignal, 'axis'> & { dx: number; dz: number };
   /** Dissolve near unresolved interior endpoints; board edges use the City's clipping. */
@@ -117,6 +119,16 @@ interface Slot {
   threshold: number;
   kind: Kind;
   color: THREE.Color;
+}
+
+// A monotone distance map concentrates existing cars at a bottleneck. Value and
+// slope match free flow at both ends; slots keep their original trip periods.
+function rushDistance(s: number, course: TrafficCourse, hour: number) {
+  const rush = course.rush;
+  if (!rush) return s;
+  const u = (s - rush.center) / rush.radius;
+  const demand = Math.max(0, 1 - Math.abs(hour - rush.hour) / 2);
+  return Math.abs(u) < 1 ? s - .92 * demand * (s - rush.center) * (1 - u * u) ** 2 : s;
 }
 
 function hourShare(hourly: TrafficData['hourly'], clockMs: number) {
@@ -168,7 +180,7 @@ export class RoadTraffic {
   /** Signalised cars the footprint check dropped behind another car on their own course this
    * frame. A queue should never need it; opposing lanes pinching at a node are not counted. */
   signalOverlaps = 0;
-  private readonly material = vehicleMaterial(this.night);
+  private readonly material = vehicleMaterial(this.night, true);
   private readonly meshes = new Map<Kind, THREE.InstancedMesh>();
   private readonly slots: Slot[];
   private readonly movingQueues = new Map<TrafficCourse, MovingQueue>();
@@ -224,6 +236,8 @@ export class RoadTraffic {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
       const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
+      mesh.geometry.setAttribute('braking', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
+        .setUsage(THREE.DynamicDrawUsage));
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -290,7 +304,7 @@ export class RoadTraffic {
         course, slots, queue, bounds,
         timed: !course.closed && (!!course.signals?.length || !!queue),
         period: course.line.length + offstage(course),
-        active: [], trips: slots.map(() => ({ start: 0, length: 0 })),
+        active: [], brakes: [], trips: slots.map(() => ({ start: 0, length: 0 })),
         heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
         vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
       }];
@@ -390,6 +404,8 @@ export class RoadTraffic {
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return this.finish(counts, false);
     this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
+    const localTime = local(new Date(clockMs));
+    const rushHour = localTime.weekend ? -24 : localTime.hour + (clockMs % 60000) / 3600000;
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads, last = this.headPhases;
@@ -422,7 +438,7 @@ export class RoadTraffic {
           trip.start = (Math.floor((seconds * v + active[i].phase) / period) * period - active[i].phase) / v;
           trip.length = LENGTH[active[i].kind];
         }
-        positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds);
+        positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds, lane.brakes);
       }
       if (!inView) continue;
       const line = course.line;
@@ -430,7 +446,8 @@ export class RoadTraffic {
         const slot = active[i];
         const timed = positions ? positions[i] : undefined;
         if (timed === null) continue;
-        const s = timed ?? THREE.MathUtils.euclideanModulo(seconds * v + slot.phase, period);
+        const free = THREE.MathUtils.euclideanModulo(seconds * v + slot.phase, period);
+        const s = timed ?? rushDistance(free, course, rushHour);
         const length = LENGTH[slot.kind], half = length / 2;
         if (!course.closed && (s < half || s > line.length - half)) continue;
         if (view) {
@@ -457,6 +474,11 @@ export class RoadTraffic {
         this.visibleCars++;
         const mesh = this.meshes.get(slot.kind)!;
         const index = mesh.count++;
+        const brake = mesh.geometry.getAttribute('braking') as THREE.InstancedBufferAttribute;
+        const braking = timed != null ? !!lane.brakes[i] : course.rush && free < course.rush.center &&
+          rushDistance(free + 1, course, rushHour) - s < .65;
+        const lamp = braking ? 1 : 0;
+        if (brake.getX(index) !== lamp) { brake.setX(index, lamp); brake.needsUpdate = true; }
         // Rotation YXZ: heading about y, then pitch about x, written straight into the matrix.
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);
         const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
@@ -531,6 +553,8 @@ export class RoadTraffic {
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return;
     this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
+    const localTime = local(new Date(clockMs));
+    const rushHour = localTime.weekend ? -24 : localTime.hour + (clockMs % 60000) / 3600000;
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads;
@@ -559,7 +583,8 @@ export class RoadTraffic {
       const { line, roads } = slot.lane;
       const timed = signalled.get(slot);
       if (timed === null) continue;
-      const s = timed ?? THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, line.length + offstage(slot.lane));
+      const free = THREE.MathUtils.euclideanModulo(seconds * slot.lane.speedMps + slot.phase, line.length + offstage(slot.lane));
+      const s = timed ?? rushDistance(free, slot.lane, rushHour);
       const length = LENGTH[slot.kind], half = length / 2;
       if (!slot.lane.closed && (s < half || s > line.length - half)) continue;
       const axle = (at: number) => {

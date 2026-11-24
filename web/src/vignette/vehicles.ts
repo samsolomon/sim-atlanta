@@ -164,11 +164,19 @@ export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
 
 /**
  * Shared vehicle material: paint from the instance colour, fixed glass/tyres/trim, and head
- * and tail lights that glow by `night` (`brake` makes all tail lights flare a little).
+ * and tail lights that glow by `night` (road cars can light their own brakes).
  */
-export function vehicleMaterial(night: { value: number }) {
+export function vehicleMaterial(night: { value: number }, brakes = false) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const shaderKey = m.customProgramCacheKey.bind(m);
+  m.customProgramCacheKey = () => shaderKey() + (brakes ? '-brakes' : '');
   m.onBeforeCompile = (sh) => {
+    if (brakes) {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float braking; varying float vBrake;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBrake = braking;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vBrake;')
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nif (vKind > 1.5 && vKind < 2.5) totalEmissiveRadiance += vec3(3.6, 0.06, 0.01) * vBrake;');
+    }
     sh.uniforms.uNight = night;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;\nvarying vec3 vRaw;')

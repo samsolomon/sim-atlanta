@@ -113,18 +113,18 @@ export function withSignals<C extends { line: Line; closed?: boolean; turnSignal
  * box). Pure: the result depends only on the inputs, so scrubbing the clock lands every car
  * where a fresh load would. Returns each trip's chainage, or null when it is off the course. */
 export function signalPositions(signals: readonly CourseSignal[], length: number, speed: number,
-  trips: readonly { start: number; length: number }[], now: number): (number | null)[] {
+  trips: readonly { start: number; length: number }[], now: number, brakes?: boolean[]): (number | null)[] {
   const n = trips.length;
   // Holds and spills are keyed by stop line k and trip i as k * n + i.
   let hold = new Map<number, number>();
-  let result = signalPass(signals, length, speed, trips, now, hold);
+  let result = signalPass(signals, length, speed, trips, now, hold, brakes);
   for (let pass = 0; pass < 6 && result.spills?.size; pass++) {
     let changed = false;
     const next = new Map(hold);
     for (const [key, t] of result.spills) if (!(next.get(key)! >= t)) { next.set(key, t); changed = true; }
     if (!changed) break;
     hold = next;
-    result = signalPass(signals, length, speed, trips, now, hold);
+    result = signalPass(signals, length, speed, trips, now, hold, brakes);
   }
   // Final guard: no follower closer than the car ahead allows. Each trip's position never
   // decreases with time, and neither does the minimum of such positions, so this keeps every
@@ -152,7 +152,7 @@ const scratch = { depart: [] as number[], from: [] as number[], arrive: [] as nu
 const byArrival = (a: number, b: number) => scratch.arrive[a] - scratch.arrive[b];
 
 function signalPass(signals: readonly CourseSignal[], length: number, speed: number,
-  trips: readonly { start: number; length: number }[], now: number, hold: ReadonlyMap<number, number>) {
+  trips: readonly { start: number; length: number }[], now: number, hold: ReadonlyMap<number, number>, brakes?: boolean[]) {
   const n = trips.length;
   // Each trip's departure time and position from its previous stop line.
   const { depart, from, arrive, order, settled, offstage } = scratch;
@@ -161,6 +161,7 @@ function signalPass(signals: readonly CourseSignal[], length: number, speed: num
   for (let i = 0; i < n; i++) {
     depart[i] = trips[i].start; from[i] = 0; pos[i] = null; settled[i] = false; offstage[i] = false;
   }
+  if (brakes) brakes.fill(false, 0, n);
   let spills: Map<number, number> | undefined;
   for (let k = 0; k < signals.length; k++) {
     const sig = signals[k];
@@ -210,7 +211,7 @@ function signalPass(signals: readonly CourseSignal[], length: number, speed: num
         const reach = depart[i] + (stopAt - from[i]) / speed;
         if (now < depart[i]) { pos[i] = null; settled[i] = true; }
         else if (now < reach) { pos[i] = from[i] + (now - depart[i]) * speed; settled[i] = true; }
-        else if (now < leave) { pos[i] = offstage[i] ? null : stopAt; settled[i] = true; }
+        else if (now < leave) { if (brakes) brakes[i] = true; pos[i] = offstage[i] ? null : stopAt; settled[i] = true; }
       }
       offstage[i] = false;
       // The next leg starts where and when the car pulls away: a queued car rolls on from its

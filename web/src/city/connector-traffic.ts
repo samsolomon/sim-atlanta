@@ -1,4 +1,4 @@
-import { connectorTrafficRoutes } from './connector-traffic-routes';
+import { connectorTrafficRoutes, type TrafficLane } from './connector-traffic-routes';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 
 export const CONNECTOR_TRAFFIC_CAP = { low: 48, high: 120 } as const;
@@ -7,11 +7,25 @@ export const CONNECTOR_AADT = 237_000; // GDOT station 121-5472, 2025 calculated
 export type ConnectorBoard = Pick<RoadTrafficOptions, 'city' | 'roadHeight'>;
 export type ConnectorTrafficOptions = RoadTrafficOptions & { neighbors?: ConnectorBoard[] };
 
+// Illustrative weekday bottleneck at the Fifth Street crossing. Find its chainage on
+// each through lane so reversing direction also reverses approach and departure.
+function fifthStreetPeak(lane: TrafficLane) {
+  for (let i = 1; i < lane.line.pts.length; i++) {
+    const [x, z] = lane.line.pts[i - 1], [xx, zz] = lane.line.pts[i];
+    if (zz === z) continue;
+    const f = (-2555 - z) / (zz - z);
+    if (f < 0 || f > 1 || Math.abs(x + f * (xx - x) - 66) > 55) continue;
+    const center = lane.line.cum[i - 1] + f * (lane.line.cum[i] - lane.line.cum[i - 1]);
+    const radius = Math.min(1400, center, lane.line.length - center);
+    if (radius > 90) return { center, radius, hour: lane.direction === 'northbound' ? 17 : 8 };
+  }
+}
+
 export class ConnectorTraffic extends RoadTraffic {
   constructor(opts: ConnectorTrafficOptions) {
     const neighbors = opts.neighbors ?? [];
     const courses = connectorTrafficRoutes(opts.city, neighbors.map(board => board.city)).map(lane => ({ ...lane,
-      speedMps: 18, dailyFlow: CONNECTOR_AADT * .5 * lane.share, truckShare: .07 }));
+      rush: fifthStreetPeak(lane), speedMps: 18, dailyFlow: CONNECTOR_AADT * .5 * lane.share, truckShare: .07 }));
     const boards = [opts, ...neighbors];
     const bounds = { ...opts.city.bounds };
     for (const { city } of neighbors) {
