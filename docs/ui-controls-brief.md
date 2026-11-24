@@ -1,8 +1,8 @@
 # UI controls and chrome: design brief
 
-Sam approved the Final layout on 2026-11-24. Steps 1–9 shipped the A2c shell. Step 10 replaces its layout.
+Status: approved direction **A2c**, confirmed by Sam on 2026-11-23.
 Design canvas: https://claude.ai/artifact/CCsbqwgHy8fTJ2ujri2iSx (private to Sam).
-Build the Final desktop and phone boards in docs/ui-a2c/final/.
+Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds are history.
 
 ## Who it is for
 

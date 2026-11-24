@@ -3022,3 +3022,36 @@ revision gives the two wings separate upper setbacks and silver mullions around
 blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
 building and eight suspended globes trace the approach to the lobby.
 [Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).
+
+### 2026-11-24 — The interface, settled after about 110 boards
+
+The first frosted-glass interface put everything in two corners: an app bar at bottom
+left with a Map · City · Models switch, and a tall camera column at bottom right. Over one
+long design session on a private canvas it went through eight layouts: a title bar, a
+dock, a quiet mode that hid the controls, a camera dial, and a version where the Model lab
+opened as an overlay. About 110 boards in all.
+
+What stuck was giving each part of the screen one job in every view. The top left is what
+you are looking at: the place and time, or the model. The top right is the camera:
+compass, zoom, and a 3D button that turns the flat map into the city. The right edge holds
+the detail for whatever you selected. A single dock at the bottom centre is the app: menu,
+Map | Models, search, radio and share. Tilting had been in the dock for a round and felt
+wrong; it moved to the camera group. A back button for the Model lab felt wrong too, and
+the fix was to make Models its own page beside Map, so there is nothing to go back from.
+
+An automated critique scored the layout 26 out of 40. Its most useful finding was about
+honesty rather than looks. The night boards said "Live" on a clock shifted to 9:30 PM,
+and one green dot was vouching for the time, the weather and the trains at once. The
+card now names what each tier covers ("Live trains · weather reported"), a shifted clock
+reads "Timetable · illustrative sky" with a grey dot (blue already means city rail), and
+the train panel splits its live arrival time from its inferred position. The critique
+also caught that half the audience had no designs: eight phone boards were missing.
+
+The last fix was framing in the Model lab. Its views were fixed camera positions, so on a
+portrait phone the three-quarter view kept the height and lost the width, cutting off the
+cab. Views now fit a focus region (the cab end of the leading car on a portrait screen) to
+whatever space the panels leave clear.
+[City on first visit](log/ui/final-layout/F01-city.jpg) ·
+[Models on a wide screen](log/ui/final-layout/F09-models.jpg) ·
+[A selected train on a phone](log/ui/final-layout/G02-card.jpg) ·
+[Model lab framing before and after](ui-a2c/final/framing-phone-before-after.jpg).
