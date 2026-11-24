@@ -1,3 +1,4 @@
+import { drawNorthAve, hasNorthAve, northAveRailProfile, northAveRoadHeight, northAveLocal } from './north-ave';
 import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
@@ -71,11 +72,14 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   group.userData.structuralHeightTier = 'illustrative';
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
   const bounds = city.bounds;
+  const northAve = hasNorthAve(city);
   const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
   const footbridgeYields: GroundYield[] = [];
   const ballastRuns: BallastQuad[][] = [];
+  const northBeds: GroundYield[] = [];
+  const northPoints = new Map<TransportRun, number[][]>();
   // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
   const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
     minZ: bounds.minZ + grid.manifest.stepM + .01, maxZ: bounds.maxZ - grid.manifest.stepM - .01 };
@@ -88,6 +92,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   let bridgePositions: THREE.BufferAttribute;
   let structurePositions: THREE.BufferAttribute;
   function deckAt(x: number, z: number, run: TransportRun) {
+    const local = northAve && northAveRoadHeight(x,z,run,sceneZero);
+    if (local !== false && local !== null) return local;
     const halfWidth = junctionWidths.get(run);
     if (halfWidth !== undefined && !run.pts.some((p, i) =>
       i > 0 && segDist(x, z, run.pts[i - 1], p) <= halfWidth + .1)) return null;
@@ -152,8 +158,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
 
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram', owner = run) {
     if (run.pts.length < 2) return;
+    const northGrade = northAve && use === 'freight' ? northAveRailProfile(run,grid) : null;
     // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
-    const groundAt: GroundAt = cut && run === cut.freight ? () => cut.treadY - .13 : (x,z) => terrainGround(x,z,run);
+    const groundAt: GroundAt = cut && run === cut.freight ? () => cut.treadY - .13 : (x,z) => { const base=terrainGround(x,z,run); return northGrade ? northGrade(x,z,base) : base; };
     const line = new Line(run.pts);
     if (!line.length) return;
     const bridge = run.kind === 'bridge';
@@ -376,10 +383,15 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
           const drawn = (terrainGround as DrapeGround).triangles;
           // Ground ballast, for graded cuttings. The East cut's freight sits in its own slot.
+          const crossing = northAve && [a,b,c,d].some(p => { const [s,t]=northAveLocal(p[0],p[2]); return s>=20 && s<=90 && Math.abs(t)<120; });
           const graded = textured && !bridge && run !== cut?.freight;
+          if (crossing && textured) {
+            const points=northPoints.get(run) ?? []; northPoints.set(run,points);
+            points.push(...[a,b,c,d].filter(p=>{const [s,t]=northAveLocal(p[0],p[2]);return s>20&&s<90&&Math.abs(t)<119;}));
+          }
           // Ground ballast may draw after the loop, so it keeps this quad's own start station.
           const s0 = lastS;
-          const draw = (flat: boolean) => { const lastS = s0; if (!flat && graded && drawn) {
+          const draw = (flat: boolean) => { const lastS = s0; if (!flat && !crossing && graded && drawn) {
             // Ground ballast follows the drawn terrain between its 2 m stations, so a
             // crease in the bank can't show through it (terrain/drape.ts). The raise is
             // capped at 25 cm: a graded cut sits below its bank on purpose, and the
@@ -531,6 +543,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from),deckWeight:road.deckWeight?.slice(from)} : road,'road',road);
   }
   for (const r of data.rail) if (!r.replaced) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
+  drawNorthAve(city,grid,structures);
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
   const bridgeNight = { value: 0 };

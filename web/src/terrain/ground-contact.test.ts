@@ -23,14 +23,6 @@ afterEach(() => vi.unstubAllGlobals());
  * Connector work) and soft planting (shrub clumps sunk into a bank on purpose).
  */
 const HELD = ['rail ballast', 'ground cover', 'landscape primitives:tread', 'landscape primitives:stone'];
-/**
- * Graded cuttings (terrain/cutting.ts) now carve the bank under ground ballast. One
- * site remains: on midtown-south the ballast drops about 6 m over 6 m where the DEM
- * dips to a road under the tracks. That needs a rail structure or profile, not a cut.
- */
-const GRADED_CUTS = [
-  { minX: -840, maxX: -760, minZ: -1935, maxZ: -1820 },
-];
 /** Inside a convex ring (either winding), in plan. */
 function insideConvex(ring: readonly (readonly [number, number])[], x: number, z: number) {
   let sign = 0;
@@ -43,8 +35,6 @@ function insideConvex(ring: readonly (readonly [number, number])[], x: number, z
   }
   return true;
 }
-const exclude = (layer: string, x: number, z: number) => layer === 'rail ballast' &&
-  GRADED_CUTS.some(b => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ);
 
 it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging layers on %s', async quality => {
   const ctx = new Proxy({}, { get: () => () => {} });
@@ -68,7 +58,7 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     const root = new Group();
     for (const area of mounted.values()) root.add(area.group);
     const audit = groundAudit(root, [...mounted].map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })),
-      { layer: cityLayer, colors: CITY_COLORS, step: 0.5, tolerance: 0.03, exclude });
+      { layer: cityLayer, colors: CITY_COLORS, step: 0.5, tolerance: 0.03 });
     // The low tier carves stairs but does not drape (phone memory), so it holds the treads only.
     const tierHeld = quality === 'high' ? HELD : HELD.filter(l => l.startsWith('landscape primitives'));
     const held = (l: LayerResult) => tierHeld.includes(l.layer);

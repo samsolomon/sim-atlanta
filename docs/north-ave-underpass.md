@@ -129,3 +129,24 @@ a beam shadow. The unresolved question is the active cover's internal soffit
 joints and pier lines, not the three western strips now visible in lidar. No need
 to enter rail property or stand in the roadway. This is a requested sightline,
 not a surveyed camera position.
+
+## Implementation plan — option C approved 2026-11-23
+
+Sam approved the five-group representation through the coordinator. Implement a
+single shared survey module for the trench floor, deck footprints, road heights,
+and rail crossing grade. Terrain must be carved before scenery is sampled;
+transport must use the same floor/deck heights and keep vehicle height queries
+consistent with its drawn treads. Batch structure geometry into the existing
+transport builder. Clip ordinary street rendering only inside the replacement
+footprint, preserving both approach continuations. Keep disused strips trackless.
+
+Architect review: a decorative deck alone would leave terrain-following freight
+and missing tunnel road beneath it. Use the shared module in terrain and transport,
+with integration tests on the actual Midtown rail fixture and staged ground grid.
+The existing ground-contact exception stays until the complete board audit passes.
+
+Product design review: no clearance or disused-status labels enter ambient scenery.
+Keep the observed gaps, Marietta balustrade, rail-cover parapets, and under-deck
+sidewalk/median separation readable at the close camera. Match day/night cameras
+and retain the same materials at both quality tiers. Internal railway joints remain
+absent until new evidence supports them.

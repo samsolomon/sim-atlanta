@@ -1,3 +1,4 @@
+import { northAveSlots } from './north-ave';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
@@ -180,7 +181,7 @@ export function takeGroundLodChange() { const c = groundLodChanged; groundLodCha
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
-  const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
+  const mesh = new GroundSurface(grid, options.quality, [...(options.openings ?? []), ...northAveSlots(city, grid.manifest.vertical.sceneZeroNavd88M)], options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
   const lighting = underpassLights(city,mesh,board.material.map);
