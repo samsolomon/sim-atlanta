@@ -1,5 +1,35 @@
 # Skin recognition audit (2026-11-24)
 
+## State of the skyline (2026-11-24, overnight)
+
+61 landmark skins were audited against the test below: 44 skins plus 17 skyline and registry landmarks. 7 FAIL, 13 BORDERLINE and 41 PASS (Promenade Tower passes on its crown but has near-black glass). Rows are ordered by size on screen.
+
+| Verdict | Building (PR) | Size | Owner | Status |
+|---|---|---|---|---|
+| FAIL | 100 Colony Square (#438) | large | skins-6 | Rework stacked on #554 |
+| FAIL | 400 Colony Square (#462) | large | skins-7 | Rework #554 held; one more pass asked for (vertical strips) |
+| FAIL | 1075 Peachtree (#416) | large | skins-4 | Rework after #522; glass value waits for Sam's palette pick (two money shots) |
+| FAIL | Norfolk Southern HQ (#507) | large | skins-5 | Rework after Ansley |
+| FAIL | JW Marriott Downtown (#522) | large | skins-4 | Rework queued, ahead of Rambler |
+| FAIL | Marquis One (#393) | large | skins-1 | Rework under way, paired with Marquis Two |
+| FAIL | Promenade Central (#164) | small–medium | lead | Untouched tonight (Sam-reviewed); listed for Sam |
+| BORDERLINE | Marquis Two (#406) | large | skins-1 | In the Marquis rework |
+| BORDERLINE | NCR HQ (#437) | large | skins-6 | Later pass |
+| BORDERLINE | 271 Seventeenth (#451) | large | culture | Later pass |
+| BORDERLINE | Loews Atlanta (#455) | large | skins-5 | Later pass |
+| BORDERLINE | Winship (#487) | large | skins-7 | Later pass |
+| BORDERLINE | The Landmark (#515) | large | skins-7 | Needs a 400–600 m shot |
+| BORDERLINE | Tower Square (#188) | medium–large | lead | Later pass |
+| BORDERLINE | Federal Reserve (#274) | medium | lead | Later pass |
+| BORDERLINE | Modera Parkside (#473) | medium | skins-2 | Later pass |
+| BORDERLINE | SkyHouse South (#504) | medium | skins-3 | Later pass |
+| BORDERLINE | Nine15 Midtown (#511) | medium | skins-3 | Later pass |
+| BORDERLINE | 1072 West Peachtree (#445) | small | lead | Later pass |
+| BORDERLINE | Hard Rock Cafe building (#508) | small | skins-7 | Needs a 400–600 m shot |
+| PASS, dark glass | Promenade Tower (#164) | medium | lead | Untouched tonight; listed in glass-palette.md for Sam |
+
+Owners marked as a later pass are provisional: they're the original authors where known. Reworks are held PRs that the lead approves from each PR's original money-shot camera, and they ride normal trains.
+
 The test: in the 400–600 m money shot, could someone who didn't know mistake the skin for the generic building beside it? If yes, it isn't finished.
 
 **Scope and method.** This covers 44 merged skin PRs, #388–#525. Each was judged on the money shot already in its PR (the before/after composite where one exists, otherwise the after view against generic neighbours in the same frame). No new renders were made. The lead checked the three FAILs outside Colony Square (#393, #507, #522) by eye.
