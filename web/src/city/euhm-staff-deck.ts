@@ -103,9 +103,15 @@ export function createEuhmStaffDeck(buildings: VBuilding[], site: VBuilding, gri
       const f = face(s, a, b, center);
       // Parapet at the deck edge.
       s.body.quad([a[0], deckTop, a[1]], [a[0], parapet, a[1]], [b[0], parapet, b[1]], [b[0], deckTop, b[1]], finShade);
-      // Lit decks behind the screen: one even plane per face.
-      f.quad(0, 1, screenLo, deckTop, 0.02, interior, true);
-      for (let k = 1; k <= levels; k++) f.quad(0, 1, screenLo + k * level - 0.45, screenLo + k * level, 0.05, slab);
+      // Decks behind the screen: dark interior, with one thin lit strip per
+      // level under each slab (the ceiling fixtures), so at night it reads as
+      // a lit garage rather than a glowing slab.
+      f.quad(0, 1, screenLo, deckTop, 0.02, interior);
+      for (let k = 1; k <= levels; k++) {
+        const ceil = screenLo + k * level - 0.45;
+        f.quad(0, 1, ceil - 0.35, ceil, 0.03, interior, true);
+        f.quad(0, 1, ceil, screenLo + k * level, 0.05, slab);
+      }
       // Fins on a world 2 m grid (x or z multiples of 2), so both rows' halves line up.
       const along = Math.abs(f.dx) > Math.abs(f.dz);
       const shift = along ? origin[0] : origin[1];
@@ -120,8 +126,11 @@ export function createEuhmStaffDeck(buildings: VBuilding[], site: VBuilding, gri
       // Lower levels: a plinth and open parking where the street falls away
       // (Linden drops 8 m toward Spring), then street glazing under the louvres.
       f.quad(0, 1, bottom, plinth, 0.03, concrete);
-      f.quad(0, 1, plinth, street ? glassLo : louvreLo, 0.02, interior, true);
-      for (let y = plinth + level; y < (street ? glassLo : louvreLo); y += level) f.quad(0, 1, y - 0.45, y, 0.05, slab);
+      f.quad(0, 1, plinth, street ? glassLo : louvreLo, 0.02, interior);
+      for (let y = plinth + level; y < (street ? glassLo : louvreLo); y += level) {
+        f.quad(0, 1, y - 0.8, y - 0.45, 0.03, interior, true);
+        f.quad(0, 1, y - 0.45, y, 0.05, slab);
+      }
       if (street) f.quad(0.02, 0.98, glassLo, louvreLo - 0.3, 0.04, storefront, true);
     }
   }
