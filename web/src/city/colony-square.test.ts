@@ -50,4 +50,8 @@ it('replaces 400 Colony Square with its 83.3 m roof, parapet ring and stepped co
   expect(h(-18.8, 0)).toBeCloseTo(86, 0); // parapet ring
   expect(h(0, -10)).toBeCloseTo(91.2, 0); // upper core
   expect(h(0, 0)).toBeCloseTo(89.9, 0); // lower core
+  expect(h(0, -4.5)).toBeCloseTo(91.2, 0); // the core steps down without a gap
+  expect(h(0, -3.5)).toBeCloseTo(89.9, 0);
+  expect(h(-23.5, 6)).toBeCloseTo(7.8, 0); // residual podium part drawn as a low base
+  expect(createColony400([], grid)).toBeNull();
 });

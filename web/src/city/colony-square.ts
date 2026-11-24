@@ -75,7 +75,7 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
 type Tower = {
   id: string; name: string; origin: P2; probes: P2[];
   half: [number, number]; lobby: number; floors: number; pitch: number; roof: number;
-  parapet?: number; cores: { at: P2; size: [number, number]; top: number }[]; seed: number;
+  parapet?: number; podium?: number; cores: { at: P2; size: [number, number]; top: number }[]; seed: number;
 };
 
 // Heights above the 2018 lidar ground (296.1 m NAVD88). Frames are centred on
@@ -88,8 +88,8 @@ const TOWERS: Record<string, Tower> = {
   },
   [colony400Id]: {
     id: colony400Id, name: '400 Colony Square', origin: [796.77, -3752.77], probes: [[0, 0], [-12, -20], [12, 20]],
-    half: [19, 27.9], lobby: 7.8, floors: 20, pitch: 3.6, roof: 83.3, parapet: 86,
-    cores: [{ at: [-0.5, -10], size: [11, 8], top: 91.2 }, { at: [-0.5, 0], size: [11, 6], top: 89.9 }], seed: 400,
+    half: [19, 27.75], lobby: 7.8, floors: 20, pitch: 3.6, roof: 83.3, parapet: 86, podium: 7.8,
+    cores: [{ at: [-0.5, -10], size: [11, 12], top: 91.2 }, { at: [-0.5, 0], size: [11, 8], top: 89.9 }], seed: 400,
   },
 };
 
@@ -115,10 +115,10 @@ function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Towe
     const c = Math.SQRT1_2, dx = x - tower.origin[0], dz = z - tower.origin[1];
     return [dx * c - dz * c, dx * c + dz * c];
   };
-  // The generated residual 'podium' part carries the tower's height in the data,
-  // but the lidar is low there: draw it as a base at the adjoining 7.8 m.
-  const lows = (site.parts ?? []).filter(p => p.rings.length === 1 && (p.id === 'podium' || (p.h && p.h <= 20)))
-    .map(p => p.id === 'podium' ? { ...p, h: 7.8 } : p);
+  // A generated residual 'podium' part carries the tower's height in the data;
+  // where the lidar shows it low, the tower config gives its base height.
+  const lows = (site.parts ?? []).filter(p => p.rings.length === 1 && (p.id === 'podium' ? tower.podium : p.h && p.h <= 20))
+    .map(p => p.id === 'podium' ? { ...p, h: tower.podium } : p);
   const others = lows.map(p => p.rings[0].map(toLocal));
   for (const [n, part] of lows.entries()) {
     const plan = others[n];
@@ -135,7 +135,8 @@ function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Towe
       if (len < 4) return;
       const sign = area > 0 ? -1 : 1, nx = sign * (b[1] - a[1]) / len, nz = -sign * (b[0] - a[0]) / len;
       const probe: P2 = [(a[0] + b[0]) / 2 + nx * 0.6, (a[1] + b[1]) / 2 + nz * 0.6];
-      if (Math.abs(probe[0]) < half[0] && Math.abs(probe[1]) < half[1]) return;
+      // A small tolerance also skips walls across the sub-metre slot to the tower.
+      if (Math.abs(probe[0]) < half[0] + 0.8 && Math.abs(probe[1]) < half[1] + 0.8) return;
       if (others.some(r => r !== plan && pointInRing(probe[0], probe[1], r))) return;
       const at = (t: number, y: number) => [a[0] + t * (b[0] - a[0]) + nx * 0.04, y, a[1] + t * (b[1] - a[1]) + nz * 0.04];
       const hi = Math.min(top - 1.2, floor + 4.6);
