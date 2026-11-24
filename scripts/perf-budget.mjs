@@ -58,6 +58,19 @@ try {
       console.log(`  ${k.padEnd(14)} ${String(v).padStart(10)} ${String(ceil ?? '-').padStart(11)} ${String(tgt ?? '').padStart(11)}  ${over ? 'OVER CEILING' : typeof tgt === 'number' && v > tgt ? `${Math.round((v / tgt - 1) * 100)}% over target` : 'at target'}`);
     }
   }
+  // Late compiles: a quick clock and weather sweep per tier after ready (scripts/program-sweep.mjs).
+  const allow = budget._lateCompiles?.allow ?? [];
+  for (const tier of ['low', 'high']) {
+    const json = join(tmp, `sweep-${tier}.json`);
+    const r = spawnSync('node', [join(root, 'scripts/program-sweep.mjs'), '--url', `http://127.0.0.1:${port}`, '--q', tier, '--quick', '--json', json], { stdio: ['ignore', 'ignore', 'inherit'] });
+    if (r.status !== 0) { console.error(`${tier} sweep: failed to run`); failed = true; continue; }
+    const sweep = JSON.parse(readFileSync(json, 'utf8'));
+    const late = sweep.rows.flatMap(row => row.newPrograms.map(p => ({ step: row.label, text: `${p.owners.map(o => `${o.path} ${o.type}`).join('; ')} ${p.key}`, owners: p.owners })));
+    const unexplained = late.filter(p => !allow.some(a => p.text.includes(a.match)));
+    console.log(`\n${tier.toUpperCase()} SWEEP     ${sweep.atReady} programs at ready, ${sweep.max} max; ${late.length} compiled after ready (${late.length - unexplained.length} known), worst step frame ${sweep.worstStepFrameMs} ms`);
+    for (const p of unexplained) console.log(`  LATE COMPILE at ${p.step}: ${p.owners.map(o => o.path || o.type).join('; ') || 'no owner found'}`);
+    if (unexplained.length) failed = true;
+  }
 } finally {
   server.kill();
   rmSync(tmp, { recursive: true, force: true });

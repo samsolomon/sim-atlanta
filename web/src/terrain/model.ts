@@ -7,18 +7,34 @@ import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
+import { createTwelveMidtown, twelveMidtownId } from '../city/twelve-midtown';
+import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
+import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
+import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
+import { createNomia, nomiaId } from '../city/nomia';
+import { createViewPoint, viewpointId } from '../city/viewpoint';
+import { createProscenium, prosceniumId } from '../city/proscenium';
+import { createHanoverMidtown, hanoverMidtownId } from '../city/hanover-midtown';
+import { createSora, soraId } from '../city/sora';
 import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
 import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
 import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
 import { create10Tenth, tenTenthId } from '../city/10-10th';
 import { atlanticId, createAtlantic } from '../city/the-atlantic';
+import { create1010Midtown, midtown1010Id } from '../city/1010-midtown';
 import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
+import { createMetropolis, metropolisId } from '../city/metropolis';
+import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
+import { createNcrHq, ncrId } from '../city/ncr-hq';
+import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
+import { createLoews, loewsId } from '../city/loews-atlanta';
+import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
-import { PlacementIndex } from '../vignette/spatial';
+import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
@@ -35,6 +51,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
+import { batchLandmarks, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
@@ -65,6 +82,8 @@ export interface DowntownTerrainOptions {
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   separateBuilding?: string;
+  /** False leaves landmark meshes in their own groups, for tests that inspect a mounted model. */
+  batchLandmarks?: boolean;
   contours?: Contours;
   openings?: readonly OpenSlot[];
   /** Street and path lamps for this area, in the downtown night style. */
@@ -244,14 +263,31 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
+      : site.id === twelveMidtownId ? createTwelveMidtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === amliArtsCenterId ? createAmliArtsCenter(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
+      : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
+      : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
+      : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
+      : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
+      : site.id === hanoverMidtownId ? createHanoverMidtown(sceneryCity.buildings, site, grid)
+      : site.id === soraId ? createSora(sceneryCity.buildings, site, grid)
       : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
       : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
       : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
       : site.id === tenTenthId ? create10Tenth(sceneryCity.buildings, site, grid)
       : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
+      : site.id === midtown1010Id ? create1010Midtown(sceneryCity.buildings, site, grid)
       : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
+      : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
+      : site.id === ncrId ? createNcrHq(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
+      : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
+      : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
@@ -329,6 +365,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   });
   scenery.group.add(houses.group);
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
+  // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
+  if (batches) {
+    scenery.group.add(batches.group);
+    if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
+  }
   // Yards by rule around every house (walks, drives, foundation planting).
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
@@ -348,7 +390,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
-    const onSite = (x: number, z: number) => sites.some(ring => pointInRing(x, z, ring));
+    // Indexed: a linear scan over every site ring per lamp candidate was ~40% of a Midtown row's build.
+    const onSite = insideAny(sites);
     const reclaimedBed = (x: number,z: number) => {
       if (!options.underpass) return false;
       const [s,t] = options.underpass.local(x,z);
@@ -401,7 +444,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
-    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
+    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       trench?.setWet(factor);
       board.material.color.setScalar(1 - 0.3 * factor);

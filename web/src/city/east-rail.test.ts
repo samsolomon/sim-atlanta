@@ -23,7 +23,51 @@ const grid = (dir: string) => {
   return new GroundGrid(J(`scene/${dir}/ground.json`), bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength));
 };
 
-describe.skipIf(!staged)('MARTA east of the board', () => {
+/**
+ * Short-ray hits against one mesh, with its triangles bucketed on a 4 m plan grid so each ray
+ * tests only the triangles beside it. Matches `Raycaster.intersectObject(mesh, false)` for a
+ * double-sided mesh (any triangle within `far`), without its brute-force pass over the station.
+ */
+function segmentHits(mesh: THREE.Mesh) {
+  const pos = mesh.geometry.getAttribute('position'), index = mesh.geometry.index;
+  const corners = (index ? index.count : pos.count) / 3, cell = 4;
+  const verts = new Float32Array(corners * 9), buckets = new Map<string, number[]>();
+  const v = new THREE.Vector3();
+  for (let t = 0; t < corners; t++) {
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (let k = 0; k < 3; k++) {
+      v.fromBufferAttribute(pos, index ? index.getX(3 * t + k) : 3 * t + k).applyMatrix4(mesh.matrixWorld);
+      verts.set([v.x, v.y, v.z], 9 * t + 3 * k);
+      x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); z0 = Math.min(z0, v.z); z1 = Math.max(z1, v.z);
+    }
+    for (let i = Math.floor(x0 / cell); i <= Math.floor(x1 / cell); i++)
+      for (let j = Math.floor(z0 / cell); j <= Math.floor(z1 / cell); j++) {
+        const key = i + ',' + j;
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key)!.push(t);
+      }
+  }
+  const ray = new THREE.Ray(), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), hit = new THREE.Vector3();
+  return (origin: THREE.Vector3, direction: THREE.Vector3, far: number) => {
+    ray.set(origin, direction);
+    const end = origin.clone().addScaledVector(direction, far), seen = new Set<number>();
+    let best: THREE.Vector3 | null = null, bestD = Infinity;
+    for (let i = Math.floor(Math.min(origin.x, end.x) / cell); i <= Math.floor(Math.max(origin.x, end.x) / cell); i++)
+      for (let j = Math.floor(Math.min(origin.z, end.z) / cell); j <= Math.floor(Math.max(origin.z, end.z) / cell); j++)
+        for (const t of buckets.get(i + ',' + j) ?? []) {
+          if (seen.has(t)) continue;
+          seen.add(t);
+          a.fromArray(verts, 9 * t); b.fromArray(verts, 9 * t + 3); c.fromArray(verts, 9 * t + 6);
+          if (!ray.intersectTriangle(a, b, c, false, hit)) continue;
+          const d = hit.distanceTo(origin);
+          if (d <= far && d < bestD) { bestD = d; best = hit.clone(); }
+        }
+    return best;
+  };
+}
+
+// Each test builds the station from the staged data, so a loaded machine gets a generous ceiling.
+describe.skipIf(!staged)('MARTA east of the board', { timeout: 15_000 }, () => {
   const manifest = staged ? J<SceneManifest>('scene/downtown/scene.json') : null!;
   const rf = staged ? J<RoutesFile>('ga/routes.json') : null!;
   const down = staged ? grid('downtown') : null!;
@@ -135,7 +179,7 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
 
   it('keeps King Memorial guideway supports clear of the CSX mains and yard leads', () => {
     const rail = buildEastRail(extended, rf, J<CorridorPack>('scene/king-memorial/corridor.json'), eastGround, zero);
-    const ray = new THREE.Raycaster();
+    const hitAlong = segmentHits(rail.mesh);
     const hits: string[] = [];
     let tested = 0;
     try {
@@ -154,12 +198,11 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
             const y0 = grantFormation(ax + d * ux, h0, zero);
             const y1 = grantFormation(ax + end * ux, h1, zero);
             const direction = new THREE.Vector3((end-d)*ux,y1-y0,(end-d)*uz);
-            ray.far = direction.length();
+            const far = direction.length();
             direction.normalize();
             for (const offset of [-1.6,-.8,0,.8,1.6]) {
-              ray.set(new THREE.Vector3(ax+d*ux-offset*uz,y0+2,az+d*uz+offset*ux),direction);
-              const hit = ray.intersectObject(rail.mesh,false)[0];
-              if (hit) hits.push(run.id + ' at ' + hit.point.toArray().map(n=>n.toFixed(1)).join(','));
+              const hit = hitAlong(new THREE.Vector3(ax+d*ux-offset*uz,y0+2,az+d*uz+offset*ux), direction, far);
+              if (hit) hits.push(run.id + ' at ' + hit.toArray().map(n=>n.toFixed(1)).join(','));
             }
             tested += end-d;
           }

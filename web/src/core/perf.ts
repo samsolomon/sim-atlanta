@@ -59,7 +59,7 @@ const TRAIL_KEY = 'perf-trail';
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, trafficLegacy: false, trafficNoCull: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -67,6 +67,7 @@ export const perfOverrides = (() => {
     shadow: sh === 'off' ? 'off' as const : Number(sh) >= 64 ? Number(sh) : null,
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
+    prewarmOff: params.get('prewarm') === '0',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
     farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
@@ -89,6 +90,7 @@ let shadowUpdates = 0;
 const phases: Phase[] = [];
 let ctx: PerfContext | null = null;
 let lastResult: unknown = null;
+const prewarmSteps: number[] = [];
 
 function heapMB(): number | null {
   const m = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
@@ -606,6 +608,52 @@ export const perf = {
   shadowUpdate() { shadowUpdates++; },
   /** Add CPU ms spent in road-traffic update() to the current frame. */
   traffic(ms: number) { trafficNow += ms; },
+  /** One prewarm step's main-thread ms (a never-drawn object's first draw, usually one compile). */
+  prewarmStep(ms: number) { prewarmSteps.push(Math.round(ms * 10) / 10); },
+  get prewarmSteps() { return [...prewarmSteps]; },
+  /** Frame intervals (ms) for frames that ended between two page times, oldest first: the long frames
+   * just after ready, for instance, where a boot-time prewarm would show. */
+  frameTimes(fromMs: number, toMs: number) {
+    const out: number[] = [];
+    for (let k = 1; k < N; k++) {
+      const i = (head - k + N) % N, j = (head - k - 1 + N) % N;
+      const t = stamps[i], prev = stamps[j];
+      if (!t || !prev || t < fromMs) break;
+      if (t <= toMs) out.push(Math.round((t - prev) * 10) / 10);
+    }
+    return out.reverse();
+  },
+  /** Which objects use which program: the path (up to four named ancestors), material type and name,
+   * and whether the object would draw now. For finding the owners of programs that compile late. */
+  programOwners() {
+    if (!ctx) return [];
+    const props = (ctx.renderer as unknown as { properties: { get(m: THREE.Material): { currentProgram?: { id: number } } } }).properties;
+    const out: { program: number; path: string; type: string; name: string; visible: boolean; object: string }[] = [];
+    const seen = new Set<string>();
+    ctx.scene.traverse(o => {
+      const mat = (o as THREE.Mesh).material;
+      if (!mat) return;
+      let visible = true;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) { visible = false; break; }
+      const names: string[] = [];
+      for (let p: THREE.Object3D | null = o; p && names.length < 4; p = p.parent) if (p.name) names.push(p.name);
+      for (const m of Array.isArray(mat) ? mat : [mat]) {
+        const id = props.get(m).currentProgram?.id;
+        if (id === undefined) continue;
+        const path = names.reverse().join(' / ');
+        const k = `${id}|${path}|${m.type}|${m.name}`;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push({ program: id, path, type: m.type, name: m.name, visible, object: o.type });
+      }
+    });
+    return out;
+  },
+  /** Compiled programs, with three.js's cache key (the defines that split a material into programs). */
+  programs() {
+    const list = (ctx?.renderer.info.programs ?? []) as unknown as { id: number; name?: string; cacheKey?: string; usedTimes?: number }[];
+    return list.map(p => ({ id: p.id, name: p.name ?? '', key: p.cacheKey ?? '', used: p.usedTimes ?? 0 }));
+  },
   get phases() { return phases.map(p => ({ ...p })); },
   get result() { return lastResult; },
 };
