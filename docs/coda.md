@@ -46,3 +46,9 @@ and [piazza view](https://luxetveritasdesign.com/wp-content/uploads/2023/08/CODA
 Passage camera `319,-2403,80,71,150` at [14:00](log/ui/coda/passage-day.jpg)
 and [21:00](log/ui/coda/passage-night.jpg). The blue-grey gallery panels are
 translucent, with continuous thin edge rails. Their opacity is estimated.
+
+A passage-camera terrain check sampled both side panels at 0.25 m intervals.
+The minimum head clearance to the glass was 2.70 m on low and 2.68 m on high.
+Rust, web and worker checks passed. The Python pipeline checks skipped without
+a local virtual environment. Both City tiers passed performance ceilings. Deploy
+with a rebuilt web bundle; the existing scene data contains all three sites.
