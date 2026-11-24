@@ -60,6 +60,38 @@ function* buildWorld(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
   return world;
 }
 
+/**
+ * Far houses' vertex data in bytes (16 bytes less per vertex, about 6.7 MB on the board): colours
+ * as normalized bytes (they never exceed 1; the landmark batches store theirs the same way),
+ * normals as normalized signed bytes, the facade style id as a signed byte. Same shader program:
+ * WebGL widens the attributes to floats. `?perf&housefar=0` keeps floats.
+ */
+export function compactFar(world: World) {
+  for (const m of world.group.children) {
+    const g = (m as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+    if (!g || (m as THREE.InstancedMesh).isInstancedMesh) continue;
+    const col = g.getAttribute('color'), nor = g.getAttribute('normal'), sty = g.getAttribute('aStyle');
+    if (col?.array instanceof Float32Array) {
+      const a = col.array, out = new Uint8Array(a.length);
+      for (let i = 0; i < a.length; i++) out[i] = Math.round(Math.min(1, Math.max(0, a[i])) * 255);
+      g.setAttribute('color', new THREE.BufferAttribute(out, col.itemSize, true));
+    }
+    if (nor?.array instanceof Float32Array) {
+      const a = nor.array, out = new Int8Array(a.length);
+      for (let i = 0; i < a.length; i++) out[i] = Math.round(Math.min(1, Math.max(-1, a[i])) * 127);
+      g.setAttribute('normal', new THREE.BufferAttribute(out, nor.itemSize, true));
+    }
+    if (sty?.array instanceof Float32Array && (sty.array as Float32Array).every(v => Number.isInteger(v) && v >= -128 && v <= 127))
+      g.setAttribute('aStyle', new THREE.BufferAttribute(Int8Array.from(sty.array as Float32Array), 1));
+  }
+  return world;
+}
+/** `?perf&housefar=0`: far houses keep float attributes and always cast shadows (the old path). */
+export const houseFarOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('housefar') === '0';
+})();
+
 const materials = (o: THREE.Object3D) => {
   const out: THREE.Material[] = [];
   o.traverse(m => { const mat = (m as THREE.Mesh).material; if (mat) out.push(...(Array.isArray(mat) ? mat : [mat])); });
@@ -211,7 +243,8 @@ export function* buildHouseLod(o: HouseLodOptions) {
   const tiles: HouseTile[] = [];
   const blocks = new Map<string, HouseTile[]>();
   for (const [key, houses] of cells) {
-    const tile = new HouseTile(houses, o, yield* buildWorld(houses, o, o.far), state);
+    const far = yield* buildWorld(houses, o, o.far);
+    const tile = new HouseTile(houses, o, houseFarOff ? far : compactFar(far), state);
     if (o.force === 'near') tile.ensureNear();
     tiles.push(tile);
     yield 'house tile';
@@ -227,6 +260,11 @@ export function* buildHouseLod(o: HouseLodOptions) {
   }
   return {
     group, tiles,
+    /** Phone detail (city.ts): `houseShadows: false` past a long orbit, where a house shadow is under 2 px. */
+    setDetail(d: { houseShadows?: boolean }) {
+      if (d.houseShadows === undefined || houseFarOff) return;
+      group.traverse(m => { if ((m as THREE.Mesh).isMesh) m.castShadow = d.houseShadows!; });
+    },
     setNight(n: number) { state.night = n; for (const t of tiles) { t.farWorld.setNight(n); t.nearWorld?.setNight(n); } },
     setWet(w: number) { state.wet = w; for (const t of tiles) { t.farWorld.setWet(w); t.nearWorld?.setWet(w); } },
     dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } for (const m of merged) m.geometry.dispose(); group.removeFromParent(); },

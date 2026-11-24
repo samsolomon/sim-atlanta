@@ -4,7 +4,7 @@ import type { TerrainCity } from '../terrain/transport-data';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { residential } from './residential';
-import { HouseBlock, SWITCH_M, TILE_M, houseLod, takeHouseLodChange } from './house-lod';
+import { HouseBlock, SWITCH_M, TILE_M, compactFar, houseLod, takeHouseLodChange } from './house-lod';
 
 const rect = (x: number, z: number, w: number, d: number): P2[] => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
 // Two streets of houses 1.7 km apart, so they fall in different tiles.
@@ -101,5 +101,43 @@ test('draws a block of far tiles as one mesh, and each tile on its own once one 
   expect(b.merged.visible).toBe(false);
   expect(lod.tiles[0].near.visible).toBe(true);
   expect(lod.tiles[1].farWorld.group.visible).toBe(true);
+  lod.dispose();
+});
+
+test('stores far houses as bytes, within a byte step of the floats', () => {
+  const far = make('far');
+  far.group.traverse(o => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || (m as THREE.InstancedMesh).isInstancedMesh) return;
+    expect(m.geometry.getAttribute('color').array).toBeInstanceOf(Uint8Array);
+    expect(m.geometry.getAttribute('normal').array).toBeInstanceOf(Int8Array);
+    expect(m.geometry.getAttribute('aStyle').array).toBeInstanceOf(Int8Array);
+  });
+  far.dispose();
+  // compactFar on known floats: colours and normals within one byte step, style ids exact.
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute([.0031, .5, 1, .2, .7, .9, 0, .33, .66], 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute([0, 1, 0, .6, .8, 0, -.7071, 0, .7071], 3));
+  g.setAttribute('aStyle', new THREE.Float32BufferAttribute([-2, 0, 5], 1));
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(g));
+  const floats = { color: [...g.getAttribute('color').array], normal: [...g.getAttribute('normal').array] };
+  compactFar({ group } as unknown as Parameters<typeof compactFar>[0]);
+  const col = g.getAttribute('color'), nor = g.getAttribute('normal');
+  floats.color.forEach((v, i) => expect(Math.abs((col.array[i] as number) / 255 - v)).toBeLessThanOrEqual(.5 / 255 + 1e-9));
+  floats.normal.forEach((v, i) => expect(Math.abs((nor.array[i] as number) / 127 - v)).toBeLessThanOrEqual(.5 / 127 + 1e-9));
+  expect([...g.getAttribute('aStyle').array]).toEqual([-2, 0, 5]);
+});
+
+test('stops far houses casting shadows past a long orbit, and starts again', () => {
+  const lod = make('far');
+  const casters = () => { let n = 0; lod.group.traverse(m => { if ((m as THREE.Mesh).isMesh && m.castShadow) n++; }); return n; };
+  const all = casters();
+  expect(all).toBeGreaterThan(0);
+  lod.setDetail({ houseShadows: false });
+  expect(casters()).toBe(0);
+  lod.setDetail({ houseShadows: true });
+  expect(casters()).toBe(all);
   lod.dispose();
 });
