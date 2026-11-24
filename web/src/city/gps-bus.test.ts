@@ -111,3 +111,19 @@ it('stops at a red line and at a queue tail, then releases on green', () => {
     expect(s).toBeGreaterThan(54);
   }
 });
+
+it('re-predicts the queue at a light after a stop dwell makes the bus late', () => {
+  const light = {s: 60, key: 'dwell-light', axis: 0 as const, dx: 0, dz: 1};
+  const queue = {tail: 10, count: 3};
+  // Find a start where the light is green on the first approach but red after a 15 s dwell.
+  let t0 = 0;
+  while (!(nextGreen(light.key, 0, t0 + 6) === t0 + 6 && nextGreen(light.key, 0, t0 + 17) > t0 + 30)) t0 += 0.5;
+  const bus = new GpsBus(0, epoch + t0 * 1000, 10, epoch + t0 * 1000, [40], [light], 12);
+  let s = 0, held = false;
+  for (let t = t0; t < t0 + 30; t += 0.1) {
+    s = bus.update(10 * (t - t0), epoch + t0 * 1000, 10, epoch + t * 1000, epoch + t * 1000, () => queue).s;
+    if (t > t0 + 16) held ||= Math.abs(s - (54 - queue.tail)) < 0.5;
+    if (t > t0 + 16 && nextGreen(light.key, 0, t) > t) expect(s).toBeLessThanOrEqual(54 - queue.tail + 1e-9);
+  }
+  expect(held).toBe(true);
+});

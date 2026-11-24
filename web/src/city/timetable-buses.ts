@@ -213,7 +213,25 @@ export function createTimetableBuses(
   }
 
   const ROUTE_49 = 'marta:route:49';
-  const editionTrips = new Set(data.tripIds ?? []);
+  const tripIndex = new Map<string, number[]>();
+  data.tripIds?.forEach((id, i) => tripIndex.set(id, [...(tripIndex.get(id) ?? []), i]));
+  /** A trip a vehicle still claims outside its modelled interval: running late past its
+   * terminal time (up to an hour), or reporting it up to 30 minutes before departure.
+   * Keeping its id keeps a selected or followed trip. */
+  function claimedTrip(fix: LiveBus, ms: number): Active | undefined {
+    for (const day of serviceDays(new Date(ms), table.timezone)) {
+      if (fix.startDate && Number(fix.startDate) !== day.ymd) continue;
+      for (const i of tripIndex.get(fix.tripId!) ?? []) {
+        const [pi, si, start] = table.trips[i];
+        const pattern = table.patterns[pi], path = paths.get(pattern.pathId);
+        if (!path || !serviceRuns(table.services[si], day)) continue;
+        if (day.secs < start - 1800 || day.secs > start + pattern.arr.at(-1)! + 3600) continue;
+        const trip = {id: `marta:bus-trip:49-${day.ymd}-${i}`, rawId: fix.tripId, stops: pattern.dist,
+          serviceDate: day.ymd, headsign: pattern.headsign, start, path, points: []};
+        return {trip, s: 0, point: null};
+      }
+    }
+  }
   interface Observation {
     at: number; x: number; z: number; bearing?: number;
     snaps: Map<PathModel, {s: number; score: number; lateral: number}>;
@@ -277,8 +295,12 @@ export function createTimetableBuses(
     // 1. Exact descriptors. The freshest vehicle claiming a trip keeps it.
     for (const c of candidates) {
       if (!c.fix.tripId) continue;
-      const a = active.find(a => a.trip.rawId === c.fix.tripId &&
+      let a = active.find(a => a.trip.rawId === c.fix.tripId &&
         (!c.fix.startDate || Number(c.fix.startDate) === a.trip.serviceDate));
+      if (!a && (a = claimedTrip(c.fix, ms))) {
+        const known = active.find(b => b.trip.id === a!.trip.id);
+        if (known) a = known; else active.push(a);
+      }
       if (!a) continue;
       if (claimed.has(a.trip.id)) { c.duplicate = true; continue; }
       claimed.add(a.trip.id);
@@ -286,7 +308,7 @@ export function createTimetableBuses(
     }
     // 2. Proximity, for Route 49 reports with no descriptor or one from another edition.
     for (const c of candidates) {
-      if (c.match || c.duplicate || !c.is49 || (c.fix.tripId && editionTrips.has(c.fix.tripId))) continue;
+      if (c.match || c.duplicate || !c.is49 || (c.fix.tripId && tripIndex.has(c.fix.tripId))) continue;
       let best = Infinity;
       for (const a of active) {
         const snap = c.obs.snaps.get(a.trip.path);

@@ -26,7 +26,7 @@ export class GpsBus {
   private nextStop: number;
   private nextLight: number;
   private waitUntil = 0;
-  private queueStop?: {s: number; release: number};
+  private queueStop?: {s: number; release: number; arrival: number};
   private relocateAt?: number;
   private appeared: number;
 
@@ -78,11 +78,14 @@ export class GpsBus {
     const light = this.lights[this.nextLight];
     if (light && next > this.distance) {
       const line = light.s - this.length / 2;
+      // Predict the queue at the line once in range, and again whenever the bus is
+      // later than predicted (a stop dwell or a hold), since the light may have changed.
+      if (this.queueStop && this.queueStop.release === 0 && time > this.queueStop.arrival + 1) this.queueStop = undefined;
       if (!this.queueStop && line - this.distance < 120) {
         const arrival = time + Math.max(0, line - this.distance) / Math.max(1, velocity);
         const green = nextGreen(light.key, light.axis, arrival);
         const cars = green > arrival ? queue(light, arrival) : undefined;
-        this.queueStop = {s: Math.max(this.distance, line - (cars?.tail ?? 0)), release: cars?.count ? green + 2 * cars.count : 0};
+        this.queueStop = {s: Math.max(this.distance, line - (cars?.tail ?? 0)), release: cars?.count ? green + 2 * cars.count : 0, arrival};
       }
       if (this.queueStop && time < this.queueStop.release) next = Math.min(next, this.queueStop.s);
       if (next >= line && nextGreen(light.key, light.axis, time) > time) next = line;
@@ -95,6 +98,7 @@ export class GpsBus {
       if (gap <= DWELL_GAP_M) {
         next = stop;
         this.waitUntil = time + BUS_DWELL_S;
+        this.queueStop = undefined;
       }
     }
     if (light && next > light.s - this.length / 2) {

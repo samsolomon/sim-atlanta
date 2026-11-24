@@ -155,3 +155,15 @@ it('keeps tracked Route 49 buses drawn when other routes fill the batch', () => 
   for (const p of poses) expect(streets.positions.some(q => q.id === p.id)).toBe(true);
   streets.dispose();
 });
+
+it('keeps a late trip’s identity while its bus still reports it after the modelled end', () => {
+  const {model} = setup();
+  const t = noon + 400_000; // S0 ended at +100 s
+  const {poses} = model.presentAt(t, t, [fix('late', 980, t, {tripId: 'S0', startDate: '20261123'})]);
+  const pose = poses.find(p => p.fix)!;
+  expect(pose.id).toBe(tripId(0));
+  expect(pose.headsign).toBe('South');
+  // An hour and more past its end, the report no longer names a trip City can show.
+  const later = noon + 100_000 + 3_601_000;
+  expect(model.presentAt(later, later, [fix('late', 980, later, {tripId: 'S0'})]).poses.find(p => p.fix)?.id).toBe('marta:bus:late');
+});
