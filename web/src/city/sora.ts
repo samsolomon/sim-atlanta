@@ -70,9 +70,10 @@ export function createSora(buildings: VBuilding[], site: VBuilding, grid: Ground
   const tower = (part: typeof shaft, wall: string, draw: (a: P2, b: P2, lo: number, hi: number, floors: number) => void) => {
     const ring = local(part.rings[0]);
     const top = datum + part.h;
-    shell.prism(ring, deck, top, wall, roofColor);
+    // Tower parts stand on grade where the podium doesn't wrap them.
+    shell.prism(ring, shell.base, top, wall, roofColor);
     faces(ring, (a, b, length) => {
-      const lo = covered(a, b, length, deck);
+      const lo = covered(a, b, length, datum);
       if (top - lo < 1) return;
       draw(a, b, lo, top - 1.2, Math.max(1, Math.round((top - 1.2 - lo) / 3.2)));
     });
