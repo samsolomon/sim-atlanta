@@ -1,6 +1,6 @@
 # Emmi Midtown
 
-Emmi Midtown, at 1405 Spring Street NW (JPX Works, RJTR, completed 2024), is a 31-floor residential tower with 326 units. It replaces the mapped outline `osm:way:269542143` and keeps both of its parts. The L-shaped tower part `osm:way:1456611142` holds Spring Street on the west and 18th Street on the north. The `osm:way:1450431130` part in the southeast corner is the parking podium with the pool deck. The 2019 lidar predates the building, so the height is the survey estimate: 102.3 m for 31 floors. The podium keeps its mapped 36 m.
+Emmi Midtown, at 1405 Spring Street NW (JPX Works, RJTR, completed 2024), is a 31-floor residential tower with 326 units. It replaces the mapped outline `osm:way:269542143` and both of its parts. The L-shaped tower part `osm:way:1456611142` holds Spring Street on the west and 18th Street on the north. The `osm:way:1450431130` part in the southeast corner is the parking podium with the pool deck. The 2019 lidar predates the building, so the height is the survey estimate: 102.3 m for 31 floors. The podium keeps its mapped 36 m.
 
 ## References
 
