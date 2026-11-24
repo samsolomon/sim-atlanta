@@ -69,29 +69,31 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     const westRange: [number, number] = dx >= 0 ? [0, tSplit] : [tSplit, 1];
     const top = y(roofH);
 
+    // Layers stand at least 4 cm apart so none z-fights at City range: lobby glass and panel wall
+    // 0.04, joints 0.09, lobby head band 0.14; above it lit panes 0.05, mullions 0.10, bands 0.15.
     // Grade: a glazed lobby, lit at night, behind round columns about 9 m apart.
     panel(s, true, a, b, 0, 1, s.base + 0.3, y(6), 0.04, lobbyGlass);
     const cols = length < 20 ? 0 : Math.max(2, Math.round(length / 9));
-    for (let i = 0; i <= cols; i++) {
+    for (let i = 0; cols > 0 && i <= cols; i++) {
       const t = i / cols, w = 0.4 / length;
       panel(s, false, a, b, Math.max(0, t - w), Math.min(1, t + w), s.base + 0.3, y(6.4), 0.12, column);
     }
     // Parking levels and the lobby floor above them: a grey panel wall with a joint grid
     // (rows plus columns), up to the lobby head.
     panel(s, false, a, b, 0, 1, y(6.4), y(lobbyTop), 0.04, panelWall);
-    for (let h = 6.4 + 3.1; h < lobbyTop; h += 3.1) panel(s, false, a, b, 0, 1, y(h) - 0.12, y(h) + 0.12, 0.06, joint);
+    for (let h = 6.4 + 3.1; h < lobbyTop; h += 3.1) panel(s, false, a, b, 0, 1, y(h) - 0.12, y(h) + 0.12, 0.09, joint);
     // Vertical joints about 6 m apart (paired panels), enough to read as a panel grid at City range.
     const pans = length < 20 ? 1 : Math.max(1, Math.round(length / 6));
-    for (let i = 1; i < pans; i++) panel(s, false, a, b, i / pans - 0.08 / length, i / pans + 0.08 / length, y(6.4), y(lobbyTop), 0.06, joint);
-    panel(s, false, a, b, 0, 1, y(lobbyTop) - 0.5, y(lobbyTop), 0.08, band);
+    for (let i = 1; i < pans; i++) panel(s, false, a, b, i / pans - 0.08 / length, i / pans + 0.08 / length, y(6.4), y(lobbyTop), 0.09, joint);
+    panel(s, false, a, b, 0, 1, y(lobbyTop) - 0.5, y(lobbyTop), 0.14, band);
 
     // West mass: Streamline bands at every office floor.
     for (let f = 1; f <= 20; f++) {
       const h = lobbyTop + f * officePitch;
       if (y(h) > top + 0.01) break;
-      panel(s, false, a, b, westRange[0], westRange[1], y(h) - 1.0, y(h) - 0.05, 0.12, band);
+      panel(s, false, a, b, westRange[0], westRange[1], y(h) - 1.0, y(h) - 0.05, 0.15, band);
       // The Dec 2025 photos show the pale floor bands across the east mass too, slimmer.
-      if (length > 20) panel(s, false, a, b, eastRange[0], eastRange[1], y(h) - 0.55, y(h) - 0.05, 0.12, band);
+      if (length > 20) panel(s, false, a, b, eastRange[0], eastRange[1], y(h) - 0.55, y(h) - 0.05, 0.15, band);
     }
     // East mass: vertical mullions about 4.5 m apart, full height.
     const span = (eastRange[1] - eastRange[0]) * length;
@@ -108,7 +110,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
       if (lo + officePitch > top + 0.01) break;
       for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, f, i) >= (f > 16 ? 0.03 : 0.05)) continue;
-        panel(s, true, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, lo + 0.1, lo + officePitch - 0.6, 0.08, glassLit);
+        panel(s, true, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, lo + 0.1, lo + officePitch - 0.6, 0.05, glassLit);
       }
     }
 
