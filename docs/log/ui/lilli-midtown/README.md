@@ -6,7 +6,7 @@ City replaces the generic mesh for `osm:way:886041059`, Lilli Midtown at 693 Pea
 - **North-west half:** rises to 85–89 m for the rooftop amenity level, with plant on top.
 - **Retail strip (south):** a single storey at about 8 m.
 
-The completed-building dusk photograph shows grey glass in a white frame of slab bands, broken by irregular opaque grey panels. The roof carries a pool deck, which the amenity photographs show at the top of the tower. City draws grey glass with a sparse mix of lighter panels, white slab edges, the raised amenity level, plant, and a pool on the main roof. Estimated details: the 3 m glazing module (doubled on low tier), the 3.15 m floor pitch, the extent of the amenity level (from the lidar), and the pool footprint. The low tier uses double-width panes to stay within the skin budget.
+The completed-building dusk photograph shows grey glass in a white frame of slab bands, broken by irregular opaque grey panels. The roof carries a pool deck, which the amenity photographs show at the top of the tower. **Identifying features** (from that photo): (1) neutral grey glass, less blue than the generic curtain walls, broken by irregular grey panels; (2) a bold white frame of slab edges at every floor plus white verticals. City draws neutral grey glass (`#868b8f`, `#8c9194`, `#9b9fa1`; the dusk photo reads charcoal, but daylight glass stays at sunlit rendered V ≥ 40), wider white slab bands, white frame verticals at about 9 m, the raised amenity level, plant, and a pool on the main roof. The retail base on Peachtree and 3rd is hidden by neighbouring buildings from every 400–600 m view, and even close up, a brick building stands in front of it. Estimated details: the 3 m glazing module (doubled on low tier), the 3.15 m floor pitch, the extent of the amenity level (from the lidar), and the pool footprint. The low tier uses double-width panes to stay within the skin budget.
 
 Sources, consulted in a fresh Orca tab:
 - [Brasfield & Gorrie project page](https://www.brasfieldgorrie.com/?p=13758): dusk exterior and rooftop pool.
@@ -21,6 +21,7 @@ Sources, consulted in a fresh Orca tab:
 | Full night, matched | `?view=city&q=low&t=2026-11-20T23:30:00-05:00&cam=660,-2210,15,52,480` |
 | Closer, from the west | `?view=city&q=low&t=2026-11-20T11:30:00-05:00&cam=660,-2185,300,55,240` |
 
+![Before and after (high tier)](lilli-midtown-before-after.jpg)
 ![Day](lilli-midtown-day.jpg)
 ![The same view at 23:30](lilli-midtown-night.jpg)
 ![Closer view](lilli-midtown-close.jpg)
