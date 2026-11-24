@@ -3851,3 +3851,7 @@ Sam picked a place in search while in City and got thrown back to the 2D map. Se
 ### 2026-11-24 — Camera controls beside Models Details
 
 Selecting the S70 streetcar opens Details from either the catalogue or the model arrows. At 1280 × 800 the camera controls move 324 px, leaving 12 px beside the 312 px panel. Closing it returns the controls to the right edge. At 390 × 844 the camera stays at the top right while Details opens below the model. The desktop Details button needed its own layout rule so it would sit inside the model card. [Desktop open](log/models-follow-desktop-open.png) · [Desktop closed](log/models-follow-desktop-closed.png) · [Phone open](log/models-follow-phone-open.png) · [Phone closed](log/models-follow-phone-closed.png).
+
+### November 24 — Ellis Street’s last two metres
+
+The last two metres of the eastbound Ellis deck climbed 15% before dropping 12 cm onto the approach. Both wheel tracks reproduced the step. The old check subtracted the tread lift even though the approach mesh already included it. The deck and its approach now use one structural elevation through the landing. The final two metres are level and the first metre on the street descends about 0.84%. The underlying ramp retains its 6.120 m road-top separation. These grades are inferred. Sam accepted the matched normal and low views and the controlled sedan pass. [Ellis landing](log/deck-approach-joints/ellis-normal-side.jpg) · [Vehicle pass](log/deck-approach-joints/ellis-vehicle-pass.jpg)
