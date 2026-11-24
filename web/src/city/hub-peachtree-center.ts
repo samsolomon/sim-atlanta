@@ -65,8 +65,8 @@ export function createHubPeachtreeCenter(buildings: VBuilding[], grid: GroundGri
       // band through it, and a glazed band under the roof.
       const top = roof - 3.6, rib0 = street + 13, rib1 = street + 15;
       panel(s.body, a, b, 0, 1, street, street + 5, 0.05, base);
-      panel(s.body, a, b, 0.58, 0.72, street + 0.2, street + 4.6, 0.08, red);
-      panel(s.body, a, b, 0, 1, rib0, rib1, 0.05, ribbon);
+      panel(s.body, a, b, 0.58, 0.72, street + 0.2, street + 4.6, 0.1, red);
+      panel(s.body, a, b, 0, 1, rib0, rib1, 0.06, ribbon);
       panel(s.body, a, b, 0, 1, top, roof - 0.8, 0.05, topGlass);
       const cols = Math.max(4, Math.round(length / 5.5));
       for (const [lo, hi, rows] of [[street + 5, rib0, 2], [rib1, top, 3]] as const) {
@@ -83,7 +83,7 @@ export function createHubPeachtreeCenter(buildings: VBuilding[], grid: GroundGri
         const steps = 8;
         for (let k = 0; k < steps; k++) {
           const a0 = (from + (to - from) * k / steps) * Math.PI / 180, a1 = (from + (to - from) * (k + 1) / steps) * Math.PI / 180;
-          const p = (ang: number, r: number) => facePoint(a, b, tc + r * Math.cos(ang) / length, yc + r * Math.sin(ang), 0.1);
+          const p = (ang: number, r: number) => facePoint(a, b, tc + r * Math.cos(ang) / length, yc + r * Math.sin(ang), 0.11);
           s.body.quad(p(a0, radius - 0.35), p(a0, radius + 0.35), p(a1, radius + 0.35), p(a1, radius - 0.35), yellow);
         }
       }
@@ -95,12 +95,12 @@ export function createHubPeachtreeCenter(buildings: VBuilding[], grid: GroundGri
       for (let f = 0; f < floors; f++) for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, f, i) >= 0.35) continue;
         const y0 = street + 0.3 + (top - street - 0.3) * f / floors;
-        panel(s.lights, a, b, (i + 0.06) / bays, (i + 0.94) / bays, y0 + 0.2, y0 + (top - street) / floors - 0.3, 0.07, atriumLit);
+        panel(s.lights, a, b, (i + 0.06) / bays, (i + 0.94) / bays, y0 + 0.2, y0 + (top - street) / floors - 0.3, 0.1, atriumLit);
       }
-      for (let i = 0; i <= bays; i++) panel(s.body, a, b, Math.max(0, i / bays - 0.12 / length), Math.min(1, i / bays + 0.12 / length), street + 0.3, top, 0.09, mullion);
+      for (let i = 0; i <= bays; i++) panel(s.body, a, b, Math.max(0, i / bays - 0.12 / length), Math.min(1, i / bays + 0.12 / length), street + 0.3, top, 0.15, mullion);
       for (let f = 0; f <= floors; f++) {
         const yy = street + 0.3 + (top - street - 0.3) * f / floors;
-        panel(s.body, a, b, 0, 1, yy - 0.15, yy + 0.15, 0.09, mullion);
+        panel(s.body, a, b, 0, 1, yy - 0.15, yy + 0.15, 0.15, mullion);
       }
     }
   });
