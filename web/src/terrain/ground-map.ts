@@ -1,3 +1,4 @@
+import { streetProfile, parallelPath } from './street-profile';
 import type { Underpass } from './underpass';
 import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
 import * as THREE from 'three';
@@ -7,6 +8,7 @@ import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
 import { dividedIvanAllen, roadWidth, type TerrainCity } from './transport-data';
 import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePaths } from './westside-path';
+import { junctionMarkings, markedCrossing } from './junction-markings';
 import { paintJunctionApproaches } from './junction-decks';
 import { paintStreetBridgeApproaches } from './street-bridges';
 import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
@@ -190,7 +192,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
       if (follows) underpassWays.add(road);
     }
   }
-  function stroke(r: PaintRoad, width: number, color: string | CanvasPattern) {
+  function stroke(r: PaintRoad, width: number, color: string | CanvasPattern, pts = r.pts) {
     const hidden = underpassWays.has(r);
     if (hidden) {
       ctx.save();
@@ -200,7 +202,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
       ctx.closePath();
       ctx.clip('evenodd');
     }
-    ctx.beginPath(); trace(ctx, r.pts);
+    ctx.beginPath(); trace(ctx, pts);
     ctx.lineWidth = width; ctx.strokeStyle = color; ctx.stroke();
     if (hidden) ctx.restore();
   }
@@ -216,10 +218,16 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   }
   const sidepaths = westsidePaths(data);
   for (const r of roads) if (sidepaths.has(r)) paintMangumVerge(ctx, r.pts);
-  const crosswalks = roads.filter(r => r.sub === 'crosswalk');
+  const crosswalks = roads.filter(markedCrossing);
+  const markings = junctionMarkings(roads.filter(r => streets.has(r.cls)), crosswalks);
+  const mark = (r: PaintRoad, width: number, color: string) => {
+    const paths = markings.get(r);
+    if (!paths) stroke(r, width, color);
+    else for (const pts of paths) stroke(r, width, color, pts);
+  };
   const crossings = roads.filter(ansleyCrossing);
   for (const r of roads) {
-    if (r.sub === 'crosswalk' || ansleyCrossing(r)) continue;
+    if (markedCrossing(r) || ansleyCrossing(r)) continue;
     if (sidepaths.has(r)) {
       stroke(r, pathWidth, pathConcrete);
       paintPathPanels(ctx, r.pts, texelM);
@@ -229,13 +237,24 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
     stroke(r, w, r.sub === 'sidewalk' && ansleyStreet(r) ? pavers : paths.has(r.cls) ? PAL.sidewalk : r.cls === 'motorway' ? PAL.asphaltHwy : PAL.asphalt);
   }
   for (const r of roads) {
-    if (r.cls === 'motorway' && r.sub !== 'link') {
+    const profile = streetProfile(r);
+    if (profile) {
+      const pieces = markings.get(r) ?? [r.pts];
+      for (let i = 1; i < profile.lanes.length; i++) {
+        const a = profile.lanes[i-1], b = profile.lanes[i];
+        const opposing = a.direction !== b.direction;
+        ctx.setLineDash(opposing ? [] : [3,6]);
+        for (const pts of pieces) stroke(r, opposing ? .32 : .24,
+          opposing ? STREET_LINE : PAL.lineWhite, parallelPath(pts, (a.offset + b.offset) / 2));
+      }
+      ctx.setLineDash([]);
+    } else if (r.cls === 'motorway' && r.sub !== 'link') {
       ctx.setLineDash([4, 8]); stroke(r, .55, PAL.lineWhite); ctx.setLineDash([]);
     } else if (dividedIvanAllen(r)) {
-      ctx.setLineDash([3, 6]); stroke(r, .24, PAL.lineWhite); ctx.setLineDash([]);
+      ctx.setLineDash([3, 6]); mark(r, .24, PAL.lineWhite); ctx.setLineDash([]);
     } else if (streets.has(r.cls) && r.cls !== 'residential' && roadWidth(r) >= 9) {
       // Wide residential streets (Ansley's circles) carry no centreline.
-      stroke(r, .4, STREET_LINE);
+      mark(r, .4, STREET_LINE);
     }
   }
   paintStreetBridgeApproaches(ctx, data);
@@ -260,7 +279,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
     type Segment = { a: P2; b: P2; road: PaintRoad };
     const index = new PlacementIndex<Segment>(24);
     for (const r of roads) {
-      if (!streets.has(r.cls) && r.sub !== 'crosswalk' && !ansleyCrossing(r)) continue;
+      if (!streets.has(r.cls) && !markedCrossing(r) && !ansleyCrossing(r)) continue;
       for (let i = 1; i < r.pts.length; i++) {
         const a = r.pts[i - 1], b = r.pts[i];
         index.add({ a, b, road: r }, [a, b], 3);
@@ -271,7 +290,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
       let best: Segment | undefined, dist = 3;
       for (const seg of index.at(x, z)) {
         const d = segDist(x, z, seg.a, seg.b);
-        if ((seg.road.sub === 'crosswalk' || ansleyCrossing(seg.road)) && d <= 3) { best = undefined; break; }
+        if ((markedCrossing(seg.road) || ansleyCrossing(seg.road)) && d <= 3) { best = undefined; break; }
         if (d < dist) { best = seg; dist = d; }
       }
       if (!best) continue;
