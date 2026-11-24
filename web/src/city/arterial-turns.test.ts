@@ -85,8 +85,10 @@ describe('arterial turns',()=>{
       return { peaks, outside };
     };
     const rigid = sweep('semi'), box = sweep('box');
+    // The replacement truck uses the same mesh on both quality tiers.
+    expect(box.outside).toEqual([0, 0, 0]);
     for (let zone = 0; zone < 3; zone++) {
-      expect(rigid.outside[zone]).toBeGreaterThan(3);
+      expect(rigid.outside[zone]).toBeGreaterThan(0);
       expect(rigid.peaks[zone]).toBeGreaterThan(box.peaks[zone]);
     }
     expect(new Set(trucks.map(s => s.kind))).toEqual(new Set(['box']));

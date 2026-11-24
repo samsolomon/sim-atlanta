@@ -38,7 +38,10 @@ export function arterialTurns(courses: TrafficCourse[], corridors: readonly Arte
     if (!approachStop) continue;
     // One speed per course: do not introduce slower traffic into a shared lane.
     if (Math.abs(a.course.speedMps-b.course.speedMps) > .1) continue;
-    const entry = a.course.line.at(a.s-10), exit = b.course.line.at(b.s+10);
+    // A 12 m approach/departure and quarter-circle cubic tangent give the 8.2 m
+    // rigid box room to clear the inside curb at the two-way secondary control.
+    const setback = 12, tangent = .55 * setback;
+    const entry = a.course.line.at(a.s-setback), exit = b.course.line.at(b.s+setback);
     const dot = entry.dx*exit.dx + entry.dz*exit.dz;
     if (Math.abs(dot) > .5) continue; // 60–120 degree turns only; no U-turns or shallow forks
     const pts: P2[] = [], roads: TrafficCourse['roads'] = [];
@@ -52,21 +55,21 @@ export function arterialTurns(courses: TrafficCourse[], corridors: readonly Arte
     };
     const start = 0, end = b.course.line.length;
     sample(a.course,start);
-    for (let i=1;i<a.course.line.pts.length;i++) if (a.course.line.cum[i]>start && a.course.line.cum[i]<a.s-10)
+    for (let i=1;i<a.course.line.pts.length;i++) if (a.course.line.cum[i]>start && a.course.line.cum[i]<a.s-setback)
       append(a.course.line.pts[i],a.course.roads[i-1]);
-    sample(a.course,a.s-10);
+    sample(a.course,a.s-setback);
     const stopS = Math.min(approachStop.s, new Line(pts).length-2);
     // Cubic tangents follow the incoming and outgoing lanes. Eight short segments
     // keep vehicle axles and their source surfaces continuous around the corner.
-    const c1: P2 = [entry.x+entry.dx*7,entry.z+entry.dz*7];
-    const c2: P2 = [exit.x-exit.dx*7,exit.z-exit.dz*7];
+    const c1: P2 = [entry.x+entry.dx*tangent,entry.z+entry.dz*tangent];
+    const c2: P2 = [exit.x-exit.dx*tangent,exit.z-exit.dz*tangent];
     for (let i=1;i<=8;i++) {
       const t=i/8,u=1-t;
       append([u*u*u*entry.x+3*u*u*t*c1[0]+3*u*t*t*c2[0]+t*t*t*exit.x,
         u*u*u*entry.z+3*u*u*t*c1[1]+3*u*t*t*c2[1]+t*t*t*exit.z],
       i<=4 ? a.course.roads[Math.max(0,Math.ceil(a.course.line.vertexAt(a.s))-1)] : b.course.roads[Math.floor(b.course.line.vertexAt(b.s))]);
     }
-    for (let i=1;i<b.course.line.pts.length;i++) if (b.course.line.cum[i]>b.s+10 && b.course.line.cum[i]<end)
+    for (let i=1;i<b.course.line.pts.length;i++) if (b.course.line.cum[i]>b.s+setback && b.course.line.cum[i]<end)
       append(b.course.line.pts[i],b.course.roads[i-1]);
     sample(b.course,end);
     const turn: TrafficCourse = { line:new Line(pts),roads,speedMps:a.course.speedMps,dailyFlow:0,truckShare:a.course.truckShare,
