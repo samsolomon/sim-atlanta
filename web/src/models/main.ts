@@ -12,7 +12,7 @@ import { gradeShader } from '../vignette/grade';
 import { xe60Geometry, xe60Material, xe60DepthMaterial, xe60Pose } from '../vignette/xe60';
 import { busGeometry, RAPID_LIVERY, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
-import { FreightBatches } from '../city/freight-batches';
+import { FreightBatches, freightMaterial } from '../city/freight-batches';
 import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-consist';
 import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
@@ -199,7 +199,7 @@ function buildIntermodalStrip() {
   if (!labParams.has('slot') || !Number.isFinite(slot)) for (slot = 0; planPassage(profile, slot, lineId).cars < STRIP_CARS; slot++);
   const units = planPassage(profile, slot, lineId).units.filter((u) => !u.power).slice(0, STRIP_CARS);
   const batches = new FreightBatches(treeQuality === 'low');
-  const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const material = freightMaterial([]);
   const total = units.reduce((sum, u) => sum + FREIGHT_LENGTH[u.kind] + COUPLER_GAP, -COUPLER_GAP);
   let front = total / 2;
   batches.begin();
@@ -208,7 +208,7 @@ function buildIntermodalStrip() {
     const pose = batches.createPose(material);
     pose.position.set(0, .125, front - length / 2);
     if (unit.flip) pose.rotation.y = Math.PI;
-    batches.append(unit.kind, pose);
+    batches.append(unit.kind, pose, unit.load);
     front -= length + COUPLER_GAP;
   }
   const draws = batches.finish();

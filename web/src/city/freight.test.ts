@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { CityFreight, DOWNTOWN_ENTRY_MS, DOWNTOWN_SLOT_MS } from './freight';
 import { FREIGHT_LENGTH } from '../vignette/freight-stock';
-import { FREIGHT_CLIP_PLANES } from './freight-batches';
+import { FREIGHT_CLIP_PLANES, FreightBatches, freightMaterial } from './freight-batches';
+import { BOX_40_SCALE } from '../vignette/intermodal';
 
 const point = (s: number, rise = .02) => ({ s, position: new THREE.Vector3(s, s * rise, 0) });
 /** Slot 0 runs up the chainage from the first section's start. */
@@ -91,7 +92,33 @@ it('gives every freight material the same clipping-plane count, so instanced fre
     freight.update(at(head));
     for (const mesh of freight.group.children.filter((m): m is THREE.InstancedMesh => m instanceof THREE.InstancedMesh)) {
       expect((mesh.material as THREE.Material).clippingPlanes).toHaveLength(FREIGHT_CLIP_PLANES);
+      // One container patch and cache key on every freight material, and every shape binds its attributes.
+      const material = mesh.material as THREE.Material;
+      expect(material.customProgramCacheKey()).toBe('freight-containers-1');
+      for (const name of ['aSlot', 'aShade', 'aLoad']) expect(mesh.geometry.getAttribute(name), name).toBeDefined();
     }
   }
   freight.dispose();
+});
+
+it('writes each well\'s containers into its instance: colour + 1, 0 for none, 40 ft as a length factor', () => {
+  const batches = new FreightBatches(false);
+  const material = freightMaterial([]);
+  const pose = batches.createPose(material);
+  batches.begin();
+  batches.append('wellA', pose, { bottom: { color: 0, long: true }, top: { color: 6, long: false } });
+  batches.append('wellA', pose, { bottom: { color: 3, long: true }, top: null });
+  batches.append('wellA', pose);
+  batches.finish();
+  const mesh = batches.group.children.find((m): m is THREE.InstancedMesh => m instanceof THREE.InstancedMesh && m.count === 3)!;
+  const load = mesh.geometry.getAttribute('aLoad') as THREE.InstancedBufferAttribute;
+  const row = (i: number) => [load.getX(i), load.getY(i), load.getZ(i), load.getW(i)];
+  expect(row(0)).toEqual([1, 7, 1, Math.fround(BOX_40_SCALE)]);
+  expect(row(1)).toEqual([4, 0, 1, 1]);
+  expect(row(2)).toEqual([0, 0, 1, 1]);
+  // The well shape tags both container slots; the car body is slot 0.
+  const slots = new Set(mesh.geometry.getAttribute('aSlot').array);
+  expect([...slots].sort()).toEqual([0, 1, 2]);
+  batches.dispose();
+  material.dispose();
 });
