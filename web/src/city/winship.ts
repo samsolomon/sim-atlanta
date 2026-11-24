@@ -74,8 +74,8 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
   s.prism(podium, s.base, podiumTop, podiumGlass, roofDeck);
   eachFace(podium, (a, b, len, at) => {
     const n = Math.max(1, Math.round(len / 1.6));
-    for (let k = 0; k <= n; k++) quad(s, at, Math.max(0, k / n - 0.18 / len), Math.min(1, k / n + 0.18 / len), g0 + 5, podiumTop, 0.4, fin);
-    quad(s, at, 0, 1, g0 + 4.4, g0 + 5, 0.42, fin);
+    for (let k = 0; k <= n; k++) quad(s, at, Math.max(0, k / n - 0.18 / len), Math.min(1, k / n + 0.18 / len), g0 + 5, podiumTop, 0.28, fin);
+    quad(s, at, 0, 1, g0 + 4.4, g0 + 5, 0.29, fin);
     quad(s, at, 0.03, 0.97, g0 + 0.3, g0 + 4.3, 0.04, podiumGlass, true);
   });
 
@@ -141,12 +141,17 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
       s.body.tri(v(i), v(j), v(k), wood);
     }
   }
-  for (const z of [-30, -20, -10, 0, 12]) {
-    s.body.box(0.6, canopyLo - s.base, 0.6, 477.4 - origin[0] + 1.2, (canopyLo + s.base) / 2, z, fin);
+  // Columns and downlights only where the canopy actually is (it spans the
+  // west strip north of the glazed band), so none hang off on their own.
+  const canopyPlans = canopyParts.map(p => local(p!.rings[0]));
+  const underCanopy = (x: number, z: number) => canopyPlans.some(pl => pointInRing(x, z, pl));
+  const colX = 477.4 - origin[0] + 1.2;
+  for (const z of [-16, -4, 8, 20, 32]) {
+    if (!underCanopy(colX, z)) continue;
+    s.body.box(0.6, canopyLo - s.base, 0.6, colX, (canopyLo + s.base) / 2, z, fin);
   }
-  for (let x = -50; x <= -20; x += 7) for (let z = -32; z <= 14; z += 7) {
-    const [wx, wz] = [x + origin[0], z + origin[1]];
-    if (Math.hypot(wx - 496.2, wz + 1803.5) < 14) continue; // the oculus
+  for (let x = -50; x <= -16; x += 7) for (let z = -18; z <= 34; z += 7) {
+    if (!underCanopy(x, z) || !underCanopy(x - 0.6, z - 0.6) || !underCanopy(x + 0.6, z + 0.6)) continue;
     s.lights.quad([x - 0.5, canopyLo - 0.05, z - 0.5], [x + 0.5, canopyLo - 0.05, z - 0.5], [x + 0.5, canopyLo - 0.05, z + 0.5], [x - 0.5, canopyLo - 0.05, z + 0.5], wood);
   }
   return s.finish('#f6e2c0', 0.55);
