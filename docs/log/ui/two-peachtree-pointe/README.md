@@ -56,3 +56,13 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T<time>-05:00`.
 | Spec starting camera | `320,-4929,32,60,231` | [Day](start-day.jpg) | [Night](start-night.jpg) |
 | Close: the day camera with a 2.4× lens (`&dev`, then `__setView(-60,52,480,312,-4905,2.4)`) | | [Close](close.jpg) | |
 | South-west: curve and crown | `318,-4910,20,52,480` | [Curve](curve.jpg) | |
+
+## Crown and base strengthening (2026-11-24)
+
+The lead's audit rated the first version BORDERLINE. The curved plan read, but the building had no distinct crown or base. The changes below are all photo-backed. The coordinator confirmed them, and the glass is unchanged.
+
+- **Crown:** in the photographs the curved bay's top two floors are a solid cream metal band, not glass, with a concave top edge sweeping up toward the west ([SKYDB 416210026](https://www.skydb.net/file/416210026/two-peachtree-pointe-atlanta/), [441174472](https://www.skydb.net/file/441174472/two-peachtree-pointe-atlanta/)). That band (`#d6d3cb`) now replaces the top two glass ribbons, rising to the lidar's 365.5 m. It sits on the curve faces.
+- **Base:** the photograph from Peachtree shows a flat projecting canopy over the drive at the block's foot ([441174472](https://www.skydb.net/file/441174472/two-peachtree-pointe-atlanta/)). City adds a 2.4 m canopy seated on the longest Peachtree run, on the south board's clip only so it is not doubled, over a dark 5.3 m lobby storey.
+- **Not added:** the round glass drum with a ring canopy in [772809535](https://www.skydb.net/file/772809535/two-peachtree-pointe-atlanta/) belongs to phase one, One Peachtree Pointe, in front of Two.
+
+[Curve before and after](crown-cmp-curve.jpg) · [South-east before and after](crown-cmp-day.jpg) · [Night](crown-night.jpg) · [Close](crown-close.jpg) · [Four sides](crown-four-sides.jpg)
