@@ -3483,3 +3483,9 @@ The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th 
 ### 2026-11-24 · 271 Seventeenth's Streamline bands
 
 TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)
+
+## 2026-11-24: The Registry, measured twice
+
+The Registry on the Park is mapped at 98 m and listed at 321 ft, but the 2019 lidar put its roof near 77 m. It was finished in 2017, so the lidar should see it. Two checks settled it. Insets of 2, 6 and 10 m inside the tower part all give a 356.9 m NAVD roof, so the footprint was not catching a podium. The ground falls toward the park, but even from the lowest return the top is 86.5 m. The model now uses absolute NAVD heights and leaves the 321 ft unverified. The other lesson was light: at 11:30 a taller neighbour shades this face, so the glass had to be checked at 14:00 to find any sun on it.
+[Before and after](log/ui/registry-on-the-park/compare.jpg) · [day and night](log/ui/registry-on-the-park/daynight.jpg) · [close](log/ui/registry-on-the-park/close.jpg)
+
