@@ -51,7 +51,7 @@ The live passenger check used City Low at `53c29a11`, with local Vite relaying p
 
 ## Claude Opus session (2026-11-23)
 
-Claude Opus session `orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d` packaged `63d7e332` and `1acba131`. The coordinator reply route works by replying to each inbound message ID. Smoke scripts: the core flow plus extras for the tree count, night chip and piazza. Run them against a staged `python3 -m http.server`. Local HTTP and headless Chrome need the sandbox disabled on this host. Release 3 waits on #416, #422 and #423; #419 and #421 are merged. Ping the coordinator after main has been quiet for 20 minutes with those merged.
+Claude Opus session `orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d` packaged `63d7e332` and `1acba131`. The coordinator reply route works by replying to each inbound message ID. Smoke scripts are `/tmp/sim-release-1acba131/smoke.mjs` (core flow) and `smoke2.mjs` (tree count, night chip, piazza). Set `SMOKE_DIR` and `SMOKE_BASE` before running them. Run them against a staged `python3 -m http.server`. Local HTTP and headless Chrome need the sandbox disabled on this host. Release 3 waits on #416, #422 and #423; #419 and #421 are merged. Ping the coordinator after main has been quiet for 20 minutes with those merged.
 
 ## Next steps, in order
 
