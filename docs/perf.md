@@ -117,6 +117,24 @@ The draw ceiling leaves room for about ten building skins at +1 to +4 draws each
 640 calls, 6.82M triangles and 99 programs measured, against a 720-call ceiling; 569 calls after landmark batching
 and house blocks, against a 630-call ceiling.
 
+### Long tasks while moving (`low-north`, `low-zoomout`)
+
+These two entries run the low tier on the A16 canvas (384x692 at DPR 1) with 6x CPU throttle while the camera flies a route
+(`?perf=run&motion=route:<name>`, out and back over a 20 s sample). They fail if any main-thread task
+(PerformanceObserver `longtask`) exceeds the ceiling. Every run reports `longestTaskMs` and `longTasksOver100`.
+
+- `route:north`: Five Points to Brookwood at a 700 m orbit. Areas and rings change under the camera.
+- `route:zoomout`: a 3 km to 25 km orbit over Midtown. It crosses the 10 km build distance early, which triggers far-level builds and swaps.
+
+Ceilings: `route:north` 650 ms and `route:zoomout` 500 ms, both ratcheting toward 300 ms as swap and build steps are sliced. The target is 150 ms.
+`summary.longTasks` lists each task over 100 ms in the sample as `[start, ms]` in page time, for attribution against a CPU profile.
+Calibration on the Studio (2026-11-24, load average ~30):
+
+- `route:north`: 920–945 ms with #538's whole-board very-far ground built in one idle task; 268–589 ms over 7 runs after #586 made it opt-in.
+- `route:zoomout` to 25 km: 72–190 ms.
+- At 1x, nothing exceeded 50 ms.
+
+
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 
 Fresh Chrome with cooldowns, low tier, all 12 areas loaded. Ten-second FPS on the pre-rollout baseline (d1411a9e), candidate (fb699bbb), and candidate with the far mask forced on:
