@@ -484,10 +484,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHealey = healey?.buildings ?? towerSite;
         hardRock = createHardRock(afterHealey, ground);
         const afterHardRock = hardRock?.buildings ?? afterHealey;
-        parkPlaceTower = createParkPlaceTower(afterHardRock, ground);
-        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHardRock;
-        theLandmark = createTheLandmark(afterHealey, ground);
-        const afterLandmark = theLandmark?.buildings ?? afterHealey;
+        theLandmark = createTheLandmark(afterHardRock, ground);
+        const afterLandmark = theLandmark?.buildings ?? afterHardRock;
         parkPlaceTower = createParkPlaceTower(afterLandmark, ground);
         const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterLandmark;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
@@ -653,9 +651,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, hardRock, fiftyFiveParkPlace,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, theLandmark, fiftyFiveParkPlace,
-            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
+            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
+            fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -1499,7 +1496,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       marquisOne?.setNight(night);
       marquisTwo?.setNight(night);
       medicalArts?.setNight(night);
-    jwMarriott?.setNight(night);
+      jwMarriott?.setNight(night);
       hilton?.setNight(night);
       altitude?.setNight(night);
       twelve?.setNight(night);
