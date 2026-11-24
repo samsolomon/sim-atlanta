@@ -21,18 +21,44 @@ export interface BudgetOptions {
   /** Resolves on the next frame (requestAnimationFrame by default). */
   nextFrame?: () => Promise<unknown>;
   now?: () => number;
+  /** Filled in as the build runs: the gate metric is the longest slice of build work in one frame. */
+  stats?: SliceStats;
 }
+
+export interface SliceStats {
+  frames: number;
+  /** Longest run of build work inside one frame, ms, and the label of the step that ended it. */
+  maxSliceMs: number;
+  maxSliceAt: string;
+  /** Longest single step (between two yields), ms, and its label. */
+  maxStepMs: number;
+  maxStepAt: string;
+  totalMs: number;
+}
+
+export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, maxSliceAt: '', maxStepMs: 0, maxStepAt: '', totalMs: 0 });
 
 export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise<T> {
   const now = o.now ?? (() => performance.now());
   const nextFrame = o.nextFrame ?? (() => new Promise(r => requestAnimationFrame(r)));
-  let deadline = now() + o.budgetMs();
+  const st = o.stats;
+  let start = now(), deadline = start + o.budgetMs();
   for (;;) {
+    const t = now();
     const r = build.next();
-    if (r.done) return r.value;
-    if (now() >= deadline) {
+    const after = now();
+    if (st) {
+      const label = (r.done ? 'end' : r.value) || '';
+      if (after - t > st.maxStepMs) { st.maxStepMs = after - t; st.maxStepAt = label; }
+      if (after - start > st.maxSliceMs) { st.maxSliceMs = after - start; st.maxSliceAt = label; }
+      st.totalMs += after - t;
+    }
+    if (r.done) { if (st) st.frames++; return r.value; }
+    if (after >= deadline) {
+      if (st) st.frames++;
       await nextFrame();
-      deadline = now() + o.budgetMs();
+      start = now();
+      deadline = start + o.budgetMs();
     }
   }
 }

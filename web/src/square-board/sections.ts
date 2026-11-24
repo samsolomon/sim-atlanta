@@ -24,7 +24,7 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, terrainOpenings } from '../terrain/model';
-import { runBudgeted, runSync, type Build } from '../core/slice';
+import { emptySliceStats, runBudgeted, runSync, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -44,6 +44,9 @@ function sliceBudget(quality: TerrainQuality): (() => number) | null {
   const ms = quality === 'low' ? 4 : 8;
   return () => ms;
 }
+/** Sliced-build stats across every section this page loaded (?slice=1), for the perf harness. */
+export const sliceStats = emptySliceStats();
+if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
@@ -250,7 +253,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   const budget = sliceBudget(quality);
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
-  const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget }) : runSync(buildPatches());
+  const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
   try {
     signal.throwIfAborted();
     connect(mounted, built);
