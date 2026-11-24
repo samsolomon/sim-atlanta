@@ -1,3 +1,15 @@
+# Current phone performance handoff · 2026-11-24
+
+The phone performance lead owns the single-pass candidate through verification and PR. The skyline lead owns integration into main. Candidate head is `55c7712161fa26d975f597fc1da11efc1209b2ec` on `samsolomon/phone-single-pass`. The candidate is pushed and its PR is pending.
+
+Only #670 has the current Studio timing window. The existing full-suite ticket is queued on the candidate. Let it finish when eligible, inspect the terrain test result, then run the locked performance suite and cross-model review. Embed the comparison sheet in the PR and send the reviewed commit to the integration owner.
+
+The candidate’s [day and night comparison sheet](https://github.com/samsolomon/sim-atlanta/blob/55c7712161fa26d975f597fc1da11efc1209b2ec/docs/log/perf/single-pass/day-night.jpg) records low-tier comparisons from opposing cameras. Six sites qualified. The World of Coca-Cola bottle frost and etched sign retain two passes. The earlier suite passed 20 Rust tests, skipped optional Python checks and hit a terrain timeout before interruption. The full suite, performance gate, review, A16 frame costs and 9 km recount are pending.
+
+#435 still needs the integration owner's call. The 300 ms low-north ceiling waits for #646 and #651. The recount scratch script now checks mounted area count, viewport and pixel ratio before accepting a sample. Its first run is pending.
+
+---
+
 # Phone performance handoff · 2026-11-24 · Codex to Codex
 
 **Release 11 pause is active.** The skyline lead will broadcast when non-release builds, tests, captures, previews and perf sweeps can resume. I stopped my test process group and dev server, closed my private Chrome instances and cancelled all three queued jobs. On resumption run every perf or long-task sweep through the shared workspace parent's `.perf-run studio-phone-perf <command>`. Release tickets take priority.
