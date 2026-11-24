@@ -30,7 +30,7 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
   const roof = datum + tower.h, garageTop = datum + podium.h, seed = seedOf(westPeachtree712Id);
   // Glass value sits with the neighbouring curtain walls; spandrels and fins carry the rhythm.
   const blue = '#66819c', spandrel = '#8a9bad', fin = '#aab6c2', pale = '#97adc2', reveal = '#3d5168',
-    transition = '#40566e', cap = '#c9ccd0', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
+    transition = '#4a5d70', cap = '#c9ccd0', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
   const FLOOR = 3.83;
   const top = roof - 7.7;
 
@@ -88,9 +88,9 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
   // A set-back rooftop penthouse.
   const [cx, cz] = [shaft.reduce((m, p) => m + p[0], 0) / shaft.length, shaft.reduce((m, p) => m + p[1], 0) / shaft.length];
   s.prism([[cx - 10, cz - 8], [cx + 10, cz - 8], [cx + 10, cz + 8], [cx - 10, cz + 8]], roof, roof + 4.6, '#5d6f82', '#7f8486');
-  // The lobby glass on West Peachtree (the long west edge), lit after dark.
-  const [la, lb] = edges.reduce((best, e) => (e[0][0] + e[1][0] < best[0][0] + best[1][0] ? e : best));
-  const lobby = (t: number, y: number) => [la[0] + t * (lb[0] - la[0]) - 0.06, y, la[1] + t * (lb[1] - la[1])];
+  // The lobby glass on West Peachtree (x ≈ 394, east of the shaft), lit after dark.
+  const [la, lb] = edges.reduce((best, e) => (e[0][0] + e[1][0] > best[0][0] + best[1][0] ? e : best));
+  const lobby = (t: number, y: number) => [la[0] + t * (lb[0] - la[0]) + 0.06, y, la[1] + t * (lb[1] - la[1])];
   s.lights.quad(lobby(0.2, datum + 0.3), lobby(0.2, datum + 5.5), lobby(0.6, datum + 5.5), lobby(0.6, datum + 0.3), blue);
   return s.finish('#f2e2c0', 0.5);
 }

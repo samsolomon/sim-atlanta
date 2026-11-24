@@ -17,7 +17,7 @@ The first version was mostly flat navy. The coordinator's review called it a rec
 - **Base and deck transition:** the street faces have a 6 m lobby storey under the first spandrel. Where the north face rises from the deck roof, its first floor is darker glass.
 - **Crown:** two paler floors, a 1.3 m pale parapet cap and a 20 × 16 × 4.6 m set-back penthouse.
 - **Garage:** one dark open band per 3.2 m deck on the north, east and west faces. In City the north face abuts its neighbour.
-- **Lobby:** a glazed band on West Peachtree, lit after dark.
+- **Lobby:** a glazed band on the West Peachtree (east) face, lit after dark.
 
 ## Lighting
 
@@ -32,3 +32,5 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T<time>-05:00`, clear weather.
 | From the east-south-east, both broad faces | `357,-2258,-75,52,520` | [Day](day.jpg) | [Night](night.jpg) |
 | Spec starting camera | `357,-2258,32,60,380` | [Day](start-day.jpg) | [Night](start-night.jpg) |
 | Close: the day camera with a 2.4× lens (`&dev`, then `__setView(-75,52,520,357,-2258,2.4)`) | `357,-2258,-75,52,520` | [Close](close.jpg) | |
+
+Glass bases (provisional rules: V ≥ 40%, S ≤ 36%): shaft `#66819c` (S 35%, V 61%), crown floors `#97adc2` (S 22%, V 76%), deck-level transition `#4a5d70` (S 34%, V 44%).
