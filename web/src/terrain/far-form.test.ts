@@ -5,7 +5,7 @@ import { northConnectorGround, northConnectorTransport } from '../square-board/c
 import { southConnectorTransport } from '../square-board/south-connector-decks';
 import { cityRoadHeight } from '../city/road-height';
 import { bridgeApproaches } from './bridge-approaches';
-import { FAR_BAND, FAR_M, farForms, farState, orderForFar, setFarOrdering, updateFarForms } from './far-form';
+import { FAR_BAND, FAR_M, farForms, farState, orderForFar, registerFar, setFarOrdering, updateFarForms } from './far-form';
 import { GroundGrid } from './grid';
 import { junctionPortals } from './junction-decks';
 import { streetPortals } from './street-bridges';
@@ -95,3 +95,27 @@ for (const name of ['north-band', 'south-band'] as const)
     expect(decks.geometry.drawRange.count).toBe(Infinity);
     for (const t of [before, after]) { t.transport.dispose(); t.approach.geometry.dispose(); t.approach.walls.dispose(); t.surface.geometry.dispose(); }
   });
+
+it('draws the far prefix in the shadow pass only, then restores the colour-pass range', () => {
+  const pos: number[] = [];
+  for (let t = 0; t < 4; t++) pos.push(t, 0, 0, t, 1, 0, t, 0, 1);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial());
+  new THREE.Group().add(mesh);
+  const { keep } = orderForFar(g, (t) => t >= 2);
+  registerFar(mesh, keep, { shadow: 'low' });
+  const near = new THREE.Vector3(0, 0, 0);
+  const call = (hook: 'onBeforeShadow' | 'onAfterShadow') =>
+    (mesh[hook] as (...a: unknown[]) => void)();
+  updateFarForms(near, 'high', 0);
+  call('onBeforeShadow');
+  expect(g.drawRange.count).toBe(Infinity);
+  call('onAfterShadow');
+  updateFarForms(near, 'low', 0);
+  call('onBeforeShadow');
+  expect(g.drawRange.count).toBe(keep);
+  call('onAfterShadow');
+  expect(g.drawRange.count).toBe(Infinity);
+  g.dispose();
+});

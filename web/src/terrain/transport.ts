@@ -587,7 +587,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     mesh.name = name;
     mesh.castShadow = !isFreight; // The structural batch also contains the freight deck undersides.
     mesh.receiveShadow = true;
-    if (builder === structures) registerFar(mesh, farKeep);
+    if (builder === structures) registerFar(mesh, farKeep, { shadow: 'always' });
     group.add(mesh);
     meshes.push(mesh);
   }

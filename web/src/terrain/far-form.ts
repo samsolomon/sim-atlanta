@@ -23,6 +23,13 @@ export interface FarForm {
   keep: number;
   /** A lamp head: when far, shown only while the night glow is up. */
   glowAtNight?: boolean;
+  /** Draw the far form in the shadow pass even when near: 'always' where the dropped triangles
+   * can't change the depth map (deck undersides, markings, parapet tops), 'low' where they cast
+   * shadows under 2 texels only on low's 1,024 px map over 1,040 m (rails, ties, posts, poles). */
+  shadow?: 'always' | 'low';
+  /** Set per frame from `shadow` and the tier. */
+  shadowFar: boolean;
+  castShadow: boolean;
   box: THREE.Box3 | null;
   far: boolean;
 }
@@ -103,8 +110,22 @@ export function colourDrop(geometry: THREE.BufferGeometry, colours: readonly THR
  * Caution: Mesh.raycast honours geometry.drawRange, so a pick or audit run while a mesh is in
  * its far state misses the dropped triangles (ties, rails, markings). Height queries here read
  * positions directly and are unaffected. */
-export function registerFar(mesh: THREE.Mesh, keep: number, options: { glowAtNight?: boolean } = {}) {
-  const form: FarForm = { mesh, keep, glowAtNight: options.glowAtNight, box: null, far: false };
+export function registerFar(mesh: THREE.Mesh, keep: number, options: { glowAtNight?: boolean; shadow?: 'always' | 'low' } = {}) {
+  const form: FarForm = { mesh, keep, glowAtNight: options.glowAtNight, shadow: options.shadow, box: null, far: false,
+    shadowFar: false, castShadow: mesh.castShadow };
+  if (keep > 0 && options.shadow) {
+    // The shadow pass draws the far prefix; the colour pass keeps whatever form is current.
+    let saved = Infinity;
+    mesh.onBeforeShadow = () => {
+      if (!form.shadowFar || disabled) return;
+      saved = mesh.geometry.drawRange.count;
+      mesh.geometry.drawRange.count = Math.min(saved, form.keep);
+    };
+    mesh.onAfterShadow = () => {
+      if (!form.shadowFar || disabled) return;
+      mesh.geometry.drawRange.count = saved;
+    };
+  }
   forms.add(form);
   mesh.geometry.addEventListener('dispose', () => {
     forms.delete(form);
@@ -134,6 +155,13 @@ export function updateFarForms(camera: THREE.Vector3, quality: Quality, night: n
     const far = farState(form.box.distanceToPoint(camera), form.far, range);
     if (far !== form.far) {
       form.far = far;
+      changed = true;
+    }
+    const shadowFar = form.shadow === 'always' || (form.shadow === 'low' && quality === 'low');
+    if (shadowFar !== form.shadowFar) {
+      form.shadowFar = shadowFar;
+      // Hidden-when-far meshes (keep 0) simply stop casting.
+      if (form.keep === 0) form.mesh.castShadow = form.castShadow && !shadowFar;
       changed = true;
     }
     apply(form, night);

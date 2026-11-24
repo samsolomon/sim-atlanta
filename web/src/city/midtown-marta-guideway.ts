@@ -288,7 +288,7 @@ export function northLineGuideway(tracks: Line[], profile: NorthLineProfile, gro
   mesh.castShadow = mesh.receiveShadow = true;
   // Far form (terrain/far-form.ts): ballast, deck, girders and walls stay; sleepers, rails,
   // the third rail, its brackets and cover board are sub-pixel past the ring.
-  registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [SLEEPER, RAIL, CONDUCTOR, BRACKET, COVER])).keep);
+  registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [SLEEPER, RAIL, CONDUCTOR, BRACKET, COVER])).keep, { shadow: 'low' });
   return mesh;
 }
 

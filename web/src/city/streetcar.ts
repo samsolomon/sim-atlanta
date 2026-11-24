@@ -220,7 +220,7 @@ export function buildStreetcarTrack(lines: Line[], bounds: Bounds, height: Heigh
   const wires = new THREE.Mesh(wire.geometry(), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   wires.castShadow = false;
   // Far form (terrain/far-form.ts): the slab stays; rails, grooves, poles and wire are sub-pixel.
-  registerFar(track, orderForFar(track.geometry, colourDrop(track.geometry, [RAIL, GROOVE, POLE])).keep);
+  registerFar(track, orderForFar(track.geometry, colourDrop(track.geometry, [RAIL, GROOVE, POLE])).keep, { shadow: 'low' });
   registerFar(wires, 0);
   track.name = 'Streetcar slab and rails';
   wires.name = 'Streetcar wire';
