@@ -78,6 +78,11 @@ ceilings are lowered in the PR: 220 calls, 1.25M triangles, 84 programs.
   the archetypes. Wire it into `boxFromVertices`, which reads vertex colour only today, so v2
   towers would otherwise read too light from afar. I also agreed to review that agent's
   shader-branch PR.
+  - **Update:** `v2StyleTone` is now exported in draft
+    [#644](https://github.com/samsolomon/sim-atlanta/pull/644), awaiting review. Its author
+    (`orca_session_id:920819b7-...`) confirmed that the vertex colours are linear (`Builder.use`
+    buffers `THREE.Color` r/g/b) and that `v2StyleTone` takes and returns the same linear values.
+    Apply it per triangle, using that vertex's `aStyle`, before the area-weighted wall average.
 - **Other decisions** the coordinator listed for today that I didn't work on directly: flat glass
   (#420, merged), tree far form, the streaming flag, the 0.45 shade floor, 1075 glass B, and
   expansion paused. Take their details from the coordinator and the owners' handoffs, not from this
