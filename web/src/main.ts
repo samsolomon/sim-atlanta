@@ -1,4 +1,5 @@
 import { perf } from './core/perf';
+import { prefetchCity } from './core/prefetch';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { initialView } from './core/initial-view';
@@ -28,6 +29,12 @@ const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.js
 const params = new URLSearchParams(location.search);
 
 const landing = initialView(location.search, location.hash);
+// A City landing starts City's code and first data now, alongside the timetable and the shell,
+// instead of after them (phone load time; core/prefetch.ts).
+if (landing === 'city') {
+  void import('./city/city');
+  prefetchCity(`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/data`);
+}
 let map: maplibregl.Map | null = null;
 const mapCentre: [number, number] = [-84.39, 33.76];
 
@@ -449,7 +456,7 @@ const cityProgress = document.getElementById('city-progress')!;
 let cityAbort: AbortController | null = null;
 
 let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
-let cityTilt = 57; // retain the user's City tilt while Map remains flat
+let cityTilt = 55; // retain the user's City tilt while Map remains flat
 let opening = landing === 'city';
 async function openCity() {
   if (diorama) {
@@ -688,6 +695,7 @@ function flattenMap(m: maplibregl.Map, animate: boolean) {
 
 /** City → Map (A2c): the map takes City's exact view underneath, colour fades off it, then the
  * map flattens. Other exits (Models, errors) use closeCity directly. */
+let mapArrival: Promise<void> = Promise.resolve();
 async function leaveCityToMap() {
   const m = map;
   if (!diorama || !m || reducedMotion()) return closeCity();
@@ -754,7 +762,7 @@ function closeCity(keepMapView = false) {
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
 // while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
 let labRoot: HTMLElement | null = null;
-let labView: { escape(): boolean; model(): string | null; reset(): void } | null = null;
+let labView: { openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
 let sceneTitle = document.title;
 const inModels = () => !!labRoot && !labRoot.hidden;
@@ -815,7 +823,7 @@ const shellOptions: ShellOptions = {
     if (v !== 'models') leaveModels();
     if (v === 'city') void openCity();
     else if (v === 'models') void openModels();
-    else void leaveCityToMap();
+    else mapArrival = leaveCityToMap();
   },
   center() {
     if (diorama) {
@@ -854,6 +862,22 @@ const shellOptions: ShellOptions = {
     buses: buses.unavailable ? null : buses.current().length,
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
+  searchModels: () => labView?.openBrowser(),
+  async goToPlace(lon, lat) { await mapArrival; if (!view3d.hidden || inModels()) return; map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
+  outsideCity() {
+    const c = map?.getCenter();
+    if (!c) return false;
+    const [x, z] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
+    return x < -1000 || x > 1800 || z < -5700 || z > 1100;
+  },
+  centerCity() { map?.jumpTo({ center: [CITY_ORIGIN.lon, CITY_ORIGIN.lat], zoom: 17 }); },
+  getTilt: () => diorama?.camera().tilt ?? cityTilt,
+  setTilt(degrees) {
+    cityTilt = degrees;
+    if (!diorama) return;
+    const t = diorama.target();
+    diorama.lookAt(t.x, t.z, { bearing: diorama.camera().bearing, tilt: degrees, distanceM: diorama.distance() });
+  },
   north() {
     if (inModels()) return;
     if (diorama) return diorama.rotate(diorama.camera().bearing);

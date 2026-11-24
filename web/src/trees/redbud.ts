@@ -71,7 +71,7 @@ export const easternRedbud: typeof base = {
 };
 export const easternRedbudLook: Look = {
   species: easternRedbud, preferred: 'A', habit, leaf: 'cordate', palette, lowLift: -0.015,
-  bloomColour: '#e46cbb', bloomFill: 0.68, branchBloom: true,
+  bloomColour: '#e46cbb', bloomFill: 0.68, branchBloom: 'twigs',
   options: [{ id: 'A', label: 'Heart-leaf vase', technique: 'cards', ink: 2,
     units: { high: 21, low: 13 }, cover: 0.8,
     note: 'Magenta flower clusters trace bare twigs before the heart-shaped leaf cards open.' }],

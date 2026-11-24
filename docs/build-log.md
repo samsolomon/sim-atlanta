@@ -3008,6 +3008,17 @@ At the same lab camera, the lit windshield had made the XN40 cab as bright as th
 
 The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
 
+### 2026-11-23 — Callery pear starts with a white March bloom
+
+The first Model Lab study follows the oval Bradford form. Four sizes share an upright grey skeleton, white flowers on fine twig cards, glossy green A cards and late burgundy fall foliage. The first test with detached flower chips left white flecks hanging above bare wood. Reusing the paired redbud twig cards put every cluster back on a branch, using space in the existing oval atlas. At 193 / 138 triangles the mature tree still fits both budgets. [Seasonal and distance sheet](log/ui/tree-species/options-callery-pear.jpg). Lab study only. Web rebuild required for release.
+
+### 2026-11-23 — Callery pear fills out below the fork
+
+The first pear looked like white twigs above a long pole. The larger trees now fork at about 2 m, and a broad teardrop holds both the summer leaf cards and the March flower mass. Separate petal cards made the biggest difference at distance. The 300 m high-detail crown mask grew from 181 to 1,638 pixels, and the white mass reads on the ordinary Lab backdrop. A small late cluster can remain at leaf-out after the large flower cards have fallen. The mature tree costs 195 / 141 triangles, and July Front luminance is 0.242 / 0.250 against the generic canopy’s 0.248. [Side-by-side sheet with distance, winter and summer](log/ui/tree-species/options-callery-pear.jpg).
+
+### 2026-11-23 — Callery pear bloom gets texture and shade
+
+The full white silhouette worked at 300 m, but close up the bloom looked like sheets of cotton. Twenty small crown cards at high detail and thirteen at low now carry clusters of opaque petals, with small openings for the wood. The surprise was how much light contributed to the fluffy look. Restoring the atlas greys and the darker underside brought out detail without sacrificing the distant bloom. Spring and July use the same crown centers, with the lowest foliage around the 2 m fork in the mature tree. The cost is 195 / 135 triangles. [Matched eye-level and distance sheet](log/ui/tree-species/options-callery-pear.jpg).
 ### 2026-11-23 — A common roof profile for the Rapid buses
 
 The first rounded XE60 covers still looked flatter than the XN40 pod at the same camera. Both models now use the XN40’s 36 cm crown, curved ends and shoulder bevel. A short strip of exposed roof ahead of the XE60 cover makes the front curve visible. The electric bus keeps its 3.30 m roof height and carries one shroud on each side of the joint. Sampling the same curves at low detail brings the XE60 to 1,286 triangles. [XE60 and XN40 at the same scale, day and night](log/rapid-buses/roof-profiles.jpg).
@@ -3027,6 +3038,42 @@ blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
 building and eight suspended globes trace the approach to the lobby.
 [Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).
 
+### 2026-11-24 — The interface, settled after about 110 boards
+
+The first frosted-glass interface put everything in two corners: an app bar at bottom
+left with a Map · City · Models switch, and a tall camera column at bottom right. Over one
+long design session on a private canvas it went through eight layouts: a title bar, a
+dock, a quiet mode that hid the controls, a camera dial, and a version where the Model lab
+opened as an overlay. About 110 boards in all.
+
+What stuck was giving each part of the screen one job in every view. The top left is what
+you are looking at: the place and time, or the model. The top right is the camera:
+compass, zoom, and a 3D button that turns the flat map into the city. The right edge holds
+the detail for whatever you selected. A single dock at the bottom centre is the app: menu,
+Map | Models, search, radio and share. Tilting had been in the dock for a round and felt
+wrong; it moved to the camera group. A back button for the Model lab felt wrong too, and
+the fix was to make Models its own page beside Map, so there is nothing to go back from.
+
+An automated critique scored the layout 26 out of 40. Its most useful finding was about
+honesty rather than looks. The night boards said "Live" on a clock shifted to 9:30 PM,
+and one green dot was vouching for the time, the weather and the trains at once. The
+card now names what each tier covers ("Live trains · weather reported"), a shifted clock
+reads "Timetable · illustrative sky" with a grey dot (blue already means city rail), and
+the train panel splits its live arrival time from its inferred position. The critique
+also caught that half the audience had no designs: eight phone boards were missing.
+
+The last fix was framing in the Model lab. Its views were fixed camera positions, so on a
+portrait phone the three-quarter view kept the height and lost the width, cutting off the
+cab. Views now fit a focus region (the cab end of the leading car on a portrait screen) to
+whatever space the panels leave clear.
+[City on first visit](log/ui/final-layout/F01-city.jpg) ·
+[Models on a wide screen](log/ui/final-layout/F09-models.jpg) ·
+[A selected train on a phone](log/ui/final-layout/G02-card.jpg) ·
+[Model lab framing before and after](ui-a2c/final/framing-phone-before-after.jpg).
+
+### 2026-11-24 — The dock stays put when the map tilts
+
+Map and City now share one tab. The 3D button and tilt control use the existing white-model arrival. On a 390 × 760 phone, moving Share to the dock leaves just two camera controls over the scene. The desktop and phone captures show the same shifted clock and Midtown camera, `565,-3965,-101,55,421`. [Desktop](log/ui/final-dock/city.jpg) · [Phone](log/ui/final-dock/phone.jpg).
 ### 2026-11-23 — The second copy of the bridge
 
 With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
@@ -3038,3 +3085,13 @@ The first 300 replacements include 89 willow oaks, 83 water oaks, 51 southern ma
 [The Prado by day](log/ui/tree-species/round-two/prado-day.jpg) and [at night](log/ui/tree-species/round-two/prado-night.jpg) use camera 1194,-4352,20,50,420. [Beverly by day](log/ui/tree-species/round-two/beverly-day.jpg) and [at night](log/ui/tree-species/round-two/beverly-night.jpg) use 1306,-4827,20,50,160. These are illustrative replacements at the existing canopy positions.
 
 On the Galaxy A16 the default view measured 23.2 fps for the baseline and 23.9 fps for the frozen tranche. Pan runs ranged from 11.9 to 25.6 fps across the three configurations and the harness lost its CDP connection during testing. The coordinator accepted the default result and deferred the pan comparison to the next release candidate.
+
+### 2026-11-23 — Grant Street runs beneath the CSX yard
+
+The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
+
+### 2026-11-23 — Colour before the whole board
+
+On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
+
+On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)

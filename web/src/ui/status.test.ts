@@ -6,30 +6,30 @@ const live = { realTime: true, rail: 'live' as const };
 describe('confidence line', () => {
   it('reads Live only at the real present with the live feed up', () => {
     expect(confidence(live, true)).toEqual({ tier: 'live', skyObserved: true, shifted: false });
-    expect(confidenceWords(confidence(live, true))).toEqual(['Live']);
+    expect(confidenceWords(confidence(live, true))).toEqual(['Live trains', 'weather reported']);
   });
   it('never reads Live on a shifted clock, even if the feed is up', () => {
     const c = confidence({ realTime: false, rail: 'live' }, true);
     expect(c.tier).toBe('timetable');
     expect(c.skyObserved).toBe(false);
     expect(c.shifted).toBe(true);
-    expect(confidenceWords(c)).toEqual(['Timetable']);
+    expect(confidenceWords(c)).toEqual(['Timetable', 'illustrative sky']);
   });
   it('reads Timetable at the present while the feed connects or is down', () => {
     expect(confidence({ realTime: true, rail: 'connecting' }, true).tier).toBe('timetable');
     expect(confidence({ realTime: true, rail: 'down' }, true).tier).toBe('timetable');
   });
-  it('says one scene-wide word and never labels the sky (#231)', () => {
-    expect(confidenceWords(confidence(live, false))).toEqual(['Live']);
-    expect(confidenceWords(confidence(live, true, true))).toEqual(['Live']);
+  it('separates live trains from an unobserved sky', () => {
+    expect(confidenceWords(confidence(live, false))).toEqual(['Live trains', 'illustrative sky']);
+    expect(confidenceWords(confidence(live, true, true))).toEqual(['Live trains', 'illustrative sky']);
     expect(confidence(live, false).skyObserved).toBe(false);
   });
 });
 
 describe('first-visit hint', () => {
   it('matches the view and the input', () => {
-    expect(hintText('map', false)).toBe('Drag to move · scroll to zoom');
-    expect(hintText('map', true)).toBe('Drag to move · pinch to zoom');
+    expect(hintText('map', false)).toBe('Click anything to inspect · drag to move · scroll to zoom');
+    expect(hintText('map', true)).toBe('Tap anything to inspect. Pinch to zoom.');
     expect(hintText('city', false)).not.toMatch(/WASD/);
     expect(hintText('map', false)).not.toMatch(/look around/);
   });

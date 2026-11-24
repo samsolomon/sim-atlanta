@@ -511,7 +511,7 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 .a2-radio-title { padding: 0 10px 0 2px; font-size: 12px; color: var(--a2-ink2); white-space: nowrap; }
 /* Below desktop the title would crowd the camera column (and an ellipsis could cut 'no audio yet'):
    the button's label carries it instead, as on phones. */
-@media (max-width: 780px) { .a2-radio-title { display: none !important; } }
+
 @media (max-width: 600px) {
   .a2-radio { width: 44px; height: 44px; }
   .a2-radio-title { display: none; }
@@ -554,3 +554,72 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 /* Map → City (and back): the 2D map shows through while City's buildings stand on it. */
 body.city-over-map #view3d { background: transparent !important; }
 body.city-over-map #city-loading { background: transparent !important; }
+
+.a2-appbar { left: 50%; right: auto; transform: translateX(-50%); height: 52px; padding-inline: 5px; gap: 4px; }
+.a2-appbar :is(.a2-ib,.a2-vs), .a2-camera .a2-ib { min-width: 44px; min-height: 44px; }
+.a2-eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--a2-ink2); }
+.a2-camera { top: var(--a2-top); bottom: auto; }
+.a2-three-d[aria-pressed=true] { background: var(--a2-ink); color: var(--a2-chip); }
+.a2-tilt { writing-mode: vertical-lr; width: 44px; height: 48px; margin: 6px 0; accent-color: var(--a2-ink); }
+.a2-dot-timetable { background: #8a8478; }
+.a2-credit { right: var(--a2-right); }
+.a2-in-models :is(.a2-three-d,.a2-tilt), body:has(.a2-panel:not([hidden])) .a2-camera { display: none; }
+@media (min-width: 601px) {
+  .a2-menu { left: max(8px, calc(50% - 278px)); }
+  .a2-share-panel { right: max(8px, calc(50% - 278px)); bottom: 68px; }
+  .a2-in-models .a2-camera { right: calc(var(--a2-right) + 300px); }
+}
+@media (max-width: 600px) {
+  .a2-appbar { left: var(--a2-left); right: var(--a2-right); transform: none; justify-content: space-evenly; bottom: max(34px, env(safe-area-inset-bottom)); }
+  .a2-tilt { display: none; }
+  .a2-credit { bottom: calc(max(34px, env(safe-area-inset-bottom)) + 54px); }
+}
+.a2-dock-field { display: flex; align-items: center; background: var(--a2-track); border-radius: 10px; padding: 0 8px; }
+.a2-dock-field input,.a2-results input { width: 160px; min-height: 44px; color: inherit; font: inherit; border: 0; background: transparent; }
+.a2-dock-field kbd { font: 600 11px system-ui; color: var(--a2-ink2); }
+.a2-dock-pop { left: 50%; bottom: 68px; transform: translateX(-50%); padding: 16px; width: min(340px, 94vw); }
+.a2-dock-pop h2 { margin: 0 0 8px; font-size: 18px; }
+.a2-dock-pop .a2-radio-title { display: block; margin-bottom: 12px; }
+.a2-dock-pop button,.a2-area-pop button { min-height: 44px; }
+.a2-area-pop { top: var(--a2-top); right: calc(var(--a2-right) + 52px); padding: 12px; }
+.a2-area-pop p { margin: 0 0 8px; }
+.a2-outside { outline: 1px solid var(--a2-ink2); outline-offset: -4px; }
+.a2-hint { left: 50%; transform: translateX(-50%); bottom: 68px; width: max-content; max-width: 95vw; }
+@media (min-width: 601px) { .a2-search-icon,.a2-results > button { display: none; } }
+@media (max-width: 600px) {
+  .a2-dock-field { display: none; }
+  .a2-dock-pop { bottom: var(--a2-bottom); z-index: 8; }
+  .a2-results { inset: var(--a2-top) var(--a2-right) var(--a2-bottom) var(--a2-left); width: auto; transform: none; }
+  .a2-results > button { float: right; }
+  .a2-hint { bottom: 110px; }
+  body:has(.a2-dock-pop:not([hidden])) .a2-appbar { display: none; }
+}
+.a2-camera { position: fixed; z-index: 5; gap: 8px; padding: 0; }
+.a2-camera > .a2-g { position: relative; }
+.a2-camera :is(.a2-compass,.a2-reset) { border-radius: 50%; color: var(--a2-ink); }
+.a2-camera-piece { display: grid; justify-items: center; }
+.a2-camera .a2-three-d { border-radius: 12px; }
+.a2-angle { display: none; position: absolute; right: calc(100% + 4px); bottom: 12px; background: var(--a2-ink); color: var(--a2-ga); border-radius: 6px; padding: 4px; }
+.a2-tilt:active + .a2-angle { display: block; }
+.a2-in-models .a2-tilt-group { display: none; }
+.a2-hint { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding-block: 0; }
+.a2-hint button { min-height: 44px; white-space: nowrap; }
+@media(max-width:600px) {
+  .a2-camera-piece:has(.a2-zoom) { display: none; }
+  .a2-subject:not(.a2-open) { display: block; }
+  .a2-credit { left: auto; }
+}
+.a2-dock-field { box-sizing: border-box; width: 210px; height: 38px; padding: 0 9px; gap: 7px; background: rgba(255,255,255,.75); box-shadow: inset 0 0 0 1px var(--a2-sep); color: var(--a2-ink2); }
+.a2-dock-field:focus-within { box-shadow: inset 0 0 0 1.5px var(--a2-ink); }
+.a2-dock-field input { width: 0; min-width: 0; flex: 1; padding: 0; outline: none; color: var(--a2-ink); font-size: 14px; }
+.a2-dock-field input::placeholder { opacity: 1; color: var(--a2-ink2); }
+.a2-dock-field kbd { padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,.6); box-shadow: inset 0 0 0 1px var(--a2-sep); }
+.a2-search-glyph,.a2-search-glyph svg { display: block; width: 17px; height: 17px; }
+.a2-search-icon svg { width: 19px; height: 19px; stroke-width: 1.8; }
+.a2-hint { gap: 12px; padding-inline: 14px; }
+.a2-got-it { position: relative; border: 0; background: transparent; color: var(--a2-ink2); font-size: 13px !important; font-weight: 600 !important; padding: 0; min-width: 44px; cursor: pointer; }
+.a2-got-it:hover { text-decoration: underline; }
+.a2-camera > :is(.a2-compass,.a2-reset) { width: 44px; height: 44px; background: linear-gradient(160deg,var(--a2-ga),var(--a2-gb)); }
+.a2-camera .a2-needle { display: block; width: 32px; height: 32px; }
+:root[data-theme=dark] .a2-dock-field,:root[data-theme=dark] .a2-dock-field kbd { background: rgba(255,255,255,.10); }
+@media(min-width:601px) { .a2-appbar { padding-inline: 8px; gap: 6px; } }

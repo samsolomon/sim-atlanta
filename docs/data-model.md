@@ -29,11 +29,11 @@ shows the tier only where someone might take a value as fact:
   `illustrative`.
 - **The scene clock.** One scene-wide word says whether the world is `Live`, only at the real
   present with the feed up, or on `Timetable`. A shifted clock never reads as live.
-- **Not ambient scenery.** No on-screen tier labels for weather, sky, trees and species,
+- **Not ambient scenery.** The Final subject card names weather confidence alongside train status (Sam, 2026-11-24). No on-screen tier labels for trees and species,
   building heights, landscaping, crowds or area notes. The Key and About explain these.
 - **Weather.** At the real present, show the observed condition. If the fetch fails, show no
   condition rather than a guess. With a shifted clock, weather is a scene setting: show its
-  control or icon, with no tier label and never as a reported condition.
+  control or icon, and name the sky illustrative.
 
 ## Identifiers
 

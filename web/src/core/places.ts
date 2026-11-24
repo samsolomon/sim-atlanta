@@ -73,3 +73,13 @@ export function lonLatToScene(origin: { lon: number; lat: number }, lon: number,
   const k = Math.cos(origin.lat * DEG);
   return [(lon - origin.lon) * DEG * R * k, -(lat - origin.lat) * DEG * R];
 }
+
+/** Locally indexed neighbourhoods, centred on their map extent. */
+export function findPlaces(text: string) {
+  const query = text.trim().toLowerCase();
+  return (places ?? []).filter(p => p.name.toLowerCase().includes(query)).slice(0, 8).map(p => ({
+    name: p.name,
+    lon: (p.bbox[0] + p.bbox[2]) / 2,
+    lat: (p.bbox[1] + p.bbox[3]) / 2,
+  }));
+}

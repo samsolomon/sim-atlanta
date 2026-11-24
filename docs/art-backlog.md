@@ -51,3 +51,4 @@ The three baseline frames use high tier and a paused Atlanta clock of 14:12:45 o
 - Georgia Tech’s Holland central utility plant stack is a separate landmark candidate.
   Verify the stack's coordinates against the City board before modelling it.
   [Georgia Tech Facilities' plant history](https://facilities.gatech.edu/index.php/2016-04/hidden-georgia-tech-holland-plant).
+- When the board grows east past x = 1905, build the CSX rail-over at Boulevard SE (FRA 717928R), including its separated pedestrian passage. [Crossing evidence, lidar and Street View](king-freight-crossings.md).

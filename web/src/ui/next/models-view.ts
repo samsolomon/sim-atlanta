@@ -177,6 +177,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
       }
       return false;
     },
+    openBrowser,
     model: () => current()?.dataset.model ?? null,
     /** Reset view: choose the current model again, which returns to its opening view. */
     reset: () => current()?.click(),
