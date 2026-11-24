@@ -264,8 +264,9 @@ it('uses specific house tags above 450 m² and requires low-rise evidence for br
   const site = (cls: string, id: string, extra: Partial<VBuilding> = {}) => house(id,rect(25,20),{cls,...extra});
   const candidates = [site('house','large'), site('detached','detached'), site('residential','low',{floors:2}),
     site('residential','unknown'),site('residential','tall',{floors:31}),site('residential','slab',{floors:3,name:'Building 10'}),
-    site('apartments','apartments',{floors:2}),site('office','office',{floors:2})];
+    site('apartments','apartments',{floors:2}),site('office','office',{floors:2}), house('block',rect(40,30)),
+    site('yes','osm:way:218548422',{floors:2}),site('yes','outside-landuse',{floors:2})];
   const homes = residential(city(candidates));
-  expect(candidates.filter(b=>homes.isHouse(b.id)).map(b=>b.id)).toEqual(['large','detached','low']);
+  expect(candidates.filter(b=>homes.isHouse(b.id)).map(b=>b.id)).toEqual(['large','detached','low','osm:way:218548422']);
   expect(homes.planOf('large')!.style).not.toBe('apartment');
 });

@@ -25,9 +25,9 @@ Across the 12 staged boards, 161 footprints over 450 m² carry one of the three 
 
 | Category over 450 m² | Footprints | General house finish | Bespoke Prado | Prior treatment retained |
 | --- | ---: | ---: | ---: | ---: |
-| Tagged house | 105 | 87 | 1 | 17 |
+| Tagged house | 105 | 83 | 1 | 21 |
 | Tagged detached | 3 | 1 | 0 | 2 |
 | Tagged residential | 53 | 0 | 0 | 53 |
 | Residential land use only | 281 | 0 | 0 | 281 |
 
-Specific house tags take precedence over the old area cutoff. In the broader residential and land-use categories, mapped levels or height must establish a low building. Separate apartment tags, named blocks, mapped parts, courtyards, seam fragments and large slab-like forms keep their earlier massing. The Castle retains its existing finish and recorded retail use. The table counts generic eligibility before any existing landmark override. The 31-storey 903 Peachtree keeps its flat roof and tower façade. General house roof rise is limited to half the eave height on the newly eligible large footprints. Where overall height is reported, two thirds or more remain in the wall.
+Footprints over 1,000 m² retain their existing geometry even when tagged as a house. This protects compact multi-unit blocks where a courtyard or elongated shape would give no warning. Specific house tags take precedence over the old area cutoff. In the broader residential and land-use categories, mapped levels or height must establish a low building. Separate apartment tags, named blocks, mapped parts, courtyards, seam fragments and large slab-like forms keep their earlier massing. The Castle retains its existing finish and recorded retail use. The table counts generic eligibility before any existing landmark override. The 31-storey 903 Peachtree keeps its flat roof and tower façade. General house roof rise is limited to half the eave height on the newly eligible large footprints. Where overall height is reported, two thirds or more remain in the wall.

@@ -3136,4 +3136,4 @@ every frame and compares the final positions with a fresh seek.
 
 ### 2026-11-23 — Finding the walls under the Prado roof
 
-The street panorama put the porch posts and the five lower windows in the same frame. Rebuilding from the front grade gave the porch a visible floor and four steps, while one low side gable could span the stepped footprint. Across the twelve boards, 442 large footprints had a residential tag or sat in mapped residential land use. Only 89 qualified for these house finishes, including the Prado itself. [Street elevation, house comparisons and tower control](log/ui/145-the-prado/README.md).
+The street panorama put the porch posts and the five lower windows in the same frame. Rebuilding from the front grade gave the porch a visible floor and four steps, while one low side gable could span the stepped footprint. Across the twelve boards, 442 large footprints had a residential tag or sat in mapped residential land use. Only 85 qualified for these house finishes, including the Prado itself. [Street elevation, house comparisons and tower control](log/ui/145-the-prado/README.md).

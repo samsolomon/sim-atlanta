@@ -128,7 +128,8 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   // A residential district or broad residential tag can include apartment slabs and towers.
   // Require positive low-rise evidence; preserve named blocks and the original mass otherwise.
   if (generalResidential && (!(b.floors || b.h) || (b.h ?? 0) > 11.5 || b.name || size > 800)) return null;
-  if (size > 450 && b.name) return null;
+  // A compact multi-unit block can carry a house tag even without a courtyard.
+  if (size > 1000 || (size > 450 && b.name)) return null;
   if (!specificHouse && !generalResidential && size > 450) return null;
   const box = oriented(ring);
   if (!box || box.half < 2) return null;
