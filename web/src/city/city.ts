@@ -127,7 +127,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { perf, perfOverrides, type PerfCategory } from '../core/perf';
+import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
@@ -284,6 +284,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
+  // Streaming prototype: sections load, swap to a cheap LOD and unload by camera distance.
+  const streamModule = mosaic && midtown && query.get('stream') === '1'
+    ? await import('./stream/manager').catch(error => { console.warn('City streaming unavailable', error); return undefined; })
+    : undefined;
+  options.signal?.throwIfAborted();
+  let stream: import('./stream/manager').StreamManager | undefined;
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -347,6 +353,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     streetcarDowntown?.dispose();
     stopsDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
+    stream?.dispose();
     mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
@@ -876,7 +883,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(area.group);
     scenery.push(area.group);
     area.setSeason(local(new Date(options.clockMs())).doy);
-    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
+    if (squareButton && mosaic && !stream) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
     renderer.shadowMap.needsUpdate = true;
   }
@@ -908,8 +915,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let areasHeld = !!options.whiteModel;
   let heldAt: { x: number; z: number } | undefined;
   function approachMosaic(x: number, z: number, needed = false) {
+    // Streaming decides from the camera each frame; a needed point loads ahead of it.
+    if (stream) { if (needed) stream.need(x, z); return; }
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
-    mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+    mosaic?.approach(x, z, quality, eastController.signal, mosaicMounted,
+      direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  function mosaicMounted(added: Map<string, NonNullable<typeof east>>, target?: { x: number; z: number }) {
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -922,6 +934,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
+      if (stream) {
+        if (brookwood) brookwood.group.visible = true;
+        rebuildStreamTraffic();
+        return;
+      }
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       void extendMidtownArterials(added.keys());
@@ -934,7 +951,45 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  // Streaming: traffic and Midtown arterials rebuild once per burst of mounts and unmounts, not per area.
+  let trafficRebuild: ReturnType<typeof setTimeout> | undefined;
+  function rebuildStreamTraffic() {
+    clearTimeout(trafficRebuild);
+    trafficRebuild = setTimeout(() => {
+      if (eastController.signal.aborted) return;
+      extendConnectorTraffic();
+      void extendMidtownArterials(Object.keys(midtownRowBounds));
+    }, 400);
+  }
+  if (streamModule && mosaic && square && terrain) {
+    const all = streamModule.allBoardRects();
+    stream = new streamModule.StreamManager(mosaic, quality, streamModule.ringConfig(low, query), low, terrain.bottomY, DATA, {
+      mounted: added => { mosaicMounted(added); perf.phase(`stream:mount:${[...added.keys()].join('+')}`); },
+      unmounted: removed => {
+        for (const a of removed.values()) {
+          const i = scenery.indexOf(a.group);
+          if (i >= 0) scenery.splice(i, 1);
+        }
+        // Brookwood's replaced roadway pieces belonged to the unmounted area.
+        for (let i = replaced.length - 1; i >= 0; i--) {
+          let o: THREE.Object3D | null = replaced[i].parent;
+          while (o && ![...removed.values()].some(a => a.group === o)) o = o.parent;
+          if (o) replaced.splice(i, 1);
+        }
+        if (brookwood && !mosaic.patches.has('brookwood-station') && !mosaic.patches.has('brookwood-south')) brookwood.group.visible = false;
+        renderer.shadowMap.needsUpdate = true;
+        perf.phase(`stream:unmount:${[...removed.keys()].join('+')}`);
+        rebuildStreamTraffic();
+      },
+      held: () => areasHeld,
+      failed: section => areaResult(String(section), null),
+    });
+    scene.add(stream.group);
+    stream.setSeason(local(new Date(options.clockMs())).doy);
+    // The plinth and the canopy's clip box cover the whole board once; areas swap inside them.
+    if (perimeter) edgePlanes(square.mountedBounds(all)).forEach((plane, i) => perimeter[i].copy(plane));
+    updatePlinth(square.mosaicPlinth(all, terrain.bottomY));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1094,8 +1149,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     return null;
   }
-  const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
-  const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
+  const streamRects = streamModule?.allBoardRects();
+  const pointOnBoard = (x: number, z: number) => (streamRects && square ? square.nearestPoint(streamRects, x, z) : undefined) ?? mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
+  const targetY = (x: number, z: number) => patchY(x, z) ?? stream?.groundAt(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
     if (drive) return;
     const t = controls.target;
@@ -1222,6 +1278,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         set(a?.group, 'transport'); set(a?.board, 'terrain'); set(a?.scenery, 'scenery');
       }
       set(brookwood?.group, 'transport');
+      set(stream?.group, 'scenery');
       set(transport?.group, 'transport');
       set(world.group, 'transport'); // streetcar track, MARTA guideway, lamps; landmarks are tagged
       return m;
@@ -1241,7 +1298,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
     if (terrain) {
-      const surface = ray.intersectObjects(mosaic ? Array.from(mosaic.areas.values(), a => a.board) : east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
+      const surface = ray.intersectObjects(mosaic ? [...Array.from(mosaic.areas.values(), a => a.board), ...(stream?.grounds() ?? [])] : east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
       if (surface) {
         glideTo = surface.point;
         glideTo.y = targetY(glideTo.x, glideTo.z);
@@ -1265,12 +1322,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
     squareButton.type = 'button';
-    squareButton.textContent = 'Show full board';
+    squareButton.textContent = stream ? 'Frame the full board' : 'Show full board';
     document.getElementById('city-info')?.append(squareButton);
     const loadFullBoard = () => {
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
-      mosaic.requestFullBoard();
+      if (!stream) mosaic.requestFullBoard();
       if (east && eastRailFailed) loadKingRail(east);
       // This explicit request also works as a retry when any geographic pack is missing.
       approachMosaic(400, -1500);
@@ -1569,7 +1626,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (fix && mosaic) {
       approachMosaic(fix.x, fix.z);
       // Per mounted area, so a row that failed or is still loading counts as off the board.
-      const rects = Array.from(mosaic.areas.values(), a => a.bounds);
+      const rects = streamRects ?? Array.from(mosaic.areas.values(), a => a.bounds);
       followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
     } else if (fix && previewEast) {
       approachEast(fix.x, fix.z);
@@ -1583,6 +1640,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
+    stream?.update(camera, controls.target.y, (scene.fog as THREE.Fog).far);
     figures?.update(sceneTime, camera, container.clientHeight);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
@@ -1648,6 +1706,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setTimeout(release, 8000);
   }
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
+  // Streaming: a handle for the perf harness and dev checks.
+  if (stream && (import.meta.env.DEV || perfEnabled)) Object.assign(window, { __stream: {
+    rings: () => stream!.stats(),
+    settled: () => stream!.settled,
+    setCamera: (x: number, z: number, dist = 700, bearing = 0, tilt = 55) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
+    areas: () => mosaic ? [...mosaic.areas.keys()] : [],
+  } });
   let firstFrame = false;
   // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
@@ -1798,6 +1863,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       east?.setSeason(day);
       north?.setSeason(day);
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
+      stream?.setSeason(day);
     },
     drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, [...(brookwood?.cars.children ?? []), ...streetcar.cars()]),
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
