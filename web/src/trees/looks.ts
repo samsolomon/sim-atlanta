@@ -64,6 +64,10 @@ export interface Look {
   species: Species;
   habit: Habit;
   leaf: LeafShape;
+  /** Target leaf size for atlas selection in metres. */
+  cardLeafM?: number;
+  /** Creates a tree's bark material when vertex colour alone cannot carry its pattern. */
+  barkMaterial?: () => THREE.MeshLambertMaterial;
   /** Leaf paint: base lightness range for the atlas (cards multiply the season colour). */
   options: LookOption[];
   /** Approved lab default, leaving comparison ordering intact. */
@@ -223,7 +227,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {
-    unitCards(b, clusters, seed, 1.25, opt.cardHeight);
+    unitCards(b, clusters, seed, 1.25, opt.cardHeight, look.cardLeafM);
   }
   let g = b.geometry();
   if (opt.technique !== 'lobes' && opt.technique !== 'stars') crownNormals(g, outwardOf(e));
@@ -279,7 +283,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const group = new THREE.Group();
   group.name = `${look.species.id} ${opt.id}`;
   const meshes: THREE.InstancedMesh[] = [];
-  const bark = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const bark = look.barkMaterial?.() ?? new THREE.MeshLambertMaterial({ vertexColors: true });
   const textured = opt.technique === 'cards' || opt.technique === 'cored';
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
