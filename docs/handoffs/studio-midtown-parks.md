@@ -1,3 +1,46 @@
+# Studio Midtown Parks handoff to Claude Opus
+
+**Stopping point, November 23, 2026.** Branch `samsolomon/prado-building-identification`. All implementation work is pushed. There is no open Parks PR or uncommitted WIP. The three PRs below merged before the coordinator’s new hold. **Hold every future merge until the coordinator relays Sam’s OK. Only the coordinator deploys.** Deployment and Sam’s verdict on the revised Prado frontage are unverified here.
+
+## Sam’s words and the requested revision
+
+On the tree round-two sheet Sam said “there is one random building.” After seeing the first porch render he said “House looks a little funny for Ansley Park.” The coordinator asked for visible siding, main-body windows and pale trim, a lighter low side gable with a front-gabled porch, square posts on masonry bases, steps, and a clean side porte-cochère. A chimney depended on photographic evidence. Sam’s comments and the full directions are in coordinator messages `msg_fd560a78ef3e` and `msg_957e2ada9997`. The board-wide rule and tower protection are in `msg_d28a30b5d3b2` and `msg_d0fa638d89f9`.
+
+## Shipped work and review views
+
+GitHub state and merge commit were checked with `gh pr view <number> --json state,mergeCommit`.
+
+| PR | Verified state and merge commit | Result and evidence |
+| --- | --- | --- |
+| [362](https://github.com/samsolomon/sim-atlanta/pull/362) | MERGED `0792e8f4946350d07307879a1c892298e9c1c274` | 33 terraces, 8 Midtown Upper and 25 Brookwood South. Ground-contact independently verified 66/66 approach corners, 39,510 clear approach samples (minimum 4.04 cm), 39,670 clear shelf/cap probes and zero low-tier terrace layers. A shared-frontage crossing accounts for the change from 34 to 33. [Matched views](../log/ui/ansley-terraces/README.md) |
+| [365](https://github.com/samsolomon/sim-atlanta/pull/365) | MERGED `cb2cdeeb337555fcb667353883c7aad0f0455f0d` | Street edges, mapped crossings, two Prado islands and high-tier yield signs. Ground-contact inspected the islands, crossing, hedge and two example streets. [Street-edge gallery](../log/ui/ansley-street-edge/README.md) |
+| [385](https://github.com/samsolomon/sim-atlanta/pull/385) | MERGED `7d35e743ddd7d3d73c4522dad32fb7389179100a` | The cream block was 145 The Prado NE, OSM way 269539876. The mustard patch was a tree. Rebuilt the street elevation and widened the house rule. Of 442 footprints above 450 m², 85 qualified (83 general house, one bespoke house, one detached). All 53 broad residential footprints kept their existing treatment. [Sources, before/afters, comparison houses and 31-storey tower](../log/ui/145-the-prado/README.md) |
+
+Use `/?view=city&ui=classic&dev&mindist=20&cam=<camera>&q=<tier>&t=2026-11-20T14:00:00-05:00`. Change 14:00 to 23:00 for night.
+
+| Subject | Camera |
+| --- | --- |
+| Sam’s original low aerial | `1194,-4352,20,50,420`, low day/night |
+| Prado porch and side bay | `1232,-4427,90,83,42` and `1231,-4427,58,58,73`, high. The gallery also records the eye, target and lens for the Street View position. |
+| General rule and tower control | `1502,-4522,40,45,120` (76 Park Lane), `1150,-4655,25,45,155` (1 Ansley Drive), `732,-2823,45,50,340` (903 Peachtree), low |
+| Terrace row and landing | `1503,-4056,70,60,150` both tiers, `1503,-4056,70,60,45` high |
+| Islands and crossing | `1152,-4545,10,40,115`, `1386,-4172,20,45,90`, `1165,-4526,130,52,42`, high |
+
+## Checks and open risks
+
+The final main-synced Prado run passed Rust, Python, 1,072 web tests (one skipped) and five worker tests. Both performance tiers loaded all 12 areas. Low/high post-GC heap measured 388/495 MB. High had 1,245 calls against a 1,250 ceiling. High readiness took 4.22 s against a nonblocking 3 s target. Two Claude review rounds led to the 1,000 m² block-scale guard and its regression test. The final sync’s Street View-position render was pixel-identical to the gallery image. No reliable night exterior or chimney evidence was found. Future footprint changes can require refitting the bespoke frame, and a new Overture release can require regenerating the land-use lookup. The terrace audit applies only to the named geometry.
+
+## Next steps in order
+
+1. Read this handoff from the current branch, then read outgoing session `orca_session_id:9ed961b2-061b-4422-a16e-54c75d4054ba`. Check the successor inbox for a new assignment or Sam’s visual feedback. The archived task list below is historical.
+2. If the coordinator requests a revision, fetch current main and create a fresh task branch. Match the gallery camera and clock. Use `. "$HOME/.cargo/env" && pnpm test`, a browser check, `pnpm test:perf` for City changes, and `pnpm review` under the two-round charter. For terrain contact, run `pnpm audit:ground --url http://localhost:5417` against the dev server. Ground-contact is `orca_session_id:22a6180b-5cd0-4056-bbed-4d2cb2483246`.
+3. Send the PR, screenshot links and camera strings to the coordinator. Use a coordinator message reply and the **successor’s own session ID**. The latest Air route is terminal `term_09e1b3da-5f48-4755-abf8-92a571a1f474`, message `msg_a8027aa718aa`. Await the coordinator’s relay of Sam’s OK before any merge. Quote GitHub state and mergeCommit before any MERGED notice. The coordinator handles publication.
+
+At handoff, ports 5417 and 5418 had no listeners and Orca listed zero browser tabs for this worktree.
+
+<details>
+<summary>Archived predecessor handoffs (superseded)</summary>
+
 # Handoff: studio-midtown-parks (Codex → gpt-6.2, 2026-11-23 evening)
 
 This section supersedes the archived Claude handoff below. Sam requested a model switch at a pushed WIP. **Resume the existing terrace task; do not redo houses or Winn.**
@@ -136,3 +179,5 @@ Worktree `studio-midtown-parks`, which the coordinator calls "Midtown parks". Th
   - After swapping files for BEFORE captures, wait for Vite to settle.
 - **Ansley box:** `inAnsley` (house styles) starts at x 800. Peachtree Circle runs at x 770–835, so street logic uses `inAnsleyStreets` (x > 740).
 - **Reviews:** Codex, opencode and Grok were unavailable to this Claude session, so reviews were self-reviews with the code-review skill, noted in each PR. Merge notices need GitHub blob links to captioned BEFORE | AFTER images, money shot first.
+
+</details>
