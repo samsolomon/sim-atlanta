@@ -3329,28 +3329,34 @@ The Atlantic's mapped outline straddles two City rows. The row survey only saw t
 
 The mapped outline for 1075 Peachtree breaks the site into seven parts. The tallest, 156.7 m, is the part with a curved north face. North of it, a part the pipeline calls `podium` (18.8 m, inferred) runs out to 12th Street. A 2.5 m raster of the April 2019 lidar disagreed: that "podium" has its roof at 433.1 m NAVD88, about 140 m up, the same as the curved part. The brochure's aerial cover and a Commons photo from 12th Street confirm it: a flat-topped glass block stands in front of the crowned one. The reported 18.8 m podium is really 35 m of precast parking deck. Inside the crowned block the median roof also sits at 433 m, while the 95th percentile reaches 445 m. That makes the thin cantilevered brim an open ring around a lower mechanical roof, not a lid. The louvred band under the brim is lit as one even glow, offices are about 5% lit at 23:30, and the entrance at Peachtree and 12th stays lit. The two tile fragments cost 1,745 low-tier triangles and three meshes, with no new shader program. [Research, lidar table and captures](log/ui/1075-peachtree/README.md)
 
-### 2026-11-24 · Streaming, take two: hide, don't rebuild
+### 2026-11-24 · Streaming, three tries in one night
 
-The goal was a City that loads only what the camera needs, so the board can grow toward I-285 without
-costing phones. The first prototype did exactly that. It built each square-board area when the camera
-came near, swapped a cheap LOD in at middle distance, and freed both far away. GPU memory came back
-cleanly over five near-far cycles. Then the pan routes came in: the worst frame on the phone tier was
-533 ms against today's 50 ms. One area's build is a single synchronous main-thread job, so wherever it
-lands, it stalls. Waiting for the camera to rest only moved the stall.
+The goal was a City that loads only what the camera needs, so the board can grow toward I-285
+without costing phones. It took three versions to find what passes.
 
-So tonight's version keeps today's boot and changes only what draws. Under `?stream=1`, each streamed
-area is near (the full area draws), mid (the full area is hidden and a LOD draws) or far (neither).
-The LOD is three batched meshes per area: coarse ground, every footprint as its minimum-area box, and
-forest masses. A Web Worker builds it from the files City already ships. It uses the board skirts'
-shader program, so it adds none. Each area draws once, unculled, as it mounts, so a later reveal never
-uploads on the spot.
+**1. Load on approach.** Areas were built as the camera came near, swapped for a cheap LOD at middle
+distance, and freed far away. GPU memory came back cleanly over five cycles out and back. Then the
+pan routes came in. The worst frame on the phone tier was 533 ms, against today's 50. One area's build
+is a single synchronous main-thread job, so wherever it lands, it stalls.
 
-On a real Galaxy A16 at the default camera, City went from 23.3 to 30.7 fps, at 562 against 290 draw
-calls. The worst frame on the north pan fell from 367 to 222 ms. On an M5 Air at high, it went from 34.0
-to 47.5 fps, at 1,229 against 631 calls. The surprise was how much of the phone's cost was draws, not
-triangles. Hiding the buildings beyond 3 km does more than any triangle cut so far.
+**2. Load at boot, swap what draws.** Every area loads as today, and the mid ring hides each one behind a
+Worker-built LOD: coarse ground, footprint boxes and forest clumps. On a real Galaxy A16 the default
+view went from 23.3 to 30.7 fps, at 562 against 290 draw calls. The phone is bound by draws, not
+triangles. But the default camera looked different: green instead of November orange, dark where
+Midtown's windows sparkle at night, and flatter colours. Tonight's rule is that speed-ups must not
+change what Sam sees.
 
-Nothing is freed yet. Heap after GC is 23 MB higher on low and 51 MB higher on high, because the LOD
-sits on top of every full area. Freeing needs sliced builds, and `docs/expansion-plan.md` now makes
-that the gate for growing past today's 12 areas. [Default camera, day and night, low](log/streaming/default-low.png) ·
-[high](log/streaming/default-high.png)
+**3. Draw only what can be seen.** No LOD. An area whose nearest point is past the fog's full-strength
+distance renders as pure fog colour, so it's hidden. A mesh whose bounding sphere projects under about
+a pixel moves off the render layer. Lights, glows, crowns, signs and emissive or instanced meshes are
+kept by rule. The blink test is today against stream at three cameras, 14:00 and 22:00, in November,
+July and January. At most 0.09% of pixels differ by more than 24/255, and those are moving vehicles.
+The saving is honest but small where the whole board is in view: 558 to 533 draws at the default camera.
+It's larger close in, where fog does the work. At Midtown street level, draws went from 78 to 53 and
+triangles from 1.29M to 0.67M.
+
+The lesson: on today's board, almost every draw at the default camera is visible. The default-view win
+has to come from fewer, bigger batches (the buildings agent's per-cell landmark batches), not from
+skipping things. Streaming earns its keep once the board outgrows the fog, and that needs sliced builds
+first. [Blink test, November](log/streaming/blink-nov20.jpg) ·
+[July, January and close views](log/streaming/blink-seasons-close.jpg)

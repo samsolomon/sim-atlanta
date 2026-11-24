@@ -57,40 +57,30 @@ What a direction needs in order to hold the bar:
 
 ### Tonight's prototype (`?stream=1`)
 
-- **Near ring:** the full area draws.
-- **Mid ring:** the full area is hidden (`group.visible`, no dispose) and a LOD draws in its place. The
-  LOD has three batched meshes per area: coarse ground, every footprint as a minimum-area box, and
-  forest masses. It's built in a Web Worker from the shipped `context.json` and `ground.i16`, and its
-  uploads are staged through `core/load-budget.ts`.
-- **Far ring and long off-screen:** neither draws, and the LOD's buffers are freed.
-- **Radii:** near is 3 km on low and 4.5 km on high, measured to the area's box from the eye, plus the
-  area under the orbit target in a close view. Fog sets the far edge at 3× the orbit distance.
-  Hysteresis and a 4 s dwell stop flicker.
-- **What's saved:** draws and triangles, which is what the A16 is bound by: hiding buildings alone
-  took it from 25.9 to 41 fps in the coordinator's attribution run.
-- **What isn't saved:** heap and GPU memory, which stay at today's level until full areas can be
-  freed and rebuilt without a stall (gate 4).
+Three versions ran tonight. The build log has the full story.
 
-Measured on 2026-11-24, from one build of the prototype (`e8557bb4`) per device. Each cell is today → `?stream=1`.
+1. **Load and free areas as the camera approaches.** Memory came back cleanly. But a full build is one
+   synchronous job, and the worst pan frame went from 50 ms to 533 ms on low (733 ms on high). That fails
+   the bar, and it's why gate 4 exists.
+2. **Load at boot, and draw a LOD in the mid ring** (commit `3ad5b731`). On the A16, the default view went
+   from 23.3 to 30.7 fps, at 562 against 290 draws. Every pan route got faster with lower worst frames
+   (north 367 → 222 ms, wide 178 → 156, dolly 300 → 178). On the M5 Air at high, it went from 34.0 to
+   47.5 fps. But it changed the look: greener, darker at night, flatter colours. The rule is that a
+   speed-up must not change what Sam sees.
+3. **What ships in #435: draw only what can be seen.** Every area loads and keeps its own geometry. An
+   area past the fog's full-strength distance (3× the orbit distance) is hidden. A mesh under about a
+   pixel moves off the render layer, with lights, glows and crowns kept by rule. The blink test (three
+   cameras × 14:00 and 22:00 × November, July and January) shows no visible change. Draws at whole-board
+   views drop only about 4% (558 → 533). Close views save more: Midtown street level goes from 78 to 53
+   draws and 1.29M to 0.67M triangles.
 
-| Run | fps | Worst frame | Draws |
-|---|---|---|---|
-| Galaxy A16, `q=low`, default camera, still | 23.3 → 30.7 | | 562 → 290 |
-| A16, north pan | 34.0 → 36.7 | 367 → 222 ms | |
-| A16, wide pan | 29.6 → 35.9 | 178 → 156 ms | |
-| A16, dolly | 29.7 → 33.3 | 300 → 178 ms | |
-| M5 Air, `q=high`, default camera, still | 34.0 → 47.5 | 100–183 → 68–83 ms | 1,229 → 631 |
-| M5 Air, north pan | 39.2 → 42.5 | 233 → 216 ms | |
-| M5 Air, wide pan (single run) | 32.2 → 33.1 | 100 → **332 ms** | |
-| M5 Air, dolly | 35.7 → 37.9 | 198 → 166 ms | |
-
-The wide pan's 332 ms frame on the M5 is open. The lead's sweep of shader programs shows that a shader
-compiled on its first use mid-pan costs frames of 100 ms or more. That fix is a separate guard
-(`samsolomon/program-guard`), and the guard has to cover the LOD's materials too.
-
-Programs are unchanged on every run (low 85 at 14:00 and 89 at 22:00). Heap after GC is **higher**:
-+23 MB on low and +51 MB on high, because the LOD sits on top of full areas that are still loaded. The
-A16 holds 30 fps still but not yet while panning on every route. Panning is the bar.
+What this means for growth:
+- **The LOD look has to match.** A mid-ring LOD for tiles that never load in full must match the full
+  area's look: the same ground map, the seeded tree colours (`trees/far-canopy.ts`, instanced, season
+  from the clock), the per-building finishes, and the night window share. Otherwise it fails the blink
+  test.
+- **The default-view win on today's board comes from batching** (the buildings agent's per-cell landmark
+  batches and house blocks), not from culling.
 
 ## 1. Tile scheme for the whole square
 
