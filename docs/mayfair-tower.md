@@ -35,6 +35,10 @@ The window base is `#76838c` (S 16%, V 55%), lifted from `#5d676e`, whose sunlit
 
 Both sample cameras use `&dev&mindist=20`.
 
+## Balcony and cornice fix (2026-11-24)
+
+In #488 each balcony rail was a dark iron plate 0.7 m off the wall, and each white cornice band a plate 0.25–0.3 m off it. Nothing joined them back to the wall, and the detachment check (#562) flagged 246 clusters. Each balcony now has a floor slab from the wall out to its rail, and each cornice a top surface. A test flood-fills through shared vertices from every triangle that touches the wall: main had 550 floating triangles, and the fix has none. [North-east corner bay before and after, and four sides](log/ui/mayfair-tower/balcony-fix.jpg)
+
 ## Night
 
 Condominium windows light at 32%, chosen per window by skin-kit's `litHash(seedOf(id), face, floor, bay)`. The lanterns glow and the cones stay dark, as in the park photographs. City adds no beacons.
