@@ -3191,3 +3191,7 @@ Most of the shader headroom came from the first colour frame. City had precompil
 ### 2026-11-23 · Marquis One
 
 Marquis One's glass sits behind 26 rows of precast spandrels. Crossing continuous strips make the 1.55 m window rhythm legible with geometry that scales with the sum of the rows and columns. From Peachtree Center Avenue, the surprise was how much the deep shadow of the double-height lobby separates the tower from the street. The matched night view keeps the crown dark and lights a sparse set of interior panes. The 12-area City budget held at 90 programs on low and 105 on high. [Camera, photographs and captures](log/ui/marquis-one/README.md)
+
+### 2026-11-23 — One freight vehicle per lab entry
+
+Two of the six freight locomotive studies had a boxcar attached. The Model Lab now centers all six locomotives on the same camera presets and gives the existing 50-foot-class boxcar its own entry. [Before](log/freight/standalone/before.jpg) · [After](log/freight/standalone/after.jpg) · [Car library and consist plan](freight-consists.md).
