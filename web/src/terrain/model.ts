@@ -17,6 +17,8 @@ import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-pla
 import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
 import { createWinship, winshipId } from '../city/winship';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
+import { createCrestOnPeachtree, crestOnPeachtreeId } from '../city/crest-on-peachtree';
+import { createTwoPeachtreePointe, twoPeachtreePointeId } from '../city/two-peachtree-pointe';
 import { createModeraParkside, moderaParksideId } from '../city/modera-parkside';
 import { createTheStandard, theStandardId } from '../city/the-standard';
 import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
@@ -352,6 +354,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === crestOnPeachtreeId ? createCrestOnPeachtree(sceneryCity.buildings, site, grid, options.quality)
+      : site.id === twoPeachtreePointeId ? createTwoPeachtreePointe(sceneryCity.buildings, site, grid)
       : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
       : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
       : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)

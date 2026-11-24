@@ -17,6 +17,16 @@ The registration uses the April 2018 lidar (USGS EPT; ground median 296.1 m NAVD
 - [Wikimedia Commons, AtlChampion, 2025](https://commons.wikimedia.org/wiki/File:AColonySq1002511-0966.jpg): the same family of facade on 100 Colony Square, from a second angle.
 - [Lead's Colony Square research](https://github.com/samsolomon/sim-atlanta/blob/fee824c6/docs/research/colony-square.md) and the [Urbanize night walk, January 2022](https://atlanta.urbanize.city/post/photos-wandering-reborn-colony-square-midtown-landmark), which shows scattered lit office floors and bright entries. The holiday displays are left out.
 
+## 2026-11-24 rework
+
+From 400 to 600 m the first skin read as generic, so it was reworked against the 2007 photograph using the shared Colony Square palette (`docs/research/colony-square.md`):
+- tall slit windows between proud, wide precast piers, with warm bronze-grey glass;
+- solid blank corners;
+- the dark mechanical band at the fourteenth window floor;
+- a two-storey blank crown.
+
+Before and after captures are in the PR.
+
 ## Estimates
 
 - 20 window floors at 3.6 m above a 7.8 m lobby, with the band up to the roof.
