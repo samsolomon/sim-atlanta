@@ -278,7 +278,10 @@ export class RoadTraffic {
 
   /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
   private heightAt(lane: LaneState, s: number, x: number, z: number): number | null {
-    const i = Math.floor(s / HEIGHT_STEP), f = s / HEIGHT_STEP - i;
+    const i = Math.floor(s / HEIGHT_STEP), length = lane.course.line.length;
+    // The last step is shorter: its upper sample sits at the lane's end, not a full step on.
+    const s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+    const f = span > 0 ? (s - s0) / span : 0;
     const a = this.profile(lane, i);
     const b = f > 0 ? this.profile(lane, i + 1) : a;
     if (a === NO_ROAD && b === NO_ROAD) return null;

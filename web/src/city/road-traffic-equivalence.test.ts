@@ -104,3 +104,16 @@ describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', 
     }
   });
 });
+
+it('interpolates the shortened last profile step to the lane end', async () => {
+  const { RoadTraffic } = await import('./road-traffic');
+  const { Line } = await import('../vignette/geom');
+  const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts: [[0, 0], [0, 101]] } as never;
+  const line = new Line([[0, 0], [0, 101]]);
+  const course = { line, roads: [road], speedMps: 10, dailyFlow: 1000, truckShare: 0 };
+  const layer = new RoadTraffic({ city: { bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 200 }, roads: [], buildings: [], rail: [] } as never,
+    quality: 'low', hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: (_x, z) => .1 * z }, [course], 4, 1, 'test');
+  const lane = (layer as unknown as { lanes: unknown[] }).lanes[0];
+  const heightAt = (layer as unknown as { heightAt(l: unknown, s: number, x: number, z: number): number | null }).heightAt.bind(layer);
+  for (const s of [0, 3.3, 99.9, 100.5, 101]) expect(heightAt(lane, s, 0, s)).toBeCloseTo(.1 * s, 9);
+});
