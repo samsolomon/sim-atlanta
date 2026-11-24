@@ -22,8 +22,14 @@ const carriageways = new Set(['service', 'residential', 'unclassified', 'tertiar
 // Some mapped sidewalks disappear under a building or into asphalt at this board's
 // resolution. Keep only the walkable portions of the lines actually painted on it.
 export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean): Traveller[] {
-  const buildings = new PlacementIndex<P2[][]>();
-  for (const { rings } of city.buildings) if (rings.length) buildings.add(rings, rings[0]);
+  // Each footprint carries its outer box, so most candidates are rejected without a ring test.
+  const buildings = new PlacementIndex<{ rings: P2[][]; x0: number; x1: number; z0: number; z1: number }>();
+  for (const { rings } of city.buildings) {
+    if (!rings.length) continue;
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const [x, z] of rings[0]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    buildings.add({ rings, x0, x1, z0, z1 }, rings[0]);
+  }
   const lanes = new PlacementIndex<{ a: P2; b: P2; half: number }>();
   const roads = city.roads.filter(r => !r.bridge && !r.tunnel);
   const groundRuns = city.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [];
@@ -39,7 +45,8 @@ export function cityTravellers(city: TerrainCity, ground: GroundAt, low: boolean
   function usable(x: number, z: number, y = ground(x, z)) {
     return x > minX + 1 && x < maxX - 1 && z > minZ + 1 && z < maxZ - 1
       && y !== null
-      && !buildings.at(x, z).some(r => pointInRing(x, z, r[0]) && !r.some((h, i) => i > 0 && pointInRing(x, z, h)))
+      && !buildings.at(x, z).some(({ rings: r, x0, x1, z0, z1 }) => x >= x0 && x <= x1 && z >= z0 && z <= z1
+        && pointInRing(x, z, r[0]) && !r.some((h, i) => i > 0 && pointInRing(x, z, h)))
       && !lanes.at(x, z).some(l => segDist(x, z, l.a, l.b) < l.half + .3);
   }
 

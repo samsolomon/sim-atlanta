@@ -329,6 +329,32 @@ function inventory() {
   };
 }
 
+/** A fingerprint of every mesh's positions and colours in scene order, to prove a load-time
+ * optimisation left the built scene unchanged (compare before/after at the same URL). */
+function hash() {
+  if (!ctx) return null;
+  // Per-mesh FNV, summed: independent of the order areas happened to mount in.
+  let sum = 0;
+  const f = new Float32Array(1);
+  const u = new Uint32Array(f.buffer);
+  let meshes = 0;
+  ctx.scene.traverse(o => {
+    const g = (o as THREE.Mesh).geometry;
+    if (!(o as THREE.Mesh).isMesh || !g) return;
+    meshes++;
+    let h = 2166136261 >>> 0;
+    for (const name of ['position', 'color']) {
+      const a = g.attributes[name] as THREE.BufferAttribute | undefined;
+      if (!a) continue;
+      const arr = a.array;
+      h = Math.imul(h ^ arr.length, 16777619);
+      for (let i = 0; i < arr.length; i++) { f[0] = arr[i]; h = Math.imul(h ^ u[0], 16777619); }
+    }
+    sum = (sum + (h >>> 0)) >>> 0;
+  });
+  return { meshes, hash: sum.toString(16) };
+}
+
 /** The heaviest meshes by triangles (instances included), with their ancestry, for owners. */
 function top(n = 25) {
   if (!ctx) return [];
@@ -561,7 +587,7 @@ function detach(c?: PerfContext) {
 }
 
 export const perf = {
-  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow,
+  enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
   get phases() { return phases.map(p => ({ ...p })); },
