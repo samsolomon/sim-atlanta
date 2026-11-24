@@ -20,7 +20,8 @@ Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds ar
 ## One layout, four places
 
 **Boards: the canvas section "FINAL — the layout to build"** (desktop 01–13, phone
-P1–P8). Every section above it on the canvas is history. Where this brief and an older
+P1–P16), copied into this branch as `docs/ui-a2c/final/F01…F13.jpg` (desktop) and
+`G01…G16.jpg` (phone), with their markup in `docs/ui-a2c/final/source/`. Every section above it on the canvas is history. Where this brief and an older
 board disagree, the Final section wins.
 
 Every view (Map, City and Models) uses the same four places. All glass sits **8 px**
