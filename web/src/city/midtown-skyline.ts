@@ -14,6 +14,7 @@ import { ponceDeLeon } from './midtown-skyline-ponce';
 import { federalReserve } from './midtown-skyline-fed';
 import { symphonyTower } from './midtown-skyline-symphony';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
+import { peachtree1100 } from './midtown-skyline-1100';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 /** Rendered ground in the landmark's street frame, metres above the site grade. */
@@ -108,6 +109,7 @@ const landmarks = [
   { site: sites.terrace, axis: [1,0], probes: [[-31,28],[-12,-25],[36,-20],[29,10]], build: georgianTerrace },
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
+  { site: sites.peachtree1100, axis: [1,1], probes: [[0,0],[-40,0],[0,-20],[0,20]], build: peachtree1100 },
   { site: sites.promenadeCentral, axis: [1,1], probes: [[-35,-20],[40,15],[0,-26],[0,24]], build: promenadeCentral },
 ] satisfies { site: typeof site, axis: P2, probes: P2[], build: (shell: Shell, ground: LocalGround) => unknown }[];
 
