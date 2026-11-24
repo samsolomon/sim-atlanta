@@ -260,3 +260,29 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 **Lab:** the near plane is adaptive beyond 60 m (`fitNearPlane` in `models/main.ts`).
 
 **Next in plan order:** tank (DOT-117 family), open mill gondola, centerbeam, autorack, open coal hopper. Add each to the manifest or unit recipes. The downtown double-stack clearance check is still open.
+
+### Update — 2026-11-24 early (Opus session bceb5cfc)
+
+**Held for Sam.** The coordinator has seen all three:
+- **#404**: Xpress coach, pass 2 (MCI D4500).
+- **#424**: City freight consists, the 53 ft well car, and the clip-plane padding.
+- **#436**: DOT-117 tank car. It is stacked on #424, so retarget it to `main` after #424 merges.
+
+**Clip-plane padding.** `FREIGHT_CLIP_PLANES = 6` saves 1–2 low programs at every clock, and the night sweep now passes (85/85). Road traffic is a padding candidate but has not been changed.
+
+**`CONSIST_VERSION = 2`** since the tank landed. Bump it whenever a recipe or car list changes.
+
+**Camera recipe.** Pick review times by listing passages with a throwaway vitest that calls `norcrossPassage(slot)` and `planPassage(DOWNTOWN_PROFILE, slot, 'csx:downtown')`, then reuse the same phase:
+- Downtown:
+  - cam `640,450,150,50,230`, slot start +2 min;
+  - "up" slots look like 15:12 ET.
+- Brookwood:
+  - cam `-330,-4830,115,58,230`;
+  - "down" slots at +4 min (as at 14:44);
+  - "up" slots at +2.5 min (as at 22:22:30).
+
+**Flaky tests under perf load:** `east-rail` and `square-board/sections` hit 5 s timeouts. Both pass alone.
+
+**Next in plan order:** open mill gondola, centerbeam, autorack, open coal hopper; DPU after those. The downtown double-stack clearance check is still open.
+
+**Environment:** no dev server is running; vite on :5647 stopped at its 2 h limit. One Orca tab, `004ae663`, is parked on about:blank.
