@@ -379,6 +379,11 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       return stripePoint(row,.5-off/travelWidth);
     }
     const walkway = use === 'road' && WALKS.has(run.cls);
+    // The Circle Connection access deck sits on the plaza above freight. Its mapped
+    // ground continuation is a landing on that plaza, while the DEM samples the rail floor.
+    const plazaAccess = use === 'road' && run.cls === 'service' &&
+      [start, end].some(([x, z]) => Math.hypot(x + 236.46, z + 167) < .05) &&
+      [start, end].some(([x, z]) => Math.hypot(x + 226.99, z + 155.19) < .05);
     const inferred = new Map<number, number>();
     const freightEndLevel = new Map<number, number>();
     // A standalone walk may descend to a ground landing. The freight envelope also
@@ -437,7 +442,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         const bank = solvedEnd ?? inferred.get(end)!;
         for (const s of ordered.slice(1)) {
           if (s === last) continue;
-          const slope = Math.max(clustered ? DECK_GRADE : .15, (height - bank) / Math.abs(end - last));
+          const slope = plazaAccess ? DECK_GRADE : Math.max(clustered ? DECK_GRADE : .15, (height - bank) / Math.abs(end - last));
           height = Math.max(inferred.get(s)!, height - slope * Math.abs(s - last));
           inferred.set(s, height);
           last = s;
@@ -514,7 +519,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const ref = end ? h1! : h0!;
             if (!(end ? endCut : startCut) && ends[end][i] !== null) y += blend * (ends[end][i]! - (ref - sceneZero));
           }
-          if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
+          if (inferred.size && (plazaAccess || ((s > 0 || startCut) && (s < line.length || endCut)))) y = Math.max(y, inferred.get(s)!);
           if (freightEndLevel.has(s)) y = Math.max(y, freightEndLevel.get(s)!);
           if (textured) y = freightGrade(x, z, y);
           section.push([x, y + lift, z]);
@@ -847,17 +852,19 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
   }
   const pinned = (key: string) => groundWalks.has(key) && !unpinned.has(key);
-  solve(clusterWalks, true, key => fixedNode(key) || deckNodes.has(key) || pinned(key), demAt);
+  solve(clusterWalks, true, key => fixedNode(key) || deckNodes.has(key) || pinned(key), key => deckNodes.get(key) ?? demAt(key));
   for (const road of throughFirst(bridgeRoads.filter(road => WALKS.has(road.cls)))) { drawDeck(road); yield 'transport bridge ' + road.cls; }
   // Where an unpinned walk end meets mapped steps, draw a flight down to the ground there:
   // stepped blocks in the walk's paving with a rail on each open side.
+  const drawnStairs = new Set<string>();
   for (const run of clusterWalks) for (const p of [run.pts[0], run.pts.at(-1)!]) {
     const key = nodeKey(p), toward = groundSteps.get(key);
-    if (!toward || !unpinned.has(key)) continue;
+    if (!toward || drawnStairs.has(key) || !unpinned.has(key)) continue;
     let top: number | null = null;
     for (const i of roadTreads.get(run) ?? []) { top = triangleHeight(livePositions, i, p[0], p[1]); if (top !== null) break; }
     const ground = terrainGround(p[0], p[1], run);
     if (top === null || ground === null || top - ground < .3) continue;
+    drawnStairs.add(key);
     stairs(p, toward, top, ground, roadWidth(run));
   }
   function stairs(from: P2, toward: P2, top: number, ground: number, width: number) {
@@ -867,14 +874,16 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const rise = top - ground, count = Math.ceil(rise / STAIR_RISE_M), step = rise / count;
     const at = (s: number, off: number, y: number) => [from[0] + dx * s + nx * off, y, from[1] + dz * s + nz * off];
     const half = width / 2;
+    const going = Math.min(STAIR_GOING_M, length / count);
     for (let i = 0; i < count; i++) {
-      const s0 = i * STAIR_GOING_M, s1 = s0 + STAIR_GOING_M, y = top - (i + 1) * step;
+      const s0 = i * going, s1 = s0 + going, y = top - (i + 1) * step;
       const tread = [at(s0, -half, y), at(s0, half, y), at(s1, half, y), at(s1, -half, y)];
+      footbridgeYields.push({ ring: tread.map(([x, , z]) => [x, z]), floor: () => y - .05 });
       structures.quad(tread[0], tread[1], tread[2], tread[3], PAL.sidewalk);
       structures.quad(at(s0, -half, y + step), at(s0, half, y + step), tread[1], tread[0], PAL.sidewalk);
       for (const side of [-half, half]) structures.quad(at(s0, side, y), at(s1, side, y), at(s1, side, ground), at(s0, side, ground), PAL.concreteDark);
     }
-    const run = count * STAIR_GOING_M;
+    const run = count * going;
     for (const side of [-half, half]) {
       const a = at(0, side, top + STAIR_RAIL_M), b = at(run, side, ground + STAIR_RAIL_M);
       structures.quad(a, b, [b[0], b[1] - .06, b[2]], [a[0], a[1] - .06, a[2]], PAL.rail);
