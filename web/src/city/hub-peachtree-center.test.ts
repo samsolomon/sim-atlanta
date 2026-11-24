@@ -27,7 +27,7 @@ it('sets the roof at the lidar height and paints it with the waves', () => {
   expect(result.buildings).toEqual([other]);
   result.group.updateMatrixWorld(true);
   const hit = (x: number, z: number) => new Raycaster(new Vector3(x, 250, z), new Vector3(0, -1, 0)).intersectObject(result.group, true)[0];
-  expect(hit(475, -700).point.y + 300).toBeCloseTo(316.3 + 29.9, 0);
+  expect(hit(475, -700).point.y + 300).toBeCloseTo(316.3 + 29.9, 1); // the lidar roof, 346.2 NAVD88
   // A line across the roof meets both the white roof and the pale-blue waves.
   const wave = new Color('#8db3cf'), white = new Color('#eef0ee');
   const seen = new Set<string>();
