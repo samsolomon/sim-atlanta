@@ -895,8 +895,9 @@ small crowns fit only a few species, crape myrtle and dogwood. Zeros stay zeros:
 sweetgum or Japanese maple at the curb. A crown no wired species fits stays generic and is
 counted (1–3 % per row, mostly small yard crowns). Named sites (trees/sites.ts), landmark
 plantings, crowns the generic World would skip (off-board, inside a building) and boards
-without a canopy rollout (downtown, King Memorial, Sweet Auburn and the north and south bands)
-are untouched. Everything stays `illustrative`.
+without a canopy rollout (downtown, King Memorial and Sweet Auburn) are untouched. The nine
+square-board rows with canopy maps (five Midtown and Brookwood rows plus the north and south
+bands and corners) are converted. Everything stays `illustrative`.
 
 | Row | Crowns (high / low) | Species trees, ordinary (high / low) | Species trees, preview (high / low) | Left generic (high) |
 |---|---:|---:|---:|---:|
@@ -905,14 +906,19 @@ are untouched. Everything stays `illustrative`.
 | midtown-upper | 2,439 / 1,023 | 492 / 256 | 2,419 / 1,011 | 33 |
 | brookwood-south | 3,377 / 1,323 | 532 / 267 | 3,370 / 1,315 | 64 |
 | brookwood-station | 4,067 / 1,557 | 558 / 244 | 4,027 / 1,527 | 63 |
+| north-band | 1,169 / 541 | 165 / 73 | 1,162 / 535 | 7 |
+| north-corner | 672 / 324 | 77 / 38 | 656 / 314 | 16 |
+| south-band | 702 / 376 | 75 / 43 | 692 / 371 | 10 |
+| south-corner | 41 / 23 | 3 / 2 | 41 / 23 | 0 |
+| **All nine** | **16,877 / 7,161** | **2,513 / 1,254** | **16,715 / 7,053** | **255** |
 
-Realised preview mix, all five rows at high (species trees, ordinary placements included):
+Realised preview mix, all nine rows at high (species trees, ordinary placements included):
 
 | Context | Mix |
 |---|---|
-| Street (1,533) | crape myrtle 512, willow oak 463, American elm 297, magnolia 125, water oak 81, dogwood 55 |
-| Yard (10,863) | water oak 2,091, willow oak 1,477, loblolly 1,445, magnolia 1,405, sweetgum 1,070, crape myrtle 928, white oak 920, dogwood 789, Japanese maple 583, American elm 155 |
-| Park (1,671) | loblolly 456, sweetgum 370, dogwood 225, water oak 210, magnolia 189, white oak 142, willow oak 49, American elm 30 |
+| Street (1,835) | crape myrtle 640, willow oak 538, American elm 345, magnolia 145, water oak 96, dogwood 71 |
+| Yard (12,674) | water oak 2,343, magnolia 1,685, loblolly 1,654, willow oak 1,654, sweetgum 1,216, crape myrtle 1,181, white oak 1,045, dogwood 1,008, Japanese maple 712, American elm 176 |
+| Park (2,109) | loblolly 560, sweetgum 471, dogwood 310, water oak 259, magnolia 243, white oak 169, willow oak 61, American elm 36 |
 | Planted (Ansley pairs and islands, 97) | willow oak 25, American elm 25, crape myrtle 24, magnolia 8, water oak 6, Japanese maple 5, dogwood 4 |
 
 ### White oak
