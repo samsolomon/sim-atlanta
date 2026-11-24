@@ -23,8 +23,8 @@ const parkingTop = 22, lobbyTop = 28.4, officePitch = (roofH - lobbyTop) / 20;
 const split = 0.38;
 
 // Flat vertex colours, not library surfaces: a painted mesh compiles its own program.
-const glass = '#3d505c', glassLit = '#3f525e', mullion = '#7d8b92', band = '#bcc4c6';
-const parapetGlass = '#4f6470', deckGlass = '#34434c', roofDeck = '#7d817f';
+const glass = '#6a8694', glassLit = '#6c8896', mullion = '#b3c0c6', band = '#dde2e2';
+const parapetGlass = '#7a95a2', deckGlass = '#58707c', roofDeck = '#7d817f';
 
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 

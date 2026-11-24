@@ -34,7 +34,7 @@ April 2019 3DEP lidar on a 2.5 m raster, measured above the 276.2 m NAVD88 groun
 - **Split between the masses:** 38% of each long face, measured from the east, as judged from the N6 aerial. East of the split, vertical mullions stand about 4.5 m apart. West of it, a silver band 0.95 m deep runs at every office floor.
 - **Ground:** floors are measured from the lidar ground ring (276.2 m NAVD88), the same datum as the roof, not from the rendered grade.
 - **Materials:** flat vertex colours. Every library surface compiles its own shader program, and dark glass, a silver band and a mullion read at the City orbit without texture.
-- **Glass:** very dark blue-grey (`#3d505c`). It reads almost black in the aerial.
+- **Glass:** dark blue-grey with a slight sky tint (`#6a8694`), the darkest tower in its group. The aerial reads almost black, but at midday dark glass still reflects sky. A near-black first pass (`#3d505c`) hid the mullions and bands at the 600 m view, so on review (Sam via the coordinator, 2026-11-24) it was lifted toward the dark end of the planned shared glass palette.
 
 ## Lighting
 
