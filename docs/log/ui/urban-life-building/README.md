@@ -1,0 +1,9 @@
+# Urban Life Building
+
+Georgia State University lists Urban Life at 140 Decatur Street SE. Its downtown outline combines the southeast tower with the northwest wing and gives both twelve floors, with no tagged height. [GSU facilities register](https://facilities.gsu.edu/files/2026/03/Building_List_03312026.pdf)
+
+The 2019 USGS lidar includes 5,248 returns inside the mapped plan. The main wing roof is almost level at 357.8 m NAVD88, the low wing sits at 326.3 m, and the southwest entry wing at 321.6 m. Four tall circular cores reach about 358.8–358.9 m, and the fifth, near the north end, reaches 360.5 m. The two low cores reach 327.4 m. The tallest broad rooftop plant cluster reads about 362.1 m. Street elevations near Piedmont are around 308–309 m. The model uses the lidar breaks for the two wings and fits the round brick cores to the mapped lobes. [USGS Georgia Statewide B2 point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json)
+
+Piedmont shows the round shafts in brown-gray brick, pale horizontal concrete bands, narrow dark windows and a recessed terrace row. The historical plaza view shows the same concrete grid and rounded shafts from the other side. Exact column widths, the depth of the terrace recess and rooftop plant details are estimates. [Piedmont approach, March 2025 Street View](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75231,-84.38499&heading=235&pitch=17&fov=96) · [1974 façade detail](https://dlg.usg.edu/record/gsu_ajc_13297) · [Plaza-side photograph](https://dlg.usg.edu/record/gsu_university_1101) · [Wide archival view](https://dlg.usg.edu/record/gsu_university_364)
+
+Routine nighttime window lighting is estimated. Available emergency-response footage does not establish how the façade is normally lit. The model has sparse warm windows and leaves the exterior shafts dark. City uses the existing staged downtown data and needs a fresh web build to deploy.
