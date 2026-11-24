@@ -285,7 +285,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
       const url = SITE + t.cover.small;
       if (art.dataset.src !== url) {
         art.dataset.src = url;
-        const img = el('img', { src: url, alt: '', width: '40', height: '40', decoding: 'async' });
+        // High priority: on a slow link the cover shouldn't wait behind the prefetching MP3.
+        const img = el('img', { src: url, alt: '', width: '40', height: '40', decoding: 'async', fetchpriority: 'high' });
         art.replaceChildren(img);
       }
     }
