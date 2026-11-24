@@ -4133,3 +4133,15 @@ The audit rated Loews borderline: a plain framed-glass tower among others. My fi
 ### 2026-11-24 · A phantom tower behind the Westin
 
 From the default City camera, a 78.7 m block stood behind the Westin. Overture had given that height to a parking deck. The 2019 lidar is flat at 27.7 m across the whole outline, and OSM maps the same footprint as a multi-storey deck. The skin draws the deck at its real height, with ribbed spandrels and louvred screens, in under 400 triangles. It is the cheapest correction of the night, and possibly the most visible. [Before/after from the default camera](log/ui/aym-deck/README.md)
+
+### 2026-11-24 — Courtland Grand's two towers
+
+The Courtland Grand hotel was one 41 m generic block. A 10 m grid of 2019 lidar
+returns showed what was really there: a 31 m slab along Ellis Street, a 29 m
+tower rising to 34 m on the north side, and an 11 m podium between them that holds
+the glass-roofed courtyard pool. City now draws the 1960s slab's cream scalloped
+balconies, which are its signature in photos, and the 1998 north tower's blue glass
+bands. My first version drew the north tower as a rectangle, which spilled 8 m
+past the mapped outline where the north edge steps in. A footprint test caught it
+before any screenshot did.
+[Before and after](log/ui/courtland-grand/compare-s.jpg) · [notes](courtland-grand.md)
