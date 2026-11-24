@@ -21,7 +21,7 @@ The frame runs u east along 12th Street and v south, with the origin at the lot 
 | Raised middle of the crown, on the broad east and west faces | 24 × 17.5 | 223.4–228 | the reported 749 ft; the step is read from the April 2026 photograph |
 
 - **Tower glass.** Blue-grey reflective glass, `#7d97ad`, with a light floor line every storey and a mullion line every unit of about 4.6 m. All of these are estimated.
-- **Balcony slots.** Each tower face has a 3 m wide, 1.5 m deep balcony slot running full height, offset as a pinwheel to match the pinwheel floor plan. The April photograph shows one off-centre slot per face; their positions are estimated.
+- **Balcony slots.** Each tower face has a 4.5 m wide, 1.5 m deep balcony slot running full height, with a light rail line at each floor (the April 2026 close-up shows the slot spanning about a fifth of a face), offset as a pinwheel to match the pinwheel floor plan. The April photograph shows one off-centre slot per face; their positions are estimated.
 - **Office block.** A light precast grid at a 3.1 m bay and 4.5 m floors.
 - **Base.** Limestone lobby glazing up to 5.6 m, vertical screen fins over the parking levels, and a glazed Commons band at 32–36 m.
 
