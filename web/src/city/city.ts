@@ -84,6 +84,7 @@ import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
 import { createMuseumTower } from './museum-tower';
+import { createCourtlandGrand } from './courtland-grand';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createTDeck } from './t-deck';
@@ -475,6 +476,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
   let museumTower: ReturnType<typeof createMuseumTower> = null;
+  let courtlandGrand: ReturnType<typeof createCourtlandGrand> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let tDeck: ReturnType<typeof createTDeck> = null;
@@ -640,7 +642,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         footballHall = createFootballHall(afterTwoPeachtree, ground);
         const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
         museumTower = createMuseumTower(afterFootballHall, ground);
-        const afterMuseumTower = museumTower?.buildings ?? afterFootballHall;
+        const afterMuseumTowerOnly = museumTower?.buildings ?? afterFootballHall;
+        courtlandGrand = createCourtlandGrand(afterMuseumTowerOnly, ground);
+        const afterMuseumTower = courtlandGrand?.buildings ?? afterMuseumTowerOnly;
         oneParkTower = createOneParkTower(afterMuseumTower, ground);
         const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
@@ -708,6 +712,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
         if (museumTower) world.group.add(museumTower.group);
+        if (courtlandGrand) world.group.add(courtlandGrand.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (tDeck) world.group.add(tDeck.group);
@@ -768,7 +773,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, tDeck, hardRock, theLandmark,
+            peachtree, library, flatiron, healey, footballHall, museumTower, courtlandGrand, oneParkTower, parkPlaceTower, tDeck, hardRock, theLandmark,
             fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
@@ -1938,6 +1943,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       healey?.setNight(night);
       footballHall?.setNight(night);
       museumTower?.setNight(night);
+      courtlandGrand?.setNight(night);
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
       tDeck?.setNight(night);
