@@ -57,7 +57,7 @@ export function create715Peachtree(buildings: VBuilding[], site: VBuilding, grid
       const y0 = base + r * rowPitch + rowPitch * 0.22, y1 = base + (r + 1) * rowPitch - rowPitch * 0.12;
       for (let k = 0; k < bays; k++) {
         const l = (k + 0.2) / bays, rr = (k + 0.8) / bays;
-        shell.body.quad(out(l, y0, 0.06), out(l, y1, 0.06), out(rr, y1, 0.06), out(rr, y0, 0.06), reveal);
+        shell.body.quad(out(l, y0, 0.035), out(l, y1, 0.035), out(rr, y1, 0.035), out(rr, y0, 0.035), reveal);
       }
     }
     // The pane inside each reveal: lit at night as an office, mostly dark.
