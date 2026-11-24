@@ -2,6 +2,10 @@
 
 ## Current handoff · 24 November 2026
 
+**Street landing release update.** Ground contact owns #418 at `650ccca8fedc47136775c66ba31c976dd687c5a7` on main base `f0de61a38f445cd4e7bb0260acf760f132257940`. Sam accepted the correction in `5ae7ee05`. The integrated successor matches all 51 signed samples. Full tests, production build, both-tier performance, night and 6× motion passed. The cross-model review command returned no review because the Studio Claude CLI reached its weekly limit. Next action is an independent review of the exact head and guarded merge after the gate clears. Keep #476 open and held and retarget it to main before merging its base. [#418 with matched views and controlled sedan pass](https://github.com/samsolomon/sim-atlanta/pull/418)
+
+**Williams and support evidence.** #476 leaves center tread gaps on both sides of the tile cut. Nearby valid top heights differ by 1.670 m and 0.561 m on the two links. Under the one-lane link City shows just 2.392 m top-to-top separation over Spring Techwood Connector. Ground contact supplied the two-tile signed profiles, vehicle traces and underside views. Both Williams and Ellis generic road paths omit intermediate supports at these sites. Connector owns the shared profile pilot, including the independent 9235148 holdout. No pier locations are established by the trace.
+
 **Accountable owner.** Ground contact owns Capitol Gateway integration on `samsolomon/capitol-crossing-trace`, based on deployed commit `e1667baa27bd057fdbf8992aac66e719403390ac`. Connector and rail supplied evidence and reported no overlapping geometry edits. Ground contact integrates the reviewed correction once.
 
 **Next action.** Compare the baseline oblique render with Sam’s screenshot, inspect the overhead and low side frames, and fit the upper deck profile from lidar. Keep the correction within deck 1451206624 and its attached road and pedestrian surfaces. Check both freeway directions beneath it and continuity across the downtown/south-band seam.
