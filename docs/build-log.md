@@ -3399,7 +3399,7 @@ The first render of Hanover Midtown was the generic box, because the mapped podi
 
 ### 2026-11-24 · Loews and the hotel next door
 
-Loews Atlanta's mapped height of 79.9 m looked low for a 2010 tower, but the lidar agrees. The roof is at 405 m NAVD88 over a 295 m street, with the Peachtree half rising to 411.5 m and the west wing stopping at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
+Loews Atlanta's parts carry a mapped 79.9 m, which is no roof at all. The lidar puts the tower at 405 m NAVD88 over a 295 m street, and the Peachtree half at 411.5 m, about 117 m, which matches the site's mapped 118.3 m. The west wing stops at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
 
 ### 2026-11-24 · Sora at Spring Quarter, part by part
 
@@ -3415,4 +3415,28 @@ face is teal glass with white slab edges. The body is 671 triangles. I found no
 night photograph, so the lit share of rooms is an estimate.
 [South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
 [north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
+
+### 2026-11-24 · Twelve Midtown gets its spires
+
+Twelve Midtown at Atlantic Station had been a plain 85 m block that also covered its low service wing. The lidar finds the slab along 17th Street with its roof at 87 m. Its maximum, 96.5 m, comes from the two pointed spires over each end, which every SKYDB photograph shows. The skin draws the slab in pale precast and teal glass, adds balcony rows on the high tier and the spires on both tiers, and drops the wing to its measured 8.5 m. On the phone tier it costs 542 triangles and two draws. [Before/after, day and night](log/ui/twelve-midtown/README.md)
+
+
+**2026-11-24 — 400 Colony Square, read from a height map.** For the second tower I sampled the lidar on a 2 m grid in the street frame and printed the median height of each cell. The roof became readable: an 83.3 m rectangle, 38 by 55.5 m, with an 86–89 m parapet that the lidar catches best on two edges (drawn all round), with a two-step core at 89.9 and 91.2 m in the middle. The "podium" heights that worried the survey were the parapet and the tower's own edge. Both Colony Square towers now come from one module that takes a frame, a plan, floors and a list of cores. 400 adds 685 triangles. [Captures and evidence](log/ui/400-colony-square/README.md)
+
+## 2026-11-24: 1355 Peachtree gets its crown
+
+1355 Peachtree is now a red-brick tower. It steps back three times under cream cornices, rises to a pitched, pedimented crown, and stands over a limestone base and brick podium wings. The surprise was the podium. The mapped heights treated it as one 32 m block, but the lidar shows corner pavilions standing up to 41 m. Measuring each of the ten parts on its own lifted half of them by 3 to 8 m. The pitched crown also shows up in the lidar as a spread: a median of 74.8 m and a maximum of 77.1 m, which sets the eaves and the ridge.
+[Before and after](log/ui/1355-peachtree/compare.jpg) · [day and night](log/ui/1355-peachtree/daynight.jpg) · [close](log/ui/1355-peachtree/close.jpg)
+
+### 2026-11-24 — Two Midtown Plaza's ribbon glass
+
+Two Midtown Plaza (1986) now wraps its half-round west end in blue reflective
+ribbon glass, with a maroon band at every floor and a dark red granite shaft
+where the curve meets the straight slab. The base is red granite. The mapped
+parts carry separate lidar roofs: 78 m on the slab and 73 m on the round end,
+the step visible in the 2009 dusk photograph. Listings disagree between 17 and
+20 storeys. The photographs show 15 glass bands over two granite storeys, so the
+model follows them. At night the lobby drum glows and the offices stay mostly
+dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
+[night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
