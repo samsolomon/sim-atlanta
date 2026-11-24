@@ -12,6 +12,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { activePort } from './chrome-cdp.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
@@ -25,13 +26,12 @@ mkdirSync(out, { recursive: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const port = 9500 + Math.floor(Math.random() * 90);
 const profile = mkdtempSync(join(tmpdir(), 'trace-chrome-'));
-const chrome = spawn(CHROME, [`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
+const chrome = spawn(CHROME, ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
   '--enable-precise-memory-info', ...(headless ? ['--headless=new'] : []), desktop ? '--window-size=1440,900' : '--window-size=420,920', 'about:blank'], { stdio: 'ignore' });
 try {
   let wsUrl;
-  for (let i = 0; i < 50 && !wsUrl; i++) { try { wsUrl = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { await sleep(200); } }
+  for (let i = 0; i < 50 && !wsUrl; i++) { try { wsUrl = (await (await fetch(`http://127.0.0.1:${await activePort(profile)}/json`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { await sleep(200); } }
   const ws = new WebSocket(wsUrl);
   await new Promise(r => ws.addEventListener('open', r, { once: true }));
   let id = 0;

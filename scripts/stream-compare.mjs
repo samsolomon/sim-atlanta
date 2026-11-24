@@ -12,6 +12,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { activePort } from './chrome-cdp.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -96,14 +97,13 @@ function table(rs) {
  */
 async function leakCheck() {
   const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  const cdp = 9800 + Math.floor(Math.random() * 150);
   const profile = mkdtempSync(join(tmpdir(), 'leak-chrome-'));
-  const chrome = spawn(CHROME, [`--remote-debugging-port=${cdp}`, `--user-data-dir=${profile}`, '--headless=new', '--no-first-run',
+  const chrome = spawn(CHROME, ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--headless=new', '--no-first-run',
     '--enable-precise-memory-info', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
   const rows = [];
   try {
     let wsUrl;
-    for (let i = 0; i < 50 && !wsUrl; i++) { try { wsUrl = (await (await fetch(`http://127.0.0.1:${cdp}/json`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { await sleep(200); } }
+    for (let i = 0; i < 50 && !wsUrl; i++) { try { wsUrl = (await (await fetch(`http://127.0.0.1:${await activePort(profile)}/json`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { await sleep(200); } }
     const ws = new WebSocket(wsUrl);
     await new Promise(r => ws.addEventListener('open', r, { once: true }));
     let id = 0;
