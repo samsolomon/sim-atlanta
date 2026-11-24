@@ -1209,6 +1209,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
+    view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
