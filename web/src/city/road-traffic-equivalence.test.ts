@@ -233,3 +233,77 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
     expect(calls / samples).toBeLessThan(.08);
   });
 });
+
+describe('road traffic bridges cracks narrower than a tyre, and nothing wider', () => {
+  type Inner = { lanes: unknown[]; heightAt(lane: unknown, s: number, x: number, z: number): number | null };
+  const city = { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 }, roads: [], buildings: [], rail: [] } as never;
+  const hourly = { weekday: Array(24).fill(1), weekend: Array(24).fill(1) };
+  async function layerOn(pts: [number, number][], roadHeight: (x: number, z: number) => number | null) {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    const course = { line: new Line(pts), roads: pts.slice(1).map(() => road), speedMps: 10, dailyFlow: 1e9, truckShare: 0 };
+    const layer = new RoadTraffic({ city, quality: 'low', hourly, roadHeight }, [course], 64, 1, 'test') as unknown as Inner;
+    return { layer, lane: layer.lanes[0] };
+  }
+
+  it('bridges the two real cracks between their rims at every knot alignment', async () => {
+    const { default: sites } = await import('./fixtures/traffic-height-cracks.json');
+    for (const { samples } of sites as unknown as { samples: [number, number, number, number | null][] }[]) {
+      // The recorded drawn surface, every 1 cm along the real lane, around the crack.
+      const ys = samples.map(r => r[3]);
+      const trend = (k: number) => ys[0]! + (ys.at(-1)! - ys[0]!) * k / (ys.length - 1);
+      const crack = ys.map((y, k) => y === null || Math.abs(y - trend(k)) > .03);
+      const first = crack.indexOf(true), last = crack.lastIndexOf(true);
+      expect(first).toBeGreaterThan(30);
+      expect(last - first).toBeLessThan(25); // narrower than 25 cm
+      const rims = [ys[first - 1]!, ys[last + 1]!];
+      for (let o = 0; o < 25; o++) { // shift where the profile's knots fall
+        const window = samples.slice(o);
+        const near = (x: number, z: number) => {
+          let best = 0, d = Infinity;
+          for (let k = 0; k < window.length; k++) { const e = (window[k][1] - x) ** 2 + (window[k][2] - z) ** 2; if (e < d) { d = e; best = k; } }
+          return window[best][3];
+        };
+        const { layer, lane } = await layerOn(window.map(r => [r[1], r[2]] as [number, number]), near);
+        let s = 0;
+        for (let k = 0; k < window.length; k++) {
+          if (k) s += Math.hypot(window[k][1] - window[k - 1][1], window[k][2] - window[k - 1][2]);
+          const got = layer.heightAt(lane, s, window[k][1], window[k][2]);
+          expect(got).not.toBeNull();
+          if (crack[k + o]) {
+            expect(got!).toBeGreaterThanOrEqual(Math.min(...rims) - .01);
+            expect(got!).toBeLessThanOrEqual(Math.max(...rims) + .01);
+          } else expect(Math.abs(got! - ys[k + o]!)).toBeLessThan(.02);
+        }
+      }
+    }
+  });
+
+  it('never bridges a 30 cm gap or dip, and always bridges an 18 cm one, at every alignment', async () => {
+    const pts: [number, number][] = [[0, 0], [0, 20]];
+    for (const width of [.3, .18]) for (const kind of ['hole', 'dip'] as const) for (let o = 0; o < 26; o++) {
+      const from = 9 + o / 100, to = from + width;
+      const { layer, lane } = await layerOn(pts, (_x, z) => z > from && z < to ? (kind === 'hole' ? null : -5) : .02 * z);
+      for (let s = from + .005; s < to; s += .01) {
+        const got = layer.heightAt(lane, s, 0, s);
+        if (width >= .25) expect(got).toBe(kind === 'hole' ? null : -5);
+        else expect(Math.abs(got! - .02 * s)).toBeLessThan(.01);
+      }
+    }
+  });
+});
+
+it('never bridges a crack within a tyre’s width of a lane end', async () => {
+  const { RoadTraffic } = await import('./road-traffic');
+  const { Line } = await import('../vignette/geom');
+  const pts: [number, number][] = [[0, 0], [0, 20]];
+  const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+  for (const [from, to] of [[19.9, 19.98], [0.02, 0.1]]) {
+    const course = { line: new Line(pts), roads: [road], speedMps: 10, dailyFlow: 1e9, truckShare: 0 };
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: (_x, z) => z > from && z < to ? null : 0 }, [course], 64, 1, 't');
+    const inner = layer as unknown as { lanes: unknown[]; heightAt(l: unknown, s: number, x: number, z: number): number | null };
+    for (let s = from + .01; s < to; s += .01) expect(inner.heightAt(inner.lanes[0], s, 0, s)).toBeNull();
+  }
+});
