@@ -3,6 +3,7 @@ import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 const precast = '#cbc3b2',
   bands = '#bcb5a7',
@@ -80,7 +81,6 @@ interface MarquisSpec {
   centre: [number, number];
   /** Double-width panes in elongated Vs on the north (−v) wall. */
   northVs?: boolean;
-  seed: number;
 }
 
 /**
@@ -125,8 +125,9 @@ function marquisTower(buildings: VBuilding[], grid: GroundGrid, spec: MarquisSpe
         point(r, hi, depth), point(r, lo, depth), color);
     return { length, panel, bays: Math.max(1, Math.round(length / BAY)), normal: [dz / length, -dx / length] };
   };
-  const lit = (floor: number, bay: number, edge: number) =>
-    (floor * 29 + bay * 17 + edge * 41 + spec.seed) % 83 === 0;
+  // The shared lit-pane hash at the old density (1 in 83 panes); a linear modulus drew diagonals.
+  const seed = seedOf(spec.id);
+  const lit = (floor: number, bay: number, edge: number) => litHash(seed, edge, floor, bay) < 1 / 83;
   const pier = 0.25, band = pitch * 0.355;
 
   // Spandrels cross continuous piers; each run draws one strip per pier and floor.
@@ -184,7 +185,7 @@ export function createMarquisOne(buildings: VBuilding[], grid: GroundGrid) {
   const tower = marquisTower(buildings, grid, {
     id: 'd36a5d7e-165d-4008-a4be-6d32c4c55f0b', name: 'Marquis One',
     origin: [552, -810], axis: [1, 0.015], probes: [[0, 0], [-25, -12], [25, 12]],
-    centre: [-5.55, 3.7], seed: 0,
+    centre: [-5.55, 3.7],
   });
   if (!tower) return null;
   const { s, shaft } = tower;
@@ -222,7 +223,7 @@ export function createMarquisTwo(buildings: VBuilding[], grid: GroundGrid) {
   const tower = marquisTower(buildings, grid, {
     id: '2b0270ee-9f6a-44c9-bf0d-e6fb20e6c47c', name: 'Marquis Two',
     origin, axis, probes: [[0, 0], [-25, -13], [25, 14]],
-    centre: [-5.08, 4.17], northVs: true, seed: 37,
+    centre: [-5.08, 4.17], northVs: true,
   });
   if (!tower) return null;
   const { s, shaft } = tower;
