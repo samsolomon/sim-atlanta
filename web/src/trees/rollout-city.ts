@@ -30,6 +30,14 @@ export const ROLLOUT_LOOKS: Record<RolloutSpecies, Look> = {
 /** Sam's pick for every rolled-out species. */
 const OPTION = 'A';
 
+/** Diagnostic only: never change an ordinary visit, or the high tier. */
+export function treeProbe(search: string, quality: TreeQuality) {
+  const p = new URLSearchParams(search), perf = p.get('perf');
+  if (quality !== 'low' || perf === null || perf === '0' || perf === 'off') return null;
+  const probe = p.get('treeprobe');
+  return ['mask-off', 'shadow-off', 'foliage-off', 'carpet-off'].includes(probe ?? '') ? probe : null;
+}
+
 export interface RolloutRowInput {
   roads: VRoad[];
   ground?: VGround[];
@@ -82,6 +90,7 @@ export class RolloutBatch {
   private state = { doy: null as number | null, far: false, night: 0, wet: 0 };
   private pending = false;
   private materials = new Set<THREE.Material>();
+  private probe() { return treeProbe(typeof location === 'undefined' ? '' : location.search, this.quality); }
   constructor() {
     this.group.name = 'tree rollout';
     this.group.userData.perf = 'trees';
@@ -102,6 +111,7 @@ export class RolloutBatch {
   /** Build now (tests, and before a measurement). */
   flush() { if (this.pending) { this.pending = false; this.rebuild(); } }
   private rebuild() {
+    const probe = this.probe();
     for (const l of this.looks) l.dispose();
     this.carpet?.dispose();
     this.carpet?.mesh.removeFromParent();
@@ -116,13 +126,21 @@ export class RolloutBatch {
       const placements = all.filter(t => t.species === id).map(t => t.p);
       if (!placements.length) continue;
       // One shared carpet (below), not one per look.
-      const l = createLook(placements, look, OPTION, this.quality, groundAt, { carpet: false });
+      const renderedLook = probe === 'mask-off'
+        ? { ...look, options: look.options.map(o => ({ ...o, ink: undefined })) }
+        : look;
+      const l = createLook(placements, renderedLook, OPTION, this.quality, groundAt, { carpet: false });
       if (!l) continue;
       l.group.userData.perf = 'trees';
       const tips: THREE.Object3D[] = [];
       l.group.traverse(o => {
         // Bare limbs inside a crown cast next to nothing: no shadow-pass draw for them.
         if (o.name.endsWith(' limbs')) o.castShadow = false;
+        if (o.name.includes(' foliage ')) {
+          if (probe === 'shadow-off') o.castShadow = false;
+          // The foliage-mask pass also respects mesh visibility.
+          if (probe === 'foliage-off') o.visible = false;
+        }
         if (o.name.endsWith(' leaf tips')) tips.push(o);
         if (o instanceof THREE.Mesh) for (const m of [o.material].flat()) this.materials.add(m);
       });
@@ -156,7 +174,7 @@ export class RolloutBatch {
     if (d.farTrees === undefined) return;
     this.state.far = d.farTrees;
     for (const l of this.looks) l.setDetail(d);
-    if (this.carpet) this.carpet.mesh.visible = !d.farTrees;
+    if (this.carpet) this.carpet.mesh.visible = !d.farTrees && this.probe() !== 'carpet-off';
     this.showTips();
   }
   /** High detail: near leaf tips follow the camera (cheap: re-sorts only after a 1 m move). */
