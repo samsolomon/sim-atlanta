@@ -2992,3 +2992,7 @@ The first Model Lab study follows the oval Bradford form. Four sizes share an up
 ### 2026-11-23 — Callery pear fills out below the fork
 
 The first pear looked like white twigs above a long pole. The larger trees now fork at about 2 m, and a broad teardrop holds both the summer leaf cards and the March flower mass. Separate petal cards made the biggest difference at distance. The 300 m high-detail crown mask grew from 181 to 1,638 pixels, and the white mass reads on the ordinary Lab backdrop. A small late cluster can remain at leaf-out after the large flower cards have fallen. The mature tree costs 195 / 141 triangles, and July Front luminance is 0.242 / 0.250 against the generic canopy’s 0.248. [Side-by-side sheet with distance, winter and summer](log/ui/tree-species/options-callery-pear.jpg).
+
+### 2026-11-23 — Callery pear bloom gets texture and shade
+
+The full white silhouette worked at 300 m, but close up the bloom looked like sheets of cotton. Twenty small crown cards at high detail and thirteen at low now carry clusters of opaque petals, with small openings for the wood. The surprise was how much light contributed to the fluffy look. Restoring the atlas greys and the darker underside brought out detail without sacrificing the distant bloom. Spring and July use the same crown centers, with the lowest foliage around the 2 m fork in the mature tree. The cost is 195 / 135 triangles. [Matched eye-level and distance sheet](log/ui/tree-species/options-callery-pear.jpg).

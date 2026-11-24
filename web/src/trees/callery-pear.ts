@@ -8,7 +8,7 @@ const habit: Habit = {
   trunkTop: 0.25, crownBase: 0.13, widest: 0.36,
   limbs: { high: 4, low: 3 }, limbAngle: 1.1, limbFrom: [0.24, 0.37], limbReach: 0.9,
   ragged: 0.065, bark: '#736c65', barkDark: '#605a54',
-  mass: { r: 0.68, low: -0.76, high: 0.77 },
+  mass: { r: 0.63, low: -0.87, high: 0.77 },
   tiers: { high: [3, 4, 2], low: [3, 2, 1] },
   bySize: {
     sapling: { crownBase: 0.21, widest: 0.49 },
@@ -74,8 +74,8 @@ export const calleryPear: typeof base = {
 };
 export const calleryPearLook: Look = {
   species: calleryPear, habit, leaf: 'oval', palette,
-  bloomColour, bloomFill: 0.52, branchBloom: 'crown',
+  bloomColour, bloomFill: 0.29, branchBloom: 'crown',
   options: [{ id: 'A', label: 'Broad teardrop crown', technique: 'cards', ink: 2, specks: 0.05,
-    units: { high: 20, low: 13 }, cover: 1.12,
+    units: { high: 20, low: 13 }, cover: 1.2,
     note: 'Low upright boughs carry a full crown of white March bloom, glossy oval leaves in July and late burgundy foliage.' }],
 };

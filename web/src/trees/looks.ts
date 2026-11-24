@@ -218,10 +218,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   const clusters = lookClusters(look, opt, size, q, opt.units[q], seed);
   const b = new FoliageBuilder();
   if (look.branchBloom) branchBlooms(b, look.species.form(size, q, d).segs, d, seed, look.branchBloom === 'twigs');
-  if (look.branchBloom === 'crown') {
-    const flowerClusters = lookClusters(look, opt, size, q, q === 'high' ? 14 : 11, seed + 7);
-    crownBlossoms(b, flowerClusters, seed + 8);
-  }
+  if (look.branchBloom === 'crown') crownBlossoms(b, clusters, seed + 8);
   if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);

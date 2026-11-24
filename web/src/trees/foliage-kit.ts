@@ -357,7 +357,7 @@ export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, bloomFill = 0, sp
       .replace('#include <project_vertex>', '#include <project_vertex>\nvFacePos = mvPosition.xyz;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 vLeaves = aLeaves;
-vChip = aMass.z != 0.0 ? 1.0 : 0.0;
+vChip = aMass.z > 0.0 && aMass.y < 0.0 ? 2.0 : (aMass.z != 0.0 ? 1.0 : 0.0);
 if (aMass.z > 0.0) { if (aMass.z > aBloom.a) transformed = vec3(0.0); }
 if (aMass.z < 0.0 && aLeaves >= aMass.y) transformed = vec3(0.0);
 ${textured ? '' : 'else if (aMass.z == 0.0 && aMass.y > aLeaves) transformed = vec3(0.0);'}`);
@@ -373,6 +373,7 @@ ${textured ? '' : 'else if (aMass.z == 0.0 && aMass.y > aLeaves) transformed = v
         // (it also clears dark, steeply angled cards from the crown's interior).
         ? `float facing = abs(dot(normalize(cross(dFdx(vFacePos), dFdy(vFacePos))), normalize(vFacePos)));
 if (vChip < 0.5) diffuseColor.a *= smoothstep(0.12, 0.35, facing);
+if (vChip > 1.5) diffuseColor.a *= smoothstep(0.16, 0.48, facing);
 #include <alphatest_fragment>
 if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.005)) discard;`
         : '#include <alphatest_fragment>');
@@ -385,7 +386,7 @@ if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.
       sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
   vec4 texel = texture2D(map, vMapUv);
   diffuseColor.a *= texel.a;
-  diffuseColor.rgb *= mix(1.0, texel.r, 0.25);
+  diffuseColor.rgb *= vChip > 1.5 ? texel.r : mix(1.0, texel.r, 0.25);
 #endif`);
     }
     if (specks > 0 && textured) {
@@ -507,25 +508,31 @@ function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number, wi
   }
 }
 
-/** Overlapping white corymbs in the pear's flower tile, with a loose edge and a dense centre. */
+/** A spray of small corymbs, separated by narrow gaps even at peak bloom. */
 function paintFlowerMass(g: CanvasRenderingContext2D, ox: number, oy: number) {
   const random = rng(712);
-  for (let i = 0; i < 480; i++) {
-    const a = random() * Math.PI * 2;
-    const r = 48 * Math.sqrt(random());
-    const x = ox + 54 + Math.cos(a) * r;
-    const y = oy + 54 + Math.sin(a) * r * 0.93;
-    const turn = random() * Math.PI;
-    const petal = 1.15 + random() * 0.9;
-    g.fillStyle = i % 7 === 0 ? '#ddd' : i % 3 === 0 ? '#eee' : '#fff';
-    g.beginPath();
-    for (let k = 0; k < 5; k++) {
-      const angle = turn + k * Math.PI * 2 / 5;
-      const px = x + Math.cos(angle) * petal, py = y + Math.sin(angle) * petal;
-      g.moveTo(px + petal, py);
-      g.arc(px, py, petal, 0, Math.PI * 2);
+  for (let i = 0; i < 76; i++) {
+    const angle = i * Math.PI * (3 - Math.sqrt(5));
+    const r = 47 * Math.sqrt((i + random()) / 76);
+    const x = ox + 54 + Math.cos(angle) * r + (random() - 0.5) * 5;
+    const y = oy + 54 + Math.sin(angle) * r * 0.93 + (random() - 0.5) * 5;
+    const grey = 202 + Math.floor(random() * 53);
+    for (let j = 0; j < 9; j++) {
+      const a = random() * Math.PI * 2;
+      const dist = 4.9 * Math.sqrt(random());
+      const px = x + Math.cos(a) * dist, py = y + Math.sin(a) * dist;
+      const petal = 0.8 + random() * 0.65;
+      const value = Math.min(255, grey + Math.floor(random() * 24));
+      g.fillStyle = `rgb(${value},${value},${value})`;
+      g.beginPath();
+      for (let k = 0; k < 5; k++) {
+        const turn = a + k * Math.PI * 2 / 5;
+        const fx = px + Math.cos(turn) * petal, fy = py + Math.sin(turn) * petal;
+        g.moveTo(fx + petal, fy);
+        g.arc(fx, fy, petal, 0, Math.PI * 2);
+      }
+      g.fill();
     }
-    g.fill();
   }
 }
 
@@ -537,21 +544,25 @@ export function crownBlossoms(b: FoliageBuilder, units: Unit[], seed: number) {
   const random = rng(seed);
   const up = new THREE.Vector3(0, 1, 0);
   const uv = fanUV(BLOOM_X);
+  const crownTop = Math.max(...units.map(u => u.c[1]));
   for (const [i, u] of units.entries()) {
     const c = new THREE.Vector3(...u.c);
-    const normal = new THREE.Vector3(...u.n).setY((random() - 0.5) * 1.25);
+    const normal = new THREE.Vector3(...u.n).setY((random() - 0.5) * 0.95).applyAxisAngle(up, (random() - 0.5) * 1.3);
     if (normal.lengthSq() < 0.05) normal.set(Math.cos(u.tone * 8), 0.3, Math.sin(u.tone * 8));
     normal.normalize();
     const across = up.clone().cross(normal).normalize();
     const rise = normal.clone().cross(across);
     // Dense cards fall away before leaf-out. A small late cluster can linger on the wood.
-    const w = u.r * (i === 0 ? 0.46 : 1.5);
+    const w = u.r * (i === 0 ? 0.43 : 1.28);
     const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) =>
       c.clone().addScaledVector(across, x * w).addScaledVector(rise, y * w * 0.99));
     const order = 0.24 + random() * 0.74;
     const opensAt = i === 0 ? 0.045 : order;
-    b.tri([p[0], p[1], p[2]], WHITE, u, [uv[0], uv[1], uv[2]], opensAt);
-    b.tri([p[0], p[2], p[3]], WHITE, u, [uv[0], uv[2], uv[3]], opensAt);
+    const colour = WHITE.clone().multiplyScalar(0.70 + 0.30 * Math.min(1, u.c[1] / crownTop));
+    // Negative drop is reserved for blossom cards that carry their own texture shading.
+    const petal = { tone: u.tone, drop: -1 };
+    b.tri([p[0], p[1], p[2]], colour, petal, [uv[0], uv[1], uv[2]], opensAt);
+    b.tri([p[0], p[2], p[3]], colour, petal, [uv[0], uv[2], uv[3]], opensAt);
   }
 }
 
@@ -591,9 +602,9 @@ export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: numb
     const turn = i % 4 === 1 ? -1 : 1;
     walk(inner, 0.64, turn * 0.98, 0.42, 0.19);
     walk(outer, 0.24, -turn * 0.65, 0.56, 0.32);
-    walk(outer, 0.68, turn * 0.36, 0.42, 0.22);
+    if (withFlowers) walk(outer, 0.68, turn * 0.36, 0.42, 0.22);
     // Shoots from opposing boughs fill the interior without making a solid canopy.
-    if (i === 1 || i === 5) walk(outer, 0.49, Math.PI - turn * 0.37, 0.53, 0.29);
+    if (withFlowers && (i === 1 || i === 5)) walk(outer, 0.49, Math.PI - turn * 0.37, 0.53, 0.29);
   }
 }
 
