@@ -46,10 +46,12 @@ export function createSkyView(buildings: VBuilding[], grid: GroundGrid) {
   for (let k = 0; k < SPOKES; k++) {
     const a = (k * 2 * Math.PI) / SPOKES + Math.PI / 2, n = [-Math.sin(a), Math.cos(a)];
     for (const v of [-HALF, HALF]) {
-      const hub = (w: number) => [n[0] * w, cy + n[1] * w, v * .35];
-      const rim = (w: number) => { const p = at(a, R - .5, v); return [p[0] + n[0] * w, p[1] + n[1] * w, p[2]]; };
+      const hub = (w: number, o = 0) => [n[0] * w, cy + n[1] * w, v * .35 + o];
+      const rim = (w: number, o = 0) => { const p = at(a, R - .5, v + o); return [p[0] + n[0] * w, p[1] + n[1] * w, p[2]]; };
       body.quad(hub(-.7), rim(-.25), rim(.25), hub(.7), WHITE);
-      lights.quad(hub(-.35), rim(-.12), rim(.12), hub(.35), WHITE);
+      // The LED strip stands 5 cm proud of the spoke's outer face, so the two never z-fight.
+      const o = Math.sign(v) * .05;
+      lights.quad(hub(-.35, o), rim(-.12, o), rim(.12, o), hub(.35, o), WHITE);
     }
   }
   // The hub: a dark disc each side and its drum.
@@ -61,11 +63,12 @@ export function createSkyView(buildings: VBuilding[], grid: GroundGrid) {
   }
   // 42 gondolas hung outside the rim: white capsule blocks with a dark glass band.
   for (let k = 0; k < CARS; k++) {
-    // Each hangs below a pivot 3.2 m outside the rim, so at the top it rides above the rim.
-    const a = (k * 2 * Math.PI) / CARS, p = at(a, R + 3.2, 0);
+    // Each hangs between the two rim rings from a pivot 1 m outside the rim: at the top it rides
+    // just above the rim (54.7 m, the lidar top), and at the bottom its floor clears the boarding deck.
+    const a = (k * 2 * Math.PI) / CARS, p = at(a, R + 1, 0);
     const [x, y] = [p[0], p[1]];
-    s.prism([[x - 1.1, -1.1], [x + 1.1, -1.1], [x + 1.1, 1.1], [x - 1.1, 1.1]], y - 2.5, y - 1.7, WHITE, WHITE);
-    s.prism([[x - 1.15, -1.15], [x + 1.15, -1.15], [x + 1.15, 1.15], [x - 1.15, 1.15]], y - 1.7, y - .5, GLASS, WHITE);
+    s.prism([[x - 1.1, -1.1], [x + 1.1, -1.1], [x + 1.1, 1.1], [x - 1.1, 1.1]], y - 2.3, y - 1.5, WHITE, WHITE);
+    s.prism([[x - 1.15, -1.15], [x + 1.15, -1.15], [x + 1.15, 1.15], [x - 1.15, 1.15]], y - 1.5, y - .3, GLASS, WHITE);
   }
   // Two white A-frames, one on each side, from the ground to the axle.
   for (const v of [-4.5, 4.5])

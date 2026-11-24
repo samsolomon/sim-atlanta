@@ -21,7 +21,10 @@ it('stands SkyView in its mapped plane at the lidar height, within the landmark 
     .intersectObject(model.group).length > 0;
   expect(hit(53.8)).toBe(true);
   expect(hit(29)).toBe(true); // the hub
-  expect(hit(58)).toBe(false);
+  expect(hit(56)).toBe(false); // gondola tops stop at ~54.7 m, the lidar top
+  // Every gondola floor clears the ground: nothing solid in the bottom 0.6 m under the wheel.
+  const down = new Raycaster(new Vector3(-23.3, ground + .6, -548.35), new Vector3(0, -1, 0)).intersectObject(model.group);
+  expect(down.filter(h => h.point.y > ground + .05)).toHaveLength(0);
   const [body, lamps] = model.group.children as Mesh[];
   expect(body.geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
   model.setNight(1);
