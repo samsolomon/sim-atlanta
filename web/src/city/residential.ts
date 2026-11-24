@@ -4,6 +4,8 @@ import { inAnsley, roadWidth, type TerrainCity } from '../terrain/transport-data
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import { flowerBed, hedge, landscapeMesh } from '../landscape/primitives';
 import { GroundCover } from '../landscape/ground-cover';
+import type { GroundYield } from '../terrain/surface';
+import { yardTerrace } from './yard-terrace';
 import type { BuildingFinish, VBuilding } from '../vignette/world';
 
 /**
@@ -530,6 +532,17 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   }
 }
 
+// Two rectangular walks overlap when neither rectangle has an edge separating them.
+function frontWalksOverlap(a: P2[], b: P2[]) {
+  for (const ring of [a,b]) for (let i=0; i<2; i++) {
+    const p=ring[i], q=ring[i+1], nx=q[1]-p[1], nz=p[0]-q[0];
+    const project=([x,z]: P2)=>x*nx+z*nz;
+    const aa=a.map(project), bb=b.map(project);
+    if (Math.max(...aa)<=Math.min(...bb) || Math.max(...bb)<=Math.min(...aa)) return false;
+  }
+  return true;
+}
+
 const WALK = '#cbc6ba', DRIVE = '#b2ada3';
 
 /**
@@ -540,8 +553,10 @@ const WALK = '#cbc6ba', DRIVE = '#b2ada3';
  * near the street. The low tier keeps walks and driveways. All `illustrative`.
  */
 function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
-  street: (x: number, z: number) => number, quality: 'high' | 'low') {
+  street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[]) {
   const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
+  const yields: GroundYield[] = [], terraceSites: { id:string; at:P2; triangles:number }[] = [];
+  const classes = new Map(all.map(b=>[b.id,b.cls]));
   // Footprint index, so drives and walks never cross another building.
   const cells = new Map<string, P2[][]>();
   for (const o of all) {
@@ -565,15 +580,35 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
   // Off the board (null ground) a quad is simply not drawn.
   const y = (x: number, z: number, lift: number) => { const v = ground(x, z); return v === null ? null : v + lift; };
   // A flat strip draped on the ground between two points, `w` wide.
-  const strip = (a: P2, c: P2, w: number, color: string) => {
+  const strip = (a: P2, c: P2, w: number, color: string, endHeight?: number) => {
     const len = Math.hypot(c[0] - a[0], c[1] - a[1]);
     if (len < .5) return;
     const ux = (c[0] - a[0]) / len, uz = (c[1] - a[1]) / len, nx = -uz * w / 2, nz = ux * w / 2, n = Math.ceil(len);
+    const startHeight = endHeight === undefined ? 0 : (ground(...a) ?? endHeight) + .04;
+    let clearance = 0;
     for (let k = 0; k < n; k++) {
       const p0 = [a[0] + ux * len * k / n, a[1] + uz * len * k / n], p1 = [a[0] + ux * len * (k + 1) / n, a[1] + uz * len * (k + 1) / n];
       const ys = [y(p0[0] + nx, p0[1] + nz, .04), y(p1[0] + nx, p1[1] + nz, .04), y(p1[0] - nx, p1[1] - nz, .04), y(p0[0] - nx, p0[1] - nz, .04)];
+      if (endHeight !== undefined && k === n - 1) ys[1] = ys[2] = endHeight;
       if (ys.some(v => v === null)) continue;
+      if (endHeight !== undefined) {
+        const t0 = k / n, t1 = (k + 1) / n;
+        const ramp = endHeight - startHeight;
+        clearance = Math.min(clearance, ys[0]! - (startHeight + ramp*t0), ys[3]! - (startHeight + ramp*t0),
+          ys[1]! - (startHeight + ramp*t1), ys[2]! - (startHeight + ramp*t1));
+      }
       b.quad([p0[0] + nx, ys[0]!, p0[1] + nz], [p1[0] + nx, ys[1]!, p1[1] + nz], [p1[0] - nx, ys[2]!, p1[1] - nz], [p0[0] - nx, ys[3]!, p0[1] - nz], color);
+    }
+    if (endHeight !== undefined) {
+      // One plane below every walk vertex also clears the interiors of all walk triangles.
+      // The small margin keeps the terrain skirt outside the rounded mesh coordinates.
+      const half = w / 2 + .03;
+      const corner = (p: P2, side: number, along: number): P2 =>
+        [p[0] - uz*half*side + ux*along, p[1] + ux*half*side + uz*along];
+      yields.push({
+        ring: [corner(a,1,-.03), corner(c,1,.03), corner(c,-1,.03), corner(a,-1,-.03)],
+        floor: (x,z) => startHeight + clearance - .04 + (endHeight-startHeight)*((x-a[0])*ux+(z-a[1])*uz)/len,
+      });
     }
   };
   // How far from a point along a direction before the sidewalk (1.5 m from the kerb) or another
@@ -585,6 +620,31 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     }
     return max;
   };
+  // Only qualifying terraces query neighbouring walks. Cache drawn approaches across nearby lots.
+  const frontWalks = new Map<Plan, P2[][]>();
+  const sharedApproach = (owner: Plan, approach: P2[]) => {
+    for (const other of plans.values()) {
+      if (other === owner || !other.front || other.concave) continue;
+      const { m, e, n } = frontFrame(other);
+      if (Math.hypot(m[0]-approach[0][0], m[1]-approach[0][1]) > 70 + Math.abs(other.doorS)) continue;
+      let rings = frontWalks.get(other);
+      if (!rings) {
+        rings = [];
+        const start = other.porch ? 3.3 : 2.2;
+        for (const ds of other.doors) {
+          const a: P2 = [m[0]+ds*e[0]+start*n[0], m[1]+ds*e[1]+start*n[1]];
+          const length = reach(...a, ...n);
+          const c: P2 = [a[0]+length*n[0], a[1]+length*n[1]];
+          if (length <= 1 || stripBlocked(a,c,1.2)) continue;
+          const edge = (p: P2, side: number): P2 => [p[0]+side*.6*e[0],p[1]+side*.6*e[1]];
+          rings.push([edge(a,1),edge(c,1),edge(c,-1),edge(a,-1)]);
+        }
+        frontWalks.set(other,rings);
+      }
+      if (rings.some(ring => frontWalksOverlap(approach,ring))) return true;
+    }
+    return false;
+  };
   for (const p of plans.values()) {
     if (!p.front || p.concave) continue;
     const { len, e, n, m } = frontFrame(p);
@@ -593,11 +653,17 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     // Walks start past the 2.4 m porch and its steps, or past the stoop.
     const porchDepth = p.porch ? 2.4 + .9 : 1.3 + .3 * 3;
     // A front walk from every entry (two on apartments) to the street.
-    let walk = 0;
+    const mainDoor=at(p.doorS,porchDepth);
+    const walk=reach(mainDoor[0],mainDoor[1],n[0],n[1]);
+    const cls=classes.get(p.id);
+    const terrace=high && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
+      ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkStart:porchDepth,walkEnd:porchDepth+walk,
+        sharedApproach:ring=>sharedApproach(p,ring),newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
+    if(terrace){yields.push(...terrace.yields);terraceSites.push({id:p.id,at:terrace.at,triangles:terrace.triangles});}
     for (const ds of p.doors) {
       const door = at(ds, porchDepth), w = reach(door[0], door[1], n[0], n[1]);
-      if (w > 1 && !stripBlocked(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2)) strip(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2, WALK);
-      if (ds === p.doorS) walk = w;
+      const end=terrace && ds===p.doorS ? at(ds,terrace.walkStop) : at(ds,porchDepth+w);
+      if (w > 1 && !stripBlocked(door,end,1.2)) strip(door,end,1.2,WALK, ds === p.doorS ? terrace?.stairTop : undefined);
     }
     // Driveway on the side away from the door, along the side wall and out to the street.
     const side = p.doorS <= 0 ? 1 : -1, dx = side * (len / 2 + 1.8);
@@ -624,12 +690,12 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       hedge(b, [at(s0 + .5, 1.05), at(s1 - .5, 1.05)], ground, { clipped: false, height: 1.1, width: .8, lumps: 1, spacing: 1.4, seed: p.id + s0 });
     }
     // A small bed beside the walk on some houses.
-    if (walk > 3 && r() < .3) {
+    if (walk > 3 && r() < .3 && !terrace) {
       const s = p.doorS + 1.1, o0 = porchDepth + .6, o1 = Math.min(walk + porchDepth - .6, o0 + 2.4);
       if (o1 - o0 > 1) flowerBed(b, [at(s, o0), at(s + 1.4, o0), at(s + 1.4, o1), at(s, o1)], ground, { doy: 300, quality, density: .7, seed: p.id + 'bed' });
     }
     // A clipped hedge near the street on some lots, broken at the walk.
-    if (walk > 4 && r() < .25) {
+    if (walk > 4 && r() < .25 && !terrace) {
       // Broken at every walk.
       const o = porchDepth + walk - .8, cuts = [...p.doors].sort((x, y) => x - y);
       let s0 = -len / 2;
@@ -637,7 +703,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       if (len / 2 - s0 > 1) hedge(b, [at(s0, o), at(len / 2, o)], ground, { height: .9, width: .6, quality, seed: p.id + 'hz' });
     }
   }
-  return { b, cover };
+  return { b, cover, yields, terraceSites };
 }
 
 /**
@@ -647,7 +713,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
  */
 export function residential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
   ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high',
-  force?: Record<string, HouseForce>, footprints?: VBuilding[]) {
+  force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = []) {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
   const buildings = city.buildings.map(b => {
@@ -766,14 +832,14 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     yards() {
       if (!ground || !plans.size) return null;
       // Every footprint blocks yards, including landmark sites already removed from `city`.
-      const { b, cover } = yards(plans, footprints ?? city.buildings, ground, street, quality);
+      const { b, cover, yields, terraceSites } = yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks);
       const group = new THREE.Group();
       group.name = 'yards';
       group.userData.perf = 'landscape';
       const land = landscapeMesh(b), covers = cover.triangles ? cover.mesh({ quality }) : null;
       group.add(land.mesh);
       if (covers) group.add(covers.mesh);
-      return { group, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
+      return { group, yields, terraceSites, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
     },
   };
 }

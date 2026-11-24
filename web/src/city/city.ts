@@ -1545,7 +1545,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
-    rolloutBatch.update(speciesDt, camera);
+    rolloutBatch.update(speciesDt, camera, camera.position.distanceTo(controls.target));
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;
@@ -1652,7 +1652,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       camera.zoom = zoom;
       camera.updateProjectionMatrix();
     };
-    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas };
+    (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
     // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
     (window as unknown as Record<string, unknown>).__groundAudit = async (o?: object) => {
       const { groundAudit, cityLayer, CITY_COLORS } = await import('../terrain/ground-audit');

@@ -48,6 +48,7 @@ export function createRhodesHall(
   masonry(s.ring, s.base, 0.5);
   masonry(rect(-2, -4, 22, 17), 0.5, 9.6);
   // Front faces south: the tall tower occupies the left (western) end of the porch.
+  const towerStart = b.pos.length / 3;
   masonry(rect(-3.5, 8, 8.4, 9.5), 0.5, 22);
   for (const y of [5, 10, 15.5, 20.5])
     s.paint(surfaces.granite({ course: 0.5 }), () => b.box(8.7, 0.35, 9.8, -3.5, y, 8, trim));
@@ -70,6 +71,7 @@ export function createRhodesHall(
       b.box(0.18, 2.55, 1.6, -7.76, y, z, trim);
       b.box(0.2, 2.2, 1.23, -7.78, y, z, glass);
     }
+  const towerEnd = b.pos.length / 3;
   // Steep hipped roof, brick-red in the daylight references.
   s.paint(surfaces.slate(), () => {
     b.quad([-13.5, 9.6, -13], [9.5, 9.6, -13], [5, 16, -4], [-9, 16, -4], roof);
@@ -95,6 +97,7 @@ export function createRhodesHall(
   });
   b.box(1.4, 2.4, 0.2, 3.5, 12.5, 4.1, trim);
   b.box(1.05, 2.1, 0.23, 3.5, 12.5, 4.12, glass);
+  const porchStart = b.pos.length / 3;
   // Three genuinely open arches: segmented voussoirs, no dark rectangles filling openings.
   for (const x of [2.5, 7.1, 11.7]) {
     for (let i = 0; i < 12; i++) {
@@ -130,8 +133,12 @@ export function createRhodesHall(
       y = pos.getY(i),
       z = pos.getZ(i);
     // Stone only: dark panes and red roofing do not become emissive.
-    if (colour.getY(i) > 0.25 && Math.abs(colour.getX(i) - colour.getY(i)) < 0.15)
-      wash[i] = x > -8 && x < 1 && z > 3 ? Math.max(0.25, 1 - y / 30) : z > 8 ? 0.6 : 0;
+    if (colour.getY(i) <= 0.25 || Math.abs(colour.getX(i) - colour.getY(i)) >= 0.15) continue;
+    if (i >= towerStart && i < towerEnd) {
+      wash[i] = 0.5 * Math.max(0, (20 - y) / 19.5);
+    } else {
+      wash[i] = x > -8 && x < 1 && z > 3 ? (i < porchStart ? 0.75 : 1) * Math.max(0.25, 1 - y / 30) : z > 8 ? 0.6 : 0;
+    }
   }
   mesh.geometry.setAttribute('aRhodesWash', new BufferAttribute(wash, 1));
   const night = { value: 0 },

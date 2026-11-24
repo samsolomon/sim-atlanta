@@ -2788,6 +2788,23 @@ Final captures checked north/south daylight (`713,-3672,0,50,1150` and `713,-367
 
 Final Claude review requested the oblique camera in daylight on both tiers. The [additional captures](log/ui/midtown-skyline/napkin-b-oblique-day.jpg) show both curved faces and end lattices without a missing section at that camera. The visual risk is dismissed for the requested view; no universal claim about arbitrary transparent overlaps is implied. Two review rounds completed; stale documentation and shared-origin/light ordering were addressed, and no blocking findings remain.
 
+### 2026-11-23 — The tree cost was a second drawing of the leaves
+
+The A16 probes recovered about5fps by disabling the species foliage mask, much more
+than switching off crown shadows. The mask drew the alpha-tested cards again and
+activated extra full-screen ink samples. Removing it everywhere made the nearby
+crape crowns visibly darker inside, so low quality now keeps the mask in close views
+and unregisters it beyond600m, restoring it below500m. High quality stays unchanged.
+
+The distance is to the orbit target, not each tree. The whole-board phone view was
+21,084m away, a surprise after discussion had assumed roughly400m. All962 registered
+species instances lose their extra mask draw in that view; the approved420m Prado
+and350m terrace views keep it. Tests cover far/near transitions, new areas mounting
+while far, and removing/reopening rows without stale mask state. The final frozen
+phone default/pan comparison still gates release.
+
+[Why the near mask stays](log/ui/tree-species/mask-clawback/1180-day-sheet.jpg) ·
+[Measurement and validation notes](tree-mask-clawback.md).
 ## 2026-11-23 — Freight joins Follow (initial checks)
 
 The downtown seven-car and Norcross ten-car illustrative consists now carry separate stable ids through picking and the existing Follow control. Their positions update before the camera lookup. Follow uses cars surviving their material clip planes and ends when none remain; it makes no tunnel claim. Both cards retain Illustrative labels.
@@ -2900,6 +2917,11 @@ Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow no
 
 The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
 
+### 2026-11-23 — Where a front walk meets the Ansley steps
+
+A level tread can meet the middle of a walk and still miss its corners by 15.6 cm on a cross-slope. We seated both corners and cut the terrain beneath the approach. A neighbouring walk crossed the proposed stairs on one lot, so the shared-frontage check leaves that yard open. The high board now has 33 terraced yards, with 66 matching corners and 4.04 cm minimum sampled walk clearance. Low adds no terraces. [Day and night comparisons](log/ui/ansley-terraces/README.md).
+
+
 ### 2026-11-23 — A final vertex is not another road segment
 
 At 21:00, a streetcar nose could project onto the exact end of a traffic course.
@@ -2925,3 +2947,35 @@ The early rendering painted big pink hearts across the crown. Now one tapered ca
 ### 2026-11-23 — Redbud gets a wider fork and a denser bloom
 
 At Sam’s review the March tree still read as bare from a distance. Four spreading boughs at high detail and three at low now carry paired cards with the same branch pattern in spring and winter. At eye level the crown mask covers about 64,200 pixels in March, up from about 3,100. At 300 m the big surprise is how little is left on screen: 156 masked pixels at high detail and 94 at low, with pink visible in each. April’s first leaves are reddish-purple and turn green before summer. The tree costs 193 / 138 triangles, with the same heart-shaped summer cards, yellow fall and four sizes. [Eye level, photo reference, 100 m, 300 m and seasons](log/ui/tree-species/options-eastern-redbud.jpg). Web rebuild only.
+### 2026-11-23 — A quieter Rhodes Hall tower
+
+Sam wanted the floodlit tower a little less bright. Its stone wash is now 25% lower,
+while the porch lighting and dark windows stay as they were. It is a one-coefficient
+calibration, with no geometry or texture cost. Matched 21:00 frames use the same
+`301,-4675,340,60,160` camera at both tiers.
+[High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
+[Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
+
+### 2026-11-23 — Two purple buses for the A-Line
+
+The purple bus photographed at the Phase One launch has two axles and a CNG roof pod. The 60-foot electric bought for the line has three axles and a folding joint. The Model Lab now puts the two silhouettes side by side in the vehicle list. Turning the electric trailer through 35° keeps both ends of the silver bellows attached. Its low-detail model uses 1,190 triangles across three meshes. [See the photographs and matched day/night studies](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — The Midtown South footbridge
+
+A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
+
+### 2026-11-23 — Rhodes Hall at 21:00
+
+At a 160 m orbit, the earlier 25% reduction still made the tower read as one lit
+block. Two studies put the brightest stone at the 0.5 m base and fade the wash
+to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
+region in plan, so the falloff follows the tower's own masonry vertices.
+[Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
+
+### 2026-11-23 — Rapid bus glazing at night
+
+At the same lab camera, the lit windshield had made the XN40 cab as bright as the passenger compartment. The revised Rapid studies keep the windshield dark and show the amber destination sign above it. Both buses now use the XN40 purple and cooler passenger lighting, with the emission multiplier reduced from 0.6 to 0.4. On the XE60, individual panes sit inside a dark frame. [Compare the matched day and night views](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — XE60 roof fairings
+
+The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).

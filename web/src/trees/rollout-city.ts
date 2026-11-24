@@ -8,6 +8,7 @@
  * pass cull; under farTrees only foliage draws (no limbs, leaf tips or carpet).
  */
 import * as THREE from 'three';
+import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
 import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import type { VBuilding, VGround, VRoad, World } from '../vignette/world';
 import { createLook, type Look } from './looks';
@@ -29,6 +30,14 @@ export const ROLLOUT_LOOKS: Record<RolloutSpecies, Look> = {
 };
 /** Sam's pick for every rolled-out species. */
 const OPTION = 'A';
+
+/** Diagnostic only: never change an ordinary visit, or the high tier. */
+export function treeProbe(search: string, quality: TreeQuality) {
+  const p = new URLSearchParams(search), perf = p.get('perf');
+  if (quality !== 'low' || perf === null || perf === '0' || perf === 'off') return null;
+  const probe = p.get('treeprobe');
+  return ['mask-on', 'mask-off', 'shadow-off', 'foliage-off', 'carpet-off'].includes(probe ?? '') ? probe : null;
+}
 
 export interface RolloutRowInput {
   roads: VRoad[];
@@ -82,6 +91,21 @@ export class RolloutBatch {
   private state = { doy: null as number | null, far: false, night: 0, wet: 0 };
   private pending = false;
   private materials = new Set<THREE.Material>();
+  private maskNear = true;
+  private masks: { mesh: THREE.InstancedMesh; mode: InkFoliageMode; remove?: () => void }[] = [];
+  private syncMasks() {
+    const probe = this.probe();
+    const enabled = probe !== 'mask-off' && probe !== 'foliage-off' && (probe === 'mask-on' || this.maskNear);
+    for (const m of this.masks) {
+      if (enabled && !m.remove) m.remove = inkFoliageMesh(m.mesh, m.mode);
+      if (!enabled && m.remove) { m.remove(); m.remove = undefined; }
+    }
+    this.group.userData.foliageMask = {
+      ...this.group.userData.foliageMask, enabled,
+      instances: this.masks.reduce((n, m) => n + m.mesh.count, 0),
+    };
+  }
+  private probe() { return treeProbe(typeof location === 'undefined' ? '' : location.search, this.quality); }
   constructor() {
     this.group.name = 'tree rollout';
     this.group.userData.perf = 'trees';
@@ -102,6 +126,9 @@ export class RolloutBatch {
   /** Build now (tests, and before a measurement). */
   flush() { if (this.pending) { this.pending = false; this.rebuild(); } }
   private rebuild() {
+    const probe = this.probe();
+    for (const m of this.masks) m.remove?.();
+    this.masks = [];
     for (const l of this.looks) l.dispose();
     this.carpet?.dispose();
     this.carpet?.mesh.removeFromParent();
@@ -117,13 +144,23 @@ export class RolloutBatch {
       const placements = all.filter(t => t.species === id).map(t => t.p);
       if (!placements.length) continue;
       // One shared carpet (below), not one per look.
-      const l = createLook(placements, look, OPTION, this.quality, groundAt, { carpet: false });
+      const renderedLook = this.quality === 'low'
+        ? { ...look, options: look.options.map(o => ({ ...o, ink: undefined })) }
+        : look;
+      const l = createLook(placements, renderedLook, OPTION, this.quality, groundAt, { carpet: false });
       if (!l) continue;
       l.group.userData.perf = 'trees';
       const tips: THREE.Object3D[] = [];
       l.group.traverse(o => {
         // Bare limbs inside a crown cast next to nothing: no shadow-pass draw for them.
         if (o.name.endsWith(' limbs')) o.castShadow = false;
+        if (o.name.includes(' foliage ')) {
+          if (probe === 'shadow-off') o.castShadow = false;
+          // The foliage-mask pass also respects mesh visibility.
+          if (probe === 'foliage-off') o.visible = false;
+          const mode = look.options.find(o => o.id === OPTION)?.ink;
+          if (this.quality === 'low' && mode && o instanceof THREE.InstancedMesh) this.masks.push({ mesh: o, mode });
+        }
         if (o.name.endsWith(' leaf tips')) tips.push(o);
         if (o instanceof THREE.Mesh) for (const m of [o.material].flat()) this.materials.add(m);
       });
@@ -136,6 +173,7 @@ export class RolloutBatch {
     this.carpet = sharedCarpet(carpeted, groundAt);
     if (this.carpet) { this.group.add(this.carpet.mesh); this.materials.add(this.carpet.mesh.material as THREE.Material); }
     this.replay();
+    this.syncMasks();
   }
   private replay() {
     const { doy, far, night, wet } = this.state;
@@ -157,12 +195,21 @@ export class RolloutBatch {
     if (d.farTrees === undefined) return;
     this.state.far = d.farTrees;
     for (const l of this.looks) l.setDetail(d);
-    if (this.carpet) this.carpet.mesh.visible = !d.farTrees;
+    if (this.carpet) this.carpet.mesh.visible = !d.farTrees && this.probe() !== 'carpet-off';
     this.showTips();
   }
   /** High detail: near leaf tips follow the camera (cheap: re-sorts only after a 1 m move). */
-  update(dt: number, camera: THREE.Camera) {
-    if (this.quality !== 'high') return;
+  update(dt: number, camera: THREE.Camera, orbitDistance?: number) {
+    if (this.quality === 'low') {
+      // Camera-to-orbit-target distance, not per-tree distance. Preserve the approved
+      // Prado (420 m) and terrace (350 m) views; hysteresis prevents boundary chatter.
+      if (orbitDistance !== undefined && Number.isFinite(orbitDistance)) {
+        const near = this.maskNear ? orbitDistance <= 600 : orbitDistance < 500;
+        if (near !== this.maskNear) { this.maskNear = near; this.syncMasks(); }
+        (this.group.userData.foliageMask ??= {}).orbitDistance = orbitDistance;
+      }
+      return;
+    }
     for (const l of this.looks) l.update(dt, camera);
     this.showTips();
   }
