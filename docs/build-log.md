@@ -3330,3 +3330,8 @@ The Atlantic's mapped outline straddles two City rows. The row survey only saw t
 Metropolis's two 21-storey condominium towers now stand on Peachtree as glass shafts with silver slab edges and stacked corner balconies. Between them, a garage podium carries a pool deck. At 23:30 about a third of the apartment runs are lit, as residential towers should be. The lesson was in the daylight. Lit windows live in a separate lamp mesh, and that mesh didn't receive shadows, so on the shaded west face every future-lit window showed at noon as a pale pane. Turning on shadow receiving for the lamps fixed it with no new shader program. A colour blended in sRGB had also drifted from the linear blend of the wall behind it. Both towers together cost 2,094 triangles and two draws.
 [Before and after](log/ui/metropolis/compare.jpg) · [day and night](log/ui/metropolis/daynight.jpg) · [podium close](log/ui/metropolis/close.jpg)
 
+## 2026-11-24: NCR's sliced tower
+
+The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
+[Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
+
