@@ -50,8 +50,11 @@ export function genericTriangles(quality: TreeQuality) {
     const geom = o.geometry;
     const tri = (geom.index ? geom.index.count : geom.attributes.position.count) / 3;
     // Pine tiers are a different kind; a broadleaf draws canopy, trunk and bare branches.
-    if (o.count === 0 || o.geometry instanceof THREE.ConeGeometry) return;
-    total += tri * o.count;
+    // Capacity, not the drawn count: World compacts a bare crown's hidden clumps away, and the
+    // budget is the full tree (crown and bare branches).
+    const capacity = o.instanceMatrix.count;
+    if (capacity === 0 || o.geometry instanceof THREE.ConeGeometry) return;
+    total += tri * capacity;
     draws++;
   });
   g.dispose();

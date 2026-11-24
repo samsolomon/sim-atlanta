@@ -3581,3 +3581,8 @@ The Codex review caught that my first test recorded only each board's single wor
 The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. It's built one board per idle slice once the camera passes 10 km. At the default view the low tier draws 94,710 fewer triangles, with the same draw count and 0.6 MB more geometry.
 
 [The default view, before and after](log/very-far-ground/strip-orbit-21k.jpg) · [Why settle: 2 m, settled 8 m, plain 8 m at 12 km](log/very-far-ground/crop-12k-2m-settled-raw.png)
+
+
+### 2026-11-24 — The trees that never culled
+
+On the A16, hiding every tree bought six frames a second. The first culprit was invisible. Every pine and every bare crown kept its unused leaf clumps as zero-scaled instances. That still cost the GPU work, and it dragged each canopy mesh's bounding sphere toward the scene origin, 2.3 km from one Brookwood row's trees, so those meshes were never culled. Dropping those slots cut 88k triangles from the phone's default view at no visible cost. Two more changes followed, both on the low tier only. Past 800 m, each area now draws its trees as two instanced meshes: two faceted clumps and a trunk per broadleaf, coloured exactly like the near trees. Close in, trees are batched in 400 m cells, so only the cells on screen draw. Pines keep their pointed tiers as two stacked cones. At the default view, trees fall from 47 draws and 575k triangles to 35 and 252k. At Sam's Ansley view, they fall from 534k triangles to 87k. [Sheets](log/ui/tree-species/far-form/far-a900-closeup.jpg).
