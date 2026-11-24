@@ -3268,3 +3268,7 @@ The first skin is 1100 Peachtree. It is a notched 47 m square on the diagonal gr
 ### 2026-11-23 · The glass spine of 999 Peachtree
 
 Each face of 999 Peachtree has the same design: a full-height blue curtain wall between two pale stone wings that step back at the 54.6 m shoulder. On the first pass, the curtain wall was invisible, because its glass sat 0.35 m behind the tower's own wall. Bringing the glass out to the wall plane and moving the stone wings 0.6 m in front of it fixed the depth without carving the mapped footprint. Faces inside a taller adjoining part are now skipped, and the tower uses only the two existing landmark materials. No full-night photograph was available, so the crown gets no lighting. [Day, night and entrance views](log/ui/999-peachtree/README.md)
+
+### 2026-11-23 · 77 12th Street drops ten metres
+
+The OSM outline for 77 12th Street tagged the whole 91 × 59 m lot as a 90 m apartment tower, so City drew a solid block twice the size of the real slab. Its three mapped parts and the 2019 lidar tell a different story. The glass slab along 12th Street stands 78.4 m to the roof and 80.8 m to the white parapet. Behind it, a 19.7 m garage carries the pool deck, and a 9.5 m frontage runs along Crescent Avenue. A lidar profile down the slab's length came out flat, which settled a misreading of the photographs: the "lower east wing" is just perspective across a notch in the plan. On the phone tier the skin costs 530 triangles and two draws, with no new shader program. [Before/after, day and night](log/ui/77-twelfth/README.md)
