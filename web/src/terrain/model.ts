@@ -18,6 +18,7 @@ import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { cokeUsaId, createCocaColaUsa } from '../city/coca-cola-usa';
 import { centergyOneId, createCentergyOne } from '../city/centergy-one';
+import { centergyWingId, createCentergyWing } from '../city/centergy-wing';
 import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
 import { createWinship, winshipId } from '../city/winship';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
@@ -389,6 +390,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
       : site.id === cokeUsaId ? createCocaColaUsa(sceneryCity.buildings, site, grid)
       : site.id === centergyOneId ? createCentergyOne(sceneryCity.buildings, site, grid)
+      : site.id === centergyWingId ? createCentergyWing(sceneryCity.buildings, site, grid)
       : site.id === winshipId ? createWinship(sceneryCity.buildings, site, grid)
       : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
