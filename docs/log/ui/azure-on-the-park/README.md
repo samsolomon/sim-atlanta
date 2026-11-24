@@ -26,6 +26,10 @@ The mapped 98 m is the OSM tag.
 
 The high tier was thinned (3.2 m bays and 10 m balcony spacing, down from 1.6 m and 7.5 m) because high-tier geometry is close to its ceiling. Same-session `pnpm test:perf` figures are in the PR.
 
+## Shade legibility
+
+At 11:30 the north and west faces are in shade, and the grid and balconies nearly disappeared there (coordinator note on #546). Balcony soffits are now `#c2c4c4` instead of `#9b9d9e`, a bright 0.3 m slab nosing (`#f2f3f2`) runs along each balcony front, and the spandrel bands between floors are wider (glass vertical fill 0.78 instead of 0.86). [Before and after in shade](az-shade.jpg)
+
 ## Night
 
 No night photograph was found. Lit rooms come from the shared `litHash(seedOf(id), face, floor, bay)` at 45%, and the podium shopfronts at 40%. The pool and crown are unlit.

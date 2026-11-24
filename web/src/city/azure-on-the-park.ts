@@ -75,7 +75,7 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     shell.body.quad(at(0, shell.base, 0.06), at(0, towerLo, 0.06), at(length, towerLo, 0.06), at(length, shell.base, 0.06), brick);
     const rows = Math.round((top - towerLo) / 3.1);
     if (high) {
-      litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, rows, 3.2, 0.92, 0.86, glass, 0.45);
+      litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, rows, 3.2, 0.92, 0.78, glass, 0.45);
       litFacade(shell, seed, block + 40 + i, a, b, shell.base + 0.8, towerLo - 0.8, podFloors, 3.2, 0.55, 0.55, ['#3d4d5b'], 0.35);
     } else if (length > 8) {
       litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, Math.round(rows / 3), 12, 0.9, 0.9, glass, 0.45);
@@ -87,9 +87,11 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
       const c = (k + 0.5) * length / stacks, yy = towerLo + j * pitch;
       const q = (u: number, out: number, h: number) => at(c + u, h, out);
       const w = 2.1, d = 1.7;
-      shell.body.quad(q(-w, 0.02, yy + 0.2), q(w, 0.02, yy + 0.2), q(w, d, yy + 0.2), q(-w, d, yy + 0.2), '#d6d7d6');
-      shell.body.quad(q(-w, 0.02, yy), q(-w, d, yy), q(w, d, yy), q(w, 0.02, yy), '#9b9d9e');
+      shell.body.quad(q(-w, 0.02, yy + 0.2), q(w, 0.02, yy + 0.2), q(w, d, yy + 0.2), q(-w, d, yy + 0.2), '#e4e5e4');
+      shell.body.quad(q(-w, 0.02, yy), q(-w, d, yy), q(w, d, yy), q(w, 0.02, yy), '#c2c4c4');
       shell.body.quad(q(-w, d, yy), q(-w, d, yy + 1.1), q(w, d, yy + 1.1), q(w, d, yy), '#a8b9c7');
+      // A bright slab nosing keeps the balcony rhythm legible on the shaded faces.
+      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy - 0.05), '#f2f3f2');
     }
   });
   tower3(t, y(roof), 0);
