@@ -5,6 +5,7 @@
  * detailed buildings and trees.
  */
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
@@ -829,6 +830,12 @@ export class World {
   // ---- buildings ----------------------------------------------------------------------
 
   buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
+    runSync(this.buildingSteps(foundationY, maxRoofUnits, finishFor));
+  }
+
+  /** buildBuildings as a build that yields every few buildings (core/slice.ts). Each building
+   * draws from its own seeded stream, so where it yields never changes the result. */
+  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
     const b = new Builder();
     const shopLights = new Builder();
     const style: number[] = [];
@@ -836,7 +843,9 @@ export class World {
     const clutter: THREE.Matrix4[] = [];
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
+    let n = 0;
     for (const bd of this.data.buildings) {
+      if (++n % 6 === 0) yield 'buildings';
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
       const footing = foundationY ? foundationY(bd) : 0;

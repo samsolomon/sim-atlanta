@@ -208,7 +208,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         transports.push(decks);
         area.carve(decks.cutting);
         area.group.add(decks.group);
-        yield;
+        yield 'decks';
         if (stationRoad && separate.length) {
           const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
           transports.push(stationDeck);
@@ -220,7 +220,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
         const roadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
-        yield;
+        yield 'piers and road heights';
         added.set(id, {
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },

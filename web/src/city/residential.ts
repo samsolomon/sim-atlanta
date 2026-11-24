@@ -674,7 +674,7 @@ function* yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, 
   for (const p of plans.values()) {
     if (!p.front || p.concave) continue;
     // One house per step: each lot draws from its own seeded stream, so yielding never reorders it.
-    yield;
+    yield 'yard';
     const { len, e, n, m } = frontFrame(p);
     const at = (s: number, o: number): P2 => [m[0] + e[0] * s + n[0] * o, m[1] + e[1] * s + n[1] * o];
     const r = rng(hashStr(p.id + '/yard'));
@@ -739,12 +739,17 @@ function* yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, 
  * `ground` (the rendered surface, scene metres) lets a lowered eave keep clear of a hillside:
  * such houses get the hillside floor rule from midtown-foundations.
  */
-export function residential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
+export function residential(...args: Parameters<typeof buildResidential>) {
+  return runSync(buildResidential(...args));
+}
+
+/** residential() as a build that yields every few houses (core/slice.ts). */
+export function* buildResidential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
   ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high',
   force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = []) {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
-  const buildings = city.buildings.map(b => {
+  const toHouse = (b: (typeof city.buildings)[number]) => {
     if (existing?.(b)) return b;
     const p = plan(b, street, quality, force?.[b.id]);
     if (!p) return b;
@@ -772,7 +777,13 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     const floor = floorY ?? b.floorY ?? base ?? undefined;
     if (p.porch && floor !== undefined && p.porchFoot !== undefined && floor + .55 - p.porchFoot > 1.5) p.porch = null;
     return floorY === undefined ? { ...b, h: p.eave, floors: null } : { ...b, h: p.eave, floors: null, floorY };
-  });
+  };
+  const buildings: ReturnType<typeof toHouse>[] = [];
+  for (const b of city.buildings) {
+    buildings.push(toHouse(b));
+    // Each house's plan reads only its own footprint and the shared street index.
+    if (buildings.length % 8 === 0) yield 'residential';
+  }
   const finishFor = (b: VBuilding): BuildingFinish | undefined => {
     const own = existing?.(b);
     if (own) return own;

@@ -5,7 +5,8 @@
  * whole build. The result is the same either way: a yield only hands control back, it never
  * reorders work.
  */
-export type Build<T> = Generator<void, T, void>;
+/** A build yields a stage label (or nothing) between units; drivers ignore it, profiles read it. */
+export type Build<T> = Generator<string | void, T, void>;
 
 export function runSync<T>(build: Build<T>): T {
   for (;;) {

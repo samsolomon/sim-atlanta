@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { landmarkBatchOff } from '../materials/landmark-batch';
 import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -185,6 +186,11 @@ function block(tiles: HouseTile[]) {
 
 /** Groups houses into tiles by footprint centre, each a LOD of far and (lazily) near versions. */
 export function houseLod(o: HouseLodOptions) {
+  return runSync(buildHouseLod(o));
+}
+
+/** houseLod() as a build that yields per tile and per merged block (core/slice.ts). */
+export function* buildHouseLod(o: HouseLodOptions) {
   const cells = new Map<string, VBuilding[]>();
   for (const h of o.houses) {
     const ring = h.rings[0];
@@ -203,6 +209,7 @@ export function houseLod(o: HouseLodOptions) {
     const tile = new HouseTile(houses, o, build(houses, o, o.far), state);
     if (o.force === 'near') tile.ensureNear();
     tiles.push(tile);
+    yield 'house tile';
     const [cx, cz] = key.split(',').map(Number);
     const bk = `${Math.floor(cx / SUPER)},${Math.floor(cz / SUPER)}`;
     (blocks.get(bk) ?? blocks.set(bk, []).get(bk)!).push(tile);
@@ -211,6 +218,7 @@ export function houseLod(o: HouseLodOptions) {
   for (const members of blocks.values()) {
     const b = members.length > 1 && !o.force && !blocksOff ? block(members) : null;
     if (b) { group.add(b); merged.push(b.merged); } else group.add(...members);
+    yield 'house block';
   }
   return {
     group, tiles,
