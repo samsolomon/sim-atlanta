@@ -3269,6 +3269,10 @@ The first skin is 1100 Peachtree. It is a notched 47 m square on the diagonal gr
 
 Each face of 999 Peachtree has the same design: a full-height blue curtain wall between two pale stone wings that step back at the 54.6 m shoulder. On the first pass, the curtain wall was invisible, because its glass sat 0.35 m behind the tower's own wall. Bringing the glass out to the wall plane and moving the stone wings 0.6 m in front of it fixed the depth without carving the mapped footprint. Faces inside a taller adjoining part are now skipped, and the tower uses only the two existing landmark materials. No full-night photograph was available, so the crown gets no lighting. [Day, night and entrance views](log/ui/999-peachtree/README.md)
 
+### 2026-11-23 · ViewPoint on a 600-triangle budget
+
+ViewPoint is the first skin built to the new per-building ceiling: 600 low-tier triangles for a 36-floor balcony tower. Every pane and railing is out of reach at that budget, so the library surfaces do the fine work. Curtain glass gives the blue wall its mullions and floor lines. A silver variant with a band at every floor turns twelve plain boxes into slatted balcony stacks. Precast panels cover the garage. The geometry is only what reads at the orbit: pilasters, stacks, a stepped Peachtree end and the crown screen. The lidar corrected the map again. The tower roof is at 119.9 m, not the mapped 150 m, and the garage is 36–38 m, not 50 m. Eight 8 m bins trace the crown's 10.3 m sweep toward Peachtree. At night a lit pane spans the pilaster in front of it, so one quad shows as two windows. That halved the cost of a noticeably lit residential tower. [Three-quarter view](log/ui/viewpoint/day.jpg) · [Night](log/ui/viewpoint/night.jpg)
+
 ### 2026-11-23 · 77 12th Street drops ten metres
 
 The OSM outline for 77 12th Street tagged the whole 91 × 59 m lot as a 90 m apartment tower, so City drew a solid block twice the size of the real slab. Its three mapped parts and the 2019 lidar tell a different story. The glass slab along 12th Street stands 78.4 m to the roof and 80.8 m to the white parapet. Behind it, a 19.7 m garage carries the pool deck, and a 9.5 m frontage runs along Crescent Avenue. A lidar profile down the slab's length came out flat, which settled a misreading of the photographs: the "lower east wing" is just perspective across a notch in the plan. On the phone tier the skin costs 530 triangles and two draws, with no new shader program. [Before/after, day and night](log/ui/77-twelfth/README.md)
@@ -3320,3 +3324,59 @@ The garage at 25 Pine Street NE was a brick block with a green roof, an odd thin
 ### 2026-11-23 · 10 10th, taller than its map
 
 The mapped parts said 10 10th was about 46 m tall. The 2019 lidar measures 64.6 m to the main roof, which is 14 storeys at roughly 4.5 m each above a 10.8 m podium. The skin follows the lidar: a brick shaft with punched windows, a silver ribbon bay wrapping the southeast corner over the MARTA plaza, two silver top floors and a penthouse, all in the existing landmark materials. The survey camera looks between two taller neighbours, so the review views come from the plaza side. [Day, night and corner views](log/ui/10-10th/README.md)
+
+### 2026-11-23 · The Atlantic across a board seam
+
+The Atlantic's mapped outline straddles two City rows. The row survey only saw the midtown-upper clip, a 94 × 43 m outline whose lidar p95 was 24.6 m, because that clip is mostly the parking podium. The 176 m tower sits almost entirely in brookwood-south. One module now claims the site in both rows. It moves the seam vertices 3 m out to the tower's real south face, so neither row keeps a generic box. Lidar on 4 m cells drew the crown. The perimeter roof is at 431 m NAVD88, the corners step down through 418 and 405 m, and a ring at 440 m surrounds a lower interior, so the Deco lattice screen is open above a penthouse. A 2016 Commons night photo closed the evidence gap: scattered warm units and floodlit crown fins. An empty lamp mesh on the podium still cost a draw call, so the module hides it, and the skin lands at three low-tier draws and about 2,050 triangles. [Before and after, day](log/ui/the-atlantic/day-before-after.jpg) · [night](log/ui/the-atlantic/night-before-after.jpg)
+
+### 2026-11-23 · 1075 Peachtree's "podium" was 140 m of tower
+
+The mapped outline for 1075 Peachtree breaks the site into seven parts. The tallest, 156.7 m, is the part with a curved north face. North of it, a part the pipeline calls `podium` (18.8 m, inferred) runs out to 12th Street. A 2.5 m raster of the April 2019 lidar disagreed: that "podium" has its roof at 433.1 m NAVD88, about 140 m up, the same as the curved part. The brochure's aerial cover and a Commons photo from 12th Street confirm it: a flat-topped glass block stands in front of the crowned one. The reported 18.8 m podium is really 35 m of precast parking deck. Inside the crowned block the median roof also sits at 433 m, while the 95th percentile reaches 445 m. That makes the thin cantilevered brim an open ring around a lower mechanical roof, not a lid. The louvred band under the brim is lit as one even glow, offices are about 5% lit at 23:30, and the entrance at Peachtree and 12th stays lit. The two tile fragments cost 1,745 low-tier triangles and three meshes, with no new shader program. [Research, lidar table and captures](log/ui/1075-peachtree/README.md)
+
+### 2026-11-23 · Nomia, a tower newer than the lidar
+
+Nomia opened in late 2023, so the 2019 point cloud shows a construction site and the mapped parts guess 111.6 m. The skin uses the reported 33 storeys: a 70 × 20 m slab, rotated 29° off the board axis, in a near-black green frame with full-height glass. It adds stacked end balconies, a lighter amenity floor and a pale penthouse. The first attempt returned nothing, because one of the shell's footprint probes sat 3 m outside the slab's rotated frame. The fixes were moving that probe and a north-facing review camera that put the whole face in shadow. Treated as residential, it keeps about 30% of its units lit at 23:30. [Day, night and close views](log/ui/nomia/README.md)
+
+### 2026-11-23 — Atlanta's newest tallest tower
+
+The unnamed 60-floor outline at West Peachtree and 12th is 1072 West Peachtree,
+which topped out in November 2025. The 2019 lidar still shows an empty lot, so
+the developer's floor-stack diagram supplies the heights.
+- A 36 m base holds nine parking levels and the glazed Commons.
+- A 72 m precast office block covers floors 11 to 18.
+- The blue-grey glass tower stops at a 219 m roof, a parapet steps up to 223.4 m,
+  and the middle of the broad faces reaches the reported 749 ft (228 m).
+
+A full-height balcony slot is recessed into each face. The slots are offset like a
+pinwheel, matching the published floor plan. At night the residences light one unit
+at a time, and the podium and office roof edges glow. The crown stays dark, as it
+was in August 2026. Its announced lighting hasn't appeared yet. The body is 1,950
+triangles. [Before and after](log/ui/1072-west-peachtree/compare-day.jpg) ·
+[night](log/ui/1072-west-peachtree/compare-night.jpg) ·
+[crown](log/ui/1072-west-peachtree/crown-day-night.jpg) ·
+[sources](1072-west-peachtree.md)
+
+### 2026-11-23 · Ascent Midtown finds its L
+
+Ascent Midtown had been one generic 82 m block over its whole 103 × 43 m lot. The 2019 lidar shows something else: an L-shaped tower whose roof is at 88.5 m, standing along the north edge and down West Peachtree, over a 20 m podium with a pool deck. Ascent shares that podium with the Hilton Canopy, which is already mapped as its own building. Pairing floors into one pane row on the phone tier kept the skin to 275 triangles and two draws there. [Before/after, day and night](log/ui/ascent-midtown/README.md)
+
+## 2026-11-23: Metropolis, and the lamp that ignored the shade
+
+Metropolis's two 21-storey condominium towers now stand on Peachtree as glass shafts with silver slab edges and stacked corner balconies. Between them, a garage podium carries a pool deck. At 23:30 about a third of the apartment runs are lit, as residential towers should be. The lesson was in the daylight. Lit windows live in a separate lamp mesh, and that mesh didn't receive shadows, so on the shaded west face every future-lit window showed at noon as a pale pane. Turning on shadow receiving for the lamps fixed it with no new shader program. A colour blended in sRGB had also drifted from the linear blend of the wall behind it. Both towers together cost 2,094 triangles and two draws.
+[Before and after](log/ui/metropolis/compare.jpg) · [day and night](log/ui/metropolis/daynight.jpg) · [podium close](log/ui/metropolis/close.jpg)
+
+**2026-11-23 — The hospital deck that crosses a seam.** Emory University Hospital Midtown's staff deck is one OSM way, but City's rows cut it at z = −1700, so two areas each load a fragment with the same id. Each row now builds its own physical half: the deck south of the seam and the low wing in one, the rest and the glass stair tower in the other. Both halves share one NAVD88 base, and the fins sit on a 2 m world grid, so the halves meet without a step whichever row mounts first. That matters because the block falls 8 m from West Peachtree to Spring. The white pleated screen became alternating fins 0.75 m proud of the deck edge, and the dusk photograph justified lighting every level as one even plane behind it. The skin is 754 triangles across both rows. [Day, night, seam close-ups at both tiers](log/ui/euhm-staff-deck/README.md)
+
+### 2026-11-23 · The Proscenium's blue crown
+
+The Proscenium's mapped outline has no parts, so its character had to come from the photographs. A pale granite grid with square windows runs up to a crown of five floors of continuous blue ribbon glass, and a narrow glazed slot climbs the middle of each long face to meet it. The faceted Peachtree bay keeps its ribbons for the full height and rises 6 m above the roof to the 104.9 m reported by CTBUH. It's built in one landmark shell with vertex colours only, so the batcher can merge it. [Day, night and Peachtree bay](log/ui/proscenium/README.md)
+
+### 2026-11-23 · 1010 Midtown's ribbons
+
+1010 Midtown is defined by the white balcony ribbon on every floor of its curve toward Peachtree. Drawing one band per floor and per curve facet put the skin at about 3,000 triangles. Merging each slab edge and its rail into a single band, and simplifying the mapped curve to 0.3 m, brought it to about 2,320. On a convex curve, the bands 1.9 m proud of neighbouring facets leave slits where the facets meet, so each band runs 0.6 m past its corners. The flat glass faces carry a white frame grid in front of the night panes. Like the Atlantic, the outline crosses a board seam, and each row draws its own parts. [Before and after](log/ui/1010-midtown/day-before-after.jpg) · [ribbons up close](log/ui/1010-midtown/ribbons-day.jpg)
+
+## 2026-11-24: NCR's sliced tower
+
+The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
+[Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
+
