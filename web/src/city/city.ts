@@ -99,6 +99,7 @@ import { createHyattRegency } from './hyatt-regency';
 import { createAltitudeApartments } from './altitude-apartments';
 import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
+import { createMarquisOne } from './marquis-offices';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -395,6 +396,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let altitude: ReturnType<typeof createAltitudeApartments> = null;
   let hilton: ReturnType<typeof createHiltonAtlanta> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
+  let marquisOne: ReturnType<typeof createMarquisOne> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
   let westin: ReturnType<typeof createWestin> = null;
@@ -438,7 +440,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         peachtreeCenter = createPeachtreeCenter(remaining, ground);
         const afterCenter = peachtreeCenter?.buildings ?? remaining;
         marquis = createMarriottMarquis(afterCenter, ground);
-        const hotelSite = marquis?.buildings ?? afterCenter;
+        const afterMarriott = marquis?.buildings ?? afterCenter;
+        marquisOne = createMarquisOne(afterMarriott, ground);
+        const hotelSite = marquisOne?.buildings ?? afterMarriott;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -548,6 +552,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
         if (marquis) world.group.add(marquis.group);
+        if (marquisOne) world.group.add(marquisOne.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -1355,6 +1360,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     eastRail?.setNight(night);
     hyatt?.setNight(night);
     marquis?.setNight(night);
+    marquisOne?.setNight(night);
     hilton?.setNight(night);
     altitude?.setNight(night);
     twelve?.setNight(night);
