@@ -40,12 +40,13 @@ try {
   for (const [tier, b] of Object.entries(budget).filter(([k]) => !k.startsWith('_'))) {
     const json = join(tmp, `${tier}.json`);
     // An entry may name its tier and clock (high-night is the high tier at 22:00).
-    const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run`;
+    // An entry may also name a camera motion and a CPU throttle (the moving long-task checks).
+    const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run${b.motion ? `&motion=${b.motion}` : ''}`;
     // One retry on a run that failed or was invalid (another agent's load can stall a headless GPU),
     // with the reason printed either way; a second failure fails the check.
     let s = null;
     for (let attempt = 1; attempt <= 2 && !s; attempt++) {
-      const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : []), url],
+      const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : b.viewport === 'a16' ? ['--viewport', '384x692@1'] : []), ...(b.cpu ? ['--cpu', String(b.cpu)] : []), url],
         { env: { ...process.env, PERF_JSON: json }, stdio: 'inherit' });
       let res = null;
       try { res = JSON.parse(readFileSync(json, 'utf8'))[0]; } catch { /* no result file */ }

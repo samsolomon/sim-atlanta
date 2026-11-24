@@ -115,6 +115,7 @@ import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
 import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
+import { createSkyView } from './skyview-atlanta';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createAtlantaCityHall } from './atlanta-city-hall';
@@ -433,6 +434,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let grady: ReturnType<typeof createGrady> = null;
   let russell: ReturnType<typeof createRussellBuilding> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
+  let skyView: ReturnType<typeof createSkyView> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
@@ -553,7 +555,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         russell = createRussellBuilding(afterStadium, ground);
         const afterRussell = russell?.buildings ?? afterStadium;
         centennial = createCentennialTower(afterRussell, ground);
-        const afterCentennial = centennial?.buildings ?? afterRussell;
+        const afterCentennialTower = centennial?.buildings ?? afterRussell;
+        skyView = createSkyView(afterCentennialTower, ground);
+        const afterCentennial = skyView?.buildings ?? afterCentennialTower;
         capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
@@ -636,6 +640,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (stadium) world.group.add(stadium.group);
         if (russell) world.group.add(russell.group);
         if (centennial) world.group.add(centennial.group);
+        if (skyView) world.group.add(skyView.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
@@ -661,7 +666,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
-            centennial, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
+            centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
@@ -1361,6 +1366,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
+    view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
@@ -1617,6 +1623,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       georgiaPacific?.setNight(night);
       russell?.setNight(night);
       centennial?.setNight(night);
+      skyView?.setNight(night);
       capitol?.setNight(night);
       arena?.setNight(night);
       atlantaCityHall?.setNight(night);

@@ -23,17 +23,15 @@ import { auburnTransport } from '../city/sweet-auburn-transport';
 import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, terrainOpenings } from '../terrain/model';
+import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
 /**
  * ?worker=1 builds ground surfaces in a Worker (the sliced-build work; off by default).
- * Do not turn this on by default yet: with it, heap after GC reads ~12 MB higher on low
- * (443 vs 431 MB, geometry and CPU memory identical; PR #486) and the phone has ~5 MB of
- * headroom. Suspects: transferred buffers kept alive by the client's pending map or the
- * Worker's own copy of the DEM.
+ * The +13 MB it used to add on low was the prebuilt near arrays kept reachable after a deck
+ * carve replaced them (fixed: takeSurface); heap after GC now matches the main-thread path.
  */
 /**
  * ?slice=1 spreads each section's build over frames: 4 ms of work per frame on low, 8 ms on
@@ -51,7 +49,7 @@ export const sliceStats = emptySliceStats();
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import { createSurfaceTransport } from '../terrain/transport';
+import { buildSurfaceTransport, type createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
@@ -176,8 +174,12 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // synchronous area build, which then adopts it. Same triangles (terrain/surface.test.ts).
   const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid }) => prebuildSurface(grid, quality,
     terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
-    joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined))) : undefined;
+    joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined, FAR_GROUND_SETTLED))) : undefined;
   signal.throwIfAborted();
+  // Hand each prebuilt surface over once and drop it here: the area's closures keep this scope
+  // alive, and a deck carve replaces the near arrays, which must not stay reachable (+13 MB on
+  // low, all typed-array stores, in a heap snapshot diff).
+  const takeSurface = (i: number) => { const s = surfaces?.[i]; if (surfaces) surfaces[i] = undefined as never; return s; };
   const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();
   // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
@@ -200,7 +202,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
         rollout: context.treeLowCount !== undefined ? { row: id, lowCount: context.treeLowCount, allCrowns: context.trees, inAnsley } : undefined,
-        surface: surfaces?.[patchIndex],
+        surface: takeSurface(patchIndex),
         // Trees join the City-wide batch only when the whole section mounts.
         deferTrees: true,
         // Sliced: dress the trees for today now, not in one pass when the section mounts.
@@ -212,13 +214,13 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const data = city.terrainTransport!;
         const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
         const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
-        const decks = createSurfaceTransport(base, grid, area.groundAt);
+        const decks = yield* buildSurfaceTransport(base, grid, area.groundAt);
         transports.push(decks);
-        area.carve(decks.cutting);
+        yield* area.carveSteps(decks.cutting);
         area.group.add(decks.group);
         yield 'decks';
         if (stationRoad && separate.length) {
-          const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
+          const stationDeck = yield* buildSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
           transports.push(stationDeck);
           stationDeck.group.name = stationRoad.id!;
           area.group.add(stationDeck.group);
