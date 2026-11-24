@@ -22,7 +22,10 @@ const parts: [id: string, roof: number][] = [
   ['osm:way:1450754140', 32.4], // podium wings
   ['osm:way:1450754141', 28.9],
   ['osm:way:1450754135', 21.6], // the mapped low wing (no clean lidar sample)
+  ['osm:way:1450754139', 3.6], // entrance blocks: limestone steps and porch
+  ['osm:way:1450754142', 3.6],
 ];
+const podiumFrom = 3; // parts from this index on are the podium and its entrances
 const crownEave = 72.6, crownRidge = 77.1; // lidar p50 74.8, max 77.1: a pitched crown
 const limestoneTop = 13.2; // the pale classical base: three storeys
 const storey = 3.6;
@@ -34,7 +37,7 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
   if (rings.some(r => !r || r.length < 3)) return null;
   const shell = landmarkShell(buildings, grid, site.id, '1355 Peachtree', origin, [1, 0], [[0, 0], [-25, 5], [25, -10]]);
   if (!shell) return null;
-  const P = rings.map((r, i) => ({ ring: wound(clean(r!), 1), roof: parts[i][1] }));
+  const P = rings.map((r, i) => ({ ring: wound(clean(r!), 1), roof: parts[i][1], crown: i === 0, podium: i >= podiumFrom }));
   const out = outwardSign(P[0].ring);
   const floor = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const footing = Math.min(floor, shell.base) - 0.65;
@@ -44,19 +47,20 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
     for (const [a, b, c] of ShapeUtils.triangulateShape(ring.map(([x, z]) => new Vector2(x, z)), []))
       body.tri([ring[a][0], y, ring[a][1]], [ring[c][0], y, ring[c][1]], [ring[b][0], y, ring[b][1]], color);
   };
-  /** Open air just outside the face at height y (no taller part there). */
-  const open = (ring: P2[], a: P2, b: P2, length: number, y: number) => {
-    const m = along(a, b, length, length / 2, 1.2 * out);
+  /** Open air just outside the face at `u` metres along it, at height y (no taller part there). */
+  const open = (ring: P2[], a: P2, b: P2, length: number, y: number, u = length / 2) => {
+    const m = along(a, b, length, u, 1.2 * out);
     return !P.some(p => p.ring !== ring && floor + p.roof > y && pointInRing(m[0], m[1], p.ring));
   };
 
-  for (const { ring, roof: h } of P) {
-    const top = floor + (h === 74.8 ? crownEave : h);
+  for (const { ring, roof: h, crown, podium } of P) {
+    const top = floor + (crown ? crownEave : h);
     // Limestone base, brick above, and a cream cornice band at every setback.
     shell.prism(ring, footing, Math.min(top, floor + limestoneTop), cream, '#8f8a80', { wall: surfaces.limestone({ course: 0.6 }) });
     if (top > floor + limestoneTop)
       shell.prism(ring, floor + limestoneTop, top - 1.4, brick, '#8f8a80', { wall: surfaces.brick() });
-    shell.prism(ring, Math.max(floor + limestoneTop, top - 1.4), top, cream, '#8a857c', { wall: surfaces.limestone({ course: 0.7 }) });
+    if (top > floor + limestoneTop)
+      shell.prism(ring, Math.max(floor + limestoneTop, top - 1.4), top, cream, '#8a857c', { wall: surfaces.limestone({ course: 0.7 }) });
     roof(ring, top, '#8a857c');
     // A projecting cornice: a thin cream lip 0.5 m out, all round.
     faces(ring, (a, b, length) => {
@@ -70,17 +74,17 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
       if (length < 6) return;
       const bays = Math.max(1, Math.round(length / 3.2));
       for (let y = floor + 4.6; y + 2.3 < top - 1.6; y += storey) {
-        if (!open(ring, a, b, length, y + 1)) continue;
         // The base storey has tall arched-looking openings; above, regular sash windows.
         const tall = y < floor + 5;
         for (let k = 0; k < bays; k++) {
           const u = (k + 0.5) * length / bays, w = Math.min(1.5, length / bays * 0.48);
+          if (!open(ring, a, b, length, y + 1, u)) continue;
           const p = along(a, b, length, u - w / 2, 0.06 * out), q = along(a, b, length, u + w / 2, 0.06 * out);
           const pf = along(a, b, length, u - w / 2 - 0.28, 0.04 * out), qf = along(a, b, length, u + w / 2 + 0.28, 0.04 * out);
           const y1 = y + (tall ? 3.4 : 2.1);
           // White frames read only from street views; on the shaft the window is one quad in a
           // frame-and-glass mean tone, which halves its triangles.
-          const framed = y < floor + 36;
+          const framed = podium;
           if (framed) shell.paint(FLAT, () => body.quad([pf[0], y - 0.15, pf[1]], [pf[0], y1 + 0.2, pf[1]], [qf[0], y1 + 0.2, qf[1]], [qf[0], y - 0.15, qf[1]], frame));
           // Offices at 23:30: about one window in twelve still lit, in small clusters.
           const lit = random() < 0.085;
@@ -99,8 +103,12 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
     // Peachtree runs north-northeast here; the ridge runs across it.
     const along_ = [0.48, 0.88], across = [0.88, -0.48];
     const proj = (p: P2, d: number[]) => p[0] * d[0] + p[1] * d[1];
-    const us = ring.map(p => proj(p, along_)), vs = ring.map(p => proj(p, across));
-    const u0 = Math.min(...us) + 1, u1 = Math.max(...us) - 1, v0 = Math.min(...vs) + 1, v1 = Math.max(...vs) - 1;
+    // Bounds from the straight walls only (edges over 4 m), so the bay on Peachtree doesn't push
+    // the pediment out past the wall plane.
+    const wall: P2[] = [];
+    faces(ring, (a, b) => { wall.push(a, b); }, 4);
+    const us = wall.map(p => proj(p, along_)), vs = wall.map(p => proj(p, across));
+    const u0 = Math.min(...us) + 0.6, u1 = Math.max(...us) - 0.6, v0 = Math.min(...vs), v1 = Math.max(...vs);
     const at = (u: number, v: number, y: number) => [u * along_[0] + v * across[0], y, u * along_[1] + v * across[1]];
     const eave = floor + crownEave, ridge = floor + crownRidge, um = (u0 + u1) / 2;
     shell.paint(surfaces.slate(), () => {
@@ -124,13 +132,13 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
   return result;
 }
 
-/** Drops vertices that close an edge shorter than 1.5 m (the mapped parts' small jogs and arcs). */
+/** Drops vertices that close an edge shorter than 1 m (the mapped parts' small jogs and arcs). */
 function clean(ring: P2[]): P2[] {
   const out: P2[] = [];
   for (const p of ring) {
     const last = out[out.length - 1];
-    if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) >= 1.5) out.push(p);
+    if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) >= 1) out.push(p);
   }
-  while (out.length > 3 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1]) < 1.5) out.pop();
+  while (out.length > 3 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1]) < 1) out.pop();
   return out;
 }

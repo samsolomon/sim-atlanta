@@ -14,7 +14,7 @@
 | `…140`, `…141` | 28.8, 21.6 | 32.4, 28.9 | podium wings |
 | `…135` | 21.6 | no clean sample | kept at its mapped height |
 
-The two 3.6 m entrance parts (`…139`, `…142`) are not drawn.
+The two 3.6 m entrance parts (`…139`, `…142`) are drawn as low limestone blocks.
 
 ## Evidence
 
@@ -25,7 +25,7 @@ The two 3.6 m entrance parts (`…139`, `…142`) are not drawn.
 
 ## Model
 
-The walls use the library's brick and limestone surfaces, and the crown roof is slate. Biltmore and the other Midtown landmarks already compile that painted program. The window glass and frames stay flat inside the painted walls. Framed windows (glass plus a white frame) stop at the podium line. On the shaft, each window is one quad in a frame-and-glass mean tone, which halves its triangles: 3,916 in all. Lit windows are in the lamp mesh, which receives shadows so the windows match by day.
+The walls use the library's brick and limestone surfaces, and the crown roof is slate. Biltmore and the other Midtown landmarks already compile that painted program. The window glass and frames stay flat inside the painted walls. Framed windows (glass plus a white frame) stop at the podium line. On the shaft, each window is one quad in a frame-and-glass mean tone, which halves its triangles: 3,868 in all. Lit windows are in the lamp mesh, which receives shadows so the windows match by day.
 
 | View | Camera | Local time, 20 November 2026 | Capture |
 |---|---|---|---|
