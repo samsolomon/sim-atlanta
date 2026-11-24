@@ -13,7 +13,7 @@ These come from the [lead's Colony Square research](https://github.com/samsolomo
 
 ## References
 
-- [Wikimedia Commons, AtlChampion, 9 November 2025](https://commons.wikimedia.org/wiki/File:AColonySq1002511-0966.jpg) gives the current tower from an elevated angle. It shows the white grid of near-square punched windows, about 15 per face, the blank top band and the solid corners.
+- [Wikimedia Commons, AtlChampion, 9 November 2025](https://commons.wikimedia.org/wiki/File:AColonySq1002511-0966.jpg) gives the current tower from an elevated angle. It shows the white grid of near-square punched windows, about 16 per face, the blank top band and the solid corners.
 - [Wikimedia Commons, dbking, 2007](https://commons.wikimedia.org/wiki/File:Colony_Square.jpg) shows the 400 tower in the same family from the street, as a second angle on the grid.
 - [Urbanize Atlanta night walk, January 2022](https://atlanta.urbanize.city/post/photos-wandering-reborn-colony-square-midtown-landmark): the skating-rink photograph shows this tower at night. Scattered office floors are lit warm and the crown is dark. The rink, the Christmas tree and the coloured accents are seasonal, so they are left out.
 
