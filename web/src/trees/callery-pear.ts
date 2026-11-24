@@ -73,7 +73,7 @@ export const calleryPear: typeof base = {
   },
 };
 export const calleryPearLook: Look = {
-  species: calleryPear, habit, leaf: 'oval', palette,
+  species: calleryPear, preferred: 'A', habit, leaf: 'oval', palette,
   bloomColour, bloomFill: 0.29, branchBloom: 'crown',
   options: [{ id: 'A', label: 'Broad teardrop crown', technique: 'cards', ink: 2, specks: 0.05,
     units: { high: 20, low: 13 }, cover: 1.2,
