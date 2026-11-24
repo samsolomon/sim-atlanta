@@ -36,6 +36,8 @@ it('raises both towers, the podium deck and the retail bases at their mapped hei
   expect(roof(710, -2918)).toBeCloseTo(270 + 24.9, 1); // amenity deck
   expect(roof(740, -2915)).toBeCloseTo(270 + 21.9, 1); // garage podium (beside the pool)
   expect(roof(715, -2860)).toBeCloseTo(270 + 9.3, 1); // 8th Street retail base
+  // The lamp quads darken with the shaded wall by day, or they show as pale panes.
+  expect(result.group.children.every(m => m.receiveShadow)).toBe(true);
   let triangles = 0;
   result.group.traverse(o => { if ('geometry' in o) triangles += (o as { geometry: { attributes: { position: { count: number } } } }).geometry.attributes.position.count / 3; });
   expect(triangles).toBeLessThan(2400);

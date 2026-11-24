@@ -2,6 +2,7 @@ import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
+import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, outwardSign, ramp, shadedQuad, wound } from './skin-kit';
 
@@ -17,8 +18,8 @@ const parts = {
   southBase: 'osm:way:886036490', northBase: 'osm:way:886036477',
 };
 
-const glassLow = '#465c67', glassHigh = '#94aab5';
-const slab = '#c3c9cb';
+const glassLow = '#4b676e', glassHigh = '#9cb6bb';
+const slab = '#d3d8d7';
 const precast = '#c9c3b6', garageGap = '#3a3f42';
 const storey = 3.6;
 
@@ -53,7 +54,7 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   // The towers' own street faces carry the same storefront line.
   for (const key of ['southBase', 'northBase', 'deck', 'podium', 'southWest', 'south', 'southStep', 'northWest', 'north', 'northStep'] as const) {
     const { ring, h } = P[key];
-    if (key.endsWith('Base')) shell.prism(ring, footing, floor + h, precast, '#8e9294');
+    if (key.endsWith('Base')) shell.prism(ring, footing, floor + h, precast, '#8e9294', { wall: surfaces.precast({ width: 3, height: 4.6 }) });
     faces(ring, (a, b, length) => {
       if (!open(ring, a, b, length, floor + 2)) return;
       const steps = Math.max(1, Math.ceil(length / 6));
@@ -69,7 +70,7 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   // The garage podium: precast with three dark bands of openings, and the amenity deck.
   for (const key of ['podium', 'deck'] as const) {
     const { ring, h } = P[key];
-    shell.prism(ring, footing, floor + h, precast, key === 'deck' ? '#7b8a62' : '#a7aaa6');
+    shell.prism(ring, footing, floor + h, precast, key === 'deck' ? '#7b8a62' : '#a7aaa6', { wall: surfaces.precast({ width: 3, height: 4.1 }) });
     faces(ring, (a, b, length) => {
       if (length < 6 || !open(ring, a, b, length, floor + 12)) return;
       const p = along(a, b, length, 1, 0.05 * out), q = along(a, b, length, length - 1, 0.05 * out);
@@ -91,7 +92,7 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   }
   // The pool on the podium deck between the towers, set in from the alley.
   const pool: P2[] = [[18, 4], [26, 4], [26, -14], [18, -14]];
-  if (pointInRing(22, -5, P.podium.ring)) roof(pool, floor + P.podium.h + 0.05, '#4f9fb4');
+  if (pool.every(([x, z]) => pointInRing(x, z, P.podium.ring))) roof(pool, floor + P.podium.h + 0.05, '#4f9fb4');
 
   // Towers: glass with silver slab edges every storey and stacked corner balconies.
   const towers = [['southWest', 'south', 'southStep'], ['northWest', 'north', 'northStep']] as const;
