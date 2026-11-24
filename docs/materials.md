@@ -201,4 +201,4 @@ the low tier on the right; wall materials paint the walls and roofing paints the
 
 ### Static downtown landmark bodies
 
-For a fixed, opaque shell with baked vertex colours, use `StaticLandmarkMaterial` from `web/src/materials/landmark-batch.ts` on a mesh that casts and receives shadows. City combines these shells within 500 m cells on High. Keep animated windows, glass, meshes with local-coordinate shader patches and anything with independently changing visibility in their own meshes. The standard landmark shell already selects the batchable material for its body. The material library's painted surfaces keep their local coordinates.
+For a fixed, opaque shell with baked vertex colours, use `StaticLandmarkMaterial` from `web/src/materials/landmark-batch.ts` on a mesh that casts and receives shadows. City combines these shells within 500 m cells on both tiers. Keep animated windows, glass, meshes with local-coordinate shader patches and anything with independently changing visibility in their own meshes. The standard landmark shell already selects the batchable material for its body. The material library's painted surfaces keep their local coordinates.
