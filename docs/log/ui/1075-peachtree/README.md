@@ -86,7 +86,8 @@ Glass, for Sam's palette pick (rendered sunlit, 11:30 high tier, `820,-3335,0,78
 |---|---|---|---|---|
 | Current glass (kept in code) | `#46606e` | 201 | 74 | 35 |
 | Photo-matched glass (shown only) | `#8ca8bc` | 192 | 20 | 64 |
+| Deeper blue, middle option (shown only) | `#718a9d` | 200 | 33 | 53 |
 
-The photo-matched value follows the photos' light, reflective sky-blue and is inside the rule (V ≥ 62 → S ≤ 30).
+The photo-matched value follows the photos' light, reflective sky-blue and is inside the rule (V ≥ 62 → S ≤ 30). At 800 m it sits close to the generic pale-blue towers, so the lead asked for a middle option. The deeper blue renders at S 33 and V 53, inside the cap and more distinct from its neighbours. The current glass, at S 74, is over the S ≤ 36 cap.
 
 [Before / current / photo-matched](rework-compare.jpg) · [Four sides at 400 m](rework-four-sides.jpg)
