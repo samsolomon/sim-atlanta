@@ -28,6 +28,14 @@ export interface Prewarmer {
   scan(): void;
   /** Draw up to `maxObjects` of them in one scratch render. Returns how many it drew. */
   step(maxObjects?: number): number;
+  /**
+   * Upload a finished group's buffers (and compile its programs) a batch per frame before it shows:
+   * every drawable in it is drawn once on the scratch layer, whether or not its material has
+   * compiled. The group must already be in the scene (hidden is fine), so the draw uses the
+   * scene's lights and fog. Resolves once all are drawn; upload work goes ahead of the compile
+   * backlog. A sliced area build calls this before it mounts (see the streaming manager).
+   */
+  upload(group: THREE.Object3D): Promise<void>;
   dispose(): void;
 }
 
@@ -36,6 +44,8 @@ export function createPrewarmer(renderer: THREE.WebGLRenderer, scene: THREE.Scen
   const target = new THREE.WebGLRenderTarget(4, 4, { type: textureType });
   const cam = camera.clone();
   let queue: Drawable[] = [];
+  type Upload = { left: Drawable[]; done: () => void };
+  const uploads: Upload[] = [];
   const compiled = (m: THREE.Material) => !!props.get(m).currentProgram;
   // One attempt per object. A draw can leave a material uncompiled (three.js skips material.visible
   // false, and some objects never render on this layer); without this, every 10 s rescan would queue
@@ -81,7 +91,7 @@ export function createPrewarmer(renderer: THREE.WebGLRenderer, scene: THREE.Scen
   }
 
   return {
-    get pending() { return queue.length; },
+    get pending() { return queue.length + uploads.length; },
     scan() {
       const seen = new Set<THREE.Material>();
       queue = [];
@@ -98,6 +108,13 @@ export function createPrewarmer(renderer: THREE.WebGLRenderer, scene: THREE.Scen
     },
     step(maxObjects = 4) {
       const batch: Drawable[] = [];
+      // Uploads first: a finished area waits on them to mount.
+      while (uploads.length && batch.length < maxObjects) {
+        const u = uploads[0];
+        const o = u.left.shift();
+        if (o) { if (o.parent) { tried.add(o); batch.push(o); } }
+        if (!u.left.length) { uploads.shift(); u.done(); }
+      }
       while (queue.length && batch.length < maxObjects) {
         const o = queue.shift()!;
         if (!o.parent || !materials(o).some(wanted)) continue;
@@ -108,6 +125,23 @@ export function createPrewarmer(renderer: THREE.WebGLRenderer, scene: THREE.Scen
       if (batch.length) draw(batch);
       return batch.length;
     },
-    dispose() { target.dispose(); queue = []; },
+    upload(group) {
+      let inScene = false;
+      for (let p: THREE.Object3D | null = group; p; p = p.parent) if (p === scene) inScene = true;
+      if (!inScene) return Promise.reject(new Error('prewarmer.upload: add the group to the scene first (hidden is fine)'));
+      const left: Drawable[] = [];
+      group.traverse(o => {
+        const d = o as Drawable;
+        if ((d as THREE.Mesh).isMesh || (d as THREE.Points).isPoints || (d as THREE.Line).isLine) left.push(d);
+      });
+      if (!left.length) return Promise.resolve();
+      return new Promise<void>(done => uploads.push({ left, done }));
+    },
+    dispose() {
+      target.dispose();
+      queue = [];
+      // Nothing will draw them now; let waiters go on.
+      for (const u of uploads.splice(0)) u.done();
+    },
   };
 }
