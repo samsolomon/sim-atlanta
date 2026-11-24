@@ -82,3 +82,13 @@ Use each table row's City x and z with a clear, paused clock at 11:30 and 23:30 
 **Marquis One and Two — paired Sol brief.** Match the slender windows recessed between light precast concrete piers on the two 115 m shafts. Give Marquis Two its wider panes on the north wall. Make one comparison from Peachtree Center Avenue with both towers in frame and another looking south at the north wall of Two. The preservation survey identifies the corresponding elevations in photos 236–250. Full-night evidence remains open. [Georgia historic district nomination](https://gadnr.org/sites/default/files/hpd/pdf/Peachtree%20Center%20HD%20Final%204-24-17.pdf)
 
 **171 Seventeenth — Sol.** The Connector approach exposes a broad glass elevation with floor-to-ceiling glazing across 21 stories. Set the curtain-glass floor module from the occupied shaft, then measure the rooftop enclosure separately. Capture the east approach over the 17th Street bridge and a three-quarter view of the return. Full-night evidence remains open. [Architect’s gallery](https://www.smallwood-us.com/work/case-study/171-17th-street) · [Leasing agent’s exterior photograph and floor count](https://www.cbre.com/press-releases/prime-us-reit-and-kbs-appoint-cbre-as-the-exclusive-leasing-agent-for-510000-sf-midtown-atlanta)
+
+### Assigned downtown landmarks
+
+Downtown rail worker `7abc46f1` owns the following three buildings, one PR each. The table above gives their Overture IDs, preliminary dimensions and target coordinates.
+
+| Order | Building | Research and acceptance view |
+|---:|---|---|
+| 1 | 230 Peachtree | Compare the precast panel module with the four promenade towers. Frame the narrow end and the Peachtree entrance. [Promenade research](log/ui/peachtree-center/README.md) |
+| 2 | 200 Peachtree | Trace the shared boundary with the Westin podium before measuring facade bays. Show the public frontage and an elevated oblique with both roofs visible. [Westin boundary survey](westin-peachtree-plaza.md) |
+| 3 | J. Mack Robinson College of Business | Identify the 14-floor Overture outline across Broad from Commerce. Frame both buildings from Broad to check their separation and roof heights. Prior lidar sampling places Robinson’s main surface at about 375.1 m NAVD88. [Commerce survey](log/ui/commerce-building/README.md) |
