@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
+import { GroundSurface } from '../terrain/surface';
+import { CITY_COLORS, groundAudit } from '../terrain/ground-audit';
 import type { FreightTreadPoint } from '../terrain/transport';
 import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import { buildRailPortals, declaredEnd, DOWNTOWN_RAIL_ENDS, extendFreightIntoMouths, looseRailEnds, railMouths, railPortalOpenings } from './rail-portals';
@@ -45,9 +47,21 @@ it.skipIf(!staged)('puts a portal and a terrain opening at each hillside mouth, 
   const slots = railPortalOpenings(mouths);
   expect(slots).toHaveLength(mouths.length);
   for (const [i, s] of slots.entries()) expect(s.halfWidthM).toBeGreaterThan(mouths[i].half);
-  const mesh = buildRailPortals(mouths, grid);
+  const mesh = buildRailPortals(mouths, grid, () => null);
   expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(100);
   expect(mesh.material).toBeInstanceOf(THREE.MeshLambertMaterial);
+});
+
+it.skipIf(!staged).each(['high', 'low'] as const)('keeps portal faces above the drawn %s terrain', (quality) => {
+  const { v, rail, grid } = load();
+  const mouths = railMouths(rail, v.bounds, grid);
+  const surface = new GroundSurface(grid, quality, railPortalOpenings(mouths));
+  const terrainAt = Object.assign(surface.sampleScene.bind(surface), { triangles: surface });
+  const mesh = buildRailPortals(mouths, grid, terrainAt);
+  const { layers } = groundAudit(mesh, [{ id: 'downtown', bounds: grid.manifest.bounds, terrainAt, terrain: [] }],
+    { colors: CITY_COLORS, tolerance: 0.02 });
+  expect(layers.reduce((sum, layer) => sum + layer.samples, 0)).toBeGreaterThan(0);
+  for (const layer of layers) expect(layer.worst).toBeNull();
 });
 
 it('runs a freight section on into the tube so trains clip in the dark', () => {

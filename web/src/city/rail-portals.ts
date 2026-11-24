@@ -10,6 +10,7 @@
  * positions, headings and cover levels come from the mapped track and the lidar ground.
  */
 import * as THREE from 'three';
+import { drapeTriangle, type DrapeGround } from '../terrain/drape';
 import type { OpenSlot } from '../terrain/openings';
 import type { FreightTreadPoint } from '../terrain/transport';
 import { Builder, type P2 } from '../vignette/geom';
@@ -151,7 +152,7 @@ const CONCRETE = '#a39a8c',
   TUBE = 22;
 
 /** One mesh for every portal, in mouth-local frames (z into the tunnel). */
-export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground) {
+export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground, terrainAt: DrapeGround) {
   const body = new Builder();
   const shade = (z: number) =>
     '#' + new THREE.Color('#5d5952').lerp(new THREE.Color('#080807'), Math.pow(Math.min(1, z / 14), 0.7)).getHexString();
@@ -207,16 +208,24 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground) {
       zero = ground.manifest.vertical.sceneZeroNavd88M;
     // Draped on the ground at each corner (a cross-slope would otherwise bury one edge).
     const lid = (u: number, w: number) => {
-      const g = ground.sample(m.x - m.dz * u + m.dx * w, m.z + m.dx * u + m.dz * w);
-      return Math.max(m.railY + clear + 0.35, g === null ? m.coverY : g - zero) + 0.12;
+      const [x, , z] = P(u, 0, w);
+      const g = ground.sample(x, z);
+      return Math.max(m.railY + clear + 0.35, terrainAt(x, z) ?? -Infinity, g === null ? m.coverY : g - zero) + 0.12;
     };
     const cols = [-outer, -outer / 2, 0, outer / 2, outer];
-    for (let w = 0.6; w < SLOT_END + 0.5; w += 1) {
-      const w1 = Math.min(SLOT_END + 0.5, w + 1);
+    for (let w = 0.6; w < SLOT_END; w += 1) {
+      const w1 = Math.min(SLOT_END, w + 1);
       for (let c = 1; c < cols.length; c++) {
         const u0 = cols[c - 1],
           u1 = cols[c];
-        quad([u0, lid(u0, w), w], [u1, lid(u1, w), w], [u1, lid(u1, w1), w1], [u0, lid(u0, w1), w1], LID);
+        const a = P(u0, lid(u0, w), w), b = P(u1, lid(u1, w), w);
+        const c1 = P(u1, lid(u1, w1), w1), d = P(u0, lid(u0, w1), w1);
+        if (terrainAt.triangles) {
+          const point = ([x, y, z]: number[]) => [x, Math.max(y, (terrainAt(x, z) ?? -Infinity) + 0.12), z];
+          const emit = (p: number[], q: number[], r: number[]) => body.tri(point(p), point(q), point(r), LID);
+          drapeTriangle(terrainAt.triangles, a, b, c1, 0.12, emit, Infinity, true);
+          drapeTriangle(terrainAt.triangles, a, c1, d, 0.12, emit, Infinity, true);
+        } else body.quad(a, b, c1, d, LID);
       }
       for (const u of [-outer, outer]) quad([u, y0, w], [u, lid(u, w), w], [u, lid(u, w1), w1], [u, y0, w1], CONCRETE_SIDE);
     }

@@ -592,7 +592,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         const landmarksFrom = world.group.children.length;
-        if (railMouthList.length) world.group.add(buildRailPortals(railMouthList, ground));
+        if (railMouthList.length) world.group.add(buildRailPortals(railMouthList, ground, terrain.terrainAt));
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
         if (marquis) world.group.add(marquis.group);
