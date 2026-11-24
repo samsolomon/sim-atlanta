@@ -33,6 +33,11 @@ export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeat
   };
 }
 
+/** Rail feed state for the shells: live only while live trains are active (real present, a fresh feed). */
+export function railStatus(liveActive: boolean, error: string | null): LiveState['rail'] {
+  return liveActive ? 'live' : error ? 'down' : 'connecting';
+}
+
 /** The Final subject card names rail and weather confidence separately. */
 export function confidenceWords(c: Confidence): string[] {
   if (c.tier === 'loading') return [];

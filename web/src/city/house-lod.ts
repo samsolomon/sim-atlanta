@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { landmarkBatchOff } from '../materials/landmark-batch';
 import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -35,12 +36,17 @@ let changed = false;
 export function takeHouseLodChange() { const c = changed; changed = false; frame++; return c; }
 
 function build(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
+  return runSync(buildWorld(houses, o, finish));
+}
+
+/** build() as a build that yields every few houses (core/slice.ts). */
+function* buildWorld(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
   class Houses extends World {
     override ground(x: number, z: number) { return o.ground(x, z) ?? 0; }
   }
   const world = new Houses({ bounds: o.bounds, buildings: houses, roads: [], rail: [] } as unknown as VData, null,
     { terrain: 'flat', clumps: 3, lightMapMax: 256 } as never);
-  world.buildBuildings(o.foundation, o.roofUnits, finish);
+  yield* world.buildingSteps(o.foundation, o.roofUnits, finish);
   // Drop empty meshes (no lit glass or roof clutter on far houses), so they never cost a draw.
   for (const m of [...world.group.children]) {
     const mesh = m as THREE.Mesh, g = mesh.geometry as THREE.BufferGeometry | undefined;
@@ -185,6 +191,11 @@ function block(tiles: HouseTile[]) {
 
 /** Groups houses into tiles by footprint centre, each a LOD of far and (lazily) near versions. */
 export function houseLod(o: HouseLodOptions) {
+  return runSync(buildHouseLod(o));
+}
+
+/** houseLod() as a build that yields per tile and per merged block (core/slice.ts). */
+export function* buildHouseLod(o: HouseLodOptions) {
   const cells = new Map<string, VBuilding[]>();
   for (const h of o.houses) {
     const ring = h.rings[0];
@@ -200,9 +211,10 @@ export function houseLod(o: HouseLodOptions) {
   const tiles: HouseTile[] = [];
   const blocks = new Map<string, HouseTile[]>();
   for (const [key, houses] of cells) {
-    const tile = new HouseTile(houses, o, build(houses, o, o.far), state);
+    const tile = new HouseTile(houses, o, yield* buildWorld(houses, o, o.far), state);
     if (o.force === 'near') tile.ensureNear();
     tiles.push(tile);
+    yield 'house tile';
     const [cx, cz] = key.split(',').map(Number);
     const bk = `${Math.floor(cx / SUPER)},${Math.floor(cz / SUPER)}`;
     (blocks.get(bk) ?? blocks.set(bk, []).get(bk)!).push(tile);
@@ -211,6 +223,7 @@ export function houseLod(o: HouseLodOptions) {
   for (const members of blocks.values()) {
     const b = members.length > 1 && !o.force && !blocksOff ? block(members) : null;
     if (b) { group.add(b); merged.push(b.merged); } else group.add(...members);
+    yield 'house block';
   }
   return {
     group, tiles,

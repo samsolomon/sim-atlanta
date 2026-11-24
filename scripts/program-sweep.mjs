@@ -47,15 +47,17 @@ try {
   if (q === 'low') await send('Emulation.setDeviceMetricsOverride', { width: 411, height: 891, deviceScaleFactor: 2.625, mobile: true });
   else await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
   await send('Page.navigate', { url: `${base}/?view=city&q=${q}&t=${start}&perf=1` });
-  // Ready, then quiet: no load phase for 5 s (every area mounted).
-  for (let i = 0; i < 480; i++) {
+  // Ready, then quiet: no load phase for 5 s (every area mounted), with the ?perf hooks installed.
+  // A loaded Studio can take minutes; wait up to 8, and say what was missing if it never got there.
+  let state = { hook: false, ready: false, last: 0, now: 0, phase: 'none' };
+  for (let i = 0; i < 960; i++) {
     await sleep(500);
     try {
-      const s = await evaluate('(() => { const p = __perf.phases; return { ready: p.some(x => x.name === "ready"), last: p[p.length - 1].ms, now: performance.now() }; })()');
-      if (s.ready && s.now - s.last > 5000) break;
-    } catch { /* loading */ }
+      state = await evaluate('(() => { const p = window.__perf?.phases ?? []; return { hook: typeof window.__scene === "function", ready: p.some(x => x.name === "ready"), last: p[p.length - 1]?.ms ?? 0, now: performance.now(), phase: p[p.length - 1]?.name ?? "none" }; })()') ?? state;
+      if (state.hook && state.ready && state.now - state.last > 5000) break;
+    } catch { /* navigating */ }
   }
-  if (!(await evaluate('typeof __scene === "function"'))) throw new Error('__scene hook missing: build lacks the ?perf scene hook');
+  if (!state.hook) throw new Error(`__scene hook never appeared at ${q} (last load phase: ${state.phase}); is this a ?perf build from main after #464?`);
   // A City that never became ready (failed data, crashed build) has no programs to sweep; passing it
   // would report zero late compiles for a scene that never drew.
   const ready = await evaluate('__perf.phases.some(p => p.name === "ready")');

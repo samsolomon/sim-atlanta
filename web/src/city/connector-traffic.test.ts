@@ -104,6 +104,8 @@ it('yields to observed buses and suppresses cars without a supported road surfac
   expect(layer.visibleCars).toBe(0);
   expect(occupied).not.toHaveBeenCalled();
   height.mockReturnValue(1);
+  // Road heights are cached per lane: a layer is told when the ground under it changes.
+  layer.refreshHeights();
   layer.update(noon,0);
   expect(occupied).toHaveBeenCalled();
   expect(layer.visibleCars).toBe(0);

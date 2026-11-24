@@ -3,6 +3,7 @@ import type { TerrainQuality } from '../terrain/surface';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litFacade, seedOf } from './skin-kit';
 
 export const amliArtsCenterId = 'osm:way:885667868';
 const origin: P2 = [282, -3890];
@@ -27,14 +28,14 @@ const garage: P2[] = [
 const local = (ring: P2[]): P2[] => ring.map(([x, z]) => [x - origin[0], z - origin[1]]);
 
 /** Edges with the outward side to the right of a → b in plan (x east, z south). */
-function edges(ring: P2[], draw: (a: P2, b: P2, length: number) => void) {
+function edges(ring: P2[], draw: (a: P2, b: P2, length: number, i: number) => void) {
   let area = 0;
   ring.forEach(([x, z], i) => { const [u, v] = ring[(i + 1) % ring.length]; area += x * v - u * z; });
   const r = area > 0 ? ring : [...ring].reverse();
   r.forEach((a, i) => {
     const b = r[(i + 1) % r.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length > 3) draw(a, b, length);
+    if (length > 3) draw(a, b, length, i);
   });
 }
 
@@ -43,6 +44,8 @@ export function createAmliArtsCenter(buildings: VBuilding[], grid: GroundGrid, q
     [[0, 15], [-40, -20], [40, 10]]);
   if (!found) return null;
   const shell = found;
+  // Lit panes come from the shared hash; each facade call site owns a face-id block of 50.
+  const seed = seedOf(amliArtsCenterId);
   const high = quality === 'high';
   const white = '#ecebe6', precast = '#d4d1c8';
   const dark = ['#2f3a44', '#35414c', '#2b3540'];
@@ -63,14 +66,14 @@ export function createAmliArtsCenter(buildings: VBuilding[], grid: GroundGrid, q
   if (high) shell.prism(local([[251, -3926], [258, -3926], [258, -3918], [251, -3918]]), deckTop, deckTop + 4, white, '#cfcdc6');
 
   // Garage tiers and the glazed shop base on Spring Street.
-  edges(g, (a, b, length) => {
+  edges(g, (a, b, length, i) => {
     if (length < 10) return;
-    shell.facade(a, b, lobbyTop + 0.8, deckTop - 0.6, high ? 4 : 2, high ? 7.5 : 30, high ? 0.82 : 0.9, 0.5, ['#45484b'], 0);
-    shell.facade(a, b, shell.base + 0.6, lobbyTop - 0.3, 1, high ? 5 : 30, 0.9, 0.85, ['#3d6f8e'], 0.5);
+    litFacade(shell, seed, 0 + i, a, b, lobbyTop + 0.8, deckTop - 0.6, high ? 4 : 2, high ? 7.5 : 30, high ? 0.82 : 0.9, 0.5, ['#45484b'], 0);
+    litFacade(shell, seed, 50 + i, a, b, shell.base + 0.6, lobbyTop - 0.3, 1, high ? 5 : 30, 0.9, 0.85, ['#3d6f8e'], 0.5);
   });
 
   const floors = Math.round((roof - lobbyTop) / 3);
-  edges(t, (a, b, length) => {
+  edges(t, (a, b, length, i) => {
     const ux = (b[0] - a[0]) / length, uz = (b[1] - a[1]) / length;
     const nx = uz, nz = -ux;
     const at = (u: number, y: number, out: number) => [a[0] + ux * u + nx * out, y, a[1] + uz * u + nz * out];
@@ -80,9 +83,9 @@ export function createAmliArtsCenter(buildings: VBuilding[], grid: GroundGrid, q
     // The east-west runs along 15th Street and the pool deck are the broad faces.
     const broad = Math.abs(ux) > 0.85;
     const colors = broad ? dark : light;
-    if (high) shell.facade(a, b, lobbyTop + 0.2, roof - 0.3, floors, broad ? 1.6 : 2.4, 0.94, 0.88, colors, 0.4);
-    else if (length > 8) shell.facade(a, b, lobbyTop + 0.2, roof - 0.3, Math.round(floors / 2), 14, 0.9, 0.92, colors, 0.4);
-    shell.facade(a, b, shell.base + 0.6, lobbyTop - 0.4, 1, high ? 4 : 14, 0.88, 0.85, ['#3a4b57'], 0.55);
+    if (high) litFacade(shell, seed, 100 + i, a, b, lobbyTop + 0.2, roof - 0.3, floors, broad ? 1.6 : 2.4, 0.94, 0.88, colors, 0.4);
+    else if (length > 8) litFacade(shell, seed, 150 + i, a, b, lobbyTop + 0.2, roof - 0.3, Math.round(floors / 2), 14, 0.9, 0.92, colors, 0.4);
+    litFacade(shell, seed, 200 + i, a, b, shell.base + 0.6, lobbyTop - 0.4, 1, high ? 4 : 14, 0.88, 0.85, ['#3a4b57'], 0.55);
     if (!broad || length < 20) return;
     // White frame fins at the ends and the middle, rising past the roof into the open crown.
     const fins = [[0, 3.2], [length / 2 - 1.3, length / 2 + 1.3], [length - 3.2, length]];

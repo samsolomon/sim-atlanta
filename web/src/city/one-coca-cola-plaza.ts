@@ -2,6 +2,7 @@ import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 export const oneCocaColaId = 'osm:way:536717630';
 
@@ -23,6 +24,7 @@ export function createOneCocaColaPlaza(buildings: VBuilding[], site: VBuilding, 
 
   // Lidar (April 2019): roof p50 116.0, p95 122.8, max 125.2 m above grade.
   const grade = s.base + 0.35;
+  const seed = seedOf(site.id);
   const half = 23.6, pier = 2.9;
   const lobbyTop = grade + 7.2,
     firstFloor = lobbyTop + 0.9,
@@ -64,7 +66,8 @@ export function createOneCocaColaPlaza(buildings: VBuilding[], site: VBuilding, 
   ];
   faces.forEach(([a, b], f) => {
     const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
-    // Outward normal: the loop runs counter-clockwise in (x, z).
+    // Outward normal: the loop runs counter-clockwise in (x, z). The eggcrate
+    // draws only lit panes over its glass box, so it uses litHash, not litFacade.
     const nx = dz / len, nz = -dx / len;
     const at = (t: number, y: number, out: number) =>
       [a[0] + t * dx + nx * out, y, a[1] + t * dz + nz * out];
@@ -82,7 +85,7 @@ export function createOneCocaColaPlaza(buildings: VBuilding[], site: VBuilding, 
       quad(t0, t1, y, y + 1.55, 0, precast);
       for (let i = 0; i < bays; i++) {
         // Offices: a sparse, stable set of late workers and cleaning crews.
-        if ((j * 31 + i * 17 + f * 43) % 37 !== 0) continue;
+        if (litHash(seed, f, j, i) >= 0.03) continue;
         quad(t0 + i * w + mullion, t0 + (i + 1) * w - mullion, y + 1.55, y + pitch, -0.55, glass, true);
       }
     }

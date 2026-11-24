@@ -538,6 +538,12 @@ export function createBrookwood(sceneZero: number, instanceFreight = true) {
     m.clippingPlanes = [northEdge, westEdge];
     m.clipShadows = true;
   }
+  // A hidden Crescent car so City's boot prewarm compiles the night-lit stock program before the
+  // Crescent first enters after ready. It sits outside `cars`, which picking and follow read.
+  const stockTemplate = new THREE.Mesh(consist[0].geometry, stockMaterial);
+  stockTemplate.name = 'crescent prewarm template';
+  stockTemplate.visible = false;
+  group.add(stockTemplate);
   const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, [northEdge, westEdge], instanceFreight);
   group.add(freight.group);
   let crescentOnCorridor = false;
