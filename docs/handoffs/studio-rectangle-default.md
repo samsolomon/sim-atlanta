@@ -66,6 +66,7 @@ When the fix merges, the coordinator will re-cut release 8 from the then-current
 - Regenerate `vignette.json` with `.venv/bin/python pipeline/scripts/terrain_transport.py`. Do not use `-I`: the script imports `vignette` from its own folder. It runs offline from `data/raw` and does not refresh Overture or GTFS.
 - Diff all 52 files. Only `terrainTransport.rail[].pts` on the 13 `freightS` runs may change.
 - Reuse the release 7 reference frames in `~/Developer/sim-atlanta-release-tools/ref-r7-4e33e335/` (plans `planR8match.json` and `planR8skins.json`).
+- **Standing deck-over-road shadow set:** `~/Developer/sim-atlanta-release-tools/planDecks.json`, 21 frames with release 7 references captured. Run it on every release from now on.
 - Bisect evidence is in `~/Developer/sim-atlanta-release-0e3a71b1-bisect/`.
 - Still to do on the re-cut: the #534 low fly with `smoke8.mjs`, the geometry read-back (about 171 MB low, about 282 MB high), the program sweep and the core regression.
 
