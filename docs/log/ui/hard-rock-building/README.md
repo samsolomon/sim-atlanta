@@ -20,7 +20,8 @@ These are Google Street View panoramas, viewed in an Orca tab. None of the image
 
 ## Estimates
 
-- Bay rhythm: paired windows, 2.65 m apart, between piers every 5.3 m.
+- Bay rhythm: piers about every 5.3 m, with exactly two windows in each bay.
+- Plan: turned 0.7° to follow the Overture outline's long edge. Each street face's storefront starts at its own sidewalk, because the site falls about 3 m to the southeast corner.
 - Awnings: one per bay on the Peachtree (west) and International (south) faces, with a few bays left bare.
 - Rooftop plant: an 8 × 6 m box, position estimated.
 - Stone `#d6cdbd`. Window glass `#8a9499` (S10 V60). The first value, `#5a6266`, rendered almost black in the punched recesses.

@@ -22,20 +22,27 @@ const stone = '#d6cdbd',
 
 export function createHardRock(buildings: VBuilding[], grid: GroundGrid) {
   const origin: P2 = [410.25, -670.55];
-  const s = landmarkShell(buildings, grid, hardRockId, 'Hard Rock Cafe building', origin, [1, 0],
+  // The Overture outline is turned about 0.7° off the City axes; follow its long edge.
+  const axis: P2 = [54.84, 0.65];
+  const s = landmarkShell(buildings, grid, hardRockId, 'Hard Rock Cafe building', origin, axis,
     [[0, 0], [-20, -10], [20, 10]]);
   if (!s) return null;
   const seed = seedOf(hardRockId);
-  const g0 = s.base + 0.35;
+  const ang = Math.atan2(axis[1], axis[0]), ca = Math.cos(ang), sa = Math.sin(ang);
+  /** NAVD88 grade under a local (u, v) point. */
+  const gradeAt = (u: number, v: number) =>
+    grid.sample(origin[0] + u * ca - v * sa, origin[1] + u * sa + v * ca) ?? s.base + 0.35;
+  // Heights from the lidar ground (324.3 m NAVD88, the ring median). The site falls
+  // about 3 m to the southeast corner, so each street face takes its own sidewalk.
+  const g0 = 324.3;
   // Lidar (April 2019) roof p50 22.3, p95 26.3 m; the maximum is the rooftop sign.
   const shop = g0 + 5.2, floors = 5, pitch = 3.5,
     top = shop + floors * pitch, // 22.7 m
     cornice = top + 0.8, parapet = g0 + 24.2;
-  const hx = 27.6, hz = 15.95;
+  const hx = 27.4, hz = 15.65;
   const box = (x: number, z: number): P2[] => [[-x, -z], [x, -z], [x, z], [-x, z]];
 
-  s.prism(box(hx - 0.25, hz - 0.25), s.base, shop, storefront, roofDeck);
-  s.prism(box(hx, hz), shop, top, stone, roofDeck);
+  s.prism(box(hx, hz), s.base, top, stone, roofDeck);
   s.prism(box(hx + 0.35, hz + 0.35), top, cornice, stoneShade, stoneShade);
   s.prism(box(hx, hz), cornice, parapet, stone, roofDeck);
   s.body.box(8, 2.6, 6, 6, parapet + 1.3, 2, '#8d8a84');
@@ -47,25 +54,27 @@ export function createHardRock(buildings: VBuilding[], grid: GroundGrid) {
     const at = (t: number, y: number, out: number) => [a[0] + t * dx + out * dz / len, y, a[1] + t * dz - out * dx / len];
     const quad = (l: number, r: number, y0: number, y1: number, out: number, c: string, lit = false) =>
       (lit ? s.lights : s.body).quad(at(l, y0, out), at(l, y1, out), at(r, y1, out), at(r, y0, out), c);
-    // Upper floors: paired windows (2.65 m module) between piers every 5.3 m.
+    // Upper floors: piers every ~5.3 m, each bay holding exactly two windows.
     // Offices above a restaurant: a few rooms lit late.
-    litFacade(s, seed, face, a, b, shop + 0.5, top - 0.3, floors, 2.65, 0.5, 0.58, [glass, '#8f979b'], 0.08);
-    const bays = Math.round(len / 5.3);
+    const bays = Math.max(1, Math.round(len / 5.3));
+    litFacade(s, seed, face, a, b, shop + 0.5, top - 0.3, floors, len / (2 * bays), 0.5, 0.58, [glass, '#8f979b'], 0.08);
     for (let k = 0; k <= bays; k++) {
       const w = (k === 0 || k === bays ? 0.7 : 0.35) / len;
       quad(Math.max(0, k / bays - w), Math.min(1, k / bays + w), shop, top, 0.12, stone);
     }
-    // Storefront: glazing lit by the restaurant, awnings above it on the two streets.
-    // Faces: 0 north (+z is south in City), 1 east, 2 south on International, 3 west on Peachtree.
+    // Storefront on each face's own sidewalk: glazing lit by the restaurant, with
+    // awnings above it on the two streets. Faces: 0 north (+z is south in City),
+    // 1 east, 2 south on International, 3 west on Peachtree.
     const street = face === 2 || face === 3;
-    quad(0.02, 0.98, g0 + 0.3, shop - 1.4, 0.03, storefront, street);
-    quad(0, 1, shop - 0.6, shop, 0.1, stoneShade);
+    const walk = gradeAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    const head = walk + 4.0;
+    quad(0.02, 0.98, walk + 0.2, head, 0.06, storefront, street);
+    quad(0, 1, head, shop, 0.08, stoneShade);
     if (street) {
-      const n = Math.round(len / 5.3);
-      for (let k = 0; k < n; k++) {
+      for (let k = 0; k < bays; k++) {
         if (litHash(seed, face + 8, 0, k) < 0.15) continue; // a few bays without awnings
-        const l = (k + 0.12) / n, r = (k + 0.88) / n;
-        s.body.quad(at(l, shop - 1.3, 1.4), at(l, shop - 0.5, 0.15), at(r, shop - 0.5, 0.15), at(r, shop - 1.3, 1.4), awning);
+        const l = (k + 0.12) / bays, r = (k + 0.88) / bays;
+        s.body.quad(at(l, head + 0.2, 1.4), at(l, head + 1, 0.15), at(r, head + 1, 0.15), at(r, head + 0.2, 1.4), awning);
       }
     }
   });
