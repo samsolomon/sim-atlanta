@@ -234,13 +234,14 @@ function* farSteps<T>(steps: Build<T>): Build<T> {
     return result;
   }
   if (!farStepProbe.has('perf')) return yield* steps;
-  let longest = 0;
+  let longest = 0, label = '';
   for (;;) {
     const start = performance.now();
     const step = steps.next();
-    longest = Math.max(longest, performance.now() - start);
+    const elapsed = performance.now() - start;
+    if (elapsed > longest) { longest = elapsed; label = step.done ? 'finish' : step.value || ''; }
     if (step.done) {
-      console.debug('City far-board longest step (ms)', longest);
+      console.debug('City far-board longest step (ms)', longest, label);
       return step.value;
     }
     yield step.value;
@@ -605,12 +606,20 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   }
   yield 'landmark batches';
   const carved: GroundYield[] = [];
-  /** Whether a point lies in a carved footprint (a graded cut), padded by a box's reach. */
-  const inCarved = (x: number, z: number) => carved.some(y => {
-    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-    for (const [px, pz] of y.ring) { minX = Math.min(minX, px); maxX = Math.max(maxX, px); minZ = Math.min(minZ, pz); maxZ = Math.max(maxZ, pz); }
-    return x > minX - 60 && x < maxX + 60 && z > minZ - 60 && z < maxZ + 60;
-  });
+  const cutBounds: { minX: number; maxX: number; minZ: number; maxZ: number }[] = [];
+  function recordCuts(yields: readonly GroundYield[]) {
+    carved.push(...yields);
+    if (!farMesh) return;
+    for (const cut of yields) {
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const [x, z] of cut.ring) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+      }
+      cutBounds.push({ minX: minX - 60, maxX: maxX + 60, minZ: minZ - 60, maxZ: maxZ + 60 });
+    }
+  }
+  const inCarved = (x: number, z: number) => cutBounds.some(b => x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ);
   /** Drop far boxes that stand clear of the ground (footbridges, skybridges, canopies): from that
    * far they don't read, and a stand-in should never float. In place. */
   function* grounded(list: FarBox[]) {
@@ -747,9 +756,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     terrainAt: bare,
     /** Lower the drawn terrain under hard surfaces placed after the board was built,
      * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
-    carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); runSync(lowerFarBoxes()); } },
+    carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); recordCuts(yields); runSync(lowerFarBoxes()); } },
     /** carve as a build that yields while the ground re-tessellates (sliced section builds). */
-    *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); carved.push(...yields); yield* lowerFarBoxes(); } },
+    *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); recordCuts(yields); yield* lowerFarBoxes(); } },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
     /**

@@ -215,6 +215,7 @@ export function boxesFromObject(root: Object3D, container: Object3D, minHeight =
 /** Module-level on purpose: a closure made inside farBoxMesh would keep its build arrays alive. */
 const noRaycast = () => {};
 const byte = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 255);
+const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const;
 const rectOf = (r: { cx: number; cz: number; ux: number; uz: number; hx: number; hz: number }) => ({ cx: r.cx, cz: r.cz, ux: r.ux, uz: r.uz, hx: r.hx, hz: r.hz });
 
 /** A stable 0..1 hash of a box's position, for per-building variety. */
@@ -227,6 +228,16 @@ const NIGHT_WALL = { r: 0.018, g: 0.03, b: 0.095 };
 /** Lit windows read amber from afar (sodium-warm interiors), in many small points. */
 const AMBER = { r: 1, g: 0.62, b: 0.26 };
 
+function litShare(box: FarBox) {
+  const tall = Math.min(1, Math.max(0, (box.y1 - box.y0 - 10) / 80));
+  return box.lit ?? (0.06 + 0.16 * tall) * (0.6 + 0.8 * hash(box.cx, box.cz));
+}
+
+function windowCount(box: FarBox, lit: number) {
+  const height = box.y1 - box.y0;
+  return height < 12 ? 0 : Math.min(80, Math.round(lit * (box.hx + box.hz) * 4 * height / 40));
+}
+
 /**
  * The far form of an area: one mesh, each building a box or, where a box would overfill it, its
  * extruded footprint. Walls are two bands (a darker base) with a per-face tone shift, so they keep
@@ -236,21 +247,34 @@ const AMBER = { r: 1, g: 0.62, b: 0.26 };
  * drawn unlit (MeshBasicMaterial with vertex colours), so the city keeps its glow.
  */
 function packBoxes(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) => boolean) {
-  const P: number[] = [], N: number[] = [], C: number[] = [], D: number[] = [], I: number[] = [], NI: number[] = [];
+  // Size the small scratch batch before emitting it. Short edges or carved cuts can use
+  // fewer vertices. Returning a typed view keeps those omissions out of the final buffers.
+  let capacity = 0;
+  for (const box of boxes) {
+    const sides = box.ring ? box.ring.length / 2 : 4;
+    capacity += sides * (shows(box) ? 9 : 5) + 4 * windowCount(box, litShare(box));
+  }
+  const positions = new Float32Array(capacity * 3), normals = new Int8Array(capacity * 3);
+  const day = new Uint8Array(capacity * 3), night = new Uint8Array(capacity * 3);
+  const I: number[] = [], NI: number[] = [];
   let v = 0;
   const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, r: number, g: number, b: number, nr: number, ng: number, nb: number) => {
-    P.push(x, y, z); N.push(nx, ny, nz); C.push(r, g, b); D.push(nr, ng, nb); return v++;
+    const i = v * 3;
+    positions[i] = x; positions[i + 1] = y; positions[i + 2] = z;
+    normals[i] = Math.round(nx * 127); normals[i + 1] = Math.round(ny * 127); normals[i + 2] = Math.round(nz * 127);
+    day[i] = byte(r); day[i + 1] = byte(g); day[i + 2] = byte(b);
+    night[i] = byte(nr); night[i + 1] = byte(ng); night[i + 2] = byte(nb);
+    return v++;
   };
   const quad = (a: number, b: number, c: number, d: number, night = false) => { const t = night ? NI : I; t.push(a, c, b, a, d, c); };
   for (const bx of boxes) {
     const { cx, cz, ux, uz, hx, hz, y0, y1 } = bx;
     // Footprint corners: the ring when given, else the box, counter-clockwise from above.
     let ring: number[] = bx.ring ?? [];
-    if (!bx.ring) for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) ring.push(cx + su * hx * ux - sv * hz * uz, cz + su * hx * uz + sv * hz * ux);
+    if (!bx.ring) for (const [su, sv] of corners) ring.push(cx + su * hx * ux - sv * hz * uz, cz + su * hx * uz + sv * hz * ux);
     if (ringArea2(ring) < 0) { const r2: number[] = []; for (let i = ring.length - 2; i >= 0; i -= 2) r2.push(ring[i], ring[i + 1]); ring = r2; }
     const n = ring.length / 2;
-    const tall = Math.min(1, Math.max(0, (y1 - y0 - 10) / 80));
-    const lit = bx.lit ?? (0.06 + 0.16 * tall) * (0.6 + 0.8 * hash(cx, cz));
+    const lit = litShare(bx);
     const ny = NIGHT_WALL, split = y0 + (y1 - y0) * 0.35, big = shows(bx);
     for (let i = 0; i < n; i++) {
       const ax = ring[i * 2], az = ring[i * 2 + 1], bx2 = ring[((i + 1) % n) * 2], bz = ring[((i + 1) % n) * 2 + 1];
@@ -294,7 +318,7 @@ function packBoxes(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) 
     // Window points only on walls standing on their ground: none in graded cuts, where a
     // building's base was re-cut after it was placed.
     if (h < 12 || noSparkle?.(cx, cz)) continue;
-    const count = Math.min(80, Math.round(lit * (hx + hz) * 4 * h / 40));
+    const count = windowCount(bx, lit);
     for (let k2 = 0; k2 < count; k2++) {
       const e = Math.floor(hash(cx + k2 * 7.1, cz - k2 * 3.7) * n), t = 0.1 + 0.8 * hash(cz + k2, cx - k2);
       const ax = ring[e * 2], az = ring[e * 2 + 1], bx2 = ring[((e + 1) % n) * 2], bz = ring[((e + 1) % n) * 2 + 1];
@@ -306,13 +330,16 @@ function packBoxes(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) 
       const px = ax + (bx2 - ax) * t + nx * 0.5, pz = az + (bz - az) * t + nz * 0.5;
       const y = y0 + 4 + (h - 8) * hash(cx * 0.3 + k2, cz * 0.7 - k2);
       const g = 0.75 + 0.25 * hash(px, pz);
-      const q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([dx, dy]) => put(px + ex * dx * w, y + dy * w, pz + ez * dx * w, nx, 0, nz, 0, 0, 0, AMBER.r * g, AMBER.g * g, AMBER.b * g));
-      quad(q[0], q[1], q[2], q[3], true);
+      const firstWindow = v;
+      for (const [dx, dy] of corners) {
+        put(px + ex * dx * w, y + dy * w, pz + ez * dx * w, nx, 0, nz, 0, 0, 0, AMBER.r * g, AMBER.g * g, AMBER.b * g);
+      }
+      quad(firstWindow, firstWindow + 1, firstWindow + 2, firstWindow + 3, true);
     }
   }
   return {
-    positions: new Float32Array(P), normals: Int8Array.from(N, x => Math.round(x * 127)),
-    day: Uint8Array.from(C, byte), night: Uint8Array.from(D, byte), faces: I, windows: NI,
+    positions: positions.subarray(0, v * 3), normals: normals.subarray(0, v * 3),
+    day: day.subarray(0, v * 3), night: night.subarray(0, v * 3), faces: I, windows: NI,
   };
 }
 
@@ -322,14 +349,20 @@ export function* farBoxMeshSteps(boxes: readonly FarBox[], noSparkle?: (x: numbe
   let components = 0, faces = 0, windows = 0;
   let started = performance.now();
   // Towers can have dozens of window quads each, so test elapsed time within a 200-box step.
-  for (let i = 0; i < boxes.length; i += 8) {
-    const chunk = packBoxes(boxes.slice(i, i + 8), noSparkle);
+  let sinceYield = 0;
+  for (let i = 0; i < boxes.length;) {
+    const start = i++;
+    // One detailed tower can emit more geometry than eight small houses.
+    while (i < boxes.length && i - start < 8 && !shows(boxes[i - 1]) && !shows(boxes[i])) i++;
+    const chunk = packBoxes(boxes.slice(start, i), noSparkle);
+    sinceYield += i - start;
     chunks.push(chunk);
     components += chunk.positions.length;
     faces += chunk.faces.length;
     windows += chunk.windows.length;
-    if ((i + 8) % 200 === 0 || performance.now() - started >= 2) {
+    if (sinceYield >= 200 || performance.now() - started >= 1.5) {
       yield 'far-board boxes';
+      sinceYield = 0;
       started = performance.now();
     }
   }
