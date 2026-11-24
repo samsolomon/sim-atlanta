@@ -25,7 +25,7 @@
 | BORDERLINE | SkyHouse South (#504) | medium | skins-3 | Later pass |
 | BORDERLINE | Nine15 Midtown (#511) | medium | skins-3 | Later pass |
 | PASS (plain, photo-backed; pending 8b) | 1072 West Peachtree (#445) | small | skins-6 | #604: photo-measured balcony slots; photos show a plain reflective shaft, identity is its height |
-| BORDERLINE | Hard Rock Cafe building (#508) | small | skins-7 | Needs a 400–600 m shot |
+| PASS (plain, photo-backed) | Hard Rock Cafe building (#508) | small | skins-7 | 500 m: six-storey stone block with maroon awning line; plain apart from logo signage (omitted) |
 | PASS, dark glass | Promenade Tower (#164) | medium | lead | Untouched tonight; listed in glass-palette.md for Sam |
 
 Owners marked as a later pass are provisional: they're the original authors where known. Reworks are held PRs that the lead approves from each PR's original money-shot camera, and they ride normal trains.
