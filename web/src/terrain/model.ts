@@ -78,7 +78,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
-import { boxesFromObject, FAR_BUILDINGS_M, KEEP_NEAR, farBoxMesh, type FarBox } from '../city/far-board';
+import { boxesFromObject, FAR_BUILDINGS_M, KEEP_NEAR, farBoxMeshSteps, type FarBox } from '../city/far-board';
 import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
@@ -223,6 +223,42 @@ const farBoard = (() => {
   const perf = p.get('perf');
   return !(perf !== null && perf !== '0' && perf !== 'off' && p.get('farboard') === 'off');
 })();
+
+const farStepProbe = new URLSearchParams(globalThis.location?.search ?? '');
+const sliceFarMesh = !(farStepProbe.has('perf') && farStepProbe.get('farsteps') === 'off');
+function* farSteps<T>(steps: Build<T>): Build<T> {
+  if (!sliceFarMesh) {
+    const start = performance.now();
+    const result = runSync(steps);
+    console.debug('City far-board longest step (ms)', performance.now() - start);
+    return result;
+  }
+  if (!farStepProbe.has('perf')) return yield* steps;
+  let longest = 0;
+  for (;;) {
+    const start = performance.now();
+    const step = steps.next();
+    longest = Math.max(longest, performance.now() - start);
+    if (step.done) {
+      console.debug('City far-board longest step (ms)', longest);
+      return step.value;
+    }
+    yield step.value;
+  }
+}
+
+/** Boot builds otherwise run synchronously. Yield to the browser at far-mesh boundaries. */
+export async function runFarSteps<T>(steps: Build<T>): Promise<T> {
+  let start = performance.now();
+  for (;;) {
+    const step = steps.next();
+    if (step.done) return step.value;
+    if (sliceFarMesh && step.value?.startsWith('far-board') && performance.now() - start >= 3) {
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      start = performance.now();
+    }
+  }
+}
 
 function makeScenery(...args: Parameters<typeof buildScenery>) {
   return runSync(buildScenery(...args));
@@ -577,9 +613,14 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   });
   /** Drop far boxes that stand clear of the ground (footbridges, skybridges, canopies): from that
    * far they don't read, and a stand-in should never float. In place. */
-  const grounded = (list: FarBox[]) => {
+  function* grounded(list: FarBox[]) {
+    let visited = 0, started = performance.now();
     let k = 0;
     for (const b of list) {
+      if (++visited % 200 === 0 || performance.now() - started >= 2) {
+        yield 'far-board ground';
+        started = performance.now();
+      }
       let lo = Infinity, hi = -Infinity;
       const at = (x: number, z: number) => { const y = bare(x, z); if (y !== null) { lo = Math.min(lo, y); hi = Math.max(hi, y); } };
       for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) at(b.cx + su * b.hx * b.ux - sv * b.hz * b.uz, b.cz + su * b.hx * b.uz + sv * b.hz * b.ux);
@@ -599,35 +640,36 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     // Houses: their per-house boxes from house-lod.ts (the plan's oriented rect, eave height,
     // wall colour and a roof-coloured top), shared with studio-tree-lab's far-far form.
     farBoxes.push(...scenery.farBoxes, ...houses.boxes);
-    grounded(farBoxes);
+    yield* farSteps(grounded(farBoxes));
     farHidden.push(...scenery.group.children.filter(o => o.userData.building || o.userData.roofClutter), houses.group,
       ...landmarks.map(l => l.group).filter(g => !KEEP_NEAR.has(g.name)), ...(batches ? [batches.group] : []));
     const t0 = performance.now();
-    farMesh = farBoxMesh(farBoxes, inCarved);
+    farMesh = yield* farSteps(farBoxMeshSteps(farBoxes, inCarved));
     if (import.meta.env.DEV) console.info('City far-board mesh', JSON.stringify({ boxes: farBoxes.length, tris: (farMesh.day.geometry.index?.count ?? 0) / 3, ms: Math.round(performance.now() - t0) }));
     scenery.group.add(farMesh.day, farMesh.night);
     yield 'far-board buildings';
   }
   /** Add buildings to the far form: their boxes join the mesh, and their roots hide with it. */
-  const addFarBuildings = (boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) => {
+  function* addFarBuildings(boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) {
     if (!farMesh) return;
     farBoxes.push(...boxes);
-    grounded(farBoxes);
+    yield* farSteps(grounded(farBoxes));
     farHidden.push(...roots);
-    const next = farBoxMesh(farBoxes, inCarved);
+    const next = yield* farSteps(farBoxMeshSteps(farBoxes, inCarved));
     farMesh.day.parent?.add(next.day, next.night);
     for (const m of [farMesh.day, farMesh.night]) { m.removeFromParent(); m.geometry.dispose(); }
     // City clips scenery materials to the board once, on load; the new meshes take the old planes.
     for (const [a, b] of [[farMesh.day, next.day], [farMesh.night, next.night]] as const) {
       const from = a.material as THREE.Material, to = b.material as THREE.Material;
       to.clippingPlanes = from.clippingPlanes; to.clipShadows = from.clipShadows;
+      from.dispose();
     }
     farMesh = next;
     showFar(farOn);
   };
   /** After a carve: re-ground the far boxes on the cut terrain (grounded() lowers each to the lowest
    * drawn ground under it), so none floats over a cut, then rebuild the far mesh. */
-  const lowerFarBoxes = () => { if (farMesh) addFarBuildings([], []); };
+  const lowerFarBoxes = () => addFarBuildings([], []);
   /** Show the boxes (far) or the buildings (near). */
   const showFar = (on: boolean) => {
     farOn = on;
@@ -676,7 +718,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         options.quality, grid.manifest.stepM, groundAt, { finishFor: options.finishFor });
       fragment.group.name = candidate.id;
       scenery.group.add(fragment.group);
-      if (farMesh) addFarBuildings(fragment.farBoxes, [fragment.group]);
+      if (farMesh) yield* addFarBuildings(fragment.farBoxes, [fragment.group]);
     }
   }
   // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
@@ -705,9 +747,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     terrainAt: bare,
     /** Lower the drawn terrain under hard surfaces placed after the board was built,
      * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
-    carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); lowerFarBoxes(); } },
+    carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); runSync(lowerFarBoxes()); } },
     /** carve as a build that yields while the ground re-tessellates (sliced section builds). */
-    *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); carved.push(...yields); lowerFarBoxes(); } },
+    *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); carved.push(...yields); yield* lowerFarBoxes(); } },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
     /**
@@ -747,7 +789,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
      * Add buildings drawn outside this area's scenery (downtown's landmarks live in City's world
      * group) to its far-board form: their far boxes join the mesh, and the roots hide with it.
      */
-    addFar(boxes: readonly FarBox[], roots: readonly THREE.Object3D[]) { addFarBuildings(boxes, roots); },
+    addFarSteps: addFarBuildings,
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean; houseShadows?: boolean }) { houses.setDetail(d); scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },

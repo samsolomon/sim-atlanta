@@ -1,7 +1,8 @@
+import { runSync } from '../core/slice';
 import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import * as THREE from 'three';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { createDowntownTerrain } from '../terrain/model';
+import { buildDowntownTerrain, runFarSteps, type createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
@@ -84,7 +85,7 @@ export async function loadEast(
   const grantNight = { value: 0 };
   const grantTunnel = context.roads.find(r => r.tunnel && r.name === 'Grant Street Southeast');
   const zero = manifest.vertical.sceneZeroNavd88M;
-  const area = createDowntownTerrain(grid, context, neighborhoodTrees({ ...context, trees, treeLowCount }, quality), {
+  const area = await runFarSteps(buildDowntownTerrain(grid, context, neighborhoodTrees({ ...context, trees, treeLowCount }, quality), {
     boardRoads: grantBoardRoads(context.roads),
     boardDetails(builder, ground, material) { drawGrantStreet(builder, ground, zero); grantLighting(material, grantNight, zero); },
     simpleLeafClumps: context.treeLowCount !== undefined,
@@ -92,10 +93,10 @@ export async function loadEast(
     bottomY,
     join: extraJoin ? [eastJoin, ...(Array.isArray(extraJoin) ? extraJoin : [extraJoin])] : eastJoin,
     finishFor: marchonFinishes(context.buildings),
-  });
+  }));
   grantLighting(area.board.material, grantNight, zero);
   let freight: ReturnType<typeof kingFreight>;
-  try { freight = kingFreight(context, grid, area); }
+  try { freight = await runFarSteps(kingFreightSteps(context, grid, area)); }
   catch (error) { area.dispose(); throw error; }
   const streetHeight = cityRoadHeight(context, area.groundAt);
   const roadHeight: typeof streetHeight = (x,z,road) =>
@@ -116,13 +117,17 @@ export async function loadEast(
  * board's context carries no rail, so without this City drew no freight east of the
  * downtown edge. Ground ballast like the rest, with graded cuttings carved under it.
  */
-export function kingFreight(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>) {
+export function kingFreight(...args: Parameters<typeof kingFreightSteps>) {
+  return runSync(kingFreightSteps(...args));
+}
+
+function* kingFreightSteps(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>) {
   const freightGround = Object.assign((x:number,z:number,run?:TransportRun) => {
     const y=area.groundAt(x,z);
     return run && y!==null ? grantFormation(x,y,grid.manifest.vertical.sceneZeroNavd88M) : y;
   }, {triangles:area.groundAt.triangles});
   const transport = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, freightGround);
-  area.carve(transport.cutting);
+  yield* area.carveSteps(transport.cutting);
   area.group.add(transport.group);
   return transport;
 }

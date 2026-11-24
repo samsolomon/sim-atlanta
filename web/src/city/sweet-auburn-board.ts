@@ -1,6 +1,6 @@
 import { neighborhoodTrees, type NeighborhoodCanopy } from './neighborhood-trees';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { createDowntownTerrain } from '../terrain/model';
+import { buildDowntownTerrain, runFarSteps } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -54,14 +54,14 @@ export async function loadNorth(base: string, west: GroundGrid, south: GroundGri
   const ids=new Set(context.buildings.filter(b => (b.id===heritageId || b.id===bigBethelId)
     && b.rings[0]?.length >= 3 && b.rings[0].every(([x,z])=>grid.sample(x,z)!==null)).map(b=>b.id));
   const city = auburnTransport({ ...context, buildings: context.buildings.filter(b=>!ids.has(b.id)) });
-  const area = createDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
+  const area = await runFarSteps(buildDowntownTerrain(grid, city, neighborhoodTrees(context, quality), {
     simpleLeafClumps: context.treeLowCount !== undefined,
     quality, bottomY, join: [northWestJoin, northSouthJoin, ...extraJoins],
     finishFor: b => b.id === wheatStreetId ? wheatStreetTower : oddFellowsFinish(b) ?? edgewoodFinish(b) ?? irwinHouseFinish(b),
-  });
+  }));
   try {
     const decks = createSurfaceTransport(city, grid, area.groundAt);
-    area.carve(decks.cutting);
+    await runFarSteps(area.carveSteps(decks.cutting));
     const walls = leonardTateWalls(city, new GroundGrid(manifest, bytes), grid);
     const signs=auburnSigns(ids,manifest.vertical.sceneZeroNavd88M);
     const shells=sanctuaryShells(ids,manifest.vertical.sceneZeroNavd88M);

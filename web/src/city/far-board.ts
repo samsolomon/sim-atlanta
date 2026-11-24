@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
+import { Box3, Sphere, BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
 import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 
 /**
@@ -235,7 +235,7 @@ const AMBER = { r: 1, g: 0.62, b: 0.26 };
  * and index with its own colours (deep blue walls) plus amber window points on taller buildings,
  * drawn unlit (MeshBasicMaterial with vertex colours), so the city keeps its glow.
  */
-export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) => boolean): { day: Mesh; night: Mesh } {
+function packBoxes(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) => boolean) {
   const P: number[] = [], N: number[] = [], C: number[] = [], D: number[] = [], I: number[] = [], NI: number[] = [];
   let v = 0;
   const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, r: number, g: number, b: number, nr: number, ng: number, nb: number) => {
@@ -310,25 +310,80 @@ export function farBoxMesh(boxes: readonly FarBox[], noSparkle?: (x: number, z: 
       quad(q[0], q[1], q[2], q[3], true);
     }
   }
-  const total = v;
-  const big = total > 65535;
+  return {
+    positions: new Float32Array(P), normals: Int8Array.from(N, x => Math.round(x * 127)),
+    day: Uint8Array.from(C, byte), night: Uint8Array.from(D, byte), faces: I, windows: NI,
+  };
+}
+
+/** Keep each area's single draw. Pack small batches and rebase their indices into the final buffers. */
+export function* farBoxMeshSteps(boxes: readonly FarBox[], noSparkle?: (x: number, z: number) => boolean) {
+  const chunks: ReturnType<typeof packBoxes>[] = [];
+  let components = 0, faces = 0, windows = 0;
+  let started = performance.now();
+  // Towers can have dozens of window quads each, so test elapsed time within a 200-box step.
+  for (let i = 0; i < boxes.length; i += 8) {
+    const chunk = packBoxes(boxes.slice(i, i + 8), noSparkle);
+    chunks.push(chunk);
+    components += chunk.positions.length;
+    faces += chunk.faces.length;
+    windows += chunk.windows.length;
+    if ((i + 8) % 200 === 0 || performance.now() - started >= 2) {
+      yield 'far-board boxes';
+      started = performance.now();
+    }
+  }
+  yield 'far-board boxes';
+  const positions = new Float32Array(components), normals = new Int8Array(components);
+  const dayColors = new Uint8Array(components), nightColors = new Uint8Array(components);
+  const Index = components / 3 > 65535 ? Uint32Array : Uint16Array;
+  const dayIndex = new Index(faces), nightIndex = new Index(faces + windows);
+  const bounds = new Box3(), point = new Vector3();
+  let offset = 0, face = 0, windowIndex = faces;
+  started = performance.now();
+  for (const chunk of chunks) {
+    positions.set(chunk.positions, offset);
+    normals.set(chunk.normals, offset);
+    dayColors.set(chunk.day, offset);
+    nightColors.set(chunk.night, offset);
+    for (let i = 0; i < chunk.positions.length; i += 3) bounds.expandByPoint(point.fromArray(chunk.positions, i));
+    const base = offset / 3;
+    for (const index of chunk.faces) {
+      dayIndex[face] = nightIndex[face] = base + index;
+      face++;
+    }
+    for (const index of chunk.windows) nightIndex[windowIndex++] = base + index;
+    offset += chunk.positions.length;
+    if (performance.now() - started >= 2) {
+      yield 'far-board buffers';
+      started = performance.now();
+    }
+  }
   const g = new BufferGeometry();
-  const position = new BufferAttribute(new Float32Array(P), 3);
-  const normal = new BufferAttribute(Int8Array.from(N, x => Math.round(x * 127)), 3, true);
-  const dayIndex = big ? Uint32Array.from(I) : Uint16Array.from(I);
-  const nightIndex = big ? Uint32Array.from([...I, ...NI]) : Uint16Array.from([...I, ...NI]);
+  const position = new BufferAttribute(positions, 3);
   g.setAttribute('position', position);
-  g.setAttribute('normal', normal);
-  g.setAttribute('color', new BufferAttribute(Uint8Array.from(C, byte), 3, true));
+  g.setAttribute('normal', new BufferAttribute(normals, 3, true));
+  g.setAttribute('color', new BufferAttribute(dayColors, 3, true));
   g.setIndex(new BufferAttribute(dayIndex, 1));
-  g.computeBoundingBox();
-  g.computeBoundingSphere();
+  g.boundingBox = bounds;
+  const center = bounds.getCenter(new Vector3());
+  let radiusSq = 0;
+  for (const chunk of chunks) {
+    for (let i = 0; i < chunk.positions.length; i += 3) {
+      radiusSq = Math.max(radiusSq, center.distanceToSquared(point.fromArray(chunk.positions, i)));
+    }
+    if (performance.now() - started >= 2) {
+      yield 'far-board bounds';
+      started = performance.now();
+    }
+  }
+  g.boundingSphere = new Sphere(center, Math.sqrt(radiusSq));
   const day = new Mesh(g, new StaticLandmarkMaterial());
   day.name = 'far-board buildings';
   day.castShadow = day.receiveShadow = true;
   const gn = new BufferGeometry();
   gn.setAttribute('position', position);
-  gn.setAttribute('color', new BufferAttribute(Uint8Array.from(D, byte), 3, true));
+  gn.setAttribute('color', new BufferAttribute(nightColors, 3, true));
   gn.setIndex(new BufferAttribute(nightIndex, 1));
   gn.boundingBox = g.boundingBox;
   gn.boundingSphere = g.boundingSphere;

@@ -37,7 +37,7 @@ import { World, type Alignment, type VData } from '../vignette/world';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
-import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { buildDowntownTerrain, runFarSteps, type createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
 import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
@@ -313,7 +313,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     await new Promise((resolve) => setTimeout(resolve, 0));
     options.signal?.throwIfAborted();
     const start = performance.now();
-    fn();
+    await fn();
     stages[name] = Math.round(performance.now() - start);
     perf.phase(`stage:${name}`);
   };
@@ -453,7 +453,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     });
     if (grid) {
       const ground = grid;
-      await build('terrain', () => {
+      await build('terrain', async () => {
         const buildings = floyd?.buildings ?? vd.buildings;
         const groundAt = (x: number, z: number) => {
           const h = ground.sample(x, z);
@@ -585,7 +585,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = await runFarSteps(buildDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] }));
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         const landmarksFrom = world.group.children.length;
@@ -685,10 +685,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             void batches.farReady.then(() => console.info('City landmark far versions (downtown)', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
           }
         }
-        terrain!.addFar(farBoxesDowntown, farRoots);
+        await runFarSteps(terrain!.addFarSteps(farBoxesDowntown, farRoots));
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
-      await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
+      await build('streets and freight', async () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); await runFarSteps(terrain!.carveSteps(transport.cutting)); });
     } else {
       if (trees.trees.length) world.realTrees = trees.trees;
       await build('board', () => { world.setOpenCuts(marta); world.buildBoard(); });
