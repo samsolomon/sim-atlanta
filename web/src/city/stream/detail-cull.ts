@@ -48,6 +48,8 @@ export class DetailCull {
   private v = new THREE.Vector3();
   private last = new THREE.Vector3(NaN, NaN, NaN);
   private lastTick = -Infinity;
+  /** The lens and viewport the last pass used: a resize or zoom changes every projection. */
+  private lens = '';
   /** Draws hidden at the last pass. */
   count = 0;
   /** Something changed that the next pass must see (a mount, night), even with a still camera. */
@@ -58,6 +60,8 @@ export class DetailCull {
 
   update(camera: THREE.PerspectiveCamera, heightPx: number, now = performance.now(), force = false) {
     // A still camera changes nothing; a moving one re-checks at most 5 times a second.
+    const lens = `${heightPx}|${camera.fov}|${camera.zoom}`;
+    if (lens !== this.lens) { this.lens = lens; this.stale = true; }
     if (!force && (now - this.lastTick < 200 || (!this.stale && this.last.distanceToSquared(camera.position) < 0.25))) return;
     this.lastTick = now;
     this.stale = false;

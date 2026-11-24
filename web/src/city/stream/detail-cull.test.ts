@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { CULL_LAYER, DetailCull, nextCulled, projectedRadiusPx } from './detail-cull';
-import { boxDistance, pastFog } from './manager';
+import { boxDistance, depthMargin, pastFog } from './manager';
 
 function camera(z: number) {
   const c = new THREE.PerspectiveCamera(22, 1, 1, 1e5);
@@ -57,6 +57,24 @@ describe('fog rule', () => {
     expect(pastFog(false, 720, 660)).toBe(true);
     expect(pastFog(true, 690, 660)).toBe(true);
     expect(pastFog(true, 650, 660)).toBe(false);
+  });
+  it('takes the depth margin from the actual frustum corner', () => {
+    expect(depthMargin(22, 411 / 891)).toBeGreaterThan(0.97);
+    expect(depthMargin(22, 4)).toBeLessThan(0.8);
+    expect(depthMargin(66, 16 / 9)).toBeLessThan(0.61);
+    // A wide drive view never hides an area the narrow default view would.
+    expect(pastFog(false, 1000, 660, depthMargin(66, 16 / 9))).toBe(false);
+  });
+  it('re-runs when the viewport changes with a still camera', () => {
+    const root = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshLambertMaterial());
+    root.add(m); root.updateMatrixWorld();
+    const cull = new DetailCull(() => [root]);
+    const cam = camera(2000);
+    cull.update(cam, 400, 0);
+    expect(m.layers.isEnabled(0)).toBe(false);
+    cull.update(cam, 2000, 1000);
+    expect(m.layers.isEnabled(0)).toBe(true);
   });
   it('measures the eye to the nearest point of the box', () => {
     const b = { minX: 0, maxX: 100, minZ: 0, maxZ: 100 };

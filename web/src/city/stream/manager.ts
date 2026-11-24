@@ -26,14 +26,18 @@ export const STREAMED: readonly Board[] = ['south-band', 'south-corner', 'north-
   'midtown-south', 'midtown-central', 'midtown-upper', 'brookwood-south', 'brookwood-station'];
 
 /**
- * View depth is at most the eye distance, and at the frame's corner it is about cos(15°) of it on
- * City's 22° lens. An area is past the fog only once its nearest point is past fogFar / 0.94.
+ * Fog follows view depth, which is the eye distance times the cosine of the angle off the view
+ * axis. Anything on screen is at most a frustum corner's angle off axis, so view depth is at least
+ * eye distance x this. On City's 22° lens it is about 0.94, on the 66° drive camera far less.
  */
-const DEPTH_MARGIN = 0.94;
+export function depthMargin(fovDeg: number, aspect: number) {
+  const t = Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2);
+  return Math.cos(Math.atan(Math.hypot(t, t * aspect)));
+}
 
-/** Hidden when the area's nearest point is past the fog (with a 5% gap before it returns). */
-export function pastFog(hidden: boolean, distance: number, fogFar: number) {
-  const edge = fogFar / DEPTH_MARGIN;
+/** Hidden when the area's nearest point is past the fog for every on-screen direction (5% gap to return). */
+export function pastFog(hidden: boolean, distance: number, fogFar: number, margin = 0.94) {
+  const edge = fogFar / margin;
   return hidden ? distance > edge * 0.95 : distance > edge;
 }
 
@@ -100,7 +104,8 @@ export class StreamManager {
     for (const u of this.units) {
       const full = this.hooks.full(u.id);
       if (!full || u.warmFrames > 0) continue;
-      const hidden = pastFog(u.hidden, boxDistance(boardBounds[u.id], p.x, p.y, p.z, target.y), fogFar);
+      const margin = depthMargin(camera.fov / camera.zoom, camera.aspect);
+      const hidden = pastFog(u.hidden, boxDistance(boardBounds[u.id], p.x, p.y, p.z, target.y), fogFar, margin);
       if (hidden === u.hidden) continue;
       u.hidden = hidden;
       full.group.visible = !hidden;
