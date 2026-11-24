@@ -75,8 +75,8 @@ interface LaneState {
 const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'van', 'semi'] as const;
 /** High-tier car mix, as cumulative shares of the non-truck slots. */
 const CAR_MIX: [Kind, number][] = [['sedan', .40], ['suv', .67], ['hatch', .79], ['pickup', .92], ['van', 1]];
-/** Share of trucks that are semis: mostly semis on the Connector (motorway speeds), few on arterials. */
-const semiShare = (lane: { speedMps: number }) => lane.speedMps > 20 ? .7 : .15;
+/** Share of trucks that are semis: the course's own share (the Connector sets one), else few, as on arterials. */
+const semiShare = (lane: { semiShare?: number }) => lane.semiShare ?? .15;
 /** Trucks only appear when the hourly share is above this, so fewer run at night. */
 const TRUCK_MIN_SHARE = .25;
 type Kind = typeof models[number];
@@ -106,6 +106,8 @@ export interface TrafficCourse {
   speedMps: number;
   dailyFlow: number;
   truckShare: number;
+  /** High tier: share of trucks drawn as tractor-trailers instead of box trucks (default 0.15). */
+  semiShare?: number;
   /** Extra time offstage between trips with separate endpoints. */
   offstageM?: number;
   /** Replay allowance for moving queues; excluded from visible-car demand. */

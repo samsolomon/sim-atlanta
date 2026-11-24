@@ -3,13 +3,13 @@ import { Line } from '../vignette/geom';
 import { LENGTH, vehicleGeometry } from '../vignette/vehicles';
 import { slotsFor, type TrafficCourse } from './road-traffic';
 
-const course = (speedMps: number, truckShare: number): TrafficCourse => ({
-  line: new Line([[0, 0], [2000, 0]]), roads: [], speedMps, dailyFlow: 60000, truckShare,
+const course = (speedMps: number, truckShare: number, semiShare?: number): TrafficCourse => ({
+  line: new Line([[0, 0], [2000, 0]]), roads: [], speedMps, dailyFlow: 60000, truckShare, semiShare,
 });
 const kinds = (slots: { kind: string }[]) => new Set(slots.map(s => s.kind));
 
 describe('road vehicle mix', () => {
-  const arterial = course(13, 0.06), connector = course(27, 0.07);
+  const arterial = course(13, 0.06), connector = course(18, 0.07, 0.7);
   it('keeps low on sedan, SUV and box truck, with the same slots as before', () => {
     const low = slotsFor([arterial, connector], 400, 1, 7, 'low');
     expect([...kinds(low)].sort()).toEqual(['box', 'sedan', 'suv']);
