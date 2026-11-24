@@ -9,7 +9,7 @@ import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
-import { FAR_PER_TREE, farCanopyInstances, type FarInstances } from '../trees/far-canopy';
+import { FAR_CONE_H, FAR_PER_TREE, FAR_PINE_TIERS, farCanopyInstances, type FarCanopy } from '../trees/far-canopy';
 import { PlacementIndex } from './spatial';
 import { SIDING_GLSL } from '../materials/siding';
 
@@ -1136,16 +1136,29 @@ export class World {
       this.far.name = 'far trees';
       this.far.castShadow = this.far.receiveShadow = true;
       this.far.visible = false;
-      this.farOut = { matrices: this.far.instanceMatrix.array as Float32Array, colors: this.far.instanceColor.array as Float32Array, count: 0 };
-      fit(this.far, boundsOf(this.trees.map((_, i) => i)));
-      this.group.add(this.far);
+      // Pines keep their pointed tiers: a second draw, of five-sided cones on the same material.
+      this.farPines = new THREE.InstancedMesh(new THREE.ConeGeometry(1, FAR_CONE_H, 5).translate(0, FAR_CONE_H / 2, 0), leafMat, n * FAR_PINE_TIERS);
+      this.farPines.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * FAR_PINE_TIERS * 3), 3);
+      this.farPines.name = 'far pines';
+      this.farOut = {
+        matrices: this.far.instanceMatrix.array as Float32Array, colors: this.far.instanceColor.array as Float32Array, count: 0,
+        pines: { matrices: this.farPines.instanceMatrix.array as Float32Array, colors: this.farPines.instanceColor.array as Float32Array, count: 0 },
+      };
+      const all = boundsOf(this.trees.map((_, i) => i));
+      for (const im of [this.far, this.farPines]) {
+        im.castShadow = im.receiveShadow = true;
+        im.visible = false;
+        fit(im, all);
+        this.group.add(im);
+      }
     }
   }
 
   /** The generic trees' near meshes, one set per cell (one cell without WorldOptions.treeCellM). */
   private cells: TreeCell[] = [];
   private far?: THREE.InstancedMesh;
-  private farOut?: FarInstances;
+  private farPines?: THREE.InstancedMesh;
+  private farOut?: FarCanopy;
   private detail = { farTrees: false, branchShadows: true };
   /**
    * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
@@ -1160,6 +1173,7 @@ export class World {
     // Far form: the whole near tree (clumps, pine tiers, trunk) gives way to one draw.
     const farForm = !!this.far && this.detail.farTrees;
     if (this.far) this.far.visible = farForm;
+    if (this.farPines) this.farPines.visible = farForm && this.farPines.count > 0;
     for (const cell of this.cells) {
       cell.branches.visible = cell.branchesShow && !this.detail.farTrees;
       cell.branches.castShadow = this.detail.branchShadows;
@@ -1269,9 +1283,14 @@ export class World {
     }
     this.applyBranchVisibility();
     if (this.far && this.farOut) {
-      this.far.count = farCanopyInstances(this.trees, doy, this.farOut).count;
-      this.far.instanceMatrix.needsUpdate = true;
-      this.far.instanceColor!.needsUpdate = true;
+      farCanopyInstances(this.trees, doy, this.farOut);
+      this.far.count = this.farOut.count;
+      this.farPines!.count = this.farOut.pines.count;
+      for (const im of [this.far, this.farPines!]) {
+        im.instanceMatrix.needsUpdate = true;
+        im.instanceColor!.needsUpdate = true;
+      }
+      this.applyBranchVisibility();
     }
   }
 

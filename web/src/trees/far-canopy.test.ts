@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { FAR_PER_TREE, farCanopyInstances, farCrown } from './far-canopy';
+import { farCanopyInstances, farCrown } from './far-canopy';
 import { World } from '../vignette/world';
 
 const pine = { x: 0, y: 0, z: 0, s: 1, c: 0.1 };
@@ -8,10 +8,24 @@ const magnolia = { x: 10, y: 0, z: 0, s: 1, c: 0.2 };
 const oak = { x: 20, y: 2, z: 5, s: 1.5, c: 0.5, th: 4 };
 
 describe('far canopy', () => {
-  it('draws two crown pieces and a trunk per tree in leaf, and only the trunk when bare', () => {
-    expect(farCanopyInstances([pine, magnolia, oak], 180).count).toBe(3 * FAR_PER_TREE);
+  it('draws two clumps and a trunk per broadleaf, two cones per pine, and only the trunk when bare', () => {
+    const summer = farCanopyInstances([pine, magnolia, oak], 180);
+    // Clumps for the magnolia and the oak, and a trunk for each tree; the pine's two tiers are cones.
+    expect(summer.count).toBe(2 + 2 + 3);
+    expect(summer.pines.count).toBe(2);
     // 15 January: the oak is bare, the evergreens are not.
-    expect(farCanopyInstances([pine, magnolia, oak], 15).count).toBe(3 * FAR_PER_TREE - 2);
+    const winter = farCanopyInstances([pine, magnolia, oak], 15);
+    expect(winter.count).toBe(2 + 3);
+    expect(winter.pines.count).toBe(2);
+  });
+
+  it('stacks a pine\'s cones from its trunk top, the upper one narrower', () => {
+    const { pines } = farCanopyInstances([pine], 180);
+    const at = (i: number) => new THREE.Matrix4().fromArray(pines.matrices, i * 16);
+    const [lo, hi] = [at(0), at(1)].map(m => ({ p: new THREE.Vector3().setFromMatrixPosition(m), s: new THREE.Vector3().setFromMatrixScale(m) }));
+    expect(lo.p.y).toBeCloseTo(2 + 0.6);
+    expect(hi.p.y).toBeGreaterThan(lo.p.y);
+    expect(hi.s.x).toBeLessThan(lo.s.x);
   });
 
   it('reuses a buffer and writes plain transferable arrays', () => {
@@ -47,9 +61,9 @@ describe('World far form', () => {
 
   it('leaves the near trees exactly as they were', () => {
     const [off, on] = [build(false), build(true)];
-    const near = (w: World) => meshes(w).filter(m => m.name !== 'far trees').map(m => [m.count, [...m.instanceMatrix.array.slice(0, m.count * 16)], m.instanceColor ? [...m.instanceColor.array.slice(0, m.count * 3)] : null]);
+    const near = (w: World) => meshes(w).filter(m => !m.name.startsWith('far ')).map(m => [m.count, [...m.instanceMatrix.array.slice(0, m.count * 16)], m.instanceColor ? [...m.instanceColor.array.slice(0, m.count * 3)] : null]);
     expect(near(on)).toEqual(near(off));
-    expect(meshes(off).some(m => m.name === 'far trees')).toBe(false);
+    expect(meshes(off).some(m => m.name.startsWith('far '))).toBe(false);
   });
 
   it('swaps the near meshes for one far draw under farTrees, and back', () => {
@@ -57,7 +71,10 @@ describe('World far form', () => {
     const far = meshes(w).find(m => m.name === 'far trees')!;
     expect(far.visible).toBe(false);
     w.setDetail({ farTrees: true });
-    expect(meshes(w).filter(m => m.visible).map(m => m.name)).toEqual(['far trees']);
+    // Only far meshes draw (the pine cones too, when the area has pines).
+    const drawn = meshes(w).filter(m => m.visible).map(m => m.name);
+    expect(drawn).toContain('far trees');
+    expect(drawn.every(n => n.startsWith('far '))).toBe(true);
     w.setDetail({ farTrees: false });
     expect(far.visible).toBe(false);
     expect(meshes(w).filter(m => m.visible).length).toBeGreaterThan(1);

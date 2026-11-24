@@ -1,5 +1,6 @@
 /**
- * The generic tree's far form: two faceted octahedron clumps (or pine tiers) and a trunk per tree, drawn as a
+ * The generic tree's far form: two faceted octahedron clumps and a trunk per broadleaf, and two
+ * stacked cones per pine (the one silhouette that reads from a distance), as two instanced meshes, drawn as a
  * single instanced mesh per area on the generic leaf material (no new shader program). City
  * swaps it in for the near clumps past the low tier's far-tree orbit (city.ts FAR_TREES_M), and
  * the streaming mid ring uses the same core for areas it holds as forest.
@@ -14,8 +15,12 @@ import { leafState } from '../vignette/time';
 /** A World tree: trunk base, size scale s, colour seed c (pine < 0.18, magnolia < 0.26), trunk height. */
 export interface FarTree { x: number; y: number; z: number; s: number; c: number; th?: number }
 
-/** Instances per tree at most: two crown clumps (or pine tiers) and a trunk. */
+/** Octahedron instances per tree at most: two crown clumps and a trunk. */
 export const FAR_PER_TREE = 3;
+/** Cone instances per pine: two stacked tiers. */
+export const FAR_PINE_TIERS = 2;
+/** The far pine's cone (base at the origin, unit radius): for ConeGeometry(1, FAR_CONE_H, 5). */
+export const FAR_CONE_H = 1;
 
 const linear = (v: number) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
 /** '#rrggbb' to linear RGB, as THREE.Color.set does in the working colour space. */
@@ -52,6 +57,8 @@ export function farCrown(t: FarTree, doy: number): { colour: [number, number, nu
 }
 
 export interface FarInstances { matrices: Float32Array; colors: Float32Array; count: number }
+/** Octahedron clumps and trunks, and the pines' cones. */
+export interface FarCanopy extends FarInstances { pines: FarInstances }
 
 function put(o: FarInstances, x: number, y: number, z: number, sx: number, sy: number, sz: number, yaw: number, c: readonly number[]) {
   const m = o.count * 16, cs = Math.cos(yaw), sn = Math.sin(yaw);
@@ -62,26 +69,30 @@ function put(o: FarInstances, x: number, y: number, z: number, sx: number, sy: n
 
 /**
  * Far instances for trees on a day of the year, into `out` when given (sized for
- * FAR_PER_TREE per tree). Crowns first, then trunks; bare crowns are skipped, so `count`
- * is exactly what draws.
+ * FAR_PER_TREE octahedra and FAR_PINE_TIERS cones per tree). Clumps first, then trunks; bare
+ * crowns are skipped, so each `count` is exactly what draws.
  */
-export function farCanopyInstances(trees: readonly FarTree[], doy: number, out?: FarInstances): FarInstances {
-  const o = out ?? { matrices: new Float32Array(trees.length * FAR_PER_TREE * 16), colors: new Float32Array(trees.length * FAR_PER_TREE * 3), count: 0 };
+export function farCanopyInstances(trees: readonly FarTree[], doy: number, out?: FarCanopy): FarCanopy {
+  const n = trees.length;
+  const o = out ?? { matrices: new Float32Array(n * FAR_PER_TREE * 16), colors: new Float32Array(n * FAR_PER_TREE * 3), count: 0,
+    pines: { matrices: new Float32Array(n * FAR_PINE_TIERS * 16), colors: new Float32Array(n * FAR_PINE_TIERS * 3), count: 0 } };
   o.count = 0;
+  o.pines.count = 0;
   for (const t of trees) {
     const trunkH = t.th ?? 2 + t.s * 0.6;
     const { colour, leaves, kind } = farCrown(t, doy);
     const yaw = t.c * 40;
-    const cs = Math.cos(yaw), sn = Math.sin(yaw);
-    // Offsets turn with the tree, so neighbours never repeat one silhouette.
-    const at = (dx: number, dz: number) => [t.x + cs * dx + sn * dz, t.z - sn * dx + cs * dz] as const;
     if (kind === 'pine') {
-      // The stacked tiers' outline: a broad lower tier and a narrower top, about 5 s above the trunk.
-      put(o, t.x, t.y + trunkH + 1.5 * t.s, t.z, 1.4 * t.s, 1.8 * t.s, 1.4 * t.s, yaw, colour);
-      put(o, t.x, t.y + trunkH + 3.7 * t.s, t.z, 0.85 * t.s, 1.6 * t.s, 0.85 * t.s, yaw + 0.6, lighter(colour, 1.12));
+      // The near form's four tiers as two pointed cones: a broad lower one from the trunk top,
+      // a narrower one over it, topping out near the near tiers' 4.9 s.
+      put(o.pines, t.x, t.y + trunkH, t.z, 1.5 * t.s, 2.6 * t.s, 1.5 * t.s, yaw, colour);
+      put(o.pines, t.x, t.y + trunkH + 1.9 * t.s, t.z, 0.95 * t.s, 3.0 * t.s, 0.95 * t.s, yaw + 0.6, lighter(colour, 1.12));
       continue;
     }
     if (leaves < 0.05) continue;
+    const cs = Math.cos(yaw), sn = Math.sin(yaw);
+    // Offsets turn with the tree, so neighbours never repeat one silhouette.
+    const at = (dx: number, dz: number) => [t.x + cs * dx + sn * dz, t.z - sn * dx + cs * dz] as const;
     // Two clumps inside the near crown's outline (about 1.2 R across), shrinking as leaves drop:
     // a larger shaded one low and a smaller sunlit one high and across from it.
     const R = 2.3 * t.s, k = 0.45 + 0.55 * leaves, cy = t.y + trunkH + R * 0.85 - (1 - leaves) * R * 0.3;
