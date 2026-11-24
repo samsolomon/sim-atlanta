@@ -37,8 +37,10 @@ const DARK = '#6a655e',
  * boards at the end that leads, the rear headlight when the unit runs long hood forward.
  */
 export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, leadFront: boolean, leadRear: boolean, family: 'cm44ac' | 'es44' = 'cm44ac') {
-  const P = PAINT[livery];
   const evolution = family === 'es44';
+  const P = evolution && livery === 'ns'
+    ? { ...PAINT.ns, body: '#4d4e50', bodyShade: '#3f4143', nose: '#4d4e50', rearPanel: '#4d4e50', sill: '#e6e2d6', endRail: '#d7b354', sideRail: '#4d4e50', cabFace: '#e6e2d6' }
+    : PAINT[livery];
   const half = GE_LENGTH / 2;
   const front = half - 0.35; // pilot face
   const rear = -half + 0.35;
