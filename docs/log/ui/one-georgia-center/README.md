@@ -23,23 +23,26 @@ From the April 2019 3DEP lidar on a 2 m raster, measured above the 303.5 m NAVD8
 
 - **Floors:** a 9 m lobby, then 21 floor modules of about 4.1 m up to a solid band from 95 m to the roof. The 24-storey count includes the lobby and mechanical levels.
 - **Fins:** about 2.35 m on centre, 0.8 m wide, standing 0.9 m off the glass. The slabs project as far as the fins.
-- **Colonnade:** marble piers on every second fin, with dark glass 2.5 m back.
-- **Glass:** pale grey-blue `#a9b5bc` (base S 0.10, V 0.74). A first try at `#98a6ae` rendered at sunlit V 37, because the fins and slabs shade the recessed panes.
+- **Colonnade:** marble piers 0.9 m square on every second fin, with an even bay count so that a pier stands at each corner. Behind them, a lobby of dark near-neutral glass (`#7a7d7e`) is recessed 2.5 m under the first slab.
+- **Fins:** full-height marble boxes with one side face each. Floor slabs run past each face's ends, so the eggcrate closes at the corners.
+- **Glass:** pale grey-blue `#b2bdc3` (base S 0.09, V 0.76). Earlier tries at `#98a6ae` and `#a9b5bc` rendered sunlit at V 37 and V 40, because the fins and slabs shade the recessed panes.
 
 ### Rendered-pixel check
 
-Taken at 11:30, high tier, from a zoomed camera on the west face (`341,-1881,300,66,460`, `__setView(300,70,300,341,-1881,4)`). Medians are over glass-hued pixels only, which excludes the marble.
+Taken at 11:30, high tier, from a zoomed camera on the west face (`341,-1881,300,66,460`, `__setView(300,70,300,341,-1881,4)`). Medians are over glass-hued pixels only, which excludes the marble. Generic tower medians come from the matching wide frame.
 
 | Patch | S | V |
 |---|---|---|
-| Sunlit glass | 14 | 41 |
-| Shaded glass | 13 | 36 |
-| Lobby glass, sun | 11 | 46 |
-| Generic glass tower, sun / shade | 15 / 15 | 55 / 36 |
+| Sunlit glass | 11 | 42 |
+| Shaded glass | 36 | 33 |
+| Recessed lobby, under the slab | 50 | 16 |
+| Generic glass tower, sun / shade | 15 / 14 | 55 / 43 |
+
+The sunlit reading passes (S ≤ 36, V ≥ 40). The shaded and lobby readings are advisory: they are deep shadow under the grade's shadow tint, and they read as dark recesses, not paint.
 
 ## Lighting
 
-- **Grid:** the floodlit marble uses its own cool-white lit material (`#dfe7ee`) at 0.3 × the night factor, changed only in `setNight`. The 2020 night photo is the evidence.
+- **Grid and crown:** the floodlit marble, including the colonnade, fins, slabs and ribbed crown band, uses its own cool-white lit material (`#dfe7ee`) at 0.3 × the night factor, changed only in `setNight`. The 2020 night photo shows the whole white frame uplit.
 - **Offices:** about 4% lit at 23:30, from the shared `litHash`.
 - Everything is `illustrative` ambient scenery and is not labelled on screen.
 

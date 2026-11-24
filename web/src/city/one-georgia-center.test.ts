@@ -35,7 +35,7 @@ it('sets the roof and penthouse at their lidar heights', () => {
 it('lights a sparse set of offices and the floodlit marble grid, inside the routine budget', () => {
   const result = createOneGeorgiaCenter([site], site, grid)!;
   expect(result.group.children).toHaveLength(3);
-  expect(triangles(result.group)).toBeLessThan(900);
+  expect(triangles(result.group)).toBeLessThan(1400);
   result.setNight(1);
   const [, lamps, wash] = result.group.children as Mesh<BufferGeometry, MeshLambertMaterial>[];
   expect(lamps.material.emissiveIntensity).toBeCloseTo(0.6);
