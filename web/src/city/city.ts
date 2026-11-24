@@ -122,6 +122,8 @@ import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
 import { createWhiteModel } from './white-model';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
+/** View depth (m) past which ink is fully faded (keep in step with vignette/ink.ts), plus a margin. */
+const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -1182,7 +1184,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const ink = new ShaderPass(inkShader());
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
-  composer.addPass(new FoliageMaskPass(scene, camera, ink));
+  const foliageMask = new FoliageMaskPass(scene, camera, ink);
+  composer.addPass(foliageMask);
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
@@ -1202,6 +1205,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
   }
+  // `?perf&bloom=device` keeps the old device-px bloom, for A/B runs.
+  const bloomCss = !(perfEnabled && query.get('bloom') === 'device');
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0, 0.55, 0.82);
   composer.addPass(bloom);
   const hts = new ShaderPass(tiltShiftShader([1, 0]));
@@ -1227,7 +1232,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setSize(w, h);
     // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
     gtao?.setSize(w, h);
-    bloom.resolution.set(w / 2, h / 2);
+    // The composer sizes every pass in device px; bloom works in CSS px, so its glow is the same
+    // size at every pixel ratio (and a 2x display doesn't pay for a full-resolution bloom chain).
+    if (bloomCss) bloom.setSize(w, h);
     const pr = renderer.getPixelRatio();
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
@@ -1238,9 +1245,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       p.enabled = tilt > 0.01 && !perfOverrides.nopass.has('tilt');
     }
   }
+  const inkWanted = !perfOverrides.nopass.has('ink');
   if (perfOverrides.nopass.size) {
     for (const p of composer.passes) if (p instanceof FoliageMaskPass && perfOverrides.nopass.has('ink')) p.enabled = false;
-    ink.enabled = !perfOverrides.nopass.has('ink');
+    ink.enabled = inkWanted;
     grade.enabled = !perfOverrides.nopass.has('grade');
     if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
   }
@@ -1659,6 +1667,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
     }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    // Ink fades out completely by 4.2 km of view depth (vignette/ink.ts). View depth is linear in
+    // position, so its minimum over the boards' box is at a corner: when even that is beyond the
+    // fade, the pass (and its foliage mask) would only copy the frame, so skip them.
+    if (inkWanted) {
+      camera.updateMatrixWorld();
+      const m = camera.matrixWorldInverse.elements;
+      let near = Infinity;
+      for (const r of [b, mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        for (const x of [r.minX, r.maxX]) for (const y of [-200, 600]) for (const z of [r.minZ, r.maxZ])
+          near = Math.min(near, -(m[2] * x + m[6] * y + m[10] * z + m[14]));
+      }
+      ink.enabled = foliageMask.enabled = near < INK_FADE_END_M;
+    }
     if (gtao && !gtaoOld) {
       // The scene pass draws into the composer's current read buffer, which alternates between
       // its two targets, so point AO at whichever depth texture it fills this frame.
