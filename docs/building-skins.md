@@ -77,6 +77,7 @@ Use the photographed structural rhythm to select the wall treatment. Measure a r
 - **BATCHING 3:** No per-building material, uniform or `onBeforeCompile` on static parts. Use the shared `StaticLandmarkMaterial` body and landmarkShell's lamp mesh, and change the night look only through `setNight`.
 - **DOWNTOWN:** A landmark mounted in `city.ts` is also added to the batcher's `listed` array after the mount block.
 - **RECOGNITION (acceptance test, 2026-11-24):** In the 400-600 m money shot, could someone who didn't know mistake the skin for the generic building beside it? If yes, it isn't finished. A skin needs the real building's vertical rhythm (mullions or piers at a spacing that reads), a distinct base and crown, floor-band contrast visible at 400-600 m, and, for glass, a colour a step away from the generic pale blue. Merged skins that fail are reworked as held PRs, largest on screen first. 100 and 400 Colony Square are first.
+- **FOUR-SIDE SHEETS:** The cam bearing is the view heading. Bearing 0 looks north and shows the south face, 90 shows the west face, 180 the north and 270 the east. Label each panel by the face it shows.
 - **QUEUE ORDER:** Order each worker's rows by size on screen from the default City camera and the park views (Piedmont, Centennial), not by list order.
 - **HEIGHTS:** The 2019 lidar is the default height source. Mark post-2019 buildings as reported or inferred. Lifted mapped parts with nothing beneath them are grounded by the generic builder (#471), so a skin replaces a filled box.
 
