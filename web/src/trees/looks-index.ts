@@ -1,3 +1,5 @@
+import { riverBirchLook } from './river-birch';
+import { lacebarkElmLook } from './lacebark-elm';
 import { calleryPearLook } from './callery-pear';
 import { easternRedbudLook } from './redbud';
 /** Every species with lab rendering options, in the order of the City mix weights (docs/tree-species.md). */
@@ -10,4 +12,4 @@ import { crapeMyrtleLook, southernMagnoliaLook } from './magnolia-crape';
 import { japaneseMapleLook } from './japanese-maple';
 import { americanElmLook, floweringDogwoodLook } from './elm-dogwood';
 
-export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook, americanElmLook, floweringDogwoodLook, japaneseMapleLook, whiteOakLook, easternRedbudLook, calleryPearLook];
+export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook, americanElmLook, floweringDogwoodLook, japaneseMapleLook, whiteOakLook, easternRedbudLook, calleryPearLook, lacebarkElmLook, riverBirchLook];

@@ -53,7 +53,12 @@ sun.shadow.bias = -0.0005; // without these the models shade themselves in fine 
 sun.shadow.normalBias = 0.05;
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 scene.add(hemi, sun);
-const floorMaterial = new THREE.MeshLambertMaterial({ color: '#d9d3c6' });
+const floorMaterial = new THREE.MeshLambertMaterial({ color: '#d9d3c6', transparent: true, depthWrite: false });
+// Leave depth clear behind the floor so the ink pass only outlines model geometry.
+floorMaterial.onBeforeCompile = shader => {
+  shader.vertexShader = 'varying vec2 floorPoint;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n floorPoint = position.xy;');
+  shader.fragmentShader = 'varying vec2 floorPoint;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', 'diffuseColor.a *= 1.0 - smoothstep(26.0, 59.0, length(floorPoint));\n#include <opaque_fragment>');
+};
 const figureShadow = new THREE.ShadowMaterial({ opacity: .22, depthWrite: false });
 const ground = new THREE.Mesh<THREE.CircleGeometry, THREE.Material>(new THREE.CircleGeometry(60, 48), floorMaterial);
 ground.rotation.x = -Math.PI / 2;
@@ -97,6 +102,8 @@ const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIS
 const SPECIES_NOTES: Record<string, string> = {
   generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
   'willow-oak': 'Downtown’s street oak: a straight trunk under a dense oval crown of fine, narrow leaves; yellow-brown to russet late in the fall. ',
+  'river-birch': 'An open, multi-stemmed tree with salmon and cream peeling bark and soft yellow fall foliage. ',
+  'lacebark-elm': 'A spreading elm with fine drooping sprays, small glossy leaves and mottled tan, cinnamon and olive bark. ',
   'callery-pear': 'A full, low teardrop crown with white spring flowers, glossy green leaves and late burgundy foliage. ',
   'eastern-redbud': 'A small low-branching vase with heart-shaped leaves, rose-pink early spring and soft yellow fall. ',
   'white-oak': 'A broad irregular crown on pale spreading limbs, rounded-lobed blue-green leaves, wine-red to russet fall colour, and a few brown leaves held into winter. ',
@@ -114,7 +121,9 @@ const SPECIES_NOTES: Record<string, string> = {
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
 type Model = keyof typeof models;
-const requested = new URLSearchParams(location.search).get('v');
+const embedded = !!el.closest('#lab-root');
+const modelParams = new URLSearchParams(location.search);
+const requested = (embedded && modelParams.get('model')) || modelParams.get('v');
 const aliases: Record<string, Model> = { bus: 'xn40', freight: 'cm44ac', train: 'cq400', streetcar: 's70' };
 let model: Model = requested && Object.hasOwn(models, requested)
   ? requested as Model : requested && Object.hasOwn(aliases, requested) ? aliases[requested] : 'cq400';
@@ -655,19 +664,108 @@ const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Rear': { pos: [0, 2.3, -60], target: [0, 2.0, -22], fov: 20 },
   'Top': { pos: [0.01, 60, 2], target: [0, 0, 2], fov: 40 },
 };
+let activePreset = '';
+let manualCamera = false;
+let fitFrame = 0;
+controls.addEventListener('start', () => { manualCamera = true; cancelAnimationFrame(fitFrame); });
+
+function fitModel(animate: boolean) {
+  if (!embedded || !activePreset || manualCamera || el.closest('[hidden]')) return;
+  const stage = el.getBoundingClientRect();
+  const visibleRect = (selector: string) => {
+    const rect = document.querySelector(selector)?.getBoundingClientRect();
+    return rect && rect.width && rect.height ? rect : null;
+  };
+  const browser = visibleRect('.a2-browser');
+  const details = visibleRect('.a2-model-details');
+  const card = visibleRect('.a2-model-card');
+  const dock = visibleRect('.a2-appbar');
+  const phone = innerWidth <= 600;
+  const left = !phone && browser ? browser.right : stage.left;
+  const right = !phone && details ? details.left : stage.right;
+  const top = !browser && card ? card.bottom : stage.top;
+  const bottom = Math.min(dock?.top ?? stage.bottom, phone && details ? details.top : stage.bottom,
+    visibleRect('.a2-details-btn')?.top ?? stage.bottom);
+  const width = right - left, height = bottom - top;
+  if (width < 44 || height < 44) return;
+
+  const box = new THREE.Box3();
+  if (cars.length && width < height && stage.width < stage.height) {
+    // The leading cab points along +Z in the lab.
+    const lead = cars.map(car => new THREE.Box3().setFromObject(car)).sort((a,b) => b.max.z - a.max.z)[0];
+    box.copy(lead);
+    if (activePreset === 'Rear') {
+      box.copy(cars.map(car => new THREE.Box3().setFromObject(car)).sort((a, b) => a.min.z - b.min.z)[0]);
+      box.max.z = box.min.z + .35 * (box.max.z - box.min.z);
+    } else {
+      box.min.z = box.max.z - .35 * (box.max.z - box.min.z);
+    }
+  } else {
+    for (const part of [...cars, figure?.group, houseScene?.group, materialScene?.group, landscape?.group, trees?.group])
+      if (part) box.expandByObject(part);
+  }
+  if (box.isEmpty()) return;
+  const preset = presets[activePreset];
+  const direction = new THREE.Vector3(...preset.pos).sub(new THREE.Vector3(...preset.target)).normalize();
+  const horizontal = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
+  const vertical = direction.clone().cross(horizontal);
+  const centre = box.getCenter(new THREE.Vector3());
+  // Perspective makes the near cab wider than the far end. Fit the projected
+  // rectangle and centre its silhouette, instead of centring the 3D box midpoint.
+  const pixels = stage.height / (2 * Math.tan(THREE.MathUtils.degToRad(preset.fov / 2)));
+  const corners: THREE.Vector3[] = [];
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    const corner = new THREE.Vector3(x, y, z).sub(centre);
+    corners.push(new THREE.Vector3(horizontal.dot(corner), vertical.dot(corner), direction.dot(corner)));
+  }
+  const projected = (distance: number) => {
+    const rect = new THREE.Box2();
+    for (const p of corners) rect.expandByPoint(new THREE.Vector2(p.x, p.y).multiplyScalar(pixels / (distance - p.z)));
+    return rect;
+  };
+  let near = Math.max(...corners.map(p => p.z)) + camera.near;
+  let far = near + pixels * 2 * box.getSize(new THREE.Vector3()).length() / (Math.min(width, height) * .88);
+  for (let i = 0; i < 20; i++) {
+    const mid = (near + far) / 2;
+    const size = projected(mid).getSize(new THREE.Vector2());
+    if (size.x > width * .88 || size.y > height * .88) near = mid;
+    else far = mid;
+  }
+  const end = centre.clone().addScaledVector(direction, far);
+  camera.far = Math.max(camera.far, far + box.getSize(new THREE.Vector3()).length());
+  const offset = projected(far).getCenter(new THREE.Vector2());
+  camera.setViewOffset(stage.width, stage.height, (stage.left + stage.right - left - right) / 2 + offset.x,
+    (stage.top + stage.bottom - top - bottom) / 2 - offset.y, stage.width, stage.height);
+  const start = camera.position.clone(), target = controls.target.clone(), since = performance.now();
+  cancelAnimationFrame(fitFrame);
+  const step = (now: number) => {
+    const t = animate && !matchMedia('(prefers-reduced-motion: reduce)').matches ? Math.min(1, (now - since) / 300) : 1;
+    const f = t * t * (3 - 2 * t);
+    controls.target.lerpVectors(target, centre, f);
+    camera.position.lerpVectors(start, end, f);
+    controls.update();
+    fitFrame = t < 1 ? requestAnimationFrame(step) : 0;
+  };
+  step(since);
+}
+document.addEventListener('lab-layout', () => fitModel(true));
+
 function view(name: string) {
   const v = presets[name];
   if (!v) return;
-  camera.position.set(...v.pos);
-  controls.target.set(...v.target);
+  activePreset = name;
+  manualCamera = false;
+  if (!embedded) camera.position.set(...v.pos);
+  if (!embedded) controls.target.set(...v.target);
   // Keep the presets centred on the train when a station moves it off the lab's centre line.
-  const dx = station?.trainX ?? 0;
+  const dx = embedded ? 0 : station?.trainX ?? 0;
   camera.position.x += dx;
   controls.target.x += dx;
   camera.fov = v.fov;
   camera.near = v.near ?? 0.1;
   camera.updateProjectionMatrix();
   controls.update();
+  fitModel(true);
   document.querySelectorAll('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === name)));
 }
 
@@ -691,6 +789,7 @@ let inkOn = true;
 function resize() {
   const w = el.clientWidth;
   const h = el.clientHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   camera.aspect = w / Math.max(1, h);
@@ -699,6 +798,7 @@ function resize() {
   ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
   ink.uniforms.uWidth.value = pr;
   grade.uniforms.uRes.value.set(w * pr, h * pr);
+  fitModel(true);
 }
 new ResizeObserver(resize).observe(el);
 resize();
@@ -789,7 +889,7 @@ for (const [kind, label] of [[null, 'None'], ['island', 'Island'], ['side', 'Sid
     platformKind = kind;
     const url = new URL(location.href);
     if (kind) url.searchParams.set('platform', kind); else url.searchParams.delete('platform');
-    history.replaceState(null, '', url);
+    history.replaceState(history.state, '', url);
     build();
     view('¾ front');
   }, platformKind === kind);
@@ -867,8 +967,9 @@ function setModel(id: Model) {
 }
 function selectModel(id: Model) {
   const url = new URL(location.href);
-  url.searchParams.set('v', id);
-  history.replaceState(null, '', url);
+  url.searchParams.set(embedded ? 'model' : 'v', id);
+  if (embedded) url.searchParams.delete('v');
+  history.replaceState(history.state, '', url);
   setModel(id);
 }
 for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'cm44ac', 'cm44acNs', 'es44acNs', 'es44ah', 'sd70ace', 'gp382', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
@@ -890,7 +991,7 @@ for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', '
 const setParam = (key: string, value: string | null) => {
   const url = new URL(location.href);
   if (value === null) url.searchParams.delete(key); else url.searchParams.set(key, value);
-  history.replaceState(null, '', url);
+  history.replaceState(history.state, '', url);
 };
 for (const size of [...SIZE_CLASSES, 'all'] as const)
   mk('tree-size', size === 'all' ? 'All sizes' : size[0].toUpperCase() + size.slice(1), () => { treeSize = size; setParam('size', size); build(); view('Front'); }, size === treeSize);
@@ -936,9 +1037,17 @@ nightBtn.addEventListener('click', () => {
   houseScene?.setNight(on ? 1 : 0);
   const url = new URL(location.href);
   if (on) url.searchParams.set('night', '1'); else url.searchParams.delete('night');
-  history.replaceState(null, '', url);
+  history.replaceState(history.state, '', url);
 });
 const inkBtn = document.getElementById('ink')!;
+if (embedded) {
+  for (const button of [nightBtn, inkBtn]) {
+    button.setAttribute('role', 'switch');
+    const sync = () => button.setAttribute('aria-checked', String(button.getAttribute('aria-pressed') === 'true'));
+    sync();
+    new MutationObserver(sync).observe(button, { attributes: true, attributeFilter: ['aria-pressed'] });
+  }
+}
 inkBtn.addEventListener('click', () => {
   inkOn = !inkOn;
   inkBtn.setAttribute('aria-pressed', String(inkOn));
@@ -1073,4 +1182,4 @@ function crownStats() {
   draw(performance.now());
   return { pixels: n, luminance: +(lum / Math.max(1, n)).toFixed(3), saturation: +(sat / Math.max(1, n)).toFixed(3) };
 }
-Object.assign(window, { __lab: { crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+Object.assign(window, { __lab: { framed: () => activePreset !== '' && fitFrame === 0, crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });

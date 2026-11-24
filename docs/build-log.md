@@ -3074,6 +3074,10 @@ whatever space the panels leave clear.
 ### 2026-11-24 — The dock stays put when the map tilts
 
 Map and City now share one tab. The 3D button and tilt control use the existing white-model arrival. On a 390 × 760 phone, moving Share to the dock leaves just two camera controls over the scene. The desktop and phone captures show the same shifted clock and Midtown camera, `565,-3965,-101,55,421`. [Desktop](log/ui/final-dock/city.jpg) · [Phone](log/ui/final-dock/phone.jpg).
+
+### 2026-11-24 — Fit the cab between the controls
+
+At 390 × 760 the lab fits the leading 35% of the cab car. At 1440 × 900 it fits the two-car train between the catalogue and Details. Both use the same eight box corners and a 12% margin. Returning from Models to the frozen Midtown Low camera took 1.69 s on the Studio, timed from tapping Map to City's completed reveal. [Phone cab](log/ui/final-models/phone.jpg) · [Wide catalogue](log/ui/final-models/wide.jpg).
 ### 2026-11-23 — The second copy of the bridge
 
 With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
@@ -3095,8 +3099,37 @@ The bare-earth DEM put eight freight tracks at road level. April 2019 lidar stil
 A 469 m² footprint was enough to push a 1905 Craftsman past the 450 m² limit for generated houses. Checking the address against the historic district survey and two street views gave us the missing silhouette: a broad side gable, a shingled front porch gable and an open bay over the drive. The gold shape in the foreground turned out to be a tree. [The original view, matched day and night, and the porch](log/ui/145-the-prado/README.md).
 
 
+### 2026-11-23 — Lacebark elm starts with the bark
+
+The first lacebark elm pairs small, fine leaf cards with long arched boughs and mottled olive, tan and cinnamon bark. The surprise came when pulling back from the trunk: the bark patches stop reading before the overall silhouette does. The shader now fades them out once they are too small on screen. The mature tree costs 194 / 102 triangles with no new texture allocation. July Front luminance is 0.248 / 0.259 against the generic canopy’s 0.248. The first crown is more open and the bark smoother than in the photos. [Seasonal sheet, 100–300 m, and bark comparison](log/ui/tree-species/options-lacebark-elm.jpg). Lab study. Web rebuild only.
 ### 2026-11-23 — Colour before the whole board
 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
 
 On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)
+
+The first Galaxy A16 runs changed the return design. Rebuilding a warm City took 12.8 and 15.2 s there, compared with 16.8 and 15.7 s for the first City build in a fresh document. Models now pauses the completed City's frame loop and keeps its WebGL context. The Studio warm run fell to 0.38 s. The two legs of the device probe share a frozen camera and a warm HTTP cache.
+
+The wide lab now centres the projected silhouette of the train between the panels. The eight box corners are tested in screen space, so the far end no longer leaves a large empty margin. [Desktop](log/ui/final-models/desktop-final.jpg) · [Phone](log/ui/final-models/phone-final.jpg).
+
+The repeated A16 probe returned in 278 ms and 569 ms with City paused. Cold builds took 16.1 s and 10.9 s. Both warm runs met the 1 s target on the 4 GB phone.
+
+
+### 2026-11-23 — River birch starts with three stems and peeling bark
+
+River birch’s first A study pairs salmon-and-cream stems with an open crown of small green leaf cards. The bark first rendered as broad, regular stripes. Finer broken layers, a raised-looking edge and darker bases on large trees made it read closer to the papery reference. The mature clump uses 190 / 134 triangles with no new texture allocation. July Front luminance is 0.245 / 0.240 against the generic canopy’s 0.248. [Seasonal sheet, bark detail and 100–300 m views](log/ui/tree-species/options-river-birch.jpg). Lab study. Web rebuild only.
+
+### 2026-11-23 — A frame spent twenty minutes in traffic
+
+At 14:00:44.6 in the downtown simulation, one car slot started its next trip.
+Its lane then replayed 2,352 half-second steps in one draw. With 64 synthetic
+timetable buses on the board, that frame took 56.6 ms in desktop Chrome. The
+streetcar queue on main reproduced the same behavior with no buses at all.
+
+A lane now processes up to 64 historical steps per draw during catch-up.
+Surviving cars hold position briefly. In three repeats with the 64 timetable
+buses, the worst queue frame fell to 6.2 ms and p95 was 0.9 ms. With the
+published timetable the worst was 0.5 ms. A regression checks the bound on
+every frame and compares the final positions with a fresh seek.
+
+[The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)

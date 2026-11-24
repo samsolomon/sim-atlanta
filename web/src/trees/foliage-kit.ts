@@ -314,7 +314,7 @@ export function needleStars(b: FoliageBuilder, units: Unit[], seed: number, rays
 }
 
 /** Two crossed cards per mass: one tangent to the crown (its silhouette), one radial (its depth). */
-export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, height = 1) {
+export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, height = 1, leafM = 0.45) {
   const r = rng(seed);
   for (const u of units) {
     const c = new THREE.Vector3(...u.c);
@@ -324,7 +324,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
     t1.normalize().applyAxisAngle(n, (r() - 0.5) * 1.2);
     const t2 = new THREE.Vector3().crossVectors(n, t1).normalize();
     const w = u.r * scale;
-    const cell = cellFor(w * 2);
+    const cell = cellFor(w * 2, leafM);
     for (const [ax, ay] of [[t1, t2], [t1, n]] as const) {
       const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => c.clone().addScaledVector(ax, x * w).addScaledVector(ay, y * w));
       for (const v of p) v.y = c.y + (v.y - c.y) * height;

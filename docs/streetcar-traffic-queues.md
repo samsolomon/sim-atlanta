@@ -19,8 +19,11 @@ at red/amber, waits behind the streetcar and leaves a 2 m bumper gap behind its
 leader. Signals are evaluated at the car's delayed arrival, so missing a green
 behind the streetcar does not let it pass the next red. Fractional frames
 interpolate immutable grid checkpoints, bounded by the signal's release time.
-Forward updates resume cached checkpoints; backward seeks or changed cohorts
-rebuild from the same clock-derived entries. Results match a fresh load.
+Forward updates resume cached checkpoints. When a slot changes during playback,
+the course replays up to 64 half-second steps per frame. Surviving trips hold
+their drawn positions and new trips appear once replay catches the clock.
+The resulting positions match a fresh load. Cold loads, backward seeks and
+forward jumps exceeding 16 simulated seconds resolve immediately.
 
 Historical streetcar poses are cached only at grid times. The shared cache retains
 the longest bound course's slot period plus one minute, with 2,400–7,200 samples.

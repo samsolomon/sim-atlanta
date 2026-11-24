@@ -13,13 +13,11 @@ const X = SVG('<path d="M6 6l12 12M18 6L6 18"/>');
 
 /** A small swatch per model, coloured by the kind of service (never the agency). */
 export function swatchFor(group: string, id: string): string {
-  if (/freight|cm44|ac44/i.test(id)) return 'var(--freight)';
+  if (/freight|cm44|ac44|es44|sd70|gp382/i.test(id)) return 'var(--freight)';
   if (/xn40|xe60|bus/i.test(id)) return 'var(--bus)';
   if (/cq400|s70|streetcar|marta/i.test(id)) return 'var(--city-rail)';
   if (/^vehicles$/i.test(group)) return 'var(--intercity)';
-  if (/^trees$/i.test(group)) return '#5f8f3e';
-  if (/^people$/i.test(group)) return '#8a8479';
-  return '#b8a98c';
+  return '#958f84';
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {
@@ -55,7 +53,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   head.append(nameBtn, el('span', { class: 'a2-model-steps' }));
   head.lastElementChild!.append(prev, next);
   const pos = el('p', { class: 'a2-model-pos' });
-  const detailsBtn = el('button', { type: 'button', class: 'a2-btn a2-details-btn', 'aria-expanded': 'false', 'aria-controls': 'a2-model-details' }, 'Details');
+  const detailsBtn = el('button', { type: 'button', class: 'a2-g a2-details-btn', 'aria-expanded': 'false', 'aria-controls': 'a2-model-details' }, 'Details');
   card.append(title, head, blurb, pos, detailsBtn);
 
   // ---- Details (right): the lab's controls, re-homed ----
@@ -72,11 +70,12 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   // ---- browser (left) ----
   const browser = el('section', { class: 'a2-browser a2-g a2-long', id: 'a2-browser', hidden: '', 'aria-label': 'Browse models' });
   browser.innerHTML = `
-    <div class="a2-panel-head"><h2>Models</h2><button type="button" class="a2-x" data-close aria-label="Close">${X}</button></div>
+    <div class="a2-phone-browser-head a2-panel-head"><h2>Models</h2><button type="button" class="a2-x" data-close aria-label="Close">${X}</button></div>
     <input type="search" class="a2-search" placeholder="Search models" aria-label="Search models">
     <div class="a2-chips" role="group" aria-label="Category"></div>
     <div class="a2-model-list"></div>`;
   const search = browser.querySelector<HTMLInputElement>('.a2-search')!;
+  search.placeholder = `Search ${buttons().length} models`;
   const chips = browser.querySelector<HTMLElement>('.a2-chips')!;
   const list = browser.querySelector<HTMLElement>('.a2-model-list')!;
   let category = 'All';
@@ -100,14 +99,26 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
         row.lastElementChild!.textContent = b.textContent;
         row.addEventListener('click', () => {
           b.click();
-          closeBrowser();
-          nameBtn.focus();
+          if (innerWidth < 1280) { closeBrowser(); nameBtn.focus(); }
         });
         list.append(row);
       }
     }
+    requestAnimationFrame(scrollState);
     if (!list.children.length) list.append(el('p', { class: 'a2-empty' }, 'No models match.'));
   }
+  let scrollTimer = 0;
+  function scrollState() {
+    list.classList.toggle('more-above', list.scrollTop > 1);
+    list.classList.toggle('more-below', list.scrollTop + list.clientHeight < list.scrollHeight - 1);
+  }
+  list.addEventListener('scroll', () => {
+    scrollState();
+    list.classList.add('scrolling');
+    clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => list.classList.remove('scrolling'), 700);
+  }, { passive: true });
+  new ResizeObserver(scrollState).observe(list);
   chips.addEventListener('click', (e) => {
     const c = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-cat]');
     if (!c) return;
@@ -115,15 +126,18 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     renderBrowser();
   });
   search.addEventListener('input', renderBrowser);
-  const openBrowser = () => {
+  const layout = () => document.dispatchEvent(new Event('lab-layout'));
+  const openBrowser = (focus = true) => {
     browser.hidden = false;
     nameBtn.setAttribute('aria-expanded', 'true');
     renderBrowser();
-    search.focus();
+    if (focus) search.focus();
+    layout();
   };
   const closeBrowser = () => {
     browser.hidden = true;
     nameBtn.setAttribute('aria-expanded', 'false');
+    layout();
   };
   nameBtn.addEventListener('click', () => (browser.hidden ? openBrowser() : closeBrowser()));
   browser.querySelector('[data-close]')!.addEventListener('click', () => {
@@ -155,6 +169,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   const setDetails = (open: boolean) => {
     details.classList.toggle('a2-open', open);
     detailsBtn.setAttribute('aria-expanded', String(open));
+    layout();
   };
   detailsBtn.addEventListener('click', () => setDetails(!details.classList.contains('a2-open')));
   details.querySelector('[data-close]')!.addEventListener('click', () => {
@@ -162,7 +177,20 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     detailsBtn.focus();
   });
 
-  root.append(card, details, browser);
+  root.append(card, details, detailsBtn);
+  const phone = matchMedia('(max-width: 600px)');
+  const placeBrowser = () => {
+    (phone.matches ? root : card).append(browser);
+    browser.classList.toggle('a2-g', phone.matches);
+    layout();
+  };
+  placeBrowser();
+  phone.addEventListener('change', placeBrowser);
+  if (innerWidth >= 1280) openBrowser(false);
+  new ResizeObserver(() => {
+    scrollState();
+    layout();
+  }).observe(card);
   return {
     /** Escape: close the browser, then the phone Details sheet. */
     escape(): boolean {
@@ -177,6 +205,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
       }
       return false;
     },
+    enter() { if (innerWidth >= 1280) openBrowser(false); else closeBrowser(); setDetails(false); },
     openBrowser,
     model: () => current()?.dataset.model ?? null,
     /** Reset view: choose the current model again, which returns to its opening view. */
