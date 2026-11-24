@@ -2,29 +2,26 @@
 
 ## Active work and merge hold
 
-**PR #399** `samsolomon/underpass-road-joins` — Smooth the North Avenue underpass joints. It is open and **held for Sam's OK**, which only the coordinator relays. The coordinator is `term_09e1b3da-…` on Sam's MacBook Air; reply to its welcome message `msg_3d5fda67006f`.
+Merged today (quote `gh pr view` from history if asked):
+- #500 71b26f41 (transport far form), #509 a1305a32 (North Line far form), #514 3eca63b9 (far prefix in shadow pass).
+- #538 52de7bf9 (very-far ground, settled 8 m beyond 12 km).
+- #566 2742657d (R8 release blocker: freight-deck undersides kept in the shadow prefix).
 
-Done and verified:
-- Board levelled at both mouths: `underpassGround` with `MOUTH_LEVEL_M`/`MOUTH_APPROACH_M`.
-- Ramp of `MOUTH_RAMP_M` = 20 m, following the board at 1 m across.
-- Fixed strip piece counts and a 0.4 m tucked apron.
-- The board's yellow line per carriageway carried through the cut (`boardLines`, `STREET_LINE`).
-- Median and kerbs tapering over 12 m.
-- Probe in `north-ave.test.ts`, which fails at baseline: step 1.40 → 0.045 m, vehicle 1.38 → 0.011 m, cross-fall 4.6 → 0.05 m, fold 43% → 4.3%, maximum grade 42% → 7.7%.
-- test:release, test:perf (low 85/90 programs) and audit:ground (+10 samples of 4 cm or less, all on the apron) were run, and two codex reviews found nothing.
-
-Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-na-*`. The cam strings are in the PR body.
-
-- **PR #500** `samsolomon/transport-far`: transport far form, approved after the A16 run (+1 fps, -272k triangles). **#509** `samsolomon/north-line-far` (North Line far form, owner 54bca5c0 OK'd) is stacked on it, also approved. They merge together in the slot the skyline lead (47b1a596) booked after #499+#501; wait for its call. Then: rebase, run one build, test:release and test:perf on the stacked head, merge #500, retarget #509 to main, merge it, and quote gh pr view for both.
-- **PR #514** `samsolomon/transport-shadow` (stacked on #509): far prefix in shadow redraws. Held for the coordinator's review. Retarget it after #509 merges.
-- **#512** (studio-amtrak-livery freight fillets): ground-contact OK given.
-- Deck cell split for the shadow camera: phone-perf said skip it after #514 (+15-25 main-pass calls cost more on the A16). If it comes back, use the landmark-batch grid: 500 m cells, floor(x/500), floor(z/500), origin at scene 0,0.
+Open and held:
+- **#418** (bridge approaches and landing decks) and **#476** (north-band seam links, stacked on #418): with Sam.
+- **#571** `samsolomon/settle-far-ground`: settle the 2 m far level. Held for the coordinator's judgement (reply to `msg_65d362faf04c`).
 
 ## Next steps
-1. Wait for Sam's OK via the coordinator. Rebase before merging (the build log conflicts routinely), then quote `gh pr view 399 --json state,mergeCommit`.
-2. Open scope question for the coordinator: the Connector deck crossings and 17th go through `bridge-approaches.ts`, the Connector agent's module. I haven't inspected the Brookwood ramps; ask before editing either.
+1. **Road-surface cracks** (branch `samsolomon/road-cracks`). The traffic owner (cfb2a7c9) listed 72 sites in `docs/log/perf/traffic-height-cracks.md` on `claude/traffic-frame-cost-2`: cityRoadHeight returns null, or a dip over 15 cm under both rims, along traffic lanes at 0.13 m steps on low.
+   - Biggest: (-170,-4150) 13 m, the 17th Street west approach. Then (-780,-40) 1.35 m, (1095,240) 0.81 m, (110,-1255) 0.51 m.
+   - Most others are single "no surface" samples on the Connector at x 1080-1240 (east boards).
+   - When fixes land, ask the traffic owner to re-run its sampler.
+2. Review the streaming agent's sliced createSurfaceTransport when asked: mesh order and far prefixes must stay byte-identical.
+3. Known gaps in `docs/art-backlog.md`: the Whitehall and RDA climbs, Peachtree at Brookwood.
 
 ## Traps
+- The far prefix is also the shadow pass (#514): anything dropped from it must not be the only caster for its spot (freight decks, #566). The far-form test pins every deck sample.
+- Capture scripts must launch their own Chrome via `scripts/chrome-cdp.mjs` launchChrome (port 0); never attach by port, never pkill by pattern.
 - Pixel-diff City frames only with `?perf&nopass=grade` (animated grain), and on high also `gtao`; otherwise identical runs differ.
 - Perf baselines with swapped files: use `git merge-base HEAD origin/main`, never `origin/main`.
 - **Camera targets inside a slot aim 26 m high.** City's `targetY` returns 0 where the board has no ground, so the view centres far beyond the point you asked for. Aim just outside the opening. The old `north-east`/`north-west` cams have this problem.
