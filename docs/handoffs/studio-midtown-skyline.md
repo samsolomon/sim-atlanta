@@ -163,3 +163,5 @@ East-rail's King Memorial test times out at 5 s when Studio load is around 50; i
 **Tools in scratch, not in the repo:**
 - `/tmp/sky-lidar-h.py`: lidar heights by footprint or part id, with ground from a 3–20 m ring.
 - `shot.py`: waits for `__city.revealed`, then `__setView`.
+
+**Peachtree Summit seam recheck (2026-11-24): passes.** The downtown piece (`30306c74…`, z −1331 to −1227) and the north-band piece (`osm:way:39449002`, z −1331 to −1300) overlap. `separateBuilding: summitDowntown` and `northBuilding: summitNorth` already give one continuous 125 m tower: one roof plate, and no wall seam or z-fighting on high or low tier at 11:30. [Seam check](../log/ui/peachtree-summit/seam-check.jpg): `cam=413,-1282,320,58,420` at zoom 1.4 on high and low, then `__setView(320,30,700,413,-1282,1.8)` for the roof. Skinning it properly would be a separate row; it is not in the top 40.
