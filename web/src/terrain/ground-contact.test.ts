@@ -64,14 +64,18 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     const zero = grid('midtown-south').manifest.vertical.sceneZeroNavd88M;
     expect(roadHeight(...position, lower)).toBeCloseTo(296.64 - zero);
     expect(roadHeight(...position, upper)).toBeCloseTo(302.32 - zero);
-    const decks = south.group.getObjectByName('North Avenue underpass')!;
-    const crossing = groundAudit(decks, [{ id: 'midtown-south', bounds: south.bounds, terrainAt: south.terrainAt, terrain: [south.board] }], {
-      colors: CITY_COLORS, layer: () => 'structures',
+    for (const t of [-21.9,21.9]) {
+      const edge = northAvePoint(10,t);
+      expect(Math.abs(roadHeight(...edge,upper)!-south.terrainAt(...edge)!)).toBeLessThan(.13);
+    }
+    const crossing = groundAudit(south.group, [{ id: 'midtown-south', bounds: south.bounds, terrainAt: south.terrainAt, terrain: [south.board] }], {
+      colors: CITY_COLORS, layer: (_path, mesh) => ['North Avenue underpass','Marietta Street pavement'].includes(mesh.name) ? mesh.name : null,
       exclude: (_layer, x, z) => {
         const [s, t] = northAveLocal(x, z);
         return s < -12 || s > 168 || Math.abs(t) > 23;
       },
     });
+    expect(crossing.layers.some(l=>l.layer==='Marietta Street pavement' && l.samples>0)).toBe(true);
     expect(crossing.layers.reduce((sum, layer) => sum + layer.samples, 0)).toBeGreaterThan(0);
     expect(crossing.worst).toEqual([]);
     const root = new Group();

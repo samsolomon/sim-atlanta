@@ -1112,13 +1112,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // The five upper surfaces continue the street, rail formation and bank.
   // Fade their screen-space ink only when seen from above the trench.
   const inkWorld = new THREE.Matrix4();
+  ink.uniforms.coverAerial = { value: false };
   ink.uniforms.coverUnproject = { value: inkWorld };
   ink.uniforms.coverSceneZero = { value: grid?.manifest.vertical.sceneZeroNavd88M ?? 323.8 };
   ink.material.fragmentShader = ink.material.fragmentShader.replace('varying vec2 vUv;', `
+    uniform bool coverAerial;
     uniform mat4 coverUnproject;
     uniform float coverSceneZero;
     varying vec2 vUv;
     float coverInk(float depth) {
+      if(!coverAerial) return 1.0;
       vec4 p = coverUnproject * vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
       vec3 world = p.xyz / p.w;
       vec2 delta = world.xz - vec2(-761.16,-1885.765);
@@ -1128,7 +1131,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       bool top = s<20.0 || (s>23.0 && s<87.0) || (s>99.0 && s<108.0)
         || (s>114.0 && s<131.0) || s>139.0;
       float floorM = 296.6 + max(0.0,s-20.0)*.01;
-      return top ? mix(1.0,.08,smoothstep(4.55,4.9,world.y+coverSceneZero-floorM)) : 1.0;
+      float heightM = world.y + coverSceneZero;
+      float surface = smoothstep(4.55,4.9,heightM-floorM) * (1.0-smoothstep(304.9,305.4,heightM));
+      return top ? mix(1.0,.08,surface) : 1.0;
     }`).replace('vec3 ink = uInk;', 'line *= coverInk(texture2D(tDepth,vUv).x); vec3 ink = uInk;');
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
@@ -1575,6 +1580,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         camera.updateProjectionMatrix();
       }
     }
+    ink.uniforms.coverAerial.value = camera.position.y + ink.uniforms.coverSceneZero.value > 306 &&
+      Math.abs(controls.target.x + 830) < controls.getDistance()+200 && Math.abs(controls.target.z + 1850) < controls.getDistance()+100;
     inkWorld.multiplyMatrices(camera.matrixWorld,camera.projectionMatrixInverse);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
