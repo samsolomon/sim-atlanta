@@ -69,6 +69,11 @@ export class StreamManager {
   private counts = { fullLoads: 0, lodLoads: 0, unmounts: 0, lodBytes: 0 };
   private tint = new THREE.Color();
   private disposed = false;
+  /** Full builds are one long main-thread job: start them only once the camera rests. */
+  private lastEye = new THREE.Vector3(NaN, NaN, NaN);
+  private movedAt = -Infinity;
+  static readonly REST_MS = 400;
+  static readonly MAX_WAIT_MS = 2500;
 
   constructor(private readonly mosaic: SquareMosaic, private readonly quality: TerrainQuality,
     private readonly cfg: RingConfig, private readonly low: boolean, private readonly bottomY: number,
@@ -105,7 +110,9 @@ export class StreamManager {
   setSeason(doy: number) { this.materials.forest.color.copy(forestTint(doy, this.tint)); }
 
   update(camera: THREE.Camera, groundY: number, fogFar: number, now = performance.now()) {
-    if (this.disposed || now - this.lastTick < 250) return;
+    if (this.disposed) return;
+    if (this.lastEye.distanceToSquared(camera.position) > 0.01 || Number.isNaN(this.lastEye.x)) { this.lastEye.copy(camera.position); this.movedAt = now; }
+    if (now - this.lastTick < 250) return;
     const dt = now - this.lastTick;
     this.lastTick = now;
     this.m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
@@ -202,6 +209,9 @@ export class StreamManager {
     if (this.fullBusy || this.hooks.held()) return;
     const want = this.units.filter(u => u.ring === 'near' && u.full === 'none').sort((a, b) => a.distance - b.distance)[0];
     if (!want) return;
+    // A followed vehicle keeps the camera moving: a near section waits at most MAX_WAIT_MS.
+    const now = performance.now();
+    if (now - this.movedAt < StreamManager.REST_MS && now - want.since < StreamManager.MAX_WAIT_MS) return;
     this.fullBusy = true;
     want.full = 'loading';
     const abort = want.fullAbort = new AbortController();
