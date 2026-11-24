@@ -434,6 +434,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   yield;
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
+  // The rolled-out trees' ground heights, read here, where they always were: later carves
+  // (lamps, decks) must not move them when registration is deferred (commitTrees).
+  const rolloutY = rollout ? new Map(rollout.plan.species.map(sp => [`${sp.x},${sp.z}`, groundAt(sp.x, sp.z)])) : null;
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
@@ -471,7 +474,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const commitTrees = () => {
     if (committed) return;
     committed = true;
-    rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
+    rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, (x, z) => rolloutY?.get(`${x},${z}`) ?? null, undefined,
       city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
     // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
     planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
