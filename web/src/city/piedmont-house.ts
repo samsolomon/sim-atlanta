@@ -105,12 +105,13 @@ export function createPiedmontHouse(buildings: VBuilding[], site: VBuilding, gri
     panel(f, -0.002, 1.002, baseTop - 1.2, baseTop, 0.1, creamShade);
     // Shaft: a white mullion per bay and a white slab edge per floor.
     for (let k = 0; k <= bays; k++) {
-      const w = (k === 0 || k === bays ? 0.6 : 0.12) / f.length; // the white edge columns are wider
+      // Street View (March 2025): bold white corner columns and white mullions frame the glass.
+      const w = (k === 0 || k === bays ? 0.9 : 0.22) / f.length;
       panel(f, k / bays - w, k / bays + w, baseTop, roofTop - 0.8, 0.08, white);
     }
     for (let j = 1; j < floors; j++) {
       const y = baseTop + j * pitch;
-      panel(f, 0, 1, y - 0.22, y + 0.22, 0.06, white);
+      panel(f, 0, 1, y - 0.4, y + 0.4, 0.06, white); // the white slab edge at every floor reads strongly in the photos
     }
     panel(f, -0.004, 1.004, roofTop - 0.8, roofTop, 0.1, white);
     // Balcony stacks at both ends of each face and at the middle of long faces.
@@ -137,5 +138,9 @@ export function createPiedmontHouse(buildings: VBuilding[], site: VBuilding, gri
     s.prism(penthouse, roofTop, penthouseTop, white, roof);
   }
 
-  return s.finish('#ffdcae', 0.62);
+  const model = s.finish('#ffdcae', 0.62);
+  // This row's outline is clipped at the board seam (z = -3300); the tower's south 5 m and its
+  // balconies stand on the midtown-central clip's outline, so the footprint audit allows 7 m here.
+  model.group.userData.footprint = { maxProjection: 7 };
+  return model;
 }

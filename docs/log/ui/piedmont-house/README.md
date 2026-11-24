@@ -50,3 +50,13 @@ The base colour is `#9aaebc` (S 18%, V 74%). At 11:30 on the high tier, the sunl
 | Low tier | `1032,-3332,270,60,750` with `&q=low` | 11:30 AM / 11:30 PM | [Day](low-day.jpg) · [Night](low-night.jpg) |
 
 Four sides at 400 m, tilt 42°, 11:30 AM: [contact sheet](four-sides.jpg). Each camera targets `1032,-3332` at a 400 m distance, using bearings 180 (camera north), 270 (east), 0 (south) and 90 (west) via `__setView(bearing, 42, 400, 1032, -3332, 1)`. None of the four sides shows a floating, missing or z-fighting part.
+
+## Strengthened grid (2026-11-24)
+
+The recognition run rated the first version borderline: from 750 m the white grid was faint, and low-rises hid the cream base. Both Street View panos above show bold white corner columns, white mullions and a white slab edge at every floor around the blue glass. The grid is now drawn at that weight: corner columns 1.8 m wide, mullions 0.44 m, slab edges 0.8 m. The glass colour is unchanged; I had no photo sample that would justify retinting it.
+
+| View | Camera | Clock | Image |
+|---|---|---|---|
+| North-west at 500 m, showing the cream base | `1032,-3332,300,52,500` with `&dev`, then `__setView(300, 52, 500, 1040, -3320, 1.2)` | 11:30 AM | [Before and after](base-before-after.jpg) |
+| #544's money shot | `1032,-3332,270,60,750` | 11:30 AM / 11:30 PM | [Day](strengthened-day.jpg) · [Night](strengthened-night.jpg) |
+| Four sides at 400 m, labelled by face shown | `__setView(bearing, 42, 400, 1032, -3332, 1)` with bearings 0, 90, 180 and 270 | 11:30 AM | [Sheet](four-sides.jpg) |
