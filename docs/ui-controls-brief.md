@@ -526,12 +526,16 @@ out, then the map flattens.
   time (daylight, no interface) and served as a static asset, so sharing costs nothing per
   visitor. A view on the Map outside City names the place in the title but uses the
   default image. A staged search View uses its own image and name.
-- **How:** the share link already carries the camera. The Worker reads `cam=` (or the Map
-  hash) and looks the point up in the static neighbourhood file, then rewrites the
-  `og:`/`twitter:` tags in `index.html` with HTMLRewriter, cached at the edge like the
-  page. It never renders anything per request. Links to one exact angle or train show
-  that neighbourhood's picture, not the exact frame; per-share snapshots would need
-  storage and are out of scope.
+- **How (no Worker, coordinator, 2026-11-24):** page loads stay free static assets, so
+  previews never run the Worker. The build writes one small static entry page per
+  neighbourhood, `/s/<slug>/index.html`: a copy of the app's `index.html` with that
+  place's `og:`/`twitter:` tags and image, which boots the app normally from the query
+  and hash it carries. The Share button looks the camera up in the client's neighbourhood
+  data and links to `/s/midtown/?view=city&cam=…`. Staged Views get their own pages
+  (`/s/view-<slug>/`). A point outside every neighbourhood links to the root, which
+  carries the default tags. Each entry page has `<link rel="canonical">` to the root.
+  Links to one exact angle or train show that neighbourhood's picture, not the exact
+  frame. Per-share snapshots would need storage and are out of scope.
 - **Share button:** copies the link (camera, time if shifted, and the selection); phones
   use the native share sheet with the same title.
 
