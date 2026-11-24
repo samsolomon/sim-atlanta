@@ -379,6 +379,7 @@ interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null; far: Mesh | n
  * is left at night 0; City sets the real value on its next frame. Run before City applies board
  * clipping.
  */
+/** `syncFar` builds far versions on the main thread, without a worker (tests). */
 export interface LandmarkBatchOptions { cellM?: number; name?: string; lod?: LandmarkLod | null; syncFar?: boolean }
 export interface LandmarkBatches {
   group: Group; stats: BatchStats; cells: Map<string, LandmarkCell>;
@@ -585,7 +586,10 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   sync();
   stats.ms = Math.round(performance.now() - t0);
   stats.lodMs = Math.round(stats.lodMs);
-  const farReady = lod && farJobs.length ? buildFar(farJobs, lod.minArea, stats, o.syncFar ?? false) : Promise.resolve();
+  // Far versions come from a worker, after the build. Without one (node tests) they are built only
+  // on request, so a scene built in a test does not change under it when a promise settles.
+  const farReady = lod && farJobs.length && (o.syncFar || typeof Worker !== 'undefined')
+    ? buildFar(farJobs, lod.minArea, stats, o.syncFar ?? false) : Promise.resolve();
   /** Streaming rings pick a cell's level; null hands it back to the distance rule. */
   const setCellDetail = (cell: string, level: CellDetail | null) => { const c = cells.get(cell); if (c) c.detail = level; };
   return { group, stats, cells, sync, setCellDetail, farReady };

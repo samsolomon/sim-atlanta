@@ -160,7 +160,7 @@ describe('batchLandmarks', () => {
       s.lamps.castShadow = s.lamps.receiveShadow = true;
       s.lamps.material.side = DoubleSide;
     }
-    const b = batchLandmarks(sites, container, { lod: { farM: 700, nearM: 600, minArea: 4 } });
+    const b = batchLandmarks(sites, container, { lod: { farM: 700, nearM: 600, minArea: 4 }, syncFar: true });
     container.add(b.group);
     container.updateMatrixWorld(true);
     const cell = [...b.cells.values()][0];
