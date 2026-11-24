@@ -1,4 +1,5 @@
 import type { GroundGrid } from '../terrain/grid';
+import type { TerrainQuality } from '../terrain/surface';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
@@ -13,7 +14,9 @@ const origin: P2 = [660, -2177];
 const crown: P2[] = [[-17.7, -13.9], [5, -12.6], [5.3, -2], [-18.3, -2.5]];
 const plant: P2[] = [[-14, -12], [-4, -11.5], [-4, -6], [-14, -6.5]];
 
-export function createLilliMidtown(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
+export function createLilliMidtown(buildings: VBuilding[], site: VBuilding, grid: GroundGrid, quality: TerrainQuality) {
+  // Low tier draws the curtain wall in double-width panes; high keeps the photographed module.
+  const high = quality === 'high';
   const parts = site.parts ?? [];
   const tower = parts.find(p => p.id === 'podium');
   const retail = parts.find(p => p.id === 'osm:way:1342535120');
@@ -48,20 +51,20 @@ export function createLilliMidtown(buildings: VBuilding[], site: VBuilding, grid
   edges(slab, (a, b, length) => {
     // The south face sits behind the retail strip for its first storey.
     const behindShop = (a[1] + b[1]) / 2 > 8;
-    if (!behindShop) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 5.6, 1, 3.4, 0.86, 0.84, storefront, 0.4);
+    if (!behindShop) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 5.6, 1, high ? 3.4 : 10, 0.86, 0.84, storefront, 0.4);
     const from = behindShop ? shop + 0.3 : datum + 6;
     litFacade(shell, seed, face++, a, b, from, roof - 0.6, Math.max(1, Math.round((roof - 0.6 - from) / 3.15)),
-      length > 20 ? 3 : 2.8, 0.93, 0.78, glass, 0.32);
+      high ? (length > 20 ? 3 : 2.8) : 6, 0.93, 0.78, glass, 0.32);
   });
   const top = ccw(crown);
   shell.prism(top, roof, crownTop, white, roofColor);
-  edges(top, (a, b) => litFacade(shell, seed, face++, a, b, roof + 0.3, crownTop - 0.5, 2, 3, 0.95, 0.85, glass, 0.4));
+  edges(top, (a, b) => litFacade(shell, seed, face++, a, b, roof + 0.3, crownTop - 0.5, 2, high ? 3 : 6, 0.95, 0.85, glass, 0.4));
   shell.prism(ccw(plant), crownTop, plantTop, '#c9c7c0', '#a3a39e');
   // Pool deck on the 78 m roof east of the amenity level.
   shell.prism(ccw([[7, -11], [19, -10.3], [18.6, -4], [7, -4.5]]), roof, roof + 0.05, '#5aa8c4', '#5aa8c4');
 
   const strip = local(retail.rings[0]);
   shell.prism(strip, shell.base, shop, '#d6d4cd', '#9c9a93');
-  edges(strip, (a, b) => litFacade(shell, seed, face++, a, b, datum + 0.4, shop - 0.6, 1, 3.4, 0.86, 0.86, storefront, 0.4));
+  edges(strip, (a, b) => litFacade(shell, seed, face++, a, b, datum + 0.4, shop - 0.6, 1, high ? 3.4 : 10, 0.86, 0.86, storefront, 0.4));
   return shell.finish('#f4d9a8', 0.62);
 }
