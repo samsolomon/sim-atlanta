@@ -1,5 +1,5 @@
 import { crownKey } from '../trees/rollout';
-import { daylightSlots, underpassMesh, type Underpass } from './underpass';
+import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
@@ -195,7 +195,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
-  const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero);
+  const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero, boardLines(options.underpass, paintCity.roads));
   if (trench) board.add(trench.mesh);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);

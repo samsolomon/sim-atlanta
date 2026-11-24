@@ -1,4 +1,37 @@
-# Handoff: studio-ground-contact (Claude → Codex, 2026-11-23)
+# Studio ground-contact handoff (Claude Opus, 2026-11-23)
+
+## Active work and merge hold
+
+**PR #399** `samsolomon/underpass-road-joins` — Smooth the North Avenue underpass joints. It is open and **held for Sam's OK**, which only the coordinator relays. The coordinator is `term_09e1b3da-…` on Sam's MacBook Air; reply to its welcome message `msg_3d5fda67006f`.
+
+Done and verified:
+- Board levelled at both mouths: `underpassGround` with `MOUTH_LEVEL_M`/`MOUTH_APPROACH_M`.
+- Ramp of `MOUTH_RAMP_M` = 20 m, following the board at 1 m across.
+- Fixed strip piece counts and a 0.4 m tucked apron.
+- The board's yellow line per carriageway carried through the cut (`boardLines`, `STREET_LINE`).
+- Median and kerbs tapering over 12 m.
+- Probe in `north-ave.test.ts`, which fails at baseline: step 1.40 → 0.045 m, vehicle 1.38 → 0.011 m, cross-fall 4.6 → 0.05 m, fold 43% → 4.3%, maximum grade 42% → 7.7%.
+- test:release, test:perf (low 85/90 programs) and audit:ground (+10 samples of 4 cm or less, all on the apron) were run, and two codex reviews found nothing.
+
+Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-na-*`. The cam strings are in the PR body.
+
+## Next steps
+1. Wait for Sam's OK via the coordinator. Rebase before merging (the build log conflicts routinely), then quote `gh pr view 399 --json state,mergeCommit`.
+2. Open scope question for the coordinator: the Connector deck crossings and 17th go through `bridge-approaches.ts`, the Connector agent's module. I haven't inspected the Brookwood ramps; ask before editing either.
+
+## Traps
+- **Camera targets inside a slot aim 26 m high.** City's `targetY` returns 0 where the board has no ground, so the view centres far beyond the point you asked for. Aim just outside the opening. The old `north-east`/`north-west` cams have this problem.
+- `__setView` zoom has no `cam=` equivalent; record both.
+- Capture helpers live in the session scratchpad (`shots.mjs`, `compose.mjs`); `/tmp/join-shots.mjs` is the original.
+- `.venv` now exists in this worktree, so the pipeline tests run.
+
+## Historical handoff
+
+The Codex → Claude checkpoint that preceded this (baseline captures, no fix) is in git history at 224b8e45.
+
+The following is the earlier Claude → Codex checkpoint. The active queue and coordinator above supersede it.
+
+### Handoff: studio-ground-contact (Claude → Codex, 2026-11-23)
 
 Worktree `studio-ground-contact`. Areas: terrain ground contact, depth range, low-tier terrain memory and triangles. Coordinator: `orca_session_id:1df827bc-6e12-4e74-b7da-83ee8931ec4b` (Sam's Air).
 
