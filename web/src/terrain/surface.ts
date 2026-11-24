@@ -11,7 +11,7 @@ export interface BuiltSurface {
   heights: Float32Array; minY: number;
   pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array;
   starts: Uint32Array; blockCols: number;
-  far?: { errorM: number; pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array };
+  far?: { errorM: number; lower?: boolean; pos: Float32Array; uv: Float32Array; normal: Float32Array; index: Uint32Array | Uint16Array };
 }
 
 export function surfaceSpec(grid: GroundGrid): SurfaceSpec {
@@ -122,7 +122,7 @@ export class GroundSurface {
   farGeometry(errorM: number, maxCellM = 160, lower = false) {
     const far = this.prebuiltFar;
     this.prebuiltFar = undefined;
-    if (far && far.errorM === errorM && maxCellM === 160 && !lower) {
+    if (far && far.errorM === errorM && maxCellM === 160 && !!far.lower === lower) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(far.pos, 3));
       g.setAttribute('uv', new THREE.BufferAttribute(far.uv, 2));

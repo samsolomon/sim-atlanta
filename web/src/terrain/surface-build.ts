@@ -485,16 +485,16 @@ function indexOf(indices: number[], vertexCount: number) {
  * (GroundYield) still happens on the main thread: yields carry floor functions.
  */
 export function buildSurfaceArrays(input: { spec: SurfaceSpec; heights: Float32Array; minY: number; quality: TerrainQuality;
-  openings?: readonly OpenSlot[]; join?: TerrainJoins; farErrorM?: number }) {
-  const { spec, heights, minY, quality, openings = [], join, farErrorM } = input;
+  openings?: readonly OpenSlot[]; join?: TerrainJoins; farErrorM?: number; farLower?: boolean }) {
+  const { spec, heights, minY, quality, openings = [], join, farErrorM, farLower = false } = input;
   const t = tessellate(spec, heights, quality, openings, join);
   const pos = new Float32Array(t.pos);
   const near = { pos, uv: new Float32Array(t.uv), normal: vertexNormals(pos, t.indices), index: indexOf(t.indices, pos.length / 3) };
   let far;
   if (farErrorM !== undefined) {
-    const f = farSurface(spec, heights, openings, farErrorM);
+    const f = farSurface(spec, heights, openings, farErrorM, 160, farLower);
     const fp = new Float32Array(f.pos);
-    far = { errorM: farErrorM, pos: fp, uv: new Float32Array(f.uv), normal: vertexNormals(fp, f.indices), index: indexOf(f.indices, fp.length / 3) };
+    far = { errorM: farErrorM, lower: farLower, pos: fp, uv: new Float32Array(f.uv), normal: vertexNormals(fp, f.indices), index: indexOf(f.indices, fp.length / 3) };
   }
   return { heights, minY, ...near, starts: t.starts, blockCols: t.blockCols, far };
 }

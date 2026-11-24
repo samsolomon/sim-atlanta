@@ -23,7 +23,7 @@ import { auburnTransport } from '../city/sweet-auburn-transport';
 import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
-import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, terrainOpenings } from '../terrain/model';
+import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, FAR_GROUND_SETTLED, terrainOpenings } from '../terrain/model';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
@@ -176,7 +176,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // synchronous area build, which then adopts it. Same triangles (terrain/surface.test.ts).
   const surfaces = surfaceWorker() ? await Promise.all(patches.map(({ id, grid }) => prebuildSurface(grid, quality,
     terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
-    joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined))) : undefined;
+    joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined, FAR_GROUND_SETTLED))) : undefined;
   signal.throwIfAborted();
   const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();

@@ -245,6 +245,12 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
  * skyline (~4.5 km) views are well beyond it, street views well inside.
  */
 export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
+/** The far level is settled below the DEM too, so it doesn't bury roads and roofs (37% of road
+ * samples by over 12 cm when it wasn't). `?perf&farsettle=0` draws the unsettled level. */
+export const FAR_GROUND_SETTLED = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  return !(p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('farsettle') === '0');
+})();
 /**
  * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
  * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
@@ -418,7 +424,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // the DEM, so it does not show stair or rail carves (sub-pixel at that range), and it is
   // built eagerly (2.9 MB across the rectangle) so a swap never stalls a frame.
   const nearGeometry = mesh.geometry;
-  const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M) : null;
+  const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, FAR_GROUND_SETTLED) : null;
   // Low tier, very far (VERY_FAR_M and out): the same far quadtree at VERY_FAR_ERROR_M, settled
   // below the DEM so nothing drawn on the ground is buried. Built lazily, one board per idle
   // slice, once the camera first passes VERY_FAR_BUILD_M; until then the far level stays.

@@ -118,6 +118,23 @@ it('swaps a low board to its far ground by distance, with hysteresis, and flags 
   } finally { vi.unstubAllGlobals(); }
 });
 
+/** The 2 m far level settled the same way: same triangles, nothing above the drawn heights inside. */
+async function checkSettled(errorM: number) {
+  let interior = 0, rim = 0;
+  for (const path of boards) {
+    const near = new GroundSurface(grid(path), 'low');
+    const plain = near.farGeometry(errorM), settled = near.farGeometry(errorM, 160, true);
+    expect(settled.index!.count, path).toBe(plain.index!.count);
+    expect(Math.abs(openLength(settled) - openLength(near.geometry)), path).toBeLessThan(1);
+    const r = aboveDem(settled, near, 160 + near.grid.manifest.stepM);
+    interior = Math.max(interior, r.interior); rim = Math.max(rim, r.rim);
+    plain.dispose(); settled.dispose(); near.geometry.dispose();
+  }
+  console.info('settled', errorM, { interior: +interior.toFixed(2), rim: +rim.toFixed(2) });
+  expect(interior).toBeLessThan(0.05);
+  expect(rim).toBeLessThanOrEqual(2 * errorM);
+}
+
 /** Largest height of the far mesh above the DEM at any node it covers, kept separately within
  * `band` of the board rim and away from it, so a rim residue can't mask an interior failure. */
 function aboveDem(g: BufferGeometry, near: GroundSurface, band: number) {
@@ -147,6 +164,7 @@ function aboveDem(g: BufferGeometry, near: GroundSurface, band: number) {
 
 it('settles the very-far ground below the DEM with exact rims, at a fifth of the far triangles', async () => {
   const { VERY_FAR_ERROR_M } = await import('./model');
+  await checkSettled(2);
   let far = 0, very = 0, rimWorst = 0, interiorWorst = 0, mb = 0;
   for (const path of boards) {
     const near = new GroundSurface(grid(path), 'low');
