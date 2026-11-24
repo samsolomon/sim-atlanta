@@ -32,3 +32,11 @@ it('breaks frames at the budget, reads it every frame, and records the longest s
   } finally { sliceInput.dragging = false; }
   expect(frames).toBe(10);
 });
+
+it('counts builds in progress for other background work to defer to', async () => {
+  const c = { t: 0 };
+  let seen = -1;
+  await runBudgeted(work(4, 2, c), { budgetMs: () => 2, nextFrame: async () => { seen = sliceInput.building; }, now: () => c.t });
+  expect(seen).toBe(1);
+  expect(sliceInput.building).toBe(0);
+});

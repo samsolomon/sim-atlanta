@@ -41,13 +41,17 @@ export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, ma
 /**
  * Set by City: `dragging` while the user drags the camera (background builds then take a
  * smaller share), and today's `dayOfYear`, so a sliced build dresses its trees for today.
+ * `building` counts sliced builds in progress (runBudgeted), for other background work to
+ * defer to.
  */
-export const sliceInput = { dragging: false, dayOfYear: 180 };
+export const sliceInput = { dragging: false, dayOfYear: 180, building: 0 };
 
 export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise<T> {
   const now = o.now ?? (() => performance.now());
   const nextFrame = o.nextFrame ?? (() => new Promise(r => requestAnimationFrame(r)));
   const st = o.stats;
+  sliceInput.building++;
+  try {
   let start = now(), deadline = start + o.budgetMs();
   for (;;) {
     const t = now();
@@ -67,6 +71,7 @@ export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise
       deadline = start + o.budgetMs();
     }
   }
+  } finally { sliceInput.building--; }
 }
 
 /** Yield after every unit (tests: proves a build is independent of where it yields). */
