@@ -559,15 +559,18 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     ? (x, z, cr) => !!namedReplace?.(x, z, cr) || rollout.replaced(x, z)
     : namedReplace;
   // Trees landmarks plant at their own height (1180 Peachtree's terrace crape myrtles).
-  const spots = landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
+  // A planting with its own size (Sifly Piazza's grove) is always a generic broadleaf; one
+  // without (1180's crapes) is the rollout's crape myrtle under ?trees=species.
+  const spots = landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number; heightM?: number; spreadM?: number }[] }).plantings ?? [])
     .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ);
   // Generic (the default): they join the row's generic crowns, appended so no colour seed moves,
   // as 4.5 m broadleaves (the species planting's size) standing on the roof, not the ground.
-  const genericSpots = drawTrees === 'generic' ? new Map(spots.map(p => [crownKey(p.x, p.z), p])) : null;
-  if (genericSpots?.size) streetTrees = [...streetTrees, ...spots.map(p => [p.x, p.z, 4.5, 2] as Tree)];
-  const sceneryGround = genericSpots?.size ? (x: number, z: number) => genericSpots.get(crownKey(x, z))?.y ?? groundAt(x, z) : groundAt;
-  const crownSize: World['crownSize'] = genericSpots?.size
-    ? (x, z) => genericSpots.has(crownKey(x, z)) ? { h: 4.5, r: 2, broadleaf: true } : rollout?.crownSize(x, z)
+  const sizeOf = (p: (typeof spots)[number]) => ({ h: p.heightM ?? 4.5, r: (p.spreadM ?? 4) / 2 });
+  const genericSpots = new Map(spots.filter(p => drawTrees === 'generic' || p.heightM !== undefined).map(p => [crownKey(p.x, p.z), p]));
+  if (genericSpots.size) streetTrees = [...streetTrees, ...[...genericSpots.values()].map(p => [p.x, p.z, sizeOf(p).h, sizeOf(p).r] as Tree)];
+  const sceneryGround = genericSpots.size ? (x: number, z: number) => genericSpots.get(crownKey(x, z))?.y ?? groundAt(x, z) : groundAt;
+  const crownSize: World['crownSize'] = genericSpots.size
+    ? (x, z) => { const p = genericSpots.get(crownKey(x, z)); return p ? { ...sizeOf(p), broadleaf: true } : rollout?.crownSize(x, z); }
     : rollout?.crownSize ?? null;
   const scenery = yield* buildScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
     replace, bd => homes.isHouse(bd.id), crownSize);
@@ -770,7 +773,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, (x, z) => rolloutY?.get(`${x},${z}`) ?? null, undefined,
       city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
     // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
-    planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
+    // A sized planting or the generic default draws in the row's generic trees instead.
+    planted = rolloutPlantings(spots.filter(p => !genericSpots.has(crownKey(p.x, p.z))), options.quality);
   };
   if (!options.deferTrees) commitTrees();
   const group = new THREE.Group();

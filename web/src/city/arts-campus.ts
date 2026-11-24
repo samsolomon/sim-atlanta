@@ -401,7 +401,7 @@ export function* buildArtsCampusLandmark(
     group.name = finished.group.name;
     group.add(finished.group, lawn.mesh, lawn.turf);
     // The board carves its drawn terrain under the granite steps.
-    return { ...finished, group, yields: lawn.yields };
+    return { ...finished, group, yields: lawn.yields, plantings: siflyGrove(groundAt) };
   } else memorial(shell);
   return shell.finish('#ffdab0', 0.68);
 }
@@ -448,4 +448,25 @@ function* peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
       cover.dispose();
     },
   };
+}
+
+/**
+ * Sifly Piazza's café grove (docs/arts-campus.md, People at Sifly Piazza): eight deciduous
+ * trees on a loose staggered grid among the tables, where the leaf-on aerial shows the
+ * canopy (local u −50…−28, v 16…30). Rows sit between the table rows (v 17, 21, 25) and off
+ * their columns, so every trunk stands at least 2.8 m from a table centre, clear of the
+ * chairs. At 9 m with a 6 m crown, the generic tree's crown starts about 3.7 m up, above the
+ * 2.65 m umbrellas. Count, spacing and size are illustrative: photographs show 6–10 trees.
+ */
+export const SIFLY_GROVE: readonly P2[] = [
+  [-45.75, 19], [-36.75, 19], [-30, 19],
+  [-50, 23], [-41.25, 23], [-32, 23],
+  [-45.75, 28], [-36.75, 28],
+];
+export function siflyGrove(groundAt: (x: number, z: number) => number | null) {
+  return SIFLY_GROVE.flatMap(([u, v]) => {
+    const x = 550 + u * 0.878 + v * 0.479, z = -3990 - u * 0.479 + v * 0.878;
+    const y = groundAt(x, z);
+    return y === null ? [] : [{ x, z, y, heightM: 9, spreadM: 6 }];
+  });
 }
