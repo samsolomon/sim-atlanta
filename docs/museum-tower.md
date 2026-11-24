@@ -40,7 +40,9 @@ Median rendered colour of glass pixels, by hue. All four come from the same clos
 
 ## Night
 
-Rooms light at 35% (30% in the crown band), chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`. Amber uplight strips run up the crown band's piers, as in the 2012 photograph. The penthouse is dark.
+Rooms light at 35% (30% in the crown band), chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`. The penthouse is dark.
+
+- **Crown uplighting (reported, 2012):** the evidence is one photograph, from the [Central Atlanta Progress article on the 20 October 2012 relighting](http://web.archive.org/web/20131007155138/http://www.atlantadowntown.com/article/museum-tower-has-a-new-look), so revisit it if newer night photos appear. City runs amber uplight strips up the crown band's piers, matching that photograph. Whether the lighting still runs today is unconfirmed.
 
 ## Captures
 
