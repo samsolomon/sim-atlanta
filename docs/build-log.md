@@ -3099,6 +3099,9 @@ On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down 
 
 On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)
 
+### 2026-11-23 — River birch starts with three stems and peeling bark
+
+River birch’s first A study pairs salmon-and-cream stems with an open crown of small green leaf cards. The bark first rendered as broad, regular stripes. Finer broken layers, a raised-looking edge and darker bases on large trees made it read closer to the papery reference. The mature clump uses 190 / 134 triangles with no new texture allocation. July Front luminance is 0.245 / 0.240 against the generic canopy’s 0.248. [Seasonal sheet, bark detail and 100–300 m views](log/ui/tree-species/options-river-birch.jpg). Lab study. Web rebuild only.
 ### 2026-11-23 — A frame spent twenty minutes in traffic
 
 At 14:00:44.6 in the downtown simulation, one car slot started its next trip.

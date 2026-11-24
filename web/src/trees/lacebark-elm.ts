@@ -1,6 +1,5 @@
 /** Lacebark elm (Ulmus parvifolia), an illustrative Atlanta street-tree study. */
-import * as THREE from 'three';
-import { SURFACE_GLSL } from '../materials/glsl';
+import { treeBarkMaterial } from './bark-material';
 import type { Habit } from './broadleaf';
 import { broadleafSpecies, keyedCalendar, type Look } from './looks';
 import { lerp3, type Seg } from './species';
@@ -72,17 +71,8 @@ export const lacebarkElm: typeof base = {
 
 /** The patches are in tree-local metres, so they follow the trunk through an instance's rotation. */
 function barkMaterial() {
-  const material = new THREE.MeshLambertMaterial({ vertexColors: true });
-  material.onBeforeCompile = shader => {
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vBarkMetres;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-vBarkMetres = position * vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz));`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nvarying vec3 vBarkMetres;\n${SURFACE_GLSL}`)
-      .replace('#include <color_fragment>', `#include <color_fragment>
+  return treeBarkMaterial('lacebark-elm-bark', /* glsl */ `
 vec2 barkUV = vec2(vBarkMetres.x + vBarkMetres.z * .83, vBarkMetres.y);
-float barkPx = max(length(dFdx(vBarkMetres)), length(dFdy(vBarkMetres)));
 float barkDetail = sfSee(.19, barkPx);
 if (barkDetail > 0.) {
   vec2 grain = barkUV * vec2(12., 7.);
@@ -95,9 +85,6 @@ if (barkDetail > 0.) {
   patches = mix(patches, pale, smoothstep(.65 - soft, .65 + soft, mottle));
   diffuseColor.rgb = mix(diffuseColor.rgb, patches, .85 * barkDetail);
 }`);
-  };
-  material.customProgramCacheKey = () => 'lacebark-elm-bark';
-  return material;
 }
 
 export const lacebarkElmLook: Look = {
