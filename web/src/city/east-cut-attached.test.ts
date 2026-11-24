@@ -41,7 +41,7 @@ describe('attached City passenger stock', () => {
     const fleet = new CityTrains([{line,elev:()=>5}],manifest,bounds,colors,[]);
     fleet.update([stock(700)],0);
     expect(fleet.surfaceCars).toBe(5);
-    for (const car of fleet.group.children) expect(car.position.y).toBeCloseTo(5.55);
+    for (const car of fleet.group.children.filter(c=>c.userData.trainId)) expect(car.position.y).toBeCloseTo(5.55);
   });
 });
 
