@@ -2,6 +2,7 @@ import { underpassFloor, underpassGround } from '../terrain/underpass';
 import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { midtownConnectorDecks, withoutLandBridgeTrees } from '../terrain/midtown-connector-decks';
+import { onFifthStreetPark } from '../terrain/fifth-street-park';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
 import { seventeenthAccess } from '../city/seventeenth-street';
 import { neighborhoodTrees, type NeighborhoodCanopy } from '../city/neighborhood-trees';
@@ -208,6 +209,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         deferTrees: true,
         // Sliced: dress the trees for today now, not in one pass when the section mounts.
         dayOfYear: budget ? sliceInput.dayOfYear : undefined,
+        fifthStreetPark: id in rowBounds ? context.trees.filter(([x, z]) => onFifthStreetPark(x, z)) as [number, number, number, number][] : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {

@@ -5,6 +5,7 @@ import { runSync, type Build } from '../core/slice';
  * GroundSurface (surface.ts) calls the same code, so both paths draw the same triangles.
  */
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
+import landbridgeFloors from '../../../pipeline/prototypes/midtown-connector/landbridge-floors.json';
 import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
@@ -59,10 +60,11 @@ export function nodeHeights(spec: SurfaceSpec, node: (row: number, col: number) 
     heights[i] = h === null ? NaN : h - sceneZeroNavd88M;
     if (h !== null) minY = Math.min(minY, heights[i]);
   }
-  // Occluded freeway pavement is inferred from class-2 returns at its portals.
-  // Apply the exposed-pavement interpolation before tessellation at either quality.
-  const patches: Record<string, number[][]> = underpassFloors;
-  for (const [i, navd] of patches[spec.sha256] ?? []) heights[i] = navd - sceneZeroNavd88M;
+  // Occluded freeway pavement is inferred from class-2 returns at its portals (the Connector's
+  // street decks, and the Fifth Street park deck in Midtown). Apply the exposed-pavement
+  // interpolation before tessellation at either quality.
+  for (const patches of [underpassFloors, landbridgeFloors] as Record<string, number[][]>[])
+    for (const [i, navd] of patches[spec.sha256] ?? []) heights[i] = navd - sceneZeroNavd88M;
   if (!Number.isFinite(minY)) throw new Error('Ground grid is empty');
   return { heights, minY };
 }

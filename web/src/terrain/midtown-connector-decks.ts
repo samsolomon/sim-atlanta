@@ -4,6 +4,7 @@ import approaches from '../city/fixtures/midtown-connector/approaches.json';
 import profiles from '../city/fixtures/midtown-connector/decks.json';
 import landbridges from '../city/fixtures/midtown-connector/landbridges.json';
 import type { TerrainCity, TransportRun } from './transport-data';
+import { FIFTH_PARK, onFifthStreetPark } from './fifth-street-park';
 import type { P2 } from '../vignette/geom';
 
 const walkways = new Set(['footway', 'pedestrian', 'steps', 'path', 'cycleway']);
@@ -12,9 +13,11 @@ const landingByEnds = new Map(landings.map(p => [endKey(p.start,p.end),p]));
 const surveyed = new Map(profiles.map(p => [endKey(p.start, p.end), p]));
 
 const landbridgeByRoad = new Map(landbridges.map(p => [endKey(p.start, p.end), p]));
-/** Fifth Street's park deck (Georgia Tech, 2007): about 24 m of roadway (two lanes, a turn lane,
- * bike lanes and a 24 ft sidewalk) between lawn and plaza decks; 51 m wide in all (lidar). */
-const LAND_BRIDGE = { road: { width: 24, lanes: 3, opposing: 1 }, plazaOffset: 18.5, plazaWidth: 13, blendM: 6 };
+/** Fifth Street's park deck (Georgia Tech, 2007; ASPIRE Winter 2008): a 48 ft (14.6 m) roadway
+ * between two 24 ft sidewalks. The landscaped decks beyond them are fifth-street-park.ts, which
+ * paints the lanes (so the run carries one undivided lane here). */
+const LAND_BRIDGE = { road: { width: 2 * FIFTH_PARK.roadHalf, lanes: 1, opposing: 0 },
+  plazaOffset: (FIFTH_PARK.roadHalf + FIFTH_PARK.walkOuter) / 2, plazaWidth: FIFTH_PARK.walkOuter - FIFTH_PARK.roadHalf, blendM: FIFTH_PARK.blendM };
 
 /** A polyline offset sideways (+ is left of travel). */
 function offset(pts: P2[], by: number): P2[] {
@@ -81,25 +84,10 @@ export function midtownConnectorDecks(city: TerrainCity): TerrainCity {
   return { ...city, terrainTransport: { ...transport, roads } };
 }
 
-/** The land bridges' outlines (their full measured width), to keep trees off the freeway below. */
-const landBridgeOutlines = landbridges.map(land => {
-  const pts = land.pts as P2[], half = LAND_BRIDGE.plazaOffset + LAND_BRIDGE.plazaWidth / 2;
-  return [...offset(pts, half), ...offset(pts, -half).reverse()];
-});
-function inside(x: number, z: number, ring: P2[]) {
-  let hit = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [ax, az] = ring[i], [bx, bz] = ring[j];
-    if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) hit = !hit;
-  }
-  return hit;
-}
-
-/** A Midtown row's canopy without crowns under a land bridge: the canopy map measures height
- * from the bare earth, the freeway below, so deck plantings would stand on the freeway and grow
- * through the deck. */
+/** A Midtown row's canopy without crowns on the Fifth Street park deck: the generic trees stand
+ * on bare earth, which there is the freeway below. The park plants them on the deck instead. */
 export function withoutLandBridgeTrees<C extends { trees: number[][]; treeLowCount?: number }>(context: C): C {
-  const keep = context.trees.map(([x, z]) => !landBridgeOutlines.some(ring => inside(x, z, ring)));
+  const keep = context.trees.map(([x, z]) => !onFifthStreetPark(x, z));
   if (keep.every(Boolean)) return context;
   const low = context.treeLowCount === undefined ? undefined : keep.slice(0, context.treeLowCount).filter(Boolean).length;
   return { ...context, trees: context.trees.filter((_, i) => keep[i]), treeLowCount: low };

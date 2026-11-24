@@ -81,6 +81,7 @@ import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
 import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
+import { fifthStreetPark } from './fifth-street-park';
 import { activeOval } from '../city/active-oval';
 import { buildHouseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
@@ -94,7 +95,7 @@ import { groundMap } from './ground-map';
 import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
-import { buildRolloutRow, rolloutPlantings, rolloutSpecies, treeMode } from '../trees/rollout-city';
+import { buildRolloutRow, rolloutPlantings, rolloutSpecies, treeMode, type Planting } from '../trees/rollout-city';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -128,6 +129,8 @@ export interface DowntownTerrainOptions {
    * frame. The result is the same: setSeason depends only on the day.
    */
   dayOfYear?: number;
+  /** Build the Fifth Street park deck here (a Midtown row), replanting these canopy crowns on it. */
+  fifthStreetPark?: Tree[];
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -478,6 +481,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   yield 'far ground';
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
+  const fifthPark = options.fifthStreetPark && fifthStreetPark(city.bounds, grid.manifest.vertical.sceneZeroNavd88M, groundAt, options.fifthStreetPark);
+  if (fifthPark) landmarks.push(fifthPark);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
   const originalFinish = options.finishFor;
@@ -515,15 +520,15 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     ? (x, z, cr) => !!namedReplace?.(x, z, cr) || rollout.replaced(x, z)
     : namedReplace;
   // Trees landmarks plant at their own height (1180 Peachtree's terrace crape myrtles).
-  const spots = landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
+  const spots = landmarks.flatMap(l => (l as { plantings?: Planting[] }).plantings ?? [])
     .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ);
   // Generic (the default): they join the row's generic crowns, appended so no colour seed moves,
   // as 4.5 m broadleaves (the species planting's size) standing on the roof, not the ground.
   const genericSpots = drawTrees === 'generic' ? new Map(spots.map(p => [crownKey(p.x, p.z), p])) : null;
-  if (genericSpots?.size) streetTrees = [...streetTrees, ...spots.map(p => [p.x, p.z, 4.5, 2] as Tree)];
+  if (genericSpots?.size) streetTrees = [...streetTrees, ...spots.map(p => [p.x, p.z, p.heightM ?? 4.5, (p.spreadM ?? 4) / 2] as Tree)];
   const sceneryGround = genericSpots?.size ? (x: number, z: number) => genericSpots.get(crownKey(x, z))?.y ?? groundAt(x, z) : groundAt;
   const crownSize: World['crownSize'] = genericSpots?.size
-    ? (x, z) => genericSpots.has(crownKey(x, z)) ? { h: 4.5, r: 2, broadleaf: true } : rollout?.crownSize(x, z)
+    ? (x, z) => { const p = genericSpots.get(crownKey(x, z)); return p ? { h: p.heightM ?? 4.5, r: (p.spreadM ?? 4) / 2, broadleaf: p.species !== 'loblolly-pine' } : rollout?.crownSize(x, z); }
     : rollout?.crownSize ?? null;
   const scenery = yield* buildScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
     replace, bd => homes.isHouse(bd.id), crownSize);
