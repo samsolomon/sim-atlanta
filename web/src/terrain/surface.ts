@@ -1,7 +1,8 @@
+import { type Build } from '../core/slice';
 import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { type OpenSlot } from './openings';
-import { farSurface, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
+import { farSurface, farSurfaceSteps, vertexNormalsSteps, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
 
 export { joinList, type GroundYield, type JoiningEdge, type TerrainJoins, type TerrainQuality } from './surface-build';
 
@@ -100,6 +101,24 @@ export class GroundSurface {
    * either neighbour exactly; cells over an opening are 5 m and clipped like the near mesh.
    * A cell whose edge borders finer cells fans from its centre node to keep them crack-free.
    */
+  /** farGeometry as a build that yields while it works (core/slice.ts): a far level built in the
+   * background must never hold a frame for a whole board. */
+  *farGeometrySteps(errorM: number, maxCellM = 160, lower = false): Build<THREE.BufferGeometry> {
+    const { pos, uv, indices } = yield* farSurfaceSteps(surfaceSpec(this.grid), this.heights, this.openings, errorM, maxCellM, lower);
+    yield 'far arrays';
+    const position = new Float32Array(pos);
+    yield 'far arrays';
+    const index = indices.length && pos.length / 3 > 65535 ? Uint32Array.from(indices) : Uint16Array.from(indices);
+    yield 'far normals';
+    const normal = yield* vertexNormalsSteps(position, index);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
+    geometry.setIndex(new THREE.BufferAttribute(index, 1));
+    return geometry;
+  }
+
   farGeometry(errorM: number, maxCellM = 160, lower = false) {
     const far = this.prebuiltFar;
     this.prebuiltFar = undefined;
