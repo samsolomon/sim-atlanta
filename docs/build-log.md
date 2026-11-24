@@ -3604,3 +3604,13 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+
+### 2026-11-24 · The houses that were built in the middle of a frame
+
+On the phone tier, flying north from Five Points stalled for a third of a second at a time. The phone-perf trace put every long task on route:north (268-589 ms at 6x CPU) in one place. When the camera crossed a house tile's 1 km switch, `HouseTile.update()`, called from inside three's render, built that tile's whole near World synchronously: every eave, porch, window and chimney for up to 422 houses.
+
+Now `update()` never builds. A tile within 1.4 km joins a queue. The nearest queued tile builds on the budgeted rAF queue that the very-far ground already uses: 3 ms a frame, 6 ms once the far version is standing in inside the switch, 1 ms while dragging. Each tile gets its own frames, and a tile that leaves range drops its build. The far version stays up until the near one is complete, so nothing pops in half-built. Two slow steps needed slicing too. The end of the build, copying the merged buffer and computing flat normals, was a single 6-13 ms step on the Studio. It now runs in chunks and gives the same bytes as `computeVertexNormals`. The building loop also yields every two houses instead of every six.
+
+route:north at 6x, three runs each on frozen builds: the longest task went from 318-463 ms with 7-9 tasks over 100 ms on main to 73-92 ms with none. The longest near-build slice is 14-24 ms at 6x. After a jump straight to a 700 m orbit, a 422-house tile shows its near houses 1.4 s after entering range. The default low view is unchanged (357 calls, 1.98 M triangles, 81 programs), and the settled near view matches main by day and at night.
+
+[Day: main | fix](log/perf/house-near/day-before.jpg) · [fix](log/perf/house-near/day-after.jpg) · [Night: main](log/perf/house-near/night-before.jpg) · [fix](log/perf/house-near/night-after.jpg)
