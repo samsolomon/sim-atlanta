@@ -1,11 +1,13 @@
 /**
- * Live MARTA buses in City (tier: live, real present only). Fixes come from the app's shared
- * LiveBuses feed (main.ts already polls /api/marta/bus once for Map and City, so City adds no
- * requests). Each new reported fix is snapped once to the nearest rendered street, through a
- * spatial index, then the bus glides there. Buses sit on the drawn surface: at-grade streets are
- * painted onto the terrain (groundAt); street bridges sample the drawn tread triangles through
- * createSurfaceTransport's deckAt. Stale fixes expire in LiveBuses; off the real present, or with
- * no feed, City shows no buses at all rather than guessing.
+ * MARTA buses in City, drawn as one instanced mesh. Fixes come from the app's shared LiveBuses
+ * feed (main.ts already polls /api/marta/bus once for Map and City, so City adds no requests).
+ * Route 49 is drawn by timetable-buses.ts: at the real present its fresh GPS steers each trip's
+ * bus and trips without GPS follow the timetable; off the present every trip follows the
+ * timetable. Other routes appear only at the real present: each new fix is snapped once to the
+ * nearest rendered street, through a spatial index, then the bus glides there. Buses sit on the
+ * drawn surface: at-grade streets are painted onto the terrain (groundAt); street bridges sample
+ * the drawn tread triangles through createSurfaceTransport's deckAt. Stale fixes expire in
+ * LiveBuses.
  */
 import * as THREE from 'three';
 import { roadWidth, type TerrainCity, type TransportRun } from '../terrain/transport-data';
@@ -174,7 +176,7 @@ export class CityBuses {
    * Call every frame. `fixes` is null off the real present or without a feed: nothing shown.
    * Otherwise the current (unexpired) fixes from the shared LiveBuses feed.
    */
-  update(fixes: LiveBus[] | null, now = performance.now()) {
+  update(fixes: LiveBus[] | null, now = performance.now(), limit = MAX) {
     this.positions.length = 0;
     if (!fixes) {
       this.shown.clear();
@@ -210,7 +212,7 @@ export class CityBuses {
     for (const id of [...this.rejected.keys()]) if (!live.has(id)) this.rejected.delete(id);
     let i = 0;
     for (const s of this.shown.values()) {
-      if (i >= MAX) break;
+      if (i >= limit) break;
       const p = this.lerp(s, now);
       const done = now - s.t0 >= GLIDE_MS;
       const run = done || s.from.run === s.to.run ? s.to.run : null;
@@ -234,8 +236,10 @@ export class CityBuses {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
+  /** Route 49 buses on their shapes (`fade` 1 = hidden), plus plain street-snapped fixes
+   * for other routes. Tracked poses keep their slots when the batch is full. */
   timetable(poses: readonly { id: string; point: BusLanePoint; fade?: number }[], raw: LiveBus[] | null = null) {
-    this.update(raw);
+    this.update(raw, performance.now(), Math.max(0, MAX - poses.length));
     for (const { id, point, fade } of poses) {
       const y = this.surface(point.x, point.z, point.run);
       if (y === null || this.mesh.count >= MAX) continue;

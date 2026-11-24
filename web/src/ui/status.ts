@@ -37,10 +37,13 @@ export interface Confidence {
   shifted: boolean;
 }
 
-export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeather: boolean, preview = false, loading = false, city = false): Confidence {
+export function confidence(s: Pick<LiveState, 'realTime' | 'rail'> & Partial<Pick<LiveState, 'buses'>>, observedWeather: boolean, preview = false, loading = false, city = false): Confidence {
+  // City at the present says Live while any live source draws: rail, or bus GPS
+  // (which steers Route 49; trips without it fall back to the timetable on their cards).
+  const live = s.rail === 'live' || (city && !!s.buses);
   return {
     // While City builds the scene isn't on screen yet: no word, a grey dot, never Live.
-    tier: loading ? 'loading' : s.realTime && (city || s.rail === 'live') ? 'live' : 'timetable',
+    tier: loading ? 'loading' : s.realTime && live ? 'live' : 'timetable',
     skyObserved: s.realTime && observedWeather && !preview,
     shifted: !s.realTime,
   };

@@ -5,9 +5,15 @@ import { TRAFFIC_EPOCH_MS } from './streetcar-traffic';
 export type BusSignal = CourseSignal & { dx: number; dz: number };
 export type BusQueue = (light: BusSignal, arrival: number) => {tail: number; count: number} | undefined;
 export const GPS_MAX_AGE_MS = 180_000;
+/** Farthest the drawn bus is steered ahead of the last fix, by its age and speed. */
 const TARGET_LEAD_M = 150;
+/** Gaps ahead of the drawn bus beyond this are closed by fading out and back in. */
 const RELOCATE_M = 300;
-const FADE_MS = 350;
+/** The drawn bus never reverses. Further behind it than this, it relocates. */
+const RELOCATE_BACK_M = 200;
+export const GPS_FADE_MS = 350;
+/** A drawn bus further behind its target than this skips modelled stop dwells. */
+const DWELL_GAP_M = 40;
 
 /** Tracks one vehicle on one directed GTFS shape. Distances are metres from
  * the route origin. GPS and traffic use independent clocks. */
@@ -26,11 +32,14 @@ export class GpsBus {
 
   constructor(s: number, at: number, speed: number | undefined, ms: number,
     private readonly stops: readonly number[], private readonly lights: readonly BusSignal[],
-    private readonly length: number) {
-    this.distance = this.reportDistance = s;
+    private readonly length: number, start?: number) {
+    this.reportDistance = s;
+    // Continuing a drawn bus (its timetable position) needs no fade-in.
+    this.distance = start ?? s;
     this.reportTime = at;
     this.speed = Math.min(16, speed ?? 0);
-    this.lastFrame = this.appeared = ms;
+    this.lastFrame = ms;
+    this.appeared = start === undefined ? ms : -Infinity;
     this.nextStop = this.nextLight = 0;
     this.resetGates();
   }
@@ -52,9 +61,9 @@ export class GpsBus {
     const target = this.reportDistance + Math.min(TARGET_LEAD_M, this.speed * Math.max(0, observationMs - at) / 1000);
     const dt = Math.max(0, Math.min(1, (ms - this.lastFrame) / 1000));
     this.lastFrame = ms;
-    if (Math.abs(target - this.distance) > RELOCATE_M) this.relocateAt ??= ms;
+    if (target - this.distance > RELOCATE_M || this.distance - target > RELOCATE_BACK_M) this.relocateAt ??= ms;
     if (this.relocateAt !== undefined) {
-      const fade = (ms - this.relocateAt) / FADE_MS;
+      const fade = (ms - this.relocateAt) / GPS_FADE_MS;
       if (fade < 1) return {s: this.distance, fade};
       this.distance = target;
       this.appeared = ms;
@@ -78,17 +87,21 @@ export class GpsBus {
       if (this.queueStop && time < this.queueStop.release) next = Math.min(next, this.queueStop.s);
       if (next >= line && nextGreen(light.key, light.axis, time) > time) next = line;
     }
+    while (this.stops[this.nextStop] !== undefined && this.stops[this.nextStop] <= this.distance) this.nextStop++;
     const stop = this.stops[this.nextStop];
     if (stop !== undefined && next >= stop) {
-      next = stop;
       this.nextStop++;
-      this.waitUntil = time + BUS_DWELL_S;
+      // Far behind its fix, the real bus has already served this stop: pass it.
+      if (gap <= DWELL_GAP_M) {
+        next = stop;
+        this.waitUntil = time + BUS_DWELL_S;
+      }
     }
     if (light && next > light.s - this.length / 2) {
       this.nextLight++;
       this.queueStop = undefined;
     }
     this.distance = next;
-    return {s: next, fade: Math.max(0, 1 - (ms - this.appeared) / FADE_MS)};
+    return {s: next, fade: Math.max(0, 1 - (ms - this.appeared) / GPS_FADE_MS)};
   }
 }

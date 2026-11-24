@@ -19,6 +19,15 @@ describe('confidence line', () => {
     expect(confidence({ realTime: true, rail: 'connecting' }, true).tier).toBe('timetable');
     expect(confidence({ realTime: true, rail: 'down' }, true).tier).toBe('timetable');
   });
+  it('reads Live in City at the present only while rail or bus GPS is live', () => {
+    const city = (rail: 'live' | 'down', buses: number | null) => confidence({ realTime: true, rail, buses }, true, false, false, true).tier;
+    expect(city('down', 120)).toBe('live');
+    expect(city('live', null)).toBe('live');
+    expect(city('down', null)).toBe('timetable');
+    expect(city('down', 0)).toBe('timetable');
+    expect(confidence({ realTime: false, rail: 'live', buses: 120 }, true, false, false, true).tier).toBe('timetable');
+    expect(confidenceWords(confidence({ realTime: true, rail: 'down', buses: 3 }, true, false, false, true), true)[0]).toBe('Live');
+  });
   it('separates live trains from an unobserved sky', () => {
     expect(confidenceWords(confidence(live, false))).toEqual(['Live trains', 'illustrative sky']);
     expect(confidenceWords(confidence(live, true, true))).toEqual(['Live trains', 'illustrative sky']);

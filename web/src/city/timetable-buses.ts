@@ -4,7 +4,7 @@ import { Line, type P2 } from '../vignette/geom';
 import { BUS_LENGTH } from '../vignette/xcelsior';
 import { makeProjector } from '../core/scene-data';
 import { busDistance, busTimeline } from './bus-timeline';
-import { GpsBus, GPS_MAX_AGE_MS } from './gps-bus';
+import { GpsBus, GPS_FADE_MS, GPS_MAX_AGE_MS } from './gps-bus';
 import type { CityBuses } from './buses';
 import { clusterSignals, courseSignals, type CourseSignal } from './traffic-signals';
 import type { TrafficCourse, RoadTrafficOptions } from './road-traffic';
@@ -94,16 +94,22 @@ function directedPath(
   return {
     at,
     needsRoad,
-    projectFix(x: number, z: number, bearing?: number) {
-      let best: {s: number; score: number} | undefined;
+    /** Closest point on this directed shape to a GPS fix within 65 m, scored by lateral
+     * offset, heading disagreement and, when `near` (the previous report's distance) is
+     * known, by distance from it, so a shape that passes near itself keeps its place. */
+    projectFix(x: number, z: number, bearing?: number, near?: number) {
+      let best: {s: number; score: number; lateral: number} | undefined;
       for (let i = 1; i < pts.length; i++) {
         const [ax, az] = pts[i - 1], dx = pts[i][0] - ax, dz = pts[i][1] - az;
         const f = Math.max(0, Math.min(1, ((x - ax)*dx + (z - az)*dz) / (dx*dx + dz*dz || 1)));
         const lateral = Math.hypot(x - ax - f*dx, z - az - f*dz);
         if (lateral > 65) continue;
-        const alignment = bearing === undefined ? 1 : Math.cos(bearing * Math.PI / 180 - Math.atan2(dx, dz));
-        const score = lateral + 30 * (1 - alignment);
-        if (!best || score < best.score) best = {s: shape.cum[i-1] + f * (shape.cum[i] - shape.cum[i-1]), score};
+        // GTFS bearing is clockwise from north, and scene north is −z.
+        const alignment = bearing === undefined ? 1 : Math.cos(bearing * Math.PI / 180 - Math.atan2(dx, -dz));
+        const s = shape.cum[i-1] + f * (shape.cum[i] - shape.cum[i-1]);
+        const jump = near === undefined ? 0 : Math.max(0, Math.abs(s - near) - 400) / 4;
+        const score = lateral + 30 * (1 - alignment) + jump;
+        if (!best || score < best.score) best = {s, score, lateral};
       }
       return best;
     },
@@ -206,82 +212,155 @@ export function createTimetableBuses(
     return activeAt(ms, activeService).flatMap(scheduled);
   }
 
-  const observations = new Map<string, {
-    at: number; x: number; z: number;
-    snaps: Map<PathModel, {s: number; score: number}>;
+  const ROUTE_49 = 'marta:route:49';
+  const editionTrips = new Set(data.tripIds ?? []);
+  interface Observation {
+    at: number; x: number; z: number; bearing?: number;
+    snaps: Map<PathModel, {s: number; score: number; lateral: number}>;
     trip?: string; driver?: GpsBus; path?: PathModel;
-  }>();
+  }
+  interface Candidate { fix: LiveBus; obs: Observation; is49: boolean; match?: Active; duplicate?: boolean }
+  const observations = new Map<string, Observation>();
+  // Last frame's present-clock state, for continuity between a trip's GPS and
+  // timetable drawings: where each fallback was, which trips were GPS-drawn,
+  // and when a trip that lost its GPS began fading in at its timetable place.
+  let fallbackWas = new Map<string, {path: PathModel; s: number}>();
+  let gpsWas = new Set<string>();
+  const fallbackSince = new Map<string, number>();
+
+  function observe49(fix: LiveBus): Observation {
+    let obs = observations.get(fix.id);
+    if (obs && obs.at === fix.at) return obs;
+    const [x, z] = project(fix.position.value.lon, fix.position.value.lat);
+    // Without a reported bearing, the motion since the last fix tells two-way
+    // streets' directions apart once the bus has moved.
+    let bearing = fix.bearing?.value;
+    if (bearing === undefined && obs && Math.hypot(x - obs.x, z - obs.z) > 15)
+      bearing = (Math.atan2(x - obs.x, -(z - obs.z)) * 180 / Math.PI + 360) % 360;
+    bearing ??= obs?.bearing;
+    const snaps: Observation['snaps'] = new Map();
+    for (const path of paths.values()) {
+      const snap = path.projectFix(x, z, bearing, obs?.snaps.get(path)?.s);
+      if (snap) snaps.set(path, snap);
+    }
+    obs = {...obs, at: fix.at!, x, z, bearing, snaps};
+    observations.set(fix.id, obs);
+    return obs;
+  }
+
+  /**
+   * Route 49 at the real present. Fresh GPS (≤ 3 min) steers its trip's bus; every
+   * active trip without one is drawn at its timetable position (`fallback`). Passes run
+   * in order so a weaker claim never displaces a stronger one: exact trip descriptors,
+   * then proximity for Route 49 reports without a descriptor this edition knows, then
+   * suppression of the nearest timetable twin of each still-unmatched Route 49 report.
+   * Other routes, and unknown routes that match no trip, keep the plain street snap.
+   */
   function presentAt(ms: number, observationMs: number, fixes: readonly LiveBus[], activeService?: (day: number) => void) {
     const active = activeAt(ms, activeService);
     const poses: Pose[] = [];
     const raw: LiveBus[] = [];
+    const candidates: Candidate[] = [];
+    for (const fix of fixes) {
+      const is49 = fix.routeId?.value === ROUTE_49;
+      if (fix.routeId && !is49) { raw.push(fix); continue; }
+      const fresh = fix.at !== null && observationMs >= fix.at && observationMs - fix.at <= GPS_MAX_AGE_MS;
+      // A stale Route 49 report yields to its trip's timetable position.
+      if (!fresh) { if (!is49) raw.push(fix); continue; }
+      candidates.push({fix, is49, obs: observe49(fix)});
+    }
+    const seen = new Set(candidates.map(c => c.fix.id));
+    for (const id of observations.keys()) if (!seen.has(id)) observations.delete(id);
+    candidates.sort((a, b) => b.fix.at! - a.fix.at! || a.fix.id.localeCompare(b.fix.id));
+
     const claimed = new Set<string>();
-    const fresh = fixes.filter(f => f.at !== null && observationMs >= f.at && observationMs - f.at <= GPS_MAX_AGE_MS);
-    const ids = new Set(fresh.map(f => f.id));
-    for (const id of observations.keys()) if (!ids.has(id)) observations.delete(id);
-    // Reserve descriptor matches before older workers' position-only reports.
-    for (const fix of [...fresh].sort((a,b) => Number(!!b.tripId) - Number(!!a.tripId) || b.at! - a.at! || a.id.localeCompare(b.id))) {
-      const is49 = fix.routeId?.value === 'marta:route:49';
-      if (!is49 && fix.routeId) { raw.push(fix); continue; }
-      let obs = observations.get(fix.id);
-      if (!obs || obs.at !== fix.at) {
-        const [x,z] = project(fix.position.value.lon, fix.position.value.lat);
-        const snaps = new Map<PathModel, {s:number; score:number}>();
-        for (const path of paths.values()) {
-          const snap = path.projectFix(x,z,fix.bearing?.value);
-          if (snap) snaps.set(path,snap);
-        }
-        obs = {...obs, at:fix.at!, x,z,snaps};
-        observations.set(fix.id, obs);
+    // 1. Exact descriptors. The freshest vehicle claiming a trip keeps it.
+    for (const c of candidates) {
+      if (!c.fix.tripId) continue;
+      const a = active.find(a => a.trip.rawId === c.fix.tripId &&
+        (!c.fix.startDate || Number(c.fix.startDate) === a.trip.serviceDate));
+      if (!a) continue;
+      if (claimed.has(a.trip.id)) { c.duplicate = true; continue; }
+      claimed.add(a.trip.id);
+      c.match = a;
+    }
+    // 2. Proximity, for Route 49 reports with no descriptor or one from another edition.
+    for (const c of candidates) {
+      if (c.match || c.duplicate || !c.is49 || (c.fix.tripId && editionTrips.has(c.fix.tripId))) continue;
+      let best = Infinity;
+      for (const a of active) {
+        const snap = c.obs.snaps.get(a.trip.path);
+        if (!snap || claimed.has(a.trip.id) || Math.abs(snap.s - a.s) > 500) continue;
+        const score = Math.abs(snap.s - a.s) + 4 * snap.score - (c.obs.trip === a.trip.id ? 150 : 0);
+        if (score < best) { best = score; c.match = a; }
       }
-      let match = active.find(a => a.trip.rawId && a.trip.rawId === fix.tripId &&
-        (!fix.startDate || Number(fix.startDate) === a.trip.serviceDate));
-      if (match && claimed.has(match.trip.id)) continue;
-      if (!match && is49 && !fix.tripId) {
-        let best = Infinity;
-        for (const a of active) {
-          const snap = obs.snaps.get(a.trip.path);
-          if (!snap || claimed.has(a.trip.id) || Math.abs(snap.s - a.s) > 500) continue;
-          const score = Math.abs(snap.s - a.s) + 4*snap.score - (obs.trip === a.trip.id ? 150 : 0);
-          if (score < best) { best = score; match = a; }
-        }
-      }
-      if (match) claimed.add(match.trip.id);
-      const path = match?.trip.path ?? (is49 ? [...obs.snaps].sort((a,b) => a[1].score-b[1].score)[0]?.[0] : undefined);
+      if (c.match) claimed.add(c.match.trip.id);
+    }
+    // 3. Draw every Route 49 report (and matched unknown-route report) on its shape.
+    const gpsNow = new Set<string>();
+    const unmatched: {obs: Observation; drawn: Point | null}[] = [];
+    for (const c of candidates) {
+      if (c.duplicate) continue;
+      const {fix, obs, match} = c;
+      if (!match && !c.is49) { raw.push(fix); continue; }
+      const path = match?.trip.path ?? [...obs.snaps].sort((a, b) => a[1].score - b[1].score)[0]?.[0];
       const snap = path && obs.snaps.get(path);
       let drawn: Point | null = null;
       if (path && snap) {
-        if (!obs.driver || obs.path !== path || obs.trip !== match?.trip.id) {
+        if (!obs.driver || obs.path !== path) {
           const stops = match?.trip.stops ?? table.patterns.find(p => paths.get(p.pathId) === path)?.dist ?? [];
-          obs.driver = new GpsBus(snap.s,fix.at!,fix.speed?.value,ms,stops,path.lights,BUS_LENGTH);
+          // Continue from where the trip's timetable bus was drawn last frame, if it was.
+          const prior = match && fallbackWas.get(match.trip.id);
+          obs.driver = new GpsBus(snap.s, fix.at!, fix.speed?.value, ms, stops, path.lights, BUS_LENGTH,
+            prior && prior.path === path ? prior.s : undefined);
         }
         obs.path = path;
         obs.trip = match?.trip.id;
         const drive = obs.driver.update(snap.s, fix.at!, fix.speed?.value, observationMs, ms,
-          (l,t) => queueAt?.(l.key,l.axis,l.dx,l.dz,t));
+          (l, t) => queueAt?.(l.key, l.axis, l.dx, l.dz, t));
         drawn = path.at(drive.s);
-        if (drawn) poses.push({id: match?.trip.id ?? fix.id, point:drawn, fix,
-          headsign:match?.trip.headsign ?? '', start:match?.trip.start ?? 0, serviceDate:match?.trip.serviceDate ?? 0,
-          offset:Math.hypot(drawn.x-obs.x,drawn.z-obs.z), fade:drive.fade});
+        if (drawn) {
+          poses.push({id: match?.trip.id ?? fix.id, point: drawn, fix,
+            headsign: match?.trip.headsign ?? '', start: match?.trip.start ?? 0, serviceDate: match?.trip.serviceDate ?? 0,
+            offset: Math.hypot(drawn.x - obs.x, drawn.z - obs.z), fade: drive.fade});
+          if (match) gpsNow.add(match.trip.id);
+        }
       }
       if (!drawn) raw.push(fix);
-      if (!match) {
-        // A report without a usable trip descriptor must not create a second
-        // bus at the same stop. Suppress only its closest eligible neighbour.
-        let nearest: Active | undefined, best = 150;
-        for (const a of active) {
-          if (!a.point || claimed.has(a.trip.id)) continue;
-          const d = Math.min(Math.hypot(a.point.x-obs.x,a.point.z-obs.z),
-            drawn ? Math.hypot(a.point.x-drawn.x,a.point.z-drawn.z) : Infinity);
-          if (d < best) { best=d; nearest=a; }
-        }
-        if (nearest) claimed.add(nearest.trip.id);
+      if (!match) unmatched.push({obs, drawn});
+    }
+    // 4. A Route 49 report without a trip must not stand beside a timetable twin.
+    for (const {obs, drawn} of unmatched) {
+      let nearest: Active | undefined, best = 150;
+      for (const a of active) {
+        if (!a.point || claimed.has(a.trip.id)) continue;
+        const d = Math.min(Math.hypot(a.point.x - obs.x, a.point.z - obs.z),
+          drawn ? Math.hypot(a.point.x - drawn.x, a.point.z - drawn.z) : Infinity);
+        if (d < best) { best = d; nearest = a; }
       }
+      if (nearest) claimed.add(nearest.trip.id);
     }
-    for (const a of active) if (!claimed.has(a.trip.id)) {
-      for (const pose of scheduled(a)) poses.push({...pose, fallback:true});
+    // 5. Timetable fallback for every unclaimed trip. One that just lost its GPS fades in.
+    const fallbackNow = new Map<string, {path: PathModel; s: number}>();
+    for (const a of active) {
+      if (claimed.has(a.trip.id)) { fallbackSince.delete(a.trip.id); continue; }
+      fallbackNow.set(a.trip.id, {path: a.trip.path, s: a.s});
+      if (gpsWas.has(a.trip.id)) fallbackSince.set(a.trip.id, ms);
+      const since = fallbackSince.get(a.trip.id);
+      const fade = since === undefined ? 0 : Math.max(0, 1 - (ms - since) / GPS_FADE_MS);
+      if (!fade) fallbackSince.delete(a.trip.id);
+      for (const pose of scheduled(a)) poses.push({...pose, fallback: true, fade});
     }
-    return {poses,raw};
+    fallbackWas = fallbackNow;
+    gpsWas = gpsNow;
+    return {poses, raw};
+  }
+  function resetPresent() {
+    observations.clear();
+    liveHistory.clear();
+    fallbackWas = new Map();
+    gpsWas = new Set();
+    fallbackSince.clear();
   }
   const samples = new Map<number, Pose[]>();
   type Footprint = { x: number; z: number; y: number; a: number };
@@ -343,7 +422,7 @@ export function createTimetableBuses(
       last: Math.max(...table.services.flatMap((s) => [s.end, ...s.added])),
     },
     posesAt, presentAt,
-    resetPresent() { observations.clear(); liveHistory.clear(); },
+    resetPresent,
     blocksFor,
     observe,
     setQueue(fn: typeof queueAt) {
