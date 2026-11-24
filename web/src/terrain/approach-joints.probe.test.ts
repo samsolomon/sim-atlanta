@@ -18,6 +18,9 @@ import { GroundSurface } from './surface';
 import { triangleHeight } from './tread-height';
 import type { TerrainCity } from './transport-data';
 import { underpassGround } from './underpass';
+import { createSurfaceTransport } from './transport';
+import { Line } from '../vignette/geom';
+import { roadWidth } from './transport-data';
 
 const root = new URL('../../../pipeline/prototypes/', import.meta.url);
 const staged = new URL('../../public/data/scene/downtown/vignette.json', import.meta.url);
@@ -84,6 +87,36 @@ export function measure(id: string, quality: 'low' | 'high') {
     const cam = [Math.round(tx), Math.round(tz), bearing, 60, 160];
     return { id, name: j.name, step, pen, fold, cam };
   });
+  // Deck runs that land on the board directly (Midtown and Brookwood ramps, decks).
+  const transport = createSurfaceTransport(city, grid, approach.groundAt);
+  const runs = city.terrainTransport?.roads ?? [];
+  const nodes = new Map<string, number>();
+  for (const r of runs) for (const p of [r.pts[0], r.pts.at(-1)!]) nodes.set(p.join(','), (nodes.get(p.join(',')) ?? 0) + 1);
+  const b = city.bounds;
+  for (const run of runs) {
+    if (run.kind !== 'bridge' || run.pts.length < 2) continue;
+    const line = new Line(run.pts);
+    for (const end of [0, 1]) {
+      const p = end ? run.pts.at(-1)! : run.pts[0];
+      if ((nodes.get(p.join(',')) ?? 0) > 1 || p[0] === b.minX || p[0] === b.maxX || p[1] === b.minZ || p[1] === b.maxZ) continue;
+      const at = line.at(end ? line.length : 0), out = end ? 1 : -1;
+      const half = roadWidth(run) / 2 - 0.3;
+      let step = 0, cross = 0, n = 0;
+      for (let k = 0; k <= 16; k++) {
+        const off = -half + (2 * half * k) / 16;
+        const x = at.x + off * at.nx, z = at.z + off * at.nz;
+        const inside = transport.deckAt(x - out * at.dx * 0.1, z - out * at.dz * 0.1, run);
+        const outside = approach.groundAt(x + out * at.dx * 0.1, z + out * at.dz * 0.1);
+        if (inside === null || outside === null) continue;
+        n++;
+        step = Math.max(step, Math.abs(inside - outside));
+      }
+      const centre = approach.groundAt(at.x, at.z);
+      for (const off of [-half, half]) { const g = approach.groundAt(at.x + off * at.nx, at.z + off * at.nz); if (g !== null && centre !== null) cross = Math.max(cross, Math.abs(g - centre)); }
+      if (n) rows.push({ id, name: 'run ' + (run.name ?? run.cls) + ' ' + p.map(Math.round).join(','), step, pen: 0, fold: cross, cam: [Math.round(at.x + out * at.dx * 6), Math.round(at.z + out * at.dz * 6), Math.round((-Math.atan2(out * at.dx, out * at.dz) * 180) / Math.PI), 60, 160] });
+    }
+  }
+  transport.dispose();
   const tris = pos.count / 3;
   approach.geometry.dispose(); approach.walls.dispose(); surface.geometry.dispose();
   return { rows, tris };
@@ -93,6 +126,6 @@ it('probes approach joints', () => {
   for (const q of ['high'] as const) for (const id of BOARDS) {
     const { rows, tris } = measure(id, q);
     console.log(q, id, 'joints', rows.length, 'tris', tris);
-    for (const r of rows) console.log('  ', r.name, 'step', r.step.toFixed(2), 'pen', r.pen.toFixed(2), 'fold', r.fold.toFixed(2), 'cam', r.cam.join(','));
+    for (const r of rows) if (!/footway|pedestrian|service|steps|cycleway|path/.test(r.name)) console.log('  ', id, r.name, 'step', r.step.toFixed(2), 'pen', r.pen.toFixed(2), 'fold', r.fold.toFixed(2), 'cam', r.cam.join(','));
   }
 }, 300000);

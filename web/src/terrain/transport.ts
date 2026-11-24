@@ -18,6 +18,9 @@ import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
 type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
+/** Road tread over its support; a landing deck settles from this to 2 cm at the board. */
+const DECK_LIFT = .12, LANDING_BAND_M = 1.5;
+
 export interface FreightTreadPoint {
   s: number;
   position: THREE.Vector3;
@@ -228,6 +231,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const row=sectionAt(ribbon,alongOn(ribbon,[p.x,p.z]).s);
       return stripePoint(row,.5-off/travelWidth);
     }
+    // A road deck that lands on the board, not on another deck or the board's edge,
+    // follows the board across its width and settles to 2 cm over the last seam.
+    const lands = [bridge && !profile && use === 'road' && !startCut && firstSupport === null,
+      bridge && !profile && use === 'road' && !endCut && lastSupport === null];
+    const landing = (s: number) => (DECK_LIFT - .02) * Math.max(
+      lands[0] ? Math.max(0, 1 - s / seam) : 0, lands[1] ? Math.max(0, 1 - (line.length - s) / seam) : 0);
     const inferred = new Map<number, number>();
     if (bridge && !profile) {
       // Sample the full tread width. Smooth the minimum upward along the span
@@ -350,7 +359,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
           if (textured) y = freightGrade(x, z, y);
-          section.push([x, y + lift, z]);
+          section.push([x, y + lift - landing(s), z]);
         }
         if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; ballast = null; continue; }
         if (range && range.every(Number.isFinite)) {
@@ -447,9 +456,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const color = ribbon ? PAL.asphaltHwy : sidepath ? pathConcrete : walkway ? PAL.sidewalk : PAL.asphalt;
       // At a deck toe the two shoulders and the center follow different
       // triangles of bare earth. Carry that crossfall into the pavement mesh.
-      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : 1;
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : lands.some(Boolean) ? Math.ceil(width / LANDING_BAND_M) : 1;
       for (let i = 0; i < bands; i++) {
-        strip(width * (.5 - i/bands), width * (.5 - (i+1)/bands), .12, color,
+        strip(width * (.5 - i/bands), width * (.5 - (i+1)/bands), DECK_LIFT, color,
           walkway ? .4 : .95, false, false, i === 0, i+1 === bands);
       }
       if (roadTop.length) roadTreads.set(owner, [...(roadTreads.get(owner) ?? []), ...roadTop]);
