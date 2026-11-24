@@ -3,25 +3,30 @@ export interface OpenSlot {
   start: readonly [x: number, bedY: number, z: number];
   end: readonly [x: number, bedY: number, z: number];
   halfWidthM: number;
+  crossAxis?: readonly [number, number];
 }
 
 type Plane = (x: number, y: number, z: number) => number;
 
-export function slotPlanes({ start, end, halfWidthM }: OpenSlot) {
+export function slotPlanes({ start, end, halfWidthM, crossAxis }: OpenSlot) {
   const [x, y, z] = start;
   const dx = end[0] - x, dy = end[1] - y, dz = end[2] - z;
   const length = Math.hypot(dx, dz);
   if (![...start, ...end, halfWidthM].every(Number.isFinite) || !length || halfWidthM <= 0) {
     throw new Error('Invalid open-slot segment');
   }
-  const along = (px: number, pz: number) => ((px - x) * dx + (pz - z) * dz) / length;
-  const across = (px: number, pz: number) => ((px - x) * dz - (pz - z) * dx) / length;
+  const [vx, vz] = crossAxis ?? [dz / length, -dx / length];
+  const determinant = dx * vz - dz * vx;
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-9 || Math.abs(Math.hypot(vx,vz)-1) > 1e-5)
+    throw new Error('Invalid open-slot cross axis');
+  const along = (px: number, pz: number) => ((px - x) * vz - (pz - z) * vx) * length / determinant;
+  const across = (px: number, pz: number) => (dx * (pz - z) - dz * (px - x)) / determinant;
   const planes: Plane[] = [
     (px, _y, pz) => along(px, pz), (px, _y, pz) => length - along(px, pz),
     (px, _y, pz) => halfWidthM - across(px, pz), (px, _y, pz) => halfWidthM + across(px, pz),
     (px, py, pz) => py - (y + along(px, pz) * dy / length) - 1e-6,
   ];
-  const wx = halfWidthM * Math.abs(dz) / length, wz = halfWidthM * Math.abs(dx) / length;
+  const wx = halfWidthM * Math.abs(vx), wz = halfWidthM * Math.abs(vz);
   return { planes, minX: Math.min(x, end[0]) - wx, maxX: Math.max(x, end[0]) + wx,
     minZ: Math.min(z, end[2]) - wz, maxZ: Math.max(z, end[2]) + wz };
 }
