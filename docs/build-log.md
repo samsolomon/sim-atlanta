@@ -3078,6 +3078,14 @@ Map and City now share one tab. The 3D button and tilt control use the existing 
 
 With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
 
+### 2026-11-23 — Six more species in Midtown and Ansley
+
+The first 300 replacements include 89 willow oaks, 83 water oaks, 51 southern magnolias, 41 white oaks, 19 flowering dogwoods and 17 American elms. The Beverly Road island has a specimen elm. On November 20 the elm is bare. Its leaf carpet crossed the island curb, so we removed the carpet for this planting at both tiers. At low detail the integrated all-12-area default view adds 8 draw calls and 1,117 submitted triangles. The pan adds 9 calls and 1,701 triangles. Both comparisons use the same 384 × 692 drawing buffer.
+
+[The Prado by day](log/ui/tree-species/round-two/prado-day.jpg) and [at night](log/ui/tree-species/round-two/prado-night.jpg) use camera 1194,-4352,20,50,420. [Beverly by day](log/ui/tree-species/round-two/beverly-day.jpg) and [at night](log/ui/tree-species/round-two/beverly-night.jpg) use 1306,-4827,20,50,160. These are illustrative replacements at the existing canopy positions.
+
+On the Galaxy A16 the default view measured 23.2 fps for the baseline and 23.9 fps for the frozen tranche. Pan runs ranged from 11.9 to 25.6 fps across the three configurations and the harness lost its CDP connection during testing. The coordinator accepted the default result and deferred the pan comparison to the next release candidate.
+
 ### 2026-11-23 — Grant Street runs beneath the CSX yard
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
