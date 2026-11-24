@@ -92,7 +92,7 @@ const models = {
   freightCenterbeamEmpty: '73-foot centerbeam · empty',
   freightGondolaScrap: '52-foot mill gondola · scrap',
   freightGondolaEmpty: '52-foot mill gondola · empty',
-  freightIntermodal: 'Intermodal train · 20 wells',
+  freightIntermodal: 'Intermodal train · 20 cars',
   freightWellA: '53-foot double-stack well car',
   freightWellB: '53-foot well car · blue over grey',
   freightWellC: '53-foot well car · single stack',
@@ -184,7 +184,7 @@ const platformParam = new URLSearchParams(location.search).get('platform');
 let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
 let station: ReturnType<typeof createPlatformScene> | undefined;
 /** The intermodal strip's batches, which `build()` tears down like `cars`. */
-let strip: { dispose(): void } | undefined;
+let strip: { group: THREE.Group; dispose(): void } | undefined;
 const STRIP_CARS = 20;
 
 /**
@@ -213,7 +213,7 @@ function buildIntermodalStrip() {
   }
   const draws = batches.finish();
   scene.add(batches.group);
-  strip = { dispose() { batches.dispose(); material.dispose(); } };
+  strip = { group: batches.group, dispose() { batches.dispose(); material.dispose(); } };
   return { slot, draws, length: total };
 }
 type LabTrees = { group: THREE.Object3D; setSeason(doy: number): void; dispose(): void; update?(dt: number, camera: THREE.Camera): void; setNight?(n: number): void; draws?: number | (() => number) };
@@ -784,18 +784,26 @@ function fitModel(animate: boolean) {
       box.min.z = box.max.z - .35 * (box.max.z - box.min.z);
     }
   } else {
-    for (const part of [...cars, figure?.group, houseScene?.group, materialScene?.group, landscape?.group, trees?.group])
+    for (const part of [...cars, strip?.group, figure?.group, houseScene?.group, materialScene?.group, landscape?.group, trees?.group])
       if (part) box.expandByObject(part);
   }
   if (box.isEmpty()) return;
   const preset = presets[activePreset];
   const direction = new THREE.Vector3(...preset.pos).sub(new THREE.Vector3(...preset.target)).normalize();
+  const stripLength = strip && activePreset === '¾ front' ? box.max.z - box.min.z : 0;
+  if (stripLength) {
+    // Frame the leading wells at +Z; the following cars recede behind this group.
+    box.min.z = Math.max(box.min.z, box.max.z - 4 * (FREIGHT_LENGTH.wellA + COUPLER_GAP));
+    direction.set(-0.7, 0.35, 1).normalize();
+  }
   const horizontal = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
   const vertical = direction.clone().cross(horizontal);
   const centre = box.getCenter(new THREE.Vector3());
   // Perspective makes the near cab wider than the far end. Fit the projected
   // rectangle and centre its silhouette, instead of centring the 3D box midpoint.
   const pixels = stage.height / (2 * Math.tan(THREE.MathUtils.degToRad(preset.fov / 2)));
+  // Keep room to zoom the full strip into the available panel space from the lead-end target.
+  if (stripLength) camera.far = Math.max(camera.far, stripLength * (2 + 4 * pixels / width));
   const corners: THREE.Vector3[] = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
     const corner = new THREE.Vector3(x, y, z).sub(centre);
@@ -1054,7 +1062,7 @@ function selectModel(id: Model) {
   history.replaceState(history.state, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['consists', ['freightIntermodal']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;

@@ -3773,3 +3773,9 @@ size. The space beside the artwork was 126 px wide. Letting the title and artist
 kept the full names visible while preserving 44 px playback controls. The phone capture
 pairs the longest title and artist strings to stress-test the available space.
 [Large-text phone preview](log/ui/radio-presets/phone-large-text.png)
+
+### 2026-11-24 · Fitting 20 well cars in the embedded Model Lab
+
+The standalone lab showed its 473 m intermodal train, but the embedded view opened with the camera and target both at the origin, looking under a car. The strip draws all 20 wells as one instanced group, and the embedded camera measured the individual-car list, which was empty. The camera now measures the instanced group with the same panel-aware fit as the other models. The Vehicles picker also lists the strip. At 1440 × 900 the entire consist fits between the open panels, and picking the 50-foot boxcar still gives the same camera and target to numerical precision. [Before](log/intermodal-picker/before-direct.jpg) · [After](log/intermodal-picker/after-direct.jpg) · [Selected through Vehicles](log/intermodal-picker/after-intermodal.jpg)
+
+In the closer composition, the 20-car train has its own Consists entry. The opening camera fits the lead four wells from ahead of the train and leaves enough depth to zoom back to all 473 m. The remaining 16 wells recede along the same track. The full-length Side view remains available. Identical picker selections at 1440 × 900 and 390 × 844 show why the full fit was hard to read on a phone. [Desktop openings](log/intermodal-picker/desktop-opening.jpg) · [Phone openings](log/intermodal-picker/phone-opening.jpg) · [Phone zoom-out](log/intermodal-picker/phone-zoom.jpg)
