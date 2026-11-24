@@ -569,13 +569,14 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
   // Off the board (null ground) a quad is simply not drawn.
   const y = (x: number, z: number, lift: number) => { const v = ground(x, z); return v === null ? null : v + lift; };
   // A flat strip draped on the ground between two points, `w` wide.
-  const strip = (a: P2, c: P2, w: number, color: string) => {
+  const strip = (a: P2, c: P2, w: number, color: string, endHeight?: number) => {
     const len = Math.hypot(c[0] - a[0], c[1] - a[1]);
     if (len < .5) return;
     const ux = (c[0] - a[0]) / len, uz = (c[1] - a[1]) / len, nx = -uz * w / 2, nz = ux * w / 2, n = Math.ceil(len);
     for (let k = 0; k < n; k++) {
       const p0 = [a[0] + ux * len * k / n, a[1] + uz * len * k / n], p1 = [a[0] + ux * len * (k + 1) / n, a[1] + uz * len * (k + 1) / n];
       const ys = [y(p0[0] + nx, p0[1] + nz, .04), y(p1[0] + nx, p1[1] + nz, .04), y(p1[0] - nx, p1[1] - nz, .04), y(p0[0] - nx, p0[1] - nz, .04)];
+      if (endHeight !== undefined && k === n - 1) ys[1] = ys[2] = endHeight;
       if (ys.some(v => v === null)) continue;
       b.quad([p0[0] + nx, ys[0]!, p0[1] + nz], [p1[0] + nx, ys[1]!, p1[1] + nz], [p1[0] - nx, ys[2]!, p1[1] - nz], [p0[0] - nx, ys[3]!, p0[1] - nz], color);
     }
@@ -601,13 +602,13 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     const walk=reach(mainDoor[0],mainDoor[1],n[0],n[1]);
     const cls=classes.get(p.id);
     const terrace=high && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
-      ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkEnd:porchDepth+walk,
+      ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkStart:porchDepth,walkEnd:porchDepth+walk,
         newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
     if(terrace){yields.push(...terrace.yields);terraceSites.push({id:p.id,at:terrace.at,triangles:terrace.triangles});}
     for (const ds of p.doors) {
       const door = at(ds, porchDepth), w = reach(door[0], door[1], n[0], n[1]);
       const end=terrace && ds===p.doorS ? at(ds,terrace.walkStop) : at(ds,porchDepth+w);
-      if (w > 1 && !stripBlocked(door,end,1.2)) strip(door,end,1.2,WALK);
+      if (w > 1 && !stripBlocked(door,end,1.2)) strip(door,end,1.2,WALK, ds === p.doorS ? terrace?.stairTop : undefined);
     }
     // Driveway on the side away from the door, along the side wall and out to the street.
     const side = p.doorS <= 0 ? 1 : -1, dx = side * (len / 2 + 1.8);

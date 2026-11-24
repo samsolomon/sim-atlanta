@@ -6,11 +6,13 @@ import type { TerrainCity } from '../terrain/transport-data';
 export function yardTerrace(b: Builder, o: {
   at(s:number,d:number):P2; ground(x:number,z:number):number|null;
   clear(a:P2,c:P2,width:number):boolean; street(x:number,z:number):number;
-  width:number; door:number; walkEnd:number; newer:boolean; piers:boolean;
+  walkStart?:number; width:number; door:number; walkEnd:number; newer:boolean; piers:boolean;
   bounds:TerrainCity['bounds']; trees:readonly (readonly number[])[];
 }) {
   const half=Math.min(o.width*.45,6),gap=.85,front=o.walkEnd-.2,back=front-2.2;
   if(o.walkEnd<6 || Math.abs(o.door)+gap+.8>half)return null;
+  if(o.walkStart !== undefined && (back - o.walkStart < .5 ||
+    !o.clear(o.at(o.door,o.walkStart),o.at(o.door,back),1.2)))return null;
   const entry=o.at(o.door,o.walkEnd),house=o.at(o.door,0);
   const low=o.ground(...entry),houseY=o.ground(...house);
   const ys=[o.at(-half,back),o.at(half,back)].map(p=>o.ground(...p));
@@ -67,5 +69,5 @@ export function yardTerrace(b: Builder, o: {
   const a=o.at(o.door,o.walkEnd),c=o.at(o.door,back),dx=c[0]-a[0],dz=c[1]-a[1],len2=dx*dx+dz*dz;
   const yields:GroundYield[]=[...shelves.map(ring=>({ring,floor:()=>top-.04})),
     {ring:stairs,floor:(x,z)=>low+rise*((x-a[0])*dx+(z-a[1])*dz)/len2-riser-.05}];
-  return {yields,walkStop:back,at:entry,triangles:(b.pos.length-start)/9};
+  return {yields,stairTop,walkStop:back,at:entry,triangles:(b.pos.length-start)/9};
 }

@@ -226,11 +226,30 @@ it('adds terraced yards only for detached Ansley houses on the high tier', () =>
   const b=house('terrace-fixture',rect(12,10,1200,-4000));
   const c={...city([b]),bounds:{minX:1000,maxX:1400,minZ:-4200,maxZ:-3800},
     roads:[{cls:'residential',name:'Test St',bridge:false,tunnel:false,pts:[[1100,-4020],[1300,-4020]]}]} as TerrainCity;
-  const ground=(_x:number,z:number)=>(z+4020)*.15;
+  const ground=(x:number,z:number)=>(z+4020)*.15+(x-1200)*.1;
   for(const quality of ['high','low'] as const){
     const yard=residential(c,undefined,ground,undefined,quality).yards()!;
     expect(yard.terraceSites.length).toBe(quality==='high'?1:0);
     expect(yard.yields.length).toBe(quality==='high'?3:0);
+    if (quality === 'high') {
+      const corners = yard.yields[2].ring.slice(2);
+      const midX = (corners[0][0] + corners[1][0]) / 2;
+      const midZ = (corners[0][1] + corners[1][1]) / 2;
+      const walk = new Color('#cbc6ba');
+      for (const [x,z] of corners) {
+        const heights: number[] = [];
+        yard.group.traverse(mesh => {
+          if (!(mesh instanceof Mesh)) return;
+          const pos = mesh.geometry.getAttribute('position'), color = mesh.geometry.getAttribute('color');
+          for (let i = 0; i < pos.count; i++) {
+            if (Math.abs(pos.getX(i)-x)<.001 && Math.abs(pos.getZ(i)-z)<.001 &&
+                Math.abs(color.getX(i)-walk.r)<.001) heights.push(pos.getY(i));
+          }
+        });
+        expect(heights.length).toBeGreaterThan(0);
+        for (const height of heights) expect(height).toBeCloseTo(ground(midX,midZ)+.04,5);
+      }
+    }
     yard.dispose();
   }
   for(const cls of ['terrace','semidetached_house']){
