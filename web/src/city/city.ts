@@ -119,6 +119,7 @@ import { createCapitol } from './capitol';
 import { createAtlantaCityHall } from './atlanta-city-hall';
 import { createAmericasMart } from './americasmart';
 import { createHurtBuilding } from './hurt-building';
+import { createAymDeck } from './aym-deck';
 import { createTheCenter } from './the-center';
 import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
@@ -427,6 +428,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let hurtBuilding: ReturnType<typeof createHurtBuilding> = null;
   let theCenter: ReturnType<typeof createTheCenter> = null;
   let samNunn: ReturnType<typeof createSamNunn> = null;
+  let aymDeck: ReturnType<typeof createAymDeck> = null;
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
@@ -577,7 +579,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         theCenter = createTheCenter(afterHurtBuilding, ground);
         const afterTheCenter = theCenter?.buildings ?? afterHurtBuilding;
         samNunn = createSamNunn(afterTheCenter, ground);
-        const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
+        const afterSamNunn = samNunn?.buildings ?? afterTheCenter;
+        aymDeck = createAymDeck(afterSamNunn, ground);
+        const city = { ...vd, buildings: aymDeck?.buildings ?? afterSamNunn,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
         mosaic?.areas.set('downtown', terrain);
@@ -643,6 +647,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (hurtBuilding) world.group.add(hurtBuilding.group);
         if (theCenter) world.group.add(theCenter.group);
         if (samNunn) world.group.add(samNunn.group);
+        if (aymDeck) world.group.add(aymDeck.group);
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
@@ -661,7 +666,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
             centennial, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
-            samNunn, candler, equitable, grady,
+            samNunn, candler, equitable, grady, aymDeck,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
           world.group.add(batches.group);
@@ -1619,6 +1624,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       hurtBuilding?.setNight(night);
       theCenter?.setNight(night);
       samNunn?.setNight(night);
+      aymDeck?.setNight(night);
       candler?.setNight(night);
       equitable?.setNight(night);
       grady?.setNight(night);

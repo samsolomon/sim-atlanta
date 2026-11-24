@@ -3604,3 +3604,7 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+
+### 2026-11-24 · A phantom tower behind the Westin
+
+From the default City camera, a 78.7 m block stood behind the Westin. Overture had given that height to a parking deck. The 2019 lidar is flat at 27.7 m across the whole outline, and OSM maps the same footprint as a multi-storey deck. The skin draws the deck at its real height, with ribbed spandrels and louvred screens, in under 400 triangles. It is the cheapest correction of the night, and possibly the most visible. [Before/after from the default camera](log/ui/aym-deck/README.md)
