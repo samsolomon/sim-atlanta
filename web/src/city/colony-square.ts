@@ -2,6 +2,7 @@ import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash } from './skin-kit';
 
 /**
  * Colony Square's 1970s office towers (100 and 400) on the 45° Peachtree grid:
@@ -36,36 +37,58 @@ function side(s: Shell, a: P2, b: P2, center: P2) {
   };
 }
 
-/** A stable, well-mixed 0–1 value per window (a linear form makes diagonal stripes). */
-function lit(seed: number, face: number, floor: number, bay: number) {
-  let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(face + 1, 0xc2b2ae35);
-  h = Math.imul(h ^ (floor * 0x27d4eb2d), 0x165667b1) ^ Math.imul(bay + 7, 0x9e3779b1);
-  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
-  return (h >>> 0) / 4294967296;
-}
+/** Per-tower facade palette and rhythm (the shared Colony Square palette lives in docs/research/colony-square.md). */
+type Style = {
+  glass: string; pier: string; crown: string; lobby: string;
+  bay: number; spandrel: number; pierWidth: number;
+  /** Piers stand proud of the spandrels by this much (0: flush grid). */
+  pierDepth: number;
+  /** Every nth pier is a wider major pier; 0 for none. */
+  majorEvery: number;
+  /** A darker shadow band under every nth spandrel; 0 for none. */
+  bandEvery: number; band: string;
+};
+
+const DEFAULT_STYLE: Style = {
+  glass, pier: precast, crown: precast, lobby: storefront,
+  bay: 2.5, spandrel: 2.3, pierWidth: 1.2, pierDepth: 0, majorEvery: 0, bandEvery: 0, band: shade,
+};
 
 /**
  * A punched precast grid: continuous piers and spandrels over a recessed dark
  * glass box, so the window count costs rows + columns, not rows × columns.
  * Lit panes (sparse, stable) sit in front of the glass in the lamp mesh.
  */
-function punchedShaft(s: Shell, half: [number, number], lo: number, floors: number, pitch: number, bay: number,
-  spandrel: number, pier: number, seed: number, occupancy: number) {
+function punchedShaft(s: Shell, half: [number, number], lo: number, floors: number, pitch: number,
+  st: Style, seed: number, occupancy: number) {
   const [hx, hz] = half, top = lo + floors * pitch;
   const box = (x: number, z: number): P2[] => [[-x, -z], [x, -z], [x, z], [-x, z]];
-  s.prism(box(hx - 0.7, hz - 0.7), lo, top, glass, glass);
+  s.prism(box(hx - 0.7, hz - 0.7), lo, top, st.glass, st.glass);
   const corners = box(hx, hz);
   corners.forEach((a, i) => {
     const b = corners[(i + 1) % 4];
     const f = side(s, a, b, [0, 0]);
-    const n = Math.max(1, Math.round(f.len / bay)), w = pier / 2 / f.len;
-    for (let k = 0; k <= n; k++) f.quad(Math.max(0, k / n - w), Math.min(1, k / n + w), lo, top, 0, precast);
+    const n = Math.max(1, Math.round(f.len / st.bay));
+    const d = st.pierDepth;
+    for (let k = 0; k <= n; k++) {
+      const major = k === 0 || k === n || (st.majorEvery > 0 && k % st.majorEvery === 0);
+      const w = (major && st.majorEvery ? st.pierWidth * 1.8 : st.pierWidth) / 2 / f.len;
+      const l = Math.max(0, k / n - w), r = Math.min(1, k / n + w);
+      f.quad(l, r, lo, top, d, st.pier);
+      if (d > 0) {
+        // Pier cheeks: the returns that make the verticals read in raking light.
+        if (k > 0) f.quad(l, l + 0.0001, lo, top, d / 2, st.band);
+        if (k < n) f.quad(r - 0.0001, r, lo, top, d / 2, st.band);
+      }
+    }
     for (let j = 0; j < floors; j++) {
       const y = lo + j * pitch;
-      f.quad(0, 1, y, y + spandrel, 0, precast);
+      f.quad(0, 1, y, y + st.spandrel, 0, st.pier);
+      if (st.bandEvery && j % st.bandEvery === 0) f.quad(0, 1, y + st.spandrel - 0.45, y + st.spandrel, 0.02, st.band);
+      const w = st.pierWidth / 2 / f.len;
       for (let k = 0; k < n; k++) {
-        if (lit(seed, i, j, k) >= occupancy) continue;
-        f.quad(k / n + w, (k + 1) / n - w, y + spandrel, y + pitch, -0.5, glass, true);
+        if (litHash(seed, i, j, k) >= occupancy) continue;
+        f.quad(k / n + w, (k + 1) / n - w, y + st.spandrel, y + pitch, -0.5, st.glass, true);
       }
     }
   });
@@ -75,7 +98,7 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
 type Tower = {
   id: string; name: string; origin: P2; probes: P2[];
   half: [number, number]; lobby: number; floors: number; pitch: number; roof: number;
-  parapet?: number; podium?: number; cores: { at: P2; size: [number, number]; top: number }[]; seed: number;
+  parapet?: number; podium?: number; style?: Partial<Style>; cores: { at: P2; size: [number, number]; top: number }[]; seed: number;
 };
 
 // Heights above the 2018 lidar ground (296.1 m NAVD88). Frames are centred on
@@ -89,6 +112,13 @@ const TOWERS: Record<string, Tower> = {
   [colony400Id]: {
     id: colony400Id, name: '400 Colony Square', origin: [796.77, -3752.77], probes: [[0, 0], [-12, -20], [12, 20]],
     half: [19, 27.75], lobby: 7.8, floors: 20, pitch: 3.6, roof: 83.3, parapet: 86, podium: 7.8,
+    // Shared Colony Square palette (agreed with skins-6): warm bronze-grey glass,
+    // bright precast, proud piers with a major pier every fourth bay, a floor
+    // shadow band every second floor, a pale crown and a dark two-storey lobby.
+    style: {
+      glass: '#6b655e', pier: '#ece8de', crown: '#d6d1c6', lobby: '#3f4448', band: '#b9b3a7',
+      bay: 2.5, spandrel: 1.7, pierWidth: 1.1, pierDepth: 0.6, majorEvery: 4, bandEvery: 2,
+    },
     cores: [{ at: [-0.5, -10], size: [11, 12], top: 91.2 }, { at: [-0.5, 0], size: [11, 8], top: 89.9 }], seed: 400,
   },
 };
@@ -109,6 +139,7 @@ function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Towe
   const grade = 296.1;
   const half = tower.half;
   const shaftLo = grade + tower.lobby, roof = grade + tower.roof;
+  const st: Style = { ...DEFAULT_STYLE, ...tower.style };
 
   // Low plaza bases: the mapped low parts, as pale concrete over street glazing.
   const toLocal = ([x, z]: P2): P2 => {
@@ -146,19 +177,30 @@ function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Towe
 
   // Tower: a recessed glazed lobby, the punched shaft, a blank band and the core.
   const box = (x: number, z: number, cx = 0, cz = 0): P2[] => [[cx - x, cz - z], [cx + x, cz - z], [cx + x, cz + z], [cx - x, cz + z]];
-  s.prism(box(half[0] - 1.8, half[1] - 1.8), s.base, shaftLo, storefront, roofDeck);
+  s.prism(box(half[0] - 1.8, half[1] - 1.8), s.base, shaftLo, st.lobby, roofDeck);
   for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-    s.body.box(1.4, shaftLo - s.base, 1.4, x * (half[0] - 0.7), (shaftLo + s.base) / 2, z * (half[1] - 0.7), precast);
+    s.body.box(1.4, shaftLo - s.base, 1.4, x * (half[0] - 0.7), (shaftLo + s.base) / 2, z * (half[1] - 0.7), st.pier);
   }
-  const gridTop = punchedShaft(s, half, shaftLo, tower.floors, tower.pitch, 2.5, 2.3, 1.2, tower.seed, 1 / 16);
-  s.prism(box(half[0], half[1]), gridTop, roof, precast, roofDeck);
+  if (st.majorEvery) {
+    // Major piers carry down through the recessed lobby to grade.
+    box(half[0], half[1]).forEach((a, i, ring) => {
+      const f = side(s, a, ring[(i + 1) % 4], [0, 0]);
+      const n = Math.max(1, Math.round(f.len / st.bay));
+      for (let k = st.majorEvery; k < n; k += st.majorEvery) {
+        const w = st.pierWidth * 0.9 / f.len;
+        f.quad(k / n - w, k / n + w, s.base, shaftLo, st.pierDepth, st.pier);
+      }
+    });
+  }
+  const gridTop = punchedShaft(s, half, shaftLo, tower.floors, tower.pitch, st, tower.seed, 1 / 16);
+  s.prism(box(half[0], half[1]), gridTop, roof, st.crown, roofDeck);
   if (tower.parapet) {
     // Parapet ring above the roof deck.
     const top = grade + tower.parapet, t = 0.6;
     const ring = box(half[0], half[1]);
     ring.forEach((a, i) => {
       const f = side(s, a, ring[(i + 1) % 4], [0, 0]);
-      f.quad(0, 1, roof, top, 0, precast);
+      f.quad(0, 1, roof, top, 0, st.crown);
       f.quad(0, 1, roof, top, -t, shade);
     });
     s.body.quad([-half[0], top, -half[1]], [half[0], top, -half[1]], [half[0], top, -half[1] + t], [-half[0], top, -half[1] + t], precast);
@@ -166,7 +208,7 @@ function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Towe
     s.body.quad([-half[0], top, -half[1]], [-half[0] + t, top, -half[1]], [-half[0] + t, top, half[1]], [-half[0], top, half[1]], precast);
     s.body.quad([half[0] - t, top, -half[1]], [half[0], top, -half[1]], [half[0], top, half[1]], [half[0] - t, top, half[1]], precast);
   }
-  for (const c of tower.cores) s.prism(box(c.size[0] / 2, c.size[1] / 2, c.at[0], c.at[1]), roof, grade + c.top, shade, roofDeck);
+  for (const c of tower.cores) s.prism(box(c.size[0] / 2, c.size[1] / 2, c.at[0], c.at[1]), roof, grade + c.top, tower.style ? st.crown : shade, roofDeck);
   // Warm lobby behind the recessed glazing.
   box(half[0] - 1.8, half[1] - 1.8).forEach((a, i, plan) => {
     side(s, a, plan[(i + 1) % 4], [0, 0]).quad(0.08, 0.92, grade + 0.3, shaftLo - 1.4, 0.04, storefront, true);
