@@ -73,7 +73,7 @@ const PARKLIKE = new Set(['park', 'garden', 'cemetery', 'wood', 'forest', 'natur
  */
 const STREET_M = 7;
 
-export interface PlacedSpecies { species: RolloutSpecies; x: number; z: number; heightM: number; spreadM: number; size: 'mature' | 'specimen'; seed: number }
+export interface PlacedSpecies { carpet?: false; species: RolloutSpecies; x: number; z: number; heightM: number; spreadM: number; size: 'mature' | 'specimen'; seed: number }
 export interface RolloutPlan {
   /** Canopy-map crowns now drawn as a species (keys from crownKey). */
   replaced: Set<string>;
@@ -174,7 +174,7 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
       // One large hardwood at the centre (the generic broadleaf, at specimen size).
       const big: Crown = [isl.cx, isl.cz, 24, Math.min(10, Math.sqrt(isl.area / Math.PI) + 4)];
       if (places && roundTwo?.id === 'brookwood-south' && Math.hypot(isl.cx - 1306, isl.cz + 4827) < 4) {
-        plan.species.push({ species: 'american-elm', x: isl.cx, z: isl.cz, heightM: big[2],
+        plan.species.push({ species: 'american-elm', carpet: false, x: isl.cx, z: isl.cz, heightM: big[2],
           spreadM: 2 * big[3], size: 'specimen', seed: positionSeed(isl.cx, isl.cz) });
         places--;
         continue;

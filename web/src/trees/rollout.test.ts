@@ -47,7 +47,7 @@ describe('tree rollout plan', () => {
       if (row === 'brookwood-south') {
         const island = low.filter(s => Math.hypot(s.x - 1306, s.z + 4827) < 4);
         expect(island).toHaveLength(1);
-        expect(island[0]).toMatchObject({ species: 'american-elm', size: 'specimen' });
+        expect(island[0]).toMatchObject({ species: 'american-elm', size: 'specimen', carpet: false });
       }
     }
     expect(counts.size).toBe(6);

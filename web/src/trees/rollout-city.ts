@@ -236,7 +236,7 @@ export function rolloutSpecies(plan: ReturnType<typeof rolloutRow>['plan'], qual
     // Some gardens already paint their leaf cover. Suppress intersecting discs entirely:
     // no flat carpet over hard surfaces and no extra low-tier clipping geometry.
     const radius = treeDims(p).spreadM / 2 * 1.1;
-    const carpet = !carpetExclusions.some(ring => pointInRing(p.x,p.z,ring)
+    const carpet = s.carpet !== false && !carpetExclusions.some(ring => pointInRing(p.x,p.z,ring)
       || ring.some((a,i) => segDist(p.x,p.z,a,ring[(i+1)%ring.length]) <= radius));
     return [{ species: s.species, p, y, carpet }];
   });
