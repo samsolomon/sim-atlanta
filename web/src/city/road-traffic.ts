@@ -23,6 +23,8 @@ const PROFILE_TOLERANCE = .005;
 const CRACK_M = .15;
 /** Cracks narrower than this (a tyre's width) are bridged; wider gaps, holes and dips are not. */
 const CRACK_WIDTH_M = .25;
+/** Bisection steps toward each rim when measuring a crack (a quarter-metre over 2^n). */
+const BISECTIONS = 4;
 /** Lanes whose nearest point is beyond this many metres from the camera re-pose at FAR_HZ;
  * nearer lanes every frame. FAR_HYSTERESIS either side stops a lane at the boundary flickering. */
 const FAR_M = 600, FAR_HYSTERESIS = 30, FAR_HZ = 15;
@@ -55,6 +57,17 @@ function pointAt(line: Line, s: number, out: { x: number; z: number }) {
   return out;
 }
 
+/**
+ * A flagged step's sub-profile, built lazily so no single piece of work is long: raw exact
+ * heights at its knots (eighths) and one knot beyond each end (NaN: no surface), the knot
+ * heights after crack bridging, and per eighth whether it interpolates (1) or samples exactly (2).
+ */
+interface Fine {
+  raw: Float64Array; rawKnown: Uint8Array;      // knots -1..9, stored at index + 1
+  knot: Float64Array; knotKnown: Uint8Array;    // knots 0..8
+  eighth: Uint8Array;                           // 0 unknown, 1 interpolate, 2 exact
+}
+
 /** A far car's last pose, replayed until its lane's next FAR_HZ tick. */
 interface HeldCar {
   kind: Kind; color: THREE.Color; opacity: number;
@@ -83,9 +96,8 @@ interface LaneState {
   /** Per step: 0 untested, 1 interpolates within PROFILE_TOLERANCE, 2 sample exactly (a deck
    * edge, a step in the drawn surface or a terrain fold inside it). */
   smooth: Uint8Array;
-  /** For steps that sample exactly (`smooth` 2): heights at the step's eighths (NaN off the
-   * road) and, per eighth, 1 if it interpolates within PROFILE_TOLERANCE at its midpoint. */
-  fine: Map<number, Float64Array>;
+  /** For steps that sample exactly (`smooth` 2): their eighths, prepared one at a time. */
+  fine: Map<number, Fine>;
   /** Distance rate: far (with hysteresis), the 1/FAR_HZ tick last posed, this lane's offset
    * into that tick (so far lanes don't all re-pose on one frame), and the cars it held. */
   far: boolean;
@@ -340,7 +352,7 @@ export class RoadTraffic {
   /** Forget cached road heights, for when the ground under existing courses changes. */
   refreshHeights() {
     for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); lane.fine.clear(); }
-    this.fillLane = this.fillStep = 0;
+    this.fillLane = this.fillStep = this.fillPart = 0;
   }
 
   /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
@@ -362,14 +374,16 @@ export class RoadTraffic {
     if (smooth === 1) return this.interpolate(lane, i, s0, span, s);
     // A step with a fold, a deck edge or a hole in it: interpolate within its eighths that pass
     // their own midpoint check, and sample exactly only inside the eighths that don't.
-    const fine = lane.fine.get(i) ?? this.refine(lane, i, s0, span);
+    const fine = this.fineOf(lane, i);
     const u = (s - s0) / span * 8, k = Math.min(7, Math.floor(u));
-    return fine[9 + k] ? fine[k] + (fine[k + 1] - fine[k]) * (u - k) : this.exactHeight(lane, s, x, z);
+    return this.eighth(lane, fine, s0, span, k) === 1
+      ? fine.knot[k] + (fine.knot[k + 1] - fine.knot[k]) * (u - k) : this.exactHeight(lane, s, x, z);
   }
 
   /** First use of a step: keep interpolating only if the drawn road agrees at its eighths,
    * which catches deck edges, steps in the surface and terrain folds. */
   private classify(lane: LaneState, i: number, s0: number, span: number) {
+    perf.count(this.filling ? 'trafficIdleSteps' : 'trafficFrameSteps');
     let smooth = 1;
     for (const t of CHECKS) {
       const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
@@ -382,6 +396,10 @@ export class RoadTraffic {
   /** Where `fillIdle` resumes: a lane, and a step within it. */
   private fillLane = 0;
   private fillStep = 0;
+  private fillPart = 0;
+
+  /** True while fillIdle runs, to attribute work to idle time or the frame. */
+  private filling = false;
 
   /**
    * Classify (and refine) height-profile steps ahead of the cars until `deadline` (a
@@ -389,15 +407,28 @@ export class RoadTraffic {
    * it stopped; returns true once every step of every lane is ready.
    */
   fillIdle(deadline: number) {
+    this.filling = true;
+    try { return this.fill(deadline); } finally { this.filling = false; }
+  }
+
+  private fill(deadline: number) {
     while (this.fillLane < this.lanes.length) {
       const lane = this.lanes[this.fillLane], length = lane.course.line.length;
       const steps = Math.ceil(length / HEIGHT_STEP);
       while (this.fillStep < steps) {
         if (performance.now() >= deadline) return false;
-        const i = this.fillStep++, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
-        if (!(span > 0)) continue;
-        const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
-        if (smooth === 2 && !lane.fine.has(i)) this.refine(lane, i, s0, span);
+        // One unit of work at a time: classify the step, then (if flagged) each of its nine knots
+        // and eight eighths, so no single idle task runs long.
+        const i = this.fillStep, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+        if (!(span > 0)) { this.fillStep++; continue; }
+        if (!lane.smooth[i]) { this.classify(lane, i, s0, span); continue; }
+        if (lane.smooth[i] === 2 && this.fillPart < 17) {
+          const fine = this.fineOf(lane, i), part = this.fillPart++;
+          if (part < 9) this.knot(lane, fine, s0, span, part); else this.eighth(lane, fine, s0, span, part - 9);
+          continue;
+        }
+        this.fillStep++;
+        this.fillPart = 0;
       }
       this.fillLane++;
       this.fillStep = 0;
@@ -406,58 +437,78 @@ export class RoadTraffic {
   }
 
   /**
-   * Exact heights at a step's eighths, and which eighths may interpolate between them.
-   *
-   * Cracks: the drawn road has seams narrower than a tyre (a deck joint, a board join) where
-   * exact sampling drops to the ground far below or finds no surface; legacy cars dropped a
-   * wheel into them for a frame. A crack narrower than 25 cm is bridged between its rims;
-   * anything 25 cm or wider, and any kerb or deck step (whose rims differ), samples exactly.
-   * Two real cracks of this kind on the 12-area board, worth fixing in the drawn surface
-   * itself: Midtown arterials at (-169, -4148), a 13 m drop, and (-1, -3076), 0.24 m.
+   * A flagged step's sub-profile. Cracks: the drawn road has seams narrower than a tyre (a deck
+   * joint, a board join) where exact sampling drops to the ground far below or finds no surface;
+   * legacy cars dropped a wheel into them for a frame. A crack narrower than 25 cm is bridged
+   * between its rims; anything 25 cm or wider, and any kerb or deck step (whose rims differ),
+   * samples exactly. Two real cracks of this kind on the 12-area board, worth fixing in the drawn
+   * surface itself: Midtown arterials at (-169, -4148), a 13 m drop, and (-1, -3076), 0.24 m.
    */
-  private refine(lane: LaneState, i: number, s0: number, span: number) {
-    const fine = new Float64Array(17), mids = this.mids, line = lane.course.line;
-    const exact = (at: number) => {
-      const p = pointAt(line, at, this.point);
-      const y = this.exactHeight(lane, at, p.x, p.z);
-      return y === null ? NaN : y;
-    };
-    for (let k = 0; k <= 8; k++) fine[k] = exact(s0 + span * k / 8);
-    for (let k = 0; k < 8; k++) mids[k] = exact(s0 + span * (k + .5) / 8);
-    // A knot inside a crack: its rims an eighth either side are road, and bisecting toward each
-    // rim finds the anomaly narrower than 25 cm. Knots on the step's ends take their outer rim
-    // from just outside the step, so a crack on a step boundary is bridged too.
-    // Never bridge within a tyre's width of either lane end: a crack there could carry a car
-    // past the end of a deck.
-    const h = span / 8, length = line.length, inside = (t: number) => t >= CRACK_WIDTH_M && t <= length - CRACK_WIDTH_M;
-    for (let k = 0; k <= 8; k++) {
-      const sk = s0 + h * k, ra = k > 0 ? fine[k - 1] : exact(sk - h), rb = k < 8 ? fine[k + 1] : exact(sk + h);
-      if (ra !== ra || rb !== rb || !(h > 0) || !inside(sk - h) || !inside(sk + h)) continue;
-      const expect = (t: number) => ra + (rb - ra) * (t - sk + h) / (2 * h);
+  private fineOf(lane: LaneState, i: number): Fine {
+    let fine = lane.fine.get(i);
+    if (!fine) {
+      fine = { raw: new Float64Array(11), rawKnown: new Uint8Array(11), knot: new Float64Array(9),
+        knotKnown: new Uint8Array(9), eighth: new Uint8Array(8) };
+      lane.fine.set(i, fine);
+    }
+    return fine;
+  }
+
+  private sampleAt(lane: LaneState, at: number) {
+    const p = pointAt(lane.course.line, at, this.point);
+    const y = this.exactHeight(lane, at, p.x, p.z);
+    return y === null ? NaN : y;
+  }
+
+  /** Raw exact height at knot j (-1..9) of a step. */
+  private raw(lane: LaneState, fine: Fine, s0: number, span: number, j: number) {
+    if (!fine.rawKnown[j + 1]) { fine.raw[j + 1] = this.sampleAt(lane, s0 + span * j / 8); fine.rawKnown[j + 1] = 1; }
+    return fine.raw[j + 1];
+  }
+
+  /** Knot j's height after crack bridging: a knot inside a crack whose rims, an eighth either
+   * side, are road and which bisection finds narrower than 25 cm takes the line between them.
+   * Never within a tyre's width of a lane end, where a bridge could carry a car past a deck. */
+  private knot(lane: LaneState, fine: Fine, s0: number, span: number, j: number) {
+    if (fine.knotKnown[j]) return fine.knot[j];
+    const h = span / 8, sk = s0 + h * j, length = lane.course.line.length;
+    let y = this.raw(lane, fine, s0, span, j);
+    const ra = this.raw(lane, fine, s0, span, j - 1), rb = this.raw(lane, fine, s0, span, j + 1);
+    const inside = (t: number) => t >= CRACK_WIDTH_M && t <= length - CRACK_WIDTH_M;
+    if (ra === ra && rb === rb && h > 0 && inside(sk - h) && inside(sk + h)) {
       // A crack opens downward (to the ground below a deck) or onto no surface at all; a narrow
       // raised strip is a real bump and keeps exact sampling.
       const floor = Math.min(ra, rb) - CRACK_M;
-      const odd = (t: number, y = exact(t)) => y !== y || y < floor;
-      if (!odd(sk, fine[k])) continue;
-      let lo = sk - h, hi = sk;
-      for (let n = 0; n < 6; n++) { const m = (lo + hi) / 2; if (odd(m)) hi = m; else lo = m; }
-      const left = lo;
-      lo = sk; hi = sk + h;
-      for (let n = 0; n < 6; n++) { const m = (lo + hi) / 2; if (odd(m)) lo = m; else hi = m; }
-      if (hi - left < CRACK_WIDTH_M) fine[k] = expect(sk);
+      const odd = (t: number, v = this.sampleAt(lane, t)) => v !== v || v < floor;
+      if (odd(sk, y)) {
+        let lo = sk - h, hi = sk;
+        for (let n = 0; n < BISECTIONS; n++) { const m = (lo + hi) / 2; if (odd(m)) hi = m; else lo = m; }
+        const left = lo;
+        lo = sk; hi = sk + h;
+        for (let n = 0; n < BISECTIONS; n++) { const m = (lo + hi) / 2; if (odd(m)) lo = m; else hi = m; }
+        // hi - left over-estimates the width by up to two bisection steps: conservative.
+        if (hi - left < CRACK_WIDTH_M) y = (ra + rb) / 2;
+      }
     }
-    for (let k = 0; k < 8; k++) {
-      const a = fine[k], b = fine[k + 1];
-      if (a !== a || b !== b) continue; // the eighth reaches a hole or an edge: exact
-      const mid = mids[k], line2 = (a + b) / 2;
-      // Smooth, or a crack between valid rims a quarter-metre apart: interpolate.
-      fine[9 + k] = mid === mid && Math.abs(mid - line2) <= PROFILE_TOLERANCE ? 1
-        : (mid !== mid || mid < Math.min(a, b) - CRACK_M) && inside(s0 + h * k) && inside(s0 + h * (k + 1)) ? 1 : 0;
-    }
-    lane.fine.set(i, fine);
-    return fine;
+    fine.knot[j] = y; fine.knotKnown[j] = 1;
+    return y;
   }
-  private readonly mids = new Float64Array(8);
+
+  /** Whether eighth k of a flagged step interpolates (1) or samples exactly (2). */
+  private eighth(lane: LaneState, fine: Fine, s0: number, span: number, k: number) {
+    if (fine.eighth[k]) return fine.eighth[k];
+    const a = this.knot(lane, fine, s0, span, k), b = this.knot(lane, fine, s0, span, k + 1);
+    let ok = 2;
+    if (a === a && b === b) {
+      const length = lane.course.line.length, h = span / 8;
+      const inside = (t: number) => t >= CRACK_WIDTH_M && t <= length - CRACK_WIDTH_M;
+      const mid = this.sampleAt(lane, s0 + h * (k + .5)), line = (a + b) / 2;
+      // Smooth, or a crack between road rims a quarter-metre apart: interpolate.
+      if (mid === mid && Math.abs(mid - line) <= PROFILE_TOLERANCE) ok = 1;
+      else if ((mid !== mid || mid < Math.min(a, b) - CRACK_M) && inside(s0 + h * k) && inside(s0 + h * (k + 1))) ok = 1;
+    }
+    return fine.eighth[k] = ok;
+  }
 
   /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
   private interpolate(lane: LaneState, i: number, s0: number, span: number, s: number): number | null {
@@ -481,6 +532,7 @@ export class RoadTraffic {
   }
 
   private exactHeight(lane: LaneState, s: number, x: number, z: number) {
+    if (!this.filling) perf.count('trafficFrameExact');
     const { line, roads } = lane.course;
     const y = this.opts.roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(line.vertexAt(s)))]);
     return y === null || !Number.isFinite(y) ? null : y;

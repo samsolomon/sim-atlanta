@@ -90,6 +90,8 @@ const updateMs = new Float32Array(N);
 const trafficMs = new Float32Array(N);
 let trafficNow = 0;
 let idleTasks = 0, idleMaxMs = 0;
+const idleMs: number[] = [];
+const counters: Record<string, number> = {};
 const renderMs = new Float32Array(N);
 const tris = new Float32Array(N);
 let head = 0;
@@ -643,8 +645,14 @@ export const perf = {
   /** Add CPU ms spent in road-traffic update() to the current frame. */
   traffic(ms: number) { trafficNow += ms; },
   /** One idle-time task's main-thread ms (the coordinator's rule: report the longest at 6x). */
-  idleTask(ms: number) { idleTasks++; idleMaxMs = Math.max(idleMaxMs, ms); },
-  get idle() { return { tasks: idleTasks, maxMs: Math.round(idleMaxMs * 100) / 100 }; },
+  idleTask(ms: number) { idleTasks++; idleMaxMs = Math.max(idleMaxMs, ms); if (idleMs.length < 4096) idleMs.push(ms); },
+  get idle() {
+    const s = [...idleMs].sort((a, b) => a - b), q = (p: number) => Math.round((s[Math.floor(p * (s.length - 1))] ?? 0) * 100) / 100;
+    return { tasks: idleTasks, p50: q(.5), p95: q(.95), p99: q(.99), maxMs: Math.round(idleMaxMs * 100) / 100 };
+  },
+  /** Cumulative work counters (road traffic's height preparation and exact reads, by caller). */
+  count(name: string, n = 1) { counters[name] = (counters[name] ?? 0) + n; },
+  get counts() { return { ...counters }; },
   /**
    * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
    * count (drawRange, material group and instance count, as three.js computes it), its pass (main,
