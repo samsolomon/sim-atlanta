@@ -58,8 +58,8 @@ export function createElevanceTech(buildings: VBuilding[], site: VBuilding, grid
       const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
       if (length > 2) draw(a, b, length);
     });
-  const silver = '#d3d6d8', fin = '#eef0f1', finShadow = '#a9afb3', roofColor = '#a2a6aa', spandrel = '#6b7f94';
-  const blue = ['#8ca5bf', '#8fa9c5'];
+  const silver = '#d3d6d8', fin = '#eef0f1', finShadow = '#a9afb3', roofColor = '#a2a6aa', spandrel = '#8796a6';
+  const blue = ['#a9bacc', '#aebfd1'];
   const lobbyGlass = ['#4c6272'];
 
   for (const { ring, top } of masses) {
