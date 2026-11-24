@@ -7,6 +7,11 @@ The before clips replay deployed R14 source `b91f1c0f1445257a82efe56ddba13b1777f
 | [Connector at Fifth](fifth.mp4) | 68, −2555, 9, 52, 570 | 17:05:00–17:05:15.75 | 2× | 120 | 6–9 / 8–13 |
 | [Northbound brakes](brakes.mp4) | 102, −2438, 0, 70, 135 | same | 2× | 120 | 5–8 / 7–11 |
 | [Spring and 10th signal cycle](midtown.mp4) | 222, −3075, 0, 45, 150 | 16:04:58–16:06:25 | 8× | 60 | 2–5 / 1–4 |
+| [Spring and 12th queue discharge](queue.mp4) | 223, −3407, 0, 8, 110 | 16:03:44–16:04:51 | 8× | 60 | 0–2 / 0–2 |
+
+At Spring and 12th, both builds show two southbound cars stopping on the same approach. The integrated cars wait 6.70 m apart, center to center, with both brake lamps engaged. In the one-second samples the leader first moves at 16:04:39 and the follower at 16:04:41. Each releases its brakes when it departs. R14 shows the same departure headway. This camera is a signal-behavior control outside the Spring/10th junction-marking pilot.
+
+The integrated Spring/10th movie shows one car stopping and departing on the selected approach. A six-hour scan sampled every three seconds found no same-course pair 3–22 m apart within 55 m of that junction. The earlier [two-car Spring/10th footage](https://github.com/samsolomon/sim-atlanta/blob/809ddaff/docs/log/ui/traffic-motion/midtown.mp4) used the behavior-only candidate.
 
 ## Pinned visibility
 
