@@ -31,7 +31,9 @@ const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const SVG = (body: string, box = 24) =>
   `<svg viewBox="0 0 ${box} ${box}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const CARET = SVG('<path d="M6 9l6 6 6-6"/>');
-const COMPASS = `<svg viewBox="0 0 32 32" aria-hidden="true" class="a2-needle"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/><g><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></g></svg>`;
+// The ring stays put; the needle is its own SVG on its own compositor layer, turned by a CSS
+// transform, so a turning camera never repaints or re-rasters the compass.
+const COMPASS = `<span class="a2-needle" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg viewBox="0 0 32 32" class="a2-needle-turn"><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></svg></span>`;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -454,8 +456,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
   compass.addEventListener('click', () => o.north?.());
   zoomIn.addEventListener('click', () => o.zoom(1));
   zoomOut.addEventListener('click', () => o.zoom(-1));
-  const needle = compass.querySelector<SVGGElement>('g')!;
+  const needle = compass.querySelector<SVGSVGElement>('.a2-needle-turn')!;
   let shownBearing = NaN;
+  let labelTimer = 0;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
     const tiltNow = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
@@ -468,8 +471,10 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     if (!Number.isFinite(shownBearing) || Math.abs(b - shownBearing) > 0.1) {
       shownBearing = b;
-      needle.setAttribute('transform', `rotate(${(-b).toFixed(1)} 16 16)`);
-      compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((b % 360) + 360) % 360)}°)`);
+      needle.style.transform = `rotate(${(-b).toFixed(1)}deg)`;
+      // Screen readers get the heading once the turn settles, not a label rewrite every frame.
+      clearTimeout(labelTimer);
+      labelTimer = window.setTimeout(() => compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((shownBearing % 360) + 360) % 360)}°)`), 250);
     }
     requestAnimationFrame(watchBearing);
   };

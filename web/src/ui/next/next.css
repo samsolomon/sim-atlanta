@@ -204,7 +204,9 @@ body:has(.a2-subject.a2-open) .a2-notice, body:has(.a2-timepanel:not([hidden])) 
   right: var(--a2-right); bottom: var(--a2-bottom); width: 44px;
   display: flex; flex-direction: column; padding: 2px 0;
 }
-.a2-needle { width: 30px; height: 30px; }
+.a2-needle { position: relative; display: block; width: 30px; height: 30px; }
+.a2-needle svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.a2-needle-turn { will-change: transform; }
 .a2-north { fill: var(--a2-north); }
 .a2-camera.a2-no-compass .a2-compass-sep { display: none; }
 
