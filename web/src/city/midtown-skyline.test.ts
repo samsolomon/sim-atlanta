@@ -346,3 +346,19 @@ it('replaces Square on 5th at its lidar roof, with fins carrying the roof frame'
   const y = lamps.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(86);
 });
+
+it('gives Two Midtown Plaza its lidar roofs, a lit lobby drum and dark offices above', () => {
+  const brookwood = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/brookwood-south/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = brookwood.buildings.find((b: VBuilding) => b.id === 'osm:way:269636880');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Two Midtown Plaza');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(405, -4195)).toBeCloseTo(78, 0); // the straight slab, lidar 95th percentile
+  expect(heightAt(375, -4190)).toBeCloseTo(73, 0); // the half-round end
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(78);
+});

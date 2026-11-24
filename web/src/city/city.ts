@@ -101,6 +101,7 @@ import { createAltitudeApartments } from './altitude-apartments';
 import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
+import { createMedicalArts } from './medical-arts';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -122,6 +123,8 @@ import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
 import { createWhiteModel } from './white-model';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
+/** View depth (m) past which ink is fully faded (keep in step with vignette/ink.ts), plus a margin. */
+const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
@@ -401,6 +404,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let hilton: ReturnType<typeof createHiltonAtlanta> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let marquisOne: ReturnType<typeof createMarquisOne> = null;
+  let medicalArts: ReturnType<typeof createMedicalArts> = null;
   let marquisTwo: ReturnType<typeof createMarquisTwo> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -449,7 +453,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         marquisOne = createMarquisOne(afterMarriott, ground);
         const afterOne = marquisOne?.buildings ?? afterMarriott;
         marquisTwo = createMarquisTwo(afterOne, ground);
-        const hotelSite = marquisTwo?.buildings ?? afterOne;
+        const afterTwo = marquisTwo?.buildings ?? afterOne;
+        medicalArts = createMedicalArts(afterTwo, ground);
+        const hotelSite = medicalArts?.buildings ?? afterTwo;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -562,6 +568,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (marquis) world.group.add(marquis.group);
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
+        if (medicalArts) world.group.add(medicalArts.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -622,7 +629,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
-            floyd, hyatt, marquis, marquisOne, marquisTwo, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
             peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
@@ -898,9 +905,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let prewarmer: Prewarmer | undefined;
   let colourShown = !options.whiteModel;
   let prewarmDone = false;
+  let prewarmBatch = 2;
   let bloomWarmFrames = 0;
+  // setNight gating (environment()); `?perf&night=every` applies it every frame, for A/B runs.
+  const nightEveryFrame = perfEnabled && query.get('night') === 'every';
+  let nightDirty = true;
+  let nightApplied = NaN;
+  let nightGeometries = -1;
+  let nightFrames = 0;
   function addArea(area: NonNullable<typeof east>) {
     requestPrewarm();
+    nightDirty = true;
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
@@ -1182,7 +1197,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const ink = new ShaderPass(inkShader());
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
-  composer.addPass(new FoliageMaskPass(scene, camera, ink));
+  const foliageMask = new FoliageMaskPass(scene, camera, ink);
+  composer.addPass(foliageMask);
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
@@ -1202,14 +1218,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
   }
+  // `?perf&bloom=device` keeps the old device-px bloom, for A/B runs.
+  const bloomCss = !(perfEnabled && query.get('bloom') === 'device');
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0, 0.55, 0.82);
   composer.addPass(bloom);
   const hts = new ShaderPass(tiltShiftShader([1, 0]));
   const vts = new ShaderPass(tiltShiftShader([0, 1]));
   composer.addPass(hts);
   composer.addPass(vts);
-  composer.addPass(new OutputPass());
-  const grade = new ShaderPass(gradeShader());
+  // Grade does OutputPass's tone mapping and sRGB output itself (one fewer full-resolution pass).
+  // `?perf&output=pass` keeps the separate pass, for A/B runs.
+  const outputPass = perfEnabled && query.get('output') === 'pass';
+  if (outputPass) composer.addPass(new OutputPass());
+  const grade = new ShaderPass(gradeShader({ output: !outputPass }));
   composer.addPass(grade);
   const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
@@ -1227,7 +1248,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setSize(w, h);
     // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
     gtao?.setSize(w, h);
-    bloom.resolution.set(w / 2, h / 2);
+    // The composer sizes every pass in device px; bloom works in CSS px, so its glow is the same
+    // size at every pixel ratio (and a 2x display doesn't pay for a full-resolution bloom chain).
+    if (bloomCss) bloom.setSize(w, h);
     const pr = renderer.getPixelRatio();
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
@@ -1238,9 +1261,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       p.enabled = tilt > 0.01 && !perfOverrides.nopass.has('tilt');
     }
   }
+  const inkWanted = !perfOverrides.nopass.has('ink');
   if (perfOverrides.nopass.size) {
     for (const p of composer.passes) if (p instanceof FoliageMaskPass && perfOverrides.nopass.has('ink')) p.enabled = false;
-    ink.enabled = !perfOverrides.nopass.has('ink');
+    ink.enabled = inkWanted;
     grade.enabled = !perfOverrides.nopass.has('grade');
     if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
   }
@@ -1424,71 +1448,83 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     bg.copy(pal.bgNight).lerp(pal.bgDay, day).lerp(pal.bgDusk, gold * 0.7);
     tableMat.color.copy(pal.tableNight).lerp(pal.tableDay, day);
     const night = atm.dark;
-    world.setNight(night);
-    platforms?.setNight(night);
-    floyd?.setNight(night);
-    eastRail?.setNight(night);
-    hyatt?.setNight(night);
-    marquis?.setNight(night);
-    marquisOne?.setNight(night);
-    marquisTwo?.setNight(night);
-    hilton?.setNight(night);
-    altitude?.setNight(night);
-    twelve?.setNight(night);
-    truist?.setNight(night);
-    westin?.setNight(night);
-    peachtreeCenter?.setNight(night);
-    peachtree?.setNight(night);
-    library?.setNight(night);
-    flatiron?.setNight(night);
-    healey?.setNight(night);
-    footballHall?.setNight(night);
-    oneParkTower?.setNight(night);
-    parkPlaceTower?.setNight(night);
-    fiftyFiveParkPlace?.setNight(night);
-    fultonBank?.setNight(night);
-    davisons?.setNight(night);
-    ritzCarlton?.setNight(night);
-    southernBell?.setNight(night);
-    rhodesHaverty?.setNight(night);
-    empireBuilding?.setNight(night);
-    commerceBuilding?.setNight(night);
-    hundredEdgewood?.setNight(night);
-    metropolitan?.setNight(night);
-    mariettaBackdrop?.setNight(night);
-    one12Courtland?.setNight(night);
-    citizensTrust?.setNight(night);
-    fultonGovernmentCenter?.setNight(night);
-    georgiaAquarium?.setNight(night);
-    worldOfCocaCola?.setNight(night);
-    williams250?.setNight(night);
-    fultonCourthouse?.setNight(night);
-    peachtreeOffices?.setNight(night);
-    williamOliver?.setNight(night);
-    omniAtlanta?.setNight(night);
-    fivePointsPlaza?.setNight(night);
-    twoPeachtree?.setNight(night);
-    georgiaPower?.setNight(night);
-    georgiaPacific?.setNight(night);
-    russell?.setNight(night);
-    centennial?.setNight(night);
-    capitol?.setNight(night);
-    arena?.setNight(night);
-    atlantaCityHall?.setNight(night);
-    americasMart?.setNight(night);
-    hurtBuilding?.setNight(night);
-    theCenter?.setNight(night);
-    samNunn?.setNight(night);
-    candler?.setNight(night);
-    equitable?.setNight(night);
-    grady?.setNight(night);
+    // ~60 landmarks and every area take setNight; night only moves with the clock, so apply it when
+    // it moves, when something mounts (addArea, or any new geometry), and once a second regardless.
+    const geometries = renderer.info.memory.geometries;
+    const applyNight = nightEveryFrame || nightDirty || !(Math.abs(night - nightApplied) <= 0.001)
+      || geometries !== nightGeometries || ++nightFrames >= 60;
+    if (applyNight) {
+      nightDirty = false;
+      nightApplied = night;
+      nightGeometries = geometries;
+      nightFrames = 0;
+      world.setNight(night);
+      platforms?.setNight(night);
+      floyd?.setNight(night);
+      eastRail?.setNight(night);
+      hyatt?.setNight(night);
+      marquis?.setNight(night);
+      marquisOne?.setNight(night);
+      marquisTwo?.setNight(night);
+      medicalArts?.setNight(night);
+      hilton?.setNight(night);
+      altitude?.setNight(night);
+      twelve?.setNight(night);
+      truist?.setNight(night);
+      westin?.setNight(night);
+      peachtreeCenter?.setNight(night);
+      peachtree?.setNight(night);
+      library?.setNight(night);
+      flatiron?.setNight(night);
+      healey?.setNight(night);
+      footballHall?.setNight(night);
+      oneParkTower?.setNight(night);
+      parkPlaceTower?.setNight(night);
+      fiftyFiveParkPlace?.setNight(night);
+      fultonBank?.setNight(night);
+      davisons?.setNight(night);
+      ritzCarlton?.setNight(night);
+      southernBell?.setNight(night);
+      rhodesHaverty?.setNight(night);
+      empireBuilding?.setNight(night);
+      commerceBuilding?.setNight(night);
+      hundredEdgewood?.setNight(night);
+      metropolitan?.setNight(night);
+      mariettaBackdrop?.setNight(night);
+      one12Courtland?.setNight(night);
+      citizensTrust?.setNight(night);
+      fultonGovernmentCenter?.setNight(night);
+      georgiaAquarium?.setNight(night);
+      worldOfCocaCola?.setNight(night);
+      williams250?.setNight(night);
+      fultonCourthouse?.setNight(night);
+      peachtreeOffices?.setNight(night);
+      williamOliver?.setNight(night);
+      omniAtlanta?.setNight(night);
+      fivePointsPlaza?.setNight(night);
+      twoPeachtree?.setNight(night);
+      georgiaPower?.setNight(night);
+      georgiaPacific?.setNight(night);
+      russell?.setNight(night);
+      centennial?.setNight(night);
+      capitol?.setNight(night);
+      arena?.setNight(night);
+      atlantaCityHall?.setNight(night);
+      americasMart?.setNight(night);
+      hurtBuilding?.setNight(night);
+      theCenter?.setNight(night);
+      samNunn?.setNight(night);
+      candler?.setNight(night);
+      equitable?.setNight(night);
+      grady?.setNight(night);
+      terrain?.setNight(night);
+      east?.setNight(night);
+      north?.setNight(night);
+      stopsDowntown?.setNight(night);
+      northStops?.setNight(night);
+      if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
+    }
     downtownBatches?.sync(); // after every downtown landmark's setNight
-    terrain?.setNight(night);
-    east?.setNight(night);
-    north?.setNight(night);
-    stopsDowntown?.setNight(night);
-    northStops?.setNight(night);
-    if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     bloom.strength = 0.55 * night;
     // A one-frame warm-up runs bloom at strength 0 by day (it adds nothing), so its blur shaders compile
     // then and not on the first dusk frame.
@@ -1659,6 +1695,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
     }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    // Ink fades out completely by 4.2 km of view depth (vignette/ink.ts). View depth is linear in
+    // position, so its minimum over the boards' box is at a corner: when even that is beyond the
+    // fade, the pass (and its foliage mask) would only copy the frame, so skip them.
+    if (inkWanted) {
+      camera.updateMatrixWorld();
+      const m = camera.matrixWorldInverse.elements;
+      let near = Infinity;
+      for (const r of [b, mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        for (const x of [r.minX, r.maxX]) for (const y of [-200, 600]) for (const z of [r.minZ, r.maxZ])
+          near = Math.min(near, -(m[2] * x + m[6] * y + m[10] * z + m[14]));
+      }
+      ink.enabled = foliageMask.enabled = near < INK_FADE_END_M;
+    }
     if (gtao && !gtaoOld) {
       // The scene pass draws into the composer's current read buffer, which alternates between
       // its two targets, so point AO at whichever depth texture it fills this frame.
@@ -1691,10 +1741,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
-    // One never-drawn object per frame (a single shader compile at most), after the frame's own work.
+    // A few never-drawn objects per frame in one scratch render, after the frame's own work.
     if (prewarmer?.pending) {
+      // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
+      // program) and halves after a slow one (a real compile), so a phone that compiles slowly
+      // never stacks several compiles into one frame.
       const t = performance.now();
-      if (prewarmer.step(low ? 2 : 4, 1)) perf.prewarmStep(performance.now() - t);
+      if (prewarmer.step(prewarmBatch)) {
+        const ms = performance.now() - t;
+        perf.prewarmStep(ms);
+        prewarmBatch = ms > 20 ? Math.max(1, prewarmBatch >> 1) : ms < 8 ? Math.min(low ? 6 : 12, prewarmBatch * 2) : prewarmBatch;
+      }
       if (!prewarmer.pending && !prewarmDone) { prewarmDone = true; bloomWarmFrames = 1; perf.phase('city:prewarmed'); }
     }
     if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
