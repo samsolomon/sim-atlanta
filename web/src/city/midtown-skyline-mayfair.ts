@@ -20,7 +20,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // from photographs (see docs/mayfair-tower.md).
 
 const ROOF = 92, FLOORS = 30;
-const WALL = '#e1dfd8', BAND = '#f3f2ec', WINDOW = '#5d676e', IRON = '#2c2f31', CONE = '#4f5d59', LANTERN = '#dfe8e2';
+const WALL = '#e1dfd8', BAND = '#f3f2ec', WINDOW = '#76838c', IRON = '#2c2f31', CONE = '#4f5d59', LANTERN = '#dfe8e2';
 export const mayfairId = 'osm:way:536728181';
 
 export function mayfairTower(shell: Shell) {

@@ -26,6 +26,15 @@ The frame uses City axes, with the origin at the tower centre (City 1005.9, −3
 
 The pool podium, gates, pediments and roof terrace are too small or too low to read at City distances.
 
+## Rendered glass (11:30, high tier)
+
+The window base is `#76838c` (S 16%, V 55%), lifted from `#5d676e`, whose sunlit faces rendered at V 32%. Median rendered colour of window pixels, by hue:
+- **Sunlit south face:** S 14%, V 45%, within the cap of S ≤ 36% and V ≥ 40% ([south-close.jpg](log/ui/mayfair-tower/south-close.jpg), `cam=1006,-3589,340,50,230`).
+- **West face, in shade at 11:30:** S 44%, V 24%. This reading is advisory ([west-close.jpg](log/ui/mayfair-tower/west-close.jpg), `cam=985,-3589,90,40,150`).
+- **Generic glass tower in the same frames:** S 38%, V 42% (west frame) and S 9%, V 55% (south frame).
+
+Both sample cameras use `&dev&mindist=20`.
+
 ## Night
 
 Condominium windows light at 32%, chosen per window by skin-kit's `litHash(seedOf(id), face, floor, bay)`. The lanterns glow and the cones stay dark, as in the park photographs. City adds no beacons.
