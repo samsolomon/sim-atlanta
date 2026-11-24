@@ -41,6 +41,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
   const line = new Line(pts);
   const batches = new FreightBatches(!highTier);
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: freightClipPlanes(planes), clipShadows: true });
+  batches.prewarm(material);
   const cars = Array.from({ length: MAX_UNITS }, () => {
     const car = batches.createPose(material);
     car.userData.trainId = 'illustrative:freight:norcross';
