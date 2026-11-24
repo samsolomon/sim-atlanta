@@ -879,7 +879,8 @@ Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
 ### All-species preview
 
 `?trees=all-species` is an opt-in look at City with every canopy-row crown converted, so Sam can
-judge the fully converted look before more rollout. Without it, City is unchanged.
+judge the fully converted look before more rollout. Since 24 November the plain City view draws
+generic trees (see below); this preview and `?trees=species` stay available.
 
 **How the remainder is assigned.** The ordinary plan runs first and keeps all its placements:
 the four first-round species, the round-two 300, Ansley's island trees and its enlarged and
@@ -936,6 +937,37 @@ columns. Matched sheets (high tier, 1280×800; Nov, Jul and Jan noon, Nov 23:00)
 [Piedmont](log/ui/tree-species/all-species/all-species-piedmont.jpg),
 [10th Street](log/ui/tree-species/all-species/all-species-street.jpg),
 [skyline](log/ui/tree-species/all-species/all-species-skyline.jpg).
+
+### City default: generic low-poly trees (Sam, 2026-11-24)
+
+After the all-species sheets, Sam decided City ships with the generic low-poly trees
+everywhere for now. Nothing is deleted. `?trees=species` restores the rollout above, and
+`?trees=all-species` keeps the preview. The Model Lab is unchanged.
+
+- **Placement is unchanged.** The rollout plan still runs. Ansley's enlarged crowns, facing
+  pairs and island planting stay. Each planned species tree becomes a generic crown at the same
+  trunk and size (`genericPlan` in trees/rollout.ts). A species on a canopy crown returns that crown
+  to the generic World, which draws it at its canopy-map size, the size the species used. The
+  island maples, crapes and the Beverly island elm become planted generic broadleaves at
+  their own height and spread. That is 2,513 trees at high and 1,254 at low across the nine
+  rows, and all of them are drawn.
+- **1180 Peachtree's terrace crapes** (eight) are now generic 4.5 m broadleaves standing on
+  the roof. The species cards read as small fuzzy blobs at the 350 m view.
+- **The High Museum ginkgo** (the only named site) stays a species. It is drawn as a faceted
+  clump (trees/render.ts), which reads cleanly at orbit. Its leaf disc stays with it.
+- **No leaf-litter carpets** are drawn. They belonged to the species looks.
+
+Cost at Nov 20 14:00 (`perf=run`). Each pair is `?trees=species` → default, calls / triangles / programs:
+
+| View | Low | High |
+|---|---|---|
+| Default open view | 542 / 2,365,466 / 85 → 527 / 2,362,573 / 79 | 1,199 / 13,908,523 / 100 → 1,117 / 13,463,925 / 92 |
+| Ansley `cam=1194,-4352,20,50,420` | 100 / 1,592,947 / 44 → 69 / 1,515,868 / 36 | 241 / 7,467,461 / 54 → 159 / 6,864,943 / 47 |
+
+Low programs (79) reach their 80 target, so the low ceiling moves from 90 to 87.
+Sheets: [Ansley, Sam's view](log/ui/tree-species/generic-default/generic-ansley.jpg),
+[Ansley overhead](log/ui/tree-species/generic-default/generic-overhead.jpg),
+[10th Street](log/ui/tree-species/generic-default/generic-street.jpg).
 
 ### White oak
 
