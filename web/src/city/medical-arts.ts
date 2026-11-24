@@ -24,7 +24,6 @@ const baseH = 9, floorH = 3.2;
 const buff = '#b8a385', red = '#9a7464', darkBrick = '#8a705a', limestone = '#dccfb6', joint = '#b2a58d';
 const terracotta = '#c97a4b', metal = '#cbbfa6', shade = '#9c8e78', window = '#5a6262', boarded = '#7b746a';
 
-type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 type Face = 'east' | 'north' | 'south' | 'west';
 
 export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
@@ -32,7 +31,6 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
   const s = landmarkShell(buildings, grid, medicalArtsId, 'Medical Arts Building', origin, [40.5, 14.1], [[0, 0], [15, 0], [-15, 0]]);
   if (!s) return null;
   const angle = Math.atan2(14.1, 40.5), c = Math.cos(angle), sn = Math.sin(angle);
-  const toLocal = ([x, z]: P2): P2 => [(x - origin[0]) * c + (z - origin[1]) * sn, -(x - origin[0]) * sn + (z - origin[1]) * c];
   const toWorld = ([u, v]: P2): P2 => [origin[0] + u * c - v * sn, origin[1] + u * sn + v * c];
 
   // Counter-clockwise plan, so the outward normal of edge a→b is (dz, -dx)/length.
@@ -46,7 +44,8 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
     const face: Face = Math.abs(mu) > Math.abs(mv) * 1.5 ? (mu > 0 ? 'east' : 'west') : (mv < 0 ? 'north' : 'south');
     return { a, b, face, length: Math.hypot(b[0] - a[0], b[1] - a[1]) };
   });
-  const east = faces.find(f => f.face === 'east')!;
+  const east = faces.find(f => f.face === 'east');
+  if (!east) return null;
   // The Peachtree sidewalk, sampled 3 m out from the wall where the street stands above the lot.
   const edx = east.b[0] - east.a[0], edz = east.b[1] - east.a[1], el = Math.hypot(edx, edz);
   const street = Math.max(s.base + 0.35, ...[0.2, 0.5, 0.8].map(t => {
@@ -77,8 +76,8 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
   for (const { a, b, face, length } of faces) {
     if (length < 3) continue;
     const front = face === 'east' || face === 'north';
-    if (face === 'south') panel(a, b, 0, 1, s.base, roof, 0.02, red);
-    if (face === 'west') panel(a, b, 0, 1, s.base, terracottaLo, 0.02, darkBrick);
+    if (face === 'south') panel(a, b, 0, 1, s.base, roof, 0.06, red);
+    if (face === 'west') panel(a, b, 0, 1, s.base, terracottaLo, 0.06, darkBrick);
 
     // Base: limestone with rusticated joints and boarded storefronts on the street faces.
     if (front) {
@@ -103,18 +102,21 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
       for (let i = 0; i < bays; i++) {
         // The south wall's elevator core leaves a blank central band.
         if (face === 'south' && Math.abs((i + 0.5) / bays - 0.5) < 0.12) continue;
-        panel(a, b, (i + 0.32) / bays, (i + 0.68) / bays, lo + 0.7, roof - 1.1, 0.04, window);
+        panel(a, b, (i + 0.32) / bays, (i + 0.68) / bays, lo + 0.7, roof - 1.1, 0.1, window);
       }
-    } else for (let f = 0; lo + f * floorH + floorH <= roof - 0.6; f++) {
-      const y = lo + f * floorH;
-      if (y > terracottaLo - 0.4 && y < terracottaTop + 0.1) continue;
-      for (let i = 0; i < bays; i++) {
-        panel(a, b, (i + 0.3) / bays, (i + 0.7) / bays, y + 0.7, y + floorH - 0.5, 0.04, window);
+    } else {
+      // Shaft floors up to the terracotta band, then the capital's two storeys above it.
+      const shaft = Math.max(1, Math.floor((terracottaLo - lo) / floorH));
+      const shaftPitch = (terracottaLo - lo) / shaft, capPitch = (roof - 0.6 - terracottaTop) / 2;
+      const rows = [...Array.from({ length: shaft }, (_, f) => [lo + f * shaftPitch, shaftPitch]),
+        [terracottaTop, capPitch], [terracottaTop + capPitch, capPitch]];
+      for (const [y, h] of rows) for (let i = 0; i < bays; i++) {
+        panel(a, b, (i + 0.3) / bays, (i + 0.7) / bays, y + 0.6, y + h - 0.5, 0.1, window);
       }
     }
 
     // The south wall has a light brick stringer where the other three carry orange terracotta.
-    if (face === 'south') panel(a, b, -0.02, 1.02, terracottaLo, terracottaTop, 0.22, '#c9ab8a');
+    if (face === 'south') panel(a, b, -0.2 / length, 1 + 0.2 / length, terracottaLo, terracottaTop, 0.22, '#c9ab8a');
   }
   // The orange terracotta band between shaft and capital, one ring around the building.
   band(plan, terracottaLo, terracottaTop, 0.2, terracotta);
@@ -128,8 +130,8 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
       panel(ea, eb, c0, c1, terracottaTop, roof - 0.6, 0.18, limestone);
     }
   }
-  course(ea, eb, roof - 0.6, roof, 0.45, metal, 1.5);
-  course(ea, eb, roof, roof + 0.55, 0.95, metal, 1.9);
+  course(ea, eb, roof - 0.6, roof, 0.45, metal, 0.45);
+  course(ea, eb, roof, roof + 0.55, 0.95, metal, 0.95);
   panel(ea, eb, -0.05, 1.05, roof - 0.25, roof, 0.9, shade);
   for (const f of faces) if (f.face !== 'east' && f.face !== 'west' && f.length > 3) {
     // The returns: the cornice runs about 2 m around each corner and stops.
@@ -145,9 +147,9 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
   const north = faces.find(f => f.face === 'north');
   if (north) {
     const [na, nb] = [north.a, north.b];
-    panel(na, nb, 0.44, 0.56, capital + 0.3, roof - 0.3, 0.06, '#e6e1d4');
-    panel(na, nb, 0.46, 0.54, capital + 1.2, roof - 1.2, 0.08, terracotta);
-    panel(na, nb, 0.48, 0.52, capital + 2.1, roof - 2.1, 0.1, '#4f6f9a');
+    panel(na, nb, 0.44, 0.56, capital + 0.3, roof - 0.3, 0.12, '#e6e1d4');
+    panel(na, nb, 0.46, 0.54, capital + 1.2, roof - 1.2, 0.18, terracotta);
+    panel(na, nb, 0.48, 0.52, capital + 2.1, roof - 2.1, 0.24, '#4f6f9a');
     for (const t of [0.36, 0.64]) {
       panel(na, nb, t - 0.035, t + 0.035, capital + 2, capital + 3.6, 0.09, limestone);
       panel(na, nb, t - 0.06, t + 0.06, roof, roof + 1.6, 0.01, buff);
@@ -155,11 +157,12 @@ export function createMedicalArts(buildings: VBuilding[], grid: GroundGrid) {
   }
 
   // The two-storey elevator penthouse and its stair head, placed from the lidar.
-  const box = (x0: number, z0: number, x1: number, z1: number): P2[] =>
-    [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].map(p => toLocal(p as P2));
-  s.prism(box(509, -1246, 526, -1231), roof, penthouse, buff, '#8f8b82');
-  s.prism(box(518, -1239, 526, -1230), penthouse, head, buff, '#8f8b82');
-  s.prism(box(498, -1240, 506, -1234), roof, roof + 2.4, '#9a9b95', '#8a8b85');
+  // Rectangles in the building's own frame (u east along Peachtree's normal, v across), centred
+  // on the lidar returns and kept inside the walls.
+  const box = (u0: number, v0: number, u1: number, v1: number): P2[] => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+  s.prism(box(-12, -8, 3, 1), roof, penthouse, buff, '#8f8b82');
+  s.prism(box(-2, -4.5, 4.5, 1.5), penthouse, head, buff, '#8f8b82');
+  s.prism(box(-20.5, 0, -16, 5.5), roof, roof + 2.4, '#9a9b95', '#8a8b85');
 
   const built = s.finish();
   // Nothing is lit in a vacant building: drop the empty lamp mesh so it costs no draw.

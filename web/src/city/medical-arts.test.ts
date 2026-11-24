@@ -31,6 +31,11 @@ it('sets the roof, penthouse and stair head at their lidar heights', () => {
   expect(top(530, -1230)).toBeCloseTo(352, 1); // main roof, east of the penthouse
   expect(top(512, -1243)).toBeCloseTo(357.4, 1); // elevator penthouse
   expect(top(522, -1234)).toBeCloseTo(361.6, 1); // stair head
+  // Nothing on the roof overhangs the walls: just outside them, a ray meets only ground or cornice.
+  const miss = (x: number, z: number) =>
+    new Raycaster(new Vector3(x, 200, z), new Vector3(0, -1, 0)).intersectObject(result.group, true).length;
+  expect(miss(524, -1245.5)).toBe(0); // north of the north wall
+  expect(miss(499, -1239)).toBe(0); // west of the west wall
 });
 
 it('is a vacant building: one body mesh, no lit windows, inside the routine budget', () => {
