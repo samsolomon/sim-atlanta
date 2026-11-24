@@ -714,7 +714,7 @@ async function leaveCityToMap() {
   closeCity(true);
 }
 
-function closeCity(keepMapView = false) {
+function closeCity(keepMapView = false, writeUrl = true) {
   stopWatchSlow?.();
   stopWatchSlow = null;
   clearTimeout(overMapTimer);
@@ -746,7 +746,7 @@ function closeCity(keepMapView = false) {
   if (lastAtm) paintMapAtmosphere?.(lastAtm);
   document.body.classList.remove('in3d');
   shell.setNote(null);
-  setViewParam('map');
+  if (writeUrl) setViewParam('map');
   map?.resize();
 }
 
@@ -757,10 +757,11 @@ let labRoot: HTMLElement | null = null;
 let labView: { openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
 let sceneTitle = document.title;
+let pendingModel: string | null = null;
 const inModels = () => !!labRoot && !labRoot.hidden;
 async function openModels() {
   hideCard();
-  if (diorama || !view3d.hidden) closeCity();
+  if (diorama || !view3d.hidden) closeCity(false, false);
   if (!labRoot) {
     labRoot = Object.assign(document.createElement('section'), { id: 'lab-root' });
     labRoot.setAttribute('aria-label', 'Models');
@@ -787,6 +788,12 @@ async function openModels() {
     shell.setNote('Models couldn’t load here, so this is the map');
     return;
   }
+  if (!inModels()) return;
+  const target = new URL(location.href).searchParams.get('model');
+  if (target && labView?.model() !== target) {
+    labRoot.querySelector<HTMLButtonElement>(`.library [data-model="${CSS.escape(target)}"]`)?.click();
+  }
+  setViewParam('models');
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }
 function leaveModels() {
@@ -805,14 +812,36 @@ function labZoom(dir: 1 | -1) {
 function setViewParam(v: View) {
   const u = new URL(location.href);
   u.searchParams.set('view', v);
-  history.replaceState(null, '', u);
+  if (v === 'models') {
+    const id = pendingModel ?? u.searchParams.get('model') ?? labView?.model() ?? u.searchParams.get('v') ?? 'cq400';
+    u.searchParams.set('model', id);
+    u.searchParams.delete('v');
+  } else {
+    u.searchParams.delete('model');
+    u.searchParams.delete('v');
+  }
+  history.replaceState(history.state, '', u);
 }
 
 document.getElementById('early-map')!.hidden = true;
 const shellOptions: ShellOptions = {
   view: 'map',
   onView(v: View) {
-    if (v !== 'models') leaveModels();
+    const before = new URL(location.href).searchParams.get('view');
+    if ((v === 'models' || inModels()) && before !== v) {
+      const pose = diorama && shellOptions.shareTarget?.();
+      if (pose?.view === 'city') {
+        const u = new URL(location.href);
+        u.searchParams.set('cam', pose.cam);
+        history.replaceState(history.state, '', u);
+      }
+      history.pushState(null, '', location.href);
+      setViewParam(v);
+    }
+    if (v !== 'models') {
+      if (inModels() && v === 'city') keepPose = parseCityCamera(new URL(location.href).searchParams.get('cam')) ?? null;
+      leaveModels();
+    }
     if (v === 'city') void openCity();
     else if (v === 'models') void openModels();
     else void leaveCityToMap();
@@ -939,6 +968,18 @@ const shellOptions: ShellOptions = {
 };
 // The A2c interface (docs/ui-controls-brief.md).
 const shell = createShellNext(shellOptions);
+addEventListener('popstate', () => {
+  const v = initialView(location.search, location.hash);
+  shell.setView(v);
+});
+cardContent.addEventListener('click', e => {
+  const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-see-model]');
+  if (!link || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  pendingModel = link.dataset.seeModel!;
+  shell.setView('models');
+  pendingModel = null;
+});
 if (import.meta.env.DEV) Object.assign(window, {
   __shell: shell,
   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.

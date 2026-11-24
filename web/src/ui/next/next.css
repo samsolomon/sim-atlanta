@@ -609,3 +609,13 @@ body.city-over-map #city-loading { background: transparent !important; }
   .a2-subject:not(.a2-open) { display: block; }
   .a2-credit { left: auto; }
 }
+@media (min-width: 601px) {
+  .a2-browser { top: calc(var(--model-card-bottom, 140px) + 4px); width: 320px; }
+  .a2-model-card { width: 320px; }
+  .a2-in-models .a2-camera { right: calc(var(--a2-right) + 320px); }
+}
+@media (max-width: 600px) {
+  .a2-details-btn { position: fixed; z-index: 5; right: var(--a2-right); bottom: 94px; width: auto; padding: 0 16px; background: var(--a2-ga); color: var(--a2-ink); }
+  body:has(.a2-browser:not([hidden]),.a2-model-details.a2-open) .a2-details-btn { display: none; }
+}
+.a2-model-row[aria-current=true]::after { content: 'Showing'; margin-left: auto; color: var(--a2-ink2); font-size: 12px; }

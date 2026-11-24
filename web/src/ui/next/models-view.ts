@@ -100,8 +100,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
         row.lastElementChild!.textContent = b.textContent;
         row.addEventListener('click', () => {
           b.click();
-          closeBrowser();
-          nameBtn.focus();
+          if (innerWidth < 1280) { closeBrowser(); nameBtn.focus(); }
         });
         list.append(row);
       }
@@ -115,15 +114,18 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     renderBrowser();
   });
   search.addEventListener('input', renderBrowser);
-  const openBrowser = () => {
+  const layout = () => document.dispatchEvent(new Event('lab-layout'));
+  const openBrowser = (focus = true) => {
     browser.hidden = false;
     nameBtn.setAttribute('aria-expanded', 'true');
     renderBrowser();
-    search.focus();
+    if (focus) search.focus();
+    layout();
   };
   const closeBrowser = () => {
     browser.hidden = true;
     nameBtn.setAttribute('aria-expanded', 'false');
+    layout();
   };
   nameBtn.addEventListener('click', () => (browser.hidden ? openBrowser() : closeBrowser()));
   browser.querySelector('[data-close]')!.addEventListener('click', () => {
@@ -155,6 +157,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   const setDetails = (open: boolean) => {
     details.classList.toggle('a2-open', open);
     detailsBtn.setAttribute('aria-expanded', String(open));
+    layout();
   };
   detailsBtn.addEventListener('click', () => setDetails(!details.classList.contains('a2-open')));
   details.querySelector('[data-close]')!.addEventListener('click', () => {
@@ -162,7 +165,12 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     detailsBtn.focus();
   });
 
-  root.append(card, details, browser);
+  root.append(card, details, browser, detailsBtn);
+  if (innerWidth >= 1280) openBrowser(false);
+  new ResizeObserver(() => {
+    root.style.setProperty('--model-card-bottom', card.getBoundingClientRect().bottom + 'px');
+    layout();
+  }).observe(card);
   return {
     /** Escape: close the browser, then the phone Details sheet. */
     escape(): boolean {
