@@ -23,7 +23,7 @@ These are Google Street View panoramas, viewed in an Orca tab. None of the image
 - Bay rhythm: paired windows, 2.65 m apart, between piers every 5.3 m.
 - Awnings: one per bay on the Peachtree (west) and International (south) faces, with a few bays left bare.
 - Rooftop plant: an 8 × 6 m box, position estimated.
-- Stone `#d6cdbd`. Window glass `#5a6266` (S15 V40), recessed punched windows.
+- Stone `#d6cdbd`. Window glass `#5a6266` (S12 V40), recessed punched windows.
 
 ## Lighting
 
