@@ -2987,6 +2987,38 @@ The purple bus photographed at the Phase One launch has two axles and a CNG roof
 
 A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
 
+### 2026-11-23 — Use the terrain itself as the roof over North Avenue
+
+From above, the active rail cover used to have a notch on each side of the
+railway. The separate roof and the bank were trying to describe the same piece
+of ground. We restored the upper formation to the terrain grid and cut out just
+the intervals where the lidar sees daylight. The tracks follow that surface
+across North Avenue. Marietta's pavement continues across on its own ground triangles. The three
+western strips initially read as grass. A muted gravel bed, weeds and a pair
+of rusty edge rails on each strip now distinguish the disused crossing from
+the active railway. [Close view of the three old bridges](log/north-ave/disused-bridges.jpg),
+`cam=-862,-1830,220,50,120`.
+
+Below them, two carriageways, sidewalks and a median run through the whole
+213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
+4.5 m railway clearance and the night lighting are inferred. On low, the
+structure and changed board mesh add 3,478 triangles and one draw with the
+existing ground texture. The two height queries at Marietta put a driver on
+the appropriate street even where both streets share the same map coordinates.
+
+| Camera | Day | Night |
+| --- | --- | --- |
+| Overview, `cam=-783,-1860,235,55,350` | [14:00](log/north-ave/shared-overview-day.jpg) | [23:00](log/north-ave/shared-overview-night.jpg) |
+| Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
+
+Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
+
+On the warehouse bank two mapped sidewalks kept going across the surface above
+their own tunnel. Following their direction through the cut placed that paint
+on the lower level. At the nearby fixed-grade building, all 472 perimeter
+samples matched the original ground at both tiers. The production board passed
+`pnpm test:perf` at both qualities. [Bank close-ups at low and high](log/north-ave/shared-banks.jpg).
+
 ### 2026-11-23 — The paths across The Prado
 
 At The Prado circle the mapped pedestrian ways run across several road legs and the verge in between. The ground painter now follows those ways but clips the white bars to the carriageways. Across two Ansley boards, 33 crossing ways join 83 mapped sidewalk ways. The phone gets the warm paver colour, while the high board carries hex joints and four small yield signs in its existing landscape mesh. [Circle, fork and crossing comparisons](log/ui/ansley-street-edge/README.md).

@@ -1,0 +1,139 @@
+{
+  "source": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json",
+  "bbox": [
+    -84.4022,
+    33.77,
+    -84.399,
+    33.7716
+  ],
+  "origin": [
+    -761.16,
+    -1885.765
+  ],
+  "axis": [
+    -0.873008603542182,
+    0.4877048063545501
+  ],
+  "points": 258838,
+  "classes": {
+    "1": 73864,
+    "2": 66498,
+    "3": 13976,
+    "4": 12400,
+    "5": 40129,
+    "6": 44680,
+    "7": 12,
+    "17": 7279
+  },
+  "adjustedGpsTimeRange": [
+    239941238.12146437,
+    239942744.2566449
+  ],
+  "groups": [
+    {
+      "name": "Marietta",
+      "selectionWindow": [
+        -2,
+        19
+      ],
+      "axisP01P99M": [
+        0.16,
+        18.76
+      ],
+      "elevationP10P50P90Navd88M": [
+        302.26,
+        302.32,
+        302.61
+      ],
+      "crossP01P99M": [
+        -10.46,
+        14.13
+      ],
+      "class17Points": 1933
+    },
+    {
+      "name": "Active-rail cover",
+      "selectionWindow": [
+        23,
+        87
+      ],
+      "axisP01P99M": [
+        23.57,
+        86.1
+      ],
+      "elevationP10P50P90Navd88M": [
+        303.11,
+        303.53,
+        304.01
+      ],
+      "crossP01P99M": [
+        -12.01,
+        15.22
+      ],
+      "class17Points": 2974
+    },
+    {
+      "name": "Disused east strip",
+      "selectionWindow": [
+        98,
+        111
+      ],
+      "axisP01P99M": [
+        99.73,
+        107.41
+      ],
+      "elevationP10P50P90Navd88M": [
+        304.19,
+        304.24,
+        304.69
+      ],
+      "crossP01P99M": [
+        -11.62,
+        16.97
+      ],
+      "class17Points": 427
+    },
+    {
+      "name": "Disused middle strip",
+      "selectionWindow": [
+        114,
+        132
+      ],
+      "axisP01P99M": [
+        115.33,
+        129.69
+      ],
+      "elevationP10P50P90Navd88M": [
+        303.85,
+        304.03,
+        304.07
+      ],
+      "crossP01P99M": [
+        -8.81,
+        18.9
+      ],
+      "class17Points": 918
+    },
+    {
+      "name": "Disused west strip",
+      "selectionWindow": [
+        136,
+        154
+      ],
+      "axisP01P99M": [
+        140.32,
+        153.47
+      ],
+      "elevationP10P50P90Navd88M": [
+        304.42,
+        304.52,
+        304.57
+      ],
+      "crossP01P99M": [
+        -7.82,
+        22.86
+      ],
+      "class17Points": 781
+    }
+  ]
+}
