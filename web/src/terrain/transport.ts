@@ -455,11 +455,16 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const color = ribbon ? PAL.asphaltHwy : sidepath ? pathConcrete : walkway ? PAL.sidewalk : PAL.asphalt;
       // At a deck toe the two shoulders and the center follow different
       // triangles of bare earth. Carry that crossfall into the pavement mesh.
-      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : lands.some(Boolean) ? Math.ceil(width / LANDING_BAND_M) : 1;
+      // A landing deck bands only its last seam; the rest of the span stays one strip.
+      // Seam stations are shared, so the bands meet the strip without T-junction gaps.
+      const landing = !run.deckWeight && lands.some(Boolean);
+      const nearLanding = (s: number) => (lands[0] && s < seam) || (lands[1] && s > line.length - seam);
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : landing ? Math.ceil(width / LANDING_BAND_M) : 1;
       for (let i = 0; i < bands; i++) {
         strip(width * (.5 - i/bands), width * (.5 - (i+1)/bands), DECK_LIFT, color,
-          walkway ? .4 : .95, false, false, i === 0, i+1 === bands);
+          walkway ? .4 : .95, false, false, i === 0, i+1 === bands, landing ? nearLanding : undefined);
       }
+      if (landing) strip(width * .5, -width * .5, DECK_LIFT, color, walkway ? .4 : .95, false, false, true, true, s => !nearLanding(s));
       if (roadTop.length) roadTreads.set(owner, [...(roadTreads.get(owner) ?? []), ...roadTop]);
       if (ribbon) {
         for (let i=0;i<=ribbon.lanes;i++) {
