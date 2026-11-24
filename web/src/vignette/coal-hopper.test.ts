@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { FREIGHT_LENGTH, freightGeometry } from './freight-stock';
 
 describe('aluminum coal hopper', () => {
@@ -15,5 +16,22 @@ describe('aluminum coal hopper', () => {
       expect(g.getAttribute('position').count / 3).toBeLessThanOrEqual(low ? 850 : 2000);
       g.dispose();
     }
+  });
+  it('shows each sloped end sheet from outside as well as inside', () => {
+    const g = freightGeometry('coalEmpty');
+    const pos = g.getAttribute('position');
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+    const facing = { out: 0, in: 0 };
+    for (let i = 0; i < pos.count; i += 3) {
+      a.fromBufferAttribute(pos, i); b.fromBufferAttribute(pos, i + 1); c.fromBufferAttribute(pos, i + 2);
+      const n = b.clone().sub(a).cross(c.clone().sub(a)).normalize();
+      // Slope sheets are the only faces tilted between vertical and horizontal along the car.
+      if (Math.abs(n.z) < 0.3 || Math.abs(n.y) < 0.3 || Math.abs(n.x) > 0.3) continue;
+      const mid = (a.z + b.z + c.z) / 3;
+      if (Math.sign(n.z) === Math.sign(mid)) facing.out++; else facing.in++;
+    }
+    expect(facing.out).toBeGreaterThanOrEqual(4);
+    expect(facing.in).toBeGreaterThanOrEqual(4);
+    g.dispose();
   });
 });

@@ -37,7 +37,8 @@ export function coalHopperBody(b: Builder, load: CoalLoad, low: boolean) {
     const sheet = new THREE.BufferGeometry();
     const p = [[-W / 2, TOP, z0], [W / 2, TOP, z0], [W / 2 - 0.9, SIDE_BOTTOM - 0.6, z1], [-W / 2 + 0.9, SIDE_BOTTOM - 0.6, z1]];
     const [a, b2, c, d] = e > 0 ? p : [p[1], p[0], p[3], p[2]];
-    sheet.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b2, ...c, ...a, ...c, ...d], 3));
+    // Two-sided: the slope shows from inside the car and from outside under the end wall.
+    sheet.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b2, ...c, ...a, ...c, ...d, ...a, ...c, ...b2, ...a, ...d, ...c], 3));
     sheet.computeVertexNormals();
     b.addGeometry(sheet, alu);
     sheet.dispose();
