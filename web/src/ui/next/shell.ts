@@ -608,9 +608,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
     panelHost.show('about');
   });
   document.addEventListener('click', (e) => {
-    const t = e.target as Node;
-    if (!radioPanel.hidden && !radioPanel.contains(t) && !radioBtn.contains(t)) closePops();
-    if (![subject, bar, cam, ...pops.map(([p]) => p)].some((c) => c.contains(t))) closePops();
+    const path = e.composedPath();
+    if (!radioPanel.hidden && !path.includes(radioPanel) && !path.includes(radioBtn)) closePops();
+    if (![subject, bar, cam, ...pops.map(([p]) => p)].some((c) => path.includes(c))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
 
