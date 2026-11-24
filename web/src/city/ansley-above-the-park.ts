@@ -89,18 +89,19 @@ export function createAnsley(buildings: VBuilding[], site: VBuilding, grid: Grou
       const bays = Math.max(1, Math.round(f.length / 3.6));
       const long = f.length > minLong && covered < 0;
       // Punched windows: one window band per floor behind a white pier per bay (far fewer quads
-      // than a pane per window); lit rooms sit between the two.
+      // than a pane per window); lit rooms sit between the two. Layers stand 5 cm apart or more (band 5, lit
+      // rooms 10, piers 15, parapet 20 cm): closer ones z-fight at 400-600 m.
       const from = Math.max(lobby, covered);
       for (let k = 0; k <= bays; k++) {
         const l = Math.max(0, k / bays - 0.18 / bays), r = Math.min(1, k / bays + 0.18 / bays);
-        if (!onStrip(f, l, r)) panel(f, l, r, from, top - 1, 0.07, white);
+        if (!onStrip(f, l, r)) panel(f, l, r, from, top - 1, 0.15, white);
       }
       for (let j = 0; j < floors; j++) {
         const y = lobby + j * pitch;
         if (y < covered) continue;
-        panel(f, 0, 1, y + 0.5, y + pitch - 0.5, 0.03, window);
+        panel(f, 0, 1, y + 0.5, y + pitch - 0.5, 0.05, window);
         for (let k = 0; k < bays; k++) {
-          if (litHash(seed, face0 + i, j, k) < 0.3) panel(f, (k + 0.18) / bays, (k + 0.82) / bays, y + 0.5, y + pitch - 0.5, 0.05, window, true);
+          if (litHash(seed, face0 + i, j, k) < 0.3) panel(f, (k + 0.18) / bays, (k + 0.82) / bays, y + 0.5, y + pitch - 0.5, 0.1, window, true);
         }
         // Balconies in alternate bays on long faces; their slabs read as white bands.
         if (long && j > 0) for (let k = 0; k < bays; k += 2) {
@@ -110,8 +111,8 @@ export function createAnsley(buildings: VBuilding[], site: VBuilding, grid: Grou
           panel(f, (k + 0.05) / bays, (k + 0.95) / bays, y - 0.3, y + 1.0, deep, railColor);
         }
       }
-      if (covered < 0) panel(f, 0.02, 0.98, grade + 0.3, lobby - 0.6, 0.04, window, true);
-      panel(f, -0.003, 1.003, top - 1, top, 0.08, white);
+      if (covered < 0) panel(f, 0.02, 0.98, grade + 0.3, lobby - 0.6, 0.05, window, true);
+      panel(f, -0.003, 1.003, top - 1, top, 0.2, white);
     });
   };
   block(slabPlan, wingPlan, wingRoof, slabRoof, 13, 1.4, rail, 0, 12);
