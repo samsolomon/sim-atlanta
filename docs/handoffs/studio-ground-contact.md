@@ -82,6 +82,10 @@ after the coordinator reviews the sheet (not merge-on-green), and sidewalks stay
   including `audit:ground` and far-form registration.
 
 ## Traps
+- **Shared perf lock (Studio-wide, 2026-11-24):** run every `test:perf` and long-task or perf sweep through
+  `/Users/samsolomon/orca/workspaces/sim-atlanta/.perf-run TICKET pnpm test:perf` (TICKET = PR number or worker
+  name), one at a time, and wait on the wrapper. Release tickets come first. Rerun any failure under load
+  inside the lock before acting on it.
 - Idle work must be sliced (coordinator rule): use core/slice.ts runBudgeted on rAF, never requestIdleCallback for whole-board work, and report the longest slice at 6x.
 - The far prefix is also the shadow pass (#514): anything dropped from it must not be the only caster for its spot (freight decks, #566). The far-form test pins every deck sample.
 - Capture scripts must launch their own Chrome via `scripts/chrome-cdp.mjs` launchChrome (port 0); never attach by port, never pkill by pattern.
