@@ -278,6 +278,9 @@ function runFar(P: Float32Array, C: Float32Array, k: number, minArea: number, sy
  * far version draws as one index into it (the walls it blends, then the triangles it keeps).
  * Until then the cell draws in full.
  */
+/** Elements per copy task when growing a class buffer (about 1 MB of floats). */
+const COPY_CHUNK = 1 << 18;
+
 async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync: boolean) {
   // Main-thread work is sliced: one range's copy-out, one attribute or one far mesh per task, so
   // no step holds a frame (coordinator's idle-time rule). Tests run it straight through.
@@ -295,9 +298,16 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
     const t0 = performance.now();
     const pending: Promise<FarResult>[] = [];
     for (const { start, count } of list) {
-      pending.push(runFar(
-        (pos.array as Float32Array).slice(start * 3, (start + count) * 3),
-        Float32Array.from((col.array as Uint8Array).subarray(start * k, (start + count) * k)), k, minArea, sync));
+      // A downtown range runs to a few MB: copy it out a chunk per task.
+      const P = new Float32Array(count * 3), C = new Float32Array(count * k);
+      const src = pos.array as Float32Array, cs = col.array as Uint8Array | Float32Array;
+      for (let v = 0; v < count; v += COPY_CHUNK / 4) {
+        const e = Math.min(count, v + COPY_CHUNK / 4);
+        P.set(src.subarray((start + v) * 3, (start + e) * 3), v * 3);
+        C.set(cs.subarray((start + v) * k, (start + e) * k), v * k);
+        if (e < count) await slice();
+      }
+      pending.push(runFar(P, C, k, minArea, sync));
       await slice();
     }
     await slice();
@@ -312,15 +322,20 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
     for (const [name, a] of Object.entries(g.attributes) as [string, BufferAttribute][]) {
       const it = a.itemSize, src = a.array as Float32Array | Uint8Array;
       const dst = new (src.constructor as Float32ArrayConstructor | Uint8ArrayConstructor)((total + extra) * it);
-      dst.set(src);
+      // A class buffer runs to tens of MB: copy it a chunk per task.
+      for (let c = 0; c < src.length; c += COPY_CHUNK) {
+        dst.set(src.subarray(c, Math.min(src.length, c + COPY_CHUNK)), c);
+        await slice();
+      }
       let at = total * it;
-      list.forEach((job, j) => {
-        const r = results[j], base = job.start / 3;
-        if (!r.walls) return;
+      for (let j = 0; j < list.length; j++) {
+        const r = results[j], base = list[j].start / 3;
+        if (!r.walls) continue;
         // Blended colours come back in the buffer's own units (bytes, here).
-        if (name === 'color') { for (const v of r.colors!) dst[at++] = a.normalized ? Math.round(v) : v; return; }
-        for (const t of r.walls) { dst.set(src.subarray((base + t) * 3 * it, (base + t + 1) * 3 * it), at); at += 3 * it; }
-      });
+        if (name === 'color') for (const v of r.colors!) dst[at++] = a.normalized ? Math.round(v) : v;
+        else for (const t of r.walls) { dst.set(src.subarray((base + t) * 3 * it, (base + t + 1) * 3 * it), at); at += 3 * it; }
+        if (j % 16 === 15) await slice();
+      }
       grown[name] = new BufferAttribute(dst, it, a.normalized);
       await slice();
     }
