@@ -9,8 +9,8 @@
  *     [--bearings 0,90,180,270] [--at 11:30] [--name "Lilli Midtown"] [--x 660 --z -2177]
  *     [--base http://127.0.0.1:5173]
  *
- * Needs a dev server (`pnpm dev`) for the `__cityDev` hook. The footprint and default target come
- * from the staged scene data; --ground is the street datum in NAVD88 metres (lidar ground) and
+ * Requires a running dev server (`pnpm dev`, passed as --base): production builds have no `__cityDev` hook.
+ * The footprint and default target come from the staged scene data; --ground is the street datum in NAVD88 metres (lidar ground) and
  * --top the skin's highest point above it. A bearing can carry its own tilt, e.g. 145:62, when a
  * neighbour hides the building from the default angle.
  *
