@@ -81,6 +81,8 @@ interface FacadeShell { body: Builder; lights: Builder }
  * panes `bay` metres apart, `fill` and `verticalFill` of each cell), but each pane goes to the lamp
  * mesh when litHash(seed, face, row, column) < occupancy, and its colour comes from the same hash
  * (slot column + 4096). Faces run with the building on the left in the shell's (u, v) plan.
+ * It deliberately takes no library-surface glass parameter: panes are vertex colours only, so the
+ * landmark batcher can merge them.
  */
 export function litFacade(
   shell: FacadeShell, seed: number, face: number, a: P2, b: P2, lo: number, hi: number,
