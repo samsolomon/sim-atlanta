@@ -1797,10 +1797,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       for (const layer of [traffic, arterials, midtownArterials]) layer?.refreshHeights();
     }
     camera.updateMatrixWorld();
+    // CSS pixels a metre spans at one metre: where a far lane's 15 Hz step stays under a pixel.
+    const trafficPx = container.clientHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
     trafficView.setFromProjectionMatrix(trafficViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-    traffic?.update(sceneTime, atm.dark, trafficView, camera.position);
-    arterials?.update(sceneTime, atm.dark, trafficView, camera.position);
-    midtownArterials?.update(sceneTime, atm.dark, trafficView, camera.position);
+    traffic?.update(sceneTime, atm.dark, trafficView, camera.position, trafficPx);
+    arterials?.update(sceneTime, atm.dark, trafficView, camera.position, trafficPx);
+    midtownArterials?.update(sceneTime, atm.dark, trafficView, camera.position, trafficPx);
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);

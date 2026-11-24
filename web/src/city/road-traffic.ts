@@ -25,9 +25,10 @@ const CRACK_M = .15;
 const CRACK_WIDTH_M = .25;
 /** Bisection steps toward each rim when measuring a crack (a quarter-metre over 2^n). */
 const BISECTIONS = 4;
-/** Lanes whose nearest point is beyond this many metres from the camera re-pose at FAR_HZ;
- * nearer lanes every frame. FAR_HYSTERESIS either side stops a lane at the boundary flickering. */
-const FAR_M = 600, FAR_HYSTERESIS = 30, FAR_HZ = 15;
+/** A lane re-poses at FAR_HZ (sim time) once its nearest point is so far from the camera that
+ * one 1/FAR_HZ step of its traffic moves less than one CSS pixel on screen, and never nearer
+ * than FAR_M. FAR_HYSTERESIS (a fraction either side) stops a lane at the boundary flickering. */
+const FAR_M = 600, FAR_HYSTERESIS = .05, FAR_HZ = 15;
 /** Fractions of a step checked against the drawn road before it may interpolate. */
 const CHECKS = [.5, .25, .75, .125, .375, .625, .875];
 /** Metres around a car's footprint that still count as on screen: its long low-sun shadow, and
@@ -559,15 +560,17 @@ export class RoadTraffic {
    * it every car is placed. Signalised and queued lanes are placed only while any part of them
    * is in view, except moving queues, which step every frame to keep their replay continuous.
    */
-  update(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3) {
+  /** `pxPerMetre`: CSS pixels one metre spans at one metre from the camera (viewport height
+   * over 2·tan(fov/2)); with `eye`, it sets where a lane's 15 Hz step falls under a pixel. */
+  update(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3, pxPerMetre = 0) {
     const started = performance.now();
     if (perfOverrides.trafficLegacy) this.stepLegacy(clockMs, darkness);
     else if (perfOverrides.trafficNoCull) this.step(clockMs, darkness);
-    else this.step(clockMs, darkness, view, perfOverrides.trafficNear ? undefined : eye);
+    else this.step(clockMs, darkness, view, perfOverrides.trafficNear ? undefined : eye, pxPerMetre);
     perf.traffic(performance.now() - started);
   }
 
-  private step(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3) {
+  private step(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3, pxPerMetre = 0) {
     this.night.value = darkness;
     const counts = this.meshCounts;
     counts.clear();
@@ -599,8 +602,8 @@ export class RoadTraffic {
       // Distance rate: a far lane re-poses on its own FAR_HZ tick and replays its held cars between.
       let hold = false, record = false;
       if (eye && inView) {
-        const d = lane.bounds.distanceToPoint(eye);
-        lane.far = lane.far ? d > FAR_M - FAR_HYSTERESIS : d > FAR_M + FAR_HYSTERESIS;
+        const d = lane.bounds.distanceToPoint(eye), farAt = Math.max(FAR_M, course.speedMps / FAR_HZ * pxPerMetre);
+        lane.far = lane.far ? d > farAt * (1 - FAR_HYSTERESIS) : d > farAt * (1 + FAR_HYSTERESIS);
         if (lane.far) {
           const tick = Math.floor(seconds * FAR_HZ + lane.stagger);
           if (tick === lane.farTick) hold = true;

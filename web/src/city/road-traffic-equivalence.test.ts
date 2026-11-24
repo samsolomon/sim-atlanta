@@ -128,6 +128,29 @@ describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', 
     }
   });
 
+  it('holds a lane only where its 15 Hz step is under a CSS pixel on screen', async () => {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const pts: [number, number][] = [[0, 0], [0, 300]];
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: () => 0 },
+      [{ line: new Line(pts), roads: [road], speedMps: 18, dailyFlow: 1e9, truckShare: 0 }], 16, 1, 'px');
+    // A phone: 891 CSS px tall at City's 22 degree field of view. A 1/15 s step at 18 m/s is
+    // 1.2 m, under a pixel only beyond about 2.75 km.
+    const px = 891 / (2 * Math.tan(11 * Math.PI / 180));
+    const step = (ms: number, eye: THREE.Vector3) => (layer as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3, px?: number): void }).step(ms, 0, undefined, eye, px);
+    const stagger = (layer as unknown as { lanes: { stagger: number }[] }).lanes[0].stagger;
+    let start = Math.ceil(Date.parse('2026-11-20T17:00:00-05:00') / 1000) * 1000;
+    while (Math.floor((start - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger) !== Math.floor((start + 10 - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger)) start += 7;
+    for (const [height, held] of [[1000, false], [10000, true]] as const) {
+      const frames: string[] = [];
+      for (let f = 0; f < 2; f++) { step(start + 5 * f, new THREE.Vector3(0, height, 150)); frames.push(cars(layer).map(c => c.slice(12, 15).join(',')).join('|')); }
+      expect(frames[0].length).toBeGreaterThan(0);
+      expect(frames[1] === frames[0]).toBe(held);
+    }
+  });
+
   it('hides a held far car when a bus moves into its footprint within the tick', async () => {
     const { RoadTraffic } = await import('./road-traffic');
     const { Line } = await import('../vignette/geom');
