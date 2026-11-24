@@ -47,7 +47,11 @@ export function mByRadius(shell: Shell) {
     for (let j = 0; j < FLOORS; j++) {
       const y = BASE + j * pitch;
       body.quad(p(0, y - .2, .1), p(0, y + .15, .1), p(len, y + .15, .1), p(len, y - .2, .1), PIER);
-      if (len > 8) body.quad(p(.6, y + .15, .55), p(.6, y + 1.05, .55), p(len - .6, y + 1.05, .55), p(len - .6, y + .15, .55), RAIL);
+      if (len > 8) {
+        // A balcony floor from the wall to the glass rail, so the rail never floats off the slab.
+        body.quad(p(.6, y + .15, .02), p(.6, y + .15, .55), p(len - .6, y + .15, .55), p(len - .6, y + .15, .02), PIER);
+        body.quad(p(.6, y + .15, .55), p(.6, y + 1.05, .55), p(len - .6, y + 1.05, .55), p(len - .6, y + .15, .55), RAIL);
+      }
       for (let i = 0; i < units; i++)
         if (litHash(seed, face, j, i) < .34)
           lights.quad(p(i * w + .35, y + .3, .08), p(i * w + .35, y + pitch - .35, .08), p((i + 1) * w - .35, y + pitch - .35, .08), p((i + 1) * w - .35, y + .3, .08), GLASS);
