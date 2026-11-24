@@ -116,8 +116,12 @@ let streamSource: (() => { pending: number; stats: unknown }) | null = null;
 /** Camera routes for ?perf=run&motion=route:<name>: targets in metres, flown at constant speed out and
  * back over the sample. `north` runs Five Points to Brookwood through every Midtown row; `loop` circles
  * the south and east patches. */
-const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][] }> = {
+const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: number[] }> = {
   north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
+  // Wide: a 4 km orbit down the board keeps mid-ring LOD in frame. Dolly: from the whole board into
+  // Brookwood, so far areas become near for the first time (a first-show upload would stall here).
+  wide: { dist: 4000, bearing: 0, tilt: 45, path: [[400, -300], [400, -4300]] },
+  dolly: { dist: 9000, bearing: 0, tilt: 40, path: [[400, -2300], [500, -5200]], dists: [9000, 600] },
   loop: { dist: 700, bearing: 30, tilt: 50, path: [[0, -300], [0, 900], [1400, 900], [1400, -900], [0, -1500], [0, -300]] },
 };
 function routeAt(path: [number, number][], u: number): [number, number] {
@@ -216,7 +220,7 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 
 function frames(windowMs: number) {
   const idx = recent(windowMs);
-  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, over33: 0, over50: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
@@ -226,6 +230,8 @@ function frames(windowMs: number) {
   return {
     fps: r1(((idx.length - 1) * 1000) / Math.max(1, span)), frames: idx.length,
     p50: r1(pct(dts, 0.5)), p95: r1(pct(dts, 0.95)), max: r1(Math.max(...dts)),
+    // Long frames: a pan's hitches, which a percentile hides when there are only a few.
+    over33: dts.filter(d => d > 34).length, over50: dts.filter(d => d > 50).length,
     updateP50: r1(pct(up, 0.5)), renderP50: r1(pct(rn, 0.5)), renderP95: r1(pct(rn, 0.95)),
     trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
   };
@@ -558,8 +564,11 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
       else if (route) {
         // Out and back: u runs 0 -> 1 -> 0 over the sample.
         const k = Math.min(1, (now - t0) / sampleMs);
-        const [x, z] = routeAt(route.path, k < 0.5 ? k * 2 : 2 - k * 2);
-        ctx?.view?.(x, z, route.dist, route.bearing, route.tilt);
+        const u = k < 0.5 ? k * 2 : 2 - k * 2;
+        const [x, z] = routeAt(route.path, u);
+        // A dolly eases its distance geometrically, so the zoom reads as steady.
+        const dist = route.dists ? route.dists[0] * Math.pow(route.dists[1] / route.dists[0], u) : route.dist;
+        ctx?.view?.(x, z, dist, route.bearing, route.tilt);
       } else {
         const next = 150 * Math.sin(((now - t0) / 4000) * 2 * Math.PI);
         ctx?.pan?.(next - x, 0);
@@ -577,7 +586,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
   const summary = {
-    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
+    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, over33: f.over33, over50: f.over50, updateP50: f.updateP50, renderP50: f.renderP50,
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
