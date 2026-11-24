@@ -34,12 +34,16 @@ export function createCentergyOne(buildings: VBuilding[], site: VBuilding, grid:
   }, 0);
   const plan = area > 0 ? s.ring : [...s.ring].reverse();
   s.prism(plan, s.base, lobby, podium, roofDeck);
-  s.prism(plan, lobby, parapet, brick, roofDeck);
-
-  // Faces on the tower's four true sides, not the ring's split segments.
-  const us = plan.map(p => p[0]), vs = plan.map(p => p[1]);
+  // The footprint turns slightly east of north. Its south lobby wall also
+  // steps around a recess. Use the surveyed corners for the tower envelope
+  // and the same four wall planes for its ribbons, corners and lit panes.
+  const extreme = (sx: number, sz: number) => plan.reduce((best, p) =>
+    sx * p[0] + sz * p[1] > sx * best[0] + sz * best[1] ? p : best);
+  const tower = [extreme(-1, -1), extreme(1, -1), extreme(1, 1), extreme(-1, 1)];
+  s.prism(tower, lobby, parapet, brick, roofDeck);
+  const faces = tower.map((p, i) => [p, tower[(i + 1) % tower.length]]);
+  const us = tower.map(p => p[0]), vs = tower.map(p => p[1]);
   const [u0, u1, v0, v1] = [Math.min(...us), Math.max(...us), Math.min(...vs), Math.max(...vs)];
-  const faces: [P2, P2][] = [[[u0, v0], [u1, v0]], [[u1, v0], [u1, v1]], [[u1, v1], [u0, v1]], [[u0, v1], [u0, v0]]];
   faces.forEach(([a, b], face) => {
     const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
     const at = (t: number, y: number, out: number) => [a[0] + t * dx + out * dz / len, y, a[1] + t * dz - out * dx / len];
@@ -61,13 +65,19 @@ export function createCentergyOne(buildings: VBuilding[], site: VBuilding, grid:
     // Only the lit panes are drawn; the ribbons already carry the day colour.
     const litOnly = { body: { quad: () => {} } as unknown as typeof s.body, lights: s.lights };
     litFacade(litOnly, seed, face, pt(0), pt(1), lobby, roof, floors, len / Math.round(len / 3), 0.9, 0.5, [band], 0.07);
-    // Lobby glazing.
-    quad(0.03, 0.97, g0 + 0.3, lobby - 0.6, 0.05, podium, true);
+
     // Sunshade trellis: a deck ring on posts, cantilevered 0.9 m past the wall (inside the 2.5 m footprint allowance).
     quad(-0.03, 1.03, trellisLo, trellisHi, 0.9, trellis);
     // Posts rise from the parapet to the slats, so the trellis is carried, not floating.
     for (const t of [0.05, 0.5, 0.95]) quad(t - 0.15 / len, t + 0.15 / len, parapet, trellisHi, 0.2, trellis);
   });
+  // Follow every lobby setback at street level.
+  for (let i = 0; i < plan.length; i++) {
+    const a = plan[i], b = plan[(i + 1) % plan.length];
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 2) continue;
+    litFacade({ body: s.body, lights: s.lights }, seed, i, a, b,
+      g0 + 0.3, lobby - 0.6, 1, 100, 0.94, 1, [podium], 1);
+  }
   // Trellis top: open slats over the roof.
   for (let k = 0; k <= 6; k++) {
     const v = v0 - 0.9 + (k / 6) * (v1 - v0 + 1.8);
