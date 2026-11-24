@@ -118,11 +118,14 @@ it('swaps a low board to its far ground by distance, with hysteresis, and flags 
   } finally { vi.unstubAllGlobals(); }
 });
 
-/** Largest height of the far mesh above the DEM at any node it covers, and the plan box of the worst. */
-function aboveDem(g: BufferGeometry, path: string) {
-  const gr = grid(path), { rows, cols, stepM, bounds } = gr.manifest;
+/** Largest height of the far mesh above the DEM at any node it covers, kept separately within
+ * `band` of the board rim and away from it, so a rim residue can't mask an interior failure. */
+function aboveDem(g: BufferGeometry, near: GroundSurface, band: number) {
+  // The heights the near mesh is drawn from: the DEM plus inferred pavement under decks.
+  const heights = (near as unknown as { heights: Float32Array }).heights;
+  const { rows, cols, stepM, bounds } = near.grid.manifest;
   const p = g.getAttribute('position'), idx = g.index!;
-  let worst = 0, at: [number, number] = [0, 0];
+  let rim = 0, interior = 0, rimAt: [number, number] = [0, 0], inAt: [number, number] = [0, 0];
   for (let n = 0; n < idx.count; n += 3) {
     const [a, b, c] = [0, 1, 2].map(e => idx.getX(n + e));
     const ax = p.getX(a), az = p.getZ(a), dx = p.getX(b) - ax, dz = p.getZ(b) - az, ex = p.getX(c) - ax, ez = p.getZ(c) - az;
@@ -130,15 +133,16 @@ function aboveDem(g: BufferGeometry, path: string) {
     const xs = [ax, p.getX(b), p.getX(c)], zs = [az, p.getZ(b), p.getZ(c)];
     for (let r = Math.max(0, Math.ceil((Math.min(...zs) - bounds.minZ) / stepM)); r <= Math.min(rows - 1, Math.floor((Math.max(...zs) - bounds.minZ) / stepM)); r++)
       for (let col = Math.max(0, Math.ceil((Math.min(...xs) - bounds.minX) / stepM)); col <= Math.min(cols - 1, Math.floor((Math.max(...xs) - bounds.minX) / stepM)); col++) {
-        const h = gr.node(r, col); if (h === null) continue;
+        const h = heights[r * cols + col]; if (!Number.isFinite(h)) continue;
         const x = bounds.minX + col * stepM, z = bounds.minZ + r * stepM;
         const wb = ((x - ax) * ez - (z - az) * ex) / det, wc = (dx * (z - az) - dz * (x - ax)) / det, wa = 1 - wb - wc;
         if (Math.min(wa, wb, wc) < -1e-6) continue;
-        const up = wa * p.getY(a) + wb * p.getY(b) + wc * p.getY(c) - (h - gr.manifest.vertical.sceneZeroNavd88M);
-        if (up > worst) { worst = up; at = [x, z]; }
+        const up = wa * p.getY(a) + wb * p.getY(b) + wc * p.getY(c) - h;
+        const nearRim = Math.min(x - bounds.minX, bounds.maxX - x, z - bounds.minZ, bounds.maxZ - z) <= band;
+        if (nearRim) { if (up > rim) { rim = up; rimAt = [x, z]; } } else if (up > interior) { interior = up; inAt = [x, z]; }
       }
   }
-  return { worst, at };
+  return { rim, interior, rimAt, inAt };
 }
 
 it('settles the very-far ground below the DEM with exact rims, at a fifth of the far triangles', async () => {
@@ -152,10 +156,10 @@ it('settles the very-far ground below the DEM with exact rims, at a fifth of the
     // Same rim, voids and openings: no crack against any neighbour or level.
     expect(Math.abs(openLength(v) - openLength(near.geometry)), path).toBeLessThan(1);
     const { bounds, stepM } = near.grid.manifest;
-    const { worst, at } = aboveDem(v, path);
-    const nearRim = Math.min(at[0] - bounds.minX, bounds.maxX - at[0], at[1] - bounds.minZ, bounds.maxZ - at[1]) <= 160 + stepM;
-    if (nearRim) rimWorst = Math.max(rimWorst, worst); else interiorWorst = Math.max(interiorWorst, worst);
-    if (process.env.RIMS && worst > 1) console.log('RIM', path, worst.toFixed(2), at.map(Math.round).join(','));
+    const { rim: r, interior: i, rimAt, inAt } = aboveDem(v, near, 160 + stepM);
+    if (process.env.RIMS && i > 0.05) console.log('INTERIOR', path, i.toFixed(2), inAt.map(Math.round).join(','));
+    rimWorst = Math.max(rimWorst, r); interiorWorst = Math.max(interiorWorst, i);
+    if (process.env.RIMS && r > 1) console.log('RIM', path, r.toFixed(2), rimAt.map(Math.round).join(','));
     // Rim vertices are exact: the same heights as the far level along every board edge.
     const rim = (g: BufferGeometry) => { const p = g.getAttribute('position'), m = new Map<string, number>();
       for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); if (x === bounds.minX || x === bounds.maxX || z === bounds.minZ || z === bounds.maxZ) m.set(x + ',' + z, p.getY(i)); } return m; };

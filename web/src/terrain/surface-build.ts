@@ -342,7 +342,7 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       const centre = node(cx + s / 2, cz + s / 2);
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
-    if (lower) settleBelow(pos, indices, remap, heights, spec, errorM);
+    if (lower) settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
     return { pos, uv, indices };
 }
 
@@ -350,7 +350,8 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
  * Lower interior far vertices until no drawn triangle stands above a DEM node under it.
  * Rim nodes (seams, side walls) and clipped slot vertices stay put; a few passes settle the
  * shared vertices, since lowering one triangle's corner also lowers its neighbours. No vertex
- * drops more than `limit` below its own DEM node, so a cell against the rim may keep a residue.
+ * drops more than `limit` (twice the error) below its own node, so a cell against the rim may
+ * keep a residue (up to about 4 m within 165 m of a seam on the current boards).
  */
 function settleBelow(pos: number[], indices: number[], remap: Map<number, number>, heights: Float32Array, spec: SurfaceSpec, limit: number) {
   const { rows, cols, stepM, bounds } = spec;
