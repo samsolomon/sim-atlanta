@@ -1,7 +1,7 @@
 import type { Underpass } from './underpass';
 import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
 import * as THREE from 'three';
-import { Line, segDist, type P2 } from '../vignette/geom';
+import { Line, rng, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
@@ -106,6 +106,33 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   }
   paintActiveOval(ctx, data.bounds);
   paintWinnPark(ctx, data);
+
+  if (underpass) for(const span of underpass.spans){
+    if(span.finish!=='disused-ballast')continue;
+    // Coarse aggregate and small islands of weeds remain on these trackless
+    // beds. Feather the old formation back into the land beyond the abutments.
+    const random=rng(Math.round(span.start*1000));
+    const width=span.end-span.start, reach=underpass.halfWidth+10;
+    const ring=(points:P2[],color:string,alpha:number)=>{
+      ctx.globalAlpha=alpha;
+      ctx.beginPath();trace(ctx,points.map(([s,t])=>underpass.point(s,t)));ctx.closePath();
+      ctx.fillStyle=color;ctx.fill();
+    };
+    const density=(t:number)=>Math.min(1,Math.max(0,(reach-Math.abs(t))/7));
+    ctx.save();
+    for(let t=-reach;t<reach;t+=2){
+      const end=Math.min(reach,t+2);
+      ring([[span.start,t],[span.end,t],[span.end,end],[span.start,end]],'#928777',density((t+end)/2));
+    }
+    const colors=['#736d64','#a79a87','#817b68','#84865e','#96916e'];
+    for(let i=0;i<width*reach*.7;i++){
+      const s=span.start+.55+random()*(width-1.1),t=(2*random()-1)*(reach-1);
+      const r=.22+random()*.7;
+      ring([[s-r*.5,t-r],[s+r*.45,t-r*.35],[s+r*.6,t+r],[s-r*.6,t+r*.5]],
+        colors[Math.floor(random()*colors.length)],.65*density(t));
+    }
+    ctx.restore();
+  }
 
   // The ballast shoulder is paint on the same ground triangles as the bank.
   // It narrows into the existing 4.2 m track ribbons at both ends.

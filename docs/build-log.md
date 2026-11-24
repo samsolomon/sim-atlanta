@@ -3099,13 +3099,16 @@ From above, the active rail cover used to have a notch on each side of the
 railway. The separate roof and the bank were trying to describe the same piece
 of ground. We restored the upper formation to the terrain grid and cut out just
 the intervals where the lidar sees daylight. The tracks follow that surface
-across North Avenue. Marietta's pavement and the grass on the three disused
-strips also continue across on their own ground triangles.
+across North Avenue. Marietta's pavement continues across on its own ground triangles. The three
+western strips initially read as grass. A muted gravel bed, weeds and a pair
+of rusty edge rails on each strip now distinguish the disused crossing from
+the active railway. [Close view of the three old bridges](log/north-ave/disused-bridges.jpg),
+`cam=-862,-1830,220,50,120`.
 
 Below them, two carriageways, sidewalks and a median run through the whole
 213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
 4.5 m railway clearance and the night lighting are inferred. On low, the
-structure and changed board mesh add 2,542 triangles and one draw with the
+structure and changed board mesh add 3,478 triangles and one draw with the
 existing ground texture. The two height queries at Marietta put a driver on
 the appropriate street even where both streets share the same map coordinates.
 
@@ -3116,7 +3119,7 @@ the appropriate street even where both streets share the same map coordinates.
 
 Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
 
-On the warehouse bank two mapped sidewalks kept going across the grass above
+On the warehouse bank two mapped sidewalks kept going across the surface above
 their own tunnel. Following their direction through the cut placed that paint
 on the lower level. At the nearby fixed-grade building, all 472 perimeter
 samples matched the original ground at both tiers. The production board passed

@@ -15,6 +15,7 @@ export interface CoverSpan {
   /** Along-road drift per cross-axis metre of the formation outside the walls. */
   bankSkew?: number;
   medianPier?: boolean;
+  finish?: 'disused-ballast';
 }
 
 /** Absolute heights are NAVD88. Uncovered intervals between spans admit daylight.
@@ -189,6 +190,50 @@ export function drawUnderpass(
     for (const s of [start, end]) {
       if (s !== cover.start && s !== cover.end) continue;
       if (site.spans.some((other) => other !== cover && (other.start === s || other.end === s))) continue;
+      if (cover.finish === 'disused-ballast') {
+        // Weathered edge protection follows the actual crest at each post.
+        // Stop on the banks, a little beyond the abutments.
+        const station = s + (s === cover.start ? 0.28 : -0.28);
+        const reach = w + 1.4,
+          bays = Math.ceil((2 * reach) / 3);
+        const rim = (t: number) => edgeHeight(station, t);
+        const section = (t: number, y: number) => [
+          p(station - 0.09, t, y + 0.63),
+          p(station + 0.09, t, y + 0.63),
+          p(station + 0.09, t, y + 0.78),
+          p(station - 0.09, t, y + 0.78),
+        ];
+        let previous: number[][] | undefined;
+        for (let j = 0; j <= bays; j++) {
+          const t = -reach + (2 * reach * j) / bays,
+            y = rim(t);
+          const current = section(t, y);
+          if (previous)
+            for (let k = 0; k < 4; k++) {
+              const next = (k + 1) % 4;
+              out.quad(
+                previous[k],
+                previous[next],
+                current[next],
+                current[k],
+                k === 2 ? '#98785d' : '#715747',
+              );
+            }
+          if (j === 0 || j === bays) out.quad(current[0], current[1], current[2], current[3], '#785e4b');
+          const base = [
+            [-0.07, -0.07],
+            [-0.07, 0.07],
+            [0.07, 0.07],
+            [0.07, -0.07],
+          ].map(([ds, dt]) => p(station + ds, t + dt, y - 0.04));
+          for (let k = 0; k < 4; k++) {
+            const a = base[k],
+              b = base[(k + 1) % 4];
+            out.quad(a, b, [b[0], y + 0.64, b[2]], [a[0], y + 0.64, a[2]], '#715747');
+          }
+          previous = current;
+        }
+      }
       for (let i = 0; i < 12; i++) {
         const l = w * (i / 6 - 1),
           r = w * ((i + 1) / 6 - 1);
@@ -288,7 +333,7 @@ export function underpassMesh(
         float d=abs(mod(trench.x+4.,12.)-6.);
         float wall=abs(abs(trench.y)-trenchWidth);
         float h=abs(trench.z-3.);
-        float inside=smoothstep(trenchEnds.y-2.,trenchEnds.y,trench.x)*(1.-smoothstep(trenchEnds.z,trenchEnds.z+2.,trench.x));
+        float inside=(1.-smoothstep(4.7,5.4,trench.z))*smoothstep(trenchEnds.y-2.,trenchEnds.y,trench.x)*(1.-smoothstep(trenchEnds.z,trenchEnds.z+2.,trench.x));
         float lens=(1.-smoothstep(.25,.4,d))*(1.-smoothstep(.08,.15,h))*(1.-smoothstep(.03,.15,wall));
         float spill=exp(-.12*d-.16*wall-.23*h);
         outgoingLight+=(1.-trench.w)*vec3(.034,.028,.019);

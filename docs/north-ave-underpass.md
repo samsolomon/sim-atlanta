@@ -119,7 +119,10 @@ and the diffuse shading apply along the approaches and through the bore.
 The five surveyed top elevations guide the board grid before either quality
 tier chooses its triangles. Each cover is part of that upper board. Marietta
 keeps its mapped pavement, the running tracks follow the restored formation,
-and the western strips retain the surrounding ground paint. The four gaps
+and the three western strips carry a muted old ballast bed with sparse weeds.
+Low rusty edge rails follow each bank-to-bank crest. The trackless strips and
+pipe railings are visible in the survey imagery. The ballast finish, rust,
+0.78 m rail height and weed pattern are illustrative. The four gaps
 between them are actual holes, with retaining walls cut to the bank height.
 The Marietta median and shoulder supports, portal faces and soffits share a
 draw with the lower pavement. Warm wall lights are based on the west approach
@@ -129,7 +132,7 @@ Tests sample the drawn carriageways and soffits, require open sky at each
 surveyed gap, and check the mapped tracks at metre intervals over the crossing
 and both banks against a 1.5% grade limit. The previous North Avenue ballast
 exception has been removed from the ground-contact regression test. The low
-board and structure cost is 2,542 additional triangles and one draw. This is a
+board and structure cost is 3,478 additional triangles and one draw. This is a
 web rebuild. The survey does not change the staged City data.
 
 [Matched overview and under-deck photographs and cameras](build-log.md#2026-11-23--use-the-terrain-itself-as-the-roof-over-north-avenue)

@@ -75,6 +75,7 @@ it('keeps North Avenue sidewalks under the covers and Marietta sidewalks on top'
     closePath() {},
     scale() {},
     translate() {},
+    fill() {},
     fillRect() {},
     setLineDash() {},
     stroke() {

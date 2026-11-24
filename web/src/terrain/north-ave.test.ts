@@ -51,6 +51,13 @@ it.each(['low', 'high'] as const)(
         expect(road[0]).toBeCloseTo(site.floor(s), 3);
         expect(Math.min(...soffit) - road[0]).toBeCloseTo(cover.clearance ?? site.clearance, 3);
       }
+    for (const cover of site.spans.filter(c => c.finish === 'disused-ballast')) {
+      for (const s of [cover.start+.28,cover.end-.28]) for (const t of [-8,0,8]) {
+        const bank = board.sampleScene(...site.point(s,t))! + zero;
+        // Both edge rails sit above the surveyed upper surface.
+        expect(Math.max(...hit(structure,s,t))-bank).toBeCloseTo(.78,1);
+      }
+    }
     for (const s of [21.5, 93, 111, 135])
       for (const t of [-7, 4, 7]) {
         expect(board.sampleScene(...site.point(s, t))).toBeNull();

@@ -27,8 +27,8 @@ export const northAvenue: Underpass = {
   spans: [
     { start: 0, end: 19, type: 'street', top: 302.32, clearance: 4.69, medianPier: true },
     { start: 24, end: 86, type: 'rail-ballast', top: 303.53, bankSkew: 0.35 },
-    { start: 100, end: 107, type: 'terrain', top: 304.24 },
-    { start: 115, end: 130, type: 'terrain', top: 304.03 },
-    { start: 140, end: 153, type: 'terrain', top: 304.52 },
+    { start: 100, end: 107, type: 'terrain', finish: 'disused-ballast', top: 304.24 },
+    { start: 115, end: 130, type: 'terrain', finish: 'disused-ballast', top: 304.03 },
+    { start: 140, end: 153, type: 'terrain', finish: 'disused-ballast', top: 304.52 },
   ],
 };

@@ -305,7 +305,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
     const onSite = (x: number, z: number) => sites.some(ring => pointInRing(x, z, ring));
-    scenery.buildLights(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z),
+    const reclaimedBed = (x: number,z: number) => {
+      if (!options.underpass) return false;
+      const [s,t] = options.underpass.local(x,z);
+      return Math.abs(t)<=options.underpass.halfWidth+2 && options.underpass.spans.some(
+        span => span.finish==='disused-ballast' && s>=span.start && s<=span.end);
+    };
+    scenery.buildLights(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
       { ...options.lights, lowDetail: options.quality === 'low' });
   }
   let fragment: World | undefined;
