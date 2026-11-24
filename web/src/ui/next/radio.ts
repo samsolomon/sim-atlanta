@@ -120,6 +120,7 @@ export function createRadio(o: RadioOptions): Radio {
   let station: Station | null = null;
   const shuffles = new Map<string, Shuffle>();
   let loaded = false;
+  let unavailable = false;
   let playing = false;
   let shown: StationTrack | null = null;
   /** The track that plays next: chosen as soon as one starts, so the preloaded file is the one used. */
@@ -161,6 +162,11 @@ export function createRadio(o: RadioOptions): Radio {
     prefetchUpcoming();
     if (playing && ctx && !primary() && upcoming) crossfade(0, upcoming);
     changed();
+  }).catch((error: unknown) => {
+    unavailable = true;
+    playing = false;
+    if (ctx) pause();
+    throw error;
   });
 
   /** Before the first Play, keep the file for the track on show fetched (and only that one). */
@@ -191,7 +197,7 @@ export function createRadio(o: RadioOptions): Radio {
     const now = ctx!.currentTime;
     const from = levelOf(d);
     const g = d.gain.gain;
-    g.cancelScheduledValues(now);
+    g.cancelScheduledValues(0);
     g.setValueAtTime(from, now);
     d.rest = to;
     if (dur <= 0 || Math.abs(to - from) < 1e-4) {
@@ -295,7 +301,7 @@ export function createRadio(o: RadioOptions): Radio {
         // The file didn't load: skip to the next track rather than sit silent, but count it, so
         // a dead network stops the radio instead of fetching its way through the station.
         if (d.role !== 'primary' && d.role !== 'incoming') return;
-        if (++strikes >= 2) return failed(d);
+        if (++strikes >= 2 || (fading?.inc === d && !fading.out.el.paused)) return failed(d);
         crossfade(0);
         return;
       }
@@ -413,6 +419,7 @@ export function createRadio(o: RadioOptions): Radio {
       // Interrupted mid-fade: the louder deck fades out, the quieter one takes the new track.
       const [a, b] = decks;
       out = levelOf(a) >= levelOf(b) ? a : b;
+      ramp(out, levelOf(out), 0);
       inc = other(out);
       fading = null;
     } else inc = out ? other(out) : decks[0];
@@ -534,6 +541,7 @@ export function createRadio(o: RadioOptions): Radio {
       return d ? d.el.currentTime : 0;
     },
     toggle() {
+      if (unavailable) return;
       // Play works before stations.json arrives: the tap still creates the AudioContext (it must
       // happen inside the gesture), the button shows the spinner, and the first track starts
       // as soon as the list loads.

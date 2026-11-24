@@ -662,15 +662,13 @@ body.city-over-map #city-loading { background: transparent !important; }
   background: linear-gradient(135deg,#9fb8d6,#e7c9a0);
 }
 .a2-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
-/* Station name small, with ‹ › beside it; their hit areas reach into the row's padding. */
+/* Give the station controls their own row so title taps never switch stations. */
 .a2-station { display: flex; align-items: center; min-width: 0; align-self: end; font-size: 12px; color: var(--a2-ink2); }
 .a2-station button { position: relative; min-height: 0; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .a2-station button:disabled { cursor: default; opacity: .5; }
 .a2-st-name { min-width: 0; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.a2-st-step { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; }
+.a2-st-step { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
 .a2-st-step svg { width: 12px; height: 12px; }
-.a2-st-step::after { content: ''; position: absolute; inset: -13px; } /* 44×44 around an 18 px glyph */
-.a2-st-name::after { content: ''; position: absolute; inset: -13px 0; }
 .a2-station button:hover:not(:disabled) { color: var(--a2-ink); }
 .a2-track-info strong { min-width: 0; align-self: start; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .a2-player .a2-ib { position: relative; flex: 0 0 44px; width: 44px; height: 44px; }

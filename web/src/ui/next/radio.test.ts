@@ -373,4 +373,53 @@ describe('radio engine', () => {
     expect(r.playing).toBe(false);
     expect(fetched.length).toBeLessThanOrEqual(3);
   });
+  it('holds the louder deck while a rapid second Next waits for playing', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const out = mp3()[0];
+    r.next();
+    await flush();
+    els.find(e => e !== out)!.emit('playing');
+    ctx.currentTime = 0.305;
+    r.next();
+    const gain = deckGain(els.indexOf(out));
+    const held = gain.last('set')![1];
+    expect(held).toBeCloseTo(Math.cos(Math.PI / 8));
+    await flush();
+    ctx.currentTime = 3;
+    els.find(e => e !== out)!.emit('playing');
+    expect(gain.last('curve')![1]).toBeCloseTo(Number(held));
+  });
+
+  it('keeps the audible track when a skip fails to fetch', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const out = mp3()[0];
+    out.emit('playing');
+    const track = r.track;
+    offline = true;
+    r.next();
+    await flush();
+    expect(r.playing).toBe(true);
+    expect(r.track).toBe(track);
+    expect(out.paused).toBe(false);
+    expect(fetched).toHaveLength(2);
+  });
+
+  it('clears early Play when the manifest fails', async () => {
+    const r = createRadio({ load: async () => { throw Error('offline'); }, sceneHour: () => 14, resolve: p => p, audio });
+    r.toggle();
+    await expect(r.ready).rejects.toThrow('offline');
+    expect(r.playing).toBe(false);
+    expect(r.buffering).toBe(false);
+    vi.advanceTimersByTime(340);
+    expect(ctx.state).toBe('suspended');
+    r.toggle();
+    expect(r.playing).toBe(false);
+  });
+
 });
