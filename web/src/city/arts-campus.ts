@@ -376,8 +376,8 @@ export function createArtsCampusLandmark(
         stair: pz.stair as [P2, P2],
         stairLanding: pz.stairLanding,
         tables: pz.tables as P2[],
-        // March and December photographs show them furled or gone.
-        umbrellas: 'furled',
+        // Sam's pick (2026-11-24): open, as in July 2024; 'furled' matches March photos.
+        umbrellas: 'open',
         benches: pz.benches as P2[],
       },
       (u, v) => {

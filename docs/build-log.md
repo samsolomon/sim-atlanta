@@ -3212,8 +3212,9 @@ Sam couldn't find the tables at his usual 260 m orbit. They sat in the Woodruff
 shadow, tucked against a wall. A leaf-on aerial showed where the real café sits:
 in a gridded tree grove in the open square, beside four pale squares that turned
 out to be open umbrellas. The tables now stand there, twelve in three rows of four,
-with warm pale tops and furled cream umbrellas, because no November photograph
-shows them open. Ten visitors sit at lunch. The grove adds about 1,100 triangles
+with warm pale tops and cream umbrellas. No November photograph shows the
+umbrellas, so they started furled. At 260 m the furled ones read only as a dark
+smudge, so Sam picked them open. Ten visitors sit at lunch. The grove adds about 1,100 triangles
 to the existing shell batch, with no new draw or material.
 [Before and after](log/ui/high-visitors/compare-lunch.jpg) ·
 [café grove close-up](log/ui/high-visitors/tables.jpg) ·

@@ -14,14 +14,14 @@ The second request came with a screenshot circling the open paved square, betwee
 ### State (revision 2)
 
 - Twelve tables in three rows of four at local u −48…−34.5, v 17…25 in `fixtures/arts-campus.json`, inside the grove that the leaf-on Esri aerial shows. Sources are in `docs/arts-campus.md`.
-- Each table has four red chairs, a warm `#f5ead4` top, and a furled cream umbrella at every other table. `umbrellas: 'open'` in `arts-campus.ts` gives the open variant offered to Sam.
+- Each table has four red chairs, a warm `#f5ead4` top, and an open cream umbrella at every other table (Sam's pick). `umbrellas: 'furled'` in `arts-campus.ts` is the one-line switch back.
 - Ten seats are set by `highSeated(crowd)`. Walker routes avoid the grove, and a test enforces a 1.3 m clearance.
 - No new material or batch. Low remains at 90/90 programs.
 
 | View | City camera | Eastern time, Nov 20 2026 |
 | --- | --- | --- |
 | [Lunch](../log/ui/high-visitors/lunch.jpg) · [Night](../log/ui/high-visitors/night.jpg) | `565,-3965,-101,55,260` | 13:00 · 23:00 |
-| [Café grove close-up](../log/ui/high-visitors/tables.jpg) · [open umbrellas](../log/ui/high-visitors/tables-open.jpg) | `520,-3955,-101,50,60` + `&dev&mindist=20` | 13:00 |
+| [Café grove close-up](../log/ui/high-visitors/tables.jpg) · [furled umbrellas](../log/ui/high-visitors/tables-furled.jpg) | `520,-3955,-101,50,60` + `&dev&mindist=20` | 13:00 |
 | [Before/after](../log/ui/high-visitors/compare-lunch.jpg) · [day/night](../log/ui/high-visitors/day-night.jpg) · [umbrella options](../log/ui/high-visitors/umbrella-options.jpg) | as above | |
 
 Checks:
@@ -32,7 +32,7 @@ Checks:
 
 ### Next steps
 
-1. Wait for Sam’s OK and his umbrella choice relayed by the coordinator. If he picks open, change `umbrellas` to `'open'`. Then reshoot lunch, night and close-up at the cameras above, rerun tests and both perf tiers, and update the docs text that says furled.
+1. Sam approved #389 with open umbrellas (coordinator, 2026-11-24).
 2. On approval, sync main, keep both build-log entries, rerun checks, merge, and quote `gh pr view 389 --json state,mergeCommit`. A web rebuild is needed, and only the coordinator deploys.
 3. Gap for the tree agent: the café grove's deciduous trees, about 6–10 in a grid, at local u −50…−28, v 16…30. Keep crowns clear of the 2.65 m umbrella tops.
 

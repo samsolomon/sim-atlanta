@@ -114,7 +114,7 @@ squares near u −33, v 10 look like open umbrellas. Photographs show a loose gr
 12–15 round pedestal tables with four chairs each, inside a low cable rail among
 deciduous trees. City draws twelve tables in three rows of four. Each table has four
 red-cushioned chairs, a warm pale top (`#f5ead4`) that stands out from the grey
-paving, and a cream umbrella at every other table.
+paving, and an open cream umbrella at every other table.
 
 - **Chairs.** The 2006–07 photographs show white wire chairs with red seat pads.
   Photographs from 2018 to 2023 show teal bistro chairs. City keeps the red chairs,
@@ -122,8 +122,9 @@ paving, and a cream umbrella at every other table.
   recorded here.
 - **Umbrellas.** In March 2023 they were furled, and in July 2024 they were open on
   weighted bases. A rainy December 2018 photograph shows none. I found no October
-  or November photograph, so City draws them furled. An open-umbrella variant
-  (`umbrellas: 'open'` in `arts-campus.ts`) was captured for Sam to choose from.
+  or November photograph. Sam chose open (2026-11-24) because they read at his
+  orbit. Setting `umbrellas: 'furled'` in `arts-campus.ts` restores the
+  photo-faithful winter state.
 - **Left out.** The grove's trees belong to the tree agent and are a gap. The cable
   rail is too thin to read at City distances.
 - **Positions.** Exact table positions are illustrative.
@@ -157,5 +158,5 @@ November 20, 2026, high tier:
   [furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg) use the
   same camera.
 - [Café grove close-up](log/ui/high-visitors/tables.jpg) and the
-  [open-umbrella close-up](log/ui/high-visitors/tables-open.jpg) use
+  [furled-umbrella close-up](log/ui/high-visitors/tables-furled.jpg) use
   `520,-3955,-101,50,60` with `&dev&mindist=20`.
