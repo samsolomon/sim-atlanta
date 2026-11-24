@@ -89,7 +89,7 @@ export function createElevanceTech(buildings: VBuilding[], site: VBuilding, grid
       if (high || floors <= 12) {
         for (let f = 0; f < floors; f++) {
           const y = from + f * (top - 0.5 - from) / floors;
-          shell.body.quad(out(0, y, 0.05), out(0, y + 0.7, 0.05), out(1, y + 0.7, 0.05), out(1, y, 0.05), spandrel);
+          shell.body.quad(out(0, y, 0.11), out(0, y + 0.7, 0.11), out(1, y + 0.7, 0.11), out(1, y, 0.11), spandrel);
         }
       }
     });
