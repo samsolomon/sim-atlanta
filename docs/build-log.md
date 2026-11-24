@@ -3456,3 +3456,7 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 — The longest car, and a curve it can't take
+
+The autorack is the longest car in the kit: Greenbrier's Multi-Max, 28.6 m over couplers and 5.79 m high. It costs 1,094 triangles on desktop and 446 on phones. Before letting it into City, I measured how tightly the drawn track bends. Consecutive car poses from a sped-up run gave a 5th-percentile radius of 268 m downtown, with two kinks as tight as 41 m in the cut. There, a car this long would swing 1.3 m off the rail centreline at its ends and 1.2 m inside at its middle, three times the boxcar's overhang. Brookwood's tightest is near 296 m, where the overhang is under 0.2 m. So autoracks run at Brookwood and stay off the downtown line, the same honest call as the double stacks, until someone smooths or verifies that curvature. [Lab and City](log/freight/autorack/comparison.jpg)
