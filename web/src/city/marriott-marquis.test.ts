@@ -1,4 +1,4 @@
-import { Raycaster, Vector3 } from 'three';
+import { Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
@@ -50,4 +50,21 @@ it('keeps the offices separate and widens the hotel below the surveyed roof', ()
   expect(hit(610, 500, -905, down).y + 323.8).toBeCloseTo(334.3, 1);
   expect(hit(625, 350, -910, south).z).toBeLessThan(hit(625, 453, -910, south).z - 10);
   expect(createMarriottMarquis(offices, grid)).toBeNull();
+
+  // Splayed piers narrow the lower bulge windows symmetrically, so every bay centre stays glass
+  // at the normal orbit instead of washing out to stone (Sam's #393 view, 2026-11-23).
+  const ray = new Raycaster();
+  const pitch = 84.8 / 22,
+    rise = (466.9 - 3 - 326.1) / 44;
+  for (let col = 4; col < 18; col++) {
+    for (let floor = 3; floor < 15; floor++) {
+      const u = -42.4 + (col + 0.5) * pitch,
+        y = 326.1 + floor * rise + 1.6;
+      ray.set(new Vector3(624.4 + u + 0.3, y - 323.8, -910), south);
+      const first = ray.intersectObject(result.group)[0];
+      const colors = (first.object as Mesh).geometry.getAttribute('color');
+      const lum = colors.getX(first.face!.a) + colors.getY(first.face!.a) + colors.getZ(first.face!.a);
+      expect(lum / 3, `bay ${col}, floor ${floor}`).toBeLessThan(0.3);
+    }
+  }
 });
