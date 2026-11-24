@@ -792,11 +792,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let northLine: ReturnType<typeof createNorthLine>;
   const trains = new CityTrains(marta, manifest, b, colors, trainEdges, cut);
   // Atlanta Streetcar: Siemens S70s on the published schedule, drawn where a board is mounted.
-  const streetcar = createStreetcarCars(rf, manifest.origin, (x, z) => {
+  const streetSurface = (x: number, z: number) => {
     for (const { bounds: r, height } of streetcarSurface)
       if (x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ) return height(x, z);
     return null;
-  }, []);
+  };
+  const streetcar = createStreetcarCars(rf, manifest.origin, streetSurface, []);
   const scenery = scene.children.slice();
   // Added after the scenery snapshot, so a streetcar never occludes its own pick.
   scene.add(streetcar.group);
@@ -1425,6 +1426,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     camera.position.copy(controls.target).add(off);
   };
   const stopGestures = options.mapGestures ? mapGestures(controls, renderer.domElement, rotateBy, manualCamera) : undefined;
+  // Development study: continue the existing tilt gesture past its public limit at close range.
+  const streetEye = import.meta.env.DEV && query.has('streetEye') && !drive;
+  const publicTilt = controls.maxPolarAngle;
+  const orbitPosition = new THREE.Vector3();
+  const orbitRotation = new THREE.Quaternion();
+  const streetAim = new THREE.Vector3();
+  const streetReading = { progress: 0, x: 0, y: 0, z: 0, streetY: 0, verticalFov: 22, pitchDown: 0 };
+  if (streetEye) Object.assign(window, { __streetEye: streetReading });
   // Maps-style input zooms on double-click instead of gliding to the clicked point.
   if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
@@ -1807,7 +1816,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       controls.target.set(ahead.x,floor(ahead)+1.65,ahead.z);
       camera.lookAt(controls.target);
       if (scene.fog instanceof THREE.Fog) { scene.fog.near=110; scene.fog.far=800; }
-    } else controls.update();
+    } else {
+      if (streetEye) {
+        const distance = camera.position.distanceTo(controls.target);
+        const close = 1 - THREE.MathUtils.smoothstep(distance, ORBIT_MIN, ORBIT_MIN * 2);
+        controls.maxPolarAngle = THREE.MathUtils.lerp(publicTilt, Math.PI / 2, close);
+      }
+      controls.update();
+    }
     buses.night.value = atm.dark;
     buses.update(options.buses?.() ?? null);
     const states = options.trains();
@@ -1847,6 +1863,30 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined;
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
+    const streetTilt = streetEye
+      ? THREE.MathUtils.smoothstep(controls.getPolarAngle(), publicTilt, Math.PI / 2) : 0;
+    const orbitNearClip = camera.near;
+    if (streetEye) streetReading.progress = streetTilt;
+    if (streetTilt > 0) {
+      orbitPosition.copy(camera.position);
+      orbitRotation.copy(camera.quaternion);
+      const t = controls.target;
+      // Move toward the same subject while widening the lens. The Decatur study ends
+      // about 82 m down the street from its target at the public 150 m orbit radius.
+      const reach = THREE.MathUtils.lerp(1, .548, streetTilt);
+      camera.position.x = t.x + (orbitPosition.x - t.x) * reach;
+      camera.position.z = t.z + (orbitPosition.z - t.z) * reach;
+      const { x, z } = camera.position;
+      const streetY = streetSurface(x, z) ?? targetY(x, z);
+      camera.position.y = Math.max(streetY + 1.7, THREE.MathUtils.lerp(orbitPosition.y, streetY + 1.7, streetTilt));
+      streetAim.set(t.x, THREE.MathUtils.lerp(t.y, camera.position.y, streetTilt), t.z);
+      camera.lookAt(streetAim);
+      camera.fov = THREE.MathUtils.lerp(22, 62, streetTilt);
+      camera.near = THREE.MathUtils.lerp(orbitNearClip, .18, streetTilt);
+      camera.updateProjectionMatrix();
+      Object.assign(streetReading, { x, y: camera.position.y, z, streetY, verticalFov: camera.fov,
+        pitchDown: THREE.MathUtils.radToDeg(Math.atan2(camera.position.y - streetAim.y, Math.hypot(x - t.x, z - t.z))) });
+    }
     treeDetail();
     figures?.update(sceneTime, camera, container.clientHeight);
     // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
@@ -1863,7 +1903,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
     rolloutBatch.update(speciesDt, camera, camera.position.distanceTo(controls.target));
-    if (!drive) {
+    if (!drive && !streetTilt) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;
       const near = orbitNear(p.distanceTo(controls.target), p.y - targetY(p.x, p.z));
@@ -1916,6 +1956,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perfOverrides.postOff) renderer.render(scene, camera);
     else if (!whiteModel?.holding) composer.render();
     whiteModel?.after();
+    if (streetTilt > 0) {
+      camera.position.copy(orbitPosition);
+      camera.quaternion.copy(orbitRotation);
+      camera.fov = 22;
+      camera.near = orbitNearClip;
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld();
+    }
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
