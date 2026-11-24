@@ -216,7 +216,8 @@ Not yet: Street view, layers and tours (see Follow-ups).
 ## 3D and tilt (in the camera group)
 
 - **3D button.** On = City, a dark chip with light "3D" (an on/off button, not a segment,
-  so the no-dark-fill segment rule doesn't apply; at night it inverts). Off = the flat map.
+  so the no-dark-fill segment rule doesn't apply; at night it inverts to a light chip with
+  dark "3D", `--a2-on-ink`, which the tilt readout shares). Off = the flat map.
   Turning it on plays the Map → City switch below; off plays City → Map. The site opens
   with 3D on (#297).
 - **Tilt slider** under the button, 48 px, one range across both: top = flat map (0°), a

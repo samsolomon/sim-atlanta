@@ -18,6 +18,8 @@
   --a2-track: rgba(60, 45, 30, 0.12);
   --a2-chip: rgba(255, 255, 255, 0.95);
   --a2-chip-sh: 0 1px 3px rgba(40, 30, 20, 0.16), 0 0 0 0.5px rgba(60, 45, 30, 0.12);
+  /* Text on a solid --a2-ink fill (selected 3D chip, tilt readout). */
+  --a2-on-ink: #fff;
   --a2-north: #c2255c;
   --a2-timetable: var(--sched);
   --a2-live: var(--live);
@@ -39,6 +41,7 @@
   --a2-track: rgba(0, 0, 0, 0.22);
   --a2-chip: rgba(255, 255, 255, 0.20);
   --a2-chip-sh: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --a2-on-ink: #1c2129;
   --a2-north: #f06595;
   --a2-timetable: #6ea8fe;
   --a2-live: #6fd58a;
@@ -559,7 +562,7 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-appbar :is(.a2-ib,.a2-vs), .a2-camera .a2-ib { min-width: 44px; min-height: 44px; }
 .a2-eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--a2-ink2); }
 .a2-camera { top: var(--a2-top); bottom: auto; }
-.a2-three-d[aria-pressed=true] { background: var(--a2-ink); color: var(--a2-chip); }
+.a2-three-d[aria-pressed=true] { background: var(--a2-ink); color: var(--a2-on-ink); }
 .a2-tilt { writing-mode: vertical-lr; width: 44px; height: 48px; margin: 6px 0; accent-color: var(--a2-ink); }
 .a2-dot-timetable { background: #8a8478; }
 .a2-credit { right: var(--a2-right); }
@@ -599,7 +602,7 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-camera :is(.a2-compass,.a2-reset) { border-radius: 50%; color: var(--a2-ink); }
 .a2-camera-piece { display: grid; justify-items: center; }
 .a2-camera .a2-three-d { border-radius: 12px; }
-.a2-angle { display: none; position: absolute; right: calc(100% + 4px); bottom: 12px; background: var(--a2-ink); color: var(--a2-ga); border-radius: 6px; padding: 4px; }
+.a2-angle { display: none; position: absolute; right: calc(100% + 4px); bottom: 12px; background: var(--a2-ink); color: var(--a2-on-ink); border-radius: 6px; padding: 4px; }
 .a2-tilt:active + .a2-angle { display: block; }
 .a2-in-models .a2-tilt-group { display: none; }
 .a2-hint { pointer-events: auto; display: flex; align-items: center; gap: 8px; padding-block: 0; }
