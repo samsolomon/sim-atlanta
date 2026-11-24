@@ -13,8 +13,8 @@ const stripId = 'osm:way:1343480972';
 const coreWorld: P2[] = [[579, -2297], [596, -2296], [595, -2280], [578, -2281]];
 
 // Heights from the April 2019 lidar (90th-percentile returns on an 8 m grid, ground 305.2 m
-// NAVD88): the 1960s office slab reads 44 m, a central core 48–49 m, the low wing on Peachtree
-// (the renovated amenity roof) about 8 m, and the east strip a single storey.
+// NAVD88): the 1960s office slab reads 44 m, a central core 48–49 m, the mapped low wing on Peachtree
+// as the same 44–49 m (so the slab covers it), and the east strip a single storey.
 export function createCirca730(buildings: VBuilding[], site: VBuilding, grid: GroundGrid, quality: TerrainQuality) {
   const high = quality === 'high';
   const parts = site.parts ?? [];
@@ -43,11 +43,13 @@ export function createCirca730(buildings: VBuilding[], site: VBuilding, grid: Gr
     return hit;
   };
   const datum = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
-  const roof = datum + 44, coreTop = datum + 48.5, wingTop = datum + 8, stripTop = datum + 3.6, lobby = datum + 5.2;
+  const roof = datum + 44, coreTop = datum + 48.5, stripTop = datum + 3.6, lobby = datum + 5.2;
   const slab = local(slabPart.rings[0]);
   const wing = wingPart?.rings.length ? local(wingPart.rings[0]) : null;
   const strip = stripPart?.rings.length ? local(stripPart.rings[0]) : null;
-  const masses = [{ ring: slab, top: roof }, ...(wing ? [{ ring: wing, top: wingTop }] : []), ...(strip ? [{ ring: strip, top: stripTop }] : [])];
+  // The lidar reads 44–49 m over the mapped 8 m wing (an illustrative-tier part), so the slab
+  // continues over it; only the east strip is low.
+  const masses = [{ ring: slab, top: roof }, ...(wing ? [{ ring: wing, top: roof }] : []), ...(strip ? [{ ring: strip, top: stripTop }] : [])];
   const covered = (a: P2, b: P2, length: number) => {
     const mx = (a[0] + b[0]) / 2 + 0.6 * (b[1] - a[1]) / length;
     const mz = (a[1] + b[1]) / 2 - 0.6 * (b[0] - a[0]) / length;
@@ -88,10 +90,13 @@ export function createCirca730(buildings: VBuilding[], site: VBuilding, grid: Gr
   const core = local(coreWorld);
   shell.prism(core, roof, coreTop, white, roofColor);
   if (wing) {
-    shell.prism(wing, shell.base, wingTop, '#d6d4cd', '#6d8a57');
+    shell.prism(wing, shell.base, roof, white, roofColor);
     edges(wing, (a, b, length) => {
-      if (covered(a, b, length) > datum + 0.01) return;
-      litFacade(shell, seed, face++, a, b, datum + 0.4, wingTop - 0.6, 1, high ? 3.2 : 10, 0.92, 0.85, storefront, 0.45);
+      const lo = covered(a, b, length);
+      if (roof - lo < 1) return;
+      litFacade(shell, seed, face++, a, b, datum + 0.4, lobby - 0.3, 1, high ? 3.2 : 10, 0.9, 0.86, storefront, 0.4);
+      const rows = Math.max(1, Math.round((roof - 1 - lobby) / pitch));
+      litFacade(shell, seed, face++, a, b, lobby, roof - 1, rows, high ? 3 : 8, 0.985, 0.55, ribbon, 0.1);
     });
   }
   if (strip) {

@@ -7,6 +7,8 @@ City replaces the generic mesh for `osm:way:234938413`, Circa 730 at 730 Peachtr
 2. Solid white end walls with a single central glazed slot.
 3. A glass lobby recessed under the slab at the street.
 
+The mapped 8 m wing on Peachtree (illustrative tier) reads 44–49 m in the lidar, so the slab continues over it rather than stepping down; only the east strip is single-storey.
+
 Estimated details: the 5.2 m lobby, the ten office floors at about 3.8 m, the ribbon height (55% of each floor), the slot width (16% of each end), and the core footprint.
 
 Sources, consulted in a fresh Orca tab:
