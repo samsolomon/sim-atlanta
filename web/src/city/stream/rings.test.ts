@@ -39,10 +39,10 @@ describe('stream rings', () => {
     expect(boxDistance(b, 50, 0, 50)).toBe(0);
     expect(boxDistance(b, 130, 40, 50)).toBe(50);
   });
-  it('the area under the orbit target goes near inside the fog, and stays near', () => {
-    expect(nextRing('mid', { ...base, distance: 1e4, atTarget: true }, cfg)).toBe('near');
-    expect(nextRing('near', { ...base, distance: 1e4, atTarget: true }, cfg)).toBe('near');
-    expect(nextRing('mid', { ...base, distance: 1e4, fogFar: 9000, atTarget: true }, cfg)).toBe('unloaded');
+  it('the area under the orbit target goes near in a close view, not in a whole-board view', () => {
+    expect(nextRing('mid', { ...base, distance: cfg.nearOut * 1.5, atTarget: true }, cfg)).toBe('near');
+    expect(nextRing('near', { ...base, distance: cfg.nearOut * 1.5, atTarget: true }, cfg)).toBe('near');
+    expect(nextRing('mid', { ...base, distance: 16000, atTarget: true }, cfg)).toBe('mid');
   });
   it('reads radii from the query', () => {
     const c = ringConfig(false, new URLSearchParams('near=900&mid=3000'));

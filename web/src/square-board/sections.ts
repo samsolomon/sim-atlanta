@@ -100,17 +100,6 @@ export function connect(mounted: Map<Board, Area>, additions: Map<Board, Area>) 
   }
 }
 
-/** Unmount areas: their neighbours' joins close again, so a missing area leaves a clean edge. */
-export function disconnect(mounted: Map<Board, Area>, ids: Iterable<Board>) {
-  for (const id of ids) {
-    if (!mounted.delete(id)) continue;
-    for (const other of neighbors[id]) {
-      const adjacent = mounted.get(other) as (Area & { closeJoin?: (i: number) => void }) | undefined;
-      adjacent?.closeJoin?.(neighbors[other].indexOf(id));
-    }
-  }
-}
-
 export async function response(url: string, signal: AbortSignal) {
   const r = await fetch(url, { signal });
   if (!r.ok) throw Error(`${url} (${r.status})`);
@@ -147,10 +136,9 @@ async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot =
   return { id, grid, context };
 }
 
-export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid; standalone?: boolean }) {
+export async function addSection(direction: Section, mounted: Map<Board, Area>, quality: TerrainQuality, signal: AbortSignal, options?: { northBuilding?: string; dataRoot?: string; brookwood?: BrookwoodGrid }) {
   const square = direction === 'north' || direction === 'south';
-  // Streaming loads a row on its own; its joins open when its neighbours mount.
-  if (!square && !options?.standalone && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
+  if (!square && !mounted.has(neighbors[direction][0])) throw Error(direction + ' requires ' + neighbors[direction][0]);
   const ids: (Patch | MidtownRow)[] = square ? [`${direction}-band`, `${direction}-corner`] : [direction];
   const [patches] = await Promise.all([
     Promise.all(ids.map(id => readPatch(id, signal, options?.dataRoot, options?.brookwood))),

@@ -398,8 +398,6 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       if (next !== far) { far = next; board.geometry = far ? farGeometry : nearGeometry; groundLodChanged = true; }
     },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
-    /** Close a join again when its neighbour unmounts (streaming, ?stream=1). */
-    closeJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = true; },
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
