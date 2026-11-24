@@ -70,7 +70,8 @@ export function createOneCocaColaPlaza(buildings: VBuilding[], site: VBuilding, 
       [a[0] + t * dx + nx * out, y, a[1] + t * dz + nz * out];
     const quad = (l: number, r: number, lo: number, hi: number, out: number, color: string, lit = false) =>
       (lit ? s.lights : s.body).quad(at(l, lo, out), at(l, hi, out), at(r, hi, out), at(r, lo, out), color);
-    const t0 = pier / len, t1 = 1 - pier / len, w = (t1 - t0) / bays;
+    // The grid meets the inner face of each corner shaft (set 0.25 m outboard).
+    const t0 = (pier - 0.25) / len, t1 = 1 - (pier - 0.25) / len, w = (t1 - t0) / bays;
     const mullion = 0.72 / len;
     for (let i = 0; i <= bays; i++) {
       const c = t0 + i * w;
@@ -82,12 +83,12 @@ export function createOneCocaColaPlaza(buildings: VBuilding[], site: VBuilding, 
       for (let i = 0; i < bays; i++) {
         // Offices: a sparse, stable set of late workers and cleaning crews.
         if ((j * 31 + i * 17 + f * 43) % 37 !== 0) continue;
-        quad(t0 + i * w + mullion, t0 + (i + 1) * w - mullion, y + 1.55, y + pitch, -0.7, glass, true);
+        quad(t0 + i * w + mullion, t0 + (i + 1) * w - mullion, y + 1.55, y + pitch, -0.55, glass, true);
       }
     }
     quad(t0, t1, gridTop - 0.2, gridTop, 0, precast);
     // Lobby glow behind the recessed glazing.
-    const inset = -1.55;
+    const inset = -1.4;
     quad(0.12, 0.88, grade + 0.2, lobbyTop - 1.2, inset, lobbyGlass, true);
     // Four columns per face carry the grid down past the recessed lobby.
     for (const i of [2, 5, 8, 11]) {
