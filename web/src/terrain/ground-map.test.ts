@@ -2,7 +2,9 @@ import { afterEach, expect, it, vi } from 'vitest';
 import type { P2 } from '../vignette/geom';
 import { PAL } from '../vignette/world';
 import { pathConcrete, pathWidth, westsideName } from './westside-path';
-import { groundMap } from './ground-map';
+import { groundMap, groundMapSize } from './ground-map';
+// Loaded at collection: importing the sections module takes about a second.
+import { bounds } from '../square-board/sections';
 import type { TerrainCity } from './transport-data';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -38,9 +40,7 @@ it('paints lot markings inside their polygon and crossing ways only once over gr
   map.dispose();
 });
 
-it('keeps the rectangle ground maps within each tier budget on the GPU', async () => {
-  const { bounds } = await import('../square-board/sections');
-  const { groundMapSize } = await import('./ground-map');
+it('keeps the rectangle ground maps within each tier budget on the GPU', () => {
   // RGBA8 with a full mip chain, every board of the rectangle mounted (the phone default).
   const mb = (quality: 'low' | 'high') => Object.values(bounds)
     .reduce((sum, b) => { const { width, height } = groundMapSize(b, quality); return sum + width * height * 4 * 4 / 3; }, 0) / 2 ** 20;
