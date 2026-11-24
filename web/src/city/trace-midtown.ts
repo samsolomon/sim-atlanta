@@ -57,8 +57,8 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
       const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
       if (length > 1.2) draw(a, b, length);
     });
-  // Pale grey render with white trim, as in the listing's aerial; grey metal balcony rails.
-  const wall = '#e4e4df', trim = '#f1f1ec', rail = '#8a9194', roofColor = '#8f908c';
+  // Pale stone-coloured walls with white pilasters and dark metal balconies, as in the listing aerial.
+  const wall = '#e2dccf', trim = '#f4f2ec', rail = '#4f565a', roofColor = '#c9c6bc';
   const windows = ['#8a9ba5', '#91a1aa'];
   const storefront = ['#6a7b84', '#6e818a'];
   const pitch = (roof - 0.9 - ground) / 11;
@@ -77,18 +77,46 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
       [a[0] + t * (b[0] - a[0]) + d * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - d * (b[0] - a[0]) / length];
     // White cornice band at the roof line.
     shell.body.quad(out(0, roof - 0.9, 0.12), out(0, roof, 0.12), out(1, roof, 0.12), out(1, roof - 0.9, 0.12), trim);
-    // Stacked balcony rails across the middle of long faces, one strip per floor.
-    if (length > 16 && (high || length > 30)) {
-      const l = 0.25, r = 0.75;
-      for (let f = 1; f < floors; f++) {
-        const y = from + f * pitch;
-        // Balcony slab from the wall to the rail (both windings), so the rail sits on something.
-        shell.body.quad(out(r, y, 0.02), out(r, y, 0.5), out(l, y, 0.5), out(l, y, 0.02), trim);
-        shell.body.quad(out(l, y, 0.02), out(l, y, 0.5), out(r, y, 0.5), out(r, y, 0.02), trim);
-        shell.body.quad(out(l, y, 0.5), out(l, y + 0.9, 0.5), out(r, y + 0.9, 0.5), out(r, y, 0.5), rail);
+    // Identifying feature 1: white pilaster bays give the pale stone walls a vertical rhythm.
+    const bays = Math.max(1, Math.round(length / (high ? 7.5 : 15)));
+    for (let k = 0; k <= bays; k++) {
+      const t = k / bays, w = 0.5 / length;
+      shell.body.quad(out(Math.max(0, t - w), from, 0.15), out(Math.max(0, t - w), roof - 0.9, 0.15),
+        out(Math.min(1, t + w), roof - 0.9, 0.15), out(Math.min(1, t + w), from, 0.15), trim);
+    }
+    // Identifying feature 2: vertical stacks of small dark balconies between the bays.
+    if (length > 16) {
+      const cols = length > 40 ? [0.3, 0.7] : [0.5];
+      for (const c of cols) {
+        const l = c - 1.6 / length, r = c + 1.6 / length;
+        if (!high) {
+          // Low tier: each stack reads as one dark vertical strip on the wall.
+          shell.body.quad(out(l, from + pitch, 0.25), out(l, roof - 0.9, 0.25), out(r, roof - 0.9, 0.25), out(r, from + pitch, 0.25), rail);
+          continue;
+        }
+        for (let f = 1; f < floors; f++) {
+          const y = from + f * pitch;
+          // Slab from the wall to the rail (both windings), then the rail on its edge.
+          shell.body.quad(out(r, y, 0.02), out(r, y, 1.1), out(l, y, 1.1), out(l, y, 0.02), trim);
+          shell.body.quad(out(l, y, 0.02), out(l, y, 1.1), out(r, y, 1.1), out(r, y, 0.02), trim);
+          shell.body.quad(out(l, y, 1.1), out(l, y + 1, 1.1), out(r, y + 1, 1.1), out(r, y, 1.1), rail);
+        }
       }
     }
   });
+
+  // Raised parapet pavilions at the long outer corners and over the Peachtree centre.
+  const pavilion = (c: P2, u: P2, v: P2, size: number) => {
+    const p = (s: number, t: number): P2 => [c[0] + u[0] * s + v[0] * t, c[1] + u[1] * s + v[1] * t];
+    shell.prism(ccw([p(0, 0), p(size, 0), p(size, size), p(0, size)]), roof, roof + 4.5, trim, '#e9e7e0');
+  };
+  // Corner pavilions at the block's four main outer corners (local metres, inset into the block).
+  pavilion([45.5, -20.5], [0, 1], [-1, 0], 10);
+  pavilion([42, 33], [0, -1], [-1, 0], 10);
+  pavilion([-56, -31.5], [0, 1], [1, 0], 10);
+  pavilion([-58.5, 5.5], [0, -1], [1, 0], 10);
+  // Peachtree (east) centre bay.
+  pavilion([45.5, -1], [0, 1], [-1, 0], 10);
 
   // Garage podium: courtyard decks on top, dark screens below, retail glass on the street.
   shell.prism(podium, shell.base, deck, '#d9d8d1', '#a8a596');
