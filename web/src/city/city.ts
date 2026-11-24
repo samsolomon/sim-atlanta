@@ -26,6 +26,7 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { floorBuildingGlass, glassFloorDay, shadeOption } from '../vignette/shade-options';
 import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { hideEmptyMeshes } from './empty-draws';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -1304,6 +1305,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (outputPass) composer.addPass(new OutputPass());
   const grade = new ShaderPass(gradeShader({ output: !outputPass }));
   composer.addPass(grade);
+  // Dev prototypes for shaded glass (vignette/shade-options.ts): off unless the URL asks.
+  const shade = shadeOption();
+  if (shade === 'lift') grade.uniforms.uShadeLift.value = 1;
+  let shadeMarkedAt = 0;
   const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
   function resize() {
@@ -1715,6 +1720,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    // Dev prototype ?shade=floor: floor building glass as areas mount (every 2 s; off by default).
+    if (shade === 'floor' && ts - shadeMarkedAt > 2000) { shadeMarkedAt = ts; floorBuildingGlass(scene); }
+    if (shade === 'floor') glassFloorDay.value = Math.min(1, Math.max(0, (atm.sunElev - 2) / 10)) * (1 - atm.dark);
     if (!emptyHidden) {
       // Downtown is all built by the first frame; areas are checked as they mount (addArea).
       emptyHidden = true;

@@ -18,6 +18,8 @@ export function gradeShader(o: { output?: boolean } = {}) {
       tDiffuse: { value: null as THREE.Texture | null },
       uTime: { value: 0 },
       uAmount: { value: 1 },
+      /** Dev prototype ?shade=lift: 0 keeps the cool shade tint; 1 swaps it for a neutral lift. */
+      uShadeLift: { value: 0 },
       uGrain: { value: 0.045 },
       uRes: { value: new THREE.Vector2(1024, 1024) },
     },
@@ -26,7 +28,7 @@ export function gradeShader(o: { output?: boolean } = {}) {
       void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
     fragmentShader: /* glsl */ `
       uniform sampler2D tDiffuse;
-      uniform float uTime, uAmount, uGrain;
+      uniform float uTime, uAmount, uGrain, uShadeLift;
       uniform vec2 uRes;
       varying vec2 vUv;
       float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -41,7 +43,7 @@ export function gradeShader(o: { output?: boolean } = {}) {
           float l = dot(c, vec3(0.299, 0.587, 0.114));
           vec3 g = (c - 0.5) * 1.12 + 0.5;                       // contrast
           g = mix(vec3(l), g, 1.14);                              // saturation
-          g += mix(vec3(-0.035, -0.01, 0.05), vec3(0.03, 0.012, -0.03), smoothstep(0.15, 0.85, l)); // cool shade, warm light
+          g += mix(mix(vec3(-0.035, -0.01, 0.05), vec3(0.045, 0.045, 0.04), uShadeLift), vec3(0.03, 0.012, -0.03), smoothstep(0.15, 0.85, l)); // cool shade (or, with uShadeLift, a neutral lift), warm light
           float vig = 1.0 - smoothstep(0.35, 1.15, length(vUv - 0.5) * 1.4); // edges must be ordered in GLSL
           g *= mix(0.86, 1.0, vig);
           float n = hash(floor(vUv * uRes) + fract(uTime) * 917.0) - 0.5;
