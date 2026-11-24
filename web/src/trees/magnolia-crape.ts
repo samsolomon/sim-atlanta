@@ -13,11 +13,11 @@ import type { Habit } from './broadleaf';
 
 const magnoliaHabit: Habit = {
   // Dense pyramidal evergreen, branched to the ground; smooth grey bark.
-  trunkTop: 0.9, crownBase: 0.03, widest: 0.24,
+  trunkTop: 0.9, crownBase: 0.08, widest: 0.24,
   limbs: { high: 4, low: 3 }, limbAngle: 0.45, limbFrom: [0.1, 0.6], limbReach: 0.85,
   ragged: 0.05, bark: '#7a776f', barkDark: '#6a675f',
   // Dense tiers to the ground, shrinking toward a filled top: a tall dark cone (gloss round 2).
-  mass: { r: 0.66, low: -0.88, high: 0.8 },
+  mass: { r: 0.66, low: -0.68, high: 0.8 },
   tiers: { high: [3, 3, 2, 2, 2], low: [2, 2, 2, 1] },
   taper: 0.6,
   cone: 0.8,
@@ -32,13 +32,13 @@ const magnoliaHabit: Habit = {
 // Jun 6 (medians), "sparse continued flowering throughout the summer" (NC State); red seeds in
 // October. Old leaves drop as the new ones open.
 const magnoliaPalette = keyedCalendar([
-  { m: 1, d: 1, leaves: 1, a: '#3a6e4c', b: '#668e5a', carpet: 0.15, label: 'evergreen, glossy' },
-  { m: 4, d: 20, leaves: 1, a: '#3a704c', b: '#749e66', carpet: 0.35, label: 'new leaves, old ones dropping' },
-  { m: 5, d: 12, leaves: 1, a: '#3c7250', b: '#6c9a62', carpet: 0.3, bloom: 0.15, label: 'first flowers' },
-  { m: 5, d: 28, leaves: 1, a: '#3c7250', b: '#6c9a62', carpet: 0.2, bloom: 0.85, label: 'creamy white flowers' },
-  { m: 6, d: 10, leaves: 1, a: '#3c7250', b: '#6c9a62', carpet: 0.15, bloom: 0.35, label: 'last of the main bloom' },
-  { m: 7, d: 1, leaves: 1, a: '#3a6e4c', b: '#66925c', carpet: 0.15, bloom: 0.06, label: 'a few summer flowers' },
-  { m: 8, d: 15, leaves: 1, a: '#3a6e4c', b: '#66925c', carpet: 0.15, bloom: 0, label: 'evergreen, glossy' },
+  { m: 1, d: 1, leaves: 1, a: '#376848', b: '#618756', carpet: 0.15, label: 'evergreen, glossy' },
+  { m: 4, d: 20, leaves: 1, a: '#376a48', b: '#6e9661', carpet: 0.35, label: 'new leaves, old ones dropping' },
+  { m: 5, d: 12, leaves: 1, a: '#396c4c', b: '#67925d', carpet: 0.3, bloom: 0.15, label: 'first flowers' },
+  { m: 5, d: 28, leaves: 1, a: '#396c4c', b: '#67925d', carpet: 0.2, bloom: 0.85, label: 'creamy white flowers' },
+  { m: 6, d: 10, leaves: 1, a: '#396c4c', b: '#67925d', carpet: 0.15, bloom: 0.35, label: 'last of the main bloom' },
+  { m: 7, d: 1, leaves: 1, a: '#376848', b: '#618b57', carpet: 0.15, bloom: 0.06, label: 'a few summer flowers' },
+  { m: 8, d: 15, leaves: 1, a: '#376848', b: '#618b57', carpet: 0.15, bloom: 0, label: 'evergreen, glossy' },
 ]);
 
 const A_BASE = { technique: 'cards' as const, ink: 2 as const, tips: 3, units: { high: 20, low: 10 }, blooms: { high: 12, low: 8 }, cover: 1.0 };
@@ -85,7 +85,7 @@ export const southernMagnolia = broadleafSpecies({
   palette: magnoliaPalette,
 });
 export const southernMagnoliaLook: Look = {
-  species: southernMagnolia, habit: magnoliaHabit, leaf: 'oval', palette: magnoliaPalette, options: MAGNOLIA_OPTIONS,
+  species: southernMagnolia, habit: magnoliaHabit, leaf: 'oval', palette: magnoliaPalette, options: MAGNOLIA_OPTIONS, preferred: 'A3', tidySkirt: true,
   toneByLight: true, bloomColour: '#f6f2e2', bloomSizeM: 1.5, bloomWash: 0.12,
 };
 

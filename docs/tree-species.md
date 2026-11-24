@@ -305,7 +305,7 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - Ginkgo: C4.
 - Sweetgum: A ("looks good").
 - American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
-- Still to pick: the magnolia (gloss round 2: A and speck densities A1–A3) and the dogwood (round 2 pending).
+- Magnolia: Sam picked A3 (23 Nov), with a tidier skirt and whiter gloss. Still to pick: the dogwood (round 2 pending).
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -601,6 +601,10 @@ Crown luminance / saturation (Front, 1 Jul): A 0.232 / 0.832, A1 0.299 / 0.726, 
 
 Crown luminance / saturation (Front, 1 Jul, high): A 0.201 / 0.862, A1 0.205, A2 0.210, A3 0.218 / 0.845; low A 0.211. The specks add 2–8%, not round 1's 30%. The pick reads the atlas at full size (`textureLod`), so mipmaps cannot blend neighbouring leaves into new ids at range, and it hashes tree space, not world position, to keep `sin()` precise far from the origin. Other species measure as before (willow oak 0.256, tulip poplar 0.240, sweetgum 0.255, crape myrtle 0.246, elm 0.249). The cone is deliberately darker than the generic canopy (0.248), as the reference is. At eye level the specks are subtle; they show best in the day row and at 300 m as a faint sun-side sparkle.
 
+**A3 picked, 2026-11-23.** [Follow-up sheet](log/ui/tree-species/options-magnolia-a3-pick.jpg). Sam chose A3. It is the lab default on a direct magnolia URL without `variant`, and the lineup Default pick. The comparison variants remain available. The lower mass band rises slightly and its card edges and matching near tips pull inward and stay near the crown base, rather than dangling to the ground. The cone remains. Leaf colours compensate for the brighter shaped surface to keep the dark base near the prior 0.201 luminance.
+
+The gloss target is a whiter warm white. Low-detail speck density is 60% of high because fewer, larger cards otherwise exceeded the +10% brightness ceiling. At matched Front on July 1: high A 0.203, A3 0.219 (+7.9%); low A 0.209, A3 0.222 (+6.2%). Eye-level A3 night luminance is 0.018 and the gloss is off. Cost remains 193 / 113 triangles plus the bounded near-tip pool. `Look.preferred` exposes the pick; tree-species should use A3 for the next City rollout alongside elm and oaks. This change does not itself add magnolia to City.
+
 ### Japanese maple
 
 `web/src/trees/japanese-maple.ts`, Sam's request (23 Nov). Red Japanese maples are "everywhere in front yards and on the traffic islands" of Ansley Park: low, wide, layered, umbrella-shaped, on several leaning trunks. They are "the colour accents". The sources describe a "low, dense, rounded top and spreading branches" ([NC State](https://plants.ces.ncsu.edu/plants/acer-palmatum/)) that is "typically multi-trunked", with "muscular-looking, picturesque, grey" trunks ([UF ST023](https://ask.ifas.ufl.edu/publication/ST023/pdf)).
@@ -696,7 +700,7 @@ Sam asked for the feel of Ansley's trees, not a survey (23 Nov). These notes com
 
 
 
-**Rollout status (2026-11-23):** Draft PR #336 implements crape myrtle A, loblolly A, sweetgum A and Japanese maple A, using these mixes and the Ansley placement rules. Oaks remain generic; magnolia awaits a gloss decision. The High Museum ginkgo is unchanged. The wider proposal has two tiers:
+**Rollout status (2026-11-23):** Draft PR #336 implements crape myrtle A, loblolly A, sweetgum A and Japanese maple A, using these mixes and the Ansley placement rules. Oaks remain generic; magnolia A3 joins elm and oaks in the next rollout. The High Museum ginkgo is unchanged. The wider proposal has two tiers:
 
 1. **Reported.** Inventory points are placed by species, at their measured sizes where given. The sources are the City 2011 census (Downtown only), Georgia Tech's campus inventory, Trees Atlanta plantings, and OSM species tags. Their licences are unclear (see [Where ginkgos are](#where-ginkgos-are)), so we would ask the owners before shipping derived positions.
 2. **Illustrative.** Every other canopy crown takes a species drawn deterministically from its crown id, weighted by context. Each crown's context (street, yard, park and woods, or campus) would come from the land use and road masks the parks staging already has.

@@ -130,3 +130,19 @@ describe('City detail switch', () => {
     g.dispose();
   });
 });
+
+describe('magnolia skirt', () => {
+  it('keeps foliage and matching near tips above the exposed trunk base at every size', async () => {
+    const { southernMagnoliaLook: look } = await import('./magnolia-crape');
+    const { lookFoliage, lookTips } = await import('./looks');
+    const opt = look.options.find(o => o.id === 'A3')!;
+    for (const size of SIZE_CLASSES) for (const q of ['high', 'low'] as const) {
+      for (const g of [lookFoliage(look, opt, size, q), lookTips(look, opt, size, q)]) {
+        if (!g) continue;
+        g.computeBoundingBox();
+        expect(g.boundingBox!.min.y).toBeGreaterThan(0.03);
+        g.dispose();
+      }
+    }
+  });
+});
