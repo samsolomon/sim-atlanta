@@ -422,3 +422,33 @@ it('keeps every part of Alexan on 8th on its footprint, within the 1.75 m balcon
   expect(worst).toBeLessThanOrEqual(1.75);
   expect(inNotch).toBe(0);
 });
+
+it('attaches every Mayfair balcony rail to the wall by its floor slab', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536728181');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const body = (model.group.children[0] as Mesh).geometry.getAttribute('position');
+  const v = new Vector3(), ring = building.rings[0] as [number, number][];
+  const out = (x: number, z: number) => pointInRing(x, z, ring) ? 0 : Math.min(...ring.map(([ax, az], k) => {
+    const [bx, bz] = ring[(k + 1) % ring.length], dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  }));
+  // Every triangle standing out from the wall must connect, through shared vertices, to one that
+  // touches it (rails reach the wall through their slab); none may float.
+  const n = body.count / 3, key = (i: number) => { v.fromBufferAttribute(body, i).applyMatrix4(model.group.matrixWorld); return `${v.x.toFixed(2)},${v.y.toFixed(2)},${v.z.toFixed(2)}`; };
+  const keys = Array.from({ length: n }, (_, t) => [0, 1, 2].map(k => key(3 * t + k)));
+  const off = Array.from({ length: n }, (_, t) => Math.min(...[0, 1, 2].map(k => {
+    v.fromBufferAttribute(body, 3 * t + k).applyMatrix4(model.group.matrixWorld);
+    return v.y < 92 ? out(v.x, v.z) : 0;
+  })) > .1);
+  const reached = new Set<string>();
+  keys.forEach((ks, t) => { if (!off[t]) ks.forEach(k => reached.add(k)); });
+  for (let grew = true; grew;) {
+    grew = false;
+    keys.forEach((ks, t) => { if (off[t] && ks.some(k => reached.has(k)) && !ks.every(k => reached.has(k))) { ks.forEach(k => reached.add(k)); grew = true; } });
+  }
+  const floating = keys.filter((ks, t) => off[t] && !ks.some(k => reached.has(k))).length;
+  expect(floating).toBe(0);
+  expect(body.count / 3).toBeLessThanOrEqual(2400);
+});
