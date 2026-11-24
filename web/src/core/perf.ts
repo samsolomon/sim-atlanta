@@ -450,6 +450,8 @@ function rendererInfo() {
     programs: renderer.info.programs?.length ?? 0,
     programKinds: (renderer.info.programs ?? []).reduce<Record<string, number>>((o, p) => { const k = (p as { name?: string }).name || '?'; o[k] = (o[k] ?? 0) + 1; return o; }, {}),
     shadowMap: { enabled: renderer.shadowMap.enabled, autoUpdate: renderer.shadowMap.autoUpdate },
+    /** Live GPU geometries and textures; a streamed area that unmounts cleanly returns these to baseline. */
+    gpuObjects: { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures },
   };
 }
 
@@ -665,6 +667,8 @@ export const perf = {
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
   ring,
+  /** Streaming loader work still queued or in flight (0 without ?stream). */
+  streamPending() { return streamSource?.().pending ?? 0; },
   ringSummary() { return { rings: Object.fromEntries(rings), transitions: ringLog.length, thrash: thrash() }; },
   /** The streaming loader registers its queue here so a run can wait for it to drain. */
   setStreamSource(source: typeof streamSource) { streamSource = source; },
