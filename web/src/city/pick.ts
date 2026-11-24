@@ -3,7 +3,9 @@ import { CAR_LENGTH } from '../vignette/cq400';
 import { BUS_LENGTH } from '../vignette/xcelsior';
 import type { CityBuses } from './buses';
 
-export type VehicleSelection = { kind: 'train'; id: string } | { kind: 'bus'; id: string } | { kind: 'freight'; id: string; line?: string };
+/** Freight carries its illustrative passage record so the card never infers it from names. */
+export interface FreightPick { kind: 'freight'; id: string; line?: string; railroad?: 'csx' | 'ns'; consist?: string; lead?: string }
+export type VehicleSelection = { kind: 'train'; id: string } | { kind: 'bus'; id: string } | FreightPick;
 
 /** Work only on a tap. Project the visible length of each drawn car into CSS pixels.
  * Comparing screen distances gives the same touch radius on both quality tiers. */
@@ -43,8 +45,9 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
   for (const car of trains.children) railCar(car, CAR_LENGTH, { kind: 'train', id: car.userData.trainId });
   for (const car of intercity?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'train', id: car.userData.trainId });
   for (const car of streetcars?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'train', id: car.userData.trainId });
-  for (const car of freight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight', id: car.userData.trainId });
-  for (const car of corridorFreight?.children ?? []) railCar(car, car.userData.lengthM, { kind: 'freight', id: car.userData.trainId, line: car.userData.line });
+  const freightPick = (car: THREE.Object3D): FreightPick => ({ kind: 'freight', id: car.userData.trainId, line: car.userData.line,
+    railroad: car.userData.railroad, consist: car.userData.consist, lead: car.userData.lead });
+  for (const car of [...(freight?.children ?? []), ...(corridorFreight?.children ?? [])]) railCar(car, car.userData.lengthM, freightPick(car));
   for (const bus of buses) {
     const dx = Math.sin(bus.a) * BUS_LENGTH / 2, dz = Math.cos(bus.a) * BUS_LENGTH / 2;
     for (const height of [1.7, 3]) {

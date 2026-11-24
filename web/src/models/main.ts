@@ -81,6 +81,9 @@ const models = {
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
   freightGrainHopper: 'Three-bay covered grain hopper',
+  freightWellA: '53-foot double-stack well car',
+  freightWellB: '53-foot well car · blue over grey',
+  freightWellC: '53-foot well car · single stack',
   freightBoxcar: '50-foot boxcar',
   freightBoxcarFaded: '50-foot boxcar · faded',
   freightBoxcarBlue: '50-foot boxcar · blue',
@@ -126,7 +129,7 @@ const SPECIES_NOTES: Record<string, string> = {
 };
 const freightModels = {
   cm44ac: 'locomotive', cm44acNs: 'locomotiveNs', es44acNs: 'es44acNs',
-  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar', freightBoxcarFaded: 'boxcarFaded', freightBoxcarBlue: 'boxcarBlue', freightGrainHopper: 'grainHopper',
+  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar', freightBoxcarFaded: 'boxcarFaded', freightBoxcarBlue: 'boxcarBlue', freightGrainHopper: 'grainHopper', freightWellA: 'wellA', freightWellB: 'wellB', freightWellC: 'wellC',
 } as const satisfies Record<string, FreightUnit>;
 function isFreightModel(id: string): id is keyof typeof freightModels {
   return Object.hasOwn(freightModels, id);
@@ -576,7 +579,7 @@ function build() {
   }
   if (isFreightModel(model)) {
     const unit = freightModels[model];
-    if (unit === 'grainHopper') document.getElementById('tier')!.hidden = false;
+    if (unit === 'grainHopper' || unit.startsWith('well')) document.getElementById('tier')!.hidden = false;
     const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: true, low: treeQuality === 'low' }), passengerMaterial(night));
     mesh.position.y = .125;
     mesh.castShadow = mesh.receiveShadow = true;
@@ -586,6 +589,9 @@ function build() {
       cm44ac: 'CSX 7257, seen at Georgia State, is a CM44AC: a GE AC4400CW rebuilt by Wabtec with a new cab. Modelled in CSX-like blue-grey and yellow. ',
       cm44acNs: 'The same GE body in an NS-like scheme, with a black hood and white nose stripes. ',
       freightGrainHopper: 'Illustrative grain car with a continuous trough hatch and three gravity outlets. ',
+      freightWellA: 'Single-unit well car carrying two 53-foot domestic containers, one above the other. ',
+      freightWellB: 'The same well car with a different pair of containers. ',
+      freightWellC: 'The same well car with a single container and the upper slot empty. ',
       freightBoxcar: 'Illustrative steel boxcar with a sliding door and two four-wheel trucks. ',
       freightBoxcarFaded: 'The same boxcar sun-bleached, with darker paint over removed markings. ',
       freightBoxcarBlue: 'The same boxcar in a dark blue common on CSX-family cars. ',
@@ -595,7 +601,7 @@ function build() {
       gp382: 'Compact EMD road-switcher with a narrow short hood and four-axle Blomberg trucks, in a CSX-like scheme. ',
     })[model] + 'Lab study; no logos or numbers. ';
     const link = document.createElement('a');
-    const notes = unit.startsWith('boxcar') || unit === 'grainHopper' ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
+    const notes = unit.startsWith('boxcar') || unit.startsWith('well') || unit === 'grainHopper' ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/' + notes;
     link.textContent = 'Dimensions and reference photos'; blurb.append(link);
     return;

@@ -128,6 +128,15 @@ let lastCardHTML = '';
 let selectedBus: string | null = null;
 let selectedTrain: string | null = null;
 let selectedFreight: string | null = null;
+/** The passage the open freight card describes; the same id draws a new train each slot. */
+let freightCardKey = '';
+function refreshFreightCard() {
+  if (!selectedFreight || !diorama) return;
+  const hit = diorama.freightPassage(selectedFreight);
+  if (!hit) return;
+  const key = `${hit.consist}|${hit.lead}`;
+  if (key !== freightCardKey) { freightCardKey = key; showCard(cityFreightCard(hit), !!follow); }
+}
 let selectedMapFeature: { kind: 'crossing' | 'arc'; id: string } | undefined;
 let keepSharedCamera = false;
 function showCard(html: string, canFollow = false) {
@@ -584,7 +593,7 @@ async function openCity() {
         selectedFreight = hit?.kind === 'freight' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line), !!follow);
+        else if (hit?.kind === 'freight') { freightCardKey = `${hit.consist}|${hit.lead}`; showCard(cityFreightCard(hit), !!follow); }
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
@@ -1027,6 +1036,7 @@ const shellOptions: ShellOptions = {
     updateClock(clock.now());
     if (selectedTrain) renderTrainCard();
     else if (selectedBus) renderBusCard();
+    else refreshFreightCard();
   },
   metresPerPixel() {
     if (diorama) return diorama.camera().metresPerPixel;
@@ -1118,13 +1128,15 @@ setInterval(() => {
     else if (params.has('bus')) selectedBus = params.get('bus');
     else if (diorama && ['illustrative:freight:downtown', 'illustrative:freight:norcross'].includes(params.get('freight') ?? '')) {
       selectedFreight = params.get('freight');
-      showCard(cityFreightCard(selectedFreight === 'illustrative:freight:norcross' ? 'NS Norcross District' : undefined), !!follow);
+      const norcross = selectedFreight === 'illustrative:freight:norcross';
+      showCard(cityFreightCard(norcross ? { line: 'NS Norcross District', railroad: 'ns' } : undefined), !!follow);
+      freightCardKey = ''; // Refresh with this passage's consist when it is on the board.
     }
   }
   followFromLink();
   if (selectedTrain) renderTrainCard();
   else if (selectedBus) renderBusCard();
-  else if (selectedFreight && follow) updateFollowPanel();
+  else if (selectedFreight) { refreshFreightCard(); if (follow) updateFollowPanel(); }
   keepSharedCamera = false;
 }, 500);
 

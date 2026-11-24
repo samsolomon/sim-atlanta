@@ -34,15 +34,16 @@ describe('three-bay covered grain hopper', () => {
     }
   });
 
-  it('runs three hoppers behind the two Norcross locomotives, instanced only at high tier', () => {
+  it('draws the Norcross passage instanced on both tiers, with reduced shapes on low', () => {
     const line: [number, number][] = [[0, 0], [400, 0]];
     for (const high of [true, false]) {
       const freight = createNorcrossFreight(line, () => 0, [], high);
-      const lengths = freight.poses.children.map((car) => car.userData.lengthM);
-      expect(lengths.slice(2, 5)).toEqual(Array(3).fill(FREIGHT_LENGTH.grainHopper));
-      expect(lengths.slice(5).every((l) => l === FREIGHT_LENGTH.boxcar)).toBe(true);
-      // Low tier must not add an instanced + clipped Lambert program (phone budget is 90).
-      expect(freight.poses.children.every((car) => !!(car as THREE.Mesh).isMesh === !high)).toBe(true);
+      freight.update(Date.parse('2026-11-23T19:03:00Z'), false);
+      // Poses are plain Object3Ds; every drawn car comes from an InstancedMesh.
+      expect(freight.poses.children.every((car) => !(car as THREE.Mesh).isMesh)).toBe(true);
+      const batches = freight.group.children.filter((m): m is THREE.InstancedMesh => (m as THREE.InstancedMesh).isInstancedMesh && m.visible);
+      expect(batches.reduce((n, m) => n + m.count, 0)).toBe(freight.visibleCars);
+      expect(freight.draws).toBe(batches.length);
       freight.dispose();
     }
   });

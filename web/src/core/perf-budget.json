@@ -3,10 +3,6 @@
   "_lateCompiles": {
     "_doc": "test:perf also sweeps the clock (dusk, night, late night, dawn) and weather on low and high after City is ready, and fails if any shader program compiles then: each late compile is a frame that stalls (100+ ms on the Studio). core/prewarm.ts compiles everything City has built but not drawn. These are the known exceptions, each matched against the late program's owners and cache key, with who is fixing it. Remove an entry when its fix lands.",
     "allow": [
-      {
-        "match": "Illustrative freight",
-        "why": "freight consists are built when they enter the board, after ready; vehicles agent (#424 pads freight to one clip-plane count)"
-      }
     ]
   },
   "low": {
