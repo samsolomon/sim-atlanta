@@ -14,7 +14,7 @@
 
 **Main queue, in order:**
 1. **#654**, band fix (perf-desktop, merging now): 2x MSAA default on High, `?msaa=4`, textureMB ceiling 890 → 1030 with the honest default-framebuffer counter. Coordinator-approved.
-2. **#613**, far-board buildings (perf-buildings; phone-perf's A16 gate passed; low 359 → 196 calls; lowers ceilings to 220 / 1.25M / 84). Then send the release commit.
+2. **#613**, far-board buildings (now owned by Codex session efd8170b-7567-4e26-a4e9-b979f1176314, so send it the slot; was perf-buildings; phone-perf's A16 gate passed; low 359 → 196 calls; lowers ceilings to 220 / 1.25M / 84). Then send the release commit.
 3. **#646**, then **#651**, tree lab (house near builds off the frame; the north long task goes from 310 ms to 70-90 ms). Then **#450** (tree far form, Sam-approved; tree lab).
 4. Phone-perf's small ratchet PR (low-north 650 → 300) after #646/#651.
 5. **#435**, streaming prototype (`?stream=1`, default off; Sam-approved as is; phone-perf owns the merge since the author is gone; run the flag-off look-neutral check).
@@ -69,7 +69,7 @@ Before building any train, re-check each PR's head with `gh pr view` (workers mo
 - #603 caps vitest at 4 forked workers. The Studio often sits at load 40-60; `test:perf` counts are load-independent, but timings and timeouts aren't.
 
 ## Worker assignments at handoff (downtown generics first: Sam's priority since this morning)
-- **skins-1 (914b0cfd):** 30 Allen Plaza, then CenturyLink, then the #657 roof cars follow-up.
+- **skins-1 (914b0cfd; 30 Allen Plaza picked up by session b3e33ca2, likely its Codex successor, with the identification confirmed: Southern Company, charcoal piers, arches, dark fascia):** 30 Allen Plaza, then CenturyLink, then the #657 roof cars follow-up.
 - **skins-2 (4695b411):** Olympia (#634) and Elevance (#642) are open; 715 Peachtree is #617.
 - **skins-3 (f7bfd025, worktree studio-midtown-parks):** the Geo Muse Building.
 - **skins-4 (89d3798a):** Hurt Plaza Garage (review fixes in), then Langdale Hall, then the GSU College of Education (name unconfirmed; README caveat).
