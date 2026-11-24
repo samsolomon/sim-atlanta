@@ -3585,3 +3585,7 @@ The Codex review caught that my first test recorded only each board's single wor
 The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. It's built one board per idle slice once the camera passes 10 km. At the default view the low tier draws 94,710 fewer triangles, with the same draw count and 0.6 MB more geometry.
 
 [The default view, before and after](log/very-far-ground/strip-orbit-21k.jpg) · [Why settle: 2 m, settled 8 m, plain 8 m at 12 km](log/very-far-ground/crop-12k-2m-settled-raw.png)
+
+### 2026-11-24 — Four shader programs from a number in a key
+
+The phone tier was at 86 of 86 shader programs, with nightly skins and features landing on top. A sweep that pairs every compiled program with its owner and three.js cache key showed four of them differed from shared programs in one field only: `numClippingPlanes`. Brookwood clips to its north and west board edges, two planes, while most of City clips to four, so its corridor materials, its freight and their shadow-depth variant each had a program of their own. Padding Brookwood's plane list with two planes that never clip (10,000 km below the board) merges them into the shared programs. The phone tier drops from 85 at ready and 86 at the sweep's peak to 81 and 82, and the last late shadow-depth compile disappears. High drops by five. The frames don't change. [Brookwood by day](log/perf/clip-pad/brookwood-1400.png) · [at night](log/perf/clip-pad/brookwood-2200.png)

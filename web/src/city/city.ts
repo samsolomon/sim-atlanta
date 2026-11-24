@@ -724,7 +724,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   renderer.info.autoReset = false;
   renderer.localClippingEnabled = true;
-  renderer.setPixelRatio(perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2)));
+  // The tier's (or ?perf&pr's) ratio for the display City is on now; see watchPixelRatio below.
+  const wantedPixelRatio = () => perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(wantedPixelRatio());
   renderer.shadowMap.enabled = perfOverrides.shadow !== 'off';
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
@@ -1229,6 +1231,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
+  // `?perf&aoblend=old` keeps GTAOPass's copy-then-blend output, for A/B runs.
+  const aoBlend = gtao && !(perfEnabled && query.get('aoblend') === 'old') ? new ShaderPass({
+    name: 'AoBlend',
+    uniforms: { tDiffuse: { value: null }, tAO: { value: null }, intensity: { value: 1 } },
+    vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    // GTAOBlendShader's colour, applied as its multiply blend did: dst * mix(1, ao, intensity).
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tDiffuse, tAO;
+      uniform float intensity;
+      varying vec2 vUv;
+      void main() {
+        vec4 c = texture2D(tDiffuse, vUv);
+        vec4 ao = texture2D(tAO, vUv);
+        gl_FragColor = vec4(c.rgb * mix(vec3(1.0), ao.rgb, intensity), c.a * ao.a);
+      }`,
+  }) : null;
   if (gtao) {
     // Read the scene pass's own depth instead of re-rendering the whole scene with a normal
     // override (which doubled draw calls and triangles). The scene is flat-shaded, so normals
@@ -1244,6 +1262,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
+    if (aoBlend) {
+      // GTAOPass's default output copies the whole frame, then multiplies the AO over it with
+      // blending: two full-resolution passes. One pass that multiplies as it copies does the same.
+      gtao.output = GTAOPass.OUTPUT.Off;
+      gtao.needsSwap = false;
+      aoBlend.uniforms.tAO.value = gtao.pdRenderTarget.texture;
+      aoBlend.uniforms.intensity.value = gtao.blendIntensity;
+      composer.addPass(aoBlend);
+    }
   }
   // `?perf&bloom=device` keeps the old device-px bloom, for A/B runs.
   const bloomCss = !(perfEnabled && query.get('bloom') === 'device');
@@ -1294,10 +1321,24 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ink.enabled = inkWanted;
     grade.enabled = !perfOverrides.nopass.has('grade');
     if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
+    if (aoBlend) aoBlend.enabled = !perfOverrides.nopass.has('gtao');
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);
   resize();
+  // A window dragged to a display with another devicePixelRatio doesn't resize the container, so
+  // the frame loop checks the ratio itself (one global read; a resolution media query's change
+  // event isn't fired everywhere). The buffer, the composer and every pass's targets follow it.
+  let seenDpr = devicePixelRatio;
+  const followPixelRatio = () => {
+    if (devicePixelRatio === seenDpr) return;
+    seenDpr = devicePixelRatio;
+    const pr = wantedPixelRatio();
+    if (pr === renderer.getPixelRatio()) return;
+    renderer.setPixelRatio(pr);
+    composer.setPixelRatio(pr);
+    resize();
+  };
   const perfContext: Parameters<typeof perf.attach>[0] = {
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
@@ -1653,6 +1694,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    followPixelRatio();
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -1825,7 +1867,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       brookwood?.cars, (northLine as { group?: THREE.Object3D } | undefined)?.group, rain.mesh, snow.mesh],
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
-    skipPasses: [gtao],
+    skipPasses: [gtao, aoBlend],
     mode: options.whiteModel,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
