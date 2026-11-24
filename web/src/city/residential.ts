@@ -1,3 +1,4 @@
+import { pradoYieldSigns } from '../terrain/ansley-street-edge';
 import * as THREE from 'three';
 import tagged from '../../../pipeline/prototypes/residential/tags.json';
 import { inAnsley, roadWidth, type TerrainCity } from '../terrain/transport-data';
@@ -555,6 +556,7 @@ const WALK = '#cbc6ba', DRIVE = '#b2ada3';
 function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
   street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[]) {
   const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
+  if (high) pradoYieldSigns(b,city.bounds,ground);
   const yields: GroundYield[] = [], terraceSites: { id:string; at:P2; triangles:number }[] = [];
   const classes = new Map(all.map(b=>[b.id,b.cls]));
   // Footprint index, so drives and walks never cross another building.
