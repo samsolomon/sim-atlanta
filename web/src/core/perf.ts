@@ -592,6 +592,58 @@ export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
+  /**
+   * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
+   * count (drawRange, material group and instance count, as three.js computes it), its pass (main,
+   * shadow depth, or post: a full-screen quad outside the scene) and its owner. Answers "what draws
+   * these triangles" where the category sums (all registered geometry) can't.
+   */
+  captureDraws(): Promise<unknown> {
+    if (!ctx) return Promise.resolve(null);
+    const { renderer, scene } = ctx;
+    const roots = ctx.roots();
+    const original = renderer.renderBufferDirect;
+    type Rec = { path: string; cat: string; pass: string; material: string; tri: number; calls: number };
+    const recs = new Map<string, Rec>();
+    const owner = (o: THREE.Object3D) => {
+      let cat = '';
+      const names: string[] = [];
+      let inScene = false;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) {
+        if (!cat) cat = (p.userData?.perf as string | undefined) ?? roots.get(p) ?? '';
+        if (p.name && names.length < 4) names.push(p.name);
+        if (p === scene) inScene = true;
+      }
+      return { cat: cat || (inScene ? 'untagged' : 'post'), path: names.reverse().join(' / ') || `(unnamed ${o.type})`, inScene };
+    };
+    renderer.renderBufferDirect = function (camera, sc, geometry, material, object, group) {
+      const g = geometry as THREE.BufferGeometry;
+      const count = g.index ? g.index.count : (g.attributes.position?.count ?? 0);
+      let start = g.drawRange.start, end = Math.min(count, g.drawRange.start + g.drawRange.count);
+      if (group) { start = Math.max(start, group.start); end = Math.min(end, group.start + group.count); }
+      const m = object as THREE.InstancedMesh & { isPoints?: boolean; isLine?: boolean };
+      const inst = m.isInstancedMesh ? m.count : (g as THREE.InstancedBufferGeometry).isInstancedBufferGeometry ? (g as THREE.InstancedBufferGeometry).instanceCount : 1;
+      const tri = m.isPoints || m.isLine ? 0 : Math.max(0, Math.floor((end - start) / 3)) * (Number.isFinite(inst) ? inst : 1);
+      const o = owner(object);
+      const depth = (material as THREE.Material).type === 'MeshDepthMaterial' || (material as THREE.Material).type === 'MeshDistanceMaterial';
+      const pass = !o.inScene ? 'post' : depth ? 'shadow' : 'main';
+      const key = `${pass}|${o.path}|${(material as THREE.Material).type}`;
+      const r = recs.get(key) ?? { path: o.path, cat: o.cat, pass, material: (material as THREE.Material).type, tri: 0, calls: 0 };
+      r.tri += tri; r.calls++;
+      recs.set(key, r);
+      return original.call(this, camera, sc, geometry, material, object, group);
+    };
+    return new Promise(resolve => {
+      // Wait for a frame to start, record the whole next one, then put the renderer back.
+      requestAnimationFrame(() => { recs.clear(); requestAnimationFrame(() => {
+        renderer.renderBufferDirect = original;
+        const all = [...recs.values()];
+        const sum = (rs: Rec[]) => ({ tri: rs.reduce((a, r) => a + r.tri, 0), calls: rs.reduce((a, r) => a + r.calls, 0) });
+        const by = (k: 'pass' | 'cat') => Object.fromEntries([...new Set(all.map(r => r[k]))].map(v => [v, sum(all.filter(r => r[k] === v))]));
+        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80) });
+      }); });
+    });
+  },
   /** One prewarm step's main-thread ms (a never-drawn object's first draw, usually one compile). */
   prewarmStep(ms: number) { prewarmSteps.push(Math.round(ms * 10) / 10); },
   get prewarmSteps() { return [...prewarmSteps]; },
