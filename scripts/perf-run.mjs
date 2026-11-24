@@ -14,11 +14,13 @@ const args = process.argv.slice(2);
 let out = null;
 let desktop = false;
 let extra = null;
+let netMbps = 0;
 const urls = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
   else if (args[i] === '--desktop') desktop = true;
   else if (args[i] === '--eval') extra = args[++i];
+  else if (args[i] === '--net') netMbps = Number(args[++i]) || 0;
   else urls.push(args[i]);
 }
 if (!urls.length) { console.error('usage: perf-run.mjs [--out dir] [--desktop] URL...'); process.exit(2); }
@@ -67,6 +69,11 @@ const evaluate = async expr => (await send('Runtime.evaluate', { expression: exp
 
 await send('Runtime.enable');
 await send('Page.enable');
+// --net 2.5 caps downloads at 2.5 Mbps with 100 ms latency, about the A16 over the test proxy.
+if (netMbps > 0) {
+  await send('Network.enable');
+  await send('Network.emulateNetworkConditions', { offline: false, latency: 100, downloadThroughput: netMbps * 125000, uploadThroughput: netMbps * 62500 });
+}
 // Galaxy A16: 1080x2340 at DPR 2.625 = 411x891 CSS px.
 if (desktop) await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
 else {

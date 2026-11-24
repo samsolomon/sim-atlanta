@@ -106,3 +106,14 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 | Texture MB | 808 | 500 |
 | Geometry MB | 270 | 350 |
 | JS heap after GC | 514 MB | 600 MB |
+
+### Galaxy A16 tree mask sign-off (2026-11-23, #348)
+
+Fresh Chrome with cooldowns, low tier, all 12 areas loaded. Ten-second FPS on the pre-rollout baseline (d1411a9e), candidate (fb699bbb), and candidate with the far mask forced on:
+
+| Camera | Baseline | Candidate | Mask on |
+| --- | --- | --- | --- |
+| Default | 27.3 | 25.9, 26.2 | 23.0 |
+| Pan | 27.0, 25.2 | 24.6, 25.7, 25.6 | 23.0, 22.3, 22.3 |
+
+The coordinator accepted the 3–5% gap to baseline and Sam accepted the far-crown appearance.
