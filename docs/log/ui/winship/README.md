@@ -34,14 +34,14 @@ There is no full-night exterior. This is an inpatient and research building, so 
 
 ## Glass
 
-The tower glass is `#a7bcc2` (S14 V76). The podium glass behind the fin screen was `#5d6c73` (S19 V45). Rendered in shade it read H215 S84 V18, so it was lifted to `#7c8387` (S8 V53), inside the provisional dark-glass rule.
+The tower glass is `#a7bcc2` (S14 V76). The podium glass behind the fin screen was `#5d6c73` (S19 V45). Rendered in shade it read H215 S84 V18, so it was lifted to a neutral grey, `#8c9296` (S7 V59).
 
 Rendered medians at 11:30, high tier:
 
 | Patch | Camera | H | S | V |
 |---|---|---|---|---|
-| Podium, sunlit | `575,-1760,340,62,260` | 129 | 19 | 43 |
-| Podium, deep shade | `575,-1760,160,62,300` | 216 | 54 | 20 |
+| Podium, sunlit | `575,-1760,340,62,260` | 64 | 17 | 51 |
+| Podium, deep shade | `575,-1760,160,62,300` | 218 | 40 | 25 |
 | Tower end, sunlit | `575,-1760,340,62,260` | 108 | 9 | 70 |
 | Generic tower, sunlit | `575,-1760,340,62,260` | 136 | 6 | 74 |
 | Tower long face, shade | `575,-1760,160,62,300` | 209 | 41 | 37 |
