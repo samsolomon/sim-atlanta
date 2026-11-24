@@ -83,7 +83,7 @@ function updateFollowPanel() {
     underground: reduced ? 'Underground · mapped tunnel' : 'Underground · mapped tunnel · following its alignment above ground',
     covered: reduced ? `${Noun} under cover` : 'Under cover · following the route above ground',
     unseen: reduced ? `${Noun} out of view` : `${Noun} out of view · following its position above ground`,
-    lost: noun !== 'bus' ? 'Follow ended · trip unavailable'
+    lost: selectedFreight ? 'Follow ended · freight no longer drawn' : noun !== 'bus' ? 'Follow ended · trip unavailable'
       : clock.isRealTime() ? 'Follow ended · bus stopped reporting' : 'Follow ended · live buses show only at the present time',
     outside: `Follow ended · ${noun} left the board`,
   }[follow.phase];
@@ -171,8 +171,9 @@ function hideCard() {
   card.classList.remove('following-trip');
   followPanel.hidden = true;
   card.hidden = true;
-  selectedBus = null; selectedFreight = null;
-  selectedTrain = null; selectedFreight = null;
+  selectedBus = null;
+  selectedTrain = null;
+  selectedFreight = null;
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
 
