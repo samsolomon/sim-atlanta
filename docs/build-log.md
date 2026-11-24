@@ -3698,3 +3698,7 @@ Rambler Atlanta opened in August 2025 on a lot that was empty in the 2019 lidar,
 ### 2026-11-24 · Loews, second pass: a dark band from the photo
 
 The audit rated Loews borderline: a plain framed-glass tower among others. My first instinct was to tint its glass aqua. Sampling the 2019 photograph showed the real glass is the same pale blue-grey as everything around it (hue 208, S 17%), so the tint would have been invented. What the photo does show is a dark band: the hotel residences' balconies cross the top dozen floors at V 25%, over the pale shaft. The rework draws that band as a shaded recess behind white slab edges, plus the sawtooth bay windows on the west face. It keeps the photo's glass colour. [Before and after from 11th and Peachtree](log/ui/loews-atlanta/rework-before-after.jpg)
+
+### 2026-11-24 · A phantom tower behind the Westin
+
+From the default City camera, a 78.7 m block stood behind the Westin. Overture had given that height to a parking deck. The 2019 lidar is flat at 27.7 m across the whole outline, and OSM maps the same footprint as a multi-storey deck. The skin draws the deck at its real height, with ribbed spandrels and louvred screens, in under 400 triangles. It is the cheapest correction of the night, and possibly the most visible. [Before/after from the default camera](log/ui/aym-deck/README.md)
