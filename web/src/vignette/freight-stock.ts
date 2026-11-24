@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { boxcarBody } from './boxcar';
 import { grainHopperBody } from './grain-hopper';
-import { WELL_LENGTH, WELL_LOADS, WELL_TRUCKS, wellCarBody } from './intermodal';
+import { WELL_LENGTH, WELL_LOADS, WELL_TRUCKS, wellCarBody, type ContainerTag } from './intermodal';
 import { TANK_LENGTH, TANK_TRUCKS, tankCarBody } from './tank-car';
 import { GONDOLA_LENGTH, GONDOLA_TRUCKS, gondolaBody } from './gondola';
 import { CENTERBEAM_LENGTH, CENTERBEAM_TRUCKS, centerbeamBody } from './centerbeam';
@@ -42,7 +42,7 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
     const lamps = new Builder();
     if (unit === 'sd70ace' || unit === 'gp382') emdLocomotive(b, lamps, unit, leadFront, leadRear);
     else geLocomotive(b, lamps, unit === 'locomotive' || unit === 'es44ah' ? 'csx' : 'ns', leadFront, leadRear, unit === 'es44acNs' || unit === 'es44ah' ? 'es44' : 'cm44ac');
-    return finishStockGeometry(b, new Builder(), lamps);
+    return withContainerTags(finishStockGeometry(b, new Builder(), lamps));
   }
   const length = FREIGHT_LENGTH[unit];
   const frame = '#393d40', steel = '#55585a';
@@ -63,8 +63,9 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
   // A through centre sill, except under the well car's floor and the tank car's stub sills.
   if (!isWell(unit) && unit !== 'tank') b.box(unit === 'grainHopper' ? .35 : 2.98, .42, length - .7, 0, 1.14, 0, frame);
   for (const end of [-1, 1]) b.box(.46, .32, .65, 0, .98, end * (length / 2 - .32), frame);
+  let tags: ContainerTag[] = [];
   if (unit === 'grainHopper') grainHopperBody(b, low);
-  else if (isWell(unit)) wellCarBody(b, unit, low);
+  else if (isWell(unit)) tags = wellCarBody(b, unit, low);
   else if (unit === 'tank') tankCarBody(b, low);
   else if (isGondola(unit)) gondolaBody(b, unit, low);
   else if (isCenterbeam(unit)) centerbeamBody(b, unit, low);
@@ -74,5 +75,21 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
   // A zero stockLight attribute so the lit stock material can be shared with locomotives.
   const g = b.geometry();
   g.setAttribute('stockLight', new THREE.BufferAttribute(new Float32Array(g.getAttribute('position').count), 1));
+  return withContainerTags(g, tags);
+}
+
+/**
+ * Every freight shape carries `aSlot` (0 car, 1 bottom container, 2 top container) and `aShade`, so
+ * all of them bind the same attributes in City's one freight program. Plain materials ignore both.
+ */
+function withContainerTags(g: THREE.BufferGeometry, tags: ContainerTag[] = []) {
+  const n = g.getAttribute('position').count;
+  const slot = new Float32Array(n), shadeF = new Float32Array(n).fill(1);
+  for (const t of tags) {
+    slot.fill(t.slot, t.start, t.end);
+    shadeF.fill(t.shade, t.start, t.end);
+  }
+  g.setAttribute('aSlot', new THREE.BufferAttribute(slot, 1));
+  g.setAttribute('aShade', new THREE.BufferAttribute(shadeF, 1));
   return g;
 }

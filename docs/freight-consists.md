@@ -40,7 +40,7 @@ The envelope follows Greenbrier's [53′ Husky-Stack](https://www.gbrx.com/railc
 - a well floor 0.36 m above the rail (estimated);
 - deep side girders, with end platforms over the trucks.
 
-Containers are 53-foot domestic high cubes, 16.15 × 2.59 × 2.90 m. The double stack tops out at 6.16 m, within Plate H's 20 ft 2 in. Three loads are baked as separate geometries, so colour adds no shader permutation:
+Containers are 53-foot domestic high cubes, 16.15 × 2.59 × 2.90 m. The double stack tops out at 6.16 m, within Plate H's 20 ft 2 in. The Model Lab keeps three baked loads for its single-car views. Since version 8, City deals each container its own colour and length (see **Well loads (version 8)**):
 - `wellA`: white over red-brown;
 - `wellB`: blue over grey;
 - `wellC`: a single faded mustard box.
@@ -152,6 +152,17 @@ An earlier estimate of 1.33 m at a 41 m radius overstated the swing. The source 
 
 **Use in City.** Coal is a unit-train commodity only, loaded or empty and chosen per passage. It runs on both lines, because a 16.2 m car clears the downtown curves. `CONSIST_VERSION` is 6. This completes the eight-car plan; distributed power (DPU) is still deferred.
 
+**Well loads (version 8).** Sam saw from the Lab sheet that the containers were "a lot of times the same colour". Version 7 drew each train from two of three baked loads, so a 20-car train alternated two looks. Now each well's `ConsistUnit` carries its own load, dealt by the seeded planner:
+- Each container gets its own colour from a ten-colour generic palette with no marks (`CONTAINER_PALETTE` in `vignette/intermodal.ts`).
+  - 53 ft domestic boxes are mostly white (42 %), then silver-grey, mustard, red and orange.
+  - 40 ft international boxes are maroon, blue, green, grey and teal.
+  - The inputs are lighter than paint, because City's grade darkens deep colours.
+- Version 9 deals 53 ft bottoms 80 % of the time. A 40 ft bottom can only carry a 40. A 53 ft bottom draws a 53 ft top three times out of four when double-stacked. A 40 ft box rides centred on a 53 ft box, so the step shows at both ends.
+- About one well in eight runs empty, and one in eight carries a single container.
+- Adjacent cars never repeat the same bottom and top colour pair.
+
+City draws every well from one shape, with both boxes modelled 53 ft long. Each box's vertices carry `aSlot` and `aShade`, and each instance carries `aLoad`. `freightMaterial()` patches the one shared freight program with `customProgramCacheKey` `freight-containers-1`. That program takes each box's colour from the palette, shortens it to 40 ft, or collapses it when the slot is empty. Downtown, Brookwood and the boot templates all use that factory, so the patch replaces the freight program rather than adding one. An intermodal train is now one instanced draw instead of two, on both tiers. The Lab's single-car views and the vignette don't use the patch and keep the baked colours. Bumping `CONSIST_VERSION` to 8 re-deals every slot. The Lab's **Intermodal train · 20 wells** entry lays out a passage exactly as City draws it ([before](log/freight/wells/before-front.jpg) · [after](log/freight/wells/after-front.jpg) · [Brookwood from 400 m](log/freight/wells/brookwood-400m-high.jpg)).
+
 **Downtown lift (version 7).** After the downtown centreline was smoothed (#512) and both clearance checks passed, `DOWNTOWN_PROFILE` dropped its autorack exclusion and gained an intermodal weight of 15 %. Manifest is now 55 % and unit 30 %. Bumping `CONSIST_VERSION` to 7 re-deals every slot on both lines.
 
 ### Built: City consists
@@ -164,7 +175,7 @@ Each passage is a pure function of the line, the signed slot and `CONSIST_VERSIO
   - Downtown (CSX-like): manifest 55 %, intermodal 15 %, unit 30 %. Intermodal and autoracks run here since `CONSIST_VERSION` 7, once the curve and overhead clearance checks passed (see **Curve clearance**).
   - Brookwood (NS-like): manifest 45 %, intermodal 35 %, unit 20 %.
 - **Manifest blocks.** Six to 24 cars in blocks of 3–8, using up to three types from the three boxcar paints and the covered hopper.
-- **Intermodal.** Eight to 30 wells, using two of the three loads.
+- **Intermodal.** Eight to 30 wells, each with its own seeded load (see **Well loads (version 8)**).
 - **Unit trains.** Twelve to 30 covered hoppers.
 - **Power.** One unit below 180 m of trailing cars, two up to 399 m, three from 400 m. The lead always faces forward; trailing units may run long hood forward. One road type is used per lash-up:
   - CSX-like: CM44AC or ES44AH, with a GP38-2 on short CSX manifests.

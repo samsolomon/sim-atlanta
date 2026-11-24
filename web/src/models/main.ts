@@ -11,7 +11,10 @@ import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type Ma
 import { gradeShader } from '../vignette/grade';
 import { xe60Geometry, xe60Material, xe60DepthMaterial, xe60Pose } from '../vignette/xe60';
 import { busGeometry, RAPID_LIVERY, busMaterial } from '../vignette/xcelsior';
-import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { FREIGHT_LENGTH, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { FreightBatches, freightMaterial } from '../city/freight-batches';
+import { COUPLER_GAP, planPassage, type LineProfile } from '../city/freight-consist';
+import { NORCROSS_PROFILE } from '../city/brookwood-freight';
 import { s70Geometry } from '../vignette/streetcar';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -89,6 +92,7 @@ const models = {
   freightCenterbeamEmpty: '73-foot centerbeam · empty',
   freightGondolaScrap: '52-foot mill gondola · scrap',
   freightGondolaEmpty: '52-foot mill gondola · empty',
+  freightIntermodal: 'Intermodal train · 20 wells',
   freightWellA: '53-foot double-stack well car',
   freightWellB: '53-foot well car · blue over grey',
   freightWellC: '53-foot well car · single stack',
@@ -179,6 +183,39 @@ phase.addEventListener('input', () => {
 const platformParam = new URLSearchParams(location.search).get('platform');
 let platformKind: PlatformKind | null = platformParam === 'island' || platformParam === 'side' ? platformParam : null;
 let station: ReturnType<typeof createPlatformScene> | undefined;
+/** The intermodal strip's batches, which `build()` tears down like `cars`. */
+let strip: { dispose(): void } | undefined;
+const STRIP_CARS = 20;
+
+/**
+ * A 20-car NS-like intermodal consist on straight track, built exactly as City builds it: the seeded
+ * planner (forced to its intermodal recipe) and FreightBatches. `&slot=` picks the passage; by
+ * default the first slot with at least 20 cars, so the same strip comes back on every load.
+ */
+function buildIntermodalStrip() {
+  const profile: LineProfile = { ...NORCROSS_PROFILE, recipes: { manifest: 0, intermodal: 1, unit: 0 } };
+  const lineId = 'ns:norcross:main2';
+  let slot = Number(labParams.get('slot'));
+  if (!labParams.has('slot') || !Number.isFinite(slot)) for (slot = 0; planPassage(profile, slot, lineId).cars < STRIP_CARS; slot++);
+  const units = planPassage(profile, slot, lineId).units.filter((u) => !u.power).slice(0, STRIP_CARS);
+  const batches = new FreightBatches(treeQuality === 'low');
+  const material = freightMaterial([]);
+  const total = units.reduce((sum, u) => sum + FREIGHT_LENGTH[u.kind] + COUPLER_GAP, -COUPLER_GAP);
+  let front = total / 2;
+  batches.begin();
+  for (const unit of units) {
+    const length = FREIGHT_LENGTH[unit.kind];
+    const pose = batches.createPose(material);
+    pose.position.set(0, .125, front - length / 2);
+    if (unit.flip) pose.rotation.y = Math.PI;
+    batches.append(unit.kind, pose, unit.load);
+    front -= length + COUPLER_GAP;
+  }
+  const draws = batches.finish();
+  scene.add(batches.group);
+  strip = { dispose() { batches.dispose(); material.dispose(); } };
+  return { slot, draws, length: total };
+}
 type LabTrees = { group: THREE.Object3D; setSeason(doy: number): void; dispose(): void; update?(dt: number, camera: THREE.Camera): void; setNight?(n: number): void; draws?: number | (() => number) };
 let trees: LabTrees | null = null;
 // Captions over each tree in "Compare all", projected every frame so screenshots label themselves.
@@ -437,6 +474,8 @@ jointSlider.oninput = setJoint;
 document.getElementById('joint-reset')!.onclick = () => { jointSlider.value = '0'; setJoint(); };
 function build() {
   trailer = undefined;
+  strip?.dispose();
+  strip = undefined;
   document.getElementById('articulation')!.hidden = model !== 'xe60';
   houseScene?.dispose();
   houseScene = null;
@@ -585,6 +624,14 @@ function build() {
     blurb.append(link);
     return;
   }
+  if (model === 'freightIntermodal') {
+    track.visible = longTrack.visible = false;
+    ground.scale.setScalar(6);
+    document.getElementById('tier')!.hidden = false;
+    const { slot, draws, length } = buildIntermodalStrip();
+    document.getElementById('blurb')!.textContent = `Slot ${slot} of the Norcross District's intermodal recipe, ${STRIP_CARS} wells and ${length.toFixed(0)} m, laid out as City draws them: ${draws} instanced draw${draws === 1 ? '' : 's'}. Containers are generic look-alikes with no marks; illustrative. `;
+    return;
+  }
   if (isFreightModel(model)) {
     const unit = freightModels[model];
     if (unit === 'grainHopper' || unit === 'tank' || unit.startsWith('well') || unit.startsWith('gondola') || unit.startsWith('centerbeam') || unit === 'autorack' || unit.startsWith('coal')) document.getElementById('tier')!.hidden = false;
@@ -680,6 +727,19 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 /** `near` defaults to the lab's 0.1 m; the swatches' City-distance view uses City's 20 m so the ink matches. */
 type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number; near?: number };
+/**
+ * The 20-well intermodal strip, keyed by the Lab's View buttons: ¾ front (the initial view) is a
+ * close run of cars, Front and Rear are each half of the train side-on, Side is the whole train
+ * and Top looks down on it.
+ */
+const STRIP_VIEWS: Record<string, ViewPreset> = {
+  'Front': { pos: [-150, 60, 118], target: [0, 2, 118], fov: 40 },
+  '¾ front': { pos: [-55, 22, 150], target: [0, 2.5, 175], fov: 42 },
+  'Side': { pos: [-230, 150, 0], target: [0, 2, 0], fov: 50 },
+  'Rear': { pos: [-150, 60, -118], target: [0, 2, -118], fov: 40 },
+  // Every preset keeps the whole 473 m train inside the Lab's 400 m far plane.
+  'Top': { pos: [0.01, 260, 0], target: [0, 0, 0], fov: 60 },
+};
 const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
   '¾ front': { pos: [-11, 4.2, 36], target: [0, 2.0, 18], fov: 28 },
@@ -979,7 +1039,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = id === 'freightIntermodal' ? STRIP_VIEWS : isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>

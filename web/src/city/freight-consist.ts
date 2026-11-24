@@ -1,17 +1,29 @@
 import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
+import { DOMESTIC_WEIGHTS, INTERNATIONAL_WEIGHTS } from '../vignette/intermodal';
 
 /**
  * Illustrative freight consists, one per passage (docs/freight-consists.md). Everything here is a
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks, v6 coal hoppers, v7 lifts the downtown autorack and intermodal exclusions. */
-export const CONSIST_VERSION = 7;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks, v6 coal hoppers, v7 lifts the downtown autorack and intermodal exclusions, v8 deals each container its own colour and length. */
+export const CONSIST_VERSION = 9;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
 export type FreightRecipe = 'manifest' | 'intermodal' | 'unit';
-export interface ConsistUnit { kind: FreightUnit; /** Runs long hood (or B end) forward. */ flip: boolean; power: boolean }
+/** One container: an index into CONTAINER_PALETTE (0–4 domestic, 5–9 international) and its length. */
+export interface Container { color: number; long: boolean }
+/** A well car's load. `null` slots are empty: an empty well has neither, a single stack no top. */
+export interface WellLoad { bottom: Container | null; top: Container | null }
+export interface ConsistUnit {
+  kind: FreightUnit;
+  /** Runs long hood (or B end) forward. */
+  flip: boolean;
+  power: boolean;
+  /** Intermodal wells only. */
+  load?: WellLoad;
+}
 export interface Passage {
   railroad: FreightRailroad;
   slot: number;
@@ -39,10 +51,17 @@ const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'gr
 /** Unit-train commodities: grain hoppers, tanks for an illustrative ethanol movement, autoracks, or
  * coal hoppers running loaded or empty. */
 const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank', 'autorack', 'coalLoaded', 'coalEmpty'];
-const WELL_LOADS: FreightUnit[] = ['wellA', 'wellB', 'wellC'];
+/** City draws every well from one shape; each car's containers come from its seeded load. */
+const WELL: FreightUnit = 'wellA';
+/** About one well in eight runs empty, and one in eight carries a single container. */
+export const EMPTY_WELL = 1 / 8;
+export const SINGLE_STACK = 1 / 8;
+/** Domestic bottoms usually carry another domestic box. Short bottoms only carry 40s. */
+const BOTTOM_53 = 0.8;
+const TOP_53_ON_53 = 0.75;
 /** Distinct car geometries a train may draw, so each passage costs a small, fixed number of
  * instanced draws (one per kind present) on both tiers. */
-export const MAX_CAR_KINDS: Record<FreightRecipe, number> = { manifest: 3, intermodal: 2, unit: 1 };
+export const MAX_CAR_KINDS: Record<FreightRecipe, number> = { manifest: 3, intermodal: 1, unit: 1 };
 export const MAX_POWER_KINDS = 2;
 export const MAX_UNITS = 3 + 30;
 
@@ -67,6 +86,33 @@ function shuffled<T>(r: () => number, xs: readonly T[]) {
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(r() * (i + 1));
     [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+const weighted = (r: () => number, weights: readonly number[]) => {
+  let roll = r() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < weights.length; i++) if ((roll -= weights[i]) < 0) return i;
+  return weights.length - 1;
+};
+function container(r: () => number, share53: number): Container {
+  const long = r() < share53;
+  return { long, color: long ? weighted(r, DOMESTIC_WEIGHTS) : 5 + weighted(r, INTERNATIONAL_WEIGHTS) };
+}
+const pairKey = (l: WellLoad) => `${l.bottom?.color ?? '-'}/${l.top?.color ?? '-'}`;
+/** Seeded loads for a run of wells: per container, never the same colour pair on adjacent cars. */
+export function wellLoads(r: () => number, n: number): WellLoad[] {
+  const out: WellLoad[] = [];
+  for (let i = 0; i < n; i++) {
+    let load: WellLoad = { bottom: null, top: null };
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const roll = r();
+      const bottom = roll < EMPTY_WELL ? null : container(r, BOTTOM_53);
+      const top = roll < EMPTY_WELL + SINGLE_STACK ? null : container(r, bottom?.long ? TOP_53_ON_53 : 0);
+      load = { bottom, top };
+      if (!out.length || pairKey(load) !== pairKey(out[out.length - 1])) break;
+    }
+    out.push(load);
   }
   return out;
 }
@@ -101,6 +147,7 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
   const recipe: FreightRecipe = (roll -= weights.manifest) < 0 ? 'manifest' : (roll -= weights.intermodal) < 0 ? 'intermodal' : 'unit';
 
   const cars: FreightUnit[] = [];
+  let loads: WellLoad[] = [];
   if (recipe === 'manifest') {
     const n = int(r, 6, 24);
     // Up to three car types; blocks rotate through them so like cars stay together.
@@ -109,8 +156,8 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
     blockSizes(n, r).forEach((size, i) => cars.push(...Array<FreightUnit>(size).fill(types[i % types.length])));
   } else if (recipe === 'intermodal') {
     const n = int(r, 8, 30);
-    const loads = shuffled(r, WELL_LOADS).slice(0, MAX_CAR_KINDS.intermodal);
-    for (let i = 0; i < n; i++) cars.push(pick(r, loads));
+    for (let i = 0; i < n; i++) cars.push(WELL);
+    loads = wellLoads(r, n);
   } else {
     const kind = pick(r, UNIT_CARS.filter((k) => !profile.exclude?.includes(k)));
     cars.push(...Array<FreightUnit>(int(r, 12, 30)).fill(kind));
@@ -129,7 +176,7 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
   const units: ConsistUnit[] = [
     // The lead always faces forward; trailing units may run either way round.
     ...power.map((kind, i) => ({ kind, flip: i > 0 && r() < 0.5, power: true })),
-    ...cars.map((kind) => ({ kind, flip: kind.startsWith('well') ? false : r() < 0.5, power: false })),
+    ...cars.map((kind, i) => (kind === WELL ? { kind, flip: false, power: false, load: loads[i] } : { kind, flip: r() < 0.5, power: false })),
   ];
   return {
     railroad: profile.railroad, slot, recipe, units, cars: cars.length, locomotives: count,
@@ -140,7 +187,7 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
 /** Every unit kind a profile can draw: both railroads' road power (a trailing unit may be borrowed),
  * the GP38-2 local on CSX-like track, and the cars its recipes and exclusions allow. */
 export function profileKinds(profile: LineProfile): FreightUnit[] {
-  const cars = [...MANIFEST_CARS, ...UNIT_CARS, ...(profile.recipes.intermodal ? WELL_LOADS : [])]
+  const cars = [...MANIFEST_CARS, ...UNIT_CARS, ...(profile.recipes.intermodal ? [WELL] : [])]
     .filter((k) => !profile.exclude?.includes(k));
   const power: FreightUnit[] = [...Object.values(ROAD_POWER).flat(), ...(profile.railroad === 'csx' ? ['gp382' as const] : [])];
   return [...new Set([...power, ...cars])];
@@ -148,7 +195,7 @@ export function profileKinds(profile: LineProfile): FreightUnit[] {
 
 /** The longest train a profile can produce, for sizing slots. */
 export function maxTrainLength(profile: LineProfile) {
-  const longestCar = Math.max(...[...MANIFEST_CARS, ...UNIT_CARS, ...(profile.recipes.intermodal ? WELL_LOADS : [])]
+  const longestCar = Math.max(...[...MANIFEST_CARS, ...UNIT_CARS, ...(profile.recipes.intermodal ? [WELL] : [])]
     .map((k) => FREIGHT_LENGTH[k as FreightUnit]));
   const longestPower = Math.max(...Object.values(ROAD_POWER).flat().map((k) => FREIGHT_LENGTH[k]));
   return 30 * longestCar + 3 * longestPower + COUPLER_GAP * 33;

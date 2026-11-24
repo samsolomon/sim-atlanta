@@ -3625,6 +3625,21 @@ Downtown freight had two exclusions. Autoracks were held back because a 28.6 m c
 **What surprised me.** The ballast-margin rule we first proposed would have failed Brookwood, which was already approved. Brookwood draws a 3.6 m bed, narrower than a 3.34 m locomotive plus 15 cm each side even on straight track. Measuring the swing itself, not the gap to however wide someone drew the ballast, turned out to be the rule that holds everywhere.
 
 [Former kink (−558, −1015), before | after](log/freight/lift/kink-2344.jpg) · [(757, 519) on the bridge](log/freight/lift/kink-246.jpg) · [(−180, −184) under the overpass](log/freight/lift/kink-1426.jpg) · [Double-stack under the overpass](log/freight/lift/overpass-double-stack.jpg)
+
+### 2026-11-24 — Twenty wells, twenty different loads, one draw
+
+Looking at the well-car Lab sheet, Sam said the containers were "a lot of times the same colour". He was right, and the cause was the draw budget, not the model. Each well load was its own baked geometry, and a train could draw at most two of the three, so a 20-car intermodal train alternated white-over-red and blue-over-grey with a mustard single.
+
+The fix moves the load into data. The seeded consist planner now deals each container a colour and a length:
+- 53 ft domestic boxes are mostly white; 40 ft international boxes are maroon, blue, green, grey or teal.
+- About one well in eight runs empty and one in eight single.
+- No two adjacent cars repeat a colour pair.
+
+City draws every well from one shape. A per-instance attribute tells the one shared freight shader each box's colour, whether to shorten it to 40 ft, or whether to collapse it. An intermodal train went from two instanced draws to one, and the patch replaced the freight program rather than adding one.
+
+The 40 ft box riding on a 53 does more for realism than the colours do: from 400 m at Brookwood the step at each end is what reads as a real double-stack.
+
+[Lab strip, before](log/freight/wells/before-front.jpg) · [after](log/freight/wells/after-front.jpg) · [Brookwood at 400 m](log/freight/wells/brookwood-400m-high.jpg)
 **2026-11-24 — The garage that was a lightbox.** At night the Emory Midtown staff deck glowed evenly across every face, brighter than any building near it, because each face was a single lamp plane. The lamps' glow is one emissive colour for the whole batch, so dimming the vertex colour would have done nothing, and a per-skin intensity would have cost a draw. The fix lights less area instead: a 1 m ceiling-fixture strip under each level, with the rest of the deck face dark. It now reads as a lit garage. [Before and after](log/ui/euhm-staff-deck/night-before-after.jpg)
 ### 2026-11-24 · Making the JW Marriott recognisable
 
@@ -3735,6 +3750,9 @@ On the M5 Air, City ran at 44 fps with its UI and 59 without, and the 3D scene w
 
 On Low, the panels now drop the blur and use a denser tint, and long-text sheets go denser still so roofs don't show behind running text. The A16 went from 25.8 to about 31.5 fps (p95 89 to 56–67 ms), within 2 fps of no UI at all. The rest of the gap appears only while the camera turns. The compass needle rotated by rewriting an SVG attribute every frame, which repainted and re-rastered it. It now turns on its own compositor layer, with 0 paints per frame where there were 0.5. High keeps the frosted look, which City's final pass will draw itself ("in-canvas glass"). A second surprise was the Android trace: the canvas is never promoted to an overlay on that phone, even with no DOM at all, so no layout change could ever have bought that back. [390 px before and after](log/ui/low-flat-glass/phone-dock-card.jpg)
 
+### 2026-11-24 · Intermodal stacks at Brookwood
+
+The 20-car Lab strip exposed a loading error. Choosing each tier independently put some 53-foot containers on a single 40-foot base, with nearly two metres hanging over each end. The planner now checks the bottom first. A 40 takes a 40, and a double-stack with a 53-foot base gets a matching top three times out of four. Singles and empty wells still break up the train. [20-car strip](log/freight/wells/v9-strip.jpg) · [Front section](log/freight/wells/v9-front.jpg) · [Rear section](log/freight/wells/v9-rear.jpg) · [Brookwood at 400 m](log/freight/wells/v9-brookwood.jpg)
 ### 2026-11-24 — Radio station controls
 
 A tap three pixels into the track title could switch stations. The station arrows now occupy their own 44 × 44 px buttons above the title. Chrome hit tests at 390, 601, 640 and 684 px kept the title clear and the panel inside the viewport. [Playing Sol Café at 684 px](log/ui/radio-stations/station-controls.png)

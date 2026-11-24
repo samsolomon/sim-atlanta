@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FREIGHT_LENGTH } from '../vignette/freight-stock';
-import { blockSizes, COUPLER_GAP, MAX_CAR_KINDS, MAX_POWER_KINDS, MAX_UNITS, maxTrainLength, planPassage, powerCount } from './freight-consist';
+import { blockSizes, COUPLER_GAP, EMPTY_WELL, MAX_CAR_KINDS, MAX_POWER_KINDS, MAX_UNITS, maxTrainLength, planPassage, powerCount, SINGLE_STACK, type WellLoad } from './freight-consist';
 import { DOWNTOWN_PROFILE } from './freight';
 import { NORCROSS_PROFILE } from './brookwood-freight';
 
@@ -53,6 +53,41 @@ describe('seeded freight passages', () => {
     // About one multi-unit passage in twelve borrows a foreign trailing unit.
     expect(foreign / multi).toBeGreaterThan(0.04);
     expect(foreign / multi).toBeLessThan(0.14);
+  });
+
+  it('deals each well its own containers: varied, never the same pair twice running, some empty or single', () => {
+    const loads: WellLoad[] = [];
+    let adjacentRepeats = 0;
+    for (const [id, profile] of lines) for (let slot = 0; slot < 3000; slot++) {
+      const p = planPassage(profile, slot, id);
+      if (p.recipe !== 'intermodal') continue;
+      const wells = p.units.filter((u) => !u.power);
+      for (const [i, u] of wells.entries()) {
+        expect(u.kind, `${id} ${slot}`).toBe('wellA');
+        expect(u.load, `${id} ${slot}`).toBeDefined();
+        const pair = (l: WellLoad) => `${l.bottom?.color}/${l.top?.color}`;
+        if (i && pair(u.load!) === pair(wells[i - 1].load!)) adjacentRepeats++;
+        // A top never rides on an empty well.
+        if (!u.load!.bottom) expect(u.load!.top).toBeNull();
+        if (u.load!.top?.long) expect(u.load!.bottom?.long).toBe(true);
+        loads.push(u.load!);
+      }
+      // Same slot, same containers.
+      expect(planPassage(profile, slot, id).units.map((u) => u.load)).toEqual(p.units.map((u) => u.load));
+    }
+    expect(loads.length).toBeGreaterThan(3000);
+    expect(adjacentRepeats).toBe(0);
+    const share = (f: (l: WellLoad) => boolean) => loads.filter(f).length / loads.length;
+    expect(share((l) => !l.bottom)).toBeCloseTo(EMPTY_WELL, 1);
+    expect(share((l) => !!l.bottom && !l.top)).toBeCloseTo(SINGLE_STACK, 1);
+    // 40 ft boxes on 53s (the step at the ends) are common, not rare.
+    expect(share((l) => !!l.bottom?.long && l.top?.long === false)).toBeGreaterThan(0.10);
+    expect(share((l) => !!l.top && l.bottom?.long === l.top.long)).toBeGreaterThan(0.5);
+    // Domestic boxes are mostly white (palette index 0), and every palette colour appears.
+    const domestic = loads.flatMap((l) => [l.bottom, l.top]).filter((c) => c?.long);
+    const counts = [0, 1, 2, 3, 4].map((k) => domestic.filter((c) => c!.color === k).length);
+    expect(counts[0]).toBe(Math.max(...counts));
+    expect(new Set(loads.flatMap((l) => [l.bottom?.color, l.top?.color]).filter((c) => c !== undefined)).size).toBe(10);
   });
 
   it('splits blocks of 3–8 with a final block of at least 3', () => {
