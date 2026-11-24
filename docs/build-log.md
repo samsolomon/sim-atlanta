@@ -3034,6 +3034,9 @@ With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage coll
 ### 2026-11-23 — Grant Street runs beneath the CSX yard
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
+
 ### 2026-11-23 — Colour before the whole board
 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
+
+On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)

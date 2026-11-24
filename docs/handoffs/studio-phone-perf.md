@@ -1,3 +1,5 @@
+**Status after takeover.** The handoffs below are historical. The coordinator accepted the #348 A16 gate and the frozen servers are closed. Sam approved staged fill for #359. Its rebased branch targets main directly after #371. #326 remains a separate budgets PR.
+
 # Codex → gpt-6.2 handoff (2026-11-23 evening)
 
 This section supersedes the older Claude handoff below. Session:
