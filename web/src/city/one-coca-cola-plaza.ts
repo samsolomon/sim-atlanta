@@ -7,7 +7,7 @@ export const oneCocaColaId = 'osm:way:536717630';
 
 const precast = '#dfd9ca',
   shade = '#b9b2a3',
-  glass = '#4b565b',
+  glass = '#6a7378',
   lobbyGlass = '#55636a',
   roofDeck = '#9d9a92';
 

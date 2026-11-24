@@ -47,7 +47,7 @@ const fin = '#e9e8e3',
   louvre = '#2e3236',
   concrete = '#a9a69d',
   storefront = '#5b6d78',
-  stairGlass = '#5d7f98',
+  stairGlass = '#6d8090',
   frame = '#3a4046',
   roofDeck = '#9c9a94';
 
