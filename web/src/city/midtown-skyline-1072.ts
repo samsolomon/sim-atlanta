@@ -18,7 +18,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
 const PODIUM = 36, OFFICE = 72, ROOF = 219, SHOULDER = 223.4, CROWN = 228;
 const STONE = '#d8d2c6', SCREEN = '#a7a49c', PRECAST = '#ddd6ca', DARK = '#3d4a57';
-const TOWER = '#5f7891', MULLION = '#9db0c0', SLOT = '#36424f';
+const TOWER = '#7d97ad', MULLION = '#d6e0e7', SLOT = '#3b4754';
 
 /** The tower plan with one recessed balcony slot per face, turned as a pinwheel (counter-clockwise). */
 export function pinwheel(cu: number, cv: number, hu: number, hv: number, w = 3, d = 1.5, k1 = 5, k2 = 3): P2[] {
@@ -108,7 +108,7 @@ export function westPeachtree1072(shell: Shell) {
     }
     for (let j = 1; j <= floors; j++) {
       const y = OFFICE + j * pitch;
-      body.quad(at(0, y - .18, .08), at(0, y + .18, .08), at(len, y + .18, .08), at(len, y - .18, .08), MULLION);
+      body.quad(at(0, y - .26, .08), at(0, y + .26, .08), at(len, y + .26, .08), at(len, y - .26, .08), MULLION);
     }
     // Residences lit at night, one unit at a time; the crown above stays dark.
     for (let j = 0; j < floors; j++)

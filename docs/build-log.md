@@ -3320,3 +3320,22 @@ The garage at 25 Pine Street NE was a brick block with a green roof, an odd thin
 ### 2026-11-23 · 10 10th, taller than its map
 
 The mapped parts said 10 10th was about 46 m tall. The 2019 lidar measures 64.6 m to the main roof, which is 14 storeys at roughly 4.5 m each above a 10.8 m podium. The skin follows the lidar: a brick shaft with punched windows, a silver ribbon bay wrapping the southeast corner over the MARTA plaza, two silver top floors and a penthouse, all in the existing landmark materials. The survey camera looks between two taller neighbours, so the review views come from the plaza side. [Day, night and corner views](log/ui/10-10th/README.md)
+### 2026-11-23 — Atlanta's newest tallest tower
+
+The unnamed 60-floor outline at West Peachtree and 12th is 1072 West Peachtree,
+which topped out in November 2025. The 2019 lidar still shows an empty lot, so
+the developer's floor-stack diagram supplies the heights.
+- A 36 m base holds nine parking levels and the glazed Commons.
+- A 72 m precast office block covers floors 11 to 18.
+- The blue-grey glass tower stops at a 219 m roof, a parapet steps up to 223.4 m,
+  and the middle of the broad faces reaches the reported 749 ft (228 m).
+
+A full-height balcony slot is recessed into each face. The slots are offset like a
+pinwheel, matching the published floor plan. At night the residences light one unit
+at a time, and the podium and office roof edges glow. The crown stays dark, as it
+was in August 2026. Its announced lighting hasn't appeared yet. The body is 1,950
+triangles. [Before and after](log/ui/1072-west-peachtree/compare-day.jpg) ·
+[night](log/ui/1072-west-peachtree/compare-night.jpg) ·
+[crown](log/ui/1072-west-peachtree/crown-day-night.jpg) ·
+[sources](1072-west-peachtree.md)
+
