@@ -115,20 +115,40 @@ export function sedanFinish(near=true){
       panel([glassPoint(a,0),glassPoint(a,1),glassPoint(b,1),glassPoint(b,0)],glass);
     }
   }
+  // Map the lens pockets and fascia onto the formed bumper corners. Ray/triangle
+  // interpolation follows the same triangulation used to pack these faces for Three.
+  const hull=faces.slice(0,2+(sections.length-1)*sections[0].length);
+  function surfaceZ(x,y,dir){
+    let furthest=-Infinity;
+    for(const {points} of hull)for(let i=1;i<points.length-1;i++){
+      const [a,b,c]=[points[0],points[i],points[i+1]];
+      const den=(b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);
+      if(Math.abs(den)<1e-9)continue;
+      const u=((b[1]-c[1])*(x-c[0])+(c[0]-b[0])*(y-c[1]))/den;
+      const v=((c[1]-a[1])*(x-c[0])+(a[0]-c[0])*(y-c[1]))/den;
+      if(u>=-1e-6&&v>=-1e-6&&u+v<=1.000001)furthest=Math.max(furthest,dir*(u*a[2]+v*b[2]+(1-u-v)*c[2]));
+    }
+    if(!Number.isFinite(furthest))throw Error('Fascia outside shell');
+    return dir*(furthest+.018);
+  }
   for(const side of [-1,1]){
-    const facet=(points,color)=>panel(points.map(([x,y,z])=>[side*x,y,z]),color);
-    // Both lamps turn onto the fender, following the front and rear bumper corners.
-    facet([[.26,.680,2.41],[.60,.766,2.355],[.81,.812,2.21],[.89,.824,1.92],
-      [.854,.755,2.02],[.69,.683,2.29],[.31,.636,2.417]],lens);
-    facet([[.16,.962,-2.404],[.61,1.005,-2.355],[.865,1.017,-2.08],
-      [.891,.950,-1.94],[.84,.898,-2.15],[.60,.901,-2.37],[.21,.910,-2.416]],red);
-    facet([[0,.628,bumper],[.47,.669,2.415],[.62,.602,2.39],[.72,.380,2.354],[.57,.315,2.398],[0,.312,bumper]],dark);
-    facet([[0,.84,-bumper],[.50,.866,-2.407],[.44,.693,-2.413],[0,.66,-bumper]],shadow);
+    // Each row gives a lateral station and the lower/upper edges in elevation.
+    const band=(rows,dir,color,offset=0)=>{
+      const point=(x,y)=>[side*x,y,surfaceZ(side*x,y,dir)+dir*offset];
+      for(let i=1;i<rows.length;i++){
+        const [a,b]=[rows[i-1],rows[i]];
+        panel([point(a[0],a[1]),point(b[0],b[1]),point(b[0],b[2]),point(a[0],a[2])],color);
+      }
+    };
+    band([[.27,.65,.674],[.42,.66,.72],[.56,.677,.735],[.66,.70,.754],[.755,.732,.777],[.812,.764,.802]],1,lens);
+    band([[.23,.886,.936],[.42,.89,.965],[.58,.90,.976],[.71,.913,.987],[.78,.936,.99]],-1,red);
+    band([[0,.31,.614],[.27,.313,.625],[.45,.32,.611],[.57,.337,.552],[.64,.35,.404]],1,dark);
+    band([[0,.667,.822],[.23,.67,.824],[.38,.70,.847]],-1,shadow);
     if(!near)continue;
     for(const z of [-.98,-.21,.99]){
       const [,w,h,sill]=sample(body,z);
       const low=Math.abs(z)>.90?.62:sill+.065;
-      facet([[w+.002,low,z],[w+.004,low,z+.009],[w*.978,h-.102,z+.032],[w*.978,h-.102,z+.022]],shadow);
+      panel([[w+.002,low,z],[w+.004,low,z+.009],[w*.978,h-.102,z+.032],[w*.978,h-.102,z+.022]].map(([x,y,z])=>[side*x,y,z]),shadow);
     }
     for(const z of [-.91,-.025]){
       const [,w,h]=sample(body,z);
@@ -138,7 +158,7 @@ export function sedanFinish(near=true){
     box(side*.971,1.012,.72,.15,.082,.167,bodyPaint);
     box(side*.966,1.014,.634,.112,.051,.008,steel);
     for(const y of [.365,.420,.475,.530]){
-      facet([[0,y,bumper+.001],[.58,y,2.394],[.58,y+.009,2.394],[0,y+.009,bumper+.001]],alloy);
+      band([[0,y,y+.011],[.25,y,y+.011],[.43,y+.005,y+.016],[.49,y+.01,y+.021]],1,alloy,.004);
     }
   }
   return faces;
