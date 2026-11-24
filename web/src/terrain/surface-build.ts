@@ -401,8 +401,8 @@ function* settleBelow(pos: number[], indices: number[], remap: Map<number, numbe
       const r0 = Math.max(0, Math.ceil((Math.min(az, bz, cz) - bounds.minZ) / stepM - 1e-9));
       const r1 = Math.min(rows - 1, Math.floor((Math.max(az, bz, cz) - bounds.minZ) / stepM + 1e-9));
       // Count the node checks; a 160 m cell alone scans ~1,000.
-      settleWork += (r1 - r0 + 1) * (c1 - c0 + 1);
-      if (settleWork > 1024) { settleWork = 0; yield 'far settle'; }
+      settleWork += 8 + (r1 - r0 + 1) * (c1 - c0 + 1);
+      if (settleWork > 512) { settleWork = 0; yield 'far settle'; }
       const ma = movable(a), mb = movable(b), mc = movable(c);
       if (!ma && !mb && !mc) continue;
       // The drop at the movable corners that clears the worst node: its excess over the
@@ -454,11 +454,21 @@ export function vertexNormals(pos: ArrayLike<number>, indices: ArrayLike<number>
   return n;
 }
 
+/** A typed copy of a large number[] in chunks, yielding between them. */
+export function* typedSteps<T extends Float32Array | Uint16Array | Uint32Array>(out: T, from: ArrayLike<number>): Build<T> {
+  for (let i = 0; i < from.length; i += 8192) {
+    const end = Math.min(from.length, i + 8192);
+    for (let k = i; k < end; k++) out[k] = from[k];
+    yield 'far arrays';
+  }
+  return out;
+}
+
 /** vertexNormals as a build that yields every few thousand triangles (same result). */
 export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<number>): Build<Float32Array> {
   const n = new Float32Array(pos.length);
   for (let i = 0; i < indices.length; i += 3) {
-    if (i % 6144 === 6141) yield 'far normals';
+    if (i % 3072 === 3069) yield 'far normals';
     const a = indices[i] * 3, b = indices[i + 1] * 3, c = indices[i + 2] * 3;
     const ax = pos[a], ay = pos[a + 1], az = pos[a + 2];
     const bx = pos[b], by = pos[b + 1], bz = pos[b + 2];
@@ -485,16 +495,16 @@ function indexOf(indices: number[], vertexCount: number) {
  * (GroundYield) still happens on the main thread: yields carry floor functions.
  */
 export function buildSurfaceArrays(input: { spec: SurfaceSpec; heights: Float32Array; minY: number; quality: TerrainQuality;
-  openings?: readonly OpenSlot[]; join?: TerrainJoins; farErrorM?: number }) {
-  const { spec, heights, minY, quality, openings = [], join, farErrorM } = input;
+  openings?: readonly OpenSlot[]; join?: TerrainJoins; farErrorM?: number; farLower?: boolean }) {
+  const { spec, heights, minY, quality, openings = [], join, farErrorM, farLower = false } = input;
   const t = tessellate(spec, heights, quality, openings, join);
   const pos = new Float32Array(t.pos);
   const near = { pos, uv: new Float32Array(t.uv), normal: vertexNormals(pos, t.indices), index: indexOf(t.indices, pos.length / 3) };
   let far;
   if (farErrorM !== undefined) {
-    const f = farSurface(spec, heights, openings, farErrorM);
+    const f = farSurface(spec, heights, openings, farErrorM, 160, farLower);
     const fp = new Float32Array(f.pos);
-    far = { errorM: farErrorM, pos: fp, uv: new Float32Array(f.uv), normal: vertexNormals(fp, f.indices), index: indexOf(f.indices, fp.length / 3) };
+    far = { errorM: farErrorM, lower: farLower, pos: fp, uv: new Float32Array(f.uv), normal: vertexNormals(fp, f.indices), index: indexOf(f.indices, fp.length / 3) };
   }
   return { heights, minY, ...near, starts: t.starts, blockCols: t.blockCols, far };
 }
