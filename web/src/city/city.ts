@@ -932,6 +932,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Set once the prewarm scheduler exists (below); an area mounting before then is covered by its first run.
   let requestPrewarm = () => {};
   let prewarmer: Prewarmer | undefined;
+  /** ?slice=1 stages a finished section's GPU upload before it shows (&upload=0 for an A/B run). */
+  const stagedUpload = query.get('slice') === '1' && query.get('upload') !== '0';
   let colourShown = !options.whiteModel;
   let prewarmDone = false;
   let prewarmBatch = 2;
@@ -984,6 +986,23 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+      // Sliced mounts (?slice=1): the finished section first joins the scene hidden and uploads its
+      // buffers a few meshes per frame (prewarmer.upload), so the frame it appears in draws nothing
+      // new. Only then does it register (addArea: rings, picking, freeze) and show. &upload=0 for A/B.
+      if (stagedUpload && prewarmer && added.size) {
+        const groups = [...added.values()].map(a => a.group);
+        for (const g of groups) { g.visible = false; scene.add(g); }
+        const warm = prewarmer;
+        void Promise.all(groups.map(g => warm.upload(g))).catch(() => undefined).then(() => {
+          for (const g of groups) g.visible = true;
+          if (!eastController.signal.aborted) mountSection(added, target);
+        });
+        return;
+      }
+      mountSection(added, target);
+    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  function mountSection(added: Map<string, NonNullable<typeof east>>, target?: { x: number; z: number }) {
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -1008,7 +1027,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
