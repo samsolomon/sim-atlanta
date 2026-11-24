@@ -38,6 +38,7 @@ import { createNcrHq, ncrId } from '../city/ncr-hq';
 import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
 import { createLoews, loewsId } from '../city/loews-atlanta';
 import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
+import { createParkCentral, parkCentralId } from '../city/park-central';
 import { createMaaMidtown, maaMidtownId } from '../city/maa-midtown';
 import { create271Seventeenth, seventeenth271Id } from '../city/271-seventeenth';
 import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
@@ -314,6 +315,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
       : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === parkCentralId ? createParkCentral(sceneryCity.buildings, site, grid, options.quality)
       : site.id === maaMidtownId ? createMaaMidtown(sceneryCity.buildings, site, grid)
       : site.id === seventeenth271Id ? create271Seventeenth(sceneryCity.buildings, site, grid)
       : site.id === regionsPlazaId ? createRegionsPlaza(sceneryCity.buildings, site, grid)

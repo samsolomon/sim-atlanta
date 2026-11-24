@@ -3503,3 +3503,9 @@ OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13,
 
 
 **2026-11-24 — The Hard Rock building was a third of its height.** Overture gave the corner block at Peachtree and International 69.3 m, which made it a plain grey tower among the Peachtree Center towers. The 2019 lidar measures the roof at 22–26 m. Street View shows a pale stone six-storey block, with paired windows between flat piers and maroon awnings over the restaurant. The model draws that and leaves off the neon guitar and the rooftop sign, which are logos. It is a downtown landmark, so it also joins the batcher's `listed` array. [Captures and references](log/ui/hard-rock-building/README.md)
+
+## 2026-11-24: Park Central, split by tier
+
+Park Central's buff slab on 12th Street is now one of the park-edge buildings people actually see. The lidar trimmed it from a mapped 71 m to a 54.6 m hip ridge. The interesting part was the budget. Punched windows with frames came to 6,500 triangles, and the low tier caps a landmark at 2,400. On the phone tier, each window column is now one glass strip crossed by a stucco band per floor, and only lit windows get their own quads. That gives 1,724 triangles and reads almost the same at the orbit. The high tier keeps punched windows, framed on the lowest storeys only.
+[Before and after](log/ui/park-central/compare.jpg) · [day, night and low tier](log/ui/park-central/daynight.jpg) · [close](log/ui/park-central/close.jpg)
+
