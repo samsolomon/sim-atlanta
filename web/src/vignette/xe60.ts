@@ -1,7 +1,7 @@
 /** MARTA Rapid XE60 study. Sources, measured and estimated dimensions: docs/marta-rapid-buses.md.
  * +z forward, y up, curb side -x. Front origin: front axle on ground; rear/bellows: hitch on ground. */
 import * as THREE from 'three';
-import { Builder } from './geom';
+import { Builder, loft } from './geom';
 import { busMaterial, RAPID_LIVERY } from './xcelsior';
 
 export const XE60_LAYOUT = {
@@ -72,16 +72,35 @@ function door(k: Kit,z: number) {
   k.panel(-1,z-.52,z+.52,.36,.4,C.yellow,0,1.35);
   k.panel(-1,z-.018,z+.018,.42,2.7,C.grey,0,1.35);
 }
-function roof(k: Kit,z0:number,z1:number,detail:BusDetail) {
-  // Electric battery/HVAC fairings, without the XN40's continuous CNG tank enclosure.
-  k.box(2.15,.24,z1-z0,0,3.14,(z0+z1)/2,C.grey);k.mark(0);
-  if(detail==='high') for(let z=z0+.35;z<z1;z+=1.2){k.box(1.8,.015,.045,0,3.268,z,C.black);k.mark(0);}
+/** A shallow crown with rolled shoulders and swept ends, as seen on 9001.
+ * The lower edge sits inside the body roof. Each rigid section carries its own cover. */
+function roofFairing(k: Kit, rear: number, front: number, detail: BusDetail) {
+  const shoulderSteps = detail === 'low' ? 2 : 4;
+  const profile = [[1, 0]];
+  for (const side of [1, -1]) {
+    for (let i = 0; i <= shoulderSteps; i++) {
+      const angle = (side === 1 ? i : shoulderSteps - i) * Math.PI / (2 * shoulderSteps);
+      profile.push([side * (.78 + .22 * Math.cos(angle)), .36 + .64 * Math.sin(angle)]);
+    }
+  }
+  profile.push([-1, 0]);
+
+  // Ease both ends into the roof. The battery cover tapers in width as well as height.
+  const stations = [
+    [rear, .82, .10], [rear + .16, .94, .70], [rear + .48, 1, 1],
+    [front - .65, 1, 1], [front - .22, .95, .75], [front, .82, .10],
+  ];
+  const rings = stations.map(([z, width, height]) => profile.map(([x, y]) =>
+    [x * 1.18 * width, 3.005 + y * .295 * height, z]));
+  loft(k, rings, profile.map(() => C.purple));
+  k.mark(0);
 }
 export function xe60Geometry(detail:BusDetail='high') {
   const f=new Kit(),r=new Kit();
   shell(f,-7.4,2.07,XE60_LAYOUT.front.axles,detail);shell(r,-8.21,-.6,XE60_LAYOUT.rear.axles,detail);
   door(f,1.27);door(f,-3.9);door(r,-3.2);
-  roof(f,-6.9,.6,detail);roof(r,-7.7,-1.1,detail);
+  roofFairing(f, -7.30, 1.88, detail);
+  roofFairing(r, -8.02, -.70, detail);
   // Broad front glass, upper destination strip and swept silver headlight cheeks.
   f.box(2.36,1.43,.03,0,2.03,2.085,C.glass);f.mark(0);
   f.box(2.25,.25,.035,0,2.83,2.087,C.black);f.mark(0);
