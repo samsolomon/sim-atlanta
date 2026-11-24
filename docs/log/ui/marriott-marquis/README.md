@@ -24,3 +24,19 @@ High quality, paused November 20, 2026 at 13:45 and 17:22 EST. Reproduce in a de
 | Baker and Peachtree Center | (615, −854), 162°, 57°, 0.55 | [Before](baker-day-before.jpg) · [After](baker-day-after.jpg) | [Before](baker-dusk-before.jpg) · [After](baker-dusk-after.jpg) |
 
 At 20:30 EST the pale fins fall into shadow and scattered guest-room windows light the two broad faces. Portman’s evening photograph shows the mostly dark end and the illuminated driveway between the offices. Individual occupied rooms are illustrative. [Evening reference](https://portmanarchitects.com/wp-content/uploads/2019/03/New_Slider02-3.jpg) · [Courtland at night](courtland-night-after.jpg) · [Baker at night](baker-night-after.jpg)
+
+## Splayed piers on the lower bulge (November 23)
+
+At the normal 490 m orbit Sam saw a tall cream band smeared down the middle of the curved south face. The cause was geometry, not texture or lighting. An ellipse of one-sided stone wedges, centred on 358 m NAVD88 and spanning ±35 m, filled up to 2.45 m of each 3.85 m bay from its left pier. Lit by the sun, the wedges turned two-thirds of the glass the colour of the frame. At about 0.3 m per pixel the remaining panes aliased into vertical streaks.
+
+Day and night photographs show something different. Above the terrace the piers splay into V fins, symmetrical about each pier. The fins are widest at the base and the middle of the face, and they fade out about a dozen floors up. Every window stays a centred dark pane, narrowed to roughly half the bay at the base. The night photograph shows uplit fins and scattered lit rooms across both faces. [Day, broad face from Peachtree Center Avenue](https://commons.wikimedia.org/wiki/File:Atlanta_Marriott_Marquis_Hotel,_Atlanta,_GA_(47474200091).jpg) · [Day, oblique over the podium](https://commons.wikimedia.org/wiki/File:Atlanta_Marriott_Marquis_Hotel,_Atlanta,_GA_(46558854255).jpg) · [Night, base of the bulge](https://commons.wikimedia.org/wiki/File:Atlanta_Marriott_Marquis_Hotel,_Atlanta,_GA_(33597634798).jpg)
+
+The model now widens each pier by up to 0.75 m on each side. The flare falls off with the square of the distance from the middle of the face (zero at ±34 m) and linearly over the 38 m above the terrace. Each cheek takes a stone a shade darker than the pier face. The 0.75 m limit, the 38 m fade and the cheek colour are estimates from the photographs. The fin uplighting is not modelled. Lit rooms are illustrative. No material or shader program was added.
+
+| View | City camera | Comparison |
+| --- | --- | --- |
+| Normal orbit, day 11:30 | `557,-862,-14,52,490` | [Before and after](day-before-after.jpg) |
+| Normal orbit, night 23:30 | `557,-862,-14,52,490` | [Before and after](night-before-after.jpg) |
+| Lower bulge, day 11:30 | `615,-878,-8,62,230` | [Before and after](near-before-after.jpg) |
+
+All three use November 20, 2026, clear weather and a paused clock at default quality. Web rebuild only.
