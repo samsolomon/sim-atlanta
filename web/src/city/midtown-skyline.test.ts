@@ -362,3 +362,19 @@ it('gives Two Midtown Plaza its lidar roofs, a lit lobby drum and dark offices a
   const y = lamps.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(78);
 });
+
+it('crowns Mayfair Tower with four lit-lantern cones at the lidar heights', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536728181');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Mayfair Tower Condominiums');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(1005.9 - 12, -3588.6)).toBeCloseTo(92, 0); // main roof, near the lidar median
+  const cone = heightAt(988.1 + 5.7, -3606.6 + 5.7);
+  expect(cone).toBeGreaterThan(100); // lantern finial, at the 102 m lidar maximum
+  expect(cone).toBeLessThan(102.5);
+  const meshes = model.group.children as Mesh[];
+  for (const m of meshes) expect([m.castShadow, m.receiveShadow]).toEqual([true, true]);
+  expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+});

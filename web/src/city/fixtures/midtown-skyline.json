@@ -117,5 +117,12 @@
     "x": 395,
     "z": -4194,
     "heightM": 79
+  },
+  "mayfair": {
+    "id": "osm:way:536728181",
+    "name": "Mayfair Tower Condominiums",
+    "x": 1005.9,
+    "z": -3588.6,
+    "heightM": 102.2
   }
 }
