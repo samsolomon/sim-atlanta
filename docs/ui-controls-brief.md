@@ -121,6 +121,11 @@ Not yet: Street view, layers and tours (see Follow-ups).
 - Contents:
   - Key ›
   - About & credits ›
+  - **Source code ↗** "Open source on GitHub", a code glyph `</>`, linking to
+    https://github.com/samsolomon/sim-atlanta in a new tab (Sam, 2026-11-24, option B).
+    It sits below About because Key and About open inside the app (›) and this leaves it
+    (↗). Not an icon beside X and Instagram, which would read as Sam's own profile. Ships
+    only once the repo is public.
   - Graphics: Auto, High, Low. Caption: "Low draws at standard resolution with simpler
     shadows, fewer leaves and less rain. Good for older phones." This maps to the
     existing `low` quality path in `web/src/city/city.ts`.
@@ -251,6 +256,24 @@ From the impeccable critique of the Final section (26/40):
   dot** (`#8a8478`), never blue, because blue means city rail. Night boards are a shifted
   clock, never "Live". Weather is "reported" when observed. The train panel splits Next
   arrival (Live) from Position (Inferred).
+- **Search keeps the view** (Sam, 2026-11-24): a result picked in the 2D Map moves the
+  Map; picked in City it moves City's camera. Search never switches views on its own,
+  with two exceptions: a place outside City's board, picked in City, opens on the Map and
+  says so in the result row ("Map only"); a **View** (below) opens in City.
+- **Views in search** (Sam asked for more interesting angles): an empty search field
+  lists a few staged camera views before places, under a "Views" heading, each with a
+  small 3D tag. A view is a saved City camera (`cam=` target, bearing, tilt, distance)
+  and optionally a time of day. First set, all inside City's board:
+  - Five Points from above, trains crossing
+  - The Gulch rail yards, looking north
+  - State Capitol dome
+  - Centennial Olympic Park toward the skyline
+  - Downtown Connector at dusk
+  Typing searches every group, in this order: Views, Stations, Landmarks, Places. Each
+  group has a small heading; places outside City carry "Map only" when in City. A View
+  with a time sets the scene clock, so its confidence line reads "Timetable". It is the
+  same data as the Tours follow-up, so tours become a sequence of views later.
+- **Addresses** (exact street addresses) are a later follow-up, not this build.
 - **One search field:** results rise from the dock field, which shows the query and a
   focus ring; popovers never repeat the field. In Models, the browser keeps its own search
   field (Sam, 2026-11-24); the dock's "Search models" opens the browser and focuses that
