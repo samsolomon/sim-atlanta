@@ -3527,3 +3527,7 @@ so "no long task" can't measure the build. The driver now reports the longest ru
 inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
 batching, which the buildings agent is turning into a generator. A row now mounts over about 200
 frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
+
+### 2026-11-24 — More kinds of car, on desktop
+
+City's traffic had three vehicle types: a sedan, an SUV and a box truck. The high tier now adds the hatchbacks, pickups and vans already modelled in the vehicle kit, plus a tractor-trailer built from the existing cab and trailer: one rigid 19.16 m body with a white trailer. Semis make up 70% of trucks on the Connector and 15% on the arterials. Trucks stay bounded by each lane's sourced truck share, and they wait for a quarter of the peak hourly flow, so fewer run at night. Phones keep their three types, because their view is GPU-bound tonight. Each new type costs one draw where it is on screen: +9 at the default view, none at the Midtown view. Measuring that turned up a latent bug. A type the boot prewarm drew before any car of that type had a colour compiled a separate shader program. Allocating the colour buffer up front removed it. [Before and after](log/traffic/vehicle-variety/comparison.jpg)
