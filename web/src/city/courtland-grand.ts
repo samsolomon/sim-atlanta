@@ -21,7 +21,7 @@ import { litHash, seedOf } from './skin-kit';
 
 export const courtlandGrandId = 'c3d66433-c80f-417c-9093-c623624b208b';
 const CREAM = '#e6dcc6', STUCCO = '#c4c3bd', PANEL = '#dcdcd6', GLASS = '#7f9aae', FRAME = '#8296a8';
-const BAND = '#f1f1ec', ROOF = '#8f8d87', DARK_ROOF = '#5a5b5c', SKY = '#9fb3b8';
+const BAND = '#f1f1ec', ROOF = '#8f8d87', SKY = '#9fb3b8';
 
 export function createCourtlandGrand(buildings: VBuilding[], grid: GroundGrid) {
   const s = landmarkShell(buildings, grid, courtlandGrandId, 'Courtland Grand hotel', [767, -565], [1, 0],
@@ -53,7 +53,7 @@ export function createCourtlandGrand(buildings: VBuilding[], grid: GroundGrid) {
 
   // South slab along Ellis: u −68.5…20, v 25…50.4 (the mapped Ellis edge runs v 50.5–51.8).
   const slab: P2[] = [[-68.5, 25], [20, 25], [20, 50.4], [-68.5, 50.4]];
-  s.prism(slab, PODIUM, SLAB, CREAM, DARK_ROOF);
+  s.prism(slab, PODIUM, SLAB, CREAM, ROOF); // grey membrane like the podium; no photo shows a dark roof
   // Its north (courtyard) face and the two ends: windows in cream bands.
   bands([20, 25], [-68.5, 25], [-24, 37.7], PODIUM, SLAB - 1, 7, 0, FRAME, CREAM, .3);
   bands([-68.5, 25], [-68.5, 50.4], [-24, 37.7], PODIUM, SLAB - 1, 7, 1, FRAME, CREAM, .3);
