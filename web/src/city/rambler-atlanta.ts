@@ -22,7 +22,7 @@ const roofH = baseH + floors * floorH + parapetH;
 // Flat vertex colours: a library surface is a hooked material that the batcher never merges.
 // The contrasts carry recognition: a white base clearly brighter than the shaft, a shaft a real
 // step darker than the generic grey and beige boxes, and white balcony ladders against it.
-const white = '#efece4', shaft = '#6f6a64', shaftDeep = '#5b5752', window = '#4c555b', windowLit = '#4e575d';
+const white = '#efece4', shaft = '#8f8981', shaftDeep = '#7b766f', window = '#5d666c', windowLit = '#5f686e';
 const balcony = '#f4f2ec', storefront = '#2f3a3f', roof = '#8f8d88';
 
 function ccw(ring: P2[]): P2[] {
