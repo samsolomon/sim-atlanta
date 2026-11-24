@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ribbons } from './connector-corridor';
-import { midtownConnectorDecks } from './midtown-connector-decks';
+import { midtownConnectorDecks, withoutLandBridgeTrees } from './midtown-connector-decks';
 import { cityRoadHeight } from '../city/road-height';
 import { connectorTrafficRoutes } from '../city/connector-traffic-routes';
 import landbridges from '../city/fixtures/midtown-connector/landbridges.json';
@@ -51,5 +51,17 @@ describe.skipIf(!staged)('the Fifth Street park deck over the Connector', () => 
     // Lidar over these shows continuous ground-class returns, no bridge deck: a real covered cut.
     const capitolGateway = new Set([39160886, 39160888, 39160889, 39160890, 435734520, 435734523, 580328711, 580328712]);
     expect(short.filter(id => !capitolGateway.has(id))).toEqual([]);
+  });
+
+  it('keeps the canopy map’s trees off the freeway under the deck', () => {
+    const staged = resolve(__dirname, '../../public/data/scene/square-board/midtown-central/context.json');
+    if (!existsSync(staged)) return;
+    const context = JSON.parse(readFileSync(staged, 'utf8')) as { trees: number[][]; treeLowCount?: number };
+    const under = (t: number[]) => t[0] > 20 && t[0] < 108 && t[1] > -2584 && t[1] < -2530;
+    expect(context.trees.filter(under).length).toBeGreaterThan(2);
+    const kept = withoutLandBridgeTrees(context);
+    expect(kept.trees.filter(under)).toEqual([]);
+    expect(context.trees.length - kept.trees.length).toBeLessThan(12);
+    if (context.treeLowCount !== undefined) expect(kept.treeLowCount).toBe(kept.trees.slice(0, kept.treeLowCount).length);
   });
 });

@@ -80,3 +80,27 @@ export function midtownConnectorDecks(city: TerrainCity): TerrainCity {
   }
   return { ...city, terrainTransport: { ...transport, roads } };
 }
+
+/** The land bridges' outlines (their full measured width), to keep trees off the freeway below. */
+const landBridgeOutlines = landbridges.map(land => {
+  const pts = land.pts as P2[], half = LAND_BRIDGE.plazaOffset + LAND_BRIDGE.plazaWidth / 2;
+  return [...offset(pts, half), ...offset(pts, -half).reverse()];
+});
+function inside(x: number, z: number, ring: P2[]) {
+  let hit = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [ax, az] = ring[i], [bx, bz] = ring[j];
+    if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) hit = !hit;
+  }
+  return hit;
+}
+
+/** A Midtown row's canopy without crowns under a land bridge: the canopy map measures height
+ * from the bare earth, the freeway below, so deck plantings would stand on the freeway and grow
+ * through the deck. */
+export function withoutLandBridgeTrees<C extends { trees: number[][]; treeLowCount?: number }>(context: C): C {
+  const keep = context.trees.map(([x, z]) => !landBridgeOutlines.some(ring => inside(x, z, ring)));
+  if (keep.every(Boolean)) return context;
+  const low = context.treeLowCount === undefined ? undefined : keep.slice(0, context.treeLowCount).filter(Boolean).length;
+  return { ...context, trees: context.trees.filter((_, i) => keep[i]), treeLowCount: low };
+}
