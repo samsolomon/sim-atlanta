@@ -135,3 +135,18 @@ it('flags a part hanging off the wall but not a slab that runs back to it', asyn
   g2.add(new Mesh(wall.geometry(), new MeshBasicMaterial()), new Mesh(pane.geometry(), new MeshBasicMaterial()));
   expect(detachedParts(g2, [[[0, 0], [9.5, 0], [9.5, 10], [0, 10]]])).toEqual([]);
 });
+
+it('joins parts that cross mid-span with no vertex near each other', async () => {
+  const { Group, Mesh, MeshBasicMaterial } = await import('three');
+  const { detachedParts } = await import('./skin-kit');
+  const square: [number, number][] = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  const b = new Builder();
+  // A long rib running out from the building (anchored), and a cross-rib outside the outline that
+  // passes through its middle: their nearest vertices are metres apart.
+  b.quad([5, 0, 5], [5, 1, 5], [25, 1, 5], [25, 0, 5], '#ffffff');
+  b.quad([15, 0.5, 0], [15, 0.5, 10], [15.2, 0.5, 10], [15.2, 0.5, 0], '#ffffff');
+  b.quad([15.1, -0.5, 0], [15.1, 1.5, 0], [15.1, 1.5, 10], [15.1, -0.5, 10], '#ffffff');
+  const g = new Group();
+  g.add(new Mesh(b.geometry(), new MeshBasicMaterial()));
+  expect(detachedParts(g, [square])).toEqual([]);
+});
