@@ -1,8 +1,12 @@
 # Studio skins 4 handoff
 
-The owner was the Claude Opus session in the `studio-skins-4` worktree, Orca session `89d3798a-aabc-4a50-95bf-6bbdc2e47102`. Read its history with `orca agent read`. It reported to the coordinator (`48e90760`) and the skyline lead, which now routes through `191b6166-18e7-4e23-8b97-ec53a7e5a19d` (formerly `47b1a596`). The lead runs the merge trains. Never push to a PR that is in a train until the lead says the train has landed, unless the lead asks for it. Never merge without the coordinator's OK, and rebase on main first.
+The skins-4 author owns the models, evidence, and verification. The skyline lead owns integration of reviewed skin contributions through one combined train. The shared City mount in `web/src/city/city.ts` is an integration overlap.
 
-The repo is public. Keep key values, private notes and personal details out of PR bodies, issues and comments.
+## Current work
+
+- **Hurt Plaza Garage, [#665](https://github.com/samsolomon/sim-atlanta/pull/665)** — `a2bd317e3c15f00a23b348eddc3476b82e9ae352`. Recognition and new-skin approval passed. The PR contains matched day/night, close, low-tier and four-side screenshots. The south view shows open decks turning the corner and the daylight close view shows the red awning. The west view is occluded. Build and 266 test files passed on this head in the previous run. Two perf runs failed to settle on low-zoomout. **Next:** await the reserved timing window, then collect the queued PR sweep and staged main baseline (`d93c51d890bdea4c1bafcc46a3a99d4bfb0e43da`), record the actual results in the PR, and send the verified head to the integration owner. The staged main baseline predates subsequent main changes.
+- **Langdale Hall**, local branch `samsolomon/langdale-hall`, draft `707b4d3c49d2b49cb00ff81c921cf94024446c8e`. Model, City mount, footprint and detachment checks, lidar roof test, and photo notes are committed. Two daylight references show the paired plaza piers and the horizontal concrete grid on the projecting end. Night lighting is estimated. **Pending:** queued build and tests, sunlit glass readings, matched day/night and low/close screenshots, four-side sheet, perf, review and recognition approval before integration. There is no PR yet.
+- **32 Decatur** follows Langdale. GSU identifies the College of Education at the Pryor/Decatur corner and publishes its entrance as 30 Pryor SW. The alternate street number remains unverified. Modeling, tests and screenshots are pending. [GSU entrance directions](https://education.gsu.edu/csd/csdresearchoutreach/slhclinic/locations/)
 
 ## Open PRs (state on 2026-11-24)
 
@@ -16,12 +20,11 @@ The repo is public. Keep key values, private notes and personal details out of P
 | #610 | 201 17th Street | `03d6375a` | Approved. The trains take this head (layer offsets). |
 | #595 | Rambler Atlanta | `fee249f3` | Approved. The trains take this head (layer offsets). |
 | #655 | Layer offsets on merged skins | `375a396c` | Green. The lead queued it for the next open train; perf is not needed (centimetre moves). |
-| #665 | Hurt Plaza Garage (new downtown) | `a2bd317e` | **Not yet reported to the lead.** Build and test pass, code-review fixes are in, and Codex had no findings. `pnpm test:perf` **failed on `low-zoomout` "not settled"** twice while the Studio load average was about 126; main passed it minutes earlier, and every static entry is within one call of main. **Rerun `test:perf` on a quiet machine**, then send the PR to the lead with the four-side sheet and perf numbers. |
+| #665 | Hurt Plaza Garage | `a2bd317e` | Approved pending locked perf. See current work above. |
 
-## Next steps, in order
+## Model references and follow-ups
 
-1. **#665:** rerun `test:perf` under the shared Studio perf lock, `/Users/samsolomon/orca/workspaces/sim-atlanta/.perf-run 665 pnpm test:perf` (and the same wrapper for the main baseline). Wait on the wrapper and run one sweep at a time; release tickets take priority. Then update the PR's Checks section and report to the lead and then the coordinator.
-2. **GSU Langdale Hall** (Overture `948a44ff-43db-4085-9b23-63a966006ca8`, downtown board, at 411,74). Not started. The lead confirmed these identifiers:
+2. **GSU Langdale Hall** (Overture `948a44ff-43db-4085-9b23-63a966006ca8`, downtown board, at 411,74). Draft committed. Photo and lidar identifiers:
    - The lidar roof is about 42 m above the 313.0 ground (mapped 28.8), with a central penthouse at about 46–48 m.
    - Tall dark-brick panels sit between slender white vertical piers, under a white top band of about 3 floors with ribbon windows, with a glazed plaza entrance.
    - [Street View, Sep 2024](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75290,-84.38680&heading=320&pitch=25&fov=100).
@@ -50,7 +53,6 @@ The repo is public. Keep key values, private notes and personal details out of P
 - **Batching:** vertex colours and `StaticLandmarkMaterial` only, so the skin batches. No `onBeforeCompile`, maps or transparency. Lit panes come from skin-kit `litHash`. Change the night look only in `setNight`.
 - **Lidar first:** downtown parking polygons have hidden phantom towers twice. Mark post-2019 heights as reported or inferred.
 - **Each PR:** day 11:30 and night 23:30 on 2026-11-20 at the money-shot cam, plus a close view and the low tier, inline with cam strings. Run `pnpm build`, `pnpm test`, and `pnpm test:perf` (low, high, high-night) with main measured in the same session. Run `code-review` (medium) and `pnpm review` (Codex). Keep routine skins to about +0.2 MB low geometry.
-- **Perf lock (Studio-wide):** every `test:perf` or long-task sweep runs through `/Users/samsolomon/orca/workspaces/sim-atlanta/.perf-run <ticket> <command>`, where the ticket is the PR number or worker name. Rerun any load failure under the lock before acting on it.
 - **Shared Studio:** no pattern kills (kill only PIDs you started). Drive only a Chrome you launched (`scripts/chrome-cdp.mjs` launchChrome, port 0).
 
 ## Gotchas
@@ -60,6 +62,5 @@ The repo is public. Keep key values, private notes and personal details out of P
 - **Lamp meshes:** an emissive lamp colour is uniform, not multiplied by the vertex colour. Give lit strips a day colour that disappears into the wall.
 - **Lidar vs mapped heights:** downtown and Midtown mapped heights are often wrong by more than 10 m in both directions (Langdale +13 m, the garage −9 m).
 - **zsh:** a `for` loop over quoted pairs does not word-split. Use bash scripts, or `${VAR}` braces in `git show "${SHA}:path"`.
-- **Load:** heavy Studio load makes `test:perf` motion routes fail as "not settled". Check `uptime` before blaming a skin.
 - **vitest:** the RPC error `Timeout calling onTaskUpdate` under load can appear with every test green.
 - **Lidar scripts** write `pipeline/scripts/__pycache__`; delete it afterwards.
