@@ -97,6 +97,15 @@ const zoneOffset = (ms: number) => {
 };
 
 /** The instant on Atlanta date `iso` that keeps the wall-clock time of `ms` (DST-safe). */
+/** `hhmm` ("17:45", Atlanta wall clock) on the Atlanta date that `ms` falls on. */
+export function timeOfDayOn(ms: number, hhmm: string): number {
+  const wall = ms + zoneOffset(ms);
+  const [h, m] = hhmm.split(':').map(Number);
+  const guess = wall - (((wall % 86_400_000) + 86_400_000) % 86_400_000) + (h * 60 + m) * 60_000;
+  const first = guess - zoneOffset(guess);
+  return guess - zoneOffset(first);
+}
+
 export function sameTimeOnDate(ms: number, iso: string): number {
   const wall = ms + zoneOffset(ms); // Atlanta wall clock, as if it were UTC
   const tod = ((wall % 86_400_000) + 86_400_000) % 86_400_000;

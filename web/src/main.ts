@@ -4,7 +4,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { initialView } from './core/initial-view';
 import { showRailOverview } from './map/overview';
-import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
+import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, paletteIsDark, type Palette } from './map/basestyle';
 import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
 import type { ShellOptions, View } from './ui/shell-api';
@@ -385,11 +385,14 @@ let paintMapAtmosphere: ((atm: Atmosphere) => void) | null = null;
  * sits on the lab's studio, which is daylight unless its own Night switch is on, so there the switch
  * decides. (Reads the DOM, not labRoot, because this runs before that binding exists.) */
 let clockTheme: 'dark' | 'light' = 'light';
+/** The Map's own: night glass only once its painted ground is dark (paletteIsDark). */
+let mapTheme: 'dark' | 'light' | null = null;
 function applyTheme() {
   const lab = document.getElementById('lab-root');
   const inLab = !!lab && !lab.hidden;
   const labNight = lab?.querySelector('#night')?.getAttribute('aria-pressed') === 'true';
-  shell.setTheme(inLab ? (labNight ? 'dark' : 'light') : clockTheme);
+  const onMap = !!document.getElementById('view3d')?.hidden && !!mapTheme;
+  shell.setTheme(inLab ? (labNight ? 'dark' : 'light') : onMap ? mapTheme! : clockTheme);
 }
 const updateAtmosphere = () => {
   const w = clock.isRealTime() ? shell.weather() : null;
@@ -453,6 +456,8 @@ function addMapLayers(map: maplibregl.Map) {
     setFog(local.fog, atm.dark);
     onScreen = pinned ?? paletteFor(local);
     applyPalette(map, onScreen);
+    mapTheme = paletteIsDark(onScreen) ? 'dark' : 'light';
+    applyTheme();
   };
   paintMapAtmosphere = (atm) => {
     sky.set(atm);
@@ -595,6 +600,8 @@ function applyGlassMode() {
 }
 new MutationObserver(applyGlassMode).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 new MutationObserver(applyGlassMode).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
+// Map ↔ City: the glass theme follows whichever scene is on screen.
+new MutationObserver(applyTheme).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
 if (params.has('glassdebug')) mountGlassDebug(document.getElementById('view3d-canvas')!);
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
 const cityLoading = document.getElementById('city-loading')!;
@@ -1140,6 +1147,66 @@ const shellOptions: ShellOptions = {
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
   searchModels: () => labView?.openBrowser(),
   async goToPlace(lon, lat) { await mapArrival; if (!view3d.hidden || inModels()) return; map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
+  search: {
+    stations() {
+      // MARTA rail and streetcar stops, and Amtrak's within the metro (its feed runs to New York).
+      const out: { name: string; lon: number; lat: number }[] = [];
+      for (const s of schedule.stops.values()) {
+        const amtrak = s.id.startsWith('amtrak:');
+        if (amtrak && Math.hypot((s.lon - CITY_ORIGIN.lon) * 92.6, (s.lat - CITY_ORIGIN.lat) * 111.2) > 45) continue;
+        out.push({ name: amtrak ? `${stationName(s.name)} (Amtrak)` : stationName(s.name), lon: s.lon, lat: s.lat });
+      }
+      return out;
+    },
+    viewAt(cam) {
+      const c = parseCityCamera(cam)!;
+      const [lon, lat] = sceneToLonLat(CITY_ORIGIN, c.x, c.z);
+      return { lon, lat };
+    },
+    inCity(lon, lat) {
+      const [x, z] = lonLatToScene(CITY_ORIGIN, lon, lat);
+      return diorama ? diorama.onBoard(x, z, true) : inCityArea(x, z);
+    },
+    pick(hit) {
+      // A View opens City on its camera (from the Map, as a link's camera would).
+      if (hit.view) {
+        hideCard(); // a carried vehicle would start a follow and take the camera off the View
+        const cam = parseCityCamera(hit.view.cam)!;
+        if (diorama) diorama.lookAt(cam.x, cam.z, cam);
+        else {
+          keepPose = cam;
+          shell.setView('city');
+        }
+        return;
+      }
+      const [x, z] = lonLatToScene(CITY_ORIGIN, hit.lon, hit.lat);
+      // In City: move City's camera, keeping its angle. A place City can't show opens on the Map.
+      if (!view3d.hidden && !inModels()) {
+        pendingFollow = null; // a Follow in 3D still waiting would take the camera back
+        updateFollowPanel();
+        if (diorama?.onBoard(x, z, true)) {
+          // The search takes the camera: a follow would pull it straight back to the vehicle.
+          if (follow?.active) {
+            follow.stop();
+            updateFollowPanel();
+          }
+          // Glide at the current scale into a mounted area. Into an area still loading, lookAt
+          // keeps the target and arrives once it mounts (glide would stop at the loaded edge). From
+          // far out (the whole board), come in to 600 m so the place is what you see.
+          if (diorama.distance() <= 900 && diorama.onBoard(x, z)) return diorama.glide(x, z);
+          const c = diorama.camera();
+          return diorama.lookAt(x, z, { bearing: c.bearing, tilt: c.tilt, distanceM: Math.min(diorama.distance(), 600) });
+        }
+        // Still building: City opens on the result (openCity reads keepPose once it is built).
+        if (!diorama && inCityArea(x, z)) {
+          keepPose = { x, z, bearing: map?.getBearing() ?? 0, tilt: cityTilt, distanceM: 600 };
+          return;
+        }
+        shell.setView('map');
+      }
+      void shellOptions.goToPlace?.(hit.lon, hit.lat);
+    },
+  },
   outsideCity() {
     const c = map?.getCenter();
     if (!c) return false;

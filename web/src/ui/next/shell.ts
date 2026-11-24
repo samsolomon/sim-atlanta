@@ -11,13 +11,14 @@ import './next.css';
 import type { AtmosphereOverride } from '../../core/atmosphere';
 import { fetchLive, weatherFresh, type Weather } from '../../core/weather';
 import { findPlaces, loadPlaces, placeAt } from '../../core/places';
+import { search as searchAll, type Hit } from '../../core/search';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
 import { createRadio, type Radio } from './radio';
 import type { StationsFile } from './radio-plan';
 import { BYLINE, createDetailPanel } from './panel';
-import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
+import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, timeOfDayOn, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
 import { shareUrl, sharePlace } from '../share';
 import type { ShellApi, ShellOptions } from '../shell-api';
@@ -55,6 +56,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 function setText(el: HTMLElement, text: string) {
   if (el.textContent !== text) el.textContent = text;
 }
+
 
 export function createShellNext(o: ShellOptions): ShellApi {
   let view = o.view;
@@ -333,19 +335,44 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }
   placeSearch();
   phone.addEventListener('change', placeSearch);
+  // Search keeps the view (brief c2008ecd): a pick moves the camera on screen. Two exceptions: a
+  // place City can't show, picked in City, opens on the Map (its row says "Map only"); a View
+  // opens in City, setting the clock when it has a time of day.
+  function pick(hit: Hit) {
+    closePops();
+    if (hit.view?.at) {
+      const ms = timeOfDayOn(clock.now().getTime(), hit.view.at);
+      anchorLive = false;
+      anchorMs = ms;
+      setTime(ms);
+    }
+    if (o.search) return o.search.pick(hit);
+    setView('map', true);
+    o.goToPlace?.(hit.lon, hit.lat);
+  }
   function renderResults() {
     results.replaceChildren();
-    for (const p of findPlaces(search.value)) {
-      const row = el('button', { type: 'button', class: 'a2-mi' });
-      row.textContent = p.name;
-      row.onclick = () => {
-        closePops();
-        setView('map', true);
-        o.goToPlace?.(p.lon, p.lat);
-      };
+    const hits = searchAll(search.value, {
+      stations: o.search?.stations() ?? [],
+      places: findPlaces,
+      viewAt: (v) => o.search?.viewAt(v.cam) ?? { lon: 0, lat: 0 },
+    });
+    let group = '';
+    for (const hit of hits) {
+      if (hit.group !== group) {
+        group = hit.group;
+        results.append(el('p', { class: 'a2-h a2-results-h', role: 'presentation' }, group));
+      }
+      const row = el('button', { type: 'button', class: 'a2-mi a2-hit' });
+      const name = el('span');
+      name.textContent = hit.name; // place and station names come from data: text, never markup
+      row.append(name);
+      if (hit.view) row.append(el('span', { class: 'a2-tag', 'aria-label': 'opens in 3D' }, '3D'));
+      else if (view === 'city' && o.search && !o.search.inCity(hit.lon, hit.lat)) row.append(el('span', { class: 'a2-tag a2-tag-map' }, 'Map only'));
+      row.onclick = () => pick(hit);
       results.append(row);
     }
-    if (!results.childElementCount) results.textContent = 'No matching places';
+    if (!hits.length) results.append(el('p', { class: 'a2-empty' }, 'No matches'));
   }
   const menu = el('section', { class: 'a2-menu a2-g a2-long', id: 'a2-menu', hidden: '', 'aria-label': 'Menu' });
   // No title block (A2c-menu): rows, Graphics, then the byline and the map-data credit.

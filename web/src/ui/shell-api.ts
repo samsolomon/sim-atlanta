@@ -24,6 +24,17 @@ export interface ShellOptions {
   north?(): void;
   searchModels?(): void;
   goToPlace?(lon: number, lat: number): void;
+  /** Search's other groups (Views, Stations, Landmarks) and its pick (brief c2008ecd: search keeps
+   * the view). */
+  search?: {
+    stations(): readonly { name: string; lon: number; lat: number }[];
+    /** A View's map position, from its camera target. */
+    viewAt(cam: string): { lon: number; lat: number };
+    /** True when City can show this point; in City, a place outside it reads "Map only". */
+    inCity(lon: number, lat: number): boolean;
+    /** Move the view on screen to the hit (City to City, Map to Map), or open City on a View. */
+    pick(hit: import('../core/search').Hit): void;
+  };
   outsideCity?(): boolean;
   centerCity?(): void;
   getTilt?(): number;
