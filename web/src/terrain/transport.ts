@@ -18,7 +18,7 @@ import { drawSeventeenthStreet } from '../city/seventeenth-street';
 import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
-type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
+type GroundAt = ((x: number, z: number, run?: TransportRun) => number | null) & { raisedEnds?: WeakMap<P2, number> };
 /** Road tread over its support, and the widest band of a deck that lands on the board. */
 const DECK_LIFT = .12, LANDING_BAND_M = 1.5, LANDING_BANK_M = 1, LANDING_TOLERANCE_M = .06;
 /** A deck that must arrive this far above the board gets a landing approach. */
@@ -253,6 +253,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // 1 at a landing end, 0 a seam away: the slab thins into the road over that seam.
     const settle = (s: number) => Math.max(
       lands[0] ? Math.max(0, 1 - s / seam) : 0, lands[1] ? Math.max(0, 1 - (line.length - s) / seam) : 0);
+    const raised = landsOn ? [terrainGround.raisedEnds?.get(start), terrainGround.raisedEnds?.get(end)] : [];
     const inferred = new Map<number, number>();
     if (bridge && !profile) {
       // Sample the full tread width. Smooth the minimum upward along the span
@@ -288,6 +289,11 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           const c = line.at(at), h = groundAt(c.x, c.z);
           if (h !== null) minimum = Math.max(minimum, h + clearance + 1);
         }
+        // The approach already includes the tread lift. At its edge use the
+        // structural datum and carry that level across the clearance span.
+        const raisedEnd = s < seam ? raised[0] : line.length - s < seam ? raised[1] : undefined;
+        if (raisedEnd !== undefined) minimum = (s === 0 || s === line.length)
+          ? raisedEnd : Math.max(minimum, raisedEnd);
         inferred.set(s,minimum);
       }
       // Steepen the approach when a crossing is close to an abutment. The
@@ -331,7 +337,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const ends = bridge ? [0, line.length].map(s => {
         return offsets.map(off => {
           const [x,z]=lateral(s,off);
-          return (s===0 ? firstSupport : lastSupport) ?? groundAt(THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX),THREE.MathUtils.clamp(z,bounds.minZ,bounds.maxZ));
+          return raised[s === 0 ? 0 : 1] ?? (s===0 ? firstSupport : lastSupport) ?? groundAt(THREE.MathUtils.clamp(x,bounds.minX,bounds.maxX),THREE.MathUtils.clamp(z,bounds.minZ,bounds.maxZ));
         });
       }) : [];
       let prev: number[][] | null = null, lastS = 0;
@@ -656,7 +662,7 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
     const radius = roadWidth(road) / 2, clearance = ['path','footway','steps','pedestrian','cycleway'].includes(road.cls) ? 2.5 : 5;
     for (let i = 1; i < road.pts.length; i++) routes.push({ a: road.pts[i - 1], b: road.pts[i], radius, clearance });
   }
-  const portals: { edge: number[][]; direction: number[]; curbs: number[]; slope: number; landing: true }[] = [];
+  const portals: { edge: number[][]; direction: number[]; curbs: number[]; slope: number; landing: true; landingPoint: P2 }[] = [];
   for (const run of data.roads) {
     if (run.kind !== 'bridge' || run.deckNavd88M || run.deckWeight || run.pts.length < 2 || run.cls === 'motorway' ||
       ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls)) continue;
@@ -701,7 +707,7 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
       const half = width / 2;
       const side = (k: number) => [at.x - k * out * half * at.nx, at.z - k * out * half * at.nz, need + zero];
       // Down to the street at a steady grade, so the approach ends where that grade meets it.
-      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1], slope: -LANDING_GRADE, landing: true });
+      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1], slope: -LANDING_GRADE, landing: true, landingPoint: p });
     }
   }
   return portals;

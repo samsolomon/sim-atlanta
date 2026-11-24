@@ -19,7 +19,8 @@ import { triangleHeight } from './tread-height';
 import type { TerrainCity } from './transport-data';
 import { underpassGround } from './underpass';
 import { createSurfaceTransport, landingPortals } from './transport';
-import { Line } from '../vignette/geom';
+import { cityRoadHeight } from '../city/road-height';
+import { Line, segDist } from '../vignette/geom';
 import { roadWidth } from './transport-data';
 
 const root = new URL('../../../pipeline/prototypes/', import.meta.url);
@@ -166,3 +167,49 @@ for (const quality of ['low', 'high'] as const)
     // And arrives at no more than a steep street's grade.
     expect(worst.grade).toBeLessThan(0.16);
   }, 300000);
+
+it('keeps the Ellis road top and its outgoing grade continuous across the east landing', () => {
+  const { city, grid } = board('north-corner');
+  const surface = new GroundSurface(grid, 'high'), bare = surface.sampleScene.bind(surface);
+  const zero = grid.manifest.vertical.sceneZeroNavd88M;
+  const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city),
+    ...landingPortals(city, bare, zero)], zero, bare, city.bounds, city.roads);
+  const decks = createSurfaceTransport(city, grid, approach.groundAt);
+  try {
+    const deck = city.terrainTransport!.roads.find(r => r.kind === 'bridge' &&
+      r.cls === 'secondary' && r.pts.at(-1)?.[0] === 1205.41)!;
+    const axis = new Line(deck.pts), at = axis.at(axis.length);
+    const street = city.roads.find(r => !r.bridge && r.name === 'Ellis Street Northeast' &&
+      r.pts[0][0] === 1205.41)!;
+    const land = new Line(street.pts).at(0);
+    const wheelHeight = cityRoadHeight(city, approach.groundAt, decks.deckAt);
+    // Eastbound Ellis crosses the Connector link 6.97 m before its abutment.
+    const crossX = 1199.2884, crossZ = -593.52785;
+    const lowerRoad = city.roads.find(r => r.cls === 'motorway' && !r.bridge &&
+      r.pts.some((p, i) => i && segDist(crossX, crossZ, r.pts[i - 1], p) < .02))!;
+    const lower = wheelHeight(crossX, crossZ, lowerRoad);
+    const upper = decks.deckAt(crossX, crossZ, deck);
+    expect(Number.isFinite(lower)).toBe(true);
+    expect(Number.isFinite(upper)).toBe(true);
+    expect(upper! - lower!).toBeGreaterThan(6.1);
+    for (const wheel of [-0.8, 0, 0.8]) {
+      const x = at.x + wheel * at.nx, z = at.z + wheel * at.nz;
+      const top = decks.deckAt(x, z, deck)!;
+      const outside = approach.groundAt(x + .05 * land.dx, z + .05 * land.dz)!;
+      expect(top).not.toBeNull();
+      expect(outside).not.toBeNull();
+      expect(wheelHeight(x - .05 * at.dx, z - .05 * at.dz, city.roads.find(r => r.bridge &&
+        r.name === street.name && r.pts.at(-1)?.[0] === 1205.41)!)).toBeCloseTo(top, 2);
+      expect(wheelHeight(x + .05 * land.dx, z + .05 * land.dz, street)).toBeCloseTo(outside, 4);
+      const arriving = top - decks.deckAt(x - at.dx, z - at.dz, deck)!;
+      const departing = approach.groundAt(x + land.dx, z + land.dz)! - outside;
+      expect(Math.abs(top - outside)).toBeLessThan(.02);
+      expect(Math.abs(arriving - departing / .95)).toBeLessThan(.04);
+    }
+  } finally {
+    decks.dispose();
+    approach.geometry.dispose();
+    approach.walls.dispose();
+    surface.geometry.dispose();
+  }
+});

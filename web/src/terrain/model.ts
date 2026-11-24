@@ -240,7 +240,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Forward the optional road: unconnected motorways must keep sampling bare earth.
   type Road = Parameters<NonNullable<typeof approaches>['groundAt']>[2];
   const groundAt = Object.assign((x: number, z: number, road?: Road) => approaches ? approaches.groundAt(x, z, road) : bare(x, z),
-    { triangles: options.quality === 'high' ? mesh : undefined }) satisfies DrapeGround;
+    { triangles: options.quality === 'high' ? mesh : undefined, raisedEnds: approaches?.groundAt.raisedEnds }) satisfies DrapeGround;
   const candidate = options.separateBuilding && city.buildings.find(b => b.id === options.separateBuilding);
   let sceneryCity = city;
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];

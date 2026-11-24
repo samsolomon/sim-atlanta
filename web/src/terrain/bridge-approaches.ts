@@ -38,6 +38,7 @@ export interface Portal {
   slope?: number;
   /** An inferred landing (transport.ts landingPortals): no link ramp starts on it. */
   landing?: boolean;
+  landingPoint?: P2;
 }
 
 // The gridded bare earth may continue at freeway level several cells beyond
@@ -71,6 +72,7 @@ export function bridgeApproaches(
   const sideWalls: { u: number[]; v: number[]; out: number[]; owner: number }[] = [];
   const owners: number[] = [];
   let portalIndex = -1;
+  const raisedEnds = new WeakMap<P2, number>();
   const landingOwners = new Set(portals.flatMap((portal, i) => (portal.landing ? [i] : [])));
   function tri(a: number[], b: number[], c: number[]) {
     const i = top.pos.length / 3;
@@ -93,7 +95,7 @@ export function bridgeApproaches(
     direction: [dx, dz],
     curbs,
     slope,
-    landing,
+    landing, landingPoint,
   } of portals) {
     portalIndex++;
     const xy = (f: number, s: number): P2 => [
@@ -118,6 +120,7 @@ export function bridgeApproaches(
     // The toe row follows the board at every column, so the approach meets it flush.
     // Columns are at most JOINT_COLUMN_M apart; the board's own faces are 5 m.
     const width = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (landingPoint) raisedEnds.set(landingPoint, deck(.5));
     const toeAt = (f: number) => bare(...xy(f, length));
     // Hermite vertical curves meet the deck tangent and the land-side street
     // tangent. Estimate the latter over several DEM cells to suppress quantization.
@@ -125,7 +128,7 @@ export function bridgeApproaches(
       const far = bare(...xy(f, length + 10));
       return far === null ? (toe - (bare(...xy(f, length - 4)) ?? toe)) / 4 : (far - toe) / 10;
     };
-    const step = 4;
+    const step = landingPoint ? 1 : 4;
     const profiles = new Map<number, number[]>();
     const profile = (f: number) => {
       const cached = profiles.get(f);
@@ -136,7 +139,7 @@ export function bridgeApproaches(
         const t = (j * step) / length;
         const blend = t * t * (3 - 2 * t);
         const tangent =
-          (1 - t) * Math.max(-0.11, Math.min(0.11, slope ?? 0)) -
+          (1 - t) * Math.max(-0.11, Math.min(0.11, landingPoint ? 0 : slope ?? 0)) -
           t * Math.max(-0.11, Math.min(0.11, toeSlope));
         const curve =
           slope === undefined
@@ -168,15 +171,15 @@ export function bridgeApproaches(
       const lift = k === 0 || k === 3 ? 0.27 : 0.12;
       const fine = Math.max(1, Math.ceil(((bands[k + 1] - bands[k]) * width) / JOINT_COLUMN_M));
       const candidates = Array.from({ length: fine + 1 }, (_, i) => bands[k] + ((bands[k + 1] - bands[k]) * i) / fine);
-      const rows = Array.from({ length: length / 4 + 1 }, (_, j) => candidates.map((f) => vertex(f, j * 4, lift)[1]));
+      const rows = Array.from({ length: length / step + 1 }, (_, j) => candidates.map((f) => vertex(f, j * step, lift)[1]));
       const columns = keepColumns(candidates.map((f) => f * width), rows).map((i) => candidates[i]);
       const pieces = columns.length - 1;
-      for (let s = 0; s < length; s += 4)
+      for (let s = 0; s < length; s += step)
         for (let i = 0; i < pieces; i++) {
           const p = vertex(columns[i], s, lift),
             q = vertex(columns[i + 1], s, lift);
-          const r = vertex(columns[i + 1], s + 4, lift),
-            t = vertex(columns[i], s + 4, lift);
+          const r = vertex(columns[i + 1], s + step, lift),
+            t = vertex(columns[i], s + step, lift);
           tri(p, q, r);
           tri(p, r, t);
           if ((k === 0 && i === 0) || (k === 3 && i === pieces - 1)) {
@@ -189,7 +192,7 @@ export function bridgeApproaches(
             walls.quad(
               c,
               d,
-              [d[0], d[1] - 0.15 * (1 - (s + 4) / length), d[2]],
+              [d[0], d[1] - 0.15 * (1 - (s + step) / length), d[2]],
               [c[0], c[1] - 0.15 * (1 - s / length), c[2]],
               '#b3aa9a',
             );
@@ -321,9 +324,9 @@ export function bridgeApproaches(
     geometry,
     walls: walls.geometry(),
     joints,
-    groundAt(x: number, z: number, road?: { cls: string; pts: P2[] }) {
+    groundAt: Object.assign((x: number, z: number, road?: { cls: string; pts: P2[] }) => {
       if (road?.cls === 'motorway' && !connected.has(road.pts)) return bare(x, z);
       return sample(positions, x, z);
-    },
+    }, { raisedEnds }),
   };
 }
