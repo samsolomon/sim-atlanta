@@ -5,7 +5,8 @@ import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-export const CONSIST_VERSION = 1;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars. */
+export const CONSIST_VERSION = 2;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';

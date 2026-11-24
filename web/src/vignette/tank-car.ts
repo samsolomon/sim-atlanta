@@ -15,7 +15,8 @@ const CY = 2.45; // tank centreline above the rail
 const SHELL = 15.2; // cylindrical shell between the heads
 
 export function tankCarBody(b: Builder, low: boolean) {
-  const black = '#1f2124', shield = '#191b1d', walk = '#3d4044', hardware = '#2e3134', rust = '#4a3a30';
+  // Inputs sit well above true black: the City grade crushes near-black into a silhouette.
+  const black = '#45484d', shield = '#3b3e42', walk = '#5a5e63', hardware = '#3f4246', rust = '#5a4d44';
   const seg = low ? 10 : 20;
   const shell = new THREE.CylinderGeometry(R, R, SHELL, seg, 1, true).rotateX(Math.PI / 2).translate(0, CY, 0);
   b.addGeometry(shell, black);
@@ -44,7 +45,7 @@ export function tankCarBody(b: Builder, low: boolean) {
     b.box(1.25, 0.06, 1.25, 0, CY + R + 0.34, 0, hardware);
     for (const x of [-0.75, 0.75]) b.box(0.04, 0.5, 2.1, x, CY + R + 0.25, 0, hardware); // rails
     // A faint rust streak down each side below the fittings, and the bottom outlet.
-    for (const s of [-1, 1]) b.box(0.02, 1.4, 0.35, s * (R - 0.03), CY + 0.3, 0.2, rust);
+    for (const s of [-1, 1]) b.box(0.02, 1.2, 0.22, s * (R - 0.02), CY + 0.5, 0.2, rust);
   }
   b.box(0.35, 0.35, 0.35, 0, CY - R - 0.1, 0, hardware);
 }

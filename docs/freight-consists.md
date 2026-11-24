@@ -47,6 +47,26 @@ Containers are 53-foot domestic high cubes, 16.15 × 2.59 × 2.90 m. The double 
 
 There is no lettering. Triangles: 1,652 high and 524 low (1,160 and 512 single-stack). Lab entries: `freightWellA`, `freightWellB` and `freightWellC`.
 
+### Built: general-service tank car (DOT-117 family)
+
+The envelope follows Greenbrier's 30,600-gallon ethanol tank car drawing: 59 ft 10 in over pulling faces (18.24 m) and 46 ft 7.5 in truck centres (14.21 m). [Greenbrier tank cars](https://gbrx.com/?p=1125)
+
+**Estimated from photographs:**
+- the 3.05 m tank diameter;
+- the 2.45 m centreline height;
+- the head shields and stub sills;
+- the end platforms and ladders;
+- the protective housing over the top fittings.
+
+**Model:**
+- Black, with one faint rust streak and no placards or lettering.
+- The DOT-117 choice is illustrative, and so is any "ethanol" reading of a tank unit train.
+- The paint inputs sit well above true black (`#45484d`), because the City grade crushes near-black into a silhouette.
+- At night the unlit black cars are nearly invisible from orbit.
+- Triangles: 1,392 high and 636 low. The Lab entry is `freightTank`.
+
+**Use in trains.** Tanks join the manifest car list, and unit trains now choose grain hoppers or tanks. `CONSIST_VERSION` is 2, so every slot is re-dealt.
+
 ### Built: City consists
 
 Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.
