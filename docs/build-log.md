@@ -2922,6 +2922,10 @@ calibration, with no geometry or texture cost. Matched 21:00 frames use the same
 [High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
 [Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
 
+### 2026-11-23 — The Midtown South footbridge
+
+A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
+
 ### 2026-11-23 — Rhodes Hall at 21:00
 
 At a 160 m orbit, the earlier 25% reduction still made the tower read as one lit

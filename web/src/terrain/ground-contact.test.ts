@@ -61,6 +61,10 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     await addSection('south', mounted, quality, signal);
     await addSection('north', mounted, quality, signal);
     for (const row of midtownRows.slice(0, 3)) await addSection(row, mounted, quality, signal);
+    // The building-to-sidewalk footbridge top is at -18.268 m here.
+    const underBridge = mounted.get('midtown-south')!.terrainAt(370.178, -1870.121);
+    expect(underBridge).not.toBeNull();
+    expect(underBridge!).toBeLessThan(-18.268 - .03);
     const root = new Group();
     for (const area of mounted.values()) root.add(area.group);
     const audit = groundAudit(root, [...mounted].map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })),
