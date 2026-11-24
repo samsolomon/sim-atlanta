@@ -2,7 +2,7 @@ import { type Build } from '../core/slice';
 import * as THREE from 'three';
 import { GroundGrid } from './grid';
 import { type OpenSlot } from './openings';
-import { farSurface, farSurfaceSteps, typedSteps, vertexNormalsSteps, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
+import { farSurface, farSurfaceSteps, indexOf, typedSteps, vertexNormalsSteps, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
 
 export { joinList, type GroundYield, type JoiningEdge, type TerrainJoins, type TerrainQuality } from './surface-build';
 
@@ -137,7 +137,8 @@ export class GroundSurface {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geometry.setIndex(indices);
+    // A typed index is not wrapped by setIndex; pick 16 or 32 bits as it would for an array.
+    geometry.setIndex(new THREE.BufferAttribute(indexOf(indices, pos.length / 3), 1));
     geometry.computeVertexNormals();
     return geometry;
   }
