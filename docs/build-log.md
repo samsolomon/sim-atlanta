@@ -3743,3 +3743,10 @@ On Low, the panels now drop the blur and use a denser tint, and long-text sheets
 ### 2026-11-24 · Intermodal stacks at Brookwood
 
 The 20-car Lab strip exposed a loading error. Choosing each tier independently put some 53-foot containers on a single 40-foot base, with nearly two metres hanging over each end. The planner now checks the bottom first. A 40 takes a 40, and a double-stack with a 53-foot base gets a matching top three times out of four. Singles and empty wells still break up the train. [20-car strip](log/freight/wells/v9-strip.jpg) · [Front section](log/freight/wells/v9-front.jpg) · [Rear section](log/freight/wells/v9-rear.jpg) · [Brookwood at 400 m](log/freight/wells/v9-brookwood.jpg)
+### 2026-11-24 — Radio station controls
+
+A tap three pixels into the track title could switch stations. The station arrows now occupy their own 44 × 44 px buttons above the title. Chrome hit tests at 390, 601, 640 and 684 px kept the title clear and the panel inside the viewport. [Playing Sol Café at 684 px](log/ui/radio-stations/station-controls.png)
+
+### 2026-11-24 · Postcards from the City camera
+
+A shared camera opens the exact angle, but its link preview can last for days in a message thread. We photographed 23 neighbourhoods in daylight and gave the five staged Views their own pictures. The build opens City once and moves the camera between shots. Each share page carries the place name in its HTML, so a messaging app can read it without loading the map or calling the Worker. [Downtown cover](log/share-previews/default.jpg) · [Midtown](log/share-previews/midtown.jpg) · [Sweet Auburn](log/share-previews/sweet-auburn.jpg) · [Old Fourth Ward](log/share-previews/old-fourth-ward.jpg)

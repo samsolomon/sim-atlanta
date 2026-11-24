@@ -135,3 +135,17 @@ describe('LiveMarta', () => {
     expect(source.update(new Date(NOW)).some((t) => t.s.tier === 'live')).toBe(false);
   });
 });
+
+it('distinguishes a delayed first observation from a completed empty response', async () => {
+  let finish!: (value: Response) => void;
+  const response = new Promise<Response>(resolve => { finish = resolve; });
+  vi.stubGlobal('fetch', () => response);
+  const feed = new LiveMarta(schedule);
+  expect(feed.firstPollComplete).toBe(false);
+  const poll = feed.poll();
+  await Promise.resolve();
+  expect(feed.firstPollComplete).toBe(false);
+  finish(new Response(JSON.stringify({ fetched: Date.now(), trains: [] })));
+  await poll;
+  expect(feed.firstPollComplete).toBe(true);
+});
