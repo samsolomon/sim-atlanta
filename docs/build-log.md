@@ -3374,3 +3374,9 @@ The Proscenium's mapped outline has no parts, so its character had to come from 
 ### 2026-11-23 · 1010 Midtown's ribbons
 
 1010 Midtown is defined by the white balcony ribbon on every floor of its curve toward Peachtree. Drawing one band per floor and per curve facet put the skin at about 3,000 triangles. Merging each slab edge and its rail into a single band, and simplifying the mapped curve to 0.3 m, brought it to about 2,320. On a convex curve, the bands 1.9 m proud of neighbouring facets leave slits where the facets meet, so each band runs 0.6 m past its corners. The flat glass faces carry a white frame grid in front of the night panes. Like the Atlantic, the outline crosses a board seam, and each row draws its own parts. [Before and after](log/ui/1010-midtown/day-before-after.jpg) · [ribbons up close](log/ui/1010-midtown/ribbons-day.jpg)
+
+## 2026-11-24: NCR's sliced tower
+
+The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
+[Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
+
