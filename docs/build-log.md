@@ -3191,3 +3191,7 @@ Most of the shader headroom came from the first colour frame. City had precompil
 ### 2026-11-23 — One freight vehicle per lab entry
 
 Two of the six freight locomotive studies had a boxcar attached. The Model Lab now centers all six locomotives on the same camera presets and gives the existing 50-foot-class boxcar its own entry. [Before](log/freight/standalone/before.jpg) · [After](log/freight/standalone/after.jpg) · [Car library and consist plan](freight-consists.md).
+
+### 2026-11-23 — A grain hopper and the ninety-first shader
+
+The first car in the freight kit is a three-bay covered grain hopper, sized from Greenbrier's 5,400 ft³ data sheet: 17.88 m over couplers and 3.25 m wide. It shares the boxcar's trucks and costs 660 triangles on phones and 1,000 on desktop. Three of them now follow the NS-like locomotives through Brookwood. The first build passed on desktop but pushed phones to 91 shader programs against a ceiling of 90. The car's geometry wasn't the cause. The WIP had switched the Brookwood train to instancing on phones, and an instanced, clipped Lambert is a different program from a plain one. Separate meshes on low tier brought it back to 90 with 567 draws, and a test now pins that choice. A second test caught the hexagonal phone wheels floating 2.4 cm above the rail because they rested on a flat edge. Turning every freight wheel a quarter-step puts a vertex on the rail. [Lab and City, day and night, both tiers](log/freight/grain-hopper/comparison.jpg)
