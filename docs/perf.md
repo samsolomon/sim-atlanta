@@ -127,3 +127,18 @@ Fresh Chrome with cooldowns, low tier, all 12 areas loaded. Ten-second FPS on th
 | Pan | 27.0, 25.2 | 24.6, 25.7, 25.6 | 23.0, 22.3, 22.3 |
 
 The coordinator accepted the 3–5% gap to baseline and Sam accepted the far-crown appearance.
+
+## Houses on the low tier: shadows and byte attributes (2026-11-24)
+
+Measured on main at low, Nov 20 14:00, with 3,430 houses at about 41 triangles each in the far form. Every mesh under `houses` was frustum-tested after a forced shadow redraw.
+
+| View | Main pass | Shadow pass per redraw |
+|---|---|---|
+| Default, houses 18–22 km away | 141k triangles, 22 draws | 100k triangles, 8 draws |
+| Ansley 900 m | 157k, 7 draws | 231k, 12 draws |
+| Ansley 420 m | 172k, 6 draws | 218k, 15 draws |
+
+- **Shadows.** Past a 9 km orbit (back at about 7.6 km), houses stop casting. An 8 m house shadow is under 2 px on the A16 there; at 2.5 km it is still about 7 px, so the trees' 2.5 km threshold would show. At the default view this takes the shadow pass from 100k triangles and 8 draws to 0. Nearer views are unchanged.
+- **Byte attributes.** Far house blocks store colour as normalized `Uint8`, normals as normalized `Int8`, and the facade style id as `Int8`. That cuts 16 bytes per vertex: geometry 186.2 → 177.7 MB, CPU buffers 251.5 → 243.0 MB. The shader programs stay the same, and the low sweep peaks at 86.
+- `&perf=1&housefar=0` keeps the old path (float attributes, shadows always on).
+- [Matched frames](log/ui/house-far/shadows-bytes.jpg).

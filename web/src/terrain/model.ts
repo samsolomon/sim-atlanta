@@ -576,7 +576,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
-    setDetail(d: { farTrees?: boolean; branchShadows?: boolean; farShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
+    setDetail(d: { farTrees?: boolean; branchShadows?: boolean; farShadows?: boolean; houseShadows?: boolean }) { houses.setDetail(d); scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
     /** Streaming rings choose a landmark cell's level ('x,z' in 500 m cells); null restores the distance rule. */
     setLandmarkDetail(cell: string, level: 'full' | 'lod' | null) { batches?.setCellDetail(cell, level); },

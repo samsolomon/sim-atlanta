@@ -1932,6 +1932,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Low tier: the far-form trees cast no shadow beyond this orbit (trees/far-canopy.ts).
   const FAR_SHADOWS_M = low ? 2500 : 0;
   let farNoShadow = false;
+  // Low tier: houses cast no shadow beyond this orbit (city/house-lod.ts setDetail).
+  const HOUSE_SHADOWS_M = low ? 9000 : 0;
+  let houseNoShadow = false;
   // Areas (and the downtown World) that already carry the current detail; a newly mounted or
   // swapped area is caught here without allocating every frame.
   let detailed = new WeakSet<object>();
@@ -1942,9 +1945,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // far mesh is submitted whole to the shadow pass (191k triangles at the default view, 8% of
     // them inside the shadow box). Hysteresis as for the far form.
     const noShadow = FAR_SHADOWS_M > 0 && (farNoShadow ? d > FAR_SHADOWS_M * 0.84 : d > FAR_SHADOWS_M);
-    if (far !== farTrees || noShadow !== farNoShadow) { farTrees = far; farNoShadow = noShadow; detailed = new WeakSet(); }
+    // Past HOUSE_SHADOWS_M houses stop casting: an 8 m house shadow is under 2 px there on the A16, and a
+    // 2.4 km far block goes whole into the shadow pass (100k triangles at the default view).
+    const noHouseShadows = HOUSE_SHADOWS_M > 0 && (houseNoShadow ? d > HOUSE_SHADOWS_M * 0.84 : d > HOUSE_SHADOWS_M);
+    if (far !== farTrees || noShadow !== farNoShadow || noHouseShadows !== houseNoShadow) { farTrees = far; farNoShadow = noShadow; houseNoShadow = noHouseShadows; detailed = new WeakSet(); }
     // Limb shadows stay on until a moving-camera A16 run shows they cost something.
-    const detail = { farTrees: far, farShadows: !noShadow };
+    const detail = { farTrees: far, farShadows: !noShadow, houseShadows: !noHouseShadows };
     let applied = false;
     const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
       if (!a || detailed.has(a)) return;
