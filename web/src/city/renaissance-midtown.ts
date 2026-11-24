@@ -35,9 +35,14 @@ export function createRenaissanceMidtown(buildings: VBuilding[], site: VBuilding
   }, 0);
   const plan = area > 0 ? s.ring : [...s.ring].reverse();
 
-  s.prism(plan, s.base, podiumTop, podium, roofDeck);
-  s.prism(plan, podiumTop, top, precast, roofDeck);
-  s.prism(plan, top, parapet, precast, roofDeck);
+  // Walls on the slab's true rectangle (the mapped ring is skewed up to 0.9 m),
+  // so the facade, slot and storefront sit on the wall rather than off it.
+  const xs = plan.map(p => p[0]), zs = plan.map(p => p[1]);
+  const slab: P2[] = [[Math.min(...xs), Math.min(...zs)], [Math.max(...xs), Math.min(...zs)],
+    [Math.max(...xs), Math.max(...zs)], [Math.min(...xs), Math.max(...zs)]];
+  s.prism(slab, s.base, podiumTop, podium, roofDeck);
+  s.prism(slab, podiumTop, top, precast, roofDeck);
+  s.prism(slab, top, parapet, precast, roofDeck);
   s.body.box(12, plant - parapet, 9, -4, (plant + parapet) / 2, 0, '#b3ada2');
 
   // Lay the facade out on the slab's four true faces, not the OSM ring's split
