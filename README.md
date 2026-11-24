@@ -123,7 +123,11 @@ See [the response contract](docs/data-model.md#live-buses).
 
 Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
 custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
-before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+before `pnpm run deploy`. The web build opens local headless Chrome once to render static
+share pictures from the staged City data. Set `CHROME` to the browser executable outside
+the standard macOS Google Chrome installation. The build writes the pictures to
+`web/dist/previews/` and crawler-readable entry pages to `web/dist/s/`. Only the existing
+API routes run the Worker first. For this deployment, the secret `MARTA_API_KEY` is already set on the Worker.
 `pnpm data` includes `data:city`: City requires `scene/downtown/vignette.json`,
 `trees.json` and the retained `scene.json` profiles. It also stages the six surrounding areas. In an existing checkout with Map
 data, run `pnpm data:city` once before building this milestone. Missing City data makes

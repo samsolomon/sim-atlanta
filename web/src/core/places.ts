@@ -49,8 +49,8 @@ function inRing(x: number, y: number, ring: Ring) {
 
 const DOWNTOWN = { lon: -84.39, lat: 33.755 };
 
-/** The neighbourhood name at a lon/lat, or a broader fallback (null until the data loads). */
-export function placeAt(lon: number, lat: number): string | null {
+/** The neighbourhood containing a point. Out-of-area shares link back to the root. */
+export function neighborhoodAt(lon: number, lat: number): string | null {
   if (!places) return null;
   for (const p of places) {
     if (lon < p.bbox[0] || lon > p.bbox[2] || lat < p.bbox[1] || lat > p.bbox[3]) continue;
@@ -58,6 +58,13 @@ export function placeAt(lon: number, lat: number): string | null {
       if (inRing(lon, lat, poly[0]) && !poly.slice(1).some((hole) => inRing(lon, lat, hole))) return p.name;
     }
   }
+  return null;
+}
+
+export function placeAt(lon: number, lat: number): string | null {
+  if (!places) return null;
+  const name = neighborhoodAt(lon, lat);
+  if (name) return name;
   const km = Math.hypot((lon - DOWNTOWN.lon) * 92.6, (lat - DOWNTOWN.lat) * 111.2);
   return km < 45 ? 'Metro Atlanta' : 'Georgia';
 }
