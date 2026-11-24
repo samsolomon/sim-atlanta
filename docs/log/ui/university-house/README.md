@@ -20,7 +20,7 @@ The Midtown Alliance photograph, taken from the west across a cleared lot, shows
 
 ## Night
 
-No night photograph was found. Student housing is noticeably lit late, so City lights a stable pattern of about 45% of the rooms and the glazed base. The garage stays dark.
+No night photograph was found. Student housing is noticeably lit late, so City lights about 45% of the rooms and the glazed base. Each pane is chosen with the shared `litHash(seedOf(id), face, floor, bay)` through skin-kit's `litFacade`, so the pattern doesn't depend on drawing order. The garage stays dark.
 
 ## Measurements
 
