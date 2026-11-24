@@ -2006,10 +2006,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const composed = !perfOverrides.postOff && !whiteModel?.holding;
     // A lost context renders nothing, so the panels need CSS until it is restored.
     const glassRects = glass && composed && canvasGlassAllowed() && grade.enabled && !gl.isContextLost() ? glassSource(renderer.domElement) : null;
-    if (glass) {
-      if (glassRects) glass.prepare(glassRects);
-      glass.pass.enabled = !!glassRects;
-    }
+    glass?.prepare(glassRects);
     if (perfOverrides.postOff) renderer.render(scene, camera);
     else if (composed) composer.render();
     if (glass) showGlass(!!glassRects && glass.drew());

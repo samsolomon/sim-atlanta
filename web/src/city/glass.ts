@@ -176,13 +176,15 @@ export class CityGlass {
   }
 
   /** Before the composer renders: whether any panel shows this frame (else the blur is skipped). */
-  prepare(src: GlassSource) {
+  prepare(src: GlassSource | null) {
+    this.pass.enabled = !!src;
     this.src = src;
     this.count.value = 0;
-    if (src.version !== this.uploaded) this.upload(src);
-    this.active = false;
-    for (let i = 0; i < src.count; i++) if (src.data[i * GLASS_STRIDE + 6] > 0.002) { this.active = true; break; }
     this.blurred = false;
+    this.active = false;
+    if (!src) return;
+    if (src.version !== this.uploaded) this.upload(src);
+    for (let i = 0; i < src.count; i++) if (src.data[i * GLASS_STRIDE + 6] > 0.002) { this.active = true; break; }
   }
 
   private blurFrom(renderer: THREE.WebGLRenderer, input: THREE.Texture) {
