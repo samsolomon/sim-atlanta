@@ -109,7 +109,9 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
     const p = at(f, 0.5, y, 0.8);
     return !covers.some(m => m.top > y && pointInRing(p[0], p[2], m.plan));
   };
-  /** Pale gridded curtain wall: a mullion per room bay, a transom every second floor, lit rooms. */
+  /** Pale gridded curtain wall: a mullion per room bay, a transom every second floor, lit rooms.
+   * Layers stand well apart (lit 5, mullions 10, transoms 19, cap 24 cm): closer ones z-fight at
+   * 400-600 m, and transoms at 11-15 cm meet the next mass's wall, 15 cm proud of some faces. */
   /** Faces whose curtain is replaced (the sawtooth face) or capped (below the residence band). */
   const key = (f: Face) => `${f.a[0].toFixed(2)},${f.a[1].toFixed(2)},${f.b[0].toFixed(2)},${f.b[1].toFixed(2)}`;
   const capAt = new Map<string, number>();
@@ -120,16 +122,16 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
       const bays = Math.max(1, Math.round(f.length / 3.2));
       const floors = Math.floor((hi - 1 - lo) / floor);
       for (let k = 0; k <= bays; k++) panel(f, k / bays - 0.12 / f.length, k / bays + 0.12 / f.length, lo, hi - 0.6, 0.1, frame);
-      for (let j = 2; j < floors; j += 2) panel(f, 0, 1, lo + j * floor - 0.18, lo + j * floor + 0.18, 0.1, frame);
+      for (let j = 2; j < floors; j += 2) panel(f, 0, 1, lo + j * floor - 0.18, lo + j * floor + 0.18, 0.19, frame);
       // A hotel is noticeably lit at night (illustrative occupancy), one pane per room bay.
       const units = bays;
       for (let j = 0; j < floors; j++) for (let k = 0; k < units; k++) {
         if (litHash(seed, faceSeed + edge, j, k) > 0.32) continue;
         const y = lo + j * floor + 0.5;
         if (!exposed(f, y + 1)) continue;
-        panel(f, (k + 0.1) / units, (k + 0.9) / units, y, y + 2.3, 0.07, glass, true);
+        panel(f, (k + 0.1) / units, (k + 0.9) / units, y, y + 2.3, 0.05, glass, true);
       }
-      panel(f, -0.005, 1.005, hi - 0.6, hi, 0.12, frame);
+      panel(f, -0.005, 1.005, hi - 0.6, hi, 0.24, frame);
     });
   };
 
