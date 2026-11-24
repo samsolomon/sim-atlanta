@@ -143,6 +143,7 @@ import { createAymDeck } from './aym-deck';
 import { createTheMitchell } from './the-mitchell';
 import { createRenaissanceLofts } from './renaissance-lofts';
 import { createBarclayHotel } from './barclay-hotel';
+import { createAllenPlaza55 } from './allen-plaza-55';
 import { createTheCenter } from './the-center';
 import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
@@ -539,6 +540,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let theMitchell: ReturnType<typeof createTheMitchell> = null;
   let renaissanceLofts: ReturnType<typeof createRenaissanceLofts> = null;
   let barclayHotel: ReturnType<typeof createBarclayHotel> = null;
+  let allenPlaza55: ReturnType<typeof createAllenPlaza55> = null;
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let olympia: ReturnType<typeof createOlympia> = null;
@@ -710,7 +712,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         renaissanceLofts = createRenaissanceLofts(afterOlympia, ground, low ? 'low' : 'high');
         const afterRenaissanceLofts = renaissanceLofts?.buildings ?? afterOlympia;
         barclayHotel = createBarclayHotel(afterRenaissanceLofts, ground, low ? 'low' : 'high');
-        const city = { ...vd, buildings: barclayHotel?.buildings ?? afterRenaissanceLofts,
+        const afterBarclayHotel = barclayHotel?.buildings ?? afterRenaissanceLofts;
+        allenPlaza55 = createAllenPlaza55(afterBarclayHotel, ground, low ? 'low' : 'high');
+        const city = { ...vd, buildings: allenPlaza55?.buildings ?? afterBarclayHotel,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
@@ -785,6 +789,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (theMitchell) world.group.add(theMitchell.group);
         if (renaissanceLofts) world.group.add(renaissanceLofts.group);
         if (barclayHotel) world.group.add(barclayHotel.group);
+        if (allenPlaza55) world.group.add(allenPlaza55.group);
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (olympia) world.group.add(olympia.group);
@@ -809,7 +814,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
-            samNunn, candler, equitable, grady, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
+            samNunn, candler, equitable, grady, allenPlaza55, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
@@ -2019,6 +2024,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       theMitchell?.setNight(night);
       renaissanceLofts?.setNight(night);
       barclayHotel?.setNight(night);
+      allenPlaza55?.setNight(night);
       candler?.setNight(night);
       equitable?.setNight(night);
       olympia?.setNight(night);
