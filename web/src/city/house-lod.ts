@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { landmarkBatchOff } from '../materials/landmark-batch';
 import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 
 /**
@@ -10,6 +12,13 @@ import { World, type BuildingFinish, type VBuilding, type VData } from '../vigne
  * the nearest house in the tile, so it doesn't pop; a 10 % band either side stops it flickering.
  */
 export const SWITCH_M = 1000, TILE_M = 800;
+/** Far tiles merge into blocks of SUPER x SUPER tiles, drawn as one mesh while every tile in it is far. */
+export const SUPER = 3;
+/** `?perf&blocks=off` (or `batch=off`) draws every far tile on its own, for A/B runs from one build. */
+const blocksOff = landmarkBatchOff || (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('blocks') === 'off';
+})();
 type Bounds = VData['bounds'];
 type Finish = (b: VBuilding) => BuildingFinish | undefined;
 export type HouseLodOptions = {
@@ -56,6 +65,8 @@ export class HouseTile extends THREE.LOD {
   nearWorld: World | null = null;
   readonly near = new THREE.Group();
   private showingNear = false;
+  /** Whether the near version is up (after the last update). */
+  get isNear() { return this.showingNear; }
   private readonly box = new THREE.Box3();
   constructor(readonly houses: VBuilding[], readonly o: HouseLodOptions, readonly farWorld: World,
     readonly state: { night: number; wet: number }) {
@@ -93,6 +104,83 @@ export class HouseTile extends THREE.LOD {
   }
 }
 
+/** The one plain mesh a far tile draws, or null when it has none or several. */
+function soleMesh(world: World) {
+  const meshes = world.group.children.filter((m): m is THREE.Mesh => (m as THREE.Mesh).isMesh);
+  if (meshes.length !== 1 || world.group.children.length !== 1) return null;
+  const m = meshes[0];
+  return (m as THREE.InstancedMesh).isInstancedMesh || Array.isArray(m.material) ? null : m;
+}
+
+/**
+ * A block of house tiles. While every tile in it shows its far version, the block draws all of
+ * them as one mesh; otherwise each tile draws its own. Both read the same vertex buffers (each
+ * tile's far mesh is a range of the block's), so nothing is stored twice. A LOD only so the
+ * renderer updates it, before its tiles, in the same pass.
+ */
+export class HouseBlock extends THREE.LOD {
+  constructor(readonly tiles: HouseTile[], readonly merged: THREE.Mesh) {
+    super();
+    for (const t of tiles) t.autoUpdate = false;
+    this.add(...tiles, merged);
+    this.autoUpdate = true;
+  }
+  override update(camera: THREE.Camera) {
+    for (const t of this.tiles) t.update(camera);
+    const far = this.tiles.every(t => !t.isNear);
+    this.merged.visible = far;
+    if (far) for (const t of this.tiles) t.farWorld.group.visible = false;
+  }
+}
+
+/** Merges the tiles' sole far meshes into one buffer; null when they cannot share a draw. */
+function block(tiles: HouseTile[]) {
+  const meshes = tiles.map(t => soleMesh(t.farWorld));
+  if (meshes.some(m => !m)) return null;
+  const ms = meshes as THREE.Mesh[];
+  const mat = ms[0].material as THREE.Material;
+  const key = (m: THREE.Mesh) => {
+    const g = m.geometry, x = m.material as THREE.Material;
+    return [x.type, x.customProgramCacheKey(), m.castShadow, m.receiveShadow, !!g.index, m.matrix.equals(ms[0].matrix),
+      ...Object.entries(g.attributes).sort(([a], [b]) => a < b ? -1 : 1).map(([n, a]) => `${n}${a.itemSize}${(a as THREE.BufferAttribute).array.constructor.name}`)].join('|');
+  };
+  if (ms.some(m => key(m) !== key(ms[0]))) return null;
+  const merged = mergeGeometries(ms.map(m => m.geometry));
+  if (!merged) return null;
+  const indexed = !!merged.index;
+  const range = (start: number, count: number, from?: THREE.BufferGeometry) => {
+    const g = new THREE.BufferGeometry();
+    for (const [n, a] of Object.entries(merged.attributes)) g.setAttribute(n, a);
+    if (merged.index) g.setIndex(merged.index);
+    g.setDrawRange(start, count);
+    if (from) {
+      from.computeBoundingBox(); from.computeBoundingSphere();
+      g.boundingBox = from.boundingBox!.clone(); g.boundingSphere = from.boundingSphere!.clone();
+    }
+    return g;
+  };
+  let start = 0;
+  const box = new THREE.Box3();
+  for (const m of ms) {
+    const old = m.geometry;
+    const count = indexed ? old.index!.count : old.getAttribute('position').count;
+    m.geometry = range(start, count, old);
+    box.union(m.geometry.boundingBox!);
+    start += count;
+    old.dispose();
+  }
+  const all = range(0, start);
+  all.boundingBox = box;
+  all.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+  const mesh = new THREE.Mesh(all, mat);
+  mesh.name = 'houses (far block)';
+  mesh.matrix.copy(ms[0].matrix);
+  mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+  mesh.castShadow = ms[0].castShadow;
+  mesh.receiveShadow = ms[0].receiveShadow;
+  return new HouseBlock(tiles, mesh);
+}
+
 /** Groups houses into tiles by footprint centre, each a LOD of far and (lazily) near versions. */
 export function houseLod(o: HouseLodOptions) {
   const cells = new Map<string, VBuilding[]>();
@@ -108,16 +196,24 @@ export function houseLod(o: HouseLodOptions) {
   group.userData.perf = 'buildings';
   const state = { night: 0, wet: 0 };
   const tiles: HouseTile[] = [];
-  for (const houses of cells.values()) {
+  const blocks = new Map<string, HouseTile[]>();
+  for (const [key, houses] of cells) {
     const tile = new HouseTile(houses, o, build(houses, o, o.far), state);
     if (o.force === 'near') tile.ensureNear();
     tiles.push(tile);
-    group.add(tile);
+    const [cx, cz] = key.split(',').map(Number);
+    const bk = `${Math.floor(cx / SUPER)},${Math.floor(cz / SUPER)}`;
+    (blocks.get(bk) ?? blocks.set(bk, []).get(bk)!).push(tile);
+  }
+  const merged: THREE.Mesh[] = [];
+  for (const members of blocks.values()) {
+    const b = members.length > 1 && !o.force && !blocksOff ? block(members) : null;
+    if (b) { group.add(b); merged.push(b.merged); } else group.add(...members);
   }
   return {
     group, tiles,
     setNight(n: number) { state.night = n; for (const t of tiles) { t.farWorld.setNight(n); t.nearWorld?.setNight(n); } },
     setWet(w: number) { state.wet = w; for (const t of tiles) { t.farWorld.setWet(w); t.nearWorld?.setWet(w); } },
-    dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } group.removeFromParent(); },
+    dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } for (const m of merged) m.geometry.dispose(); group.removeFromParent(); },
   };
 }

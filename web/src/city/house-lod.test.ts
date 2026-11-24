@@ -4,7 +4,7 @@ import type { TerrainCity } from '../terrain/transport-data';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { residential } from './residential';
-import { SWITCH_M, TILE_M, houseLod, takeHouseLodChange } from './house-lod';
+import { HouseBlock, SWITCH_M, TILE_M, houseLod, takeHouseLodChange } from './house-lod';
 
 const rect = (x: number, z: number, w: number, d: number): P2[] => [[x, z], [x + w, z], [x + w, z + d], [x, z + d]];
 // Two streets of houses 1.7 km apart, so they fall in different tiles.
@@ -76,4 +76,29 @@ test('measures the switch to the nearest house, builds one tile per frame, and c
   fresh.tiles[1].update(camera);
   expect(fresh.tiles[1].nearWorld).not.toBeNull();
   fresh.dispose();
+});
+
+test('draws a block of far tiles as one mesh, and each tile on its own once one comes near', () => {
+  const lod = make();
+  const blocks = lod.group.children.filter((c): c is HouseBlock => c instanceof HouseBlock);
+  expect(blocks).toHaveLength(1);
+  const [b] = blocks;
+  const camera = new THREE.PerspectiveCamera();
+  const drawn = () => { const out: THREE.Mesh[] = []; lod.group.traverseVisible(m => { if (m instanceof THREE.Mesh) out.push(m); }); return out; };
+  camera.position.set(900, 3000, 0); camera.updateMatrixWorld();
+  lod.group.updateMatrixWorld(true);
+  takeHouseLodChange();
+  b.update(camera);
+  expect(drawn()).toEqual([b.merged]);
+  // The tiles' far meshes are ranges of the block's buffer.
+  const ranges = lod.tiles.map(t => (t.farWorld.group.children[0] as THREE.Mesh).geometry);
+  expect(ranges.every(g => g.attributes.position === b.merged.geometry.attributes.position)).toBe(true);
+  expect(ranges.reduce((n, g) => n + g.drawRange.count, 0)).toBe(b.merged.geometry.drawRange.count);
+  camera.position.set(90, 150, 0); camera.updateMatrixWorld();
+  takeHouseLodChange();
+  b.update(camera);
+  expect(b.merged.visible).toBe(false);
+  expect(lod.tiles[0].near.visible).toBe(true);
+  expect(lod.tiles[1].farWorld.group.visible).toBe(true);
+  lod.dispose();
 });
