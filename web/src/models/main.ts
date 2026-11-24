@@ -74,6 +74,10 @@ const models = {
   s70: 'Siemens S70 streetcar',
   cm44ac: 'GE/Wabtec CM44AC, CSX-like',
   cm44acNs: 'GE AC44-type, NS-like',
+  es44acNs: 'GE ES44AC, NS-like',
+  es44ah: 'GE ES44AH, CSX-like',
+  sd70ace: 'EMD SD70ACe, NS-like',
+  gp382: 'EMD GP38-2, CSX-like',
   ...stockNames, crescent: 'Full Crescent consist',
   walker: 'Walker',
   cyclist: 'Cyclist and bicycle',
@@ -90,6 +94,7 @@ const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIS
 const SPECIES_NOTES: Record<string, string> = {
   generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
   'willow-oak': 'Downtown’s street oak: a straight trunk under a dense oval crown of fine, narrow leaves; yellow-brown to russet late in the fall. ',
+  'white-oak': 'A broad irregular crown on pale spreading limbs, rounded-lobed blue-green leaves, wine-red to russet fall colour, and a few brown leaves held into winter. ',
   'water-oak': 'The yard and woods oak: a short trunk splitting into big ascending leaders under a wider, more open crown of small spatulate leaves; a yellow week in late fall, and some leaves held into winter. ',
   'loblolly-pine': 'The tall pine of Atlanta’s yards and woods: a long clear red-brown trunk under a high, open, irregular crown, its needles in tufts at the tips of bare twigs. Evergreen; the inner needles brown and drop in fall. ',
   'tulip-poplar': 'The city’s tallest tree: a straight column of trunk under a narrow oval crown of big square-tipped leaves, golden yellow early in the fall and bare by mid-November. ',
@@ -470,7 +475,7 @@ function build() {
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 'cm44acNs' || model === 's70' || passenger);
+  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 'cm44acNs' || ['es44acNs', 'es44ah', 'sd70ace', 'gp382'].includes(model) || model === 's70' || passenger);
   longTrack.visible = model === 'crescent';
   if (longTrack.visible) track.visible = false;
   ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
@@ -526,6 +531,23 @@ function build() {
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/atlanta-streetcar.md';
     link.textContent = 'Dimensions and reference photos';
     blurb.append(link);
+    return;
+  }
+  if (model === 'es44acNs' || model === 'es44ah' || model === 'sd70ace' || model === 'gp382') {
+    const mesh = new THREE.Mesh(freightGeometry(model, { leadFront: true }), passengerMaterial(night));
+    mesh.position.y = .125;
+    mesh.castShadow = mesh.receiveShadow = true;
+    scene.add(mesh); cars = [mesh];
+    const blurb = document.getElementById('blurb')!;
+    blurb.textContent = ({
+      es44acNs: 'GE Evolution-series road locomotive with the long flared radiator, in an NS-like black and white scheme. ',
+      es44ah: 'GE Evolution-series road locomotive with the long flared radiator, in a CSX-like blue-grey and yellow scheme. ',
+      sd70ace: 'EMD road locomotive with a broad safety cab, brow headlights and six-axle running gear, in an NS-like scheme. ',
+      gp382: 'Compact EMD road-switcher with a narrow short hood and four-axle Blomberg trucks, in a CSX-like scheme. ',
+    })[model] + 'Lab study; no logos or numbers. ';
+    const link = document.createElement('a');
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/freight-variety.md';
+    link.textContent = 'Dimensions and reference photos'; blurb.append(link);
     return;
   }
   if (model === 'cm44ac' || model === 'cm44acNs') {
@@ -797,7 +819,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, cm44acNs: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || ['es44acNs', 'es44ah', 'sd70ace', 'gp382'].includes(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, cm44acNs: FREIGHT_VIEWS, es44acNs: FREIGHT_VIEWS, es44ah: FREIGHT_VIEWS, sd70ace: FREIGHT_VIEWS, gp382: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -811,7 +833,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', 'cm44acNs', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', 'cm44acNs', 'es44acNs', 'es44ah', 'sd70ace', 'gp382', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;

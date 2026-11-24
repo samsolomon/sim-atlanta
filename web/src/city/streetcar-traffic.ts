@@ -56,8 +56,9 @@ export function streetcarTraffic(rf: RoutesFile, origin:{lon:number;lat:number},
   return (course:TrafficCourse):MovingBlocks|undefined=>{
     if(course.closed)return;
     const height=(s:number)=>{
-      const p=course.line.at(s),road=course.roads[Math.floor(course.line.vertexAt(s))];
-      return roadHeight(p.x,p.z,road);
+      // A projection may land exactly on the final vertex, which has no outgoing segment.
+      const p=course.line.at(s),road=course.roads[Math.min(course.roads.length-1,Math.floor(course.line.vertexAt(s)))];
+      return road ? roadHeight(p.x,p.z,road) : null;
     };
     // Bind only courses with a same-level parallel overlap. Sample the rail at
     // 5 m spacing once, not every road and rail segment on every frame.
