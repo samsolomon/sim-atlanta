@@ -19,3 +19,9 @@ The hood, fenders, headlamp pods, grille surround and grille bars have separate 
 ## Distance treatment
 
 Each mesh packs into one vertex-colour draw. The close sedan has 1,890 triangles and the close tractor has 4,150. The distant forms have 538 and 958 respectively, omitting fine fittings and simplifying wheel geometry. Native City comparisons use the distant forms; street-eye and Model Lab use the close forms. The study is isolated from the traffic renderer and has no fleet performance result.
+
+## Rendered comparison
+
+[Model Lab three-quarter](finish-lab.jpg) · [Street-eye front](finish-eye.jpg) · [Street-eye rear](finish-rear.jpg) · [Native City](finish-city.jpg)
+
+Model geometry is pinned to cf949119 and the original forms to 0d5a45ca. Both revisions use the same neutral body paint, camera and lighting within each pair. Model Lab uses its normal shadow, ink and grade passes. At Spring Street and 10th Street, the frozen illustrative traffic pose is (222.456, −29.273, −3079.872) m at 14:00 Eastern on November 23. The City scene uses its normal compositor. Street-eye height is 1.6 m above sampled ground. The 150 m orbit frames include 1:1 centre crops at the original pixel density. The rear tractor close-up emphasizes the coupling and rear axles; the lab view shows its full length.
