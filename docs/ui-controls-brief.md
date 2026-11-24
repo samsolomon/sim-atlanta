@@ -550,6 +550,68 @@ The canvas is private, so the approved boards are copied into this branch:
   (54 px on the 390×844 board). The dock sits 34 px from the bottom, above the
   home indicator.
 
+### Glass over City: performance budget (2026-11-24)
+
+Measured on production with the scene held fixed: CSS `backdrop-filter` over the City
+canvas costs about 15 fps on an M5 MacBook Air (44 fps shipped, 59 without the blur, 60
+with no DOM) and about 4 fps on the Galaxy A16 (26, 30, 33). Sam's bar is "extremely fast,
+never laggy", desktop included. The look stays; how it's made changes.
+
+- **No CSS `backdrop-filter` over the City canvas.** City's final pass draws each glass
+  rect's blurred, tinted backing ("in-canvas glass"); the DOM panel above keeps its fill
+  gradient, edge, inset highlight, shadow, radius and content, and drops the filter.
+  CSS `backdrop-filter` stays where there is no City canvas behind the panel (2D Map).
+  Models has its own WebGL canvas: use in-canvas glass there too if the lab shows the
+  same cost, otherwise CSS.
+- **The canvas must still be presented directly:** panels add no filters, blend modes,
+  `opacity` < 1 on ancestors of the canvas, or other effects that force the browser to
+  composite the canvas through an extra copy.
+- **Budget:** with every always-on surface shown, City may be at most **1 fps / 0.5 ms**
+  slower than with no DOM on the M5 Air (high detail) and at most **1 fps** on the A16.
+  Transient panels (menu, sheets, popovers) may add up to 1 ms more while open.
+- **Low tier fallback:** if the shader glass can't meet the budget on a device, draw the
+  backing without blur (saturated, tinted only, alpha raised to .90/.82 day) rather than
+  dropping frames.
+
+**Values the shader must match** (CSS semantics, so the two paths look identical):
+
+| | Day | Night |
+|---|---|---|
+| Blur | Gaussian, σ = 22 CSS px (× devicePixelRatio in device px); a downsampled Kawase or dual-filter blur is fine if it looks the same | same |
+| Saturation of the blurred backdrop | 1.35 (CSS `saturate()` matrix, applied after the blur) | 1.35 |
+| Tint over it (the DOM fill, unchanged) | `linear-gradient(160deg, rgba(252,250,245,.80), rgba(243,239,230,.68))` | `rgba(38,44,56,.70)` → `rgba(20,24,32,.62)`, 160deg |
+| Long-text panels (menu, About, browser) | alphas .84–.92 / .74–.86 | +0.08 alpha |
+| Edge, highlight, shadow | stay in the DOM: see "Glass" above | same |
+| Shape | rounded rect matching the panel's `border-radius` (16; 14 camera pieces; 12 hint, notices and Details; 20 phone card; 24 phone sheet tops; round compass) | same |
+
+The shader only needs the blurred + saturated backdrop inside each rounded rect; the
+DOM's semi-transparent fill supplies the tint. Rects come from the panels'
+`getBoundingClientRect()` each frame they move (open/close and sheet drags animate).
+
+**Glass area** (cost scales with it; 1296×726 desktop board, 390×844 phone):
+
+| Surface | Desktop size | Phone | When |
+|---|---|---|---|
+| Place card | ~262×120 | ~322×100 | always |
+| Camera group: compass, zoom, 3D + tilt | 44² + 44×88 + 44×110 | compass + 3D, 2 × 44² | always (steps aside for the right panel) |
+| Dock | ~556×52 | full width × 52 | always |
+| **Always-on total** | **≈ 71k px, 7.5% of the screen** | **≈ 55k px, 17%** | |
+| First-visit hint | ~600×40 | full width × ~56 | first visit only |
+| Notices ("Building the city…") | ~180×34 | same | loading, briefly |
+| Detail panel (train) | 360 × ~300 | compact card full width × ~150; expanded sheet up to ~75% of the screen | while selected |
+| Time & weather | 372 × ~480 (replaces the card) | sheet ~60% | while open |
+| Menu | 320 × ~420 | sheet ~55% | while open |
+| Search | 380 × ~280 | full screen | while open |
+| Share | 340 × ~300 | sheet ~45% | while open |
+| Radio | 300 × 64 | full width × 64 | while open |
+| Off-area popover | 230 × ~110 | 220 × ~110 | rare |
+| Models browser / Details | 400 × full height / 300 × ~260 | sheets | Models only (not over City) |
+
+New in `ui-frosted-glass` versus the shipped A2c shell: the centred dock (wider than the
+old app bar), the separate camera-group pieces, the hint, the radio popover, the search
+results, the off-area popover, the phone compact card and the larger phone sheets. The
+biggest always-on cost is the dock; the biggest transient ones are the phone sheets.
+
 ### Type and sizes
 
 System UI sans throughout.
