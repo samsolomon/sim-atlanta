@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | FAIL | 100 Colony Square (#438) | large | skins-6 | Rework stacked on #554 |
 | FIXED (pending train 8) | 400 Colony Square (#462) | large | skins-7 | Rework #554 v2 approved by lead: vertical stripes and 14th-floor band read at 420 m |
-| FAIL | 1075 Peachtree (#416) | large | skins-4 | Rework after #522; glass value waits for Sam's palette pick (two money shots) |
+| FIXED (held for glass pick) | 1075 Peachtree (#416) | large | skins-4 | Rework #573 approved by lead; glass value waits for Sam (see glass-palette.md) |
 | FAIL | Norfolk Southern HQ (#507) | large | skins-5 | Rework after Ansley |
 | FAIL | JW Marriott Downtown (#522) | large | skins-4 | Rework queued, ahead of Rambler |
 | FAIL | Marquis One (#393) | large | skins-1 | Rework under way, paired with Marquis Two |
