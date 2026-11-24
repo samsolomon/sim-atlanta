@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shareUrl } from './share';
+import { sharePlace, shareUrl } from './share';
 import { formatCityCamera, parseCityCamera } from '../core/camera';
 
 const at = new Date('2026-11-21T02:30:00Z');
@@ -33,5 +33,17 @@ describe('model links', () => {
     expect(url.searchParams.get('model')).toBe('cq400');
     expect(url.searchParams.has('ui')).toBe(false);
     expect(url.searchParams.has('t')).toBe(false);
+  });
+});
+
+describe('static share routes', () => {
+  it('identifies the staged camera and clears a stale share path after moving away', () => {
+    const staged = sharePlace({ view: 'city', cam: '333,545,-30,55,330' }, null);
+    expect(staged).toEqual({ path: '/s/view-capitol/', title: 'State Capitol dome · Sim Atlanta' });
+    const target = { view: 'map' as const, hash: '#12/35/-83', selection: { kind: 'train', id: 'x:y:7' } };
+    const url = new URL(shareUrl('https://sim.example/s/view-capitol/', target, 'live', at, sharePlace(target, null).path));
+    expect(url.pathname).toBe('/');
+    expect(url.searchParams.get('train')).toBe('x:y:7');
+    expect(url.hash).toBe(target.hash);
   });
 });

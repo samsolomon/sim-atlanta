@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "note": "Station picked from the scene clock: the station whose [start,end) local hours contain it. Tracks shuffle within a station.",
+  "stations": [
+    {
+      "id": "glasshouse",
+      "name": "Glasshouse 94.1",
+      "description": "Soft keys, pads and piano",
+      "defaultHours": [
+        5,
+        11
+      ],
+      "tracks": [
+        {
+          "id": "lumen-commuter--paper-kites",
+          "artist": "Lumen Commuter",
+          "title": "Paper Kites",
+          "src": "music/tracks/lumen-commuter--paper-kites.mp3",
+          "cover": {
+            "small": "music/covers/lumen-commuter-128.webp",
+            "large": "music/covers/lumen-commuter-512.webp"
+          },
+          "durationS": 150.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "lumen-commuter--soft-focus",
+          "artist": "Lumen Commuter",
+          "title": "Soft Focus",
+          "src": "music/tracks/lumen-commuter--soft-focus.mp3",
+          "cover": {
+            "small": "music/covers/lumen-commuter-128.webp",
+            "large": "music/covers/lumen-commuter-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "lumen-commuter--something-small-demo",
+          "artist": "Lumen Commuter",
+          "title": "Something Small (Demo)",
+          "src": "music/tracks/lumen-commuter--something-small-demo.mp3",
+          "cover": {
+            "small": "music/covers/lumen-commuter-128.webp",
+            "large": "music/covers/lumen-commuter-512.webp"
+          },
+          "durationS": 158.6,
+          "source": "coded"
+        },
+        {
+          "id": "feltwork--umbrella-weather",
+          "artist": "Feltwork",
+          "title": "Umbrella Weather",
+          "src": "music/tracks/feltwork--umbrella-weather.mp3",
+          "cover": {
+            "small": "music/covers/feltwork-128.webp",
+            "large": "music/covers/feltwork-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "lanternfish--low-tide-lights",
+          "artist": "Lanternfish",
+          "title": "Low Tide Lights",
+          "src": "music/tracks/lanternfish--low-tide-lights.mp3",
+          "cover": {
+            "small": "music/covers/lanternfish-128.webp",
+            "large": "music/covers/lanternfish-512.webp"
+          },
+          "durationS": 150.0,
+          "source": "elevenlabs"
+        }
+      ]
+    },
+    {
+      "id": "sol-cafe",
+      "name": "Sol Café 101.7",
+      "description": "Sunny, plucky and jazzy",
+      "defaultHours": [
+        11,
+        17
+      ],
+      "tracks": [
+        {
+          "id": "cafe-interlock--lemon-ice",
+          "artist": "Café Interlock",
+          "title": "Lemon Ice",
+          "src": "music/tracks/cafe-interlock--lemon-ice.mp3",
+          "cover": {
+            "small": "music/covers/cafe-interlock-128.webp",
+            "large": "music/covers/cafe-interlock-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "pocket-parade--cartwheels",
+          "artist": "Pocket Parade",
+          "title": "Cartwheels",
+          "src": "music/tracks/pocket-parade--cartwheels.mp3",
+          "cover": {
+            "small": "music/covers/pocket-parade-128.webp",
+            "large": "music/covers/pocket-parade-512.webp"
+          },
+          "durationS": 150.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "sundial-social-club--lido-hours",
+          "artist": "Sundial Social Club",
+          "title": "Lido Hours",
+          "src": "music/tracks/sundial-social-club--lido-hours.mp3",
+          "cover": {
+            "small": "music/covers/sundial-social-club-128.webp",
+            "large": "music/covers/sundial-social-club-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        }
+      ]
+    },
+    {
+      "id": "velvet",
+      "name": "Velvet 97.9",
+      "description": "Instrumental R&B",
+      "defaultHours": [
+        17,
+        22
+      ],
+      "tracks": [
+        {
+          "id": "velour-avenue--slow-honey",
+          "artist": "Velour Avenue",
+          "title": "Slow Honey",
+          "src": "music/tracks/velour-avenue--slow-honey.mp3",
+          "cover": {
+            "small": "music/covers/velour-avenue-128.webp",
+            "large": "music/covers/velour-avenue-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "velour-avenue--half-past-midnight",
+          "artist": "Velour Avenue",
+          "title": "Half Past Midnight",
+          "src": "music/tracks/velour-avenue--half-past-midnight.mp3",
+          "cover": {
+            "small": "music/covers/velour-avenue-128.webp",
+            "large": "music/covers/velour-avenue-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "satin-hours--candlewax",
+          "artist": "Satin Hours",
+          "title": "Candlewax",
+          "src": "music/tracks/satin-hours--candlewax.mp3",
+          "cover": {
+            "small": "music/covers/satin-hours-128.webp",
+            "large": "music/covers/satin-hours-512.webp"
+          },
+          "durationS": 170.0,
+          "source": "elevenlabs"
+        }
+      ]
+    },
+    {
+      "id": "afterglow",
+      "name": "Afterglow 88.5",
+      "description": "Synth-pop and synthwave",
+      "defaultHours": [
+        22,
+        5
+      ],
+      "tracks": [
+        {
+          "id": "coral-neon--pastel-static",
+          "artist": "Coral Neon",
+          "title": "Pastel Static",
+          "src": "music/tracks/coral-neon--pastel-static.mp3",
+          "cover": {
+            "small": "music/covers/coral-neon-128.webp",
+            "large": "music/covers/coral-neon-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "neon-interchange--rearview-summer",
+          "artist": "Neon Interchange",
+          "title": "Rearview Summer",
+          "src": "music/tracks/neon-interchange--rearview-summer.mp3",
+          "cover": {
+            "small": "music/covers/neon-interchange-128.webp",
+            "large": "music/covers/neon-interchange-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        },
+        {
+          "id": "polaroid-coast--streetlight-bloom",
+          "artist": "Polaroid Coast",
+          "title": "Streetlight Bloom",
+          "src": "music/tracks/polaroid-coast--streetlight-bloom.mp3",
+          "cover": {
+            "small": "music/covers/polaroid-coast-128.webp",
+            "large": "music/covers/polaroid-coast-512.webp"
+          },
+          "durationS": 180.0,
+          "source": "elevenlabs"
+        }
+      ]
+    }
+  ]
+}
