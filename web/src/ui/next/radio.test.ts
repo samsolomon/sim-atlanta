@@ -343,4 +343,22 @@ describe('radio engine', () => {
     expect(r.buffering).toBe(false);
     expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
   });
+
+  it('skips to the next track when the stream is cut off mid-track, and stops after two failures in a row', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const a = mp3()[0];
+    a.emit('playing');
+    const first = r.track;
+    a.emit('error');
+    await flush();
+    expect(r.playing).toBe(true);
+    expect(r.track).not.toBe(first);
+    const b = mp3().find((e) => e !== a)!;
+    b.emit('error'); // the next one fails too, before it ever sounded: the network is down
+    await flush();
+    expect(r.playing).toBe(false);
+  });
 });

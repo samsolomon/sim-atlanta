@@ -60,6 +60,16 @@ export function streamSource(url: string, signal: AbortSignal, d: SourceDeps): P
   };
   ms.addEventListener('sourceopen', () => {
     if (sb) return;
+    if (failed) {
+      // The fetch failed before any element attached (a prefetch): end at once, so the element
+      // reports an error instead of waiting for data that will never come.
+      try {
+        ms.endOfStream('network');
+      } catch {
+        /* detached */
+      }
+      return;
+    }
     sb = ms.addSourceBuffer('audio/mpeg');
     sb.addEventListener('updateend', pump);
     pump();

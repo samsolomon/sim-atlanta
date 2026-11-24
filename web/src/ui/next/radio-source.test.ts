@@ -93,4 +93,13 @@ describe('radio source', () => {
     expect(await trackSource('/a.mp3', new AbortController().signal, deps())).toBe('blob:mediasource');
     expect(await trackSource('/a.mp3', new AbortController().signal, deps({ userAgent: SAFARI_IOS, MediaSource: undefined }))).toBe('blob:6');
   });
+
+  it('stream path: a fetch that fails before any element attaches ends the stream on attach', async () => {
+    await streamSource('/a.mp3', new AbortController().signal, deps({ fetch: streamingFetch([[1]], { failAt: 0 }) }));
+    const ms = FakeMediaSource.last;
+    await settle(); // the prefetch fails while nothing is attached
+    ms.open();
+    expect(ms.ended).toEqual(['network']);
+    expect(ms.sb.appended).toEqual([]);
+  });
 });

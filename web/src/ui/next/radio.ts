@@ -325,6 +325,18 @@ export function createRadio(o: RadioOptions): Radio {
     }
   }
 
+  /** Failures in a row; reset whenever a track sounds. Two in a row (say, offline) stop the radio
+   * rather than racing through the station. */
+  let strikes = 0;
+  /** A media error after the file was assigned (a stream cut off mid-track, a bad file). */
+  function onError(d: Deck) {
+    if (!sounding(d) || !playing) return;
+    if (d.role === 'outgoing') return retire(d);
+    if (++strikes >= 2) return failed(d);
+    if (fading && d === fading.inc) return failed(d);
+    if (d.role === 'primary') crossfade(0);
+  }
+
   function onTime(d: Deck) {
     if (!playing || !d.track || !sounding(d)) return;
     const t = d.el.currentTime;
@@ -348,6 +360,7 @@ export function createRadio(o: RadioOptions): Radio {
 
   function onPlaying(d: Deck) {
     if (!sounding(d)) return;
+    strikes = 0;
     if (!d.heard) {
       d.heard = true;
       changed();
@@ -448,6 +461,7 @@ export function createRadio(o: RadioOptions): Radio {
       el.addEventListener('timeupdate', () => onTime(d));
       el.addEventListener('playing', () => onPlaying(d));
       el.addEventListener('ended', () => onEnded(d));
+      el.addEventListener('error', () => onError(d));
       el.src = silence;
       void el.play().then(() => { if (d.role === 'idle') el.pause(); }, () => undefined);
       return d;
