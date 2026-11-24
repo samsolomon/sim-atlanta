@@ -3538,3 +3538,7 @@ Each transport mesh now orders its triangles so the parts that still read at tha
 On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
 
 [Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
+
+### 2026-11-24 · The Crowne Plaza was 17 m shorter
+
+The second of the two unnamed masses near the North Avenue and Connector sightline is a 1972 slab at 590 West Peachtree. OSM tags it 4 levels and 98 m. A hotel listing names it the Crowne Plaza Atlanta Midtown, and the 2019 lidar puts its roof at 81 m, so City had been drawing it 17 m too tall next to One Georgia Center. Street View shows a white slab with blank ends and a white grid of piers and floor slabs on its long faces. That grid comes to about 620 triangles, roughly routine-skin size. The first window glass sent the shaded faces navy (S 91), so the base went paler, landing sunlit glass at S 8 and V 47. [Before and after](log/ui/crowne-plaza-midtown/compare.jpg)
