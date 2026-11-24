@@ -172,7 +172,7 @@ const GINKGO_RENDERINGS: Renderings = {
 };
 const lookRenderings = (look: Look): Renderings => ({
   ids: look.options.map(o => o.id),
-  preferred: look.options[0].id,
+  preferred: look.preferred ?? look.options[0].id,
   label: id => look.options.find(o => o.id === id)?.label ?? id,
   compares: [
     { id: 'all', label: 'Compare all', set: look.options.filter(o => /^[A-Z]$/.test(o.id)).map(o => o.id) },
@@ -186,7 +186,7 @@ const lookRenderings = (look: Look): Renderings => ({
   }).join(' '),
 });
 const RENDERINGS: Record<string, Renderings> = { ginkgo: GINKGO_RENDERINGS, ...Object.fromEntries(LOOKS.map(l => [l.species.id, lookRenderings(l)])) };
-let rendering = new URLSearchParams(location.search).get('variant') ?? 'current';
+let rendering = new URLSearchParams(location.search).get('variant') ?? LOOKS.find(l => l.species.id === model)?.preferred ?? 'current';
 let treeCount = Number(new URLSearchParams(location.search).get('n')) || 1;
 let scaleFigure: ReturnType<typeof createFigurePreview> | undefined;
 // Trees follow the City clock's date: ?t= as in City, otherwise today in Atlanta.
