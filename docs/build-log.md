@@ -2988,3 +2988,7 @@ The photograph of 9001 shows a rounded purple roofline above the windshield. The
 ### 2026-11-23 — Callery pear starts with a white March bloom
 
 The first Model Lab study follows the oval Bradford form. Four sizes share an upright grey skeleton, white flowers on fine twig cards, glossy green A cards and late burgundy fall foliage. The first test with detached flower chips left white flecks hanging above bare wood. Reusing the paired redbud twig cards put every cluster back on a branch, using space in the existing oval atlas. At 193 / 138 triangles the mature tree still fits both budgets. [Seasonal and distance sheet](log/ui/tree-species/options-callery-pear.jpg). Lab study only. Web rebuild required for release.
+
+### 2026-11-23 — Callery pear fills out below the fork
+
+The first pear looked like white twigs above a long pole. The larger trees now fork at about 2 m, and a broad teardrop holds both the summer leaf cards and the March flower mass. Separate petal cards made the biggest difference at distance. The 300 m high-detail crown mask grew from 181 to 1,638 pixels, and the white mass reads on the ordinary Lab backdrop. A small late cluster can remain at leaf-out after the large flower cards have fallen. The mature tree costs 195 / 141 triangles, and July Front luminance is 0.242 / 0.250 against the generic canopy’s 0.248. [Side-by-side sheet with distance, winter and summer](log/ui/tree-species/options-callery-pear.jpg).

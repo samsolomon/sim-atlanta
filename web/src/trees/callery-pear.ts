@@ -5,13 +5,14 @@ import { broadleafSpecies, keyedCalendar, type Look } from './looks';
 import { polar, type Seg } from './species';
 
 const habit: Habit = {
-  trunkTop: 0.4, crownBase: 0.25, widest: 0.56,
+  trunkTop: 0.25, crownBase: 0.13, widest: 0.36,
   limbs: { high: 4, low: 3 }, limbAngle: 1.1, limbFrom: [0.24, 0.37], limbReach: 0.9,
   ragged: 0.065, bark: '#736c65', barkDark: '#605a54',
-  mass: { r: 0.7, low: -0.54, high: 0.88 },
+  mass: { r: 0.68, low: -0.76, high: 0.77 },
+  tiers: { high: [3, 4, 2], low: [3, 2, 1] },
   bySize: {
-    sapling: { crownBase: 0.34, widest: 0.52 },
-    specimen: { widest: 0.63, limbAngle: 0.86 },
+    sapling: { crownBase: 0.21, widest: 0.49 },
+    specimen: { widest: 0.38 },
   },
 };
 const palette = keyedCalendar([
@@ -20,8 +21,8 @@ const palette = keyedCalendar([
   { m: 3, d: 6, leaves: 0, a: '#83a561', b: '#98b56e', bloom: 1, label: 'white flower clusters on bare wood' },
   { m: 3, d: 18, leaves: 0, a: '#83a561', b: '#98b56e', bloom: 1, label: 'white flower clusters on bare wood' },
   { m: 3, d: 27, leaves: 0.38, a: '#83a561', b: '#98b56e', bloom: 0.12, label: 'last flowers and pale green leaves' },
-  { m: 4, d: 12, leaves: 1, a: '#567f53', b: '#6a925c', label: 'glossy green leaves' },
-  { m: 10, d: 20, leaves: 1, a: '#567f53', b: '#6a925c', label: 'glossy green leaves' },
+  { m: 4, d: 12, leaves: 1, a: '#598656', b: '#6e9a5f', label: 'glossy green leaves' },
+  { m: 10, d: 20, leaves: 1, a: '#598656', b: '#6e9a5f', label: 'glossy green leaves' },
   { m: 11, d: 11, leaves: 0.94, a: '#934532', b: '#bc6851', label: 'bronze red' },
   { m: 11, d: 25, leaves: 0.84, a: '#74384d', b: '#a65666', carpet: 0.3, label: 'late burgundy foliage' },
   { m: 12, d: 17, leaves: 0, a: '#605a54', b: '#736c65', carpet: 1, label: 'bare over fallen leaves' },
@@ -49,18 +50,23 @@ export const calleryPear: typeof base = {
   form(size, quality, dims) {
     const form = base.form(size, quality, dims);
     const trunk = form.segs[0];
-    trunk.b = [0, size === 'sapling' ? 0.31 : 0.27, 0];
+    trunk.b = [0, Math.min(0.25, 2 / dims.heightM), 0];
     trunk.r1 = trunk.r0 * 0.66;
     const count = quality === 'high' ? 4 : 3;
     const boughs: Seg[] = [];
     for (let i = 0; i < count; i++) {
       const angle = i * 2 * Math.PI / count + (i % 2 ? 0.18 : -0.06);
       const rise = [0.16, 0.02, 0.13, 0.07][i];
-      const elbow = polar(angle, 0.28, 0.44 + rise * 0.5);
-      const tip = polar(angle + 0.13, 0.65 - rise, 0.6 + rise);
+      const elbow = polar(angle, 0.35, 0.34 + rise * 0.45);
+      const tip = polar(angle + 0.13, 0.76 - rise, 0.59 + rise);
       const radius = trunk.r0 * (0.52 - i * 0.055);
       boughs.push({ a: trunk.b, b: elbow, r0: radius, r1: radius * 0.61, sides: 3, color: habit.barkDark });
       boughs.push({ a: elbow, b: tip, r0: radius * 0.61, r1: 0, sides: 3, color: habit.bark });
+    }
+    // Close-set leaders rise through the middle without pushing the outer crown up.
+    for (let i = 0; i < (quality === 'high' ? 2 : 1); i++) {
+      boughs.push({ a: trunk.b, b: polar(1.5 + i * 3.2, 0.33, 0.75 + i * 0.07),
+        r0: trunk.r0 * 0.34, r1: 0, sides: 3, color: habit.barkDark });
     }
     form.segs = [trunk, ...boughs];
     return form;
@@ -68,8 +74,8 @@ export const calleryPear: typeof base = {
 };
 export const calleryPearLook: Look = {
   species: calleryPear, habit, leaf: 'oval', palette,
-  bloomColour, bloomFill: 0.6, branchBloom: true,
-  options: [{ id: 'A', label: 'Oval crown', technique: 'cards', ink: 2, specks: 0.05,
-    units: { high: 21, low: 13 }, cover: 0.94,
-    note: 'Upright grey branches, white March flower clusters, glossy oval leaves and late burgundy foliage.' }],
+  bloomColour, bloomFill: 0.52, branchBloom: 'crown',
+  options: [{ id: 'A', label: 'Broad teardrop crown', technique: 'cards', ink: 2, specks: 0.05,
+    units: { high: 20, low: 13 }, cover: 1.12,
+    note: 'Low upright boughs carry a full crown of white March bloom, glossy oval leaves in July and late burgundy foliage.' }],
 };

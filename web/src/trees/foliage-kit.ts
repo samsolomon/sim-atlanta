@@ -179,7 +179,8 @@ export function leafAtlas(shape: LeafShape): THREE.Texture | null {
       const branchFans = shape === 'cordate' || shape === 'oval';
       g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`;
       g.fillRect(ox + 2, oy + 2, CELL - 4, (branchFans ? CELL * 0.54 : CELL) - 4);
-      if (branchFans) paintBranchFans(g, ox, oy);
+      if (branchFans) paintBranchFans(g, ox, oy, shape === 'cordate');
+      if (shape === 'oval') paintFlowerMass(g, ox + BLOOM_X, oy + FAN_TOP);
       continue;
     }
     // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).
@@ -468,7 +469,7 @@ vSpeckPos = transformed;
 /** Matched winter and spring tiles, with padding between the solid fill and both fan tiles. */
 const FAN_TILE = 108, FAN_TOP = 143, WOOD_X = 8, BLOOM_X = 140;
 
-function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
+function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number, withFlowers: boolean) {
   const random = rng(483);
   const stroke = (x: number, y: number, bx: number, by: number, width: number, flowerSpacing: number) => {
     g.strokeStyle = '#e0d8cb';
@@ -487,7 +488,7 @@ function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
         g.beginPath();
         g.ellipse(cx + (random() - 0.5) * 4.8, cy + (random() - 0.5) * 4.8,
           0.8 + random() * 1.35, 0.65 + random() * 1.3, random() * Math.PI, 0, Math.PI * 2);
-        g.fill();
+        if (withFlowers) g.fill();
       }
     }
   };
@@ -506,14 +507,60 @@ function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
   }
 }
 
+/** Overlapping white corymbs in the pear's flower tile, with a loose edge and a dense centre. */
+function paintFlowerMass(g: CanvasRenderingContext2D, ox: number, oy: number) {
+  const random = rng(712);
+  for (let i = 0; i < 480; i++) {
+    const a = random() * Math.PI * 2;
+    const r = 48 * Math.sqrt(random());
+    const x = ox + 54 + Math.cos(a) * r;
+    const y = oy + 54 + Math.sin(a) * r * 0.93;
+    const turn = random() * Math.PI;
+    const petal = 1.15 + random() * 0.9;
+    g.fillStyle = i % 7 === 0 ? '#ddd' : i % 3 === 0 ? '#eee' : '#fff';
+    g.beginPath();
+    for (let k = 0; k < 5; k++) {
+      const angle = turn + k * Math.PI * 2 / 5;
+      const px = x + Math.cos(angle) * petal, py = y + Math.sin(angle) * petal;
+      g.moveTo(px + petal, py);
+      g.arc(px, py, petal, 0, Math.PI * 2);
+    }
+    g.fill();
+  }
+}
+
+const fanUV = (x: number) => [[0, 1], [1, 1], [1, 0], [0, 0]].map(([u, v]) =>
+  cellUV(SOLID, (x + u * FAN_TILE) / CELL, 1 - (FAN_TOP + v * FAN_TILE) / CELL));
+
+/** Dense bloom across the crown, with its own petal texture and no dependency on leaf-out. */
+export function crownBlossoms(b: FoliageBuilder, units: Unit[], seed: number) {
+  const random = rng(seed);
+  const up = new THREE.Vector3(0, 1, 0);
+  const uv = fanUV(BLOOM_X);
+  for (const [i, u] of units.entries()) {
+    const c = new THREE.Vector3(...u.c);
+    const normal = new THREE.Vector3(...u.n).setY((random() - 0.5) * 1.25);
+    if (normal.lengthSq() < 0.05) normal.set(Math.cos(u.tone * 8), 0.3, Math.sin(u.tone * 8));
+    normal.normalize();
+    const across = up.clone().cross(normal).normalize();
+    const rise = normal.clone().cross(across);
+    // Dense cards fall away before leaf-out. A small late cluster can linger on the wood.
+    const w = u.r * (i === 0 ? 0.46 : 1.5);
+    const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) =>
+      c.clone().addScaledVector(across, x * w).addScaledVector(rise, y * w * 0.99));
+    const order = 0.24 + random() * 0.74;
+    const opensAt = i === 0 ? 0.045 : order;
+    b.tri([p[0], p[1], p[2]], WHITE, u, [uv[0], uv[1], uv[2]], opensAt);
+    b.tri([p[0], p[2], p[3]], WHITE, u, [uv[0], uv[2], uv[3]], opensAt);
+  }
+}
+
 /** Cards rooted in the scaffold, with fine wood and seasonal blossoms sharing the same pattern. */
-export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: number) {
+export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: number, withFlowers: boolean) {
   const random = rng(seed);
   const scale = new THREE.Vector3(d.spreadM / 2, d.heightM, d.spreadM / 2);
   const up = new THREE.Vector3(0, 1, 0);
   const wood = new THREE.Color('#76635a');
-  const quadUV = (x: number) => [[0, 1], [1, 1], [1, 0], [0, 0]].map(([u, v]) =>
-    cellUV(SOLID, (x + u * FAN_TILE) / CELL, 1 - (FAN_TOP + v * FAN_TILE) / CELL));
   const walk = (seg: Seg, fraction: number, turn: number, length: number, rise: number) => {
     const a = new THREE.Vector3(...seg.a).multiply(scale), tip = new THREE.Vector3(...seg.b).multiply(scale);
     const root = a.clone().lerp(tip, fraction);
@@ -526,19 +573,21 @@ export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: numb
     // The visible twig network recedes as the canopy closes. Keep this separate from bloom order.
     const tone = { tone: 1, drop: 0.72 + 0.25 * ((fraction + turn + 4) % 1) };
     for (const [cell, color, order] of [[WOOD_X, wood, -1], [BLOOM_X, WHITE, 0.12 + random() * 0.83]] as const) {
+      if (!withFlowers && order > 0) continue;
       const foot = root.clone();
       // Lift the paired petals slightly to break coplanar overlap with the wood.
       if (order > 0) foot.addScaledVector(up, scale.y * 0.004);
       const end = foot.clone().add(shoot);
       const p = [foot.clone().sub(side), foot.clone().add(side), end.clone().add(side), end.clone().sub(side)];
-      const uv = quadUV(cell);
+      const uv = fanUV(cell);
       if (mirror) { [uv[0], uv[1]] = [uv[1], uv[0]]; [uv[2], uv[3]] = [uv[3], uv[2]]; }
       b.tri([p[0], p[1], p[2]], color, tone, [uv[0], uv[1], uv[2]], order);
       b.tri([p[0], p[2], p[3]], color, tone, [uv[0], uv[2], uv[3]], order);
     }
   };
-  for (let i = 1; i < segs.length; i += 2) {
+  for (let i = 1; i + 1 < segs.length; i += 2) {
     const inner = segs[i], outer = segs[i + 1];
+    if (inner.b !== outer.a) break;
     const turn = i % 4 === 1 ? -1 : 1;
     walk(inner, 0.64, turn * 0.98, 0.42, 0.19);
     walk(outer, 0.24, -turn * 0.65, 0.56, 0.32);

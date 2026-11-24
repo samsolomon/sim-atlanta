@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
 import { broadleafForm, crownMasses, envelope, envelopeNormal, habitFor, ringAt, massClusters, type Habit, type Unit } from './broadleaf';
-import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, blooms, branchBlooms, crownNormals, foliageDepth, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
+import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, blooms, branchBlooms, crownBlossoms, crownNormals, foliageDepth, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
 import { skeletonGeometry, treeDims, type TreePlacement } from './render';
 import { doyOf, hash01, type Foliage, type SizeClass, type Species, type TreeQuality, type V3 } from './species';
 
@@ -84,8 +84,8 @@ export interface Look {
   /** Several bloom colours (crape myrtle): each tree takes one by its seed. */
   bloomColours?: string[];
   bloomSizeM?: number;
-  /** Twig fans and flowers follow the wood using paired tiles in the cordate or oval atlas. */
-  branchBloom?: boolean;
+  /** Fine winter twigs, with March flowers either on the same twigs or across the crown. */
+  branchBloom?: 'twigs' | 'crown';
   /** While in flower, up to this share of the leaf clusters turn wholly to the bloom colour
    *  (a crape myrtle's crown covered in trusses), at no triangle cost. */
   bloomWash?: number;
@@ -217,7 +217,11 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   const masses = crownMasses(look.habit, size, q, d, look.species.id.length);
   const clusters = lookClusters(look, opt, size, q, opt.units[q], seed);
   const b = new FoliageBuilder();
-  if (look.branchBloom) branchBlooms(b, look.species.form(size, q, d).segs, d, seed);
+  if (look.branchBloom) branchBlooms(b, look.species.form(size, q, d).segs, d, seed, look.branchBloom === 'twigs');
+  if (look.branchBloom === 'crown') {
+    const flowerClusters = lookClusters(look, opt, size, q, q === 'high' ? 14 : 11, seed + 7);
+    crownBlossoms(b, flowerClusters, seed + 8);
+  }
   if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
