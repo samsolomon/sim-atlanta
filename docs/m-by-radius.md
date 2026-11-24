@@ -29,6 +29,10 @@ Median rendered colour of glass pixels, by hue, from [the north-west view](log/u
 | Shaded south face (advisory) | 39% | 32% |
 | Generic glass tower, same frame | 46% | 44% |
 
+## Balcony fix (2026-11-24)
+
+As first opened, each glass balcony rail was a plate 0.55 m off the slab edge, with nothing joining it back. #562's detachment check found 253 detached parts, the worst 0.43 m off. Each rail now stands on a balcony floor that runs back to the wall, and the check finds none. At City distances the gap is under a pixel; the [before, after and amplified difference](log/ui/m-by-radius/balcony-fix.jpg) shows where the geometry changed.
+
 ## Night
 
 Apartments light at 34%, chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`. With no night photograph, City adds no crown lighting.
