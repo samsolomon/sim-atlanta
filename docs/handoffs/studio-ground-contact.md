@@ -2,24 +2,21 @@
 
 ## Active work and merge hold
 
-**PR #399** `samsolomon/underpass-road-joins` — Smooth the North Avenue underpass joints. It is open and **held for Sam's OK**, which only the coordinator relays. The coordinator is `term_09e1b3da-…` on Sam's MacBook Air; reply to its welcome message `msg_3d5fda67006f`.
-
-Done and verified:
-- Board levelled at both mouths: `underpassGround` with `MOUTH_LEVEL_M`/`MOUTH_APPROACH_M`.
-- Ramp of `MOUTH_RAMP_M` = 20 m, following the board at 1 m across.
-- Fixed strip piece counts and a 0.4 m tucked apron.
-- The board's yellow line per carriageway carried through the cut (`boardLines`, `STREET_LINE`).
-- Median and kerbs tapering over 12 m.
-- Probe in `north-ave.test.ts`, which fails at baseline: step 1.40 → 0.045 m, vehicle 1.38 → 0.011 m, cross-fall 4.6 → 0.05 m, fold 43% → 4.3%, maximum grade 42% → 7.7%.
-- test:release, test:perf (low 85/90 programs) and audit:ground (+10 samples of 4 cm or less, all on the apron) were run, and two codex reviews found nothing.
-
-Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-na-*`. The cam strings are in the PR body.
+- **#399** (North Avenue underpass joints) is merged: `bfb20e9143c067c10e385362fb41c08e4f23b94a`.
+- **PR #418** `samsolomon/deck-approach-joins` (bridge approaches and landing decks) is open and **held for Sam's OK**, which only the coordinator relays. The coordinator is `term_09e1b3da-…` on Sam's Air; reply to `msg_cec673161ad3`.
+  - Approaches have 1.25 m columns (`JOINT_COLUMN_M`), and link toes follow each column.
+  - Landing road decks (no profile, unsupported, inside the board) band their last seam at 1.5 m (`LANDING_BAND_M`) and keep the 12 cm tread.
+  - `approach-joints.test.ts` fails at baseline. The audit and perf numbers are in the PR body.
+  - Before merging: rebase, then run `pnpm build`, `pnpm test`, and `test:perf` on both tiers, then quote `gh pr view`.
 
 ## Next steps
-1. Wait for Sam's OK via the coordinator. Rebase before merging (the build log conflicts routinely), then quote `gh pr view 399 --json state,mergeCommit`.
-2. Open scope question for the coordinator: the Connector deck crossings and 17th go through `bridge-approaches.ts`, the Connector agent's module. I haven't inspected the Brookwood ramps; ask before editing either.
+1. Wait for Sam's OK on #418.
+2. If the coordinator agrees: regrade the board under the landings that meet DEM humps, as North Ave was. That covers Ellis Street and its secondary link at north-corner (0.75 and 1.39 m), and the north-band Connector links at 121,-1300 and nearby (1–2 m). The probe (`measure()` in `approach-joints.test.ts`) lists them.
+3. The 17th Street west approach still has 0.49 m of terrain showing through partway along, probably from its 4 m row spacing.
 
 ## Traps
+- Surveyed deck profiles (`deckNavd88M`) must keep their ends. Easing them onto the board broke the I-20 and Spring/Techwood tests by 4–16 m.
+- Low is triangle-bound: banding whole deck spans cost +134k triangles; banding only the seam costs +35.7k.
 - **Camera targets inside a slot aim 26 m high.** City's `targetY` returns 0 where the board has no ground, so the view centres far beyond the point you asked for. Aim just outside the opening. The old `north-east`/`north-west` cams have this problem.
 - `__setView` zoom has no `cam=` equivalent; record both.
 - Capture helpers live in the session scratchpad (`shots.mjs`, `compose.mjs`); `/tmp/join-shots.mjs` is the original.
