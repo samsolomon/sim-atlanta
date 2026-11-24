@@ -305,7 +305,9 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - Ginkgo: C4.
 - Sweetgum: A ("looks good").
 - American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
-- Magnolia: Sam picked A3 (23 Nov), with a tidier skirt and whiter gloss. Still to pick: the dogwood (round 2 pending).
+- Magnolia: A3, with a tidier skirt and whiter gloss.
+- Dogwood: A, fuller layered crown and white bloom, approved with final twig tidy-ups.
+- White oak A: rounded-lobed leaf cards, selected by Sam on 2026-11-23.
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -873,3 +875,29 @@ Additional terrace checks: [low daylight](log/ui/tree-species/rollout/1180-low-d
 and [low night](log/ui/tree-species/rollout/1180-low-night-sheet.jpg).
 Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
 [pan counts](log/ui/tree-species/rollout/pan-results.json) preserve the measurement runs.
+
+### White oak
+
+`web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.
+
+The [research handoff](handoffs/studio-tree-lab-white-oak.md) records the Georgia Tech inventory, Atlanta champions and Georgia USA-NPN calculations. Source units and the conversion method remain inferred as described there. Nominal sizes below are illustrative combinations within the measured ranges, not one surveyed tree, except the specimen's height/spread pair from the 2016 Atlanta champion at Vaughn Street.
+
+| Class | Height / spread / calliper, m | Basis |
+|---|---|---|
+| Sapling | 4.7 / 2.4 / 0.08 | GT QUAL under 15 cm DBH, medians 4.7 m high and 2.4 m wide |
+| Young | 9.1 / 5 / 0.22 | GT 15–30 cm DBH medians |
+| Mature | 25.3 / 22.1 / 0.95 | GT large-tree height and crown medians, combined illustratively; crown base about 6 m |
+| Specimen | 30 / 35.7 / 1.7 | Atlanta champion 2016 height/spread; circumference 211.2 inches implies about 1.71 m diameter |
+
+**References viewed:** [Dcrjsr's open-grown Duke Forest white oak](https://commons.wikimedia.org/wiki/File:Large_white_oak_at_old_house_site.jpg), 11 Nov 2011, CC BY 3.0, shows thick spreading limbs and russet leaves; [Huron H. Smith's Athens winter white oak](https://commons.wikimedia.org/wiki/File:The_tree_that_owns_itself_(4987035786).jpg), 1910, Field Museum, no known restrictions, shows the bare crown's broad outline. [NC State](https://plants.ces.ncsu.edu/plants/quercus-alba/) and [UF/IFAS ST541](https://ask.ifas.ufl.edu/publication/ST541/pdf) describe the broad crown, pale scaly bark and rounded leaf lobes. No nighttime reference is used; the night panel checks the lab's illustrative lighting.
+
+**Calendar:** Georgia NPN puts median budbreak near April 1 and expansion near April 13; the lab reaches full leaf by May. Blue-green summer lasts through September. Wine-red/russet develops in October, brown leaves drop through November, and a small residual of brown leaves persists into early winter. The retention strength and interpolation are illustrative. Published descriptions and photographs concentrate marcescence on lower limbs and young trees; the current renderer distributes retained leaves through the crown instead. This remains a known limit: restricting retention spatially would require coordinated changes to the shared foliage visibility, ink mask, shadows and near tips, beyond a cheap species-only adjustment. Acorns and bark plates are not individually modelled.
+
+| Option | High / low triangles | High / low draws for one size | Near-tip cost |
+|---|---|---|---|
+| A · broad lobed-leaf masses | 193 / 81 | 4 / 3 | 120 triangles per eligible near tree, bounded by the existing TIP_CAP pool |
+| C · faceted spreading crown | 191 / 111 | 3 / 3 | none |
+
+All counts include the seven-triangle leaf carpet. A uses the established silhouette ink; C gives a faceted comparison. The cored trial was dropped because its summer luminance exceeded the generic canopy target by about 10%. The eighth leaf-atlas shape adds 1,398,100 bytes (512×512 RGBA8 with mipmaps) when used; the budget entry also corrects the previous seven-atlas estimate, which counted pixels instead of bytes. No new texture source or material-library texture is introduced, and no City geometry or placement changes in this step.
+
+White-oak standard Front summer crownStats (July 1): A high 0.255 luminance / 0.772 saturation, A low 0.258 / 0.779; C high 0.236 / 0.813 and low 0.236 / 0.803. The generic target is 0.248 / 0.806. All are within about 5% on the measured fields. The eye-level A camera is (0,1.6,27.625) toward (0,12.144,0), FOV 58; standard Front is (0,11.385,63.66) toward (0,11.385,0), FOV 30.
