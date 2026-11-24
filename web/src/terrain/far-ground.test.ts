@@ -173,3 +173,29 @@ it('settles the very-far ground below the DEM with exact rims, at a fifth of the
   expect(interiorWorst).toBeLessThan(0.05);
   expect(rimWorst).toBeLessThanOrEqual(VERY_FAR_ERROR_M);
 }, 300_000);
+
+it('schedules no very-far build by default (opt-in until the build is incremental)', async () => {
+  const { vi } = await import('vitest');
+  let idle = 0, timers = 0;
+  vi.stubGlobal('requestIdleCallback', () => { idle++; return 1; });
+  const realTimeout = globalThis.setTimeout;
+  vi.stubGlobal('setTimeout', ((cb: () => void, ms?: number) => { timers++; return realTimeout(cb, ms); }) as typeof setTimeout);
+  try {
+    const { PerspectiveCamera } = await import('three');
+    const { createDowntownTerrain, VERY_FAR_M } = await import('./model');
+    const { bounds } = await import('../square-board/sections');
+    const ctx = new Proxy({}, { get: () => () => {} });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+    const b = bounds['south-corner'];
+    const area = createDowntownTerrain(grid('square-board/south-corner'), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const camera = new PerspectiveCamera();
+    const before = timers;
+    camera.position.set(b.maxX + 2 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);
+    const far = area.board.geometry;
+    camera.position.set(b.maxX + 3 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);
+    expect(idle).toBe(0);
+    expect(timers).toBe(before);
+    expect(area.board.geometry).toBe(far); // the 2 m far level, never the very-far one
+    area.dispose();
+  } finally { vi.unstubAllGlobals(); }
+});
