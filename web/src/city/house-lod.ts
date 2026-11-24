@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { runSync } from '../core/slice';
+import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { landmarkBatchOff } from '../materials/landmark-batch';
 import { World, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -63,11 +63,57 @@ export function* buildHouseBoxes(o: Pick<HouseLodOptions, 'box' | 'foundation' |
   return out;
 }
 
-// One near build per frame at most, so a camera jump into Midtown never stalls a frame on every tile.
-let lastBuildFrame = -1, frame = 0;
 // Set when a tile swaps versions or gains its near houses; City redraws its (manual) shadow map.
 let changed = false;
-export function takeHouseLodChange() { const c = changed; changed = false; frame++; return c; }
+export function takeHouseLodChange() { const c = changed; changed = false; return c; }
+
+/**
+ * Near houses build in the background, never inside a frame: a tile within PREBUILD_M (1.4 x the
+ * switch) joins a queue, and the nearest queued tile builds a few milliseconds per frame
+ * (core/slice.ts runBudgeted, 1 ms while the user drags). Built synchronously in update() as
+ * before, one tile's near World was a 100-590 ms task on the A16 at 6x (route:north). The far
+ * version shows until the near one is ready; a tile that leaves range before then drops its build.
+ */
+export const PREBUILD_M = SWITCH_M * 1.4;
+export const NEAR_BUDGET_MS = 3;
+/** Longest slice and step of near-house build work (dev: window.__houseNearStats). */
+export const houseNearStats = emptySliceStats();
+if (import.meta.env?.DEV) (globalThis as { __houseNearStats?: typeof houseNearStats }).__houseNearStats = houseNearStats;
+const queued = new Set<HouseTile>();
+let running: Promise<void> | null = null;
+// Outside a page (tests) there is no requestAnimationFrame: a frame is a microtask.
+const pageFrame = typeof requestAnimationFrame === 'undefined' ? () => Promise.resolve() : () => new Promise(r => requestAnimationFrame(r));
+let nextFrame = pageFrame;
+let now: (() => number) | undefined;
+/** Tests: wait for queued near builds, or step frames by hand. */
+export const houseNearForTests = {
+  done: async () => { while (running) await running; },
+  setNextFrame(f: (() => Promise<unknown>) | undefined) { nextFrame = f ?? pageFrame; },
+  setClock(f: (() => number) | undefined) { now = f; },
+};
+function startQueue() {
+  running ??= (async () => {
+    try {
+      // Start on the next frame: update() runs inside the render, and does no build work itself.
+      await nextFrame();
+      while (queued.size) {
+        let next: HouseTile | null = null;
+        for (const t of queued) if (!next || t.distance < next.distance) next = t;
+        queued.delete(next!);
+        await next!.buildNear();
+      }
+    } finally { running = null; }
+  })();
+}
+/** Steps `build` while `alive()`; null (and the generator closed) once it is not. */
+function* whileAlive<T>(build: Build<T>, alive: () => boolean): Build<T | null> {
+  for (;;) {
+    if (!alive()) { build.return(undefined as T); return null; }
+    const r = build.next();
+    if (r.done) return r.value;
+    yield r.value;
+  }
+}
 
 function build(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
   return runSync(buildWorld(houses, o, finish));
@@ -139,6 +185,10 @@ export class HouseTile extends THREE.LOD {
   private showingNear = false;
   /** Whether the near version is up (after the last update). */
   get isNear() { return this.showingNear; }
+  /** Camera distance to the tile's houses at the last update. */
+  distance = Infinity;
+  private pending = false;
+  private disposed = false;
   private readonly box = new THREE.Box3();
   constructor(readonly houses: VBuilding[], readonly o: HouseLodOptions, readonly farWorld: World,
     readonly state: { night: number; wet: number }) {
@@ -149,26 +199,39 @@ export class HouseTile extends THREE.LOD {
     this.near.visible = false;
     this.autoUpdate = true;
   }
+  /** Builds the near version now, in one go (the dev houses=near pin). */
   ensureNear() {
-    if (this.nearWorld) return;
-    this.nearWorld = build(this.houses, this.o, this.o.near);
-    this.nearWorld.setNight(this.state.night);
-    this.nearWorld.setWet(this.state.wet);
+    if (!this.nearWorld) this.mountNear(build(this.houses, this.o, this.o.near));
+  }
+  /** The queued near build, a few ms per frame; dropped if the tile leaves range or is disposed. */
+  async buildNear() {
+    if (this.nearWorld || this.disposed) { this.pending = false; return; }
+    const world = await runBudgeted(whileAlive(buildWorld(this.houses, this.o, this.o.near), () => !this.disposed && this.distance < PREBUILD_M * 1.1), {
+      budgetMs: () => (sliceInput.dragging ? 1 : NEAR_BUDGET_MS), stats: houseNearStats, nextFrame, now,
+    });
+    this.pending = false;
+    if (!world) return;
+    if (this.disposed) { world.dispose(); return; }
+    this.mountNear(world);
+  }
+  private mountNear(world: World) {
+    this.nearWorld = world;
+    world.setNight(this.state.night);
+    world.setWet(this.state.wet);
     // City clips the board's edges once, on load; give the new materials the far version's planes.
     const far = materials(this.farWorld.group).find(m => m.clippingPlanes?.length);
-    if (far) for (const m of materials(this.nearWorld.group)) { m.clippingPlanes = far.clippingPlanes; m.clipShadows = far.clipShadows; }
-    this.near.add(this.nearWorld.group);
+    if (far) for (const m of materials(world.group)) { m.clippingPlanes = far.clippingPlanes; m.clipShadows = far.clipShadows; }
+    this.near.add(world.group);
     this.near.updateMatrixWorld(true);
-    changed = true;
   }
+  dispose() { this.disposed = true; queued.delete(this); this.farWorld.dispose(); this.nearWorld?.dispose(); }
   override update(camera: THREE.Camera) {
-    const d = this.box.distanceToPoint(camera.getWorldPosition(new THREE.Vector3()));
+    const d = this.distance = this.box.distanceToPoint(camera.getWorldPosition(new THREE.Vector3()));
     const force = this.o.force;
+    if (!force && !this.nearWorld && !this.pending && d < PREBUILD_M) { this.pending = true; queued.add(this); startQueue(); }
     let want = force ? force === 'near' : this.showingNear ? d < SWITCH_M * 1.1 : d < SWITCH_M * .9;
-    if (want && !this.nearWorld) {
-      if (lastBuildFrame === frame && force !== 'near') want = false;
-      else { lastBuildFrame = frame; this.ensureNear(); }
-    }
+    // Until the near version is built the far one stays up, so nothing pops in half-built.
+    if (want && !this.nearWorld) { if (force === 'near') this.ensureNear(); else want = false; }
     if (want !== this.showingNear) changed = true;
     this.showingNear = want;
     this.near.visible = want;
@@ -316,7 +379,7 @@ export function* buildHouseLod(o: HouseLodOptions) {
     },
     setNight(n: number) { state.night = n; for (const t of tiles) { t.farWorld.setNight(n); t.nearWorld?.setNight(n); } },
     setWet(w: number) { state.wet = w; for (const t of tiles) { t.farWorld.setWet(w); t.nearWorld?.setWet(w); } },
-    dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } for (const m of merged) m.geometry.dispose(); farFar?.geometry.dispose(); group.removeFromParent(); },
+    dispose() { for (const t of tiles) t.dispose(); for (const m of merged) m.geometry.dispose(); farFar?.geometry.dispose(); group.removeFromParent(); },
   };
 }
 

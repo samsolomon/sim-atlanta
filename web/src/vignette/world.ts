@@ -857,7 +857,7 @@ export class World {
     const m4 = new THREE.Matrix4();
     let n = 0;
     for (const bd of this.data.buildings) {
-      if (++n % 6 === 0) yield 'buildings';
+      if (++n % 2 === 0) yield 'buildings';
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
       const footing = foundationY ? foundationY(bd) : 0;
@@ -967,7 +967,7 @@ export class World {
       style.push(-2);
       base.push(0);
     }
-    const g = b.geometry();
+    const g = yield* b.geometrySteps();
     g.setAttribute('aStyle', new THREE.Float32BufferAttribute(style, 1));
     g.setAttribute('aBase', new THREE.Float32BufferAttribute(base, 1));
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });

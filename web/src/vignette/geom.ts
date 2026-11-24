@@ -163,6 +163,39 @@ export class Builder {
     g.computeVertexNormals();
     return g;
   }
+
+  /**
+   * geometry() as a build that yields every few thousand vertices (core/slice.ts), with the same
+   * bytes: flat normals as three's computeVertexNormals makes them for unindexed triangles.
+   */
+  *geometrySteps(): Generator<string | void, THREE.BufferGeometry, void> {
+    const STEP = 12288;
+    const pos = new Float32Array(this.pos.length), col = new Float32Array(this.col.length), nor = new Float32Array(this.pos.length);
+    for (let i = 0; i < pos.length; i += STEP) {
+      const end = Math.min(pos.length, i + STEP);
+      for (let k = i; k < end; k++) { pos[k] = this.pos[k]; col[k] = this.col[k]; }
+      yield 'geometry';
+    }
+    for (let i = 0; i + 8 < pos.length; i += 9) {
+      if (i % STEP === 0 && i) yield 'normals';
+      // (C − B) × (A − B), as three does, stored unnormalized in float32...
+      const ex = pos[i + 6] - pos[i + 3], ey = pos[i + 7] - pos[i + 4], ez = pos[i + 8] - pos[i + 5];
+      const fx = pos[i] - pos[i + 3], fy = pos[i + 1] - pos[i + 4], fz = pos[i + 2] - pos[i + 5];
+      const nx = ey * fz - ez * fy, ny = ez * fx - ex * fz, nz = ex * fy - ey * fx;
+      for (let v = 0; v < 9; v += 3) { nor[i + v] = nx; nor[i + v + 1] = ny; nor[i + v + 2] = nz; }
+      // ...then normalized from the stored values (BufferGeometry.normalizeNormals).
+      for (let v = 0; v < 9; v += 3) {
+        const x = nor[i + v], y = nor[i + v + 1], z = nor[i + v + 2];
+        const inv = 1 / (Math.sqrt(x * x + y * y + z * z) || 1);
+        nor[i + v] = x * inv; nor[i + v + 1] = y * inv; nor[i + v + 2] = z * inv;
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    return g;
+  }
 }
 
 /**
