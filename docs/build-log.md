@@ -3226,3 +3226,5 @@ to the existing shell batch, with no new draw or material.
 [café grove close-up](log/ui/high-visitors/tables.jpg) ·
 [day and night](log/ui/high-visitors/day-night.jpg) ·
 [furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).
+
+**2026-11-23 — The Marriott Marquis stops smearing.** Sam asked whether a cream band down the hotel's curved face was texture or reality. It was neither. An ellipse of one-sided stone wedges filled up to 64% of each window mid-bulge, and at 0.3 m per pixel the slivers of glass left over aliased into vertical streaks. Photographs show the real piers splaying symmetrically into V fins that are widest at the terrace and gone about a dozen floors up. Rebuilding the flare that way keeps every bay a centred dark pane. A raycast test samples 168 bay centres on the lower bulge and fails on the old wedges (bay 6, floor 8 hit stone). No new material. [Before and after](log/ui/marriott-marquis/day-before-after.jpg)
