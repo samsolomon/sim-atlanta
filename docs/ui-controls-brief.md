@@ -48,6 +48,9 @@ Not yet: Street view, layers and tours (see Follow-ups).
 
 ## Subject card and time
 
+- **"Atlanta" eyebrow** above the neighbourhood (12 px / 600, secondary ink), so a
+  visitor from a link knows the city at a glance (critique, 2026-11-24). At metro zoom,
+  drop the eyebrow and show "Metro Atlanta" as the name.
 - The neighbourhood comes from `data/ga/neighborhoods.json` at the camera centre and
   updates when the camera settles. Past neighbourhood zoom it reads "Metro Atlanta".
   - **Fix:** today it says "Downtown" even at metro zoom.
@@ -174,6 +177,11 @@ Not yet: Street view, layers and tours (see Follow-ups).
   "Two-finger scroll to tilt and turn · pinch to zoom · drag to move"; touch: "Two
   fingers: drag up or down to tilt, twist to turn, pinch to zoom"), so the
   "Drag to look around · WASD to move" hint no longer appears on Map.
+- **First-visit hint** (Final 01, P1): one glass line above the dock that leads with the
+  reason to interact. Desktop: "**Tap a train** for where it's going · **drag** to move ·
+  **two-finger scroll** to tilt" (mouse: "right-drag to tilt"). Phone: "**Tap a train** for
+  where it's going. Pinch to zoom, two fingers to tilt." It has a "Got it" and also goes
+  after the first gesture; it never returns once dismissed (per-viewer storage).
 
 ## 3D and tilt (in the camera group)
 
