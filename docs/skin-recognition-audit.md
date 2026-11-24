@@ -17,7 +17,7 @@
 | BORDERLINE | NCR HQ (#437) | large | skins-6 | Later pass |
 | FIXED (pending 8b) | 271 Seventeenth (#451) | large | skins-4 | #614: photo-correct grey panel podium and glazed lobby, floor bands, lighter parapet |
 | BORDERLINE | Loews Atlanta (#455) | large | skins-5 | Later pass |
-| BORDERLINE | Winship (#487) | large | skins-7 | Later pass |
+| PASS (photo-backed) | Winship (#487) | large | skins-7 | 500 m: timber sunshade, oculus canopy, finned podium carry it; tower and screen crown match the SOM photos |
 | PASS (plain, photo-backed) | The Landmark (#515) | large | skins-7 | 500 m frame: brick field, paired windows, pale fins; the photo shows no crown |
 | FIXED (pending 8c) | Tower Square (#188) | medium–large | skins-1 | #620: splayed piloti base, blank crown band, corner piers (photo-backed) |
 | FIXED (pending 8b) | Federal Reserve (#274) | medium | skins-6 | Rework #594 approved: paired windows between marble piers, photo-correct loggia; the slab is genuinely plain |
