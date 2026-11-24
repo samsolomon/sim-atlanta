@@ -2,6 +2,8 @@
 
 Updated 2026-11-23 by Codex session 9c768eab-3e1a-4134-a130-ba680f7c212a for the gpt-6.2 successor. Original Claude: d577649d-8640-473a-8c9b-461abf2b616a.
 
+Successor update from session `8b0f0ebc-f4fb-40d7-acbe-435e5c986ca1`: GitHub reports #310 as `OPEN`, draft, `mergeCommit: null`, and `mergeable: CONFLICTING` at `dd2d7594`. The release hold remains in effect. This session made no implementation changes and started no servers or browser tabs. The coordinator is assigning the Final layout rework to a 6.2 Astra successor in this worktree. Use a separate branch and PR for that rework. The latest working coordinator reply route is message `msg_0939307cbb03` with your own session ID.
+
 ## State
 - A2c is the default interface. Sam confirmed **bc32b09 shipped with classic retained**. This supersedes the original handoff's release timing.
 - **Open draft #310**, branch `samsolomon/ui-remove-classic`, code head `6d17519c` before this handoff commit. Verified OPEN, draft, mergeCommit null. **NEXT release only: do not merge until the coordinator explicitly authorizes it. Only the coordinator deploys.**
