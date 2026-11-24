@@ -210,6 +210,10 @@ it('swaps a mounted low board to its settled far level once the idle settle runs
     // Before the idle slice the board draws the plain level, which stands above the DEM inside.
     expect(aboveDem(plain, near, 165).interior).toBeGreaterThan(0.5);
     farSettleForTests.flush();
+    // Held while the board draws its far level: no swap on screen by itself.
+    expect(area.board.geometry).toBe(plain);
+    camera.position.set(b.maxX + 100, 0, b.minZ); area.update(0, camera);
+    camera.position.set(b.maxX + FAR_GROUND_M + 10, 0, b.minZ); area.update(0, camera);
     const settled = area.board.geometry;
     expect(settled).not.toBe(plain);
     expect(settled.index!.count).toBe(plain.index!.count);

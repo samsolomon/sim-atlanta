@@ -423,7 +423,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     veryFarQueue.push(() => {
       if (disposed || !farGeometry) return;
       const settled = mesh.farGeometry(FAR_GROUND_ERROR_M, 160, true);
-      if (board.geometry === farGeometry) { board.geometry = settled; groundLodChanged = true; }
+      // Never swap a level on screen by itself: a board drawing its far level now holds the
+      // settled one until its next level change (update), where any change is already a switch.
+      if (board.geometry === farGeometry) { pendingFar = settled; return; }
       farGeometry.dispose();
       farGeometry = settled;
     });
@@ -436,6 +438,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   let veryFarQueued = false;
   const bb = grid.manifest.bounds;
   let far = false, veryFar = false, disposed = false;
+  let pendingFar: THREE.BufferGeometry | null = null;
   yield 'far ground';
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
@@ -600,6 +603,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       if (next !== far || nextVery !== veryFar) {
         far = next;
         veryFar = nextVery;
+        if (pendingFar) { farGeometry!.dispose(); farGeometry = pendingFar; pendingFar = null; }
         board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : nearGeometry;
         groundLodChanged = true;
       }
@@ -625,7 +629,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       });
       // The traverse disposed whichever ground is attached; release the others.
       disposed = true;
-      for (const g of [nearGeometry, farGeometry, veryFarGeometry]) if (g && g !== board.geometry) g.dispose();
+      for (const g of [nearGeometry, farGeometry, veryFarGeometry, pendingFar]) if (g && g !== board.geometry) g.dispose();
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();
