@@ -79,4 +79,15 @@ describe('World far form', () => {
     expect(far.visible).toBe(false);
     expect(meshes(w).filter(m => m.visible).length).toBeGreaterThan(1);
   });
+
+  it('keeps the far form out of the shadow pass at a long orbit, and back', () => {
+    const w = build(true);
+    const far = meshes(w).filter(m => m.name.startsWith('far '));
+    w.setDetail({ farTrees: true, farShadows: false });
+    expect(far.every(m => !m.castShadow)).toBe(true);
+    w.setDetail({ farShadows: true });
+    expect(far.every(m => m.castShadow)).toBe(true);
+    // The near trees always cast.
+    expect(meshes(w).filter(m => !m.name.startsWith('far ')).every(m => m.castShadow)).toBe(true);
+  });
 });

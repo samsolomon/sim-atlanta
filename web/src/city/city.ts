@@ -1693,15 +1693,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
   const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
   let farTrees = false;
+  // Low tier: the far-form trees cast no shadow beyond this orbit (trees/far-canopy.ts).
+  const FAR_SHADOWS_M = low ? 2500 : 0;
+  let farNoShadow = false;
   // Areas (and the downtown World) that already carry the current detail; a newly mounted or
   // swapped area is caught here without allocating every frame.
   let detailed = new WeakSet<object>();
   function treeDetail() {
     const d = camera.position.distanceTo(controls.target);
     const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    if (far !== farTrees) { farTrees = far; detailed = new WeakSet(); }
+    // Past FAR_SHADOWS_M the far form stops casting: its shadows are 1-3 px there, and an area's
+    // far mesh is submitted whole to the shadow pass (191k triangles at the default view, 8% of
+    // them inside the shadow box). Hysteresis as for the far form.
+    const noShadow = FAR_SHADOWS_M > 0 && (farNoShadow ? d > FAR_SHADOWS_M * 0.84 : d > FAR_SHADOWS_M);
+    if (far !== farTrees || noShadow !== farNoShadow) { farTrees = far; farNoShadow = noShadow; detailed = new WeakSet(); }
     // Limb shadows stay on until a moving-camera A16 run shows they cost something.
-    const detail = { farTrees: far };
+    const detail = { farTrees: far, farShadows: !noShadow };
     let applied = false;
     const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
       if (!a || detailed.has(a)) return;

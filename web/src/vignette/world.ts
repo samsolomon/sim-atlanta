@@ -1159,19 +1159,21 @@ export class World {
   private far?: THREE.InstancedMesh;
   private farPines?: THREE.InstancedMesh;
   private farOut?: FarCanopy;
-  private detail = { farTrees: false, branchShadows: true };
+  private detail = { farTrees: false, branchShadows: true, farShadows: true };
   /**
    * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
    * bare-branch skeletons, which are a few pixels at long orbit distances; `branchShadows`
    * lets low quality stop them casting shadows. Call whenever a threshold changes.
    */
-  setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) {
+  setDetail(d: { farTrees?: boolean; branchShadows?: boolean; farShadows?: boolean }) {
     Object.assign(this.detail, d);
     this.applyBranchVisibility();
   }
   private applyBranchVisibility() {
     // Far form: the whole near tree (clumps, pine tiers, trunk) gives way to one draw.
     const farForm = !!this.far && this.detail.farTrees;
+    // farShadows: false (a long orbit) keeps the far form out of the shadow pass entirely.
+    for (const im of [this.far, this.farPines]) if (im) im.castShadow = this.detail.farShadows;
     if (this.far) this.far.visible = farForm;
     if (this.farPines) this.farPines.visible = farForm && this.farPines.count > 0;
     for (const cell of this.cells) {
