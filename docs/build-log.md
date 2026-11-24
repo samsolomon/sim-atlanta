@@ -3352,3 +3352,6 @@ triangles. [Before and after](log/ui/1072-west-peachtree/compare-day.jpg) ·
 [crown](log/ui/1072-west-peachtree/crown-day-night.jpg) ·
 [sources](1072-west-peachtree.md)
 
+### 2026-11-23 · Ascent Midtown finds its L
+
+Ascent Midtown had been one generic 82 m block over its whole 103 × 43 m lot. The 2019 lidar shows something else: an L-shaped tower whose roof is at 88.5 m, standing along the north edge and down West Peachtree, over a 20 m podium with a pool deck. Ascent shares that podium with the Hilton Canopy, which is already mapped as its own building. Pairing floors into one pane row on the phone tier kept the skin to 275 triangles and two draws there. [Before/after, day and night](log/ui/ascent-midtown/README.md)

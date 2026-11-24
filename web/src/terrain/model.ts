@@ -7,6 +7,7 @@ import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
+import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
@@ -245,6 +246,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
+      : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
