@@ -22,7 +22,7 @@
 - **Wheel:** a 25 m-radius wheel with its axle at 29 m, in the mapped plane.
 - **Rim:** a two-ring rim 3.2 m deep, as two ribbons with an outer band, in 42 segments.
 - **Spokes:** 21 tapered spokes on each face, converging on a dark hub.
-- **Gondolas:** 42 white capsules with dark glass bands. Each hangs below a pivot 3.2 m outside the rim, so at the top it rides above the rim and its roof reaches about 57 m.
+- **Gondolas:** 42 white capsules with dark glass bands, hung between the two rim rings from pivots 1 m outside the rim. At the top a capsule rides just above the rim to 54.7 m, matching the lidar's 54.5 m top return. At the bottom its floor clears the boarding deck by 0.7 m.
 - **Supports:** two white tubular A-frames, one on each side of the wheel, from the ground to the axle.
 - **Base:** a boarding deck under an arched canopy on the street side.
 - **Not drawn:** cross-cables, the stair truss, the "ATLANTA" hub sign and the VIP gondola's black finish. They are too fine or not worth the triangles.
@@ -39,3 +39,4 @@ The LED show runs nightly, but its colours vary: purple-blue with a white rim be
 | Broadside, before and after, 11:30 | `cam=-23,-548,312,62,260` with `&dev&mindist=20` | [compare-day.jpg](log/ui/skyview-atlanta/compare-day.jpg) |
 | Same, 23:30 | same | [compare-night.jpg](log/ui/skyview-atlanta/compare-night.jpg) |
 | From over the park, day and night | `cam=-23,-548,140,58,420` | [park-day-night.jpg](log/ui/skyview-atlanta/park-day-night.jpg) |
+| Four sides by day, about 400 m (checked for floating, missing or z-fighting parts: none) | N `-23,-593,0,60,400` · E `22,-548,90,60,400` · S `-23,-503,180,60,400` · W `-68,-548,270,60,400` | [four-side.jpg](log/ui/skyview-atlanta/four-side.jpg) |

@@ -13,8 +13,7 @@ import { landmarkShell } from './landmark-shell';
 //   the wheel faces the park broadside.
 // - Height: the 2019 lidar profile along that plane traces the rim's circle,
 //   with the axle about 29 m up and the rim top near 54 m. The official
-//   "200 ft" counts the site and gondolas. Thin tubes under-sample in lidar, so
-//   gondola tops are allowed to reach about 57 m.
+//   "200 ft" counts the site. Gondola tops reach 54.7 m, at the lidar top.
 // - Night: LEDs, lit each evening from one show console with colours that vary.
 //   City uses the blue-violet seen in 2018–2020 photographs on rim and spokes,
 //   leaves the gondolas dark, and does not animate the wheel.
