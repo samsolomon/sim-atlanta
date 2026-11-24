@@ -1,0 +1,41 @@
+# SkyView Atlanta
+
+`a7661a6c-82d6-4347-98fe-f0acff8b918e` (Overture). This is the Ferris wheel beside Centennial Olympic Park, a Bussink R60 observation wheel that opened in 2013. City code: `web/src/city/skyview-atlanta.ts`, mounted in `city.ts` after Centennial Tower and added to the downtown batcher's `listed` array. Shipping it requires a web rebuild and redeploy; the data is unchanged.
+
+## Sources
+
+- [Construction Equipment Guide](https://www.constructionequipmentguide.com/atlanta-visitors-residents-go-sky-high-on-skyview/21076): 21 spokes and 42 gondolas, six footings, and "one million multi-colored LED lights". [PLSN, 2013-07-30](https://plsn.com/?p=247571): the show runs from one console and is lit "each evening". [Bussink](https://bussink.com/observation-wheels): the R60 model. [Wikipedia](https://en.wikipedia.org/wiki/Centennial_Olympic_Park): 200 ft.
+- Day photographs:
+  - [face-on, 2020](https://commons.wikimedia.org/wiki/File:SkyView_ATL.jpg)
+  - [oblique, July 2018](https://commons.wikimedia.org/wiki/File:SkyView_Atlanta,_July_2018.jpg)
+  - [from Luckie Street, 2019](https://commons.wikimedia.org/wiki/File:SkyView_Atlanta,_Atlanta,_GA_(40508040873).jpg)
+  - [hub, rim and legs, 2018](https://commons.wikimedia.org/wiki/File:Skyview_Atlanta.jpg)
+- Night photographs:
+  - [purple-blue, before 2018](https://commons.wikimedia.org/wiki/File:The_Wheel_(259777543).jpeg)
+  - [blue, 2020-05-31](https://commons.wikimedia.org/wiki/File:Protecting_Atlanta_Georgia_National_Guard.jpg)
+  - [magenta, 2018-09-29](https://commons.wikimedia.org/wiki/File:SkyView_Atlanta_IMG_7479.jpg)
+- Orientation: OSM and Overture map the wheel as a 50.3 × 2.3 m strip at about 42° (NE–SW). An Esri aerial shows its shadow as a full circle to the north-west, so the wheel faces the park broadside.
+- Height: 3DEP lidar (2019-04-22). Along the strip, the per-slice maximum heights trace the top of a circle about 27 m in radius, centred about 27.5 m up, with a top return of 54.5 m above the 317.1 m (NAVD88) ground. An R60 spec sheet found in search put the axle near 29 m. The official 200 ft (61 m) counts the platform and site. Lidar under-samples thin tubes, so its maximum is a lower bound.
+
+## What City draws
+
+- **Wheel:** a 25 m-radius wheel with its axle at 29 m, in the mapped plane.
+- **Rim:** a two-ring rim 3.2 m deep, as two ribbons with an outer band, in 42 segments.
+- **Spokes:** 21 tapered spokes on each face, converging on a dark hub.
+- **Gondolas:** 42 white capsules with dark glass bands. Each hangs below a pivot 3.2 m outside the rim, so at the top it rides above the rim and its roof reaches about 57 m.
+- **Supports:** two white tubular A-frames, one on each side of the wheel, from the ground to the axle.
+- **Base:** a boarding deck under an arched canopy on the street side.
+- **Not drawn:** cross-cables, the stair truss, the "ATLANTA" hub sign and the VIP gondola's black finish. They are too fine or not worth the triangles.
+- **Budget:** 1,354 body triangles and 252 lamp triangles, inside the 2,400-triangle landmark budget.
+
+## Night
+
+The LED show runs nightly, but its colours vary: purple-blue with a white rim before 2018, magenta in 2018, blue and violet in 2020, plus event colours such as pink or blue for gender reveals. `finish()` gives the lamp mesh a single emissive colour, so City lights rim and spokes in the blue-violet (`#8f86ff`) seen most often. The gondolas stay dark, as they appear in the night photographs; that is inferred. The wheel doesn't turn. Animating it would mean moving or re-uploading geometry, which the batching rules forbid for static landmarks.
+
+## Captures
+
+| View | Camera | Image |
+|---|---|---|
+| Broadside, before and after, 11:30 | `cam=-23,-548,312,62,260` with `&dev&mindist=20` | [compare-day.jpg](log/ui/skyview-atlanta/compare-day.jpg) |
+| Same, 23:30 | same | [compare-night.jpg](log/ui/skyview-atlanta/compare-night.jpg) |
+| From over the park, day and night | `cam=-23,-548,140,58,420` | [park-day-night.jpg](log/ui/skyview-atlanta/park-day-night.jpg) |

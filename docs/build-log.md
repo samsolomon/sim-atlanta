@@ -3581,3 +3581,16 @@ The Codex review caught that my first test recorded only each board's single wor
 The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. It's built one board per idle slice once the camera passes 10 km. At the default view the low tier draws 94,710 fewer triangles, with the same draw count and 0.6 MB more geometry.
 
 [The default view, before and after](log/very-far-ground/strip-orbit-21k.jpg) · [Why settle: 2 m, settled 8 m, plain 8 m at 12 km](log/very-far-ground/crop-12k-2m-settled-raw.png)
+
+### 2026-11-24 — SkyView turns up
+
+The Ferris wheel by Centennial Olympic Park was a 2 m-thin box 61 m tall. The
+2019 lidar was more useful than expected. Slicing the returns along the wheel's
+mapped plane gives a top height per slice, and those heights trace the top of the
+rim's circle: an axle about 29 m up, with the rim near 54 m. City now draws a
+white wheel with 21 spokes, 42 gondolas hung outside the rim, and two A-frames,
+facing the park broadside. That is 1,354 triangles in the downtown batch. At night
+the rim and spokes glow the blue-violet of most night photos. It doesn't turn,
+because a static batch costs nothing and an animated wheel wouldn't.
+[Before and after](log/ui/skyview-atlanta/compare-day.jpg) · [night](log/ui/skyview-atlanta/compare-night.jpg) · [notes](skyview-atlanta.md)
+
