@@ -1,8 +1,8 @@
 import type { GroundGrid } from '../terrain/grid';
-import { rng, type P2 } from '../vignette/geom';
+import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 export const westPeachtree712Id = 'osm:way:996610147';
 const TOWER = 'osm:way:1344870476', CORE = 'osm:way:1344870473';
@@ -27,22 +27,21 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
     return area < 0 ? pts.reverse() : pts;
   };
   const datum = site.floorY === undefined ? s.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
-  const roof = datum + tower.h, garageTop = datum + podium.h, random = rng(712);
+  const roof = datum + tower.h, garageTop = datum + podium.h, seed = seedOf(westPeachtree712Id);
   // Glass value sits with the neighbouring curtain walls; spandrels and fins carry the rhythm.
   const blue = '#66819c', spandrel = '#8a9bad', fin = '#aab6c2', pale = '#97adc2', reveal = '#3d5168',
     transition = '#40566e', cap = '#c9ccd0', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
   const FLOOR = 3.83;
-  const glass = surfaces.curtainGlass({ tint: 'blue', mullion: 1.5, floor: FLOOR });
   const top = roof - 7.7;
 
   const shaft = local(tower.rings[0]);
-  s.prism(shaft, datum, top, blue, roofGrey, { wall: glass });
-  s.prism(shaft, top, roof, pale, roofGrey, { wall: glass });
-  s.prism(local(core.rings[0]), datum, datum + core.h, blue, roofGrey, { wall: glass });
+  s.prism(shaft, datum, top, blue, roofGrey);
+  s.prism(shaft, top, roof, pale, roofGrey);
+  s.prism(local(core.rings[0]), datum, datum + core.h, blue, roofGrey);
 
   // Precast garage with one open band per deck on its north, east and west faces.
   const garage = local(podium.rings[0]);
-  s.prism(garage, datum, garageTop, concrete, roofGrey, { wall: surfaces.precast({ width: 3, height: 3.2 }) });
+  s.prism(garage, datum, garageTop, concrete, roofGrey);
   const [gx0, gx1] = [Math.min(...garage.map(p => p[0])), Math.max(...garage.map(p => p[0]))];
   const gz1 = Math.max(...garage.map(p => p[1])), gz0 = Math.min(...garage.map(p => p[1]));
   for (let y = datum + 4.2; y + 2 < garageTop; y += 3.2) {
@@ -54,7 +53,7 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
   // Details follow the mapped shaft edges (the north wall steps twice where the deck meets it).
   const edges = shaft.map((a, i): [P2, P2] => [a, shaft[(i + 1) % shaft.length]])
     .filter(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]) >= 10);
-  for (const [a, b] of edges) {
+  edges.forEach(([a, b], face) => {
     // local() makes the ring counter-clockwise in (x, z), so (dz, −dx) points outward.
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n: P2 = [(b[1] - a[1]) / len, -(b[0] - a[0]) / len];
     const at = (t: number, y: number, d = 0.08) => [a[0] + t * (b[0] - a[0]) + n[0] * d, y, a[1] + t * (b[1] - a[1]) + n[1] * d];
@@ -77,13 +76,15 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
     if (len >= 16) {
       for (const t of [4 / len, 1 - 4 / len]) strip(t - 0.45 / len, t + 0.45 / len, lo + FLOOR, roof - 0.9, reveal, 0.16);
     }
-    // Offices are mostly dark by 23:30: a stable few panes per floor stay lit.
-    for (let y = lo + FLOOR + 0.5; y + 3 < top; y += FLOOR) {
-      if (random() > 0.35 * len / 48) continue;
-      const w = Math.min(0.5, (1.5 + random() * 3) / len), t = 0.05 + random() * (0.9 - w);
-      s.lights.quad(at(t, y, 0.05), at(t, y + 2.6, 0.05), at(t + w, y + 2.6, 0.05), at(t + w, y, 0.05), blue);
+    // Offices are mostly dark by 23:30: about 6% of the fin bays stay lit (skin-kit litHash).
+    for (let floor = 0, y = lo + FLOOR + 0.5; y + 3 < top; floor++, y += FLOOR) {
+      for (let bay = 0; bay < fins; bay++) {
+        if (litHash(seed, face, floor, bay) >= 0.06) continue;
+        const t0 = bay / fins + 0.14 / len, t1 = (bay + 1) / fins - 0.14 / len;
+        s.lights.quad(at(t0, y, 0.05), at(t0, y + 2.6, 0.05), at(t1, y + 2.6, 0.05), at(t1, y, 0.05), blue);
+      }
     }
-  }
+  });
   // A set-back rooftop penthouse.
   const [cx, cz] = [shaft.reduce((m, p) => m + p[0], 0) / shaft.length, shaft.reduce((m, p) => m + p[1], 0) / shaft.length];
   s.prism([[cx - 10, cz - 8], [cx + 10, cz - 8], [cx + 10, cz + 8], [cx - 10, cz + 8]], roof, roof + 4.6, '#5d6f82', '#7f8486');

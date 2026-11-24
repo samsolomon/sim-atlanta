@@ -10,9 +10,9 @@ The tower postdates the 2018 USGS lidar this repo samples, so City keeps the map
 
 The first version was mostly flat navy. The coordinator's review called it a recoloured block, so the shaft now carries the curtain-wall rhythm in geometry:
 
-- **Glass value:** a mid blue-grey (`#66819c`) on library curtain glass, close to its neighbours' value so it doesn't read as a dark hole.
+- **Glass value:** a mid blue-grey (`#66819c`) in plain vertex colour (no library surface, so the body batches), close to its neighbours' value so it doesn't read as a dark hole.
 - **Spandrels (estimated):** a 0.9 m grey-blue band at every 3.83 m floor line. The two crown floors use a pale cap colour.
-- **Mullion fins (estimated):** a 0.24 m pale fin every 3 m. The library glass draws the 1.5 m mullions between them up close.
+- **Mullion fins (estimated):** a 0.24 m pale fin every 3 m.
 - **Corner reveals (estimated):** a 0.9 m dark reveal 4 m in from each end of every mapped edge 16 m or longer, between the first spandrel and the cap.
 - **Base and deck transition:** the street faces have a 6 m lobby storey under the first spandrel. Where the north face rises from the deck roof, its first floor is darker glass.
 - **Crown:** two paler floors, a 1.3 m pale parapet cap and a 20 × 16 × 4.6 m set-back penthouse.
@@ -21,7 +21,7 @@ The first version was mostly flat navy. The coordinator's review called it a rec
 
 ## Lighting
 
-I found no verified night exterior (gap). As an office, it is mostly dark at 23:30. About one in three floors per face has a stable lit pane run, and the West Peachtree lobby is lit. This lighting is illustrative.
+I found no verified night exterior (gap). As an office, it is mostly dark at 23:30: about 6% of the 3 m fin bays are lit, chosen by skin-kit `litHash`, and the West Peachtree lobby is lit. This lighting is illustrative.
 
 ## Captures
 
