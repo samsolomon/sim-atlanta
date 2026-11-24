@@ -78,6 +78,7 @@ import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
 import { createRitzCarlton } from './ritz-carlton-atlanta';
+import { createEllisHotel } from './ellis-hotel';
 import { createSouthernBell } from './southern-bell';
 import { createRhodesHaverty } from './rhodes-haverty';
 import { createEmpireBuilding } from './empire-building';
@@ -391,6 +392,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
   let ritzCarlton: ReturnType<typeof createRitzCarlton> = null;
+  let ellisHotel: ReturnType<typeof createEllisHotel> = null;
   let southernBell: ReturnType<typeof createSouthernBell> = null;
   let rhodesHaverty: ReturnType<typeof createRhodesHaverty> = null;
   let empireBuilding: ReturnType<typeof createEmpireBuilding> = null;
@@ -504,8 +506,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         davisons = createDavisons(afterFultonBank, ground);
         ritzCarlton = createRitzCarlton(davisons?.buildings ?? afterFultonBank, ground);
         const afterRitzCarlton = ritzCarlton?.buildings ?? davisons?.buildings ?? afterFultonBank;
-        southernBell = createSouthernBell(afterRitzCarlton, ground);
-        const afterSouthernBell = southernBell?.buildings ?? afterRitzCarlton;
+        ellisHotel = createEllisHotel(afterRitzCarlton, ground, quality);
+        const afterEllisHotel = ellisHotel?.buildings ?? afterRitzCarlton;
+        southernBell = createSouthernBell(afterEllisHotel, ground);
+        const afterSouthernBell = southernBell?.buildings ?? afterEllisHotel;
         rhodesHaverty = createRhodesHaverty(afterSouthernBell, ground);
         const afterRhodesHaverty = rhodesHaverty?.buildings ?? afterSouthernBell;
         empireBuilding = createEmpireBuilding(afterRhodesHaverty, ground);
@@ -618,6 +622,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
         if (ritzCarlton) world.group.add(ritzCarlton.group);
+        if (ellisHotel) world.group.add(ellisHotel.group);
         if (southernBell) world.group.add(southernBell.group);
         if (rhodesHaverty) world.group.add(rhodesHaverty.group);
         if (empireBuilding) world.group.add(empireBuilding.group);
@@ -665,7 +670,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
             peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
             fiftyFiveParkPlace,
-            fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
+            fultonBank, davisons, ritzCarlton, ellisHotel, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
@@ -1639,6 +1644,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       fultonBank?.setNight(night);
       davisons?.setNight(night);
       ritzCarlton?.setNight(night);
+      ellisHotel?.setNight(night);
       southernBell?.setNight(night);
       rhodesHaverty?.setNight(night);
       empireBuilding?.setNight(night);
