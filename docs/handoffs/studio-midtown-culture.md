@@ -1,41 +1,91 @@
-# Handoff: studio-midtown-culture (Claude → Codex), 2026-11-23
+# Handoff: studio-midtown-culture → Codex 6.2, 2026-11-23
 
-## State
-- Every PR from this worktree is merged: #177 Mitchell House, #184 Varsity, #195 High (grid, ramp, atrium), #198 Sifly Piazza, #202 review sheets, #206 Woodruff rear, #209 High entry deck, #216 High Peachtree lawn, #244 lawn turf, #250 manicured cover, and the Woodruff service-side PR that adds this file (branch `samsolomon/woodruff-service`).
-- The area docs are `docs/arts-campus.md`, `docs/varsity.md`, `docs/margaret-mitchell-house.md` and `docs/tech-campus.md`. Captioned before/after sheets are in `docs/log/ui/culture-review/README.md`.
-- Code lives in `web/src/city/midtown-culture-*.ts`, `arts-campus.ts` and the fixtures in `web/src/city/fixtures/{arts-campus.json,midtown-culture/}`.
+## Current state
 
-## Sam's decisions and intent (all 2026-11-23)
-- Approved the Woodruff precast skin (fins, joints, slot windows). Reuse that approach for other large blank volumes.
-- Every merge notice links captioned BEFORE|AFTER composites, one image per pair, with a caption and a ring or arrow on the subject. Money shot first, as GitHub blob links.
-- Street View is approved for ground-level detail. View and cite it in an Orca tab; never copy the imagery into the repo.
-- The High's lawn is a formal lawn, so it uses the `'manicured'` cover. The High's ginkgo mound stays mulch and does not get rich-black soil.
-- Open question for Sam: the Varsity curb-canopy neon is lit at the present-day clock, which is illustrative because curb service ended in 2020. Darkening it is a one-line change if Sam wants that.
+Stopping at coordinator's request to migrate models. Current branch:
+`samsolomon/tech-square-coda`, based on main `53c29a114eb58791f3dde3cf77571c9fd88b2db6`.
+This branch is research-only WIP, **no Coda implementation and no PR**. `docs/coda.md`
+contains consulted day/night photo sources and reviewed implementation notes.
 
-## Next, in order
-1. **Rhodes Hall** (Peachtree), as a new landmark under the full AGENTS.md rule: day and night photos, a second angle, sources, dimensions, and matched day and full-night City shots at both tiers. Keep the low tier within `pnpm test:perf`. Research tabs from an earlier pass: georgiatrust.org/our-historic-sites/rhodes-hall, exploregeorgia rental PDF.
-2. **SCAD Atlanta** on the south edge of the Brookwood campus.
-3. **Tech Square with Coda** and its smokestack.
-4. After each landmark lands, update its item in `docs/rectangle-detail-plan.md` (the coordinator asked for this).
-5. Check every site lies inside x −1000..1800, z −5700..1100 and isn't already modelled (`git grep <osm id> web/src`).
+Completed and verified with `gh pr view N --json state,mergeCommit`:
+- Rhodes Hall #344: MERGED `bd6271605c0d3fc7d42ce5a4631d60024570f7b9`.
+- SCAD Atlanta #351: MERGED `1683a0a22e8093465dd6c1da9ffe0bb39edca864`.
+- Rhodes tower -25% #355: MERGED `53c29a114eb58791f3dde3cf77571c9fd88b2db6`.
+  Full tests passed after syncing main/conflict and final porch exclusion (Python
+  pipeline checks skip without `.venv`). Perf low546 calls434MB heap; high1183 calls545MB,
+  all ceilings pass. Two Claude review rounds completed; overlap observation fixed.
+  Matched high/low night pairs: `docs/log/ui/rhodes-tower-dim/compare-{high,low}-night.jpg`.
+  No deployment; only coordinator deploys.
 
-## Promises to other agents
-- **Tree agent** (orca_session_id:6b76e039-f4f6-472d-b827-e2a3fdf94a0a) owns the High ginkgo at (612.5, −4001.2) in `web/src/trees/sites.ts`. Inside its 9 m crown nothing may stand more than 1.5 m above grade, and a test pins this. The oak and magnolias are generic parks canopy, and the lamp belongs to the street-light layer, so don't model them.
-- **Parks agent** (orca_session_id:eee32d1c-9a81-4fc4-b25f-64c0efd863df) owns the landscape primitives (`web/src/landscape/`). Use them; don't hand-roll one-offs.
-- **Ground-contact agent** (orca_session_id:1df827bc-6e12-4e74-b7da-83ee8931ec4b) owns stair yields and carving in `peachtreeLawn` (#282). Message it before changing the stair or the turf cut there. Keep the stair's world coordinates and its 4 m width.
+## Next steps — latest Sam correction takes priority
 
-## Servers
-- None left running by this session. `:5317` was the Vite dev server for this worktree (stopped), and `:5320` was a temporary main-branch "before" server (stopped, and its worktree removed).
+1. **Rhodes stronger uplight options BEFORE Coda.** Coordinator thread `msg_6ad58365f976`:
+   Sam says tower still too bright after #355. Prepare a NEW branch/PR from latest main.
+   Reduce tower to roughly half original and make a real base-to-top falloff: top and
+   crenellations should be in shadow, not a uniformly cream block. Show **two options
+   around -50% and -65% of original**, on one matched 21:00 high/low choice sheet.
+   Preserve porch AND bay. Compare with existing real night photo in `docs/rhodes-hall.md`.
+   Send sheet for Sam to pick; **merge only the selected option** after tests/review.
+   Camera `301,-4675,340,60,160`, Nov20 2026 21:00 Eastern, `speed=0`.
+   Current code `midtown-culture-rhodes.ts` uses `aRhodesWash`; coefficient .75 and
+   `Math.max(.25,1-y/30)` still leave top too bright. Geometry from `porchStart` onward
+   is excluded from the multiplier to preserve the western porch beam that overlaps
+   the old spatial tower mask. Existing regression pins this beam's original wash.
+   Use actual tower geometry ownership if needed so bay/plinth do not change incidentally.
+2. Return to this Coda WIP after the selected Rhodes follow-up merges. Main tower way
+   714119667, Crum & Forster way42792936, High Performance Computing Center way791413998
+   are three separate mapped footprints in `pipeline/prototypes/square-board/midtown-south/context.json`.
+   No existing model found by git grep. All lie inside rectangle. Read `docs/coda.md`.
+   Keep the public arcade genuinely open; three separate dispatches preserve each footprint.
+   AIA ground floor plan and day photos plus lighting designer's actual night photos were
+   viewed in fresh Orca research tab. Record estimated dimensions and uncertainty.
+   Baseline captures remain to do: attempted `326,-2402,280,60,360` was too close and
+   clipped tower top. Choose a wider camera (~500m) and correct bearing to see west facade.
+   Night capture guard saw renderer calls0 after12areas; no bad image saved. Recheck on a
+   fresh page before diagnosing; may be transient. All final Rhodes captures worked.
+3. Add Georgia Tech central utility/Holland plant stack as a **separate backlog candidate**
+   in `docs/art-backlog.md`, with https://facilities.gatech.edu/index.php/2016-04/hidden-georgia-tech-holland-plant
+   as a starting source. Coordinator clarified handoff's “Coda and its smokestack” was
+   mistaken (`msg_8f87ed65f253`). Do not invent a stack at Coda. Model later only after
+   verifying it lies inside board.
+4. After Coda lands update `docs/rectangle-detail-plan.md`, build-log and source/capture doc.
 
-## Repo rules that bit me
-- **Formatting:** there is no Prettier config. Use `npx prettier --single-quote --print-width 120`, which matches the repo style; the defaults reformat whole files.
-- **Toolchain:** cargo is not on PATH on the Studio. Prefix `PATH="/opt/homebrew/opt/rustup/bin:$PATH"` before `pnpm test`, and opencode is absent.
-- **Shell:** zsh doesn't word-split `$VAR` lists. Use bash scripts or explicit loops.
-- **Footprint edges:** the shell podium wall stands on the mapped footprint ring, which can sit metres outside a modelled face. Anything at street level must go on the ring edge, or it hides behind the podium (this happened with the loading dock).
-- **Tests:** use `Box3.setFromObject(obj, true)` (precise). The default over-estimates under a rotated group. The museum landmark group's children are `[shell, landscape, turf]`, and the tests rely on that order.
-- **City captures:**
-  - The orbit minimum is 150 m, so use `window.__setView(bearing, tilt, dist, x, z, zoom)` for close-ups.
-  - Hide the HUD with `.a2-subject,.a2-appbar,.a2-camera,.a2-hint,.a2-credit`, and wait until "Building the city…" disappears before a screenshot.
-  - For a before build, `git worktree add` the base and run `pnpm install --offline` in it.
-- **Merge conflicts:** `docs/build-log.md` conflicts on almost every merge. Resolve by keeping main's entries first, then yours.
-- **Review:** `pnpm review` needs Codex, which was out of usage in this session, so these PRs got self-review with the code-review skill (one or two rounds) instead. Codex can run `pnpm review` normally.
+## Coordination and promises
+
+Coordinator: Air terminal `term_05a952fa-de06-4064-8655-3e98e1caf1e0`.
+Direct Studio→Air sends may fail rejected pairing token. Reply threads work:
+`orca orchestration reply --id msg_371ef516eb3e --from <YOUR session id> --body '...'`.
+Other useful threads: `msg_6ad58365f976` new Rhodes options; `msg_a45f81f0350b` workstream.
+Read replies with `orca orchestration check`. Send milestones only: research done,
+PR ready with shots, verified merge. Every MERGED notice must quote exact state and
+mergeCommit from `gh pr view`. Preserve both build-log entries on conflict and rerun tests.
+Every merge notice: captioned BEFORE|AFTER composite, subject ring/arrow, GitHub blob links,
+money shot first, camera string. For options, use clearly labelled option sheet.
+
+Traffic owner `orca_session_id:1f9238ff-2c34-4398-9612-0425e769c083` fixed the 21:00 crash
+in #354 `b8011c954ba77117a2f2cb07c7dcc0baa6c2b37b`: streetcar endpoint indexed past road
+segments, now clamped with missing-owner guard. Do not duplicate its work. If another
+frame crash appears, install a window error listener to capture stack; Orca console
+alone did not expose it reliably.
+
+Other prior promises: tree agent owns High ginkgo at(612.5,-4001.2), no objects above1.5m
+within9m crown. Ground agent owns High stair/turf carving; don't edit those. Parks agent
+owns landscape primitives. No other unfinished implementation owed.
+
+## Tools and cleanup
+
+All my servers and browser tabs stopped/closed at handoff. Port5317 was own Vite server.
+Use `/Applications/Orca.app/Contents/Resources/bin/orca`.
+Rust tests need `PATH="/opt/homebrew/opt/rustup/bin:$PATH" pnpm test`.
+Use `pnpm review -- --reviewer claude` (cross-review skill), max2 rounds. Review is against
+origin/main, includes untracked files; never run while a temporary before variant is active.
+Use Prettier `--single-quote --print-width 120` if needed, avoid whole-file default formatting.
+
+Local helper scripts (not committed): `/tmp/dim-capture.py`, `/tmp/dim-work.py` (temporary
+before variant restored in finally), `/tmp/dim-sheets.py`; Pillow at
+`/tmp/rhodes-art/bin/python`. Scripts contain old closed browser page IDs; replace them.
+Screenshots: wait until12areas and loading text gone, set camera with `__setView`, wait,
+then assert `window.__cityDev.renderer.info.render.calls > 0`; inspect actual images.
+`ui=classic` is supported escape hatch. `speed=0` works; earlier suspicion was wrong,
+actual cause was the fixed traffic crash. Do not commit blank beige images.
+Logs in /tmp/dim-tests-porch.log, /tmp/dim-perf-final.log, /tmp/dim-review-final.log.
