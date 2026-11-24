@@ -38,6 +38,9 @@ export interface SliceStats {
 
 export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, maxSliceAt: '', maxStepMs: 0, maxStepAt: '', totalMs: 0 });
 
+/** Set by City while the user drags the camera: background builds then take a smaller share. */
+export const sliceInput = { dragging: false };
+
 export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise<T> {
   const now = o.now ?? (() => performance.now());
   const nextFrame = o.nextFrame ?? (() => new Promise(r => requestAnimationFrame(r)));

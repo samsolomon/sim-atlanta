@@ -24,7 +24,7 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, terrainOpenings } from '../terrain/model';
-import { emptySliceStats, runBudgeted, runSync, type Build, type SliceStats } from '../core/slice';
+import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -37,12 +37,14 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  */
 /**
  * ?slice=1 spreads each section's build over frames: 4 ms of work per frame on low, 8 ms on
- * high (the sliced-build gate: no long task while an area mounts). Off by default.
+ * high, half that while the camera is dragged (the sliced-build gate: no long task while an
+ * area mounts). Off by default.
  */
 function sliceBudget(quality: TerrainQuality): (() => number) | null {
   if (typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') !== '1') return null;
   const ms = quality === 'low' ? 4 : 8;
-  return () => ms;
+  // Half the share while the user drags, so a moving camera stays smooth.
+  return () => sliceInput.dragging ? ms / 2 : ms;
 }
 /** Sliced-build stats across every section this page loaded (?slice=1), for the perf harness. */
 export const sliceStats = emptySliceStats();
