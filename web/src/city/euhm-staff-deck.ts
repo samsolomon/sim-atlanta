@@ -65,6 +65,10 @@ function face(shell: Shell, a: P2, b: P2, center: P2) {
     quad(l: number, r: number, y0: number, y1: number, out: number, c: string, lit = false) {
       (lit ? shell.lights : shell.body).quad(at(l, y0, out), at(l, y1, out), at(r, y1, out), at(r, y0, out), c);
     },
+    /** A horizontal strip at height y, from `in0` to `out0` off the face. */
+    flat(l: number, r: number, y: number, in0: number, out0: number, c: string) {
+      shell.body.quad(at(l, y, in0), at(l, y, out0), at(r, y, out0), at(r, y, in0), c);
+    },
   };
 }
 
@@ -101,8 +105,10 @@ export function createEuhmStaffDeck(buildings: VBuilding[], site: VBuilding, gri
 
     for (const { a, b, street } of faces) {
       const f = face(s, a, b, center);
-      // Parapet at the deck edge.
+      // Parapet at the deck edge, and a coping out to the fin screen so the
+      // screen hangs from the deck rather than floating 0.75 m off it.
       s.body.quad([a[0], deckTop, a[1]], [a[0], parapet, a[1]], [b[0], parapet, b[1]], [b[0], deckTop, b[1]], finShade);
+      f.flat(0, 1, parapet, 0, 0.75, fin);
       // Decks behind the screen: dark interior, with one thin lit strip per
       // level under each slab (the ceiling fixtures), so at night it reads as
       // a lit garage rather than a glowing slab.
