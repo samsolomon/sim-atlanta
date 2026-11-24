@@ -252,8 +252,25 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
   return runSync(farSurfaceSteps(spec, heights, openings, errorM, maxCellM, lower));
 }
 
-/** farSurface as a build that yields every few dozen cells, leaves and triangles (core/slice.ts). */
-export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openings: readonly OpenSlot[], errorM: number, maxCellM = 160, lower = false): Build<{ pos: number[]; uv: number[]; indices: number[] }> {
+/** Room for `need` items: the same typed array, or a copy at least twice as long. */
+function room<T extends Float64Array | Float32Array | Int32Array | Uint32Array>(a: T, need: number): T {
+  if (need <= a.length) return a;
+  const b = new (a.constructor as new (n: number) => T)(Math.max(need, 2 * a.length));
+  b.set(a);
+  return b;
+}
+/** First capacity (vertices, leaves) of a far build's growing arrays; tests shrink it so every grow path runs. */
+export const farGrowth = { start: 4096 };
+
+/**
+ * farSurface as a build that yields every few dozen cells, leaves and triangles (core/slice.ts).
+ * Everything that lives through the build is a typed array (off the JS heap), and the per-cell
+ * and per-triangle steps allocate almost nothing, so a background build leaves the garbage
+ * collector little to copy: its pauses were the longest slices of the sliced build at 6x.
+ * Positions stay doubles until the end (settling compares them); the arrays returned are
+ * views over the build's buffers, sized to what was used.
+ */
+export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openings: readonly OpenSlot[], errorM: number, maxCellM = 160, lower = false): Build<{ pos: Float64Array; uv: Float32Array; indices: Uint32Array }> {
     const { rows, cols, stepM, bounds } = spec;
     const cellsX = cols - 1, cellsZ = rows - 1;
     const maxSize = 2 ** Math.floor(Math.log2(Math.max(1, maxCellM / stepM)));
@@ -264,12 +281,12 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       const r0 = Math.max(0, Math.floor((sl.minZ - bounds.minZ) / stepM) - 1), r1 = Math.min(cellsZ - 1, Math.floor((sl.maxZ - bounds.minZ) / stepM) + 1);
       for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) slotCell[r * cellsX + c] = 1;
     }
-    // Leaves: origin (cell units) and size; `leafAt` maps each 5 m cell to its leaf (-1: void).
-    const lx: number[] = [], lz: number[] = [], ls: number[] = [];
+    // Leaves: origin (cell units), size and excess; `leafAt` maps each 5 m cell to its leaf (-1: void).
+    const start = Math.max(1, farGrowth.start);
+    let lx = new Int32Array(start), lz = new Int32Array(start), ls = new Int32Array(start), le = new Float64Array(start), leaves = 0;
     const leafAt = new Int32Array(cellsX * cellsZ).fill(-1);
     const node = (c: number, r: number) => r * cols + c;
     let excess = 0;
-    const le: number[] = [];
     const accept = (cx: number, cz: number, s: number) => {
       excess = 0;
       const nw = heights[node(cx, cz)], ne = heights[node(cx + s, cz)], sw = heights[node(cx, cz + s)], se = heights[node(cx + s, cz + s)];
@@ -284,36 +301,55 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       return true;
     };
     const place = (cx: number, cz: number, s: number) => {
-      const id = ls.length; lx.push(cx); lz.push(cz); ls.push(s); le.push(s > 1 ? excess : 0);
+      if (leaves === lx.length) { lx = room(lx, leaves + 1); lz = room(lz, leaves + 1); ls = room(ls, leaves + 1); le = room(le, leaves + 1); }
+      const id = leaves++;
+      lx[id] = cx; lz[id] = cz; ls[id] = s; le[id] = s > 1 ? excess : 0;
       for (let r = cz; r < cz + s; r++) for (let c = cx; c < cx + s; c++) leafAt[r * cellsX + c] = id;
+    };
+    /** One 5 m cell: a leaf unless a corner is void. */
+    const unit = (cx: number, cz: number) => {
+      if (cx >= cellsX || cz >= cellsZ) return;
+      if (Number.isFinite(heights[node(cx, cz)]) && Number.isFinite(heights[node(cx + 1, cz)])
+        && Number.isFinite(heights[node(cx, cz + 1)]) && Number.isFinite(heights[node(cx + 1, cz + 1)])) place(cx, cz, 1);
     };
     let work = 0;
     function* split(cx: number, cz: number, s: number): Generator<string, void, void> {
       if (cx >= cellsX || cz >= cellsZ) return;
-      if (s === 1) {
-        const h = [node(cx, cz), node(cx + 1, cz), node(cx, cz + 1), node(cx + 1, cz + 1)].map(i => heights[i]);
-        if (h.every(Number.isFinite)) place(cx, cz, 1);
-        return;
-      }
+      if (s === 1) { unit(cx, cz); return; }
       // accept() scans (s+1)² nodes: count that work and hand back control every few thousand.
       work += (s + 1) * (s + 1);
       if (work > 512) { work = 0; yield 'far cells'; }
       if (cx + s <= cellsX && cz + s <= cellsZ && accept(cx, cz, s)) { place(cx, cz, s); return; }
       const h = s / 2;
+      // 5 m children directly: no generator per cell.
+      if (h === 1) { unit(cx, cz); unit(cx + 1, cz); unit(cx, cz + 1); unit(cx + 1, cz + 1); return; }
       yield* split(cx, cz, h); yield* split(cx + h, cz, h); yield* split(cx, cz + h, h); yield* split(cx + h, cz + h, h);
     }
     for (let cz = 0; cz < cellsZ; cz += maxSize) for (let cx = 0; cx < cellsX; cx += maxSize) yield* split(cx, cz, maxSize);
-    const pos: number[] = [], uv: number[] = [], indices: number[] = [];
-    const remap = new Map<number, number>();
+    // Vertices: doubles until the end; `nodeOf` is each vertex's grid node (-1: a clip vertex),
+    // `vertOf` each node's vertex plus one (0: none yet).
+    let pos = new Float64Array(3 * start), uv = new Float32Array(2 * start), nodeOf = new Int32Array(start), indices = new Uint32Array(6 * start);
+    let verts = 0, count = 0, clipping = false;
+    const vertOf = new Int32Array(rows * cols);
     const add = (x: number, y: number, z: number) => {
-      const i = pos.length / 3;
-      pos.push(x, y, z);
-      uv.push((x - bounds.minX) / (bounds.maxX - bounds.minX), (bounds.maxZ - z) / (bounds.maxZ - bounds.minZ));
+      if (verts === nodeOf.length) {
+        // subtractSlot holds `pos` across its calls to add: room is made before each call.
+        if (clipping) throw new Error('far build: positions grew during a slot clip');
+        pos = room(pos, 3 * verts + 3); uv = room(uv, 2 * verts + 2); nodeOf = room(nodeOf, verts + 1);
+      }
+      const i = verts++;
+      pos[3 * i] = x; pos[3 * i + 1] = y; pos[3 * i + 2] = z;
+      uv[2 * i] = (x - bounds.minX) / (bounds.maxX - bounds.minX); uv[2 * i + 1] = (bounds.maxZ - z) / (bounds.maxZ - bounds.minZ);
+      nodeOf[i] = -1;
       return i;
+    };
+    const triangle = (a: number, b: number, c: number) => {
+      if (count + 3 > indices.length) indices = room(indices, count + 3);
+      indices[count++] = a; indices[count++] = b; indices[count++] = c;
     };
     const drop = new Float32Array(lower ? rows * cols : 0);
     let dropWork = 0;
-    if (lower) for (let id = 0; id < ls.length; id++) {
+    if (lower) for (let id = 0; id < leaves; id++) {
       const e = le[id];
       if (!(e > 0)) continue;
       const cx = lx[id], cz = lz[id], s = ls[id];
@@ -327,29 +363,42 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
       }
     }
     const vertex = (n: number) => {
-      let v = remap.get(n);
-      if (v === undefined) remap.set(n, v = add(bounds.minX + (n % cols) * stepM, heights[n] - (lower ? drop[n] : 0), bounds.minZ + Math.floor(n / cols) * stepM));
+      let v = vertOf[n] - 1;
+      if (v < 0) {
+        v = add(bounds.minX + (n % cols) * stepM, heights[n] - (lower ? drop[n] : 0), bounds.minZ + Math.floor(n / cols) * stepM);
+        nodeOf[v] = n;
+        vertOf[n] = v + 1;
+      }
       return v;
     };
     // A node strictly inside a leaf edge is kept when the cell across the edge is a void,
     // off the board, or a finer leaf with a corner there.
-    const keep = (c: number, r: number, across: [number, number][]) => across.some(([ac, ar]) => {
+    const across = (c: number, r: number, ac: number, ar: number) => {
       if (ac < 0 || ar < 0 || ac >= cellsX || ar >= cellsZ) return true;
       const id = leafAt[ar * cellsX + ac];
       if (id < 0) return true;
       return (c - lx[id]) % ls[id] === 0 && (r - lz[id]) % ls[id] === 0;
-    });
+    };
+    const keep = (c: number, r: number, ac: number, ar: number, bc: number, br: number) => across(c, r, ac, ar) || across(c, r, bc, br);
     let clip = false, near: typeof slots = [];
     const emit = (a: number, b: number, c: number) => {
-      const face = [vertex(a), vertex(b), vertex(c)];
-      let faces = [face];
+      const va = vertex(a), vb = vertex(b), vc = vertex(c);
+      if (!clip) { triangle(va, vb, vc); return; }
+      let faces = [[va, vb, vc]];
       // Only the slots whose box meets this 5 m cell can cut it (downtown has dozens).
-      if (clip) for (const sl of near) faces = faces.flatMap(f => subtractSlot(f, sl.planes, pos, add));
-      for (const f of faces) for (let j = 1; j + 1 < f.length; j++) indices.push(f[0], f[j], f[j + 1]);
+      for (const sl of near) faces = faces.flatMap(f => {
+        // Each plane adds at most two cut vertices.
+        const need = verts + 2 * sl.planes.length;
+        if (need > nodeOf.length) { pos = room(pos, 3 * need); uv = room(uv, 2 * need); nodeOf = room(nodeOf, need); }
+        clipping = true;
+        try { return subtractSlot(f, sl.planes, pos, add); } finally { clipping = false; }
+      });
+      for (const f of faces) for (let j = 1; j + 1 < f.length; j++) triangle(f[0], f[j], f[j + 1]);
     };
     yield 'far emit';
     let clipWork = 0;
-    for (let id = 0; id < ls.length; id++) {
+    const ring: number[] = [];
+    for (let id = 0; id < leaves; id++) {
       if (id % 64 === 63) yield 'far leaves';
       const cx = lx[id], cz = lz[id], s = ls[id];
       clip = s === 1 && slotCell[cz * cellsX + cx] === 1;
@@ -360,20 +409,21 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
         if (clipWork > 64) { clipWork = 0; yield 'far clips'; }
       }
       const nw = node(cx, cz), ne = node(cx + s, cz), sw = node(cx, cz + s), se = node(cx + s, cz + s);
-      const ring = [nw];
-      for (let t = 1; t < s; t++) if (keep(cx, cz + t, [[cx - 1, cz + t - 1], [cx - 1, cz + t]])) ring.push(node(cx, cz + t));
+      ring.length = 0;
+      ring.push(nw);
+      for (let t = 1; t < s; t++) if (keep(cx, cz + t, cx - 1, cz + t - 1, cx - 1, cz + t)) ring.push(node(cx, cz + t));
       ring.push(sw);
-      for (let t = 1; t < s; t++) if (keep(cx + t, cz + s, [[cx + t - 1, cz + s], [cx + t, cz + s]])) ring.push(node(cx + t, cz + s));
+      for (let t = 1; t < s; t++) if (keep(cx + t, cz + s, cx + t - 1, cz + s, cx + t, cz + s)) ring.push(node(cx + t, cz + s));
       ring.push(se);
-      for (let t = s - 1; t > 0; t--) if (keep(cx + s, cz + t, [[cx + s, cz + t - 1], [cx + s, cz + t]])) ring.push(node(cx + s, cz + t));
+      for (let t = s - 1; t > 0; t--) if (keep(cx + s, cz + t, cx + s, cz + t - 1, cx + s, cz + t)) ring.push(node(cx + s, cz + t));
       ring.push(ne);
-      for (let t = s - 1; t > 0; t--) if (keep(cx + t, cz, [[cx + t - 1, cz - 1], [cx + t, cz - 1]])) ring.push(node(cx + t, cz));
+      for (let t = s - 1; t > 0; t--) if (keep(cx + t, cz, cx + t - 1, cz - 1, cx + t, cz - 1)) ring.push(node(cx + t, cz));
       if (ring.length === 4) { emit(nw, sw, ne); emit(sw, se, ne); continue; }
       const centre = node(cx + s / 2, cz + s / 2);
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
-    if (lower) yield* settleBelow(pos, indices, remap, heights, spec, 2 * errorM);
-    return { pos, uv, indices };
+    if (lower) yield* settleBelow(pos, indices, count, nodeOf, heights, spec, 2 * errorM);
+    return { pos: pos.subarray(0, 3 * verts), uv: uv.subarray(0, 2 * verts), indices: indices.subarray(0, count) };
 }
 
 /**
@@ -383,21 +433,25 @@ export function* farSurfaceSteps(spec: SurfaceSpec, heights: Float32Array, openi
  * drops more than `limit` (twice the error) below its own node, so a cell against the rim may
  * keep a residue (up to about 4 m within 165 m of a seam on the current boards).
  */
-function* settleBelow(pos: number[], indices: number[], remap: Map<number, number>, heights: Float32Array, spec: SurfaceSpec, limit: number): Generator<string, void, void> {
+function* settleBelow(pos: Float64Array, indices: Uint32Array, count: number, nodeOf: Int32Array, heights: Float32Array, spec: SurfaceSpec, limit: number): Generator<string, void, void> {
   const { rows, cols, stepM, bounds } = spec;
-  const nodeOf = new Int32Array(pos.length / 3).fill(-1);
-  for (const [n, v] of remap) nodeOf[v] = n;
   const movable = (v: number) => {
     const n = nodeOf[v];
     if (n < 0) return false;
     const c = n % cols, r = Math.floor(n / cols);
     return c > 0 && r > 0 && c < cols - 1 && r < rows - 1;
   };
+  let moved = false;
+  const lower = (v: number, need: number) => {
+    const floor = heights[nodeOf[v]] - limit;
+    const y = Math.max(floor, pos[3 * v + 1] - need);
+    if (y < pos[3 * v + 1]) { pos[3 * v + 1] = y; moved = true; }
+  };
   let settleWork = 0;
   for (let pass = 0; pass < 4; pass++) {
-    let moved = false;
-    for (let t = 0; t < indices.length; t += 3) {
-      const [a, b, c] = [indices[t], indices[t + 1], indices[t + 2]];
+    moved = false;
+    for (let t = 0; t < count; t += 3) {
+      const a = indices[t], b = indices[t + 1], c = indices[t + 2];
       const ax = pos[3 * a], ay = pos[3 * a + 1], az = pos[3 * a + 2];
       const bx = pos[3 * b], by = pos[3 * b + 1], bz = pos[3 * b + 2];
       const cx = pos[3 * c], cy = pos[3 * c + 1], cz = pos[3 * c + 2];
@@ -426,11 +480,9 @@ function* settleBelow(pos: number[], indices: number[], remap: Map<number, numbe
         if (over > 1e-3 && share > 1e-6) need = Math.max(need, over / share);
       }
       if (need <= 1e-3) continue;
-      for (const v of [a, b, c]) if (movable(v)) {
-        const n = nodeOf[v], floor = heights[n] - limit;
-        const y = Math.max(floor, pos[3 * v + 1] - need);
-        if (y < pos[3 * v + 1]) { pos[3 * v + 1] = y; moved = true; }
-      }
+      if (ma) lower(a, need);
+      if (mb) lower(b, need);
+      if (mc) lower(c, need);
     }
     if (!moved) break;
   }
@@ -451,7 +503,9 @@ export function vertexNormals(pos: ArrayLike<number>, indices: ArrayLike<number>
     const cx = pos[c], cy = pos[c + 1], cz = pos[c + 2];
     const ux = cx - bx, uy = cy - by, uz = cz - bz, vx = ax - bx, vy = ay - by, vz = az - bz;
     const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-    for (const k of [a, b, c]) { n[k] += nx; n[k + 1] += ny; n[k + 2] += nz; }
+    n[a] += nx; n[a + 1] += ny; n[a + 2] += nz;
+    n[b] += nx; n[b + 1] += ny; n[b + 2] += nz;
+    n[c] += nx; n[c + 1] += ny; n[c + 2] += nz;
   }
   for (let k = 0; k < n.length; k += 3) {
     // Vector3.normalize: divideScalar(length || 1) multiplies by the reciprocal.
@@ -482,7 +536,9 @@ export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<n
     const cx = pos[c], cy = pos[c + 1], cz = pos[c + 2];
     const ux = cx - bx, uy = cy - by, uz = cz - bz, vx = ax - bx, vy = ay - by, vz = az - bz;
     const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-    for (const k of [a, b, c]) { n[k] += nx; n[k + 1] += ny; n[k + 2] += nz; }
+    n[a] += nx; n[a + 1] += ny; n[a + 2] += nz;
+    n[b] += nx; n[b + 1] += ny; n[b + 2] += nz;
+    n[c] += nx; n[c + 1] += ny; n[c + 2] += nz;
   }
   yield 'far normals';
   for (let k = 0; k < n.length; k += 3) {
@@ -493,7 +549,7 @@ export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<n
 }
 
 /** 16- or 32-bit indices, as BufferGeometry.setIndex(number[]) picks them. */
-function indexOf(indices: number[], vertexCount: number) {
+export function indexOf(indices: ArrayLike<number>, vertexCount: number) {
   return vertexCount > 65535 ? Uint32Array.from(indices) : Uint16Array.from(indices);
 }
 

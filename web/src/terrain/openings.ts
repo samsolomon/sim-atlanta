@@ -33,7 +33,7 @@ export function slotPlanes({ start, end, halfWidthM, crossAxis }: OpenSlot) {
 
 /** Subtract an oriented slot from one convex terrain face. All split vertices stay on
  * the original terrain plane. A slot narrower than a grid cell still has exact ends. */
-export function subtractSlot(face: number[], planes: Plane[], positions: number[],
+export function subtractSlot(face: number[], planes: Plane[], positions: ArrayLike<number>,
   add: (x: number, y: number, z: number) => number): number[][] {
   let inside = face;
   const kept: number[][] = [];
