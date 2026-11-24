@@ -26,6 +26,7 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { FramePacer } from './pacer';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -1595,18 +1596,31 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     return null;
   }
+  // `?perf&pace=off` draws every refresh, for A/B runs.
+  const pacer = perfEnabled && query.get('pace') === 'off' ? null : new FramePacer();
+  const glideStep = () => {
+    if (!glideTo) return;
+    const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : 0.12);
+    controls.target.add(step);
+    camera.position.add(step);
+    if (step.length() < 0.05) glideTo = null;
+  };
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
+    // A device that can't hold its refresh rate draws on a steady divisor of it (city/pacer.ts).
+    // Skipped refreshes still move the camera, so damping and glides keep their pace.
+    if (pacer && !pacer.tick(ts)) {
+      if (!drive) {
+        glideStep();
+        controls.update();
+      }
+      return;
+    }
     const frameStart = performance.now();
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
-    if (glideTo) {
-      const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : 0.12);
-      controls.target.add(step);
-      camera.position.add(step);
-      if (step.length() < 0.05) glideTo = null;
-    }
+    glideStep();
     if (drive) {
       controls.enabled = false;
       const {eye,ahead} = drive((ts-driveStart)/1000);
