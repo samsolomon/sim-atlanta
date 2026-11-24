@@ -52,6 +52,7 @@ import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { createStreetcarCars, streetcarCovers } from './streetcar-cars';
+import { streetcarTraffic } from './streetcar-traffic';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
 import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
@@ -188,6 +189,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Arrive as a white study model, then fade colour in (A2c step 9; see white-model.ts). */
   whiteModel?: false | 'paper' | 'map' | 'fade';
   trains: () => TrainState[];
+  /** Timetable-only historical samples for deterministic streetcar following. */
+  scheduledStreetcarsAt?: (clockMs: number) => readonly TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
   clockMs: () => number;
@@ -756,8 +759,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(next.group);
   }
   const corridors = trafficOptions && loadArterials(arterialData, vd).corridors;
+  const movingBlocks = trafficOptions && options.scheduledStreetcarsAt
+    ? streetcarTraffic(rf, manifest.origin, options.scheduledStreetcarsAt, (x,z) => {
+      for (const { bounds:r, height } of streetcarSurface)
+        if (x>=r.minX && x<=r.maxX && z>=r.minZ && z<=r.maxZ) return height(x,z);
+      return null;
+    }, trafficOptions.roadHeight) : undefined;
   const arterials = trafficOptions && corridors?.length
-    ? new ArterialTraffic({ ...trafficOptions, arterials: corridors })
+    ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
     : undefined;
   if (traffic) scene.add(traffic.group);
   if (arterials) scene.add(arterials.group);

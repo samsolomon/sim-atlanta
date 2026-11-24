@@ -517,6 +517,7 @@ async function openCity() {
       mapGestures: uiNext(location.search),
       whiteModel: !uiNext(location.search) ? false : overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
       trains: () => source.update(),
+      scheduledStreetcarsAt: ms => schedule.trainsAt(new Date(ms)).filter(t => t.routeId === 'marta:route:STREETCAR'),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
