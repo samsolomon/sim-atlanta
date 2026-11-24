@@ -1,4 +1,56 @@
-# Handoff: studio-ground-contact (Claude → Codex, 2026-11-23)
+# Studio ground-contact handoff to Claude Opus
+
+## Active work and merge hold
+
+Resume in this worktree on `samsolomon/underpass-road-joins`. The baseline is `59b8cbc998e147ea21e028beecc3cbc409fe6938`. There is no PR yet for the road joins. **Hold its eventual PR until the coordinator relays Sam’s explicit OK.** Only the coordinator deploys. The new coordinator is `term_09e1b3da-5f48-4755-abf8-92a571a1f474` on Sam’s MacBook Air. Task message `msg_0dc023458d76`, handoff message `msg_8d98c97a626b`, outgoing Codex session `orca_session_id:22a6180b-5cd0-4056-bbed-4d2cb2483246`. Use your own session identity when replying to a coordinator message. Direct Studio-to-Air send has had pairing failures.
+
+Sam’s exact words were “we should try and smooth the tunnel connections to the main roads. I think that's something that continues to be an issue.” The coordinator described a dark band across the lanes, double yellow fading into white dashes, and divider and side walls ending squarely. The requested result covers every road underpass, with continuous pavement and markings, a smooth ramp and tapered walls, day/night evidence, and a joint height and normal regression probe.
+
+The screenshot description identifies **North Avenue**. It has two cells, a median pier and a shader that blends from the board paint into dashed lane markings over 15 m at either end. Grant is undivided, with the road already painted on continuous terrain. This identification comes from the scene and source; the original production screenshot was described in the message. The physical cause of the dark band still needs measurement.
+
+## Checkpoint and evidence
+
+The only changes on this branch are this handoff and the before captures. No fix or regression probe has been implemented. All 28 JPEGs decoded and were inspected on a contact sheet. They cover 14 normal-distance cameras at 14:00 and 23:00 Eastern, high tier, at the baseline commit. Some control views are occluded by elevated streets or nearby buildings. Inspect them at full size before using them for sign-off. A single control overview does not establish continuity at both ends.
+
+Earlier work has landed. GitHub returned the following for `gh pr view --json state,mergeCommit`.
+
+- Grant Street #370 `{"mergeCommit":{"oid":"f6cddc404d42e247228afddf1362fc907cf6918f"},"state":"MERGED"}`
+- North Avenue #380 `{"mergeCommit":{"oid":"bca71fa4347daa8db0fe10f34d0ba6eac70ad62a"},"state":"MERGED"}`. MARTA closed its superseded draft #361. The south Midtown footbridge fix is in main, documented in the build log.
+
+## Next steps in order
+
+1. Inspect both North Avenue mouths and compare cross sections on high and low. In `web/src/terrain/underpass.ts`, trace `underpassFloor`, `drawUnderpass` and the 15 m paint blend. Compare the actual emitted pavement triangles with the exterior board on both sides of the joint. Check surface normals, shadows and the board light map separately before attributing the dark band.
+2. Add a regression test or probe that fails on the current discontinuity. Sample height and tangent/normal across each mouth, including both lanes and shoulders. Inventory Grant, Leonard Tate, the seven Connector crossings, 17th and the Brookwood ramps against the rendered geometry. Existing `terrain/underpass-clearance.test.ts` tests overhead clearance, a separate property.
+3. Implement one continuous ramp surface or a matched joint. Carry a coherent marking layout through the cut, taper divider and walls to grade, and match day/night illumination at the boundary. Reuse shared materials. Preserve surveyed cover spans and clearance, open daylight gaps and the disused rail tops. Check which other mouths share the defect before changing their geometry.
+4. Repeat the before cameras and supply additional matched views of each joint that a control overview does not expose. Run `pnpm test`, `pnpm audit:ground --url http://localhost:5291` and `pnpm test:perf` on both tiers. Verify low remains within 90 programs. No test, ground-audit or perf result exists for the proposed change yet. On this Studio, `CHROME=/tmp/king-hardware-chrome` has worked for headless GPU checks. Ensure the Python pipeline tests actually run.
+5. Record results and screenshot links in the build log, run the repo cross-review, open the task PR and reply to the coordinator with the evidence and camera strings. Wait for Sam’s OK before merging. Before any MERGED notice, quote `state` and `mergeCommit` from a fresh `gh pr view`.
+
+## Before views
+
+Reproduce with `/?view=city&q=high&dev&speed=0&t=2026-11-20T14:00:00-05:00&cam=...` or hour 23. The captures used 999 × 496 CSS pixels at DPR 2 and zoom 1. Camera order is x, z, bearing, tilt, distance. The local batch helper and camera list are in `/tmp/join-shots.mjs` and `/tmp/join-cams.json` on this Studio. With Vite on 5291, use `node /tmp/join-shots.mjs --desktop after 14` and repeat with 23. The capture browsers exited and Vite on 5291 was stopped.
+
+| View | Camera | Day | Night |
+| --- | --- | --- | --- |
+| north-east | `-740,-1898,62,58,160` | [14:00](../log/underpass-road-joins/join-before-north-east-14.jpg) | [23:00](../log/underpass-road-joins/join-before-north-east-23.jpg) |
+| north-west | `-920,-1812,-109,58,160` | [14:00](../log/underpass-road-joins/join-before-north-west-14.jpg) | [23:00](../log/underpass-road-joins/join-before-north-west-23.jpg) |
+| grant-north | `1381,482,177,60,150` | [14:00](../log/underpass-road-joins/join-before-grant-north-14.jpg) | [23:00](../log/underpass-road-joins/join-before-grant-north-23.jpg) |
+| grant-south | `1382,533,8,60,150` | [14:00](../log/underpass-road-joins/join-before-grant-south-14.jpg) | [23:00](../log/underpass-road-joins/join-before-grant-south-23.jpg) |
+| leonard-north | `1096,134,164,58,160` | [14:00](../log/underpass-road-joins/join-before-leonard-north-14.jpg) | [23:00](../log/underpass-road-joins/join-before-leonard-north-23.jpg) |
+| leonard-south | `1119,240,-7,58,160` | [14:00](../log/underpass-road-joins/join-before-leonard-south-14.jpg) | [23:00](../log/underpass-road-joins/join-before-leonard-south-23.jpg) |
+| baker | `892,-930,-38,52,260` | [14:00](../log/underpass-road-joins/join-before-baker-14.jpg) | [23:00](../log/underpass-road-joins/join-before-baker-23.jpg) |
+| courtland | `685,-1157,84,58,230` | [14:00](../log/underpass-road-joins/join-before-courtland-14.jpg) | [23:00](../log/underpass-road-joins/join-before-courtland-23.jpg) |
+| peachtree | `565,-1274,-50,52,230` | [14:00](../log/underpass-road-joins/join-before-peachtree-14.jpg) | [23:00](../log/underpass-road-joins/join-before-peachtree-23.jpg) |
+| turner | `320,-1445,85,58,220` | [14:00](../log/underpass-road-joins/join-before-turner-14.jpg) | [23:00](../log/underpass-road-joins/join-before-turner-23.jpg) |
+| decatur | `855,452,3,58,220` | [14:00](../log/underpass-road-joins/join-before-decatur-14.jpg) | [23:00](../log/underpass-road-joins/join-before-decatur-23.jpg) |
+| mlk | `595,626,9,58,220` | [14:00](../log/underpass-road-joins/join-before-mlk-14.jpg) | [23:00](../log/underpass-road-joins/join-before-mlk-23.jpg) |
+| capitol | `354,1044,85,58,220` | [14:00](../log/underpass-road-joins/join-before-capitol-14.jpg) | [23:00](../log/underpass-road-joins/join-before-capitol-23.jpg) |
+| 17th | `-60,-4173,155,58,240` | [14:00](../log/underpass-road-joins/join-before-17th-14.jpg) | [23:00](../log/underpass-road-joins/join-before-17th-23.jpg) |
+
+## Historical handoff
+
+The following is the earlier Claude → Codex checkpoint. The active queue and coordinator above supersede it.
+
+### Handoff: studio-ground-contact (Claude → Codex, 2026-11-23)
 
 Worktree `studio-ground-contact`. Areas: terrain ground contact, depth range, low-tier terrain memory and triangles. Coordinator: `orca_session_id:1df827bc-6e12-4e74-b7da-83ee8931ec4b` (Sam's Air).
 
