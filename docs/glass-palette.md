@@ -2,6 +2,10 @@
 
 **Status:** proposal for Sam (2026-11-24). Nothing changes until he picks.
 
+## Decision (Sam, 2026-11-24): glass-only shade floor at 0.45x (#631)
+
+Sam approved [#631](https://github.com/samsolomon/sim-atlanta/pull/631), a glass-only shade floor in the shader at 0.45x, which supersedes #619. By day, shaded glass never lights below 0.45x of its own colour; non-glass surfaces are untouched, and it fades out at dusk. **The shade reading is no longer advisory: the rule is the shader floor.** Workers stop compensating in base colours for shade. Pick glass base colours against the sunlit rule (rendered sunlit S <= 36, teal 40; V >= 40) with the floor on, and let the floor carry the shaded faces. Follow-ups: #573 (1075 Peachtree) picks its glass against the floor; One and Two Midtown Plaza get matched glass.
+
 ## Problem
 
 Each glass tower skinned tonight was matched to its own photos by a different worker. Each match is defensible on its own. Side by side, though, they skew to dark, saturated blues and teals. The generic buildings around them are pale grey-blue: saturation (S) 13–23% and value (V) 64–76% in HSV.
