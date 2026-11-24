@@ -1212,8 +1212,11 @@ const shellOptions: ShellOptions = {
           keepPose = { x, z, bearing: map?.getBearing() ?? 0, tilt: cityTilt, distanceM: 600 };
           return;
         }
-        shell.setView('map');
       }
+      // A Map result supersedes the vehicle selection. Clear it before closeCity can carry
+      // it, or before an already queued focusSelection reads it after the Map flattens.
+      hideCard();
+      if (!mapExitActive && !view3d.hidden) shell.setView('map');
       void shellOptions.goToPlace?.(hit.lon, hit.lat);
     },
   },
