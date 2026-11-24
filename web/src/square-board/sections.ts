@@ -51,7 +51,7 @@ export const sliceStats = emptySliceStats();
 if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
-import { createSurfaceTransport } from '../terrain/transport';
+import { buildSurfaceTransport, type createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
 
 export type Direction = 'north' | 'south';
@@ -212,13 +212,13 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const data = city.terrainTransport!;
         const separate = stationRoad ? data.roads.filter(run => run.pts === stationRoad.pts) : [];
         const base = separate.length ? { ...city, terrainTransport: { ...data, roads: data.roads.filter(run => !separate.includes(run)) } } : city;
-        const decks = createSurfaceTransport(base, grid, area.groundAt);
+        const decks = yield* buildSurfaceTransport(base, grid, area.groundAt);
         transports.push(decks);
-        area.carve(decks.cutting);
+        yield* area.carveSteps(decks.cutting);
         area.group.add(decks.group);
         yield 'decks';
         if (stationRoad && separate.length) {
-          const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
+          const stationDeck = yield* buildSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
           transports.push(stationDeck);
           stationDeck.group.name = stationRoad.id!;
           area.group.add(stationDeck.group);
