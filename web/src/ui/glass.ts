@@ -79,6 +79,7 @@ let dirty = true;
 let liveUntil = 0;
 let watching = false;
 let nodes: HTMLElement[] | null = null;
+let measures = 0;
 
 /** One rect's radius and corner mask from its four computed corner radii (CSS strings such as
  * '16px' or '50%'). Pure, for tests. */
@@ -99,6 +100,12 @@ function glassNodes(): HTMLElement[] {
   return nodes;
 }
 
+/** An inline-style change matters only on a glass panel or something around one, never inside one:
+ * the compass needle turns by its own style every frame of a camera turn. */
+function movesGlass(target: Node): boolean {
+  return target instanceof Element && (target.classList.contains('a2-g') || !!target.querySelector('.a2-g'));
+}
+
 function markLive() {
   dirty = true;
   liveUntil = performance.now() + SETTLE_MS;
@@ -108,8 +115,12 @@ function watch() {
   if (watching) return;
   watching = true;
   new MutationObserver((records) => {
-    for (const r of records) if (r.type === 'childList') nodes = null;
-    dirty = true;
+    for (const r of records) {
+      if (r.type === 'childList') {
+        nodes = null;
+        dirty = true;
+      } else if (r.attributeName !== 'style' || movesGlass(r.target)) dirty = true;
+    }
   }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'style', 'open'] });
   for (const type of ['transitionrun', 'transitionend', 'transitioncancel', 'animationstart', 'animationend', 'animationcancel'])
     document.addEventListener(type, markLive, true);
@@ -130,6 +141,7 @@ function effectiveOpacity(el: HTMLElement): number {
 }
 
 function refresh(canvas: Element) {
+  measures++;
   const c = canvas.getBoundingClientRect();
   let n = 0;
   let changed = false;
@@ -174,4 +186,34 @@ export function glassSource(canvas: Element): GlassSource {
     refresh(canvas);
   }
   return source;
+}
+
+/** ?glassdebug (any build, so it works with ?perf on a device): outline every rect the renderer
+ * would draw, and expose the measurement count, so mismatches show on the first integrated build. */
+export function mountGlassDebug(canvas: Element) {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99';
+  document.body.append(box);
+  let shown = -1;
+  const w = window as unknown as { __glassMeasures: () => number; __glassRects: () => number[][] };
+  w.__glassMeasures = () => measures;
+  w.__glassRects = () => Array.from({ length: source.count }, (_, i) => Array.from(data.subarray(i * GLASS_STRIDE, (i + 1) * GLASS_STRIDE)));
+  const frame = () => {
+    const before = source.version;
+    const s = glassSource(canvas);
+    if (s.version !== before || shown < 0) {
+      const c = canvas.getBoundingClientRect();
+      box.replaceChildren(...Array.from({ length: s.count }, (_, i) => {
+        const o = i * GLASS_STRIDE;
+        const d = document.createElement('div');
+        const r = `${s.data[o + 4]}px`;
+        const m = s.data[o + 5];
+        d.style.cssText = `position:absolute;left:${c.left + s.data[o]}px;top:${c.top + s.data[o + 1]}px;width:${s.data[o + 2]}px;height:${s.data[o + 3]}px;outline:2px dashed #f0f;opacity:${s.data[o + 6]};border-radius:${m & 1 ? r : 0} ${m & 2 ? r : 0} ${m & 4 ? r : 0} ${m & 8 ? r : 0}`;
+        return d;
+      }));
+      shown = s.version;
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
 }
