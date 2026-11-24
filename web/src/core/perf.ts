@@ -513,10 +513,10 @@ if (perfEnabled && typeof PerformanceObserver !== 'undefined') {
 }
 /** Camera routes for ?perf=run&motion=route:<name>, flown out and back over a 20 s sample. `north`
  * runs Five Points to Brookwood at 700 m (areas and rings change under it); `zoomout` eases from a
- * 3 km to a 21 km orbit over Midtown (what triggers far-level builds and swaps). */
+ * 3 km to a 25 km orbit over Midtown, crossing the 10 km build distance early (far-level builds and swaps). */
 const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: [number, number] }> = {
   north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
-  zoomout: { dist: 3000, bearing: 0, tilt: 35, path: [[400, -2300], [400, -2300]], dists: [3000, 21000] },
+  zoomout: { dist: 3000, bearing: 0, tilt: 35, path: [[400, -2300], [400, -2300]], dists: [3000, 25000] },
 };
 function routeAt(path: [number, number][], u: number): [number, number] {
   const seg = path.slice(1).map((p, i) => Math.hypot(p[0] - path[i][0], p[1] - path[i][1]));
