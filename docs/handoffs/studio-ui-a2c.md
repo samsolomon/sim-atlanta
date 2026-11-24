@@ -1,65 +1,41 @@
-# Handoff: studio-ui-a2c (A2c interface)
+# Studio UI handoff to Claude Opus
 
-Updated 2026-11-23 by Codex session 9c768eab-3e1a-4134-a130-ba680f7c212a for the gpt-6.2 successor. Original Claude: d577649d-8640-473a-8c9b-461abf2b616a.
+**Status (2026-11-23, Claude Opus):** Sam approved #387 through the coordinator, and it merges with this note. The PR body embeds day, night and close-view screenshots per Sam’s standing rule (`docs/log/ui/radio-glyph/day-night.jpg`, `phone-day-night.jpg`, `close-before-after.jpg`). No Studio UI work is open. Seen while capturing, not fixed: at night the City “3D” chip renders as a blank white square, on main as well as this branch.
 
-Successor update from session `8b0f0ebc-f4fb-40d7-acbe-435e5c986ca1`: GitHub reports #310 as `OPEN`, draft, `mergeCommit: null`, and `mergeable: CONFLICTING` at `dd2d7594`. The release hold remains in effect. This session made no implementation changes and started no servers or browser tabs. The coordinator is assigning the Final layout rework to a 6.2 Astra successor in this worktree. Use a separate branch and PR for that rework. The latest working coordinator reply route is message `msg_0939307cbb03` with your own session ID.
+The only outstanding decision is Sam’s visual approval of [draft PR #387](https://github.com/samsolomon/sim-atlanta/pull/387). The branch is `samsolomon/ui-radio-next-glyph`. Its implementation commit is `65e55413a534fdbd4dd755e3702d187c1b90af17`. GitHub reported OPEN, draft, and a null mergeCommit at handoff. This document is the only change after that reviewed commit. All work is pushed.
 
-## State
-- A2c is the default interface. Sam confirmed **bc32b09 shipped with classic retained**. This supersedes the original handoff's release timing.
-- **Open draft #310**, branch `samsolomon/ui-remove-classic`, code head `6d17519c` before this handoff commit. Verified OPEN, draft, mergeCommit null. **NEXT release only: do not merge until the coordinator explicitly authorizes it. Only the coordinator deploys.**
-- Cleanup removes the old shell, `?ui=classic`, `?controls=1`, and City info popover. Keep `<div id="city-info" hidden>` for the full-board button and board-exterior tests. Fixed the leftover `hidePopover()` call in `city.ts`: optional chaining still invoked the method on the plain div and threw.
-- Rebased onto `d1411a9e`; build-log conflicts preserved both entries. No uncommitted implementation work.
-- Validation: tests/build passed on `64bc952c` and again on `8c281730` (912 web passed / 1 skipped, 5 worker, 20 Rust; pipeline skipped without `.venv`). Last rebase to `d1411a9e` brought an unrelated Woodruff landmark change and was **not retested**. Before merge, update to current main and rerun required checks, especially after build-log conflicts.
-- Performance on earlier base passed enforced ceilings: Low 2.324M triangles / 530 calls; High 13.266M / 1,130 calls. Several aspirational targets remain unmet. No ceiling lowered: this cleanup did not deliver a rendering reduction.
-- Two Claude rounds via `pnpm review -- --reviewer claude`: one confirmed popover bug fixed and committed; CSS visual concern dismissed by day/night browser checks. No blocking/significant findings. Review limit reached for this change.
-- Browser checked Map, City, Models, old classic URL, full-board action, day/night selected cards and 390×640 phone. Screenshots: `docs/log/ui/remove-classic/{day-card,night-card,phone-night-card}.png`. Day camera `1799.793,-5699.709,-101,55,421`, 2026-11-20 14:00 ET, Low. Night 22:00 same date. Live API not checked (worker absent). PR body records evidence and limits. Requires web rebuild/redeploy only, no data rebuild.
-- Code map:
-  - `web/src/ui/next/`: shell.ts, panel.ts, models-view.ts, radio.ts, next.css.
-  - `web/src/ui/status.ts`: tier words, tested.
-  - `web/src/ui/share.ts`.
-  - `web/src/city/map-gestures.ts`, `web/src/city/white-model.ts`.
-  - Map↔City choreography: `openCity`, `leaveCityToMap` and `tiltMapTo` in `web/src/main.ts`.
+## Sam’s request
 
-## Sam's decisions (all 2026-11-23)
-- A2c approved, then made the **default**, with `?ui=classic` kept for one release only.
-- **#231 tier rule:** the corner shows only Live or Timetable. Chips go on selected-vehicle cards. Ambient scenery carries no on-screen tier.
-- 2D Map keeps a **permanent** credit line; City's credit fades after the first move or 5 s.
-- Phones use the short tier line ("● Live").
-- Loading is the **white model**. Map→City is **option B**: the map tilts at City's 22° field of view, white buildings stand on its streets, then colour cross-fades in. No zoom.
-- The white fade is 1.2 s ease-in-out.
-- The radio stays a stub until real tracks exist, and says "no audio yet".
-- Do not change progressive versus eager area loading until A16 data exists.
+The coordinator’s subject was “Sam: skip icon on the radio player is too big”. The relay contains no separate verbatim quotation from Sam. Its exact description and instruction were:
 
-## Next steps
-1. Hold #310 for coordinator authorization for the release after bc32b09. Once authorized, update/test, merge, then verify `gh pr view 310 --json state,mergeCommit` before announcing MERGED; quote both returned values.
-2. Still deferred from the brief:
-   - Render the white model before the build stages finish (needs A16 numbers; the desktop build is 0.59 s).
-   - White areas that arrive later.
-   - Carry the weather choice in frozen share links.
-3. After #310, drop the non-A2c layouts in `map/card.ts` (the `a2c` parameter).
+> Sam flagged the compact radio player in City: the Next-track glyph is about twice the size of the pause glyph and looks oversized.
 
-## Coordination and promises
-- Coordinator: Air terminal `term_05a952fa-de06-4064-8655-3e98e1caf1e0`. Direct `send --on air` rejects the saved pairing token. **Reply route works**: `/Applications/Orca.app/Contents/Resources/bin/orca orchestration reply --id msg_8a926fd79744 --from <your orca_session_id> --body '...'`. Coordinator received takeover status via this route. Use `orca orchestration check` for replies.
-- Current handoff request is `msg_9d6ba3a61b13`; predecessor will reply READY FOR 6.2 after pushing this doc, then take no new work.
-- Owe coordinator the eventual verified merge notice, screenshot links/camera, and any items requiring Sam's eye. No new promises made during Codex takeover. Contracts below are inherited; recheck their PR status before acting.
-- **phone-perf** (3126b1a7-8882-498c-a5ff-7b65d626cf91): #312 (device-tier rules) changes `pickQuality()`. It needs no UI change, but they will ping if its rules change. The Auto step-down contract is in #321.
-- **Lab owners** (tree-species 6b76e039…, tree-lab 4a8d1cca…, Amtrak e5348118…, parks eee32d1c…, materials 2a079a0f…):
-  - Lab markup lives in `web/src/models/lab-markup.ts`, and lab CSS is scoped under `.lab`.
-  - The Models view reads `.model-group button[data-model]` and moves `.settings` into its Details panel.
-  - Keep `__lab.render()`/`resize()` working.
-- **ground-contact** (1df827bc…) and **materials**: the white model swaps one material per mesh for a few frames and uses one temporary render target, declared in `materials/budget.ts`.
+> Make Next match the play/pause glyph's optical size and stroke weight, keep the 44x44 targets, and check that nothing else needed that rule. Small PR with before/after crops on desktop and a 390px phone. Don't merge until I relay Sam's OK.
 
-## Servers
-None owned by this session remain. Codex dev server used :5173 (the `pnpm dev -- --port 5730` forwarding did not set Vite's port) and was stopped; review tab 56bcc186-04c8-4a6f-bee4-f94c9785c607 was closed. Predecessor stopped :5730 and :5741. Do not stop other agents' servers or the shared worker.
+## Implementation and verification
 
-## Rules that bit
-- **Squashing onto a moved main reverts other agents' work** (it nearly reverted #232). Rebase, or rebuild the branch from a patch of only your files.
-- **`docs/build-log.md` conflicts on almost every rebase.** Keep both sides and rerun tests. Main moved repeatedly during preparation; never announce a merge from a command attempt alone.
-- **Orca browser background tab:**
-  - It draws about 1 frame a second. Pump frames with `orca screenshot`.
-  - Viewports taller than about 776 px duplicate a strip in captures.
-  - `goto` resets the viewport to 999×496.
-- **Cargo:** needs `export PATH="$(dirname $(ls ~/.rustup/toolchains/*/bin/cargo | head -1)):$PATH"` before `pnpm test`.
-- **`square-board/sections.test.ts`** occasionally times out under load. Rerun it.
-- **Texture budget:** a new render target or texture must be declared in `web/src/materials/budget.ts`.
-- **Reviews:** predecessor used self-review when other models were unavailable; Codex successfully ran two fresh Claude reviews for #310.
+Only Next matched the removed `.a2-player .a2-ib:last-of-type svg` rule. Play/Pause and Next now share an 18 px SVG box, 24-unit viewBox and 1.8-unit stroke. The separate Play circle rule remains. The Radio section of `docs/ui-controls-brief.md` records the correction.
+
+Chrome measured both targets at 44 × 44 before and after. At 1440 × 900 and 390 × 760, Pause measured 18 px throughout and Next went from 36 to 18 px. Sam has the matched crops. [Desktop before](../log/ui/radio-glyph/desktop-before.jpg) · [Desktop after](../log/ui/radio-glyph/desktop-after.jpg) · [Phone before](../log/ui/radio-glyph/phone-before.jpg) · [Phone after](../log/ui/radio-glyph/phone-after.jpg)
+
+To reproduce, start `pnpm --dir web exec vite --port 5730 --strictPort`. Open `http://localhost:5730/?view=city&q=low&t=2026-11-20T14:00:00-05:00&cam=565,-3965,-101,55,421`, open Radio, and press Play to show Pause beside Next. This Studio has the capture helpers at `/tmp/radio-glyph-crop.mjs` and `/tmp/radio-glyph-shots.sh`. The player labels its silent preview “No audio yet”.
+
+On the implementation commit, `pnpm test` passed (1,076 web tests passed, one skipped, five worker tests passed). Python pipeline checks skipped because this worktree lacks `.venv`. `pnpm build` passed. Claude cross-review via `pnpm review -- --reviewer claude` returned no findings. The change affects browser CSS and requires a web rebuild at deployment. No City geometry or data changed. All owned preview servers were stopped and the capture browsers closed.
+
+## Next steps in order
+
+1. Read `AGENTS.md` and check for a coordinator reply. To read this outgoing Codex session, use `orca agent read --id orca_session_id:9d1a7658-bc7f-4725-ba5f-fb9f8f5f8d34 --limit 100`. The current Air coordinator is `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. Use `orca orchestration check` and reply to the radio thread (`msg_328da0f1c97c`) or handoff thread (`msg_d0f513259a48`) with your own session ID. Direct sends previously hit a pairing-token rejection.
+2. Keep #387 draft until the coordinator relays Sam’s OK. If Sam asks for adjustments, update this branch, rerun the checks, and send fresh matched crops. The screenshots and PR have already been sent for this revision.
+3. After explicit clearance, fetch main and check the diff, mergeability and review status. Recheck any changed implementation. Mark #387 ready and merge. Before announcing MERGED, run `gh pr view 387 --json state,mergeCommit` and quote both returned fields in the coordinator reply with the screenshot links and camera string. Only the coordinator deploys.
+
+## Final layout already on main
+
+| PR | Delivered | Verified merge commit |
+| --- | --- | --- |
+| #310 | Classic removal | b4fae8d5215bfe252994c8c943fe4a34a05f0163 |
+| #373 | Final dock and camera group | 579239543b37bd5f9b2bbcf528959e187c2d1f62 |
+| #376 | Models browser, Details, framing and paused City | d3ea752c8bbbcc4915221fc044f51d8234c48258 |
+| #379 | Compact and expanded train, bus and freight selections | 100df928461f8befcbb063144bad179b531148f7 |
+| #382 | Compact radio player and desktop search fix | b71b863fa0e4f813e8125a16dab04932075271af |
+
+Models keeps City resident while pausing its render loop. The coordinator’s A16 warm returns measured 278 and 569 ms, down from 12.8 and 15.2 seconds. Cold builds measured 16.1 and 10.9 seconds. The dev-only probe is `?perf=models-return`. See `docs/log/ui/final-models/`, `final-selection/` and `final-radio/` under the same parent for the earlier approvals. Building picking is a separate follow-up in the brief. The earlier handoff also deferred weather in frozen share links and staged white-model loading work. Check current main and coordinate with phone-perf before taking on any loading changes.
