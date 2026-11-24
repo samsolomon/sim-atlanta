@@ -52,6 +52,8 @@ export interface Radio {
   /** The track the player shows: it switches at a crossfade's midpoint. */
   readonly track: StationTrack | null;
   readonly elapsedS: number;
+  /** Playing, but the current file hasn't arrived yet (the button shows a spinner). */
+  readonly buffering: boolean;
   /** Call from a click: the first call creates the AudioContext. */
   toggle(): void;
   next(): void;
@@ -123,6 +125,10 @@ export function createRadio(o: RadioOptions): Radio {
   let fading: { inc: Deck; out: Deck; dur: number; midDone: boolean; scheduled: boolean } | null = null;
   let pauseTimer: ReturnType<typeof setTimeout> | undefined;
   let masterLevel = 0;
+  /** The shown track's file, fetched as soon as the panel opens so Play has little to wait for. */
+  let prefetch: { track: StationTrack; ac: AbortController; src: Promise<string | null> } | null = null;
+  /** Hold the resume ramp until the first file actually sounds. */
+  let rampOnSound = false;
   let masterRamp = { from: 0, t0: 0, dur: 0 };
 
   const changed = () => {
@@ -147,8 +153,27 @@ export function createRadio(o: RadioOptions): Radio {
     station = startStation(stations, o.sceneHour(), remembered);
     shown = upcoming = pick(station);
     loaded = true;
+    prefetchUpcoming();
     changed();
   });
+
+  /** Before the first Play, keep the file for the track on show fetched (and only that one). */
+  function prefetchUpcoming() {
+    if (ctx && primary()) return;
+    if (prefetch && prefetch.track === upcoming) return;
+    dropPrefetch();
+    if (!upcoming) return;
+    const ac = new AbortController();
+    const t = upcoming;
+    prefetch = { track: t, ac, src: audio.source(o.resolve(t.src), ac.signal).catch(() => null) };
+  }
+  function dropPrefetch() {
+    if (!prefetch) return;
+    const p = prefetch;
+    prefetch = null;
+    p.ac.abort();
+    void p.src.then((src) => src && audio.release(src));
+  }
 
   function levelOf(d: Deck): number {
     if (!d.fade || !ctx) return d.rest;
@@ -204,8 +229,19 @@ export function createRadio(o: RadioOptions): Radio {
       d.rest = 0;
       d.fade = null;
       d.track = t;
-      const ac = (d.abort = new AbortController());
-      d.ready = audio.source(o.resolve(t.src), ac.signal).then(
+      let ac: AbortController;
+      let src: Promise<string>;
+      if (prefetch && prefetch.track === t) {
+        // Hand the prefetched file to the deck; the deck now owns (and releases) it.
+        ac = d.abort = prefetch.ac;
+        const p = prefetch.src;
+        prefetch = null;
+        src = p.then((x) => x ?? audio.source(o.resolve(t.src), ac.signal));
+      } else {
+        ac = d.abort = new AbortController();
+        src = audio.source(o.resolve(t.src), ac.signal);
+      }
+      d.ready = src.then(
         (src) => {
           if (ac.signal.aborted || d.track !== t) {
             audio.release(src);
@@ -214,6 +250,7 @@ export function createRadio(o: RadioOptions): Radio {
           d.blob = src;
           d.el.preload = 'auto';
           d.el.src = src;
+          changed();
           return true;
         },
         () => false,
@@ -304,6 +341,11 @@ export function createRadio(o: RadioOptions): Radio {
 
   function onPlaying(d: Deck) {
     if (!sounding(d)) return;
+    if (rampOnSound && playing && (d.role === 'primary' || d.role === 'incoming')) {
+      rampOnSound = false;
+      rampMaster(1, PAUSE_RAMP_S);
+      changed();
+    }
     // Schedule a crossfade's ramps only once the incoming track is actually sounding, so a slow
     // fetch never leaves a gap: until then the outgoing track keeps playing at full level.
     if (fading && d === fading.inc && !fading.scheduled) {
@@ -369,6 +411,15 @@ export function createRadio(o: RadioOptions): Radio {
 
   /** Inside the first tap: build the graph and unlock both decks for later starts. */
   function setup() {
+    // iOS: play like media, so the ring/silent switch doesn't mute Web Audio (Safari 17+).
+    const session = (typeof navigator !== 'undefined' ? (navigator as Navigator & { audioSession?: { type: string } }).audioSession : undefined);
+    if (session) {
+      try {
+        session.type = 'playback';
+      } catch {
+        /* not settable here */
+      }
+    }
     ctx = audio.context();
     master = ctx.createGain();
     master.gain.value = 0;
@@ -405,11 +456,15 @@ export function createRadio(o: RadioOptions): Radio {
       play(p);
       if (fading) play(fading.out);
     }
-    rampMaster(1, PAUSE_RAMP_S);
+    // The ramp starts when sound does: right away if the file is here, else once it arrives.
+    const cur = primary();
+    if (cur && sounding(cur)) rampMaster(1, PAUSE_RAMP_S);
+    else rampOnSound = true;
     changed();
   }
 
   function pause() {
+    rampOnSound = false;
     rampMaster(0, PAUSE_RAMP_S);
     clearTimeout(pauseTimer);
     // Then stop the elements and the clock together, so a crossfade in flight freezes with them.
@@ -441,6 +496,11 @@ export function createRadio(o: RadioOptions): Radio {
     get playing() { return playing; },
     get station() { return station; },
     get track() { return shown; },
+    get buffering() {
+      if (!playing) return false;
+      const p = primary();
+      return !p || !sounding(p);
+    },
     get elapsedS() {
       const d = decks.find((x) => x.track && x.track === shown && x.role !== 'idle');
       return d ? d.el.currentTime : 0;
@@ -462,6 +522,7 @@ export function createRadio(o: RadioOptions): Radio {
       if (!loaded || !station) return;
       if (!ctx) {
         shown = upcoming = pick(station);
+        prefetchUpcoming();
         changed();
         return;
       }
@@ -479,6 +540,7 @@ export function createRadio(o: RadioOptions): Radio {
       const first = pick(station); // a random track, and the shuffle knows it played
       if (!ctx) {
         shown = upcoming = first;
+        prefetchUpcoming();
         changed();
         return;
       }

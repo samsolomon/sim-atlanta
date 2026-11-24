@@ -278,7 +278,9 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const st = radio.station;
     stationName.textContent = st?.name ?? 'Radio';
     stationName.setAttribute('aria-label', st ? `${st.name}. Next station` : 'Radio');
-    radioTitle.textContent = t ? `${t.artist} · ${t.title}` : radioFailed ? 'Radio unavailable' : 'Tuning in…';
+    const line = t ? `${t.artist} · ${t.title}` : radioFailed ? 'Radio unavailable' : 'Tuning in…';
+    radioTitle.textContent = line;
+    radioTitle.title = line; // the full line when it ends in an ellipsis
     if (t) {
       const url = SITE + t.cover.small;
       if (art.dataset.src !== url) {
@@ -288,8 +290,15 @@ export function createShellNext(o: ShellOptions): ShellApi {
       }
     }
     for (const b of [play, next, stationPrev, stationName, stationNext]) b.disabled = !radio.loaded;
-    play.innerHTML = SVG(radio.playing ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
-    play.setAttribute('aria-label', radio.playing ? 'Pause' : 'Play');
+    // While the first file is still arriving, the glyph is a spinning arc (brief: Radio, Loading).
+    const glyph = radio.buffering ? 'busy' : radio.playing ? 'pause' : 'play';
+    if (play.dataset.glyph !== glyph) {
+      play.dataset.glyph = glyph;
+      play.innerHTML = SVG(glyph === 'busy' ? '<path d="M12 3a9 9 0 1 1-9 9"/>' : glyph === 'pause' ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
+      play.classList.toggle('a2-busy', glyph === 'busy');
+      play.toggleAttribute('aria-busy', glyph === 'busy');
+    }
+    play.setAttribute('aria-label', radio.playing ? (t ? `Pause ${t.title} by ${t.artist}` : 'Pause') : t ? `Play ${t.title} by ${t.artist}` : 'Play');
     radioBtn.classList.toggle('a2-playing', radio.playing);
     const radioLabel = radio.playing && t ? `Radio, playing ${t.title} by ${t.artist}` : 'Radio';
     radioBtn.setAttribute('aria-label', radioLabel);

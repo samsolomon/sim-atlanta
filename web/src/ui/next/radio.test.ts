@@ -58,10 +58,12 @@ let els: FakeElement[];
 const audio: RadioAudio = {
   context: () => (ctx = new FakeContext()) as unknown as AudioContext,
   element: () => { const e = new FakeElement(); els.push(e); return e as unknown as HTMLAudioElement; },
-  source: (url) => { fetched.push(url); return hold ? hold.then(() => url) : Promise.resolve(url); },
-  release: () => {},
+  source: (url) => { fetched.push(url); live.add(url); return hold ? hold.then(() => url) : Promise.resolve(url); },
+  release: (src) => { released.push(src); live.delete(src); },
 };
 let fetched: string[] = [];
+let released: string[] = [];
+const live = new Set<string>();
 let hold: Promise<void> | null = null;
 /** Let the decks' fetched sources settle. */
 const flush = async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); };
@@ -84,25 +86,81 @@ const mp3 = () => els.filter((e) => e.src.endsWith('.mp3'));
 beforeEach(() => {
   els = [];
   fetched = [];
+  released = [];
+  live.clear();
   hold = null;
   vi.useFakeTimers();
 });
 afterEach(() => vi.useRealTimers());
 
 describe('radio engine', () => {
-  it('opens on the scene clock’s station and touches no audio until Play', async () => {
+  it('opens on the scene clock’s station, prefetches only that track, and starts no audio until Play', async () => {
     const r = make(22);
     await r.ready;
     expect(r.station?.id).toBe('night');
     expect(r.track?.id).toMatch(/^n/);
+    expect(fetched).toEqual([`/music/tracks/${r.track!.id}.mp3`]); // prefetched on open
     expect(els).toHaveLength(0);
     r.toggle();
     await flush();
     expect(r.playing).toBe(true);
-    expect(fetched).toHaveLength(1);
+    expect(fetched).toHaveLength(1); // Play reuses the prefetched file
     expect(mp3()).toHaveLength(1);
     expect(mp3()[0].src).toBe(`/music/tracks/${r.track!.id}.mp3`);
+    expect(master().last('linear')).toBeUndefined(); // the ramp waits for sound
+    mp3()[0].emit('playing');
     expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
+  });
+
+  it('shows buffering until a slow first file arrives, then ramps in', async () => {
+    let release!: () => void;
+    hold = new Promise((r) => (release = r));
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    expect(r.buffering).toBe(true);
+    release();
+    await flush();
+    expect(r.buffering).toBe(false);
+    mp3()[0].emit('playing');
+    expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
+  });
+
+  it('re-prefetches when the station changes before Play, and lets the old file go', async () => {
+    const r = make(14);
+    await r.ready;
+    const first = fetched[0];
+    r.switchStation(1);
+    await flush();
+    expect(fetched).toHaveLength(2);
+    expect(released).toContain(first);
+    expect(live.size).toBe(1);
+  });
+
+  it('never holds more than two files across an hour of crossfades', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    for (let i = 0; i < 25; i++) {
+      const cur = els.find((e) => e.src.endsWith('.mp3') && !e.paused)!;
+      cur.duration = 180;
+      cur.currentTime = 160.5;
+      cur.emit('timeupdate');
+      await flush();
+      cur.currentTime = 175.5;
+      cur.emit('timeupdate');
+      await flush();
+      const inc = els.find((e) => e !== cur && e.src.endsWith('.mp3'))!;
+      inc.emit('playing');
+      inc.currentTime = 5.1;
+      inc.emit('timeupdate');
+      await flush();
+      expect(live.size).toBeLessThanOrEqual(2);
+    }
+    expect(fetched.length).toBe(26);
+    expect(released.length).toBe(25);
   });
 
   it('fetches the next file 20 s out and crossfades 5 s out, switching the title at the midpoint', async () => {
@@ -252,8 +310,9 @@ describe('radio engine', () => {
   it('reverses a pause or resume ramp from the level it has reached, without a jump', async () => {
     const r = make();
     await r.ready;
-    r.toggle(); // resume ramp 0 → 1 over 0.3 s, starting at t = 0
+    r.toggle();
     await flush();
+    mp3()[0].emit('playing'); // resume ramp 0 → 1 over 0.3 s, starting at t = 0
     ctx.currentTime = 0.1;
     r.toggle(); // pause a third of the way up
     const held = [...master().calls].reverse().find((c) => c[0] === 'set')!;
