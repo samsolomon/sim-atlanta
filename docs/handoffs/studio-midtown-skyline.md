@@ -1,3 +1,122 @@
+# Handoff: studio-midtown-skyline, Studio merge lead and skins lead (Claude Opus 5.5 → Codex), 2026-11-24 afternoon
+
+**Session to read:** `orca agent read --environment studio orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529` (this session; it succeeded `1a78f936-…`). The coordinator is the Claude session on Sam's MacBook Air (`TERM_09E1B3DA…`). Reply to it with `orca orchestration reply`.
+
+## Role
+1. **Merge lead.** I run the main queue, giving each owner "your turn" in order. Owners rebase, run `pnpm build`, `pnpm test` (or `test:release`) and `pnpm test:perf`, merge with a merge commit, and send `gh pr view N --json state,mergeCommit`. I verify every merge with `gh pr view` and report merge commits and release commits to the coordinator.
+2. **Skin trains.** Approved skin PRs land as merge trains that I build: branch from main → `git merge --no-ff` each head → resolve conflicts → full checks on the final head → one PR → merge with a merge commit → verify each constituent PR shows MERGED. A PR stacked on another branch can't be marked merged by GitHub; close it with a comment naming the train merge commit (as done for #569 and #581). **Keep trains at 15 PRs or fewer** (coordinator).
+3. **Skins lead.** I assign rows to skins workers, review every skin's money shot against the recognition test, and approve reworks, strengthenings and fixes myself. New skins go to the coordinator for approval. I own the docs on branch `samsolomon/studio-building-skins`: `docs/building-skins.md` (spec, rules, assignments), `docs/skin-recognition-audit.md` (state-of-the-skyline table up top) and `docs/glass-palette.md` (decisions up top).
+
+## Where the queue stands (main ≈ a49825cb at handoff)
+**Merged today, verified:** train 7 #547, train 8a #599, train 8b #622, release-9 train #559, #538, #550, #551, #562 (detachment check), #566 (shadow-banding fix), #570, #574 (Mayfair), #576, #582, #586 (very-far ground opt-in), #593 (long-task gate), #597, #603 (vitest worker cap), #608, #615, #625, #520 (low far shadows), #524 (landmark LOD), #631 (0.45 glass shade floor), #649 (Fifth St bridge), #420 (low flat glass), #567, #580, #572/#596/#601, #549.
+
+**Release:** the coordinator wants the commit as soon as **#654 and #613** have both landed (with #420 that's the phone speed-up plus the band fix). Send it the moment #613 merges.
+
+**Main queue, in order:**
+1. **#654**, band fix (perf-desktop, merging now): 2x MSAA default on High, `?msaa=4`, textureMB ceiling 890 → 1030 with the honest default-framebuffer counter. Coordinator-approved.
+2. **#613**, far-board buildings (perf-buildings; phone-perf's A16 gate passed; low 359 → 196 calls; lowers ceilings to 220 / 1.25M / 84). Then send the release commit.
+3. **#646**, then **#651**, tree lab (house near builds off the frame; the north long task goes from 310 ms to 70-90 ms). Then **#450** (tree far form, Sam-approved; tree lab).
+4. Phone-perf's small ratchet PR (low-north 650 → 300) after #646/#651.
+5. **#435**, streaming prototype (`?stream=1`, default off; Sam-approved as is; phone-perf owns the merge since the author is gone; run the flag-off look-neutral check).
+6. **#616**, camera damping (perf-desktop). 7. **#592**, traffic round 2 (connector agent; idle tasks ≤ 5 ms).
+8. **Train 8c**, then **train 8d** (split at 15; see below).
+Held, not in the queue: #446 radio (draft, held for Sam; review build was served), #575 packed positions/normals (held for Sam: near-pixel and shadow diffs), #621 (held for Sam), #623 (camera=direct, with Sam), #611 (held).
+
+**Train 8c (fixes, reworks, coordinator-approved skins; split if > 15):**
+- #578 + #587 Centergy One + glass wing
+- #594 Fed rework (437e57b0)
+- #595 Rambler (fee249f3)
+- #598 Hampton
+- #600 Clara Meer declarations
+- #602 Loews (ffdbcfdb)
+- #604 1072
+- #605 #513 wording
+- #606 Two Peachtree Pointe strengthening (320eb85a)
+- #607 phantom tower behind the Westin
+- #614 271 Seventeenth (2d013a72)
+- #539 Renaissance (643d41c2)
+- #568 Southern Company Gas (d045755b)
+- #627 Emmi detached
+- #629 The M
+- #633 Atlantic House/ViewPoint footprint
+- #655 skins-4 layer offsets
+- #662 Marquis layer offsets
+- #573 1075 Peachtree (d0100024, glass B)
+
+**Train 8d onward (new downtown and Midtown skins; split into 8d/8e/8f at ≤ 15 each):**
+- #533 Lilli, #544 Piedmont House (27ba31c1), #560 Ansley (25817ec2), #563 Trace (2cc9f035), #591 Circa
+- #609 Courtland Grand (77b44a4a)
+- #610 201 17th (03d6375a)
+- #612 One Peachtree Pointe
+- #618 The Mitchell (05fde483)
+- #624 One Midtown + #652 matched glass (stacked; take together)
+- #626 City Heights (269e72a9)
+- #628 Mira (7671a3a8)
+- #630 Renaissance Lofts
+- #632 T Deck (5910174b)
+- #635 Bethel (1f3c0a02 or later; confirm the head)
+- #636 Modera (4057dff6)
+- #637 Landmark deck (444ac581)
+- #640 Barclay, #641 Capital City Club (8b65b1bf), #643 Azure (a20d40c9), #645 International Garage, #648 55 Allen Plaza, #650 Peachtree Towers, #653 The Hub, #657 260/270 Peachtree Parking, #658 Ten/One Park Place, #659 Fairlie-Poplar (may get a shared-shell head), #660 Peachtree International deck, #661 Imperial
+- #617 715 Peachtree, #634 Olympia, #642 Elevance (skins-2, new heads 1df90cb0 / 818737e0 / 70b31518; confirm the coordinator approved them)
+
+Before building any train, re-check each PR's head with `gh pr view` (workers moved several heads tonight for the 3 cm layer fixes) and confirm the coordinator's approval for new skins.
+
+**Train-building gotchas:**
+- `git merge-file --union` is fine for `docs/build-log.md` and dispatch lists, but it duplicates lines when two sides edit the same line. Train 7 doubled `city.ts`'s mount chain and `listed` array. Train 8a dropped a test's closing `});` where both sides ended with the same line. Always run tsc and read `git diff origin/main -- web/src/city/city.ts web/src/terrain/model.ts` after union merges.
+- **Run the footprint, detachment and skyline tests on the train head:** `npx vitest run src/city/skin-footprint.test.ts src/city/midtown-skyline.test.ts`. They pulled #528, #577, #568 and #539 from trains with loose parts. Downtown city.ts skins aren't in that audit yet (skins-5 is adding it).
+- A train worktree needs `pnpm install`, a copy of `web/public/data`, `data/raw` (only `studio-amtrak-livery` has the downtown roads extract) and `.venv` symlinks. Regenerate freight with `pipeline/scripts/terrain_transport.py` (run without `-I`).
+- #603 caps vitest at 4 forked workers. The Studio often sits at load 40-60; `test:perf` counts are load-independent, but timings and timeouts aren't.
+
+## Worker assignments at handoff (downtown generics first: Sam's priority since this morning)
+- **skins-1 (914b0cfd):** 30 Allen Plaza, then CenturyLink, then the #657 roof cars follow-up.
+- **skins-2 (4695b411):** Olympia (#634) and Elevance (#642) are open; 715 Peachtree is #617.
+- **skins-3 (f7bfd025, worktree studio-midtown-parks):** the Geo Muse Building.
+- **skins-4 (89d3798a):** Hurt Plaza Garage (review fixes in), then Langdale Hall, then the GSU College of Education (name unconfirmed; README caveat).
+- **skins-5 (95400b56):** extending skin-footprint.test.ts to the downtown city.ts landmarks, then the Emory Faculty Office Building.
+- **skins-6 (f7b4e433):** the coplanar (< 3 cm) lint in skin-footprint.test.ts with a ratchet, sharing the harness with skins-5.
+- **skins-7 (cda9a6e2):** the Medical Arts garage; a possible #659 shared-shell head.
+- **culture (ba45f7e8):** the AJC complex (one module claiming 08b3e01b + df3490e1), then the GSU College of Law, then University Lofts.
+- **Generic archetypes (`?generic=v2`):** new agent `studio-generic-buildings`. I sent it the palette rules, references and limits.
+
+## Rules in force (all in docs/building-skins.md)
+- **Recognition test:** in the 400-600 m money shot, the skin must not be mistakable for the generic building beside it, and it must get there from the real building's features (rhythm, base, crown, material). **Plain is a pass when the photos show plain.** Every colour or contrast change cites its photo.
+- **Features first:** a worker names 1-2 identifying features with photo links before building, and I confirm.
+- **Lidar first:** lidar-check every height. Parking polygons hid three phantom towers tonight (78.7 m behind the Westin, 68 m by The Landmark, 40 m Theatrical Outfit), and Ten/One Park Place had inverted Overture heights. Post-2019 buildings get reported/inferred heights.
+- **Checks:** a four-side sheet via `scripts/four-side-sheet.mjs` (use `--base http://localhost:<port>`; `pnpm dev` binds IPv6), plus the footprint and detachment checks. **No coplanar layer closer than 3 cm** (use 4-8 cm). Low-tier skins stay under about 2,400 triangles; report low and high geometry MB and draw deltas from a same-session base; add no new shader program variants (low is at 81/86).
+- **Glass:** rendered sunlit S ≤ 36 (teal 40), V ≥ 40. **The shade is handled by #631's 0.45x floor in the shader** (Sam), so don't compensate in base colours.
+- **Idle work:** sliced to a few ms; report the longest task at 6x.
+- **Browsers:** launch your own Chrome (`chrome-cdp.mjs launchChrome`); never attach to one you didn't launch. **Never pkill or killall by pattern**; kill only PIDs you started.
+- Downtown skins mount in `city.ts` plus the batcher's `listed` array; Midtown and square-board skins dispatch in `terrain/model.ts`.
+
+## Sam's decisions today
+- Flat glass on low (#420) is merged.
+- Far-board buildings (#613): approved.
+- Landmark distance LOD (#524) is merged.
+- Low far shadows under 2 px (#520) is merged.
+- Tree far form (#450): approved.
+- Streaming prototype (#435): merge as is, flag off, no further expansion.
+- Glass shade floor at 0.45x (#631) is merged, superseding #619.
+- 1075 Peachtree glass B, #718a9d (#573).
+- **Expansion paused.**
+- **Generic downtown buildings are the priority.**
+- Promenade Tower/Central glass stays untouched (listed in glass-palette.md).
+
+## Open coordinator rulings
+- Train 8d onward splits at 15.
+- Release after #654 and #613.
+- #637, #609 and #632 depth fixes are taken at their new heads without re-approval.
+- The 3 cm rule is binding.
+
+## Gotchas I hit
+- **`orca orchestration reply --id` must be the OTHER agent's incoming message id.** Replying to my own sent id loops the message back to me, which happened about six times. Use the id in the header of their message.
+- The streaming agent's session (be9e0816) was declared ended by the coordinator but kept answering. #435's merge went to phone-perf.
+- Stacked PRs: retarget them, or close them with a comment once their head is in main.
+- Done-worktree cleanup used `orca worktree rm` (tree-species, ui-a2c). Never `rm -rf` a worktree.
+- The perf harness was once driven by another agent's ranged-port Chrome; that's why the browser rule exists.
+
+---
+
 # Handoff: studio-midtown-skyline (Claude → Codex), 2026-11-24
 
 ## Original Claude handoff state (historical)
