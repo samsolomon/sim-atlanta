@@ -5,7 +5,9 @@ describe('glass mode', () => {
   it('lets flat (Low) win, and uses canvas only while the renderer draws backings', () => {
     expect(resolveGlassMode('flat', true)).toBe('flat');
     expect(resolveGlassMode('flat', false)).toBe('flat');
-    expect(resolveGlassMode('css', true)).toBe('canvas');
+    expect(resolveGlassMode('canvas', true)).toBe('canvas');
+    expect(resolveGlassMode('canvas', false)).toBe('css');
+    expect(resolveGlassMode('css', true)).toBe('css');
     expect(resolveGlassMode('css', false)).toBe('css');
   });
 });

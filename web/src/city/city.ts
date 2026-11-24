@@ -29,7 +29,7 @@ import { gradeShader } from '../vignette/grade';
 import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { hideEmptyMeshes } from './empty-draws';
 import { CityGlass } from './glass';
-import { glassSource, setCanvasGlass } from '../ui/glass';
+import { canvasGlassAllowed, glassSource, setCanvasGlass } from '../ui/glass';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -2005,7 +2005,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // The backings go with the composer's frame: no composer, or no grade, means CSS blurs.
     const composed = !perfOverrides.postOff && !whiteModel?.holding;
     // A lost context renders nothing, so the panels need CSS until it is restored.
-    const glassRects = glass && composed && grade.enabled && !gl.isContextLost() ? glassSource(renderer.domElement) : null;
+    const glassRects = glass && composed && canvasGlassAllowed() && grade.enabled && !gl.isContextLost() ? glassSource(renderer.domElement) : null;
     if (glass) {
       if (glassRects) glass.prepare(glassRects);
       glass.pass.enabled = !!glassRects;

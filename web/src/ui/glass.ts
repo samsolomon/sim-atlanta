@@ -11,8 +11,8 @@
  * - 'flat' (Low): no blur anywhere; the tint fill gets denser instead.
  * - 'css': the browser blurs. 2D Map, Models, City loading, paused or lost.
  *
- * Two owners: main.ts sets the base ('flat' while City shows at Low, else 'css') and the renderer
- * says whether it is drawing backings. Flat wins; otherwise canvas when the renderer draws.
+ * main.ts allows canvas backings only when High City owns the pixels. During a Map blend,
+ * CSS blurs both layers together. The renderer confirms it has drawn before CSS lets go.
  */
 
 export type GlassMode = 'css' | 'canvas' | 'flat';
@@ -34,14 +34,13 @@ export const GLASS_STRIDE = 7;
 /** Keep re-measuring every frame this long after the last transition or animation event. */
 const SETTLE_MS = 700;
 
-let base: 'css' | 'flat' = 'css';
+let base: GlassMode = 'canvas';
 let canvasDraws = false;
 let mode: GlassMode = 'css';
 
 /** The mode the two owners resolve to. Pure, for tests. */
-export function resolveGlassMode(baseMode: 'css' | 'flat', rendererDraws: boolean): GlassMode {
-  if (baseMode === 'flat') return 'flat';
-  return rendererDraws ? 'canvas' : 'css';
+export function resolveGlassMode(baseMode: GlassMode, rendererDraws: boolean): GlassMode {
+  return baseMode === 'canvas' && !rendererDraws ? 'css' : baseMode;
 }
 
 function apply() {
@@ -54,8 +53,11 @@ function apply() {
   dirty = true;
 }
 
-/** main.ts: 'flat' while City shows at Low, otherwise 'css'. */
-export function setGlassMode(next: 'css' | 'flat') {
+export function canvasGlassAllowed() {
+  return base === 'canvas';
+}
+
+export function setGlassMode(next: GlassMode) {
   base = next;
   apply();
 }
