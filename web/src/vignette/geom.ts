@@ -91,9 +91,19 @@ export class Builder {
   pos: number[] = [];
   col: number[] = [];
   private c = new THREE.Color();
+  /** Parsed colours by string or hex number. Parsing a CSS string (plus the sRGB conversion) per
+   * triangle was ~0.6 s of a phone's City load; the cached floats are the ones set() produces. */
+  private static parsed = new Map<string | number, [number, number, number]>();
+  private use(color: THREE.ColorRepresentation) {
+    if (typeof color !== 'string' && typeof color !== 'number') { this.c.set(color); return; }
+    const hit = Builder.parsed.get(color);
+    if (hit) { this.c.r = hit[0]; this.c.g = hit[1]; this.c.b = hit[2]; return; }
+    this.c.set(color);
+    if (Builder.parsed.size < 4096) Builder.parsed.set(color, [this.c.r, this.c.g, this.c.b]);
+  }
 
   tri(a: number[], b: number[], c: number[], color: THREE.ColorRepresentation) {
-    this.c.set(color);
+    this.use(color);
     this.pos.push(...a, ...b, ...c);
     for (let i = 0; i < 3; i++) this.col.push(this.c.r, this.c.g, this.c.b);
   }
@@ -142,7 +152,7 @@ export class Builder {
   addGeometry(g: THREE.BufferGeometry, color: THREE.ColorRepresentation) {
     const gg = g.index ? g.toNonIndexed() : g;
     const p = gg.attributes.position.array;
-    this.c.set(color);
+    this.use(color);
     for (let i = 0; i < p.length; i++) this.pos.push(p[i]);
     for (let i = 0; i < p.length / 3; i++) this.col.push(this.c.r, this.c.g, this.c.b);
   }

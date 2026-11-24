@@ -3008,6 +3008,17 @@ At the same lab camera, the lit windshield had made the XN40 cab as bright as th
 
 The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
 
+### 2026-11-23 — Callery pear starts with a white March bloom
+
+The first Model Lab study follows the oval Bradford form. Four sizes share an upright grey skeleton, white flowers on fine twig cards, glossy green A cards and late burgundy fall foliage. The first test with detached flower chips left white flecks hanging above bare wood. Reusing the paired redbud twig cards put every cluster back on a branch, using space in the existing oval atlas. At 193 / 138 triangles the mature tree still fits both budgets. [Seasonal and distance sheet](log/ui/tree-species/options-callery-pear.jpg). Lab study only. Web rebuild required for release.
+
+### 2026-11-23 — Callery pear fills out below the fork
+
+The first pear looked like white twigs above a long pole. The larger trees now fork at about 2 m, and a broad teardrop holds both the summer leaf cards and the March flower mass. Separate petal cards made the biggest difference at distance. The 300 m high-detail crown mask grew from 181 to 1,638 pixels, and the white mass reads on the ordinary Lab backdrop. A small late cluster can remain at leaf-out after the large flower cards have fallen. The mature tree costs 195 / 141 triangles, and July Front luminance is 0.242 / 0.250 against the generic canopy’s 0.248. [Side-by-side sheet with distance, winter and summer](log/ui/tree-species/options-callery-pear.jpg).
+
+### 2026-11-23 — Callery pear bloom gets texture and shade
+
+The full white silhouette worked at 300 m, but close up the bloom looked like sheets of cotton. Twenty small crown cards at high detail and thirteen at low now carry clusters of opaque petals, with small openings for the wood. The surprise was how much light contributed to the fluffy look. Restoring the atlas greys and the darker underside brought out detail without sacrificing the distant bloom. Spring and July use the same crown centers, with the lowest foliage around the 2 m fork in the mature tree. The cost is 195 / 135 triangles. [Matched eye-level and distance sheet](log/ui/tree-species/options-callery-pear.jpg).
 ### 2026-11-23 — A common roof profile for the Rapid buses
 
 The first rounded XE60 covers still looked flatter than the XN40 pod at the same camera. Both models now use the XN40’s 36 cm crown, curved ends and shoulder bevel. A short strip of exposed roof ahead of the XE60 cover makes the front curve visible. The electric bus keeps its 3.30 m roof height and carries one shroud on each side of the joint. Sampling the same curves at low detail brings the XE60 to 1,286 triangles. [XE60 and XN40 at the same scale, day and night](log/rapid-buses/roof-profiles.jpg).
@@ -3074,3 +3085,9 @@ With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage coll
 ### 2026-11-23 — Grant Street runs beneath the CSX yard
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
+
+### 2026-11-23 — Colour before the whole board
+
+On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
+
+On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)

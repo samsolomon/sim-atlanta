@@ -126,6 +126,7 @@ import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
+import { takePrefetched } from '../core/prefetch';
 
 export type Quality = 'low' | 'high';
 
@@ -206,7 +207,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   surfaceDefaults.tier = quality;
   surfaceDefaults.enabled = new URLSearchParams(globalThis.location?.search ?? '').get('surfaces') !== 'off';
   async function asset(name: string) {
-    const r = await fetch(`${DATA}/scene/downtown/${name}`, { signal: options.signal });
+    const url = `${DATA}/scene/downtown/${name}`;
+    // A City landing started these at boot (core/prefetch.ts); otherwise fetch now.
+    const r = (await takePrefetched(url, options.signal)) ?? await fetch(url, { signal: options.signal });
+    options.signal?.throwIfAborted();
     if (!r.ok) throw new Error(`City ${name} (${r.status})`);
     return r;
   }
@@ -872,7 +876,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     renderer.shadowMap.needsUpdate = true;
   }
-  function approachMosaic(x: number, z: number) {
+  // Phone load time: building a far area blocks the main thread for seconds on a phone, which
+  // starves the white model's settle frames and delays colour. While the reveal runs, a camera
+  // holds far areas back, including the default whole-board request; they start once colour shows
+  // (or after 8 s at most). Only an explicit far target (a camera link to Brookwood, a study
+  // camera) loads now, since the view it opens on needs that area.
+  let areasHeld = !!options.whiteModel;
+  let heldAt: { x: number; z: number } | undefined;
+  function approachMosaic(x: number, z: number, needed = false) {
+    if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
@@ -1094,12 +1106,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (Object.hasOwn(profileCameras,profile)) {
     const [x,z,bearing,tilt,scale]=profileCameras[profile];
     mosaic?.remember(x,z);
-    approachMosaic(x,z);
+    approachMosaic(x,z,true);
     setView(-bearing,tilt,Math.max(150,scale*container.clientHeight/(2*Math.tan(THREE.MathUtils.degToRad(11)))),x,z);
   }
   if (brookwoodStudy) {
     mosaic?.remember(-92,-5054);
-    approachMosaic(-92,-5054);
+    approachMosaic(-92,-5054,true);
   }
 
   // ---- post: ink, ambient occlusion, bloom, tilt-shift, grade ------------------------------
@@ -1592,6 +1604,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     mode: options.whiteModel,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
+  if (areasHeld) {
+    const release = () => {
+      if (!areasHeld) return;
+      areasHeld = false;
+      perf.phase('city:areas-released');
+      if (heldAt && !options.signal?.aborted) approachMosaic(heldAt.x, heldAt.z);
+    };
+    void (whiteModel?.revealed ?? Promise.resolve()).then(release);
+    setTimeout(release, 8000);
+  }
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
   let firstFrame = false;
   // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
@@ -1678,7 +1700,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       pendingNorthTarget = previewNorth && !north && x > b.maxX && x <= northBounds.maxX &&
         z >= northBounds.minZ && z < northBounds.maxZ ? { x, z } : undefined;
       mosaic?.remember(x, z);
-      approachMosaic(x, z);
+      const offBoard = mosaic ? Math.hypot(mosaic.point(x, z).x - x, mosaic.point(x, z).z - z) >= 1 : false;
+      approachMosaic(x, z, offBoard);
       approachEast(x, z);
       approachNorth(x, z);
       const point = pointOnBoard(x, z);
@@ -1810,7 +1833,7 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
       const p = al.line.at(s);
       if (p.x < b.minX || p.x > b.maxX || p.z < b.minZ || p.z > b.maxZ) continue;
       total++;
-      if (kept.some((k) => distToLine(k.line, p.x, p.z) < 6)) near++;
+      if (kept.some((k) => distToLine(k.line, p.x, p.z, 6) < 6)) near++;
     }
     if (!total || near / total >= 0.9) continue;
     const registered = grid && !station ? registerStationLine(al, site, manifest.rail?.paths[id]) : undefined;
@@ -1824,9 +1847,22 @@ function martaAlignments(rf: RoutesFile, manifest: SceneManifest, b: VData['boun
   return { tracks: kept, station };
 }
 
-function distToLine(line: Line, x: number, z: number) {
+const lineBoxes = new WeakMap<Line, { minX: number; maxX: number; minZ: number; maxZ: number }>();
+/** Distance from (x, z) to the polyline. With `within`, only "is it under `within`" is exact: a
+ * point farther than that from the line's box returns Infinity, and the scan stops at the first
+ * segment closer than `within` (this ran ~0.35 s of a phone's City load scanning every point). */
+function distToLine(line: Line, x: number, z: number, within = Infinity) {
   let best = Infinity;
   const pts = line.pts;
+  if (within < Infinity) {
+    let box = lineBoxes.get(line);
+    if (!box) {
+      box = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+      for (const [px, pz] of pts) { box.minX = Math.min(box.minX, px); box.maxX = Math.max(box.maxX, px); box.minZ = Math.min(box.minZ, pz); box.maxZ = Math.max(box.maxZ, pz); }
+      lineBoxes.set(line, box);
+    }
+    if (x < box.minX - within || x > box.maxX + within || z < box.minZ - within || z > box.maxZ + within) return Infinity;
+  }
   for (let i = 1; i < pts.length; i += 1) {
     const [ax, az] = pts[i - 1];
     const [bx, bz] = pts[i];
@@ -1835,6 +1871,7 @@ function distToLine(line: Line, x: number, z: number) {
     const l2 = dx * dx + dz * dz || 1;
     const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2));
     best = Math.min(best, Math.hypot(ax + dx * t - x, az + dz * t - z));
+    if (best < within) return best;
   }
   return best;
 }

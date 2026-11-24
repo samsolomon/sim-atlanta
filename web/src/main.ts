@@ -1,4 +1,5 @@
 import { perf } from './core/perf';
+import { prefetchCity } from './core/prefetch';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { initialView } from './core/initial-view';
@@ -28,6 +29,12 @@ const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.js
 const params = new URLSearchParams(location.search);
 
 const landing = initialView(location.search, location.hash);
+// A City landing starts City's code and first data now, alongside the timetable and the shell,
+// instead of after them (phone load time; core/prefetch.ts).
+if (landing === 'city') {
+  void import('./city/city');
+  prefetchCity(`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/data`);
+}
 let map: maplibregl.Map | null = null;
 const mapCentre: [number, number] = [-84.39, 33.76];
 
