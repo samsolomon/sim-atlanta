@@ -92,11 +92,11 @@ const KNOWN: Record<string, number> = {
 const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:1021839184': 84, // EUHM staff deck, midtown-south, worst 0.67 m off
   'osm:way:269542143': 29, // Emmi Midtown, brookwood-south, worst 0.52 m off
-  'osm:way:235006952': 11, // Midtown station east entrance, midtown-central, worst 0.32 m off
+  'osm:way:235006952': 10, // Midtown station east entrance, midtown-central, worst 0.32 m off
   'osm:way:886044296': 9, // Winship at Emory Midtown, midtown-south, worst 1.7 m off
   'osm:way:39450314': 9, // One Atlantic Center, midtown-upper, worst 0.67 m off
   'osm:way:208355680': 8, // Ponce de Leon Apartments, midtown-south, worst 0.34 m off
-  'osm:way:28961767': 7, // Woodruff Arts Center, midtown-upper, worst 0.33 m off
+  'osm:way:28961767': 6, // Woodruff Arts Center, midtown-upper, worst 0.33 m off
   'osm:way:269747513': 7, // clara-meer, midtown-upper, worst 5.85 m off
   'osm:way:42725820': 6, // Academy of Medicine, midtown-central, worst 0.46 m off
   'osm:way:789975430': 4, // Alexan on 8th, midtown-central, worst 0.55 m off

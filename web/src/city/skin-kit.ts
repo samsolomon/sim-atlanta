@@ -204,10 +204,27 @@ function triDist2(p: V3, a: V3, b: V3, c: V3) {
   return at([a[0] + ab[0] * v + ac[0] * w, a[1] + ab[1] * v + ac[1] * w, a[2] + ab[2] * v + ac[2] * w]);
 }
 
+/** Whether segment ab passes through triangle pqr (Möller–Trumbore, both directions). */
+function segmentHitsTriangle(a: V3, b: V3, p: V3, q: V3, r: V3) {
+  const d: V3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const e1: V3 = [q[0] - p[0], q[1] - p[1], q[2] - p[2]], e2: V3 = [r[0] - p[0], r[1] - p[1], r[2] - p[2]];
+  const h: V3 = [d[1] * e2[2] - d[2] * e2[1], d[2] * e2[0] - d[0] * e2[2], d[0] * e2[1] - d[1] * e2[0]];
+  const det = e1[0] * h[0] + e1[1] * h[1] + e1[2] * h[2];
+  if (Math.abs(det) < 1e-9) return false;
+  const f = 1 / det, sv: V3 = [a[0] - p[0], a[1] - p[1], a[2] - p[2]];
+  const u = f * (sv[0] * h[0] + sv[1] * h[1] + sv[2] * h[2]);
+  if (u < 0 || u > 1) return false;
+  const qv: V3 = [sv[1] * e1[2] - sv[2] * e1[1], sv[2] * e1[0] - sv[0] * e1[2], sv[0] * e1[1] - sv[1] * e1[0]];
+  const v = f * (d[0] * qv[0] + d[1] * qv[1] + d[2] * qv[2]);
+  if (v < 0 || u + v > 1) return false;
+  const t = f * (e2[0] * qv[0] + e2[1] * qv[1] + e2[2] * qv[2]);
+  return t >= 0 && t <= 1;
+}
+
 /**
  * Parts of a skin that hang outside its footprint without connecting back to it. Triangles that
- * share a vertex (to 1 cm) or come within `tolerance` metres of each other's surfaces join one
- * cluster, so a pane on its wall or a rail on its slab is part of the building. A cluster with
+ * share a vertex (to 1 cm), come within `tolerance` metres of each other's surfaces, or cross
+ * (an edge through a face) join one cluster, so a pane on its wall or a rail on its slab is part of the building. A cluster with
  * no vertex inside the outline rings that reaches more than `tolerance` outside them is
  * detached: a stack of balcony plates floating off the wall, say. `gap` is its distance back to
  * the rest of the skin (Infinity when nothing lies within about 4 m).
@@ -256,7 +273,7 @@ export function detachedParts(object: { updateMatrixWorld(force?: boolean): void
     const [a, b, c] = [verts[tris[t]], verts[tris[t + 1]], verts[tris[t + 2]]];
     return [a, b, c, [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3]];
   };
-  for (let t = 0; t < tris.length; t += 3)
+  for (let t = 0; t < tris.length; t += 3) {
     for (const p of sample(t)) {
       const c = p.map(v => Math.floor(v / cell));
       for (const u of grid.get(cellKey(c[0], c[1], c[2])) ?? []) {
@@ -264,6 +281,17 @@ export function detachedParts(object: { updateMatrixWorld(force?: boolean): void
         if (triDist2(p, verts[tris[u]], verts[tris[u + 1]], verts[tris[u + 2]]) <= tol2) parent[find(tris[u])] = find(tris[t]);
       }
     }
+    // Triangles that cross without a vertex near each other (a rib through a rib): any edge of
+    // this triangle that passes through a nearby triangle joins them.
+    for (let e = 0; e < 3; e++) {
+      const a = verts[tris[t + e]], b = verts[tris[t + (e + 1) % 3]];
+      const cells = new Set([a, b, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2] as V3].map(p => cellKey(...p.map(v => Math.floor(v / cell)) as [number, number, number])));
+      for (const k of cells) for (const u of grid.get(k) ?? []) {
+        if (find(tris[u]) === find(tris[t])) continue;
+        if (segmentHitsTriangle(a, b, verts[tris[u]], verts[tris[u + 1]], verts[tris[u + 2]])) parent[find(tris[u])] = find(tris[t]);
+      }
+    }
+  }
   // A cluster is anchored when any of its vertices lies inside the footprint; the rest float.
   const outside = verts.map(([x, , z]) => outsideRings(rings, x, z));
   const clusters = new Map<number, { tris: number[]; anchored: boolean; reach: number; at: V3 }>();
