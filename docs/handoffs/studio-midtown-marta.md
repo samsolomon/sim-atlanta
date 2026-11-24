@@ -1,5 +1,17 @@
 # Studio Midtown MARTA handoff (Claude Opus → Codex)
 
+## Current handoff after the portal audit, 2026-11-24
+
+**#663 remains open on `samsolomon/rail-gaps`.** The latest geometry is `b8ffce92bc22a08ec891ebe28e03336f41893ea4`. Ground contact accepted it. The staged regression failed against the old mesh at `d3434fa0` on both tiers (37.09 cm). The full-board 0.5 m lattice at a 2 cm tolerance had zero portal penetrations out of 646 samples on each tier. The change preserves the existing shared drape implementation.
+
+- **A has visual sign-off. B needs another pass.** The plaza is now the original terrain over the tube, with the face recessed 7 m. The daytime image still reads as a tall dark wedge pointing toward the building. Make just a square headwall visible, flush with the bank. Look at the vertical side return along the approach: replacing it with graded earth may address the silhouette. Check with the same camera (`10,-45,180,40,90`), then reshoot day, night and illustrative freight and send the coordinator full-SHA image links. The current images are `docs/log/ui/rail-portals/b-recessed.jpg` and `night-freight.jpg`. The old daylight composite predates B's revision. Recheck the ground audit after the edit. No slot requested.
+- **Studio release pause.** Wait for the skyline lead's release-11 all-clear before builds, tests, captures or dev servers. Then use the shared parent-directory wrapper `../.perf-run 663 pnpm test:perf` for #663 and the relevant ticket for each subsequent perf run. The unmodified takeover head passed the full suite. New full-suite attempts hit timeouts under shared load; the last attempt was stopped for the release pause. The targeted portal suite passed. Final build, full tests, locked perf, and cross-review still need to run on the proposed merge head.
+- **Five Points PR 2** has a pushed, unverified draft at `samsolomon/five-points-cut-faces` (`0d30281c`), based on the earlier portal head. It spans each mapped track strip on its tangent plane. Inspect the steps between adjacent strips, close side gaps, verify the full street-width face and street-level top, and verify scheduled MARTA and illustrative freight at both ends by day and night. Rebase onto landed #663 before opening. No PR yet.
+- **CQ400** remains at `a7a95322` on `samsolomon/cq400-bogies`, without a PR. **#427** remains held. Follow the existing workflow below for both.
+
+The following section records the previous handoff. Its portal geometry, missing-image list, and queue contacts predate this update. Use the live orchestration thread for current routing.
+
+
 Outgoing session: `orca_session_id:54bca5c0-00b8-4d4d-94c4-c1c7f8cdd9f8` (Claude Opus, worktree `studio-midtown-marta`). Read it with `orca agent read`. The coordinator is `term_09e1b3da-5f48-4755-abf8-92a571a1f474` on Sam's MacBook Air; reply to its newest message with `orca orchestration reply --id <msg> --from <your session id>`. The skyline lead `studio-midtown-skyline-1c` (`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`) sequences merges: ask it for a slot, rebase at your turn, rerun the checks, merge, then report the `gh pr view <n> --json state,mergeCommit` output to both. Ground-contact (`orca_session_id:a761d59f-dbff-4e39-95d4-51790b17cb47`) owns `web/src/terrain`. The vehicles agent (`orca_session_id:bceb5cfc-138b-456e-a77d-4537701e21ef`) runs the passenger-swing probe and reviews.
 
 This worktree owns downtown and MARTA: the stations, the east cut (`east-cut*.ts`, unowned since #29, now ours), the streetcar shape and the freight tunnel portals.
