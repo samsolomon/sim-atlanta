@@ -18,8 +18,8 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // architect's photographs (see docs/alexan-on-8th.md).
 
 const ROOF = 74.5, BASE = 7, FLOORS = 21;
-const PANEL = '#c6ad8e', STRIP = '#eeece6', WINDOW = '#4f7178', SLAB = '#3b3e41', RAIL = '#7d9097';
-const STORE = '#3e4d55', SLOT = '#6a8f98';
+const PANEL = '#c6ad8e', STRIP = '#eeece6', WINDOW = '#7b9aa0', SLAB = '#3b3e41', RAIL = '#7d9097';
+const STORE = '#3e4d55', SLOT = '#7e9ca4';
 export const alexanId = 'osm:way:789975430';
 
 export function alexanOn8th(shell: Shell) {
