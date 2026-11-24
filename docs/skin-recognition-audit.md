@@ -84,7 +84,7 @@ Twelve skins queued before the recognition rule were judged from each PR's own i
 
 | Verdict | PR | Building | Note | Disposition |
 |---|---|---|---|---|
-| FAIL | #530 | Coca-Cola USA Building (large) | Red-brown granite reads as a beige punched grid at 620 m | Pulled from 8b; skins-7 reworks it |
+| FIXED (pending 8b) | #530 | Coca-Cola USA Building (large) | First skin had the wrong material | Reworked to the Enclos aerial: dark blue-grey curtain wall, silver mullions, brown crown band |
 | FIXED (pending 8b) | #527 | Two Peachtree Pointe (large) | Curved plan reads; glass and banding generic; no base or crown | Landed in 8a; strengthened by #606 (swept crown band, Peachtree canopy; photo-backed) |
 | BORDERLINE | #539 | Renaissance Midtown (large) | Beige grid apart from the centre strip; frame is 300 m | Rides 8b; needs a 400–600 m frame; later pass |
 | BORDERLINE | #528 | The M by Radius | Piers faint, crown hidden from that side | Rides 8a; later pass |
