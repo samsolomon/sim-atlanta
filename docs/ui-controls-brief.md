@@ -421,6 +421,14 @@ out, then the map flattens.
   panel's bottom edge, not draggable. No "Radio" header, no ✕ (the dock button toggles;
   Esc or a tap outside closes), no previous button and no volume row (system volume).
 - **Phones:** the same row as a floating glass card 12 px above the dock, not a sheet.
+- **Crossfade** (Sam, 2026-11-24): tracks roll into each other. Start the next track about
+  5 s before the current one ends and cross over with an equal-power curve over 5 s.
+  Preload the next file about 20 s ahead so the overlap never stalls. Use the Web Audio API
+  (each track through a GainNode); iOS ignores `HTMLAudioElement.volume`, so element
+  volume can't do it. Next (or switching station) fades over about 1.2 s; pause and resume
+  ramp over 300 ms so nothing clicks. The title, art and Media Session metadata switch when
+  the incoming track passes the midpoint of the fade. With reduced motion this stays: it
+  is sound, not motion.
 - While playing with the player closed, the dock's radio button shows a small playing
   state.
 - Tracks: about 10 calm city-builder tracks, around 30 minutes, generated (our own coded
