@@ -4220,3 +4220,9 @@ This was the first of the downtown generics Sam flagged next to the skinned land
 ### 2026-11-24 · Elevance Health Technology Center: silver below, blue above
 
 I first planned Elevance as three blues of faceted glass. The award photographs told a different story: the angular folds belong to a pale silver fin screen wrapping the parking floors over a glass lobby, and the tower above is plain blue banded glass stepping back in tiers. That material change is what separates it from its curtain-walled neighbours. The lidar lifted the mapped 54 m "podium" to 70 m wings. The 16th-floor sky bridge to 712 West Peachtree waits: it reaches 12 m past the footprint, and the new skin audit has no way yet to allow one part to do that. [Before/after, views and four-side sheet](log/ui/elevance-tech/README.md)
+
+### 2026-11-24 · Azure on the Park: blue, and balconies where they really are
+
+The recognition audit rated Azure BORDERLINE because its glass matched every tower around it. The first skin had desaturated the glass to keep shaded faces from going navy, and in doing so it erased the building's colour. Two photos, one from 11th Street and one from the Piedmont House roof, both show Azure as plainly bluer than its neighbours, with balconies stacked at the corners rather than mid-face. The rework puts the blue back as far as the glass rule allows (sunlit S 29 at V 65, against a cap of 30) and moves the balcony stacks to the corners, where they wrap the tower. A slab nosing on the low tier keeps the corners legible on phones for about 150 more triangles. The shaded faces still go a saturated navy. That's the city-wide shade-tone question now in front of Sam, not something to fix one building at a time.
+
+[Before and after](log/ui/azure-on-the-park/strengthen-compare.jpg)
