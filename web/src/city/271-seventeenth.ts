@@ -11,12 +11,11 @@ import { landmarkShell } from './landmark-shell';
  * left out. Evidence, estimates and gaps: docs/log/ui/271-seventeenth/README.md.
  */
 export const seventeenth271Id = 'osm:way:269542282';
-// The part OSM maps at 103 m: the south-west sliver, which lidar shows without the parapet.
-const lowSliverId = 'osm:way:1562299300';
 
 // Heights above the lidar ground ring (276.2 m NAVD88), from the April 2019 returns: roof 107
-// (median 106.8), parapet rim 113.5 (p95 113.4), penthouse 113 and the low sliver 103.
-const roofH = 107, parapetH = 113.5, sliverH = 103, penthouseH = 113;
+// (median 106.8), parapet rim 113.5 (p95 113.4) and penthouse 113. A 20 m notch at the north-west
+// corner reads 103 m; it is not modelled.
+const roofH = 107, parapetH = 113.5, penthouseH = 113;
 const groundNavd = 276.2;
 const parkingTop = 22, lobbyTop = 28.4, officePitch = (roofH - lobbyTop) / 20;
 // Where the vertical-mullion mass hands over to the banded mass, as a share of each long face
@@ -24,8 +23,8 @@ const parkingTop = 22, lobbyTop = 28.4, officePitch = (roofH - lobbyTop) / 20;
 const split = 0.38;
 
 // Flat vertex colours, not library surfaces: a painted mesh compiles its own program.
-const glass = '#2d3b45', glassLit = '#2f3d47', mullion = '#56636b', band = '#97a1a5';
-const parapetGlass = '#41525c', deckGlass = '#26323a', roofDeck = '#7d817f';
+const glass = '#3d505c', glassLit = '#3f525e', mullion = '#7d8b92', band = '#bcc4c6';
+const parapetGlass = '#4f6470', deckGlass = '#34434c', roofDeck = '#7d817f';
 
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 
@@ -53,14 +52,11 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
   const origin: P2 = [-376, -4187];
   const s = landmarkShell(buildings, grid, site.id, '271 Seventeenth Street', origin, [1, 0], [[0, 0], [-30, -12], [30, 10]]);
   if (!s) return null;
-  const zero = grid.manifest.vertical.sceneZeroNavd88M;
-  const y = (h: number) => groundNavd + h - zero;
+  // Shell coordinates are NAVD88 metres (landmarkShell offsets the group by the scene zero).
+  const y = (h: number) => groundNavd + h;
   const plan = ccw(s.ring);
-  const sliver = site.parts?.find(p => p.id === lowSliverId);
-  const sliverPlan = sliver?.rings.length === 1 ? ccw(sliver.rings[0].map(([x, z]): P2 => [x - origin[0], z - origin[1]])) : null;
 
   s.prism(plan, s.base, y(roofH), glass, roofDeck);
-  if (sliverPlan) s.prism(sliverPlan, y(sliverH) - 0.2, y(sliverH), glass, roofDeck);
 
   const xs = plan.map(([x]) => x), east = Math.max(...xs), west = Math.min(...xs);
   plan.forEach((a, edge) => {
@@ -72,9 +68,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     const tSplit = Math.abs(dx) > 1 ? Math.min(1, Math.max(0, (splitX - a[0]) / dx)) : (a[0] > splitX ? (dx >= 0 ? 0 : 1) : 1);
     const eastRange: [number, number] = dx >= 0 ? [tSplit, 1] : [0, tSplit];
     const westRange: [number, number] = dx >= 0 ? [0, tSplit] : [tSplit, 1];
-    const isSliverEdge = !!sliverPlan && sliverPlan.some(([x, z]) => Math.hypot(x - a[0], z - a[1]) < 0.5)
-      && sliverPlan.some(([x, z]) => Math.hypot(x - b[0], z - b[1]) < 0.5) && Math.abs(dz) < 2 && Math.abs(a[1]) > 15;
-    const top = isSliverEdge ? y(sliverH) : y(roofH);
+    const top = y(roofH);
 
     // Parking levels read as dark spandrel glass with thin floor lines; the lobby is tall glass.
     panel(s, false, a, b, 0, 1, s.base + 0.3, y(parkingTop), 0.04, deckGlass);
@@ -85,13 +79,13 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     for (let f = 1; f <= 20; f++) {
       const h = lobbyTop + f * officePitch;
       if (y(h) > top + 0.01) break;
-      panel(s, false, a, b, westRange[0], westRange[1], y(h) - 0.55, y(h) - 0.05, 0.12, band);
+      panel(s, false, a, b, westRange[0], westRange[1], y(h) - 1.0, y(h) - 0.05, 0.12, band);
     }
     // East mass: vertical mullions about 4.5 m apart, full height.
     const span = (eastRange[1] - eastRange[0]) * length;
     const ribs = Math.round(span / 4.5);
     for (let i = 1; i < ribs; i++) {
-      const t = eastRange[0] + (eastRange[1] - eastRange[0]) * i / ribs, w = 0.14 / length;
+      const t = eastRange[0] + (eastRange[1] - eastRange[0]) * i / ribs, w = 0.22 / length;
       panel(s, false, a, b, t - w, t + w, y(lobbyTop), top, 0.1, mullion);
     }
 
@@ -107,7 +101,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     }
 
     // The 20 ft glass parapet, flush with the wall.
-    if (!isSliverEdge) panel(s, false, a, b, 0, 1, y(roofH), y(parapetH), 0, parapetGlass);
+    panel(s, false, a, b, 0, 1, y(roofH), y(parapetH), 0, parapetGlass);
   });
 
   // The penthouse the lidar finds in the middle of the roof.
