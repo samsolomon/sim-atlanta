@@ -1,5 +1,7 @@
 # Ansley terrace comparisons
 
+**WIP evidence:** these captures predate the stair-landing correction and its 34-site placement result. Refresh after views before opening the PR; preserve the existing before halves.
+
 Matched camera `1503,-4056,70,60,150`, 2026-11-20 at 14:00 and 23:00 ET, classic UI. Before is the Winn-merged build; after is the terrace branch with the same staged terrain. The classic UI avoids the opening-animation stall in the capture browser.
 
 - [High day](row-high-day-compare.jpg) · [High night](row-high-night-compare.jpg)

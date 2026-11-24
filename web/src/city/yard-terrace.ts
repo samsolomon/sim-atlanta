@@ -15,7 +15,10 @@ export function yardTerrace(b: Builder, o: {
   const low=o.ground(...entry),houseY=o.ground(...house);
   const ys=[o.at(-half,back),o.at(half,back)].map(p=>o.ground(...p));
   if(low===null || houseY===null || ys.some(y=>y===null) || houseY-low<=.8)return null;
-  const top=Math.max(...ys as number[]),rise=top-low;
+  const landing=o.ground(...o.at(o.door,back));
+  if(landing===null)return null;
+  // The walk joins the centre of the stairs, not the higher shelf corner on a sideways slope.
+  const top=Math.max(...ys as number[]),stairTop=landing+.04,rise=stairTop-low;
   if(rise<.25 || rise>.85)return null;
   const steps=Math.ceil(rise/.17),riser=rise/steps;
   const runs:[number,number][]=[[-half,o.door-gap],[o.door+gap,half]];
@@ -58,7 +61,7 @@ export function yardTerrace(b: Builder, o: {
     b.quad(at(o.door-.6,d0,y),at(o.door+.6,d0,y),at(o.door+.6,d1,y),at(o.door-.6,d1,y),cap);
     b.quad(at(o.door-.6,d0,y-riser),at(o.door+.6,d0,y-riser),at(o.door+.6,d0,y),at(o.door-.6,d0,y),stone);
   }
-  for(const s of [o.door-.6,o.door+.6])b.quad(at(s,o.walkEnd,low-.2),at(s,back,low-.2),at(s,back,top),at(s,o.walkEnd,low+riser),stone);
+  for(const s of [o.door-.6,o.door+.6])b.quad(at(s,o.walkEnd,low-.2),at(s,back,low-.2),at(s,back,stairTop),at(s,o.walkEnd,low+riser),stone);
   // Keep the occasional entry piers within the 80-triangle per-yard budget.
   if(o.newer && o.piers && steps<=4)for(const s of [o.door-1.1,o.door+1.1])prism(s-.22,s+.22,front,front-.44,top,top+.8,cap);
   const a=o.at(o.door,o.walkEnd),c=o.at(o.door,back),dx=c[0]-a[0],dz=c[1]-a[1],len2=dx*dx+dz*dz;
