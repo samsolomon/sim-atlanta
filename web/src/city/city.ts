@@ -69,6 +69,7 @@ import { createFootballHall } from './football-hall';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createHardRock } from './hard-rock';
+import { createTheLandmark } from './the-landmark';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -374,6 +375,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let hardRock: ReturnType<typeof createHardRock> = null;
+  let theLandmark: ReturnType<typeof createTheLandmark> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -478,6 +480,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHardRock = hardRock?.buildings ?? afterHealey;
         parkPlaceTower = createParkPlaceTower(afterHardRock, ground);
         const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHardRock;
+        theLandmark = createTheLandmark(afterHealey, ground);
+        const afterLandmark = theLandmark?.buildings ?? afterHealey;
+        parkPlaceTower = createParkPlaceTower(afterLandmark, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterLandmark;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
@@ -588,6 +594,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (hardRock) world.group.add(hardRock.group);
+        if (theLandmark) world.group.add(theLandmark.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -637,6 +644,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           const listed = ([
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
             peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, hardRock, fiftyFiveParkPlace,
+            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, theLandmark, fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -1494,6 +1502,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
       hardRock?.setNight(night);
+      theLandmark?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
       davisons?.setNight(night);
