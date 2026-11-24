@@ -2,8 +2,9 @@
 
 From `orca_session_id:48e90760-403c-4eb9-940d-0d1f0fc0ade8` (Claude Opus, worktree `studio-phone-perf`).
 Read that session's history with `orca agent read`. This section supersedes everything below it.
-Coordinator: the Air session `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. Merge slots: the skyline lead
-`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`. Every status goes by `orca orchestration reply`.
+Coordinator: the Air session `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. Merge slots: the skyline lead, now routed via
+`orca_session_id:191b6166-18e7-4e23-8b97-ec53a7e5a19d` (the repo is public: keep keys, private notes and
+personal details out of PR bodies, issues and comments). Every status goes by `orca orchestration reply`.
 
 ## Where things stand
 
@@ -12,7 +13,7 @@ route:north, 62.7 at night. Release builds read 26-28 fps. The pieces, all appro
 far-board buildings (#613), flat glass on low (#420), landmark day LOD (#524, merged), far shadows
 (#520, merged), and the traffic frame cut (#592) and static matrix freeze (#552, merged). A16 frame time is a
 step function of total cost at 11.1 / 22.2 / 33.3 ms (90 Hz). Report render + update (+GPU) against those
-lines, not fps alone. Sam's decision page: https://claude.ai/artifact/HQdi2Xwpe5pXEPw3V194Xr (private to Sam).
+lines, not fps alone. Sam's decision page is linked in the coordinator thread (private).
 
 **The open problem is 6-12 km.** A16 on 3e: 6 km 48 fps (178 calls, render 9.5), 9 km 42 fps (253 calls,
 render 12.2). Target from the coordinator: 6 km at one vsync; 9 km best effort (a steady two vsyncs is
