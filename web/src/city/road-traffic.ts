@@ -18,6 +18,9 @@ const HEIGHT_STEP = 2;
 const NO_ROAD = -Infinity;
 /** Largest gap (m) allowed between a step's interpolation and the drawn road at its midpoint. */
 const PROFILE_TOLERANCE = .005;
+/** Lanes whose nearest point is beyond this many metres from the camera re-pose at FAR_HZ;
+ * nearer lanes every frame. FAR_HYSTERESIS either side stops a lane at the boundary flickering. */
+const FAR_M = 600, FAR_HYSTERESIS = 30, FAR_HZ = 15;
 /** Fractions of a step checked against the drawn road before it may interpolate. */
 const CHECKS = [.5, .25, .75, .125, .375, .625, .875];
 /** Metres around a car's footprint that still count as on screen: its long low-sun shadow, and
@@ -47,6 +50,13 @@ function pointAt(line: Line, s: number, out: { x: number; z: number }) {
   return out;
 }
 
+/** A far car's last pose, replayed until its lane's next FAR_HZ tick. */
+interface HeldCar {
+  kind: Kind; color: THREE.Color; opacity: number;
+  e: Float64Array; // rotation columns (9) then position (3), as written to the instance matrix
+  x: number; y: number; z: number; half: number; ux: number; uz: number;
+}
+
 /** One course's per-frame state, built once so the frame loop allocates nothing. */
 interface LaneState {
   course: TrafficCourse;
@@ -68,6 +78,16 @@ interface LaneState {
   /** Per step: 0 untested, 1 interpolates within PROFILE_TOLERANCE, 2 sample exactly (a deck
    * edge, a step in the drawn surface or a terrain fold inside it). */
   smooth: Uint8Array;
+  /** For steps that sample exactly (`smooth` 2): heights at the step's eighths (NaN off the
+   * road) and, per eighth, 1 if it interpolates within PROFILE_TOLERANCE at its midpoint. */
+  fine: Map<number, Float64Array>;
+  /** Distance rate: far (with hysteresis), the 1/FAR_HZ tick last posed, this lane's offset
+   * into that tick (so far lanes don't all re-pose on one frame), and the cars it held. */
+  far: boolean;
+  farTick: number;
+  stagger: number;
+  held: HeldCar[];
+  heldCount: number;
 }
 
 const models = ['sedan', 'suv', 'box'] as const;
@@ -274,7 +294,7 @@ export class RoadTraffic {
       if (list) list.push(slot); else byCourse.set(slot.lane, [slot]);
     }
     // Slots are generated course by course, so this keeps the original placement priority.
-    return courses.flatMap(course => {
+    return courses.flatMap((course, index) => {
       const slots = byCourse.get(course);
       if (!slots) return [];
       const queue = this.movingQueues.get(course);
@@ -289,7 +309,8 @@ export class RoadTraffic {
         period: course.line.length + offstage(course),
         active: [], trips: slots.map(() => ({ start: 0, length: 0 })),
         heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
-        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
+        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n), fine: new Map(),
+        far: false, farTick: NaN, stagger: (index * 0.6180339887) % 1, held: [], heldCount: 0,
       }];
     });
   }
@@ -310,7 +331,8 @@ export class RoadTraffic {
 
   /** Forget cached road heights, for when the ground under existing courses changes. */
   refreshHeights() {
-    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); }
+    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); lane.fine.clear(); }
+    this.fillLane = this.fillStep = 0;
   }
 
   /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
@@ -322,19 +344,70 @@ export class RoadTraffic {
       const a = this.profile(lane, i);
       return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
     }
-    let smooth = lane.smooth[i];
-    if (!smooth) {
-      // First use of this step: keep interpolating only if the drawn road agrees at its eighths,
-      // which catches deck edges, steps in the surface and terrain folds.
-      smooth = 1;
-      for (const t of CHECKS) {
-        const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
-        const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
-        if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
-      }
-      lane.smooth[i] = smooth;
+    const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
+    if (smooth === 1) return this.interpolate(lane, i, s0, span, s);
+    // A step with a fold, a deck edge or a hole in it: interpolate within its eighths that pass
+    // their own midpoint check, and sample exactly only inside the eighths that don't.
+    const fine = lane.fine.get(i) ?? this.refine(lane, i, s0, span);
+    const u = (s - s0) / span * 8, k = Math.min(7, Math.floor(u));
+    return fine[9 + k] ? fine[k] + (fine[k + 1] - fine[k]) * (u - k) : this.exactHeight(lane, s, x, z);
+  }
+
+  /** First use of a step: keep interpolating only if the drawn road agrees at its eighths,
+   * which catches deck edges, steps in the surface and terrain folds. */
+  private classify(lane: LaneState, i: number, s0: number, span: number) {
+    let smooth = 1;
+    for (const t of CHECKS) {
+      const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
+      const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
+      if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
     }
-    return smooth === 1 ? this.interpolate(lane, i, s0, span, s) : this.exactHeight(lane, s, x, z);
+    return lane.smooth[i] = smooth;
+  }
+
+  /** Where `fillIdle` resumes: a lane, and a step within it. */
+  private fillLane = 0;
+  private fillStep = 0;
+
+  /**
+   * Classify (and refine) height-profile steps ahead of the cars until `deadline` (a
+   * performance.now() time), so the frame loop rarely meets an unsampled step. Resumes where
+   * it stopped; returns true once every step of every lane is ready.
+   */
+  fillIdle(deadline: number) {
+    while (this.fillLane < this.lanes.length) {
+      const lane = this.lanes[this.fillLane], length = lane.course.line.length;
+      const steps = Math.ceil(length / HEIGHT_STEP);
+      while (this.fillStep < steps) {
+        if (performance.now() >= deadline) return false;
+        const i = this.fillStep++, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+        if (!(span > 0)) continue;
+        const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
+        if (smooth === 2 && !lane.fine.has(i)) this.refine(lane, i, s0, span);
+      }
+      this.fillLane++;
+      this.fillStep = 0;
+    }
+    return true;
+  }
+
+  /** Exact heights at a step's eighths, and which eighths may interpolate between them. */
+  private refine(lane: LaneState, i: number, s0: number, span: number) {
+    const fine = new Float64Array(17), line = lane.course.line;
+    const exact = (at: number) => {
+      const p = pointAt(line, at, this.point);
+      const y = this.exactHeight(lane, at, p.x, p.z);
+      return y === null ? NaN : y;
+    };
+    for (let k = 0; k <= 8; k++) fine[k] = exact(s0 + span * k / 8);
+    for (let k = 0; k < 8; k++) {
+      const a = fine[k], b = fine[k + 1];
+      if (a !== a || b !== b) continue; // a hole or edge: exact
+      const mid = exact(s0 + span * (k + .5) / 8);
+      fine[9 + k] = mid === mid && Math.abs(mid - (a + b) / 2) <= PROFILE_TOLERANCE ? 1 : 0;
+    }
+    lane.fine.set(i, fine);
+    return fine;
   }
 
   /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
@@ -385,14 +458,15 @@ export class RoadTraffic {
    * it every car is placed. Signalised and queued lanes are placed only while any part of them
    * is in view, except moving queues, which step every frame to keep their replay continuous.
    */
-  update(clockMs: number, darkness: number, view?: THREE.Frustum) {
+  update(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3) {
     const started = performance.now();
     if (perfOverrides.trafficLegacy) this.stepLegacy(clockMs, darkness);
-    else this.step(clockMs, darkness, perfOverrides.trafficNoCull ? undefined : view);
+    else if (perfOverrides.trafficNoCull) this.step(clockMs, darkness);
+    else this.step(clockMs, darkness, view, perfOverrides.trafficNear ? undefined : eye);
     perf.traffic(performance.now() - started);
   }
 
-  private step(clockMs: number, darkness: number, view?: THREE.Frustum) {
+  private step(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3) {
     this.night.value = darkness;
     const counts = this.meshCounts;
     counts.clear();
@@ -421,6 +495,18 @@ export class RoadTraffic {
       const { course, slots, active, trips } = lane;
       const inView = !view || view.intersectsBox(lane.bounds);
       if (!inView && !lane.queue) continue;
+      // Distance rate: a far lane re-poses on its own FAR_HZ tick and replays its held cars between.
+      let hold = false, record = false;
+      if (eye && inView) {
+        const d = lane.bounds.distanceToPoint(eye);
+        lane.far = lane.far ? d > FAR_M - FAR_HYSTERESIS : d > FAR_M + FAR_HYSTERESIS;
+        if (lane.far) {
+          const tick = Math.floor(seconds * FAR_HZ + lane.stagger);
+          if (tick === lane.farTick) hold = true;
+          else { lane.farTick = tick; record = true; lane.heldCount = 0; }
+        } else lane.farTick = NaN;
+      } else lane.farTick = NaN;
+      if (hold && !lane.queue) { dirty = this.replay(lane) || dirty; continue; }
       active.length = 0;
       for (const slot of slots) if (slot.threshold < this.share) active.push(slot);
       if (!active.length) continue;
@@ -436,6 +522,7 @@ export class RoadTraffic {
         positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds);
       }
       if (!inView) continue;
+      if (hold) { dirty = this.replay(lane) || dirty; continue; }
       const line = course.line;
       for (let i = 0; i < active.length; i++) {
         const slot = active[i];
@@ -466,30 +553,59 @@ export class RoadTraffic {
         const place = this.visible[this.visibleCars] ??= { x, y, z, half: end, ux, uz };
         place.x = x; place.y = y; place.z = z; place.half = end; place.ux = ux; place.uz = uz; place.lane = course;
         this.visibleCars++;
-        const mesh = this.meshes.get(slot.kind)!;
-        const index = mesh.count++;
         // Rotation YXZ: heading about y, then pitch about x, written straight into the matrix.
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);
         const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
-        const m = mesh.instanceMatrix.array as Float32Array, o = index * 16;
-        dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
-          x, (front.y + rear.y) * .5 + .03, z) || dirty;
-        const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
-        if (opacity) {
-          const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;
-          const toEnd = course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1;
-          const a = Math.min(1, fromStart, toEnd), arr = opacity.array as Float32Array;
-          if (arr[index] !== Math.fround(a)) { arr[index] = a; opacity.needsUpdate = true; }
-        }
-        const colors = mesh.instanceColor?.array as Float32Array | undefined, c = slot.color;
-        if (!colors || colors[index * 3] !== Math.fround(c.r) || colors[index * 3 + 1] !== Math.fround(c.g) ||
-            colors[index * 3 + 2] !== Math.fround(c.b)) {
-          mesh.setColorAt(index, c);
-          mesh.instanceColor!.needsUpdate = true;
+        const e = this.pose12;
+        e[0] = cy; e[1] = 0; e[2] = -sy; e[3] = sy * sx; e[4] = cx; e[5] = cy * sx;
+        e[6] = sy * cx; e[7] = -sx; e[8] = cy * cx; e[9] = x; e[10] = (front.y + rear.y) * .5 + .03; e[11] = z;
+        const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;
+        const toEnd = course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1;
+        const opacity = Math.min(1, fromStart, toEnd);
+        dirty = this.emit(slot.kind, slot.color, e, opacity) || dirty;
+        if (record) {
+          const h = lane.held[lane.heldCount++] ??= { kind: slot.kind, color: slot.color, opacity, e: new Float64Array(12), x, y, z, half: end, ux, uz };
+          h.kind = slot.kind; h.color = slot.color; h.opacity = opacity; h.e.set(e);
+          h.x = x; h.y = y; h.z = z; h.half = end; h.ux = ux; h.uz = uz;
         }
       }
     }
     this.finish(counts, dirty);
+  }
+
+  private readonly pose12 = new Float64Array(12);
+
+  /** Draw one car at the next instance of its kind's mesh; true if its matrix changed. */
+  private emit(kind: Kind, c: THREE.Color, e: Float64Array, a: number) {
+    const mesh = this.meshes.get(kind)!;
+    const index = mesh.count++;
+    const changed = write(mesh.instanceMatrix.array as Float32Array, index * 16, e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8], e[9], e[10], e[11]);
+    const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
+    if (opacity) {
+      const arr = opacity.array as Float32Array;
+      if (arr[index] !== Math.fround(a)) { arr[index] = a; opacity.needsUpdate = true; }
+    }
+    const colors = mesh.instanceColor?.array as Float32Array | undefined;
+    if (!colors || colors[index * 3] !== Math.fround(c.r) || colors[index * 3 + 1] !== Math.fround(c.g) ||
+        colors[index * 3 + 2] !== Math.fround(c.b)) {
+      mesh.setColorAt(index, c);
+      mesh.instanceColor!.needsUpdate = true;
+    }
+    return changed;
+  }
+
+  /** A far lane between its ticks: its cars where they were last posed, still occupying their
+   * footprints so nearer cars keep clear of them. */
+  private replay(lane: LaneState) {
+    let dirty = false;
+    for (let i = 0; i < lane.heldCount; i++) {
+      const h = lane.held[i];
+      const place = this.visible[this.visibleCars] ??= { x: h.x, y: h.y, z: h.z, half: h.half, ux: h.ux, uz: h.uz };
+      place.x = h.x; place.y = h.y; place.z = h.z; place.half = h.half; place.ux = h.ux; place.uz = h.uz; place.lane = lane.course;
+      this.visibleCars++;
+      dirty = this.emit(h.kind, h.color, h.e, h.opacity) || dirty;
+    }
+    return dirty;
   }
 
   private readonly meshCounts = new Map<Kind, number>();

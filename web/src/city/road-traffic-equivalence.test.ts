@@ -81,6 +81,36 @@ describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', 
     expect(compared).toBeGreaterThan(200);
   });
 
+  it('re-poses far lanes at 15 Hz with poses no older than one tick, and near lanes every frame', () => {
+    const make = () => new ArterialTraffic({ city: vd, arterials: loadArterials(J('arterials.json'), vd).corridors, hourly, roadHeight, quality: 'high' });
+    const far = make(), every = make();
+    const start = Date.parse('2026-11-20T17:00:00-05:00');
+    const eyeFar = new THREE.Vector3(0, 5000, 0), eyeNear = new THREE.Vector3(0, 50, 0);
+    const key = (c: number[]) => c.slice(12, 15).map(v => v.toFixed(3)).join(',');
+    const history: Set<string>[] = [];
+    let held = 0, compared = 0;
+    for (let f = 0; f < 240; f++) {
+      const ms = start + f * 1000 / 60;
+      (every as unknown as Paths & { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0);
+      history.push(new Set(cars(every).map(key)));
+      (far as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0, undefined, eyeFar);
+      const now = cars(far);
+      // A held car is drawn where the every-frame layer had it on an earlier frame.
+      for (const c of now) if (!history.at(-1)!.has(key(c))) held++;
+      // Every far car sits where the every-frame layer had a car within the last 1/15 s.
+      const recent = history.slice(-5);
+      for (const c of now) { expect(recent.some(h => h.has(key(c)))).toBe(true); compared++; }
+    }
+    expect(compared).toBeGreaterThan(1000);
+    expect(held).toBeGreaterThan(0);
+    // Near the camera nothing is held: frames match the every-frame layer exactly.
+    const ms = start + 241 * 1000 / 60;
+    (far as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0, undefined, eyeNear);
+    paths(every).step(ms, 0);
+    const lanes = (far as unknown as { lanes: { bounds: THREE.Box3 }[] }).lanes;
+    if (lanes.every(l => l.bounds.distanceToPoint(eyeNear) < 570)) expectSame(cars(far), cars(every));
+  });
+
   it('culls only cars outside the view, posing the rest exactly as without culling', () => {
     const layer = layers.connector!;
     const camera = new THREE.PerspectiveCamera(40, 411 / 891, 1, 6000);
@@ -151,8 +181,11 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
       ? corner(i, j) + (corner(i + 1, j) - corner(i, j)) * u + (corner(i, j + 1) - corner(i, j)) * v
       : corner(i + 1, j + 1) + (corner(i, j + 1) - corner(i + 1, j + 1)) * (1 - u) + (corner(i + 1, j) - corner(i + 1, j + 1)) * (1 - v);
   };
+  // Plus 0.3 m kerb-height steps in the drawn surface on a 37 m diagonal grid, the smallest jump
+  // an exact-sampling fallback must still catch.
+  const kerb = (x: number, z: number) => (Math.floor((x + z) / 37) % 2 ? .3 : 0);
   const roadHeight = (x: number, z: number, road: { bridge?: boolean; tunnel?: boolean }) =>
-    road.tunnel || (z > 100 && z < 103) ? null : terrain(x, z) + (road.bridge ? 7 : 0) + (x > 200 && x < 230 ? 5 : 0);
+    road.tunnel || (z > 100 && z < 103) ? null : terrain(x, z) + kerb(x, z) + (road.bridge ? 7 : 0) + (x > 200 && x < 230 ? 5 : 0);
   type Inner = { lanes: { course: { line: { length: number; vertexAt(s: number): number; pts: number[][] }; roads: { bridge?: boolean; tunnel?: boolean }[] } }[];
     heightAt(lane: unknown, s: number, x: number, z: number): number | null };
   it('stays within 2 cm of exact sampling every 0.5 m of every lane, corners and steps included', () => {
@@ -178,5 +211,25 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
       expect(mismatched).toBe(0);
       expect(worst).toBeLessThan(.02);
     }
+  });
+
+  it('after an idle fill, samples exactly only inside eighths that fail their own check', () => {
+    let calls = 0;
+    const counted = (x: number, z: number, road: { bridge?: boolean; tunnel?: boolean }) => { calls++; return roadHeight(x, z, road); };
+    const layer = new ArterialTraffic({ city: vd, arterials: loadArterials(J('arterials.json'), vd).corridors, hourly, roadHeight: counted, quality: 'high' });
+    const inner = layer as unknown as Inner & { fillIdle(deadline: number): boolean };
+    expect(inner.fillIdle(performance.now() - 1)).toBe(false); // an expired slice does nothing
+    expect(inner.fillIdle(Infinity)).toBe(true);
+    calls = 0;
+    let samples = 0;
+    for (const lane of inner.lanes) {
+      const { line } = lane.course;
+      for (let s = 0.37; s <= line.length; s += .5, samples++) {
+        const vertex = line.vertexAt(s), i = Math.min(Math.floor(vertex), line.pts.length - 2), f = vertex - i;
+        inner.heightAt(lane, s, line.pts[i][0] + (line.pts[i + 1][0] - line.pts[i][0]) * f, line.pts[i][1] + (line.pts[i + 1][1] - line.pts[i][1]) * f);
+      }
+    }
+    // Kerbs every 37 m, decks, holes and a fold every 4 m still need some exact reads (5.7% here).
+    expect(calls / samples).toBeLessThan(.08);
   });
 });

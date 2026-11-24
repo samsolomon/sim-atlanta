@@ -831,6 +831,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       return null;
     }, trafficOptions.roadHeight) : undefined;
   const trafficView = new THREE.Frustum(), trafficViewMatrix = new THREE.Matrix4();
+  // Traffic samples road heights ahead of its cars in idle time: at most 1 ms a slice, never
+  // while the camera is being dragged or the tab is hidden (the default board builds
+  // synchronously, so no area build shares this time).
+  let trafficDragging = false, trafficIdleStopped = false;
+  const idle = (fn: (budget: number) => void) => typeof requestIdleCallback === 'function'
+    ? requestIdleCallback(deadline => fn(Math.min(1, deadline.timeRemaining() - 3)))
+    : setTimeout(() => fn(1), 50);
+  const fillTrafficHeights = (budget: number) => {
+    if (trafficIdleStopped) return;
+    if (budget > 0 && !trafficDragging && !document.hidden) {
+      const deadline = performance.now() + budget;
+      for (const layer of [traffic, arterials, midtownArterials]) if (layer && !layer.fillIdle(deadline)) break;
+    }
+    idle(fillTrafficHeights);
+  };
+  idle(fillTrafficHeights);
   const arterials = trafficOptions && corridors?.length
     ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
     : undefined;
@@ -1325,6 +1341,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  controls.addEventListener('start', () => { trafficDragging = true; });
+  controls.addEventListener('end', () => { trafficDragging = false; });
   // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
@@ -1695,9 +1713,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     camera.updateMatrixWorld();
     trafficView.setFromProjectionMatrix(trafficViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-    traffic?.update(sceneTime, atm.dark, trafficView);
-    arterials?.update(sceneTime, atm.dark, trafficView);
-    midtownArterials?.update(sceneTime, atm.dark, trafficView);
+    traffic?.update(sceneTime, atm.dark, trafficView, camera.position);
+    arterials?.update(sceneTime, atm.dark, trafficView, camera.position);
+    midtownArterials?.update(sceneTime, atm.dark, trafficView, camera.position);
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
@@ -1981,6 +1999,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      trafficIdleStopped = true;
       prewarmer?.dispose();
       perf.detach(perfContext);
       whiteModel?.dispose();
