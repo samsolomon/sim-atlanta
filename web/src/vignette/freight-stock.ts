@@ -5,13 +5,14 @@ import { WELL_LENGTH, WELL_LOADS, WELL_TRUCKS, wellCarBody } from './intermodal'
 import { TANK_LENGTH, TANK_TRUCKS, tankCarBody } from './tank-car';
 import { GONDOLA_LENGTH, GONDOLA_TRUCKS, gondolaBody } from './gondola';
 import { CENTERBEAM_LENGTH, CENTERBEAM_TRUCKS, centerbeamBody } from './centerbeam';
+import { AUTORACK_LENGTH, AUTORACK_TRUCKS, autorackBody } from './autorack';
 import { Builder } from './geom';
 import { finishStockGeometry } from './crescent-stock';
 import { EMD_DIMENSIONS, emdLocomotive } from './emd-loco';
 import { GE_LENGTH, GE_TRUCKS, geLocomotive } from './freight-loco';
 
 /** 'locomotive' is the CSX-like CM44AC; 'locomotiveNs' the same GE body in an NS-like scheme. */
-export type FreightUnit = 'locomotive' | 'locomotiveNs' | 'es44acNs' | 'es44ah' | 'sd70ace' | 'gp382' | 'boxcar' | 'boxcarFaded' | 'boxcarBlue' | 'grainHopper' | 'wellA' | 'wellB' | 'wellC' | 'tank' | 'gondolaEmpty' | 'gondolaScrap' | 'centerbeamEmpty' | 'centerbeamLumber';
+export type FreightUnit = 'locomotive' | 'locomotiveNs' | 'es44acNs' | 'es44ah' | 'sd70ace' | 'gp382' | 'boxcar' | 'boxcarFaded' | 'boxcarBlue' | 'grainHopper' | 'wellA' | 'wellB' | 'wellC' | 'tank' | 'gondolaEmpty' | 'gondolaScrap' | 'centerbeamEmpty' | 'centerbeamLumber' | 'autorack';
 const BOXCAR_PAINT = { boxcar: 'oxide', boxcarFaded: 'faded', boxcarBlue: 'blue' } as const;
 function isBoxcar(unit: FreightUnit): unit is keyof typeof BOXCAR_PAINT {
   return Object.hasOwn(BOXCAR_PAINT, unit);
@@ -26,8 +27,8 @@ function isWell(unit: FreightUnit): unit is keyof typeof WELL_LOADS {
   return Object.hasOwn(WELL_LOADS, unit);
 }
 /** Dimensions in metres: locomotive from AC4400CW data (docs/freight-stock.md); boxcar illustrative. */
-export const FREIGHT_LENGTH = { locomotive: GE_LENGTH, locomotiveNs: GE_LENGTH, es44acNs: GE_LENGTH, es44ah: GE_LENGTH, sd70ace: EMD_DIMENSIONS.sd70ace.length, gp382: EMD_DIMENSIONS.gp382.length, grainHopper: 17.8816, boxcar: 16.8, boxcarFaded: 16.8, boxcarBlue: 16.8, wellA: WELL_LENGTH, wellB: WELL_LENGTH, wellC: WELL_LENGTH, tank: TANK_LENGTH, gondolaEmpty: GONDOLA_LENGTH, gondolaScrap: GONDOLA_LENGTH, centerbeamEmpty: CENTERBEAM_LENGTH, centerbeamLumber: CENTERBEAM_LENGTH } as const;
-export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_TRUCKS, es44acNs: GE_TRUCKS, es44ah: GE_TRUCKS, sd70ace: EMD_DIMENSIONS.sd70ace.trucks, gp382: EMD_DIMENSIONS.gp382.trucks, grainHopper: 13.4, boxcar: 12, boxcarFaded: 12, boxcarBlue: 12, wellA: WELL_TRUCKS, wellB: WELL_TRUCKS, wellC: WELL_TRUCKS, tank: TANK_TRUCKS, gondolaEmpty: GONDOLA_TRUCKS, gondolaScrap: GONDOLA_TRUCKS, centerbeamEmpty: CENTERBEAM_TRUCKS, centerbeamLumber: CENTERBEAM_TRUCKS } as const;
+export const FREIGHT_LENGTH = { locomotive: GE_LENGTH, locomotiveNs: GE_LENGTH, es44acNs: GE_LENGTH, es44ah: GE_LENGTH, sd70ace: EMD_DIMENSIONS.sd70ace.length, gp382: EMD_DIMENSIONS.gp382.length, grainHopper: 17.8816, boxcar: 16.8, boxcarFaded: 16.8, boxcarBlue: 16.8, wellA: WELL_LENGTH, wellB: WELL_LENGTH, wellC: WELL_LENGTH, tank: TANK_LENGTH, gondolaEmpty: GONDOLA_LENGTH, gondolaScrap: GONDOLA_LENGTH, centerbeamEmpty: CENTERBEAM_LENGTH, centerbeamLumber: CENTERBEAM_LENGTH, autorack: AUTORACK_LENGTH } as const;
+export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_TRUCKS, es44acNs: GE_TRUCKS, es44ah: GE_TRUCKS, sd70ace: EMD_DIMENSIONS.sd70ace.trucks, gp382: EMD_DIMENSIONS.gp382.trucks, grainHopper: 13.4, boxcar: 12, boxcarFaded: 12, boxcarBlue: 12, wellA: WELL_TRUCKS, wellB: WELL_TRUCKS, wellC: WELL_TRUCKS, tank: TANK_TRUCKS, gondolaEmpty: GONDOLA_TRUCKS, gondolaScrap: GONDOLA_TRUCKS, centerbeamEmpty: CENTERBEAM_TRUCKS, centerbeamLumber: CENTERBEAM_TRUCKS, autorack: AUTORACK_TRUCKS } as const;
 
 /**
  * Local +z faces the cab. The origin is midway between the trucks at rail height. Locomotives carry
@@ -36,7 +37,7 @@ export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_T
  */
 export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear = false, low = false } = {}) {
   const b = new Builder();
-  if (!isBoxcar(unit) && !isWell(unit) && !isGondola(unit) && !isCenterbeam(unit) && unit !== 'grainHopper' && unit !== 'tank') {
+  if (!isBoxcar(unit) && !isWell(unit) && !isGondola(unit) && !isCenterbeam(unit) && unit !== 'autorack' && unit !== 'grainHopper' && unit !== 'tank') {
     const lamps = new Builder();
     if (unit === 'sd70ace' || unit === 'gp382') emdLocomotive(b, lamps, unit, leadFront, leadRear);
     else geLocomotive(b, lamps, unit === 'locomotive' || unit === 'es44ah' ? 'csx' : 'ns', leadFront, leadRear, unit === 'es44acNs' || unit === 'es44ah' ? 'es44' : 'cm44ac');
@@ -66,6 +67,7 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
   else if (unit === 'tank') tankCarBody(b, low);
   else if (isGondola(unit)) gondolaBody(b, unit, low);
   else if (isCenterbeam(unit)) centerbeamBody(b, unit, low);
+  else if (unit === 'autorack') autorackBody(b, low);
   else boxcarBody(b, BOXCAR_PAINT[unit]);
   // A zero stockLight attribute so the lit stock material can be shared with locomotives.
   const g = b.geometry();

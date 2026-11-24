@@ -5,8 +5,8 @@ import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams. */
-export const CONSIST_VERSION = 4;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks. */
+export const CONSIST_VERSION = 5;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
@@ -26,6 +26,8 @@ export interface LineProfile {
   railroad: FreightRailroad;
   /** Weights for manifest, intermodal and unit. Intermodal is 0 where double-stack clearance is unverified. */
   recipes: Record<FreightRecipe, number>;
+  /** Car kinds this line never draws (unverified clearance or curvature). */
+  exclude?: FreightUnit[];
 }
 
 /** Look-alike power by railroad (docs/freight-variety.md). The GP38-2 is a CSX-like local unit. */
@@ -33,9 +35,9 @@ const ROAD_POWER: Record<FreightRailroad, FreightUnit[]> = {
   csx: ['locomotive', 'es44ah'],
   ns: ['locomotiveNs', 'es44acNs', 'sd70ace'],
 };
-const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper', 'tank', 'gondolaScrap', 'gondolaEmpty', 'centerbeamLumber', 'centerbeamEmpty'];
-/** Unit-train commodities: grain hoppers, or tanks for an illustrative ethanol movement. */
-const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank'];
+const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper', 'tank', 'gondolaScrap', 'gondolaEmpty', 'centerbeamLumber', 'centerbeamEmpty', 'autorack'];
+/** Unit-train commodities: grain hoppers, tanks for an illustrative ethanol movement, or autoracks. */
+const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank', 'autorack'];
 const WELL_LOADS: FreightUnit[] = ['wellA', 'wellB', 'wellC'];
 /** Distinct car geometries a train may draw, so each passage costs a small, fixed number of
  * instanced draws (one per kind present) on both tiers. */
@@ -101,14 +103,15 @@ export function planPassage(profile: LineProfile, slot: number, lineId: string):
   if (recipe === 'manifest') {
     const n = int(r, 6, 24);
     // Up to three car types; blocks rotate through them so like cars stay together.
-    const types = shuffled(r, MANIFEST_CARS).slice(0, int(r, 1, MAX_CAR_KINDS.manifest));
+    const allowed = MANIFEST_CARS.filter((k) => !profile.exclude?.includes(k));
+    const types = shuffled(r, allowed).slice(0, int(r, 1, MAX_CAR_KINDS.manifest));
     blockSizes(n, r).forEach((size, i) => cars.push(...Array<FreightUnit>(size).fill(types[i % types.length])));
   } else if (recipe === 'intermodal') {
     const n = int(r, 8, 30);
     const loads = shuffled(r, WELL_LOADS).slice(0, MAX_CAR_KINDS.intermodal);
     for (let i = 0; i < n; i++) cars.push(pick(r, loads));
   } else {
-    const kind = pick(r, UNIT_CARS);
+    const kind = pick(r, UNIT_CARS.filter((k) => !profile.exclude?.includes(k)));
     cars.push(...Array<FreightUnit>(int(r, 12, 30)).fill(kind));
   }
 

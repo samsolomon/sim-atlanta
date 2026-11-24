@@ -8,7 +8,9 @@ import { COUPLER_GAP, MAX_UNITS, maxTrainLength, passageSummary, planPassage, ty
 const ENTRY_MS = Date.parse('2026-11-20T19:12:02Z');
 const SPEED_MPS = 4.5;
 /** CSX-like power downtown. No intermodal: double-stack clearance through the downtown cut is unverified. */
-export const DOWNTOWN_PROFILE: LineProfile = { railroad: 'csx', recipes: { manifest: 0.65, intermodal: 0, unit: 0.35 } };
+/** No autoracks either: the drawn track through the cut has kinks near 41 m radius, where a 28.6 m car's
+ * ends would swing about 1.3 m off the rail centreline (docs/freight-consists.md). */
+export const DOWNTOWN_PROFILE: LineProfile = { railroad: 'csx', recipes: { manifest: 0.65, intermodal: 0, unit: 0.35 }, exclude: ['autorack'] };
 export const DOWNTOWN_LINE = 'Atlanta Terminal Subdivision';
 const LINE_ID = 'csx:downtown';
 /** One passage per slot, alternating direction. Fixed from the epoch so every tier and reload
