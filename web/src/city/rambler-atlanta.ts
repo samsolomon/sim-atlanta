@@ -68,17 +68,19 @@ export function createRambler(buildings: VBuilding[], site: VBuilding, grid: Gro
     const ladders = long ? (dx < 0 ? [0.22, 0.78] : []) : [0.5];
     const half = 3 / length;
     const inLadder = (t0: number, t1: number) => ladders.some(c => t1 > c - half && t0 < c + half);
+    // Layers stand at least 4 cm apart so none z-fights at City range: lit rooms 0.04, piers
+    // 0.08, floor bands 0.13.
     // Piers every 3.4 m, 55% of the bay, in the warm-grey frame colour; skip inside a ladder.
     const bays = Math.max(1, Math.round(length / 3.4));
     for (let i = 0; i <= bays; i++) {
       const t = i / bays, w = 0.55 * 1.7 / length;
       if (inLadder(t - w, t + w)) continue;
-      panel(false, a, b, Math.max(0, t - w), Math.min(1, t + w), floor + baseH, shaftTop, 0.05, shaft);
+      panel(false, a, b, Math.max(0, t - w), Math.min(1, t + w), floor + baseH, shaftTop, 0.08, shaft);
     }
     // Floor bands: the spandrel between window rows, 1.1 m deep.
     for (let f = 0; f <= floors; f++) {
       const y = floor + baseH + f * floorH;
-      panel(false, a, b, 0, 1, y - 0.55, Math.min(y + 0.55, shaftTop), 0.06, shaftDeep);
+      panel(false, a, b, 0, 1, y - 0.55, Math.min(y + 0.55, shaftTop), 0.13, shaftDeep);
     }
     // Lit rooms, grouped two windows wide (student housing, about a third lit at 23:30).
     const rooms = Math.max(1, Math.round(length / 6.8));
@@ -87,7 +89,7 @@ export function createRambler(buildings: VBuilding[], site: VBuilding, grid: Gro
       for (let i = 0; i < rooms; i++) {
         const t0 = (i + 0.1) / rooms, t1 = (i + 0.9) / rooms;
         if (inLadder(t0, t1) || litHash(seed, edge, f, i) >= 0.32) continue;
-        panel(true, a, b, t0, t1, y + 0.6, y + floorH - 0.6, 0.03, windowLit);
+        panel(true, a, b, t0, t1, y + 0.6, y + floorH - 0.6, 0.04, windowLit);
       }
     }
     // Each ladder: a white balcony front (slab edge and rail) at every floor, 1.5 m out, with two
