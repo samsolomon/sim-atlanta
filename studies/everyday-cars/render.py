@@ -20,7 +20,7 @@ def mesh(faces, angle, tilt, width, height, scale):
     image = np.full((height,width,3), paper, dtype=np.uint8)
     depth = np.full((height,width), -np.inf)
     for face in faces:
-        p = np.array(face['points'])
+        p = np.asarray(face['points'], dtype=float)
         v = np.column_stack([width/2 + scale*(p@across), height*.76-scale*(p@up), p@toward])
         n = np.cross(p[1]-p[0],p[2]-p[0])
         n /= max(np.linalg.norm(n),.000001)
