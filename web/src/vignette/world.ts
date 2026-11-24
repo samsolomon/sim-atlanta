@@ -1225,7 +1225,15 @@ export class World {
   buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
     inTravelLane?: (x: number, z: number) => boolean,
     mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
+    runSync(this.lightSteps(board, groundAt, inTravelLane, mapped));
+  }
+
+  /** buildLights as a build that yields every 16 roads and through the light-map bake (core/slice.ts). */
+  *lightSteps(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
+    inTravelLane?: (x: number, z: number) => boolean,
+    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
     const r = rng(311);
+    let roadsSeen = 0;
     const spots: { x: number; z: number; y: number; ang: number; h?: number; pool?: number }[] = [];
     const clear = (x: number, z: number) => this.inBounds(x, z, 3) && !inTravelLane?.(x, z) &&
       !this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring));
@@ -1234,6 +1242,7 @@ export class World {
     const seamClear = (z: number, pool: number) => !mapped || (z - this.b.minZ >= pool && this.b.maxZ - z >= pool);
     const carriageways = new PlacementIndex<{ a: P2; b: P2; half: number }>();
     if (mapped) for (const rd of this.data.roads) {
+      if (++roadsSeen % 16 === 0) yield 'lamp roads';
       if (!DRIVABLE.has(rd.cls) || rd.bridge || rd.tunnel) continue;
       for (let i = 1; i < rd.pts.length; i++) {
         const seg = { a: rd.pts[i - 1], b: rd.pts[i], half: (WIDTH[rd.cls] ?? 7) / 2 + 0.3 };
@@ -1265,6 +1274,7 @@ export class World {
       mappedLamps.push([x, z]);
     }
     for (const rd of this.data.roads) {
+      if (++roadsSeen % 16 === 0) yield 'lamp roads';
       if (!DRIVABLE.has(rd.cls) || rd.cls === 'service' || (mapped && !mapped.include(rd))) continue;
       // The Connector has tall lights every ~50 m along both shoulders; streets every 28 m, alternating sides.
       const hwy = rd.cls === 'motorway' && rd.sub !== 'link';
@@ -1301,7 +1311,8 @@ export class World {
     });
     post.castShadow = true;
     this.group.add(post, this.lampHeads);
-    this.bakeLightMap(spots, board);
+    yield 'lamps';
+    yield* this.bakeSteps(spots, board);
   }
 
   /**
@@ -1309,7 +1320,8 @@ export class World {
    * storefronts) painted into a texture over the board, added to the ground, street and
    * lot materials in proportion to the night factor.
    */
-  private bakeLightMap(spots: { x: number; z: number; pool?: number }[], board?: THREE.Mesh) {
+  /** Bakes the night light map; yields every 64 lamp pools and 64 buildings (core/slice.ts). */
+  private *bakeSteps(spots: { x: number; z: number; pool?: number }[], board?: THREE.Mesh) {
     const b = this.b;
     const PX = Math.max(1, Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / this.opts.lightMapMax); // metres per texel
     const c = document.createElement('canvas');
@@ -1330,9 +1342,14 @@ export class World {
       g.fillStyle = grad;
       g.fillRect(px - r / PX, pz - r / PX, (2 * r) / PX, (2 * r) / PX);
     };
-    for (const sp of spots) pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.pool ? 0.6 : 0.85); // ~3000 K LED/sodium mix
+    let pools = 0;
+    for (const sp of spots) {
+      pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.pool ? 0.6 : 0.85); // ~3000 K LED/sodium mix
+      if (++pools % 64 === 0) yield 'light map';
+    }
     // Shopfront spill along building edges at street level.
     for (const bd of this.data.buildings) {
+      if (++pools % 64 === 0) yield 'light map';
       const ring = bd.rings[0];
       for (let i = 0; i < ring.length; i += 2) pool(ring[i][0], ring[i][1], 6, '255,214,160', 0.18);
     }

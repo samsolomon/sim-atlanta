@@ -344,7 +344,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     if (landmark) {
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };
       landmarks.push(landmark);
-      yield 'landmark';
+      yield 'landmark ' + site.id;
     }
   }
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
@@ -459,7 +459,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       return Math.abs(t)<=options.underpass.halfWidth+2 && options.underpass.spans.some(
         span => span.finish==='disused-ballast' && s>=span.start && s<=span.end);
     };
-    scenery.buildLights(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
+    yield* scenery.lightSteps(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
       { ...options.lights, lowDetail: options.quality === 'low' });
     yield 'lights';
   }
