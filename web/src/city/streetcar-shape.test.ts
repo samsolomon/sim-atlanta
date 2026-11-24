@@ -9,15 +9,21 @@ import { Schedule } from '../sched/engine';
 import { STREETCAR_ROUTE } from './streetcar';
 import { streetcarStops } from './streetcar-stops';
 import { createStreetcarCars, streetcarPaths } from './streetcar-cars';
-import { filletShape, STREETCAR_RADIUS, streetcarShapes } from './streetcar-shape';
+import { filletShape, STREETCAR_RADIUS, streetcarShapes, streetcarSweptCorners } from './streetcar-shape';
 
 afterEach(() => vi.unstubAllGlobals());
 /** No body corner within this of a building wall. The raw GTFS corner at Edgewood and Park Place
  * brought the S70's tail within 0.6 m of Ten Park Place (the probe's site 1); the fillet clears it. */
 const BUILDING_CLEARANCE = 1.0;
-/** Footprints the streetcar runs beneath: a skybridge between the Lanier deck and 200 Peachtree
- * (a 3 m strip across the street, no height of its own in the data). */
-const OVERHEAD = new Set(['6a08f0c0-d808-4de4-af33-d7af31528b57']);
+/**
+ * Footprints the streetcar runs beneath, by id, each named so the exemption can't silently cover a
+ * real collision. Exempt only a structure the car physically passes under.
+ */
+const OVERHEAD = new Map([
+  // Skybridge over Carnegie Way NW (0.6 m from its centreline at (260,-526)) joining the Lanier Parking
+  // deck and 200 Peachtree: a 3 m-wide unnamed Overture part with no height of its own.
+  ['6a08f0c0-d808-4de4-af33-d7af31528b57', 'skybridge over Carnegie Way, Lanier deck to 200 Peachtree'],
+]);
 /**
  * How far past the drawn kerb (the carriageway edge) any S70 body corner may reach, per filleted
  * corner. Measured 2026-11-24. Raw GTFS corners already overshot here (290,-267 3.84 m; 286,-64
@@ -199,4 +205,17 @@ it.skipIf(!staged)('moves each downtown corner toward the built track OSM maps, 
       checked++;
     }
   expect(checked).toBeGreaterThanOrEqual(8);
+});
+
+it.skipIf(!staged)('exports a swept polygon around every sharp filleted corner for the ground paint', () => {
+  const rf: RoutesFile = JSON.parse(readFileSync(data('ga/routes.json')).toString());
+  const origin = JSON.parse(readFileSync(data('scene/downtown/scene.json')).toString()).origin;
+  const swept = streetcarSweptCorners(rf, origin, STREETCAR_ROUTE);
+  expect(swept.length).toBeGreaterThanOrEqual(10);
+  // Each polygon covers its corner's arc: every arc point lies inside one.
+  for (const shape of streetcarShapes(rf, origin, STREETCAR_ROUTE))
+    for (const c of shape.corners.filter((k) => k.turn >= 0.5)) {
+      const mid = shape.pts.reduce((best, p) => (Math.hypot(p[0] - c.at[0], p[1] - c.at[1]) < Math.hypot(best[0] - c.at[0], best[1] - c.at[1]) ? p : best));
+      expect(swept.some((poly) => pointInRing(mid[0], mid[1], poly)), `${shape.id} ${c.at.join(',')}`).toBe(true);
+    }
 });

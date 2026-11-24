@@ -261,3 +261,33 @@ function joinEnd(shape: StreetcarShape, end: 'start' | 'end', shapes: readonly S
     return;
   }
 }
+
+/** S70 half width (1.33 m) plus the worst measured swing (0.95 m) and a little margin. */
+const SWEPT_HALF_WIDTH = 2.4;
+
+/**
+ * The ground a streetcar body sweeps through each filleted street corner, as one closed polygon
+ * per corner and path: the drawn shape near the corner, offset SWEPT_HALF_WIDTH to either side.
+ * Ground paint (ground-map.ts) can lay carriageway under it, so the track never crosses sidewalk.
+ */
+export function streetcarSweptCorners(rf: Pick<RoutesFile, 'paths'>, origin: Origin, route: string, minTurn = 0.5): P2[][] {
+  const out: P2[][] = [];
+  for (const shape of streetcarShapes(rf, origin, route))
+    for (const c of shape.corners) {
+      if (c.turn < minTurn) continue;
+      const reach = c.radius * Math.tan(c.turn / 2) + 15;
+      const run = shape.pts.filter((p) => Math.hypot(p[0] - c.at[0], p[1] - c.at[1]) <= reach);
+      if (run.length < 2) continue;
+      const left: P2[] = [],
+        right: P2[] = [];
+      run.forEach((p, i) => {
+        const a = run[Math.max(0, i - 1)],
+          b = run[Math.min(run.length - 1, i + 1)];
+        const d = unit(a, b);
+        left.push([p[0] - d[1] * SWEPT_HALF_WIDTH, p[1] + d[0] * SWEPT_HALF_WIDTH]);
+        right.push([p[0] + d[1] * SWEPT_HALF_WIDTH, p[1] - d[0] * SWEPT_HALF_WIDTH]);
+      });
+      out.push([...left, ...right.reverse()]);
+    }
+  return out;
+}
