@@ -69,8 +69,12 @@ export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid:
       const y = firstFloor + f * pitch;
       quad(0, 1, y - 0.35, y + 0.35, 0.08, graniteShade);
     }
-    // Offices at 23:30: a sparse, well-mixed set of panes.
-    if (len > 3) litFacade(s, seed, face, a, b, firstFloor, frieze, floors, len / bays, 0.86, 0.78, [glass], 0.06);
+    // Offices at 23:30: a sparse, well-mixed set of panes. The glass prism is
+    // the pane colour, so only the lit panes need their own quads.
+    if (len > 3) {
+      const lit = { body: { quad: () => {} } as unknown as typeof s.body, lights: s.lights };
+      litFacade(lit, seed, face, a, b, firstFloor, frieze, floors, len / bays, 0.86, 0.78, [glass], 0.06);
+    }
     // Below the plaza the granite plinth faces the low west grade: storey bands
     // and recessed openings above this face's own grade, so it reads as occupied
     // podium, not a blank wall.
