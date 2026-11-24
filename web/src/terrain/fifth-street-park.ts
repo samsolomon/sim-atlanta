@@ -88,8 +88,8 @@ export const onFifthStreetPark = (x: number, z: number) => pointInRing(x, z, OUT
 export const fifthStreetParkFits = (b: { minX: number; maxX: number; minZ: number; maxZ: number }) =>
   OUTLINE.every(([x, z]) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ);
 
-// Colours: the photographs' light grey ribbed precast, red-brick curb bands and young lawn.
-const PRECAST = '#cdc8bd', PRECAST_RIB = '#b6b1a6', CAP = '#d9d5cb', LAWN = '#6f9a4a', BED = '#465e35',
+// Colours: the photographs' light grey ribbed precast, red-brick curb bands and the board's park and garden greens (ground-map.ts).
+const PRECAST = '#cdc8bd', PRECAST_RIB = '#b6b1a6', CAP = '#d9d5cb', LAWN = '#adbe90', BED = '#94ad78',
   BRICK = '#a24c35', IRON = '#26272a', TRELLIS = '#d1d7d9', VINE = '#4f7438', BENCH = '#7a6a58',
   LINE_WHITE = '#e9e7df', LINE_YELLOW = '#d9b23a', ACORN = '#f1e4c2', LIT_LAWN = LAWN;
 const UNDERSIDE_M = 1.6; // deck top to the girders' underside (estimated)
