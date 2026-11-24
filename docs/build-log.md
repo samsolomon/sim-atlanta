@@ -3542,3 +3542,7 @@ Each transport mesh now orders its triangles so the parts that still read at tha
 On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
 
 [Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
+
+### 2026-11-24 · Azure on the Park comes apart
+
+Azure on the Park by Piedmont Park was a 98 m block over its whole lot. The lidar separates a 79 m tower on 11th Street, a lower step at its east end, and a 17 m podium that runs to the rounded glass corner on Piedmont. Contractor photographs and two March 2025 Street View frames gave the blue glass, cantilevered balconies and dark-brick lower floors. Two budgets shaped it. The first blue shaded to S 45, the most saturated thing in frame, so the glass went grey-blue and the shadow now supplies the blue. High-tier geometry is within 3 MB of its ceiling, so the bays and balcony stacks were thinned until the skin cost a few hundred kilobytes. [Before/after, day and night](log/ui/azure-on-the-park/README.md)
