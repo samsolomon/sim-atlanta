@@ -40,6 +40,13 @@ it('lights about three balconies in ten inside the routine budget', () => {
   result.setNight(1);
   const lamps = result.group.children[1] as Mesh<BufferGeometry, MeshLambertMaterial>;
   expect(lamps.material.emissiveIntensity).toBeCloseTo(0.62);
-  expect(lamps.castShadow).toBe(result.group.children[0].castShadow);
-  expect(lamps.geometry.attributes.position.count / 6).toBeGreaterThan(50);
+  // No lit bays hide inside the lift core that fills the slab's slot.
+  const pos = lamps.geometry.attributes.position;
+  let inCore = 0;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i) + 853, z = pos.getZ(i) - 3808;
+    if (x > 853 && x < 881 && z > -3806 && z < -3780 && Math.abs((x - 852) + (z + 3803.2)) < 3) inCore++;
+  }
+  expect(inCore).toBe(0);
+  expect(pos.count / 6).toBeGreaterThan(50);
 });

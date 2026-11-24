@@ -1,5 +1,5 @@
 import type { GroundGrid } from '../terrain/grid';
-import type { P2 } from '../vignette/geom';
+import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 import { litHash, seedOf } from './skin-kit';
@@ -47,11 +47,12 @@ export function createColonyHouse(buildings: VBuilding[], site: VBuilding, grid:
   };
 
   // Low wings toward 15th Street, then the lift and stair cores that rise above the slab.
+  const others: { plan: P2[]; top: number }[] = [];
   for (const part of site.parts ?? []) {
     if (!part.rings.length) continue;
     const plan = local(part.rings[0]);
-    if (wingRoofs[part.id]) s.prism(plan, s.base, wingRoofs[part.id], concrete, roofColor);
-    else if (coreIds.includes(part.id)) s.prism(plan, s.base, coreRoof, concrete, roofColor);
+    if (wingRoofs[part.id]) { s.prism(plan, s.base, wingRoofs[part.id], concrete, roofColor); others.push({ plan, top: wingRoofs[part.id] }); }
+    else if (coreIds.includes(part.id)) { s.prism(plan, s.base, coreRoof, concrete, roofColor); others.push({ plan, top: coreRoof }); }
   }
 
   // The slab: concrete to the roof, with recessed balcony floors on the long faces.
@@ -63,10 +64,14 @@ export function createColonyHouse(buildings: VBuilding[], site: VBuilding, grid:
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
     // Narrow ends and short jogs stay blank concrete, as the end walls on 15th Street are.
     if (length < 20) return;
+    // Faces against a core or wing are hidden up to that part's roof.
+    const mid: P2 = [(a[0] + b[0]) / 2 + 1.2 * (b[1] - a[1]) / length, (a[1] + b[1]) / 2 - 1.2 * (b[0] - a[0]) / length];
+    const covered = Math.max(-Infinity, ...others.filter(o => pointInRing(mid[0], mid[1], o.plan)).map(o => o.top));
     const bays = Math.round(length / 3.6);
     // Each floor: a dark balcony recess band under the concrete slab edge, divided by cross walls.
     for (let f = 0; f < floors; f++) {
       const lo = entryNavd + lobbyH + f * pitch;
+      if (lo + pitch <= covered) continue;
       panel(false, a, b, 0.01, 0.99, lo + 0.45, lo + pitch, 0.02, recess);
       for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, f, i) >= 0.3) continue;
@@ -75,7 +80,7 @@ export function createColonyHouse(buildings: VBuilding[], site: VBuilding, grid:
     }
     for (let i = 1; i < bays; i++) {
       const t = i / bays, w = 0.18 / length;
-      panel(false, a, b, t - w, t + w, entryNavd + lobbyH, slabRoof - 1.2, 0.06, concreteShade);
+      if (covered < slabRoof - 1.2) panel(false, a, b, t - w, t + w, Math.max(entryNavd + lobbyH, covered), slabRoof - 1.2, 0.06, concreteShade);
     }
   });
 
