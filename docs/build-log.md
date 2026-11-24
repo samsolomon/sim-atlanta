@@ -3690,7 +3690,6 @@ On the M5 Air, City ran at 44 fps with its UI and 59 without, and the 3D scene w
 
 On Low, the panels now drop the blur and use a denser tint, and long-text sheets go denser still so roofs don't show behind running text. The A16 went from 25.8 to about 31.5 fps (p95 89 to 56–67 ms), within 2 fps of no UI at all. The rest of the gap appears only while the camera turns. The compass needle rotated by rewriting an SVG attribute every frame, which repainted and re-rastered it. It now turns on its own compositor layer, with 0 paints per frame where there were 0.5. High keeps the frosted look, which City's final pass will draw itself ("in-canvas glass"). A second surprise was the Android trace: the canvas is never promoted to an overlay on that phone, even with no DOM at all, so no layout change could ever have bought that back. [390 px before and after](log/ui/low-flat-glass/phone-dock-card.jpg)
 
-
 ### 2026-11-24 · The bands were in the floor lines
 
 Sam saw faint darker bands crawling across downtown's glass towers whenever the camera moved: invisible in a still, obvious in motion. The usual suspects were shadows re-centring, ambient occlusion noise and the tilt-shift blur. None of them was it. With shadows off, AO off, tilt-shift off and every post pass off, the bands stayed.
