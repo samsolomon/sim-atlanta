@@ -8,7 +8,7 @@
  * pass cull; under farTrees only foliage draws (no limbs, leaf tips or carpet).
  */
 import * as THREE from 'three';
-import type { P2 } from '../vignette/geom';
+import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import type { VBuilding, VGround, VRoad, World } from '../vignette/world';
 import { createLook, type Look } from './looks';
 import { hash01 } from './species';
@@ -63,7 +63,7 @@ export function rolloutRow(input: RolloutRowInput) {
   };
 }
 
-interface RowTrees { quality: TreeQuality; trees: { species: RolloutSpecies; p: TreePlacement; y: number }[] }
+interface RowTrees { quality: TreeQuality; trees: { species: RolloutSpecies; p: TreePlacement; y: number; carpet?: boolean }[] }
 
 /**
  * One set of looks for the whole City, not one per board row: each look costs its draws once,
@@ -110,6 +110,7 @@ export class RolloutBatch {
     this.materials.clear();
     const all = [...this.rows.values()].filter(r => r.quality === this.quality).flatMap(r => r.trees);
     const ys = new Map(all.map(t => [crownKey(t.p.x, t.p.z), t.y]));
+    const noCarpet = new Set(all.filter(t => t.carpet === false).map(t => crownKey(t.p.x, t.p.z)));
     const groundAt = (x: number, z: number) => ys.get(crownKey(x, z)) ?? null;
     const carpeted: { p: TreePlacement; look: Look }[] = [];
     for (const [id, look] of Object.entries(ROLLOUT_LOOKS) as [RolloutSpecies, Look][]) {
@@ -130,7 +131,7 @@ export class RolloutBatch {
       this.group.add(l.group);
       this.looks.push(l);
       this.tipMeshes.push(tips);
-      if (look.species.carpet) for (const p of placements) carpeted.push({ p, look });
+      if (look.species.carpet) for (const p of placements) if (!noCarpet.has(crownKey(p.x, p.z))) carpeted.push({ p, look });
     }
     this.carpet = sharedCarpet(carpeted, groundAt);
     if (this.carpet) { this.group.add(this.carpet.mesh); this.materials.add(this.carpet.mesh.material as THREE.Material); }
@@ -172,14 +173,19 @@ export const rolloutBatch = new RolloutBatch();
 
 /** A row's rolled-out species, registered with the batch. Returns null when the row has none. */
 export function rolloutSpecies(plan: ReturnType<typeof rolloutRow>['plan'], quality: TreeQuality,
-  groundAt: (x: number, z: number) => number | null, batch = rolloutBatch) {
+  groundAt: (x: number, z: number) => number | null, batch = rolloutBatch, carpetExclusions: P2[][] = []) {
   const trees = plan.species.flatMap(s => {
     const y = groundAt(s.x, s.z);
     if (y === null) return [];
     const look = ROLLOUT_LOOKS[s.species];
     // One size class per look at low detail: the specimen form only at high.
     const p: TreePlacement = { species: look.species, size: quality === 'low' ? 'mature' : s.size, x: s.x, z: s.z, seed: s.seed, heightM: s.heightM, spreadM: s.spreadM };
-    return [{ species: s.species, p, y }];
+    // Some gardens already paint their leaf cover. Suppress intersecting discs entirely:
+    // no flat carpet over hard surfaces and no extra low-tier clipping geometry.
+    const radius = treeDims(p).spreadM / 2 * 1.1;
+    const carpet = !carpetExclusions.some(ring => pointInRing(p.x,p.z,ring)
+      || ring.some((a,i) => segDist(p.x,p.z,a,ring[(i+1)%ring.length]) <= radius));
+    return [{ species: s.species, p, y, carpet }];
   });
   if (!trees.length) return null;
   const remove = batch.add({ quality, trees });
