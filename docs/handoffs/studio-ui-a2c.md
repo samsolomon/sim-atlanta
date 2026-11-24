@@ -1,14 +1,16 @@
 # Handoff: studio-ui-a2c (A2c interface)
 
-Written 2026-11-23 by the Claude session d577649d-8640-473a-8c9b-461abf2b616a, for its Codex successor.
+Updated 2026-11-23 by Codex session 9c768eab-3e1a-4134-a130-ba680f7c212a for the gpt-6.2 successor. Original Claude: d577649d-8640-473a-8c9b-461abf2b616a.
 
 ## State
-- The A2c UI (docs/ui-controls-brief.md, steps 1–9) is built, the default interface, and **live in production at 94e2d8e**.
-- Merged after that deploy (each needs only a web rebuild):
-  - #305: Follow and Share pinned on short viewports.
-  - #309: City's "Show full board" retry as a menu row. It had been unreachable since step 6; production lacks this fix.
-  - #321: Graphics Auto steps down to Low for the session when City runs under 20 fps at High.
-- **Open: draft #310** (`samsolomon/ui-remove-classic`). It removes the old shell, `?ui=classic`, `?controls=1` and the City info popover (−770 lines). Tests pass. Merge it for the release *after* 94e2d8e, when the coordinator says. Keep `<div id="city-info" hidden>`: City's retry button and `tests/board-exterior` need it.
+- A2c is the default interface. Sam confirmed **bc32b09 shipped with classic retained**. This supersedes the original handoff's release timing.
+- **Open draft #310**, branch `samsolomon/ui-remove-classic`, code head `6d17519c` before this handoff commit. Verified OPEN, draft, mergeCommit null. **NEXT release only: do not merge until the coordinator explicitly authorizes it. Only the coordinator deploys.**
+- Cleanup removes the old shell, `?ui=classic`, `?controls=1`, and City info popover. Keep `<div id="city-info" hidden>` for the full-board button and board-exterior tests. Fixed the leftover `hidePopover()` call in `city.ts`: optional chaining still invoked the method on the plain div and threw.
+- Rebased onto `d1411a9e`; build-log conflicts preserved both entries. No uncommitted implementation work.
+- Validation: tests/build passed on `64bc952c` and again on `8c281730` (912 web passed / 1 skipped, 5 worker, 20 Rust; pipeline skipped without `.venv`). Last rebase to `d1411a9e` brought an unrelated Woodruff landmark change and was **not retested**. Before merge, update to current main and rerun required checks, especially after build-log conflicts.
+- Performance on earlier base passed enforced ceilings: Low 2.324M triangles / 530 calls; High 13.266M / 1,130 calls. Several aspirational targets remain unmet. No ceiling lowered: this cleanup did not deliver a rendering reduction.
+- Two Claude rounds via `pnpm review -- --reviewer claude`: one confirmed popover bug fixed and committed; CSS visual concern dismissed by day/night browser checks. No blocking/significant findings. Review limit reached for this change.
+- Browser checked Map, City, Models, old classic URL, full-board action, day/night selected cards and 390×640 phone. Screenshots: `docs/log/ui/remove-classic/{day-card,night-card,phone-night-card}.png`. Day camera `1799.793,-5699.709,-101,55,421`, 2026-11-20 14:00 ET, Low. Night 22:00 same date. Live API not checked (worker absent). PR body records evidence and limits. Requires web rebuild/redeploy only, no data rebuild.
 - Code map:
   - `web/src/ui/next/`: shell.ts, panel.ts, models-view.ts, radio.ts, next.css.
   - `web/src/ui/status.ts`: tier words, tested.
@@ -27,14 +29,17 @@ Written 2026-11-23 by the Claude session d577649d-8640-473a-8c9b-461abf2b616a, f
 - Do not change progressive versus eager area loading until A16 data exists.
 
 ## Next steps
-1. Merge #310 when the coordinator cuts the next release.
+1. Hold #310 for coordinator authorization for the release after bc32b09. Once authorized, update/test, merge, then verify `gh pr view 310 --json state,mergeCommit` before announcing MERGED; quote both returned values.
 2. Still deferred from the brief:
    - Render the white model before the build stages finish (needs A16 numbers; the desktop build is 0.59 s).
    - White areas that arrive later.
    - Carry the weather choice in frozen share links.
 3. After #310, drop the non-A2c layouts in `map/card.ts` (the `a2c` parameter).
 
-## Promises to other agents
+## Coordination and promises
+- Coordinator: Air terminal `term_05a952fa-de06-4064-8655-3e98e1caf1e0`. Direct `send --on air` rejects the saved pairing token. **Reply route works**: `/Applications/Orca.app/Contents/Resources/bin/orca orchestration reply --id msg_8a926fd79744 --from <your orca_session_id> --body '...'`. Coordinator received takeover status via this route. Use `orca orchestration check` for replies.
+- Current handoff request is `msg_9d6ba3a61b13`; predecessor will reply READY FOR 6.2 after pushing this doc, then take no new work.
+- Owe coordinator the eventual verified merge notice, screenshot links/camera, and any items requiring Sam's eye. No new promises made during Codex takeover. Contracts below are inherited; recheck their PR status before acting.
 - **phone-perf** (3126b1a7-8882-498c-a5ff-7b65d626cf91): #312 (device-tier rules) changes `pickQuality()`. It needs no UI change, but they will ping if its rules change. The Auto step-down contract is in #321.
 - **Lab owners** (tree-species 6b76e039…, tree-lab 4a8d1cca…, Amtrak e5348118…, parks eee32d1c…, materials 2a079a0f…):
   - Lab markup lives in `web/src/models/lab-markup.ts`, and lab CSS is scoped under `.lab`.
@@ -43,11 +48,11 @@ Written 2026-11-23 by the Claude session d577649d-8640-473a-8c9b-461abf2b616a, f
 - **ground-contact** (1df827bc…) and **materials**: the white model swaps one material per mesh for a few frames and uses one temporary render target, declared in `materials/budget.ts`.
 
 ## Servers
-None running. I stopped the device preview on :5741 (it was serving 94e2d8e) and my dev server on :5730. The shared worker on :8787 belonged to someone else and was already down.
+None owned by this session remain. Codex dev server used :5173 (the `pnpm dev -- --port 5730` forwarding did not set Vite's port) and was stopped; review tab 56bcc186-04c8-4a6f-bee4-f94c9785c607 was closed. Predecessor stopped :5730 and :5741. Do not stop other agents' servers or the shared worker.
 
 ## Rules that bit
 - **Squashing onto a moved main reverts other agents' work** (it nearly reverted #232). Rebase, or rebuild the branch from a patch of only your files.
-- **`docs/build-log.md` conflicts on almost every rebase.** Keep both sides.
+- **`docs/build-log.md` conflicts on almost every rebase.** Keep both sides and rerun tests. Main moved repeatedly during preparation; never announce a merge from a command attempt alone.
 - **Orca browser background tab:**
   - It draws about 1 frame a second. Pump frames with `orca screenshot`.
   - Viewports taller than about 776 px duplicate a strip in captures.
@@ -55,4 +60,4 @@ None running. I stopped the device preview on :5741 (it was serving 94e2d8e) and
 - **Cargo:** needs `export PATH="$(dirname $(ls ~/.rustup/toolchains/*/bin/cargo | head -1)):$PATH"` before `pnpm test`.
 - **`square-board/sections.test.ts`** occasionally times out under load. Rerun it.
 - **Texture budget:** a new render target or texture must be declared in `web/src/materials/budget.ts`.
-- **Reviews:** Codex and Grok were unavailable to Claude, so every PR used the code-review skill as self-review.
+- **Reviews:** predecessor used self-review when other models were unavailable; Codex successfully ran two fresh Claude reviews for #310.
