@@ -44,6 +44,7 @@ import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
 import { createNorfolkSouthern, norfolkSouthernId } from '../city/norfolk-southern';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -237,6 +238,15 @@ export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainO
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
+  return runSync(buildDowntownTerrain(grid, city, trees, options));
+}
+
+/**
+ * createDowntownTerrain as a generator that yields between stages and landmarks, so a
+ * background mount can spread it over frames (core/slice.ts). Nothing it builds is attached
+ * to the scene or registered City-wide before it returns.
+ */
+export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
@@ -249,6 +259,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (trench) board.add(trench.mesh);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
+  yield;
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
@@ -323,6 +334,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     if (landmark) {
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };
       landmarks.push(landmark);
+      yield;
     }
   }
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
@@ -330,6 +342,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const winn = winnPark(city, groundAt, options.quality);
   const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
   if (yields.length) mesh.carve(yields);
+  yield;
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
   // triangles once the camera is over 2.5 km away. Render-only: placement, the audit and
   // every seam keep the near triangles; the rim is shared node for node. It is built from
@@ -339,6 +352,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M) : null;
   const bb = grid.manifest.bounds;
   let far = false;
+  yield;
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
@@ -347,9 +361,11 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const homes = residential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
+  yield;
   // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
   const yardLayer = homes.yards();
   if (yardLayer?.yields.length) mesh.carve(yardLayer.yields);
+  yield;
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
@@ -371,6 +387,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     }))(new PlacementIndex<P2[]>().addAll(sceneryCity.buildings.map(bd => bd.rings[0]))) : undefined,
   }) : null;
   if (rollout) streetTrees = rollout.crowns;
+  yield;
   const replace: World['replacedTree'] = rollout
     ? (x, z, cr) => !!namedReplace?.(x, z, cr) || rollout.replaced(x, z)
     : namedReplace;
@@ -387,6 +404,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     : rollout?.crownSize ?? null;
   const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
     replace, bd => homes.isHouse(bd.id), crownSize);
+  yield;
   // Houses by distance: a bare far version for wide views, the full house when the camera comes close.
   const houses = houseLod({
     houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
@@ -394,6 +412,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     roofUnits: options.quality === 'low' ? 3 : 8, force: houseLodForce(),
   });
   scenery.group.add(houses.group);
+  yield;
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
   const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
@@ -410,13 +429,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const park = piedmontPark(city, groundAt, options.quality);
   if (park) { park.group.userData.perf = 'landscape'; scenery.group.add(park.group); }
   if (winn) { winn.group.userData.perf = 'landscape'; scenery.group.add(winn.group); }
+  yield;
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
-  // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
-  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
-    city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
-  // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
-  const planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
@@ -430,6 +445,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     };
     scenery.buildLights(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
       { ...options.lights, lowDetail: options.quality === 'low' });
+    yield;
   }
   let fragment: World | undefined;
   if (candidate) {
@@ -444,6 +460,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       scenery.group.add(fragment.group);
     }
   }
+  // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
+  // Registered last, after every yield, so a sliced build never shows its trees early.
+  // (Deterministic per tree: no shared random state, so the order does not change them.)
+  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
+    city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
+  // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
+  const planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
   const carved: GroundYield[] = [];
   const group = new THREE.Group();
   group.add(board, scenery.group);
