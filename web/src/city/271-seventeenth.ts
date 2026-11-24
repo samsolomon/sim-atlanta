@@ -109,7 +109,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
   s.prism(ccw(pent), y(roofH), y(penthouseH), '#8b908e', '#9a9e9b');
 
   const built = s.finish('#f2e6cf', 0.6);
-  // Lit panes sit on the glass: let neighbours' shadows fall on them too, or they show by day.
-  built.group.children.forEach(m => { m.receiveShadow = true; });
+  // Lamps share the body's shadow flags, so they batch with it and darken in shade by day.
+  built.group.children.forEach(m => { m.castShadow = m.receiveShadow = true; });
   return built;
 }
