@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { normalize, parseEastern, type MartaRow } from './marta';
 
 const row = (o: Partial<MartaRow>): MartaRow => ({
@@ -18,6 +18,21 @@ const row = (o: Partial<MartaRow>): MartaRow => ({
 });
 
 describe('parseEastern', () => {
+  it('reuses the Eastern formatter across prediction rows', () => {
+    parseEastern('11/24/2026 8:32:00 AM');
+    const Formatter = Intl.DateTimeFormat;
+    const constructors = vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+      (locales, options) => new Formatter(locales, options),
+    );
+    try {
+      const rows = Array.from({ length: 30 }, (_, i) => row({ EVENT_TIME: `11/24/2026 8:32:${String(i).padStart(2, '0')} AM` }));
+      expect(normalize(rows, 0).trains[0].at).toBe(Date.UTC(2026, 10, 24, 13, 32, 29));
+      expect(constructors).not.toHaveBeenCalled();
+    } finally {
+      constructors.mockRestore();
+    }
+  });
+
   it('handles EST and EDT', () => {
     expect(new Date(parseEastern('11/20/2026 2:59:25 PM')!).toISOString()).toBe('2026-11-20T19:59:25.000Z');
     expect(new Date(parseEastern('7/4/2026 12:05:00 AM')!).toISOString()).toBe('2026-07-04T04:05:00.000Z');
