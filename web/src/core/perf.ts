@@ -547,7 +547,10 @@ function applyHide() {
     let cat: string | undefined;
     for (let p: THREE.Object3D | null = o; p && !cat; p = p.parent) cat = (p.userData?.perf as string | undefined) ?? roots.get(p);
     const tree = cat === 'scenery' && (o as THREE.InstancedMesh).isInstancedMesh;
-    if ((cat && hide.has(cat) && (o as THREE.Mesh).isMesh) || (tree && hide.has('trees'))) o.visible = false;
+    // Off render layer 0 rather than visible=false: owners flip visibility every frame (landmark
+    // batches' sync() picks day or night ranges), which undid about 450k triangles of &hide=buildings.
+    // Layer 0 is what the main and shadow cameras draw.
+    if ((cat && hide.has(cat) && (o as THREE.Mesh).isMesh) || (tree && hide.has('trees'))) o.layers.disable(0);
   });
 }
 
