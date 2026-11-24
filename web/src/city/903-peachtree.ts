@@ -44,7 +44,7 @@ export function create903Peachtree(buildings: VBuilding[], site: VBuilding, grid
   shell.prism(plan, shell.base, storefrontTop, stone, '#777773');
   shell.prism(deck, storefrontTop, deckTop, stone, '#7c827b');
   faces(plan, (a, b) =>
-    shell.facade(a, b, siteFloor + 0.2, storefrontTop - 0.25, 1, 3.25, 0.78, 0.88, glass, 0.16));
+    shell.facade(a, b, siteFloor + 0.2, storefrontTop - 0.25, 1, 3.25, 0.78, 0.88, glass, 0.45));
   faces(deck, (a, b, length) => {
     const dx = b[0] - a[0], dz = b[1] - a[1];
     const midpointZ = (a[1] + b[1]) / 2;
@@ -81,10 +81,17 @@ export function create903Peachtree(buildings: VBuilding[], site: VBuilding, grid
     deckTop, deckTop + 0.18, '#8f8b80', '#aaa18d');
   shell.prism([[-28, 6], [9.1, 6.3], [8.7, 14.8], [-28.5, 14.5]],
     deckTop + 0.18, deckTop + 0.22, '#6c7560', '#7d865e');
+  // Warm low lighting along the terrace's glass balustrade, as in the twilight aerial.
+  const terrace: P2[] = [[-35, 2.8], [12.6, 3.2], [11.7, 17.5], [-36.1, 17.1]];
+  terrace.forEach(([x, z], i) => {
+    const [nx, nz] = terrace[(i + 1) % terrace.length];
+    shell.lights.quad([x, deckTop + 0.18, z], [x, deckTop + 1.05, z], [nx, deckTop + 1.05, nz], [nx, deckTop + 0.18, nz], '#e8c995');
+  });
 
   shell.prism(tower, deckTop, shaftTop, dark, '#6a777c');
+  // Apartments, not offices: at 23:00 roughly a third of the units are still lit.
   faces(tower, (a, b, length) => {
-    shell.facade(a, b, deckTop + 0.55, shaftTop - 0.85, 25, length > 15 ? 3.35 : 2.8, 0.95, 0.82, glass, 0.09);
+    shell.facade(a, b, deckTop + 0.55, shaftTop - 0.85, 25, length > 15 ? 3.35 : 2.8, 0.95, 0.82, glass, 0.32);
   });
   const cap = plant.rings[0].map(([x, z]): P2 => [x - origin[0], z - origin[1]]).reverse();
   shell.prism(cap, shaftTop, siteFloor + plant.h, '#647478', '#939b99');
