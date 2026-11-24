@@ -5,8 +5,8 @@ import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks. */
-export const CONSIST_VERSION = 5;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks, v6 coal hoppers. */
+export const CONSIST_VERSION = 6;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
@@ -36,8 +36,9 @@ const ROAD_POWER: Record<FreightRailroad, FreightUnit[]> = {
   ns: ['locomotiveNs', 'es44acNs', 'sd70ace'],
 };
 const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper', 'tank', 'gondolaScrap', 'gondolaEmpty', 'centerbeamLumber', 'centerbeamEmpty', 'autorack'];
-/** Unit-train commodities: grain hoppers, tanks for an illustrative ethanol movement, or autoracks. */
-const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank', 'autorack'];
+/** Unit-train commodities: grain hoppers, tanks for an illustrative ethanol movement, autoracks, or
+ * coal hoppers running loaded or empty. */
+const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank', 'autorack', 'coalLoaded', 'coalEmpty'];
 const WELL_LOADS: FreightUnit[] = ['wellA', 'wellB', 'wellC'];
 /** Distinct car geometries a train may draw, so each passage costs a small, fixed number of
  * instanced draws (one per kind present) on both tiers. */

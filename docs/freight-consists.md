@@ -130,6 +130,18 @@ The envelope follows Greenbrier's [Multi-Max](https://www.gbrx.com/?p=920): 93 f
 
 **Curve clearance.** The drawn downtown track has kinks of about 41–70 m radius at (−372, −605) and (−8, −54). Over a 30 s sped-up run, 1,567 adjacent car pairs gave a 5th-percentile radius of 268 m. At 41 m, the ends of a 28.6 m car on 19.5 m truck centres swing about 1.33 m outside the rail centreline and its middle 1.16 m inside, against 0.42 m for the boxcar. Brookwood's tightest is about 296 m, where the overhang is about 0.18 m. Autoracks therefore run only at Brookwood: `DOWNTOWN_PROFILE.exclude` keeps them off the downtown line until the cut's drawn curvature is smoothed or verified.
 
+### Built: open aluminum coal hopper
+
+**Model:**
+- *Type:* an open-top aluminum hopper with longitudinal bottom discharge, the kind that runs in Southeastern coal unit trains.
+- *Envelope:* 53 ft 1 in × 10 ft 8 in × 13 ft 4 in exterior (16.18 × 3.25 × 4.06 m). It comes from a [railcar-registry entry for a 4,323 cu ft car](https://cahancock.rrpicturearchives.net/rspicture.aspx?id=445247). That is the capacity of Trinity's aluminum RDL, but the figure is a lead, not a builder's sheet, because Trinity's RDL spec sheet wasn't found.
+- *Estimated:* the 12.4 m truck centres, the stepped side sheets that follow the sloped ends, the twin chutes and gates, and the heaped load.
+- *Loads:* two, baked in. `coalLoaded` has a low ridge of coal up to 0.38 m above the rim, with lumps at high detail. `coalEmpty` shows the floor between the end slopes.
+- *Triangles:* loaded 882 high / 642 low; empty 792 / 648. Plan ceilings are 2,000 / 850.
+- *Lab entries:* `freightCoalLoaded`, `freightCoalEmpty`.
+
+**Use in City.** Coal is a unit-train commodity only, loaded or empty and chosen per passage. It runs on both lines, because a 16.2 m car clears the downtown curves. `CONSIST_VERSION` is 6. This completes the eight-car plan; distributed power (DPU) is still deferred.
+
 ### Built: City consists
 
 Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.

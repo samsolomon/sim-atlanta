@@ -286,3 +286,79 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 **Next in plan order:** open mill gondola, centerbeam, autorack, open coal hopper; DPU after those. The downtown double-stack clearance check is still open.
 
 **Environment:** no dev server is running; vite on :5647 stopped at its 2 h limit. One Orca tab, `004ae663`, is parked on about:blank.
+
+### Update — 2026-11-24 morning (Opus session bceb5cfc)
+
+**Freight plan complete.** All eight cars are built. Everything is held for Sam unless marked otherwise.
+
+| PR | Contents | Branch |
+| --- | --- | --- |
+| #424 | Consists, 53 ft well, clip padding, freight boot template; closes `Illustrative freight` | `intermodal-well` |
+| #436 | Tank | `tank-car` |
+| #443 | Gondola | `mill-gondola` |
+| #456 | Centerbeam | `centerbeam` |
+| #492 | Autorack, Brookwood only | `autorack` |
+| #496 | Coal hopper | `coal-hopper` |
+| #404 | Xpress coach, MCI D4500, pass 2 | `xpress-coach` |
+| #467 | Crescent and CQ400 boot templates; CQ400 padded to 5 clip planes; closes `stockNight` and `cq400` | `prewarm-stock`, held for the coordinator |
+
+**Merge order.** The freight PRs are a stack: #424 → #436 → #443 → #456 → #492 → #496.
+- Retarget each to `main` as its base merges.
+- Keep the stack rebased on `main`.
+- #424 and #467 both set program ceilings in `perf-budget.json`, so whichever merges second must rebase and re-measure.
+
+**Perf baseline** (#424 on `main` `cd33324b`):
+
+| Tier | Programs | Calls |
+| --- | --- | --- |
+| Low | 85/87 (main 84 to 85) | 415/460 |
+| High | 98/100 (main 101) | — |
+| High-night | 97/99 | — |
+
+- The extra low program is the instanced freight Lambert. Nothing else can share it, and it saves about 30 draws.
+- If you hit `__scene hook missing` in `program-sweep`, rerun until #480 lands.
+
+**`CONSIST_VERSION` is 6.**
+- `DOWNTOWN_PROFILE` excludes autoracks.
+- Downtown intermodal weight is 0.
+- The reason is the 41–70 m kinks in the downtown cut, at (−372, −605) and (−8, −54). That follow-up is recorded in #492.
+
+**Next:**
+- Road-vehicle variety: City uses 3 of the 8 types in `vignette/vehicles.ts`. Alternatively, do the downtown curvature follow-up first; I asked the coordinator which.
+- Distributed power (DPU) remains deferred.
+
+### Update — 2026-11-24, after #467 and #512 (Opus session bceb5cfc)
+
+- **#467 merged** as `23cc47a0`. It added Crescent and CQ400 boot templates, padded CQ400 to 5 clip planes, and set program ceilings to low 86 and high/high-night 100. #424 must rebase onto it and re-measure, because both touch `perf-budget.json`.
+- **#512: freight curvature, held for the coordinator. Needs `pnpm data`.**
+  - `bake()` now fillets the `freightS` runs to a 150 m minimum radius.
+  - Pinned: run ends and shared vertices.
+  - The largest shift is 0.16 m.
+  - Ground-contact (a761d59f) owns `web/src/terrain` and approved it.
+  - The raw Overture extracts came from `studio-rectangle-default/data/raw` and were copied into this worktree's gitignored `data/raw`.
+  - This worktree's scene data is back to main's original. Regenerate the smoothed data with `.venv/bin/python pipeline/scripts/terrain_transport.py`.
+- **Once #512 lands:** drop `DOWNTOWN_PROFILE.exclude` (autorack) and set the downtown intermodal weight above 0 in the stack, after re-measuring car-pose curvature.
+- **Merge queue:** the skyline lead (studio-midtown-skyline) hands out merge slots. Ask for one and wait for "your turn".
+- **Next:** road-vehicle variety.
+
+### Update — 2026-11-24 morning, later (Opus session bceb5cfc)
+
+- **#512 merged** (`6f994bfa`): freight centreline smoothing. **Needs `pnpm data`.**
+  - The only generated change is `scene/downtown/vignette.json` `terrainTransport.rail[].pts` for the 13 `freightS` runs.
+  - The curvature test skips on stale data (79 freight vertices on stale data against 176 after).
+  - Once release data includes this, lift `DOWNTOWN_PROFILE.exclude` and turn downtown intermodal back on in the stack, after re-measuring car-pose curvature.
+- **#541: high-tier road-vehicle variety, held for Sam.**
+  - Adds hatch, pickup and van, plus a rigid 19.16 m semi, with `semiShare` 0.7 on the Connector.
+  - Trucks appear only above 25% of the hourly share.
+  - `instanceColor` is now allocated at build (fixes the prewarm program).
+  - Low is unchanged.
+  - The road-traffic owner (studio-midtown-connector) has been told.
+- **MARTA/streetcar radius note** sent to 54bca5c0 for the morning.
+- **Rules (coordinator):**
+  - No pattern kills.
+  - Use your own Chrome via `scripts/chrome-cdp.mjs launchChrome`, and check the URL before navigating.
+  - Merge slots come from the skyline lead.
+- **Held for Sam:** #404, #424 → #436 → #443 → #456 → #492 → #496, #541.
+- **Gotchas:**
+  - `origin/main` moves under you, because fetches are shared across worktrees. Pin the main SHA when you compare builds.
+  - #424 must rebase onto `23cc47a0` or later (#467) and re-measure the ceilings.
