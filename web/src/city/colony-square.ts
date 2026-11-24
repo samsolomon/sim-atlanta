@@ -1,5 +1,5 @@
 import type { GroundGrid } from '../terrain/grid';
-import type { P2 } from '../vignette/geom';
+import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 
@@ -35,6 +35,14 @@ function side(s: Shell, a: P2, b: P2, center: P2) {
   };
 }
 
+/** A stable, well-mixed 0–1 value per window (a linear form makes diagonal stripes). */
+function lit(seed: number, face: number, floor: number, bay: number) {
+  let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(face + 1, 0xc2b2ae35);
+  h = Math.imul(h ^ (floor * 0x27d4eb2d), 0x165667b1) ^ Math.imul(bay + 7, 0x9e3779b1);
+  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
+  return (h >>> 0) / 4294967296;
+}
+
 /**
  * A punched precast grid: continuous piers and spandrels over a recessed dark
  * glass box, so the window count costs rows + columns, not rows × columns.
@@ -55,7 +63,7 @@ function punchedShaft(s: Shell, half: [number, number], lo: number, floors: numb
       const y = lo + j * pitch;
       f.quad(0, 1, y, y + spandrel, 0, precast);
       for (let k = 0; k < n; k++) {
-        if ((j * 31 + k * 17 + i * 43 + seed) % Math.round(1 / occupancy) !== 0) continue;
+        if (lit(seed, i, j, k) >= occupancy) continue;
         f.quad(k / n + w, (k + 1) / n - w, y + spandrel, y + pitch, -0.5, glass, true);
       }
     }
@@ -69,8 +77,8 @@ export function createColony100(buildings: VBuilding[], grid: GroundGrid) {
     [[0, 0], [-15, -15], [15, 15]]);
   if (!s) return null;
   const site = buildings.find(b => b.id === colony100Id)!;
-  const grade = s.base + 0.35;
-  // Lidar (2018, ground 296.1 m NAVD88): main roof 89.3 m, core 96.3 m.
+  // Shell heights are NAVD88. Lidar (2018): ground 296.1 m, main roof +89.3 m, core +96.3 m.
+  const grade = 296.1;
   const half: [number, number] = [19.7, 19.7];
   const shaftLo = grade + 8.7,
     floors = 21,
@@ -83,16 +91,28 @@ export function createColony100(buildings: VBuilding[], grid: GroundGrid) {
     const c = Math.SQRT1_2, dx = x - 822.15, dz = z + 3673.5;
     return [dx * c - dz * c, dx * c + dz * c];
   };
-  for (const part of site.parts ?? []) {
-    if (!part.h || part.h > 20 || part.rings.length !== 1) continue;
-    const plan = part.rings[0].map(toLocal);
-    const top = grade + part.h;
+  const lows = (site.parts ?? []).filter(p => p.h && p.h <= 20 && p.rings.length === 1);
+  const others = lows.map(p => p.rings[0].map(toLocal));
+  for (const [n, part] of lows.entries()) {
+    const plan = others[n];
+    // Each base stands on its own ground; the site falls about 2 m to the northeast.
+    const ground = part.rings[0].map(([x, z]) => grid.sample(x, z)).filter((y): y is number => y !== null && Number.isFinite(y));
+    const floor = ground.length ? Math.max(...ground) : grade;
+    const top = floor + part.h;
     s.prism(plan, s.base, top, base, roofDeck);
-    const c: P2 = [plan.reduce((t, p) => t + p[0], 0) / plan.length, plan.reduce((t, p) => t + p[1], 0) / plan.length];
+    // Outward by winding; skip edges against the tower or another base.
+    const area = plan.reduce((t, [x, z], i) => { const [x2, z2] = plan[(i + 1) % plan.length]; return t + x * z2 - x2 * z; }, 0);
     plan.forEach((a, i) => {
       const b = plan[(i + 1) % plan.length];
-      if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 4) return;
-      side(s, a, b, c).quad(0.04, 0.96, grade + 0.3, Math.min(top - 1.2, grade + 4.6), 0.04, storefront, true);
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (len < 4) return;
+      const sign = area > 0 ? -1 : 1, nx = sign * (b[1] - a[1]) / len, nz = -sign * (b[0] - a[0]) / len;
+      const probe: P2 = [(a[0] + b[0]) / 2 + nx * 0.6, (a[1] + b[1]) / 2 + nz * 0.6];
+      if (Math.abs(probe[0]) < half[0] && Math.abs(probe[1]) < half[1]) return;
+      if (others.some(r => r !== plan && pointInRing(probe[0], probe[1], r))) return;
+      const at = (t: number, y: number) => [a[0] + t * (b[0] - a[0]) + nx * 0.04, y, a[1] + t * (b[1] - a[1]) + nz * 0.04];
+      const hi = Math.min(top - 1.2, floor + 4.6);
+      s.lights.quad(at(0.04, floor + 0.3), at(0.04, hi), at(0.96, hi), at(0.96, floor + 0.3), storefront);
     });
   }
 
