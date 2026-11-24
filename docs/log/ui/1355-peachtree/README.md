@@ -25,7 +25,7 @@ The two 3.6 m entrance parts (`…139`, `…142`) are drawn as low limestone blo
 
 ## Model
 
-The walls use the library's brick and limestone surfaces, and the crown roof is slate. Biltmore and the other Midtown landmarks already compile that painted program. The window glass and frames stay flat inside the painted walls. Framed windows (glass plus a white frame) stop at the podium line. On the shaft, each window is one quad in a frame-and-glass mean tone, which halves its triangles: 3,868 in all. Lit windows are in the lamp mesh, which receives shadows so the windows match by day.
+Every surface is a vertex colour on `landmarkShell`'s StaticLandmarkMaterial body and its lamp mesh: brick, limestone, cream cornices, slate crown, window glass and frames. That is deliberate. A library-painted body is a hooked material, which the landmark batcher (#441/#442) can't merge, so it costs its own draw. At the 400 m orbit the brick coursing fades out anyway. The lamp mesh shares the body's shadow flags, so by day the batcher draws both as one (lit windows look like the wall then). Framed windows (glass plus a white frame) are on the podium parts. On the shaft, each window is one quad in a frame-and-glass mean tone. The skin is 3,868 triangles.
 
 | View | Camera | Local time, 20 November 2026 | Capture |
 |---|---|---|---|

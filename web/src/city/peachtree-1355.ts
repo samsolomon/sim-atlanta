@@ -2,7 +2,6 @@ import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { FLAT, surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, outwardSign, wound } from './skin-kit';
 
@@ -56,11 +55,11 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
   for (const { ring, roof: h, crown, podium } of P) {
     const top = floor + (crown ? crownEave : h);
     // Limestone base, brick above, and a cream cornice band at every setback.
-    shell.prism(ring, footing, Math.min(top, floor + limestoneTop), cream, '#8f8a80', { wall: surfaces.limestone({ course: 0.6 }) });
+    shell.prism(ring, footing, Math.min(top, floor + limestoneTop), cream, '#8f8a80');
     if (top > floor + limestoneTop)
-      shell.prism(ring, floor + limestoneTop, top - 1.4, brick, '#8f8a80', { wall: surfaces.brick() });
+      shell.prism(ring, floor + limestoneTop, top - 1.4, brick, '#8f8a80');
     if (top > floor + limestoneTop)
-      shell.prism(ring, Math.max(floor + limestoneTop, top - 1.4), top, cream, '#8a857c', { wall: surfaces.limestone({ course: 0.7 }) });
+      shell.prism(ring, Math.max(floor + limestoneTop, top - 1.4), top, cream, '#8a857c');
     roof(ring, top, '#8a857c');
     // A projecting cornice: a thin cream lip 0.5 m out, all round.
     faces(ring, (a, b, length) => {
@@ -85,13 +84,11 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
           // White frames read only from street views; on the shaft the window is one quad in a
           // frame-and-glass mean tone, which halves its triangles.
           const framed = podium;
-          if (framed) shell.paint(FLAT, () => body.quad([pf[0], y - 0.15, pf[1]], [pf[0], y1 + 0.2, pf[1]], [qf[0], y1 + 0.2, qf[1]], [qf[0], y - 0.15, qf[1]], frame));
-          // Offices at 23:30: about one window in twelve still lit, in small clusters.
-          const lit = random() < 0.085;
-          const target = lit ? lights : body;
-          (lit ? (f: () => void) => f() : (f: () => void) => shell.paint(FLAT, f))(() => void (
-            framed ? target.quad([p[0], y, p[1]], [p[0], y1, p[1]], [q[0], y1, q[1]], [q[0], y, q[1]], glass)
-              : target.quad([pf[0], y - 0.1, pf[1]], [pf[0], y1 + 0.15, pf[1]], [qf[0], y1 + 0.15, qf[1]], [qf[0], y - 0.1, qf[1]], shaftWindow)));
+          if (framed) body.quad([pf[0], y - 0.15, pf[1]], [pf[0], y1 + 0.2, pf[1]], [qf[0], y1 + 0.2, qf[1]], [qf[0], y - 0.15, qf[1]], frame);
+          // Offices at 23:30: about one window in twelve still lit, scattered.
+          const target = random() < 0.085 ? lights : body;
+          if (framed) target.quad([p[0], y, p[1]], [p[0], y1, p[1]], [q[0], y1, q[1]], [q[0], y, q[1]], glass);
+          else target.quad([pf[0], y - 0.1, pf[1]], [pf[0], y1 + 0.15, pf[1]], [qf[0], y1 + 0.15, qf[1]], [qf[0], y - 0.1, qf[1]], shaftWindow);
         }
       }
     });
@@ -111,10 +108,8 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
     const u0 = Math.min(...us) + 0.6, u1 = Math.max(...us) - 0.6, v0 = Math.min(...vs), v1 = Math.max(...vs);
     const at = (u: number, v: number, y: number) => [u * along_[0] + v * across[0], y, u * along_[1] + v * across[1]];
     const eave = floor + crownEave, ridge = floor + crownRidge, um = (u0 + u1) / 2;
-    shell.paint(surfaces.slate(), () => {
-      body.quad(at(u0, v0, eave), at(um, v0, ridge), at(um, v1, ridge), at(u0, v1, eave), '#5d6168');
-      body.quad(at(um, v0, ridge), at(u1, v0, eave), at(u1, v1, eave), at(um, v1, ridge), '#5d6168');
-    });
+    body.quad(at(u0, v0, eave), at(um, v0, ridge), at(um, v1, ridge), at(u0, v1, eave), '#5d6168');
+    body.quad(at(um, v0, ridge), at(u1, v0, eave), at(u1, v1, eave), at(um, v1, ridge), '#5d6168');
     for (const v of [v0, v1]) {
       body.tri(at(u0, v, eave), at(u1, v, eave), at(um, v, ridge), brick);
       // Cream raking cornices and the arched window under the pediment.
@@ -128,7 +123,8 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
   }
   const result = shell.finish('#f2d9a8', 0.6);
   // The lamp quads darken with the shaded wall they sit on, or they show as pale panes by day.
-  result.group.children.forEach(m => { m.receiveShadow = true; });
+  // Matching the body's shadow flags also lets the landmark batcher draw both as one by day.
+  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
   return result;
 }
 
