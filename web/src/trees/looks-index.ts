@@ -1,3 +1,4 @@
+import { riverBirchLook } from './river-birch';
 import { lacebarkElmLook } from './lacebark-elm';
 import { calleryPearLook } from './callery-pear';
 import { easternRedbudLook } from './redbud';
@@ -11,4 +12,4 @@ import { crapeMyrtleLook, southernMagnoliaLook } from './magnolia-crape';
 import { japaneseMapleLook } from './japanese-maple';
 import { americanElmLook, floweringDogwoodLook } from './elm-dogwood';
 
-export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook, americanElmLook, floweringDogwoodLook, japaneseMapleLook, whiteOakLook, easternRedbudLook, calleryPearLook, lacebarkElmLook];
+export const LOOKS: Look[] = [willowOakLook, waterOakLook, loblollyPineLook, tulipPoplarLook, redMapleLook, sweetgumLook, southernMagnoliaLook, crapeMyrtleLook, americanElmLook, floweringDogwoodLook, japaneseMapleLook, whiteOakLook, easternRedbudLook, calleryPearLook, lacebarkElmLook, riverBirchLook];
