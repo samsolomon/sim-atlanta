@@ -6,9 +6,10 @@ import { landmarkShell } from './landmark-shell';
 /**
  * Loews Atlanta Hotel, 1065 Peachtree Street (2010), part of the 12th & Midtown development.
  * The mapped site splits into a west wing (`osm:way:1434982550`), three 8 m arrival and retail
- * pieces, and the tower itself (the largest remaining part, 79.9 m mapped). Heights are NAVD88
- * metres from the April 2019 3DEP lidar, which puts the tower at 405 m with a higher north-west
- * block on the Peachtree side at 411.5 m and the west wing at 369 m
+ * pieces, and the tower itself (the largest remaining part). Heights are NAVD88 metres from the
+ * April 2019 3DEP lidar, which puts the tower at 405 m with a higher north-west block on the
+ * Peachtree side at 411.5 m (about 117 m over the street, as the site's mapped 118.3 m says;
+ * the parts' 79.9 m is not a roof) and the west wing at 369 m
  * (docs/log/ui/loews-atlanta/README.md). Flat vertex colours, no library surfaces: the low tier
  * has no shader-program headroom for a painted variant.
  */
@@ -167,8 +168,18 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
     panel(peachtree, 0.15, 0.85, y - 0.35, y, 1.6, slab);
   }
 
-  // Low arrival and retail pieces keep their mapped 8 m. No canopy: the photos don't fix where it sits.
+  // Low arrival and retail pieces keep their mapped 8 m.
   for (const { plan, top } of lowParts) if (plan.length >= 3) s.prism(plan, s.base, top, stone, roof);
+
+  // Street View (March 2025): a continuous flat canopy runs along the Peachtree frontage over the
+  // colonnaded cafe and lobby, with the hotel entrance at its north end.
+  const frontage = lowParts.flatMap(({ plan }) => faces(tidy(plan))).filter(f => f.length > 8 && facing(f) > 0.7);
+  for (const f of frontage) {
+    const mid = at(f, 0.5, 0, 0), y = gradeAt(mid[0], mid[2]) + 4.6;
+    s.body.quad(at(f, 0, y, 0), at(f, 0, y, 2.6), at(f, 1, y, 2.6), at(f, 1, y, 0), frame);
+    panel(f, 0, 1, y - 0.45, y, 2.6, frame);
+    s.lights.quad(at(f, 0.02, y - 0.47, 0.1), at(f, 0.02, y - 0.47, 2.5), at(f, 0.98, y - 0.47, 2.5), at(f, 0.98, y - 0.47, 0.1), '#8a8272');
+  }
 
   return s.finish('#ffdcae', 0.62);
 }
