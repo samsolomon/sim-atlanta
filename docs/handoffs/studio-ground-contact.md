@@ -15,8 +15,9 @@ Done and verified:
 
 Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-na-*`. The cam strings are in the PR body.
 
-- **PR #500** `samsolomon/transport-far`: transport far form (setDrawRange on reordered triangles, `terrain/far-form.ts`). Held for the coordinator's A16 run. A frozen build is served on :4697 (2 h) and Taildropped as transport-far-e0e71b80.zip. The North Line is excluded pending the MARTA owner.
-- Freight fillets (studio-amtrak-livery, pipeline-side): I OK'd them pending its rail-ballast audit diff, which comes to me for review.
+- **PR #500** `samsolomon/transport-far`: transport far form, approved after the A16 run (+1 fps, -272k triangles). **#509** `samsolomon/north-line-far` (North Line far form, owner 54bca5c0 OK'd) is stacked on it, also approved. They merge together in the slot the skyline lead (47b1a596) booked after #499+#501; wait for its call. Then: rebase, run one build, test:release and test:perf on the stacked head, merge #500, retarget #509 to main, merge it, and quote gh pr view for both.
+- **PR #514** `samsolomon/transport-shadow` (stacked on #509): far prefix in shadow redraws. Held for the coordinator's review. Retarget it after #509 merges.
+- **#512** (studio-amtrak-livery freight fillets): ground-contact OK given.
 
 ## Next steps
 1. Wait for Sam's OK via the coordinator. Rebase before merging (the build log conflicts routinely), then quote `gh pr view 399 --json state,mergeCommit`.
