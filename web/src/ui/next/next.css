@@ -649,26 +649,41 @@ body.city-over-map #city-loading { background: transparent !important; }
 :root[data-theme=dark] .a2-dock-field,:root[data-theme=dark] .a2-dock-field kbd { background: rgba(255,255,255,.10); }
 @media(min-width:601px) { .a2-appbar { padding-inline: 8px; gap: 6px; } }
 .a2-player {
-  width: 300px; padding: 10px 12px; overflow: hidden;
-  left: min(calc(50% + 164px), calc(100% - 158px));
+  width: 340px; padding: 10px 12px; overflow: hidden;
+  left: min(calc(50% + 164px), calc(100% - 178px));
 }
 .a2-player:not([hidden]) { display: flex; align-items: center; }
 .a2-track-info {
   flex: 1; min-width: 0; display: grid; align-items: center;
   grid-template-columns: 40px minmax(0,1fr); gap: 2px 8px;
 }
-.a2-track-info::before {
-  content: ''; width: 40px; height: 40px; grid-row: span 2; border-radius: 8px;
+.a2-art {
+  width: 40px; height: 40px; grid-row: span 2; border-radius: 8px; overflow: hidden;
   background: linear-gradient(135deg,#9fb8d6,#e7c9a0);
 }
-.a2-track-info strong,.a2-track-info span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.a2-track-info strong { align-self: end; font-size: 14px; font-weight: 600; }
-.a2-track-info span { align-self: start; font-size: 12px; color: var(--a2-ink2); }
+.a2-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Give the station controls their own row so title taps never switch stations. */
+.a2-station { display: flex; align-items: center; min-width: 0; align-self: end; font-size: 12px; color: var(--a2-ink2); }
+.a2-station button { position: relative; min-height: 0; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.a2-station button:disabled { cursor: default; opacity: .5; }
+.a2-st-name { min-width: 0; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a2-st-step { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
+.a2-st-step svg { width: 12px; height: 12px; }
+.a2-station button:hover:not(:disabled) { color: var(--a2-ink); }
+.a2-track-info strong { min-width: 0; align-self: start; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .a2-player .a2-ib { position: relative; flex: 0 0 44px; width: 44px; height: 44px; }
 .a2-player .a2-ib svg { position: relative; width: 18px; height: 18px; }
-.a2-player .a2-ib:first-of-type::before {
-  content: ''; position: absolute; inset: 2px; background: var(--a2-sep); border-radius: 50%;
+/* Play/pause: one 40 px rounded square (radius 10, like the art tile and the dock's square
+   buttons) in every state. Rest, hover, pressed and keyboard focus all draw on that one shape;
+   the 44 px button around it is only the hit area. */
+.a2-player .a2-play::before {
+  content: ''; position: absolute; inset: 2px; background: var(--a2-sep); border-radius: 10px;
 }
+.a2-player .a2-play:hover { background: transparent; }
+.a2-player .a2-play:hover::before { background: color-mix(in srgb, var(--a2-ink) 18%, transparent); }
+.a2-player .a2-play:active::before { background: color-mix(in srgb, var(--a2-ink) 26%, transparent); }
+.a2-player .a2-play:focus-visible { outline: none; }
+.a2-player .a2-play:focus-visible::before { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
 .a2-player progress {
   appearance: none; position: absolute; inset: auto 0 0; width: 100%; height: 2px;
   border: 0; background: var(--a2-sep); --progress-ink: color-mix(in srgb,var(--a2-ink) 55%,transparent);
@@ -758,3 +773,7 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .a2-g input[type='search']::-webkit-search-cancel-button:hover { background: var(--a2-ink); }
+/* Radio loading: an arc spins in the play button until the first file arrives; under reduced motion it stays still. */
+.a2-player .a2-busy svg { animation: a2-spin 0.9s linear infinite; }
+@keyframes a2-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .a2-player .a2-busy svg { animation: none; } }
