@@ -30,7 +30,7 @@ The photographs are Dave Burk (© SOM) and David Kresses (© May Architecture), 
 
 ## Lighting
 
-There is no full-night exterior. This is an inpatient and research building, so the night view lights about a third of the panes, through a stable mixed hash (to move to skin-kit's `litHash` once #470 lands). That is more than an office tower and less than housing. The podium storefront is lit, and downlights dot the canopy soffit (an estimate: the photographs are daytime only). The crown stays unlit.
+There is no full-night exterior. This is an inpatient and research building, so the night view lights about a third of the panes, through skin-kit's `litHash(seedOf(id), face, floor, bay)`. That is more than an office tower and less than housing. The podium storefront is lit, and downlights dot the canopy soffit (an estimate: the photographs are daytime only). The crown stays unlit.
 
 ## Captures
 

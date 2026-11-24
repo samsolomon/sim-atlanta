@@ -3,6 +3,7 @@ import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 /**
  * Winship Cancer Institute at Emory Midtown (SOM with May Architecture, 2023):
@@ -24,14 +25,6 @@ const glass = '#a7bcc2',
   roofDeck = '#a19f99',
   screen = '#c9cdcc';
 
-/** A stable, well-mixed 0–1 value per window. TODO: switch to skin-kit's litHash once #470 lands. */
-function lit(seed: number, face: number, floor: number, bay: number) {
-  let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(face + 1, 0xc2b2ae35);
-  h = Math.imul(h ^ Math.imul(floor + 1, 0x27d4eb2d), 0x165667b1) ^ Math.imul(bay + 7, 0x9e3779b1);
-  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
-  return (h >>> 0) / 4294967296;
-}
-
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 
 /** Faces of a plan, offset outward. */
@@ -52,6 +45,7 @@ function quad(s: Shell, at: (t: number, y: number, d: number) => number[], l: nu
 
 export function createWinship(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const origin: P2 = [530.6, -1813];
+  const seed = seedOf(site.id);
   const s = landmarkShell(buildings, grid, site.id, 'Winship at Emory Midtown', origin, [1, 0],
     [[0, 0], [40, 0], [-40, -20]]);
   if (!s) return null;
@@ -112,7 +106,7 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
     }
     for (let f = first; f < floors; f++) {
       for (let k = 0; k < n; k++) {
-        if (lit(886, face, f, k) >= 0.32) continue;
+        if (litHash(seed, face, f, k) >= 0.32) continue;
         const y = Math.max(lobby + f * pitch + 0.3, podiumTop + 0.2);
         quad(s, at, k / n + 0.1 / len, (k + 1) / n - 0.1 / len, y, lobby + (f + 1) * pitch - 0.3, 0.05, glass, true);
       }
