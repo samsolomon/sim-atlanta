@@ -92,5 +92,5 @@ Twelve skins queued before the recognition rule were judged from each PR's own i
 | BORDERLINE | #544 | Piedmont House | Blue among blue boxes at 750 m; faint grid | Strengthen before 8c (lead approves) |
 | BORDERLINE | #529 | Vireo Piedmont Park | Balconies don't read at 700 m | Rides 8b; later pass |
 | BORDERLINE | #537 | Hanover House | Tan box with one slot; grid doesn't read | Rides 8b; later pass |
-| BORDERLINE | #546 | Azure on the Park | Tower glass matches neighbours | Rides 8b with #581's shade fix; later pass |
+| FIXED (pending 8d) | #546 | Azure on the Park | Tower glass matched neighbours | #643: photographed blue #86a0c0, corner-wrapping balcony stacks on both tiers |
 | PASS | #532, #536, #558 | Luxe, Crowne Plaza, Windsor | | 8b |
