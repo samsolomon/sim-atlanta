@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { inkFoliageMesh, type InkFoliageMode } from '../vignette/ink';
 import { broadleafForm, crownMasses, envelope, envelopeNormal, habitFor, ringAt, massClusters, type Habit, type Unit } from './broadleaf';
-import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, blooms, crownNormals, foliageDepth, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
+import { FoliageBuilder, TIP_CAP, TIP_RANGE_M, blooms, branchBlooms, crownNormals, foliageDepth, leafAtlas, leafTips, lobes, needleStars, twoToneFoliage, unitCards, type LeafShape } from './foliage-kit';
 import { skeletonGeometry, treeDims, type TreePlacement } from './render';
 import { doyOf, hash01, type Foliage, type SizeClass, type Species, type TreeQuality, type V3 } from './species';
 
@@ -84,6 +84,8 @@ export interface Look {
   /** Several bloom colours (crape myrtle): each tree takes one by its seed. */
   bloomColours?: string[];
   bloomSizeM?: number;
+  /** Twig fans and flowers follow the wood using paired tiles in the cordate atlas. */
+  branchBloom?: boolean;
   /** While in flower, up to this share of the leaf clusters turn wholly to the bloom colour
    *  (a crape myrtle's crown covered in trusses), at no triangle cost. */
   bloomWash?: number;
@@ -215,6 +217,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   const masses = crownMasses(look.habit, size, q, d, look.species.id.length);
   const clusters = lookClusters(look, opt, size, q, opt.units[q], seed);
   const b = new FoliageBuilder();
+  if (look.branchBloom) branchBlooms(b, look.species.form(size, q, d).segs, d, seed);
   if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
@@ -394,9 +397,9 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
       const bc = bloomOf(t);
       set.bloom.setXYZW(i, bc.r, bc.g, bc.b, blooming ? p.bloom : 0);
       // Hidden only when bare and not in flower (dogwood bracts open before the leaves).
-      const hidden = p.leaves <= 0.02 && !(blooming && p.bloom > 0.01);
+      const hidden = !look.branchBloom && p.leaves <= 0.02 && !(blooming && p.bloom > 0.01);
       // A thin crown (leafing out or dropping) reads as a haze, not a tree: keep the limbs too.
-      if (p.leaves < 0.5 && !(blooming && p.bloom > 0.3)) anyBare = true;
+      if (p.leaves < 0.5 && (look.branchBloom || !(blooming && p.bloom > 0.3))) anyBare = true;
       set.mesh.setMatrixAt(i, hidden ? zero : place(t));
       set.toneB.needsUpdate = set.leaves.needsUpdate = set.bloom.needsUpdate = true;
     });

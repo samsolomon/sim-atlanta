@@ -2935,6 +2935,18 @@ removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
 
 ![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
 Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
+
+### 2026-11-23 — Redbud starts with the leaves
+
+After Sam picked white oak A, the next tree is eastern redbud: one explicit Winn Park Street View observation, 4.6% of the recorded Trees Atlanta plantings and 6.1% in street strips and wells. The first lab pass adds heart-shaped A-style cards, four illustrative sizes, a low vase and yellow fall colour. It costs 185 high-tier triangles, with one new 1.33 MiB atlas. The reference revealed the hard part immediately: flowers trace bare wood, while our existing bloom wash makes large pink leaves. That was conspicuous on the first-pass comparison. Web rebuild needed when eventually released; no data or deployment change.
+
+### 2026-11-23 — Redbud blooms along bare wood
+
+The early rendering painted big pink hearts across the crown. Now one tapered card follows each branch or twig, carrying a trail of magenta clusters in a spare part of the leaf atlas. The surprise was how much the extra lateral twigs mattered: even small flowers read as a crown once the bare wood spreads outward. Leaves start after the March bloom. The mature tree costs 193 / 91 triangles at high / low detail, including leaf litter, with summer luminance at 0.236 / 0.259 against the generic tree’s 0.248. Lab study awaiting review. Web rebuild only.
+
+### 2026-11-23 — Redbud gets a wider fork and a denser bloom
+
+At Sam’s review the March tree still read as bare from a distance. Four spreading boughs at high detail and three at low now carry paired cards with the same branch pattern in spring and winter. At eye level the crown mask covers about 64,200 pixels in March, up from about 3,100. At 300 m the big surprise is how little is left on screen: 156 masked pixels at high detail and 94 at low, with pink visible in each. April’s first leaves are reddish-purple and turn green before summer. The tree costs 193 / 138 triangles, with the same heart-shaped summer cards, yellow fall and four sizes. [Eye level, photo reference, 100 m, 300 m and seasons](log/ui/tree-species/options-eastern-redbud.jpg). Web rebuild only.
 ### 2026-11-23 — A quieter Rhodes Hall tower
 
 Sam wanted the floodlit tower a little less bright. Its stone wash is now 25% lower,
@@ -2976,3 +2988,18 @@ The photograph of 9001 shows a rounded purple roofline above the windshield. The
 ### 2026-11-23 — A common roof profile for the Rapid buses
 
 The first rounded XE60 covers still looked flatter than the XN40 pod at the same camera. Both models now use the XN40’s 36 cm crown, curved ends and shoulder bevel. A short strip of exposed roof ahead of the XE60 cover makes the front curve visible. The electric bus keeps its 3.30 m roof height and carries one shroud on each side of the joint. Sampling the same curves at low detail brings the XE60 to 1,286 triangles. [XE60 and XN40 at the same scale, day and night](log/rapid-buses/roof-profiles.jpg).
+
+### 2026-11-23 — Three footprints at Tech Square
+
+Coda's 118.9 m tower shares its block with a five-floor computing center and
+the retained Crum & Forster building. The archive supplies three separate
+footprints. Putting a solid base under the tower would close the 19.2 m arcade,
+so the west podium stops short and the soffit spans the opening. A ray from
+pedestrian height crosses the passage and a second ray hits the soffit overhead.
+[High daylight comparison](log/ui/coda/high-day.jpg) · [High night comparison](log/ui/coda/high-night.jpg).
+
+At the 840 m review camera, the first glass treatment hid the floor grid. The
+revision gives the two wings separate upper setbacks and silver mullions around
+blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
+building and eight suspended globes trace the approach to the lobby.
+[Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).

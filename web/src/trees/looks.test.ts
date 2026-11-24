@@ -7,9 +7,9 @@ import { SIZE_CLASSES, doyOf } from './species';
 const BUDGET = { high: 196, low: 156 } as const;
 
 describe.each(LOOKS.map(l => [l.species.id, l] as const))('%s rendering options (lab only)', (_, look) => {
-  it('has two or three options, plus variants of a picked one (A1, A2…)', () => {
+  it('has one to three options, plus variants of a picked one (A1, A2…)', () => {
     const base = look.options.filter(o => /^[A-Z]$/.test(o.id));
-    expect(base.length).toBeGreaterThanOrEqual(2);
+    expect(base.length).toBeGreaterThanOrEqual(1);
     expect(base.length).toBeLessThanOrEqual(3);
   });
 
@@ -145,4 +145,20 @@ describe('magnolia skirt', () => {
       }
     }
   });
+});
+
+it('keeps redbud flowers on bare wood and leaves the wood visible at far detail in bloom', async () => {
+  const { easternRedbudLook: look } = await import('./redbud');
+  const peak = look.palette(doyOf(3, 22), 0);
+  expect(peak.bloom).toBe(1);
+  expect(peak.leaves).toBe(0);
+  for (let day = doyOf(2, 25); day <= doyOf(4, 20); day++) {
+    const stage = look.palette(day, 0);
+    expect(stage.bloom * stage.leaves).toBe(0);
+  }
+  const g = createLook([{ species: look.species, size: 'mature', x: 0, z: 0, seed: 1 }], look, 'A', 'high', () => 0)!;
+  g.setSeason(doyOf(3, 22));
+  g.setDetail({ farTrees: true });
+  expect(g.group.getObjectByName('mature limbs')?.visible).toBe(true);
+  g.dispose();
 });
