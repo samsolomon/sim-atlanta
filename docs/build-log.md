@@ -3166,6 +3166,14 @@ every frame and compares the final positions with a fresh seek.
 
 [The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)
 
+### 2026-11-23 — The cream block on The Prado
+
+A 469 m² footprint was enough to push a 1905 Craftsman past the 450 m² limit for generated houses. Checking the address against the historic district survey and two street views gave us the missing silhouette: a broad side gable, a shingled front porch gable and an open bay over the drive. The gold shape in the foreground turned out to be a tree. [The original view, matched day and night, and the porch](log/ui/145-the-prado/README.md).
+
+### 2026-11-23 — Finding the walls under the Prado roof
+
+The street panorama put the porch posts and the five lower windows in the same frame. Rebuilding from the front grade gave the porch a visible floor and four steps, while one low side gable could span the stepped footprint. Across the twelve boards, 442 large footprints had a residential tag or sat in mapped residential land use. Only 85 qualified for these house finishes, including the Prado itself. [Street elevation, house comparisons and tower control](log/ui/145-the-prado/README.md).
+
 ### 2026-11-24 — Radio in the dock
 
 The first radio player followed boards F07 and G13. Sam wanted more of the city to stay visible. The revised player fits the track and two 44 px touch targets in one 64 px row. On the 390 px phone, the card is 374 px wide and sits 12 px above the dock. Silent placeholder tracks read “No audio yet”. [Desktop before](log/ui/final-radio/desktop.jpg) · [After](log/ui/final-radio/desktop-compact.jpg) · [Phone before](log/ui/final-radio/phone.jpg) · [After](log/ui/final-radio/phone-compact.jpg).

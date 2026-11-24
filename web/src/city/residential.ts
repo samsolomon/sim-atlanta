@@ -1,3 +1,4 @@
+import landuse from '../../../pipeline/prototypes/residential/landuse.json';
 import { pradoYieldSigns } from '../terrain/ansley-street-edge';
 import * as THREE from 'three';
 import tagged from '../../../pipeline/prototypes/residential/tags.json';
@@ -17,6 +18,8 @@ import type { BuildingFinish, VBuilding } from '../vignette/world';
  * porch, chimney). Heights: OSM height is the ridge, so walls stop at the eave.
  */
 const HOMES = new Set(['house', 'detached', 'semidetached_house', 'bungalow', 'terrace']);
+const residentialLand = new Set(landuse.lowRiseCandidates);
+const otherUse = new Set(landuse.otherUse);
 const tags = tagged as unknown as Record<string, [string | null, string | null, string | null]>;
 
 type Shape = 'gabled' | 'hipped' | 'pyramidal';
@@ -115,9 +118,19 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const ring = b.rings[0];
   // Pieces clipped at a board seam (`id/n`) keep the generic box on both sides,
   // since neither half can be roofed as one house.
-  if (b.id.includes('/') || b.rings.length !== 1 || !ring || ring.length < 4 || !HOMES.has(b.cls ?? '')) return null;
+  if (b.id.includes('/') || b.rings.length !== 1 || !ring || ring.length < 4 || b.parts?.length || otherUse.has(b.id)) return null;
   const size = area(ring);
-  if (size < 25 || size > 450 || (b.floors || 0) > 3 || (b.h ?? 0) > 14) return null;
+  const specificHouse = b.cls === 'house' || b.cls === 'detached';
+  const generalResidential = b.cls === 'residential' ||
+    ((!b.cls || b.cls === 'yes' || b.cls === 'building') && residentialLand.has(b.id));
+  if (!HOMES.has(b.cls ?? '') && !generalResidential) return null;
+  if (size < 25 || (b.floors ?? 0) > 3 || (b.h ?? 0) > 14) return null;
+  // A residential district or broad residential tag can include apartment slabs and towers.
+  // Require positive low-rise evidence; preserve named blocks and the original mass otherwise.
+  if (generalResidential && (!(b.floors || b.h) || (b.h ?? 0) > 11.5 || b.name || size > 800)) return null;
+  // A compact multi-unit block can carry a house tag even without a courtyard.
+  if (size > 1000 || (size > 450 && b.name)) return null;
+  if (!specificHouse && !generalResidential && size > 450) return null;
   const box = oriented(ring);
   if (!box || box.half < 2) return null;
   const [shapeTag, material] = tags[b.id] ?? [null, null, null];
@@ -125,6 +138,8 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const fill = size / (4 * box.long * box.half), aspect = box.long / box.half;
   // A ridge through an L or courtyard plan would roof empty ground. Concave
   // plans get a low hip-and-deck roof that follows the footprint instead.
+  if (size > 900 && box.long * 2 > 45 && (aspect > 2.4 || fill < .75)) return null;
+  if (generalResidential && size > 450 && (aspect > 2 || fill < .85)) return null;
   const concave = fill < .85;
   // The front is the frontage nearest a mapped street; door, stoop or porch face it.
   let front: P2[] | null = null, best = Infinity;
@@ -138,8 +153,8 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
   const frontLen = front ? Math.hypot(front[1][0] - front[0][0], front[1][1] - front[0][1]) : 0;
   const ansley = inAnsley(...box.centre);
   const f = force ?? {};
-  // Long or large "house" footprints are period apartment buildings or duplexes, not giant houses.
-  const multi = (size > 220 && aspect > 1.8) || size > 330;
+  // Only less specific housing types use footprint proportions to choose a multi-unit form.
+  const multi = (size <= 450 || !specificHouse) && ((size > 220 && aspect > 1.8) || size > 330);
   // Style by neighbourhood (Street View): Ansley Park is Colonial and Tudor revival among
   // Craftsman houses; Home Park and the other side streets are mostly Craftsman bungalows.
   const pickStyle = r();
@@ -219,7 +234,14 @@ function plan(b: VBuilding, street: (x: number, z: number) => number, quality: '
     doorColor: DOORS[Math.floor(r() * DOORS.length)], crossGable, dormers, quality,
     wall, roof: roofs[Math.floor(r() * roofs.length)],
     trim, porch, chimney: !concave && (kind === 'brick' || style === 'tudor' ? r() < .8 : r() < .45), brick: kind === 'brick', frame: trim, foursquare: false };
-  return f.form || (ansley && !f.style && !f.siding && !f.wall) ? ansleyForms(plan, b, size, frontLen, !!shapeTag, !!tagged, f.form) : plan;
+  const finished = f.form || (ansley && !f.style && !f.siding && !f.wall) ? ansleyForms(plan, b, size, frontLen, !!shapeTag, !!tagged, f.form) : plan;
+  if (size <= 450) return finished;
+  // Wide footprints reach the style pitch cap quickly. Give the half-storey a
+  // knee wall and keep at least two thirds of the visible elevation in siding.
+  const wallHeight = Math.floor(finished.storeys) * 3.25 + (finished.storeys % 1 ? 1.05 : .3);
+  const roofRise = Math.min(finished.rise, b.h ? b.h / 3 : wallHeight / 2);
+  return { ...finished, eave: b.h ? b.h - roofRise : wallHeight, rise: roofRise,
+    dormers: roofRise < 2 ? 0 : finished.dormers };
 }
 
 /**

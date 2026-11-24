@@ -27,6 +27,7 @@ export interface VBuildingPart {
   tier: 'reported' | 'inferred' | 'illustrative';
 }
 export interface VBuilding {
+  name?: string | null;
   /** Inferred finished floor in scene metres on a sloped site. */
   floorY?: number;
   cls?: string | null;
@@ -48,6 +49,8 @@ export interface BuildingFinish {
   windowStyle?: number;
   /** Supplies roof fixtures in place of the generic rooftop equipment. */
   /** `litGlass` takes window glass that glows at night (it shares the building draw). */
+  /** The finish builds its entire roof, including open bays below the eaves. */
+  replacesRoof?: boolean;
   dressRoof?: (builder: Builder, outer: P2[], roof: number, litGlass: Builder) => void;
   drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
 }
@@ -901,7 +904,7 @@ export class World {
       const all = [...contour, ...holes.flat()];
       // Roofs: white membrane, gravel, tar and the odd green roof.
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
-      for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
+      if (!finish?.replacesRoof || bd.parts?.length) for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
       if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY, shopLights);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
