@@ -73,7 +73,7 @@ Before building any train, re-check each PR's head with `gh pr view` (workers mo
 - **skins-2 (4695b411):** Olympia (#634) and Elevance (#642) are open; 715 Peachtree is #617.
 - **skins-3 (f7bfd025, worktree studio-midtown-parks):** the Geo Muse Building.
 - **skins-4 (89d3798a):** Hurt Plaza Garage (review fixes in), then Langdale Hall, then the GSU College of Education (name unconfirmed; README caveat).
-- **skins-5 (95400b56):** extending skin-footprint.test.ts to the downtown city.ts landmarks, then the Emory Faculty Office Building.
+- **skins-5 (95400b56):** the downtown audit is WIP on `samsolomon/downtown-footprint-audit` (9f245fca; committed fixture, harness design in docs/handoffs/studio-skins-5.md), then the Emory Faculty Office Building.
 - **skins-6 (f7b4e433):** the coplanar (< 3 cm) lint in skin-footprint.test.ts with a ratchet, sharing the harness with skins-5.
 - **skins-7 (cda9a6e2):** the Medical Arts garage; a possible #659 shared-shell head.
 - **culture (ba45f7e8):** the AJC complex (one module claiming 08b3e01b + df3490e1), then the GSU College of Law, then University Lofts.
