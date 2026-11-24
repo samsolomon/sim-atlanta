@@ -66,6 +66,7 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
+import { createMuseumTower } from './museum-tower';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createFiftyFiveParkPlace } from './55-park-place';
@@ -369,6 +370,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
+  let museumTower: ReturnType<typeof createMuseumTower> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
@@ -519,8 +521,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         footballHall = createFootballHall(afterTwoPeachtree, ground);
         const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
-        oneParkTower = createOneParkTower(afterFootballHall, ground);
-        const afterOnePark = oneParkTower?.buildings ?? afterFootballHall;
+        museumTower = createMuseumTower(afterFootballHall, ground);
+        const afterMuseumTower = museumTower?.buildings ?? afterFootballHall;
+        oneParkTower = createOneParkTower(afterMuseumTower, ground);
+        const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
         const afterPower = georgiaPower?.buildings ?? afterOnePark;
         georgiaPacific = createGeorgiaPacific(afterPower, groundAt);
@@ -580,6 +584,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
+        if (museumTower) world.group.add(museumTower.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
@@ -630,7 +635,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
+            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -1482,6 +1487,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       flatiron?.setNight(night);
       healey?.setNight(night);
       footballHall?.setNight(night);
+      museumTower?.setNight(night);
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
