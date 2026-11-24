@@ -207,7 +207,9 @@ export class StreamManager {
     const abort = want.fullAbort = new AbortController();
     void loadBudget.enqueue(want.section, 'props', async () => {
       const added = await this.mosaic.load(want.section, this.quality, abort.signal);
-      if (!added || abort.signal.aborted) return;
+      if (!added) return;
+      // mosaic.load already frees a build aborted before it returned; this covers any abort after.
+      if (abort.signal.aborted) { this.mosaic.unmount(want.section, added); return; }
       if (want.ring !== 'near') { this.mosaic.unmount(want.section, added); want.full = 'none'; return; }
       want.full = 'mounted';
       this.counts.fullLoads++;

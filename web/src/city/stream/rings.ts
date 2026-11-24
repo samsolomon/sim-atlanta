@@ -60,11 +60,14 @@ export function nextRing(current: Ring, input: RingInput, cfg: RingConfig): Ring
   const { distance: d, visible, offscreenFor, inRingFor, needed } = input;
   const midOut = Math.min(cfg.midMax, input.fogFar);
   const midIn = midOut * 0.85;
-  if (needed || d < cfg.nearIn) return 'near';
+  // Fog also bounds the near ring: a close orbit sees only a few hundred metres.
+  const nearIn = Math.min(cfg.nearIn, input.fogFar * 0.8);
+  const nearOut = Math.min(cfg.nearOut, input.fogFar);
+  if (needed || d < nearIn) return 'near';
   const canDemote = inRingFor >= cfg.dwellMs;
   switch (current) {
     case 'near':
-      if (d <= cfg.nearOut || !canDemote) return 'near';
+      if (d <= nearOut || !canDemote) return 'near';
       return d > midOut ? 'unloaded' : 'mid';
     case 'mid':
       if (!canDemote) return 'mid';

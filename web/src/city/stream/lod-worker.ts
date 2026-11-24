@@ -1,4 +1,3 @@
-/// <reference lib="webworker" />
 /**
  * Fetches and parses an area's shipped files and builds its mid-ring LOD off the main thread.
  * The result's typed arrays are transferred back, not copied.
@@ -15,7 +14,9 @@ async function get(url: string) {
   return r;
 }
 
-self.onmessage = async (e: MessageEvent<LodRequest>) => {
+// Typed locally: a webworker lib reference would retype the page's globals for the whole program.
+const scope = self as unknown as { onmessage: ((e: MessageEvent<LodRequest>) => void) | null; postMessage(m: unknown, transfer?: Transferable[]): void };
+scope.onmessage = async (e: MessageEvent<LodRequest>) => {
   const { id, path, options } = e.data;
   try {
     const [manifestText, ground, contextText] = await Promise.all([
@@ -29,8 +30,8 @@ self.onmessage = async (e: MessageEvent<LodRequest>) => {
     const bytes = manifestText.length + ground.byteLength + contextText.length;
     const transfer: Transferable[] = [result.heights.buffer];
     for (const p of [result.ground, result.blocks, result.forest]) transfer.push(p.position.buffer, p.normal.buffer, p.color.buffer);
-    (self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: true, result, bytes } satisfies LodResponse, transfer);
+    scope.postMessage({ id, ok: true, result, bytes } satisfies LodResponse, transfer);
   } catch (error) {
-    (self as unknown as DedicatedWorkerGlobalScope).postMessage({ id, ok: false, error: String(error) } satisfies LodResponse);
+    scope.postMessage({ id, ok: false, error: String(error) } satisfies LodResponse);
   }
 };
