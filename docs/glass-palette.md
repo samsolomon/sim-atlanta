@@ -96,6 +96,12 @@ So, to land under the rendered cap of S 36:
 
 These are starting points, not proof: the rendered-pixel check in the PR still decides. For punched-window buildings, where panes are about 4 px at the start camera and ink outlines dominate the median, take the sample from a closer camera at the same sun time.
 
+**An alternative for Sam: fix it in the grade.** Dark glass gaining 30+ saturation points means the cause is upstream of the glass. The colour grade and shadow tint push every dark, cool surface toward saturated blue. A small grade change would fix dark glass on every building at once, with no per-building constants to tune. Two candidates:
+- less blue lift in the shadows;
+- a saturation rolloff at low values.
+
+But it would also change every other dark surface: roofs, asphalt, water, shaded walls and the whole night look. That makes it an art-direction decision for Sam, not a skin fix. Until he decides, workers compensate in the base constants using the table above.
+
 **Saturation cap:** S ≤ 36, except teal, which is ≤ 40 and photo-backed. Above that, glass reads as paint under the colour grade.
 
 ## If Sam approves
