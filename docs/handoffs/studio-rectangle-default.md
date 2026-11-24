@@ -1,17 +1,21 @@
 # Handoff: studio-rectangle-default (release packager + Follow)
 
-Claude (Opus 5.5), session `orca_session_id:f4705eb0-457d-47df-aca6-992847d53ceb`, handing to Codex on 2026-11-23.
+Codex session `orca_session_id:d460b6b8-d706-4545-8a60-370d9ba9369c`, handing to gpt-6.2 on 2026-11-23. Original Claude predecessor: `orca_session_id:f4705eb0-457d-47df-aca6-992847d53ceb`.
 
 ## State
 
-- No open PRs or uncommitted work of mine. The worktree is clean on `main`. My merged work: #175 and #180 (west-edge shadows and the perimeter test), #238 (Follow any vehicle), #261 (timetable→live handoff).
+- Follow PR B **#338 is merged**, verified using `gh pr view 338 --json state,mergeCommit`: `MERGED`, `f70efec304469f65d3d4f1b56d2404cf66137746`. No implementation remains in flight. This handoff is a pushed docs-only commit on `samsolomon/handoff-studio-rectangle-62`; it is not merged or a PR yet.
+- #338 adds stable ids `illustrative:freight:downtown` and `illustrative:freight:norcross`, freight picking and Follow. Current-frame clip-tested cars drive the camera. Cards/status stay Illustrative; disappearance ends Follow without a tunnel claim. Norcross board exit reports “train left the board”.
+- Validation after rebase: 20 Rust, 11 pipeline, 931 web (+1 skipped), 5 worker; build/typecheck and Low/High perf passed. Claude cross-review completed two rounds; only visual finding dismissed after replay checks.
+- [Review sheet](../log/ui/follow/freight-review.jpg) compares BEFORE Follow / AFTER Follow / exit interaction states, not software versions. Four `*-check.json` files beside it record replay camera/status samples. Full-night freight checks passed; passenger live-feed night checks remain separate.
+- Earlier merged work: #175/#180 shadows, #238 Follow, #261 timetable→live handoff. No release packaged by this Codex session.
 - **Releases packaged, newest first** (all Taildropped to `sams-macbook-air`; the coordinator deploys):
   - `bc32b09`, the phones release: `e3a3239c…315e`. No data change.
   - `94e2d8e`, A2c default: `b630dabb…b79e`. Changed `downtown/vignette.json` (#215).
   - `d1866d5`: a held candidate, superseded.
   - Earlier: `fd2ccc7`, `82a0d5f`, `22b175d`.
   - Archives are in `~/Developer/sim-atlanta-release-<sha>/`. Diff the next release's `web/dist/data` against the newest one the coordinator says is live.
-- **Not mine but in flight:** #310 removes `?ui=classic` and is meant for the *next* release. #326 (perf budgets) and #291 (freight locomotive) belong to other agents.
+- The prior handoff listed #310, #326 and #291 as in flight. That list is historical; check current main and the coordinator’s release baseline before packaging.
 
 ## Sam's decisions (2026-11-23)
 
@@ -27,10 +31,7 @@ Claude (Opus 5.5), session `orca_session_id:f4705eb0-457d-47df-aca6-992847d53ceb
 
 ## Next steps
 
-1. **Follow PR B: the two illustrative freights.** City freight (`city/freight.ts`) and the Brookwood Norcross freight (`brookwood.ts`). Each needs a stable consist id and per-car `userData.trainId` / `lengthM` (local +z along the track).
-   - Add a `freight` branch to `locate()` in `city.ts`.
-   - The card must stay `illustrative`.
-   - `pick.ts` currently returns `{kind:'freight'}` with no id.
+1. Read this branch’s docs-only handoff commit and the predecessor conversation; do not redo #338. Finish the handoff docs PR if desired. The only known Follow follow-up is passenger **live-feed night checks** (unshifted present clock), which freight replay checks do not cover. Coordinate further scope with the coordinator.
 2. **Package releases** when the coordinator asks. The recipe:
    - On `main`, run `pnpm data:city` (it includes `data:midtown`) if any PR needs data, then `pnpm build`.
    - Run `pnpm test:release`.
@@ -39,7 +40,18 @@ Claude (Opus 5.5), session `orca_session_id:f4705eb0-457d-47df-aca6-992847d53ceb
    - Write `RELEASE.md`: highlights, a data table, about 20 day/night cameras, and smoke results.
    - Generate `SHA256SUMS`, tar with `COPYFILE_DISABLE=1`, and verify after extracting.
    - `tailscale file cp … sams-macbook-air:`, then send the SHA-256.
-3. **Night live checks of Follow** have never been done (daytime only).
+3. Await coordinator release requests; only the coordinator deploys. No new release is currently requested.
+
+## Coordinator route and evidence
+
+- Coordinator: `term_05a952fa-de06-4064-8655-3e98e1caf1e0` on the Air. Direct `send --on air` fails with rejected pairing token. Reply on an incoming message instead, using your own session id. Known thread: `orca orchestration reply --id msg_3233869b9e9f --from <your orca_session_id> --body "..."`. Ask for a fresh inbound thread if required. `orca orchestration check` reads replies.
+- Coordinator already received verified #338 merge, screenshots, cameras and validation. Nothing else is owed except availability for releases and preserving the UI contracts below.
+- Screenshot cameras (use `?view=city&q=low&speed=0&t=TIME&cam=CAM`, tap freight, then Follow):
+  - Downtown day: `2026-11-20T14:12:35-05:00`, `921,549,-148,26,300`.
+  - Downtown night: `2026-11-20T22:12:35-05:00`, `-505,-900,-148,26,300`.
+  - Norcross day: `2026-11-20T14:21:25-05:00`, `-654,-4519,-148,26,300`.
+  - Norcross night: `2026-11-20T22:21:25-05:00`, same camera.
+- Before any MERGED notice, run `gh pr view <n> --json state,mergeCommit` and quote those actual values. On build-log rebase conflicts, retain both entries and rerun tests.
 
 ## Promises to other agents
 
@@ -49,7 +61,7 @@ Claude (Opus 5.5), session `orca_session_id:f4705eb0-457d-47df-aca6-992847d53ceb
 
 ## Servers and ports
 
-None are running.
+None are running; no Orca tabs remain. Headless verification browsers closed themselves. Vite :5418 was stopped after #338.
 - When used: Vite on `127.0.0.1:5418`, release dist on `:5420` (`python3 -m http.server`), and a live-API forwarder on `:8787`.
 - The forwarder (`scratchpad/liveproxy.mjs`) relays `/api/marta/{rail,bus}` to production's public cached endpoint when 1Password isn't unlocked for `pnpm secrets:local`.
 - Background jobs are killed when their time limit runs out. Pass a long timeout, or the server silently disappears.
