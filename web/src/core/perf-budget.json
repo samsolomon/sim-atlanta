@@ -5,7 +5,7 @@
     "ceiling": {
       "triangles": 2600000,
       "calls": 600,
-      "programs": 90,
+      "programs": 87,
       "textureMB": 125,
       "geometryMB": 190,
       "heapAfterGcMB": 460
