@@ -89,7 +89,7 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 
 | Low (phone), main 63d7e332 | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 2.36M (4.77M on the morning of 2026-11-23) | 2.6M | 2.0M |
+| Triangles | 1.87M with the landmark day LOD (2.17M before; 4.77M on the morning of 2026-11-23) | 2.06M | 2.0M |
 | Draw calls | 395 with lit panes in the body batch (414 after landmark batching and house blocks; 541 before) | 435 | 500 |
 | Programs | 85 | 90 | 80 |
 | Texture MB | 118 | 125 | 100 |
@@ -103,7 +103,7 @@ Low triangle headroom on 2026-11-23: 2.6M − 2.36M = 240k. About 30 building sk
 
 | High (desktop), main 2447d8c0 (after #421) | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 6.79M (13.90M before #421) | 7.5M | 6.5M |
+| Triangles | 6.22M with the landmark day LOD (6.54M before; 13.90M before #421) | 6.85M | 6.5M |
 | Draw calls | 432 with lit panes in the body batch (462 after landmark batching; 597; 1,199 before #421) | 475 | 550 |
 | Programs | 89 | 140 | 140 |
 | Texture MB | 808 | 890 | 500 |
