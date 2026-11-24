@@ -12,6 +12,7 @@ import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './ge
 import { groundLiftedParts } from './parts';
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
+import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 import { SIDING_GLSL } from '../materials/siding';
 
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
@@ -790,8 +791,12 @@ export class World {
     }
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     mesh.castShadow = mesh.receiveShadow = true;
+    // Far form (terrain/far-form.ts): ballast and viaduct stay; rails and ties are sub-pixel.
+    registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [PAL.rail])).keep);
+    const tieMesh = instanced(new THREE.BoxGeometry(2.6, 0.18, 0.3), PAL.tieConcrete, ties);
+    registerFar(tieMesh, 0);
     this.group.add(mesh);
-    this.group.add(instanced(new THREE.BoxGeometry(2.6, 0.18, 0.3), PAL.tieConcrete, ties));
+    this.group.add(tieMesh);
   }
 
   buildFreight() {
@@ -823,7 +828,10 @@ export class World {
     }
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     mesh.castShadow = mesh.receiveShadow = true;
-    this.group.add(mesh, instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties));
+    registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [PAL.railRust])).keep);
+    const tieMesh = instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties);
+    registerFar(tieMesh, 0);
+    this.group.add(mesh, tieMesh);
   }
 
   /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
@@ -1310,6 +1318,9 @@ export class World {
       this.lampHeads!.setMatrixAt(i, m);
     });
     post.castShadow = true;
+    // Far form: posts go; heads stay only while they glow (the same night factor as setNight).
+    registerFar(post, 0);
+    registerFar(this.lampHeads, 0, { glowAtNight: true });
     this.group.add(post, this.lampHeads);
     yield 'lamps';
     yield* this.bakeSteps(spots, board);
