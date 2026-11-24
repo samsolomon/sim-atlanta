@@ -3440,3 +3440,7 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 — Taking the corners off the freight line
+
+The downtown freight track was drawn straight from Overture's polyline, so it turned at hard corners wherever the source had a vertex. Measured over 12 m chords, it bent as tightly as 65 m. A 28.6 m autorack spanning one of those corners swung 1.3 m off the rails, which is why autoracks and double stacks were kept off downtown. The pipeline now gives every free vertex on the freight route a 150 m circular fillet. Run ends, switches, junctions, bridge ends and board edges stay exactly where they were. The largest move from the source line is 16 cm, the ground audit's ballast count changed by one sample, and the seam with the King Memorial board stays closed. The first try left a doubled point on the board edge, where an end fillet started exactly on the pinned vertex. The seam test counted seven edge points instead of six and caught it. [Radius along the route, before and after](log/freight/curvature/radius-chart.png)

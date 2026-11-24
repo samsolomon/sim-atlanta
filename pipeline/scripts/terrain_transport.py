@@ -182,6 +182,14 @@ def smooth_centreline(pts, pinned, max_shift):
         radii.append(radius)
         shifts.append(radius * shift_per_r)
     out.append(pts[-1])
+    # A fillet using a whole end segment starts or ends on the pinned endpoint; keep one copy.
+    deduped = [out[0]]
+    for p in out[1:]:
+        if math.dist(p, deduped[-1]) > 1e-6:
+            deduped.append(p)
+        elif p is out[-1]:
+            deduped[-1] = p
+    out = deduped
     return out, {"min_radius": round(min(radii), 1) if radii else None, "max_shift": round(max(shifts), 3), "short": short}
 
 
