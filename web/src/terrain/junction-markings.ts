@@ -1,6 +1,6 @@
 import type { P2 } from '../vignette/geom';
 import { Line } from '../vignette/geom';
-import { roadWidth } from './transport-data';
+import { streetProfile } from './street-profile';
 
 type Road = { cls: string; sub?: string | null; name?: string | null; pts: P2[] };
 const key = ([x, z]: P2) => x + ',' + z;
@@ -21,64 +21,59 @@ export function markedCrossing(r: Road) {
   return marked.has(a + '/' + b) || marked.has(b + '/' + a);
 }
 
-/** Split ordinary ground-road paint only where its source line shares an actual
- * junction vertex with a transverse ground road. Coplanar-looking plan overlaps
- * at bridges never participate. Traffic and pavement retain their full paths. */
-export function junctionMarkings(roads: Road[], crossings: Road[]) {
-  const owners = new Map<string, { road: Road; i: number }[]>();
-  for (const road of roads) road.pts.forEach((p, i) => {
-    const k = key(p), list = owners.get(k);
-    if (list) list.push({ road, i }); else owners.set(k, [{ road, i }]);
-  });
-  const crossingNodes = new Set(crossings.flatMap(r => r.pts.map(key)));
-  const result = new Map<Road, P2[][]>();
-  const tangent = (road: Road, i: number) => {
-    const a = road.pts[Math.max(0, i - 1)], b = road.pts[Math.min(road.pts.length - 1, i + 1)];
-    return [b[0] - a[0], b[1] - a[1]];
-  };
+// The motor signal is OSM node 69616397. Each arm's crossing point lies on its
+// directed source way. Stop-bar paint, arrow paint and pedestrian-head positions
+// are unknown. The simulation stops a front bumper upstream of the crossing.
+export const springTenth = {
+  center: [224.37, -3069.7] as P2,
+  arms: new Map<number, P2>([
+    [48663359, [221.73,-3083.73]], [306157879, [226.87,-3056.37]],
+    [311764287, [214.1,-3069.77]], [629238141, [235.57,-3069.71]],
+  ]),
+};
+
+export function junctionMarkings(roads: Road[]) {
+  const paths = new Map<Road, P2[][]>();
   for (const road of roads) {
-    const gaps: [number, number][] = [];
-    let line: Line | undefined;
-    for (const [i, p] of road.pts.entries()) {
-      const shared = owners.get(key(p))!;
-      if (shared.length < 2) continue;
-      const [dx, dz] = tangent(road, i);
-      let reach = 0;
-      for (const other of shared) {
-        if (other.road === road || (road.name && road.name === other.road.name)) continue;
-        const [ux, uz] = tangent(other.road, other.i);
-        const sine = Math.abs(dx * uz - dz * ux) / (Math.hypot(dx, dz) * Math.hypot(ux, uz));
-        if (sine > .5) reach = Math.max(reach, roadWidth(other.road) / (2 * sine));
-      }
-      if (!reach) continue;
-      line ??= new Line(road.pts);
-      const at = line.cum[i];
-      const limit = (step: number) => {
-        for (let j = i + step; j >= 0 && j < road.pts.length; j += step) {
-          const distance = Math.abs(line!.cum[j] - at);
-          if (distance > reach + 12) break;
-          if (crossingNodes.has(key(road.pts[j]))) return Math.max(reach, distance + 1.4);
-        }
-        return reach;
-      };
-      gaps.push([at - limit(-1), at + limit(1)]);
-    }
-    if (!line) continue;
-    const axis: Line = line;
-    const paths: P2[][] = [];
-    const add = (a: number, b: number) => {
-      if (b <= a) return;
-      const start = axis.at(a), end = axis.at(b);
-      const pts = road.pts.slice(Math.floor(axis.vertexAt(a)) + 1, Math.ceil(axis.vertexAt(b)));
-      paths.push([[start.x, start.z], ...pts, [end.x, end.z]]);
-    };
-    let s = 0;
-    for (const [a, b] of gaps.sort((a, b) => a[0] - b[0])) {
-      add(s, a);
-      s = Math.max(s, b);
-    }
-    add(s, axis.length);
-    result.set(road, paths);
+    const profile = streetProfile(road);
+    const crossing = profile && springTenth.arms.get(profile.way);
+    if (!crossing) continue;
+    const center = road.pts.findIndex(p => key(p) === key(springTenth.center));
+    const index = road.pts.findIndex(p => key(p) === key(crossing));
+    if (index < 0 || (center !== 0 && center !== road.pts.length - 1)) continue;
+    const line = new Line(road.pts);
+    // The zebra stripes span 2.8 m along the carriageway.
+    const station = Math.max(0, Math.min(line.length, line.cum[index] + (center === 0 ? 1.4 : -1.4)));
+    const end = line.at(station), cut: P2 = [end.x,end.z];
+    const v = line.vertexAt(station);
+    paths.set(road, [center === 0 ? [cut, ...road.pts.slice(Math.floor(v)+1)] :
+      [...road.pts.slice(0,Math.ceil(v)), cut]]);
   }
-  return result;
+  return paths;
+}
+
+/** Where the front bumper waits on an incoming lane. The station is inferred from
+ * its mapped crossing. Only a carrier belonging to this junction can claim it. */
+export function junctionStop(line: Line, roads: readonly Road[] | undefined, at: number, center: P2) {
+  if (!roads || Math.hypot(center[0]-springTenth.center[0],center[1]-springTenth.center[1]) > 3) return;
+  const near = Math.min(line.pts.length-2, Math.floor(line.vertexAt(at)));
+  for (let i=near; i>=0 && line.cum[i+1] >= at-32; i--) {
+    const profile = streetProfile(roads[i]);
+    const point = profile && springTenth.arms.get(profile.way);
+    if (!point) continue;
+    const a=line.pts[i], b=line.pts[i+1], dx=b[0]-a[0], dz=b[1]-a[1];
+    const length=Math.hypot(dx,dz);
+    if (!length) continue;
+    const along=((point[0]-a[0])*dx+(point[1]-a[1])*dz)/length;
+    if (along < -.5 || along > length+.5) continue;
+    const station=line.cum[i]+along;
+    if (station < at && station > at-32) return station-2.4;
+  }
+}
+
+export function junctionConnection(incoming: Road, outgoing: Road, center: P2) {
+  const [x,z] = springTenth.center;
+  if (Math.hypot(x-center[0],z-center[1]) > .5) return true;
+  const a=streetProfile(incoming), b=streetProfile(outgoing);
+  return !!a && !!b && springTenth.arms.has(a.way) && springTenth.arms.has(b.way) && a.way !== b.way;
 }

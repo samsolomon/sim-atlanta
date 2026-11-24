@@ -46,7 +46,8 @@ add(segment(1103152009, 4), spring, [259.51,-2551.04], [258.92,-2500], [258.12,-
 add(segment(311764287, 3, 3), tenth, [224.37,-3069.7], [181.38,-3070.09]);
 add(segment(629238141, 3, 3), tenth, [288.94,-3069.78], [224.37,-3069.7]);
 
-export function streetProfile(road: SegmentRoad) {
+export function streetProfile(road?: SegmentRoad) {
+  if (!road || (road.name !== spring && road.name !== tenth)) return;
   if (!road.pts?.length || road.bridge || road.tunnel || (road.kind && road.kind !== 'ground')) return;
   return profiles.get(road.name + '/' + road.pts[0] + '/' + road.pts.at(-1));
 }

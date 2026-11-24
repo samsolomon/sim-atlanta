@@ -1,3 +1,5 @@
+import { junctionStop } from '../terrain/junction-markings';
+import type { VRoad } from '../vignette/world';
 import { hashStr, type Line, type P2 } from '../vignette/geom';
 
 /** Signal timing shared by every City traffic layer, matching the vignette's: an 84 s cycle,
@@ -55,7 +57,7 @@ export function clusterSignals(points: readonly P2[], radius = 25): SignalCluste
  * the controller, which spans a wide intersection's approaches): 8 m before the point nearest
  * the cluster centre, with the unit heading there. The axis is provisional (north–south 0,
  * east–west 1); `withSignals` settles it per intersection. */
-export function courseSignals(line: Line, clusters: readonly SignalCluster[], reach = 20): (CourseSignal & { dx: number; dz: number })[] {
+export function courseSignals(line: Line, clusters: readonly SignalCluster[], reach = 20, roads?: readonly VRoad[]): (CourseSignal & { dx: number; dz: number })[] {
   const out: (CourseSignal & { dx: number; dz: number })[] = [];
   for (const c of clusters) {
     let best = { d: Infinity, s: 0, dx: 0, dz: 0 };
@@ -66,7 +68,7 @@ export function courseSignals(line: Line, clusters: readonly SignalCluster[], re
       const d = Math.hypot(ax + t * dx - c.x, az + t * dz - c.z);
       if (d < best.d) best = { d, s: line.cum[i - 1] + t * Math.sqrt(l2), dx, dz };
     }
-    const s = best.s - 8;
+    const s = junctionStop(line, roads, best.s, [c.x,c.z]) ?? best.s - 8;
     if (best.d > reach || s < 2 || s > line.length - 4) continue;
     const n = Math.hypot(best.dx, best.dz) || 1;
     out.push({ s, key: c.key, axis: Math.abs(best.dz) >= Math.abs(best.dx) ? 0 : 1, dx: best.dx / n, dz: best.dz / n });
@@ -78,11 +80,11 @@ export function courseSignals(line: Line, clusters: readonly SignalCluster[], re
 }
 
 /** Give every open course its stop lines at the mapped signals. Closed loops stay unsignalled. */
-export function withSignals<C extends { line: Line; closed?: boolean; turnSignal?: { key: string; s: number; dx: number; dz: number } }>(courses: C[], points: readonly P2[]) {
+export function withSignals<C extends { line: Line; roads?: VRoad[]; closed?: boolean; turnSignal?: { key: string; s: number; dx: number; dz: number } }>(courses: C[], points: readonly P2[]) {
   const clusters = clusterSignals(points);
   const hits = courses.map(c => {
     if (c.closed) return [];
-    const hits = courseSignals(c.line, clusters);
+    const hits = courseSignals(c.line, clusters, 20, c.roads);
     if (c.turnSignal) {
       const turn = c.turnSignal;
       return [...hits.filter(h => h.key !== turn.key), { ...turn, axis: 0 as const }].sort((a,b) => a.s-b.s);

@@ -219,7 +219,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   const sidepaths = westsidePaths(data);
   for (const r of roads) if (sidepaths.has(r)) paintMangumVerge(ctx, r.pts);
   const crosswalks = roads.filter(markedCrossing);
-  const markings = junctionMarkings(roads.filter(r => streets.has(r.cls)), crosswalks);
+  const markings = junctionMarkings(roads.filter(r => streets.has(r.cls)));
   const mark = (r: PaintRoad, width: number, color: string) => {
     const paths = markings.get(r);
     if (!paths) stroke(r, width, color);

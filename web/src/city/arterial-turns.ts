@@ -1,3 +1,4 @@
+import { junctionConnection } from '../terrain/junction-markings';
 import { Line, type P2 } from '../vignette/geom';
 import type { TrafficCourse } from './road-traffic';
 import type { ArterialCorridor } from './arterial-traffic-routes';
@@ -25,12 +26,15 @@ export function arterialTurns(courses: TrafficCourse[], corridors: readonly Arte
     }
   }
   const clusters = clusterSignals(points);
-  const approachStops = new Map(courses.map(c => [c, courseSignals(c.line, clusters)]));
+  const approachStops = new Map(courses.map(c => [c, courseSignals(c.line, clusters, 20, c.roads)]));
   const turns = new Map<TrafficCourse, TrafficCourse[]>();
   for (const a of incoming) for (const b of outgoing) {
     if (a.course === b.course || a.node !== b.node || Math.hypot(a.point[0]-b.point[0],a.point[1]-b.point[1]) > .5) continue;
     const controller = clusters.reduce<(typeof clusters)[number] | undefined>((best,c) =>
       Math.hypot(c.x-a.point[0],c.z-a.point[1]) < Math.min(20, best ? Math.hypot(best.x-a.point[0],best.z-a.point[1]) : Infinity) ? c : best, undefined);
+    const incomingRoad = a.course.roads[Math.max(0,Math.ceil(a.course.line.vertexAt(a.s))-1)];
+    const outgoingRoad = b.course.roads[Math.min(b.course.roads.length-1,Math.floor(b.course.line.vertexAt(b.s)))];
+    if (!junctionConnection(incomingRoad, outgoingRoad, a.point)) continue;
     if (!controller || a.s < 35 || b.course.line.length-b.s < 35) continue;
     // Share the through controller. A twin-light merge may have dropped this
     // controller from the approach; skip that ambiguous junction.
