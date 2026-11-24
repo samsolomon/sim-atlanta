@@ -743,7 +743,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   function showNotice(text: string | null) {
     if (notice.textContent !== (text ?? '')) notice.textContent = text ?? '';
-    notice.hidden = !text;
+    if (notice.hidden !== !text) notice.hidden = !text;
   }
 
   // ---- views --------------------------------------------------------------------------------
