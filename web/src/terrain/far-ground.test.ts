@@ -182,6 +182,7 @@ it('schedules no very-far build with the level switched off', async () => {
   vi.stubGlobal('setTimeout', ((cb: () => void, ms?: number) => { timers++; return realTimeout(cb, ms); }) as typeof setTimeout);
   const { setVeryFarForTests } = await import('./model');
   setVeryFarForTests(false);
+  const steps = vi.spyOn(GroundSurface.prototype, 'farGeometrySteps');
   try {
     const { PerspectiveCamera } = await import('three');
     const { createDowntownTerrain, VERY_FAR_M } = await import('./model');
@@ -195,10 +196,15 @@ it('schedules no very-far build with the level switched off', async () => {
     camera.position.set(b.maxX + 2 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);
     const far = area.board.geometry;
     camera.position.set(b.maxX + 3 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);
+    // The background queue runs on promises: flush it with the board still alive.
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    await new Promise(r => realTimeout(r, 0));
+    expect(steps).not.toHaveBeenCalled();
     expect(idle).toBe(0);
     expect(timers).toBe(before);
     expect(area.board.geometry).toBe(far);
     area.dispose();
+    steps.mockRestore();
   } finally { setVeryFarForTests(true); vi.unstubAllGlobals(); }
 });
 
