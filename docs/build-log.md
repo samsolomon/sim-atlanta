@@ -4179,3 +4179,12 @@ The fix swaps materials, not shaders. Each lit-wall group keeps a twin cloned be
 What surprised me was the first night test: 81 programs instead of 80. Diffing the two programs' cache keys found a single field, `numClippingPlanes`, 4 against 0. City clips whatever material a mesh holds when it mounts, so the twin that wasn't attached then had never been clipped. The swap now carries the clipping across. Desktop can't show the win, even at 6x CPU, because the cost is GPU vertex work. The A16 run decides it, and until it reports, this is the suspected cause, not a proven win.
 
 ![Main, fix and diff ×4 on matched frames](log/day-fps-r21/sheet-main-fix-diff.jpg)
+
+### 2026-11-24 — One Midtown Plaza joins its sister
+
+One Midtown Plaza now shares Two Midtown's builder: ribbon glass with maroon
+floor bands, a red granite base and joint shafts, at its own lidar roofs (55.5 m
+slab, 49.8 m rounded part). The first glass colour, a base at S 29%, rendered
+at S 47% on the sunlit face, because the grade and the low winter sun saturate
+blue glass. It now sits at a near-neutral `#8c9bab`, which renders at S 28%.
+[Before and after](log/ui/one-midtown-plaza/compare-day.jpg) · [notes](one-midtown-plaza.md)

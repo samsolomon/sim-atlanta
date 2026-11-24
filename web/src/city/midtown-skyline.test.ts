@@ -481,3 +481,30 @@ it('attaches every Mayfair balcony rail to the wall by its floor slab', () => {
   expect(floating).toBe(0);
   expect(body.count / 3).toBeLessThanOrEqual(2400);
 });
+
+it('builds One Midtown Plaza from its sister skin at its own lidar roofs, nothing loose', () => {
+  const brookwood = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/brookwood-south/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = brookwood.buildings.find((b: VBuilding) => b.id === 'osm:way:269637564');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('One Midtown Plaza');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(472, -4185)).toBeCloseTo(55.5, 0); // the straight slab, lidar 95th percentile
+  expect(heightAt(498, -4195)).toBeCloseTo(49.8, 0); // the rounded part
+  const [body] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const ring = building.rings[0] as [number, number][], v = new Vector3();
+  const out = (x: number, z: number) => pointInRing(x, z, ring) ? 0 : Math.min(...ring.map(([ax, az], k) => {
+    const [bx, bz] = ring[(k + 1) % ring.length], dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  }));
+  let worst = 0;
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    const p = o.geometry.getAttribute('position');
+    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); worst = Math.max(worst, out(v.x, v.z)); }
+  });
+  expect(worst).toBeLessThanOrEqual(1.5); // the granite joint shafts stand 1.4 m proud
+});

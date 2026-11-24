@@ -1,7 +1,8 @@
 import type { P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
 import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
-import plan from './fixtures/midtown-skyline/two-midtown-plaza.json';
+import twoPlan from './fixtures/midtown-skyline/two-midtown-plaza.json';
+import onePlan from './fixtures/midtown-skyline/one-midtown-plaza.json';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
@@ -18,12 +19,29 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // count follows the photographs (two granite storeys, then 15 glass bands); the
 // published 20 storeys is likely high (see docs/two-midtown-plaza.md).
 
-const BASE = 9, BANDS = 15;
-const GRANITE = '#8a4844', PINK = '#a8706a', GLASS = '#5d82ad', BAND = '#6b3a3c', LOBBY = '#9fb2bf';
+const BASE = 9;
+const GRANITE = '#8a4844', PINK = '#a8706a', BAND = '#6b3a3c', LOBBY = '#9fb2bf';
 
+type PlazaPlan = typeof twoPlan;
+interface PlazaStyle { id: string; plan: PlazaPlan; bands: number; glass: string }
+
+/** Two Midtown Plaza (1986): 15 glass bands, glass #5d82ad as merged (the held palette branch lightens it). */
 export function twoMidtownPlaza(shell: Shell) {
+  return midtownPlazaTower(shell, { id: 'osm:way:269636880', plan: twoPlan, bands: 15, glass: '#5d82ad' });
+}
+
+/**
+ * One Midtown Plaza, 1360 Peachtree: the 14-storey sister of Two Midtown, with the same ribbon
+ * glass, maroon floor bands, red granite base and joint shafts, at its own lidar roofs. Its glass
+ * meets the 2026-11-24 rule (#8c9bab, S 18 V 67); see docs/one-midtown-plaza.md.
+ */
+export function oneMidtownPlaza(shell: Shell) {
+  return midtownPlazaTower(shell, { id: 'osm:way:269637564', plan: onePlan as PlazaPlan, bands: 12, glass: '#8c9bab' });
+}
+
+function midtownPlazaTower(shell: Shell, { id, plan, bands: BANDS, glass: GLASS }: PlazaStyle) {
   const { body, lights } = shell;
-  const seed = seedOf('osm:way:269636880');
+  const seed = seedOf(id);
   let wall = 0;
   const local = (ring: number[][]): P2[] => wound(ring.map(([x, z]) => [x - plan.origin[0], z - plan.origin[1]] as P2), 1);
   const slab = local(plan.slab), round = local(plan.round);
