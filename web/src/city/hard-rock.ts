@@ -15,7 +15,7 @@ export const hardRockId = '2734ea6e-3114-4acb-a02f-06ff16fe76d5';
 
 const stone = '#d6cdbd',
   stoneShade = '#c4baa8',
-  glass = '#5a6266',
+  glass = '#8a9499',
   storefront = '#4f5a5f',
   awning = '#6e2c30',
   roofDeck = '#b3aea4';
@@ -49,7 +49,7 @@ export function createHardRock(buildings: VBuilding[], grid: GroundGrid) {
       (lit ? s.lights : s.body).quad(at(l, y0, out), at(l, y1, out), at(r, y1, out), at(r, y0, out), c);
     // Upper floors: paired windows (2.65 m module) between piers every 5.3 m.
     // Offices above a restaurant: a few rooms lit late.
-    litFacade(s, seed, face, a, b, shop + 0.5, top - 0.3, floors, 2.65, 0.5, 0.58, [glass, '#5e6569'], 0.08);
+    litFacade(s, seed, face, a, b, shop + 0.5, top - 0.3, floors, 2.65, 0.5, 0.58, [glass, '#8f979b'], 0.08);
     const bays = Math.round(len / 5.3);
     for (let k = 0; k <= bays; k++) {
       const w = (k === 0 || k === bays ? 0.7 : 0.35) / len;

@@ -23,11 +23,21 @@ These are Google Street View panoramas, viewed in an Orca tab. None of the image
 - Bay rhythm: paired windows, 2.65 m apart, between piers every 5.3 m.
 - Awnings: one per bay on the Peachtree (west) and International (south) faces, with a few bays left bare.
 - Rooftop plant: an 8 × 6 m box, position estimated.
-- Stone `#d6cdbd`. Window glass `#5a6266` (S12 V40), recessed punched windows.
+- Stone `#d6cdbd`. Window glass `#8a9499` (S10 V60). The first value, `#5a6266`, rendered almost black in the punched recesses.
 
 ## Lighting
 
 At night the storefront glazing is lit on the two street faces, through the lamp mesh. About 8% of the upper windows are lit, from skin-kit `litFacade` (offices above a restaurant).
+
+## Glass check
+
+Rendered medians at 11:30, high tier, close camera `400,-662,30,55,110` ([frame](glass-sample.jpg)). Both street faces sit in the Westin's shadow at that hour, so the stone itself reads V40 and there is no sunlit sample.
+
+| Patch | H | S | V |
+|---|---|---|---|
+| Pane, shade (south face) | 217 | 43 | 26 |
+| Pane, shade (west face) | 212 | 42 | 26 |
+| Generic glass, adjacent tower, same frame | 216 | 65 | 31 |
 
 ## Captures
 
