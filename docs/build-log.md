@@ -2808,7 +2808,50 @@ Rebased validation: 20 Rust, 11 pipeline, 931 web tests (one skipped), five work
 ### 2026-11-23 — Ansley gets more than a colour change
 
 Ansley's house mix now includes two-storey Foursquares with broad white-railed porches, alongside newer limestone and white-brick houses with dark slate roofs and black window frames. The forms follow Sam's neighbourhood observations without copying addresses. The surprising cost was small: across nine boards, the extra house detail is 7,580 triangles on high and 1,037 on low. Balusters and dormers belong to high; low keeps the porch rails. Cross-review caught a 12 × 8 m Foursquare whose dormer could poke through its shallow ridge. Keeping the established 2.7 m minimum rise fixed it, and a geometry test fails when that guard is removed. Painted shingles also needed a geographic guard so adding Ansley colours did not recolour Home Park. Requires a web rebuild, with deployment left to the coordinator. [Day comparison](log/ui/ansley-houses/sam-high-day-compare.jpg) · [Night comparison](log/ui/ansley-houses/sam-high-night-compare.jpg) · [Cameras and measurements](log/ui/ansley-houses/README.md)
+### 2026-11-23 — Rhodes Hall's open porch
 
+Rhodes Hall replaces one generic Brookwood South footprint with a granite tower,
+rounded bay, steep roof and three open porch arches. The tower reaches an estimated
+22.65 m, and a 3.5 m stair uses the shared terrain carve. The night reference was the
+surprise: most windows are dark while floodlights pick out the rough tower and porch.
+A stone-only shader wash reproduces that distinction without point lights or texture
+bytes. Low tier stays within its ceilings at 2.38 million triangles, 543 calls and
+432 MB post-GC heap. [Daylight](log/ui/rhodes-hall/high-day.png) ·
+[Full night](log/ui/rhodes-hall/high-night.png) · [Sources and estimates](rhodes-hall.md).
+### 2026-11-23 — A timetable test outlives its timetable
+
+A fresh Amtrak download broke both Brookwood corridor tests without changing a single path vertex. The new feed began its service calendars on November 22; the tests asked for November 20. Zero trains was the correct answer. A 15 KB recorded fixture now keeps the historical geometry, calendar and timetable together, so the edge-to-edge and freight-yield regressions also run without generated data. The same two checks pass on November 23 with the fresh feed. Regenerating production data will remove the old November 20 Crescent from demo links; it does not require a berth or consist fix. [Investigation and fixture provenance](brookwood-gtfs-regression.md).
+
+### 2026-11-23 — Magnolia A3 selected
+
+Sam picked the dense leaf specks on the dark cone, with a tidier lower edge and whiter gloss. Pulling only the leaf masses upward did not stop their cards and near tips from hanging downward, so both now share a lower-edge shaping step. The subtlety budget mattered most at low detail: fewer, larger cards pushed the first pass to +15% luminance. Reducing low-detail speck density brought A3 to +6.2% over A (0.222 versus 0.209); high detail is +7.9% (0.219 versus 0.203). Geometry remains 193 / 113 triangles. [Matched comparison sheet](log/ui/tree-species/options-magnolia-a3-pick.jpg).
+
+### 2026-11-23 — A car stays behind the streetcar
+
+The previous overlap guard made cars disappear when they met the S70. Three
+same-direction downtown arterial courses now replay their illustrative cars against
+the streetcar timetable. Cars wait behind its rear with a 2 m bumper gap, then
+follow when it moves. Each delayed car checks the traffic light again; it cannot
+borrow a green it missed while waiting. Adjacent lanes, crossing roads and bridges
+keep the occupancy guard. The streetcar's timetable motion is unchanged.
+
+The awkward part was time. A snapshot clamp can move a car backwards when a tram
+enters its lane, and an ordinary frame simulation cannot reproduce a clock seek.
+The queue uses half-second checkpoints and interpolates between them. A regression
+caught a 3 m backwards jump between fractional frames before that interpolation.
+Cross-review caught another trap: caching every frame's fractional timestamp
+would evict the replay history after about 40 s. Only grid samples are cached now,
+and the cache retains a complete course period, bounded at 7,200 samples. In a
+10,800-frame browser probe, updates took 0.3 ms at the median and 0.6 ms at the 99th
+percentile. The largest warm frame was 4.3 ms; the initial time jump took 45 ms.
+
+The Edgewood frame uses `cam=588,-65,0,50,100`, high tier,
+`t=2026-11-20T17:08:23Z&speed=0&dev&mindist=20`. It shows the car held behind the
+streetcar instead of absent. [Queue model and limits](streetcar-traffic-queues.md).
+Web rebuild only; no `pnpm data`, new requests or worker change.
+
+[Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
+[Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
 
 ### 2026-11-23 — Winn Park under the canopy
 

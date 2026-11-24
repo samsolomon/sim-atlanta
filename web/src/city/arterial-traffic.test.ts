@@ -163,3 +163,18 @@ it('recomputes hourly demand when seeking within the same minute', () => {
   expect(snapshot(fleet)).toEqual(snapshot(fresh));
   fleet.dispose(); fresh.dispose();
 });
+
+it('draws a moving-obstacle queue and reproduces it after clock seeks',()=>{
+  const corridor={id:'queue',runs:[run(road([[0,0],[500,0]]),'a','b',{allow:'forward',aadt:{forward:80000,reverse:0}})]};
+  const opts={...base,arterials:[corridor],movingBlocks:()=>()=>[{rear:250,front:274}]};
+  const fleet=new ArterialTraffic(opts),fresh=new ArterialTraffic(opts);
+  fleet.update(noon,0);
+  expect(fleet.visibleCars).toBeGreaterThan(2);
+  for(const obj of fleet.group.children){
+    const mesh=obj as InstancedMesh;
+    for(let i=0;i<mesh.count;i++)expect(mesh.instanceMatrix.array[i*16+12]).toBeLessThan(248);
+  }
+  fleet.update(noon+120000,0);fleet.update(noon+125,0);fresh.update(noon+125,0);
+  expect(snapshot(fleet)).toEqual(snapshot(fresh));
+  fleet.dispose();fresh.dispose();
+});
