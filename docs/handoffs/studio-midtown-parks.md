@@ -97,7 +97,8 @@ Only the ones marked * are detailed in my own work. For the rest, see the owning
 
 - Orca CLI: `/Applications/Orca.app/Contents/Resources/bin/orca`.
 - Coordinator: the Air terminal. Reply on the thread you were given (handoff: `msg_83670ee8ea9b`; skins-3: `msg_b0bff9a2cf73`) with `orca orchestration reply --id <their msg id> --from <your session> --body ...`. The id must be **their** incoming message id; replying to your own id loops back to you.
-- Skyline lead: session 47b1a596. Peer studio-midtown-skyline-1c owns #600.
+- Skyline lead: now routes via `orca_session_id:191b6166-18e7-4e23-8b97-ec53a7e5a19d` (was 47b1a596). Peer studio-midtown-skyline-1c owns #600.
+- **The repo is public** (2026-11-24). Keep key values, private notes and personal details out of PR bodies, issues and comments.
 
 ## Shutdown
 
