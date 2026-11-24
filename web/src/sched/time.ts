@@ -32,11 +32,31 @@ function fmt(tz: string) {
 
 const WEEKDAYS: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
 
+/** The last minute resolved per time zone. Zone offsets change only on whole minutes, so the
+ * calendar fields hold for the whole minute and only the seconds advance. */
+const minuteCache = new Map<string, { minute: number; ymd: number; weekday: number; secs: number; yYmd: number }>();
+
 /**
  * The service days that can have trains running at `date`: today, and yesterday
  * (GTFS trips that started yesterday may run past midnight, e.g. "25:10:00").
  */
 export function serviceDays(date: Date, tz: string): [ServiceDay, ServiceDay] {
+  const ms = date.getTime(), minute = Math.floor(ms / 60000);
+  let c = minuteCache.get(tz);
+  if (!c || c.minute !== minute) {
+    const [today, yesterday] = resolveDays(new Date(minute * 60000), tz);
+    c = { minute, ymd: today.ymd, weekday: today.weekday, secs: today.secs, yYmd: yesterday.ymd };
+    minuteCache.set(tz, c);
+  }
+  const secs = c.secs + (ms - c.minute * 60000) / 1000;
+  return [
+    { ymd: c.ymd, weekday: c.weekday, secs },
+    { ymd: c.yYmd, weekday: (c.weekday + 6) % 7, secs: secs + 86400 },
+  ];
+}
+
+/** The uncached resolution, once per minute per zone (and the reference in tests). */
+export function resolveDays(date: Date, tz: string): [ServiceDay, ServiceDay] {
   const p = Object.fromEntries(fmt(tz).formatToParts(date).map((x) => [x.type, x.value]));
   const ymd = Number(`${p.year}${p.month}${p.day}`);
   const secs = Number(p.hour) * 3600 + Number(p.minute) * 60 + Number(p.second) + (date.getMilliseconds() / 1000);

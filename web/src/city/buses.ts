@@ -57,13 +57,24 @@ interface Shown {
   from: BusLanePoint;
   to: BusLanePoint;
   t0: number;
+  /** Drawn height once the glide has ended and the bus stands still (unchanged until its next fix). */
+  y?: number;
 }
+
+type Footprint = { id: string; x: number; y: number; z: number; a: number };
 
 export class CityBuses {
   readonly mesh: THREE.InstancedMesh;
   readonly night = { value: 0 };
   /** Footprints drawn this frame (after update), for traffic and readouts. */
-  readonly positions: { id: string; x: number; y: number; z: number; a: number }[] = [];
+  readonly positions: Footprint[] = [];
+  /** Footprint objects reused frame to frame, so the loop allocates nothing. */
+  private readonly footprints: Footprint[] = [];
+  private readonly seen = new Set<string>();
+  private readonly live = new Set<string>();
+  private matrixDirty = false;
+  private fadeDirty = false;
+  private drawn = 0;
   /** Snaps performed (one per new reported fix), for tests. */
   snaps = 0;
   private readonly fade = new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1).setUsage(THREE.DynamicDrawUsage);
@@ -112,6 +123,9 @@ export class CityBuses {
   }
 
   mount(board: ConnectorBoard, needsRoad:(pts:P2[])=>boolean) {
+    // City offers every board on each area mount; ground and joins may have changed, so parked
+    // buses sample their height again.
+    for (const s of this.shown.values()) s.y = undefined;
     if (this.mounted.has(board)) return false;
     this.mounted.add(board);
     const runs = board.city.roads.filter(r => !r.tunnel && BUS_STREETS.has(r.cls) && needsRoad(r.pts)).map(road => {
@@ -184,8 +198,10 @@ export class CityBuses {
       this.mesh.count = 0;
       return;
     }
-    const seen = new Set<string>();
+    const seen = this.seen, live = this.live;
+    seen.clear(); live.clear();
     for (const b of fixes) {
+      live.add(b.id);
       const at = b.at ?? 0;
       const prev = this.shown.get(b.id);
       if (prev && prev.at === at) {
@@ -207,33 +223,54 @@ export class CityBuses {
       const glide = cur && cur.run === p.run && Math.hypot(p.x - cur.x, p.z - cur.z) < MAX_GLIDE_M && chordOnRun(cur, p, p.run);
       this.shown.set(b.id, { id: b.id, at, from: glide ? cur : p, to: p, t0: now });
     }
-    const live = new Set(fixes.map((b) => b.id));
-    for (const id of [...this.shown.keys()]) if (!seen.has(id)) this.shown.delete(id);
-    for (const id of [...this.rejected.keys()]) if (!live.has(id)) this.rejected.delete(id);
-    let i = 0;
+    for (const id of this.shown.keys()) if (!seen.has(id)) this.shown.delete(id);
+    for (const id of this.rejected.keys()) if (!live.has(id)) this.rejected.delete(id);
+    this.mesh.count = 0;
     for (const s of this.shown.values()) {
-      if (i >= limit) break;
-      const p = this.lerp(s, now);
+      if (this.mesh.count >= limit) break;
       const done = now - s.t0 >= GLIDE_MS;
+      if (done && s.y !== undefined) { this.place(s.id, s.to.x, s.y, s.to.z, s.to.a, 0); continue; }
+      const p = this.lerp(s, now);
       const run = done || s.from.run === s.to.run ? s.to.run : null;
       // On one street (or arrived): its drawn surface. Mid-glide between streets: blend ends.
       let y = run ? this.surface(p.x, p.z, run) : null;
+      if (y !== null && done) s.y = y;
       if (y === null) {
         const y0 = this.surface(s.from.x, s.from.z, s.from.run), y1 = this.surface(s.to.x, s.to.z, s.to.run);
         if (y0 === null && y1 === null) continue; // nowhere drawn to stand: hide rather than float
         const e = smooth(Math.min(1, (now - s.t0) / GLIDE_MS));
         y = y0 === null ? y1! : y1 === null ? y0 : y0 + (y1 - y0) * e;
       }
-      this.positions.push({ id: s.id, x: p.x, y, z: p.z, a: p.a });
-      this.obj.position.set(p.x, y, p.z);
-      this.obj.rotation.set(0, p.a, 0);
-      this.obj.updateMatrix();
-      this.fade.setX(i, 0);
-      this.mesh.setMatrixAt(i++, this.obj.matrix);
+      this.place(s.id, p.x, y, p.z, p.a, 0);
     }
-    this.fade.needsUpdate = true;
-    this.mesh.count = i;
-    this.mesh.instanceMatrix.needsUpdate = true;
+    this.flush();
+  }
+
+  /** Draw one bus at the next instance: its footprint, and its matrix and fade if they changed. */
+  private place(id: string, x: number, y: number, z: number, a: number, fade: number) {
+    const i = this.mesh.count++;
+    const f = this.footprints[i] ??= { id, x, y, z, a };
+    f.id = id; f.x = x; f.y = y; f.z = z; f.a = a;
+    this.positions.push(f);
+    // Rotation about y only, written straight into the instance matrix.
+    const m = this.mesh.instanceMatrix.array as Float32Array, o = i * 16, c = Math.cos(a), sn = Math.sin(a);
+    if (m[o] !== Math.fround(c) || m[o + 8] !== Math.fround(sn) || m[o + 12] !== Math.fround(x) ||
+        m[o + 13] !== Math.fround(y) || m[o + 14] !== Math.fround(z) || m[o + 15] !== 1 || m[o + 2] !== Math.fround(-sn)) {
+      m[o] = c; m[o + 1] = 0; m[o + 2] = -sn; m[o + 3] = 0;
+      m[o + 4] = 0; m[o + 5] = 1; m[o + 6] = 0; m[o + 7] = 0;
+      m[o + 8] = sn; m[o + 9] = 0; m[o + 10] = c; m[o + 11] = 0;
+      m[o + 12] = x; m[o + 13] = y; m[o + 14] = z; m[o + 15] = 1;
+      this.matrixDirty = true;
+    }
+    if (this.fade.getX(i) !== Math.fround(fade)) { this.fade.setX(i, fade); this.fadeDirty = true; }
+  }
+
+  /** Upload instance data only when a bus moved, faded, appeared or left. */
+  private flush() {
+    if (this.matrixDirty || this.mesh.count !== this.drawn) this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.fadeDirty) this.fade.needsUpdate = true;
+    this.matrixDirty = this.fadeDirty = false;
+    this.drawn = this.mesh.count;
   }
 
   /** Route 49 buses on their shapes (`fade` 1 = hidden), plus plain street-snapped fixes
@@ -241,17 +278,11 @@ export class CityBuses {
   timetable(poses: readonly { id: string; point: BusLanePoint; fade?: number }[], raw: LiveBus[] | null = null) {
     this.update(raw, performance.now(), Math.max(0, MAX - poses.length));
     for (const { id, point, fade } of poses) {
+      if (this.mesh.count >= MAX) break;
       const y = this.surface(point.x, point.z, point.run);
-      if (y === null || this.mesh.count >= MAX) continue;
-      this.positions.push({ id, x: point.x, y, z: point.z, a: point.a });
-      this.obj.position.set(point.x, y, point.z);
-      this.obj.rotation.set(0, point.a, 0);
-      this.obj.updateMatrix();
-      this.fade.setX(this.mesh.count, fade ?? 0);
-      this.mesh.setMatrixAt(this.mesh.count++, this.obj.matrix);
+      if (y !== null) this.place(id, point.x, y, point.z, point.a, fade ?? 0);
     }
-    this.fade.needsUpdate = true;
-    this.mesh.instanceMatrix.needsUpdate = true;
+    this.flush();
   }
 
   /**
