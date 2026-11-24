@@ -64,7 +64,7 @@ const BRICK = ['#9c5a43', '#a86a4f', '#8b4e3c', '#b0805f', '#93604c', '#7f4b3d']
 const LIMESTONE = ['#d5c7a8', '#cbbd9f', '#dcd0b6', '#c2b59b', '#cfc3ad'];
 const RESIDENTIAL = ['#e4dfd4', '#d8d1c2', '#d0d2cd', '#cbbba4', '#ddd4c6'];
 const DECK = ['#d2cdc2', '#c7c1b5', '#d9d4c9', '#bdb8ad'];
-const SHOP = ['#d9cdb5', '#c9b99d', '#c0b7a7', '#b9a68c', '#a9583f', '#cfc6b4', '#9c5d48'];
+const SHOP = ['#d9cdb5', '#b86a4b', '#9a4c39', '#b9a68c', '#a9583f', '#cfc6b4', '#9c5d48'];
 const GLASS_FRAME = ['#9ea4a7', '#b0b3b2', '#8c9396', '#a8a59c'];
 
 /** Tall buildings whose class says housing, a hotel or a dorm. */
@@ -127,8 +127,8 @@ export function archetypeFor(id: string, cls: string | null | undefined, h: numb
     return weighted(r, [[Arch.Precast, 0.45], [Arch.Brick, 0.3], [Arch.Limestone, 0.25]]);
   // Long, low, ragged footprints read as decks or warehouses, not offices.
   if (h < 22 && area > 3500 && compact > 0.55 && !c && r() < 0.2) return Arch.Deck;
-  if (h < 30) return weighted(r, [[Arch.Brick, 0.35], [Arch.Limestone, 0.2], [Arch.Precast, 0.3], [Arch.Banded, 0.15]]);
-  if (h < 60) return weighted(r, [[Arch.Precast, 0.35], [Arch.Banded, 0.3], [Arch.Limestone, 0.15], [Arch.Brick, 0.1], [Arch.Residential, midtown ? 0.25 : 0.05], [Arch.Glass, 0.05]]);
+  if (h < 30) return weighted(r, [[Arch.Brick, 0.5], [Arch.Limestone, 0.15], [Arch.Precast, 0.2], [Arch.Banded, 0.15]]);
+  if (h < 60) return weighted(r, [[Arch.Precast, 0.26], [Arch.Banded, 0.25], [Arch.Limestone, 0.14], [Arch.Brick, 0.25], [Arch.Residential, midtown ? 0.25 : 0.05], [Arch.Glass, 0.05]]);
   if (h < 110) return weighted(r, [[Arch.Precast, 0.3], [Arch.Banded, 0.35], [Arch.Limestone, 0.1], [Arch.Residential, midtown ? 0.25 : 0.05], [Arch.Glass, midtown ? 0.25 : 0.12]]);
   return weighted(r, [[Arch.Banded, 0.35], [Arch.Precast, 0.2], [Arch.Glass, midtown ? 0.45 : 0.3]]);
 }

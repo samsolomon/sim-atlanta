@@ -843,13 +843,13 @@ export class World {
   /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
   // ---- buildings ----------------------------------------------------------------------
 
-  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
-    runSync(this.buildingSteps(foundationY, maxRoofUnits, finishFor));
+  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined, quality: 'low' | 'high' = 'high') {
+    runSync(this.buildingSteps(foundationY, maxRoofUnits, finishFor, quality));
   }
 
   /** buildBuildings as a build that yields every few buildings (core/slice.ts). Each building
    * draws from its own seeded stream, so where it yields never changes the result. */
-  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
+  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined, quality: 'low' | 'high' = 'high') {
     const b = new Builder();
     const shopLights = new Builder();
     const style: number[] = [];
@@ -883,6 +883,13 @@ export class World {
       // It reads its own seeded stream, so `r` above and the clutter below are unchanged.
       const arch = v2 && !finish ? archetypeFor(bd.id, bd.cls, h, bd.rings) : null;
       const look: GenericLook | null = arch === null ? null : lookFor(bd.id, arch, h);
+      // Low keeps the street frontage and shaft rhythm on straight walls. Sub-metre
+      // coping and recessed soffits otherwise duplicate the footprint around every roof.
+      if (look && quality === 'low') {
+        look.inset = 0;
+        look.overhang = 0;
+        look.capH = 0;
+      }
       const clutterWall = look ? look.penthouse : wallCol;
       if (look && import.meta.env?.DEV) {
         const cx = outer.reduce((s, p) => s + p[0], 0) / outer.length, cz = outer.reduce((s, p) => s + p[1], 0) / outer.length;

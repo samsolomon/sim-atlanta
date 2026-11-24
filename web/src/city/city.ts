@@ -686,7 +686,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       await build('streets', () => world.buildStreets());
       await build('ground', () => world.buildGround());
       await build('freight', () => world.buildFreight());
-      await build('buildings', () => world.buildBuildings());
+      await build('buildings', () => world.buildBuildings(undefined, 8, undefined, quality));
       await build('trees', () => world.buildTrees());
     }
     // The Atlanta Streetcar draws its own embedded track and wire from the GTFS shapes,
