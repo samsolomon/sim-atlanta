@@ -57,7 +57,7 @@ export function createTheStandard(buildings: VBuilding[], site: VBuilding, grid:
     return Math.max(datum, ...masses.filter(m => inside(mx, mz, m.ring)).map(m => m.top));
   };
   const precast = '#d9d6cf', amber = '#b8743f', roofColor = '#8e8f8b';
-  const punched = ['#4b5d68', '#526571'];
+  const punched = ['#5d707b', '#647782'];
   const storefront = ['#5a7584', '#617c8a'];
 
   for (const [index, { ring, top }] of masses.entries()) {
