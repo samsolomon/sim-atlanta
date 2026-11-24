@@ -85,16 +85,27 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     // (both photos), with white slab edges and dark rails. Each face carries a stack at each end.
     if (block !== 0 || length < 15) return;
     const w = 2.1, d = 1.7;
+    // The east step stands flush against the tower's east face up to its own roof.
+    const [sx0, sx1] = [Math.min(...s.map(p => p[0])), Math.max(...s.map(p => p[0]))];
+    const [sz0, sz1] = [Math.min(...s.map(p => p[1])), Math.max(...s.map(p => p[1]))];
+    const inStep = (u: number, out: number) => {
+      const [x, , z] = at(u, 0, out);
+      return x > sx0 - 0.5 && x < sx1 + 0.5 && z > sz0 - 0.5 && z < sz1 + 0.5;
+    };
     for (const c of [w, length - w]) for (let j = 1; j < floors; j++) {
       const yy = towerLo + j * pitch;
+      if (yy < y(stepTop) + 0.5 && inStep(c, d / 2)) continue;
       const q = (u: number, out: number, h: number) => at(c + u, h, out);
+      // The stack at each face's far end runs d past the corner, filling the corner square so the
+      // balconies wrap it and meet the next face's stack.
+      const hi = c > length / 2 ? w + d + 0.02 : w;
       // A bright slab nosing keeps the stacks legible on the shaded faces, on both tiers. Its top
       // runs back to the wall, so the slab hangs from the tower rather than floating off it.
-      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy - 0.05), '#f2f3f2');
-      shell.body.quad(q(-w, 0, yy + 0.25), q(w, 0, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(-w, d + 0.02, yy + 0.25), high ? '#e4e5e4' : '#f2f3f2');
+      shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(hi, d + 0.02, yy + 0.25), q(hi, d + 0.02, yy - 0.05), '#f2f3f2');
+      shell.body.quad(q(-w, 0, yy + 0.25), q(hi, 0, yy + 0.25), q(hi, d + 0.02, yy + 0.25), q(-w, d + 0.02, yy + 0.25), high ? '#e4e5e4' : '#f2f3f2');
       if (!high) continue;
-      shell.body.quad(q(-w, 0, yy - 0.05), q(-w, d + 0.02, yy - 0.05), q(w, d + 0.02, yy - 0.05), q(w, 0, yy - 0.05), '#c2c4c4');
-      shell.body.quad(q(-w, d, yy + 0.25), q(-w, d, yy + 1.1), q(w, d, yy + 1.1), q(w, d, yy + 0.25), '#3a3f44');
+      shell.body.quad(q(-w, 0, yy - 0.05), q(-w, d + 0.02, yy - 0.05), q(hi, d + 0.02, yy - 0.05), q(hi, 0, yy - 0.05), '#c2c4c4');
+      shell.body.quad(q(-w, d, yy + 0.25), q(-w, d, yy + 1.1), q(hi, d, yy + 1.1), q(hi, d, yy + 0.25), '#3a3f44');
     }
   });
   tower3(t, y(roof), 0);

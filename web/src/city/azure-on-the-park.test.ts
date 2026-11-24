@@ -50,10 +50,10 @@ it('keeps the low tier lean with a stable night pattern', () => {
   const low = createAzureOnThePark([site], grid, 'low')!;
   const again = createAzureOnThePark([site], grid, 'low')!;
   const high = createAzureOnThePark([site], grid, 'high')!;
-  // The corner balcony slabs (8 stacks of 18 floors, a top and a nose each) are the only low-tier
-  // addition since #546.
-  expect(triangles(low.group)).toBeLessThan(1100);
-  // Low keeps the corner slabs, so the ratio fell from about 8x (#546) to about 4.5x.
+  // The corner balcony slabs (8 stacks of 19 rows, a top and a nose each; the east face's start
+  // above the step) are the only low-tier addition since #546: 405 -> 877 triangles.
+  expect(triangles(low.group)).toBeLessThan(950);
+  // Low keeps the corner slabs, so the ratio fell from about 12x (#546) to about 4.8x.
   expect(triangles(high.group)).toBeGreaterThan(triangles(low.group) * 4);
   const lamps = (g: typeof low) => g.group.children[1] as Mesh<BufferGeometry, MeshLambertMaterial>;
   expect(lamps(low).geometry.attributes.position.array).toEqual(lamps(again).geometry.attributes.position.array);
