@@ -55,7 +55,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   head.append(nameBtn, el('span', { class: 'a2-model-steps' }));
   head.lastElementChild!.append(prev, next);
   const pos = el('p', { class: 'a2-model-pos' });
-  const detailsBtn = el('button', { type: 'button', class: 'a2-btn a2-details-btn', 'aria-expanded': 'false', 'aria-controls': 'a2-model-details' }, 'Details');
+  const detailsBtn = el('button', { type: 'button', class: 'a2-g a2-details-btn', 'aria-expanded': 'false', 'aria-controls': 'a2-model-details' }, 'Details');
   card.append(title, head, blurb, pos, detailsBtn);
 
   // ---- Details (right): the lab's controls, re-homed ----
@@ -72,11 +72,12 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
   // ---- browser (left) ----
   const browser = el('section', { class: 'a2-browser a2-g a2-long', id: 'a2-browser', hidden: '', 'aria-label': 'Browse models' });
   browser.innerHTML = `
-    <div class="a2-panel-head"><h2>Models</h2><button type="button" class="a2-x" data-close aria-label="Close">${X}</button></div>
+    <div class="a2-phone-browser-head a2-panel-head"><h2>Models</h2><button type="button" class="a2-x" data-close aria-label="Close">${X}</button></div>
     <input type="search" class="a2-search" placeholder="Search models" aria-label="Search models">
     <div class="a2-chips" role="group" aria-label="Category"></div>
     <div class="a2-model-list"></div>`;
   const search = browser.querySelector<HTMLInputElement>('.a2-search')!;
+  search.placeholder = `Search ${buttons().length} models`;
   const chips = browser.querySelector<HTMLElement>('.a2-chips')!;
   const list = browser.querySelector<HTMLElement>('.a2-model-list')!;
   let category = 'All';
@@ -105,8 +106,21 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
         list.append(row);
       }
     }
+    requestAnimationFrame(scrollState);
     if (!list.children.length) list.append(el('p', { class: 'a2-empty' }, 'No models match.'));
   }
+  let scrollTimer = 0;
+  function scrollState() {
+    list.classList.toggle('more-above', list.scrollTop > 1);
+    list.classList.toggle('more-below', list.scrollTop + list.clientHeight < list.scrollHeight - 1);
+  }
+  list.addEventListener('scroll', () => {
+    scrollState();
+    list.classList.add('scrolling');
+    clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => list.classList.remove('scrolling'), 700);
+  }, { passive: true });
+  new ResizeObserver(scrollState).observe(list);
   chips.addEventListener('click', (e) => {
     const c = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-cat]');
     if (!c) return;
@@ -165,10 +179,18 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     detailsBtn.focus();
   });
 
-  root.append(card, details, browser, detailsBtn);
+  root.append(card, details, detailsBtn);
+  const phone = matchMedia('(max-width: 600px)');
+  const placeBrowser = () => {
+    (phone.matches ? root : card).append(browser);
+    browser.classList.toggle('a2-g', phone.matches);
+    layout();
+  };
+  placeBrowser();
+  phone.addEventListener('change', placeBrowser);
   if (innerWidth >= 1280) openBrowser(false);
   new ResizeObserver(() => {
-    root.style.setProperty('--model-card-bottom', card.getBoundingClientRect().bottom + 'px');
+    scrollState();
     layout();
   }).observe(card);
   return {

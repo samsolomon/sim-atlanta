@@ -686,7 +686,12 @@ function fitModel(animate: boolean) {
     // The leading cab points along +Z in the lab.
     const lead = cars.map(car => new THREE.Box3().setFromObject(car)).sort((a,b) => b.max.z - a.max.z)[0];
     box.copy(lead);
-    box.min.z = box.max.z - .35 * (box.max.z - box.min.z);
+    if (activePreset === 'Rear') {
+      box.copy(cars.map(car => new THREE.Box3().setFromObject(car)).sort((a, b) => a.min.z - b.min.z)[0]);
+      box.max.z = box.min.z + .35 * (box.max.z - box.min.z);
+    } else {
+      box.min.z = box.max.z - .35 * (box.max.z - box.min.z);
+    }
   } else {
     for (const part of [...cars, figure?.group, houseScene?.group, materialScene?.group, landscape?.group, trees?.group])
       if (part) box.expandByObject(part);
@@ -716,7 +721,7 @@ function fitModel(animate: boolean) {
     controls.target.lerpVectors(target, centre, f);
     camera.position.lerpVectors(start, end, f);
     controls.update();
-    if (t < 1) fitFrame = requestAnimationFrame(step);
+    fitFrame = t < 1 ? requestAnimationFrame(step) : 0;
   };
   step(since);
 }
@@ -1146,4 +1151,4 @@ function crownStats() {
   draw(performance.now());
   return { pixels: n, luminance: +(lum / Math.max(1, n)).toFixed(3), saturation: +(sat / Math.max(1, n)).toFixed(3) };
 }
-Object.assign(window, { __lab: { crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });
+Object.assign(window, { __lab: { framed: () => activePreset !== '' && fitFrame === 0, crownStats, overdraw, bench, view, setNight, resize, render: () => draw(performance.now()), role, scene, camera, controls, station: () => station } });

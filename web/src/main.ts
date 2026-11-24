@@ -1011,3 +1011,10 @@ else if (landing === 'models') {
   shell.setView('models');
 }
 else if (!openMap()) shell.setNote('Interactive graphics unavailable · MARTA rail overview');
+
+if (import.meta.env.DEV && params.get('perf') === 'models-return') {
+  void import('./core/models-return').then(({ measureModelsReturn }) => measureModelsReturn(
+    () => !inModels() && !!diorama && !view3d.hidden && cityLoading.hidden,
+    () => inModels() && !!labView && !!(window as unknown as { __lab?: { framed(): boolean } }).__lab?.framed(),
+  ));
+}
