@@ -39,5 +39,6 @@ Everyday office night: about 6% of windows lit warm, from the shared mixed hash 
 | Colony Square cluster, looking east-northeast | `800,-3710,70,50,1021` | 11:30 AM EST | [Cluster](cluster.jpg) |
 | Colony Square cluster | `800,-3710,70,50,1021` | 11:30 PM EST | [Cluster at night](cluster-night.jpg) |
 | South corner and grid (close) | `790,-3790,0,66,130` | 11:30 AM EST | [Corner](corner.jpg) |
+| Southwest base on the residual podium part (close) | `770,-3740,135,60,110` | 11:30 AM EST | [Podium](podium.jpg) |
 
 The bearing is the camera's heading. Use `/?view=city&cam=<camera>&t=2026-11-20T<clock>`. The close view adds `&dev&mindist=20`.
