@@ -77,6 +77,8 @@ export interface DowntownTerrainOptions {
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   separateBuilding?: string;
+  /** False leaves landmark meshes in their own groups, for tests that inspect a mounted model. */
+  batchLandmarks?: boolean;
   contours?: Contours;
   openings?: readonly OpenSlot[];
   /** Street and path lamps for this area, in the downtown night style. */
@@ -353,7 +355,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   scenery.group.add(houses.group);
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
-  const batches = !landmarkBatchOff && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
   if (batches) {
     scenery.group.add(batches.group);
     if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
