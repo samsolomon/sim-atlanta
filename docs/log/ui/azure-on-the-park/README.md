@@ -59,7 +59,7 @@ The audit rated #546 BORDERLINE: "Tower glass matches neighbours". Two photos sh
 
 Changes:
 
-- **Glass:** base `#86a0c0` (S 30%, V 75%), up from `#9aa7b3` (S 14%). Rendered at 11:30 on the high tier from the glass-check camera, the sunlit face reads **S 29 / V 65**, inside the V ≥ 62 → S ≤ 30 rule. Shaded faces read S 68 / V 40, against generic shaded glass at S 29–35 / V 43–46 in the same frame. This is the advisory shade reading, so the skin carries no per-building lift. [Glass check](strengthen-glass.jpg)
+- **Glass:** base `#86a0c0` (S 30%, V 75%), up from `#9aa7b3` (S 14%). Rendered at 11:30 on the high tier from the glass-check camera, the sunlit face reads **S 29 / V 65**, inside the V ≥ 62 → S ≤ 30 rule. Shaded faces are left to the shader's glass shade floor (#631), as the glass rule now says. [Glass check](strengthen-glass.jpg)
 - **Balconies:** the stacks move from mid-face (10 m spacing) to the main tower's four corners, one stack at each end of every face, so each corner is wrapped from both sides. Each has a white slab, a soffit, a dark rail and a bright nosing. The noses now draw on the low tier too, so the corners read there.
 - **Unchanged:** lidar heights, brick base, podium, pool and night lighting.
 
