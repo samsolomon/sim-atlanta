@@ -431,9 +431,20 @@ out, then the map flattens.
   is sound, not motion.
 - While playing with the player closed, the dock's radio button shows a small playing
   state.
-- Tracks: about 10 calm city-builder tracks, around 30 minutes, generated (our own coded
-  tracks plus ElevenLabs Music). ElevenLabs tracks live in their own folder, excluded from
-  the repository's code licence and marked not for reuse.
+- **Stations** (Sam, 2026-11-24): four fictional stations, 14 tracks, about 40 minutes,
+  on branch `samsolomon/radio-music` under `web/public/music/` (`stations.json`, `tracks/`,
+  `covers/`, licence README). The player:
+  - opens on the station whose `defaultHours` contain the **scene clock** (Glasshouse
+    05–11, Sol Café 11–17, Velvet 17–22, Afterglow 22–05), so a shifted clock picks its
+    station too; it shuffles within the station without repeating until all have played
+  - shows the station name small above "Artist · Title", with the 128 px cover in the
+    40 px art slot (the 512 px cover for Media Session artwork)
+  - switches station with a small ‹ › beside the station name (or tapping the name); a
+    switch crossfades over 1.2 s and starts a random track in the new station
+  - remembers the visitor's last station on that device; if they switched, that wins over
+    the clock next time
+- The audio and covers are excluded from the code licence and not for reuse; keep the
+  README in `web/public/music/`.
 
 ## Follow-ups (not in this build)
 
