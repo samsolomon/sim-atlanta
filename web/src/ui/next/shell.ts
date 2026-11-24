@@ -256,7 +256,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Radio', 'aria-expanded': 'false', 'aria-controls': 'a2-radio-player' }, NOTE);
   const radioPanel = el('section', { class: 'a2-dock-pop a2-g a2-player', id: 'a2-radio-player', hidden: '', 'aria-label': 'Radio' });
-  const play = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Play' });
+  const play = el('button', { type: 'button', class: 'a2-ib a2-play', 'aria-label': 'Play' });
   const next = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Next track' }, SVG('<path d="M18 5v14M5 5l10 7-10 7z"/>'));
   // Station name small above "Artist · Title"; ‹ › (or tapping the name) switches station.
   const art = el('span', { class: 'a2-art', 'aria-hidden': 'true' });

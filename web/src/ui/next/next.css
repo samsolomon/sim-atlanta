@@ -675,9 +675,17 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-track-info strong { min-width: 0; align-self: start; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .a2-player .a2-ib { position: relative; flex: 0 0 44px; width: 44px; height: 44px; }
 .a2-player .a2-ib svg { position: relative; width: 18px; height: 18px; }
-.a2-player .a2-ib:first-of-type::before {
-  content: ''; position: absolute; inset: 2px; background: var(--a2-sep); border-radius: 50%;
+/* Play/pause: one 40 px rounded square (radius 10, like the art tile and the dock's square
+   buttons) in every state. Rest, hover, pressed and keyboard focus all draw on that one shape;
+   the 44 px button around it is only the hit area. */
+.a2-player .a2-play::before {
+  content: ''; position: absolute; inset: 2px; background: var(--a2-sep); border-radius: 10px;
 }
+.a2-player .a2-play:hover { background: transparent; }
+.a2-player .a2-play:hover::before { background: color-mix(in srgb, var(--a2-ink) 18%, transparent); }
+.a2-player .a2-play:active::before { background: color-mix(in srgb, var(--a2-ink) 26%, transparent); }
+.a2-player .a2-play:focus-visible { outline: none; }
+.a2-player .a2-play:focus-visible::before { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
 .a2-player progress {
   appearance: none; position: absolute; inset: auto 0 0; width: 100%; height: 2px;
   border: 0; background: var(--a2-sep); --progress-ink: color-mix(in srgb,var(--a2-ink) 55%,transparent);
