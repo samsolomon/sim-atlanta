@@ -2821,3 +2821,29 @@ bytes. Low tier stays within its ceilings at 2.38 million triangles, 543 calls a
 ### 2026-11-23 — A timetable test outlives its timetable
 
 A fresh Amtrak download broke both Brookwood corridor tests without changing a single path vertex. The new feed began its service calendars on November 22; the tests asked for November 20. Zero trains was the correct answer. A 15 KB recorded fixture now keeps the historical geometry, calendar and timetable together, so the edge-to-edge and freight-yield regressions also run without generated data. The same two checks pass on November 23 with the fresh feed. Regenerating production data will remove the old November 20 Crescent from demo links; it does not require a berth or consist fix. [Investigation and fixture provenance](brookwood-gtfs-regression.md).
+### 2026-11-23 — A car stays behind the streetcar
+
+The previous overlap guard made cars disappear when they met the S70. Three
+same-direction downtown arterial courses now replay their illustrative cars against
+the streetcar timetable. Cars wait behind its rear with a 2 m bumper gap, then
+follow when it moves. Each delayed car checks the traffic light again; it cannot
+borrow a green it missed while waiting. Adjacent lanes, crossing roads and bridges
+keep the occupancy guard. The streetcar's timetable motion is unchanged.
+
+The awkward part was time. A snapshot clamp can move a car backwards when a tram
+enters its lane, and an ordinary frame simulation cannot reproduce a clock seek.
+The queue uses half-second checkpoints and interpolates between them. A regression
+caught a 3 m backwards jump between fractional frames before that interpolation.
+Cross-review caught another trap: caching every frame's fractional timestamp
+would evict the replay history after about 40 s. Only grid samples are cached now,
+and the cache retains a complete course period, bounded at 7,200 samples. In a
+10,800-frame browser probe, updates took 0.3 ms at the median and 0.6 ms at the 99th
+percentile. The largest warm frame was 4.3 ms; the initial time jump took 45 ms.
+
+The Edgewood frame uses `cam=588,-65,0,50,100`, high tier,
+`t=2026-11-20T17:08:23Z&speed=0&dev&mindist=20`. It shows the car held behind the
+streetcar instead of absent. [Queue model and limits](streetcar-traffic-queues.md).
+Web rebuild only; no `pnpm data`, new requests or worker change.
+
+[Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
+[Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
