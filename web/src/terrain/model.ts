@@ -27,6 +27,7 @@ import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { houseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
+import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
@@ -247,7 +248,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
-  const homes = residential(sceneryCity, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
+  const originalFinish = options.finishFor;
+  const homes = residential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
   // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
