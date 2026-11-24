@@ -611,7 +611,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
         const landmarks = world.group.children.slice(landmarksFrom);
         for (const c of landmarks) c.userData.perf = 'buildings';
-        if (!low) world.group.add(batchLandmarkBodies(landmarks));
+        world.group.add(batchLandmarkBodies(landmarks));
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
@@ -775,7 +775,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
       .map(([row, a]) => ({ row, ...a.connectorBoard }));
     const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
-    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: [] }, boards);
+    // Share the four-plane shader variants with downtown. The perimeter moves as rows mount.
+    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: perimeter }, boards);
     midtownArterials?.dispose();
     midtownArterials = next;
     scene.add(next.group);
@@ -959,6 +960,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         streetcarSurface.push(entry);
         area.group.add(track.group);
         const stops = buildStreetcarStops(sites, area.bounds, surface);
+        // Match the downtown track and shelter shaders while keeping the interior seam open.
+        if (perimeter) {
+          clipScenery(track.group, perimeter);
+          clipScenery(stops.group, perimeter);
+        }
         area.group.add(stops.group);
         northStops = stops;
         const disposeArea = area.dispose.bind(area);
