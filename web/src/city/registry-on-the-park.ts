@@ -45,17 +45,18 @@ export function createRegistry(buildings: VBuilding[], site: VBuilding, grid: Gr
   const out = outwardSign(tower);
   const podTop = floor + podiumTop;
 
-  // Podium: white, with the art screens on its 13th Street (south) face, under a planted terrace.
+  // Podium: white, with the art screens on its 13th Street face (north; City's z axis points south),
+  // under a planted terrace.
   for (const { ring, h } of podia) {
     const r = wound(local(ring!), 1);
     shell.prism(r, footing, floor + h, podiumWhite, '#8fa06a');
   }
   shell.prism(tower, footing, podTop, podiumWhite, '#8fa06a');
-  const south = wound(local(podia[2].ring!), 1);
-  faces(south, (a, b, length) => {
-    const m = along(a, b, length, length / 2, 1.5 * outwardSign(south));
+  const street = wound(local(podia[2].ring!), 1); // the 13th Street podium part
+  faces(street, (a, b, length) => {
+    const m = along(a, b, length, length / 2, 1.5 * outwardSign(street));
     if (length < 12 || pointInRing(m[0], m[1], tower)) return;
-    const o = outwardSign(south);
+    const o = outwardSign(street);
     const panels = Math.max(1, Math.round(length / 7));
     for (let k = 0; k < panels; k++) {
       const u0 = (k + 0.12) * length / panels, u1 = (k + 0.88) * length / panels;
