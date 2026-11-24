@@ -79,3 +79,29 @@ the lab, including a joint that bends on curves, reference livery colours, and a
 phone performance cost note. Coordinate its vehicle-type ID with the connector
 agent before integration. Coordinator thread: `msg_8f9a7007f319`.
 #347 remains awaiting Sam's approval of the revised colour/silhouette sheets.
+
+### Connector agreement and merge reporting
+
+Connector: `orca_session_id:1f9238ff-2c34-4398-9612-0425e769c083`, thread
+`msg_98ec3c022c8c`. Traffic remains a plan pending Sam's GPS/signals decision.
+Use a sourced manufacturer/model slug for art/lab and `marta:vt:<slug>` for the
+future VehicleType. LiveBus has no type or trip ID; never assign articulation
+by route alone. Pin the GTFS edition when investigating route coverage.
+
+Proposed model boundary: separate front/rear/bellows geometry, shared material,
+low detail variants, dimensions, section-local axles and origins, matching hitch
+anchors, articulation limit. Coordinates: +z forward, y up, ground origin,
+curb side -x. Lab starts with explicit joint angle; motion owns section poses
+{x,y,z,yaw,pitch}, joint angle and collision footprints. Propose front axle s
+as progress reference. Preserve rigid axle/hitch distances and coincident joints;
+do not independently sample two body centres along the path. Seek history must
+be deterministic; sparse live fixes do not establish a driven curve.
+
+Proposed phone target (not measured): articulated total <=1,500 low-tier triangles
+and <=3 shared instanced batches for front/rear/bellows, not per-bus calls.
+Existing rigid XN40 is 6,140 triangles; connector proposes <=1,000 at low tier.
+Send sourced ID/dimensions and export proposal to connector before integration.
+
+Before any MERGED notice, run `gh pr view <n> --json state,mergeCommit` and quote
+both returned values. A failed merge is not a merge. Resolve build-log append
+conflicts by retaining both entries, then rerun tests.
