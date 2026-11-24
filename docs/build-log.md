@@ -3702,3 +3702,5 @@ The audit rated Loews borderline: a plain framed-glass tower among others. My fi
 ### 2026-11-24 · A phantom tower behind the Westin
 
 From the default City camera, a 78.7 m block stood behind the Westin. Overture had given that height to a parking deck. The 2019 lidar is flat at 27.7 m across the whole outline, and OSM maps the same footprint as a multi-storey deck. The skin draws the deck at its real height, with ribbed spandrels and louvred screens, in under 400 triangles. It is the cheapest correction of the night, and possibly the most visible. [Before/after from the default camera](log/ui/aym-deck/README.md)
+
+**2026-11-24 — The Renaissance Midtown.** Here the map and the lidar agree, with a 64 m roof and plant to 66.5 m, so the work was the facade. Street View shows a tan precast slab with punched windows and a recessed glass slot down the West Peachtree end, sitting on a dark podium. The slot gets its own lit rooms, so at night it reads as a thin vertical line on the narrow end. [Captures and references](log/ui/renaissance-midtown/README.md)
