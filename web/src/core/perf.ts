@@ -62,7 +62,7 @@ const TRAIL_KEY = 'perf-trail';
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -71,6 +71,8 @@ export const perfOverrides = (() => {
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
     prewarmOff: params.get('prewarm') === '0',
+    /** &shadowgap=old: low's shadow map redraws on every LOD swap and on fixed 80 m steps (before 2026-11-24). */
+    shadowGapOld: params.get('shadowgap') === 'old',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
     farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
