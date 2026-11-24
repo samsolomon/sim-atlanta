@@ -72,6 +72,9 @@
 :root.glass-flat { --a2-flat-a: rgba(252, 250, 245, 0.95); --a2-flat-b: rgba(243, 239, 230, 0.92); }
 :root.glass-flat[data-theme='dark'] { --a2-flat-a: rgba(38, 44, 56, 0.92); --a2-flat-b: rgba(20, 24, 32, 0.90); }
 :root.glass-flat :is(.a2-long, .a2-results, .a2-subject.a2-open) { --a2-ga: var(--a2-flat-a); --a2-gb: var(--a2-flat-b); }
+/* High-tier City draws each panel's blurred backing in its final pass (html.glass-canvas, set by
+   web/src/ui/glass.ts once the renderer draws them); the DOM keeps tint, edge, highlight and shadow. */
+:root.glass-canvas .a2-g { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .a2-g :is(button, a) { font: inherit; color: inherit; }
 .a2-g :is(button, a):focus-visible, .a2-credit a:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
 .a2-ic { display: inline-grid; width: 20px; height: 20px; }

@@ -23,7 +23,7 @@ import { TrainSource } from './core/trains';
 import { railStatus } from './ui/status';
 import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
-import { setGlassMode } from './ui/glass';
+import { mountGlassDebug, setGlassMode } from './ui/glass';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -516,6 +516,7 @@ function applyGlassMode() {
 }
 new MutationObserver(applyGlassMode).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 new MutationObserver(applyGlassMode).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
+if (params.has('glassdebug')) mountGlassDebug(document.getElementById('view3d-canvas')!);
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
 const cityLoading = document.getElementById('city-loading')!;
 const cityProgress = document.getElementById('city-progress')!;
