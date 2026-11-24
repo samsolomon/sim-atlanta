@@ -60,13 +60,15 @@ Claude Opus session `orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d` packa
 
 ## Release 8 hold (2026-11-24)
 
-Release 8 at `0e3a71b1` is **held and not Taildropped**. On High and Low, the freight viaduct's shadow over the Connector bands in wavy stripes; see `757,519,190,55,350` at 2026-11-23 14:05:41. The merge bisect shows the bands first at `3eca63b9` (#514, transport in the shadow pass) on top of #500's triangle permutation; `71b26f41` and `a1305a32` are clean. Ground-contact (`a761d59f`) owns the fix. Production stays on release 7.
+Release 8 was re-cut twice. `2742657d` added #566, the viaduct fix, verified at 0.06–0.08% against release 7. `c3d751fd` passed full strict tests. It is held for ground-contact's PR that makes #538 opt-in, and the go will name that commit. Originally, release 8 at `0e3a71b1` was **held and not Taildropped**. On High and Low, the freight viaduct's shadow over the Connector bands in wavy stripes; see `757,519,190,55,350` at 2026-11-23 14:05:41. The merge bisect shows the bands first at `3eca63b9` (#514, transport in the shadow pass) on top of #500's triangle permutation; `71b26f41` and `a1305a32` are clean. Ground-contact (`a761d59f`) owns the fix. Production stays on release 7.
 
 When the fix merges, the coordinator will re-cut release 8 from the then-current main, which will also carry #538, #550 and the release-9 train.
 - Regenerate `vignette.json` with `.venv/bin/python pipeline/scripts/terrain_transport.py`. Do not use `-I`: the script imports `vignette` from its own folder. It runs offline from `data/raw` and does not refresh Overture or GTFS.
 - Diff all 52 files. Only `terrainTransport.rail[].pts` on the 13 `freightS` runs may change.
 - Reuse the release 7 reference frames in `~/Developer/sim-atlanta-release-tools/ref-r7-4e33e335/` (plans `planR8match.json` and `planR8skins.json`).
 - **Standing deck-over-road shadow set:** `~/Developer/sim-atlanta-release-tools/planDecks.json`, 21 frames with release 7 references captured. Run it on every release from now on.
+- **Standing check: far-orbit shadow follow** (`smoke9.mjs`). On Low at 3, 6, 12 and 21 km over downtown, drag-pan about 2 km. The camera is read from the share panel's `cam`, because the URL doesn't update. Report shadow redraws and frames against release 7. R7 baseline: 25, 15, 13 and 8 redraws.
+- **Standing check: 6x CPU long tasks** (`smoke10.mjs`). On Low with CDP `setCPUThrottlingRate` 6 after ready, run a 12 s drag-pan at Midtown 700 m and a 33-tick wheel zoom from 3 to about 22.9 km, then hold 8 s. Record `longtask` entries and the worst frame. Fail if a task exceeds 1.5x release 7's worst on the same path, comparing three runs each. R7: pan 72–93 ms (worst frame 67–100), zoom 50–74 ms. `route:north` and `route:loop` exist only on the held #435 branch.
 - Bisect evidence is in `~/Developer/sim-atlanta-release-0e3a71b1-bisect/`.
 - Still to do on the re-cut: the #534 low fly with `smoke8.mjs`, the geometry read-back (about 171 MB low, about 282 MB high), the program sweep and the core regression.
 
