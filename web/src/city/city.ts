@@ -861,6 +861,25 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       return null;
     }, trafficOptions.roadHeight) : undefined;
   const trafficView = new THREE.Frustum(), trafficViewMatrix = new THREE.Matrix4();
+  // Traffic samples road heights ahead of its cars in idle time: at most 1 ms a slice, never
+  // while the camera is being dragged, a sliced area build is running (?slice=1) or the tab is
+  // hidden.
+  let trafficIdleStopped = false;
+  // A busy main thread (a phone at 30 fps) may never go idle, so a slice is also forced every
+  // 250 ms: 1 ms per 250 ms, a fraction of what the frame loop would spend sampling instead.
+  const idle = (fn: (budget: number) => void) => typeof requestIdleCallback === 'function'
+    ? requestIdleCallback(deadline => fn(deadline.didTimeout ? 1 : Math.min(1, deadline.timeRemaining() - 3)), { timeout: 250 })
+    : setTimeout(() => fn(1), 50);
+  const fillTrafficHeights = (budget: number) => {
+    if (trafficIdleStopped) return;
+    if (budget > 0 && !sliceInput.dragging && sliceInput.building === 0 && !document.hidden) {
+      const started = performance.now(), deadline = started + budget;
+      for (const layer of [traffic, arterials, midtownArterials]) if (layer && !layer.fillIdle(deadline)) break;
+      perf.idleTask(performance.now() - started);
+    }
+    idle(fillTrafficHeights);
+  };
+  idle(fillTrafficHeights);
   const arterials = trafficOptions && corridors?.length
     ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
     : undefined;
@@ -1809,10 +1828,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       for (const layer of [traffic, arterials, midtownArterials]) layer?.refreshHeights();
     }
     camera.updateMatrixWorld();
+    // CSS pixels a metre spans at one metre: where a far lane's 15 Hz step stays under a pixel.
+    const trafficPx = container.clientHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
     trafficView.setFromProjectionMatrix(trafficViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
-    traffic?.update(sceneTime, atm.dark, trafficView);
-    arterials?.update(sceneTime, atm.dark, trafficView);
-    midtownArterials?.update(sceneTime, atm.dark, trafficView);
+    traffic?.update(sceneTime, atm.dark, trafficView, camera.position, trafficPx);
+    arterials?.update(sceneTime, atm.dark, trafficView, camera.position, trafficPx);
+    midtownArterials?.update(sceneTime, atm.dark, trafficView, camera.position, trafficPx);
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
@@ -2108,6 +2129,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      trafficIdleStopped = true;
       prewarmer?.dispose();
       perf.setPrewarmPending(null);
       perf.detach(perfContext);

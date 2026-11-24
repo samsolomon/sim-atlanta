@@ -7,6 +7,9 @@ import { ConnectorTraffic } from './connector-traffic';
 import { loadArterials } from './arterials';
 import type { RoadTraffic } from './road-traffic';
 
+// These run whole staged layers over thousands of frames: about 1 s alone, but several times that
+// on the shared Studio under load, so they get a generous timeout rather than vitest's 5 s.
+
 const data = resolve(__dirname, '../../public/data/scene/downtown');
 const staged = ['vignette.json', 'arterials.json', 'traffic.json'].every(f => existsSync(resolve(data, f)));
 const J = (f: string) => JSON.parse(readFileSync(resolve(data, f), 'utf8'));
@@ -34,7 +37,7 @@ function expectSame(got: number[][], want: number[][]) {
 type Paths = { stepLegacy(ms: number, dark: number): void; step(ms: number, dark: number, view?: THREE.Frustum): void };
 const paths = (layer: RoadTraffic) => layer as unknown as Paths;
 
-describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', () => {
+describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', { timeout: 60_000 }, () => {
   const vd = staged ? J('vignette.json') : null!;
   const hourly = staged ? J('traffic.json').hourly : null!;
   // A sloped plane: interpolating the cached 2 m height profile is exact on it, so any
@@ -76,6 +79,96 @@ describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', 
       compared += want.length;
     }
     expect(compared).toBeGreaterThan(200);
+  });
+
+  it('re-poses far lanes at 15 Hz with poses no older than one tick, and near lanes every frame', () => {
+    const make = () => new ArterialTraffic({ city: vd, arterials: loadArterials(J('arterials.json'), vd).corridors, hourly, roadHeight, quality: 'high' });
+    const far = make(), every = make();
+    const start = Date.parse('2026-11-20T17:00:00-05:00');
+    const eyeFar = new THREE.Vector3(0, 5000, 0);
+    const key = (c: number[]) => c.slice(12, 15).map(v => v.toFixed(3)).join(',');
+    const history: Set<string>[] = [];
+    let held = 0, compared = 0;
+    for (let f = 0; f < 240; f++) {
+      const ms = start + f * 1000 / 60;
+      (every as unknown as Paths & { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0);
+      history.push(new Set(cars(every).map(key)));
+      (far as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0, undefined, eyeFar);
+      const now = cars(far);
+      // A held car is drawn where the every-frame layer had it on an earlier frame.
+      for (const c of now) if (!history.at(-1)!.has(key(c))) held++;
+      // Every far car sits where the every-frame layer had a car within the last 1/15 s.
+      const recent = history.slice(-5);
+      for (const c of now) { expect(recent.some(h => h.has(key(c)))).toBe(true); compared++; }
+    }
+    expect(compared).toBeGreaterThan(1000);
+    expect(held).toBeGreaterThan(0);
+  });
+
+  it('re-poses a lane near the camera every frame, and holds it within a 15 Hz tick when far', async () => {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const pts: [number, number][] = [[0, 0], [0, 300]];
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    const course = { line: new Line(pts), roads: [road], speedMps: 12, dailyFlow: 1e9, truckShare: 0 };
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: () => 0 }, [course], 16, 1, 'near');
+    const step = (ms: number, eye: THREE.Vector3) => (layer as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0, undefined, eye);
+    const t0 = Math.ceil(Date.parse('2026-11-20T17:00:00-05:00') / 1000) * 1000; // a whole second: a 15 Hz tick starts here or soon after
+    for (const [eye, moving] of [[new THREE.Vector3(0, 30, 150), true], [new THREE.Vector3(0, 5000, 150), false]] as const) {
+      const frames: string[] = [];
+      // Three frames 5 ms apart, inside one 1/15 s tick of this lane whatever its stagger.
+      let start = t0;
+      const stagger = (layer as unknown as { lanes: { stagger: number }[] }).lanes[0].stagger;
+      while (Math.floor((start - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger) !== Math.floor((start + 10 - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger)) start += 7;
+      for (let f = 0; f < 3; f++) { step(start + 5 * f, eye); frames.push(cars(layer).map(c => c.slice(12, 15).map(v => v.toFixed(4)).join(',')).join('|')); }
+      expect(frames[0].length).toBeGreaterThan(0);
+      if (moving) { expect(frames[1]).not.toBe(frames[0]); expect(frames[2]).not.toBe(frames[1]); }
+      else { expect(frames[1]).toBe(frames[0]); expect(frames[2]).toBe(frames[0]); }
+    }
+  });
+
+  it('holds a lane only where its 15 Hz step is under a CSS pixel on screen', async () => {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const pts: [number, number][] = [[0, 0], [0, 300]];
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: () => 0 },
+      [{ line: new Line(pts), roads: [road], speedMps: 18, dailyFlow: 1e9, truckShare: 0 }], 16, 1, 'px');
+    // A phone: 891 CSS px tall at City's 22 degree field of view. A 1/15 s step at 18 m/s is
+    // 1.2 m, under a pixel only beyond about 2.75 km.
+    const px = 891 / (2 * Math.tan(11 * Math.PI / 180));
+    const step = (ms: number, eye: THREE.Vector3) => (layer as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3, px?: number): void }).step(ms, 0, undefined, eye, px);
+    const stagger = (layer as unknown as { lanes: { stagger: number }[] }).lanes[0].stagger;
+    let start = Math.ceil(Date.parse('2026-11-20T17:00:00-05:00') / 1000) * 1000;
+    while (Math.floor((start - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger) !== Math.floor((start + 10 - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger)) start += 7;
+    for (const [height, held] of [[1000, false], [10000, true]] as const) {
+      const frames: string[] = [];
+      for (let f = 0; f < 2; f++) { step(start + 5 * f, new THREE.Vector3(0, height, 150)); frames.push(cars(layer).map(c => c.slice(12, 15).join(',')).join('|')); }
+      expect(frames[0].length).toBeGreaterThan(0);
+      expect(frames[1] === frames[0]).toBe(held);
+    }
+  });
+
+  it('hides a held far car when a bus moves into its footprint within the tick', async () => {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const pts: [number, number][] = [[0, 0], [0, 300]];
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    let bus = false;
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: () => 0, busOccupies: () => bus },
+      [{ line: new Line(pts), roads: [road], speedMps: 12, dailyFlow: 1e9, truckShare: 0 }], 16, 1, 'held');
+    const step = (ms: number) => (layer as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0, undefined, new THREE.Vector3(0, 5000, 150));
+    const stagger = (layer as unknown as { lanes: { stagger: number }[] }).lanes[0].stagger;
+    let start = Math.ceil(Date.parse('2026-11-20T17:00:00-05:00') / 1000) * 1000;
+    while (Math.floor((start - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger) !== Math.floor((start + 10 - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger)) start += 7;
+    step(start);
+    expect(layer.visibleCars).toBeGreaterThan(0);
+    bus = true; // a bus now covers every footprint, within the same 15 Hz tick
+    step(start + 5);
+    expect(layer.visibleCars).toBe(0);
   });
 
   it('culls only cars outside the view, posing the rest exactly as without culling', () => {
@@ -135,7 +228,7 @@ it('keeps a lane corner inside a profile step at its own height', async () => {
   }
 });
 
-describe.skipIf(!staged)('road traffic’s cached height profile on a hard surface', () => {
+describe.skipIf(!staged)('road traffic’s cached height profile on a hard surface', { timeout: 60_000 }, () => {
   const vd = staged ? J('vignette.json') : null!;
   const hourly = staged ? J('traffic.json').hourly : null!;
   // A drawn-terrain stand-in: a 4 m triangulated grid of random heights (a fold on every
@@ -148,8 +241,11 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
       ? corner(i, j) + (corner(i + 1, j) - corner(i, j)) * u + (corner(i, j + 1) - corner(i, j)) * v
       : corner(i + 1, j + 1) + (corner(i, j + 1) - corner(i + 1, j + 1)) * (1 - u) + (corner(i + 1, j) - corner(i + 1, j + 1)) * (1 - v);
   };
+  // Plus 0.3 m kerb-height steps in the drawn surface on a 37 m diagonal grid, the smallest jump
+  // an exact-sampling fallback must still catch.
+  const kerb = (x: number, z: number) => (Math.floor((x + z) / 37) % 2 ? .3 : 0);
   const roadHeight = (x: number, z: number, road: { bridge?: boolean; tunnel?: boolean }) =>
-    road.tunnel || (z > 100 && z < 103) ? null : terrain(x, z) + (road.bridge ? 7 : 0) + (x > 200 && x < 230 ? 5 : 0);
+    road.tunnel || (z > 100 && z < 103) ? null : terrain(x, z) + kerb(x, z) + (road.bridge ? 7 : 0) + (x > 200 && x < 230 ? 5 : 0);
   type Inner = { lanes: { course: { line: { length: number; vertexAt(s: number): number; pts: number[][] }; roads: { bridge?: boolean; tunnel?: boolean }[] } }[];
     heightAt(lane: unknown, s: number, x: number, z: number): number | null };
   it('stays within 2 cm of exact sampling every 0.5 m of every lane, corners and steps included', () => {
@@ -176,4 +272,111 @@ describe.skipIf(!staged)('road traffic’s cached height profile on a hard surfa
       expect(worst).toBeLessThan(.02);
     }
   });
+
+  it('after an idle fill, samples exactly only inside eighths that fail their own check', () => {
+    let calls = 0;
+    const counted = (x: number, z: number, road: { bridge?: boolean; tunnel?: boolean }) => { calls++; return roadHeight(x, z, road); };
+    const layer = new ArterialTraffic({ city: vd, arterials: loadArterials(J('arterials.json'), vd).corridors, hourly, roadHeight: counted, quality: 'high' });
+    const inner = layer as unknown as Inner & { fillIdle(deadline: number): boolean };
+    expect(inner.fillIdle(performance.now() - 1)).toBe(false); // an expired slice does nothing
+    expect(inner.fillIdle(Infinity)).toBe(true);
+    calls = 0;
+    let samples = 0;
+    for (const lane of inner.lanes) {
+      const { line } = lane.course;
+      for (let s = 0.37; s <= line.length; s += .5, samples++) {
+        const vertex = line.vertexAt(s), i = Math.min(Math.floor(vertex), line.pts.length - 2), f = vertex - i;
+        inner.heightAt(lane, s, line.pts[i][0] + (line.pts[i + 1][0] - line.pts[i][0]) * f, line.pts[i][1] + (line.pts[i + 1][1] - line.pts[i][1]) * f);
+      }
+    }
+    // Kerbs every 37 m, decks, holes and a fold every 4 m still need some exact reads (5.7% here).
+    expect(calls / samples).toBeLessThan(.08);
+  });
+});
+
+describe('road traffic bridges cracks narrower than a tyre, and nothing wider', () => {
+  type Inner = { lanes: unknown[]; heightAt(lane: unknown, s: number, x: number, z: number): number | null };
+  const city = { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 }, roads: [], buildings: [], rail: [] } as never;
+  const hourly = { weekday: Array(24).fill(1), weekend: Array(24).fill(1) };
+  async function layerOn(pts: [number, number][], roadHeight: (x: number, z: number) => number | null) {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    const course = { line: new Line(pts), roads: pts.slice(1).map(() => road), speedMps: 10, dailyFlow: 1e9, truckShare: 0 };
+    const layer = new RoadTraffic({ city, quality: 'low', hourly, roadHeight }, [course], 64, 1, 'test') as unknown as Inner;
+    return { layer, lane: layer.lanes[0] };
+  }
+
+  it('bridges the two real cracks between their rims at every knot alignment', async () => {
+    const { default: sites } = await import('./fixtures/traffic-height-cracks.json');
+    for (const { samples } of sites as unknown as { samples: [number, number, number, number | null][] }[]) {
+      // The recorded drawn surface, every 1 cm along the real lane, around the crack.
+      const ys = samples.map(r => r[3]);
+      const trend = (k: number) => ys[0]! + (ys.at(-1)! - ys[0]!) * k / (ys.length - 1);
+      const crack = ys.map((y, k) => y === null || Math.abs(y - trend(k)) > .03);
+      const first = crack.indexOf(true), last = crack.lastIndexOf(true);
+      expect(first).toBeGreaterThan(30);
+      expect(last - first).toBeLessThan(25); // narrower than 25 cm
+      const rims = [ys[first - 1]!, ys[last + 1]!];
+      for (let o = 0; o < 25; o++) { // shift where the profile's knots fall
+        const window = samples.slice(o);
+        const near = (x: number, z: number) => {
+          let best = 0, d = Infinity;
+          for (let k = 0; k < window.length; k++) { const e = (window[k][1] - x) ** 2 + (window[k][2] - z) ** 2; if (e < d) { d = e; best = k; } }
+          return window[best][3];
+        };
+        const { layer, lane } = await layerOn(window.map(r => [r[1], r[2]] as [number, number]), near);
+        let s = 0;
+        for (let k = 0; k < window.length; k++) {
+          if (k) s += Math.hypot(window[k][1] - window[k - 1][1], window[k][2] - window[k - 1][2]);
+          const got = layer.heightAt(lane, s, window[k][1], window[k][2]);
+          expect(got).not.toBeNull();
+          if (crack[k + o]) {
+            expect(got!).toBeGreaterThanOrEqual(Math.min(...rims) - .01);
+            expect(got!).toBeLessThanOrEqual(Math.max(...rims) + .01);
+          } else expect(Math.abs(got! - ys[k + o]!)).toBeLessThan(.02);
+        }
+      }
+    }
+  });
+
+  it('never bridges a 30 cm gap or dip, and always bridges an 18 cm one, at every alignment', async () => {
+    const pts: [number, number][] = [[0, 0], [0, 20]];
+    for (const width of [.3, .18]) for (const kind of ['hole', 'dip'] as const) for (let o = 0; o < 26; o++) {
+      const from = 9 + o / 100, to = from + width;
+      const { layer, lane } = await layerOn(pts, (_x, z) => z > from && z < to ? (kind === 'hole' ? null : -5) : .02 * z);
+      for (let s = from + .005; s < to; s += .01) {
+        const got = layer.heightAt(lane, s, 0, s);
+        if (width >= .25) expect(got).toBe(kind === 'hole' ? null : -5);
+        else expect(Math.abs(got! - .02 * s)).toBeLessThan(.01);
+      }
+    }
+  });
+});
+
+it('never bridges a crack within a tyre’s width of a lane end', async () => {
+  const { RoadTraffic } = await import('./road-traffic');
+  const { Line } = await import('../vignette/geom');
+  const pts: [number, number][] = [[0, 0], [0, 20]];
+  const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+  for (const [from, to] of [[19.9, 19.98], [0.02, 0.1]]) {
+    const course = { line: new Line(pts), roads: [road], speedMps: 10, dailyFlow: 1e9, truckShare: 0 };
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: (_x, z) => z > from && z < to ? null : 0 }, [course], 64, 1, 't');
+    const inner = layer as unknown as { lanes: unknown[]; heightAt(l: unknown, s: number, x: number, z: number): number | null };
+    for (let s = from + .01; s < to; s += .01) expect(inner.heightAt(inner.lanes[0], s, 0, s)).toBeNull();
+  }
+});
+
+it('bridges a crack centred on a profile step boundary', async () => {
+  const { RoadTraffic } = await import('./road-traffic');
+  const { Line } = await import('../vignette/geom');
+  const pts: [number, number][] = [[0, 0], [0, 20]];
+  const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+  const course = { line: new Line(pts), roads: [road], speedMps: 10, dailyFlow: 1e9, truckShare: 0 };
+  // Codex's case: a 10 cm dip centred on the 10 m boundary between two 2 m steps.
+  const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+    hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: (_x, z) => z > 9.95 && z < 10.05 ? -6 : 0 }, [course], 64, 1, 't');
+  const inner = layer as unknown as { lanes: unknown[]; heightAt(l: unknown, s: number, x: number, z: number): number | null };
+  for (const s of [9.96, 10, 10.04]) expect(inner.heightAt(inner.lanes[0], s, 0, s)).toBeCloseTo(0, 6);
 });

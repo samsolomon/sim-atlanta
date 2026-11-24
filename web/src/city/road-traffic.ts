@@ -18,6 +18,17 @@ const HEIGHT_STEP = 2;
 const NO_ROAD = -Infinity;
 /** Largest gap (m) allowed between a step's interpolation and the drawn road at its midpoint. */
 const PROFILE_TOLERANCE = .005;
+/** A sample this far below both rims around it is in a crack in the drawn surface (or it finds
+ * no surface at all), not on a fold, slope or kerb step. */
+const CRACK_M = .15;
+/** Cracks narrower than this (a tyre's width) are bridged; wider gaps, holes and dips are not. */
+const CRACK_WIDTH_M = .25;
+/** Bisection steps toward each rim when measuring a crack (a quarter-metre over 2^n). */
+const BISECTIONS = 4;
+/** A lane re-poses at FAR_HZ (sim time) once its nearest point is so far from the camera that
+ * one 1/FAR_HZ step of its traffic moves less than one CSS pixel on screen, and never nearer
+ * than FAR_M. FAR_HYSTERESIS (a fraction either side) stops a lane at the boundary flickering. */
+const FAR_M = 600, FAR_HYSTERESIS = .05, FAR_HZ = 15;
 /** Fractions of a step checked against the drawn road before it may interpolate. */
 const CHECKS = [.5, .25, .75, .125, .375, .625, .875];
 /** Metres around a car's footprint that still count as on screen: its long low-sun shadow, and
@@ -47,6 +58,23 @@ function pointAt(line: Line, s: number, out: { x: number; z: number }) {
   return out;
 }
 
+/**
+ * A flagged step's sub-profile, built lazily so no single piece of work is long: raw exact
+ * heights at its knots (eighths) and one knot beyond each end (NaN: no surface), the knot
+ * heights after crack bridging, and per eighth whether it interpolates (1) or samples exactly (2).
+ */
+type Fine = Float64Array; // [0..10] raw knots -1..9, [11..19] knots 0..8, [20..27] eighths
+/** Not yet sampled, in a Fine (NaN already means no surface). */
+const UNKNOWN = -Number.MAX_VALUE;
+const RAW = 1, KNOT = 11, EIGHTH = 20;
+
+/** A far car's last pose, replayed until its lane's next FAR_HZ tick. */
+interface HeldCar {
+  kind: Kind; color: THREE.Color; opacity: number;
+  e: Float64Array; // rotation columns (9) then position (3), as written to the instance matrix
+  x: number; y: number; z: number; half: number; ux: number; uz: number;
+}
+
 /** One course's per-frame state, built once so the frame loop allocates nothing. */
 interface LaneState {
   course: TrafficCourse;
@@ -68,6 +96,15 @@ interface LaneState {
   /** Per step: 0 untested, 1 interpolates within PROFILE_TOLERANCE, 2 sample exactly (a deck
    * edge, a step in the drawn surface or a terrain fold inside it). */
   smooth: Uint8Array;
+  /** For steps that sample exactly (`smooth` 2): their eighths, prepared one at a time. */
+  fine: Map<number, Fine>;
+  /** Distance rate: far (with hysteresis), the 1/FAR_HZ tick last posed, this lane's offset
+   * into that tick (so far lanes don't all re-pose on one frame), and the cars it held. */
+  far: boolean;
+  farTick: number;
+  stagger: number;
+  held: HeldCar[];
+  heldCount: number;
 }
 
 const models = ['sedan', 'suv', 'box'] as const;
@@ -277,7 +314,7 @@ export class RoadTraffic {
       if (list) list.push(slot); else byCourse.set(slot.lane, [slot]);
     }
     // Slots are generated course by course, so this keeps the original placement priority.
-    return courses.flatMap(course => {
+    return courses.flatMap((course, index) => {
       const slots = byCourse.get(course);
       if (!slots) return [];
       const queue = this.movingQueues.get(course);
@@ -292,38 +329,184 @@ export class RoadTraffic {
         period: course.line.length + offstage(course),
         active: [], trips: slots.map(() => ({ start: 0, length: 0 })),
         heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
-        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
+        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n), fine: new Map(),
+        far: false, farTick: NaN, stagger: (index * 0.6180339887) % 1, held: [], heldCount: 0,
       }];
     });
   }
 
+  /** The hour's demand share, resolved once per clock second: building the local date costs
+   * more than the rest of a frame's signal work, and the share drifts ~0.03% a second. Any seek,
+   * drag or speed change lands on another second and recomputes. */
+  private shareAt(clockMs: number) {
+    const second = Math.floor(clockMs / 1000);
+    if (second !== this.shareSecond) {
+      this.shareSecond = second;
+      this.shareCached = hourShare(this.opts.hourly, clockMs) / this.peak;
+    }
+    return this.shareCached;
+  }
+  private shareSecond = NaN;
+  private shareCached = 0;
+
   /** Forget cached road heights, for when the ground under existing courses changes. */
   refreshHeights() {
-    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); }
+    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); lane.fine.clear(); }
+    this.fillLane = this.fillStep = this.fillPart = 0;
   }
 
   /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
   private heightAt(lane: LaneState, s: number, x: number, z: number): number | null {
-    const i = Math.floor(s / HEIGHT_STEP), length = lane.course.line.length;
-    // The last step is shorter: its upper sample sits at the lane's end, not a full step on.
+    let i = Math.floor(s / HEIGHT_STEP);
+    const length = lane.course.line.length;
+    // Within a tyre's width of either end, never interpolate: a bridged crack there could carry
+    // a car past the end of a deck.
+    if (s < CRACK_WIDTH_M || s > length - CRACK_WIDTH_M) return this.exactHeight(lane, s, x, z);
+    // A point on a step boundary belongs to the step before, whose refined end knot may bridge
+    // a crack there. The last step is shorter: its upper sample sits at the lane's end.
+    if (s <= i * HEIGHT_STEP && i > 0) i--;
     const s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
-    if (!(span > 0) || s <= s0) {
+    if (!(span > 0)) {
       const a = this.profile(lane, i);
       return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
     }
-    let smooth = lane.smooth[i];
-    if (!smooth) {
-      // First use of this step: keep interpolating only if the drawn road agrees at its eighths,
-      // which catches deck edges, steps in the surface and terrain folds.
-      smooth = 1;
-      for (const t of CHECKS) {
-        const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
-        const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
-        if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
-      }
-      lane.smooth[i] = smooth;
+    const smooth = lane.smooth[i] || this.classify(lane, i, s0, span);
+    if (smooth === 1) return this.interpolate(lane, i, s0, span, s);
+    // A step with a fold, a deck edge or a hole in it: interpolate within its eighths that pass
+    // their own midpoint check, and sample exactly only inside the eighths that don't.
+    const fine = this.fineOf(lane, i);
+    const u = (s - s0) / span * 8, k = Math.min(7, Math.floor(u));
+    return this.eighth(lane, fine, s0, span, k) === 1
+      ? fine[KNOT + k] + (fine[KNOT + k + 1] - fine[KNOT + k]) * (u - k) : this.exactHeight(lane, s, x, z);
+  }
+
+  /** First use of a step: keep interpolating only if the drawn road agrees at its eighths,
+   * which catches deck edges, steps in the surface and terrain folds. */
+  private classify(lane: LaneState, i: number, s0: number, span: number) {
+    perf.count(this.filling ? 'trafficIdleSteps' : 'trafficFrameSteps');
+    let smooth = 1;
+    for (const t of CHECKS) {
+      const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
+      const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
+      if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
     }
-    return smooth === 1 ? this.interpolate(lane, i, s0, span, s) : this.exactHeight(lane, s, x, z);
+    return lane.smooth[i] = smooth;
+  }
+
+  /** Where `fillIdle` resumes: a lane, and a step within it. */
+  private fillLane = 0;
+  private fillStep = 0;
+  private fillPart = 0;
+
+  /** True while fillIdle runs, to attribute work to idle time or the frame. */
+  private filling = false;
+
+  /**
+   * Classify (and refine) height-profile steps ahead of the cars until `deadline` (a
+   * performance.now() time), so the frame loop rarely meets an unsampled step. Resumes where
+   * it stopped; returns true once every step of every lane is ready.
+   */
+  fillIdle(deadline: number) {
+    this.filling = true;
+    try { return this.fill(deadline); } finally { this.filling = false; }
+  }
+
+  private fill(deadline: number) {
+    while (this.fillLane < this.lanes.length) {
+      const lane = this.lanes[this.fillLane], length = lane.course.line.length;
+      const steps = Math.ceil(length / HEIGHT_STEP);
+      while (this.fillStep < steps) {
+        if (performance.now() >= deadline) return false;
+        // One unit of work at a time: classify the step, then (if flagged) each of its nine knots
+        // and eight eighths, so no single idle task runs long.
+        const i = this.fillStep, s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
+        if (!(span > 0)) { this.fillStep++; continue; }
+        if (!lane.smooth[i]) { this.classify(lane, i, s0, span); continue; }
+        if (lane.smooth[i] === 2 && this.fillPart < 17) {
+          const fine = this.fineOf(lane, i), part = this.fillPart++;
+          if (part < 9) this.knot(lane, fine, s0, span, part); else this.eighth(lane, fine, s0, span, part - 9);
+          continue;
+        }
+        this.fillStep++;
+        this.fillPart = 0;
+      }
+      this.fillLane++;
+      this.fillStep = 0;
+    }
+    return true;
+  }
+
+  /**
+   * A flagged step's sub-profile. Cracks: the drawn road has seams narrower than a tyre (a deck
+   * joint, a board join) where exact sampling drops to the ground far below or finds no surface;
+   * legacy cars dropped a wheel into them for a frame. A crack narrower than 25 cm is bridged
+   * between its rims; anything 25 cm or wider, and any kerb or deck step (whose rims differ),
+   * samples exactly. Two real cracks of this kind on the 12-area board, worth fixing in the drawn
+   * surface itself: Midtown arterials at (-169, -4148), a 13 m drop, and (-1, -3076), 0.24 m.
+   */
+  private fineOf(lane: LaneState, i: number): Fine {
+    let fine = lane.fine.get(i);
+    if (!fine) {
+      // One packed array (about 230 bytes) per flagged step: eighths start at 0 (unknown).
+      fine = new Float64Array(28).fill(UNKNOWN, 0, EIGHTH);
+      lane.fine.set(i, fine);
+    }
+    return fine;
+  }
+
+  private sampleAt(lane: LaneState, at: number) {
+    const p = pointAt(lane.course.line, at, this.point);
+    const y = this.exactHeight(lane, at, p.x, p.z);
+    return y === null ? NaN : y;
+  }
+
+  /** Raw exact height at knot j (-1..9) of a step. */
+  private raw(lane: LaneState, fine: Fine, s0: number, span: number, j: number) {
+    if (fine[RAW + j] === UNKNOWN) fine[RAW + j] = this.sampleAt(lane, s0 + span * j / 8);
+    return fine[RAW + j];
+  }
+
+  /** Knot j's height after crack bridging: a knot inside a crack whose rims, an eighth either
+   * side, are road and which bisection finds narrower than 25 cm takes the line between them.
+   * Never within a tyre's width of a lane end, where a bridge could carry a car past a deck. */
+  private knot(lane: LaneState, fine: Fine, s0: number, span: number, j: number) {
+    if (fine[KNOT + j] !== UNKNOWN) return fine[KNOT + j];
+    const h = span / 8, sk = s0 + h * j, length = lane.course.line.length;
+    let y = this.raw(lane, fine, s0, span, j);
+    const ra = this.raw(lane, fine, s0, span, j - 1), rb = this.raw(lane, fine, s0, span, j + 1);
+    const inside = (t: number) => t >= CRACK_WIDTH_M && t <= length - CRACK_WIDTH_M;
+    if (ra === ra && rb === rb && h > 0 && inside(sk - h) && inside(sk + h)) {
+      // A crack opens downward (to the ground below a deck) or onto no surface at all; a narrow
+      // raised strip is a real bump and keeps exact sampling.
+      const floor = Math.min(ra, rb) - CRACK_M;
+      const odd = (t: number, v = this.sampleAt(lane, t)) => v !== v || v < floor;
+      if (odd(sk, y)) {
+        let lo = sk - h, hi = sk;
+        for (let n = 0; n < BISECTIONS; n++) { const m = (lo + hi) / 2; if (odd(m)) hi = m; else lo = m; }
+        const left = lo;
+        lo = sk; hi = sk + h;
+        for (let n = 0; n < BISECTIONS; n++) { const m = (lo + hi) / 2; if (odd(m)) lo = m; else hi = m; }
+        // hi - left over-estimates the width by up to two bisection steps: conservative.
+        if (hi - left < CRACK_WIDTH_M) y = (ra + rb) / 2;
+      }
+    }
+    return fine[KNOT + j] = y;
+  }
+
+  /** Whether eighth k of a flagged step interpolates (1) or samples exactly (2). */
+  private eighth(lane: LaneState, fine: Fine, s0: number, span: number, k: number) {
+    if (fine[EIGHTH + k]) return fine[EIGHTH + k];
+    const a = this.knot(lane, fine, s0, span, k), b = this.knot(lane, fine, s0, span, k + 1);
+    let ok = 2;
+    if (a === a && b === b) {
+      const length = lane.course.line.length, h = span / 8;
+      const inside = (t: number) => t >= CRACK_WIDTH_M && t <= length - CRACK_WIDTH_M;
+      const mid = this.sampleAt(lane, s0 + h * (k + .5)), line = (a + b) / 2;
+      // Smooth, or a crack between road rims a quarter-metre apart: interpolate.
+      if (mid === mid && Math.abs(mid - line) <= PROFILE_TOLERANCE) ok = 1;
+      else if ((mid !== mid || mid < Math.min(a, b) - CRACK_M) && inside(s0 + h * k) && inside(s0 + h * (k + 1))) ok = 1;
+    }
+    return fine[EIGHTH + k] = ok;
   }
 
   /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
@@ -348,6 +531,7 @@ export class RoadTraffic {
   }
 
   private exactHeight(lane: LaneState, s: number, x: number, z: number) {
+    if (!this.filling) perf.count('trafficFrameExact');
     const { line, roads } = lane.course;
     const y = this.opts.roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(line.vertexAt(s)))]);
     return y === null || !Number.isFinite(y) ? null : y;
@@ -374,14 +558,17 @@ export class RoadTraffic {
    * it every car is placed. Signalised and queued lanes are placed only while any part of them
    * is in view, except moving queues, which step every frame to keep their replay continuous.
    */
-  update(clockMs: number, darkness: number, view?: THREE.Frustum) {
+  /** `pxPerMetre`: CSS pixels one metre spans at one metre from the camera (viewport height
+   * over 2·tan(fov/2)); with `eye`, it sets where a lane's 15 Hz step falls under a pixel. */
+  update(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3, pxPerMetre = 0) {
     const started = performance.now();
     if (perfOverrides.trafficLegacy) this.stepLegacy(clockMs, darkness);
-    else this.step(clockMs, darkness, perfOverrides.trafficNoCull ? undefined : view);
+    else if (perfOverrides.trafficNoCull) this.step(clockMs, darkness);
+    else this.step(clockMs, darkness, view, perfOverrides.trafficNear ? undefined : eye, pxPerMetre);
     perf.traffic(performance.now() - started);
   }
 
-  private step(clockMs: number, darkness: number, view?: THREE.Frustum) {
+  private step(clockMs: number, darkness: number, view?: THREE.Frustum, eye?: THREE.Vector3, pxPerMetre = 0) {
     this.night.value = darkness;
     const counts = this.meshCounts;
     counts.clear();
@@ -389,7 +576,7 @@ export class RoadTraffic {
     this.visibleCars = 0;
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return this.finish(counts, false);
-    this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
+    this.share = this.shareAt(clockMs);
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads, last = this.headPhases;
@@ -410,6 +597,18 @@ export class RoadTraffic {
       const { course, slots, active, trips } = lane;
       const inView = !view || view.intersectsBox(lane.bounds);
       if (!inView && !lane.queue) continue;
+      // Distance rate: a far lane re-poses on its own FAR_HZ tick and replays its held cars between.
+      let hold = false, record = false;
+      if (eye && inView) {
+        const d = lane.bounds.distanceToPoint(eye), farAt = Math.max(FAR_M, course.speedMps / FAR_HZ * pxPerMetre);
+        lane.far = lane.far ? d > farAt * (1 - FAR_HYSTERESIS) : d > farAt * (1 + FAR_HYSTERESIS);
+        if (lane.far) {
+          const tick = Math.floor(seconds * FAR_HZ + lane.stagger);
+          if (tick === lane.farTick) hold = true;
+          else { lane.farTick = tick; record = true; lane.heldCount = 0; }
+        } else lane.farTick = NaN;
+      } else lane.farTick = NaN;
+      if (hold && !lane.queue) { dirty = this.replay(lane) || dirty; continue; }
       active.length = 0;
       for (const slot of slots) if (slot.threshold < this.share) active.push(slot);
       if (!active.length) continue;
@@ -425,6 +624,7 @@ export class RoadTraffic {
         positions = lane.queue?.at(trips, seconds) ?? signalPositions(course.signals!, course.line.length, v, trips, seconds);
       }
       if (!inView) continue;
+      if (hold) { dirty = this.replay(lane) || dirty; continue; }
       const line = course.line;
       for (let i = 0; i < active.length; i++) {
         const slot = active[i];
@@ -455,30 +655,62 @@ export class RoadTraffic {
         const place = this.visible[this.visibleCars] ??= { x, y, z, half: end, ux, uz };
         place.x = x; place.y = y; place.z = z; place.half = end; place.ux = ux; place.uz = uz; place.lane = course;
         this.visibleCars++;
-        const mesh = this.meshes.get(slot.kind)!;
-        const index = mesh.count++;
         // Rotation YXZ: heading about y, then pitch about x, written straight into the matrix.
         const dy = front.y - rear.y, slope = Math.hypot(horizontal, dy);
         const cy = uz, sy = ux, cx = horizontal / slope, sx = -dy / slope;
-        const m = mesh.instanceMatrix.array as Float32Array, o = index * 16;
-        dirty = write(m, o, cy, 0, -sy, sy * sx, cx, cy * sx, sy * cx, -sx, cy * cx,
-          x, (front.y + rear.y) * .5 + .03, z) || dirty;
-        const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
-        if (opacity) {
-          const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;
-          const toEnd = course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1;
-          const a = Math.min(1, fromStart, toEnd), arr = opacity.array as Float32Array;
-          if (arr[index] !== Math.fround(a)) { arr[index] = a; opacity.needsUpdate = true; }
-        }
-        const colors = mesh.instanceColor?.array as Float32Array | undefined, c = slot.color;
-        if (!colors || colors[index * 3] !== Math.fround(c.r) || colors[index * 3 + 1] !== Math.fround(c.g) ||
-            colors[index * 3 + 2] !== Math.fround(c.b)) {
-          mesh.setColorAt(index, c);
-          mesh.instanceColor!.needsUpdate = true;
+        const e = this.pose12;
+        e[0] = cy; e[1] = 0; e[2] = -sy; e[3] = sy * sx; e[4] = cx; e[5] = cy * sx;
+        e[6] = sy * cx; e[7] = -sx; e[8] = cy * cx; e[9] = x; e[10] = (front.y + rear.y) * .5 + .03; e[11] = z;
+        const fromStart = course.fadeStartM ? (s - half) / course.fadeStartM : 1;
+        const toEnd = course.fadeEndM ? (line.length - s - half) / course.fadeEndM : 1;
+        const opacity = Math.min(1, fromStart, toEnd);
+        dirty = this.emit(slot.kind, slot.color, e, opacity) || dirty;
+        if (record) {
+          const h = lane.held[lane.heldCount++] ??= { kind: slot.kind, color: slot.color, opacity, e: new Float64Array(12), x, y, z, half: end, ux, uz };
+          h.kind = slot.kind; h.color = slot.color; h.opacity = opacity; h.e.set(e);
+          h.x = x; h.y = y; h.z = z; h.half = end; h.ux = ux; h.uz = uz;
         }
       }
     }
     this.finish(counts, dirty);
+  }
+
+  private readonly pose12 = new Float64Array(12);
+
+  /** Draw one car at the next instance of its kind's mesh; true if its matrix changed. */
+  private emit(kind: Kind, c: THREE.Color, e: Float64Array, a: number) {
+    const mesh = this.meshes.get(kind)!;
+    const index = mesh.count++;
+    const changed = write(mesh.instanceMatrix.array as Float32Array, index * 16, e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8], e[9], e[10], e[11]);
+    const opacity = mesh.geometry.getAttribute('tripOpacity') as THREE.InstancedBufferAttribute | undefined;
+    if (opacity) {
+      const arr = opacity.array as Float32Array;
+      if (arr[index] !== Math.fround(a)) { arr[index] = a; opacity.needsUpdate = true; }
+    }
+    const colors = mesh.instanceColor?.array as Float32Array | undefined;
+    if (!colors || colors[index * 3] !== Math.fround(c.r) || colors[index * 3 + 1] !== Math.fround(c.g) ||
+        colors[index * 3 + 2] !== Math.fround(c.b)) {
+      mesh.setColorAt(index, c);
+      mesh.instanceColor!.needsUpdate = true;
+    }
+    return changed;
+  }
+
+  /** A far lane between its ticks: its cars where they were last posed, still occupying their
+   * footprints so nearer cars keep clear of them. A bus, streetcar or car that has moved into a
+   * held footprint since the tick hides that car, as it would a freshly posed one. */
+  private replay(lane: LaneState) {
+    let dirty = false;
+    for (let i = 0; i < lane.heldCount; i++) {
+      const h = lane.held[i];
+      if (this.opts.busOccupies?.(h.x, h.y, h.z, LENGTH[h.kind], Math.atan2(h.ux, h.uz))) continue;
+      if (this.blocked(h.x, h.y, h.z, h.ux, h.uz, h.half)) continue;
+      const place = this.visible[this.visibleCars] ??= { x: h.x, y: h.y, z: h.z, half: h.half, ux: h.ux, uz: h.uz };
+      place.x = h.x; place.y = h.y; place.z = h.z; place.half = h.half; place.ux = h.ux; place.uz = h.uz; place.lane = lane.course;
+      this.visibleCars++;
+      dirty = this.emit(h.kind, h.color, h.e, h.opacity) || dirty;
+    }
+    return dirty;
   }
 
   private readonly meshCounts = new Map<Kind, number>();

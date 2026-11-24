@@ -56,13 +56,14 @@ const TRAIL_KEY = 'perf-trail';
  *   &shadowstep=80 grid step (m) the shadow camera moves in (0 = follow the target)
  *   &traffic=legacy  road traffic's pre-2026-11-24 update path (every car posed and height-sampled
  *                 every frame), for A/B update-ms runs on a device; &traffic=nocull keeps the new
- *                 path but poses off-screen cars too (to compare drawn cars with legacy)
+ *                 path but poses off-screen cars too (to compare drawn cars with legacy); &traffic=near
+ *                 re-poses every lane every frame (no 15 Hz rate for lanes beyond 600 m)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false, trafficNear: false };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -78,6 +79,7 @@ export const perfOverrides = (() => {
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
     trafficLegacy: params.get('traffic') === 'legacy',
     trafficNoCull: params.get('traffic') === 'nocull',
+    trafficNear: params.get('traffic') === 'near',
   };
 })();
 
@@ -87,6 +89,9 @@ const updateMs = new Float32Array(N);
 /** CPU ms the road-traffic layers spent in update() during each frame (all instances summed). */
 const trafficMs = new Float32Array(N);
 let trafficNow = 0;
+let idleTasks = 0, idleMaxMs = 0;
+const idleMs: number[] = [];
+const counters: Record<string, number> = {};
 const renderMs = new Float32Array(N);
 const tris = new Float32Array(N);
 let head = 0;
@@ -639,6 +644,15 @@ export const perf = {
   setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
   /** Add CPU ms spent in road-traffic update() to the current frame. */
   traffic(ms: number) { trafficNow += ms; },
+  /** One idle-time task's main-thread ms (the coordinator's rule: report the longest at 6x). */
+  idleTask(ms: number) { idleTasks++; idleMaxMs = Math.max(idleMaxMs, ms); if (idleMs.length < 4096) idleMs.push(ms); },
+  get idle() {
+    const s = [...idleMs].sort((a, b) => a - b), q = (p: number) => Math.round((s[Math.floor(p * (s.length - 1))] ?? 0) * 100) / 100;
+    return { tasks: idleTasks, p50: q(.5), p95: q(.95), p99: q(.99), maxMs: Math.round(idleMaxMs * 100) / 100 };
+  },
+  /** Cumulative work counters (road traffic's height preparation and exact reads, by caller). */
+  count(name: string, n = 1) { counters[name] = (counters[name] ?? 0) + n; },
+  get counts() { return { ...counters }; },
   /**
    * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
    * count (drawRange, material group and instance count, as three.js computes it), its pass (main,
