@@ -36,12 +36,17 @@ let changed = false;
 export function takeHouseLodChange() { const c = changed; changed = false; frame++; return c; }
 
 function build(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
+  return runSync(buildWorld(houses, o, finish));
+}
+
+/** build() as a build that yields every few houses (core/slice.ts). */
+function* buildWorld(houses: VBuilding[], o: HouseLodOptions, finish: Finish) {
   class Houses extends World {
     override ground(x: number, z: number) { return o.ground(x, z) ?? 0; }
   }
   const world = new Houses({ bounds: o.bounds, buildings: houses, roads: [], rail: [] } as unknown as VData, null,
     { terrain: 'flat', clumps: 3, lightMapMax: 256 } as never);
-  world.buildBuildings(o.foundation, o.roofUnits, finish);
+  yield* world.buildingSteps(o.foundation, o.roofUnits, finish);
   // Drop empty meshes (no lit glass or roof clutter on far houses), so they never cost a draw.
   for (const m of [...world.group.children]) {
     const mesh = m as THREE.Mesh, g = mesh.geometry as THREE.BufferGeometry | undefined;
@@ -206,7 +211,7 @@ export function* buildHouseLod(o: HouseLodOptions) {
   const tiles: HouseTile[] = [];
   const blocks = new Map<string, HouseTile[]>();
   for (const [key, houses] of cells) {
-    const tile = new HouseTile(houses, o, build(houses, o, o.far), state);
+    const tile = new HouseTile(houses, o, yield* buildWorld(houses, o, o.far), state);
     if (o.force === 'near') tile.ensureNear();
     tiles.push(tile);
     yield 'house tile';
