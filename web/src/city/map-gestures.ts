@@ -83,6 +83,20 @@ export function mapGestures(
     const [a, b] = [...touches.values()];
     return Math.atan2(b.y - a.y, b.x - a.x);
   };
+  // DOLLY_ROTATE combines pinch and orbit. Read both pointers together after
+  // their move events; a partially updated pair can look like a pinch mid-twist.
+  let pinchStart: number | null = null;
+  let pinchFrame = 0;
+  const span = () => {
+    const [a, b] = [...touches.values()];
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  };
+  const checkPinch = () => {
+    if (pinchStart !== null && Math.abs(span() - pinchStart) > 6) {
+      pinchStart = null;
+      onZoom();
+    }
+  };
   // ---- double tap: two quick single-finger taps close together ----
   let down: { id: number; x: number; y: number; t: number } | null = null;
   let lastTap: { x: number; y: number; t: number } | null = null;
@@ -93,6 +107,7 @@ export function mapGestures(
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (touches.size > 1) lastTap = null; // a pinch between two taps is not a double tap
     twist = touches.size === 2 ? angle() : null;
+    pinchStart = touches.size === 2 ? span() : null;
     down = touches.size === 1 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp } : null;
   });
   on('pointermove', (e) => {
@@ -101,6 +116,9 @@ export function mapGestures(
     p.x = e.clientX;
     p.y = e.clientY;
     if (touches.size !== 2 || twist == null) return;
+    if (pinchStart !== null && !pinchFrame) {
+      pinchFrame = requestAnimationFrame(() => { pinchFrame = 0; checkPinch(); });
+    }
     const a = angle();
     const d = angleDelta(twist, a);
     twist = a;
@@ -108,7 +126,10 @@ export function mapGestures(
     if (Math.abs(d) > 1e-4 && Math.abs(d) < 0.5) rotate((d * 180) / Math.PI);
   });
   const lift = (e: PointerEvent) => {
-    if (!touches.delete(e.pointerId)) return;
+    if (!touches.has(e.pointerId)) return;
+    checkPinch();
+    touches.delete(e.pointerId);
+    pinchStart = touches.size === 2 ? span() : null;
     twist = touches.size === 2 ? angle() : null;
     if (e.type !== 'pointerup' || !down || down.id !== e.pointerId) return (down = null), undefined;
     const quick = e.timeStamp - down.t < TAP_MS && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10;
@@ -123,6 +144,7 @@ export function mapGestures(
   on('pointercancel', lift);
 
   return () => {
+    cancelAnimationFrame(pinchFrame);
     events.abort();
     if (rotateLeft) inner._rotateLeft = rotateLeft;
   };
