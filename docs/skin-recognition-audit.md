@@ -21,7 +21,7 @@
 | PASS (plain, photo-backed) | The Landmark (#515) | large | skins-7 | 500 m frame: brick field, paired windows, pale fins; the photo shows no crown |
 | FIXED (pending 8c) | Tower Square (#188) | medium–large | skins-1 | #620: splayed piloti base, blank crown band, corner piers (photo-backed) |
 | FIXED (pending 8b) | Federal Reserve (#274) | medium | skins-6 | Rework #594 approved: paired windows between marble piers, photo-correct loggia; the slab is genuinely plain |
-| BORDERLINE | Modera Parkside (#473) | medium | skins-2 | Later pass |
+| FIXED (pending 8c) | Modera Parkside (#473) | medium | culture | #636: photographed rainbow slot, crown visor, core box (Gresham Smith 2025) |
 | BORDERLINE | SkyHouse South (#504) | medium | skins-3 | Later pass |
 | BORDERLINE | Nine15 Midtown (#511) | medium | skins-3 | Later pass |
 | PASS (plain, photo-backed; pending 8b) | 1072 West Peachtree (#445) | small | skins-6 | #604: photo-measured balcony slots; photos show a plain reflective shaft, identity is its height |
