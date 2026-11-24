@@ -3779,3 +3779,15 @@ pairs the longest title and artist strings to stress-test the available space.
 The standalone lab showed its 473 m intermodal train, but the embedded view opened with the camera and target both at the origin, looking under a car. The strip draws all 20 wells as one instanced group, and the embedded camera measured the individual-car list, which was empty. The camera now measures the instanced group with the same panel-aware fit as the other models. The Vehicles picker also lists the strip. At 1440 × 900 the entire consist fits between the open panels, and picking the 50-foot boxcar still gives the same camera and target to numerical precision. [Before](log/intermodal-picker/before-direct.jpg) · [After](log/intermodal-picker/after-direct.jpg) · [Selected through Vehicles](log/intermodal-picker/after-intermodal.jpg)
 
 In the closer composition, the 20-car train has its own Consists entry. The opening camera fits the lead four wells from ahead of the train and leaves enough depth to zoom back to all 473 m. The remaining 16 wells recede along the same track. The full-length Side view remains available. Identical picker selections at 1440 × 900 and 390 × 844 show why the full fit was hard to read on a phone. [Desktop openings](log/intermodal-picker/desktop-opening.jpg) · [Phone openings](log/intermodal-picker/phone-opening.jpg) · [Phone zoom-out](log/intermodal-picker/phone-zoom.jpg)
+
+### 2026-11-24 — A brighter overcast noon at the Midtown arts campus
+
+With the sun behind dry cloud, the north-facing walls around the arts campus looked almost as dim at noon as they did in rain. City now gives those walls and the pavement more light from the sky and ground while keeping the direct sun soft. A separate peach tint follows the low eastern sun through dawn and fades out as it climbs.
+
+From the same 1,200 m orbit, dry-overcast noon raised the central crop’s mean display luma from 83.5 to 125.8 on Low and 78.8 to 119.7 on High (0–255). At 07:23, cool shade remained visible between the warmer façades. The full-night, storm and dusk controls matched to the nearest tenth of a luma unit on both tiers. All 20 frames use Atlanta time on November 20, 2026, a paused clock and camera `565,-3965,-101,55,1200`.
+
+[Low noon, dawn and night](log/city-sky/low-study.jpg) · [High noon, dawn and night](log/city-sky/high-study.jpg) · [Low storm and dusk](log/city-sky/low-controls.jpg) · [High storm and dusk](log/city-sky/high-controls.jpg)
+
+### 2026-11-24 — Choosing the cloud fill at noon
+
+The first overcast pass made the dark tower easier to read, but the arts-center roof, pavement and lawn began to blend together. Sam selected the right-hand frame in the [three-way comparison](https://share.onorca.dev/a/2xr828hqBC6T). Halving the extra dry-cloud hemisphere intensity from +0.8 to +0.4 kept the soft shadows and brought the matched High noon crop to 107.6 mean display luma, between clear noon at 100.6 and the first overcast pass at 119.7. The sunrise palette and eastern-sun blend carry forward as reviewed. [Selected frame with matched arts-center details](log/city-sky/high-noon-selection.jpg)
