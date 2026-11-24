@@ -233,7 +233,18 @@ export function symphonyTower(shell: Shell) {
   // Kendall/Heaton's night skyline: the veil glass is a soft pale grey-green wash,
   // dimmer than the white lattice behind it; nothing on the crown clips to white.
   const veilMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true,
-    opacity: .88, depthWrite: false, emissive: '#9dbcb2', emissiveIntensity: 0 });
+    opacity: .88, depthWrite: true, emissive: '#d5dfdc', emissiveIntensity: 0 });
+  // The ink pass needs the veil's own depth, rather than the lattice/scene behind it.
+  // A single smooth wash rises gently towards the crest; no window atlas or texture.
+  veilMaterial.onBeforeCompile = shader => {
+    shader.vertexShader = 'varying float vVeilHeight;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>',
+      `#include <begin_vertex>\nvVeilHeight = clamp((position.y - ${ROOF.toFixed(3)}) / ${VEIL.toFixed(3)}, 0.0, 1.0);`);
+    shader.fragmentShader = 'varying float vVeilHeight;\n' + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= mix(0.72, 1.0, vVeilHeight);');
+  };
+  veilMaterial.customProgramCacheKey = () => '1180-veil-wash-v1';
   // One mesh per veil, so three.js sorts the near one over the far one.
   const veil = veilSides.map((b, i) => { const m = new THREE.Mesh(b.geometry(), veilMaterial); m.name = `1180 veil ${i}`; return m; });
   const lattice = new THREE.Mesh(frame.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
@@ -245,6 +256,7 @@ export function symphonyTower(shell: Shell) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
     veilMaterial.emissiveIntensity = CROWN_NIGHT.veil * night;
+    veilMaterial.opacity = .88 + .12 * Math.min(1, Math.max(0, night));
     (crownFrame.material as THREE.MeshLambertMaterial).emissiveIntensity = CROWN_NIGHT.lattice * night;
     lineMaterial.color.setScalar(CROWN_NIGHT.edge * Math.min(1, night));
     edgeLine.visible = night > .001;

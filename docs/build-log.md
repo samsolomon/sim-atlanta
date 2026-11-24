@@ -2767,3 +2767,9 @@ The freight locomotive branch now passes the full test command with Python check
 ### 2026-11-23 — 1180 crown colour trials
 
 Compared three pale-green emission colours at 92%, 97%, and 100% veil opacity, holding emission strength at 0.82. Six captures use the same Midtown aerial at 23:30 across both quality tiers. The paler panels brighten, but a mottled appearance remains even at full opacity: opacity alone does not recreate the smooth wash in the Kendall/Heaton night photograph. These are review trials, not a selected production change. [Comparison sheet](log/ui/midtown-skyline/napkin-night-colour-trials.jpg).
+
+### 2026-11-23 — The veil needed depth
+
+A controlled render changed only depthWrite to true while retaining the old colour and 88% opacity: the large mottled patches disappeared. The ink pass had been reading depth from objects behind the veil. The new night study writes veil depth, reaches 100% opacity at full night, and applies one procedural emissive wash rising from 72% at the base to 100% at the crest. No texture or geometry was added. Three silver-white colours at 0.82 strength are shown on both tiers in the [smooth-wash sheet](log/ui/midtown-skyline/napkin-night-smooth-steps.jpg); B (#d5dfdc) is provisional pending Sam's choice. The [matched daytime camera](log/ui/midtown-skyline/napkin-smooth-day-high.png) remains at 88% opacity.
+
+Full tests, the 15 skyline tests including the new depth/opacity guard, and performance budgets pass. Cross-review confirmed the depth explanation and flagged daytime near/far veil sorting and oblique edge-light occlusion as plausible risks to check before merge. The earlier colour-only sheet is superseded. This needs a web rebuild on eventual release; nothing is deployed.

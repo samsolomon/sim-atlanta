@@ -85,3 +85,9 @@
 - Captured runtime-only colour/opacity trials in `docs/log/ui/midtown-skyline/napkin-night-colour-trials.jpg`: A #b2cfc5/.92, B #c4ddd4/.97, C #d8e9e2/1.00; intensity .82 unchanged. Both tiers, requested aerial and 23:30 clock. Production source unchanged.
 - The veil brightens, but mottling persists at both tiers. Investigate before calling the soft wash finished. No pick or merge yet; tests/ceiling/review remain after selection.
 - Coordinator delivery blocked: saved environment alias is `air`, but `orca orchestration send --on air` returns `Remote Orca runtime rejected the pairing token`. User asked to refresh pairing. Local delivery cannot find the remote terminal. `orca orchestration check` returned no messages.
+
+## Smooth-wash follow-up (supersedes colour-only trials)
+- Coordinator reply route works: reply to msg_ba155acc1549 from orca_session_id:f9351f4d-5bff-422e-895e-42277adf4c92. No pairing refresh needed for replies.
+- Source now provisionally implements step B in napkin-night-smooth-steps.jpg: #d5dfdc, intensity .82, depthWrite true, opacity .88 daytime to 1 night, procedural height emission multiplier .72–1. A=#b4c3bf, C=#e7eeeb. Await Sam's pick; no PR/merge.
+- Controlled old-colour/.88-opacity test with only depthWrite enabled removed the large mottling. Ink uses background depth when the veil does not write depth.
+- pnpm test, focused 15 skyline tests, and pnpm test:perf pass. pnpm review now works (Claude); round 1 found stale docs (superseded here and in build log) and plausible near/far daytime sorting / oblique edge-light occlusion. Check those cameras before merge, retune ceiling to chosen colour, then final review (round 2).

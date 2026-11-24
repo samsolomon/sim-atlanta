@@ -145,6 +145,11 @@ it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit
   model.setNight(1);
   expect((wall.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
   expect((veils[0].material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  // Without veil depth, the post pass outlines background lattice through the wash.
+  for (const veil of veils) {
+    expect((veil.material as MeshLambertMaterial).depthWrite).toBe(true);
+    expect((veil.material as MeshLambertMaterial).opacity).toBe(1);
+  }
   // The crown lattice glows from inside and the leading-edge light line appears only at night.
   // The crown is a soft wash at night (Kendall/Heaton night skyline): no crown
   // material's emissive may saturate a channel, or it clips to a white slab.
