@@ -12,11 +12,11 @@ import { wallRuns } from './marquis-offices';
  * lidar (docs/log/ui/ten-peachtree-place/README.md).
  */
 export const tenPeachtreePlaceId = 'osm:way:164876035';
-const TOWER = 'osm:way:1430435514', SOUTH_WING = 'osm:way:235008477';
+const TOWER = 'osm:way:1430435514', TENTH_WING = 'osm:way:235008477';
 const origin: P2 = [411, -3010];
 
 export const TEN_PEACHTREE_PLACE = {
-  grade: 293.1, roof: 374.4, parapet: 376.1, penthouse: 378.0, lowMid: 320.2, lowSouth: 311.8, floor: 3.9,
+  grade: 293.1, roof: 374.4, parapet: 376.1, penthouse: 378.0, lowMid: 320.2, lowTenth: 311.8, floor: 3.9,
 } as const;
 
 // Red granite (photographs), dark window rows and green glass under the base-value table.
@@ -46,15 +46,15 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
   const panel = (f: Face, l: number, r: number, lo: number, hi: number, d: number, colour: string, lit = false) =>
     (lit ? s.lights : s.body).quad(at(f, l, lo, d), at(f, l, hi, d), at(f, r, hi, d), at(f, r, lo, d), colour);
 
-  // Low wings to the south: granite with one window row per floor.
+  // Low wings toward 10th Street (north): granite with one window row per floor.
   for (const part of parts) {
     if (part === tower || part.h < 8) continue;
     const plan = local(part.rings[0]);
-    // Lidar: the south wing on 10th tops out at 311.8 m, the middle wings at 320.2 m.
-    const top = part.id === SOUTH_WING ? H.lowSouth : H.lowMid;
+    // Lidar: the wing on 10th Street tops out at 311.8 m, the middle wings at 320.2 m.
+    const top = part.id === TENTH_WING ? H.lowTenth : H.lowMid;
     s.prism(plan, base, top, granite, roof);
     for (const f of faces(plan)) {
-      if (f.length < 6 || f.n[1] < 0.5) continue; // south and street faces only
+      if (f.length < 6 || f.n[1] > 0.5) continue; // skip faces turned toward the tower
       for (let y = H.grade + 4.6; y + 3 < top; y += H.floor) panel(f, 0.06, 0.94, y + 1, y + 2.8, 0.05, windows);
     }
   }
@@ -70,7 +70,7 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
   });
   runs.forEach((f, face) => {
     if (f.length < 8) return;
-    const broad = f.length > 40, north = f.n[1] < -0.9;
+    const broad = f.length > 40, south = f.n[1] > 0.9; // z is -north: +z faces Peachtree Place
     const lo = H.grade + 8;
     // Window rows: one dark band per floor, broken by the corner slots and the central bay.
     const slot = 4.5 / f.length, slotW = 1.6 / f.length;
@@ -106,7 +106,7 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
       panel(f, k / merlons, (k + 1) / merlons, H.roof - 3.8, H.roof - 0.8, 0.04, graniteDark);
     }
     panel(f, 0, 1, H.roof, H.parapet, 0, granite);
-    if (north && broad) {
+    if (south && broad) {
       // The Peachtree Place entrance: a tall recessed glass bay with a lunette over the setback.
       panel(f, 0.44, 0.56, H.grade + 0.3, H.grade + 14, 0.06, lobby);
       s.lights.quad(at(f, 0.46, H.grade + 0.3, 0.07), at(f, 0.46, H.grade + 5, 0.07), at(f, 0.54, H.grade + 5, 0.07), at(f, 0.54, H.grade + 0.3, 0.07), lobby);
