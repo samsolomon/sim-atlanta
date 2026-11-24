@@ -3715,6 +3715,16 @@ the rim and spokes glow the blue-violet of most night photos. It doesn't turn,
 because a static batch costs nothing and an animated wheel wouldn't.
 [Before and after](log/ui/skyview-atlanta/compare-day.jpg) · [night](log/ui/skyview-atlanta/compare-night.jpg) · [notes](skyview-atlanta.md)
 
+### 2026-11-24 — More brick on ordinary blocks
+
+Giving each generic facade a base and a cap originally cost 15.6 MB on low. Keeping a flush
+street frontage and drawing the window rhythm on a straight shaft brought the overhead to
+about 6 MB. At the high-tier Peachtree Center camera, a red-brick shop sits beside an open
+concrete deck. The glass check found a different issue in the banded offices. One sunlit
+ribbon reached just V 34.9 under the final colour grade. The same pane sample now bottoms out
+at V 49.8. The [four-view sheet](log/ui/generic-buildings/final-sheet.jpg) follows the city
+from late morning through the first lit windows.
+
 ### 2026-11-24 · Windsor Over Peachtree in buff brick
 
 The 1964 Peachtree North Apartments at North Avenue had been a generic glass slab. The lidar puts the roof at 57 m above grade. Two photographs gave the look: buff brick, balcony runs between brick piers, and brick end walls. The first version ran the balconies the full length of each face, and from the review orbit they hid every pier, so the building read as a grey striped box. Breaking the runs at the piers brought the brick back. [Before/after, day and night](log/ui/windsor-over-peachtree/README.md)
@@ -3750,3 +3760,7 @@ A tap three pixels into the track title could switch stations. The station arrow
 ### 2026-11-24 · Postcards from the City camera
 
 A shared camera opens the exact angle, but its link preview can last for days in a message thread. We photographed 23 neighbourhoods in daylight and gave the five staged Views their own pictures. The build opens City once and moves the camera between shots. Each share page carries the place name in its HTML, so a messaging app can read it without loading the map or calling the Worker. [Downtown cover](log/share-previews/default.jpg) · [Midtown](log/share-previews/midtown.jpg) · [Sweet Auburn](log/share-previews/sweet-auburn.jpg) · [Old Fourth Ward](log/share-previews/old-fourth-ward.jpg)
+
+### 2026-11-24 · Ordinary buildings on the release 12 board
+
+At the downtown-wide camera, the towers make good reference points for seeing what changed around them. The eight generic facades give street walls a base and window rhythm. High adds the recessed lobbies and projecting caps. Low keeps those bases flush and uses 175.8 MB of geometry across the board. High uses 297.1 MB of its 300 MB budget. The East Portal illustration exporter still produced the same 51,108,052-byte GLB, including its baked panes. [Matched Low and High views against release 12](log/ui/generic-buildings/release-12-comparison.jpg)
