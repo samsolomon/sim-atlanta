@@ -82,6 +82,7 @@ import { createSouthernBell } from './southern-bell';
 import { createRhodesHaverty } from './rhodes-haverty';
 import { createEmpireBuilding } from './empire-building';
 import { createCommerceBuilding } from './commerce-building';
+import { createWdGrantBuilding } from './wd-grant-building';
 import { createHundredEdgewood } from './100-edgewood';
 import { createMetropolitan } from './metropolitan';
 import { createMariettaBackdrop } from './marietta-backdrop';
@@ -395,6 +396,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let rhodesHaverty: ReturnType<typeof createRhodesHaverty> = null;
   let empireBuilding: ReturnType<typeof createEmpireBuilding> = null;
   let commerceBuilding: ReturnType<typeof createCommerceBuilding> = null;
+  let wdGrantBuilding: ReturnType<typeof createWdGrantBuilding> = null;
   let hundredEdgewood: ReturnType<typeof createHundredEdgewood> = null;
   let metropolitan: ReturnType<typeof createMetropolitan> = null;
   let mariettaBackdrop: ReturnType<typeof createMariettaBackdrop> = null;
@@ -511,8 +513,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         empireBuilding = createEmpireBuilding(afterRhodesHaverty, ground);
         commerceBuilding = createCommerceBuilding(empireBuilding?.buildings ?? afterRhodesHaverty, ground);
         const afterCommerceBuilding = commerceBuilding?.buildings ?? empireBuilding?.buildings ?? afterRhodesHaverty;
-        hundredEdgewood = createHundredEdgewood(afterCommerceBuilding, ground);
-        const afterHundredEdgewood = hundredEdgewood?.buildings ?? afterCommerceBuilding;
+        wdGrantBuilding = createWdGrantBuilding(afterCommerceBuilding, ground, quality);
+        const afterWdGrantBuilding = wdGrantBuilding?.buildings ?? afterCommerceBuilding;
+        hundredEdgewood = createHundredEdgewood(afterWdGrantBuilding, ground);
+        const afterHundredEdgewood = hundredEdgewood?.buildings ?? afterWdGrantBuilding;
         metropolitan = createMetropolitan(afterHundredEdgewood, ground);
         const afterMetropolitan = metropolitan?.buildings ?? afterHundredEdgewood;
         mariettaBackdrop = createMariettaBackdrop(afterMetropolitan, ground);
@@ -622,6 +626,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (rhodesHaverty) world.group.add(rhodesHaverty.group);
         if (empireBuilding) world.group.add(empireBuilding.group);
         if (commerceBuilding) world.group.add(commerceBuilding.group);
+        if (wdGrantBuilding) world.group.add(wdGrantBuilding.group);
         if (hundredEdgewood) world.group.add(hundredEdgewood.group);
         if (metropolitan) world.group.add(metropolitan.group);
         if (mariettaBackdrop) world.group.add(mariettaBackdrop.group);
@@ -665,7 +670,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
             peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
             fiftyFiveParkPlace,
-            fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
+            fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding, wdGrantBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
@@ -1643,6 +1648,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       rhodesHaverty?.setNight(night);
       empireBuilding?.setNight(night);
       commerceBuilding?.setNight(night);
+      wdGrantBuilding?.setNight(night);
       hundredEdgewood?.setNight(night);
       metropolitan?.setNight(night);
       mariettaBackdrop?.setNight(night);
