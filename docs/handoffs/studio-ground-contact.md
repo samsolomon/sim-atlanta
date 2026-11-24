@@ -1,30 +1,84 @@
-# Studio ground-contact handoff (Claude Opus, 2026-11-23)
+# Studio ground-contact handoff (Claude Opus → Codex, 2026-11-24)
 
-## Active work and merge hold
+Previous session: `orca_session_id:a761d59f-dbff-4e39-95d4-51790b17cb47` (read it with `orca agent read`).
+Coordinator: `term_09e1b3da` on Sam's MacBook Air. Merge slots: the skyline lead
+`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`. Nothing merges without the coordinator relaying Sam's OK
+(or, where stated below, the coordinator's own approval).
 
-**PR #399** `samsolomon/underpass-road-joins` — Smooth the North Avenue underpass joints. It is open and **held for Sam's OK**, which only the coordinator relays. The coordinator is `term_09e1b3da-…` on Sam's MacBook Air; reply to its welcome message `msg_3d5fda67006f`.
+## In flight, in priority order
 
-Done and verified:
-- Board levelled at both mouths: `underpassGround` with `MOUTH_LEVEL_M`/`MOUTH_APPROACH_M`.
-- Ramp of `MOUTH_RAMP_M` = 20 m, following the board at 1 m across.
-- Fixed strip piece counts and a 0.4 m tucked apron.
-- The board's yellow line per carriageway carried through the cut (`boardLines`, `STREET_LINE`).
-- Median and kerbs tapering over 12 m.
-- Probe in `north-ave.test.ts`, which fails at baseline: step 1.40 → 0.045 m, vehicle 1.38 → 0.011 m, cross-fall 4.6 → 0.05 m, fold 43% → 4.3%, maximum grade 42% → 7.7%.
-- test:release, test:perf (low 85/90 programs) and audit:ground (+10 samples of 4 cm or less, all on the apron) were run, and two codex reviews found nothing.
+### 1. Sam's footpath over the freight line: `samsolomon/footpath-rail` (no PR yet; the coordinator reviews the sheet before merge)
+Sam saw a pale path at the Gulch deck corner (site **G**) climb onto the freight track and trains drive through it.
+Cause: all 238 downtown bridge runs are inferred (no lidar profile) and each run's ends sat on the bare-earth DEM,
+which in the Gulch is the rail floor.
+- `terrain/deck-levels.ts` (pure solver) and the wiring in `terrain/transport.ts`. Only **rail clusters** are
+  affected: decks connected through bridge-only nodes to a deck over a track. Every other deck on every board is
+  bit-identical to main.
+- Rules, each a coordinator ruling: rail clearance over the swept width (`RAIL_ENVELOPE_M` 1.8, rail + 8 m);
+  free nodes take a level ramped at 8% (`DECK_GRADE`, checked at `DECK_REACH` 6.5%) to real abutments;
+  **a road's sidewalk stays welded to its deck end to end** (sidewalk = at least 60% of its length beside a road
+  deck; Overture leaves `subclass` empty); a standalone footbridge end on a ground walk keeps the ground; an
+  unreachable end at OSM steps stays up and gets a drawn stair; a deck ending on another deck meets its drawn
+  tread (`drawnTopAt`, drawn in `throughFirst` order); clustered deck ends are mitred (folded in from road-cracks).
+- `terrain/model.ts`: canopy trees within 4 m of a surface track are skipped **after** their seed is drawn
+  (filtering the list reshuffled every tree's colour; don't do that).
+- `terrain/rail-envelope.test.ts`: board-wide envelope check, with counts pinned (downtown 8 cells in the
+  envelope, was 47; 45 cells under 7 m, was 166; 1 path at grade). Lower the pins as fixes land.
+- Evidence so far: 89 of 533 runs change, all downtown. Pixel diffs on frozen builds (`?perf&nopass=grade,gtao`):
+  Whitehall (#418 cam), North Ave/Connector, 17th, Grant/CSX and all 21 deck-over-road shadow cams are identical
+  to main, except `viaduct` (0.1% of pixels, max delta 4/255, shadow-map rounding). The traffic sampler
+  (cfb2a7c9) found cars follow the new heights (within 5 mm), crack cells down from 85 to 81, and one new
+  cell at (-484.8, 100.7). The mitre added since should close that; ask cfb2a7c9 to re-run.
+- `pnpm test`: 1304 passed. One vitest worker RPC timeout under load; rerun.
+- **Remaining before the PR**: `pnpm test:perf` both tiers; `pnpm build`; `pnpm review` (Claude → it will be
+  Codex reviewing Claude's code; triage per review-charter); the sheet for the coordinator (frames for G, A
+  (Russell Plaza), B (trees), Whitehall, North Ave/Connector and the shadow set; the changed-run table with
+  old/new max grade and clearance; 20 runs with a new steep step (short links and pinned ends between a raised
+  deck and a floor footway, none mid-span); the 32-joint landing list in `docs/art-backlog.md`). The coordinator
+  approves after reviewing that sheet and shows Sam G, A and Whitehall.
+- Frame tooling is in the old scratchpad (gone with this session): `shots5.mjs` reloads a frozen preview build
+  per `cam=` and screenshots PNG with the HUD hidden; build main from `git merge-base HEAD origin/main`.
 
-Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-na-*`. The cam strings are in the PR body.
+### 2. #418 deck-sidewalk welds and landings (coordinator ruling, after item 1 lands)
+Stack on #418 (`samsolomon/deck-approach-joins`, held for Sam): deck sidewalk strips continue into ground
+sidewalks (same width and colour, short taper, no gap); parapets ramp to nothing at landings; Whitehall's
+40% climb under 8%; a board-wide landing list with before/after frames and a check flagging deck sidewalk ends
+more than 0.5 m from a ground sidewalk or kerb. Include the 32 Gulch landings from item 1.
 
-- **PR #500** `samsolomon/transport-far`: transport far form, approved after the A16 run (+1 fps, -272k triangles). **#509** `samsolomon/north-line-far` (North Line far form, owner 54bca5c0 OK'd) is stacked on it, also approved. They merge together in the slot the skyline lead (47b1a596) booked after #499+#501; wait for its call. Then: rebase, run one build, test:release and test:perf on the stacked head, merge #500, retarget #509 to main, merge it, and quote gh pr view for both.
-- **PR #514** `samsolomon/transport-shadow` (stacked on #509): far prefix in shadow redraws. Held for the coordinator's review. Retarget it after #509 merges.
-- **#512** (studio-amtrak-livery freight fillets): ground-contact OK given.
-- Deck cell split for the shadow camera: phone-perf said skip it after #514 (+15-25 main-pass calls cost more on the A16). If it comes back, use the landmark-batch grid: 500 m cells, floor(x/500), floor(z/500), origin at scene 0,0.
+### 3. Far-slice GC follow-up: `samsolomon/far-slice-pool` (WIP 9ef65c07)
+The coordinator and lead want the far-ground background build's longest slice at or under 8 ms at 6x (lead:
+5 ms). Diagnosis: GC pauses from number[] and Map survivors. The WIP converts the far build to growing typed
+arrays; output is bit-identical in 78 cases. Remaining: per-triangle temporaries, a CDP trace on main versus the
+branch at 6x, the slice distribution (p50/p99/max), and a PR. It needs rebasing on main.
 
-## Next steps
-1. Wait for Sam's OK via the coordinator. Rebase before merging (the build log conflicts routinely), then quote `gh pr view 399 --json state,mergeCommit`.
-2. Open scope question for the coordinator: the Connector deck crossings and 17th go through `bridge-approaches.ts`, the Connector agent's module. I haven't inspected the Brookwood ramps; ask before editing either.
+### 4. Road cracks: `samsolomon/road-cracks` (WIP 849a9a60, 99bdfec5)
+Apron (17th St west) and mitre (10th St). The traffic sampler showed 85 to 77. Agreed next step: in
+`city/road-height.ts`, fall back to a deck run sharing the road's end node; then downtown (-778,-38) at 1.35 m
+and Connector (1097,241). Ping cfb2a7c9 to re-run after each.
+
+### 5. Streetcar paving (B): after #625 (merged 750228e6)
+Paint carriageway paving under `streetcarSweptCorners()` (city/streetcar-shape.ts) in ground-map.ts; cover site
+9 (161,-643); then tighten `KERB_PAST` in streetcar-shape.test.ts.
+
+## Open PRs I own
+- **#418** `samsolomon/deck-approach-joins`: held for Sam. Merge it first, then retarget #476 to main.
+- **#476** `samsolomon/connector-seam-links`: held for Sam, stacked on #418.
+
+## Sam's decisions today (relayed by the coordinator; check details with the coordinator)
+Flat glass; far-board; landmark LOD; far shadows; tree far form; the streaming flag; the 0.45 shade floor;
+1075 glass B; expansion paused; generic buildings as the priority. In my area: footpath/viaduct fixes merge
+after the coordinator reviews the sheet (not merge-on-green), and sidewalks stay welded.
+
+## Notes
+- phone-perf's #593 number for main c01ca94d: route:north 547 ms (HouseTile near builds, tree lab's), zoomout
+  109 ms; very-far ground no longer in it. Relay it to the coordinator if not done.
+- Studio Midtown's #663 (rail-gaps) adds freight tunnel portals and OpenSlots downtown. Review it when asked,
+  including `audit:ground` and far-form registration.
 
 ## Traps
+- Idle work must be sliced (coordinator rule): use core/slice.ts runBudgeted on rAF, never requestIdleCallback for whole-board work, and report the longest slice at 6x.
+- The far prefix is also the shadow pass (#514): anything dropped from it must not be the only caster for its spot (freight decks, #566). The far-form test pins every deck sample.
+- Capture scripts must launch their own Chrome via `scripts/chrome-cdp.mjs` launchChrome (port 0); never attach by port, never pkill by pattern.
 - Pixel-diff City frames only with `?perf&nopass=grade` (animated grain), and on high also `gtao`; otherwise identical runs differ.
 - Perf baselines with swapped files: use `git merge-base HEAD origin/main`, never `origin/main`.
 - **Camera targets inside a slot aim 26 m high.** City's `targetY` returns 0 where the board has no ground, so the view centres far beyond the point you asked for. Aim just outside the opening. The old `north-east`/`north-west` cams have this problem.
@@ -32,41 +86,7 @@ Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-
 - Capture helpers live in the session scratchpad (`shots.mjs`, `compose.mjs`); `/tmp/join-shots.mjs` is the original.
 - `.venv` now exists in this worktree, so the pipeline tests run.
 
-## Historical handoff
-
-The Codex → Claude checkpoint that preceded this (baseline captures, no fix) is in git history at 224b8e45.
-
-The following is the earlier Claude → Codex checkpoint. The active queue and coordinator above supersede it.
-
-### Handoff: studio-ground-contact (Claude → Codex, 2026-11-23)
-
-Worktree `studio-ground-contact`. Areas: terrain ground contact, depth range, low-tier terrain memory and triangles. Coordinator: `orca_session_id:1df827bc-6e12-4e74-b7da-83ee8931ec4b` (Sam's Air).
-
-## State
-Nothing in flight, and no open PRs of mine. Everything below is merged:
-- **#282** Ground contact (beb576b). `terrain/ground-audit.ts` + `pnpm audit:ground` (headless full-board audit at both tiers). `terrain/drape.ts` (split along the drawn triangles, raise to terrain + lift; ballast capped at 25 cm). `GroundSurface.carve` + `GroundYield` (stair runs; also used by MARTA's `terrain/cutting.ts`). `city/depth-range.ts` (orbit near plane). The drape is **off on low** (Sam, 2026-11-23, phone memory). `ground-contact.test.ts` holds the low tier to stair treads only.
-- **#308** Low ground maps at 0.724 px/m, downtown light map 1024² on low (80aa8d5). Sam chose option A over B on 2026-11-23, because road edges must stay legible at a 600 m orbit. `pnpm measure:gpu` (`scripts/gpu-meter.mjs`). `ground-map.test.ts` pins low ≤ 75 MB and high ≤ 410 MB.
-- **#323** Far ground mesh (bc32b09). `GroundSurface.farGeometry(2)` is swapped in on low beyond `FAR_GROUND_M` = 2500 m (near again inside 2250 m); `?ground=old` turns it off. A16: default 14.7 → 24.8 fps, panning 15.8 → 25.1. The A16 skyline at 1.9 km isn't ground-bound, so don't lower 2500.
-
-Branches you can delete: `samsolomon/low-ground-merge` is a WIP masked near-mesh merge. **Do not ship it**: it breaks the Brookwood ballast-seating and downtown underpass-clearance tests at low; the far mesh replaced it. Also `samsolomon/far-ground`, `samsolomon/terrain-texture-budget` and `samsolomon/studio-ground-contact` (all merged).
-
-## Next steps, in order
-1. Only if phone-perf asks: a near-mesh quadtree for low under a footprint/deck/rail mask (design (c), in my conversation). Phone-perf said the far mesh covers the fps for now.
-2. KTX2/ETC2 ground maps as a pipeline project, if phone heap is still a problem after the geometry work (coordinator, 2026-11-23).
-3. Re-run `pnpm audit:ground` after other agents land ground-hugging layers. Residual known items, handed off and not mine: street decks and bridge approaches (Connector, `86c22ca9-…`); graded freight cuts (MARTA, done in `terrain/cutting.ts`); the Arts Center station east-wing slab, 25 cm (MARTA, relayed via the coordinator with a 3-line `yields` fix); building shells (routed by the coordinator).
-
-## Promises owed
-None outstanding. Phone-perf (`3126b1a7-8882-498c-a5ff-7b65d626cf91`) has the perf tags and A16 numbers. Parks (`eee32d1c-…`) has #328 reviewed and merged. Culture (`dcd075c8-…`) has no open asks.
-
-## Servers and ports
-None of mine are running. I used 5291 (dev) and 4601/4602 (preview); all are stopped. The other listeners on the Studio belong to other worktrees.
-
-## Rules and traps that bit me
-- `window.__city` is taken by main.ts; the dev scene handle is `__cityDev`. Close-ups use `__setView(bearing, tilt, dist, x, z, zoom)`, because the orbit minimum is 150 m and Orca screenshots are in CSS pixels.
-- `computeVertexNormals` reuses a stale normal attribute when a geometry is rebuilt; delete it first (it blanked a whole board once).
-- three r180 calls `texStorage2D` and then `generateMipmap`: count mips once, or memory reads a third high.
-- Rebase before every merge, because main moves fast; build-log conflicts are routine (keep both entries).
-- Before approving a PR, check `git diff --stat origin/main...HEAD`. #328 first arrived as a stale-tree squash that deleted 3,335 lines of main.
-- Use `git stash push -m <tag>` and `stash apply <sha>`, never a bare stash (the stash stack is shared). Remove scratch worktrees with `git worktree remove --force`.
-- In shell `--body "..."` strings, backticks are command substitution; use single quotes.
-- Cargo and `.venv` are missing on the Studio, so `pnpm test` runs web and worker tests only.
+- origin/main moves fast: before frames or dumps, rebase, or use `git merge-base HEAD origin/main` files. A
+  "main" build from origin/main files on an older tree fails to load midtown-upper.
+- Downtown deck data is staged (`web/public/data/scene/downtown/vignette.json`, gitignored). Tests that need it
+  `skipIf` it is missing.
