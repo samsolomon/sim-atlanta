@@ -876,6 +876,104 @@ and [low night](log/ui/tree-species/rollout/1180-low-night-sheet.jpg).
 Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
 [pan counts](log/ui/tree-species/rollout/pan-results.json) preserve the measurement runs.
 
+### All-species preview
+
+`?trees=all-species` is an opt-in look at City with every canopy-row crown converted, so Sam can
+judge the fully converted look before more rollout. Since 24 November the plain City view draws
+generic trees (see below); this preview and `?trees=species` stay available.
+
+**How the remainder is assigned.** The ordinary plan runs first and keeps all its placements:
+the four first-round species, the round-two 300, Ansley's island trees and its enlarged and
+paired crowns. Then each crown still drawn generic draws one of the ten City-wired species. The
+draw uses the crown's context weights (street, yard or park, from `MIX` plus `SECOND_MIX`, with
+Ansley's yard maple bias), renormalised over the species whose size fit accepts the crown, on its
+own position-seeded hash channel. That keeps species identical across tiers and reloads.
+
+Unmodelled shares are dropped, not redrawn as look-alikes. That covers red maple, tulip poplar,
+southern red oak, ginkgo, river birch, Yoshino cherry, pistache and other broadleaf (19, 16 and
+11 % of street, yard and park). So the preview over-represents oaks, elm, magnolia and, because
+small crowns fit only a few species, crape myrtle and dogwood. Zeros stay zeros: no loblolly,
+sweetgum or Japanese maple at the curb. A crown no wired species fits stays generic and is
+counted (1–3 % per row, mostly small yard crowns). Named sites (trees/sites.ts), landmark
+plantings, crowns the generic World would skip (off-board, inside a building) and boards
+without a canopy rollout (downtown, King Memorial and Sweet Auburn) are untouched. The nine
+square-board rows with canopy maps (five Midtown and Brookwood rows plus the north and south
+bands and corners) are converted. Everything stays `illustrative`.
+
+| Row | Crowns (high / low) | Species trees, ordinary (high / low) | Species trees, preview (high / low) | Left generic (high) |
+|---|---:|---:|---:|---:|
+| midtown-south | 1,962 / 923 | 265 / 151 | 1,936 / 909 | 26 |
+| midtown-central | 2,448 / 1,071 | 346 / 180 | 2,412 / 1,048 | 36 |
+| midtown-upper | 2,439 / 1,023 | 492 / 256 | 2,419 / 1,011 | 33 |
+| brookwood-south | 3,377 / 1,323 | 532 / 267 | 3,370 / 1,315 | 64 |
+| brookwood-station | 4,067 / 1,557 | 558 / 244 | 4,027 / 1,527 | 63 |
+| north-band | 1,169 / 541 | 165 / 73 | 1,162 / 535 | 7 |
+| north-corner | 672 / 324 | 77 / 38 | 656 / 314 | 16 |
+| south-band | 702 / 376 | 75 / 43 | 692 / 371 | 10 |
+| south-corner | 41 / 23 | 3 / 2 | 41 / 23 | 0 |
+| **All nine** | **16,877 / 7,161** | **2,513 / 1,254** | **16,715 / 7,053** | **255** |
+
+Realised preview mix, all nine rows at high (species trees, ordinary placements included):
+
+| Context | Mix |
+|---|---|
+| Street (1,835) | crape myrtle 640, willow oak 538, American elm 345, magnolia 145, water oak 96, dogwood 71 |
+| Yard (12,674) | water oak 2,343, magnolia 1,685, loblolly 1,654, willow oak 1,654, sweetgum 1,216, crape myrtle 1,181, white oak 1,045, dogwood 1,008, Japanese maple 712, American elm 176 |
+| Park (2,109) | loblolly 560, sweetgum 471, dogwood 310, water oak 259, magnolia 243, white oak 169, willow oak 61, American elm 36 |
+| Planted (Ansley pairs and islands, 97) | willow oak 25, American elm 25, crape myrtle 24, magnolia 8, water oak 6, Japanese maple 5, dogwood 4 |
+
+Cost, `?view=city&t=2026-11-20T14:00:00-05:00&perf=run&q=<tier>` on `63d7e332` + this branch,
+Studio headless Chrome (low at the A16 viewport, high at desktop). Ansley appends
+`&cam=1194,-4352,20,20,150`. Calls / triangles / programs:
+
+| View | Low, off | Low, preview | High, off | High, preview |
+|---|---:|---:|---:|---:|
+| Default | 541 / 2,361,810 / 85 | 538 / 2,414,184 / 85 | 1,197 / 13,896,459 / 100 | 1,202 / 16,637,579 / 100 |
+| Ansley 150 m | 87 / 1,246,253 / 43 | 86 / 1,762,314 / 43 | 208 / 5,957,833 / 53 | 221 / 10,358,177 / 53 |
+
+The low default orbit sits beyond the 600 m foliage-mask gate, so its masks are off in both
+columns. Matched sheets (high tier, 1280×800; Nov, Jul and Jan noon, Nov 23:00):
+[Ansley](log/ui/tree-species/all-species/all-species-ansley.jpg),
+[Piedmont](log/ui/tree-species/all-species/all-species-piedmont.jpg),
+[10th Street](log/ui/tree-species/all-species/all-species-street.jpg),
+[skyline](log/ui/tree-species/all-species/all-species-skyline.jpg).
+
+### City default: generic low-poly trees (Sam, 2026-11-24)
+
+After the all-species sheets, Sam decided City ships with the generic low-poly trees
+everywhere for now. Nothing is deleted. `?trees=species` restores the rollout above, and
+`?trees=all-species` keeps the preview. The Model Lab is unchanged.
+
+- **Placement is unchanged.** The rollout plan still runs. Ansley's enlarged crowns, facing
+  pairs and island planting stay. Each planned species tree becomes a generic crown at the same
+  trunk and size (`genericPlan` in trees/rollout.ts). A species on a canopy crown returns that crown
+  to the generic World, which draws it at its canopy-map size, the size the species used. The
+  island maples, crapes and the Beverly island elm become planted generic broadleaves at
+  their own height and spread. That covers 2,513 trees at high and 1,254 at low across the
+  nine rows. The World draws all but two: their trunks fall inside a building footprint, which
+  generic trees always avoid.
+- **1180 Peachtree's terrace crapes** (eight) are now generic 4.5 m broadleaves standing on
+  the roof. The species cards read as small fuzzy blobs at the 350 m view.
+- **The High Museum ginkgo** (the only named site) stays a species. It is drawn as a faceted
+  clump (trees/render.ts), which reads cleanly at orbit. Its leaf disc stays with it.
+- **No leaf-litter carpets** are drawn. They belonged to the species looks.
+
+Cost at Nov 20 14:00 (`perf=run`). Each pair is `?trees=species` → default, calls / triangles / programs:
+
+| View | Low | High |
+|---|---|---|
+| Default open view | 542 / 2,365,466 / 85 → 527 / 2,362,573 / 79 | 1,199 / 13,908,523 / 100 → 1,117 / 13,463,925 / 92 |
+| Ansley `cam=1194,-4352,20,50,420` | 100 / 1,592,947 / 44 → 69 / 1,515,868 / 36 | 241 / 7,467,461 / 54 → 159 / 6,864,943 / 47 |
+
+Low programs reach their 80 target at 14:00 (79), but light changes the count. With low on the
+same build, the default view measures 79 at 14:00, 82 at dusk (17:45) and 83 at 22:00, and
+`motion=pan` measures 80, 82 and 83 at those times. Ansley is 35–37. The low ceiling moves from
+90 to 85: the worst clock plus two slots. `pnpm test:perf` checks only 14:00, so night program
+growth needs a separate run (phone-perf owns the harness).
+Sheets: [Ansley, Sam's view](log/ui/tree-species/generic-default/generic-ansley.jpg),
+[Ansley overhead](log/ui/tree-species/generic-default/generic-overhead.jpg),
+[10th Street](log/ui/tree-species/generic-default/generic-street.jpg).
+
 ### White oak
 
 `web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.

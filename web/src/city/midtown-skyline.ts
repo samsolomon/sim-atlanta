@@ -13,8 +13,10 @@ import { wimbishHouse } from './midtown-skyline-wimbish';
 import { ponceDeLeon } from './midtown-skyline-ponce';
 import { federalReserve } from './midtown-skyline-fed';
 import { symphonyTower } from './midtown-skyline-symphony';
+import { fourSeasons } from './midtown-skyline-fourseasons';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 import { peachtree1100 } from './midtown-skyline-1100';
+import { campanile } from './midtown-skyline-campanile';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 /** Rendered ground in the landmark's street frame, metres above the site grade. */
@@ -107,8 +109,10 @@ const landmarks = [
   { site: sites.academy, axis: [1,0], probes: [[0,0],[-10,-15],[-10,15],[18,0]], build: academyOfMedicine },
   { site: sites.biltmore, axis: [1,0], probes: [[-10,0],[0,-50],[-10,50],[20,45]], build: biltmore },
   { site: sites.terrace, axis: [1,0], probes: [[-31,28],[-12,-25],[36,-20],[29,10]], build: georgianTerrace },
+  { site: sites.fourSeasons, axis: [1,0], probes: [[0,0],[-20,-13],[20,13],[0,40]], build: fourSeasons },
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
+  { site: sites.campanile, axis: [1,1], probes: [[0,0],[-15,-20],[15,20],[15,-10]], build: campanile },
   { site: sites.peachtree1100, axis: [1,1], probes: [[0,0],[-40,0],[0,-20],[0,20]], build: peachtree1100 },
   { site: sites.promenadeCentral, axis: [1,1], probes: [[-35,-20],[40,15],[0,-26],[0,24]], build: promenadeCentral },
 ] satisfies { site: typeof site, axis: P2, probes: P2[], build: (shell: Shell, ground: LocalGround) => unknown }[];
