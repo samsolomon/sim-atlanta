@@ -143,11 +143,12 @@ function aboveDem(g: BufferGeometry, path: string) {
 
 it('settles the very-far ground below the DEM with exact rims, at a fifth of the far triangles', async () => {
   const { VERY_FAR_ERROR_M } = await import('./model');
-  let far = 0, very = 0, rimWorst = 0, interiorWorst = 0;
+  let far = 0, very = 0, rimWorst = 0, interiorWorst = 0, mb = 0;
   for (const path of boards) {
     const near = new GroundSurface(grid(path), 'low');
     const f = near.farGeometry(2), v = near.farGeometry(VERY_FAR_ERROR_M, 160, true), raw = near.farGeometry(VERY_FAR_ERROR_M);
     far += f.index!.count / 3; very += v.index!.count / 3;
+    mb += (Object.values(v.attributes).reduce((t, a) => t + (a as { array: ArrayLike<number> & { byteLength: number } }).array.byteLength, 0) + v.index!.array.byteLength) / 2 ** 20;
     // Same rim, voids and openings: no crack against any neighbour or level.
     expect(Math.abs(openLength(v) - openLength(near.geometry)), path).toBeLessThan(1);
     const { bounds, stepM } = near.grid.manifest;
@@ -162,7 +163,7 @@ it('settles the very-far ground below the DEM with exact rims, at a fifth of the
     for (const [k, y] of rv) expect(y, path + ' ' + k).toBe(rf.get(k));
     f.dispose(); v.dispose(); raw.dispose(); near.geometry.dispose();
   }
-  console.info('very far', { far, very, rimWorst: +rimWorst.toFixed(2), interiorWorst: +interiorWorst.toFixed(2) });
+  console.info('very far', { far, very, MB: +mb.toFixed(2), rimWorst: +rimWorst.toFixed(2), interiorWorst: +interiorWorst.toFixed(2) });
   expect(very).toBeLessThan(far * 0.2);
   // Away from the rim nothing stands above the DEM; the rim's fixed nodes can leave a residue.
   expect(interiorWorst).toBeLessThan(0.05);
