@@ -142,6 +142,26 @@ function classKey(mesh: Mesh, baked: boolean) {
   ].join('|');
 }
 
+/** Mirror each source's night state onto its batch: call after the landmarks' setNight. */
+function syncer(days: DayGroup[]) {
+  return () => {
+    for (const d of days) {
+      let alike = true;
+      for (const r of d.runs) {
+        const { source: s, material: t } = r;
+        if (!r.baked && s.color) t.color!.copy(s.color);
+        if (t.emissive && s.emissive) t.emissive.copy(s.emissive);
+        if (s.emissiveIntensity !== undefined) t.emissiveIntensity = s.emissiveIntensity;
+        t.opacity = s.opacity;
+        if (alike && lookOf(r.source, r.baked) !== d.look) alike = false;
+      }
+      if (!d.mesh) continue;
+      d.mesh.visible = alike;
+      for (const r of d.runs) r.mesh.visible = !alike;
+    }
+  };
+}
+
 export interface BatchStats { candidates: number; merged: number; draws: number; dayDraws: number; nightDraws: number; skipped: Record<string, number>; ms: number }
 
 interface Member { mesh: Mesh; bake: Color | null; day: string; run: string }
@@ -319,23 +339,11 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
     }
   }
 
-  /** Mirror each source's night state onto its batch: call after the landmarks' setNight. */
-  function sync() {
-    for (const d of days) {
-      let alike = true;
-      for (const r of d.runs) {
-        const { source: s, material: t } = r;
-        if (!r.baked && s.color) t.color!.copy(s.color);
-        if (t.emissive && s.emissive) t.emissive.copy(s.emissive);
-        if (s.emissiveIntensity !== undefined) t.emissiveIntensity = s.emissiveIntensity;
-        t.opacity = s.opacity;
-        if (alike && lookOf(r.source, r.baked) !== d.look) alike = false;
-      }
-      if (!d.mesh) continue;
-      d.mesh.visible = alike;
-      for (const r of d.runs) r.mesh.visible = !alike;
-    }
-  }
+  // sync() lives outside this scope: a closure here would keep this function's maps, and with
+  // them every original geometry, alive.
+  users.clear();
+  classes.clear();
+  const sync = syncer(days);
   sync();
   stats.ms = Math.round(performance.now() - t0);
   return { group, stats, cells, sync };
