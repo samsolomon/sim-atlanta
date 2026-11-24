@@ -16,13 +16,13 @@ The 46-storey Art Deco revival apartment tower at 1380 Atlantic Drive, Atlantic 
 | Element | Evidence | City |
 |---|---|---|
 | Shaft | Tan precast piers run full height between dark blue glass. Long faces carry stacked balconies in alternate bays. | Piers on a 4.2 m bay (1.5 m wide, 0.35 m proud) and 1.2 m balcony stacks in rail grey. |
-| Stepped corners | Both photos show the corners stepping in over the top ten floors. Lidar corner cells read 392–405, then 412–418, then 431 m. | Three setbacks at 398, 410 and 420 m cut the corners back by 4×3, 8×5.5 and 11.5×8 m. |
+| Stepped corners | Both photos show the corners stepping in over the top ten floors. Lidar corner cells read 392–405, then 412–418, then 431 m. | Three cross-shaped setbacks (398–410, 410–420 and 420–431 m) step the face ends inward. The long faces keep their central 43 m of bays to the top. Each tier sits inside the mapped shaft and the tier below it, which a test checks. |
 | Occupied roof | Perimeter lidar 431 m NAVD88 (p50 152.4 m and p95 163.9 m above ring ground 276.3 m). | 431 m. |
-| Crown screen | Lidar shows a ring at about 440 m around a lower interior (430–435 m). The Henry photo shows tan ribs with X lattice and pinnacles. | Open screen 54 × 23 m to 440.5 m, ribs every 4.5 m, X lattice, eight pinnacles. Corner pinnacles reach 445.3 m, the mapped 176 m above the lowest grade (269.3 m). A 434.5 m penthouse sits inside. |
+| Crown screen | Lidar shows a ring at about 440 m around a lower interior (430–435 m). The Henry photo shows tan ribs with X lattice and pinnacles. | Open screen 47 × 21 m to 440.5 m, inside the top tier, with ribs every 4.5 m, X lattice and eight pinnacles. Corner pinnacles reach 445.3 m, the mapped 176 m above the lowest grade (269.3 m). A 434.5 m penthouse sits inside. The 4 m lidar cells put the ring at about 54 × 24 m, so the screen is drawn slightly small to keep it on the roof. |
 | Base | Pale stone base about three storeys high. The lobby glazing is tall and warm at night. | Stone to 290.5 m, tall lobby windows on the street faces and an arrival canopy over the east motor court. |
 | Podium | Open parking decks with tan precast spandrels. Trees on the amenity deck by the tower. Lidar puts the roof at 288.4 m and the deck planting at 290–293 m. | Deck openings per 3.2 m level, columns every ~9 m, a roof at 288.6 m and planters along the tower side. |
 
-**Estimated:** bay width and pier depth, balcony depth, setback cuts (from 4 m lidar cells and photos), lattice spacing, the penthouse size, canopy dimensions, podium level height and column spacing. No logos or signage.
+**Estimated:** the podium's tower-side wall, snapped 0.1 m clear of the tower face, bay width and pier depth, balcony depth, setback cuts (from 4 m lidar cells and photos), lattice spacing, the penthouse size, canopy dimensions, podium level height and column spacing. No logos or signage.
 
 ## Night
 
@@ -44,4 +44,4 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T11:30:00-05:00` (or `T23:30:00-05:00`
 
 ## Budget
 
-The tower uses 2,000 triangles (1,078 in the body and 922 in lit panes and crown), and the podium about 165, for about 2,165 against the 2,400 landmark ceiling. Net of the two generic boxes it replaces, the low-tier board gains 1,816 triangles. The podium's empty lamp mesh is hidden, because three.js still issues a call for it. The skin costs three low-tier draws and no new shader program.
+The tower uses 1,908 triangles (1,038 in the body and 870 in lit panes and crown), and the podium about 145, for about 2,050 against the 2,400 landmark ceiling. The podium's empty lamp mesh is hidden, because three.js still issues a call for it. The skin costs three low-tier draws and no new shader program.

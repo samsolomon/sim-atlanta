@@ -57,24 +57,44 @@ function local(ring: P2[], origin: P2): P2[] {
 }
 
 /** Drops vertices that only split a straight wall (mapped outlines carry several). */
-export function mergeCollinear(plan: P2[], tolerance = 0.03): P2[] {
+export function mergeCollinear(ring: P2[], tolerance = 0.03): P2[] {
+  const plan = ring.filter((p, i) => {
+    const next = ring[(i + 1) % ring.length];
+    return Math.hypot(next[0] - p[0], next[1] - p[1]) > 1e-6;
+  });
   const out = plan.filter((p, i) => {
     const a = plan[(i + plan.length - 1) % plan.length], b = plan[(i + 1) % plan.length];
     const ux = p[0] - a[0], uz = p[1] - a[1], vx = b[0] - p[0], vz = b[1] - p[1];
     const lu = Math.hypot(ux, uz), lv = Math.hypot(vx, vz);
-    return lu < 1e-6 || lv < 1e-6 ? false : Math.abs(ux * vz - uz * vx) / (lu * lv) > tolerance || ux * vx + uz * vz < 0;
+    return Math.abs(ux * vz - uz * vx) / (lu * lv) > tolerance || ux * vx + uz * vz < 0;
   });
   return out.length >= 3 ? out : plan;
 }
 
-/** A rectangle with each corner cut back by (cu, cv), counter-clockwise. */
-function steppedPlan(hu: number, hv: number, cu: number, cv: number): P2[] {
+type Rect = [u0: number, u1: number, v0: number, v1: number];
+export const rect = ([u0, u1, v0, v1]: Rect): P2[] => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+
+/** The union of a wide rectangle `a` and a deep one `b`, counter-clockwise. */
+function cross(a: Rect, b: Rect): P2[] {
   return [
-    [-hu + cu, -hv], [hu - cu, -hv], [hu - cu, -hv + cv], [hu, -hv + cv],
-    [hu, hv - cv], [hu - cu, hv - cv], [hu - cu, hv], [-hu + cu, hv],
-    [-hu + cu, hv - cv], [-hu, hv - cv], [-hu, -hv + cv], [-hu + cu, -hv + cv],
+    [b[0], b[2]], [b[1], b[2]], [b[1], a[2]], [a[1], a[2]], [a[1], a[3]], [b[1], a[3]],
+    [b[1], b[3]], [b[0], b[3]], [b[0], a[3]], [a[0], a[3]], [a[0], a[2]], [b[0], a[2]],
   ];
 }
+
+/**
+ * Set-backs over the mapped shaft, each inside the one below (local u, v; v points south).
+ * Lidar puts 431 m across the middle of every face and 392–418 m in the last few metres of
+ * each corner; the long faces keep their central bays to the top.
+ */
+const deep: Rect = [-21, 22, -15, 15.3];
+export const tiers: { plan: P2[]; lo: number; hi: number }[] = [
+  { plan: cross([-30.5, 29.6, -13.2, 14.8], deep), lo: 398, hi: 410 },
+  { plan: cross([-28, 27.5, -11.5, 13], deep), lo: 410, hi: 420 },
+  { plan: cross([-26, 25, -10, 11], deep), lo: 420, hi: 431 },
+];
+/** The open crown screen sits inside the top tier. */
+export const screenRect: Rect = [-24, 23, -10, 11];
 
 /** Stable per-window hash in [0, 1). */
 function hash(a: number, b: number, c: number) {
@@ -94,7 +114,7 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
   const s = landmarkShell(buildings, grid, site.id, 'The Atlantic', towerOrigin, [1, 0], [[0, 0], [-25, 0], [25, 0]]);
   if (!s) return null;
   const ring = mergeCollinear(local(extendAcrossSeam(towerRing, seamZ, towerSouthZ), towerOrigin));
-  const hu = Math.max(...ring.map(([u]) => Math.abs(u))), hv = 15.3;
+  const hu = Math.max(...ring.map(([u]) => u));
 
   type Face = { a: P2; b: P2; length: number; n: P2 };
   const faces = (plan: P2[]): Face[] => plan.map((a, i) => {
@@ -117,8 +137,7 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
   s.prism(ring, s.base, stoneTop, stone, roof);
   s.prism(ring, stoneTop, shaftTop, glass, roof);
   // Three set-backs cut the corners back, so every face climbs in steps to the screen.
-  const tiers: [number, number, number, number][] = [[4, 3, shaftTop, 410], [8, 5.5, 410, 420], [11.5, 8, 420, occupiedRoof]];
-  for (const [cu, cv, lo, hi] of tiers) s.prism(steppedPlan(hu, hv, cu, cv), lo, hi, glass, roof);
+  for (const { plan, lo, hi } of tiers) s.prism(plan, lo, hi, glass, roof);
 
   const bay = 4.2;
   const piers = (plan: P2[], lo: number, hi: number, proud: boolean, edge0: number) => {
@@ -136,7 +155,7 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
       if (proud && (long || end)) {
         for (let k = 1; k < bays - 1; k++) {
           if (long ? k % 2 === 0 : k !== 1 && k !== bays - 2) continue;
-          fin(f, (k + 0.18) / bays, (k + 0.82) / bays, stoneTop + 3, hi - 2.5, 1.2, rail, pierShade);
+          fin(f, (k + 0.18) / bays, (k + 0.82) / bays, stoneTop, hi - 2.5, 1.2, rail, pierShade);
         }
       }
       // Residential windows are noticeably lit at night (illustrative occupancy).
@@ -150,7 +169,7 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
     });
   };
   piers(ring, stoneTop, shaftTop, true, 0);
-  tiers.forEach(([cu, cv, lo, hi], i) => piers(steppedPlan(hu, hv, cu, cv), lo, hi, false, 40 + 20 * i));
+  tiers.forEach(({ plan, lo, hi }, i) => piers(plan, lo, hi, false, 40 + 20 * i));
 
   // Lobby: tall warm windows in the stone base, with the arrival canopy on the east drive.
   const grade = (u: number, v: number) => grid.sample(u + towerOrigin[0], v + towerOrigin[1]) ?? s.base;
@@ -170,9 +189,9 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
 
   // Crown: a dark screen box behind tan ribs with X lattice, stepped at the occupied roof and
   // crowned by corner pinnacles. Ribs, lattice and pinnacles are floodlit as one warm glow.
-  const crownPlan = steppedPlan(27, 11.5, 0, 0).filter((_, i) => i % 3 === 0);
+  const crownPlan = rect(screenRect);
   // The screen is open above: lidar finds a lower roof and penthouse (~434 m) inside it.
-  s.prism(steppedPlan(14, 6, 0, 0).filter((_, i) => i % 3 === 0), occupiedRoof, 434.5, '#a39d90', roof);
+  s.prism(rect([-14, 14, -6, 6]), occupiedRoof, 434.5, '#a39d90', roof);
   for (const f of faces(crownPlan)) {
     panel(f, 0, 1, occupiedRoof, screenTop, 0, screen);
     const bays = Math.max(2, Math.round(f.length / 4.5));
@@ -189,8 +208,12 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
     }
     panel(f, 0, 1, screenTop - 0.8, screenTop, 0.32, crown, true);
   }
-  for (const [u, v] of [[-27, -11.5], [27, -11.5], [27, 11.5], [-27, 11.5], [-9, -11.5], [9, -11.5], [-9, 11.5], [9, 11.5]]) {
-    const r = Math.abs(u) === 27 ? 1.3 : 0.9, top = Math.abs(u) === 27 ? spireTop : spireTop - 2.5;
+  // Corner pinnacles stand just inside the screen's corners, smaller ones at the long-face thirds.
+  const [u0, u1, v0, v1] = screenRect;
+  const pinnacles = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].map(([u, v]) => [u - Math.sign(u) * 1.3, v - Math.sign(v) * 1.3, 1.3])
+    .concat([-8, 7].flatMap(u => [[u, v0 + 0.9, 0.9], [u, v1 - 0.9, 0.9]]));
+  for (const [u, v, r] of pinnacles) {
+    const top = r > 1 ? spireTop : spireTop - 2.5;
     const sq: P2[] = [[u - r, v - r], [u + r, v - r], [u + r, v + r], [u - r, v + r]];
     sq.forEach(([x, z], i) => {
       const [nx, nz] = sq[(i + 1) % 4];
@@ -204,14 +227,16 @@ function createTower(buildings: VBuilding[], site: VBuilding, towerRing: P2[], g
 function createPodium(buildings: VBuilding[], site: VBuilding, podiumRing: P2[], grid: GroundGrid) {
   const s = landmarkShell(buildings, grid, site.id, 'The Atlantic podium', podiumOrigin, [1, 0], [[0, 0], [-35, 0], [35, 0]]);
   if (!s) return null;
-  const ring = mergeCollinear(local(podiumRing, podiumOrigin));
+  // The tower-side edge crosses the tower's south face; keep it 0.1 m clear on the podium side.
+  const clear = towerSouthZ + 0.1;
+  const ring = mergeCollinear(local(podiumRing.map(([x, z]): P2 => Math.abs(z - towerSouthZ) < 0.5 ? [x, clear] : [x, z]), podiumOrigin));
   const top = 288.6;
   s.prism(ring, s.base, top, deck, '#9d978a');
   const grade = (u: number, v: number) => grid.sample(u + podiumOrigin[0], v + podiumOrigin[1]);
   ring.forEach((a, i) => {
     const b = ring[(i + 1) % ring.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length < 4) return;
+    if (length < 4 || (a[1] === b[1] && a[1] === clear - podiumOrigin[1])) return;
     const n: P2 = [(b[1] - a[1]) / length, -(b[0] - a[0]) / length];
     const at = (t: number, y: number, depth: number) =>
       [a[0] + t * (b[0] - a[0]) + depth * n[0], y, a[1] + t * (b[1] - a[1]) + depth * n[1]];

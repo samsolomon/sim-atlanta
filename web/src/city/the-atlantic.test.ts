@@ -3,7 +3,8 @@ import { expect, it } from 'vitest';
 import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
-import { atlanticId, createAtlantic, extendAcrossSeam, mergeCollinear } from './the-atlantic';
+import { pointInRing, type P2 } from '../vignette/geom';
+import { atlanticId, createAtlantic, extendAcrossSeam, mergeCollinear, rect, screenRect, tiers } from './the-atlantic';
 
 const context = (board: string): VBuilding[] => JSON.parse(readFileSync(new URL(
   `../../../pipeline/prototypes/square-board/${board}/context.json`, import.meta.url), 'utf8')).buildings;
@@ -54,5 +55,25 @@ it('carries the tower across the seam to its south face and steps the roof to th
 
 it('merges collinear outline vertices and moves seam vertices', () => {
   expect(mergeCollinear([[0, 0], [5, 0], [10, 0], [10, 10], [0, 10]])).toEqual([[0, 0], [10, 0], [10, 10], [0, 10]]);
+  // A repeated or closing vertex keeps its corner.
+  expect(mergeCollinear([[0, 0], [10, 0], [10, 0], [10, 10], [0, 10], [0, 0]])).toEqual([[0, 0], [10, 0], [10, 10], [0, 10]]);
   expect(extendAcrossSeam([[0, -4100], [1, -4110]], -4100, -4097)).toEqual([[0, -4097], [1, -4110]]);
+});
+
+it('stacks every set-back and the crown screen inside the floor below, so nothing overhangs', () => {
+  const site = context('brookwood-south').find(b => b.id === atlanticId)!;
+  const tower = site.parts!.find(p => p.id === 'osm:way:884897812')!.rings[0];
+  const shaft = extendAcrossSeam(tower, -4100, -4097).map(([x, z]): P2 => [x + 547.2, z + 4112.3]);
+  // Pull each vertex 1 cm toward the centre so shared edges count as inside.
+  const inside = (plan: P2[], below: P2[]) => plan.every(([u, v]) => {
+    const [cu, cv] = plan.reduce(([a, b], [x, y]) => [a + x / plan.length, b + y / plan.length], [0, 0]);
+    const d = Math.hypot(u - cu, v - cv);
+    return pointInRing(u + (cu - u) * 0.01 / d, v + (cv - v) * 0.01 / d, below);
+  });
+  let below = shaft;
+  for (const tier of tiers) {
+    expect(inside(tier.plan, below)).toBe(true);
+    below = tier.plan;
+  }
+  expect(inside(rect(screenRect), below)).toBe(true);
 });
