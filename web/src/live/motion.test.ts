@@ -10,8 +10,8 @@ describe('live rail motion on 30-second reports', () => {
     const drawn: number[] = [];
     for (let seconds = 0; seconds <= 210; seconds++) {
       if (seconds % 30 === 0 && seconds / 30 < fixes.length)
-        appendFix(knots, fixes[seconds / 30], seconds * 1000);
-      drawn.push(playback(knots, seconds * 1000));
+        appendFix(knots, fixes[seconds / 30], seconds * 1000, 60_000);
+      drawn.push(playback(knots, seconds * 1000, 60_000));
       expect(drawn[seconds]).toBeLessThanOrEqual(fixes[Math.min(Math.floor(seconds / 30), fixes.length - 1)]);
     }
     fixes.forEach((s, i) => expect(drawn[60 + 30 * i]).toBeCloseTo(s));

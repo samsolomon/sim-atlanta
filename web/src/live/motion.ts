@@ -1,6 +1,5 @@
-/** Presentation clock trails receipt by two ordinary polls so the following fix
- * can establish whether the train continued, stopped or reversed at a knot. */
-export const PLAYBACK_DELAY_MS = 60_000;
+/** Preview selected for Orca: present each received fix one nominal poll later. */
+export const PLAYBACK_DELAY_MS = 30_000;
 
 export interface Knot {
   time: number;
