@@ -19,7 +19,7 @@ import type { StationsFile } from './radio-plan';
 import { BYLINE, createDetailPanel } from './panel';
 import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
-import { shareUrl } from '../share';
+import { shareUrl, sharePlace } from '../share';
 import type { ShellApi, ShellOptions } from '../shell-api';
 
 const TZ = 'America/New_York';
@@ -450,9 +450,11 @@ export function createShellNext(o: ShellOptions): ShellApi {
   // The frozen moment is taken once, when the panel opens, so the label and the copied link agree.
   let frozenAt = clock.now();
   /** null while there is nothing to reopen yet (City still loading, or no renderer at all). */
-  const currentLink = () => {
+  const currentShare = () => {
     const target = o.shareTarget?.();
-    return target ? shareUrl(location.href, target, shareMode, frozenAt) : null;
+    if (!target) return null;
+    const { path, title } = sharePlace(target, o.center());
+    return { title, url: shareUrl(location.href, target, shareMode, frozenAt, path) };
   };
   const renderShare = () => {
     const target = o.shareTarget?.();
@@ -463,7 +465,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     share.querySelector('.a2-freeze-text')!.textContent =
       `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. Trains from the timetable.`;
     modeInputs.forEach((i) => (i.checked = i.value === shareMode));
-    const link = currentLink();
+    const link = currentShare()?.url;
     if (shareUrlOut.textContent !== (link ?? '')) shareUrlOut.textContent = link ?? '';
     copyBtn.disabled = nativeBtn.disabled = !link;
   };
@@ -472,7 +474,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     renderShare();
   }));
   copyBtn.addEventListener('click', async () => {
-    const link = currentLink();
+    const link = currentShare()?.url;
     if (!link) return;
     try {
       await navigator.clipboard.writeText(link);
@@ -487,9 +489,15 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     setTimeout(() => (copyBtn.textContent = 'Copy link'), 1800);
   });
+  const shareNative = (data: ShareData) => navigator.share(data).catch((err: Error) => {
+    if (err.name !== 'AbortError') {
+      if (share.hidden) toggle(share, shareBtn, renderShare);
+      else renderShare();
+    }
+  });
   nativeBtn.addEventListener('click', () => {
-    const link = currentLink();
-    if (link) navigator.share?.({ title: document.title, url: link }).catch(() => { /* dismissed */ });
+    const data = currentShare();
+    if (data) void shareNative(data);
   });
   share.querySelector('[data-close]')!.addEventListener('click', () => {
     closePops();
@@ -643,13 +651,17 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   menuBtn.addEventListener('click', () => showGraphics());
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
-  shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
+  shareBtn.addEventListener('click', () => {
     // A shifted or paused clock most likely means this moment is the point of the link.
     shareMode = clock.isRealTime() ? 'live' : 'freeze';
     frozenAt = clock.now();
-    renderShare();
-    copyBtn.focus();
-  }));
+    const data = currentShare();
+    if (phone.matches && !nativeBtn.hidden && data) {
+      void shareNative(data);
+      return;
+    }
+    toggle(share, shareBtn, () => { renderShare(); copyBtn.focus(); });
+  });
   open.addEventListener('click', () => toggle(panel, open, () => {
     lastTick = -Infinity;
     tick(clock.now());
