@@ -16,7 +16,7 @@ const corner = 84.4, parapet = 96.8, hipTop = 104, rail = 105.2;
 const base = 9.2; // two-storey granite base
 const storeys = 20, storey = (corner - base) / storeys;
 
-const stone = '#cbb3a2', stoneShade = '#b89f8e', band = '#d8c3b3';
+const stone = '#dcc3ae', stoneShade = '#c9ae98', band = '#e6d2c0'; // warm and light, so piers hold in shade
 // Glass base #737c86: HSV saturation 14%, value 53%, near-neutral as the glass rules ask for dark
 // glass. The photographs read darker; at 11:30 it renders about V 44% where sunlit.
 const glass = ['#737c86', '#707983', '#76808a'];

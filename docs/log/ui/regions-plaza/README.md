@@ -21,6 +21,8 @@ Regions Plaza (1180 West Peachtree, completed 2001, formerly Atlantic Center Pla
 
 Everything is vertex colours on `landmarkShell` (batchable, no library surfaces). The shaft uses `litFacade`, so at night about 9% of office windows are lit by `litHash`. The hip roof sits in the lamp mesh, so it glows as one even surface at night, as in the photo.
 
+**Piers:** warm, light granite (`#dcc3ae`), so the pier-and-window rhythm holds on shaded faces. On the shaded west face at 11:30, piers read V 42% against panes at V 12%.
+
 **Glass:** base `#737c86` (HSV S 14%, V 53%). Rendered at 11:30, sunlit panes measure S 12–16%, V 43–46%. Shaded west face: S 20%, V 30%, against a generic glass tower in the same frame at S 35%, V 45%. Panes inside a neighbour's cast shadow read darker navy (S 82%, V 20%).
 
 | View | Camera | Local time, 20 November 2026 | Capture |
