@@ -3136,4 +3136,4 @@ every frame and compares the final positions with a fresh seek.
 
 ### 2026-11-24 — Radio in the dock
 
-The radio popover now has the track controls from F07 and G13. The 10-track placeholder playlist advances and pauses locally, shows elapsed progress, and identifies its silent tracks with “no audio yet”. The phone uses the same player in a bottom sheet. [Desktop](log/ui/final-radio/desktop.jpg) · [Phone](log/ui/final-radio/phone.jpg).
+The first radio player followed boards F07 and G13. Sam wanted more of the city to stay visible. The revised player fits the track and two 44 px touch targets in one 64 px row. On the 390 px phone, the card is 374 px wide and sits 12 px above the dock. Silent placeholder tracks read “No audio yet”. [Desktop before](log/ui/final-radio/desktop.jpg) · [After](log/ui/final-radio/desktop-compact.jpg) · [Phone before](log/ui/final-radio/phone.jpg) · [After](log/ui/final-radio/phone-compact.jpg).
