@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Mesh, Raycaster, Vector3 } from 'three';
+import { Mesh, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
 import { createMuseumTower, museumTowerId } from './museum-tower';
@@ -21,5 +21,5 @@ it('raises Museum Tower to its lidar deck and penthouse, with the crown band lit
   const [body, lamps] = model.group.children as Mesh[];
   expect(body.geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
   model.setNight(1);
-  expect((lamps.material as { emissiveIntensity: number }).emissiveIntensity).toBeGreaterThan(0);
+  expect((lamps.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
 });
