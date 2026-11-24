@@ -1,4 +1,4 @@
-import { Box3, DoubleSide, Group, Material, Mesh, MeshLambertMaterial, Object3D, Vector3 } from 'three';
+import { Box3, type BufferGeometry, DoubleSide, Group, Material, Mesh, MeshLambertMaterial, Object3D, Vector3 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** For opaque, static landmark bodies with baked vertex colours and no per-building uniforms. */
@@ -8,7 +8,7 @@ export class StaticLandmarkMaterial extends MeshLambertMaterial {
 
 /** Called before City applies board clipping. Keep batches local so close views still cull. */
 export function batchLandmarkBodies(landmarks: Object3D[]) {
-  const tiles = new Map<string, Mesh<import('three').BufferGeometry, StaticLandmarkMaterial>[]>();
+  const tiles = new Map<string, Mesh<BufferGeometry, StaticLandmarkMaterial>[]>();
   const center = new Vector3();
   for (const landmark of landmarks) {
     landmark.updateMatrixWorld(true);
