@@ -122,12 +122,15 @@ import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
 import { createWhiteModel } from './white-model';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
+/** View depth (m) past which ink is fully faded (keep in step with vignette/ink.ts), plus a margin. */
+const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
@@ -892,7 +895,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perimeter) edgePlanes(square!.mountedBounds(rects)).forEach((plane, i) => perimeter[i].copy(plane));
     return square!.mosaicPlinth(rects, terrain!.bottomY);
   }
+  // Set once the prewarm scheduler exists (below); an area mounting before then is covered by its first run.
+  let requestPrewarm = () => {};
+  let prewarmer: Prewarmer | undefined;
+  let colourShown = !options.whiteModel;
+  let prewarmDone = false;
+  let bloomWarmFrames = 0;
   function addArea(area: NonNullable<typeof east>) {
+    requestPrewarm();
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
@@ -1174,7 +1184,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const ink = new ShaderPass(inkShader());
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
-  composer.addPass(new FoliageMaskPass(scene, camera, ink));
+  const foliageMask = new FoliageMaskPass(scene, camera, ink);
+  composer.addPass(foliageMask);
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
@@ -1194,6 +1205,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
   }
+  // `?perf&bloom=device` keeps the old device-px bloom, for A/B runs.
+  const bloomCss = !(perfEnabled && query.get('bloom') === 'device');
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0, 0.55, 0.82);
   composer.addPass(bloom);
   const hts = new ShaderPass(tiltShiftShader([1, 0]));
@@ -1219,7 +1232,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setSize(w, h);
     // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
     gtao?.setSize(w, h);
-    bloom.resolution.set(w / 2, h / 2);
+    // The composer sizes every pass in device px; bloom works in CSS px, so its glow is the same
+    // size at every pixel ratio (and a 2x display doesn't pay for a full-resolution bloom chain).
+    if (bloomCss) bloom.setSize(w, h);
     const pr = renderer.getPixelRatio();
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
@@ -1230,9 +1245,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       p.enabled = tilt > 0.01 && !perfOverrides.nopass.has('tilt');
     }
   }
+  const inkWanted = !perfOverrides.nopass.has('ink');
   if (perfOverrides.nopass.size) {
     for (const p of composer.passes) if (p instanceof FoliageMaskPass && perfOverrides.nopass.has('ink')) p.enabled = false;
-    ink.enabled = !perfOverrides.nopass.has('ink');
+    ink.enabled = inkWanted;
     grade.enabled = !perfOverrides.nopass.has('grade');
     if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
   }
@@ -1482,7 +1498,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     northStops?.setNight(night);
     if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     bloom.strength = 0.55 * night;
-    bloom.enabled = !low && night > 0.02 && !perfOverrides.nopass.has('bloom');
+    // A one-frame warm-up runs bloom at strength 0 by day (it adds nothing), so its blur shaders compile
+    // then and not on the first dusk frame.
+    bloom.enabled = !low && (night > 0.02 || bloomWarmFrames > 0) && !perfOverrides.nopass.has('bloom');
+    if (bloomWarmFrames > 0) bloomWarmFrames--;
 
     const ease = 1 - Math.exp(-dt * 2);
     wx.cloud += (atm.cloud - wx.cloud) * ease;
@@ -1648,6 +1667,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
     }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    // Ink fades out completely by 4.2 km of view depth (vignette/ink.ts). View depth is linear in
+    // position, so its minimum over the boards' box is at a corner: when even that is beyond the
+    // fade, the pass (and its foliage mask) would only copy the frame, so skip them.
+    if (inkWanted) {
+      camera.updateMatrixWorld();
+      const m = camera.matrixWorldInverse.elements;
+      let near = Infinity;
+      for (const r of [b, mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        for (const x of [r.minX, r.maxX]) for (const y of [-200, 600]) for (const z of [r.minZ, r.maxZ])
+          near = Math.min(near, -(m[2] * x + m[6] * y + m[10] * z + m[14]));
+      }
+      ink.enabled = foliageMask.enabled = near < INK_FADE_END_M;
+    }
     if (gtao && !gtaoOld) {
       // The scene pass draws into the composer's current read buffer, which alternates between
       // its two targets, so point AO at whichever depth texture it fills this frame.
@@ -1680,6 +1713,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    // One never-drawn object per frame (a single shader compile at most), after the frame's own work.
+    if (prewarmer?.pending) {
+      const t = performance.now();
+      if (prewarmer.step(low ? 2 : 4, 1)) perf.prewarmStep(performance.now() - t);
+      if (!prewarmer.pending && !prewarmDone) { prewarmDone = true; bloomWarmFrames = 1; perf.phase('city:prewarmed'); }
+    }
     if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
     frames++;
     if (ts - fpsT > 1000) {
@@ -1711,6 +1750,18 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setTimeout(release, 8000);
   }
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
+  // Compile what City may show later (weather, dusk and night lights, culled areas) a little at a
+  // time once colour shows, so a clock or weather change never stalls on a first-use shader compile.
+  // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
+  if (!perfOverrides.prewarmOff) {
+    prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
+    requestPrewarm = () => setTimeout(rescan, 500);
+    // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
+    const rescanTimer = setInterval(rescan, 10000);
+    options.signal?.addEventListener('abort', () => clearInterval(rescanTimer), { once: true });
+    void (whiteModel?.revealed ?? Promise.resolve()).then(() => { colourShown = true; rescan(); });
+  }
   let firstFrame = false;
   // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
@@ -1878,6 +1929,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      prewarmer?.dispose();
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();
