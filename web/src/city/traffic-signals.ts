@@ -149,6 +149,8 @@ export function signalPositions(signals: readonly CourseSignal[], length: number
 const scratch = { depart: [] as number[], from: [] as number[], arrive: [] as number[], order: [] as number[],
   settled: [] as boolean[], offstage: [] as boolean[] };
 
+const byArrival = (a: number, b: number) => scratch.arrive[a] - scratch.arrive[b];
+
 function signalPass(signals: readonly CourseSignal[], length: number, speed: number,
   trips: readonly { start: number; length: number }[], now: number, hold: ReadonlyMap<number, number>) {
   const n = trips.length;
@@ -164,7 +166,7 @@ function signalPass(signals: readonly CourseSignal[], length: number, speed: num
     const sig = signals[k];
     for (let i = 0; i < n; i++) { arrive[i] = depart[i] + (sig.s - from[i]) / speed; order[i] = i; }
     // Queue order: arrival time at this stop line.
-    order.sort((a, b) => arrive[a] - arrive[b]);
+    order.sort(byArrival);
     // lastClear: when the car ahead has rolled clear of the line, not merely been released.
     let back = 0, lastLeave = -Infinity, lastClear = -Infinity, lastStop = 0, leaderHalf = 0;
     for (let q = 0; q < n; q++) {

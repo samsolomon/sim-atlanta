@@ -52,13 +52,14 @@ const TRAIL_KEY = 'perf-trail';
  *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never)
  *   &shadowstep=80 grid step (m) the shadow camera moves in (0 = follow the target)
  *   &traffic=legacy  road traffic's pre-2026-11-24 update path (every car posed and height-sampled
- *                 every frame), for A/B update-ms runs on a device
+ *                 every frame), for A/B update-ms runs on a device; &traffic=nocull keeps the new
+ *                 path but poses off-screen cars too (to compare drawn cars with legacy)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, trafficLegacy: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, trafficLegacy: false, trafficNoCull: false };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -70,6 +71,7 @@ export const perfOverrides = (() => {
     farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
     trafficLegacy: params.get('traffic') === 'legacy',
+    trafficNoCull: params.get('traffic') === 'nocull',
   };
 })();
 

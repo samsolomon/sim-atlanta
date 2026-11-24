@@ -317,7 +317,7 @@ export class RoadTraffic {
   update(clockMs: number, darkness: number, view?: THREE.Frustum) {
     const started = performance.now();
     if (perfOverrides.trafficLegacy) this.stepLegacy(clockMs, darkness);
-    else this.step(clockMs, darkness, view);
+    else this.step(clockMs, darkness, perfOverrides.trafficNoCull ? undefined : view);
     perf.traffic(performance.now() - started);
   }
 

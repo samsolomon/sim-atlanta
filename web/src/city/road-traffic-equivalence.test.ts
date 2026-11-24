@@ -32,6 +32,7 @@ function expectSame(got: number[][], want: number[][]) {
   expect(worst).toBeLessThan(1e-2);
 }
 type Paths = { stepLegacy(ms: number, dark: number): void; step(ms: number, dark: number, view?: THREE.Frustum): void };
+const paths = (layer: RoadTraffic) => layer as unknown as Paths;
 
 describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', () => {
   const vd = staged ? J('vignette.json') : null!;
@@ -55,5 +56,51 @@ describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', 
       compared += legacy.length;
     }
     expect(compared).toBeGreaterThan(400);
+  });
+
+  it('matches frame by frame through moving-queue rollovers, with in-place trip reuse', () => {
+    // A streetcar-like blocker sweeping each queued course every 100 s queues cars behind it.
+    // Separate layers run each path over the same continuous frames. (Warm rollovers that keep
+    // surviving trips are rare here; traffic-queues.test.ts covers in-place trip reuse directly.)
+    const movingBlocks = () => (t: number) => { const front = (t * 9) % 900; return [{ rear: front - 24, front }]; };
+    const make = () => new ArterialTraffic({ city: vd, arterials: loadArterials(J('arterials.json'), vd).corridors, hourly, roadHeight, quality: 'high', movingBlocks });
+    const legacy = make(), next = make();
+    const start = Date.parse('2026-11-20T17:00:00-05:00');
+    let compared = 0;
+    for (let f = 0; f < 3000; f++) {
+      const ms = start + f * 1000 / 30;
+      paths(legacy).stepLegacy(ms, 0);
+      paths(next).step(ms, 0);
+      const want = cars(legacy);
+      expectSame(cars(next), want);
+      compared += want.length;
+    }
+    expect(compared).toBeGreaterThan(200);
+  });
+
+  it('culls only cars outside the view, posing the rest exactly as without culling', () => {
+    const layer = layers.connector!;
+    const camera = new THREE.PerspectiveCamera(40, 411 / 891, 1, 6000);
+    camera.position.set(700, 260, 760);
+    camera.lookAt(650, 0, 450);
+    camera.updateMatrixWorld();
+    const view = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const ms = Date.parse('2026-11-20T17:05:00-05:00');
+    paths(layer).step(ms, 0);
+    const all = cars(layer);
+    paths(layer).step(ms, 0, view);
+    const culled = cars(layer);
+    const seen = all.filter(c => view.containsPoint(new THREE.Vector3(c[12], c[13], c[14])));
+    expect(seen.length).toBeGreaterThan(5);
+    expect(culled.length).toBeLessThan(all.length);
+    // Every car the camera can see is still drawn, identically; nothing far outside is.
+    const key = (c: number[]) => `${c[12].toFixed(3)},${c[14].toFixed(3)}`;
+    const drawn = new Map(culled.map(c => [key(c), c]));
+    for (const c of seen) expect(drawn.get(key(c))).toEqual(c);
+    const margin = new THREE.Box3();
+    for (const c of culled) {
+      margin.min.set(c[12] - 31, -80, c[14] - 31); margin.max.set(c[12] + 31, 150, c[14] + 31);
+      expect(view.intersectsBox(margin)).toBe(true);
+    }
   });
 });
