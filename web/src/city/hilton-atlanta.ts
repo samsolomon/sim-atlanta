@@ -228,6 +228,7 @@ export function createHiltonAtlanta(buildings: VBuilding[], grid: GroundGrid) {
         vertexColors: true,
         side: DoubleSide,
         transparent: true,
+        forceSinglePass: true,
         opacity: 0,
         depthWrite: false,
         blending: AdditiveBlending,

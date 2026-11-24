@@ -231,6 +231,7 @@ export function createFootballHall(buildings: VBuilding[], grid: GroundGrid) {
         transparent: true,
         depthWrite: false,
         side: DoubleSide,
+        forceSinglePass: true,
       });
       material.addEventListener('dispose', () => map.dispose());
       const sign = new Mesh(new PlaneGeometry(12.7, 2.65), material);

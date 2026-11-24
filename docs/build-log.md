@@ -4021,3 +4021,7 @@ differ from main by at most 0.21% of pixels. Main against itself differs by the 
 the six frames I checked. Skins keep choosing their lit panes when they build them. Re-picking them in the
 shader would have lit different windows on every approved landmark.
 [docs/perf.md views](log/facade-night/sheet-views.jpg) · [12 landmarks](log/facade-night/sheet-landmarks.jpg) · [design note](facade-night.md)
+
+### 2026-11-24 · Drawing through the aquarium signs
+
+Three.js draws a transparent, double-sided mesh twice to put its back faces behind its front faces. On the phone tier, the four Georgia Aquarium sign meshes each lost a draw with identical pixels in two opposite close views, by day and at night. The same comparison supported one pass for the 1180 Peachtree veil, Hilton flood, College Football Hall of Fame sign, Coda gallery and streetcar panes. The World of Coca-Cola bottle enclosure showed why the default exists. One pass changed the tint across the bottle in daylight. Both its frost and the etched sign keep two passes. [Day and night comparisons](log/perf/single-pass/day-night.jpg)
