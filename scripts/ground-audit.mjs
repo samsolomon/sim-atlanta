@@ -10,6 +10,7 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { activePort } from './chrome-cdp.mjs';
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf('--' + name);
@@ -22,15 +23,14 @@ const step = Number(arg('step', '0.5'));
 const chrome = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 const profile = mkdtempSync(join(tmpdir(), 'ground-audit-'));
-const port = 9300 + Math.floor(Math.random() * 500);
-const proc = spawn(chrome, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
+const proc = spawn(chrome, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
   '--no-first-run', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--window-size=1280,800', 'about:blank'], { stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function target() {
   for (let i = 0; i < 100; i++) {
     try {
-      const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+      const list = await (await fetch(`http://127.0.0.1:${await activePort(profile)}/json/list`)).json();
       const page = list.find(t => t.type === 'page');
       if (page) return page.webSocketDebuggerUrl;
     } catch { /* not up yet */ }
