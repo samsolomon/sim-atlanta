@@ -326,3 +326,17 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 **Next:**
 - Road-vehicle variety: City uses 3 of the 8 types in `vignette/vehicles.ts`. Alternatively, do the downtown curvature follow-up first; I asked the coordinator which.
 - Distributed power (DPU) remains deferred.
+
+### Update — 2026-11-24, after #467 and #512 (Opus session bceb5cfc)
+
+- **#467 merged** as `23cc47a0`. It added Crescent and CQ400 boot templates, padded CQ400 to 5 clip planes, and set program ceilings to low 86 and high/high-night 100. #424 must rebase onto it and re-measure, because both touch `perf-budget.json`.
+- **#512: freight curvature, held for the coordinator. Needs `pnpm data`.**
+  - `bake()` now fillets the `freightS` runs to a 150 m minimum radius.
+  - Pinned: run ends and shared vertices.
+  - The largest shift is 0.16 m.
+  - Ground-contact (a761d59f) owns `web/src/terrain` and approved it.
+  - The raw Overture extracts came from `studio-rectangle-default/data/raw` and were copied into this worktree's gitignored `data/raw`.
+  - This worktree's scene data is back to main's original. Regenerate the smoothed data with `.venv/bin/python pipeline/scripts/terrain_transport.py`.
+- **Once #512 lands:** drop `DOWNTOWN_PROFILE.exclude` (autorack) and set the downtown intermodal weight above 0 in the stack, after re-measuring car-pose curvature.
+- **Merge queue:** the skyline lead (studio-midtown-skyline) hands out merge slots. Ask for one and wait for "your turn".
+- **Next:** road-vehicle variety.
