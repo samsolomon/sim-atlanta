@@ -58,8 +58,7 @@ function excluded(mesh: Mesh, root: Object3D): string | null {
   if (g.drawRange.start !== 0 || g.drawRange.count !== Infinity) return 'draw range';
   if (!mesh.frustumCulled || mesh.customDepthMaterial || mesh.customDistanceMaterial) return 'custom draw';
   if (mesh.onBeforeRender !== Mesh.prototype.onBeforeRender || mesh.onAfterRender !== Mesh.prototype.onAfterRender) return 'custom draw';
-  // Mirrored transforms flip the winding: three corrects that per object, a baked batch cannot.
-  if (mesh.matrixWorld.determinant() <= 0 && mat.side !== DoubleSide) return 'mirrored';
+  if (mesh.matrixWorld.determinant() === 0) return 'degenerate';
   for (let p: Object3D | null = mesh; p && p !== root.parent; p = p.parent) {
     if (p.userData.dynamic) return 'dynamic';
     if ((p as Object3D & { isLOD?: boolean }).isLOD) return 'lod';
@@ -108,7 +107,19 @@ function normalized(mesh: Mesh, bake: Color | null, matrix: Matrix4) {
     g.setAttribute('color', new Float32BufferAttribute(out, 3));
   }
   if (src !== mesh.geometry) src.dispose();
-  return g.applyMatrix4(matrix);
+  g.applyMatrix4(matrix);
+  // A mirroring transform flips the winding. three corrects that per object at draw time; a baked
+  // batch cannot, so reverse each triangle here instead.
+  if (matrix.determinant() < 0) {
+    for (const a of Object.values(g.attributes) as BufferAttribute[]) {
+      const k = a.itemSize, arr = a.array;
+      for (let t = 0; t + 2 < a.count; t += 3) for (let c = 0; c < k; c++) {
+        const i = (t + 1) * k + c, j = (t + 2) * k + c, v = arr[i];
+        arr[i] = arr[j]; arr[j] = v;
+      }
+    }
+  }
+  return g;
 }
 function toFloat(a: BufferAttribute) {
   const n = a.count * a.itemSize;

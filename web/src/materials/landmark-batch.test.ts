@@ -112,4 +112,22 @@ describe('batchLandmarks', () => {
     expect(twin.geometry.attributes.position.count).toBeGreaterThan(0);
     expect(twin.parent).toBe(a.group);
   });
+
+  it('reverses the winding of a mirrored mesh, so its faces still front the way its normals point', () => {
+    const container = new Group();
+    const a = landmark(10), c = landmark(20);
+    c.group.scale.z = -1;
+    for (const s of [a, c]) container.add(s.group);
+    const b = batchLandmarks([a, c], container);
+    const body = meshes(b.group).find(m => m.castShadow)!;
+    const p = body.geometry.attributes.position, n = body.geometry.attributes.normal;
+    const v = [0, 1, 2].map(() => new Vector3()), face = new Vector3(), normal = new Vector3();
+    let agree = 0;
+    for (let t = 0; t < p.count; t += 3) {
+      v.forEach((x, k) => x.fromBufferAttribute(p, t + k));
+      face.subVectors(v[1], v[0]).cross(new Vector3().subVectors(v[2], v[0]));
+      if (face.dot(normal.fromBufferAttribute(n, t)) > 0) agree++;
+    }
+    expect(agree).toBe(p.count / 3);
+  });
 });
