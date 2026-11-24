@@ -35,7 +35,9 @@ const lerp = (a: P2, b: P2, t: number): P2 => [a[0] + (b[0] - a[0]) * t, a[1] + 
 
 /** Local part outlines (tower frame), from the mapped building parts of osm:way:39450210. */
 const garage: P2[] = [[-19.8,19],[-23.7,18.9],[-23,-19.3],[-19.2,-19.3],[-19.1,-23.7],[-17.4,-23.6],[-17.8,-44.4],
-  [-24.6,-51.2],[-31.8,-61.6],[-73.5,-20.8],[-73.9,0.2],[-37,44.9],[-30.6,52.6],[-18.2,42.3],[-17.8,23],[-19.9,23]];
+  [-24.6,-51.2],[-31.8,-61.6],[-73.5,-20.8],[-73.9,0.2],[-37,44.9],[-30.6,52.6],[-18.2,42.3],[-17.8,23],[-19.9,23]]
+  // The mapped ring winds clockwise; facades need the building on the left of each edge.
+  .reverse();
 const lowParts: { plan: P2[]; h: number; above: 'street' | 'west' }[] = [
   // Service wing on the garage's north side: 3DEP median 8.5 m over the lower west grade.
   { plan: [[-25.2,-54.5],[-17.8,-44.4],[-17.4,-23.6],[-9,-23.5],[-8.8,-50.4],[-13.7,-55.5],[-14.7,-62.3],[-19.3,-67.1],[-25.9,-67.1],[-31.8,-61.6]], h: 8.5, above: 'west' },
@@ -55,7 +57,7 @@ export function peachtree1100(shell: Shell, ground: LocalGround) {
 
   // Garage podium: stone with two dark open decks, stepping down the slope to the west.
   const podiumTop = y(NAVD.podium);
-  shell.prism(garage, base, podiumTop, STONE, '#9d9887');
+  shell.prism(garage, base, podiumTop, STONE, '#b5afa1');
   garage.forEach((a, i) => {
     const b = garage[(i + 1) % garage.length];
     if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 8) return;
