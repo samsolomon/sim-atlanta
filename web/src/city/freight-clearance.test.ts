@@ -1,13 +1,26 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { P2 } from '../vignette/geom';
 import { freightGeometry, FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, type FreightUnit } from '../vignette/freight-stock';
-import { curveSwing, MAX_CURVE_SWING_M } from './freight-clearance';
+import { curveSwing, MAX_CURVE_SWING_M, MIN_OVERHEAD_CLEARANCE_M } from './freight-clearance';
 import { profileKinds, type LineProfile } from './freight-consist';
 import { DOWNTOWN_PROFILE } from './freight';
 import { NORCROSS_PROFILE } from './brookwood-freight';
 import { corridor } from './brookwood-corridor';
+import { createSurfaceTransport } from '../terrain/transport';
+import { GroundGrid } from '../terrain/grid';
+import { prepareEastCut } from './east-cut';
+import { withoutTram } from './streetcar';
+
+/** Height of the tallest body above the railhead, on either tier. */
+const height = (unit: FreightUnit) => Math.max(...[false, true].map((low) => {
+  const g = freightGeometry(unit, { low });
+  g.computeBoundingBox();
+  g.dispose();
+  return g.boundingBox!.max.y;
+}));
 
 /** Half the widest body, from the built geometry on either tier (cars are laid out along z). */
 const halfWidth = (unit: FreightUnit) => Math.max(...[false, true].map((low) => {
@@ -59,5 +72,40 @@ describe('freight curve swing (freight-clearance.ts)', () => {
     const kinds = worstOn(DOWNTOWN_PROFILE, chains);
     expect(kinds.map((k) => k.kind)).toEqual(expect.arrayContaining(['autorack', 'wellA']));
     for (const r of kinds) expect(r.swing, JSON.stringify(r)).toBeLessThanOrEqual(MAX_CURVE_SWING_M);
+  });
+
+  const dir = resolve(__dirname, '../../public/data/scene/downtown');
+  const staged = () => smoothed() && ['scene.json', 'ground.json', 'ground.i16', '../../ga/routes.json'].every((f) => existsSync(resolve(dir, f)));
+  it.skipIf(!staged())('clears the tallest downtown car under every deck that crosses a drawn chain (needs pnpm data)', () => {
+    const json = (f: string) => JSON.parse(readFileSync(resolve(dir, f), 'utf8'));
+    const city = json('vignette.json'), spec = json('scene.json'), routes = json('../../ga/routes.json');
+    const grid = new GroundGrid(json('ground.json'), Uint8Array.from(readFileSync(resolve(dir, 'ground.i16'))).buffer);
+    // As City builds it, with the bare grid standing in for the drawn terrain (within 5 cm of the
+    // browser's soffit heights on 2026-11-24).
+    const transport = createSurfaceTransport(withoutTram(city), grid, (x, z) => grid.sample(x, z), prepareEastCut(routes, spec, grid, city.terrainTransport.rail));
+    const meshes: THREE.Mesh[] = [];
+    transport.group.updateMatrixWorld(true);
+    transport.group.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh); });
+    // Count a soffit whichever way its faces wind.
+    for (const m of meshes) for (const mat of [m.material].flat()) mat.side = THREE.DoubleSide;
+    const tallest = Math.max(...profileKinds(DOWNTOWN_PROFILE).map(height));
+    const ray = new THREE.Raycaster(), up = new THREE.Vector3(0, 1, 0), from = new THREE.Vector3();
+    ray.far = tallest + 2;
+    let lowest = { clear: Infinity, at: [0, 0] }, covered = 0;
+    for (const tread of transport.freightTreads) {
+      let last = -Infinity;
+      for (const p of tread) {
+        if (Math.abs(p.s - last) < 2) continue;
+        last = p.s;
+        ray.set(from.copy(p.position).setY(p.position.y + 0.4), up);
+        const hit = ray.intersectObjects(meshes, false)[0];
+        if (!hit) continue;
+        covered++;
+        if (hit.distance + 0.4 < lowest.clear) lowest = { clear: hit.distance + 0.4, at: [Math.round(p.position.x), Math.round(p.position.z)] };
+      }
+    }
+    // The line passes under at least the three overpasses the probe found.
+    expect(covered).toBeGreaterThan(10);
+    expect(lowest.clear - tallest, JSON.stringify({ ...lowest, tallest })).toBeGreaterThanOrEqual(MIN_OVERHEAD_CLEARANCE_M);
   });
 });

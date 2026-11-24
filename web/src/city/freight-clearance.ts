@@ -11,6 +11,12 @@ import type { P2 } from '../vignette/geom';
  * car kinds and any edit to the drawn track. Downtown before smoothing (#512) swung 0.41–0.44 m.
  */
 export const MAX_CURVE_SWING_M = 0.35;
+/**
+ * Overhead clearance: along every drawn freight chain, the lowest deck soffit over the railhead stays
+ * at least this far above the tallest car the line can draw (a loaded double-stack well, 6.16 m).
+ * Downtown's lowest soffit is 6.82–6.87 m, at the overpasses near (−44, −81) and (−182, −186).
+ */
+export const MIN_OVERHEAD_CLEARANCE_M = 0.5;
 
 export interface CurveSwing {
   /** Largest extra distance of a body corner or mid-side point from the centreline, beyond its
