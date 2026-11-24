@@ -616,7 +616,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     commitTrees,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     /** Drawn terrain triangles only, without bridge approaches. */
-    terrainAt: bare,
+    terrainAt: Object.assign(bare, { triangles: mesh }),
     /** Lower the drawn terrain under hard surfaces placed after the board was built,
      * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },

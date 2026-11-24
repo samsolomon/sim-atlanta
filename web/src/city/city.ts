@@ -46,6 +46,7 @@ import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { boardPoint, eastBounds, eastJoin, nearEast, nearNorth, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
 import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
+import { buildRailPortals, extendFreightIntoMouths, railMouths, railPortalOpenings, type RailMouth } from './rail-portals';
 import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
@@ -430,6 +431,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let atlantaCityHall: ReturnType<typeof createAtlantaCityHall> = null;
   let americasMart: ReturnType<typeof createAmericasMart> = null;
   let hurtBuilding: ReturnType<typeof createHurtBuilding> = null;
+  let railMouthList: RailMouth[] = [];
   let theCenter: ReturnType<typeof createTheCenter> = null;
   let samNunn: ReturnType<typeof createSamNunn> = null;
   let candler: ReturnType<typeof createCandler> = null;
@@ -585,12 +587,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         theCenter = createTheCenter(afterHurtBuilding, ground);
         const afterTheCenter = theCenter?.buildings ?? afterHurtBuilding;
         samNunn = createSamNunn(afterTheCenter, ground);
+        // Downtown freight tunnel mouths: portals and terrain openings (rail-portals.ts).
+        railMouthList = vd.terrainTransport ? railMouths(vd.terrainTransport.rail, vd.bounds, ground) : [];
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
-        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : [])] });
+        terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...railPortalOpenings(railMouthList)] });
         mosaic?.areas.set('downtown', terrain);
         downtownPlinth = world.buildPlinth(terrain.bottomY);
         const landmarksFrom = world.group.children.length;
+        if (railMouthList.length) world.group.add(buildRailPortals(railMouthList, ground, terrain.terrainAt));
         if (floyd) world.group.add(floyd.group);
         if (hyatt) world.group.add(hyatt.group);
         if (marquis) world.group.add(marquis.group);
@@ -801,6 +806,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Added after the scenery snapshot, so a streetcar never occludes its own pick.
   scene.add(streetcar.group);
   scene.add(trains.group);
+  // Trains run on into each portal's tube, so they're clipped in the dark rather than at the face.
+  if (transport) extendFreightIntoMouths(transport.freightTreads, railMouthList);
   const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges, !low) : undefined;
   if (freight) scene.add(freight.group);
   // Live buses on the drawn streets: terrain-painted ground and exact bridge treads, or the
