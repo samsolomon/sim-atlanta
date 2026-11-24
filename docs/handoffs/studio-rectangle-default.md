@@ -25,6 +25,8 @@ Archives, unpacked app and Worker, SHA files, per-release notes, camera tables a
 
 | Release | Compared against | Archive SHA-256 | Verification |
 | --- | --- | --- | --- |
+| `1acba131` | `63d7e332` | `a1c0d9050b3c51b66ed706294d9da04b7631e691dfe5536e77078aca70eb9ee7` | 22 PRs (#326–#417). Web rebuild only. 128 manifest entries, 95 served files. Strict tests 20 Rust, 11 pipeline, 1,110 web with one skip, 5 Worker. Default City has 0 species-rollout meshes and 0 rollout carpets on both tiers, and `?trees=species` restores them (counted with `__perf.top`). Night 3D chip and the 13:00 piazza umbrellas checked. Deployed by the coordinator as version `cc1fe35a`, and the production verifier passed. |
+| `63d7e332` | `b71b863f` | `3cb8e0aa70b983ea1aed3417c889406b584ad676bdcd977346c6643c464e5302` | 11 PRs (#377–#395). Web rebuild only. 116 manifest entries, 95 served files. Strict tests 20 Rust, 11 pipeline, 1,080 web with one skip, 5 Worker. No High precompile exception. |
 | `b71b863f` | `ccae1bc1` | `80b0f06ac93b68d38dc1695d99b54dea107f1b4abf4fad5eae2a44e3d334bfea` | 112 manifest entries checked after extraction, 95 local HTTP assets. Strict tests 20 Rust, 11 pipeline, 1,071 web with one skip, 5 Worker. Desktop and phone checked Final dock, radio, Models search/XE60 Details, warm return and selection. An old classic URL opens Final. |
 | `ccae1bc1` | `bc32b09` | `de404a41230783bb1d742ed39f0705f1a855afbf84001e9086f6420c0e22c6d3` | 118 manifest entries checked after extraction, 102 local HTTP assets. Strict tests 20 Rust, 11 pipeline, 987 web with one skip, 5 Worker. Classic still worked. Phone auto chose Low. Edgewood at 21:00 rendered. Downtown freight Follow said Illustrative. |
 
@@ -46,6 +48,10 @@ City camera format is `cam=x,z,bearing,tilt,distance`. Use `/?view=city&q=low&we
 | Grant Street and North Avenue | `1390,505,0,55,300` and `-783,-1860,235,55,350`; closer below-deck cameras are in the project survey notes. |
 
 The live passenger check used City Low at `53c29a11`, with local Vite relaying public cached MARTA endpoints at the real clock around 20:18–20:21 ET, solar elevation −34° to −35°. The Red Line camera moved 1,041 m through mapped Midtown tunnel, from `489,-3026,-148,26,300` to `410,-1988,-148,26,300`. Route 49 bus 5106 moved 449 m across a live update, from `878,-895,-148,26,300` to `549,-1200,-148,26,300`. Stop/restart passed on both. Pinning the clock switched Live to Timetable. The board-wide tier and cards were checked independently. Evidence is in `~/Developer/sim-atlanta-passenger-night-2026-11-23/`. The review sheet and moving-bus frame were Taildropped. The Route 49 bus check used a public feed observation. The later Route 49 feature branch adds separate functionality.
+
+## Claude Opus session (2026-11-23)
+
+Claude Opus session `orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d` packaged `63d7e332` and `1acba131`. The coordinator reply route works by replying to each inbound message ID. Smoke scripts: the core flow plus extras for the tree count, night chip and piazza. Run them against a staged `python3 -m http.server`. Local HTTP and headless Chrome need the sandbox disabled on this host. Release 3 waits on #416, #422 and #423; #419 and #421 are merged. Ping the coordinator after main has been quiet for 20 minutes with those merged.
 
 ## Next steps, in order
 
