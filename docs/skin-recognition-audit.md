@@ -87,7 +87,7 @@ Twelve skins queued before the recognition rule were judged from each PR's own i
 | FIXED (pending 8b) | #530 | Coca-Cola USA Building (large) | First skin had the wrong material | Reworked to the Enclos aerial: dark blue-grey curtain wall, silver mullions, brown crown band |
 | FIXED (pending 8b) | #527 | Two Peachtree Pointe (large) | Curved plan reads; glass and banding generic; no base or crown | Landed in 8a; strengthened by #606 (swept crown band, Peachtree canopy; photo-backed) |
 | BORDERLINE | #539 | Renaissance Midtown (large) | Beige grid apart from the centre strip; frame is 300 m | Rides 8b; needs a 400–600 m frame; later pass |
-| BORDERLINE | #528 | The M by Radius | Piers faint, crown hidden from that side | Rides 8a; later pass |
+| FIXED (pending 8c) | #528 | The M by Radius | Hidden by 1072 from the south | #629: brighter, wider silver piers from the listing aerial (NW side) |
 | BORDERLINE | #533 | Lilli Midtown | Grey glass near generic; base hidden; low-tier frame | Strengthen before 8c (lead approves) |
 | BORDERLINE | #544 | Piedmont House | Blue among blue boxes at 750 m; faint grid | Strengthen before 8c (lead approves) |
 | BORDERLINE | #529 | Vireo Piedmont Park | Balconies don't read at 700 m | Rides 8b; later pass |
