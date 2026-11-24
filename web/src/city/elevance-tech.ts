@@ -8,9 +8,6 @@ import { litFacade, seedOf } from './skin-kit';
 export const elevanceTechId = 'osm:way:996610148';
 const origin: P2 = [357, -2319];
 const towerId = 'osm:way:1344870475';
-// 712 West Peachtree's tower north face is at world z −2275.5 (local +43.5); Elevance's north
-// wall runs at local +31.2. The 16th-floor bridge spans that gap above 712's garage.
-const bridge = { x0: 6, x1: 13, z0: 31.2, z1: 43.5 };
 
 // Heights from the April 2019 lidar (90th-percentile returns on an 8 m grid, ground 297.1 m
 // NAVD88): the central tower 76 m and the two wings (the mapped "podium" parts, inferred 54 m)
@@ -104,12 +101,7 @@ export function createElevanceTech(buildings: VBuilding[], site: VBuilding, grid
   shell.body.tri(tri(-24, lobbyTop), tri(-30, screenTop), tri(-18, screenTop), '#f4f1e8');
   shell.body.tri(tri(-24, lobbyTop), tri(-18, screenTop), tri(-30, screenTop), '#f4f1e8');
 
-  // 16th-floor sky bridge to 712 West Peachtree, seated 0.4 m into both walls.
-  const y0 = screenTop + 7 * 3.95, y1 = y0 + 4.2;
-  const box = ccw([[bridge.x0, bridge.z0 - 0.4], [bridge.x1, bridge.z0 - 0.4], [bridge.x1, bridge.z1 + 0.4], [bridge.x0, bridge.z1 + 0.4]]);
-  shell.prism(box, y0, y1, '#8fa9c4', roofColor);
-  edges(box, (a, b, length) => {
-    if (length > 10) litFacade(shell, seed, face++, a, b, y0 + 0.3, y1 - 0.3, 1, 2.5, 0.92, 0.85, blue, 0.3);
-  });
+  // The 16th-floor sky bridge to 712 West Peachtree spans 12.3 m beyond this footprint, past
+  // the skin footprint audit's allowance; it follows once the audit can take a per-part outline.
   return shell.finish('#f4d9a8', 0.62);
 }
