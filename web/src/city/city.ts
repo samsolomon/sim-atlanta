@@ -124,6 +124,7 @@ import { Snow } from './snow';
 import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
+import { rolloutBatch } from '../trees/rollout-city';
 
 export type Quality = 'low' | 'high';
 
@@ -657,6 +658,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
   scene.add(world.group);
+  // The tree rollout's species, one batch for every board row (trees/rollout-city.ts).
+  scene.add(rolloutBatch.group);
   if (terrain && transport) scene.add(terrain.group, transport.group);
   if (cut && grid) scene.add(cutFloor(grid));
   // Trim content to the board, retaining the ground, cut edge and walnut lip.
@@ -1436,6 +1439,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       return { id: t.id, pathId: t.pathId, tier: t.s.tier, routeId: t.routeId, heading: t.heading, x, z, cars,
         hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
+    if (v.kind === 'freight') {
+      const cars = [...(freight?.group.children ?? []), ...(brookwood?.freight.children ?? [])]
+        .filter(c => c.userData.trainId === v.id).flatMap(c => drawnCar(c) ?? []);
+      if (!cars.length) return null;
+      return { id: v.id, tier: 'illustrative', x: cars[0].x, z: cars[0].z, cars, hidden: null };
+    }
     if (v.kind === 'bus') {
       const bus = options.buses?.()?.find(b => b.id === v.id);
       if (!bus) return null;
@@ -1489,6 +1498,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
     }
+    const sceneTime = options.clockMs();
+    freight?.update(sceneTime);
+    brookwood?.updateFreight(sceneTime);
     const followed = options.follow?.vehicle;
     let fix = followed ? locate(followed, states) : null;
     // A timetable trip replaced by live rail (or the reverse) hands off to its nearest match.
@@ -1517,16 +1529,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
-    const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
-    freight?.update(sceneTime);
-    brookwood?.updateFreight(sceneTime);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
     midtownArterials?.update(sceneTime, atm.dark);
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
+    rolloutBatch.update(speciesDt, camera);
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;

@@ -2661,6 +2661,149 @@ Sam flagged 1180 Peachtree's crown glowing like a light box in production. Three
 
 Sam walked Ansley Park and said the first thing a visitor notices: the streets are unusually wide. City had drawn every one at 7 m, because OpenStreetMap tags them all as plain residential streets with no width. On the satellite view, Peachtree Circle by Winn Park and the two Prados measure 12–13 m curb to curb with parking, and 15th and 17th Streets about 10 m. The side drives really are about 7 m. The widths are a small, inferred table, keyed by street name and limited to Ansley. A test confirms the wider carriageways clear every house wall and mapped tree trunk. It found none in the way, which says how much room these 1900s streets were given. The first attempt missed Peachtree Circle entirely, because it runs just west of the box I had drawn around Ansley for house styles. Requires a web rebuild only. [Before and after](log/ui/ansley-widths/winn-compare.jpg) · [Method](ansley-street-widths.md)
 
+### 2026-11-23 — Gloss is a speck, not a card
+
+Round 1 of the magnolia gloss lit whole leaf cards, and it read as frost: pale blue-grey blotches lifting the crown 30%. The fix came from scale. A card carries a dozen painted leaves, and real gloss is one leaf at a time catching the sun. So the shader now picks single painted leaves by a hash of the leaf's atlas value and a half-metre cell of tree space, then flashes only the picked leaves whose card faces the sun's half vector on the sun side of the crown. At one leaf in six the crown brightens 8% (0.201 to 0.218), not 30%. It costs no draws and no triangles, and night turns it off.
+
+The first try showed nothing at all. A debug pass that painted the pick, side and sun terms as RGB showed that the card normals sit 0.5 to 0.8 from the half vector; the round-1 exponent of 28 had only ever lit the rare card that was nearly a mirror. A broad lobe with a near-binary step made the points visible.
+
+The crown also became a cone: a new `cone` habit option straightens the envelope above its widest point, and the outline clamp and leader follow it. [Sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg).
+
+### 2026-11-23 — The freight line that stopped at the board edge
+
+Sam drew a red line along an empty grass strip past King Memorial: "missing freight tracks." The data had them all along. The NARN arcs for CSX's Atlanta Terminal Subdivision cross the King board, and so do the OSM tracks. The board's context simply baked `rail: []`, and its loader never built surface transport, so downtown's six freight tracks ended in a clean cut at x = 1000.
+
+The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX mains and 7 Hulsey Yard tracks. Those runs meet downtown's six track ends at the edge to the centimetre, and the board draws them with the same ballast and graded cuttings as everywhere else. On the high tier the ground audit finds no ballast under terrain on the board. On the low tier, which has no drape, the worst is 5 cm. The new test is the part I care about most: with the generated data present, every CSX or NS arc inside the board must have drawn track within 12 m. So the next time a board silently drops a railroad, a test will say so, not Sam. Release: web rebuild only; no `pnpm data` change.
+
+![CSX past King Memorial, before and after](log/ui/freight/king-csx.jpg)
+
+### 2026-11-23 — The loading dock was next door
+
+The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
+
+## 2026-11-23 — Four tree species share a City-wide batch
+
+The first City rollout brings Sam's A choices for crape myrtle, loblolly pine,
+sweetgum and Japanese maple into the canopy. Ansley keeps its larger specimen
+crowns, facing street pairs and planted islands. The roof garden at 1180 Peachtree
+now uses the same crape model as the lab. Counting the actual planting loop turned
+up eight trees, correcting the handoff's seven.
+
+Batching matters more than the number of board rows: against current main, the low
+view adds nine calls and 44,752 triangles; the moving pan adds nine and 46,744.
+After bringing in main's far-ground reduction, the default total is 2.379M triangles,
+not the earlier 3.397M. Both performance tiers pass. Cross-review also found that
+the separate square-board preview removed generic crowns without mounting their
+replacements; it now mounts and updates the species batch too.
+
+Phone-perf accepted the bounded winter-limb exception. Sam approved the Ansley
+canopy and 1180 garden, and the coordinator authorized merge after the A16 check.
+The A16 averaged 22.0 fps at default and 22.7 while panning, versus production's
+24.9 and 26.0. The roughly 12% reduction needs attribution: the tested b4993131 did not include
+several main changes initially cited in the comparison. The coordinator approved
+merge while phone-perf prepares a frozen d1411a9e/b4993131 comparison; release
+packaging waits for that result. Full run values are recorded in PR #336.
+
+[1180 before/after](log/ui/tree-species/rollout/1180-day-sheet.jpg) ·
+[The Prado before/after](log/ui/tree-species/rollout/prado-day-sheet.jpg) ·
+[Winter far-detail comparison](log/ui/tree-species/rollout/winter-sheet.jpg).
+The winter species limbs cost 13,974 submitted triangles across three instanced
+meshes, with shadows disabled. They preserve the otherwise missing bare silhouettes.
+
+### 2026-11-23 — Arterial cars turn on their incoming green
+
+The illustrative arterial fleet can now turn between permitted directed roads at
+mapped signal junctions. Midtown supplies 20 eligible turn courses. A cubic curve
+joins the lanes, and each turn keeps the incoming signal phase rather than choosing
+one from the curve's tangent. Spring stays southbound and West Peachtree northbound.
+The turning courses reuse approach signal heads and the original route endpoints.
+
+Cross-review caught a useful mistake: slowing an entire turn course to 6 m/s made
+through cars catch it well before the junction, where overlap suppression hid one
+of them. Turns now keep their approach speed and exclude exits differing by more
+than 0.1 m/s. They take an illustrative 15% of incoming flow, divided among available
+turns, rather than scaling demand by the parent route's length. Separate queues can
+still overlap; the existing footprint guard hides conflicting cars. Protected left
+phases and shared queues remain future work.
+
+The frozen Spring/10th comparison uses `cam=222,-3075,0,45,110`, high tier,
+`t=2026-11-20T19:02:49.250Z&speed=0&dev&mindist=20`. The downtown check is Washington
+at Trinity: `cam=122,670,0,45,110`, high tier, `t=2026-11-20T19:01:51Z&speed=0`.
+Screenshots are in [arterial-turns](log/ui/arterial-turns/). A clock-seek regression
+also removed an hourly-demand cache that retained the first visited time within a
+minute. This needs a web rebuild only, with no new data or server work.
+
+The second review also found a signal-location edge case: at 17th Street the turn
+stop was 11.95 m beyond the through stop. Turns now stop no later than their through
+course, and one ambiguous twin-controller junction is excluded. All 20 remaining
+Midtown courses have a shared controller, ordered stops and no second stop within
+30 m. [Spring/10th before and after](log/ui/arterial-turns/compare-spring-10th.jpg).
+### 2026-11-23 — Arts Center entrance slab clears the plaza
+
+The east wing floor now gives terrain a yield boundary at entry + 0.03 m,
+5 cm below its 0.08 m slab top. The earlier audit found 491 intruding samples,
+up to 25 cm above the floor; this uses the shared carve mechanism without
+raising the station. A separate surprise during verification: the Ansley tree
+rollout failure was stale generated Midtown data. Restaging the Midtown rows
+made all 10 rollout tests pass.
+
+Matched daylight camera: `445,-3930,250,50,150`, at `2026-11-20T14:00:00-05:00`.
+Web rebuild only; no pipeline change.
+
+![Arts Center entrance before and after](log/2026-11-23-arts-center-slab.jpg)
+
+Edge verification at the same camera with lens zoom 2.5: [day](log/2026-11-23-arts-center-edge-day.png)
+and [night](log/2026-11-23-arts-center-edge-night.png). The targeted audit at 0.25 m
+spacing finds zero penetrations among 11,342 samples on the two slab-top triangles.
+Station-wide hits include other paving and must not be mistaken for this slab.
+### 2026-11-23 — A GE freight engine, properly
+
+The old freight locomotive was a long box with a yellow nose and an EMD-like cab, which no GE has. The detail pass rebuilds it as the AC4400CW family from published dimensions (22.3 m, 16.15 m truck centres) and dated photos of CSX 69, 7216 and 7232. It now has the CM44AC's raked cab front, roof number boards, stacked headlights and corner ditch lights, a louvred cabinet behind the cab, and the radiator wings overhanging the walkways. The surprise was colour again. The grade turned CSX's blue-grey into navy and the trucks into pure black. Sampling the photos (hood near #415155, running gear a weathered brown-grey) and feeding lighter inputs fixed both. The same body in an NS-like black with white nose stripes now leads the Brookwood passage, and the card names the scheme, still illustrative. 2,608 triangles per locomotive; draws unchanged. Web rebuild only. [Front three-quarter](log/freight/cm44ac-front34.jpg) · [Night](log/freight/cm44ac-night.jpg) · [Notes](freight-stock.md)
+
+### 2026-11-23 — Freight takeover verification
+
+The freight locomotive branch now passes the full test command with Python checks enabled: 20 Rust, 11 Python, 918 web and 5 worker tests. The missing routes contract fixture was an incomplete local data copy. Both City performance ceilings pass (533 low-tier draw calls, 1,136 high). A fresh Claude cross-review found no in-scope issues. The inherited Brookwood camera hid the engines behind the station; moving the frozen clock back 20 seconds exposed them. [Day and night captures with cameras](freight-stock.md#codex-takeover-verification--2026-11-23). Coordinator approval remains pending because the Air pairing token is rejected.
+
+### 2026-11-23 — 1180 crown colour trials
+
+Compared three pale-green emission colours at 92%, 97%, and 100% veil opacity, holding emission strength at 0.82. Six captures use the same Midtown aerial at 23:30 across both quality tiers. The paler panels brighten, but a mottled appearance remains even at full opacity: opacity alone does not recreate the smooth wash in the Kendall/Heaton night photograph. These are review trials, not a selected production change. [Comparison sheet](log/ui/midtown-skyline/napkin-night-colour-trials.jpg).
+
+### 2026-11-23 — The veil needed depth
+
+A controlled render changed only depthWrite to true while retaining the old colour and 88% opacity: the large mottled patches disappeared. The ink pass had been reading depth from objects behind the veil. The new night study writes veil depth, reaches 100% opacity at full night, and applies one procedural emissive wash rising from 72% at the base to 100% at the crest. No texture or geometry was added. Three silver-white colours at 0.82 strength are shown on both tiers in the [smooth-wash sheet](log/ui/midtown-skyline/napkin-night-smooth-steps.jpg); B (#d5dfdc) is provisional pending Sam's choice. The [matched daytime camera](log/ui/midtown-skyline/napkin-smooth-day-high.png) remains at 88% opacity.
+
+Full tests, the 15 skyline tests including the new depth/opacity guard, and performance budgets pass. Cross-review confirmed the depth explanation and flagged daytime near/far veil sorting and oblique edge-light occlusion as plausible risks to check before merge. The earlier colour-only sheet is superseded. This needs a web rebuild on eventual release; nothing is deployed.
+
+### 2026-11-23 — Sam chose the silver-white B wash
+
+Sam selected B: #d5dfdc at 0.82 emission, with the 0.72–1 crest gradient and full-night opacity of 1. Its peak linear emission is about 0.605, so the veil-specific regression ceiling is now 0.61 (the lattice keeps 0.7). Transparent sorting exposed another concrete issue: both veils had the same object origin. Their geometry now has separate x/z origins without changing its world position or height gradient. The edge light draws after the glass but still respects depth. No new geometry, texture, or server work is involved. Release needs only a web rebuild, by the coordinator.
+
+Final captures checked north/south daylight (`713,-3672,0,50,1150` and `713,-3672,180,50,1150`), the oblique night edge (`1268,-3672,90,72,950`), and matched aerial day/night on both tiers (`800,-3710,70,50,1021`). Both veil faces remain present; the light line is visible from the oblique night view. Orca's review tab stopped advancing animation frames, so final evidence uses the repository's headless Chrome/CDP capture setup. Full tests pass (931 web tests, one skipped), and performance ceilings pass on both tiers; high-tier ready time was 4.6 s against a nonblocking 3 s target. [Matched pair, high](log/ui/midtown-skyline/napkin-b-daynight-high.jpg) · [Matched pair, low](log/ui/midtown-skyline/napkin-b-daynight-low.jpg) · [Alternate angles](log/ui/midtown-skyline/napkin-b-angle-checks.jpg).
+
+Final Claude review requested the oblique camera in daylight on both tiers. The [additional captures](log/ui/midtown-skyline/napkin-b-oblique-day.jpg) show both curved faces and end lattices without a missing section at that camera. The visual risk is dismissed for the requested view; no universal claim about arbitrary transparent overlaps is implied. Two review rounds completed; stale documentation and shared-origin/light ordering were addressed, and no blocking findings remain.
+
+## 2026-11-23 — Freight joins Follow (initial checks)
+
+The downtown seven-car and Norcross ten-car illustrative consists now carry separate stable ids through picking and the existing Follow control. Their positions update before the camera lookup. Follow uses cars surviving their material clip planes and ends when none remain; it makes no tunnel claim. Both cards retain Illustrative labels.
+
+The easy-to-miss detail was update order: freight previously moved after the camera had already resolved its target. Initial browser checks picked and followed both consists. [Downtown capture](log/ui/follow/freight-downtown.jpg): 2026-11-20 14:12:35 ET, starting camera `900,545,0,35,300`; [Norcross capture](log/ui/follow/freight-norcross.jpg): 14:20:50 ET, starting camera `-790,-4385,0,35,300`. Follow then applies its standard bearing -148°, tilt 26°, distance 300 m.
+
+Validation: 20 Rust, 11 pipeline, 914 web tests (one skipped), five worker tests; production build and both performance tiers passed. Cross-model review found no blocking code issue. Initial captures are retained below; final replay checks and the review sheet are recorded in the completion entry. Web rebuild required; no data rebuild.
+
+## 2026-11-23 — Freight Follow replay checks complete
+
+Both illustrative consists passed day and full-night browser replays. The camera moved with the drawn cars through the downtown sections, then stopped when no cars remained drawn. Norcross followed to the mounted board edge and reported “train left the board” in both runs. Downtown ends with “freight no longer drawn”; it does not invent an underground location or a timetable trip. The selected card and active Follow position remain Illustrative.
+
+[Before Follow / after Follow / exit review sheet](log/ui/follow/freight-review.jpg). These compare interaction states, not two software versions. The browser advanced the pinned clock in 2-second steps, with camera and status samples saved in the four `*-check.json` files alongside the sheet. Cameras at the start of Follow:
+
+| Consist | Pinned time | Camera |
+| --- | --- | --- |
+| Downtown day | 2026-11-20T14:12:35-05:00 | `921,549,-148,26,300` |
+| Downtown night | 2026-11-20T22:12:35-05:00 | `-505,-900,-148,26,300` |
+| Norcross day | 2026-11-20T14:21:25-05:00 | `-654,-4519,-148,26,300` |
+| Norcross night | 2026-11-20T22:21:25-05:00 | `-654,-4519,-148,26,300` |
+
+Rebased validation: 20 Rust, 11 pipeline, 931 web tests (one skipped), five worker tests; build and type check passed. Perf Low: 2,382,511 triangles / 540 calls; High: 13,783,617 / 1,169, both below ceilings. Claude's second review found no code defect; its remaining visual finding is dismissed by these replays and screenshots. No live-feed night check is claimed: freight has no live feed. Web rebuild only; no data rebuild or worker change.
 
 ### 2026-11-23 — Ansley gets more than a colour change
 

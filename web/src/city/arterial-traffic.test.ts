@@ -151,3 +151,15 @@ it('fades a single vehicle at an interior end and leaves a gap before its next t
   expect(restarts).toBeGreaterThan(0);
   fleet.dispose();
 });
+
+
+it('recomputes hourly demand when seeking within the same minute', () => {
+  const hourly={weekday:Array.from({length:24},(_,h)=>h===12?1:0),weekend:Array(24).fill(0)};
+  const fleet=new ArterialTraffic({...base,hourly});
+  const fresh=new ArterialTraffic({...base,hourly});
+  fleet.update(noon+59000,0);
+  fleet.update(noon+1000,0);
+  fresh.update(noon+1000,0);
+  expect(snapshot(fleet)).toEqual(snapshot(fresh));
+  fleet.dispose(); fresh.dispose();
+});

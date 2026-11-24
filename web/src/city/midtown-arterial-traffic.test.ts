@@ -38,3 +38,23 @@ it('uses only the rows that are mounted', () => {
   for (const c of corridors) for (const r of c.runs) expect(r.road.pts.every(([, z]) => z >= -2500)).toBe(true);
   expect(midtownArterialCorridors([]).corridors).toEqual([]);
 });
+
+
+it('builds signalised turns on the actual Midtown junction graph', async () => {
+  const { arterialTurns } = await import('./arterial-turns');
+  const { default: signals } = await import('./fixtures/midtown-signals.json');
+  const { corridors, bounds } = midtownArterialCorridors(all);
+  const routes = arterialTurns(arterialTrafficRoutes(corridors, bounds!), corridors, signals as [number,number][]);
+  const turns = routes.filter(c => c.turnSignal);
+  expect(turns).toHaveLength(20);
+  for (const c of turns) {
+    expect(c.roads).toHaveLength(c.line.pts.length-1);
+    expect(c.roads.every(Boolean)).toBe(true);
+    const source=routes.find(r=>!r.turnSignal && r.roads[0]===c.roads[0] && r.line.pts[0][0]===c.line.pts[0][0] && r.line.pts[0][1]===c.line.pts[0][1])!;
+    const shared=source.signals!.find(s=>s.key===c.turnSignal!.key)!;
+    expect(shared).toBeDefined();
+    expect(c.turnSignal!.s).toBeLessThanOrEqual(shared.s);
+    expect(c.signals!.filter(s=>s.key!==c.turnSignal!.key && Math.abs(s.s-c.turnSignal!.s)<30)).toEqual([]);
+    expect(c.signals!.some(s => s.key === c.turnSignal!.key)).toBe(true);
+  }
+});

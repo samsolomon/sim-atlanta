@@ -78,9 +78,17 @@ export function courseSignals(line: Line, clusters: readonly SignalCluster[], re
 }
 
 /** Give every open course its stop lines at the mapped signals. Closed loops stay unsignalled. */
-export function withSignals<C extends { line: Line; closed?: boolean }>(courses: C[], points: readonly P2[]) {
+export function withSignals<C extends { line: Line; closed?: boolean; turnSignal?: { key: string; s: number; dx: number; dz: number } }>(courses: C[], points: readonly P2[]) {
   const clusters = clusterSignals(points);
-  const hits = courses.map(c => (c.closed ? [] : courseSignals(c.line, clusters)));
+  const hits = courses.map(c => {
+    if (c.closed) return [];
+    const hits = courseSignals(c.line, clusters);
+    if (c.turnSignal) {
+      const turn = c.turnSignal;
+      return [...hits.filter(h => h.key !== turn.key), { ...turn, axis: 0 as const }].sort((a,b) => a.s-b.s);
+    }
+    return hits;
+  });
   // Per intersection, the first approach sets the reference street. Approaches within 45° of
   // it (either way along it) share its phase; the crossing street takes the other, however
   // the two streets are oriented on the map.

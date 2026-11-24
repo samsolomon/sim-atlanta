@@ -127,5 +127,10 @@ export function createSkylineLandmark(buildings: VBuilding[], building: VBuildin
     const y = groundAt(site.x + u * c - v * s, site.z + u * s + v * c);
     return y === null || !Number.isFinite(y) ? null : y - grade;
   };
-  return shell && build(shell, ground);
+  const built = shell && build(shell, ground);
+  if (!built) return built;
+  // Trees a landmark plants (1180 Peachtree's terrace crape myrtles), in world coordinates.
+  const local = (built as { terraceTrees?: { u: number; v: number; y: number }[] }).terraceTrees ?? [];
+  const plantings = local.map(({ u, v, y }) => ({ x: site.x + u * c - v * s, z: site.z + u * s + v * c, y: grade + y }));
+  return { ...built, plantings };
 }

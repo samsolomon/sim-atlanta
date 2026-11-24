@@ -5,7 +5,7 @@ import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, freightGeometry, type FreightUni
 /** An illustrative Norfolk Southern passage on Main 2 of the Norcross District.
  * Timing, direction, speed and consist are all invented. The Crescent keeps Main 1. */
 export const NORCROSS_LINE = 'NS Norcross District';
-const CONSIST: FreightUnit[] = ['locomotive', 'locomotive', ...Array<FreightUnit>(8).fill('boxcar')];
+const CONSIST: FreightUnit[] = ['locomotiveNs', 'locomotiveNs', ...Array<FreightUnit>(8).fill('boxcar')];
 const GAP = 0.3;
 export const FREIGHT_SPEED_MPS = 6.7;
 /** One passage may begin every 20 minutes, alternating direction. */
@@ -34,6 +34,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
     let shape = shapes.get(kind);
     if (!shape) shapes.set(kind, (shape = freightGeometry(kind)));
     const car = new THREE.Mesh(shape, material);
+    car.userData.trainId = 'illustrative:freight:norcross';
     car.userData.lengthM = FREIGHT_LENGTH[kind];
     car.userData.line = NORCROSS_LINE;
     car.receiveShadow = true;
