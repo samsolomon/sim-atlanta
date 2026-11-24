@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { Builder, rng } from '../vignette/geom';
 import type { Unit } from './broadleaf';
-import type { V3 } from './species';
+import type { Dims, Seg, V3 } from './species';
 
 export type LeafShape = 'cordate' | 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval' | 'needles';
 /** Vertex shade for a spray from its depth (0 core, 1 rim) and how far it points up. */
@@ -175,7 +175,27 @@ export function leafAtlas(shape: LeafShape): THREE.Texture | null {
   const k = CELL / 128;
   for (let cell = 0; cell < 4; cell++) {
     const ox = (cell % 2) * CELL, oy = Math.floor(cell / 2) * CELL;
-    if (cell === SOLID) { g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`; g.fillRect(ox + 2, oy + 2, CELL - 4, CELL - 4); continue; }
+    if (cell === SOLID) {
+      g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`;
+      g.fillRect(ox + 2, oy + 2, CELL - 4, (shape === 'cordate' ? CELL * 0.54 : CELL) - 4);
+      if (shape === 'cordate') {
+        const flower = rng(483);
+        // One triangle in the lower part of the cell. Petal clusters thin toward its tip.
+        for (let i = 0; i < 14; i++) {
+          const x = (i + 1 + flower() * 0.65) / 17;
+          const y = 0.78 + (flower() - 0.5) * 0.16 * (1 - x);
+          for (let j = 0; j < 5; j++) {
+            g.fillStyle = j % 3 ? '#fff' : '#aaa';
+            g.beginPath();
+            g.ellipse(ox + CELL * (x + (flower() - 0.5) * 0.035),
+              oy + CELL * (y + (flower() - 0.5) * 0.16 * (1 - x)),
+              3 + flower() * 2, (7 + flower() * 6) * (1 - x), flower() - 0.5, 0, Math.PI * 2);
+            g.fill();
+          }
+        }
+      }
+      continue;
+    }
     // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).
     const ls = LEAF_SCALE[cell] * k;
     // A rounded spray: dense in the middle, ragged at the edge, twigs underneath.
@@ -229,7 +249,7 @@ export function shade(depth: number, up: number) {
 export class FoliageBuilder {
   pos: number[] = []; col: number[] = []; uv: number[] = []; mass: number[] = [];
   /** `bloom` > 0 marks a flower chip: its bloom order (0–1], shown while the tree's bloom share is at least that. */
-  tri(p: THREE.Vector3[], c: THREE.Color, u: Unit, uvs: [number, number][] = [cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5)], bloom = 0) {
+  tri(p: THREE.Vector3[], c: THREE.Color, u: Pick<Unit, 'tone' | 'drop'>, uvs: [number, number][] = [cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5)], bloom = 0) {
     p.forEach((v, i) => { this.pos.push(v.x, v.y, v.z); this.col.push(c.r, c.g, c.b); this.uv.push(...uvs[i]); this.mass.push(u.tone, u.drop, bloom); });
   }
   geometry() {
@@ -456,6 +476,25 @@ vSpeckPos = transformed;
   m.userData.maskShader = visibility;
   m.userData.maskKey = 'species-look' + (textured ? ':map' : '');
   return m;
+}
+
+/** One tapered flower card per limb, with its painted clusters centred on the wood. */
+export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: number) {
+  const random = rng(seed);
+  const scale = new THREE.Vector3(d.spreadM / 2, d.heightM, d.spreadM / 2);
+  const up = new THREE.Vector3(0, 1, 0);
+  const uv = [cellUV(SOLID, 0, 0), cellUV(SOLID, 0, 0.44), cellUV(SOLID, 1, 0.22)];
+  const flower = { tone: 1, drop: 0 };
+  for (const seg of segs.slice(1)) {
+    const a = new THREE.Vector3(...seg.a).multiply(scale), tip = new THREE.Vector3(...seg.b).multiply(scale);
+    const along = tip.clone().sub(a).normalize();
+    const across = up.clone().cross(along).normalize().applyAxisAngle(along, (random() - 0.5) * Math.PI);
+    // Slightly exaggerated for readability at lab scale. The strip narrows with the twig.
+    const width = Math.min(0.2, d.heightM * 0.034) + seg.r0 * scale.x;
+    const start = a.clone().lerp(tip, 0.08);
+    b.tri([start.clone().addScaledVector(across, -width), start.clone().addScaledVector(across, width), tip],
+      WHITE, flower, uv, 0.12 + 0.87 * random());
+  }
 }
 
 /**

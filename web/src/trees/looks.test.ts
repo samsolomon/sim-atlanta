@@ -146,3 +146,19 @@ describe('magnolia skirt', () => {
     }
   });
 });
+
+it('keeps redbud flowers on bare wood and leaves the wood visible at far detail in bloom', async () => {
+  const { easternRedbudLook: look } = await import('./redbud');
+  const peak = look.palette(doyOf(3, 22), 0);
+  expect(peak.bloom).toBe(1);
+  expect(peak.leaves).toBe(0);
+  for (let day = doyOf(2, 25); day <= doyOf(4, 20); day++) {
+    const stage = look.palette(day, 0);
+    expect(stage.bloom * stage.leaves).toBe(0);
+  }
+  const g = createLook([{ species: look.species, size: 'mature', x: 0, z: 0, seed: 1 }], look, 'A', 'high', () => 0)!;
+  g.setSeason(doyOf(3, 22));
+  g.setDetail({ farTrees: true });
+  expect(g.group.getObjectByName('mature limbs')?.visible).toBe(true);
+  g.dispose();
+});

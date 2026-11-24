@@ -2,7 +2,11 @@
 
 Updated 2026-11-23 (America/New_York) by Codex session `48c0c9e4-ceda-4b87-adf1-6ada97d12390` at coordinator request `msg_4f8696001876`. Stop at this pushed WIP; successor continues on the same worktree. Read AGENTS.md and fetch first.
 
-## Current state
+## GPT-6.2 update
+
+The spring revision is on this branch for Sam’s eye. A-style heart-shaped foliage remains, while an atlas strip paints clusters along bare scaffold branches and lateral twigs. Leaves come after the flower display. The refreshed sheet is `docs/log/ui/tree-species/options-eastern-redbud.jpg` and the matched spring money shot is `redbud/spring.png` alongside it. Mature cost is 193 / 91 triangles, July Front luminance is 0.236 / 0.259. Review camera is Eye level, position (0, 1.6, 10), target (0, 3.36, 0), FOV 58, with `/models.html?v=eastern-redbud&variant=A&size=mature&t=2026-03-22T12:00:00-04:00`. The tree is still a lab candidate pending approval.
+
+## Predecessor's state at handoff
 
 Branch **`samsolomon/eastern-redbud-lab`** contains the unmerged first redbud lab study and this handoff. No redbud PR opened. Code, sheet and docs are committed together as WIP. The model is intentionally not an approved default or City rollout. All servers and tabs owned by this session are closed at handoff.
 
