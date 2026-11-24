@@ -83,3 +83,21 @@ it('litFacade lays the facade grid and lights panes by the shared hash', () => {
   expect(lit).toBeGreaterThan(5);
   expect(lit).toBeLessThan(40);
 });
+
+it('measures how far a mesh reaches past its footprint and its top', async () => {
+  const { BoxGeometry, Mesh, MeshBasicMaterial, Group } = await import('three');
+  const { footprintReport, outsideRings } = await import('./skin-kit');
+  const square: [number, number][] = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  expect(outsideRings([square], 5, 5)).toBe(0);
+  expect(outsideRings([square], 13, 5)).toBeCloseTo(3);
+  const group = new Group();
+  const box = new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial());
+  box.position.set(14, 1, 5); // 3 to 5 m outside the east wall
+  group.add(box);
+  const r = footprintReport(group, [square], { maxProjection: 2.5, top: 1.5 });
+  expect(r.worst).toBeCloseTo(2.5); // 5 m out, less the 2.5 m allowance
+  expect(r.outside).toBeCloseTo(5);
+  expect(r.vertical).toBeCloseTo(0.5);
+  box.position.set(5, 1, 5);
+  expect(footprintReport(group, [square]).worst).toBe(0);
+});
