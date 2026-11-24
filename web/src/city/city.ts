@@ -1163,10 +1163,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // `?perf&gtao=old` keeps the previous normal-override pass, for A/B runs from one build.
     if (!gtaoOld) {
       gtao.setGBuffer(sceneTarget.depthTexture);
-      // AO only on the board. Normals rebuilt from depth band on the far, grazing paper table
-      // (hyperbolic depth has no precision left there), and the table needs no contact shading.
-      const box = mosaic?.bounds ?? b;
-      gtao.setSceneClipBox(new THREE.Box3(new THREE.Vector3(box.minX, -500, box.minZ), new THREE.Vector3(box.maxX, 3000, box.maxZ)));
+      // AO only on the boards (aoClip, per frame, since joined boards arrive later). Normals
+      // rebuilt from depth band on the far, grazing paper table (hyperbolic depth has no
+      // precision left there), and the table needs no contact shading.
+      gtao.setSceneClipBox(new THREE.Box3());
     }
     gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
     gtao.blendIntensity = 0.9;
@@ -1618,6 +1618,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       gtao.depthTexture = composer.readBuffer.depthTexture!;
       gtao.gtaoMaterial.uniforms.tDepth.value = gtao.depthTexture;
       gtao.pdMaterial.uniforms.tDepth.value = gtao.depthTexture;
+      const lo = gtao.gtaoMaterial.uniforms.sceneBoxMin.value as THREE.Vector3;
+      const hi = gtao.gtaoMaterial.uniforms.sceneBoxMax.value as THREE.Vector3;
+      lo.set(b.minX, -500, b.minZ);
+      hi.set(b.maxX, 3000, b.maxZ);
+      for (const r of [mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        lo.x = Math.min(lo.x, r.minX); lo.z = Math.min(lo.z, r.minZ);
+        hi.x = Math.max(hi.x, r.maxX); hi.z = Math.max(hi.z, r.maxZ);
+      }
     }
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
