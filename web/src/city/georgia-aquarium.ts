@@ -431,6 +431,7 @@ function graphic(
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
+    forceSinglePass: true,
   });
   mat.addEventListener('dispose', () => map.dispose());
   const position: number[] = [],

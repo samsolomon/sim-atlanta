@@ -253,7 +253,7 @@ export function buildStreetcarStops(sites: ReturnType<typeof platformSites>, bou
   solid.castShadow = solid.receiveShadow = true;
   const panes = new THREE.Mesh(
     glass.geometry(),
-    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: 0.38, depthWrite: false }),
+    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, forceSinglePass: true, opacity: 0.38, depthWrite: false }),
   );
   const panels = new THREE.Mesh(lit.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#f4f1e6', emissiveIntensity: 0 }));
   group.add(solid, panes, panels);
