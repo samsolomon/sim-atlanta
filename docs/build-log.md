@@ -4157,3 +4157,7 @@ The Mitchell opened in September 2025, six years after the lidar flight, so for 
 ### 2026-11-24 · Tower Square stands on its piloti
 
 The audit said Tower Square had strong piers but a generic flat top and no base. The Commons photographs show both features plainly. The shaft's window banks rest on a ring of splayed concrete columns over a recessed glass lobby, and the window rows stop under a blank crown band about three floors deep. Both are cheap in geometry: three quads per column, and one band per face. [Piloti](log/ui/midtown-skyline/tower-square-piloti.jpg) · [Before and after](log/ui/midtown-skyline/tower-square-cmp-north.jpg)
+
+### 2026-11-24 · The Olympia Building: a sign, not a tower
+
+The generic builder drew the Olympia Building at Five Points as a 27.5 m block. The 2019 lidar says the building is about 10.5 m, two stone storeys and a set-back glass floor; the 27 m return is only the famous rooftop sign over the west corner. The skin brings the building down to its real height and keeps the sign as a blank neutral disc and message board on a mast, with no brand. The sign glows at night, because its face is neon-lit. It's the first downtown skin on this list, so it mounts in `city.ts` and joins the batcher's listed array. [Before/after, views and four-side sheet](log/ui/olympia-building/README.md)
