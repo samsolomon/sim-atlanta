@@ -81,6 +81,6 @@ export function createModeraParkside(buildings: VBuilding[], site: VBuilding, gr
   for (const [u, v] of [[-13, -16], [13.5, -16], [17.5, 37], [-12.5, 37]] as P2[])
     shell.prism([[u - .4, v - .4], [u + .4, v - .4], [u + .4, v + .4], [u - .4, v + .4]], roof, visorLo, white, white);
   for (let v = -15; v < 6; v += 2.2) shell.prism([[-13, v], [14, v], [14, v + .35], [-13, v + .35]], visorHi - .5, visorHi, white, white);
-  shell.prism(ccw([[-6, 18], [6, 18], [6.6, 32], [-6, 32]]), roof, amenityTop + 8, '#3d4144', '#33373a');
+  shell.prism(ccw([[-6, 18], [6, 18], [6.6, 32], [-6, 32]]), roof, amenityTop + 8, '#8a9094', '#6b7175');
   return shell.finish('#f4d9a8', 0.62);
 }
