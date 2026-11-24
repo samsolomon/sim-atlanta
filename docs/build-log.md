@@ -3428,3 +3428,15 @@ Twelve Midtown at Atlantic Station had been a plain 85 m block that also covered
 1355 Peachtree is now a red-brick tower. It steps back three times under cream cornices, rises to a pitched, pedimented crown, and stands over a limestone base and brick podium wings. The surprise was the podium. The mapped heights treated it as one 32 m block, but the lidar shows corner pavilions standing up to 41 m. Measuring each of the ten parts on its own lifted half of them by 3 to 8 m. The pitched crown also shows up in the lidar as a spread: a median of 74.8 m and a maximum of 77.1 m, which sets the eaves and the ridge.
 [Before and after](log/ui/1355-peachtree/compare.jpg) · [day and night](log/ui/1355-peachtree/daynight.jpg) · [close](log/ui/1355-peachtree/close.jpg)
 
+### 2026-11-24 — Two Midtown Plaza's ribbon glass
+
+Two Midtown Plaza (1986) now wraps its half-round west end in blue reflective
+ribbon glass, with a maroon band at every floor and a dark red granite shaft
+where the curve meets the straight slab. The base is red granite. The mapped
+parts carry separate lidar roofs: 78 m on the slab and 73 m on the round end,
+the step visible in the 2009 dusk photograph. Listings disagree between 17 and
+20 storeys. The photographs show 15 glass bands over two granite storeys, so the
+model follows them. At night the lobby drum glows and the offices stay mostly
+dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
+[night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
+
