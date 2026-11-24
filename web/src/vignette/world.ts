@@ -1055,6 +1055,19 @@ export class World {
     }
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
+    // Fixed bounds from the trees themselves, for every tree mesh. three would otherwise
+    // compute them once from whatever instances the first season drew, and keep them.
+    const box = new THREE.Box3(), corner = new THREE.Vector3();
+    for (const t of this.trees) {
+      const R = 2.3 * t.s * 1.6, top = (t.th ?? 2 + t.s * 0.6) + PINE_TIERS * 1.05 * t.s + 2 * R;
+      box.expandByPoint(corner.set(t.x - R, t.y - 1, t.z - R)).expandByPoint(corner.set(t.x + R, t.y + top, t.z + R));
+    }
+    const bounds = box.isEmpty() ? null : box.getBoundingSphere(new THREE.Sphere());
+    for (const im of [this.canopy, this.pines, this.trunks, this.branches]) {
+      if (!bounds) continue;
+      im.boundingSphere = bounds.clone();
+      im.boundingBox = box.clone();
+    }
     this.trees.forEach((t, i) => {
       const trunkH = t.th ?? 2 + t.s * 0.6;
       m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
@@ -1105,7 +1118,6 @@ export class World {
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const c = new THREE.Color();
-    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
     const summer = ['#5f8f4e', '#6e9d55', '#4f7f45', '#7ea65f', '#5a8a58'];
     const spring = '#a9cf6a';
     // Fall colour by species: maple red, sweetgum burgundy, oak russet, poplar gold.
@@ -1136,7 +1148,6 @@ export class World {
           pines.setColorAt(kp, c.set('#355f3c').offsetHSL((r() - 0.5) * 0.02, 0, (f - 0.5) * 0.12 + (t.c - 0.1) * 0.2));
           kp++;
         }
-        for (let i = 0; i < clumps; i++) canopy.setMatrixAt(k++, zero);
         return;
       }
       let canopyLeft = 1;
@@ -1168,10 +1179,9 @@ export class World {
         const ox = Math.sin(phi) * Math.cos(th) * rad * R;
         const oy = (Math.cos(phi) * 0.75 - 0.05) * rad * R;
         const oz = Math.sin(phi) * Math.sin(th) * rad * R;
-        if (i >= showing) {
-          canopy.setMatrixAt(k++, zero);
-          continue;
-        }
+        // Hidden clumps are not submitted at all (compacted, not zero-scaled): the draw covers
+        // only what shows, and no empty slot drags the mesh's bounds to the origin.
+        if (i >= showing) continue;
         const size = R * (i === 0 ? 0.7 : 0.5 + r() * 0.14);
         q.setFromEuler(new THREE.Euler(r() * 6.3, r() * 6.3, r() * 6.3));
         m.compose(v.set(cx + ox, cy + oy - (1 - canopyLeft) * R * 0.3, cz + oz), q, sc3.set(size, size * 0.85, size));
@@ -1182,6 +1192,7 @@ export class World {
         k++;
       }
     });
+    canopy.count = k;
     pines.count = kp;
     if (branches) {
       branches.count = kb;
