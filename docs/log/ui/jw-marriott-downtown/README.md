@@ -58,3 +58,29 @@ Clock 2026-11-20. Prefix each camera with `/?view=city&cam=`.
 | South face (close) | `220,-1270,10,72,280` with `&dev&mindist=20` | 11:30 |
 | South-east corner and podium (close) | `225,-1265,130,66,260` / `190,-1235,0,72,120` with `&dev&mindist=20` | 11:30 |
 | East face and balcony stacks (close) | `232,-1245,250,70,170` with `&dev&mindist=20` | 11:30 / 23:30 |
+
+## Rework (2026-11-24)
+
+The registry audit and the lead's review failed #522. Its pale blue-grey glass matched its generic neighbours, the balcony stacks faded at distance, and no crown read. The lead confirmed two identifying features from the Street View above:
+
+1. **White balcony-slab bands at every floor**, wrapping the east face and the corners, plus the **taller south block's cap** on the stepped top.
+2. **A clearly bluer, more saturated glass** than the generic pale towers on Ivan Allen.
+
+What changed:
+- Floor bands: white (`#f2f1ec`), 0.6 m deep, standing 0.3 m off the glass, and running 0.3 m past each face end so they wrap the corners.
+- Balcony stacks: white slab edges 0.5 m deep and pale rails.
+- White caps on the slab parapet and on the south block.
+- Glass base: `#7a92b2` (S 0.31, V 0.70, hue 213).
+
+There is no new geometry beyond the two cap rings, and no new material.
+
+Rendered sunlit check, 11:30 high tier, camera `220,-1270,10,72,280` with `&dev&mindist=20`:
+
+| Patch | Hue | S | V |
+|---|---|---|---|
+| JW south face | 213 | **34** | **63** |
+| Generic neighbour in the same frame | 199 | 20 | 55 |
+
+The JW glass passes the sunlit rule (S ≤ 36, V ≥ 40) and differs from the generic neighbour in both hue and saturation, as the lead asked.
+
+[Before and after at the #522 money-shot camera](rework-compare.jpg) · [Four sides at 400 m](four-sides.jpg)
