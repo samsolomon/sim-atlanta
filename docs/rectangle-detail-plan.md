@@ -102,3 +102,10 @@ Each owner supplies a private model/fixture/test family. The coordinator integra
 **studio-midtown-parks** — Own web/src/city/midtown-parks*, pipeline/scripts/midtown_canopy* and pipeline/prototypes/midtown-canopy/. Deliver a separate static crown/landscape overlay for all five rows; preserve existing tree packs. Use canopy imagery/heights, land cover, path widths, building exclusions and corrected rendered ground. Accept a continuous canopy transition at North Avenue and open sightlines, slopes and path entrances along Piedmont Park. Coordinate Kendeda Walk tread height with the Connector owner. [canopy boundary](http://localhost:5173/?view=map&board=midtown&q=low&weather=clear&speed=0&t=2026-11-20T12:00:00-05:00#15.7864/33.769188/-84.378079/0) · [park edge](http://localhost:5173/?view=map&board=midtown&q=low&weather=clear&speed=0&t=2026-11-20T12:00:00-05:00#15.8502/33.785646/-84.376457/0) · [canopy walk](http://localhost:5173/?view=map&board=midtown&q=low&weather=clear&speed=0&t=2026-11-20T12:00:00-05:00#16.9876/33.790790/-84.373158/0).
 
 This inventory changes documentation only. Future asset work needs its static data staged, a web rebuild and deployment together. Use the existing Midtown staging command for this baseline. [Staging and row dependencies](midtown-board.md)
+
+## Culture landmark progress — 2026-11-23
+
+Rhodes Hall (OSM way 269637579) now has a custom granite tower, rounded bay,
+steep roof, open porch and carved entrance stairs at (301, −4675).
+[Evidence, estimated dimensions and matched day/night views](rhodes-hall.md).
+SCAD Atlanta and Tech Square with Coda remain next in this workstream.
