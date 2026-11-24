@@ -1,21 +1,23 @@
+import { type Material, Mesh } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 
 /**
- * 1075 Peachtree (2010, now the PwC tower): dark blue-green curtain glass in two masses, a south
- * block under a louvred crown and a thin cantilevered roof brim, and a flat-topped north block
- * on 12th Street, over a beige precast parking podium shared with the Loews block. The mapped
- * outline is split across the midtown-upper and midtown-central tiles. Evidence, estimates and
- * night notes: docs/log/ui/1075-peachtree/README.md.
+ * 1075 Peachtree (2010): dark blue-green curtain glass in two masses between Peachtree (west)
+ * and Juniper (east). The south block carries a louvred crown under a thin cantilevered brim; the
+ * flat-topped north block meets 12th Street, with the curved entrance corner at Peachtree. A
+ * beige precast parking podium runs south toward the Loews. The mapped outline is split across
+ * the midtown-upper and midtown-central tiles. Evidence, estimates and night notes:
+ * docs/log/ui/1075-peachtree/README.md.
  */
 export const peachtree1075Id = 'osm:way:234935278';
 const crownBlockId = 'osm:way:1434982572';
 // The pipeline labels the north block "podium" at an inferred 18.8 m; lidar has its roof at 140 m.
 const northBlockId = 'podium';
 const canopyId = 'osm:way:1434982570';
-// The two-storey glazed corner at Peachtree and 12th.
+// The two-storey glazed corner at Juniper and 12th.
 const cornerId = 'osm:way:1434982571';
 
 /**
@@ -29,8 +31,13 @@ const roofs: Record<string, number> = {
   'osm:way:1434982573': 323.2,
   'osm:way:1434982574': 306.8,
 };
-// The crown block: glass to the mechanical roof, a louvred screen, then the brim (p95 445.2).
-const glassTop = 431.6, louvreTop = 443.6, brimTop = 445.2;
+// The crown block: a roof at the lidar median (433.1) inside a ring of glass parapet, a louvred
+// band of about five metres (aerial and sunset photos), then the brim (p95 445.2).
+const crownRoof = 433.1, glassTop = 438.6, louvreTop = 443.6, brimTop = 445.2;
+// The two tiles meet on this line; faces along it are buried in the other fragment.
+const tileCutZ = -3300;
+// The double-height entrance under the curved canopy at Peachtree and 12th (photographed lit).
+const entrance: P2 = [801, -3366];
 const pitch = 4.1;
 
 const glass = '#46606e', glassLit = '#486271', mullion = '#667b84', band = '#526b78';
@@ -41,7 +48,8 @@ const storefront = '#33434a', lobby = '#3e4f63';
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 /** Street grade under an edge, NAVD88 metres. */
 type Grade = (a: P2, b: P2) => number;
-interface Solid { plan: P2[]; top: number }
+/** `cutZ` is the tile cut in this plan's local frame. */
+interface Solid { plan: P2[]; top: number; cutZ: number }
 
 /** Counter-clockwise in (x, z) so the outward normal of edge a→b is (dz, -dx)/length. */
 function ccw(ring: P2[]): P2[] {
@@ -85,7 +93,7 @@ function exposed(plan: P2[], solids: Solid[], self: Solid, draw: (a: P2, b: P2, 
   plan.forEach((a, i) => {
     const b = plan[(i + 1) % plan.length];
     const dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
-    if (length < 0.4) return;
+    if (length < 0.4 || (Math.abs(a[1] - self.cutZ) < 0.1 && Math.abs(b[1] - self.cutZ) < 0.1)) return;
     let from = -Infinity;
     for (const t of [0.25, 0.5, 0.75]) {
       const x = a[0] + t * dx + 1.2 * dz / length, z = a[1] + t * dz - 1.2 * dx / length;
@@ -175,9 +183,10 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     const plan = local(part.rings[0]);
     if (part.id === canopyId) { canopy = plan; continue; }
     if (part.id === cornerId) { s.prism(plan, s.base, floor + part.h, storefront, '#7f8582'); continue; }
-    const solid: Solid = part.id === crownBlockId ? { plan: simplify(plan, 3), top: glassTop }
-      : part.id === northBlockId ? { plan: simplify(plan, 3.5), top: roofs[northBlockId] }
-      : { plan, top: roofs[part.id] ?? floor + part.h };
+    const cutZ = tileCutZ - origin[1];
+    const solid: Solid = part.id === crownBlockId ? { plan: simplify(plan, 3), top: glassTop, cutZ }
+      : part.id === northBlockId ? { plan: simplify(plan, 3.5), top: roofs[northBlockId], cutZ }
+      : { plan, top: roofs[part.id] ?? floor + part.h, cutZ };
     if (part.id === crownBlockId) crown = solid;
     else if (part.id === northBlockId) north = solid;
     solids.push(solid);
@@ -187,11 +196,16 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
   // The curved corner canopy at 12th Street is a thin slab.
   if (canopy) s.prism(canopy, floor + 6.9, floor + 7.5, soffit, brimTopColor);
 
-  /** Double-height lobby glazing on the faces that reach the street, warm all night. */
+  /**
+   * Double-height glazing where the tower meets the street. Only the entrance corner is lit all
+   * night; the restaurant and retail frontage elsewhere stays dark glass.
+   */
   const base = (solid: Solid) => exposed(solid.plan, solids, solid, (a, b, length, from) => {
     const street = grade(a, b);
     if (from > street + 1 || length < 3) return;
-    panel(s, a, b, 0, 1, street + 0.2, street + 8.2, 0.05, lobby, true);
+    const mx = (a[0] + b[0]) / 2 + origin[0] - entrance[0], mz = (a[1] + b[1]) / 2 + origin[1] - entrance[1];
+    const lit = Math.hypot(mx, mz) < 16;
+    panel(s, a, b, 0, 1, street + 0.2, street + 8.2, 0.05, lit ? lobby : storefront, lit);
     panel(s, a, b, 0, 1, street + 8.2, street + 8.6, 0.08, mullion);
     const mullions = Math.round(length / 3);
     for (let i = 1; i < mullions; i++) panel(s, a, b, i / mullions - 0.1 / length, i / mullions + 0.1 / length, street + 0.2, street + 8.2, 0.08, mullion);
@@ -206,13 +220,14 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
   }
 
   if (crown) {
-    s.prism(crown.plan, s.base, glassTop, glass, glass);
+    s.prism(crown.plan, s.base, crownRoof, glass, '#8e908c');
     curtain(s, crown.plan, solids, crown, grade, glassTop, 3);
     base(crown);
-    // The louvred screen around the mechanical roof glows evenly at night.
-    s.prism(crown.plan, glassTop, glassTop + 1.2, louvre, '#8e908c');
+    // Glass parapet around the lower mechanical roof, then the louvred band, which glows evenly
+    // at night. Single faces: the shared material is double-sided.
     for (let i = 0; i < crown.plan.length; i++) {
       const a = crown.plan[i], b = crown.plan[(i + 1) % crown.plan.length];
+      panel(s, a, b, 0, 1, crownRoof, glassTop, 0, glass);
       panel(s, a, b, 0, 1, glassTop, louvreTop, 0.02, louvre, true);
     }
     // The cantilevered brim: a ring about 2.6 m beyond the glass and 3 m inside it.
@@ -224,7 +239,16 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
       s.body.quad([oa[0], louvreTop, oa[1]], [ob[0], louvreTop, ob[1]], [ib[0], louvreTop, ib[1]], [ia[0], louvreTop, ia[1]], soffit);
       s.body.quad([oa[0], louvreTop, oa[1]], [oa[0], brimTop, oa[1]], [ob[0], brimTop, ob[1]], [ob[0], louvreTop, ob[1]], soffit);
     }
-    s.prism(local([[804, -3336], [832, -3338], [832, -3322], [804, -3322]]), glassTop + 1.2, glassTop + 5.8, '#a7aaa5', '#93968f');
+    s.prism(local([[804, -3336], [832, -3338], [832, -3322], [804, -3322]]), crownRoof, crownRoof + 5.6, '#a7aaa5', '#93968f');
   }
-  return s.finish('#f2ead9', 0.62);
+  const built = s.finish('#f2ead9', 0.62);
+  // The podium-only fragment has no lit faces: drop its empty lamp mesh so it costs no draw.
+  for (const child of [...built.group.children]) {
+    if (child instanceof Mesh && child.geometry.getAttribute('position').count === 0) {
+      child.removeFromParent();
+      child.geometry.dispose();
+      (child.material as Material).dispose();
+    }
+  }
+  return built;
 }
