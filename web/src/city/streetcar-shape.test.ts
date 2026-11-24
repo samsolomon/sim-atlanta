@@ -176,3 +176,27 @@ it.skipIf(!staged)('keeps every S70 section within 1 m of swing, off buildings a
   expect(worst.swing, worst.at).toBeLessThanOrEqual(1.0);
   expect([...new Set(bad)].slice(0, 20)).toEqual([]);
 });
+
+it.skipIf(!staged)('moves each downtown corner toward the built track OSM maps, not away from it', () => {
+  // Overture/OSM map the streetcar's own rails (terrainTransport tram runs) on the downtown board.
+  // Where they exist, each filleted arc runs close to them; the raw GTFS corner was up to 14 m off
+  // (Edgewood at Park Place). The kerb overshoot above is the street model's square corners, not
+  // the track leaving the street.
+  const rf: RoutesFile = JSON.parse(readFileSync(data('ga/routes.json')).toString());
+  const origin = JSON.parse(readFileSync(data('scene/downtown/scene.json')).toString()).origin;
+  const v = JSON.parse(readFileSync(data('scene/downtown/vignette.json')).toString());
+  const trams: P2[][] = (v.terrainTransport?.rail ?? []).filter((r: { cls?: string }) => r.cls === 'tram').map((r: { pts: P2[] }) => r.pts);
+  expect(trams.length).toBeGreaterThan(0);
+  const toTram = (x: number, z: number) => Math.min(...trams.flatMap((t) => t.slice(1).map((b, k) => segDist(x, z, t[k], b))));
+  let checked = 0;
+  for (const shape of streetcarShapes(rf, origin, STREETCAR_ROUTE))
+    for (const c of shape.corners.filter((k) => k.turn > 0.5)) {
+      const raw = toTram(c.at[0], c.at[1]);
+      if (raw > 30) continue; // no mapped tram near this corner (the Edgewood leg's board)
+      const arc = shape.pts.filter((p) => { const d = Math.hypot(p[0] - c.at[0], p[1] - c.at[1]); return d > 1 && d < c.shift + 20; });
+      const mean = arc.reduce((sum, p) => sum + toTram(p[0], p[1]), 0) / arc.length;
+      expect(mean, `${shape.id} corner ${c.at.map((n) => n.toFixed(0)).join(',')}`).toBeLessThanOrEqual(Math.max(5, raw));
+      checked++;
+    }
+  expect(checked).toBeGreaterThanOrEqual(8);
+});
