@@ -416,7 +416,7 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 /* ---- menu (A2c-menu): rows, Graphics, byline, map-data credit ---- */
 .a2-menu { padding: 8px 8px 10px; }
 .a2-menu-rows { padding: 0 0 6px; }
-.a2-mi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px;
+.a2-mi { text-decoration: none; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px;
   background: transparent; font-size: 15px !important; font-weight: 500 !important; text-align: left; cursor: pointer; }
 .a2-mi:hover { background: var(--a2-sep); }
 .a2-mi > svg { width: 19px; height: 19px; flex: none; }
