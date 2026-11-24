@@ -80,9 +80,10 @@ export function createHanoverMidtown(buildings: VBuilding[], site: VBuilding, gr
   for (const part of towers) {
     const ring = local(part!.rings[0]);
     const top = datum + part!.h;
-    shell.prism(ring, deck, top, glassWall, roofColor);
+    // Tower parts stand on grade where the podium doesn't wrap them.
+    shell.prism(ring, shell.base, top, glassWall, roofColor);
     faces(ring, (a, b, length) => {
-      const lo = covered(a, b, length, deck);
+      const lo = covered(a, b, length, datum);
       if (top - lo < 1) return;
       const floors = Math.max(1, Math.round((top - 2.5 - lo) / 3.3));
       shell.facade(a, b, lo + 0.2, top - 2.5, floors, 2.9, 0.96, 0.8, glass, 0.32);
