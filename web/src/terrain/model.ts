@@ -7,13 +7,16 @@ import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
+import { createWindsorOverPeachtree, windsorOverPeachtreeId } from '../city/windsor-over-peachtree';
 import { createSkyhouseSouth, skyhouseSouthId } from '../city/skyhouse-south';
 import { createNine15Midtown, nine15MidtownId } from '../city/nine15-midtown';
+import { azureOnTheParkId, createAzureOnThePark } from '../city/azure-on-the-park';
 import { createTwelveMidtown, twelveMidtownId } from '../city/twelve-midtown';
 import { createUniversityHouse, universityHouseId } from '../city/university-house';
 import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
 import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
+import { cokeUsaId, createCocaColaUsa } from '../city/coca-cola-usa';
 import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
 import { createWinship, winshipId } from '../city/winship';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
@@ -35,7 +38,9 @@ import { create10Tenth, tenTenthId } from '../city/10-10th';
 import { atlanticId, createAtlantic } from '../city/the-atlantic';
 import { create1010Midtown, midtown1010Id } from '../city/1010-midtown';
 import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
+import { createColonyHouse, colonyHouseId } from '../city/colony-house';
 import { createOneGeorgiaCenter, oneGeorgiaCenterId } from '../city/one-georgia-center';
+import { createCrownePlaza, crownePlazaId } from '../city/crowne-plaza-midtown';
 import { createMetropolis, metropolisId } from '../city/metropolis';
 import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
 import { createNcrHq, ncrId } from '../city/ncr-hq';
@@ -44,10 +49,14 @@ import { createLoews, loewsId } from '../city/loews-atlanta';
 import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
 import { createRegistry, registryId } from '../city/registry-on-the-park';
 import { createParkCentral, parkCentralId } from '../city/park-central';
+import { createLuxe, luxeId } from '../city/luxe';
+import { createHanoverHouse, hanoverHouseId } from '../city/hanover-house';
+import { createMarriottSuites, marriottSuitesId } from '../city/marriott-suites';
 import { createMaaMidtown, maaMidtownId } from '../city/maa-midtown';
 import { create271Seventeenth, seventeenth271Id } from '../city/271-seventeenth';
 import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
 import { createNorfolkSouthern, norfolkSouthernId } from '../city/norfolk-southern';
+import { createVireo, vireoId } from '../city/vireo';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
@@ -366,13 +375,16 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
+      : site.id === windsorOverPeachtreeId ? createWindsorOverPeachtree(sceneryCity.buildings, grid, options.quality)
       : site.id === skyhouseSouthId ? createSkyhouseSouth(sceneryCity.buildings, grid, options.quality)
       : site.id === nine15MidtownId ? createNine15Midtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === azureOnTheParkId ? createAzureOnThePark(sceneryCity.buildings, grid, options.quality)
       : site.id === twelveMidtownId ? createTwelveMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === universityHouseId ? createUniversityHouse(sceneryCity.buildings, grid, options.quality)
       : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === amliArtsCenterId ? createAmliArtsCenter(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
+      : site.id === cokeUsaId ? createCocaColaUsa(sceneryCity.buildings, site, grid)
       : site.id === winshipId ? createWinship(sceneryCity.buildings, site, grid)
       : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
@@ -395,7 +407,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
       : site.id === midtown1010Id ? create1010Midtown(sceneryCity.buildings, site, grid)
       : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === colonyHouseId ? createColonyHouse(sceneryCity.buildings, site, grid)
       : site.id === oneGeorgiaCenterId ? createOneGeorgiaCenter(sceneryCity.buildings, site, grid)
+      : site.id === crownePlazaId ? createCrownePlaza(sceneryCity.buildings, site, grid)
       : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
       : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
       : site.id === ncrId ? createNcrHq(sceneryCity.buildings, site, grid)
@@ -404,10 +418,14 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
       : site.id === registryId ? createRegistry(sceneryCity.buildings, site, grid)
       : site.id === parkCentralId ? createParkCentral(sceneryCity.buildings, site, grid, options.quality)
+      : site.id === luxeId ? createLuxe(sceneryCity.buildings, site, grid)
+      : site.id === hanoverHouseId ? createHanoverHouse(sceneryCity.buildings, site, grid)
+      : site.id === marriottSuitesId ? createMarriottSuites(sceneryCity.buildings, site, grid)
       : site.id === maaMidtownId ? createMaaMidtown(sceneryCity.buildings, site, grid)
       : site.id === seventeenth271Id ? create271Seventeenth(sceneryCity.buildings, site, grid)
       : site.id === regionsPlazaId ? createRegionsPlaza(sceneryCity.buildings, site, grid)
       : site.id === norfolkSouthernId ? createNorfolkSouthern(sceneryCity.buildings, site, grid)
+      : site.id === vireoId ? createVireo(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {

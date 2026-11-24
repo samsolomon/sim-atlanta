@@ -3604,3 +3604,67 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+### 2026-11-24 — Downtown's Museum Tower and Midtown's SkyHouse
+
+Museum Tower at Centennial Hill is the first of my skins mounted downtown, so it
+goes in the batcher's listed array.
+- Its red-brown brick shaft has glass corner bays and a cream crown band whose
+  piers carry amber uplights. The source is one 2012 photograph, marked reported.
+- The lidar puts its planted roof deck at 84 m and the penthouse at 94 m.
+
+The M by Radius opened in 2013 as SkyHouse Midtown.
+- It is mapped at 90 m, but the 2019 lidar reads 77 m at the roof edge.
+- It keeps the series' arched crown screen with a teal edge, over pale glass and
+  silver piers.
+
+Neither skin adds a draw on the low tier, and each adds about 0.2 MB of geometry.
+[Museum Tower](museum-tower.md) · [The M by Radius](m-by-radius.md)
+
+
+
+### 2026-11-24 · Vireo's balconies at night
+
+Vireo, the white apartment tower by Piedmont Park, is mapped at 105 m. The 2019 lidar has its roof at about 82 m, with an amenity floor on top reaching 89 m. Its long faces are deep balconies stacked on every floor, and from City's usual high orbit those 1.9 m slabs hide every lit room behind them, so the first night render was darker than the generic box it replaced. A lit room's light also shows through its glass balcony rail, and lighting the rail makes the tower read as lived-in from above. [Before and after](log/ui/vireo/day-before-after.jpg) · [night](log/ui/vireo/night-before-after.jpg)
+
+
+
+**2026-11-24 — The Coca-Cola USA Building's two heights.** The mapped height was 78 m and Enclos lists 216 ft (66 m), while the lidar said 85 m. All three were measuring from a different ground. The tower stands on a plaza about 19 m above the low west grade, and its roof deck is a flat 382.1 m NAVD88. The model takes absolute heights from the lidar, so the plaza, the parapet at 383.2 m and the penthouse at 388.8 m all land where the point cloud has them. The facade is slate glass in a red-brown granite grid under a plain frieze. In the City campus view it now sits behind One Coca-Cola Plaza's cream eggcrate as the Enclos aerial shows. [Captures and references](log/ui/coca-cola-usa/README.md)
+
+## 2026-11-24: Luxe, lean
+
+Luxe's white tower and its rounded blue glass corner now stand on 12th Street, at 67 m from a 6 m lidar grid. With the high tier's geometry down to about 2 MB of headroom, this skin was built to a budget: 1,278 triangles, with one glass strip per window run and a ten-facet drum. It reads the same at the orbit as a punched-window version would. A tooling lesson came with it. My screenshot script picked a random DevTools port, attached to another agent's headless perf page, and drove it for a few frames. Scripts now launch with port 0 and read their own DevToolsActivePort.
+[Before and after](log/ui/luxe/compare.jpg) · [day and night](log/ui/luxe/daynight.jpg) · [close](log/ui/luxe/close.jpg)
+
+### 2026-11-24 · The Crowne Plaza was 17 m shorter
+
+The second of the two unnamed masses near the North Avenue and Connector sightline is a 1972 slab at 590 West Peachtree. OSM tags it 4 levels and 98 m. A hotel listing names it the Crowne Plaza Atlanta Midtown, and the 2019 lidar puts its roof at 81 m, so City had been drawing it 17 m too tall next to One Georgia Center. Street View shows a white slab with blank ends and a white grid of piers and floor slabs on its long faces. That grid comes to about 620 triangles, roughly routine-skin size. The first window glass sent the shaded faces navy (S 91), so the base went paler, landing sunlit glass at S 8 and V 47. [Before and after](log/ui/crowne-plaza-midtown/compare.jpg)
+## 2026-11-24: Hanover House, concrete and bronze
+
+Colony Square's Brutalist slab is now concrete, with bronze glass bays scattered among blank panels across its long faces, a slot up each end wall, and raked aprons at its base. The irregular panel pattern comes from the same shared hash that lights windows, on a different slot, so it is stable and has no lattice. The lidar roof is 53.1 m, against a mapped 62 m. It costs under 1,200 triangles.
+[Before and after](log/ui/hanover-house/compare.jpg) · [day and night](log/ui/hanover-house/daynight.jpg) · [close](log/ui/hanover-house/close.jpg)
+
+### 2026-11-24 · Azure on the Park comes apart
+
+Azure on the Park by Piedmont Park was a 98 m block over its whole lot. The lidar separates a 79 m tower on 11th Street, a lower step at its east end, and a 17 m podium that runs to the rounded glass corner on Piedmont. Contractor photographs and two March 2025 Street View frames gave the blue glass, cantilevered balconies and dark-brick lower floors. Two budgets shaped it. The first blue shaded to S 45, the most saturated thing in frame, so the glass went grey-blue and the shadow now supplies the blue. High-tier geometry is within 3 MB of its ceiling, so the bays and balcony stacks were thinned until the skin cost a few hundred kilobytes. [Before/after, day and night](log/ui/azure-on-the-park/README.md)
+### 2026-11-24 · Colony House, a raw concrete slab, 14 m shorter
+
+Colony House, a 1972 condominium tower beside Colony Square, was mapped at 62 m and tagged `retail`. The 2019 lidar puts its slab roof at 47.7 m above grade, with stair and lift cores about 3 m higher. In the skin, the long faces of the bent, diagonal slab are a grid of recessed balconies, while the ends stay blank, stepped, board-formed concrete, as they look from 15th Street. The first balcony recess colour went navy-black in shade (S 100, V 13), so it became a neutral grey. A four-side contact sheet, the new standing rule after a skin shipped with balconies floating off one wall, showed nothing loose. The skin costs about 730 triangles, once the faces hidden inside the lift core are skipped. [Before and after](log/ui/colony-house/compare.jpg) · [Four sides](log/ui/colony-house/four-sides.jpg)
+## 2026-11-24: Marriott Suites, unbranded
+
+The all-suite hotel on 14th Street is now its rose-beige precast tower, with punched windows and a balcony stack. The lidar trims it from a mapped 68 m to 56 m. The hotel's own photograph shows a brand-red entrance canopy and a name sign. Neither is drawn, so the street front stays generic. At night about 40% of rooms are lit, which reads as a hotel next to the darker offices around it.
+[Before and after](log/ui/marriott-suites/compare.jpg) · [day and night](log/ui/marriott-suites/daynight.jpg) · [close](log/ui/marriott-suites/close.jpg)
+### 2026-11-24 — SkyView turns up
+
+The Ferris wheel by Centennial Olympic Park was a 2 m-thin box 61 m tall. The
+2019 lidar was more useful than expected. Slicing the returns along the wheel's
+mapped plane gives a top height per slice, and those heights trace the top of the
+rim's circle: an axle about 29 m up, with the rim near 54 m. City now draws a
+white wheel with 21 spokes, 42 gondolas hung outside the rim, and two A-frames,
+facing the park broadside. That is 1,354 triangles in the downtown batch. At night
+the rim and spokes glow the blue-violet of most night photos. It doesn't turn,
+because a static batch costs nothing and an animated wheel wouldn't.
+[Before and after](log/ui/skyview-atlanta/compare-day.jpg) · [night](log/ui/skyview-atlanta/compare-night.jpg) · [notes](skyview-atlanta.md)
+
+### 2026-11-24 · Windsor Over Peachtree in buff brick
+
+The 1964 Peachtree North Apartments at North Avenue had been a generic glass slab. The lidar puts the roof at 57 m above grade. Two photographs gave the look: buff brick, balcony runs between brick piers, and brick end walls. The first version ran the balconies the full length of each face, and from the review orbit they hid every pier, so the building read as a grey striped box. Breaking the runs at the piers brought the brick back. [Before/after, day and night](log/ui/windsor-over-peachtree/README.md)
