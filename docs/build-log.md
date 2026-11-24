@@ -3095,3 +3095,5 @@ On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data t
 The first Galaxy A16 runs changed the return design. Rebuilding a warm City took 12.8 and 15.2 s there, compared with 16.8 and 15.7 s for the first City build in a fresh document. Models now pauses the completed City's frame loop and keeps its WebGL context. The Studio warm run fell to 0.38 s. The two legs of the device probe share a frozen camera and a warm HTTP cache.
 
 The wide lab now centres the projected silhouette of the train between the panels. The eight box corners are tested in screen space, so the far end no longer leaves a large empty margin. [Desktop](log/ui/final-models/desktop-final.jpg) · [Phone](log/ui/final-models/phone-final.jpg).
+
+The repeated A16 probe returned in 278 ms and 569 ms with City paused. Cold builds took 16.1 s and 10.9 s. Both warm runs met the 1 s target on the 4 GB phone.
