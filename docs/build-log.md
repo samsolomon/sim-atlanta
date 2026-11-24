@@ -3456,6 +3456,10 @@ The phone spent about 6 ms of every 33 ms frame updating City, and road traffic 
 Each lane now keeps a cached 2 m height profile, and cars outside the camera frustum are skipped. Matrices and colours upload only when they change. Holding the same seed and clock, the Midtown arterial view fell from 9.0 ms to 1.3 ms, and the whole-board view fell from 7.7 to 5.4 ms. The real A16 measured City's update step falling from 6.5 to 3.8 ms on an earlier commit.
 
 The surprise came in review. The profile passed a pose-equivalence test on a sloped plane, yet on the real board it was off by up to 8 m. One road owner can switch between deck and ground inside a 2 m step. Each step now checks itself against the drawn road at its eighths before it is allowed to interpolate. After that, every lane on the 12-area board is within 5 mm of exact sampling. [Same frame, legacy and new](log/perf/traffic-frame-cost-midtown.jpg)
+### 2026-11-24 · Atlantic House
+
+The map gave Atlantic House 125 m. The lidar puts its stone crown about 110 m above its low corner, with end bays 10 m lower. That matches CTBUH's 109 m to within the site's 7 m of slope. It is the first skin built entirely to the overnight rules. It uses vertex colour only, so it batches with zero added draws. Its teal-grey glass sits under the rendered saturation cap (S 29, V 54 sunlit), and lit units come from the shared `litHash` rather than a random stream. The look comes from geometry: cream pilasters, balcony stacks, a slab edge per floor and the crown's stone piers. [Day](log/ui/atlantic-house/day.jpg) · [Night](log/ui/atlantic-house/night.jpg)
+
 ### 2026-11-24 · The Medical Arts Building, from its nomination
 
 No good public photographs of the 1927 Medical Arts Building turned up, but the 2016 National Register nomination describes every elevation in turn. That was enough to model it. The two-storey limestone base and orange terracotta band run on Peachtree and the north side. A pilastered capital and a cornice turn both corners and stop. On the north side, a tile panel sits between heightened bays. The south wall is plain red brick with a blank strip where the elevator core sits. The nomination's "60 feet of frontage, 140 feet deep" matched the Overture outline. The lidar put the elevator penthouse and stair head at 357 m and 362 m NAVD88, exactly where the nomination says the two-storey penthouse stands. The building has been boarded since at least 2016, so it is the first skin with no lamp mesh at all. It costs about 470 triangles and goes straight into the downtown landmark batch. [Before and after](log/ui/medical-arts/compare-ne.jpg)
@@ -3531,6 +3535,25 @@ so "no long task" can't measure the build. The driver now reports the longest ru
 inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
 batching, which the buildings agent is turning into a generator. A row now mounts over about 200
 frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
+### 2026-11-24 · Nine15 Midtown from Street View
+
+Nine15 Midtown on 8th Street was mapped at 94 m, but the lidar puts its flat roof at 71.3 m. With no property photograph of the tower itself, this skin uses the rule for dated Street View: three captures from December and March 2025 agree on white and grey panels, tall glass, dark balcony stacks at the corners and a dark base. The Midtown Alliance rendering only confirms the massing. It is the first skin to cost no draws on the phone tier, because landmark batching folds it into its 500 m cell. [Before/after, day and night](log/ui/nine15-midtown/README.md)
+## 2026-11-24: The Registry, measured twice
+
+The Registry on the Park is mapped at 98 m and listed at 321 ft, but the 2019 lidar put its roof near 77 m. It was finished in 2017, so the lidar should see it. Two checks settled it. Insets of 2, 6 and 10 m inside the tower part all give a 356.9 m NAVD roof, so the footprint was not catching a podium. The ground falls toward the park, but even from the lowest return the top is 86.5 m. The model now uses absolute NAVD heights and leaves the 321 ft unverified. The other lesson was light: at 11:30 a taller neighbour shades this face, so the glass had to be checked at 14:00 to find any sun on it.
+[Before and after](log/ui/registry-on-the-park/compare.jpg) · [day and night](log/ui/registry-on-the-park/daynight.jpg) · [close](log/ui/registry-on-the-park/close.jpg)
+
+**2026-11-24 — The Landmark loses 18 m.** Overture extruded the 1963 slab on Piedmont to 86.2 m. The 2019 lidar puts its roof at 62.5 m, with the penthouse at 68 m. The mapped outline's notches turned out to be useful. Each long face breaks into a brick middle flanked by short returns, and painting the returns and ends in pale concrete reproduces the photographed pattern of concrete fins either side of a brick field, with no extra geometry. [Captures and references](log/ui/the-landmark/README.md)
+
+### 2026-11-24 · The unnamed glass slab on Ivan Allen
+
+One of the largest footprints City still drew as a box was unnamed in the data. A reverse lookup put it at 45 Ivan Allen Jr Boulevard: the W Atlanta – Downtown, reflagged as a JW Marriott in 2026, a 25-storey hotel with condominiums above. The 2019 lidar resolved its mapped parts: a 102 m slab with a roof deck sunk to 98 m inside a glass parapet, a 106 m south block, balcony stacks on the east face up to 89 m, and a podium at 18 to 22 m. The first glass colour passed the sunlit check but sent both long faces deep navy, because the slab runs north–south and both are in shade most of the day. A paler, less saturated base brought the shaded faces' saturation within a point of a generic tower's (S 38 against 37), though they stay darker (V 35 against 44). The building costs about 1,740 low-tier triangles and adds no draws, since it merges into the downtown landmark batch. [Before and after](log/ui/jw-marriott-downtown/compare.jpg)
+
+## 2026-11-24: Park Central, split by tier
+
+Park Central's buff slab on 12th Street is now one of the park-edge buildings people actually see. The lidar trimmed it from a mapped 71 m to a 54.6 m hip ridge. The interesting part was the budget. Punched windows with frames came to 6,500 triangles, and the low tier caps a landmark at 2,400. On the phone tier, each window column is now one glass strip crossed by a stucco band per floor, and only lit windows get their own quads. That gives 1,724 triangles and reads almost the same at the orbit. The high tier keeps punched windows, framed on the lowest storeys only.
+[Before and after](log/ui/park-central/compare.jpg) · [day, night and low tier](log/ui/park-central/daynight.jpg) · [close](log/ui/park-central/close.jpg)
+
 
 
 ### 2026-11-24 — Transport far form

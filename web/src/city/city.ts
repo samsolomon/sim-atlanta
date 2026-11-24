@@ -67,9 +67,11 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
+import { createMuseumTower } from './museum-tower';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createHardRock } from './hard-rock';
+import { createTheLandmark } from './the-landmark';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -104,6 +106,7 @@ import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
 import { createMedicalArts } from './medical-arts';
+import { createJwMarriott } from './jw-marriott-downtown';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -372,9 +375,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
+  let museumTower: ReturnType<typeof createMuseumTower> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let hardRock: ReturnType<typeof createHardRock> = null;
+  let theLandmark: ReturnType<typeof createTheLandmark> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -409,6 +414,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let marquisOne: ReturnType<typeof createMarquisOne> = null;
   let medicalArts: ReturnType<typeof createMedicalArts> = null;
+  let jwMarriott: ReturnType<typeof createJwMarriott> = null;
   let marquisTwo: ReturnType<typeof createMarquisTwo> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -459,7 +465,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         marquisTwo = createMarquisTwo(afterOne, ground);
         const afterTwo = marquisTwo?.buildings ?? afterOne;
         medicalArts = createMedicalArts(afterTwo, ground);
-        const hotelSite = medicalArts?.buildings ?? afterTwo;
+        const afterMedicalArts = medicalArts?.buildings ?? afterTwo;
+        jwMarriott = createJwMarriott(afterMedicalArts, ground);
+        const hotelSite = jwMarriott?.buildings ?? afterMedicalArts;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -477,8 +485,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHealey = healey?.buildings ?? towerSite;
         hardRock = createHardRock(afterHealey, ground);
         const afterHardRock = hardRock?.buildings ?? afterHealey;
-        parkPlaceTower = createParkPlaceTower(afterHardRock, ground);
-        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHardRock;
+        theLandmark = createTheLandmark(afterHardRock, ground);
+        const afterLandmark = theLandmark?.buildings ?? afterHardRock;
+        parkPlaceTower = createParkPlaceTower(afterLandmark, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterLandmark;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
@@ -525,8 +535,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         footballHall = createFootballHall(afterTwoPeachtree, ground);
         const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
-        oneParkTower = createOneParkTower(afterFootballHall, ground);
-        const afterOnePark = oneParkTower?.buildings ?? afterFootballHall;
+        museumTower = createMuseumTower(afterFootballHall, ground);
+        const afterMuseumTower = museumTower?.buildings ?? afterFootballHall;
+        oneParkTower = createOneParkTower(afterMuseumTower, ground);
+        const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
         const afterPower = georgiaPower?.buildings ?? afterOnePark;
         georgiaPacific = createGeorgiaPacific(afterPower, groundAt);
@@ -575,6 +587,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
         if (medicalArts) world.group.add(medicalArts.group);
+        if (jwMarriott) world.group.add(jwMarriott.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -586,9 +599,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
+        if (museumTower) world.group.add(museumTower.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (hardRock) world.group.add(hardRock.group);
+        if (theLandmark) world.group.add(theLandmark.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -636,8 +651,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
-            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, hardRock, fiftyFiveParkPlace,
+            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
+            fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -1495,6 +1511,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       marquisOne?.setNight(night);
       marquisTwo?.setNight(night);
       medicalArts?.setNight(night);
+      jwMarriott?.setNight(night);
       hilton?.setNight(night);
       altitude?.setNight(night);
       twelve?.setNight(night);
@@ -1506,9 +1523,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       flatiron?.setNight(night);
       healey?.setNight(night);
       footballHall?.setNight(night);
+      museumTower?.setNight(night);
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
       hardRock?.setNight(night);
+      theLandmark?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
       davisons?.setNight(night);
