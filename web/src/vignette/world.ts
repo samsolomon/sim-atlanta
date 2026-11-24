@@ -1186,15 +1186,16 @@ export class World {
   private branchesShow = true;
   /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
   private branchMatrices: THREE.Matrix4[] = [];
-  private detail = { farTrees: false, branchShadows: true };
+  private detail = { farTrees: false, branchShadows: true, farLamps: false };
   /**
    * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
    * bare-branch skeletons, which are a few pixels at long orbit distances; `branchShadows`
    * lets low quality stop them casting shadows. Call whenever a threshold changes.
    */
-  setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) {
+  setDetail(d: { farTrees?: boolean; branchShadows?: boolean; farLamps?: boolean }) {
     Object.assign(this.detail, d);
     this.applyBranchVisibility();
+    this.applyLamps();
   }
   private applyBranchVisibility() {
     if (!this.branches) return;
@@ -1318,17 +1319,25 @@ export class World {
    * paths and at mapped lamp nodes. */
   buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
     inTravelLane?: (x: number, z: number) => boolean,
-    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
+    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean;
+      /** Park paths: lamps every 30 m with small, faint pools, so a park reads as dim paths in the dark. */
+      dimPaths?: [number, number][][];
+      /** Light pools only, for lamps a landmark draws itself (Greystone's deck globes). */
+      pools?: { at: [number, number]; r: number }[] }) {
     runSync(this.lightSteps(board, groundAt, inTravelLane, mapped));
   }
 
   /** buildLights as a build that yields every 16 roads and through the light-map bake (core/slice.ts). */
   *lightSteps(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
     inTravelLane?: (x: number, z: number) => boolean,
-    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
+    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean;
+      /** Park paths: lamps every 30 m with small, faint pools, so a park reads as dim paths in the dark. */
+      dimPaths?: [number, number][][];
+      /** Light pools only, for lamps a landmark draws itself (Greystone's deck globes). */
+      pools?: { at: [number, number]; r: number }[] }) {
     const r = rng(311);
     let roadsSeen = 0;
-    const spots: { x: number; z: number; y: number; ang: number; h?: number; pool?: number }[] = [];
+    const spots: { x: number; z: number; y: number; ang: number; h?: number; pool?: number; dim?: boolean }[] = [];
     const clear = (x: number, z: number) => this.inBounds(x, z, 3) && !inTravelLane?.(x, z) &&
       !this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring));
     // A board area bakes only its own light map, so a pool crossing a row seam would stop
@@ -1356,6 +1365,21 @@ export class World {
           if (!clear(x, z) || !seamClear(z, 9) || onCarriageway(x, z)) continue;
           const y = groundY(x, z);
           if (y !== null) spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side), h: 4, pool: 9 });
+          break;
+        }
+      }
+    }
+    // Dim park paths, after the lit ones so their seeded draws stay put.
+    for (const pts of mapped?.dimPaths ?? []) {
+      const line = new Line(pts);
+      for (let s = 6 + r() * 12; s < line.length; s += 30) {
+        const p = line.at(s);
+        for (const side of [1, -1]) {
+          const x = p.x + p.nx * 1.4 * side, z = p.z + p.nz * 1.4 * side;
+          if (!clear(x, z) || !seamClear(z, 7) || onCarriageway(x, z)) continue;
+          if (spots.some(o => Math.hypot(o.x - x, o.z - z) < 12)) break;
+          const y = groundY(x, z);
+          if (y !== null) spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side), h: 4, pool: 7, dim: true });
           break;
         }
       }
@@ -1390,6 +1414,9 @@ export class World {
         spots.push({ x, z, y, ang: Math.atan2(-p.nx * side, -p.nz * side) });
       }
     }
+    // Park path lamps last, so they can be dropped by trimming the instance count.
+    spots.sort((a, b) => Number(!!a.dim) - Number(!!b.dim));
+    this.dimLamps = spots.filter(s => s.dim).length;
     const m = new THREE.Matrix4();
     // Thin posts barely read at the low tier: four sides instead of five.
     const post = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.16, 7, mapped?.lowDetail ? 4 : 5).translate(0, 3.5, 0), new THREE.MeshLambertMaterial({ color: '#4a4f55' }), spots.length);
@@ -1409,9 +1436,13 @@ export class World {
     this.lampHeads.name = 'Street lamp heads';
     registerFar(post, 0, { shadow: 'low' });
     registerFar(this.lampHeads, 0, { glowAtNight: true });
+    this.lampPost = post;
+    // For the perf report: lamps by kind (the park's dim path lamps are illustrative).
+    post.userData.lamps = { total: spots.length, dimPaths: spots.filter(s => s.dim).length };
     this.group.add(post, this.lampHeads);
+    this.applyLamps();
     yield 'lamps';
-    yield* this.bakeSteps(spots, board);
+    yield* this.bakeSteps([...spots, ...(mapped?.pools ?? []).map(p => ({ x: p.at[0], z: p.at[1], pool: p.r }))], board);
   }
 
   /**
@@ -1420,7 +1451,7 @@ export class World {
    * lot materials in proportion to the night factor.
    */
   /** Bakes the night light map; yields every 64 lamp pools and 64 buildings (core/slice.ts). */
-  private *bakeSteps(spots: { x: number; z: number; pool?: number }[], board?: THREE.Mesh) {
+  private *bakeSteps(spots: { x: number; z: number; pool?: number; dim?: boolean }[], board?: THREE.Mesh) {
     const b = this.b;
     const PX = Math.max(1, Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / this.opts.lightMapMax); // metres per texel
     const c = document.createElement('canvas');
@@ -1443,7 +1474,8 @@ export class World {
     };
     let pools = 0;
     for (const sp of spots) {
-      pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.pool ? 0.6 : 0.85); // ~3000 K LED/sodium mix
+      // ~3000 K LED/sodium mix; park paths fainter, so the park stays dark between lamps.
+      pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.dim ? 0.4 : sp.pool ? 0.6 : 0.85);
       if (++pools % 64 === 0) yield 'light map';
     }
     // Shopfront spill along building edges at street level.
@@ -1520,8 +1552,17 @@ export class World {
   }
 
   /** Called each frame with the night factor (0 day … 1 night). */
+  /** Park path lamps (the last `dimLamps` instances) draw by night, and by day only up close. */
+  private applyLamps() {
+    if (!this.lampPost || !this.lampHeads) return;
+    const n = this.detail.farLamps && this.night.value < .3 ? this.lampPost.instanceMatrix.count - this.dimLamps : this.lampPost.instanceMatrix.count;
+    this.lampPost.count = this.lampHeads.count = n;
+  }
+  private lampPost?: THREE.InstancedMesh;
+  private dimLamps = 0;
   setNight(n: number) {
     this.night.value = n;
+    this.applyLamps();
     if (this.lampHeads) (this.lampHeads.material as THREE.MeshBasicMaterial).color.set('#8a8f94').lerp(new THREE.Color('#ffe2a8'), n);
   }
 

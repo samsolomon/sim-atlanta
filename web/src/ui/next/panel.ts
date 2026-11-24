@@ -58,7 +58,7 @@ function aboutNode(): HTMLElement {
       <p class="a2-quiet">Nothing here is for planning a trip. It’s a window, not a timetable.</p>
       <p class="a2-h">How true is it?</p>
       <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. The corner says Live only when the clock shows the real present and MARTA’s feed is up. Otherwise it says Timetable while a published timetable covers the moment, and Inferred past a timetable’s last date, when we repeat its last published week.</p>
-      <p>Scenery carries no label. The sky away from the present, trees and their species, building heights, landscaping, walkers and road traffic are illustrative or inferred: drawn to look right, not measured. Freight train movements are simulated.</p>
+      <p>Scenery carries no label. The sky away from the present, trees and their species, building heights, landscaping and park lamps, walkers and road traffic are illustrative or inferred: drawn to look right, not measured. Freight train movements are simulated.</p>
       <p class="a2-h">Credits</p>
       <dl class="a2-credits">
         ${credit('MARTA', 'Live rail and bus positions, and the rail timetable (GTFS)')}

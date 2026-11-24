@@ -2353,6 +2353,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Low tier: houses cast no shadow beyond this orbit (city/house-lod.ts setDetail).
   const HOUSE_SHADOWS_M = low ? 9000 : 0;
   let houseNoShadow = false;
+  const FAR_LAMPS_M = 800;
+  let farLamps = false;
   // Areas (and the downtown World) that already carry the current detail; a newly mounted or
   // swapped area is caught here without allocating every frame.
   let detailed = new WeakSet<object>();
@@ -2362,9 +2364,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Past HOUSE_SHADOWS_M houses stop casting: an 8 m house shadow is under 2 px there on the A16, and a
     // 2.4 km far block goes whole into the shadow pass (100k triangles at the default view).
     const noHouseShadows = HOUSE_SHADOWS_M > 0 && (houseNoShadow ? d > HOUSE_SHADOWS_M * 0.84 : d > HOUSE_SHADOWS_M);
-    if (far !== farTrees || noHouseShadows !== houseNoShadow) { farTrees = far; houseNoShadow = noHouseShadows; detailed = new WeakSet(); }
+    // Both tiers: park path lamps drop out by day beyond this orbit, where their posts read as a
+    // fence line of dark dots on open lawn (World.setDetail farLamps).
+    const lampsFar = farLamps ? d > FAR_LAMPS_M * 0.85 : d > FAR_LAMPS_M;
+    if (far !== farTrees || noHouseShadows !== houseNoShadow || lampsFar !== farLamps) { farTrees = far; houseNoShadow = noHouseShadows; farLamps = lampsFar; detailed = new WeakSet(); }
     // Limb shadows stay on until a moving-camera A16 run shows they cost something.
-    const detail = { farTrees: far, houseShadows: !noHouseShadows };
+    const detail = { farTrees: far, houseShadows: !noHouseShadows, farLamps: lampsFar };
     let applied = false;
     const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
       if (!a || detailed.has(a)) return;

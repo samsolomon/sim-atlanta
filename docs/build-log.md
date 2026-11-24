@@ -4039,3 +4039,7 @@ The strip meant to end the green ground at the Robinson College doors had passed
 ### 2026-11-24 — Shade for the café
 
 Sifly Piazza's café sits in a gridded grove, but City had no trees there. A first try put eight 9 m trees among the tables, as the photographs show them. From Sam's usual 260 m orbit, their crowns covered the tables and umbrellas that had just been moved into the open so he could find them. Six smaller trees around the table block keep the café readable and still give it shade. They are generic low-poly crowns like the rest of City, set on the piazza as a landmark planting. [Grove at 260 m](log/ui/arts-campus/grove-orbit.jpg).
+
+### 2026-11-24 — Piedmont Park after dark
+
+City drew Piedmont Park's 1926 bathhouse as a generic two-storey block, with no pool and nothing lit in the park at night. Greystone now has granite walls, pale shingle roofs, a taller centre pavilion with an arched entry, and long one-storey wings. Its pool is a lap pool plus a free-form lagoon, traced from a leaf-off aerial, with butterfly pergolas and twin-globe lamps on the deck. 244 lamps now line the park's promenades and long footways, each with a pool of light about half as strong as a street lamp's, so the park reads as a few dim paths in the dark rather than a lit lot. The surprise was how far the park runs past the board: the Meadow, the Legacy Fountain and the dog parks all sit about 90 m east of its edge. The whole pass costs two or three draws and 8k triangles, with no new shader programs. [From 900 m](log/ui/piedmont-details/ov.jpg).

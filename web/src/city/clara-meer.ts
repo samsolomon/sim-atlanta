@@ -37,7 +37,9 @@ const ARCH = { span: 12, rise: 2.1, inset: 5 };
 const GRANITE = '#8e8b84', COPING = '#b3afa6', PAVING = '#bdb9b0', RAIL = '#1f2224', WOOD = '#9a8b76';
 
 type Ground = (x: number, z: number) => number | null;
-const water = (ground: Ground) => ground(...centre);
+/** The lake surface (hydro-flattened 3DEP) in scene metres: the ground at the gazebo. */
+export const waterLevel = (ground: Ground) => ground(...centre);
+const water = waterLevel;
 
 /** Deck height in scene metres along the bridge, meeting both banks. */
 export function deckHeight(s: number, ground: Ground) {

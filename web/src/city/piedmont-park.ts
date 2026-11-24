@@ -87,3 +87,23 @@ export function piedmontPark(city: TerrainCity, ground: Ground, quality: 'high' 
     },
   };
 }
+
+/**
+ * Piedmont Park's main paths, for dim path lamps (World.buildLights dimPaths): every pedestrian
+ * promenade and every footway at least 100 m long inside the park. The park's paths carry no
+ * lit=yes tag in OSM; the photographs show black acorn-globe posts about 4 m tall along the main
+ * loops. Which paths are lit, and the 30 m spacing, are illustrative.
+ */
+export function piedmontLampPaths(city: TerrainCity): P2[][] {
+  const park = city.ground?.find(g => g.name === 'Piedmont Park' && g.kind === 'park')?.rings[0] as P2[] | undefined;
+  if (!park) return [];
+  const inPark = ([x, z]: P2) => {
+    let c = false;
+    for (let i = 0, j = park.length - 1; i < park.length; j = i++)
+      if ((park[i][1] > z) !== (park[j][1] > z) && x < (park[j][0] - park[i][0]) * (z - park[i][1]) / (park[j][1] - park[i][1]) + park[i][0]) c = !c;
+    return c;
+  };
+  const length = (pts: P2[]) => pts.reduce((n, p, i) => i ? n + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
+  return city.roads.filter(r => !r.bridge && !r.tunnel && (r.cls === 'pedestrian' || (r.cls === 'footway' && length(r.pts as P2[]) >= 100))
+    && inPark(r.pts[Math.floor(r.pts.length / 2)] as P2)).map(r => r.pts as P2[]);
+}
