@@ -163,9 +163,8 @@ Not yet: Street view, layers and tours (see Follow-ups).
   the dock's top, 44 px tall, radius 12, 14 px / 600 label. Like every control that floats
   over the scene, it uses the dock's glass recipe (fill, blur, ring, shadow), never a flat
   chip.
-- **Returning to Map:** City is disposed on the way into Models today
-  (`web/src/main.ts`), so coming back replays the white-model arrival (1–5 s). Pausing
-  City instead is worth measuring on the Galaxy A16; until then, accept the rebuild.
+- **Returning to Map:** City pauses behind Models instead of being disposed. Measured on
+  the Galaxy A16: back to City in 0.28–0.57 s (was 13–15 s with a rebuild).
 
 ## Selected states
 
@@ -427,6 +426,9 @@ out, then the map flattens.
   ground-level camera in `underpassDrive` (`web/src/city/city.ts`).
 - **Search content:** the field ships in the dock; results (stations, buildings, streets,
   and addresses outside City that open on the Map) come with the search work.
+- **Building selection:** tapping a building, its detail panel and "See the model ›" for
+  landmarks. City has no building pick event or building-to-catalogue mapping yet, so the
+  phone selection card ships for trains, buses and freight first (coordinator, 2026-11-24).
 - **Layers** (freight, buses, roadwork from 511GA, game days), each with its truth label,
   and **Tours** (staged shots) in the menu.
 
