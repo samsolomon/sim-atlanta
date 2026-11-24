@@ -5,7 +5,13 @@
  */
 import * as THREE from 'three';
 
-export function gradeShader() {
+/**
+ * `output: true` also does OutputPass's work first (the renderer's tone mapping, then the output
+ * colour space), so a chain that ends in grade can drop that full-screen pass. It relies on grade
+ * drawing to the canvas, where three.js gives a tone-mapped ShaderMaterial `toneMapping()` and
+ * `linearToOutputTexel()` from the renderer's settings.
+ */
+export function gradeShader(o: { output?: boolean } = {}) {
   return {
     name: 'Grade',
     uniforms: {
@@ -26,6 +32,10 @@ export function gradeShader() {
       float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
       void main() {
         vec4 src = texture2D(tDiffuse, vUv);
+        ${o.output ? `#ifdef TONE_MAPPING
+        src.rgb = toneMapping(src.rgb);
+        #endif
+        src = linearToOutputTexel(src);` : ''}
         vec3 c = src.rgb;
         if (uAmount > 0.001) {
           float l = dot(c, vec3(0.299, 0.587, 0.114));

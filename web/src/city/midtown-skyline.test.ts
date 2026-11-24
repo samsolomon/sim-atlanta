@@ -54,6 +54,7 @@ it.each([
   ['osm:way:885660351','1180 Peachtree',200],
   ['osm:way:269636921','Promenade Central',36.2],
   ['osm:way:269637575','Promenade Tower',211],
+  ['osm:way:269843469','Four Seasons Hotel',190],
 ] as const)('replaces %s at the measured local grade', (id, name, height) => {
   const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === id);
   const model = createSkylineLandmark([building,tower], building, -8, () => -3)!;
@@ -269,4 +270,95 @@ it('replaces 1100 Peachtree with its notched shaft, lit loggia and stepped pyram
     o.geometry.computeVertexNormals();
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
+});
+
+it('steps the Four Seasons back to a pyramid and keeps its crown floors dark', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:269843469');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 400, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(577.4, -3601.9)).toBeCloseTo(190, 0); // pyramid apex, inside the 193 m lidar maximum
+  expect(heightAt(577.4 + 20, -3601.9)).toBeLessThan(151); // outside the crown tiers
+  expect(heightAt(577.4 + 22.5, -3601.9)).toBeLessThan(69); // the hotel base below the first setback
+  expect(heightAt(577.4, -3560)).toBeCloseTo(16.8, 1); // south podium
+  // Lit panes and floodlights share the lamp mesh: above the 150 m crown only gold, granite and
+  // the attic windows' floodlit lattice may glow, never office or residence windows.
+  const lamps = (model.group.children[1] as Mesh).geometry;
+  const y = lamps.getAttribute('position'), colour = lamps.getAttribute('color');
+  for (let i = 0; i < y.count; i++) if (y.getY(i) > 150) expect(colour.getX(i)).toBeGreaterThan(.5);
+  const body = (model.group.children[0] as Mesh).geometry;
+  // A landmark-class skin stays inside the 2,400-triangle body budget at low tier.
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+});
+
+it('draws the Campanile as its present-day stripped frame at the lidar roof, unlit at night', () => {
+  const site: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:269843407');
+  const model = createSkylineLandmark([site, tower], site, -2, () => 0)!;
+  expect(model.group.name).toBe('The Campanile');
+  expect(model.buildings).toEqual([tower]);
+  model.group.updateMatrixWorld(true);
+  const box = new Box3().setFromObject(model.group);
+  // 3DEP (April 2019): top slab 95.4 m over the site's ring grade; the hoist mast rises 4 m above it.
+  expect(box.max.y).toBeCloseTo(95.4 + 4, 0);
+  const top = new Raycaster(new Vector3(833, 300, -3571), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
+  expect(top).toBeCloseTo(95.4, 0);
+  // A stalled construction site: no photographed lighting, so nothing glows.
+  model.setNight(1);
+  expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
+  expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+});
+
+it('stacks 1072 West Peachtree as podium, office block and glass tower, with a dark crown', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:1464967906');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('1072 West Peachtree');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (u: number, v: number) => {
+    const a = Math.atan2(.0153, 1), x = 308.3 + u * Math.cos(a) - v * Math.sin(a), z = -3351.2 + u * Math.sin(a) + v * Math.cos(a);
+    return new Raycaster(new Vector3(x, 400, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0]?.point.y ?? 0;
+  };
+  expect(heightAt(12, -18)).toBeCloseTo(228, 0); // the crown's raised middle, at the reported 749 ft
+  expect(heightAt(12, -32)).toBeCloseTo(223.4, 0); // parapet shoulder
+  expect(heightAt(-4, 10)).toBeCloseTo(72, 0); // office block, floors 11–18
+  expect(heightAt(-20, 30)).toBeCloseTo(36, 0); // parking podium and Commons
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  // A landmark-class skin stays inside the 2,400-triangle body budget at low tier.
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  // Nothing above the residential roof lights at night (the crown was unlit in August 2026).
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(219);
+});
+
+it('replaces Square on 5th at its lidar roof, with fins carrying the roof frame', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:536884432');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Square on 5th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(219.5, -2681.5)).toBeCloseTo(89.5, 0); // roof frame, the lidar maximum
+  expect(heightAt(245, -2681.5)).toBeGreaterThan(87.5); // east penthouse above the 88 m roof
+  expect(heightAt(195, -2681.5)).toBeCloseTo(88, 0); // the lidar 95th-percentile roof
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(86);
+});
+
+it('gives Two Midtown Plaza its lidar roofs, a lit lobby drum and dark offices above', () => {
+  const brookwood = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/brookwood-south/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = brookwood.buildings.find((b: VBuilding) => b.id === 'osm:way:269636880');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Two Midtown Plaza');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(405, -4195)).toBeCloseTo(78, 0); // the straight slab, lidar 95th percentile
+  expect(heightAt(375, -4190)).toBeCloseTo(73, 0); // the half-round end
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(78);
 });

@@ -5,10 +5,9 @@
  * Chrome is driven over CDP (Node 22+ global WebSocket). The Studio's GPU is not a phone's: use
  * this for scene counts and memory, and the A16 runs (docs/perf.md) for fps.
  */
-import { spawn } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { launchChrome } from './chrome-cdp.mjs';
 
 const args = process.argv.slice(2);
 let out = null;
@@ -16,6 +15,7 @@ let desktop = false;
 let extra = null;
 let netMbps = 0;
 let cpu = 1;
+let viewport = null;
 const urls = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
@@ -23,6 +23,8 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--eval') extra = args[++i];
   else if (args[i] === '--net') netMbps = Number(args[++i]) || 0;
   else if (args[i] === '--cpu') cpu = Number(args[++i]) || 1;
+  // --viewport 384x692@1: the A16's portrait canvas as measured on the device (CSS px at DPR 1).
+  else if (args[i] === '--viewport') { const m = /^(\d+)x(\d+)@([\d.]+)$/.exec(args[++i]); if (m) viewport = { width: +m[1], height: +m[2], deviceScaleFactor: +m[3] }; }
   else urls.push(args[i]);
 }
 if (!urls.length) { console.error('usage: perf-run.mjs [--out dir] [--desktop] URL...'); process.exit(2); }
@@ -30,25 +32,9 @@ if (out) mkdirSync(out, { recursive: true });
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function session() {
-const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const port = 9300 + Math.floor(Math.random() * 500);
-const profile = mkdtempSync(join(tmpdir(), 'perf-chrome-'));
-const chrome = spawn(CHROME, [`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--headless=new',
-  '--no-first-run', '--enable-precise-memory-info', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
+const browser = await launchChrome('perf-chrome-', ['--headless=new', '--enable-precise-memory-info', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader']);
 
-async function target() {
-  for (let i = 0; i < 50; i++) {
-    try {
-      const list = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-      const page = list.find(t => t.type === 'page');
-      if (page) return page.webSocketDebuggerUrl;
-    } catch { /* starting */ }
-    await sleep(200);
-  }
-  throw new Error('Chrome did not start');
-}
-
-const ws = new WebSocket(await target());
+const ws = new WebSocket(browser.wsUrl);
 await new Promise(r => ws.addEventListener('open', r, { once: true }));
 let id = 0;
 const pending = new Map();
@@ -81,17 +67,13 @@ if (cpu > 1) await send('Emulation.setCPUThrottlingRate', { rate: cpu });
 // Galaxy A16: 1080x2340 at DPR 2.625 = 411x891 CSS px.
 if (desktop) await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
 else {
-  await send('Emulation.setDeviceMetricsOverride', { width: 411, height: 891, deviceScaleFactor: 2.625, mobile: true });
+  await send('Emulation.setDeviceMetricsOverride', { ...(viewport ?? { width: 411, height: 891, deviceScaleFactor: 2.625 }), mobile: true });
   await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 }
 
   return { send, evaluate, logs, async close() {
     try { ws.close(); } catch { /* closed */ }
-    // Delete the profile only once Chrome has exited, or it writes the folder back.
-    const exited = new Promise(r => chrome.once('exit', r));
-    chrome.kill();
-    await Promise.race([exited, sleep(5000)]);
-    rmSync(profile, { recursive: true, force: true });
+    await browser.close();
   } };
 }
 

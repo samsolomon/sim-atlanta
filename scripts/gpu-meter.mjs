@@ -10,6 +10,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { activePort } from './chrome-cdp.mjs';
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const url = arg('url', 'http://localhost:5173/?view=city&q=low');
@@ -55,13 +56,12 @@ const tally = () => {
 };
 
 const profile = mkdtempSync(join(tmpdir(), 'gpu-meter-'));
-const port = 9500 + Math.floor(Math.random() * 400);
-const proc = spawn(chrome, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run',
+const proc = spawn(chrome, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
   '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-precise-memory-info', 'about:blank'], { stdio: 'ignore' });
 try {
   let ws;
   for (let i = 0; i < 100 && !ws; i++) {
-    try { ws = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { /* starting */ }
+    try { ws = (await (await fetch(`http://127.0.0.1:${await activePort(profile)}/json/list`)).json()).find(t => t.type === 'page')?.webSocketDebuggerUrl; } catch { /* starting */ }
     await sleep(200);
   }
   if (!ws) throw Error(`Chrome exposed no debugger page; set CHROME (now ${chrome}). Needs Node 22+ for WebSocket.`);

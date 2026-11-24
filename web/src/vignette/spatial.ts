@@ -1,4 +1,4 @@
-import type { P2 } from './geom';
+import { pointInRing, type P2 } from './geom';
 
 /** Conservative broad phase for static placement. Exact geometry tests still decide hits. */
 export class PlacementIndex<T> {
@@ -24,7 +24,16 @@ export class PlacementIndex<T> {
     }
   }
 
+  /** Index rings by their own points. */
+  addAll(this: PlacementIndex<P2[]>, rings: P2[][]) { for (const ring of rings) this.add(ring, ring); return this; }
+
   at(x: number, z: number): readonly T[] {
     return this.cells.get(this.key(Math.floor(x / this.step), Math.floor(z / this.step))) ?? [];
   }
+}
+
+/** Is (x, z) inside any of `rings`? Same answer as a linear scan, through the broad phase. */
+export function insideAny(rings: P2[][], step = 64) {
+  const index = new PlacementIndex<P2[]>(step).addAll(rings);
+  return (x: number, z: number) => index.at(x, z).some(ring => pointInRing(x, z, ring));
 }

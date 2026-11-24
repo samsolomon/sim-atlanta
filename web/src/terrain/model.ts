@@ -6,14 +6,47 @@ import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
+import { create25Pine, pine25Id } from '../city/25-pine';
+import { createTwelveMidtown, twelveMidtownId } from '../city/twelve-midtown';
+import { createUniversityHouse, universityHouseId } from '../city/university-house';
+import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
+import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center';
+import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
+import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
+import { createWinship, winshipId } from '../city/winship';
+import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
+import { createModeraParkside, moderaParksideId } from '../city/modera-parkside';
+import { createTheStandard, theStandardId } from '../city/the-standard';
+import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
+import { createNomia, nomiaId } from '../city/nomia';
+import { createViewPoint, viewpointId } from '../city/viewpoint';
+import { createProscenium, prosceniumId } from '../city/proscenium';
+import { createHanoverMidtown, hanoverMidtownId } from '../city/hanover-midtown';
+import { createSora, soraId } from '../city/sora';
+import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
+import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
+import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
+import { create10Tenth, tenTenthId } from '../city/10-10th';
+import { atlanticId, createAtlantic } from '../city/the-atlantic';
+import { create1010Midtown, midtown1010Id } from '../city/1010-midtown';
+import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
+import { createMetropolis, metropolisId } from '../city/metropolis';
+import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
+import { createNcrHq, ncrId } from '../city/ncr-hq';
+import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
+import { createLoews, loewsId } from '../city/loews-atlanta';
+import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
+import { createMaaMidtown, maaMidtownId } from '../city/maa-midtown';
+import { create271Seventeenth, seventeenth271Id } from '../city/271-seventeenth';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
+import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
-import { GroundSurface, joinList, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
+import { GroundSurface, joinList, type BuiltSurface, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
 import { createCoda, codaIds } from '../city/midtown-culture-coda';
@@ -25,6 +58,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
+import { batchLandmarks, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
@@ -40,7 +74,7 @@ import { groundMap } from './ground-map';
 import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
-import { rolloutPlantings, rolloutRow, rolloutSpecies } from '../trees/rollout-city';
+import { rolloutPlantings, rolloutRow, rolloutSpecies, treeMode } from '../trees/rollout-city';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -55,6 +89,8 @@ export interface DowntownTerrainOptions {
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   separateBuilding?: string;
+  /** False leaves landmark meshes in their own groups, for tests that inspect a mounted model. */
+  batchLandmarks?: boolean;
   contours?: Contours;
   openings?: readonly OpenSlot[];
   /** Street and path lamps for this area, in the downtown night style. */
@@ -62,6 +98,8 @@ export interface DowntownTerrainOptions {
   /** The tree rollout (trees/rollout-city.ts) for a canopy-map row: every crown of the row (the
    *  high tier's list) and the Ansley Park test. */
   rollout?: { row: string; lowCount: number; allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
+  /** The ground surface, already built off the main thread (terrain/surface-worker.ts). */
+  surface?: BuiltSurface;
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -186,14 +224,20 @@ let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
 export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
 
+/** The openings the ground surface is cut by, so a surface built off the main thread matches. */
+export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainOptions, 'underpass' | 'openings'>) {
+  const zero = grid.manifest.vertical.sceneZeroNavd88M;
+  return options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+}
+
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
-  const openings = options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
-  const mesh = new GroundSurface(grid, options.quality, openings, options.join);
+  const openings = terrainOpenings(grid, options);
+  const mesh = new GroundSurface(grid, options.quality, openings, options.join, options.surface);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
@@ -233,6 +277,39 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === gazeboId ? createClaraMeer : null;
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
+      : site.id === twelveMidtownId ? createTwelveMidtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === universityHouseId ? createUniversityHouse(sceneryCity.buildings, grid, options.quality)
+      : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === amliArtsCenterId ? createAmliArtsCenter(sceneryCity.buildings, grid, options.quality)
+      : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
+      : site.id === winshipId ? createWinship(sceneryCity.buildings, site, grid)
+      : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
+      : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
+      : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
+      : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
+      : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
+      : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
+      : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
+      : site.id === hanoverMidtownId ? createHanoverMidtown(sceneryCity.buildings, site, grid)
+      : site.id === soraId ? createSora(sceneryCity.buildings, site, grid)
+      : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
+      : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
+      : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
+      : site.id === tenTenthId ? create10Tenth(sceneryCity.buildings, site, grid)
+      : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
+      : site.id === midtown1010Id ? create1010Midtown(sceneryCity.buildings, site, grid)
+      : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
+      : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
+      : site.id === ncrId ? createNcrHq(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
+      : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
+      : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === maaMidtownId ? createMaaMidtown(sceneryCity.buildings, site, grid)
+      : site.id === seventeenth271Id ? create271Seventeenth(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
@@ -270,18 +347,38 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const named = treeSitesIn(city.bounds);
   const namedReplace = named.length ? replacedBy(named) : null;
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
+  const drawTrees = treeMode(typeof location === 'undefined' ? '' : location.search);
   const rollout = options.rollout ? rolloutRow({
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
     allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
+    // `?trees=all-species`: convert only crowns the generic World would draw (its bounds and
+    // building test), and leave named sites to trees/sites.ts.
+    generic: drawTrees === 'generic',
+    preview: drawTrees === 'all-species' ? (blocks => ({
+      drawn: (x, z) => x > city.bounds.minX + 1 && x < city.bounds.maxX - 1 && z > city.bounds.minZ + 1 && z < city.bounds.maxZ - 1
+        && !blocks.at(x, z).some(ring => pointInRing(x, z, ring)),
+      managed: namedReplace ?? undefined,
+    }))(new PlacementIndex<P2[]>().addAll(sceneryCity.buildings.map(bd => bd.rings[0]))) : undefined,
   }) : null;
   if (rollout) streetTrees = rollout.crowns;
   const replace: World['replacedTree'] = rollout
     ? (x, z, cr) => !!namedReplace?.(x, z, cr) || rollout.replaced(x, z)
     : namedReplace;
-  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options,
-    replace, bd => homes.isHouse(bd.id), rollout?.crownSize ?? null);
+  // Trees landmarks plant at their own height (1180 Peachtree's terrace crape myrtles).
+  const spots = landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
+    .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ);
+  // Generic (the default): they join the row's generic crowns, appended so no colour seed moves,
+  // as 4.5 m broadleaves (the species planting's size) standing on the roof, not the ground.
+  const genericSpots = drawTrees === 'generic' ? new Map(spots.map(p => [crownKey(p.x, p.z), p])) : null;
+  if (genericSpots?.size) streetTrees = [...streetTrees, ...spots.map(p => [p.x, p.z, 4.5, 2] as Tree)];
+  const sceneryGround = genericSpots?.size ? (x: number, z: number) => genericSpots.get(crownKey(x, z))?.y ?? groundAt(x, z) : groundAt;
+  const crownSize: World['crownSize'] = genericSpots?.size
+    ? (x, z) => genericSpots.has(crownKey(x, z)) ? { h: 4.5, r: 2, broadleaf: true } : rollout?.crownSize(x, z)
+    : rollout?.crownSize ?? null;
+  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
+    replace, bd => homes.isHouse(bd.id), crownSize);
   // Houses by distance: a bare far version for wide views, the full house when the camera comes close.
   const houses = houseLod({
     houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
@@ -290,6 +387,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   });
   scenery.group.add(houses.group);
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
+  // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
+  if (batches) {
+    scenery.group.add(batches.group);
+    if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
+  }
   // Yards by rule around every house (walks, drives, foundation planting).
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
@@ -305,12 +408,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
     city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
   // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
-  const planted = rolloutPlantings(landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
-    .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ), options.quality);
+  const planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
-    const onSite = (x: number, z: number) => sites.some(ring => pointInRing(x, z, ring));
+    // Indexed: a linear scan over every site ring per lamp candidate was ~40% of a Midtown row's build.
+    const onSite = insideAny(sites);
     const reclaimedBed = (x: number,z: number) => {
       if (!options.underpass) return false;
       const [s,t] = options.underpass.local(x,z);
@@ -363,7 +466,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
-    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
+    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       trench?.setWet(factor);
       board.material.color.setScalar(1 - 0.3 * factor);
