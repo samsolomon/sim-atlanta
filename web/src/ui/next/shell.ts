@@ -14,15 +14,24 @@ import { findPlaces, loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
-import { createRadio, PLAYLIST, type Radio } from './radio';
+import { createRadio, type Radio } from './radio';
+import type { StationsFile } from './radio-plan';
 import { BYLINE, createDetailPanel } from './panel';
 import { atlantaDate, confidence, confidenceWords, sameTimeOnDate, hintText, placeLabel, SLIDER_MIN, sliderValue, skyLabel, type View } from '../status';
 import { clock } from '../../core/clock';
-import { shareUrl } from '../share';
+import { shareUrl, sharePlace } from '../share';
 import type { ShellApi, ShellOptions } from '../shell-api';
 
 const TZ = 'America/New_York';
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
+const hourFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: 'numeric', hourCycle: 'h23' });
+/** Fractional hour of a moment in Atlanta, e.g. 22.5 for 10:30 PM. */
+function atlantaHour(d: Date): number {
+  const p = hourFmt.formatToParts(d);
+  const n = (t: string) => Number(p.find((x) => x.type === t)?.value ?? 0);
+  return (n('hour') % 24) + n('minute') / 60;
+}
+const SITE = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/');
 const dayTimeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', hour: 'numeric', minute: '2-digit' });
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'long', month: 'short', day: 'numeric' });
 const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric' });
@@ -31,13 +40,20 @@ const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const SVG = (body: string, box = 24) =>
   `<svg viewBox="0 0 ${box} ${box}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const CARET = SVG('<path d="M6 9l6 6 6-6"/>');
-const COMPASS = `<svg viewBox="0 0 32 32" aria-hidden="true" class="a2-needle"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/><g><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></g></svg>`;
+// The ring stays put; the needle is its own SVG on its own compositor layer, turned by a CSS
+// transform, so a turning camera never repaints or re-rasters the compass.
+const COMPASS = `<span class="a2-needle" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg viewBox="0 0 32 32" class="a2-needle-turn"><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></svg></span>`;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
   e.innerHTML = html;
   return e;
+}
+
+/** Set text only when it differs, so a periodic refresh doesn't invalidate style for nothing. */
+function setText(el: HTMLElement, text: string) {
+  if (el.textContent !== text) el.textContent = text;
 }
 
 export function createShellNext(o: ShellOptions): ShellApi {
@@ -240,28 +256,61 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Radio', 'aria-expanded': 'false', 'aria-controls': 'a2-radio-player' }, NOTE);
   const radioPanel = el('section', { class: 'a2-dock-pop a2-g a2-player', id: 'a2-radio-player', hidden: '', 'aria-label': 'Radio' });
-  const play = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Play' });
+  const play = el('button', { type: 'button', class: 'a2-ib a2-play', 'aria-label': 'Play' });
   const next = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Next track' }, SVG('<path d="M18 5v14M5 5l10 7-10 7z"/>'));
+  // Station name small above "Artist · Title"; ‹ › (or tapping the name) switches station.
+  const art = el('span', { class: 'a2-art', 'aria-hidden': 'true' });
+  const stationPrev = el('button', { type: 'button', class: 'a2-st-step', 'aria-label': 'Previous station' }, SVG('<path d="M14 6l-6 6 6 6"/>'));
+  const stationName = el('button', { type: 'button', class: 'a2-st-name' });
+  const stationNext = el('button', { type: 'button', class: 'a2-st-step', 'aria-label': 'Next station' }, SVG('<path d="M10 6l6 6-6 6"/>'));
+  const stationRow = el('span', { class: 'a2-station' });
+  stationRow.append(stationPrev, stationName, stationNext);
   const radioTitle = el('strong');
-  const trackNote = el('span');
   const trackInfo = el('div', { class: 'a2-track-info' });
-  trackInfo.append(radioTitle, trackNote);
+  trackInfo.append(art, stationRow, radioTitle);
   const progress = el('progress', { 'aria-label': 'Track progress' });
   radioPanel.append(trackInfo, play, next, progress);
   let radio: Radio | null = null;
+  let radioFailed = false;
   const showRadio = () => {
     if (!radio) return;
-    radioTitle.textContent = radio.track.title;
-    trackNote.textContent = radio.track.src ? `Track ${radio.index + 1} of ${PLAYLIST.length}` : 'No audio yet';
-    play.innerHTML = SVG(radio.playing ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
-    play.setAttribute('aria-label', radio.playing ? 'Pause' : 'Play');
+    const t = radio.track;
+    const st = radio.station;
+    stationName.textContent = st?.name ?? 'Radio';
+    stationName.setAttribute('aria-label', st ? `${st.name}. Next station` : 'Radio');
+    const line = t ? `${t.artist} · ${t.title}` : radioFailed ? 'Radio unavailable' : 'Tuning in…';
+    radioTitle.textContent = line;
+    radioTitle.title = line; // the full line when it ends in an ellipsis
+    if (t) {
+      const url = SITE + t.cover.small;
+      if (art.dataset.src !== url) {
+        art.dataset.src = url;
+        // High priority: on a slow link the cover shouldn't wait behind the prefetching MP3.
+        const img = el('img', { src: url, alt: '', width: '40', height: '40', decoding: 'async', fetchpriority: 'high' });
+        art.replaceChildren(img);
+      }
+    }
+    play.disabled = radioFailed;
+    for (const b of [next, stationPrev, stationName, stationNext]) b.disabled = !radio.loaded;
+    // While the first file is still arriving, the glyph is a spinning arc (brief: Radio, Loading).
+    const glyph = radio.buffering ? 'busy' : radio.playing ? 'pause' : 'play';
+    if (play.dataset.glyph !== glyph) {
+      play.dataset.glyph = glyph;
+      play.innerHTML = SVG(glyph === 'busy' ? '<path d="M12 3a9 9 0 1 1-9 9"/>' : glyph === 'pause' ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
+      play.classList.toggle('a2-busy', glyph === 'busy');
+      play.toggleAttribute('aria-busy', glyph === 'busy');
+    }
+    play.setAttribute('aria-label', radio.playing ? (t ? `Pause ${t.title} by ${t.artist}` : 'Pause') : t ? `Play ${t.title} by ${t.artist}` : 'Play');
     radioBtn.classList.toggle('a2-playing', radio.playing);
-    const radioLabel = !radio.playing ? 'Radio' : radio.track.src ? 'Radio, playing' : 'Radio, playing preview · no audio yet';
+    const radioLabel = radio.playing && t ? `Radio, playing ${t.title} by ${t.artist}` : 'Radio';
     radioBtn.setAttribute('aria-label', radioLabel);
-    radioBtn.title = radioLabel;
-    progress.max = radio.track.durationS;
+    radioBtn.title = radio.playing && t ? `${t.artist} · ${t.title}` : 'Radio';
+    progress.max = t?.durationS ?? 1;
     progress.value = radio.elapsedS;
   };
+  stationPrev.onclick = () => radio?.switchStation(-1);
+  stationNext.onclick = () => radio?.switchStation(1);
+  stationName.onclick = () => radio?.switchStation(1);
   play.onclick = () => radio?.toggle();
   next.onclick = () => radio?.next();
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn);
@@ -305,6 +354,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="board" hidden>${SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 5v14"/>')}<span>Show full board<small>Every City area, or retry one that failed</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
+      <a class="a2-mi" href="https://github.com/samsolomon/sim-atlanta" target="_blank" rel="noopener">${SVG('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>')}<span>Source code<small>Open source on GitHub</small></span><span class="a2-chev">${SVG('<path d="M7 17L17 7M9 7h8v8"/>')}</span></a>
     </div>
     <div class="a2-sep"></div>
     <div class="a2-menu-gfx">
@@ -401,9 +451,11 @@ export function createShellNext(o: ShellOptions): ShellApi {
   // The frozen moment is taken once, when the panel opens, so the label and the copied link agree.
   let frozenAt = clock.now();
   /** null while there is nothing to reopen yet (City still loading, or no renderer at all). */
-  const currentLink = () => {
+  const currentShare = () => {
     const target = o.shareTarget?.();
-    return target ? shareUrl(location.href, target, shareMode, frozenAt) : null;
+    if (!target) return null;
+    const { path, title } = sharePlace(target, o.center());
+    return { title, url: shareUrl(location.href, target, shareMode, frozenAt, path) };
   };
   const renderShare = () => {
     const target = o.shareTarget?.();
@@ -414,7 +466,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     share.querySelector('.a2-freeze-text')!.textContent =
       `${shortDate.format(frozenAt)} · ${timeFmt.format(frozenAt)}, paused. Trains from the timetable.`;
     modeInputs.forEach((i) => (i.checked = i.value === shareMode));
-    const link = currentLink();
+    const link = currentShare()?.url;
     if (shareUrlOut.textContent !== (link ?? '')) shareUrlOut.textContent = link ?? '';
     copyBtn.disabled = nativeBtn.disabled = !link;
   };
@@ -423,7 +475,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     renderShare();
   }));
   copyBtn.addEventListener('click', async () => {
-    const link = currentLink();
+    const link = currentShare()?.url;
     if (!link) return;
     try {
       await navigator.clipboard.writeText(link);
@@ -438,9 +490,15 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     setTimeout(() => (copyBtn.textContent = 'Copy link'), 1800);
   });
+  const shareNative = (data: ShareData) => navigator.share(data).catch((err: Error) => {
+    if (err.name !== 'AbortError') {
+      if (share.hidden) toggle(share, shareBtn, renderShare);
+      else renderShare();
+    }
+  });
   nativeBtn.addEventListener('click', () => {
-    const link = currentLink();
-    if (link) navigator.share?.({ title: document.title, url: link }).catch(() => { /* dismissed */ });
+    const data = currentShare();
+    if (data) void shareNative(data);
   });
   share.querySelector('[data-close]')!.addEventListener('click', () => {
     closePops();
@@ -449,11 +507,13 @@ export function createShellNext(o: ShellOptions): ShellApi {
   compass.addEventListener('click', () => o.north?.());
   zoomIn.addEventListener('click', () => o.zoom(1));
   zoomOut.addEventListener('click', () => o.zoom(-1));
-  const needle = compass.querySelector<SVGGElement>('g')!;
+  const needle = compass.querySelector<SVGSVGElement>('.a2-needle-turn')!;
   let shownBearing = NaN;
+  let labelTimer = 0;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
-    if (!tilt.matches(':active, :focus-visible')) tilt.value = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    const tiltNow = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    if (tilt.value !== tiltNow && !tilt.matches(':active, :focus-visible')) tilt.value = tiltNow;
     const show = view !== 'models';
     if (compass.hidden === show) {
       compass.hidden = !show;
@@ -462,8 +522,10 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     if (!Number.isFinite(shownBearing) || Math.abs(b - shownBearing) > 0.1) {
       shownBearing = b;
-      needle.setAttribute('transform', `rotate(${(-b).toFixed(1)} 16 16)`);
-      compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((b % 360) + 360) % 360)}°)`);
+      needle.style.transform = `rotate(${(-b).toFixed(1)}deg)`;
+      // Screen readers get the heading once the turn settles, not a label rewrite every frame.
+      clearTimeout(labelTimer);
+      labelTimer = window.setTimeout(() => compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((shownBearing % 360) + 360) % 360)}°)`), 250);
     }
     requestAnimationFrame(watchBearing);
   };
@@ -568,21 +630,39 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   radioBtn.onclick = () => toggle(radioPanel, radioBtn, () => {
     if (!radio) {
-      radio = createRadio();
+      // Nothing under music/ is requested before this first open.
+      radio = createRadio({
+        load: async () => {
+          const r = await fetch(`${SITE}music/stations.json`);
+          if (!r.ok) throw new Error(`stations.json ${r.status}`);
+          return (await r.json()) as StationsFile;
+        },
+        sceneHour: () => atlantaHour(now),
+        resolve: (path) => SITE + path,
+        storage: (() => { try { return localStorage; } catch { return null; } })(),
+      });
       radio.onChange(showRadio);
+      radio.ready.catch(() => {
+        radioFailed = true;
+        showRadio();
+      });
     }
     showRadio();
     play.focus();
   });
   menuBtn.addEventListener('click', () => showGraphics());
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
-  shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
+  shareBtn.addEventListener('click', () => {
     // A shifted or paused clock most likely means this moment is the point of the link.
     shareMode = clock.isRealTime() ? 'live' : 'freeze';
     frozenAt = clock.now();
-    renderShare();
-    copyBtn.focus();
-  }));
+    const data = currentShare();
+    if (phone.matches && !nativeBtn.hidden && data) {
+      void shareNative(data);
+      return;
+    }
+    toggle(share, shareBtn, () => { renderShare(); copyBtn.focus(); });
+  });
   open.addEventListener('click', () => toggle(panel, open, () => {
     lastTick = -Infinity;
     tick(clock.now());
@@ -639,7 +719,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const t = performance.now();
     if (t - lastTick < 500) return;
     lastTick = t;
-    if (radio && !radioPanel.hidden) progress.value = radio.elapsedS;
+    if (radio && !radioPanel.hidden && progress.value !== radio.elapsedS) progress.value = radio.elapsedS;
     const c = o.center();
     const mpp = o.metresPerPixel?.() ?? null;
     threeD.classList.toggle('a2-outside', !!outside());
@@ -656,35 +736,38 @@ export function createShellNext(o: ShellOptions): ShellApi {
     let svg: string;
     if (wxNow) {
       svg = weatherIcon(wxNow, night);
-      wxText.textContent = `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`;
+      setText(wxText, `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`);
     } else if (s.realTime && !preview) {
       // At the present with no observation yet (or the fetch failed): show no condition at all,
       // never a guessed one in the observed-weather slot.
       svg = '';
-      wxText.textContent = '';
+      setText(wxText, '');
     } else {
       // A shifted clock or a chosen sky is a scene setting: its icon only, no words, so it never
       // reads as a reported condition (#231).
       const sk = skyLabel(o.sky?.() ?? { cloud: 0, rain: 0, fog: 0, snow: 0 });
       svg = weatherIcon({ kind: sk.kind, label: sk.snow ? 'snow' : sk.label, cloud: 0, rain: 0, fog: 0, live: false }, night);
       // At the present, a picked sky says so in words, so it can't pass for the observed one.
-      wxText.textContent = s.realTime && preview ? `Chosen: ${sk.label}` : '';
-      wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
+      setText(wxText, s.realTime && preview ? `Chosen: ${sk.label}` : '');
+      if (wx.title !== `Scene sky: ${sk.label.toLowerCase()}`) wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
     }
-    wx.hidden = !svg;
-    if (wxText.textContent) wx.removeAttribute('title');
+    if (wx.hidden !== !svg) wx.hidden = !svg;
+    if (wxText.textContent && wx.hasAttribute('title')) wx.removeAttribute('title');
     if (wxIcon.dataset.svg !== svg) {
       wxIcon.innerHTML = svg;
       wxIcon.dataset.svg = svg;
     }
-    timeText.textContent = timeFmt.format(now);
-    tierDot.className = `a2-dot a2-dot-${conf.tier}`;
-    tierText.textContent = confidenceWords(conf).join(' · ');
+    // Write only what changed: this runs twice a second, and each DOM write re-styles the card.
+    setText(timeText, timeFmt.format(now));
+    const dotClass = `a2-dot a2-dot-${conf.tier}`;
+    if (tierDot.className !== dotClass) tierDot.className = dotClass;
+    setText(tierText, confidenceWords(conf).join(' · '));
     tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
-    tierDate.textContent = dateFmt.format(now);
-    tierDate.hidden = !conf.shifted;
-    nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`);
+    setText(tierDate, dateFmt.format(now));
+    if (tierDate.hidden !== !conf.shifted) tierDate.hidden = !conf.shifted;
+    if (nowBtn.hidden !== !conf.shifted) nowBtn.hidden = !conf.shifted;
+    const label = `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`;
+    if (open.getAttribute('aria-label') !== label) open.setAttribute('aria-label', label);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(loadingNote ?? areaNote ?? feedNote);
@@ -729,7 +812,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   function showNotice(text: string | null) {
     if (notice.textContent !== (text ?? '')) notice.textContent = text ?? '';
-    notice.hidden = !text;
+    if (notice.hidden !== !text) notice.hidden = !text;
   }
 
   // ---- views --------------------------------------------------------------------------------

@@ -1,8 +1,65 @@
 # Sim Atlanta
 
-A free, fast map of where trains are, or are likely to be, right now. It starts with
-Atlanta and Georgia. Every fact on the map says how we know it: **live**, **scheduled**,
-**reported** average, **inferred** or **illustrative**. See [docs/data-model.md](docs/data-model.md).
+A miniature Atlanta you can watch. MARTA trains and buses sit where they really are,
+traffic runs as it usually does at this hour, and the sky matches Atlanta's weather right
+now. The City view is a hand-built, low-poly model of downtown and Midtown drawn like a
+tabletop diorama; the Map view zooms out to the region's rail.
+
+**Live at [atlanta.solomon.io](https://atlanta.solomon.io).** Free, no ads, no tracking.
+An unofficial project, not affiliated with MARTA, Amtrak or the City of Atlanta.
+
+![Midtown Atlanta in the City view, around the Woodruff Arts Center](docs/readme/city.jpg)
+
+## How true is it?
+
+Every moving thing carries a label for how much we actually know about it, per attribute:
+
+- **live**: MARTA reported this train or bus's position in the last few minutes
+- **scheduled**: where the published timetable says it should be, used when there's no live report
+- **reported**: published figures, such as daily freight trains on a line, or observed weather
+- **inferred**: worked out from nearby data, such as a train placed between two live fixes
+- **illustrative**: drawn to look right, not measured, such as freight trains and car counts
+
+A schedule or a guess is never shown as live. See [docs/data-model.md](docs/data-model.md).
+
+## Where the data comes from
+
+| Source | Used for | Terms |
+|---|---|---|
+| [MARTA](https://www.itsmarta.com/app-developer-resources.aspx) GTFS and realtime rail and bus APIs | Timetables and live positions | MARTA developer terms; realtime rail needs a free key |
+| Amtrak GTFS | Intercity trains | Public feed |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) via [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://openmaptiles.org) | Basemap, streets, rail lines | ODbL |
+| [Overture Maps](https://overturemaps.org) | Building footprints and heights, roads, land use | CDLA Permissive 2.0 / ODbL |
+| FRA crossing inventory, BTS/FRA North American Rail Network | Rail lines and crossings | US public domain |
+| FHWA HPMS and TMAS | Usual road traffic by hour | US public domain |
+| [Open-Meteo](https://open-meteo.com) | Current weather | CC BY 4.0 |
+| City of Atlanta & Georgia Tech 2023 tree canopy study; Meta & WRI 1 m canopy height (CC BY 4.0) | Trees | As published |
+| City of Atlanta | Neighbourhood names | Open data |
+
+The full credits are in the app under Menu › About & credits.
+
+## Your own MARTA key (optional)
+
+Everything runs without a key. With no key, the Worker answers `/api/marta/rail` with a
+503, the app says the live feed is unavailable, and trains run from the MARTA timetable,
+labelled **scheduled**, never live. Buses use MARTA's keyless feed.
+
+For live trains, request a free key from MARTA's
+[app developer resources](https://www.itsmarta.com/app-developer-resources.aspx) ("sign
+up for the API key"), then put it where the Worker reads it:
+
+```sh
+# local development (worker/.dev.vars is gitignored)
+printf 'MARTA_API_KEY=%s\n' 'your-key' > worker/.dev.vars
+
+# your own Cloudflare deployment
+cd worker && npx wrangler secret put MARTA_API_KEY
+```
+
+The key stays on the server: the browser only ever talks to the Worker, which caches each
+response for 10 s, so visitors never see it and a busy day costs no extra MARTA calls.
+Never commit a key. (`pnpm secrets:local` is the maintainer's 1Password shortcut for the
+same file.)
 
 ## What's here
 
@@ -66,7 +123,11 @@ See [the response contract](docs/data-model.md#live-buses).
 
 Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
 custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
-before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
+before `pnpm run deploy`. The web build opens local headless Chrome once to render static
+share pictures from the staged City data. Set `CHROME` to the browser executable outside
+the standard macOS Google Chrome installation. The build writes the pictures to
+`web/dist/previews/` and crawler-readable entry pages to `web/dist/s/`. Only the existing
+API routes run the Worker first. For this deployment, the secret `MARTA_API_KEY` is already set on the Worker.
 `pnpm data` includes `data:city`: City requires `scene/downtown/vignette.json`,
 `trees.json` and the retained `scene.json` profiles. It also stages the six surrounding areas. In an existing checkout with Map
 data, run `pnpm data:city` once before building this milestone. Missing City data makes
@@ -91,3 +152,9 @@ pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
 - City's phone performance gate, moving vehicles, real terrain, a ride-along camera,
   and growing out to I-285 (see docs/city-plan.md and docs/art-backlog.md).
 - Freight positions. No free source exists; see docs/data-model.md.
+
+## Licence
+
+The code is MIT (see `LICENSE`). The radio music and covers in `web/public/music/` are
+not covered by it and are not for reuse. Map and open data keep their own licences,
+credited in the app's About & credits.

@@ -15,6 +15,8 @@ import { leafState } from './time';
 import { PlacementIndex } from './spatial';
 import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 import { SIDING_GLSL } from '../materials/siding';
+import { ARCH_NAMES, archetypeFor, genericV2, lookFor, offsetRing, v2Samples, type GenericLook } from './generic-v2';
+import { GENERIC_V2_GLSL } from './generic-v2-glsl';
 
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
 export const MARTA_TRACK_OFFSET = 2.1;
@@ -94,6 +96,8 @@ export interface VData {
  * the City board is ~10× larger, so it is flat with a coarse grid and lighter trees.
  */
 export interface WorldOptions {
+  /** Use the City facade archetypes unless the URL selects legacy buildings. */
+  cityFacades?: boolean;
   terrain: 'trench' | 'flat';
   /** Leaf clumps per deciduous canopy (10 on desktop, fewer on phones). */
   clumps: number;
@@ -844,13 +848,13 @@ export class World {
   /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
   // ---- buildings ----------------------------------------------------------------------
 
-  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
-    runSync(this.buildingSteps(foundationY, maxRoofUnits, finishFor));
+  buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined, quality: 'low' | 'high' = 'high') {
+    runSync(this.buildingSteps(foundationY, maxRoofUnits, finishFor, quality));
   }
 
   /** buildBuildings as a build that yields every few buildings (core/slice.ts). Each building
    * draws from its own seeded stream, so where it yields never changes the result. */
-  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined,
+  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined, quality: 'low' | 'high' = 'high',
     /** Also fill farBoxes (city/far-board.ts). Off by default: a near build (house tiles) never draws
      * them, and the oriented-box fit is about a third of its cost. */
     withFarBoxes = false) {
@@ -861,6 +865,7 @@ export class World {
     const clutter: THREE.Matrix4[] = [];
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
+    const v2 = genericV2(this.opts.cityFacades);
     let n = 0;
     // One far-board box per building (city/far-board.ts), from the vertices it just added. Walls
     // with procedural windows read darker from afar than their vertex colour.
@@ -898,6 +903,22 @@ export class World {
       const kind = h < 16 ? 0 : h < 42 ? (r() < 0.45 ? 0 : 1) : 2;
       const tall = h >= 16;
       const wallCol = finish?.wall ?? pick(r, kind === 0 && tall ? ['#c9b49a', '#b98a6a', '#d8c9b0', '#a9583f', '#e0d6c4'] : kind === 0 ? ['#a9583f', '#b86a4b', '#9a4c39', '#c98f6b', '#d7c3a2'] : kind === 1 ? ['#d9cdb5', '#cfc5b4', '#c1b6a3', '#e1d8c6', '#b9b0a3'] : ['#8fa4b6', '#9fb0bd', '#7f93a4', '#a8b8c2']);
+      // ?generic=v2: an archetype look for buildings without a finish (generic-v2.ts).
+      // It reads its own seeded stream, so `r` above and the clutter below are unchanged.
+      const arch = v2 && !finish ? archetypeFor(bd.id, bd.cls, h, bd.rings) : null;
+      const look: GenericLook | null = arch === null ? null : lookFor(bd.id, arch, h);
+      // Low keeps the street frontage and shaft rhythm on straight walls. Sub-metre
+      // coping and recessed soffits otherwise duplicate the footprint around every roof.
+      if (look && quality === 'low') {
+        look.inset = 0;
+        look.overhang = 0;
+        look.capH = 0;
+      }
+      const clutterWall = look ? look.penthouse : wallCol;
+      if (look && import.meta.env?.DEV) {
+        const cx = outer.reduce((s, p) => s + p[0], 0) / outer.length, cz = outer.reduce((s, p) => s + p[1], 0) / outer.length;
+        v2Samples.push({ arch: ARCH_NAMES[look.arch], id: bd.id, x: Math.round(cx), z: Math.round(cz), h: Math.round(h), cls: bd.cls ?? null });
+      }
       let foot = footing;
       if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
       const y0 = foot - 0.5;
@@ -922,7 +943,12 @@ export class World {
       const wallBase = mass.minH > 0 ? originY + mass.minH : y0;
       // Walls (run to h + parapet), roof slightly below the parapet top.
       const parapet = finish?.parapet ?? (h - mass.minH > 6 ? 1.1 : 0);
-      for (const [ringIndex, ring] of mass.rings.entries()) {
+      // The shader's storey origin for these walls (legacy: one value per mass).
+      const grade = mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0);
+      const wallOrigin: number[] = [];
+      // A raised part (an overhang) has no street base of its own.
+      if (look && !shop) appendGenericWalls(b, mass.rings, mass.minH > 0 ? { ...look, baseH: 0 } : look, wallBase, grade, mass.minH > 0 ? wallBase : originY, roofY + parapet, style, wallOrigin);
+      else for (const [ringIndex, ring] of mass.rings.entries()) {
         // Finishes describe a whole footprint; mapped parts use the plain walls.
         if (finish?.drawRing && !bd.parts?.length) {
           const first = b.pos.length / 3;
@@ -949,14 +975,13 @@ export class World {
       const tris = THREE.ShapeUtils.triangulateShape(contour, holes);
       const all = [...contour, ...holes.flat()];
       // Roofs: white membrane, gravel, tar and the odd green roof.
-      const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
+      const legacyRoof = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
+      const roofCol = look?.roof ?? legacyRoof;
       if (!finish?.replacesRoof || bd.parts?.length) for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
       if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY, shopLights);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
-      for (let i = 0; i < wallVerts; i++) {
-        base.push(mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
-      }
+      for (let i = 0; i < wallVerts; i++) base.push(wallOrigin.length ? wallOrigin[i] : grade);
       for (let i = 0; i < roofVerts; i++) {
         style.push(-1);
         base.push(0);
@@ -978,7 +1003,7 @@ export class World {
         m4.makeRotationY(Math.atan2(outer[1][1] - outer[0][1], outer[1][0] - outer[0][0]));
         m4.scale(new THREE.Vector3(w, hh, l)).setPosition(x, roofY + hh / 2, z);
         clutter.push(m4.clone());
-        clutterCol.push(new THREE.Color(big ? wallCol : r() < 0.7 ? PAL.hvac : '#8f9498'));
+        clutterCol.push(new THREE.Color(big ? clutterWall : r() < 0.7 ? PAL.hvac : '#8f9498'));
         placed++;
       }
       }
@@ -1545,6 +1570,52 @@ function instanced(geo: THREE.BufferGeometry, color: string, mats: THREE.Matrix4
 }
 
 /**
+ * v2 generic walls (generic-v2.ts): a base (optionally recessed under a soffit), the shaft with
+ * the archetype's facade style, and a cap band (optionally a projecting cornice) on the outer
+ * ring; courtyard rings get a plain shaft. Pushes six `style` values and six storey origins per
+ * quad, so `wallOrigin` lines up with the wall vertices.
+ */
+function appendGenericWalls(b: Builder, rings: P2[][], look: GenericLook, foot: number, grade: number, floor: number, top: number, style: number[], wallOrigin: number[]) {
+  const quad = (a: P2, c: P2, y0: number, y1: number, col: string, st: number, origin: number, a1: P2 = a, c1: P2 = c) => {
+    b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c1[0], y1, c1[1]], [a1[0], y1, a1[1]], col);
+    for (let k = 0; k < 6; k++) { style.push(st); wallOrigin.push(origin); }
+  };
+  const tall = top - floor;
+  // Base and cap only where the shaft keeps at least two storeys between them.
+  const baseTop = look.baseH > 0 && tall - look.baseH - look.capH > 2 ? floor + look.baseH : null;
+  const capY = look.capH > 0 && tall - look.capH > 2.5 ? top - look.capH : top;
+  // A shop too low for a separate upper wall is all shopfront.
+  const shaftStyle = baseTop === null && look.arch === 6 ? look.baseStyle : look.style;
+  for (const [ri, ring] of rings.entries()) {
+    const n = ring.length;
+    if (ri > 0) {
+      for (let i = 0; i < n; i++) quad(ring[i], ring[(i + 1) % n], foot, top, look.wall, shaftStyle, grade);
+      continue;
+    }
+    const inner = baseTop !== null && look.inset > 0 ? offsetRing(ring, look.inset) : null;
+    const lip = capY < top && look.overhang > 0 ? offsetRing(ring, -look.overhang) : null;
+    const shaftOrigin = baseTop ?? grade;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const a = ring[i], c = ring[j];
+      if (baseTop !== null) {
+        quad(inner ? inner[i] : a, inner ? inner[j] : c, foot, baseTop, look.base, look.baseStyle, grade);
+        // Soffit over the recess, facing down.
+        if (inner) quad(inner[i], inner[j], baseTop, baseTop, '#3c3e40', -1, 0, a, c);
+      }
+      quad(a, c, baseTop ?? foot, capY, look.wall, shaftStyle, shaftOrigin);
+      if (capY < top) {
+        if (lip) {
+          quad(a, c, capY, capY, '#55524d', -1, 0, lip[i], lip[j]);
+          quad(lip[i], lip[j], capY, top, look.cap, -1, 0);
+          quad(lip[i], lip[j], top, top, look.cap, -1, 0, a, c);
+        } else quad(a, c, capY, top, look.cap, -1, 0);
+      }
+    }
+  }
+}
+
+/**
  * Facades: punched windows on brick, ribbon windows on stone, curtain wall on towers,
  * storefront glass at street level. Computed per fragment from world position.
  */
@@ -1574,6 +1645,9 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           float win = 0.0;
           // Houses at 7–10 and 12 draw their own windows; keep the shader's off even after the distance fade.
           float hasWin = 1.0;
+          if (st > 19.5) {
+${GENERIC_V2_GLSL}
+          } else {
           if (st > 2.5) {
             // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle, 11 ashlar). Fine siding lines fade
             // to their average once a course is under a couple of pixels, so walls never shimmer.
@@ -1629,6 +1703,7 @@ ${SIDING_GLSL}
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
           // Houses keep their masonry foundation band instead of the generic plinth line.
           diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4) * step(st, 2.5));
+          }
         }`,
       )
       .replace(
