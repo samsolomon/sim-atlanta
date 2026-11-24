@@ -14,6 +14,7 @@ import { ponceDeLeon } from './midtown-skyline-ponce';
 import { federalReserve } from './midtown-skyline-fed';
 import { symphonyTower } from './midtown-skyline-symphony';
 import { fourSeasons } from './midtown-skyline-fourseasons';
+import { alexanOn8th } from './midtown-skyline-alexan';
 import { squareOn5th } from './midtown-skyline-square5th';
 import { twoMidtownPlaza } from './midtown-skyline-twomidtown';
 import { westPeachtree1072 } from './midtown-skyline-1072';
@@ -115,6 +116,7 @@ const landmarks = [
   { site: sites.westPeachtree1072, axis: [1,.0153], probes: [[0,0],[12,-18],[-20,30],[20,30]], build: westPeachtree1072 },
   { site: sites.squareOn5th, axis: [1,0], probes: [[0,0],[-25,-8],[25,-8],[0,8]], build: squareOn5th },
   { site: sites.twoMidtownPlaza, axis: [1,0], probes: [[0,0],[-15,-12],[10,-12],[-2,20]], build: twoMidtownPlaza },
+  { site: sites.alexan8th, axis: [1,0], probes: [[10,0],[10,-35],[10,35],[-15,-30]], build: alexanOn8th },
   { site: sites.fourSeasons, axis: [1,0], probes: [[0,0],[-20,-13],[20,13],[0,40]], build: fourSeasons },
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },

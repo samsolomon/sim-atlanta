@@ -117,5 +117,12 @@
     "x": 395,
     "z": -4194,
     "heightM": 79
+  },
+  "alexan8th": {
+    "id": "osm:way:789975430",
+    "name": "Alexan on 8th",
+    "x": 361.5,
+    "z": -2800,
+    "heightM": 74.5
   }
 }
