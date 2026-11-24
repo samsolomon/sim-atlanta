@@ -314,6 +314,11 @@ function renderBusCard() {
   } else hideCard();
 }
 
+function cancelDeferredFollowLink() {
+  followRoute = null;
+  followBus = null;
+}
+
 // A review link names a route, not a trip id, which changes with each timetable refresh.
 function followFromLink() {
   if (followBus && follow && diorama && clock.isRealTime()) {
@@ -645,8 +650,7 @@ async function openCity() {
   if (follow && carries(carried, 'city', clock.isRealTime()) && (carried?.kind === 'train' || carried?.kind === 'bus') && selectedInCityArea()) {
     follow.stop();
     // The vehicle chosen on the Map supersedes even a link target that has yet to arrive.
-    followRoute = null;
-    followBus = null;
+    cancelDeferredFollowLink();
     pendingFollow = { kind: carried.kind, id: carried.id };
     updateFollowPanel();
   } else hideCard();
@@ -1168,6 +1172,7 @@ const shellOptions: ShellOptions = {
       return diorama ? diorama.onBoard(x, z, true) : inCityArea(x, z);
     },
     pick(hit) {
+      cancelDeferredFollowLink();
       // A View opens City on its camera (from the Map, as a link's camera would).
       if (hit.view) {
         hideCard(); // a carried vehicle would start a follow and take the camera off the View
