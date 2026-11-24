@@ -302,7 +302,7 @@ export function needleStars(b: FoliageBuilder, units: Unit[], seed: number, rays
 }
 
 /** Two crossed cards per mass: one tangent to the crown (its silhouette), one radial (its depth). */
-export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25) {
+export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, height = 1) {
   const r = rng(seed);
   for (const u of units) {
     const c = new THREE.Vector3(...u.c);
@@ -315,6 +315,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
     const cell = cellFor(w * 2);
     for (const [ax, ay] of [[t1, t2], [t1, n]] as const) {
       const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => c.clone().addScaledVector(ax, x * w).addScaledVector(ay, y * w));
+      for (const v of p) v.y = c.y + (v.y - c.y) * height;
       const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(cell, x, y));
       // Softer than the facets' shade: the crown normals already light the crown as a blob.
       const col = shade(u.depth, n.y).lerp(WHITE, 0.55);
@@ -444,7 +445,7 @@ vSpeckPos = transformed;
  * the leaf clusters, `size` metres across. Each takes a bloom order, so a tree's bloom share
  * opens them a few at a time, whatever the leaves are doing (dogwood bracts before leaves).
  */
-export function blooms(b: FoliageBuilder, units: Unit[], total: number, seed: number, size = 0.5) {
+export function blooms(b: FoliageBuilder, units: Unit[], total: number, seed: number, size = 0.5, offset = 1.25) {
   const r = rng(seed);
   const outer = units.filter(u => u.depth >= 0.45);
   const pool = outer.length ? outer : units;
@@ -454,7 +455,7 @@ export function blooms(b: FoliageBuilder, units: Unit[], total: number, seed: nu
     {
       const dir = new THREE.Vector3(r() - 0.5, r() * 0.6, r() - 0.5).normalize().addScaledVector(n, 1.3).normalize();
       // On the cluster's surface, just proud of its cards, so flowers read over the leaves.
-      const c = new THREE.Vector3(...u.c).addScaledVector(dir, u.r * (1.25 + r() * 0.15));
+      const c = new THREE.Vector3(...u.c).addScaledVector(dir, u.r * (offset + r() * 0.15));
       // Face outward and a little up, not skyward: seen from the street a flower is never
       // edge-on (edge-on cards fade out).
       const face = new THREE.Vector3(dir.x, 0.35, dir.z);

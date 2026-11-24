@@ -11,6 +11,8 @@ import { lerp3, polar, trunkRadius, type Dims, type Form, type Pad, type Seg, ty
 export interface Habit {
   /** Where the trunk (or central leader) ends, as a fraction of height. */
   trunkTop: number;
+  /** Low fork for tiered understorey trees, metres above ground. */
+  forkM?: number;
   /** Lowest foliage, as a fraction of height (street trees are limbed up). */
   crownBase: number;
   /** Crown envelope's widest point as a fraction of the way from base to top (0.5 an ellipse, lower an egg). */
@@ -212,7 +214,7 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
     // A cone top pulls the tuft's leaves in and down (inEnvelope), so the leader stops lower,
     // and is not lifted back to the limbs' top (it would show through the narrowed tip).
     const leaderTop = Math.min(h.trunkTop, (top.c[1] - top.r * (0.35 + (h.cone ?? 0))) / e.H);
-    const leaderY = h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
+    const leaderY = h.forkM !== undefined ? Math.min(h.forkM / e.H, 0.4) : h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
     segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * 0.12, sides: q === 'high' ? 5 : 4, color: habit.barkDark });
     const count = h.tiers ? masses.length - 1 : limbs;
     for (let i = 0; i < count; i++) {
@@ -223,7 +225,16 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
         const out = Math.hypot(main.c[0], main.c[2]);
         // Never above the leader's end: a limb must leave the trunk, not the air over it.
         const y0 = Math.min(leaderY * 0.97, Math.max(h.crownBase * 0.85, (main.c[1] - Math.tan(h.limbAngle) * out) / e.H));
-        segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
+        const tip = unit(main.c);
+        if (h.forkM !== undefined) {
+          // Rising scaffold from the low fork, then a long, almost horizontal twig.
+          const elbow: V3 = [tip[0] * 0.38, tip[1] - 0.025, tip[2] * 0.38];
+          segs.push({ a: [0, y0, 0], b: elbow, r0: tr * 0.34, r1: tr * 0.14, sides: 3, color: habit.bark });
+          segs.push({ a: elbow, b: [tip[0] * 1.5, tip[1], tip[2] * 1.5], r0: tr * 0.14, r1: tr * 0.015, sides: 3, color: habit.bark });
+          const twig = lerp3(elbow, tip, 0.55);
+          const turn = i % 2 ? 0.9 : -0.9;
+          segs.push({ a: twig, b: [tip[0] - tip[2] * turn, twig[1] + 0.01, tip[2] + tip[0] * turn], r0: tr * 0.055, r1: tr * 0.008, sides: 3, color: habit.bark });
+        } else segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
         continue;
       }
       const y = Math.min(h.trunkTop * 0.95, h.limbFrom[0] + (h.limbFrom[1] - h.limbFrom[0]) * f);
