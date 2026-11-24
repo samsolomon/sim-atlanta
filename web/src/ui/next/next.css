@@ -648,7 +648,10 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-camera > :is(.a2-compass,.a2-reset) { width: 44px; height: 44px; background: linear-gradient(160deg,var(--a2-ga),var(--a2-gb)); }
 .a2-camera .a2-needle { display: block; width: 32px; height: 32px; }
 :root[data-theme=dark] .a2-dock-field,:root[data-theme=dark] .a2-dock-field kbd { background: rgba(255,255,255,.10); }
-@media(min-width:601px) { .a2-appbar { padding-inline: 8px; gap: 6px; } }
+@media(min-width:601px) {
+  .a2-appbar { padding-inline: 8px 4px; gap: 6px; }
+  .a2-appbar :is(.a2-dock-next, .a2-share) { margin-inline-start: -6px; }
+}
 .a2-player {
   width: 340px; padding: 10px 12px; overflow: hidden;
   left: min(calc(50% + 164px), calc(100% - 178px));
