@@ -3370,3 +3370,7 @@ Metropolis's two 21-storey condominium towers now stand on Peachtree as glass sh
 ### 2026-11-23 · The Proscenium's blue crown
 
 The Proscenium's mapped outline has no parts, so its character had to come from the photographs. A pale granite grid with square windows runs up to a crown of five floors of continuous blue ribbon glass, and a narrow glazed slot climbs the middle of each long face to meet it. The faceted Peachtree bay keeps its ribbons for the full height and rises 6 m above the roof to the 104.9 m reported by CTBUH. It's built in one landmark shell with vertex colours only, so the batcher can merge it. [Day, night and Peachtree bay](log/ui/proscenium/README.md)
+
+### 2026-11-23 · 1010 Midtown's ribbons
+
+1010 Midtown is defined by the white balcony ribbon on every floor of its curve toward Peachtree. Drawing one band per floor and per curve facet put the skin at about 3,000 triangles. Merging each slab edge and its rail into a single band, and simplifying the mapped curve to 0.3 m, brought it to about 2,320. On a convex curve, the bands 1.9 m proud of neighbouring facets leave slits where the facets meet, so each band runs 0.6 m past its corners. The flat glass faces carry a white frame grid in front of the night panes. Like the Atlantic, the outline crosses a board seam, and each row draws its own parts. [Before and after](log/ui/1010-midtown/day-before-after.jpg) · [ribbons up close](log/ui/1010-midtown/ribbons-day.jpg)
