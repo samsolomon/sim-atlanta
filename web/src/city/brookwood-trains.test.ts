@@ -1,24 +1,20 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Schedule } from '../sched/engine';
 import { consistLength } from '../vignette/crescent-stock';
-import { Line } from '../vignette/geom';
+import fixture from './fixtures/brookwood-timetable.json';
+import type { RoutesFile, TimetableFile, VehicleType } from '../model/types';
 import { corridorChainage, crescentPlacement } from './brookwood';
 import { corridor } from './brookwood-corridor';
 import { createNorcrossFreight, NORCROSS_LINE } from './brookwood-freight';
 
-const data = resolve(__dirname, '../../public/data');
-const files = ['ga/routes.json', 'ga/timetable.json', 'ga/vehicle-types.json'];
-const staged = files.every(f => existsSync(resolve(data, f)));
-const J = (f: string) => JSON.parse(readFileSync(resolve(data, f), 'utf8'));
-
-describe.skipIf(!staged)('Brookwood corridor trains', () => {
-  const schedule = staged ? new Schedule(J('ga/routes.json'), J('ga/timetable.json'), J('ga/vehicle-types.json')) : null!;
+// Keep the recorded service day and geometry together: rolling GTFS feeds expire
+// historical dates, so local pnpm data must not change this regression's input.
+describe('Brookwood corridor trains', () => {
+  const schedule = new Schedule(fixture.routes as RoutesFile, fixture.timetable as unknown as TimetableFile, fixture.vehicles as VehicleType[]);
   // 06:00 on 20 November to 06:00 the next day, every 10 s.
   const start = Date.parse('2026-11-20T06:00:00-05:00'), end = start + 24 * 3600e3, step = 10e3;
   const placed: { t: number; center: number; dir: number }[] = [];
-  if (staged) for (let t = start; t < end; t += step) {
+  for (let t = start; t < end; t += step) {
     for (const state of schedule.trainsAt(new Date(t))) {
       const run = crescentPlacement(state);
       if (run) placed.push({ t, ...run });
