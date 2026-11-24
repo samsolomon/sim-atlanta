@@ -45,6 +45,12 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
     [f.a[0] + t * (f.b[0] - f.a[0]) + d * f.n[0], y, f.a[1] + t * (f.b[1] - f.a[1]) + d * f.n[1]];
   const panel = (f: Face, l: number, r: number, lo: number, hi: number, d: number, colour: string, lit = false) =>
     (lit ? s.lights : s.body).quad(at(f, l, lo, d), at(f, l, hi, d), at(f, r, hi, d), at(f, r, lo, d), colour);
+  /** A projecting band with its top and soffit returned to the wall, so it reads as one solid. */
+  const ledge = (f: Face, lo: number, hi: number, d: number) => {
+    panel(f, 0, 1, lo, hi, d, graniteDark);
+    s.body.quad(at(f, 0, hi, 0), at(f, 0, hi, d), at(f, 1, hi, d), at(f, 1, hi, 0), graniteDark);
+    s.body.quad(at(f, 0, lo, d), at(f, 0, lo, 0), at(f, 1, lo, 0), at(f, 1, lo, d), graniteDark);
+  };
 
   // Low wings toward 10th Street (north): granite with one window row per floor.
   for (const part of parts) {
@@ -97,8 +103,8 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
     // The glazed central bay through the top seven floors of the broad faces.
     if (broad) panel(f, 0.5 - bay, 0.5 + bay, lo + (floors - 7) * H.floor, H.roof - 5, 0.04, green);
     // Setback ledge over the base and the cornice under the crown.
-    panel(f, -0.01, 1.01, H.grade + 27, H.grade + 28.2, 0.45, graniteDark);
-    panel(f, -0.01, 1.01, H.roof - 5.6, H.roof - 4.6, 0.5, graniteDark);
+    ledge(f, H.grade + 27, H.grade + 28.2, 0.45);
+    ledge(f, H.roof - 5.6, H.roof - 4.6, 0.5);
     // Castellated crown: dark openings between granite merlons above the cornice.
     const merlons = Math.max(2, Math.round(f.length / 3.2));
     for (let k = 0; k < merlons; k++) {
