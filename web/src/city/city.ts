@@ -1766,7 +1766,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       const step = glideTo.clone().sub(controls.target).multiplyScalar(reduceMotion ? 1 : frameFraction(GLIDE_PER_60HZ_FRAME, frameMs));
       controls.target.add(step);
       camera.position.add(step);
-      if (step.length() < 0.05) glideTo = null;
+      // Done within a fixed distance, the same at any frame rate (0.05 m of a 60 Hz step).
+      if (glideTo.distanceTo(controls.target) < 0.05 / GLIDE_PER_60HZ_FRAME) glideTo = null;
     }
     if (drive) {
       controls.enabled = false;
