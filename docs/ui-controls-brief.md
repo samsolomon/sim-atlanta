@@ -415,9 +415,11 @@ out, then the map flattens.
 
 - A button in the dock, off until tapped, because browsers block autoplay.
 - **Compact player** (Sam, 2026-11-24; tighter than boards F07/G13): one row, about 64 px
-  tall, 300 px wide on desktop. 40×40 art (radius 8) · title 14 px / 600, one line, with a
+  tall, 340 px wide on desktop (was 300; widened 2026-11-24 so most "Artist · Title" lines
+  fit). 40×40 art (radius 8) · title 14 px / 600, one line, with a
   12 px secondary-ink subtitle ("Track 2 of 10") · a 40 px round play/pause on the
-  separator tint and a 36 px next icon (44×44 hit areas). Progress is a 2 px line along the
+  separator tint and an 18 px next icon matching the pause glyph (#387, approved by Sam),
+  both with 44×44 hit areas. Progress is a 2 px line along the
   panel's bottom edge, not draggable. No "Radio" header, no ✕ (the dock button toggles;
   Esc or a tap outside closes), no previous button and no volume row (system volume).
 - **Phones:** the same row as a floating glass card 12 px above the dock, not a sheet.
@@ -438,17 +440,32 @@ out, then the map flattens.
     05–11, Sol Café 11–17, Velvet 17–22, Afterglow 22–05), so a shifted clock picks its
     station too; it shuffles within the station without repeating until all have played
   - shows the station name small above "Artist · Title", with the 128 px cover in the
-    40 px art slot (the 512 px cover for Media Session artwork)
+    40 px art slot (the 512 px cover for Media Session artwork). "Artist · Title" stays on
+    one line and the artist stays on it; if it still overflows at 340 px it ends in an
+    ellipsis, with the full text in the accessible name and a tooltip. Phones use the
+    card's full width.
   - switches station with a small ‹ › beside the station name (or tapping the name); a
-    switch crossfades over 1.2 s and starts a random track in the new station
+    switch crossfades over 1.2 s and starts a random track in the new station. The ‹ ›
+    glyphs stay 18 px, but each gets a 44×44 hit area like every other control (padding
+    may overlap the row's edges; the 64 px row has room)
+  - **Loading:** prefetch the current track when the panel opens. If Play is tapped before
+    it has arrived, the station, art and "Artist · Title" show at once (from
+    `stations.json`), and the play glyph is replaced by an 18 px, 2 px-stroke arc that
+    spins in the button (`aria-busy`; with reduced motion the arc stays still). Sound
+    starts with the usual 300 ms ramp. Nothing else in the row changes.
+  - **iOS silent switch:** set `navigator.audioSession.type = "playback"` where it exists so
+    Web Audio plays like media with the switch on silent. Check on a real iPhone before
+    release (unverified on the Studio).
   - remembers the visitor's last station on that device; if they switched, that wins over
     the clock next time
 - The audio and covers are excluded from the code licence and not for reuse; keep the
   README in `web/public/music/`.
 - **Loading and cost** (coordinator, 2026-11-24): nothing under `web/public/music/` is
   requested until the radio is first opened; only the current and next track are fetched,
-  never a whole station; MP3s are served as static assets (range requests, never through
-  the worker), so the radio adds no per-visitor server cost.
+  never a whole station. Cloudflare static assets ignore Range requests (a `bytes=0-99`
+  request returns 200 and the whole file, checked on production), so each track is fetched
+  once in full as a static asset and played from a blob URL, never through the worker. The
+  radio adds no per-visitor server cost.
 
 ## Follow-ups (not in this build)
 
@@ -570,8 +587,11 @@ never laggy", desktop included. The look stays; how it's made changes.
   slower than with no DOM on the M5 Air (high detail) and at most **1 fps** on the A16.
   Transient panels (menu, sheets, popovers) may add up to 1 ms more while open.
 - **Low tier fallback:** if the shader glass can't meet the budget on a device, draw the
-  backing without blur (saturated, tinted only, alpha raised to .90/.82 day) rather than
-  dropping frames.
+  backing without blur (saturated, tinted only) rather than dropping frames. Alphas are
+  raised: dock, card and camera group .90/.82 day and .86/.80 night; panels with running
+  text (Details, sheets, the menu, the Models browser) .95/.92 day and .92/.90 night,
+  because the scene showed through behind long text. Measured +21% frame rate on the real
+  A16 (PR #420, held for Sam).
 
 **Values the shader must match** (CSS semantics, so the two paths look identical):
 
