@@ -76,9 +76,9 @@ export function takeHouseLodChange() { const c = changed; changed = false; retur
  */
 export const PREBUILD_M = SWITCH_M * 1.4;
 export const NEAR_BUDGET_MS = 3;
-/** Longest slice and step of near-house build work (dev: window.__houseNearStats). */
+/** Longest slice and step of near-house build work (window.__houseNearStats, like sections.ts __sliceStats). */
 export const houseNearStats = emptySliceStats();
-if (import.meta.env?.DEV) (globalThis as { __houseNearStats?: typeof houseNearStats }).__houseNearStats = houseNearStats;
+if (typeof window !== 'undefined') (window as unknown as { __houseNearStats?: typeof houseNearStats }).__houseNearStats = houseNearStats;
 const queued = new Set<HouseTile>();
 let running: Promise<void> | null = null;
 // Outside a page (tests) there is no requestAnimationFrame: a frame is a microtask.
