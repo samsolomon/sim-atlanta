@@ -101,3 +101,69 @@ export function litFacade(
       target.quad(point(l, y), point(l, top), point(r, top), point(r, y), color);
     }
 }
+
+/** How far a skin may reach past its footprint, and how high, for the footprint audit. */
+export interface FootprintLimits {
+  /** Metres a part may project past the mapped outline (balconies, fins, canopies). Default 2.5. */
+  maxProjection?: number;
+  /** Highest allowed y (scene metres), roof plus plant, when the skin declares one. */
+  top?: number;
+  /** Lowest allowed y (scene metres): walls are sunk below grade on purpose. */
+  bottom?: number;
+}
+
+/** Distance in plan from (x, z) to the nearest of the rings, 0 inside any of them. */
+export function outsideRings(rings: readonly (readonly (readonly [number, number])[])[], x: number, z: number) {
+  let best = Infinity;
+  for (const ring of rings) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, zi] = ring[i], [xj, zj] = ring[j];
+      if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside;
+      const dx = xj - xi, dz = zj - zi, l2 = dx * dx + dz * dz;
+      const t = l2 ? Math.max(0, Math.min(1, ((x - xi) * dx + (z - zi) * dz) / l2)) : 0;
+      best = Math.min(best, Math.hypot(x - (xi + t * dx), z - (zi + t * dz)));
+    }
+    if (inside) return 0;
+  }
+  return best;
+}
+
+export interface FootprintReport {
+  /** The worst plan offset past the allowance, in metres (0 when everything is within it). */
+  worst: number;
+  /** Where the worst vertex is (world x, y, z), and how far outside the mapped outline it lies. */
+  at: [number, number, number];
+  outside: number;
+  /** Vertices outside the allowance, or above `top` / below `bottom`. */
+  count: number;
+  /** The worst vertical excess past `top` or `bottom`, in metres. */
+  vertical: number;
+}
+
+/**
+ * Every vertex of every mesh under `object` (world space) checked against the footprint rings
+ * (world x, z) expanded by `maxProjection`, and between `bottom` and `top` where given.
+ */
+export function footprintReport(object: { updateMatrixWorld(force?: boolean): void; traverse(f: (o: unknown) => void): void },
+  rings: readonly (readonly (readonly [number, number])[])[], limits: FootprintLimits = {}): FootprintReport {
+  const max = limits.maxProjection ?? 2.5;
+  const report: FootprintReport = { worst: 0, at: [0, 0, 0], outside: 0, count: 0, vertical: 0 };
+  object.updateMatrixWorld(true);
+  object.traverse(o => {
+    const mesh = o as { isMesh?: boolean; geometry?: { getAttribute(n: string): { count: number; getX(i: number): number; getY(i: number): number; getZ(i: number): number } | undefined }; matrixWorld?: { elements: number[] } };
+    const pos = mesh.isMesh ? mesh.geometry?.getAttribute('position') : undefined;
+    if (!pos || !mesh.matrixWorld) return;
+    const e = mesh.matrixWorld.elements;
+    for (let i = 0; i < pos.count; i++) {
+      const lx = pos.getX(i), ly = pos.getY(i), lz = pos.getZ(i);
+      const x = e[0] * lx + e[4] * ly + e[8] * lz + e[12], y = e[1] * lx + e[5] * ly + e[9] * lz + e[13], z = e[2] * lx + e[6] * ly + e[10] * lz + e[14];
+      const d = outsideRings(rings, x, z), over = d - max;
+      const vert = Math.max(limits.top !== undefined ? y - limits.top : 0, limits.bottom !== undefined ? limits.bottom - y : 0);
+      if (over > 1e-3 || vert > 1e-3) report.count++;
+      if (vert > report.vertical) report.vertical = vert;
+      if (over > report.worst) { report.worst = over; report.at = [x, y, z]; report.outside = d; }
+    }
+  });
+  return report;
+}
