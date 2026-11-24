@@ -87,6 +87,8 @@ export interface Look {
   bloomWash?: number;
   /** How far blossom escapes the crown's interior shade, 0–1 (0: shaded like the leaves). */
   bloomLift?: number;
+  /** Daylight-only diffuse fill for translucent white bracts. */
+  bloomFill?: number;
 }
 
 // ---- calendar ------------------------------------------------------------------------------
@@ -259,8 +261,8 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const textured = opt.technique === 'cards' || opt.technique === 'cored';
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
-    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
-    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, specks: opt.specks, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
+    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
+    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, specks: opt.specks, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
   const depthMat = foliageDepth(leafMat);
   // Foliage meshes registered with the ink's foliage mask: outlined at the crown's silhouette only.

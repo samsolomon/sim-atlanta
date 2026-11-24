@@ -216,6 +216,18 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
     const leaderTop = Math.min(h.trunkTop, (top.c[1] - top.r * (0.35 + (h.cone ?? 0))) / e.H);
     const leaderY = h.forkM !== undefined ? Math.min(h.forkM / e.H, 0.4) : h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
     segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * (h.forkM !== undefined ? 0.55 : 0.12), sides: q === 'high' ? 5 : 4, color: habit.barkDark });
+    const scaffolds: { elbow: V3; tip: V3 }[] = [];
+    if (h.forkM !== undefined && h.tiers) {
+      const n = q === 'high' ? 3 : 2;
+      for (let j = 0; j < n; j++) {
+        const angle = j * Math.PI * 2 / n + 0.4;
+        const elbow: V3 = [Math.cos(angle) * 0.13, leaderY + (0.62 - leaderY) * 0.5, Math.sin(angle) * 0.13];
+        const tip: V3 = [Math.cos(angle + 0.3) * 0.3, 0.8, Math.sin(angle + 0.3) * 0.3];
+        segs.push({ a: [0, leaderY, 0], b: elbow, r0: tr * 0.48, r1: tr * 0.32, sides: 3, color: habit.bark });
+        segs.push({ a: elbow, b: tip, r0: tr * 0.32, r1: tr * 0.12, sides: 3, color: habit.bark });
+        scaffolds.push({ elbow, tip });
+      }
+    }
     const count = h.tiers ? masses.length - 1 : limbs;
     for (let i = 0; i < count; i++) {
       const f = count === 1 ? 0.5 : i / (count - 1);
@@ -227,13 +239,18 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
         const y0 = Math.min(leaderY * 0.97, Math.max(h.crownBase * 0.85, (main.c[1] - Math.tan(h.limbAngle) * out) / e.H));
         const tip = unit(main.c);
         if (h.forkM !== undefined) {
-          // Rising scaffold from the low fork, then a long, almost horizontal twig.
-          const elbow: V3 = [tip[0] * 0.38, tip[1] - 0.025, tip[2] * 0.38];
-          segs.push({ a: [0, y0, 0], b: elbow, r0: tr * 0.34, r1: tr * 0.14, sides: 3, color: habit.bark });
-          segs.push({ a: elbow, b: [tip[0] * 1.5, tip[1], tip[2] * 1.5], r0: tr * 0.14, r1: tr * 0.015, sides: 3, color: habit.bark });
-          const twig = lerp3(elbow, tip, 0.55);
-          const turn = i % 2 ? 0.9 : -0.9;
-          segs.push({ a: twig, b: [tip[0] - tip[2] * turn, twig[1] + 0.01, tip[2] + tip[0] * turn], r0: tr * 0.1, r1: tr * 0.03, sides: 3, color: habit.bark });
+          const scaffold = scaffolds.reduce((best, v) =>
+            Math.hypot(v.tip[0] - tip[0], v.tip[2] - tip[2]) < Math.hypot(best.tip[0] - tip[0], best.tip[2] - tip[2]) ? v : best);
+          const y = Math.max(leaderY, tip[1] - 0.025);
+          const from: V3 = y < scaffold.elbow[1]
+            ? lerp3([0, leaderY, 0], scaffold.elbow, (y - leaderY) / (scaffold.elbow[1] - leaderY))
+            : lerp3(scaffold.elbow, scaffold.tip, Math.min(1, (y - scaffold.elbow[1]) / (scaffold.tip[1] - scaffold.elbow[1])));
+          const end: V3 = [tip[0] * 1.5, tip[1], tip[2] * 1.5];
+          segs.push({ a: from, b: end, r0: tr * 0.18, r1: tr * 0.06, sides: 3, color: habit.bark });
+          const twig = lerp3(from, end, 0.55);
+          for (const turn of [-0.9, 0.9]) {
+            segs.push({ a: twig, b: [tip[0] - tip[2] * turn, twig[1] + 0.01, tip[2] + tip[0] * turn], r0: tr * 0.22, r1: tr * 0.16, sides: 2, color: habit.bark });
+          }
         } else segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
         continue;
       }
