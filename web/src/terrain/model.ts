@@ -365,7 +365,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   options = { ...options, finishFor: homes.finishFor };
   yield;
   // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
-  const yardLayer = homes.yards();
+  const yardLayer = yield* homes.buildYards();
   if (yardLayer?.yields.length) mesh.carve(yardLayer.yields);
   yield;
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
