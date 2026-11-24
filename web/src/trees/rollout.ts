@@ -86,6 +86,9 @@ export interface RolloutPlan {
   /** Crowns removed for an island's own planting (keys). */
   cleared: Set<string>;
   context: Map<string, Context>;
+  /** The all-species preview (`?trees=all-species`) only: crowns it converted and crowns no
+   *  wired species fits, by context. Absent on an ordinary visit. */
+  preview?: { converted: Record<Context, number>; generic: Record<Context, number> };
 }
 
 export const crownKey = (x: number, z: number) => `${Math.round(x * 10)},${Math.round(z * 10)}`;
@@ -152,9 +155,39 @@ export interface RolloutInput {
   buildings?: P2[][];
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   inAnsley?: (x: number, z: number) => boolean;
+  /**
+   * Preview only (`?trees=all-species`, docs/tree-species.md#all-species-preview): after the
+   * ordinary plan, every crown still drawn generic becomes a wired species (allSpecies()).
+   * `drawn` says whether the generic World would draw a crown at all (bounds, building rings);
+   * `managed` marks crowns another system owns (named sites), which stay as they are.
+   */
+  preview?: { drawn: (x: number, z: number) => boolean; managed?: (x: number, z: number, r: number) => boolean };
 }
 
-export function planRollout({ crowns, roads, ground = [], buildings = [], bounds, roundTwo, inAnsley = () => false }: RolloutInput): RolloutPlan {
+/**
+ * The preview's weights: the #225 context mix for the ten City-wired species only (MIX plus
+ * SECOND_MIX, with Ansley's yard maple bias). Unmodelled shares (red maple, tulip poplar, southern
+ * red oak, ginkgo, other broadleaf…) are dropped, so each draw renormalises over what is left
+ * and fits. Zeros stay zeros: no loblolly, sweetgum or Japanese maple at the curb.
+ */
+export function previewWeights(ctx: Context, ansley: boolean): [RolloutSpecies, number][] {
+  const w: Partial<Record<RolloutSpecies, number>> = { ...MIX[ctx] };
+  if (ansley && ctx === 'yard') w['japanese-maple'] = ANSLEY_YARD_MAPLE;
+  const i = ctx === 'street' ? 0 : ctx === 'yard' ? 1 : 2;
+  for (const sp of Object.keys(SECOND_MIX) as SecondSpecies[]) w[sp] = SECOND_MIX[sp][i];
+  return (Object.entries(w) as [RolloutSpecies, number][]).filter(([, n]) => n > 0);
+}
+
+/** Crown sizes each wired species can honestly take (height, crown radius; metres). */
+export function fitsSpecies(sp: RolloutSpecies, h: number, r: number) {
+  if (sp in FITS) return FITS[sp as FirstSpecies](h, r);
+  if (sp === 'flowering-dogwood') return h >= 3 && h <= 12 && r <= 6;
+  if (sp === 'southern-magnolia') return h >= 6 && h <= 30 && r <= 12;
+  return h >= 8 && h <= 40 && r <= 17;
+}
+const specimenAt = (sp: RolloutSpecies) => sp in SPECIMEN_AT ? SPECIMEN_AT[sp as FirstSpecies] : 24;
+
+export function planRollout({ crowns, roads, ground = [], buildings = [], bounds, roundTwo, inAnsley = () => false, preview }: RolloutInput): RolloutPlan {
   let places = roundTwo ? rowLimits[roundTwo.id] ?? 0 : 0;
   const candidates: PlacedSpecies[] = [];
   const near = roadIndex(roads);
@@ -267,7 +300,40 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
     plan.species.push(tree);
     plan.replaced.add(crownKey(tree.x, tree.z));
   }
+  if (preview) allSpecies(plan, crowns, preview, inAnsley);
   return plan;
+}
+
+/**
+ * The all-species preview: every crown the ordinary plan left generic (canopy crowns, Ansley's
+ * facing pairs and island hardwoods) draws a wired species from its context's previewWeights(),
+ * renormalised over the species its (possibly enlarged) size fits, on its own hash channel. A crown
+ * no species fits stays generic and is counted. Ordinary placements are untouched.
+ */
+function allSpecies(plan: RolloutPlan, crowns: Crown[], preview: NonNullable<RolloutInput['preview']>, inAnsley: (x: number, z: number) => boolean) {
+  const zero = () => ({ street: 0, yard: 0, park: 0 });
+  const stats = { converted: zero(), generic: zero() };
+  const taken = new Set(plan.species.map(s => crownKey(s.x, s.z)));
+  const convert = ([x, z, h0, r0]: Crown, ctx: Context) => {
+    const key = crownKey(x, z);
+    if (plan.replaced.has(key) || plan.cleared.has(key) || taken.has(key) || !preview.drawn(x, z)) return;
+    if (preview.managed?.(x, z, r0)) return;
+    const { h, r } = plan.enlarged.get(key) ?? { h: h0, r: r0 };
+    const seed = positionSeed(x, z);
+    const options = previewWeights(ctx, inAnsley(x, z)).filter(([sp]) => fitsSpecies(sp, h, r));
+    const total = options.reduce((n, [, w]) => n + w, 0);
+    if (!total) { stats.generic[ctx]++; return; }
+    let u = hash01(seed, 91) * total, species = options[options.length - 1][0];
+    for (const [sp, w] of options) { if (u < w) { species = sp; break; } u -= w; }
+    plan.species.push({ species, x, z, heightM: h, spreadM: 2 * r, seed, size: h >= specimenAt(species) ? 'specimen' : 'mature' });
+    plan.replaced.add(key);
+    taken.add(key);
+    stats.converted[ctx]++;
+  };
+  for (const c of crowns) { const ctx = plan.context.get(crownKey(c[0], c[1])); if (ctx) convert(c, ctx); }
+  // Planted generic crowns: facing pairs and island hardwoods both stand at the street.
+  for (const { crown } of plan.added) convert(crown, 'street');
+  plan.preview = stats;
 }
 
 /** Ansley's grass traffic islands: small grass polygons ringed by carriageways. */
@@ -309,13 +375,16 @@ export function tierPlan(plan: RolloutPlan, tierCrowns: Crown[]): RolloutPlan {
   const here = new Set(tierCrowns.map(([x, z]) => crownKey(x, z)));
   const added = plan.added.filter(a => a.from === undefined || here.has(a.from));
   const addedKeys = new Set(added.map(a => crownKey(a.crown[0], a.crown[1])));
+  // A species on a planted crown (preview only) follows that crown's own tier rule.
+  const planted = new Set(plan.added.map(a => crownKey(a.crown[0], a.crown[1])));
   const keep = (k: string) => here.has(k) || addedKeys.has(k);
   return {
     replaced: new Set([...plan.replaced].filter(keep)),
-    species: plan.species.filter(sp => { const k = crownKey(sp.x, sp.z); return here.has(k) || !plan.context.has(k); }),
+    species: plan.species.filter(sp => { const k = crownKey(sp.x, sp.z); return keep(k) || (!plan.context.has(k) && !planted.has(k)); }),
     enlarged: new Map([...plan.enlarged].filter(([k]) => keep(k))),
     added,
     cleared: plan.cleared,
     context: plan.context,
+    preview: plan.preview,
   };
 }
