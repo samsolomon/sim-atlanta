@@ -965,7 +965,11 @@ Cost at Nov 20 14:00 (`perf=run`). Each pair is `?trees=species` → default, ca
 | Default open view | 542 / 2,365,466 / 85 → 527 / 2,362,573 / 79 | 1,199 / 13,908,523 / 100 → 1,117 / 13,463,925 / 92 |
 | Ansley `cam=1194,-4352,20,50,420` | 100 / 1,592,947 / 44 → 69 / 1,515,868 / 36 | 241 / 7,467,461 / 54 → 159 / 6,864,943 / 47 |
 
-Low programs (79) reach their 80 target, so the low ceiling moves from 90 to 87.
+Low programs reach their 80 target at 14:00 (79), but light changes the count. With low on the
+same build, the default view measures 79 at 14:00, 82 at dusk (17:45) and 83 at 22:00, and
+`motion=pan` measures 80, 82 and 83 at those times. Ansley is 35–37. The low ceiling moves from
+90 to 85: the worst clock plus two slots. `pnpm test:perf` checks only 14:00, so night program
+growth needs a separate run (phone-perf owns the harness).
 Sheets: [Ansley, Sam's view](log/ui/tree-species/generic-default/generic-ansley.jpg),
 [Ansley overhead](log/ui/tree-species/generic-default/generic-overhead.jpg),
 [10th Street](log/ui/tree-species/generic-default/generic-street.jpg).
