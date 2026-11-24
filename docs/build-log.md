@@ -3454,3 +3454,8 @@ Modera Parkside went up on a lot the 2019 lidar recorded as empty, so the only h
 ### 2026-11-24 · The Standard, measured from the point cloud
 
 The Standard's map entry had one inferred 68.4 m part covering everything, so the 2019 lidar was sampled on an 8 m grid instead of as one number. The grid shows a 63 m north bar, a 61 m east bar with a 64 m core, a 44 m step to the west, a 31 m mid-rise over the garage and a courtyard notch. Each became a mass. The precast skin has the amber "cutouts" from the architect's photos, the mid-rise's roof carries the pool and green roofs, and at 23:30 the student rooms are lit more than a typical apartment tower's. [Day, night and amenity deck](log/ui/the-standard/README.md)
+
+
+### 2026-11-24 · University House is sixteen metres shorter
+
+University House on Spring Street was mapped at 80 m and drawn as a block over the whole lot. The 2019 lidar puts its roof at 63.8 m, or 19 floors at 3.3 m, which matches the floor count reported when it opened. The returns also trace an L around an 8 m garage deck. From a single Midtown Alliance photograph, the skin carries over the grey, charcoal and yellow panel blocks that make the tower easy to pick out near Georgia Tech. This build also showed that on-and-off camera triangle counts carry ±400 of noise and count a mesh several times, so the skin reports its mesh size, 350 triangles on the phone tier, alongside them. [Before/after, day and night](log/ui/university-house/README.md)
