@@ -1,0 +1,73 @@
+import type { GroundGrid } from '../terrain/grid';
+import { rng, type P2 } from '../vignette/geom';
+import type { VBuilding } from '../vignette/world';
+import { surfaces } from '../materials';
+import { landmarkShell } from './landmark-shell';
+
+export const westPeachtree712Id = 'osm:way:996610147';
+const TOWER = 'osm:way:1344870476', CORE = 'osm:way:1344870473';
+const origin: P2 = [357, -2258];
+
+/**
+ * 712 West Peachtree (2021, 23 floors) postdates the 2019 lidar, so heights follow the mapped
+ * parts: the 88 m tower over most of the block, a 60 m core sliver on Spring Street and the
+ * 25.2 m garage strip along the south. Photographs show deep blue reflective glass, dark
+ * vertical reveals near each corner, two paler floors under the roof and a precast garage.
+ */
+export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
+  const parts = site.parts;
+  const tower = parts?.find(p => p.id === TOWER), core = parts?.find(p => p.id === CORE);
+  const podium = parts?.find(p => p.id === 'podium');
+  if (!parts || !tower || !core || !podium) return null;
+  const s = landmarkShell(buildings, grid, site.id, '712 West Peachtree', origin, [1, 0], [[0, 0], [-20, -25], [20, 25]]);
+  if (!s) return null;
+  const local = (ring: P2[]): P2[] => {
+    const pts: P2[] = ring.map(([x, z]) => [x - origin[0], z - origin[1]]);
+    const area = pts.reduce((sum, [x, z], i) => sum + x * pts[(i + 1) % pts.length][1] - pts[(i + 1) % pts.length][0] * z, 0);
+    return area < 0 ? pts.reverse() : pts;
+  };
+  const datum = site.floorY === undefined ? s.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
+  const roof = datum + tower.h, garageTop = datum + podium.h, random = rng(712);
+  const blue = '#2f4a6b', pale = '#7d9cbf', reveal = '#1b2838', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
+  const glass = surfaces.curtainGlass({ tint: 'blue', mullion: 1.5, floor: 3.83 });
+  const top = roof - 7.7;
+
+  const shaft = local(tower.rings[0]);
+  s.prism(shaft, datum, top, blue, roofGrey, { wall: glass });
+  s.prism(shaft, top, roof, pale, roofGrey, { wall: glass });
+  s.prism(local(core.rings[0]), datum, datum + core.h, blue, roofGrey, { wall: glass });
+
+  // Precast garage with one open band per deck on its north, east and west faces.
+  const garage = local(podium.rings[0]);
+  s.prism(garage, datum, garageTop, concrete, roofGrey, { wall: surfaces.precast({ width: 3, height: 3.2 }) });
+  const [gx0, gx1] = [Math.min(...garage.map(p => p[0])), Math.max(...garage.map(p => p[0]))];
+  const gz1 = Math.max(...garage.map(p => p[1])), gz0 = Math.min(...garage.map(p => p[1]));
+  for (let y = datum + 4.2; y + 2 < garageTop; y += 3.2) {
+    s.body.quad([gx1, y, gz0 - 0.06], [gx1, y + 1.4, gz0 - 0.06], [gx0, y + 1.4, gz0 - 0.06], [gx0, y, gz0 - 0.06], slot);
+    s.body.quad([gx1 + 0.06, y, gz1], [gx1 + 0.06, y + 1.4, gz1], [gx1 + 0.06, y + 1.4, gz0], [gx1 + 0.06, y, gz0], slot);
+    s.body.quad([gx0 - 0.06, y, gz0], [gx0 - 0.06, y + 1.4, gz0], [gx0 - 0.06, y + 1.4, gz1], [gx0 - 0.06, y, gz1], slot);
+  }
+
+  // Dark reveals 4 m in from each corner of the shaft's four long faces, full height.
+  const [x0, x1] = [Math.min(...shaft.map(p => p[0])), Math.max(...shaft.map(p => p[0]))];
+  const [z0, z1] = [Math.min(...shaft.map(p => p[1])), Math.max(...shaft.map(p => p[1]))];
+  const lo = garageTop, faces: [P2, P2][] = [[[x0, z1], [x1, z1]], [[x1, z1], [x1, z0]], [[x1, z0], [x0, z0]], [[x0, z0], [x0, z1]]];
+  for (const [a, b] of faces) {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n: P2 = [-(b[1] - a[1]) / len, (b[0] - a[0]) / len];
+    const at = (t: number, y: number, d = 0.08) => [a[0] + t * (b[0] - a[0]) + n[0] * d, y, a[1] + t * (b[1] - a[1]) + n[1] * d];
+    for (const t of [4 / len, 1 - 4 / len]) {
+      const w = 0.45 / len;
+      s.body.quad(at(t - w, lo), at(t - w, roof), at(t + w, roof), at(t + w, lo), reveal);
+    }
+    // Offices are mostly dark by 23:30: a stable few panes per floor stay lit.
+    for (let y = lo + 0.5; y + 3 < top; y += 3.83) {
+      if (random() > 0.35) continue;
+      const t = 0.1 + random() * 0.75, w = (1.5 + random() * 3) / len;
+      s.lights.quad(at(t, y, 0.05), at(t, y + 2.6, 0.05), at(t + w, y + 2.6, 0.05), at(t + w, y, 0.05), blue);
+    }
+  }
+  // The lobby glass on West Peachtree, below the garage line, glows after dark.
+  const at = (t: number, y: number): number[] => [x0 - 0.06, y, z0 + t * (z1 - z0)];
+  s.lights.quad(at(0.15, datum + 0.3), at(0.15, datum + 5.5), at(0.55, datum + 5.5), at(0.55, datum + 0.3), blue);
+  return s.finish('#f2e2c0', 0.5);
+}
