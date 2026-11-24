@@ -167,3 +167,132 @@ export function footprintReport(object: { updateMatrixWorld(force?: boolean): vo
   });
   return report;
 }
+
+export interface DetachedPart {
+  /** The gap from the part to the nearest surface of the rest of the skin, in metres. */
+  gap: number;
+  /** How far its farthest vertex reaches outside the footprint outline. */
+  reach: number;
+  /** Where its farthest vertex is (world x, y, z), and how many triangles it has. */
+  at: [number, number, number];
+  triangles: number;
+}
+
+type V3 = [number, number, number];
+/** Squared distance from p to triangle abc (Ericson, Real-Time Collision Detection 5.1.5). */
+function triDist2(p: V3, a: V3, b: V3, c: V3) {
+  const sub = (u: V3, v: V3): V3 => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+  const dot = (u: V3, v: V3) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const ab = sub(b, a), ac = sub(c, a), ap = sub(p, a);
+  const d1 = dot(ab, ap), d2 = dot(ac, ap);
+  const at = (q: V3) => dot(sub(p, q), sub(p, q));
+  if (d1 <= 0 && d2 <= 0) return at(a);
+  const bp = sub(p, b), d3 = dot(ab, bp), d4 = dot(ac, bp);
+  if (d3 >= 0 && d4 <= d3) return at(b);
+  const vc = d1 * d4 - d3 * d2;
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) { const v = d1 / (d1 - d3); return at([a[0] + v * ab[0], a[1] + v * ab[1], a[2] + v * ab[2]]); }
+  const cp = sub(p, c), d5 = dot(ab, cp), d6 = dot(ac, cp);
+  if (d6 >= 0 && d5 <= d6) return at(c);
+  const vb = d5 * d2 - d1 * d6;
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) { const w = d2 / (d2 - d6); return at([a[0] + w * ac[0], a[1] + w * ac[1], a[2] + w * ac[2]]); }
+  const va = d3 * d6 - d5 * d4;
+  if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+    const w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+    return at([b[0] + w * (c[0] - b[0]), b[1] + w * (c[1] - b[1]), b[2] + w * (c[2] - b[2])]);
+  }
+  const den = 1 / (va + vb + vc), v = vb * den, w = vc * den;
+  return at([a[0] + ab[0] * v + ac[0] * w, a[1] + ab[1] * v + ac[1] * w, a[2] + ab[2] * v + ac[2] * w]);
+}
+
+/**
+ * Parts of a skin that hang outside its footprint without connecting back to it. Triangles that
+ * share a vertex (to 1 cm) or come within `tolerance` metres of each other's surfaces join one
+ * cluster, so a pane on its wall or a rail on its slab is part of the building. A cluster with
+ * no vertex inside the outline rings that reaches more than `tolerance` outside them is
+ * detached: a stack of balcony plates floating off the wall, say. `gap` is its distance back to
+ * the rest of the skin (Infinity when nothing lies within about 4 m).
+ */
+export function detachedParts(object: { updateMatrixWorld(force?: boolean): void; traverse(f: (o: unknown) => void): void },
+  rings: readonly (readonly (readonly [number, number])[])[], tolerance = 0.3): DetachedPart[] {
+  object.updateMatrixWorld(true);
+  const verts: V3[] = [];
+  const tris: number[] = [];
+  const index = new Map<string, number>();
+  const key = (p: V3) => `${Math.round(p[0] * 100)},${Math.round(p[1] * 100)},${Math.round(p[2] * 100)}`;
+  object.traverse(o => {
+    const mesh = o as { isMesh?: boolean; geometry?: { index?: { count: number; getX(i: number): number } | null; getAttribute(n: string): { count: number; getX(i: number): number; getY(i: number): number; getZ(i: number): number } | undefined }; matrixWorld?: { elements: number[] } };
+    const pos = mesh.isMesh ? mesh.geometry?.getAttribute('position') : undefined;
+    if (!pos || !mesh.matrixWorld) return;
+    const e = mesh.matrixWorld.elements, ids: number[] = [];
+    for (let i = 0; i < pos.count; i++) {
+      const lx = pos.getX(i), ly = pos.getY(i), lz = pos.getZ(i);
+      const p: V3 = [e[0] * lx + e[4] * ly + e[8] * lz + e[12], e[1] * lx + e[5] * ly + e[9] * lz + e[13], e[2] * lx + e[6] * ly + e[10] * lz + e[14]];
+      const k = key(p);
+      let id = index.get(k);
+      if (id === undefined) { id = verts.length; verts.push(p); index.set(k, id); }
+      ids.push(id);
+    }
+    const idx = mesh.geometry!.index;
+    const n = idx ? idx.count : pos.count;
+    for (let i = 0; i + 2 < n; i += 3) tris.push(...[0, 1, 2].map(j => ids[idx ? idx.getX(i + j) : i + j]));
+  });
+  const parent = verts.map((_, i) => i);
+  const find = (i: number): number => { while (parent[i] !== i) i = parent[i] = parent[parent[i]]; return i; };
+  for (let t = 0; t < tris.length; t += 3) for (const j of [1, 2]) parent[find(tris[t + j])] = find(tris[t]);
+  // A 4 m grid of triangle bounds, to find nearby surfaces.
+  const cell = 4, grid = new Map<string, number[]>();
+  const cellKey = (x: number, y: number, z: number) => `${x},${y},${z}`;
+  for (let t = 0; t < tris.length; t += 3) {
+    const [a, b, c] = [verts[tris[t]], verts[tris[t + 1]], verts[tris[t + 2]]];
+    const lo = [0, 1, 2].map(k => Math.floor((Math.min(a[k], b[k], c[k]) - tolerance) / cell));
+    const hi = [0, 1, 2].map(k => Math.floor((Math.max(a[k], b[k], c[k]) + tolerance) / cell));
+    for (let x = lo[0]; x <= hi[0]; x++) for (let y = lo[1]; y <= hi[1]; y++) for (let z = lo[2]; z <= hi[2]; z++) {
+      const k = cellKey(x, y, z); (grid.get(k) ?? grid.set(k, []).get(k)!).push(t);
+    }
+  }
+  // Join parts that come within the tolerance of each other (a pane on its wall, a rail on its slab).
+  const tol2 = tolerance * tolerance;
+  const sample = (t: number): V3[] => {
+    const [a, b, c] = [verts[tris[t]], verts[tris[t + 1]], verts[tris[t + 2]]];
+    return [a, b, c, [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3, (a[2] + b[2] + c[2]) / 3]];
+  };
+  for (let t = 0; t < tris.length; t += 3)
+    for (const p of sample(t)) {
+      const c = p.map(v => Math.floor(v / cell));
+      for (const u of grid.get(cellKey(c[0], c[1], c[2])) ?? []) {
+        if (find(tris[u]) === find(tris[t])) continue;
+        if (triDist2(p, verts[tris[u]], verts[tris[u + 1]], verts[tris[u + 2]]) <= tol2) parent[find(tris[u])] = find(tris[t]);
+      }
+    }
+  // A cluster is anchored when any of its vertices lies inside the footprint; the rest float.
+  const outside = verts.map(([x, , z]) => outsideRings(rings, x, z));
+  const clusters = new Map<number, { tris: number[]; anchored: boolean; reach: number; at: V3 }>();
+  for (let t = 0; t < tris.length; t += 3) {
+    const root = find(tris[t]);
+    let cl = clusters.get(root);
+    if (!cl) clusters.set(root, cl = { tris: [], anchored: false, reach: 0, at: [0, 0, 0] });
+    cl.tris.push(t);
+    for (let j = 0; j < 3; j++) {
+      const v = tris[t + j];
+      if (outside[v] === 0) cl.anchored = true;
+      if (outside[v] > cl.reach) { cl.reach = outside[v]; cl.at = verts[v]; }
+    }
+  }
+  const out: DetachedPart[] = [];
+  for (const [root, cl] of clusters) {
+    if (cl.anchored || cl.reach <= tolerance) continue;
+    // The gap back to anchored geometry, searched within the neighbouring cells (up to ~4 m).
+    let best = Infinity;
+    for (const t of cl.tris) for (const p of sample(t)) {
+      const c = p.map(v => Math.floor(v / cell));
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++)
+        for (const u of grid.get(cellKey(c[0] + dx, c[1] + dy, c[2] + dz)) ?? []) {
+          if (find(tris[u]) === root) continue;
+          const d = triDist2(p, verts[tris[u]], verts[tris[u + 1]], verts[tris[u + 2]]);
+          if (d < best) best = d;
+        }
+    }
+    out.push({ gap: Math.sqrt(best), reach: cl.reach, at: cl.at, triangles: cl.tris.length });
+  }
+  return out.sort((a, b) => b.reach - a.reach);
+}

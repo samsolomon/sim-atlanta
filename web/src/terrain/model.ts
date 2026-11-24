@@ -18,6 +18,8 @@ import { colony100Id, colony400Id, createColony100, createColony400 } from '../c
 import { createWinship, winshipId } from '../city/winship';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createTenPeachtreePlace, tenPeachtreePlaceId } from '../city/ten-peachtree-place';
+import { createCrestOnPeachtree, crestOnPeachtreeId } from '../city/crest-on-peachtree';
+import { createTwoPeachtreePointe, twoPeachtreePointeId } from '../city/two-peachtree-pointe';
 import { createModeraParkside, moderaParksideId } from '../city/modera-parkside';
 import { createTheStandard, theStandardId } from '../city/the-standard';
 import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
@@ -248,13 +250,17 @@ export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
  * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
  * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
  * error at City's tilt is under a pixel there; only the default (~21 km) and wider orbits reach
- * it. 115k -> 19k ground triangles across the 12 boards. `?perf&veryfar=0` keeps the far level.
+ * it. 115k -> 19k ground triangles across the 12 boards. Opt-in for now: `?veryfar=1`.
  */
 export const VERY_FAR_M = 12000, VERY_FAR_BUILD_M = 10000, VERY_FAR_ERROR_M = 8;
-const veryFarOff = (() => {
-  const p = new URLSearchParams(globalThis.location?.search ?? '');
-  return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('veryfar') === '0';
-})();
+/**
+ * Opt-in (`?veryfar=1`) until the build is incremental: one board's settled 8 m level is a single
+ * 145 ms task on the Studio (600+ ms on the A16), so in an idle gap mid-flight it stalled a frame,
+ * and at the static default view the phone is never idle, so it never built. Off: nothing queued.
+ */
+let veryFarOff = new URLSearchParams(globalThis.location?.search ?? '').get('veryfar') !== '1';
+/** Tests: turn the very-far level on or off. */
+export function setVeryFarForTests(on: boolean) { veryFarOff = !on; }
 /** One very-far build per idle slice across all boards: several hundred ms on a phone if done at once. */
 const veryFarQueue: (() => void)[] = [];
 let veryFarPumping = false;
@@ -350,6 +356,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === colony400Id ? createColony400(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === tenPeachtreePlaceId ? createTenPeachtreePlace(sceneryCity.buildings, site, grid)
+      : site.id === crestOnPeachtreeId ? createCrestOnPeachtree(sceneryCity.buildings, site, grid, options.quality)
+      : site.id === twoPeachtreePointeId ? createTwoPeachtreePointe(sceneryCity.buildings, site, grid)
       : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
       : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
       : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
@@ -409,7 +417,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   let veryFarGeometry: THREE.BufferGeometry | null = null;
   let veryFarQueued = false;
   const bb = grid.manifest.bounds;
-  let far = false, veryFar = false, disposed = false;
+  let far = false, veryFar = false, farHouses = false, disposed = false;
   yield 'far ground';
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
@@ -468,6 +476,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
     foundation: bd => foundation(bd.rings, groundAt, grid.manifest.stepM / 2), near: homes.finishFor, far: homes.farFinishFor,
     roofUnits: options.quality === 'low' ? 3 : 8, force: houseLodForce(),
+    // Low tier: the far-far boxes past the very-far orbit.
+    box: options.quality === 'low' ? b => homes.boxOf(b.id) : undefined,
   });
   scenery.group.add(houses.group);
   yield 'houses';
@@ -570,6 +580,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
         veryFarQueue.push(() => { if (!disposed) veryFarGeometry = mesh.farGeometry(VERY_FAR_ERROR_M, 160, true); });
         pumpVeryFar();
       }
+      // The houses' far-far form switches on the very-far ground's distances, not its build.
+      const nextHouses = farHouses ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M;
+      if (nextHouses !== farHouses) { farHouses = nextHouses; houses.setDetail({ farHouses }); groundLodChanged = true; }
       const nextVery = veryFarGeometry !== null && (veryFar ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M);
       if (next !== far || nextVery !== veryFar) {
         far = next;
@@ -580,7 +593,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
-    setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
+    setDetail(d: { farTrees?: boolean; branchShadows?: boolean; houseShadows?: boolean }) { houses.setDetail(d); scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
     setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {

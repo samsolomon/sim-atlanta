@@ -199,7 +199,26 @@ interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null }
  * is left at night 0; City sets the real value on its next frame. Run before City applies board
  * clipping.
  */
-export function batchLandmarks(entries: readonly LandmarkEntry[], container: Object3D, o: { cellM?: number; name?: string } = {}) {
+export interface LandmarkBatchOptions { cellM?: number; name?: string }
+export interface LandmarkBatches {
+  group: Group; stats: BatchStats; cells: Map<string, Group>;
+  /** Mirror each landmark's night state onto its batch: call after their setNight. */
+  sync(): void;
+}
+
+/** batchLandmarks, all at once. */
+export function batchLandmarks(entries: readonly LandmarkEntry[], container: Object3D, o: LandmarkBatchOptions = {}): LandmarkBatches {
+  const build = buildLandmarkBatches(entries, container, o);
+  for (let step = build.next(); ; step = build.next()) if (step.done) return step.value;
+}
+
+/**
+ * batchLandmarks as a sliced build step: yields a label after each landmark's probe and after each
+ * cell class is merged, so an area build can spread it over frames. Nothing is shared across a
+ * yield, so the result does not depend on where it pauses. `stats.ms` is then wall time.
+ */
+export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], container: Object3D,
+  o: LandmarkBatchOptions = {}): Generator<string | void, LandmarkBatches, void> {
   const t0 = performance.now();
   const cellM = o.cellM ?? CELL_M;
   const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0 };
@@ -256,6 +275,7 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
         { mesh, bake, day: looks[looks.length - 1], run: looks.join(';') });
       stats.candidates++;
     });
+    yield 'landmark probe';
   }
 
   const group = new Group();
@@ -352,6 +372,7 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
       // Sources still drive their runs' copies through sync(), but never draw again.
       if (!users.get(mat)) mat.dispose();
     }
+    yield 'landmark cell';
   }
 
   // sync() lives outside this scope: a closure here would keep this function's maps, and with

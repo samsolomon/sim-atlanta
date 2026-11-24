@@ -26,6 +26,8 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
+import { hideEmptyMeshes } from './empty-draws';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -137,6 +139,7 @@ import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEnt
 import { surfaceDefaults } from '../materials';
 import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
@@ -738,6 +741,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   perf.phase('city:renderer');
 
   const scene = new THREE.Scene();
+  // `?perf&freeze=off` keeps three.js recomposing every static matrix each frame, for A/B runs.
+  const freezeOn = !(perfEnabled && new URLSearchParams(location.search).get('freeze') === 'off');
+  if (freezeOn) freezeSelf(scene);
+  let staticFrozen = !freezeOn;
+  // `?perf&empty=draw` keeps drawing meshes with no vertices (city/empty-draws.ts), for A/B runs.
+  const keepEmpty = perfEnabled && new URLSearchParams(location.search).get('empty') === 'draw';
+  let emptyHidden = false;
   const bg = new THREE.Color('#e7e2d8');
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
@@ -948,7 +958,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
+    if (!keepEmpty) hideEmptyMeshes(area.group);
     scenery.push(area.group);
+    // The area is in place: its board and scenery never move again (city/freeze.ts). Its transport
+    // subgroup keeps updating (freight runs in it).
+    if (freezeOn) {
+      freezeSelf(area.group);
+      freezeStatic(area.board);
+      freezeStatic(area.scenery);
+    }
     area.setSeason(local(new Date(options.clockMs())).doy);
     if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
@@ -1495,7 +1513,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     // Low re-centres on a step that grows with the orbit (0.15 x, at least 80 m): from far away the
     // same 80 m step came round many times a second while panning, for shadows a few pixels wide.
-    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? Math.max(SHADOW_STEP_M, 0.15 * camera.position.distanceTo(t)) : SHADOW_STEP_M;
+    // Capped at a quarter of the shadow box (260 m on low): an uncapped 0.15 x orbit is ~3.2 km at
+    // the default view, three times the box, and with the 0.6 hysteresis the target could pan ~1.9 km
+    // away from its shadows before the box followed. Far orbits are the far-shadow rule's to handle.
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? shadowStepM(camera.position.distanceTo(t), SHADOW_STEP_M, 2 * SH) : SHADOW_STEP_M;
     const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
@@ -1694,7 +1715,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    if (!emptyHidden) {
+      // Downtown is all built by the first frame; areas are checked as they mount (addArea).
+      emptyHidden = true;
+      if (!keepEmpty) hideEmptyMeshes(scene);
+    }
     followPixelRatio();
+    if (!staticFrozen) {
+      // Downtown's world, board and scenery are all built by the first frame.
+      staticFrozen = true;
+      freezeStatic(world.group);
+      freezeSelf(terrain?.group);
+      freezeStatic(terrain?.board);
+      freezeStatic(terrain?.scenery);
+      freezeStatic(rolloutBatch.group);
+    }
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -1838,6 +1873,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    if (import.meta.env.DEV && freezeOn && frames % 120 === 0) {
+      const moved = checkFrozen(scene);
+      if (moved.length) console.error(`Frozen objects moved without refreeze() (city/freeze.ts): ${moved.length}`, moved.slice(0, 10));
+    }
     // A few never-drawn objects per frame in one scratch render, after the frame's own work.
     if (prewarmer?.pending) {
       // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
@@ -1900,15 +1939,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
   const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
   let farTrees = false;
+  // Low tier: houses cast no shadow beyond this orbit (city/house-lod.ts setDetail).
+  const HOUSE_SHADOWS_M = low ? 9000 : 0;
+  let houseNoShadow = false;
   // Areas (and the downtown World) that already carry the current detail; a newly mounted or
   // swapped area is caught here without allocating every frame.
   let detailed = new WeakSet<object>();
   function treeDetail() {
     const d = camera.position.distanceTo(controls.target);
     const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    if (far !== farTrees) { farTrees = far; detailed = new WeakSet(); }
+    // Past HOUSE_SHADOWS_M houses stop casting: an 8 m house shadow is under 2 px there on the A16, and a
+    // 2.4 km far block goes whole into the shadow pass (100k triangles at the default view).
+    const noHouseShadows = HOUSE_SHADOWS_M > 0 && (houseNoShadow ? d > HOUSE_SHADOWS_M * 0.84 : d > HOUSE_SHADOWS_M);
+    if (far !== farTrees || noHouseShadows !== houseNoShadow) { farTrees = far; houseNoShadow = noHouseShadows; detailed = new WeakSet(); }
     // Limb shadows stay on until a moving-camera A16 run shows they cost something.
-    const detail = { farTrees: far };
+    const detail = { farTrees: far, houseShadows: !noHouseShadows };
     let applied = false;
     const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
       if (!a || detailed.has(a)) return;
