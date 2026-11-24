@@ -270,3 +270,20 @@ it('replaces 1100 Peachtree with its notched shaft, lit loggia and stepped pyram
     expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
   });
 });
+
+it('draws the Campanile as its present-day stripped frame at the lidar roof, unlit at night', () => {
+  const site: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:269843407');
+  const model = createSkylineLandmark([site, tower], site, -2, () => 0)!;
+  expect(model.group.name).toBe('The Campanile');
+  expect(model.buildings).toEqual([tower]);
+  model.group.updateMatrixWorld(true);
+  const box = new Box3().setFromObject(model.group);
+  // 3DEP (April 2019): top slab 95.4 m over the site's ring grade; the hoist mast rises 4 m above it.
+  expect(box.max.y).toBeCloseTo(95.4 + 4, 0);
+  const top = new Raycaster(new Vector3(833, 300, -3571), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
+  expect(top).toBeCloseTo(95.4, 0);
+  // A stalled construction site: no photographed lighting, so nothing glows.
+  model.setNight(1);
+  expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
+  expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+});
