@@ -57,7 +57,7 @@ Held, not in the queue: #446 radio (draft, held for Sam; review build was served
 - #635 Bethel (1f3c0a02 or later; confirm the head)
 - #636 Modera (4057dff6)
 - #637 Landmark deck (444ac581)
-- #640 Barclay, #641 Capital City Club (8b65b1bf), #643 Azure (a20d40c9), #645 International Garage, #648 55 Allen Plaza, #650 Peachtree Towers, #653 The Hub, #657 260/270 Peachtree Parking, #658 Ten/One Park Place, #659 Fairlie-Poplar (may get a shared-shell head), #660 Peachtree International deck, #661 Imperial
+- #640 Barclay, #641 Capital City Club (8b65b1bf), #643 Azure (a20d40c9), #645 International Garage, #648 55 Allen Plaza, #650 Peachtree Towers, #653 The Hub, #657 260/270 Peachtree Parking, #658 Ten/One Park Place, #659 Fairlie-Poplar (8006119e: shared shell, high-night +1), #660 Peachtree International deck, #661 Imperial
 - #617 715 Peachtree, #634 Olympia, #642 Elevance (skins-2, new heads 1df90cb0 / 818737e0 / 70b31518; confirm the coordinator approved them)
 
 Before building any train, re-check each PR's head with `gh pr view` (workers moved several heads tonight for the 3 cm layer fixes) and confirm the coordinator's approval for new skins.
