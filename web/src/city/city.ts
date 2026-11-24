@@ -958,6 +958,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       },
     });
     scene.add(stream.group);
+    // Visible LOD blocks occlude vehicle taps, as the full buildings they stand in for do.
+    scenery.push(stream.group);
     stream.setSeason(local(new Date(options.clockMs())).doy);
   }
   function approachNorth(x: number, z: number) {

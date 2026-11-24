@@ -70,6 +70,11 @@ export class StreamManager {
   private worker = new LodWorker();
   readonly materials = lodMaterials();
   readonly group = new THREE.Group();
+  /** Meshes drawn once here, invisibly, so their buffers upload in their own budgeted frame. */
+  private uploads = new THREE.Group();
+  /** Same shader program as the LOD materials (colour and depth writes are not program keys). */
+  private uploadMaterial = Object.assign(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    { colorWrite: false, depthWrite: false });
   private frustum = new THREE.Frustum();
   private m = new THREE.Matrix4();
   private box = new THREE.Box3();
@@ -81,6 +86,8 @@ export class StreamManager {
   constructor(private readonly cfg: RingConfig, private readonly low: boolean, private readonly bottomY: number,
     private readonly dataRoot: string, private readonly hooks: StreamHooks) {
     this.group.name = 'stream LOD';
+    this.uploads.name = 'stream LOD uploads';
+    this.group.add(this.uploads);
     this.units = STREAMED.map(id => ({ id, ring: 'unloaded' as Ring, since: 0, offscreenSince: null,
       lodLoading: false, neededUntil: 0, distance: Infinity, fullShown: null, warmFrames: 0, warmed: null }));
     loadBudget.frameMs = low ? 4 : 8;
@@ -193,10 +200,21 @@ export class StreamManager {
       area.group.visible = false;
       this.group.add(area.group);
       u.lod = area;
-      // Upload one part per frame job, ground first.
+      // Upload one part per frame job, ground first: each draws once, invisibly and unculled, so
+      // its GPU upload lands in that frame and not all at once when the LOD is revealed.
       await Promise.all(parts.map(([stage, mesh]) => loadBudget.enqueue('lod:' + u.id, stage as LoadStage, () => {
         mesh.updateMatrix();
-        area.group.add(mesh);
+        const { material, castShadow } = mesh;
+        Object.assign(mesh, { material: this.uploadMaterial, castShadow: false, frustumCulled: false });
+        mesh.userData.streamLod = u.id;
+        this.uploads.add(mesh);
+        return new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => {
+          Object.assign(mesh, { material, castShadow, frustumCulled: true });
+          // A dropped LOD has already freed this geometry: never draw it again.
+          if (abort.signal.aborted) mesh.removeFromParent();
+          else area.group.add(mesh);
+          done();
+        })));
       }, { signal: abort.signal, priority: u.distance })));
       if (abort.signal.aborted) return;
       this.counts.lodLoads++;
@@ -214,6 +232,8 @@ export class StreamManager {
     u.lodAbort?.abort();
     u.lodAbort = undefined;
     u.lodLoading = false;
+    // Pull any mesh still waiting to upload, so a freed geometry is never drawn again.
+    for (const m of [...this.uploads.children]) if (m.userData.streamLod === u.id) m.removeFromParent();
     if (u.lod) { u.lod.dispose(); u.lod = undefined; this.counts.lodDrops++; }
   }
 
@@ -240,6 +260,7 @@ export class StreamManager {
     this.worker.dispose();
     this.group.removeFromParent();
     for (const m of Object.values(this.materials)) m.dispose();
+    this.uploadMaterial.dispose();
   }
 }
 
