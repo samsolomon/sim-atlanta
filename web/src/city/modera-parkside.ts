@@ -35,7 +35,7 @@ export function createModeraParkside(buildings: VBuilding[], site: VBuilding, gr
   const retailTop = datum + 5.5, podiumTop = datum + 24, roof = datum + 5.5 + 31 * 3.15, amenityTop = roof + 4.8;
   const white = '#e9e8e3', frame = '#f0efea', roofColor = '#8d908e';
   const glass = ['#7894a6', '#819db0'];
-  const storefront = ['#557080', '#5c7787'];
+  const storefront = ['#667680', '#6c7d87'];
 
   const podium = ccw(shell.ring);
   const slab = ccw(tower);
