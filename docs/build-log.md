@@ -2818,3 +2818,6 @@ A stone-only shader wash reproduces that distinction without point lights or tex
 bytes. Low tier stays within its ceilings at 2.38 million triangles, 543 calls and
 432 MB post-GC heap. [Daylight](log/ui/rhodes-hall/high-day.png) ·
 [Full night](log/ui/rhodes-hall/high-night.png) · [Sources and estimates](rhodes-hall.md).
+### 2026-11-23 — A timetable test outlives its timetable
+
+A fresh Amtrak download broke both Brookwood corridor tests without changing a single path vertex. The new feed began its service calendars on November 22; the tests asked for November 20. Zero trains was the correct answer. A 15 KB recorded fixture now keeps the historical geometry, calendar and timetable together, so the edge-to-edge and freight-yield regressions also run without generated data. The same two checks pass on November 23 with the fresh feed. Regenerating production data will remove the old November 20 Crescent from demo links; it does not require a berth or consist fix. [Investigation and fixture provenance](brookwood-gtfs-regression.md).
