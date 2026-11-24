@@ -21,6 +21,7 @@ import { createTheStandard, theStandardId } from '../city/the-standard';
 import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
+import { createAtlanticHouse, atlanticHouseId } from '../city/atlantic-house';
 import { createProscenium, prosceniumId } from '../city/proscenium';
 import { createHanoverMidtown, hanoverMidtownId } from '../city/hanover-midtown';
 import { createSora, soraId } from '../city/sora';
@@ -324,6 +325,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
       : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
+      : site.id === atlanticHouseId ? createAtlanticHouse(sceneryCity.buildings, site, grid)
       : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
       : site.id === hanoverMidtownId ? createHanoverMidtown(sceneryCity.buildings, site, grid)
       : site.id === soraId ? createSora(sceneryCity.buildings, site, grid)
