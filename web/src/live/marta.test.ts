@@ -149,3 +149,21 @@ it('distinguishes a delayed first observation from a completed empty response', 
   await poll;
   expect(feed.firstPollComplete).toBe(true);
 });
+
+it('keeps the original observation across duplicate and delayed fixes and expires it between polls', async () => {
+  vi.useFakeTimers({ now: NOW, toFake: ['Date', 'performance'] });
+  const live = new LiveMarta(schedule);
+  const first = feed(NOW);
+  await pollWith(live, first, NOW);
+  const observed = first.trains[0].at;
+  for (const at of [observed, observed - 1000]) {
+    vi.advanceTimersByTime(30_000);
+    const delayed = feed(Date.now());
+    delayed.trains[0] = { ...delayed.trains[0], at, lon: -84.4 };
+    await pollWith(live, delayed, Date.now());
+    expect(live.trains()[0]).toMatchObject({ observedAt: observed, lon: first.trains[0].lon });
+  }
+  vi.advanceTimersByTime(STALE_MS - (Date.now() - observed));
+  expect(live.available).toBe(false);
+  expect(live.trains()).toEqual([]);
+});

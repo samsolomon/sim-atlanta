@@ -8,8 +8,8 @@ export interface Knot {
   velocity: number; // path metres per millisecond
 }
 
-export function appendFix(history: Knot[], s: number, received: number) {
-  const playhead = received - PLAYBACK_DELAY_MS;
+export function appendFix(history: Knot[], s: number, received: number, delay = PLAYBACK_DELAY_MS) {
+  const playhead = received - delay;
   while (history.length > 1 && history[1].time <= playhead) history.shift();
   const last = history.at(-1);
   if (last && last.time >= received) return;
@@ -25,8 +25,8 @@ export function appendFix(history: Knot[], s: number, received: number) {
   history.push({ time: received, s, velocity: 0 });
 }
 
-export function playback(history: readonly Knot[], now: number) {
-  const time = now - PLAYBACK_DELAY_MS;
+export function playback(history: readonly Knot[], now: number, delay = PLAYBACK_DELAY_MS) {
+  const time = now - delay;
   const i = history.findIndex(p => p.time >= time);
   if (i < 0) return history[history.length - 1].s;
   if (i === 0) return history[0].s;
