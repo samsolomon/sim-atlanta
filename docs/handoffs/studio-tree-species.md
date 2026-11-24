@@ -1,6 +1,10 @@
 # studio-tree-species — gpt-6.2 handoff, 2026-11-23
 
-## Current stopping point
+## Takeover update
+
+The coordinator accepted the final A16 results and approved merging on November 23. See [the final measurements](../tree-mask-clawback.md). The migration notes below describe the earlier stopping point.
+
+## Original stopping point
 
 Branch `samsolomon/tree-low-clawback`. PR #348 is OPEN and draft, not merged.
 Rendering/tested SHA `fb699bbb1fd9d4db74931cb4c182375f61aca3a1` is frozen by
