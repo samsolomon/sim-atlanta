@@ -185,12 +185,16 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground, t
         return terrainAt(x, z) ?? (ground.sample(x, z) ?? m.coverY + ground.manifest.vertical.sceneZeroNavd88M) - ground.manifest.vertical.sceneZeroNavd88M;
       };
       const ceiling = m.railY + 6;
+      const approach = -3.5;
+      const tread = rim(0, approach) + .13;
       for (const side of [-1, 1]) {
         const u = side * outer;
-        // Wings meet the cut bank along its actual slope.
+        // Grade the approach from the ballast shoulder up to the intact bank.
+        const shoulder = side * 2.1;
+        const bank = (w: number) => [u, Math.max(tread - .13, rim(u + side * .01, w)), w];
         for (let w = -2; w < face; w++) {
-          const topAt = (s: number) => Math.max(y0, rim(u + side * .01, s));
-          quad([u,y0,w], [u,y0,w+1], [u,topAt(w+1),w+1], [u,topAt(w),w], CONCRETE_SIDE);
+          const end = Math.min(w + 1, face);
+          quad([shoulder, tread - .13, w], [shoulder, tread - .13, end], bank(end), bank(w), LID);
         }
         quad([side*h,y0,face], [u,y0,face], [u,ceiling,face], [side*h,ceiling,face], CONCRETE);
         quad([side*h,y0,face], [side*h,ceiling,face], [side*h,ceiling,face+8], [side*h,y0,face+8], '#353330');
@@ -203,8 +207,6 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground, t
       quad([-h,y0,face+8], [h,y0,face+8], [h,ceiling,face+8], [-h,ceiling,face+8], '#050505');
       // The terrain slot clips the mapped tread just before its surveyed
       // endpoint. Continue the rails from the last supported approach.
-      const approach = -3.5;
-      const tread = rim(0, approach) + .13;
       const strip = (left: number, right: number, w0: number, w1: number, y: number, colour: string) => {
         const vertex = (u: number, w: number) => {
           const [x, , z] = P(u, 0, w);
@@ -216,7 +218,7 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground, t
           quad(vertex(left,w), vertex(right,w), vertex(right,end), vertex(left,end), colour);
         }
       };
-      quad([-outer,tread-.13,-2], [outer,tread-.13,-2], [outer,tread-.13,face], [-outer,tread-.13,face], '#645e53');
+      quad([-2.1,tread-.13,-2], [2.1,tread-.13,-2], [2.1,tread-.13,face], [-2.1,tread-.13,face], '#645e53');
       strip(-2.1, 2.1, approach, face+8, tread-.09, BALLAST);
       for (let w = approach; w < face+7; w += .8)
         strip(-1.15, 1.15, w, w+.18, tread-.045, '#4c453f');
