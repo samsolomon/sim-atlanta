@@ -233,3 +233,30 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
   - Brookwood: `cam=-140,-5010,115,58,110` at `14:03` and `22:03`.
 - **Captures:** Lab captures use `__lab.camera` / `__lab.controls` set directly. The view presets glide, so they render mid-transition. City captures use `orca screenshot` after the scene draws.
 - **Perf:** park your City tab on `about:blank` before `pnpm test:perf`. One low run timed out while a City tab was rendering.
+
+### Update — 2026-11-23 night (Opus session bceb5cfc)
+
+**Held for Sam:**
+- **#404** Xpress coach, pass 2. It is now an MCI D4500 (`samsolomon/xpress-coach`). The coordinator says it reads well; Sam looks in the morning.
+- **#424** City freight consists plus the 53 ft well car (`samsolomon/intermodal-well`).
+
+**Merged:** #394 hopper (`82d49b85`), #396 boxcar paints (`64a207c2`).
+
+**Standing rules from the coordinator:**
+- Screenshots go inline in each PR, with the cam under each image; image URLs go in the reply.
+- Run `pnpm build` on the final rebased head right before merging.
+- Kill only PIDs you started. `pkill -f perf-budget` kills other worktrees' perf runs; I did this once and apologised.
+
+**Consists design.** `web/src/city/freight-consist.ts` holds the pure planner. `FreightBatches` is always instanced, and poses change kind per passage.
+- Downtown uses fixed 15-minute slots from `ENTRY_MS` and alternates direction.
+- Brookwood uses 20-minute slots.
+- The card refreshes through `CityView.freightPassage()`.
+- A new car type goes into `MANIFEST_CARS` or a recipe. Watch `MAX_CAR_KINDS`.
+
+**Perf findings:**
+- Low instancing costs +2 programs.
+- A swept night clock (`t=…22:02&speed=60`) already reaches 91 low programs before this change.
+
+**Lab:** the near plane is adaptive beyond 60 m (`fitNearPlane` in `models/main.ts`).
+
+**Next in plan order:** tank (DOT-117 family), open mill gondola, centerbeam, autorack, open coal hopper. Add each to the manifest or unit recipes. The downtown double-stack clearance check is still open.
