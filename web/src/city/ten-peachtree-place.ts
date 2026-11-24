@@ -3,6 +3,7 @@ import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 import { litHash, seedOf } from './skin-kit';
+import { wallRuns } from './marquis-offices';
 
 /**
  * Southern Company Gas at Ten Peachtree Place (1991), red granite with punched window rows,
@@ -11,7 +12,7 @@ import { litHash, seedOf } from './skin-kit';
  * lidar (docs/log/ui/ten-peachtree-place/README.md).
  */
 export const tenPeachtreePlaceId = 'osm:way:164876035';
-const TOWER = 'osm:way:1430435514';
+const TOWER = 'osm:way:1430435514', SOUTH_WING = 'osm:way:235008477';
 const origin: P2 = [411, -3010];
 
 export const TEN_PEACHTREE_PLACE = {
@@ -49,8 +50,8 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
   for (const part of parts) {
     if (part === tower || part.h < 8) continue;
     const plan = local(part.rings[0]);
-    const zs = plan.map(p => p[1]);
-    const top = Math.max(...zs) > 33 ? H.lowSouth : H.lowMid;
+    // Lidar: the south wing on 10th tops out at 311.8 m, the middle wings at 320.2 m.
+    const top = part.id === SOUTH_WING ? H.lowSouth : H.lowMid;
     s.prism(plan, base, top, granite, roof);
     for (const f of faces(plan)) {
       if (f.length < 6 || f.n[1] < 0.5) continue; // south and street faces only
@@ -62,7 +63,12 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
   const plan = local(tower.rings[0]);
   s.prism(plan, base, H.roof, granite, roof);
   const floors = Math.floor((H.roof - 8 - (H.grade + 8)) / H.floor);
-  faces(plan).forEach((f, face) => {
+  // Mapping nodes split the long elevations; lay details out on whole collinear runs.
+  const runs: Face[] = wallRuns(plan).map(([a, b]) => {
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    return { a, b, length, n: [(b[1] - a[1]) / length, -(b[0] - a[0]) / length] as P2 };
+  });
+  runs.forEach((f, face) => {
     if (f.length < 8) return;
     const broad = f.length > 40, north = f.n[1] < -0.9;
     const lo = H.grade + 8;
