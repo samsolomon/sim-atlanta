@@ -79,8 +79,8 @@ export function createMira(buildings: VBuilding[], site: VBuilding, grid: Ground
       stripe(s, a, b, t, t + 0.6 / n, screen, mid, w, 0.06, screenLight);
       stripe(s, a, b, t + 0.6 / n, t, mid, roofY - 0.5, w, 0.06, screenLight);
     }
-    // Yellow accent slots, one per screen bay at mid height (photo).
-    for (let i = 0; i < n; i++) panel(s, false, a, b, (i + 0.45) / n, (i + 0.55) / n, mid - 1.2, mid + 0.4, 0.08, accent);
+    // Yellow accent slots, one per screen bay at mid height (photo), 6 cm clear of the stripes.
+    for (let i = 0; i < n; i++) panel(s, false, a, b, (i + 0.45) / n, (i + 0.55) / n, mid - 1.2, mid + 0.4, 0.12, accent);
   });
 
   if (!tower?.rings.length) return s.finish('#f2e2c4', 0.62);
