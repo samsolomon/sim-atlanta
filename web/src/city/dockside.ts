@@ -96,6 +96,9 @@ export function createDockside(buildings: VBuilding[], site: VBuilding, _base: n
 
   const group = new THREE.Group();
   group.name = 'dockside';
+  // The columned lake porch stands outside the OSM outline (Street View, May 2015): 3.6 m deep
+  // with its eaves, about 4.3 m out.
+  group.userData.footprint = { maxProjection: 4.5 };
   const make = (b: Builder, material: THREE.MeshLambertMaterial) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
