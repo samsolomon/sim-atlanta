@@ -51,3 +51,17 @@ it('heartbeat polls on its own (no map), once per 30 s, and only while active', 
     vi.useRealTimers();
   }
 });
+
+it('distinguishes a delayed first observation from a completed empty response', async () => {
+  let finish!: (value: Response) => void;
+  const response = new Promise<Response>(resolve => { finish = resolve; });
+  vi.stubGlobal('fetch', () => response);
+  const feed = new LiveBuses();
+  expect(feed.firstPollComplete).toBe(false);
+  const poll = feed.poll();
+  await Promise.resolve();
+  expect(feed.firstPollComplete).toBe(false);
+  finish(new Response(JSON.stringify({ fetched: Date.now(), buses: [] })));
+  await poll;
+  expect(feed.firstPollComplete).toBe(true);
+});
