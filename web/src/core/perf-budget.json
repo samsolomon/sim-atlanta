@@ -12,9 +12,9 @@
   "low": {
     "viewport": "phone",
     "ceiling": {
-      "triangles": 2060000,
-      "calls": 435,
-      "programs": 86,
+      "triangles": 1250000,
+      "calls": 220,
+      "programs": 84,
       "textureMB": 125,
       "geometryMB": 190,
       "heapAfterGcMB": 460

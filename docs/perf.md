@@ -89,9 +89,9 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 
 | Low (phone), main 63d7e332 | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 1.87M with the landmark day LOD (2.17M before; 4.77M on the morning of 2026-11-23) | 2.06M | 2.0M |
-| Draw calls | 395 with lit panes in the body batch (414 after landmark batching and house blocks; 541 before) | 435 | 500 |
-| Programs | 85 | 90 | 80 |
+| Triangles | 1.14M with far-board buildings past 15 km (1.69M with the landmark LOD; 4.77M on the morning of 2026-11-23) | 1.25M | 2.0M |
+| Draw calls | 196 with far-board buildings (358 with the landmark LOD; 541 before landmark batching) | 220 | 500 |
+| Programs | 78 with far-board buildings | 84 | 80 |
 | Texture MB | 118 | 125 | 100 |
 | Geometry MB | 174 | 190 | 200 |
 | JS heap after GC | 394 MB | 460 MB | 400 MB |
