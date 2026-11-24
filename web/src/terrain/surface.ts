@@ -100,10 +100,10 @@ export class GroundSurface {
    * either neighbour exactly; cells over an opening are 5 m and clipped like the near mesh.
    * A cell whose edge borders finer cells fans from its centre node to keep them crack-free.
    */
-  farGeometry(errorM: number, maxCellM = 160) {
+  farGeometry(errorM: number, maxCellM = 160, lower = false) {
     const far = this.prebuiltFar;
     this.prebuiltFar = undefined;
-    if (far && far.errorM === errorM && maxCellM === 160) {
+    if (far && far.errorM === errorM && maxCellM === 160 && !lower) {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(far.pos, 3));
       g.setAttribute('uv', new THREE.BufferAttribute(far.uv, 2));
@@ -111,7 +111,7 @@ export class GroundSurface {
       g.setIndex(new THREE.BufferAttribute(far.index, 1));
       return g;
     }
-    const { pos, uv, indices } = farSurface(surfaceSpec(this.grid), this.heights, this.openings, errorM, maxCellM);
+    const { pos, uv, indices } = farSurface(surfaceSpec(this.grid), this.heights, this.openings, errorM, maxCellM, lower);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));

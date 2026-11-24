@@ -237,7 +237,10 @@ export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: Te
  * the sw–ne diagonal, accepted when every DEM node inside lies within `errorM` of them. See
  * GroundSurface.farGeometry.
  */
-export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: readonly OpenSlot[], errorM: number, maxCellM = 160) {
+/** `lower`: drop interior vertices by the most any of their cells' planes rise above the DEM,
+ * so nothing drawn on the ground (roads, ballast, building bases, trees) is buried by the
+ * coarser surface; rim nodes stay exact for the seams and side walls. */
+export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: readonly OpenSlot[], errorM: number, maxCellM = 160, lower = false) {
     const { rows, cols, stepM, bounds } = spec;
     const cellsX = cols - 1, cellsZ = rows - 1;
     const maxSize = 2 ** Math.floor(Math.log2(Math.max(1, maxCellM / stepM)));
@@ -252,19 +255,23 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
     const lx: number[] = [], lz: number[] = [], ls: number[] = [];
     const leafAt = new Int32Array(cellsX * cellsZ).fill(-1);
     const node = (c: number, r: number) => r * cols + c;
+    let excess = 0;
+    const le: number[] = [];
     const accept = (cx: number, cz: number, s: number) => {
+      excess = 0;
       const nw = heights[node(cx, cz)], ne = heights[node(cx + s, cz)], sw = heights[node(cx, cz + s)], se = heights[node(cx + s, cz + s)];
       for (let r = 0; r <= s; r++) for (let c = 0; c <= s; c++) {
         const h = heights[node(cx + c, cz + r)];
         if (!Number.isFinite(h)) return false;
         const plane = c + r <= s ? nw + (ne - nw) * c / s + (sw - nw) * r / s : se + (sw - se) * (s - c) / s + (ne - se) * (s - r) / s;
         if (Math.abs(h - plane) > errorM) return false;
+        if (plane - h > excess) excess = plane - h;
       }
       for (let r = cz; r < cz + s; r++) for (let c = cx; c < cx + s; c++) if (slotCell[r * cellsX + c]) return false;
       return true;
     };
     const place = (cx: number, cz: number, s: number) => {
-      const id = ls.length; lx.push(cx); lz.push(cz); ls.push(s);
+      const id = ls.length; lx.push(cx); lz.push(cz); ls.push(s); le.push(s > 1 ? excess : 0);
       for (let r = cz; r < cz + s; r++) for (let c = cx; c < cx + s; c++) leafAt[r * cellsX + c] = id;
     };
     const split = (cx: number, cz: number, s: number): void => {
@@ -287,9 +294,21 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       uv.push((x - bounds.minX) / (bounds.maxX - bounds.minX), (bounds.maxZ - z) / (bounds.maxZ - bounds.minZ));
       return i;
     };
+    const drop = new Float32Array(lower ? rows * cols : 0);
+    if (lower) for (let id = 0; id < ls.length; id++) {
+      const e = le[id];
+      if (!(e > 0)) continue;
+      const cx = lx[id], cz = lz[id], s = ls[id];
+      for (let r = 0; r <= s; r++) for (let c = 0; c <= s; c++) {
+        const C = cx + c, R = cz + r;
+        if (C === 0 || R === 0 || C === cols - 1 || R === rows - 1) continue;
+        const n = node(C, R);
+        if (drop[n] < e) drop[n] = e;
+      }
+    }
     const vertex = (n: number) => {
       let v = remap.get(n);
-      if (v === undefined) remap.set(n, v = add(bounds.minX + (n % cols) * stepM, heights[n], bounds.minZ + Math.floor(n / cols) * stepM));
+      if (v === undefined) remap.set(n, v = add(bounds.minX + (n % cols) * stepM, heights[n] - (lower ? drop[n] : 0), bounds.minZ + Math.floor(n / cols) * stepM));
       return v;
     };
     // A node strictly inside a leaf edge is kept when the cell across the edge is a void,
@@ -323,7 +342,63 @@ export function farSurface(spec: SurfaceSpec, heights: Float32Array, openings: r
       const centre = node(cx + s / 2, cz + s / 2);
       for (let i = 0; i < ring.length; i++) emit(centre, ring[i], ring[(i + 1) % ring.length]);
     }
+    if (lower) settleBelow(pos, indices, remap, heights, spec, errorM);
     return { pos, uv, indices };
+}
+
+/**
+ * Lower interior far vertices until no drawn triangle stands above a DEM node under it.
+ * Rim nodes (seams, side walls) and clipped slot vertices stay put; a few passes settle the
+ * shared vertices, since lowering one triangle's corner also lowers its neighbours. No vertex
+ * drops more than `limit` below its own DEM node, so a cell against the rim may keep a residue.
+ */
+function settleBelow(pos: number[], indices: number[], remap: Map<number, number>, heights: Float32Array, spec: SurfaceSpec, limit: number) {
+  const { rows, cols, stepM, bounds } = spec;
+  const nodeOf = new Int32Array(pos.length / 3).fill(-1);
+  for (const [n, v] of remap) nodeOf[v] = n;
+  const movable = (v: number) => {
+    const n = nodeOf[v];
+    if (n < 0) return false;
+    const c = n % cols, r = Math.floor(n / cols);
+    return c > 0 && r > 0 && c < cols - 1 && r < rows - 1;
+  };
+  for (let pass = 0; pass < 4; pass++) {
+    let moved = false;
+    for (let t = 0; t < indices.length; t += 3) {
+      const [a, b, c] = [indices[t], indices[t + 1], indices[t + 2]];
+      const ax = pos[3 * a], ay = pos[3 * a + 1], az = pos[3 * a + 2];
+      const bx = pos[3 * b], by = pos[3 * b + 1], bz = pos[3 * b + 2];
+      const cx = pos[3 * c], cy = pos[3 * c + 1], cz = pos[3 * c + 2];
+      const dx = bx - ax, dz = bz - az, ex = cx - ax, ez = cz - az, det = dx * ez - dz * ex;
+      if (Math.abs(det) < 1e-9) continue;
+      const c0 = Math.max(0, Math.ceil((Math.min(ax, bx, cx) - bounds.minX) / stepM - 1e-9));
+      const c1 = Math.min(cols - 1, Math.floor((Math.max(ax, bx, cx) - bounds.minX) / stepM + 1e-9));
+      const r0 = Math.max(0, Math.ceil((Math.min(az, bz, cz) - bounds.minZ) / stepM - 1e-9));
+      const r1 = Math.min(rows - 1, Math.floor((Math.max(az, bz, cz) - bounds.minZ) / stepM + 1e-9));
+      const ma = movable(a), mb = movable(b), mc = movable(c);
+      if (!ma && !mb && !mc) continue;
+      // The drop at the movable corners that clears the worst node: its excess over the
+      // share of the plane those corners carry there.
+      let need = 0;
+      for (let r = r0; r <= r1; r++) for (let col = c0; col <= c1; col++) {
+        const h = heights[r * cols + col];
+        if (!Number.isFinite(h)) continue;
+        const x = bounds.minX + col * stepM, z = bounds.minZ + r * stepM;
+        const wb = ((x - ax) * ez - (z - az) * ex) / det, wc = (dx * (z - az) - dz * (x - ax)) / det, wa = 1 - wb - wc;
+        if (Math.min(wa, wb, wc) < -1e-6) continue;
+        const over = wa * ay + wb * by + wc * cy - h;
+        const share = (ma ? wa : 0) + (mb ? wb : 0) + (mc ? wc : 0);
+        if (over > 1e-3 && share > 1e-6) need = Math.max(need, over / share);
+      }
+      if (need <= 1e-3) continue;
+      for (const v of [a, b, c]) if (movable(v)) {
+        const n = nodeOf[v], floor = heights[n] - limit;
+        const y = Math.max(floor, pos[3 * v + 1] - need);
+        if (y < pos[3 * v + 1]) { pos[3 * v + 1] = y; moved = true; }
+      }
+    }
+    if (!moved) break;
+  }
 }
 
 /**

@@ -373,7 +373,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // the DEM, so it does not show stair or rail carves (sub-pixel at that range), and it is
   // built eagerly (2.9 MB across the rectangle) so a swap never stalls a frame.
   const nearGeometry = mesh.geometry;
-  const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M) : null;
+  // PROTOTYPE (measurement only): ?perf&farerror=N rebuilds the far level at N m.
+  const farErrorProbe = (() => { const p = new URLSearchParams(globalThis.location?.search ?? ''); const v = Number(p.get('farerror')); return p.has('perf') && v > 0 ? v : null; })();
+  const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(farErrorProbe ?? FAR_GROUND_ERROR_M, 160, new URLSearchParams(globalThis.location?.search ?? '').has('farlower')) : null;
   const bb = grid.manifest.bounds;
   let far = false;
   yield 'far ground';
