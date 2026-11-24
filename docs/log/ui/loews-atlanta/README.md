@@ -35,7 +35,7 @@ No full-night exterior photograph was found, so this is an evidence gap. Searche
 | Same | `764,-3269,32,62,600` | 11:30 PM | [Before and after](night-before-after.jpg) |
 | Starting cam | `764,-3269,32,60,355` | 11:30 AM | [Before and after](start-day-before-after.jpg) |
 | Starting cam | `764,-3269,32,60,355` | 11:30 PM | [Before and after](start-night-before-after.jpg) |
-| Close, base and Peachtree canopy | `742,-3240,25,62,500` with `&dev`, then `__setView(25, 62, 500, 742, -3240, 3.2)` | 11:30 AM / 11:30 PM | [Day](close-day.jpg) · [Night](close-night.jpg) |
+| Close, base and Peachtree canopy | `738,-3272,80,64,500` with `&dev`, then `__setView(80, 64, 500, 738, -3272, 3.4)` | 11:30 AM / 11:30 PM | [Day](close-day.jpg) · [Night](close-night.jpg) |
 | Over the 1075 Peachtree boundary | `770,-3272,60,40,420` with `&dev&mindist=20` | 11:30 AM | [Boundary](boundary.jpg) |
 | Low tier | `764,-3269,32,62,600` with `&q=low` | 11:30 AM / 11:30 PM | [Day](low-day.jpg) · [Night](low-night.jpg) |
 
