@@ -32,6 +32,8 @@ April 2019 3DEP lidar on a 2.5 m raster, measured above the 276.2 m NAVD88 groun
 - **Parking levels:** 7 levels at about 3.1 m, up to 22 m. They are drawn as dark spandrel glass with floor lines. The photos show the base under trees and the deck, so this is an **estimate**.
 - **Lobby:** 22 to 28.4 m, with 20 office floors of 3.9 m each above it, up to the 107 m roof.
 - **Split between the masses:** 38% of each long face, measured from the east, as judged from the N6 aerial. East of the split, vertical mullions stand about 4.5 m apart. West of it, a silver band 0.95 m deep runs at every office floor.
+- **Ground:** floors are measured from the lidar ground ring (276.2 m NAVD88), the same datum as the roof, not from the rendered grade.
+- **Materials:** flat vertex colours. Every library surface compiles its own shader program, and dark glass, a silver band and a mullion read at the City orbit without texture.
 - **Glass:** very dark blue-grey (`#3d505c`). It reads almost black in the aerial.
 
 ## Lighting

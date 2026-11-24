@@ -65,7 +65,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     if (length < 3) return;
     // Long faces run east-west; the share of a face east of the split takes vertical mullions.
     const splitX = east - split * (east - west);
-    const tSplit = Math.abs(dx) > 1 ? Math.min(1, Math.max(0, (splitX - a[0]) / dx)) : (a[0] > splitX ? (dx >= 0 ? 0 : 1) : 1);
+    const tSplit = Math.abs(dx) > 1 ? Math.min(1, Math.max(0, (splitX - a[0]) / dx)) : (a[0] > splitX) === (dx >= 0) ? 0 : 1;
     const eastRange: [number, number] = dx >= 0 ? [tSplit, 1] : [0, tSplit];
     const westRange: [number, number] = dx >= 0 ? [0, tSplit] : [tSplit, 1];
     const top = y(roofH);
@@ -109,5 +109,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
   s.prism(ccw(pent), y(roofH), y(penthouseH), '#8b908e', '#9a9e9b');
 
   const built = s.finish('#f2e6cf', 0.6);
+  // Lit panes sit on the glass: let neighbours' shadows fall on them too, or they show by day.
+  built.group.children.forEach(m => { m.receiveShadow = true; });
   return built;
 }
