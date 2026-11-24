@@ -139,6 +139,7 @@ import { createAmericasMart } from './americasmart';
 import { createHurtBuilding } from './hurt-building';
 import { createAymDeck } from './aym-deck';
 import { createTheMitchell } from './the-mitchell';
+import { createRenaissanceLofts } from './renaissance-lofts';
 import { createTheCenter } from './the-center';
 import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
@@ -531,6 +532,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let samNunn: ReturnType<typeof createSamNunn> = null;
   let aymDeck: ReturnType<typeof createAymDeck> = null;
   let theMitchell: ReturnType<typeof createTheMitchell> = null;
+  let renaissanceLofts: ReturnType<typeof createRenaissanceLofts> = null;
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let olympia: ReturnType<typeof createOlympia> = null;
@@ -695,7 +697,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         theMitchell = createTheMitchell(afterAymDeck, ground, low ? 'low' : 'high');
         const afterTheMitchell = theMitchell?.buildings ?? afterAymDeck;
         olympia = createOlympia(afterTheMitchell, ground);
-        const city = { ...vd, buildings: olympia?.buildings ?? afterTheMitchell,
+        const afterOlympia = olympia?.buildings ?? afterTheMitchell;
+        renaissanceLofts = createRenaissanceLofts(afterOlympia, ground, low ? 'low' : 'high');
+        const city = { ...vd, buildings: renaissanceLofts?.buildings ?? afterOlympia,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
@@ -766,6 +770,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (samNunn) world.group.add(samNunn.group);
         if (aymDeck) world.group.add(aymDeck.group);
         if (theMitchell) world.group.add(theMitchell.group);
+        if (renaissanceLofts) world.group.add(renaissanceLofts.group);
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (olympia) world.group.add(olympia.group);
@@ -790,7 +795,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
-            samNunn, candler, equitable, grady, aymDeck, theMitchell, olympia,
+            samNunn, candler, equitable, grady, renaissanceLofts, aymDeck, theMitchell, olympia,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
@@ -1996,6 +2001,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       samNunn?.setNight(night);
       aymDeck?.setNight(night);
       theMitchell?.setNight(night);
+      renaissanceLofts?.setNight(night);
       candler?.setNight(night);
       equitable?.setNight(night);
       olympia?.setNight(night);
