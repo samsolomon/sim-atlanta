@@ -6,7 +6,7 @@ import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, type FreightUnit } from '../vign
 // A replayable model railway passage. Its phase, speed and consist are illustrative.
 const ENTRY_MS = Date.parse('2026-11-20T19:12:02Z');
 const SPEED_MPS = 4.5;
-const CONSIST: FreightUnit[] = ['locomotive', 'locomotive', 'boxcar', 'boxcar', 'boxcar', 'boxcar', 'boxcar'];
+const CONSIST: FreightUnit[] = ['locomotive', 'locomotive', 'boxcarBlue', 'boxcarBlue', 'boxcarBlue', 'boxcar', 'boxcar'];
 const GAP = .30;
 
 function visibleSections(runs: FreightTreadPoint[][]) {

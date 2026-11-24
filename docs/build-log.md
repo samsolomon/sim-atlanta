@@ -3200,6 +3200,10 @@ Two of the six freight locomotive studies had a boxcar attached. The Model Lab n
 
 The first car in the freight kit is a three-bay covered grain hopper, sized from Greenbrier's 5,400 ft³ data sheet: 17.88 m over couplers and 3.25 m wide. It shares the boxcar's trucks and costs 660 triangles on phones and 1,000 on desktop. Three of them now follow the NS-like locomotives through Brookwood. The first build passed on desktop but pushed phones to 91 shader programs against a ceiling of 90. The car's geometry wasn't the cause. The WIP had switched the Brookwood train to instancing on phones, and an instanced, clipped Lambert is a different program from a plain one. Separate meshes on low tier brought it back to 90 with 567 draws, and a test now pins that choice. A second test caught the hexagonal phone wheels floating 2.4 cm above the rail because they rested on a flat edge. Turning every freight wheel a quarter-step puts a vertex on the rail. [Lab and City, day and night, both tiers](log/freight/grain-hopper/comparison.jpg)
 
+### 2026-11-23 — Three paints for one boxcar
+
+The freight kit's boxcar now comes in its original oxide, a sun-bleached brown with darker painted-out patches, and a CSX-family navy. All three share one shape and one material. Each paint is a separate vertex-coloured geometry of 800 triangles, and the patches add 12. The first navy, input `#3f5d84`, rendered as a bright royal blue in the Lab. Halving its saturation to `#34465e` landed on the photo's navy, and on Sam's review a little grime (`#3b4859`) sat it beside the weathered oxide. The faded car went pink when lightened, so bleached rust needed less red, not more white. Downtown now runs three navy cars and two oxide; Brookwood runs three hoppers, three faded cars and two oxide. [Lab and City, day and night](log/freight/boxcar-variants/comparison.jpg)
+
 **2026-11-23 — The Empire Building on Broad.** A 14-floor count had supplied the old extrusion. Roof returns put the buff masonry shaft near 375 m NAVD88, with two courts opening down to 345 and 335 m behind it. The public door sits in the southern arch of the central three. The roof camera gained 2,258 triangles and two draws on low. [Broad Street and the surrounding block by day and night](log/ui/empire-building/README.md)
 
 ### 2026-11-23 — Five shader programs back on the phone board
@@ -3228,3 +3232,17 @@ to the existing shell batch, with no new draw or material.
 [furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).
 
 **2026-11-23 — The Marriott Marquis stops smearing.** Sam asked whether a cream band down the hotel's curved face was texture or reality. It was neither. An ellipse of one-sided stone wedges filled up to 64% of each window mid-bulge, and at 0.3 m per pixel the slivers of glass left over aliased into vertical streaks. Photographs show the real piers splaying symmetrically into V fins that are widest at the terrace and gone about a dozen floors up. Rebuilding the flare that way keeps every bay a centred dark pane. A raycast test samples 168 bay centres on the lower bulge and fails on the old wedges (bay 6, floor 8 hit stone). No new material. [Before and after](log/ui/marriott-marquis/day-before-after.jpg)
+
+### 2026-11-23 — Where North Avenue meets its tunnel
+
+Sam kept seeing a dark band where North Avenue drops under the railway. The paint wasn't causing it. The open ramp at each mouth took its height from the board at only six points across 22.6 m, and the outer two sat on the bank. At the west mouth the lanes rose 1.3 m to meet a bank that had climbed onto the painted road. The east step was 0.3 m. The shadowed faces of those steps were the band. Vehicles followed the same function, so they ran up to 1.38 m away from the drawn pavement.
+
+The fix starts on the board. The site's existing DEM regrade now levels the road for 10 m beyond each mouth and eases back into the terrain by 30 m. The ramp follows the board at 1 m intervals across, then descends to the surveyed floor over 20 m. Its strips keep a fixed vertex count, so neighbouring rows share every vertex, and a 0.4 m apron tucks under the board to close the seam. A new test compares the board and the drawn pavement across both mouths on both tiers. At baseline it found a 1.40 m step, 1.38 m vehicle error and 4.6 m cross-fall. After the fix those are 0.04 m, 0.01 m and 0.05 m.
+
+Markings were the second seam. The board paints one yellow line down each mapped carriageway. At the mouths those lines are 1–1.7 m from the pale dashes the cut drew. The cut now carries the board's own line from mouth to mouth, and the median nose and kerbs grow from zero width over 12 m. The low tier spends 921 more triangles on the underpass, which now totals 4,399 against a 5,000 cap. It adds no shader program; low holds 85 of 90 after rebasing on main.
+
+[West mouth, before and after](log/underpass-road-joins/join-compare-na-west-a-high-14.jpg) · [East mouth](log/underpass-road-joins/join-compare-na-east-a-high-14.jpg) · [West at night](log/underpass-road-joins/join-compare-na-west-a-high-23.jpg)
+
+### 2026-11-23 · 171 Seventeenth at the bridge
+
+From the Connector, the 71 × 36 m office tower reads as three shapes. The stone-framed west wing steps down 9 m from the ribbon-glazed shaft, and the crown rises 8 m above it. In the night photograph the brightest surface was the broad glass crown itself. The City model gives that surface a warm glow and shares its window lighting with the scattered panes below. The skin uses 3,848 triangles across two meshes and keeps the low tier at 90 shader programs. [Matched day and night views](log/ui/171-seventeenth/README.md)
