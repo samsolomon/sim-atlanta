@@ -308,3 +308,24 @@ it('draws the Campanile as its present-day stripped frame at the lidar roof, unl
   expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
   expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
+
+it('stacks 1072 West Peachtree as podium, office block and glass tower, with a dark crown', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:1464967906');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('1072 West Peachtree');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (u: number, v: number) => {
+    const a = Math.atan2(.0153, 1), x = 308.3 + u * Math.cos(a) - v * Math.sin(a), z = -3351.2 + u * Math.sin(a) + v * Math.cos(a);
+    return new Raycaster(new Vector3(x, 400, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0]?.point.y ?? 0;
+  };
+  expect(heightAt(12, -18)).toBeCloseTo(228, 0); // the crown's raised middle, at the reported 749 ft
+  expect(heightAt(12, -32)).toBeCloseTo(223.4, 0); // parapet shoulder
+  expect(heightAt(-4, 10)).toBeCloseTo(72, 0); // office block, floors 11–18
+  expect(heightAt(-20, 30)).toBeCloseTo(36, 0); // parking podium and Commons
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  // A landmark-class skin stays inside the 2,400-triangle body budget at low tier.
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  // Nothing above the residential roof lights at night (the crown was unlit in August 2026).
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(219);
+});

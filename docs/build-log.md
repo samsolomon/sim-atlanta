@@ -3332,3 +3332,23 @@ The mapped outline for 1075 Peachtree breaks the site into seven parts. The tall
 ### 2026-11-23 · Nomia, a tower newer than the lidar
 
 Nomia opened in late 2023, so the 2019 point cloud shows a construction site and the mapped parts guess 111.6 m. The skin uses the reported 33 storeys: a 70 × 20 m slab, rotated 29° off the board axis, in a near-black green frame with full-height glass. It adds stacked end balconies, a lighter amenity floor and a pale penthouse. The first attempt returned nothing, because one of the shell's footprint probes sat 3 m outside the slab's rotated frame. The fixes were moving that probe and a north-facing review camera that put the whole face in shadow. Treated as residential, it keeps about 30% of its units lit at 23:30. [Day, night and close views](log/ui/nomia/README.md)
+
+### 2026-11-23 — Atlanta's newest tallest tower
+
+The unnamed 60-floor outline at West Peachtree and 12th is 1072 West Peachtree,
+which topped out in November 2025. The 2019 lidar still shows an empty lot, so
+the developer's floor-stack diagram supplies the heights.
+- A 36 m base holds nine parking levels and the glazed Commons.
+- A 72 m precast office block covers floors 11 to 18.
+- The blue-grey glass tower stops at a 219 m roof, a parapet steps up to 223.4 m,
+  and the middle of the broad faces reaches the reported 749 ft (228 m).
+
+A full-height balcony slot is recessed into each face. The slots are offset like a
+pinwheel, matching the published floor plan. At night the residences light one unit
+at a time, and the podium and office roof edges glow. The crown stays dark, as it
+was in August 2026. Its announced lighting hasn't appeared yet. The body is 1,950
+triangles. [Before and after](log/ui/1072-west-peachtree/compare-day.jpg) ·
+[night](log/ui/1072-west-peachtree/compare-night.jpg) ·
+[crown](log/ui/1072-west-peachtree/crown-day-night.jpg) ·
+[sources](1072-west-peachtree.md)
+
