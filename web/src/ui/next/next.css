@@ -634,6 +634,8 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-track-info strong { align-self: end; font-size: 15px; }
 .a2-track-info span { align-self: start; font-size: 12px; color: var(--a2-ink2); }
 .a2-player progress { display: block; width: 100%; height: 4px; margin: 12px 0; border: 0; border-radius: 2px; overflow: hidden; }
+.a2-player progress { appearance: none; background: var(--a2-sep); }
+.a2-player progress::-moz-progress-bar { background: var(--a2-ink); }
 .a2-player progress::-webkit-progress-bar { background: var(--a2-sep); }
 .a2-player progress::-webkit-progress-value { background: var(--a2-ink); }
 .a2-transport { justify-content: center; gap: 18px; }
@@ -641,5 +643,5 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-volume { gap: 10px; }
 .a2-volume svg { width: 18px; height: 18px; }
 .a2-volume input { flex: 1; height: 44px; accent-color: var(--a2-ink2); }
-@media(min-width:601px) { .a2-player { left: calc(50% + 164px); } }
+@media(min-width:601px) { .a2-player { left: min(calc(50% + 164px), calc(100% - 158px)); } }
 @media(max-width:600px) { .a2-player { width: calc(100vw - var(--a2-left) - var(--a2-right)); } }
