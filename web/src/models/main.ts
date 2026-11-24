@@ -727,11 +727,17 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 /** `near` defaults to the lab's 0.1 m; the swatches' City-distance view uses City's 20 m so the ink matches. */
 type ViewPreset = { pos: [number, number, number]; target: [number, number, number]; fov: number; near?: number };
-/** The 20-well intermodal strip: each half of the train side-on, then a close run of cars. */
+/**
+ * The 20-well intermodal strip, keyed by the Lab's View buttons: ¾ front (the initial view) is a
+ * close run of cars, Front and Rear are each half of the train side-on, Side is the whole train
+ * and Top looks down on it.
+ */
 const STRIP_VIEWS: Record<string, ViewPreset> = {
-  'Front ten': { pos: [-150, 60, 118], target: [0, 2, 118], fov: 40 },
-  'Rear ten': { pos: [-150, 60, -118], target: [0, 2, -118], fov: 40 },
-  'Close': { pos: [-55, 22, 150], target: [0, 2.5, 175], fov: 42 },
+  'Front': { pos: [-150, 60, 118], target: [0, 2, 118], fov: 40 },
+  '¾ front': { pos: [-55, 22, 150], target: [0, 2.5, 175], fov: 42 },
+  'Side': { pos: [-230, 150, 0], target: [0, 2, 0], fov: 50 },
+  'Rear': { pos: [-150, 60, -118], target: [0, 2, -118], fov: 40 },
+  'Top': { pos: [0.01, 420, 0], target: [0, 0, 0], fov: 60 },
 };
 const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
