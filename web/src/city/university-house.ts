@@ -53,7 +53,7 @@ export function createUniversityHouse(buildings: VBuilding[], grid: GroundGrid, 
   if (!found) return null;
   const shell = found;
   const high = quality === 'high';
-  const windows = ['#3a4652', '#43505c', '#36414c'];
+  const windows = ['#4f5c69', '#56636f', '#4a5866'];
   const t = local(tower);
 
   shell.prism(local(garage), shell.base, deckTop, '#c9c7c0', '#b3aea4');
