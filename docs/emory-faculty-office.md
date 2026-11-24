@@ -1,0 +1,13 @@
+# Emory Faculty Office Building
+
+The four-storey Emory Clinical Training and Faculty Office Building stands at 49 Jesse Hill Jr. Drive SE, at Armstrong Street, across from Grady Memorial Hospital. City replaces the single downtown Overture footprint `806a6dd9-0ea5-47e1-a6ab-99d9c062da89`. The neighbouring buildings remain independent. [Emory faculty guide](https://med.emory.edu/about/faculty/faculty-development/_documents/emory-at-grady-faculty-onboarding-guide-final1.pdf) · [Emory dedication report](https://news.emory.edu/emory-report-archive/erarchive/2004/April/er%20April%2019/4_19_04gradybuilding.html)
+
+## Height and footprint
+
+The mapped plan spans about 35 × 44 m. The USGS Georgia Statewide B2 point cloud was clipped to the footprint in City's local coordinate system. Inside the ring, 2,186 returns between 321.2 and 321.9 m had a median of 321.57 m. The raised west-side enclosure had 1,041 returns between 325.7 and 326.4 m with a median of 326.00 m. The smaller headhouse had 199 returns between 328.7 and 329.2 m with a median of 328.98 m. Classified ground within 5 m of the footprint had a median elevation of 304.82 m NAVD88. These give main roof, plant enclosure and headhouse datums of 321.6, 326.0 and 329.0 m NAVD88. The terrain anchors the base on the street slope. The parapet profile and the enclosure outlines are approximations. [USGS 3DEP point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json)
+
+## Exterior evidence
+
+The Emory historian's corner photo shows warm red-brown brick over a tan base, pale horizontal belt courses, two tall middle ranks of divided windows and a compact top rank. From Armstrong, the pale surround of the arched entrance reads through street-tree cover. The 2025 Armstrong panorama shows the same division in direct sun. The 2017 service-side panorama shows a plainer side with a blind corner return and exposed utilities. City models the masonry rhythm and the two street arches. Individual window sizes, stone-course heights, frame widths, arch depth and the less visible sides are estimates. [Emory corner photo](https://emoryhistorian.org/2016/10/12/the-cornerstone-at-the-dumpster/emory-faculty-building-at-grady-hospital-former-site-of-acps/) · [Armstrong Street, March 2025](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75283,-84.38210&heading=15&pitch=12) · [Service side, January 2017](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.75343,-84.38226&heading=135&pitch=10)
+
+The day references show daylight and glass reflections. The exterior search yielded no reliable full-night photograph. The warm entry glazing and sparse occupied offices are illustrative.

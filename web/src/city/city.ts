@@ -126,6 +126,7 @@ import { createSamNunn } from './sam-nunn';
 import { createCandler } from './candler';
 import { createEquitable } from './equitable';
 import { createGrady } from './grady';
+import { createEmoryFacultyOffice } from './emory-faculty-office';
 import { createStateFarmArena } from './state-farm-arena';
 import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
@@ -435,6 +436,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let grady: ReturnType<typeof createGrady> = null;
+  let emoryFacultyOffice: ReturnType<typeof createEmoryFacultyOffice> = null;
   let russell: ReturnType<typeof createRussellBuilding> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
   let skyView: ReturnType<typeof createSkyView> = null;
@@ -572,8 +574,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const hospitalSite = arena?.buildings ?? arenaSite;
         grady = createGrady(hospitalSite, ground);
         const afterGrady = grady?.buildings ?? hospitalSite;
-        candler = createCandler(afterGrady, ground);
-        const afterCandler = candler?.buildings ?? afterGrady;
+        emoryFacultyOffice = createEmoryFacultyOffice(afterGrady, ground);
+        const afterEmory = emoryFacultyOffice?.buildings ?? afterGrady;
+        candler = createCandler(afterEmory, ground);
+        const afterCandler = candler?.buildings ?? afterEmory;
         equitable = createEquitable(afterCandler, ground);
         const samNunnSite = equitable?.buildings ?? afterCandler;
         atlantaCityHall = createAtlantaCityHall(samNunnSite, ground);
@@ -655,6 +659,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
+        if (emoryFacultyOffice) world.group.add(emoryFacultyOffice.group);
         const landmarks = world.group.children.slice(landmarksFrom);
         for (const c of landmarks) c.userData.perf = 'buildings';
         if (landmarkBatchOff) world.group.add(batchLandmarkBodies(landmarks));
@@ -670,7 +675,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
-            samNunn, candler, equitable, grady,
+            samNunn, candler, equitable, grady, emoryFacultyOffice,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
@@ -1673,6 +1678,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       candler?.setNight(night);
       equitable?.setNight(night);
       grady?.setNight(night);
+      emoryFacultyOffice?.setNight(night);
       terrain?.setNight(night);
       east?.setNight(night);
       north?.setNight(night);
