@@ -3,7 +3,10 @@ import { arterialTurns, TURN_SHARE } from './arterial-turns';
 import { arterialTrafficRoutes, type ArterialCorridor } from './arterial-traffic-routes';
 import { signalPhase, signalPositions } from './traffic-signals';
 import type { VRoad } from '../vignette/world';
-import type { P2 } from '../vignette/geom';
+import { roadWidth } from '../terrain/transport-data';
+import { slotsFor } from './road-traffic';
+import { LENGTH, vehicleGeometry } from '../vignette/vehicles';
+import { segDist, type P2 } from '../vignette/geom';
 
 const bounds={minX:-250,maxX:250,minZ:-250,maxZ:250};
 const make=(id:string,pts:P2[],from:string,to:string,allow:'both'|'forward'|'reverse'='both'):ArterialCorridor => {
@@ -32,6 +35,61 @@ describe('arterial turns',()=>{
       const entry=c.line.at(c.turnSignal!.s);
       expect(Math.abs(entry.dx)).toBeCloseTo(1);
     }
+  });
+  it('keeps rigid semis on the through course at a 90-degree two-way intersection', () => {
+    const cross = [west, east, make('south', [[0,0],[0,200]], 'j', 's')];
+    const incoming = arterialTrafficRoutes(cross, bounds).map(c => ({ ...c, truckShare: 1, semiShare: 1 }));
+    const courses = arterialTurns(incoming, cross, [[0,0]]);
+    const turn = courses.find(c => c.turnSignal && c.line.pts[0][0] === -200)!;
+    const straight = courses.find(c => !c.turnSignal && c.line.pts[0][0] === -200)!;
+    const plan = (c: typeof turn) => slotsFor([c], 100, 1, 19, 'high');
+    expect(new Set(plan(straight).map(s => s.kind))).toEqual(new Set(['semi']));
+    const trucks = plan(turn);
+    expect(trucks.length).toBeGreaterThan(0);
+    expect(trucks.length).toBe(slotsFor([turn], 100, 1, 19, 'low').length);
+
+    // Sweep actual mesh vertices with City's centre position and front-to-rear heading.
+    // Split the eight-segment cubic at its quarter points; include a half-body of straight
+    // approach and departure, where the rigid nose or tail can still cross the lane edge.
+    const { line } = turn;
+    const sweep = (kind: 'box' | 'semi') => {
+      const half = LENGTH[kind] / 2;
+      const mesh = vehicleGeometry(kind);
+      const vertices = mesh.getAttribute('position');
+      const footprint = new Map<string, P2>();
+      for (let i = 0; i < vertices.count; i++) {
+        const point: P2 = [vertices.getX(i), vertices.getZ(i)];
+        footprint.set(point.join(','), point);
+      }
+      mesh.dispose();
+      const peaks = [0, 0, 0], outside = [0, 0, 0];
+      const directionalWidth = roadWidth(west.runs[0].road) / 2;
+      for (let s = line.cum[1] - half; s <= line.cum[9] + half; s += .05) {
+        const c = line.at(s), f = line.at(s + half), r = line.at(s - half);
+        const chord = Math.hypot(f.x - r.x, f.z - r.z);
+        const dx = (f.x - r.x) / chord, dz = (f.z - r.z) / chord;
+        const zone = s < line.cum[3] ? 0 : s < line.cum[7] ? 1 : 2;
+        for (const [x,z] of footprint.values()) {
+          const px = c.x + x*dz + z*dx, pz = c.z - x*dx + z*dz;
+          const offset = Math.min(...line.pts.slice(1).map((b,i) => segDist(px,pz,line.pts[i],b)));
+          // This eastbound-to-southbound right turn occupies the two right-hand
+          // halves of the secondary streets, bounded by their centre lines and curbs.
+          const approach = Math.hypot(Math.max(0, px), Math.max(0, -pz, pz - directionalWidth));
+          const departure = Math.hypot(Math.max(0, px, -directionalWidth - px), Math.max(0, -pz));
+          const junction = Math.hypot(Math.max(0, Math.abs(px) - directionalWidth),
+            Math.max(0, Math.abs(pz) - directionalWidth));
+          outside[zone] = Math.max(outside[zone], Math.min(approach, departure, junction));
+          peaks[zone] = Math.max(peaks[zone], offset);
+        }
+      }
+      return { peaks, outside };
+    };
+    const rigid = sweep('semi'), box = sweep('box');
+    for (let zone = 0; zone < 3; zone++) {
+      expect(rigid.outside[zone]).toBeGreaterThan(3);
+      expect(rigid.peaks[zone]).toBeGreaterThan(box.peaks[zone]);
+    }
+    expect(new Set(trucks.map(s => s.kind))).toEqual(new Set(['box']));
   });
   it('splits incoming flow without adding demand or new mid-block fade points',()=>{
     for (const source of base) {
