@@ -3396,3 +3396,7 @@ On the A16, hiding buildings alone took the default view from 26 to 41 fps, and 
 ### 2026-11-24 · Hanover Midtown and a podium with holes
 
 The first render of Hanover Midtown was the generic box, because the mapped podium part carried four rings: an outer ring plus courtyard holes under the tower. The skin's guard expected exactly one. Using the outer ring fixed it. The L-shaped tower is blue-green glass with white fins about every 8.5 m. The amenity deck on the 25 m podium has a pool, lawn and cabanas, which at the review orbit say "apartment tower" more clearly than any facade detail. Night follows the property's pool-deck photograph, with a third of the units lit. [Day, night and pool deck](log/ui/hanover-midtown/README.md)
+
+### 2026-11-24 · Loews and the hotel next door
+
+Loews Atlanta's mapped height of 79.9 m looked low for a 2010 tower, but the lidar agrees. The roof is at 405 m NAVD88 over a 295 m street, with the Peachtree half rising to 411.5 m and the west wing stopping at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
