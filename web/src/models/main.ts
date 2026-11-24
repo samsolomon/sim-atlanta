@@ -80,7 +80,10 @@ const models = {
   xn40Rapid: 'New Flyer XN40 · Rapid A-Line',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
+  freightGrainHopper: 'Three-bay covered grain hopper',
   freightBoxcar: '50-foot boxcar',
+  freightBoxcarFaded: '50-foot boxcar · faded',
+  freightBoxcarBlue: '50-foot boxcar · blue',
   cm44ac: 'GE/Wabtec CM44AC, CSX-like',
   cm44acNs: 'GE AC44-type, NS-like',
   es44acNs: 'GE ES44AC, NS-like',
@@ -123,7 +126,7 @@ const SPECIES_NOTES: Record<string, string> = {
 };
 const freightModels = {
   cm44ac: 'locomotive', cm44acNs: 'locomotiveNs', es44acNs: 'es44acNs',
-  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar',
+  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar', freightBoxcarFaded: 'boxcarFaded', freightBoxcarBlue: 'boxcarBlue', freightGrainHopper: 'grainHopper',
 } as const satisfies Record<string, FreightUnit>;
 function isFreightModel(id: string): id is keyof typeof freightModels {
   return Object.hasOwn(freightModels, id);
@@ -573,7 +576,8 @@ function build() {
   }
   if (isFreightModel(model)) {
     const unit = freightModels[model];
-    const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: unit !== 'boxcar' }), passengerMaterial(night));
+    if (unit === 'grainHopper') document.getElementById('tier')!.hidden = false;
+    const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: true, low: treeQuality === 'low' }), passengerMaterial(night));
     mesh.position.y = .125;
     mesh.castShadow = mesh.receiveShadow = true;
     scene.add(mesh); cars = [mesh];
@@ -581,14 +585,17 @@ function build() {
     blurb.textContent = ({
       cm44ac: 'CSX 7257, seen at Georgia State, is a CM44AC: a GE AC4400CW rebuilt by Wabtec with a new cab. Modelled in CSX-like blue-grey and yellow. ',
       cm44acNs: 'The same GE body in an NS-like scheme, with a black hood and white nose stripes. ',
+      freightGrainHopper: 'Illustrative grain car with a continuous trough hatch and three gravity outlets. ',
       freightBoxcar: 'Illustrative steel boxcar with a sliding door and two four-wheel trucks. ',
+      freightBoxcarFaded: 'The same boxcar sun-bleached, with darker paint over removed markings. ',
+      freightBoxcarBlue: 'The same boxcar in a dark blue common on CSX-family cars. ',
       es44acNs: 'GE Evolution-series road locomotive with the long flared radiator, in an NS-like black and white scheme. ',
       es44ah: 'GE Evolution-series road locomotive with the long flared radiator, in a CSX-like blue-grey and yellow scheme. ',
       sd70ace: 'EMD road locomotive with a broad safety cab, brow headlights and six-axle running gear, in an NS-like scheme. ',
       gp382: 'Compact EMD road-switcher with a narrow short hood and four-axle Blomberg trucks, in a CSX-like scheme. ',
     })[model] + 'Lab study; no logos or numbers. ';
     const link = document.createElement('a');
-    const notes = unit === 'boxcar' ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
+    const notes = unit.startsWith('boxcar') || unit === 'grainHopper' ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
     link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/' + notes;
     link.textContent = 'Dimensions and reference photos'; blurb.append(link);
     return;

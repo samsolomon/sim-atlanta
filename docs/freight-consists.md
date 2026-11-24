@@ -19,6 +19,20 @@ Dimensions below are **proposed modelling envelopes** in metres, length over cou
 
 Use a shared two-axle truck, wheel diameter, knuckle coupler, sill and bolster builder with per-class truck centers and length. A well needs a depressed floor, a tank needs stub sills, and a hopper needs open space below its bays. Bake those parts into one vertex-coloured geometry per car/LOD/load for instancing. Use painted ribs at low detail and geometry for projecting handbrakes, running boards and end ladders at high detail. Seed restrained dust, fading and rust by block. Omit lettering, reporting marks, graffiti, logos and road numbers. The equipment gallery provides cross-checks for silhouette and cargo. [Union Pacific equipment photographs](https://www.up.com/news/service/tr181121-rail-car-types)
 
+### Built: three-bay covered grain hopper
+
+The envelope follows Greenbrier's 5,400 ft³ covered hopper data sheet (October 2019): 58 ft 8 in over couplers, 10 ft 8 in wide and 15 ft 6 in tall. [Greenbrier 5400 data sheet](https://www.gbrx.com/wp-content/uploads/2021/06/5400cf-Covered-Hopper-Railcar.pdf). The model is 17.88 m long, 3.25 m wide and about 4.72 m to the roof walk. The 13.4 m truck centres, bay slopes, outlet gates, roof walk, end platforms and ladders are estimated from the Doraville and Inman photographs above. It uses the boxcar's trucks, wheels and couplers on a narrow through sill, in a light-grey paint with no lettering. Triangles: 660 low, 1,000 high. Lab entry `freightGrainHopper`. Brookwood Main 2 now runs two NS-like locomotives, three hoppers and five boxcars. Low tier keeps separate meshes with the reduced shape and the shared freight Lambert, so it adds no shader program (90/90). [Lab and City, day and night, both tiers](log/freight/grain-hopper/comparison.jpg)
+
+### Built: boxcar paints
+
+The existing 50-foot-class boxcar now comes in three paints, all with the same shape and material. Each paint is one baked vertex-colour geometry, so it adds a draw only where it appears and adds no shader program.
+
+- **Oxide.** The original paint.
+- **Faded.** A sun-bleached brown with three darker painted-out patches per side where markings were removed. Reference: [SOU 531111, June 26, 2016](https://commons.wikimedia.org/wiki/File:SOU_531111_(27843222280).jpg), CC BY-SA 2.0, by Dan from PQ. That car is ex-Southern and is still in Southern lettering under NS. Its graffiti and lettering are omitted.
+- **Blue.** The dark blue of CSX-family plug-door cars. Reference: [Boxcar, CSX, Danville IL, 1987](https://commons.wikimedia.org/wiki/File:Boxcar,_CSX_-_10586756734.jpg), CC0, by Gary Lee Todd. The yellow lettering is omitted.
+
+Colours were set by eye against the photos in rendered Lab frames, with inputs brighter than the photos because the grade crushes dark blues. Downtown, the CSX-like train now runs three blue cars and two oxide. Brookwood's NS-like train runs three hoppers, three faded cars and two oxide. Each car is 800 triangles, unchanged; the faded paint adds 12 for its patches. [Lab and City, day and night](log/freight/boxcar-variants/comparison.jpg)
+
 ## Passage selection and power
 
 Derive the passage index from a fixed UTC epoch and fixed line-specific slot length. Use floor division for dates before the epoch. Hash the stable line ID, signed slot and recipe version. Draw direction, recipe, length, locomotive selection, trailing orientation, blocks and paint from that seed. Never advance shared random state from animation frames. Give downtown a slot long enough for the longest approved train to leave the board. Keep Brookwood’s 20-minute slots and yield to the scheduled Crescent. Compute tail clearance from the chosen cars’ lengths and coupler gaps. Seeking a given instant from either direction, reloading and changing quality must select the same train.
@@ -31,7 +45,7 @@ Scale the proposed power count by trailing length: one unit below 180 m, two at 
 
 ## Rendering, selection and acceptance
 
-Use the existing FreightBatches key of geometry plus clipping material. Reuse existing material instances and shader programs. In the current renderers high tier uses instancing and low tier uses individual meshes. Establish reuse of an existing instanced, clipped Lambert program on low before rolling out car variety. Measure the actual renderer program count, especially across tunnel mouths. Any additional program at the stated 90/90 ceiling blocks that integration.
+Use the existing FreightBatches key of geometry plus clipping material. Reuse existing material instances and shader programs. In the current renderers high tier uses instancing and low tier uses individual meshes. Today low tier draws individual meshes with the shared freight material, because instancing Brookwood on low compiled a 91st program (covered hopper WIP). Every new car reuses that one material. Per-car meshes cannot meet the low draw targets below for 12–30-car recipes (low already uses 567 of 600 calls), so low-tier instancing needs one of the program slots that #391 frees before the City consists PR. Measure the actual renderer program count, especially across tunnel mouths. Any additional program at the stated 90/90 ceiling blocks that integration.
 
 For one unobstructed visible train, target low/high colour draws of 2–3 / 2–5 for a unit or intermodal train and 3–5 / 3–8 for a manifest. Budget one draw per distinct visible geometry/load and power variant per clipping group. Shared paint across a block can be baked into a bounded geometry variant; count each active variant. Do not enable per-instance colour if it creates a shader permutation. A downtown train spanning openings can draw several clipping groups; report actual peak calls and occupied groups separately. Reuse instance capacity across passages without creating a new pool each slot. Preserve pickable car poses and stable train IDs.
 

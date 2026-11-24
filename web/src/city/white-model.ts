@@ -217,6 +217,8 @@ export function createWhiteModel(o: {
           fade(0);
           overlay.style.opacity = '1';
         }
+        // The overlay now owns the white pixels. Release the temporary shader programs.
+        white.dispose();
         // A resize would stretch the still out of register with the scene: drop it instead.
         stillCamera.copy(o.camera.matrixWorld);
         ro = new ResizeObserver(() => this.check());

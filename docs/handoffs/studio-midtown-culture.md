@@ -1,3 +1,49 @@
+# Studio Midtown Culture handoff to Claude Opus
+
+**Current worktree:** `studio-midtown-culture`, branch `samsolomon/high-piazza-people`.
+**Only active PR:** [#389 — High Museum visitors](https://github.com/samsolomon/sim-atlanta/pull/389), OPEN and held for Sam’s OK. Owner: Claude Opus session `ba45f7e8-2a67-4069-ae27-fc13f736da26`. Coordinator thread for this revision: `msg_fd1939706770`.
+
+### Sam’s requests
+
+> there's a little kind of like courtyard in the middle where they have tables and stuff. It'd be nice to have like people sitting there or people kind of like walking around the High.
+
+> I like the little table models at the High. The only thing I might be a little bit worried about are like where they're positioned. It's kind of hard to see here.
+
+The second request came with a screenshot circling the open paved square, between the Woodruff canopy slab and the High's entrance slab. The coordinator asked for the tables there, checked against photos, umbrellas only if November photos show them, seated figures kept, walkers crossing, and readability at the 250–450 m orbit.
+
+### State (revision 2)
+
+- Twelve tables in three rows of four at local u −48…−34.5, v 17…25 in `fixtures/arts-campus.json`, inside the grove that the leaf-on Esri aerial shows. Sources are in `docs/arts-campus.md`.
+- Each table has four red chairs, a warm `#f5ead4` top, and an open cream umbrella at every other table (Sam's pick). `umbrellas: 'furled'` in `arts-campus.ts` is the one-line switch back.
+- Ten seats are set by `highSeated(crowd)`. Walker routes avoid the grove, and a test enforces a 1.3 m clearance.
+- No new material or batch. Low remains at 90/90 programs.
+
+| View | City camera | Eastern time, Nov 20 2026 |
+| --- | --- | --- |
+| [Lunch](../log/ui/high-visitors/lunch.jpg) · [Night](../log/ui/high-visitors/night.jpg) | `565,-3965,-101,55,260` | 13:00 · 23:00 |
+| [Café grove close-up](../log/ui/high-visitors/tables.jpg) · [furled umbrellas](../log/ui/high-visitors/tables-furled.jpg) | `520,-3955,-101,50,60` + `&dev&mindist=20` | 13:00 |
+| [Before/after](../log/ui/high-visitors/compare-lunch.jpg) · [day/night](../log/ui/high-visitors/day-night.jpg) · [umbrella options](../log/ui/high-visitors/umbrella-options.jpg) | as above | |
+
+Checks:
+- `pnpm test`: all passed. Rust passed. Web passed 1,082, with one skip. Python skipped because there is no `.venv`. `east-rail` timed out once under capture load, then passed when rerun alone and in the full rerun.
+- `pnpm test:perf`, low: 567 draws, 2,357,089 triangles, 90/90 programs, 393 MB.
+- `pnpm test:perf`, high: 1,191 draws, 13,895,605 triangles, 105/140 programs, 500 MB.
+- Codex cross-review: no findings.
+
+### Next steps
+
+1. Sam approved #389 with open umbrellas (coordinator, 2026-11-24).
+2. On approval, sync main, keep both build-log entries, rerun checks, merge, and quote `gh pr view 389 --json state,mergeCommit`. A web rebuild is needed, and only the coordinator deploys.
+3. Gap for the tree agent: the café grove's deciduous trees, about 6–10 in a grid, at local u −50…−28, v 16…30. Keep crowns clear of the 2.65 m umbrella tops.
+
+Capture helper (not committed): the session scratchpad `cap.py` follows the old `/tmp/high-visit-capture.py` pattern, with a 15 s settle. Blank beige frames still pass the renderer-call check, so inspect every image.
+
+---
+
+## Archived predecessor handoff
+
+The material below records the earlier transfer and its historical queue.
+
 # Handoff: studio-midtown-culture → Codex 6.2, 2026-11-23
 
 ## Successor update

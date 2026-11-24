@@ -11,7 +11,10 @@ const halfLength = 42.4,
   roof = 466.9;
 const stone = '#dbd6cd',
   edge = '#e9e3d9',
-  reveal = '#8f918e';
+  reveal = '#8f918e',
+  // Splayed pier cheeks turn toward the sun, so they take a shade darker than the pier face.
+  fin = '#c2bdb4',
+  maxFlare = 0.75;
 const glass = ['#50616a', '#45545d', '#596970', '#4d585d'];
 
 // The long faces bow around the atrium below the rectangular upper shaft.
@@ -100,34 +103,45 @@ export function createMarriottMarquis(buildings: VBuilding[], grid: GroundGrid) 
     pitch = (2 * halfLength) / bays,
     floors = 44,
     rise = (roof - 3.0 - deck) / floors;
+  // Above the terrace the piers splay into V fins. Each pier widens equally on both sides,
+  // most at the middle of the face and the base, so every window stays a centred dark pane.
+  const flare = (u: number, y: number) =>
+    maxFlare * Math.max(0, 1 - (u / 34) ** 2) * Math.max(0, 1 - (y - deck) / 38);
   for (const side of [-1, 1]) {
     for (let col = 0; col < bays; col++) {
       const l = -halfLength + col * pitch,
-        r = l + pitch,
-        mid = (l + r) / 2;
+        r = l + pitch;
       for (let floor = 0; floor < floors; floor++) {
         const low = deck + floor * rise,
           high = low + rise;
         const pt = (u: number, y: number, off = 0) => facade(u, y, side, off);
         solid.quad(pt(l, low), pt(r, low), pt(r, high), pt(l, high), stone);
-        // Solid, staggered infill around the great lower hall tapers out toward the ends.
-        const infill = Math.max(0, 1 - (mid / 35) ** 2 - ((low - 358) / 25) ** 2);
         const pane = hashStr(side + '/' + col + '/' + floor) % 101 < 13 ? rooms : solid;
-        const left = l + 0.25 + 2.45 * infill;
+        const left = l + 0.25 + flare(l, low),
+          right = r - 0.26 - flare(r, low);
         pane.quad(
           pt(left, low + 0.48, 0.06),
-          pt(r - 0.26, low + 0.48, 0.06),
-          pt(r - 0.26, high - 0.17, 0.06),
+          pt(right, low + 0.48, 0.06),
+          pt(right, high - 0.17, 0.06),
           pt(left, high - 0.17, 0.06),
           glass[(col + Math.floor(floor / 8)) % 4]
         );
-        if (infill > 0) {
+        if (left > l + 0.26) {
           solid.quad(
-            pt(l + 0.2, low + 0.4, 0.56),
+            pt(l + 0.22, low, 0.6),
             pt(left, low + 0.48, 0.07),
             pt(left, high - 0.17, 0.07),
-            pt(l + 0.2, high, 0.56),
-            stone
+            pt(l + 0.22, high, 0.6),
+            fin
+          );
+        }
+        if (right < r - 0.27) {
+          solid.quad(
+            pt(right, low + 0.48, 0.07),
+            pt(r, low, 0.6),
+            pt(r, high, 0.6),
+            pt(right, high - 0.17, 0.07),
+            fin
           );
         }
         // Piers in front of the glazing cast a continuous vertical shadow.

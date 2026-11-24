@@ -277,6 +277,16 @@ live.start();
 let override: AtmosphereOverride | null = null;
 let sceneConditions: AtmosphereOverride = {};
 let paintMapAtmosphere: ((atm: Atmosphere) => void) | null = null;
+/** The chrome's glass follows what sits behind it. City and Map follow the clock's darkness. Models
+ * sits on the lab's studio, which is daylight unless its own Night switch is on, so there the switch
+ * decides. (Reads the DOM, not labRoot, because this runs before that binding exists.) */
+let clockTheme: 'dark' | 'light' = 'light';
+function applyTheme() {
+  const lab = document.getElementById('lab-root');
+  const inLab = !!lab && !lab.hidden;
+  const labNight = lab?.querySelector('#night')?.getAttribute('aria-pressed') === 'true';
+  shell.setTheme(inLab ? (labNight ? 'dark' : 'light') : clockTheme);
+}
 const updateAtmosphere = () => {
   const w = clock.isRealTime() ? shell.weather() : null;
   const atm = atmosphere(clock.now(), w, { ...override, ...sceneConditions });
@@ -284,7 +294,8 @@ const updateAtmosphere = () => {
   atmAt = clock.now().getTime();
   lastAtm = atm;
   diorama?.setAtmosphere(atm, clock.now());
-  shell.setTheme(atm.dark > 0.55 ? 'dark' : 'light');
+  clockTheme = atm.dark > 0.55 ? 'dark' : 'light';
+  applyTheme();
   if (view3d.hidden) paintMapAtmosphere?.(atm);
 };
 let atmRealTime = true; // the clock state the atmosphere was last computed for
@@ -534,6 +545,7 @@ async function openCity() {
       return;
     }
     diorama = d;
+    perf.phase('city:built');
     if (import.meta.env.DEV) Object.assign(window, { __city: d });
   } catch (err) {
     if (load !== cityLoad) return;
@@ -546,6 +558,7 @@ async function openCity() {
     return;
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
+  perf.phase('city:atmosphere');
   let offBoard = false;
   // Arriving from Map keeps its camera within the loaded City board.
   // A Graphics change rebuilds City where it was; otherwise a link's camera opens it.
@@ -573,6 +586,7 @@ async function openCity() {
   }
   if (offBoard) document.body.classList.remove('city-over-map');
   // A2c: the white model holds until colour starts; only then is City "here" (Live, credit, vehicles).
+  perf.phase('city:placed');
   diorama.beginReveal(offBoard && overMap ? 'paper' : undefined);
   await diorama.revealed;
   if (load !== cityLoad) return;
@@ -807,12 +821,16 @@ async function openModels() {
   }
   if (labRoot.hidden !== false) sceneTitle = document.title;
   labRoot.hidden = false;
+  applyTheme();
   setViewParam('models');
   // One mount, however often Models is chosen while the lab is still loading.
   labReady ??= (async () => {
     await import('./models/main');
     const { mountModelsView } = await import('./ui/next/models-view');
     labView = mountModelsView(labRoot!, { dev: params.has('dev') });
+    const night = labRoot!.querySelector('#night');
+    if (night) new MutationObserver(applyTheme).observe(night, { attributes: true, attributeFilter: ['aria-pressed'] });
+    applyTheme();
   })();
   try {
     await labReady;
@@ -837,6 +855,7 @@ function leaveModels() {
   if (!labRoot || labRoot.hidden) return;
   labRoot.hidden = true;
   document.title = sceneTitle; // the lab names the tab after its model
+  applyTheme();
 }
 /** Zoom the model by a wheel step at the stage centre, through the lab's own OrbitControls. */
 function labZoom(dir: 1 | -1) {

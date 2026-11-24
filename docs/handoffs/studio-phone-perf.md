@@ -1,4 +1,31 @@
-**Status after takeover.** The handoffs below are historical. The coordinator accepted the #348 A16 gate and the frozen servers are closed. Sam approved staged fill for #359. Its rebased branch targets main directly after #371. #326 remains a separate budgets PR.
+# Phone performance handoff to Claude Opus
+
+2026-11-23, from `orca_session_id:c74d45e5-b1c7-4503-ad83-5440c1631917`. This section supersedes every earlier task list below. Current branch `samsolomon/low-program-headroom`, draft [#391](https://github.com/samsolomon/sim-atlanta/pull/391), base `59b8cbc9` including #377 and #381. Implementation `e5137af0`, initial evidence `d721ee3a`. **Hold #391 and #326 until the Air coordinator relays Sam’s OK.** #326 is the separate open budgets proposal on `samsolomon/studio-phone-budgets`; its measurements predate these changes. Deployment belongs to the coordinator.
+
+## Mandate and decisions
+
+Sam’s directly quoted decision was “I am ok with load-time staging.” That approval covered #359. For #391 the coordinator’s exact assignment was “Apply the same treatment on low (drop the reveal precompile there if it applies, and use the shared landmark material) and report the headroom.” The latest switch instruction was “Merge holds stay in force; nothing merges until I relay Sam's OK.” The historical goal is 30 fps and ready within eight seconds on the Galaxy A16.
+
+## What is on main
+
+Checked with `gh pr view` at handoff. The merge commits were #348 `a6e6a28a` (mask gate), #363 `0937b971` (tree round two), #371 `614cf140` (transport heap), #359 `3d8c6506` (load staging), and #386 `e603b195` (instanced freight, downtown batching, high program warmup). The four waiting owners received verified #386 notices. The #359 device comparison saved about 1.85 s from data to ready. Proxy-inflated absolute times cannot establish production ready. Round-two tree default passed on A16; the coordinator deferred its noisy pan check to the release candidate. Both frozen ports 4616 and 4619 were stopped at the coordinator’s request.
+
+## What is verified on #391
+
+- The separate reveal precompile was already gone on Low. Once the white image is captured, the temporary white material can release its programs. Midtown arterial traffic and Sweet Auburn infrastructure now share downtown’s four-plane shader variants while clipping to the moving outer perimeter. Plain landmark bodies batch on both tiers.
+- Same production data and clock on the phone viewport, all twelve areas. Baseline 567 draws, 90 programs, 393 MB after GC. Candidate 538 draws, 85 programs, 393 MB; both captured 2,359,308 triangles. **Five programs and 62 draws free.** High measured 1,189 draws, 100 programs, 500 MB; 61 draws and 40 programs free. No ceiling changed. No new device FPS or load-time claim.
+- `pnpm build`, `pnpm test`, and `pnpm test:perf --no-build` on that production build passed. 20 Rust, 1,076 web, 5 worker tests passed, one web test skipped; Python pipeline checks skipped without a virtual environment. One earlier high run measured 1,004 MB after GC during concurrent capture activity. Both repeats measured 500 MB; the cause of the outlier is unconfirmed.
+- Matched baseline and candidate Chrome views, Low at 14:00 Eastern, `cam=1536,-182,190,48,180` (Sweet Auburn shelter and streetcar), `cam=902,-1925,130,32,270` (arterial traffic signals). City → Map → City re-entry rendered successfully. [Shelter capture](../log/perf/low-streetcar-shelter.jpg). Review used `pnpm review -- --reviewer claude`; no blocking or significant findings. Its sole minor request was a matched day/night landmark check. At 14:00 and 22:00 both the requested Midtown camera `565,-3965,-101,55,421` and the downtown camera `400,-650,15,60,1150` matched the frozen baseline in the inspected renders. [Downtown day](../log/perf/low-landmarks-day.jpg) · [Downtown night](../log/perf/low-landmarks-night.jpg).
+- Local evidence: `/tmp/low-current-test.log`, `/tmp/low-current-repeat.log`, `/tmp/low-program-high-repeat.log`, `/tmp/low-program-baseline-valid.log`, `/tmp/low-program-cross-review.log`, and `/tmp/low-program-views/`. The committed screenshot travels with the branch.
+
+## Next steps in order
+
+1. Read this session’s history and coordinator inbox. For the transition reply to `msg_c08a3709dda0` on Air terminal `term_09e1b3da-5f48-4755-abf8-92a571a1f474` with your own session ID. The low-program assignment thread is `msg_95794cd7d226`. Direct sends to the Air reject the pairing token. The successor may need a fresh inbound message for the reply route.
+2. Await the coordinator’s explicit relay of Sam’s approval for #391. Keep it in draft pending that relay. On approval, fetch main and resolve changes if needed, preserving build-log entries. Run `pnpm build`, `pnpm test` and `pnpm test:perf --no-build`; confirm twelve mounted areas and five program slots on the recorded base. Recheck the matched cameras if the base or rendering changes.
+3. After approval and verification, mark #391 ready and merge. Quote fresh `gh pr view 391 --json state,mergeCommit` in the notice; include screenshot, camera strings, budgets and coordinator-only web rebuild/deployment. Ask for separate disposition of #326 before touching it. Its proposed ceilings need new measurements.
+4. The A16 release-candidate pan and any further work toward 30 fps belong to the coordinator’s release queue. No device server or review tab needs to remain open during this handoff.
+
+---
 
 # Codex → gpt-6.2 handoff (2026-11-23 evening)
 
