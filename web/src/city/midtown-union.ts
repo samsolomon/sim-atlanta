@@ -18,7 +18,8 @@ const deckH = 28.8;
 const lobbyH = 8.4;
 
 // Reflective blue glass, darker at street level and picking up the sky near the top.
-const glassLow = ['#4f6b84', '#57728a', '#4b667f', '#536f87'];
+// Glass bases: HSV saturation 33–35%, value 50–54% (the provisional glass rules).
+const glassLow = ['#566f84', '#5d758a', '#53697f', '#5a7187'];
 const glassHigh = ['#a3b8c9', '#abbfce', '#9db3c5', '#b0c3d1'];
 // Mostly white and pale grey, crossed by charcoal diagonals.
 const panels = ['#e2e1dc', '#c9cac6', '#e2e1dc', '#a9acab', '#66696b'];
@@ -219,11 +220,7 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
     const lo = hex(glassLow[tone], glassHigh[tone], (y - floor) / 97.2), hi = hex(glassLow[tone], glassHigh[tone], (y + 2.8 - floor) / 97.2);
     for (let v = n; v < lights.pos.length; v += 3) lights.col.splice(v, 3, ...(lights.pos[v + 1] > y + 1 ? hi : lo));
   }
-  const result = shell.finish('#f4dcae', 0.6);
-  // The lamp quads share the body's shadow flags: they darken with shaded walls by day, and the
-  // landmark batcher draws both as one then.
-  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
-  return result;
+  return shell.finish('#f4dcae', 0.6);
 }
 
 function hex(a: string, b: string, t: number): number[] {

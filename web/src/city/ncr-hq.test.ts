@@ -27,11 +27,9 @@ it('stands both towers at their lidar roofs over the sky-garden base, with the s
   expect(result.buildings).toEqual([other]);
   expect(result.group.children.every(m => m.receiveShadow)).toBe(true);
   result.group.updateMatrixWorld(true);
-  // Batchable: no hooked (library-painted) material, and the lamps share the body's shadow flags.
-  for (const m of result.group.children as Mesh[]) {
+  // Batchable: no hooked (library-painted) material.
+  for (const m of result.group.children as Mesh[])
     expect((m.material as Material).onBeforeCompile).toBe(Material.prototype.onBeforeCompile);
-    expect(m.castShadow && m.receiveShadow).toBe(true);
-  }
   const roof = (x: number, z: number) =>
     new Raycaster(new Vector3(x, 500, z), new Vector3(0, -1, 0)).intersectObject(result.group)[0]?.point.y + 300;
   const floor = 285;

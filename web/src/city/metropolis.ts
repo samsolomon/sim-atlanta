@@ -166,7 +166,6 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   }
   const result = shell.finish('#f2d3a2', 0.62);
   // By day the lamp quads must darken with the shaded wall they sit on, or they show as panes.
-  // Matching the body's shadow flags also lets the landmark batcher draw both as one by day.
-  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
+  result.group.children.forEach(m => { m.receiveShadow = true; });
   return result;
 }

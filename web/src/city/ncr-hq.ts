@@ -22,7 +22,8 @@ const heights = {
 };
 const lobby = 7.6, storey = (heights.tower - lobby) / 19;
 
-const glassLow = '#3f5a70', glassHigh = '#9ab3c6';
+// Glass base #4a5f70: HSV saturation 34%, value 44% (the provisional glass rules).
+const glassLow = '#4a5f70', glassHigh = '#9ab3c6';
 // The sloping facet reflects more sky than the vertical walls.
 const facetLow = '#6f8fa8', facetHigh = '#bfd2df';
 
@@ -155,8 +156,7 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
 
   const result = shell.finish('#f2dcb0', 0.6);
   // The lamp quads darken with the shaded wall they sit on, or they show as pale panes by day.
-  // Matching the body's shadow flags also lets the landmark batcher draw both as one by day.
-  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
+  result.group.children.forEach(m => { m.receiveShadow = true; });
   return result;
 }
 
