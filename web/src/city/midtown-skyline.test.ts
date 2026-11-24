@@ -377,3 +377,19 @@ it('crowns Mayfair Tower with four lit-lantern cones at the lidar heights', () =
   const meshes = model.group.children as Mesh[];
   expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
+
+it('replaces Alexan on 8th at its lidar roof', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:789975430');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Alexan on 8th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(372, -2800)).toBeCloseTo(74.5, 0); // the slab, lidar 95th percentile
+  expect(heightAt(350, -2830)).toBeCloseTo(74.5, 0); // the south-west leg is full height too
+  const meshes = model.group.children as Mesh[];
+  expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = meshes[1].geometry.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(71);
+});
