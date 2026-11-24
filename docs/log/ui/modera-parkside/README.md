@@ -9,7 +9,7 @@ The mapped outline is a 33 × 78 m block with no parts. The renderings and the t
 - **The crown visor.** A white frame rings the top, with pergola slats over the pool deck ([N24](https://www.greshamsmith.com/wp-content/uploads/2024/04/45200_00_N24_medium.jpg), [N26](https://www.greshamsmith.com/wp-content/uploads/2024/04/45200_00_N26_medium.jpg)).
 - **The tall charcoal core box above it.** Its script logo is not drawn, and neither is the Modera sign on the podium: branding is never drawn.
 
-The slot's colour stops and height, the visor's 1.4 m depth and the box size are estimated from the photographs. [East face at 500 m](audit-east.jpg) · [crown](audit-crown.jpg) · [night](audit-night.jpg)
+The slot's colour stops and height, the visor's 1.4 m depth and the box size are estimated from the photographs. [East face at 500 m](audit-east.jpg) · [crown](audit-crown.jpg) · [night](audit-night.jpg) · [four sides at 400 m](modera-parkside-four-sides.jpg)
 
 Sources, consulted in a fresh Orca tab:
 - [Urbanize Atlanta, topping out (2024)](https://atlanta.urbanize.city/post/midtown-tower-tops-out-10th-street-piedmont-design-improvements-promised): 32 storeys plus a rooftop amenity level, and the April 2024 construction photograph from Piedmont Park.
