@@ -24,8 +24,8 @@ const cornerId = 'osm:way:1434982571';
  * Roofs in NAVD88 metres from the 22 April 2019 3DEP returns (median roof, or the 95th percentile
  * where a parapet or brim is the edge people see). The mapped tags (18.8 to 45.4 m) disagree.
  */
+const northRoof = 433.1;
 const roofs: Record<string, number> = {
-  [northBlockId]: 433.1,
   'osm:way:234935282': 332.4,
   'osm:way:1434982552': 323.6,
   'osm:way:1434982573': 323.2,
@@ -40,6 +40,8 @@ const tileCutZ = -3300;
 const entrance: P2 = [801, -3366];
 const pitch = 4.1;
 
+// Flat vertex colours, not library surfaces: a painted mesh compiles its own program, and the low
+// tier has no program to spare (90 of 90 when this was built).
 const glass = '#46606e', glassLit = '#486271', mullion = '#667b84', band = '#526b78';
 const louvre = '#c6c9c4', soffit = '#d9dbd6', brimTopColor = '#a9aca8';
 const precast = '#cbbd9f', precastDark = '#b5a78c', screen = '#a8a497', deck = '#8f8d86';
@@ -48,8 +50,11 @@ const storefront = '#33434a', lobby = '#3e4f63';
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 /** Street grade under an edge, NAVD88 metres. */
 type Grade = (a: P2, b: P2) => number;
-/** `cutZ` is the tile cut in this plan's local frame. */
-interface Solid { plan: P2[]; top: number; cutZ: number }
+/**
+ * `plan` is the exact mapped ring, so neighbouring masses still share their edges. `bands` drops
+ * the traced curves' short chords for the facade detail. `cutZ` is the tile cut in local metres.
+ */
+interface Solid { plan: P2[]; bands: P2[]; top: number; cutZ: number }
 
 /** Counter-clockwise in (x, z) so the outward normal of edge a→b is (dz, -dx)/length. */
 function ccw(ring: P2[]): P2[] {
@@ -58,30 +63,42 @@ function ccw(ring: P2[]): P2[] {
   return area > 0 ? ring : [...ring].reverse();
 }
 
-/** Drop vertices closer than `min` metres, so the traced curves stay cheap to band. */
-function simplify(ring: P2[], min: number): P2[] {
+/**
+ * Drop vertices closer than `min` metres to the last one kept, so the traced curves stay cheap to
+ * band, but always keep a real corner (a turn of more than 20 degrees).
+ */
+export function simplify(ring: P2[], min: number): P2[] {
+  const turn = (i: number) => {
+    const [px, pz] = ring[(i + ring.length - 1) % ring.length], [x, z] = ring[i], [nx, nz] = ring[(i + 1) % ring.length];
+    const a = Math.atan2(z - pz, x - px), b = Math.atan2(nz - z, nx - x);
+    return Math.abs(Math.atan2(Math.sin(b - a), Math.cos(b - a)));
+  };
+  const corner = ring.map((_, i) => turn(i) > Math.PI / 9);
+  const start = Math.max(0, corner.indexOf(true));
   const out: P2[] = [];
-  for (const p of ring) {
-    const last = out[out.length - 1];
-    if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) >= min) out.push(p);
+  for (let k = 0; k < ring.length; k++) {
+    const i = (start + k) % ring.length, p = ring[i], last = out[out.length - 1];
+    if (!last || corner[i] || Math.hypot(p[0] - last[0], p[1] - last[1]) >= min) out.push(p);
   }
-  const first = out[0], last = out[out.length - 1];
-  if (out.length > 3 && Math.hypot(first[0] - last[0], first[1] - last[1]) < min) out.pop();
   return out;
 }
 
-/** Offset a CCW ring by `d` metres along vertex bisectors, clamped at sharp corners. */
+/**
+ * Offset a CCW ring by `d` metres along vertex bisectors. Each vertex moves at most 40% of its
+ * shorter edge, so an inward offset cannot fold the ring over a short edge.
+ */
 function offset(ring: P2[], d: number): P2[] {
   const normal = (a: P2, b: P2) => {
     const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
-    return [dz / l, -dx / l];
+    return [dz / l, -dx / l, l];
   };
   return ring.map((p, i) => {
-    const [ax, az] = normal(ring[(i + ring.length - 1) % ring.length], p);
-    const [bx, bz] = normal(p, ring[(i + 1) % ring.length]);
+    const [ax, az, al] = normal(ring[(i + ring.length - 1) % ring.length], p);
+    const [bx, bz, bl] = normal(p, ring[(i + 1) % ring.length]);
     const ml = Math.hypot(ax + bx, az + bz) || 1, mx = (ax + bx) / ml, mz = (az + bz) / ml;
     const scale = Math.min(2, 1 / Math.max(0.5, mx * ax + mz * az));
-    return [p[0] + mx * d * scale, p[1] + mz * d * scale];
+    const move = Math.sign(d) * Math.min(Math.abs(d) * scale, 0.4 * Math.min(al, bl));
+    return [p[0] + mx * move, p[1] + mz * move];
   });
 }
 
@@ -122,24 +139,25 @@ function panel(s: Shell, a: P2, b: P2, t0: number, t1: number, lo: number, hi: n
 }
 
 /** Floor lines, the vertical mullion rhythm and a sparse, stable set of lit office panes. */
-function curtain(s: Shell, plan: P2[], solids: Solid[], self: Solid, grade: Grade, hi: number, seed: number) {
-  exposed(plan, solids, self, (a, b, length, from, edge) => {
+function curtain(s: Shell, solids: Solid[], self: Solid, grade: Grade, hi: number, seed: number) {
+  exposed(self.bands, solids, self, (a, b, length, from, edge) => {
     const bottom = Math.max(grade(a, b) + 8.6, from);
     if (hi - bottom < 1) return;
     const bays = Math.max(1, Math.round(length / 4.6)), ribs = Math.max(1, Math.round(length / 9.2));
     // Short chords of the curves go without floor lines; at City range they read as one face.
-    if (length >= 5) for (let y = hi - pitch; y > bottom; y -= pitch) panel(s, a, b, 0, 1, y - 0.3, y, 0.05, band);
+    // They stand 0.15 m out, clear of the true curve between a chord's ends.
+    if (length >= 5) for (let y = hi - pitch; y > bottom; y -= pitch) panel(s, a, b, 0, 1, y - 0.3, y, 0.15, band);
     // Paired-module mullions; the 1.5 m mullions themselves would shimmer at City range.
     for (let i = 1; i < ribs; i++) {
       const w = 0.15 / length;
-      panel(s, a, b, i / ribs - w, i / ribs + w, bottom, hi, 0.06, mullion);
+      panel(s, a, b, i / ribs - w, i / ribs + w, bottom, hi, 0.16, mullion);
     }
     let floor = 0;
     for (let y = hi - pitch; y - pitch > bottom; y -= pitch, floor++) {
       for (let i = 0; i < bays; i++) {
         // Offices at 23:30: about one pane in twenty, fewer near the top.
         if (hash(floor, i, edge * 31 + seed) >= (floor < 4 ? 0.03 : 0.05)) continue;
-        panel(s, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, y - pitch + 0.12, y - 0.42, 0.035, glassLit, true);
+        panel(s, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, y - pitch + 0.12, y - 0.42, 0.13, glassLit, true);
       }
     }
   });
@@ -173,6 +191,9 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     const ys = [a, b].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? floor);
     return Math.max(floor, Math.min(...ys));
   };
+  /** The lowest drawn ground under a part, for slabs that hang from their own street. */
+  const ringGrade = (plan: P2[]) =>
+    Math.min(...plan.map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? floor));
   const local = (ring: [number, number][]): P2[] => ccw(ring.map(([x, z]): P2 => [x - origin[0], z - origin[1]]));
 
   const solids: Solid[] = [];
@@ -182,25 +203,32 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     if (part.rings.length !== 1) continue;
     const plan = local(part.rings[0]);
     if (part.id === canopyId) { canopy = plan; continue; }
-    if (part.id === cornerId) { s.prism(plan, s.base, floor + part.h, storefront, '#7f8582'); continue; }
+    if (part.id === cornerId) { s.prism(plan, s.base, ringGrade(plan) + part.h, storefront, '#7f8582'); continue; }
     const cutZ = tileCutZ - origin[1];
-    const solid: Solid = part.id === crownBlockId ? { plan: simplify(plan, 3), top: glassTop, cutZ }
-      : part.id === northBlockId ? { plan: simplify(plan, 3.5), top: roofs[northBlockId], cutZ }
-      : { plan, top: roofs[part.id] ?? floor + part.h, cutZ };
+    // `podium` is the pipeline's generic name for a remainder polygon, so the north block is the
+    // remainder that lies north of the crown block, toward 12th Street.
+    const centroidZ = plan.reduce((sum, [, z]) => sum + z, 0) / plan.length + origin[1];
+    const isNorth = crownPart && part.id === northBlockId && centroidZ < -3345 && !north;
+    const solid: Solid = part.id === crownBlockId ? { plan, bands: simplify(plan, 3), top: crownRoof, cutZ }
+      : isNorth ? { plan, bands: simplify(plan, 3.5), top: northRoof, cutZ }
+      : { plan, bands: plan, top: (part.id === northBlockId ? undefined : roofs[part.id]) ?? floor + part.h, cutZ };
     if (part.id === crownBlockId) crown = solid;
-    else if (part.id === northBlockId) north = solid;
+    else if (isNorth) north = solid;
     solids.push(solid);
   }
 
   for (const solid of solids) if (solid !== crown && solid !== north) podium(s, solid, solids, grade);
   // The curved corner canopy at 12th Street is a thin slab.
-  if (canopy) s.prism(canopy, floor + 6.9, floor + 7.5, soffit, brimTopColor);
+  if (canopy) {
+    const street = ringGrade(canopy);
+    s.prism(canopy, street + 6.9, street + 7.5, soffit, brimTopColor);
+  }
 
   /**
    * Double-height glazing where the tower meets the street. Only the entrance corner is lit all
    * night; the restaurant and retail frontage elsewhere stays dark glass.
    */
-  const base = (solid: Solid) => exposed(solid.plan, solids, solid, (a, b, length, from) => {
+  const base = (solid: Solid) => exposed(solid.bands, solids, solid, (a, b, length, from) => {
     const street = grade(a, b);
     if (from > street + 1 || length < 3) return;
     const mx = (a[0] + b[0]) / 2 + origin[0] - entrance[0], mz = (a[1] + b[1]) / 2 + origin[1] - entrance[1];
@@ -213,7 +241,7 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
 
   if (north) {
     s.prism(north.plan, s.base, north.top, glass, '#7f8582');
-    curtain(s, north.plan, solids, north, grade, north.top - 0.4, 7);
+    curtain(s, solids, north, grade, north.top - 0.4, 7);
     base(north);
     s.prism(offset(north.plan, -0.6), north.top, north.top + 1.4, '#6f7a7c', '#868b88');
     s.prism(local([[812, -3362], [838, -3362], [838, -3352], [812, -3352]]), north.top, north.top + 3.6, '#b3b6b1', '#9a9d99');
@@ -221,23 +249,25 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
 
   if (crown) {
     s.prism(crown.plan, s.base, crownRoof, glass, '#8e908c');
-    curtain(s, crown.plan, solids, crown, grade, glassTop, 3);
+    curtain(s, solids, crown, grade, crownRoof, 3);
     base(crown);
     // Glass parapet around the lower mechanical roof, then the louvred band, which glows evenly
     // at night. Single faces: the shared material is double-sided.
-    for (let i = 0; i < crown.plan.length; i++) {
-      const a = crown.plan[i], b = crown.plan[(i + 1) % crown.plan.length];
+    const rim = crown.bands;
+    for (let i = 0; i < rim.length; i++) {
+      const a = rim[i], b = rim[(i + 1) % rim.length];
       panel(s, a, b, 0, 1, crownRoof, glassTop, 0, glass);
       panel(s, a, b, 0, 1, glassTop, louvreTop, 0.02, louvre, true);
     }
     // The cantilevered brim: a ring about 2.6 m beyond the glass and 3 m inside it.
-    const outer = offset(crown.plan, 2.6), inner = offset(crown.plan, -3);
+    const outer = offset(rim, 2.6), inner = offset(rim, -3);
     for (let i = 0; i < outer.length; i++) {
       const j = (i + 1) % outer.length;
       const [oa, ob, ia, ib] = [outer[i], outer[j], inner[i], inner[j]];
       s.body.quad([oa[0], brimTop, oa[1]], [ob[0], brimTop, ob[1]], [ib[0], brimTop, ib[1]], [ia[0], brimTop, ia[1]], brimTopColor);
       s.body.quad([oa[0], louvreTop, oa[1]], [ob[0], louvreTop, ob[1]], [ib[0], louvreTop, ib[1]], [ia[0], louvreTop, ia[1]], soffit);
       s.body.quad([oa[0], louvreTop, oa[1]], [oa[0], brimTop, oa[1]], [ob[0], brimTop, ob[1]], [ob[0], louvreTop, ob[1]], soffit);
+      s.body.quad([ia[0], louvreTop, ia[1]], [ia[0], brimTop, ia[1]], [ib[0], brimTop, ib[1]], [ib[0], louvreTop, ib[1]], soffit);
     }
     s.prism(local([[804, -3336], [832, -3338], [832, -3322], [804, -3322]]), crownRoof, crownRoof + 5.6, '#a7aaa5', '#93968f');
   }

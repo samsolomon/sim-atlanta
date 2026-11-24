@@ -1,6 +1,6 @@
 # 1075 Peachtree
 
-`osm:way:234935278`, rank 4 in [building skins](../../../building-skins.md). Code: `web/src/city/1075-peachtree.ts`.
+`osm:way:234935278`, rank 4 in [building skins](https://github.com/samsolomon/sim-atlanta/blob/samsolomon/studio-building-skins/docs/building-skins.md). Code: `web/src/city/1075-peachtree.ts`.
 
 The 2010 office tower fills the block between Peachtree Street (west) and Juniper Street (east), south of 12th Street. Its main entrance is the curved corner at Peachtree and 12th. The tower is now known for its PwC tenancy. Its sign is a tenant logo, so the model leaves it out.
 
