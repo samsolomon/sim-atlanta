@@ -534,10 +534,11 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
   const settleStart = performance.now();
   if (streaming) {
-    // Streamed areas: settled once the loader is idle and no ring has changed for quietMs.
+    // Streamed areas: settled once the loader is idle and neither a ring nor a load phase (boot still
+    // mounts every area under stream) has changed for quietMs.
     while (performance.now() - settleStart < maxWaitMs) {
-      const lastRing = ringLog[ringLog.length - 1]?.ms ?? 0;
-      if ((!streamSource || !streamSource().pending) && performance.now() - lastRing > quietMs) break;
+      const last = Math.max(ringLog[ringLog.length - 1]?.ms ?? 0, phases[phases.length - 1]?.ms ?? 0);
+      if ((!streamSource || !streamSource().pending) && performance.now() - last > quietMs) break;
       await sleep(250);
     }
     phase('stream:settled');
