@@ -7,7 +7,7 @@
 | Verdict | Building (PR) | Size | Owner | Status |
 |---|---|---|---|---|
 | FAIL | 100 Colony Square (#438) | large | skins-6 | Rework stacked on #554 |
-| FAIL | 400 Colony Square (#462) | large | skins-7 | Rework #554 held; one more pass asked for (vertical strips) |
+| FIXED (pending train 8) | 400 Colony Square (#462) | large | skins-7 | Rework #554 v2 approved by lead: vertical stripes and 14th-floor band read at 420 m |
 | FAIL | 1075 Peachtree (#416) | large | skins-4 | Rework after #522; glass value waits for Sam's palette pick (two money shots) |
 | FAIL | Norfolk Southern HQ (#507) | large | skins-5 | Rework after Ansley |
 | FAIL | JW Marriott Downtown (#522) | large | skins-4 | Rework queued, ahead of Rambler |
