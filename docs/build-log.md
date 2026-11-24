@@ -3604,3 +3604,8 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+
+
+### 2026-11-24 · Vireo's balconies at night
+
+Vireo, the white apartment tower by Piedmont Park, is mapped at 105 m. The 2019 lidar has its roof at about 82 m, with an amenity floor on top reaching 89 m. Its long faces are deep balconies stacked on every floor, and from City's usual high orbit those 1.9 m slabs hide every lit room behind them, so the first night render was darker than the generic box it replaced. A lit room's light also shows through its glass balcony rail, and lighting the rail makes the tower read as lived-in from above. [Before and after](log/ui/vireo/day-before-after.jpg) · [night](log/ui/vireo/night-before-after.jpg)
