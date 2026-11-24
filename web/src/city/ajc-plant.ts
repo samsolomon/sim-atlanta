@@ -48,7 +48,7 @@ export function createAjcPlant(buildings: VBuilding[], grid: GroundGrid) {
   const deck = wound(s.ring, 1);
   const plant = plantSite ? wound(plantSite.rings[0].map(local), 1) : null;
 
-  function block(ring: P2[], roof: number, roofColor: string, edgeWall: number) {
+  const block = (ring: P2[], roof: number, roofColor: string, edgeWall: number) => {
     s.prism(ring, s.base, roof, PANEL, roofColor);
     const out = outwardSign(ring);
     faces(ring, (a, b, len) => {
@@ -71,7 +71,7 @@ export function createAjcPlant(buildings: VBuilding[], grid: GroundGrid) {
         s.prism(wound([q(0, 0), q(len, 0), q(len, .4), q(0, .4)], 1), roof, edgeWall, PANEL, PANEL);
       }
     });
-  }
+  };
 
   block(deck, DECK, CONCRETE, DECK_WALL);
   if (plant) block(plant, PLANT, MEMBRANE, PLANT + 1);
