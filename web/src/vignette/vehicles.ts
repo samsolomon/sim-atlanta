@@ -6,6 +6,7 @@
  * Per-vertex `aKind`: 0 paint (takes the instance colour), 1 headlight, 2 taillight,
  * 3 glass, 4 fixed colour (tyres, trim, livery: ignores the instance colour).
  */
+import { roadSedanGeometry } from './road-sedan';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -16,10 +17,10 @@ export type VehicleType = 'sedan' | 'hatch' | 'suv' | 'pickup' | 'van' | 'box' |
  * lamps (7.255 m behind the trailer's centre). */
 const SEMI_TRAILER_DZ = -2.0 - 6.2, SEMI_FRONT = 3.7, SEMI_REAR = SEMI_TRAILER_DZ - 7.255;
 const SEMI_LENGTH = SEMI_FRONT - SEMI_REAR;
-export const LENGTH: Record<VehicleType, number> = { sedan: 4.7, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6, semi: SEMI_LENGTH };
+export const LENGTH: Record<VehicleType, number> = { sedan: 4.885, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6, semi: SEMI_LENGTH };
 
 // Shared by the moving road sedan and the lower-detail sedan baked into parking decks.
-export const SEDAN = { length: LENGTH.sedan, width: 1.8, sill: 0.32, roof: 1.42, tireRadius: 0.33 };
+export const SEDAN = { length: LENGTH.sedan, width: 1.84, sill: 0.195, roof: 1.445, tireRadius: 0.335 };
 
 class Kit {
   pos: number[] = [];
@@ -91,12 +92,7 @@ function car(len: number, profile: [number, number][], glass: [number, number][]
 export function vehicleGeometry(t: VehicleType): THREE.BufferGeometry {
   switch (t) {
     case 'sedan':
-      return car(
-        SEDAN.length,
-        [[-2.35, SEDAN.sill], [2.35, SEDAN.sill], [2.35, 0.72], [2.15, 0.84], [0.95, 0.94], [0.2, SEDAN.roof], [-1.15, SEDAN.roof], [-1.9, 0.98], [-2.3, 0.92], [-2.35, 0.72]],
-        [[0.92, 0.97], [0.2, 1.38], [-1.12, 1.38], [-1.84, 1.0]],
-        SEDAN.width, SEDAN.tireRadius,
-      );
+      return roadSedanGeometry();
     case 'hatch':
       return car(
         4.1,
