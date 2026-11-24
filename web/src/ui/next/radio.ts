@@ -10,7 +10,10 @@
  * elements' timeupdate events), never on the render loop.
  *
  * Nothing under music/ is requested until the radio is first opened, and only the current and
- * next file are ever fetched. They are static assets (range requests; never the worker script).
+ * next file are ever fetched. They stay static assets that never run the worker script. Cloudflare's
+ * static assets answer a Range request with the whole file (200, checked on production), and iOS
+ * Safari won't play <audio> from a server without byte ranges, so each deck fetches its file once
+ * and plays it from a blob URL, which every browser can play and seek.
  */
 import {
   FADE_S, PAUSE_RAMP_S, SKIP_FADE_S, Shuffle, equalPowerCurve, gainAt, startStation, trackTimeline,
@@ -23,6 +26,10 @@ export type { Station, StationTrack } from './radio-plan';
 export interface RadioAudio {
   context(): AudioContext;
   element(): HTMLAudioElement;
+  /** Fetch a track and give back something an <audio> src can play. */
+  source(url: string, signal: AbortSignal): Promise<string>;
+  /** Let go of a source from `source`. */
+  release(src: string): void;
 }
 
 export interface RadioOptions {
@@ -62,6 +69,10 @@ interface Deck {
   gain: GainNode;
   track: StationTrack | null;
   role: Role;
+  /** Settles once the track's file is fetched and set as the element's src. */
+  ready: Promise<boolean>;
+  abort: AbortController | null;
+  blob: string | null;
   /** Our own record of the gain automation, so an interrupted fade can turn round smoothly. */
   rest: number;
   fade: { from: number; to: number; t0: number; dur: number } | null;
@@ -86,6 +97,12 @@ function silentWav(): string {
 const browserAudio: RadioAudio = {
   context: () => new (window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)(),
   element: () => new Audio(),
+  async source(url, signal) {
+    const r = await fetch(url, { signal });
+    if (!r.ok) throw new Error(`${url} ${r.status}`);
+    return URL.createObjectURL(await r.blob());
+  },
+  release: (src) => URL.revokeObjectURL(src),
 };
 
 export function createRadio(o: RadioOptions): Radio {
@@ -163,16 +180,38 @@ export function createRadio(o: RadioOptions): Radio {
     masterLevel = to;
   }
 
+  function unload(d: Deck) {
+    d.abort?.abort();
+    d.abort = null;
+    if (d.blob) audio.release(d.blob);
+    d.blob = null;
+  }
+
   function assign(d: Deck, t: StationTrack, role: Role) {
     if (d.track !== t || d.role === 'idle') {
-      d.el.preload = 'auto';
-      d.el.src = o.resolve(t.src);
+      unload(d);
       d.track = t;
+      const ac = (d.abort = new AbortController());
+      d.ready = audio.source(o.resolve(t.src), ac.signal).then(
+        (src) => {
+          if (ac.signal.aborted || d.track !== t) {
+            audio.release(src);
+            return false;
+          }
+          d.blob = src;
+          d.el.preload = 'auto';
+          d.el.src = src;
+          return true;
+        },
+        () => false,
+      );
     }
     d.role = role;
   }
 
   function retire(d: Deck) {
+    unload(d);
+    d.ready = Promise.resolve(false);
     d.el.pause();
     d.el.removeAttribute('src');
     d.el.load(); // drops the buffered file
@@ -189,13 +228,22 @@ export function createRadio(o: RadioOptions): Radio {
   const other = (d: Deck) => decks[decks[0] === d ? 1 : 0];
 
   function play(d: Deck) {
-    void d.el.play().catch((e: unknown) => {
-      // A pause or track change aborts the pending play: that's not a failure.
-      if (e instanceof DOMException && e.name === 'AbortError') return;
-      if (d.role === 'primary' || d.role === 'incoming') {
-        playing = false;
-        changed();
+    const t = d.track;
+    void d.ready.then((ok) => {
+      if (!playing || d.track !== t || d.role === 'idle' || d.role === 'preloaded') return;
+      if (!ok) {
+        // The file didn't load: skip to the next track rather than sit silent.
+        if (d.role === 'primary' || d.role === 'incoming') crossfade(0);
+        return;
       }
+      return d.el.play().catch((e: unknown) => {
+        // A pause or track change aborts the pending play: that's not a failure.
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+        if (d.role === 'primary' || d.role === 'incoming') {
+          playing = false;
+          changed();
+        }
+      });
     });
   }
 
@@ -298,12 +346,12 @@ export function createRadio(o: RadioOptions): Radio {
       gain.gain.value = 0;
       ctx!.createMediaElementSource(el).connect(gain);
       gain.connect(master!);
-      const d: Deck = { el, gain, track: null, role: 'idle', rest: 0, fade: null };
+      const d: Deck = { el, gain, track: null, role: 'idle', rest: 0, fade: null, ready: Promise.resolve(false), abort: null, blob: null };
       el.addEventListener('timeupdate', () => onTime(d));
       el.addEventListener('playing', () => onPlaying(d));
       el.addEventListener('ended', () => onEnded(d));
       el.src = silence;
-      void el.play().then(() => el.pause(), () => undefined);
+      void el.play().then(() => { if (d.role === 'idle') el.pause(); }, () => undefined);
       return d;
     });
   }
@@ -347,7 +395,8 @@ export function createRadio(o: RadioOptions): Radio {
         album: station?.name ?? '',
         artwork: [{ src: o.resolve(shown.cover.large), sizes: '512x512', type: 'image/webp' }],
       });
-    ms.playbackState = playing ? 'playing' : 'paused';
+    const state = playing ? 'playing' : 'paused';
+    if (ms.playbackState !== state) ms.playbackState = state;
   }
 
   const radio: Radio = {

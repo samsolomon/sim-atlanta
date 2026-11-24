@@ -57,7 +57,12 @@ let els: FakeElement[];
 const audio: RadioAudio = {
   context: () => (ctx = new FakeContext()) as unknown as AudioContext,
   element: () => { const e = new FakeElement(); els.push(e); return e as unknown as HTMLAudioElement; },
+  source: (url) => { fetched.push(url); return Promise.resolve(url); },
+  release: () => {},
 };
+let fetched: string[] = [];
+/** Let the decks' fetched sources settle. */
+const flush = async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); };
 function make(hour = 14, storage: Map<string, string> = new Map()) {
   const r = createRadio({
     load: () => Promise.resolve(FILE),
@@ -76,6 +81,7 @@ const mp3 = () => els.filter((e) => e.src.endsWith('.mp3'));
 
 beforeEach(() => {
   els = [];
+  fetched = [];
   vi.useFakeTimers();
 });
 afterEach(() => vi.useRealTimers());
@@ -88,7 +94,9 @@ describe('radio engine', () => {
     expect(r.track?.id).toMatch(/^n/);
     expect(els).toHaveLength(0);
     r.toggle();
+    await flush();
     expect(r.playing).toBe(true);
+    expect(fetched).toHaveLength(1);
     expect(mp3()).toHaveLength(1);
     expect(mp3()[0].src).toBe(`/music/tracks/${r.track!.id}.mp3`);
     expect(master().last('linear')).toEqual(['linear', 1, 0.3]);
@@ -98,6 +106,7 @@ describe('radio engine', () => {
     const r = make();
     await r.ready;
     r.toggle();
+    await flush();
     const first = r.track!;
     const a = mp3()[0];
     a.duration = 180;
@@ -106,11 +115,14 @@ describe('radio engine', () => {
     expect(mp3()).toHaveLength(1); // nothing preloaded yet
     a.currentTime = 160.2;
     a.emit('timeupdate');
+    await flush();
     expect(mp3()).toHaveLength(2);
+    expect(fetched).toHaveLength(2); // the current and the next file, nothing more
     const b = mp3().find((e) => e !== a)!;
     expect(b.paused).toBe(true);
     a.currentTime = 175.1;
     a.emit('timeupdate');
+    await flush();
     expect(b.paused).toBe(false);
     ctx.currentTime = 10;
     b.emit('playing');
@@ -132,8 +144,10 @@ describe('radio engine', () => {
     const r = make();
     await r.ready;
     r.toggle();
+    await flush();
     const a = mp3()[0];
     r.next();
+    await flush();
     const b = els.find((e) => e !== a && e.src.endsWith('.mp3'))!;
     ctx.currentTime = 1;
     b.emit('playing');
@@ -141,6 +155,7 @@ describe('radio engine', () => {
     // Halfway through, Next again: the louder deck fades out from where it is.
     ctx.currentTime = 1.605;
     r.next();
+    await flush();
     const c = els.find((e) => e.src.endsWith('.mp3') && e.src !== b.src && e !== b) ?? a;
     ctx.currentTime = 1.7;
     c.emit('playing');
@@ -153,6 +168,7 @@ describe('radio engine', () => {
     const r = make();
     await r.ready;
     r.toggle();
+    await flush();
     const a = mp3()[0];
     r.toggle();
     expect(master().last('linear')).toEqual(['linear', 0, 0.3]);
@@ -161,6 +177,7 @@ describe('radio engine', () => {
     expect(a.paused).toBe(true);
     expect(ctx.state).toBe('suspended');
     r.toggle();
+    await flush();
     expect(ctx.state).toBe('running');
     expect(a.paused).toBe(false);
   });
@@ -183,6 +200,7 @@ describe('radio engine', () => {
     const r = make();
     await r.ready;
     r.toggle();
+    await flush();
     const first = r.track;
     mp3()[0].emit('ended');
     expect(r.track).not.toBe(first);
