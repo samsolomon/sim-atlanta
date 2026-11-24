@@ -66,9 +66,7 @@ const TRAIL_KEY = 'perf-trail';
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false };
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, farForm: true, treeCellM: null };
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, farShadowM: null };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, farShadowM: null, farForm: true, treeCellM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -494,7 +492,7 @@ function rendererInfo() {
     programKinds: (renderer.info.programs ?? []).reduce<Record<string, number>>((o, p) => { const k = (p as { name?: string }).name || '?'; o[k] = (o[k] ?? 0) + 1; return o; }, {}),
     shadowMap: { enabled: renderer.shadowMap.enabled, autoUpdate: renderer.shadowMap.autoUpdate },
     /** Live GPU geometries and textures; a streamed area that unmounts cleanly returns these to baseline. */
-    gpuObjects: { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures },
+    gpuObjects: { geometries: renderer.info.memory?.geometries ?? 0, textures: renderer.info.memory?.textures ?? 0 },
   };
 }
 
@@ -631,9 +629,8 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
   const summary = {
-    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
-    trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, over33: f.over33, over50: f.over50, updateP50: f.updateP50, renderP50: f.renderP50,
+    trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,

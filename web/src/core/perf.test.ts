@@ -124,6 +124,9 @@ describe('perf overlay', () => {
       perf.detach(ctx);
       vi.unstubAllGlobals();
     }
+  });
+});
+
 describe('perf.ring', () => {
   it('records ring transitions and counts quick back-and-forth as thrash', () => {
     perf.ring('north-band', 'mid');

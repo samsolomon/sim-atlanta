@@ -47,8 +47,6 @@ import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
-import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
-import { PlacementIndex } from '../vignette/spatial';
 import { TREE_CELL_M, World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
