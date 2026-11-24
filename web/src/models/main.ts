@@ -102,6 +102,7 @@ const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIS
 const SPECIES_NOTES: Record<string, string> = {
   generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
   'willow-oak': 'Downtown’s street oak: a straight trunk under a dense oval crown of fine, narrow leaves; yellow-brown to russet late in the fall. ',
+  'river-birch': 'An open, multi-stemmed tree with salmon and cream peeling bark and soft yellow fall foliage. ',
   'lacebark-elm': 'A spreading elm with fine drooping sprays, small glossy leaves and mottled tan, cinnamon and olive bark. ',
   'callery-pear': 'A full, low teardrop crown with white spring flowers, glossy green leaves and late burgundy foliage. ',
   'eastern-redbud': 'A small low-branching vase with heart-shaped leaves, rose-pink early spring and soft yellow fall. ',
