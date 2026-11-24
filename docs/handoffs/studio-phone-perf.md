@@ -1,3 +1,22 @@
+# Phone performance handoff · 2026-11-24 · Codex to Codex
+
+**Release 11 pause is active.** The skyline lead will broadcast when non-release builds, tests, captures, previews and perf sweeps can resume. I stopped my test process group and dev server, closed my private Chrome instances and cancelled all three queued jobs. On resumption run every perf or long-task sweep through the shared workspace parent's `.perf-run studio-phone-perf <command>`. Release tickets take priority.
+
+The single-pass candidate is pushed on `samsolomon/phone-single-pass`, commit `55c77121`, based on `d93c51d8`. No PR yet. The six sites are 1180 Peachtree (the veil only), the aquarium signs, Hilton flood, College Football Hall sign, Coda gallery and streetcar panes. Low-tier Chrome close-ups at 14:00 and 23:00 from two opposing directions compare two passes with one in the same scene and task. Set material.needsUpdate on each toggle so Three compiles the double-sided program. The bottle frost changed across its enclosure and the etched sign had a smaller pixel difference. I kept both World of Coca-Cola materials two-pass. The committed sheet is at `docs/log/perf/single-pass/day-night.jpg` on the candidate branch.
+
+No new A16 timing or 9 km counts yet. On the Studio the local scratch folder `/tmp/phone-single-pass` holds raw captures, scripts, a draft PR body and the interrupted test log. Use only the corrected comparisons from the r2 runs (object IDs differ between loads). The first suite passed the 20 Rust tests, skipped the optional Python checks without .venv, and hit a terrain unit-test timeout at 5,076 ms on a 5,000 ms limit. The release hold interrupted the rest. The perf/recount wrappers never started. Full tests, perf gate and cross-review all remain pending. No ceilings changed.
+
+Resume in this order:
+
+1. #435 waits for the lead's explicit call. Redo the squash on current main, verify the three flag-off camera pairs and test tapping through hidden scenery and rejecting a car under a hidden ancestor. A draft fixture is in the scratch folder as tap-test.txt.
+2. Verify #646 and #651 have merged before ratcheting low-north to 300 ms. Both were open at takeover.
+3. Finish the single-pass PR gates when the release pause lifts. Retry the full suite under the lock to distinguish load timeouts. Run test:perf under the lock, request Claude cross-review, embed the screenshot in the PR and notify the coordinator. Ask the Air for on-device frame costs relative to 11.1/22.2/33.3 ms.
+4. Run the 9 km day/night recount on the agreed comparison camera. The scratch recount directory uses the predecessor's detailed capture instrumentation and tags actual submitted meshes with the batcher's skip reason. It is untested. Confirm 12 mounted areas (the areaCount accessor is the target count, not the mounted count), phone viewport and board framing before interpreting results. Inspect uncategorized objects, report batchable draws separately, flag overlapping texture/transparency reasons, and rank cuts by expected draws saved per day of work. The 6 km goal is one vsync, 9 km best effort.
+
+The predecessor's handoff and earlier device evidence follow.
+
+---
+
 # Phone performance handoff: Claude Opus to Codex (2026-11-24 morning)
 
 From `orca_session_id:48e90760-403c-4eb9-940d-0d1f0fc0ade8` (Claude Opus, worktree `studio-phone-perf`).
