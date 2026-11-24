@@ -1,3 +1,4 @@
+import { northAveRoadHeight } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
@@ -181,10 +182,12 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
+        const roadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
         added.set(id, {
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
-          connectorBoard: { city, roadHeight: cityRoadHeight(city, area.groundAt, deckHeight) },
+          connectorBoard: { city, roadHeight: id === 'midtown-south' ? (x, z, road) =>
+            northAveRoadHeight(x, z, road, grid.manifest.vertical.sceneZeroNavd88M) ?? roadHeight(x, z, road) : roadHeight },
           dispose() {
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();

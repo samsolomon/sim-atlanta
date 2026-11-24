@@ -3,6 +3,7 @@ import { Group, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { addSection, bounds, connect, joins, midtownRows, type Area, type Board } from '../square-board/sections';
 import { CITY_COLORS, cityLayer, groundAudit, type LayerResult } from './ground-audit';
+import { northAveLocal } from './north-ave';
 import { GroundGrid } from './grid';
 import { createDowntownTerrain } from './model';
 
@@ -55,6 +56,17 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     const underBridge = mounted.get('midtown-south')!.terrainAt(370.178, -1870.121);
     expect(underBridge).not.toBeNull();
     expect(underBridge!).toBeLessThan(-18.268 - .03);
+    const south = mounted.get('midtown-south')!;
+    const decks = south.group.getObjectByName('Decks and embedded rails')!;
+    const crossing = groundAudit(decks, [{ id: 'midtown-south', bounds: south.bounds, terrainAt: south.terrainAt, terrain: [south.board] }], {
+      colors: CITY_COLORS, layer: () => 'structures',
+      exclude: (_layer, x, z) => {
+        const [s, t] = northAveLocal(x, z);
+        return s < -12 || s > 168 || Math.abs(t) > 12;
+      },
+    });
+    expect(crossing.layers.reduce((sum, layer) => sum + layer.samples, 0)).toBeGreaterThan(0);
+    expect(crossing.worst).toEqual([]);
     const root = new Group();
     for (const area of mounted.values()) root.add(area.group);
     const audit = groundAudit(root, [...mounted].map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })),

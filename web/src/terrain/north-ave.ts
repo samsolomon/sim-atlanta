@@ -37,7 +37,10 @@ export function northAveRailProfile(run: Pick<TransportRun,'pts'>,grid:GroundGri
       const a=run.pts[i-1],b=run.pts[i],ta=northAveLocal(...a)[1],tb=northAveLocal(...b)[1];
       if((ta-target)*(tb-target)>0||ta===tb)continue;
       const f=(target-ta)/(tb-ta),x=a[0]+f*(b[0]-a[0]),z=a[1]+f*(b[1]-a[1]);
-      return {t:target,h:grid.sample(x,z)!};
+      const along = northAveLocal(x, z)[0];
+      if (along < 0 || along > 110) continue;
+      const h = grid.sample(x, z);
+      if (h !== null) return {t:target,h};
     }
     // A turnout beginning inside the profile shares the common formation there.
     return {t:target,h:northAveRail(target)};
@@ -51,7 +54,7 @@ export function northAveRailProfile(run: Pick<TransportRun,'pts'>,grid:GroundGri
 export function northAveRoadHeight(x:number,z:number,run: Pick<TransportRun,'name'>,zero:number) {
   const [s,t]=northAveLocal(x,z);
   if(run.name==='North Avenue Northwest' && s>=-12 && s<=168 && Math.abs(t)<=11.3) return northAveFloor(s)-zero+.04;
-  if(run.name==='Marietta Street Northwest' && s>=0 && s<=19 && Math.abs(t)<=11.3) return 302.32-zero+.04;
+  if(run.name==='Marietta Street Northwest' && s>=0 && s<=19 && Math.abs(t)<=11.3) return 302.32-zero;
   return null;
 }
 /** Appends to the existing structural batch: no new material, texture or draw. */
@@ -87,7 +90,7 @@ export function drawNorthAve(city:TerrainCity, grid:GroundGrid, out:Builder) {
       for(const t of [-9,-3,3,9])slab(9.45,9.55,t-1.5,t+1.5,()=>302.33,()=>302.32,'#d4cba7');
     }
     // Two road bays: columns occupy only the reserved median, with wall abutments outside shoulders.
-    for(const s of [a+.6,b-.6]) for(const t of [0,-10.85,10.85]) {
+    for(const s of [a+.6,b-.6]) for(const t of [0,-10.7,10.7]) {
       slab(s-.35,s+.35,t-.35,t+.35,underside,q=>northAveFloor(q)+.18,'#918c80');
       slab(s-.55,s+.55,t-.5,t+.5,underside,q=>underside(q)-.55,'#aaa496');
     }

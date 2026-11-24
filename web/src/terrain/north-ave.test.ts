@@ -4,7 +4,7 @@ import { Builder, Line } from '../vignette/geom';
 import railRows from '../city/fixtures/midtown-rail.json';
 import { GroundGrid } from './grid';
 import { GroundSurface } from './surface';
-import { drawNorthAve, northAveSlots, northAveLocal, northAveRailProfile, northAveFloor, northAvePoint, NORTH_AVE } from './north-ave';
+import { drawNorthAve, northAveSlots, northAveLocal, northAveRailProfile, northAveRail, northAveFloor, northAvePoint, NORTH_AVE } from './north-ave';
 import type { TerrainCity } from './transport-data';
 const read=(file:string)=>readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/'+file,import.meta.url));
 const grid=new GroundGrid(JSON.parse(read('ground.json').toString()),Uint8Array.from(read('ground.i16')).buffer);
@@ -22,7 +22,7 @@ it('keeps every real rail crossing continuous and under 1.5 percent through the 
    if(s<21||s>89||Math.abs(t)>39){last=undefined;continue;}
    const base=grid.sample(p.x,p.z)!-323.8,y=grade(p.x,p.z,base)!;
    if(last)maxGrade=Math.max(maxGrade,Math.abs(y-last.y)/(d-last.s));last={s:d,y};samples++;
-   if(Math.abs(t)<11.3)expect(y+323.8-northAveFloor(s)).toBeGreaterThanOrEqual(4.5);
+   if(Math.abs(t)<11.3)expect(y+323.8).toBeGreaterThan(northAveRail(t)-.45);
   }
  }
  expect(samples).toBeGreaterThan(200);expect(maxGrade).toBeLessThanOrEqual(.015);
