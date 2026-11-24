@@ -25,7 +25,7 @@ The matched camera targets (565, −3965), bearing −101°, tilt 55°, at 0.33 
 
 **Ginkgo planting spot (for the tree agent; City models no tree here).** Trees Atlanta lists Atlanta's champion ginkgo at 33.789866, −84.384916, which is City (617.9, −3999.2). An OSM tree node sits 1.1 m away. The record gives 27.5 m height, 26.2 m spread and a 186 in circumference, about 1.5 m DBH. It stands on the Peachtree lawn south of the ramp, about 12 m south of the ramp centreline and about 10.7 m from its south parapet. It is not in Sifly Piazza. Rodin's *The Shade* stands to its west. A leaf-on Esri export puts the crown centre near (615, −4005), consistent with the record within the crown radius. My first pick, from leaf-off branch shadows, sat 4–5 m too far north. Nothing new in this change stands within 10 m of the trunk. [Champion tree service](https://services6.arcgis.com/BZn8g8tzu5WfMokL/arcgis/rest/services/TreeChampionData_2019/FeatureServer/0) · [Ginkgo and Rodin](https://commons.wikimedia.org/wiki/File:Ginkgo_tree_and_Rodin_at_the_Woodruff_Arts_Center.jpg)
 
-**Sifly Piazza.** Paving is now 1.5 × 3 m white concrete slabs in three close tones, with dark 0.1 m joints, laid on the rendered terrain. The slab size is estimated from a ground-level photograph. OSM maps a 330 m² lawn inside the old paved outline, at local u −10…10, v −4…23. It stays grass behind a low white curb. Leaf-off imagery shows it tan, as it shows the dormant Peachtree lawn. A mapped stair leaves the piazza's north edge through the passage between Stent and the Piano wing, at local u −13.6, v −9.3 → −20.1. 3DEP confirms the fall, about 3 m over 11 m. Most of the stair lies under the skybridge and is hard to see from City's cameras. Six bistro tables with red wire chairs stand in a row along the Memorial's north wall, and three benches face the lawn. The aerial shows table clusters there, but the exact count and positions are illustrative. Temporary installations such as the rope seating are left out. I found no reliable night photograph of the piazza, so City adds no piazza lighting. At night it reads by the Piano glazing and the Memorial lobby. Night coverage remains a gap. Six tables stand where the aerial shows clusters; two more in the first draft fell inside the Memorial link block. [Piazza paving and café seating](https://commons.wikimedia.org/wiki/File:Plaza_-_Flickr_-_hyku.jpg) · [OSM lawn and stair](https://www.openstreetmap.org/#map=20/33.78972/-84.38605)
+**Sifly Piazza.** Paving is now 1.5 × 3 m white concrete slabs in three close tones, with dark 0.1 m joints, laid on the rendered terrain. The slab size is estimated from a ground-level photograph. OSM maps a 330 m² lawn inside the old paved outline, at local u −10…10, v −4…23. It stays grass behind a low white curb. Leaf-off imagery shows it tan, as it shows the dormant Peachtree lawn. A mapped stair leaves the piazza's north edge through the passage between Stent and the Piano wing, at local u −13.6, v −9.3 → −20.1. 3DEP confirms the fall, about 3 m over 11 m. Most of the stair lies under the skybridge and is hard to see from City's cameras. The café seating is described under People at Sifly Piazza below. Three benches face the lawn. Temporary installations such as the rope seating are left out. I found no reliable night photograph of the piazza, so City adds no piazza lighting. At night it reads by the Piano glazing and the Memorial lobby. Night coverage remains a gap. [Piazza paving and café seating](https://commons.wikimedia.org/wiki/File:Plaza_-_Flickr_-_hyku.jpg) · [OSM lawn and stair](https://www.openstreetmap.org/#map=20/33.78972/-84.38605)
 
 | Matched camera in Five Points metres | High | Low |
 |---|---|---|
@@ -104,19 +104,58 @@ Nothing within the ginkgo's 9 m crown stands more than 1.5 m above the lawn. The
 
 ## People at Sifly Piazza
 
-The six existing bistro tables each have three chairs. At lunch the high tier
-fills one chair at each table. Eight walkers share the piazza paving, entry ramp
-and mapped Peachtree lawn path. The low tier shows the walkers. The figures use
-the existing City clothing palette and material. Visitor positions and attendance
-carry the illustrative tier in the visitor data.
+**Café grove (revised 2026-11-23 after Sam's review).** The first version set six
+tables in a row against the Memorial's north wall, under the Woodruff shadow, where
+they were hard to see at the usual orbit. The tables now stand where the photographs
+and aerial put them: a gridded grove in the paved square, along the Woodruff wall at
+the square's south-west edge, local u −48…−34.5, v 17…25. The leaf-on Esri aerial
+shows the grove's tree canopy at about u −50…−28, v 16…30. Beside it, four pale
+squares near u −33, v 10 look like open umbrellas. Photographs show a loose grid of
+12–15 round pedestal tables with four chairs each, inside a low cable rail among
+deciduous trees. City draws twelve tables in three rows of four. Each table has four
+red-cushioned chairs, a warm pale top (`#f5ead4`) that stands out from the grey
+paving, and a cream umbrella at every other table.
 
-The scene uses Atlanta local time. Tuesday through Sunday, the 12:00–14:00
-lunch peak falls within the busier 10:00–17:00 museum period. A few walkers
-linger into the evening. Monday daytime has one walker, and after 21:00 the
-museum crowd is empty. These are artistic estimates of activity. A fixed scene
-clock reproduces the same visitor positions, looks and gait.
+- **Chairs.** The 2006–07 photographs show white wire chairs with red seat pads.
+  Photographs from 2018 to 2023 show teal bistro chairs. City keeps the red chairs,
+  which Sam liked and which read better against the paving. The teal era is
+  recorded here.
+- **Umbrellas.** In March 2023 they were furled, and in July 2024 they were open on
+  weighted bases. A rainy December 2018 photograph shows none. I found no October
+  or November photograph, so City draws them furled. An open-umbrella variant
+  (`umbrellas: 'open'` in `arts-campus.ts`) was captured for Sam to choose from.
+- **Left out.** The grove's trees belong to the tree agent and are a gap. The cable
+  rail is too thin to read at City distances.
+- **Positions.** Exact table positions are illustrative.
 
-November 20, 2026, high tier. [Lunch](log/ui/high-visitors/lunch.jpg) and
-[full night](log/ui/high-visitors/night.jpg) use camera `565,-3965,-101,55,260`
-at 13:00 and 23:00 Eastern. [Café seating at 13:00](log/ui/high-visitors/tables.jpg)
-uses `557,-3963,145,55,48` with `&dev&mindist=20`.
+Sources:
+- [Plaza, 2006-03-28](https://commons.wikimedia.org/wiki/File:Plaza_-_Flickr_-_hyku.jpg)
+- [Table 1280 patio, 2007](https://www.flickr.com/photos/abardis/696583449/)
+- [Teal chairs, 2018-12-20](https://www.flickr.com/photos/doctorcasino/46599960995/)
+- [Furled umbrellas, 2023-03-10](https://www.flickr.com/photos/9115672@N05/52743396909/)
+- [Open umbrellas, 2024-07-14](https://www.flickr.com/photos/31673483@N00/53884854993/)
+- [Esri World Imagery](https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9)
+
+At lunch the high tier seats ten visitors around the grove. Eight walkers cross
+the open square, skirt the grove, climb the entry ramp and follow the mapped
+Peachtree lawn path. A test keeps every walker more than 1.3 m from each table.
+The low tier shows the walkers and the furniture but no seated figures. The figures
+use the existing City clothing palette and material. Visitor positions and
+attendance carry the illustrative tier in the visitor data.
+
+The scene uses Atlanta local time. Tuesday through Sunday, the 12:00–14:00 lunch
+peak falls within the busier 10:00–17:00 museum period. A few visitors linger into
+the evening. Monday daytime has one walker, and after 21:00 the museum crowd is
+empty. Seated visitors scale with the crowd, from ten at lunch to none after close.
+These are artistic estimates of activity. A fixed scene clock reproduces the same
+visitor positions, looks and gait.
+
+November 20, 2026, high tier:
+- [Lunch](log/ui/high-visitors/lunch.jpg) and [full night](log/ui/high-visitors/night.jpg)
+  use camera `565,-3965,-101,55,260` at 13:00 and 23:00 Eastern.
+- [Before and after](log/ui/high-visitors/compare-lunch.jpg) and
+  [furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg) use the
+  same camera.
+- [Café grove close-up](log/ui/high-visitors/tables.jpg) and the
+  [open-umbrella close-up](log/ui/high-visitors/tables-open.jpg) use
+  `520,-3955,-101,50,60` with `&dev&mindist=20`.

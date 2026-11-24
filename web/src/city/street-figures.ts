@@ -2,7 +2,7 @@
 // Parts are shared across the whole board. Only the instance transforms move.
 import * as THREE from 'three';
 import { FigureBuilder, figureLooks, figureMaterial } from './figure-looks';
-import { highSeats, highWalkers, highWalkerPose, museumCrowd } from './high-visitors';
+import { highSeated, highSeats, highWalkers, highWalkerPose, museumCrowd } from './high-visitors';
 import { strideAngle, travelSpeed, travellerAt, type Traveller } from './walkways';
 
 type XYZ = [number, number, number];
@@ -295,7 +295,7 @@ export class StreetFigures {
         const p = highWalkerPose(visitor,tick*step/1000,this.museumGround);
         if (p) draw(visitor.person,p,p.y);
       }
-      if (this.seated) for (let i = 0; i < this.crowd - 2; i++) {
+      if (this.seated) for (let i = 0; i < highSeated(this.crowd); i++) {
         const seat = highSeats[i];
         const g = this.museumGround(...seat.table);
         if (g === null) continue;

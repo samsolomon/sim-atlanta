@@ -3194,5 +3194,16 @@ Sifly Piazza already had six café tables and eighteen red chairs. At 13:00 on
 Friday, six visitors sit facing their tables while eight walkers cross the
 paving, climb the entry ramp and follow the lawn path. The ramp needed its own
 height calculation because the deck rises away from the ground beneath it.
-At 23:00 the tables and paths are quiet. [Café seats](log/ui/high-visitors/tables.jpg)
-· [lunchtime overview](log/ui/high-visitors/lunch.jpg) · [matched night](log/ui/high-visitors/night.jpg).
+At 23:00 the tables and paths are quiet.
+
+Sam couldn't find the tables at his usual 260 m orbit. They sat in the Woodruff
+shadow, tucked against a wall. A leaf-on aerial showed where the real café sits:
+in a gridded tree grove in the open square, beside four pale squares that turned
+out to be open umbrellas. The tables now stand there, twelve in three rows of four,
+with warm pale tops and furled cream umbrellas, because no November photograph
+shows them open. Ten visitors sit at lunch. The grove adds about 1,100 triangles
+to the existing shell batch, with no new draw or material.
+[Before and after](log/ui/high-visitors/compare-lunch.jpg) ·
+[café grove close-up](log/ui/high-visitors/tables.jpg) ·
+[day and night](log/ui/high-visitors/day-night.jpg) ·
+[furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).

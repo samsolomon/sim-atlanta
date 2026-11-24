@@ -109,7 +109,7 @@ it.each([true, false])('reuses City batches for museum visitors and empties them
   expect(new Set(meshes.map(m => m.material)).size).toBe(1);
   figures.update(Date.parse('2026-11-20T13:00:00-05:00'), camera, 100);
   const count = () => meshes.reduce((sum, mesh) => sum + mesh.count, 0);
-  expect(count()).toBe(low ? 8 : 14);
+  expect(count()).toBe(low ? 8 : 18);
   figures.update(Date.parse('2026-11-20T23:00:00-05:00'), camera, 100);
   expect(count()).toBe(0);
   figures.dispose();

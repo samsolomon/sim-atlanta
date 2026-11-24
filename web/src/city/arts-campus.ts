@@ -376,6 +376,8 @@ export function createArtsCampusLandmark(
         stair: pz.stair as [P2, P2],
         stairLanding: pz.stairLanding,
         tables: pz.tables as P2[],
+        // March and December photographs show them furled or gone.
+        umbrellas: 'furled',
         benches: pz.benches as P2[],
       },
       (u, v) => {

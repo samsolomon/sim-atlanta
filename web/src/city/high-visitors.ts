@@ -27,9 +27,10 @@ function world(u: number, v: number): P2 {
   return [550 + c * u - s * v, -3990 + s * u + c * v];
 }
 const ramp = campus.museum.ramp;
-// Lawn coordinates follow the archived footway from the Peachtree steps.
+// Lawn coordinates follow the archived footway from the Peachtree steps; the
+// first walk skirts the café grove's north edge on its way there.
 const paths = [
-  new Line([world(-42, 19), world(-29, 24), world(-13, 24), world(12, 24)]),
+  new Line([world(-50, 14), world(-31, 14.5), world(-29, 24), world(-13, 24), world(12, 24)]),
   new Line([ramp.foot, ramp.head] as P2[]),
   new Line([
     [619.61, -3987.83],
@@ -37,7 +38,8 @@ const paths = [
     [593.19, -3972.93],
     [584.07, -3970.85],
   ]),
-  new Line([world(-23, 5), world(-23, 17), world(-19, 23)]),
+  // Across the open square, clear of the café grove.
+  new Line([world(-52, 6), world(-40, 10), world(-26, 8), world(-14, 2)]),
 ];
 export const highVisitorTier = 'illustrative' as const;
 export const highWalkers = Array.from({ length: 8 }, (_, i) => {
@@ -55,9 +57,22 @@ export const highWalkers = Array.from({ length: 8 }, (_, i) => {
   return { person, path, tier: highVisitorTier };
 });
 
-export const highSeats = [1, 4, 0, 3, 5, 2].map((tableIndex, i) => {
+// [table, chair]: chairs stand at quarter turns, chair 0 toward +u.
+const seatings = [
+  [1, 0],
+  [6, 2],
+  [4, 1],
+  [11, 3],
+  [2, 2],
+  [9, 0],
+  [7, 1],
+  [0, 3],
+  [10, 2],
+  [5, 0],
+];
+export const highSeats = seatings.map(([tableIndex, chair], i) => {
   const [u, v] = campus.museum.piazza.tables[tableIndex];
-  const theta = ((i % 3) * 2 * Math.PI) / 3;
+  const theta = (chair * Math.PI) / 2;
   const [x, z] = world(u + 0.72 * Math.cos(theta), v + 0.72 * Math.sin(theta));
   const table = world(u, v);
   return {
@@ -69,6 +84,10 @@ export const highSeats = [1, 4, 0, 3, 5, 2].map((tableIndex, i) => {
     tier: highVisitorTier,
   };
 });
+/** Seated café visitors for a museum crowd: ten at the lunch peak, none after close. */
+export function highSeated(crowd: number) {
+  return Math.min(highSeats.length, Math.round(crowd * 1.25));
+}
 
 export function highWalkerPose(walker: (typeof highWalkers)[number], seconds: number, ground: Ground) {
   const p = travellerAt(walker.person, seconds);
