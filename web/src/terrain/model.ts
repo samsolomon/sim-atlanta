@@ -223,7 +223,8 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
   const tagNew = (from: number, perf: string) => world.group.children.slice(from).forEach(o => { o.userData.perf ??= perf; });
   let before = world.group.children.length;
   // Houses stay in the data (lamps and trees keep clear of them) but are drawn by house-lod.ts.
-  yield* world.buildingSteps(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
+  yield* world.buildingSteps(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor,
+    farBuildingsOff() ? undefined : { errorM: FAR_BUILDING_ERROR_M });
   tagNew(before, 'buildings');
   yield 'buildings done';
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
@@ -243,6 +244,15 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
  * skyline (~4.5 km) views are well beyond it, street views well inside.
  */
 export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
+/** Generic buildings switch to their far form (footprints simplified to 2 m, no roof clutter) past
+ * this camera distance to the board, the same boundary as the transport far form (700 m low,
+ * 1,600 m high). A 2 m footprint error is under a pixel there on both tiers. */
+export const FAR_BUILDINGS_M = { low: 700, high: 1600 } as const, FAR_BUILDING_ERROR_M = 2;
+/** ?perf&buildingfar=0 keeps generic buildings in their near form (A/B from one build). */
+function farBuildingsOff() {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  return p.has('perf') && p.get('perf') !== '0' && p.get('buildingfar') === '0';
+}
 /**
  * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
  * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
@@ -558,10 +568,14 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
      * frame); a swap flags the manual shadow map for a redraw (takeGroundLodChange).
      */
     update(_dt: number, camera: THREE.Camera) {
-      if (!farGeometry) return;
       const p = camera.position;
       const dx = Math.max(bb.minX - p.x, 0, p.x - bb.maxX), dz = Math.max(bb.minZ - p.z, 0, p.z - bb.maxZ);
       const d = Math.hypot(dx, dz, Math.max(0, p.y - mesh.minY));
+      // Generic buildings: far form past the shared boundary, near again inside 0.9 x (hysteresis).
+      const buildingsAt = FAR_BUILDINGS_M[options.quality === 'low' ? 'low' : 'high'];
+      const buildingsFar = scenery.buildingLod?.isFar ? d > 0.9 * buildingsAt : d > buildingsAt;
+      if (scenery.setBuildingsFar(buildingsFar)) groundLodChanged = true;
+      if (!farGeometry) return;
       const next = far ? d > 0.9 * FAR_GROUND_M : d > FAR_GROUND_M;
       if (!veryFarOff && !veryFarQueued && d > VERY_FAR_BUILD_M) {
         veryFarQueued = true;
@@ -598,6 +612,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       // The traverse disposed whichever ground is attached; release the others.
       disposed = true;
       for (const g of [nearGeometry, farGeometry, veryFarGeometry]) if (g && g !== board.geometry) g.dispose();
+      // Generic buildings: the scenery traverse frees whichever form is attached; free the other.
+      const lod = scenery.buildingLod;
+      if (lod) (lod.isFar ? lod.near : lod.far).dispose();
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();

@@ -931,6 +931,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   // Set once the prewarm scheduler exists (below); an area mounting before then is covered by its first run.
   let requestPrewarm = () => {};
+  // Measurement probe (?perf&clippad=1, never default): pad every lit material that clips to no
+  // planes up to four never-clipping ones, so its program merges with City's four-plane programs.
+  // Measures the program saving against the cost of the clip test on materials without one.
+  if (perfOverrides.clipPad) {
+    const pad = () => scene.traverse(o => {
+      const mat = (o as THREE.Mesh).material;
+      for (const m of Array.isArray(mat) ? mat : mat ? [mat] : []) {
+        const lit = (m as THREE.MeshLambertMaterial).isMeshLambertMaterial || (m as THREE.MeshBasicMaterial).isMeshBasicMaterial || (m as THREE.MeshPhongMaterial).isMeshPhongMaterial;
+        if (lit && !m.clippingPlanes?.length) { m.clippingPlanes = [0, 1, 2, 3].map(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e7)); m.needsUpdate = true; }
+      }
+    });
+    const padTimer = setInterval(pad, 1000);
+    options.signal?.addEventListener('abort', () => clearInterval(padTimer), { once: true });
+  }
   let prewarmer: Prewarmer | undefined;
   let colourShown = !options.whiteModel;
   let prewarmDone = false;

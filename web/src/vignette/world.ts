@@ -206,6 +206,18 @@ export class World {
   readonly trees: { x: number; y: number; z: number; s: number; c: number; th?: number }[] = [];
   /** Real trees from a canopy height map: [x, z, height m, crown radius m]. */
   realTrees: [number, number, number, number][] | null = null;
+  /** Generic buildings' near and far forms (buildingSteps with `far`), for setBuildingsFar. */
+  buildingLod: { mesh: THREE.Mesh; near: THREE.BufferGeometry; far: THREE.BufferGeometry; clutter: THREE.Object3D; isFar: boolean } | null = null;
+  /** Swap generic buildings to their far form (simplified massing, no roof clutter) or back.
+   * Returns true when it changed, so the caller can redraw a manual shadow map. */
+  setBuildingsFar(far: boolean) {
+    const l = this.buildingLod;
+    if (!l || l.isFar === far) return false;
+    l.isFar = far;
+    l.mesh.geometry = far ? l.far : l.near;
+    l.clutter.visible = !far;
+    return true;
+  }
   /**
    * Canopy crowns a named species tree replaces (x, z, crown radius m). They are skipped only
    * after their colour seed is drawn, so every other tree keeps its kind and colour.
@@ -847,8 +859,48 @@ export class World {
 
   /** buildBuildings as a build that yields every few buildings (core/slice.ts). Each building
    * draws from its own seeded stream, so where it yields never changes the result. */
-  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
+  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined,
+    far?: { errorM: number }) {
     const b = new Builder();
+    // Far form (City areas only): the same buildings as plain massing on footprints simplified to
+    // `errorM`, with the near form's own colours and window styles, no roof clutter, shopfronts or
+    // facade finishes. setBuildingsFar swaps it in by distance; it adds no draw call.
+    const fb = far ? new Builder() : null;
+    const fstyle: number[] = [];
+    const fbase: number[] = [];
+    // A building with its own facade, roof dressing, shopfront or deck keeps its near geometry in the
+    // far form, so its colours and features don't change at distance (only plain massing simplifies).
+    const copyNear = (nearStart: number, farStart: number) => {
+      if (!fb) return;
+      fb.pos.length = farStart * 3; fb.col.length = farStart * 3; fstyle.length = farStart; fbase.length = farStart;
+      const end = b.pos.length / 3;
+      for (let i = nearStart; i < end; i++) {
+        fb.pos.push(b.pos[3 * i], b.pos[3 * i + 1], b.pos[3 * i + 2]);
+        fb.col.push(b.col[3 * i], b.col[3 * i + 1], b.col[3 * i + 2]);
+        fstyle.push(style[i]); fbase.push(base[i]);
+      }
+    };
+    const farMass = (rings: P2[][], wallBase: number, top: number, roofY: number, underside: boolean, wallCol: string, roofCol: string, wallKind: number, wallBaseAttr: number) => {
+      if (!fb || !far) return;
+      const sr = rings.map((ring) => simplifyRing(ring, far.errorM)).filter((ring) => ring.length >= 3);
+      if (!sr.length || rings[0].length < 3) return;
+      for (const ring of sr) for (let i = 0; i < ring.length; i++) {
+        const a = ring[i], c = ring[(i + 1) % ring.length];
+        fb.quad([a[0], wallBase, a[1]], [c[0], wallBase, c[1]], [c[0], top, c[1]], [a[0], top, a[1]], wallCol);
+        for (let k = 0; k < 6; k++) { fstyle.push(wallKind); fbase.push(wallBaseAttr); }
+      }
+      const contour = sr[0].map((q) => new THREE.Vector2(q[0], q[1]));
+      const holes = sr.slice(1).map((ring) => ring.map((q) => new THREE.Vector2(q[0], q[1])));
+      const all = [...contour, ...holes.flat()];
+      for (const t of THREE.ShapeUtils.triangulateShape(contour, holes)) {
+        fb.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
+        for (let k = 0; k < 3; k++) { fstyle.push(-1); fbase.push(0); }
+        if (underside) {
+          fb.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
+          for (let k = 0; k < 3; k++) { fstyle.push(-1); fbase.push(0); }
+        }
+      }
+    };
     const shopLights = new Builder();
     const style: number[] = [];
     const base: number[] = [];
@@ -885,9 +937,12 @@ export class World {
           style.push(-1);
           base.push(0);
         }
+        copyNear(before, fb ? fb.pos.length / 3 : 0);
         continue;
       }
       const shop = bd.parts?.length ? null : woodruffLot(bd);
+      const custom = !!shop || (!bd.parts?.length && !!(finish?.drawRing || finish?.dressRoof || finish?.replacesRoof));
+      const farStart = fb ? fb.pos.length / 3 : 0;
       for (const mass of masses) {
       const outer = mass.rings[0];
       if (!outer || outer.length < 3) continue;
@@ -928,6 +983,9 @@ export class World {
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       if (!finish?.replacesRoof || bd.parts?.length) for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
       if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
+      farMass(mass.rings, wallBase, roofY + parapet, roofY, mass.minH > 0, wallCol, roofCol,
+        finish?.drawRing && !bd.parts?.length ? -1 : finish?.plainWalls ? -1 : finish?.windowStyle ?? (finish ? 0 : kind),
+        mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
       if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY, shopLights);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
@@ -958,6 +1016,7 @@ export class World {
         placed++;
       }
       }
+      if (custom) copyNear(before, farStart);
     }
     // Painted shop glass shares the building draw. Only this glass receives the
     // subdued interior light when the City's existing night uniform comes up.
@@ -979,6 +1038,13 @@ export class World {
     const cm = instanced(new THREE.BoxGeometry(1, 1, 1), '#ffffff', clutter);
     clutterCol.forEach((c, i) => cm.setColorAt(i, c));
     this.group.add(cm);
+    if (fb) {
+      const fg = fb.geometry();
+      fg.setAttribute('aStyle', new THREE.Float32BufferAttribute(fstyle, 1));
+      fg.setAttribute('aBase', new THREE.Float32BufferAttribute(fbase, 1));
+      fg.computeBoundingSphere();
+      this.buildingLod = { mesh, near: g, far: fg, clutter: cm, isFar: false };
+    }
   }
 
   // ---- trees --------------------------------------------------------------------------
@@ -1611,4 +1677,29 @@ ${SIDING_GLSL}
         totalEmissiveRadiance += vec3(1.0, 0.72, 0.4) * litWin * uNight * litLevel;`,
       );
   };
+}
+
+/** Douglas-Peucker on a closed footprint ring: drop vertices within `tol` metres of the line between
+ * kept neighbours. Keeps at least three points; returns the ring unchanged if it is already small. */
+export function simplifyRing(ring: P2[], tol: number): P2[] {
+  if (ring.length <= 4) return ring;
+  // Split the closed ring at its two farthest-apart vertices and simplify each half.
+  let far = 0, best = -1;
+  for (let i = 1; i < ring.length; i++) { const d = Math.hypot(ring[i][0] - ring[0][0], ring[i][1] - ring[0][1]); if (d > best) { best = d; far = i; } }
+  const keep = new Uint8Array(ring.length);
+  keep[0] = keep[far] = 1;
+  const stack: [number, number][] = [[0, far], [far, ring.length]];
+  while (stack.length) {
+    const [a, b] = stack.pop()!;
+    const A = ring[a], B = ring[b % ring.length];
+    const dx = B[0] - A[0], dz = B[1] - A[1], L = Math.hypot(dx, dz) || 1;
+    let worst = -1, at = -1;
+    for (let i = a + 1; i < b; i++) {
+      const d = Math.abs((ring[i][0] - A[0]) * dz - (ring[i][1] - A[1]) * dx) / L;
+      if (d > worst) { worst = d; at = i; }
+    }
+    if (at >= 0 && worst > tol) { keep[at] = 1; stack.push([a, at], [at, b]); }
+  }
+  const out = ring.filter((_, i) => keep[i]);
+  return out.length >= 3 ? out : ring;
 }
