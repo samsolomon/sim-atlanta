@@ -127,7 +127,10 @@ export function groundAudit(root: THREE.Object3D, boards: AuditBoard[], o: Audit
     const offset = materials.every(mat => mat.polygonOffset && mat.polygonOffsetFactor + mat.polygonOffsetUnits < 0);
     const col = mesh.geometry.getAttribute('color') as THREE.BufferAttribute | undefined;
     const base = layer;
+    // Triangle offsets explicitly marked by the producer, independent of winding.
+    const buriedFaces = mesh.userData.groundAuditBuriedFaces as Set<number> | undefined;
     for (let i = 0; i + 2 < count; i += 3) {
+      if (buriedFaces?.has(i)) continue;
       const ia = index ? index.getX(i) : i, ib = index ? index.getX(i + 1) : i + 1, ic = index ? index.getX(i + 2) : i + 2;
       a.fromBufferAttribute(pos, ia).applyMatrix4(m);
       b.fromBufferAttribute(pos, ib).applyMatrix4(m);
