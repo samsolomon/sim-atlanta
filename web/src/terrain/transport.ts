@@ -22,7 +22,7 @@ type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
 /** Road tread over its support, and the widest band of a deck that lands on the board. */
 const DECK_LIFT = .12, LANDING_BAND_M = 1.5, LANDING_BANK_M = 1, LANDING_TOLERANCE_M = .06;
 /** A deck that must arrive this far above the board gets a landing approach. */
-const LANDING_RISE_M = .5;
+const LANDING_RISE_M = .5, LANDING_RISE_MAX_M = 2.5;
 
 export interface FreightTreadPoint {
   s: number;
@@ -680,7 +680,8 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
           if (h !== null) need = Math.max(need, h + clearance + 1);
         }
       }
-      if (need - bank < LANDING_RISE_M) continue;
+      // Past a few metres the deck end needs surveyed structure, not an inferred causeway.
+      if (need - bank < LANDING_RISE_M || need - bank > LANDING_RISE_MAX_M) continue;
       const at = line.at(last ? line.length : 0), out = last ? 1 : -1;
       // Follow the street that continues the deck, as streetPortals does; a deck whose
       // street turns away at the abutment keeps its own end.
