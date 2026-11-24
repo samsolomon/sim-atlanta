@@ -3677,3 +3677,31 @@ The 1964 Peachtree North Apartments at North Avenue had been a generic glass sla
 A draw capture of one shadow redraw on the phone tier, at the default view, counted 1.39 million triangles. That's more than half the main pass, and low redraws the map on every 80 m pan step. At the default view the shadow box covers about 90 pixels of the board, so the redraws pay for a 1 km island of shadow. The far-orbit rule fades shadow strength out where a 12 m building's shadow drops under two drawing-buffer pixels, then stops redrawing. On the Galaxy A16's 692-pixel canvas at 14:00 that happens at 17.1 km. At dusk the sun is low, shadows are long, and the rule never triggers. On a default-view pan at 6x CPU, frame rate goes from 26.4 to 31.3 fps, with no redraws instead of 36.
 
 Two surprises. First, the light sits over the last shadow centre, which starts at Infinity, so a session that opened already far put the sun at Infinity. Every clipped material then got NaN planes, and three.js threw on every uniform upload. Second, a layer on the shadow camera can't empty the shadow pass, because three tests casters against the main camera's layers. So the saving comes from skipped redraws. The look isn't neutral at 14:00, since downtown towers lose their small shadow patch, so this one is Sam's call. [Default view](log/perf/far-shadow/default-side-by-side.png) · [Zoom across the threshold](log/perf/far-shadow/zoom-strip-1400.png)
+
+### 2026-11-24 · The Gulch viaducts stop lying on the freight track
+
+Sam found a pale footpath at the Gulch that left a parking deck's corner, climbed onto the freight
+line at about train height, ran along it and dropped back down, and the illustrative freight drove
+straight through it. It was the Ted Turner viaduct's own sidewalk (OSM `bridge=yes`, `layer=1`),
+and the cause turned out to be bigger than one path. None of downtown's 238 bridge runs has a lidar
+deck profile. Every deck is inferred, and every run's ends were pinned to the bare-earth DEM, which in
+the Gulch is the rail floor. Viaduct pieces, their separately mapped sidewalks and the footbridges
+between them all met at track level and humped up only where a centreline crossed something.
+
+The fix works on the network instead of the run (`terrain/deck-levels.ts`). A node where only
+bridges meet is no longer an abutment. Connected decks share a level set by what they must clear:
+any track under a deck's whole width gets rail plus 8 m, not just a centreline crossing. The level
+falls at 8% toward real abutments (a ground carriageway, the board edge, a surveyed deck). Sidewalks
+stay welded to their road deck end to end. A deck that ends on another deck meets its drawn tread,
+and joints between raised decks are mitred. Mapped steps get a drawn flight. The new rules apply only
+to rail clusters, the decks joined to one that clears a track. The other 444 bridge runs on 10 boards
+are bit-identical. A ray-cast check now counts every drawn structure inside a train's running
+envelope at the centre and ±1.6 m against the drawn tread. Downtown went from 47 cells to 8, and
+cells under 7 m of clearance went from 166 to 45. The four-track bed also lost the pines that grew on
+its ballast.
+
+The surprise was how much of the work was the last few metres. Raising the viaducts is easy.
+Deciding what a raised sidewalk does where OSM says it meets a ground footway on the floor took
+three tries. The pin rule, the sidewalk weld and the stair rule each fixed one set of frames and
+broke another. The 32 joints still waiting for a landing are listed in the art backlog.
+[G before and after](log/footpath-rail/G-before.jpg) · [Russell Plaza](log/footpath-rail/A-after-wip2.jpg)

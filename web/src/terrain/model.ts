@@ -493,12 +493,13 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const yardLayer = yield* homes.buildYards();
   if (yardLayer?.yields.length) yield* mesh.carveSteps(yardLayer.yields);
   yield 'yards carve';
-  // No crown on a track bed: a trunk within the ballast and a train's swept width is dropped.
+  // No crown on a track bed: a trunk within the ballast and a train's swept width is skipped
+  // where trees are placed, after its seed is drawn, so every other tree keeps its own look.
   const tracks = new PlacementIndex<[P2, P2]>();
   for (const rail of city.terrainTransport?.rail ?? []) if (rail.kind === 'ground' && rail.cls !== 'tram')
     for (let i = 1; i < rail.pts.length; i++) tracks.add([rail.pts[i - 1], rail.pts[i]], [rail.pts[i - 1], rail.pts[i]], TREE_TRACK_CLEAR_M);
   const onTrack = (x: number, z: number) => tracks.at(x, z).some(([a, b]) => segDist(x, z, a, b) < TREE_TRACK_CLEAR_M);
-  let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z) && !onTrack(x, z));
+  let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
   const namedReplace = named.length ? replacedBy(named) : null;
@@ -508,7 +509,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
-    allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z) && !onTrack(x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
+    allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
     // `?trees=all-species`: convert only crowns the generic World would draw (its bounds and
     // building test), and leave named sites to trees/sites.ts.
     generic: drawTrees === 'generic',
@@ -535,7 +536,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     ? (x, z) => genericSpots.has(crownKey(x, z)) ? { h: 4.5, r: 2, broadleaf: true } : rollout?.crownSize(x, z)
     : rollout?.crownSize ?? null;
   const scenery = yield* buildScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
-    replace, bd => homes.isHouse(bd.id), crownSize);
+    (x, z, r) => onTrack(x, z) || (replace?.(x, z, r) ?? false), bd => homes.isHouse(bd.id), crownSize);
   yield 'scenery';
   // Houses by distance: a bare far version for wide views, the full house when the camera comes close.
   const houses = yield* buildHouseLod({
