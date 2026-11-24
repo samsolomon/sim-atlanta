@@ -153,6 +153,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   }
   for (const rail of data.rail) if (rail.kind === 'ground') indexCrossing(rail.pts, 2.1, 7);
 
+  function deckJoins(p: P2, owner: TransportRun, run: TransportRun) {
+    if (run.kind !== 'bridge' || run.deckNavd88M) return false;
+    const key = p.join(',');
+    return data!.roads.some(other => other !== owner && other.kind === 'bridge' && !other.deckNavd88M &&
+      !sharedDecks.has(other) && other.pts.some(q => q.join(',') === key));
+  }
   function draw(run: TransportRun, use: 'road' | 'freight' | 'tram', owner = run) {
     if (run.pts.length < 2) return;
     // Only this matched freight strip shares the illustrative bed. Roads retain terrain support.
@@ -162,7 +168,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const bridge = run.kind === 'bridge';
     const onEdge = ([x, z]: P2) => x === bounds.minX || x === bounds.maxX || z === bounds.minZ || z === bounds.maxZ;
     const start = run.pts[0], end = run.pts[run.pts.length - 1];
-    const startCut = onEdge(start), endCut = onEdge(end);
+    // An unsurveyed deck that meets another unsurveyed deck has no support there and
+    // no meaningful bare earth (often the floor of the cut). Carry its other end's
+    // height to the joint, as at a board edge, unless both ends are such joints.
+    const joinStart = deckJoins(start, owner, run), joinEnd = deckJoins(end, owner, run);
+    const startCut = onEdge(start) || (joinStart && !joinEnd && !onEdge(end));
+    const endCut = onEdge(end) || (joinEnd && !joinStart && !onEdge(start));
     function support(p:P2) {
       if (use!=='road') return null;
       for(const parent of junctionNodes.get(p.join(',')) ?? []) {
@@ -267,7 +278,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         }
         for (const [{radius, clearance}, at] of below) {
           if (Math.abs(at - s) > radius) continue;
-          const h = groundAt(p.x, p.z);
+          // Clear the route where it crosses, not the bank under each nearby station.
+          const c = line.at(at), h = groundAt(c.x, c.z);
           if (h !== null) minimum = Math.max(minimum, h + clearance + 1);
         }
         inferred.set(s,minimum);
