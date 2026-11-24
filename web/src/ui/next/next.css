@@ -670,9 +670,30 @@ body.city-over-map #city-loading { background: transparent !important; }
   .a2-browser .a2-panel-head h2 { font-size: 18px; }
   .a2-browser .a2-x { width: 44px; height: 44px; }
 }
+.a2-more { display: none; }
+@media (max-width:600px) {
+  .a2-panel.a2-selection:not(.a2-expanded) { bottom: calc(max(34px,env(safe-area-inset-bottom)) + 60px); max-height: min(46dvh,300px); border-radius: 20px; }
+  body:has(.a2-panel.a2-selection:not(.a2-expanded):not([hidden])) .a2-appbar { display: flex; }
+  body:has(.a2-panel.a2-selection:not([hidden])):has(.a2-dock-pop:not([hidden]),.a2-menu:not([hidden]),.a2-share-panel:not([hidden])) .a2-panel { visibility: hidden; }
+  .a2-selection:not(.a2-expanded) #card h2 { font-size: 18px; }
+  .a2-selection:not(.a2-expanded) :is(.a2-allstops,.a2-row-fact:not(:first-child),[data-card-share],.tip) { display: none; }
+  .a2-selection .a2-more { display: block; width: 100%; min-height: 44px; }
+  .a2-selection .a2-card-actions { display: flex; gap: 6px; }
+  .a2-selection .a2-x { width: 44px; height: 44px; }
+  .a2-selection:not(.a2-expanded) #card .a2-facts { margin-bottom: 0; }
+  .a2-selection:not(.a2-expanded) .a2-row-fact { padding: 6px 0; }
+}
+@media(max-width:600px) {
+  .a2-panel.a2-selection.a2-expanded { top: auto; bottom: var(--a2-bottom); height: auto; max-height: calc(100dvh - var(--a2-top) - 56px); }
+  .a2-selection.a2-expanded #card .a2-card-actions { grid-column: 2; }
+  .a2-selection.a2-expanded .a2-more { position: absolute; top: 0; left: calc(50% - 24px); width: 48px !important; height: 44px; min-height: 44px; font-size: 0 !important; background: transparent; }
+}
 .a2-model-card #blurb { text-wrap: pretty; }
 .a2-lab .a2-model-details legend { font-size: 13px; font-weight: 600; color: var(--a2-ink2); }
 .a2-lab .a2-model-details button[role=switch] { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; margin: 0; padding-inline: 0; background: transparent; box-shadow: none; font-weight: 500; }
 .a2-model-details button[role=switch]::after { content: ''; width: 36px; height: 22px; border-radius: 12px; background: radial-gradient(circle at 11px 50%, white 0 7px,transparent 8px),var(--a2-track); box-shadow: inset 0 0 0 1px var(--a2-hair); }
 .a2-model-details button[role=switch][aria-checked=true]::after { background: radial-gradient(circle at 25px 50%, white 0 7px,transparent 8px),#486c52; }
 .a2-lab .a2-model-details .settings button[role=switch][aria-pressed] { background: transparent; box-shadow: none; }
+@media(max-width:600px) {
+  body:not(.in3d):has(.a2-panel:not([hidden])) .a2-credit { visibility: visible; top: calc(var(--a2-subject-bottom) + 4px); left: var(--a2-left); bottom: auto; right: auto; }
+}

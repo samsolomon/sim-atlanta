@@ -420,6 +420,8 @@ out, then the map flattens.
 
 ## Follow-ups (not in this build)
 
+- **Building selection:** add City building and landmark pick events, map known buildings to catalogue entries, and provide a building card with “See the model” where an entry exists. The Final selection PR covers trains, buses and freight.
+
 - **Street view:** the tilt slider continues past 70° to a second notch, and the camera
   drops to street level (drag to look, arrows to walk, ✕ to exit). Build from the
   ground-level camera in `underpassDrive` (`web/src/city/city.ts`).

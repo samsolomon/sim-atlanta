@@ -3094,9 +3094,14 @@ On the Galaxy A16 the default view measured 23.2 fps for the baseline and 23.9 f
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
 
+### 2026-11-24 — A selection that leaves room for the train
+
+At 390 × 760, the first tap now leaves the dock visible below a compact card with the next stop, its confidence and Follow. More and a swipe reveal the complete selection. Both sizes use the same live-updating card, so expanding it keeps the trip and Follow state. A feed arrival carries its own Live chip while a position drawn between track fixes reads Inferred. [Compact](log/ui/final-selection/compact.jpg) · [Expanded](log/ui/final-selection/expanded.jpg).
+
 ### 2026-11-23 — Lacebark elm starts with the bark
 
 The first lacebark elm pairs small, fine leaf cards with long arched boughs and mottled olive, tan and cinnamon bark. The surprise came when pulling back from the trunk: the bark patches stop reading before the overall silhouette does. The shader now fades them out once they are too small on screen. The mature tree costs 194 / 102 triangles with no new texture allocation. July Front luminance is 0.248 / 0.259 against the generic canopy’s 0.248. The first crown is more open and the bark smoother than in the photos. [Seasonal sheet, 100–300 m, and bark comparison](log/ui/tree-species/options-lacebark-elm.jpg). Lab study. Web rebuild only.
+
 ### 2026-11-23 — Colour before the whole board
 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
