@@ -10,7 +10,7 @@
  * (curb) side is −x, so the doors are on −x. Livery is a parameter (`BusLivery`), from reference
  * photos of MARTA's scheme. No logos.
  *
- * Per-vertex `aKind` (read by `busMaterial`): 0 fixed, 1 headlight, 2 tail light, 3 glass,
+ * Per-vertex `aKind` (read by `busMaterial`): 0 fixed, 1 headlight, 2 tail light, 3 glass, 4 Rapid passenger glass,
  * 7 destination sign.
  */
 import * as THREE from 'three';
@@ -173,7 +173,8 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   const DOOR_R: [number, number] = [AXLE_R + 1.55, AXLE_R + 2.75];
   const DOOR_F: [number, number] = [ZF - 1.28, ZF - 0.22];
   k.side(both, BAND_R, ZF - 0.22, BELT - 0.05, HEAD + 0.05, C.frame, 0, 0.007);
-  const pane = (sides: number[], z0: number, z1: number) => k.side(sides, z0, z1, BELT, HEAD, C.glass, 3, 0.011);
+  const passengerGlass = liv.rapid ? 4 : 3;
+  const pane = (sides: number[], z0: number, z1: number) => k.side(sides, z0, z1, BELT, HEAD, C.glass, passengerGlass, 0.011);
   // Street side (+x): driver's window, then five even bays back to the band's end.
   pane([1], DOOR_F[0] + 0.04, ZF - 0.3);
   const bays = 5;
@@ -299,8 +300,8 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   for (const [z0, z1] of [DOOR_R, DOOR_F]) {
     k.side([-1], z0 - 0.04, z1 + 0.04, Y0 + 0.08, HEAD + 0.12, C.frame, 0, 0.009);
     const mid = (z0 + z1) / 2;
-    k.side([-1], z0 + 0.05, mid - 0.03, Y0 + 0.4, HEAD + 0.02, C.glass, 3, 0.013);
-    k.side([-1], mid + 0.03, z1 - 0.05, Y0 + 0.4, HEAD + 0.02, C.glass, 3, 0.013);
+    k.side([-1], z0 + 0.05, mid - 0.03, Y0 + 0.4, HEAD + 0.02, C.glass, passengerGlass, 0.013);
+    k.side([-1], mid + 0.03, z1 - 0.05, Y0 + 0.4, HEAD + 0.02, C.glass, passengerGlass, 0.013);
   }
 
   // ---- front: big curved windscreen, sign, swept headlights, bumper, mirrors -----------------
@@ -319,7 +320,7 @@ export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
     }
   };
   windscreen(-0.06, 0.02, C.frame, 0);
-  windscreen(0, 0.03, C.glass, 3);
+  windscreen(0, 0.03, C.glass, liv.rapid ? 0 : 3);
   // Destination sign band above the windscreen.
   k.box(W - 0.42, 0.24, 0.03, 0, 2.86, fz(2.86) + 0.012, C.frame);
   k.box(W - 0.62, 0.15, 0.03, 0, 2.86, fz(2.86) + 0.02, '#ffb84a', 7);
@@ -439,6 +440,7 @@ export function busMaterial(night: { value: number }) {
         float glow = 0.3 + 1.5 * uNight;
         if (vKind > 0.5 && vKind < 2.5) totalEmissiveRadiance += diffuseColor.rgb * glow;
         if (vKind > 2.5 && vKind < 3.5) totalEmissiveRadiance += vec3(1.0, 0.93, 0.78) * uNight * 0.6;
+        if (vKind > 3.5 && vKind < 4.5) totalEmissiveRadiance += vec3(0.84, 0.92, 1.0) * uNight * 0.4;
         if (vKind > 6.5) totalEmissiveRadiance += diffuseColor.rgb * (0.5 + uNight);`,
       );
   };

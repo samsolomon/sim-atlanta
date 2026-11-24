@@ -2,7 +2,7 @@
  * +z forward, y up, curb side -x. Front origin: front axle on ground; rear/bellows: hitch on ground. */
 import * as THREE from 'three';
 import { Builder } from './geom';
-import { busMaterial } from './xcelsior';
+import { busMaterial, RAPID_LIVERY } from './xcelsior';
 
 export const XE60_LAYOUT = {
   length: 18.54, bodyLength: 18.29, width: 2.6, height: 3.3,
@@ -12,7 +12,7 @@ export const XE60_LAYOUT = {
   maxAngle: 35 * Math.PI / 180,
 } as const;
 export type BusDetail = 'low' | 'high';
-const C = { purple: '#7162b7', lavender: '#b6adc8', grey: '#bac1cd', glass: '#26333d', black: '#181e25', blue: '#29abe0', yellow: '#f4c346', orange: '#f28a39' };
+const C = { purple: RAPID_LIVERY.body, lavender: '#b6adc8', grey: '#bac1cd', glass: '#26333d', black: '#181e25', blue: '#29abe0', yellow: '#f4c346', orange: '#f28a39' };
 class Kit extends Builder {
   kinds: number[] = [];
   mark(kind: number) { while (this.kinds.length < this.pos.length / 3) this.kinds.push(kind); }
@@ -38,8 +38,8 @@ function shell(k: Kit, z0: number, z1: number, axles: readonly number[], detail:
   const g=new THREE.ExtrudeGeometry(shape,{depth:2.6,bevelEnabled:false,curveSegments:detail==='low'?3:8});
   g.translate(0,0,-1.3); g.rotateY(-Math.PI/2); k.addGeometry(g,C.purple);g.dispose();k.mark(0);
   for(const s of [-1,1]) {
-    k.panel(s,z0+.12,z1-.2,1.25,2.77,C.glass,3);
-    for(let z=z0+.15;z<z1-.2;z+=1.25) k.panel(s,z,z+.055,1.22,2.8,C.black);
+    k.panel(s,z0+.12,z1-.2,1.25,2.77,C.black);
+    for(let z=z0+.18;z<z1-.29;z+=1.25) k.panel(s,z,Math.min(z+1.15,z1-.26),1.32,2.70,C.glass,4,1.311);
     // Thin blue / gold / orange band below the windows, with pale angular lower blocks.
     const span=z1-z0;
     for(const [a,b,color] of [[0,.32,C.orange],[.32,.58,C.yellow],[.58,1,C.blue]] as const)
@@ -67,8 +67,8 @@ function shell(k: Kit, z0: number, z1: number, axles: readonly number[], detail:
 }
 function door(k: Kit,z: number) {
   k.panel(-1,z-.56,z+.56,.32,2.8,C.black,0,1.33);
-  k.panel(-1,z-.48,z-.04,.45,2.64,C.glass,3,1.34);
-  k.panel(-1,z+.04,z+.48,.45,2.64,C.glass,3,1.34);
+  k.panel(-1,z-.48,z-.04,.45,2.64,C.glass,4,1.34);
+  k.panel(-1,z+.04,z+.48,.45,2.64,C.glass,4,1.34);
   k.panel(-1,z-.52,z+.52,.36,.4,C.yellow,0,1.35);
   k.panel(-1,z-.018,z+.018,.42,2.7,C.grey,0,1.35);
 }
@@ -83,7 +83,7 @@ export function xe60Geometry(detail:BusDetail='high') {
   door(f,1.27);door(f,-3.9);door(r,-3.2);
   roof(f,-6.9,.6,detail);roof(r,-7.7,-1.1,detail);
   // Broad front glass, upper destination strip and swept silver headlight cheeks.
-  f.box(2.36,1.43,.03,0,2.03,2.085,C.glass);f.mark(3);
+  f.box(2.36,1.43,.03,0,2.03,2.085,C.glass);f.mark(0);
   f.box(2.25,.25,.035,0,2.83,2.087,C.black);f.mark(0);
   f.box(1.8,.11,.04,0,2.83,2.11,'#ffb950');f.mark(7);
   f.box(.035,1.42,.04,0,2.03,2.105,C.black);f.mark(0);

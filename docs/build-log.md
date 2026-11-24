@@ -2954,3 +2954,7 @@ block. Two studies put the brightest stone at the 0.5 m base and fade the wash
 to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
 region in plan, so the falloff follows the tower's own masonry vertices.
 [Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
+
+### 2026-11-23 — Rapid bus glazing at night
+
+At the same lab camera, the lit windshield had made the XN40 cab as bright as the passenger compartment. The revised Rapid studies keep the windshield dark and show the amber destination sign above it. Both buses now use the XN40 purple and cooler passenger lighting, with the emission multiplier reduced from 0.6 to 0.4. On the XE60, individual panes sit inside a dark frame. [Compare the matched day and night views](marta-rapid-buses.md#review-views).
