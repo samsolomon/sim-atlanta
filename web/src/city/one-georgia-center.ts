@@ -61,8 +61,28 @@ export function createOneGeorgiaCenter(buildings: VBuilding[], site: VBuilding, 
   const y = (h: number) => groundNavd + h;
   const seed = seedOf(site.id);
   const plan = straighten(ccw(s.ring));
-  // The floodlit white grid: lit by its own cool-white material, so offices stay warm.
-  const wash = new Builder();
+  // The floodlit white frame, graded in three height bands because uplighting is brightest
+  // near its fixtures at the base and falls off up the shaft (see the 2020 night photo).
+  const bands = [new Builder(), new Builder(), new Builder()];
+  const cuts = [y(36), y(72)];
+  const band = (yy: number) => (yy < cuts[0] ? 0 : yy < cuts[1] ? 1 : 2);
+  /** Routes a quad to its height band, splitting upright quads at the band boundaries. */
+  const wash = {
+    quad(p0: number[], p1: number[], p2: number[], p3: number[], color: string) {
+      const lo = Math.min(p0[1], p3[1]), hi = Math.max(p1[1], p2[1]);
+      const upright = p0[1] === p3[1] && p1[1] === p2[1] && p1[1] > p0[1];
+      if (!upright) { bands[band((p0[1] + p1[1] + p2[1] + p3[1]) / 4)].quad(p0, p1, p2, p3, color); return; }
+      const at = (p: number[], q: number[], yy: number) => {
+        const t = (yy - p[1]) / (q[1] - p[1]);
+        return [p[0] + (q[0] - p[0]) * t, yy, p[2] + (q[2] - p[2]) * t];
+      };
+      const stops = [lo, ...cuts.filter(c => c > lo && c < hi), hi];
+      for (let i = 0; i + 1 < stops.length; i++) {
+        const [a, b] = [stops[i], stops[i + 1]];
+        bands[band((a + b) / 2)].quad(at(p0, p1, a), at(p0, p1, b), at(p3, p2, b), at(p3, p2, a), color);
+      }
+    },
+  } as unknown as Builder;
 
   const quad = (b: Builder, a: P2, c: P2, t0: number, t1: number, lo: number, hi: number, out: number, color: string) => {
     const dx = c[0] - a[0], dz = c[1] - a[1], l = Math.hypot(dx, dz);
@@ -130,15 +150,21 @@ export function createOneGeorgiaCenter(buildings: VBuilding[], site: VBuilding, 
   });
 
   const built = s.finish('#f2e6cf', 0.6);
-  const washMesh = new Mesh(wash.geometry(),
-    new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: '#dfe7ee', emissiveIntensity: 0 }));
-  washMesh.castShadow = washMesh.receiveShadow = true;
-  built.group.add(washMesh);
+  // Peak 0.2 at the base, about half mid-shaft and a third at the crown. The cool white leans
+  // slightly toward the night grade so it sits in the scene rather than on it.
+  const grade = [0.2, 0.11, 0.065];
+  const washes = bands.map(b => {
+    const mesh = new Mesh(b.geometry(),
+      new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: '#c8d2e4', emissiveIntensity: 0 }));
+    mesh.castShadow = mesh.receiveShadow = true;
+    built.group.add(mesh);
+    return mesh;
+  });
   return {
     ...built,
     setNight(night: number) {
       built.setNight(night);
-      washMesh.material.emissiveIntensity = night * 0.3;
+      washes.forEach((mesh, i) => { mesh.material.emissiveIntensity = night * grade[i]; });
     },
   };
 }

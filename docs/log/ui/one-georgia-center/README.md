@@ -42,7 +42,7 @@ The sunlit reading passes (S ≤ 36, V ≥ 40). The shaded and lobby readings ar
 
 ## Lighting
 
-- **Grid and crown:** the floodlit marble, including the colonnade, fins, slabs and ribbed crown band, uses its own cool-white lit material (`#dfe7ee`) at 0.3 × the night factor, changed only in `setNight`. The 2020 night photo shows the whole white frame uplit.
+- **Floodlighting (reported, 2020):** the evidence is one photo, the [Commons night view of 28 September 2020](https://commons.wikimedia.org/wiki/File:One_Georgia_Center_at_night.jpg), so revisit it if newer night photos appear. Uplighting in it is brightest near the base and falls off up the shaft, and the glass between the fins stays dark. Both faces in the photo are lit: the plaza face strongly and full height, the street face more softly. The two faces it cannot see are assumed to match, since the tower stands free on its plaza. The marble frame (colonnade, fins, slabs and crown band) is split into three height bands with their own lit material (`#c8d2e4`, a cool white leaning toward the night grade). Their intensity is 0.2, 0.11 and 0.065 × the night factor, from the base to the crown, so the crown gets about a third of the base. It is changed only in `setNight`. On first review the frame was lit flat at 0.3 from pavement to crown, which made it the brightest thing in the downtown night view. It now reads as notable, not dominant, beside its lit neighbours (`context-night.jpg`, camera `400,-1600,345,64,1000`).
 - **Offices:** about 4% lit at 23:30, from the shared `litHash`.
 - Everything is `illustrative` ambient scenery and is not labelled on screen.
 
@@ -54,4 +54,5 @@ Clock 2026-11-20. Prefix each camera with `/?view=city&cam=`.
 |---|---|---|
 | West face, day / night / low tier | `341,-1881,300,66,460` | 11:30 / 23:30 / 11:30 `&q=low` |
 | North-west, day | `341,-1881,230,66,520` | 11:30 |
+| Night context with neighbours | `400,-1600,345,64,1000` | 23:30 |
 | Close (colonnade and eggcrate) | as above, `&dev&mindist=20` plus `__setView(300,70,300,341,-1881,3)` | 11:30 / 23:30 |

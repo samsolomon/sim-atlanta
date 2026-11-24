@@ -34,13 +34,17 @@ it('sets the roof and penthouse at their lidar heights', () => {
 
 it('lights a sparse set of offices and the floodlit marble grid, inside the routine budget', () => {
   const result = createOneGeorgiaCenter([site], site, grid)!;
-  expect(result.group.children).toHaveLength(3);
-  expect(triangles(result.group)).toBeLessThan(1400);
+  expect(result.group.children).toHaveLength(5);
+  expect(triangles(result.group)).toBeLessThan(2000);
   result.setNight(1);
-  const [, lamps, wash] = result.group.children as Mesh<BufferGeometry, MeshLambertMaterial>[];
+  const [, lamps, ...washes] = result.group.children as Mesh<BufferGeometry, MeshLambertMaterial>[];
   expect(lamps.material.emissiveIntensity).toBeCloseTo(0.6);
-  expect(wash.material.emissiveIntensity).toBeCloseTo(0.3);
-  expect(wash.castShadow && wash.receiveShadow).toBe(true);
+  // The floodlight falls off up the shaft: base, mid-shaft, crown.
+  const lit = washes.map(w => w.material.emissiveIntensity);
+  expect(lit[0]).toBeGreaterThan(lit[1]);
+  expect(lit[1]).toBeGreaterThan(lit[2]);
+  expect(lit[2]).toBeCloseTo(lit[0] / 3, 1);
+  expect(washes.every(w => w.castShadow && w.receiveShadow && w.geometry.attributes.position.count > 0)).toBe(true);
   result.setNight(0);
-  expect(wash.material.emissiveIntensity).toBe(0);
+  expect(washes.every(w => w.material.emissiveIntensity === 0)).toBe(true);
 });
