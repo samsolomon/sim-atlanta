@@ -3829,3 +3829,7 @@ The loop uses 91 one-minute frames per version, from 16:45 to 18:15 EST on Novem
 ### 2026-11-24 — One time-zone formatter for a rail feed
 
 A train appears once per upcoming stop in MARTA’s arrivals feed. We were creating two Eastern time-zone formatters on every prediction row. On the morning of November 24, rail returned 172 HTTP 503s while Cloudflare recorded 173 resource-limit errors across the Worker. In a local workerd replay of 300 synthetic rows across 30 trains, reusing one formatter cut mean process CPU from 12.89 ms to 0.89 ms over 45 requests. Both versions produced identical response bytes. The failing requests’ original feed sizes are unknown. A comparable morning in production will show whether the change reduces those errors. The 42 overnight rail 502s occurred in a separate window.
+
+### 2026-11-24 — NCR’s lower podium garden
+
+At 19.7 m above the site datum, the garage roof had read as a single lawn with a solid pavilion. The revised model breaks it into paving, planted beds, an irregular lawn and a canopy on four posts. The rust-coloured planter appears to the right of the pavilion apron in two built photographs and to the left in the lawn-level City capture. Its compass position is inferred. City accepted the garden at normal viewing scale and retained that alignment for follow-up. [Photographs, lawn-level capture and overhead](log/ui/ncr-hq/README.md#lower-podium-garden-reference-check).

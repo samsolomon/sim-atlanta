@@ -22,7 +22,8 @@ const heights = {
 };
 const lobby = 7.6, storey = (heights.tower - lobby) / 19;
 
-const glassLow = '#3f5a70', glassHigh = '#9ab3c6';
+// NCR palette approved 2026-11-24: revised blue glass and pale membrane tops.
+const glassLow = '#4a5f70', glassHigh = '#9ab3c6';
 // The sloping facet reflects more sky than the vertical walls.
 const facetLow = '#6f8fa8', facetHigh = '#bfd2df';
 
@@ -131,7 +132,7 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
   }
 
   // Garage base: pale louvre bands over a glazed street storey, with the sky garden on top.
-  shell.prism(baseR, footing, floor + heights.base, '#c9ccca', '#77905c');
+  shell.prism(baseR, footing, floor + heights.base, '#c9ccca', '#beb9ac');
   faces(baseR, (a, b, length) => {
     const m = along(a, b, length, length / 2, 1.5 * out);
     if (length < 4 || pointInRing(m[0], m[1], towerR) || pointInRing(m[0], m[1], annexR)) return;
@@ -148,10 +149,40 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
       lights.quad([s[0], footing, s[1]], [s[0], ground(s) + 4.8, s[1]], [e[0], ground(e) + 4.8, e[1]], [e[0], footing, e[1]], '#34444c');
     }
   });
-  // The sky garden's pavilion on the terrace (the lawn is the base's planted roof colour).
-  const pavilion: P2[] = [[-8, 8], [14, 8], [14, 16], [-8, 16]];
-  if (pavilion.every(([x, z]) => pointInRing(x, z, baseR) && !pointInRing(x, z, towerR) && !pointInRing(x, z, annexR)))
-    shell.prism(pavilion, floor + heights.base, floor + heights.base + 4.2, '#3f4a50', '#4c555a');
+  // Duda|Paine's NCR_14 axon locates the cross-garden and the narrow planted walk.
+  // NCR_20 and HGOR's Spring @ 8th photos show the open canopy, curved planter rim
+  // and lawn. Dimensions, planting density and bed outlines are estimates.
+  const deck = floor + heights.base;
+  const rectangle = (x: number, z: number, width: number, depth: number): P2[] =>
+    [[x,z], [x+width,z], [x+width,z+depth], [x,z+depth]];
+  const garden = (ring: P2[], bottom: number, top: number, side: string, cap: string) => {
+    if (ring.every(([x,z]) => pointInRing(x,z,baseR) && !pointInRing(x,z,towerR) && !pointInRing(x,z,annexR)))
+      shell.prism(ring, deck+bottom, deck+top, side, cap);
+  };
+  garden([[-7,-8],[8,-18],[23,-24],[36,-22],[37,-12],[28,-6],[27,4],[17,11],[-6,9]],
+    0,0.12,'#787e52','#93a85f');
+  // The long, straight walk between rectangular beds runs toward the central lawn.
+  for (const x of [-63,-52,-41,-30,-19]) {
+    for (const z of [-8,1]) {
+      garden(rectangle(x,z,8,5),0,0.48,'#78776b',z<0 ? '#6e844f' : '#839452');
+    }
+  }
+  const plantedIsland: P2[] = [[14,12],[17,7],[22,5],[28,5],[34,7],[37,11],[36,15],[30,18],[21,17]];
+  garden(plantedIsland,0,0.65,'#865f47','#68834e');
+  garden([[15.4,12],[18,8],[22.5,6],[28,6],[33,8],[35.5,11],[34.8,14],[30,16.5],[21.5,16]],
+    0.65,0.95,'#73854c','#89934f');
+  for (const [x,z] of [[-59,-5],[-38,-5],[-17,-5],[33,-18],[24,11]]) {
+    garden(rectangle(x-0.18,z-0.18,0.36,0.36),0,2.8,'#786954','#786954');
+    const crown: P2[] = [[x-2,z-0.8],[x-1,z-2],[x+1.4,z-1.7],[x+2,z],[x+0.8,z+1.8],[x-1.5,z+1.4]];
+    garden(crown,2.3,4.7,'#657a4b','#859258');
+  }
+  // Four steel columns support spaced roof blades above the paved meeting area.
+  for (const x of [-6,10]) for (const z of [12,20])
+    garden(rectangle(x,z,0.35,0.35),0,4.25,'#545857','#545857');
+  for (const z of [12,20])
+    garden(rectangle(-7,z,19,0.4),4,4.35,'#535854','#69706a');
+  for (let x=-7; x<12; x+=1.5)
+    garden(rectangle(x,10.5,0.95,11.4),4.35,4.55,'#747974','#9eaaa5');
 
   // Tower on Williams and 8th: the facet faces the Connector from the tower's south corner on
   // Williams, its long cut up the Williams face and its short cut on the mapped south jog.
