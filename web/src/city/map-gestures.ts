@@ -83,19 +83,12 @@ export function mapGestures(
     const [a, b] = [...touches.values()];
     return Math.atan2(b.y - a.y, b.x - a.x);
   };
-  // DOLLY_ROTATE combines pinch and orbit. Read both pointers together after
-  // their move events; a partially updated pair can look like a pinch mid-twist.
+  // A two-finger tilt can report its pointers on different frames, briefly
+  // spreading them like a pinch. Classify zoom by net span at the first lift.
   let pinchStart: number | null = null;
-  let pinchFrame = 0;
   const span = () => {
     const [a, b] = [...touches.values()];
     return Math.hypot(b.x - a.x, b.y - a.y);
-  };
-  const checkPinch = () => {
-    if (pinchStart !== null && Math.abs(span() - pinchStart) > 6) {
-      pinchStart = null;
-      onZoom();
-    }
   };
   // ---- double tap: two quick single-finger taps close together ----
   let down: { id: number; x: number; y: number; t: number } | null = null;
@@ -116,9 +109,6 @@ export function mapGestures(
     p.x = e.clientX;
     p.y = e.clientY;
     if (touches.size !== 2 || twist == null) return;
-    if (pinchStart !== null && !pinchFrame) {
-      pinchFrame = requestAnimationFrame(() => { pinchFrame = 0; checkPinch(); });
-    }
     const a = angle();
     const d = angleDelta(twist, a);
     twist = a;
@@ -127,7 +117,11 @@ export function mapGestures(
   });
   const lift = (e: PointerEvent) => {
     if (!touches.has(e.pointerId)) return;
-    checkPinch();
+    if (e.type === 'pointerup' && pinchStart !== null) {
+      // Include the lifted finger's final coordinate, even on a quick pinch.
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (Math.abs(span() - pinchStart) > 6) onZoom();
+    }
     touches.delete(e.pointerId);
     pinchStart = touches.size === 2 ? span() : null;
     twist = touches.size === 2 ? angle() : null;
@@ -144,7 +138,6 @@ export function mapGestures(
   on('pointercancel', lift);
 
   return () => {
-    cancelAnimationFrame(pinchFrame);
     events.abort();
     if (rotateLeft) inner._rotateLeft = rotateLeft;
   };
