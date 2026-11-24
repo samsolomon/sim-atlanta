@@ -302,7 +302,7 @@ export function needleStars(b: FoliageBuilder, units: Unit[], seed: number, rays
 }
 
 /** Two crossed cards per mass: one tangent to the crown (its silhouette), one radial (its depth). */
-export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25) {
+export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale = 1.25, height = 1) {
   const r = rng(seed);
   for (const u of units) {
     const c = new THREE.Vector3(...u.c);
@@ -315,6 +315,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
     const cell = cellFor(w * 2);
     for (const [ax, ay] of [[t1, t2], [t1, n]] as const) {
       const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => c.clone().addScaledVector(ax, x * w).addScaledVector(ay, y * w));
+      for (const v of p) v.y = c.y + (v.y - c.y) * height;
       const uv = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([x, y]) => cellUV(cell, x, y));
       // Softer than the facets' shade: the crown normals already light the crown as a blob.
       const col = shade(u.depth, n.y).lerp(WHITE, 0.55);
@@ -333,7 +334,7 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
  * order) ignore the leaves: they show in the instance's bloom colour `aBloom.rgb` while its
  * bloom share `aBloom.a` is at least their order.
  */
-export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, specks = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; specks?: number }) {
+export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, bloomFill = 0, specks = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; bloomFill?: number; specks?: number }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   const textured = !!opts.map;
   // Which leaves exist: shared with the ink's foliage mask (userData.maskShader), so the mask
@@ -432,8 +433,21 @@ vSpeckPos = transformed;
   // bloomLift: blossom keeps less of the interior shade than leaves (white bracts read white).
   vColor.xyz = blossom ? mix(color.xyz, vec3(1.0), ${bloomLift.toFixed(3)}) * aBloom.rgb : color.xyz * mix(instanceColor.xyz, aToneB, aMass.x);
 #endif`);
+    if (bloomFill > 0) {
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying float vBlossom;')
+        .replace('vColor.xyz = blossom ?', 'vBlossom = blossom ? 1.0 : 0.0;\n  vColor.xyz = blossom ?');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vBlossom;')
+        .replace('#include <tonemapping_fragment>', `
+#if NUM_DIR_LIGHTS > 0
+  float bractDay = smoothstep(0.35, 1.2, dot(directionalLights[0].color, vec3(0.3333)));
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, max(gl_FragColor.rgb, diffuseColor.rgb), vBlossom * bractDay * ${bloomFill.toFixed(3)});
+#endif
+#include <tonemapping_fragment>`);
+    }
   };
-  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash + ':' + bloomLift + (textured && specks > 0 ? ':' + specks : '');
+  m.customProgramCacheKey = () => 'species-look-foliage' + (textured ? ':map' : '') + ':' + bloomWash + ':' + bloomLift + ':' + bloomFill + (textured && specks > 0 ? ':' + specks : '');
   m.userData.maskShader = visibility;
   m.userData.maskKey = 'species-look' + (textured ? ':map' : '');
   return m;

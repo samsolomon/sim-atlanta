@@ -655,25 +655,29 @@ The weeping laceleaf mound (about 2 m, cascading to the ground, on Sam's ivy ban
 
 ### Flowering dogwood
 
-`web/src/trees/elm-dogwood.ts`. "Branches on the lower half of the crown grow horizontally, those in the upper half are more upright … a strikingly horizontal impact" ([UF ST185](https://ask.ifas.ufl.edu/publication/ST185/pdf)). The crown is drawn as tiers of flat masses (3, 3 and 2) on near-level limbs. It has one trunk: UF says "typically multi-trunked", but 96% of GT's 339 dogwoods are single-stem.
+`web/src/trees/elm-dogwood.ts`. "Branches on the lower half of the crown grow horizontally, those in the upper half are more upright … a strikingly horizontal impact" ([UF ST185](https://ask.ifas.ufl.edu/publication/ST185/pdf)). The crown is drawn as three tiers of flat masses (2 per tier at high detail) on near-level limbs. It has one trunk: UF says "typically multi-trunked", but 96% of GT's 339 dogwoods are single-stem.
 
-**Bloom.** The bracts open on bare or barely leafing twigs. In bloom the crown stays present and washes white (`bloomWash` 0.8), with early green between, because the bracts dominate the crown. Georgia USA-NPN has 39 tree-years: open flowers Mar 28 to Apr 9 (medians), full flowering Apr 1–13. The Atlanta Dogwood Festival runs Apr 10–12, 2026, and a [dated Oakland Cemetery photo](https://commons.wikimedia.org/wiki/File:Oakland_Cemetery_dogwood_tree_and_downtown_Atlanta_skyline.jpg) shows full bloom on 29 Mar 2017. Red berries from late September are not drawn.
+**Bloom.** The bracts open on bare or barely leafing twigs. In bloom the crown stays present and washes white (`bloomWash` 1), with early green between, because the bracts dominate the crown. Georgia USA-NPN has 39 tree-years: open flowers Mar 28 to Apr 9 (medians), full flowering Apr 1–13. The Atlanta Dogwood Festival runs Apr 10–12, 2026, and a [dated Oakland Cemetery photo](https://commons.wikimedia.org/wiki/File:Oakland_Cemetery_dogwood_tree_and_downtown_Atlanta_skyline.jpg) shows full bloom on 29 Mar 2017. Red berries from late September are not drawn.
 
 **Options:**
-- A · layered branch-mass cards: 189 / 109, plus 90 in tips.
-- B · cored layers: 183 / 129.
-- C · faceted layers: 169 / 109.
+- A · layered branch-mass cards: 195 / 146. Close-up tips removed because they did not follow flattened cards.
+- B · cored layers: retained as a comparison, with reduced card counts to fit the twig budget.
+- C dropped per Sam.
 
 | Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
 |---|---|---|---|---|---|
-| Sapling | 1.5–4 | 1–4 | 0.03–0.12 | 3 / 2.6 / 0.07 | GT under 15 cm DBH: median 3.4 m by 2.7 m |
-| Young | 4–7 | 3–7.5 | 0.12–0.3 | 6 / 5.5 / 0.2 | GT 15–30 cm medians: 6.4 m by 5.5 m |
-| Mature | 6–9.3 | 4.6–11.1 | 0.3–0.5 | 7.5 / 8 / 0.35 | NC State 4.6–7.6 m by 4.6–9.1 m; UF 6.1–9.1 m by 7.6–9.1 m; GT 30–61 cm medians 8.2 m by 7.2 m |
+| Sapling | 1.5–4 | 1–4 | 0.03–0.12 | 2.5 / 3 / 0.07 | GT under 15 cm DBH: median 3.4 m by 2.7 m |
+| Young | 4–7 | 3–7.5 | 0.12–0.3 | 5 / 6.5 / 0.2 | GT 15–30 cm medians: 6.4 m by 5.5 m |
+| Mature | 6–9.3 | 4.6–11.1 | 0.3–0.5 | 6 / 9 / 0.45 | NC State 4.6–7.6 m by 4.6–9.1 m; UF 6.1–9.1 m by 7.6–9.1 m; GT 30–61 cm medians 8.2 m by 7.2 m |
 | Specimen | 8–12.9 | 9–13.7 | 0.45–0.65 | 9.1 / 13.7 / 0.6 | Champions: 458 Ponce de Leon Ave, 9.1 × 13.7 m; Peachtree Christian courtyard, 12.9 × 12.2 m |
 
 **Fall.** "Red to reddish purple" (NC State), "red to maroon" in sun (UF). Georgia USA-NPN puts coloured leaves Oct 3–20 and falling leaves Oct 5–22, with the latest on Nov 21. Sam saw red-maroon dogwoods at Ansley yard edges on 23 Nov, so the lab keeps them red-maroon into November and bare by early December.
 
 **Brightness.** Option A against the generic tree: elm 0.249 / 0.818 high and 0.249 / 0.806 low; dogwood 0.238 / 0.749 and 0.247 / 0.739.
+
+**Round 2 review draft (2026-11-23).** [Matched seasonal sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). Mature height/spread is an illustrative 6 × 9 m, with a 1.25 m fork, three jointed scaffold limbs (two at low detail) and paired horizontal terminal twigs. Each crossed foliage card is flattened to 34% of its vertical extent; the old flat setting only flattened the cluster centres. Separate bloom chips were removed in the final pass; the white crown wash supplies the bracts without floating geometry. A cool-white input (#edf4ff) compensates for the global warm grade; a daylight-gated diffuse fill lifts the shaded bracts and switches off with the sun at night. Day bloom saturation is 0.018. Final standard Front summer crownStats: high 0.247 / 0.823 luminance / saturation, low 0.249 / 0.828. Camera position (0, 1.6, 11.25), target (0, 2.88, 0), FOV 58. Winter density and the sparse comparison B still need Sam's eye. All four sizes were checked in summer and winter at both tiers; terminal endpoints stay within 0.971 nominal crown radii. The branch tips intentionally extend beyond some leaf patches. The reference is Marc Merlin's Oakland Cemetery photograph, CC BY-SA 4.0, linked above; no reliable matching night photograph was used.
+
+**Approved A, 2026-11-23.** Sam approved the full dome, tiers, low fork and white bloom. [Final bloom/winter tidy-ups](log/ui/tree-species/options-dogwood-final-tidy.jpg) pull the upper wood below the crown and replace blunt twig forks with three staggered, tapered fine twigs per horizontal branch. The actual cone tips use three triangles each, funding more twigs within 195 / 146 triangles. The crown's white wash replaces separate bloom chips. A is now the direct lab and lineup default; dogwood joins elm, magnolia A3 and oaks in the next City rollout, not in this lab-only change.
 
 ### Pair 2 gaps
 

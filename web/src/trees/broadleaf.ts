@@ -11,6 +11,8 @@ import { lerp3, polar, trunkRadius, type Dims, type Form, type Pad, type Seg, ty
 export interface Habit {
   /** Where the trunk (or central leader) ends, as a fraction of height. */
   trunkTop: number;
+  /** Low fork for tiered understorey trees, metres above ground. */
+  forkM?: number;
   /** Lowest foliage, as a fraction of height (street trees are limbed up). */
   crownBase: number;
   /** Crown envelope's widest point as a fraction of the way from base to top (0.5 an ellipse, lower an egg). */
@@ -212,8 +214,21 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
     // A cone top pulls the tuft's leaves in and down (inEnvelope), so the leader stops lower,
     // and is not lifted back to the limbs' top (it would show through the narrowed tip).
     const leaderTop = Math.min(h.trunkTop, (top.c[1] - top.r * (0.35 + (h.cone ?? 0))) / e.H);
-    const leaderY = h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
-    segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * 0.12, sides: q === 'high' ? 5 : 4, color: habit.barkDark });
+    const leaderY = h.forkM !== undefined ? Math.min(h.forkM / e.H, 0.4) : h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
+    segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * (h.forkM !== undefined ? 0.55 : 0.12), sides: q === 'high' ? 5 : 4, color: habit.barkDark });
+    const scaffolds: { elbow: V3; tip: V3 }[] = [];
+    if (h.forkM !== undefined && h.tiers) {
+      const n = q === 'high' ? 3 : 2;
+      const scaffoldTop = Math.min(0.6, (top.c[1] - top.r * 0.5) / e.H);
+      for (let j = 0; j < n; j++) {
+        const angle = j * Math.PI * 2 / n + 0.4;
+        const elbow: V3 = [Math.cos(angle) * 0.13, leaderY + (scaffoldTop - leaderY) * 0.48, Math.sin(angle) * 0.13];
+        const tip: V3 = [Math.cos(angle + 0.3) * 0.3, scaffoldTop, Math.sin(angle + 0.3) * 0.3];
+        segs.push({ a: [0, leaderY, 0], b: elbow, r0: tr * 0.48, r1: tr * 0.32, sides: 3, color: habit.bark });
+        segs.push({ a: elbow, b: tip, r0: tr * 0.32, r1: tr * 0.12, sides: 3, color: habit.bark });
+        scaffolds.push({ elbow, tip });
+      }
+    }
     const count = h.tiers ? masses.length - 1 : limbs;
     for (let i = 0; i < count; i++) {
       const f = count === 1 ? 0.5 : i / (count - 1);
@@ -223,7 +238,26 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
         const out = Math.hypot(main.c[0], main.c[2]);
         // Never above the leader's end: a limb must leave the trunk, not the air over it.
         const y0 = Math.min(leaderY * 0.97, Math.max(h.crownBase * 0.85, (main.c[1] - Math.tan(h.limbAngle) * out) / e.H));
-        segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
+        const tip = unit(main.c);
+        if (h.forkM !== undefined) {
+          tip[1] = Math.max(leaderY + 0.03, tip[1] - 0.08);
+          const scaffold = scaffolds.reduce((best, v) =>
+            Math.hypot(v.tip[0] - tip[0], v.tip[2] - tip[2]) < Math.hypot(best.tip[0] - tip[0], best.tip[2] - tip[2]) ? v : best);
+          const y = Math.max(leaderY, tip[1] - 0.025);
+          const from: V3 = y < scaffold.elbow[1]
+            ? lerp3([0, leaderY, 0], scaffold.elbow, (y - leaderY) / (scaffold.elbow[1] - leaderY))
+            : lerp3(scaffold.elbow, scaffold.tip, Math.min(1, (y - scaffold.elbow[1]) / (scaffold.tip[1] - scaffold.elbow[1])));
+          const end: V3 = [tip[0] * 1.15, tip[1], tip[2] * 1.15];
+          segs.push({ a: from, b: end, r0: tr * 0.18, r1: tr * 0.06, sides: 3, color: habit.bark });
+          // Tapered three-sided tips cost three triangles, versus four for a flat
+          // two-sided cylinder. Spend that saving on three staggered fine forks.
+          for (let j = 0; j < 3; j++) {
+            const twig = lerp3(from, end, 0.3 + j * 0.2);
+            const turn = (j % 2 ? -1 : 1) * (i % 2 ? -1 : 1);
+            const dx = end[0] - from[0], dz = end[2] - from[2];
+            segs.push({ a: twig, b: [twig[0] + dx * 0.24 - dz * turn * 0.28, twig[1] + (j === 1 ? -0.025 : 0.035), twig[2] + dz * 0.24 + dx * turn * 0.28], r0: tr * 0.26, r1: 0, sides: 3, color: habit.bark });
+          }
+        } else segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
         continue;
       }
       const y = Math.min(h.trunkTop * 0.95, h.limbFrom[0] + (h.limbFrom[1] - h.limbFrom[0]) * f);
