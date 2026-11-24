@@ -80,7 +80,9 @@ export function createSkyhouseSouth(buildings: VBuilding[], grid: GroundGrid, qu
       const c = Math.min(length - 0.5, Math.max(0.5, k * length / piers));
       const top = crownTop + (k % 2 ? 1.2 : 2.6);
       const q = (u: number, out: number, y: number) => [a[0] + ux * (c + u) + nx * out, y, a[1] + uz * (c + u) + nz * out];
-      shell.body.quad(q(-0.5, 0.45, lobbyTop), q(-0.5, 0.45, top), q(0.5, 0.45, top), q(0.5, 0.45, lobbyTop), white);
+      // The low tier draws only the face, kept within 0.2 m of the wall so it reads as seated on it.
+      const d = high ? 0.45 : 0.2;
+      shell.body.quad(q(-0.5, d, lobbyTop), q(-0.5, d, top), q(0.5, d, top), q(0.5, d, lobbyTop), white);
       if (high) {
         shell.body.quad(q(-0.5, 0, lobbyTop), q(-0.5, 0, top), q(-0.5, 0.45, top), q(-0.5, 0.45, lobbyTop), '#d9d7d0');
         shell.body.quad(q(0.5, 0.45, lobbyTop), q(0.5, 0.45, top), q(0.5, 0, top), q(0.5, 0, lobbyTop), '#d9d7d0');
