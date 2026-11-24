@@ -127,7 +127,8 @@ The full credits are in the app under Menu › About & credits.
 
 The public site runs on Cloudflare’s free tier. Its Worker is named `railwatch`, with the
 custom domain configured in [worker/wrangler.toml](worker/wrangler.toml). For your own
-deployment, update the Worker name and domain, then authenticate with Cloudflare.
+deployment, set the Worker name, custom domain and `account_id` to your own Cloudflare values,
+then authenticate.
 
 ```sh
 (cd worker && pnpm exec wrangler login)
