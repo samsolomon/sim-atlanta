@@ -538,7 +538,9 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     // mounts every area under stream) has changed for quietMs.
     while (performance.now() - settleStart < maxWaitMs) {
       const last = Math.max(ringLog[ringLog.length - 1]?.ms ?? 0, phases[phases.length - 1]?.ms ?? 0);
-      if ((!streamSource || !streamSource().pending) && performance.now() - last > quietMs) break;
+      // A LOD still building in the worker isn't in the loader's queue yet; the stream manager knows.
+      const streamSettled = (globalThis as { __stream?: { settled?(): boolean } }).__stream?.settled?.() ?? true;
+      if ((!streamSource || !streamSource().pending) && streamSettled && performance.now() - last > quietMs) break;
       await sleep(250);
     }
     phase('stream:settled');
