@@ -1,4 +1,5 @@
 import { crownKey } from '../trees/rollout';
+import { perfOverrides } from '../core/perf';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { buildResidential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
@@ -51,7 +52,7 @@ import * as THREE from 'three';
 import { runSync } from '../core/slice';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
-import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
+import { TREE_CELL_M, World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
 
@@ -213,7 +214,7 @@ function makeScenery(...args: Parameters<typeof buildScenery>) {
 function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
   sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
-  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
+  const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048, farForm: quality === 'low' && perfOverrides.farForm, treeCellM: quality === 'low' ? perfOverrides.treeCellM ?? TREE_CELL_M : 0 };
   class TerrainScenery extends World {
     override ground(x: number, z: number) { return sceneY(x, z)!; }
   }
@@ -575,7 +576,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
-    setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
+    setDetail(d: { farTrees?: boolean; branchShadows?: boolean; farShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
     /** Streaming rings choose a landmark cell's level ('x,z' in 500 m cells); null restores the distance rule. */
     setLandmarkDetail(cell: string, level: 'full' | 'lod' | null) { batches?.setCellDetail(cell, level); },

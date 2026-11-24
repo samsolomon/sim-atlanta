@@ -11,6 +11,7 @@ import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { groundLiftedParts } from './parts';
 import { leafState } from './time';
+import { FAR_CONE_H, FAR_PER_TREE, FAR_PINE_TIERS, farCanopyInstances, type FarCanopy } from '../trees/far-canopy';
 import { PlacementIndex } from './spatial';
 import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 import { SIDING_GLSL } from '../materials/siding';
@@ -98,6 +99,27 @@ export interface WorldOptions {
   clumps: number;
   /** Largest side of the night light map in texels. */
   lightMapMax: number;
+  /** Generic trees batched by square cells of this size (metres), so a close view draws only
+   *  the cells in sight; one batch per area without it. */
+  treeCellM?: number;
+  /** Swap the generic trees for their one-draw far form (trees/far-canopy.ts) under
+   *  setDetail({ farTrees }): City's low tier. */
+  farForm?: boolean;
+}
+/** Low tier's generic tree cell (metres): measured on the A16 viewport at 420–680 m orbits. */
+export const TREE_CELL_M = 400;
+/** One cell's generic tree meshes (World.buildTrees). */
+interface TreeCell {
+  /** Indices into World.trees. */
+  trees: number[];
+  canopy: THREE.InstancedMesh;
+  pines: THREE.InstancedMesh;
+  trunks: THREE.InstancedMesh;
+  branches: THREE.InstancedMesh;
+  /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
+  branchMatrices: THREE.Matrix4[];
+  /** True while some broadleaf crown is thin enough to show the limbs inside it. */
+  branchesShow: boolean;
 }
 export const EAST_PORTAL: WorldOptions = { terrain: 'trench', clumps: 10, lightMapMax: 4096 };
 
@@ -1060,13 +1082,11 @@ export class World {
     }
     const n = this.trees.length;
     const leafMat = new THREE.MeshLambertMaterial({ flatShading: true });
-    // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
-    this.canopy = new THREE.InstancedMesh(leafGeometry, leafMat, n * this.opts.clumps);
-    // Pines: two stacked five-sided cones.
+    // Shared by every cell: one geometry and material each, so cells add draws, not programs.
     const pine = new THREE.ConeGeometry(1, 1.6, 7);
     pine.translate(0, 0.8, 0);
-    this.pines = new THREE.InstancedMesh(pine, leafMat, n * PINE_TIERS);
-    this.trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.24, 1, 5).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: '#6b4f3a' }), n);
+    const trunkGeometry = new THREE.CylinderGeometry(0.16, 0.24, 1, 5).translate(0, 0.5, 0);
+    const trunkMat = new THREE.MeshLambertMaterial({ color: '#6b4f3a' });
     // Bare-branch crowns, hidden inside the canopy until the leaves drop.
     const br = new Builder();
     const rb = rng(5);
@@ -1076,48 +1096,123 @@ export class World {
       br.addGeometry(g, '#6b5444');
     }
     br.addGeometry(new THREE.CylinderGeometry(0.06, 0.14, 1.8, 4).translate(0, 0.9, 0), '#6b5444');
-    this.branches = new THREE.InstancedMesh(br.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true }), n);
-    for (const im of [this.canopy, this.pines, this.trunks, this.branches]) {
-      im.castShadow = true;
-      im.receiveShadow = true;
-      this.group.add(im);
-    }
+    const branchGeometry = br.geometry();
+    const branchMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    // Trees by cell (WorldOptions.treeCellM): each cell's meshes cull on their own, so a close
+    // view draws only the cells in sight. Without cells the whole area is one batch.
+    const byCell = new Map<string, number[]>();
+    this.trees.forEach((t, i) => {
+      const cell = this.opts.treeCellM;
+      const key = cell ? `${Math.floor(t.x / cell)},${Math.floor(t.z / cell)}` : '';
+      (byCell.get(key) ?? byCell.set(key, []).get(key)!).push(i);
+    });
+    if (!n) byCell.set('', []);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
-    for (const [i, t] of this.trees.entries()) {
-      if (i % 128 === 127) yield 'tree trunks';
-      const trunkH = t.th ?? 2 + t.s * 0.6;
-      m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
-      this.trunks!.setMatrixAt(i, m);
-      q.setFromEuler(new THREE.Euler(0, t.c * 40, 0));
-      m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
-      this.branches!.setMatrixAt(i, m);
-      this.branchMatrices[i] = m.clone();
+    // Fixed bounds from the trees themselves, for every tree mesh. three would otherwise
+    // compute them once from whatever instances the first season drew, and keep them.
+    const boundsOf = (idx: number[]) => {
+      const box = new THREE.Box3(), corner = new THREE.Vector3();
+      for (const i of idx) {
+        const t = this.trees[i];
+        const R = 2.3 * t.s * 1.6, top = (t.th ?? 2 + t.s * 0.6) + PINE_TIERS * 1.05 * t.s + 2 * R;
+        box.expandByPoint(corner.set(t.x - R, t.y - 1, t.z - R)).expandByPoint(corner.set(t.x + R, t.y + top, t.z + R));
+      }
+      return box.isEmpty() ? null : { box, sphere: box.getBoundingSphere(new THREE.Sphere()) };
+    };
+    const fit = (im: THREE.InstancedMesh, b: ReturnType<typeof boundsOf>) => {
+      if (!b) return;
+      im.boundingSphere = b.sphere.clone();
+      im.boundingBox = b.box.clone();
+    };
+    this.cells = [];
+    let placed = 0;
+    for (const idx of byCell.values()) {
+      const k = idx.length;
+      const cell: TreeCell = {
+        trees: idx,
+        // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
+        canopy: new THREE.InstancedMesh(leafGeometry, leafMat, k * this.opts.clumps),
+        // Pines: stacked seven-sided cones.
+        pines: new THREE.InstancedMesh(pine, leafMat, k * PINE_TIERS),
+        trunks: new THREE.InstancedMesh(trunkGeometry, trunkMat, k),
+        branches: new THREE.InstancedMesh(branchGeometry, branchMat, k),
+        branchMatrices: [],
+        branchesShow: true,
+      };
+      const b = boundsOf(idx);
+      for (const im of [cell.canopy, cell.pines, cell.trunks, cell.branches]) {
+        im.castShadow = true;
+        im.receiveShadow = true;
+        fit(im, b);
+        this.group.add(im);
+      }
+      for (const [j, ti] of idx.entries()) {
+        if (++placed % 128 === 0) yield 'tree trunks';
+        const t = this.trees[ti];
+        const trunkH = t.th ?? 2 + t.s * 0.6;
+        m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
+        cell.trunks.setMatrixAt(j, m);
+        q.setFromEuler(new THREE.Euler(0, t.c * 40, 0));
+        m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
+        cell.branches.setMatrixAt(j, m);
+        cell.branchMatrices[j] = m.clone();
+      }
+      this.cells.push(cell);
+    }
+    if (this.opts.farForm && n) {
+      // One instanced draw per area past the far-tree orbit, on the same leaf material.
+      this.far = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1), leafMat, n * FAR_PER_TREE);
+      this.far.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * FAR_PER_TREE * 3), 3);
+      this.far.name = 'far trees';
+      this.far.castShadow = this.far.receiveShadow = true;
+      this.far.visible = false;
+      // Pines keep their pointed tiers: a second draw, of five-sided cones on the same material.
+      this.farPines = new THREE.InstancedMesh(new THREE.ConeGeometry(1, FAR_CONE_H, 5).translate(0, FAR_CONE_H / 2, 0), leafMat, n * FAR_PINE_TIERS);
+      this.farPines.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * FAR_PINE_TIERS * 3), 3);
+      this.farPines.name = 'far pines';
+      this.farOut = {
+        matrices: this.far.instanceMatrix.array as Float32Array, colors: this.far.instanceColor.array as Float32Array, count: 0,
+        pines: { matrices: this.farPines.instanceMatrix.array as Float32Array, colors: this.farPines.instanceColor.array as Float32Array, count: 0 },
+      };
+      const all = boundsOf(this.trees.map((_, i) => i));
+      for (const im of [this.far, this.farPines]) {
+        im.castShadow = im.receiveShadow = true;
+        im.visible = false;
+        fit(im, all);
+        this.group.add(im);
+      }
     }
   }
 
-  private canopy?: THREE.InstancedMesh;
-  private pines?: THREE.InstancedMesh;
-  private trunks?: THREE.InstancedMesh;
-  private branches?: THREE.InstancedMesh;
-  /** True while some broadleaf crown is thin enough to show the limbs inside it. */
-  private branchesShow = true;
-  /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
-  private branchMatrices: THREE.Matrix4[] = [];
-  private detail = { farTrees: false, branchShadows: true };
+  /** The generic trees' near meshes, one set per cell (one cell without WorldOptions.treeCellM). */
+  private cells: TreeCell[] = [];
+  private far?: THREE.InstancedMesh;
+  private farPines?: THREE.InstancedMesh;
+  private farOut?: FarCanopy;
+  private detail = { farTrees: false, branchShadows: true, farShadows: true };
   /**
    * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
    * bare-branch skeletons, which are a few pixels at long orbit distances; `branchShadows`
    * lets low quality stop them casting shadows. Call whenever a threshold changes.
    */
-  setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) {
+  setDetail(d: { farTrees?: boolean; branchShadows?: boolean; farShadows?: boolean }) {
     Object.assign(this.detail, d);
     this.applyBranchVisibility();
   }
   private applyBranchVisibility() {
-    if (!this.branches) return;
-    this.branches.visible = this.branchesShow && !this.detail.farTrees;
-    this.branches.castShadow = this.detail.branchShadows;
+    // Far form: the whole near tree (clumps, pine tiers, trunk) gives way to one draw.
+    const farForm = !!this.far && this.detail.farTrees;
+    // farShadows: false (a long orbit) keeps the far form out of the shadow pass entirely.
+    for (const im of [this.far, this.farPines]) if (im) im.castShadow = this.detail.farShadows;
+    if (this.far) this.far.visible = farForm;
+    if (this.farPines) this.farPines.visible = farForm && this.farPines.count > 0;
+    for (const cell of this.cells) {
+      cell.branches.visible = cell.branchesShow && !this.detail.farTrees;
+      cell.branches.castShadow = this.detail.branchShadows;
+      if (!this.far) continue;
+      for (const im of [cell.canopy, cell.pines, cell.trunks]) im.visible = !farForm;
+    }
   }
   private seasonDoy = -1;
 
@@ -1132,31 +1227,31 @@ export class World {
 
   /** setSeason as a build that yields every 64 trees (core/slice.ts). Each tree seeds its own stream. */
   *seasonSteps(doy: number) {
-    if (doy === this.seasonDoy || !this.canopy || !this.pines) return;
+    if (doy === this.seasonDoy || !this.cells.length) return;
     this.seasonDoy = doy;
-    const canopy = this.canopy;
-    const pines = this.pines;
     const clumps = this.opts.clumps;
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const c = new THREE.Color();
-    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
     const summer = ['#5f8f4e', '#6e9d55', '#4f7f45', '#7ea65f', '#5a8a58'];
     const spring = '#a9cf6a';
     // Fall colour by species: maple red, sweetgum burgundy, oak russet, poplar gold.
     const fall = ['#c43a26', '#8e2f3a', '#a8662f', '#e0b04a', '#d0782f'];
     const brown = new THREE.Color('#8a6a48');
-    let k = 0;
-    let kp = 0;
     const tint = new THREE.Color();
     const v = new THREE.Vector3();
     const sc3 = new THREE.Vector3();
+    let seen = 0;
+    for (const cell of this.cells) {
+    const { canopy, pines, branches } = cell;
+    let k = 0;
+    let kp = 0;
     // Bare-branch crowns only show inside a thinning broadleaf crown. Under full leaf, and on
     // pines and magnolias, they sit hidden: draw only the thinning trees' (compacted instances).
-    const branches = this.branches;
     let kb = 0;
-    for (const [ti, t] of this.trees.entries()) {
-      if (ti % 64 === 63) yield 'tree season';
+    for (const [j, ti] of cell.trees.entries()) {
+      if (++seen % 64 === 0) yield 'tree season';
+      const t = this.trees[ti];
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
       const r = rng(Math.floor(t.c * 1e9) + 7);
@@ -1172,7 +1267,6 @@ export class World {
           pines.setColorAt(kp, c.set('#355f3c').offsetHSL((r() - 0.5) * 0.02, 0, (f - 0.5) * 0.12 + (t.c - 0.1) * 0.2));
           kp++;
         }
-        for (let i = 0; i < clumps; i++) canopy.setMatrixAt(k++, zero);
         continue;
       }
       let canopyLeft = 1;
@@ -1187,7 +1281,7 @@ export class World {
         else if (st.stage === 'turning') c.set(green).lerp(new THREE.Color(species), Math.min(1, st.t * 1.3));
         else if (st.stage === 'dropping') c.set(species).lerp(brown, st.t * 0.6);
         canopyLeft = st.canopy;
-        if (canopyLeft < 0.97 && branches && this.branchMatrices[ti]) branches.setMatrixAt(kb++, this.branchMatrices[ti]);
+        if (canopyLeft < 0.97 && cell.branchMatrices[j]) branches.setMatrixAt(kb++, cell.branchMatrices[j]);
       }
       // A rounded crown of clumps: top clumps catch the sun, lower ones sit in shade.
       const R = 2.3 * t.s;
@@ -1204,10 +1298,9 @@ export class World {
         const ox = Math.sin(phi) * Math.cos(th) * rad * R;
         const oy = (Math.cos(phi) * 0.75 - 0.05) * rad * R;
         const oz = Math.sin(phi) * Math.sin(th) * rad * R;
-        if (i >= showing) {
-          canopy.setMatrixAt(k++, zero);
-          continue;
-        }
+        // Hidden clumps are not submitted at all (compacted, not zero-scaled): the draw covers
+        // only what shows, and no empty slot drags the mesh's bounds to the origin.
+        if (i >= showing) continue;
         const size = R * (i === 0 ? 0.7 : 0.5 + r() * 0.14);
         q.setFromEuler(new THREE.Euler(r() * 6.3, r() * 6.3, r() * 6.3));
         m.compose(v.set(cx + ox, cy + oy - (1 - canopyLeft) * R * 0.3, cz + oz), q, sc3.set(size, size * 0.85, size));
@@ -1218,16 +1311,26 @@ export class World {
         k++;
       }
     }
+    canopy.count = k;
     pines.count = kp;
-    if (branches) {
-      branches.count = kb;
-      branches.instanceMatrix.needsUpdate = true;
-    }
-    this.branchesShow = kb > 0;
-    this.applyBranchVisibility();
+    branches.count = kb;
+    branches.instanceMatrix.needsUpdate = true;
+    cell.branchesShow = kb > 0;
     for (const im of [canopy, pines]) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    }
+    }
+    this.applyBranchVisibility();
+    if (this.far && this.farOut) {
+      farCanopyInstances(this.trees, doy, this.farOut);
+      this.far.count = this.farOut.count;
+      this.farPines!.count = this.farOut.pines.count;
+      for (const im of [this.far, this.farPines!]) {
+        im.instanceMatrix.needsUpdate = true;
+        im.instanceColor!.needsUpdate = true;
+      }
+      this.applyBranchVisibility();
     }
   }
 
