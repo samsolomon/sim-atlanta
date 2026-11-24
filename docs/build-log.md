@@ -3620,3 +3620,8 @@ The M by Radius opened in 2013 as SkyHouse Midtown.
 Neither skin adds a draw on the low tier, and each adds about 0.2 MB of geometry.
 [Museum Tower](museum-tower.md) · [The M by Radius](m-by-radius.md)
 
+
+
+### 2026-11-24 · Vireo's balconies at night
+
+Vireo, the white apartment tower by Piedmont Park, is mapped at 105 m. The 2019 lidar has its roof at about 82 m, with an amenity floor on top reaching 89 m. Its long faces are deep balconies stacked on every floor, and from City's usual high orbit those 1.9 m slabs hide every lit room behind them, so the first night render was darker than the generic box it replaced. A lit room's light also shows through its glass balcony rail, and lighting the rail makes the tower read as lived-in from above. [Before and after](log/ui/vireo/day-before-after.jpg) · [night](log/ui/vireo/night-before-after.jpg)
