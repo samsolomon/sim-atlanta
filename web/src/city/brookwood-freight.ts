@@ -34,6 +34,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
     let shape = shapes.get(kind);
     if (!shape) shapes.set(kind, (shape = freightGeometry(kind)));
     const car = new THREE.Mesh(shape, material);
+    car.userData.trainId = 'illustrative:freight:norcross';
     car.userData.lengthM = FREIGHT_LENGTH[kind];
     car.userData.line = NORCROSS_LINE;
     car.receiveShadow = true;

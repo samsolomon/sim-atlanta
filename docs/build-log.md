@@ -2781,3 +2781,26 @@ Sam selected B: #d5dfdc at 0.82 emission, with the 0.72–1 crest gradient and f
 Final captures checked north/south daylight (`713,-3672,0,50,1150` and `713,-3672,180,50,1150`), the oblique night edge (`1268,-3672,90,72,950`), and matched aerial day/night on both tiers (`800,-3710,70,50,1021`). Both veil faces remain present; the light line is visible from the oblique night view. Orca's review tab stopped advancing animation frames, so final evidence uses the repository's headless Chrome/CDP capture setup. Full tests pass (931 web tests, one skipped), and performance ceilings pass on both tiers; high-tier ready time was 4.6 s against a nonblocking 3 s target. [Matched pair, high](log/ui/midtown-skyline/napkin-b-daynight-high.jpg) · [Matched pair, low](log/ui/midtown-skyline/napkin-b-daynight-low.jpg) · [Alternate angles](log/ui/midtown-skyline/napkin-b-angle-checks.jpg).
 
 Final Claude review requested the oblique camera in daylight on both tiers. The [additional captures](log/ui/midtown-skyline/napkin-b-oblique-day.jpg) show both curved faces and end lattices without a missing section at that camera. The visual risk is dismissed for the requested view; no universal claim about arbitrary transparent overlaps is implied. Two review rounds completed; stale documentation and shared-origin/light ordering were addressed, and no blocking findings remain.
+
+## 2026-11-23 — Freight joins Follow (initial checks)
+
+The downtown seven-car and Norcross ten-car illustrative consists now carry separate stable ids through picking and the existing Follow control. Their positions update before the camera lookup. Follow uses cars surviving their material clip planes and ends when none remain; it makes no tunnel claim. Both cards retain Illustrative labels.
+
+The easy-to-miss detail was update order: freight previously moved after the camera had already resolved its target. Initial browser checks picked and followed both consists. [Downtown capture](log/ui/follow/freight-downtown.jpg): 2026-11-20 14:12:35 ET, starting camera `900,545,0,35,300`; [Norcross capture](log/ui/follow/freight-norcross.jpg): 14:20:50 ET, starting camera `-790,-4385,0,35,300`. Follow then applies its standard bearing -148°, tilt 26°, distance 300 m.
+
+Validation: 20 Rust, 11 pipeline, 914 web tests (one skipped), five worker tests; production build and both performance tiers passed. Cross-model review found no blocking code issue. Initial captures are retained below; final replay checks and the review sheet are recorded in the completion entry. Web rebuild required; no data rebuild.
+
+## 2026-11-23 — Freight Follow replay checks complete
+
+Both illustrative consists passed day and full-night browser replays. The camera moved with the drawn cars through the downtown sections, then stopped when no cars remained drawn. Norcross followed to the mounted board edge and reported “train left the board” in both runs. Downtown ends with “freight no longer drawn”; it does not invent an underground location or a timetable trip. The selected card and active Follow position remain Illustrative.
+
+[Before Follow / after Follow / exit review sheet](log/ui/follow/freight-review.jpg). These compare interaction states, not two software versions. The browser advanced the pinned clock in 2-second steps, with camera and status samples saved in the four `*-check.json` files alongside the sheet. Cameras at the start of Follow:
+
+| Consist | Pinned time | Camera |
+| --- | --- | --- |
+| Downtown day | 2026-11-20T14:12:35-05:00 | `921,549,-148,26,300` |
+| Downtown night | 2026-11-20T22:12:35-05:00 | `-505,-900,-148,26,300` |
+| Norcross day | 2026-11-20T14:21:25-05:00 | `-654,-4519,-148,26,300` |
+| Norcross night | 2026-11-20T22:21:25-05:00 | `-654,-4519,-148,26,300` |
+
+Rebased validation: 20 Rust, 11 pipeline, 931 web tests (one skipped), five worker tests; build and type check passed. Perf Low: 2,382,511 triangles / 540 calls; High: 13,783,617 / 1,169, both below ceilings. Claude's second review found no code defect; its remaining visual finding is dismissed by these replays and screenshots. No live-feed night check is claimed: freight has no live feed. Web rebuild only; no data rebuild or worker change.
