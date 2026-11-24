@@ -3829,3 +3829,7 @@ The loop uses 91 one-minute frames per version, from 16:45 to 18:15 EST on Novem
 ### 2026-11-24 — One time-zone formatter for a rail feed
 
 A train appears once per upcoming stop in MARTA’s arrivals feed. We were creating two Eastern time-zone formatters on every prediction row. On the morning of November 24, rail returned 172 HTTP 503s while Cloudflare recorded 173 resource-limit errors across the Worker. In a local workerd replay of 300 synthetic rows across 30 trains, reusing one formatter cut mean process CPU from 12.89 ms to 0.89 ms over 45 requests. Both versions produced identical response bytes. The failing requests’ original feed sizes are unknown. A comparable morning in production will show whether the change reduces those errors. The 42 overnight rail 502s occurred in a separate window.
+
+### 2026-11-24 — An everyday sedan for moving traffic
+
+The moving sedan takes its silhouette from the July 2017 Camry G Leather Package, with a 2.825 m wheelbase, a crowned roof and a short rear deck. In the first street-height render, a flat taillight spanning the convex bumper broke into two red strokes. Clipping the housing against each bumper facet kept both lenses continuous at five rear bearings from 125° through 235°. The existing instanced brake channel lights the same surface. The static parking-deck cars retain their original dimensions. [Matched 145° rear views](log/road-sedan/rear.jpg) · [Toyota rear reference](https://global.toyota/pages/news/images/2017/07/10/1330/cmrh1707_10_s.jpg)
