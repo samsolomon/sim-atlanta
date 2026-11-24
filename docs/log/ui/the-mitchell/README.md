@@ -20,10 +20,12 @@ No night photograph exists. Rooms are lit from the shared litHash at 45%, and th
 ## Views
 | View | Query |
 |---|---|
+| Money shot, 520 m | `?view=city&q=high&t=2026-11-20T11:30:00-05:00&cam=-592,-24,20,50,520` |
 | Hero (from the south-south-west), day and night | `?view=city&q=high&t=2026-11-20T11:30:00-05:00&cam=-592,-24,10,50,450` (23:30 for night) |
 | Close (Mitchell Street end) | `?view=city&dev&mindist=20&q=high&t=2026-11-20T11:30:00-05:00&cam=-600,0,20,35,180` |
 | Four-side | `&dev&mindist=20&cam=-592,-24,{180,270,0,90},50,400` |
 
+![Money shot at 520 m: the lot-filling block becomes the slab and podium](m-money.jpg)
 ![Before and after, day](m-day.jpg)
 ![Night](m-night.jpg)
 ![Low tier](m-low.jpg)
