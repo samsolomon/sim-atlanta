@@ -206,3 +206,20 @@ it('gives the 15th Street face a ground loggia and balconied windows', () => {
   precastWall(rich, lit, [0, 0], [65, 0], [0, 1], 1.5, 20, { ...opts, loggia: 4.5, balconies: 12.5 });
   expect(count(rich)).toBeGreaterThan(count(plain) + 20 * 6);
 });
+
+it('rings the café tables with grove trees clear of the tables and inside the aerial canopy', async () => {
+  const { SIFLY_GROVE, siflyGrove } = await import('./arts-campus');
+  const tables = sites.museum.piazza.tables as [number, number][];
+  for (const [u, v] of SIFLY_GROVE) {
+    expect(Math.min(...tables.map(([tu, tv]) => Math.hypot(u - tu, v - tv)))).toBeGreaterThanOrEqual(2.5);
+    expect(u).toBeGreaterThanOrEqual(-51);
+    expect(u).toBeLessThanOrEqual(-28);
+    expect(v).toBeGreaterThanOrEqual(16);
+    expect(v).toBeLessThanOrEqual(30);
+  }
+  const spots = siflyGrove(() => 290);
+  expect(spots).toHaveLength(SIFLY_GROVE.length);
+  for (const s of spots) expect(s).toMatchObject({ y: 290, heightM: 8, spreadM: 5 });
+  // Off the board, no tree.
+  expect(siflyGrove(() => null)).toEqual([]);
+});

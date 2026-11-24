@@ -4035,3 +4035,7 @@ Single-pass drawing saved 11 night draw calls at the default view, and the first
 ### 2026-11-27 — The paving that was never painted
 
 The strip meant to end the green ground at the Robinson College doors had passed its tests and never drawn. It checked for the Empire Building in the list of buildings handed to the ground map, and City's own skin for that building had already taken it off the list. The test fixtures never ran a skin, so they could not see it. Gating the strip on the board's bounds paints it, and the new test passes City's state: no building at all. The lesson: after a landmark replaces a footprint, nothing downstream can use that footprint as a flag. [Before and after](log/ui/landuse-paving/frontage-fix.jpg)
+
+### 2026-11-24 — Shade for the café
+
+Sifly Piazza's café sits in a gridded grove, but City had no trees there. A first try put eight 9 m trees among the tables, as the photographs show them. From Sam's usual 260 m orbit, their crowns covered the tables and umbrellas that had just been moved into the open so he could find them. Six smaller trees around the table block keep the café readable and still give it shade. They are generic low-poly crowns like the rest of City, set on the piazza as a landmark planting. [Grove at 260 m](log/ui/arts-campus/grove-orbit.jpg).

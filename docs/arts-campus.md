@@ -125,8 +125,18 @@ paving, and an open cream umbrella at every other table.
   or November photograph. Sam chose open (2026-11-24) because they read at his
   orbit. Setting `umbrellas: 'furled'` in `arts-campus.ts` restores the
   photo-faithful winter state.
-- **Left out.** The grove's trees belong to the tree agent and are a gap. The cable
-  rail is too thin to read at City distances.
+- **Grove trees (added 2026-11-24).** Six deciduous trees stand around the table
+  block, inside the canopy that the leaf-on aerial shows (local u −50…−28, v 16…30).
+  They are City's generic low-poly broadleaves, 8 m tall with 5 m crowns
+  (`SIFLY_GROVE` in `arts-campus.ts`), and draw generic in every tree mode. The
+  photographs show 6–10 trees among the tables. A first version with eight 9 m trees
+  among the tables hid the tables and umbrellas at Sam's 260 m orbit. These trees ring
+  the block instead, so the café still reads at that distance. Each trunk stands at
+  least 2.5 m from a table centre, clear of the chairs, and each crown starts about
+  3.5 m up, above the 2.65 m umbrellas. Count, positions and size are illustrative.
+  [260 m orbit](log/ui/arts-campus/grove-orbit.jpg) ·
+  [close](log/ui/arts-campus/grove-close.jpg), by day, in July and at night.
+- **Left out.** The cable rail is too thin to read at City distances.
 - **Positions.** Exact table positions are illustrative.
 
 Sources:
