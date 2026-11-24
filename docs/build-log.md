@@ -3496,3 +3496,7 @@ The 113 m tower at 600 West Peachtree had no name in the data. A reverse lookup 
 ### 2026-11-24 · SkyHouse South in white and teal
 
 SkyHouse South on 6th Street was a generic 90 m block. The 2019 lidar puts its roof at 75.6 m, with a set-back sky deck to 79.5 m. The property photograph supplied the rest: a white precast frame around teal-green glass, balcony stacks at the corners and centre, and a blue glass band under the deck. It is the first skin built under the provisional glass rules. Its photo-matched teal at V 66 rendered too dark in sun, so the base went up to V 75 to land sunlit windows at V 40–42. On the phone tier it costs about 190 triangles and one draw. [Before/after, day and night](log/ui/skyhouse-south/README.md)
+
+### 2026-11-24 · Norfolk Southern from roof slabs to towers
+
+OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13, floating over thin end masses, and the 2019 lidar predates the site. The sources didn't agree on storey counts: HOK says 17- and 10-storey towers over a five-storey podium, the structural engineer says 12 and 5 over 11, and CoStar says 22. City takes HOK's 22 and 15 floors and keeps OSM's massing by shifting its levels up two, which gives 86 m and 58 m, both inferred. Each tower is two knife-edged glass halves either side of a slot 2 m lower, as in the photos. [Before and after](log/ui/norfolk-southern/day-before-after.jpg) · [night](log/ui/norfolk-southern/night-before-after.jpg)
