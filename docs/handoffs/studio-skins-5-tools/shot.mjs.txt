@@ -1,0 +1,44 @@
+// node shot.mjs out.jpg URL [width height] [--eval expr]
+import { spawn } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const argv = process.argv.slice(2); const ei = argv.indexOf('--eval'); const pos = ei >= 0 ? argv.slice(0, ei) : argv; const [out, url, W = '1600', H = '1000'] = pos;
+const extra = process.argv.includes('--eval') ? process.argv[process.argv.indexOf('--eval') + 1] : null;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const profile = mkdtempSync(join(tmpdir(), 'skins5-shot-'));
+const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--headless=new', '--no-first-run', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
+let wsUrl;
+// Our own Chrome only: read the port it chose from its own profile, and use the page we opened.
+let port;
+for (let i = 0; i < 100 && !port; i++) { try { port = Number(readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]); } catch {} if (!port) await sleep(100); }
+for (let i = 0; i < 60 && !wsUrl; i++) { try { wsUrl = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find(t => t.type === 'page' && t.url === 'about:blank')?.webSocketDebuggerUrl; } catch {} await sleep(200); }
+const ws = new WebSocket(wsUrl); await new Promise(r => ws.addEventListener('open', r, { once: true }));
+ws.addEventListener('close', () => { for (const [, f] of pending) f({ error: { message: 'socket closed' } }); pending.clear(); });
+const hardStop = setTimeout(() => { chrome.kill('SIGKILL'); process.exit(3); }, 330000);
+let id = 0; const pending = new Map(); const logs = [];
+ws.addEventListener('message', ev => { const m = JSON.parse(ev.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+  if (m.method === 'Runtime.exceptionThrown') logs.push('EXC ' + (m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text));
+  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') logs.push('ERR ' + m.params.args.map(a => a.value ?? a.description).join(' ')); });
+const send = (method, params = {}) => new Promise((res, rej) => { const n = ++id; pending.set(n, m => m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)); ws.send(JSON.stringify({ id: n, method, params })); });
+const evaluate = async e => (await send('Runtime.evaluate', { expression: e, returnByValue: true, awaitPromise: true })).result.value;
+try {
+  await send('Runtime.enable'); await send('Page.enable');
+  await send('Emulation.setDeviceMetricsOverride', { width: +W, height: +H, deviceScaleFactor: 1, mobile: false });
+  await send('Page.navigate', { url });
+  const t0 = Date.now(); let last = '', stable = 0, ready = false;
+  while (!url.startsWith('file:') && Date.now() - t0 < 300000) {
+    await sleep(1000);
+    let s; try { s = await evaluate(`(() => { const p = window.__perf?.report?.(); return p ? JSON.stringify([p.phases?.some(x => x.name === 'ready'), (p.phases||[]).length, (p.areas||[]).length]) : '' })()`); } catch { continue; }
+    if (!s) continue;
+    const [r] = JSON.parse(s); ready = r;
+    if (r && s === last) { if (++stable >= 6) break; } else stable = 0;
+    last = s;
+  }
+  await sleep(1500);
+  if (extra) console.log(JSON.stringify(await evaluate(extra)));
+  const shot = await send('Page.captureScreenshot', { format: out.endsWith('png') ? 'png' : 'jpeg', quality: 88 });
+  writeFileSync(out, Buffer.from(shot.data, 'base64'));
+  console.log('saved', out, 'ready', ready, last, 'secs', ((Date.now() - t0) / 1000).toFixed(0), logs.slice(-4).join(' | '));
+} finally { try { ws.close(); } catch {} chrome.kill('SIGKILL'); clearTimeout(hardStop); await sleep(800); rmSync(profile, { recursive: true, force: true }); }

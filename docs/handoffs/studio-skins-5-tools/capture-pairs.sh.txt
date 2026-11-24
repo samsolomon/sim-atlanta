@@ -1,0 +1,24 @@
+#!/bin/zsh
+cd /private/tmp/claude-501/-Users-samsolomon-orca-workspaces-sim-atlanta-studio-skins-5/07a4c456-16c9-44a0-a915-4e88511c3c71/scratchpad
+R=/Users/samsolomon/orca/workspaces/sim-atlanta/studio-skins-5
+U='http://127.0.0.1:5515/?view=city'; F=558,-1127,225,50,330; S0=558,-1127,32,60,420
+shot() { timeout 200 node tools/shot.mjs "$@" 2>&1 | tail -1; }
+both() { local p=$1
+  for t in 11:30 23:30; do n=day; [ $t = 23:30 ] && n=night; T=2026-11-20T$t:00-05:00
+    shot im/$p-far-$n.jpg "$U&cam=$F&t=$T"
+    shot im/$p-start-$n.jpg "$U&cam=$S0&t=$T"
+    [ $p = after ] && shot im/after-low-far-$n.jpg "$U&q=low&cam=$F&t=$T" && shot im/after-close-$n.jpg "$U&dev&cam=$F&t=$T" --eval "window.__setView(225, 60, 150, 558, -1127, 1), 'ok'"
+  done; }
+sleep 3; both after
+(cd $R && git show "$(git merge-base HEAD origin/main):web/src/city/city.ts" > web/src/city/city.ts); sleep 4
+both before
+(cd $R && git checkout HEAD -- web/src/city/city.ts && git status --short | grep -v '^??')
+cp final/compose.html im/; F2=file://$PWD/im
+enc(){ python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$1"; }
+mk(){ timeout 60 node tools/shot.mjs im/$1 "$F2/compose.html?a=$2&b=$3&ca=$(enc "$4")&cb=$(enc "$5")&ring=$(enc "$6")" 1616 516 | tail -1; }
+R2="left:33%;top:12%;width:30%;height:56%"
+mk cmp-far-day.jpg before-far-day.jpg after-far-day.jpg "The Commons at Imperial Hotel, 11:30 AM: generic 36.5 m box" "The Commons at Imperial Hotel, 11:30 AM: 1910 brick hotel at lidar 32 m, white bay-window stacks on Ralph McGill, banded east end" "$R2"
+mk cmp-far-night.jpg before-far-night.jpg after-far-night.jpg "The Commons at Imperial Hotel, 11:30 PM: generic" "The Commons at Imperial Hotel, 11:30 PM: about a third of homes lit" "$R2"
+mk cmp-start-day.jpg before-start-day.jpg after-start-day.jpg "Spec starting cam, 11:30 AM: generic" "Spec starting cam, 11:30 AM" ""
+mk cmp-start-night.jpg before-start-night.jpg after-start-night.jpg "Spec starting cam, 11:30 PM: generic" "Spec starting cam, 11:30 PM" ""
+echo IM_DONE

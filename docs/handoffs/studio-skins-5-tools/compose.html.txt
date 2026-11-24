@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><style>
+body{margin:0;background:#15171a;font:600 15px/1.3 -apple-system,Helvetica,sans-serif;color:#eee}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+.p{position:relative}.p img{width:100%;display:block;border-radius:4px}
+.tag{position:absolute;left:10px;top:10px;background:#000c;padding:4px 10px;border-radius:3px;letter-spacing:.08em}
+.cap{position:absolute;left:10px;right:10px;bottom:10px;background:#000b;padding:6px 10px;border-radius:3px;font-weight:500}
+.ring{position:absolute;border:3px solid #ffcf4a;border-radius:50%;box-shadow:0 0 0 2px #0008}
+</style><body><div class="row" id="r"></div><script>
+const q=new URLSearchParams(location.search);const [a,b]=[q.get('a'),q.get('b')];const ring=q.get('ring');
+for(const [src,tag,cap] of [[a,'BEFORE',q.get('ca')],[b,'AFTER',q.get('cb')]]){const d=document.createElement('div');d.className='p';d.innerHTML=`<img src="${src}"><div class="tag">${tag}</div><div class="cap">${cap}</div>`+(ring?`<div class="ring" style="${ring}"></div>`:'');document.getElementById('r').appendChild(d)}
+</script>

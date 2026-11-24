@@ -1,0 +1,84 @@
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { Vector3, type Object3D, type Mesh, type BufferGeometry } from 'three';
+import { afterEach, it, vi } from 'vitest';
+import { GroundGrid } from '../terrain/grid';
+import { createDowntownTerrain } from '../terrain/model';
+
+// Throwaway lint: overlapping parallel faces closer than 3 cm (z-fight risk at 400-600 m).
+const IDS = (process.env.COPLANAR_IDS ?? '').split(',').filter(Boolean);
+afterEach(() => vi.unstubAllGlobals());
+
+type Tri = { n: Vector3; d: number; u: Vector3; v: Vector3; box: [number, number, number, number]; c: number[] };
+function tris(root: Object3D): Tri[] {
+  const out: Tri[] = [];
+  root.updateMatrixWorld(true);
+  root.traverse(o => {
+    const g = (o as Mesh).geometry as BufferGeometry | undefined;
+    const pos = g?.getAttribute('position');
+    if (!pos) return;
+    const idx = g!.getIndex();
+    const count = idx ? idx.count : pos.count;
+    const at = (i: number) => new Vector3().fromBufferAttribute(pos, idx ? idx.getX(i) : i).applyMatrix4(o.matrixWorld);
+    for (let t = 0; t + 2 < count; t += 3) {
+      const a = at(t), b = at(t + 1), c = at(t + 2);
+      const n = new Vector3().subVectors(b, a).cross(new Vector3().subVectors(c, a));
+      if (n.length() < 1e-4) continue;
+      n.normalize();
+      if (n.dot(new Vector3(0, 0, 0)) < 0) n.negate();
+      // canonical sign
+      if (n.x < -1e-6 || (Math.abs(n.x) < 1e-6 && (n.y < -1e-6 || (Math.abs(n.y) < 1e-6 && n.z < 0)))) n.negate();
+      const u = Math.abs(n.y) > 0.9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0);
+      const e1 = new Vector3().crossVectors(n, u).normalize(), e2 = new Vector3().crossVectors(n, e1);
+      const xs = [a, b, c].map(p => p.dot(e1)), ys = [a, b, c].map(p => p.dot(e2));
+      out.push({ n, d: a.dot(n), u: e1, v: e2, box: [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)], c: [a, b, c].map(p => p.toArray().map(v => +v.toFixed(2))).flat() });
+    }
+  });
+  return out;
+}
+export function coplanar(root: Object3D) {
+  const t = tris(root);
+  let hits = 0;
+  let worst: number[] = [];
+  for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) {
+    const A = t[i], B = t[j];
+    if (A.n.dot(B.n) < 0.9995) continue;
+    const pts: number[][] = [B.c.slice(0, 3), B.c.slice(3, 6), B.c.slice(6, 9)];
+    const ptsA: number[][] = [A.c.slice(0, 3), A.c.slice(3, 6), A.c.slice(6, 9)];
+    const shared = pts.filter(q => ptsA.some(r => Math.hypot(q[0] - r[0], q[1] - r[1], q[2] - r[2]) < 0.005)).length;
+    if (shared >= 2) continue; // the two halves of one quad
+    const dist = pts.map(q => q[0] * A.n.x + q[1] * A.n.y + q[2] * A.n.z - A.d);
+    const gap = Math.abs(dist.reduce((x, y) => x + y) / 3);
+    if (gap < 0.005 || gap >= 0.03) continue;
+    const xs = pts.map(q => q[0] * A.u.x + q[1] * A.u.y + q[2] * A.u.z), ys = pts.map(q => q[0] * A.v.x + q[1] * A.v.y + q[2] * A.v.z);
+    const bb = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    const m = 0.05;
+    if (A.box[1] - m < bb[0] || bb[1] - m < A.box[0] || A.box[3] - m < bb[2] || bb[3] - m < A.box[2]) continue;
+    hits++;
+    if (!worst.length || gap < worst[0]) worst = [gap, A.d, B.d, ...A.n.toArray().map(v => +v.toFixed(3)), ...A.box.map(v => +v.toFixed(1)), ...B.box.map(v => +v.toFixed(1)), 'A', ...A.c, 'B', ...B.c];
+  }
+  return { hits, worst };
+}
+
+it('reports coplanar layers under 3 cm', () => {
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const sq = new URL('../../../pipeline/prototypes/square-board/', import.meta.url);
+  const boards = [
+    ...readdirSync(sq).filter(id => existsSync(new URL(id + '/context.json', sq))).map(id => ({ dir: new URL(id + '/', sq), ground: '' })),
+    { dir: new URL('../../../pipeline/prototypes/sweet-auburn/', import.meta.url), ground: 'ground/' },
+  ];
+  for (const { dir, ground } of boards) {
+    const read = (n: string) => readFileSync(new URL(n, dir));
+    const context = JSON.parse(read('context.json').toString());
+    if (!context.buildings.some((b: { id: string }) => IDS.includes(b.id))) continue;
+    console.log('BOARD', dir.pathname.split('/').slice(-2)[0]);
+    const grid = new GroundGrid(JSON.parse(read(ground + 'ground.json').toString()), Uint8Array.from(read(ground + 'ground.i16')).buffer);
+    const area = createDowntownTerrain(grid, { ...context, rail: context.rail ?? [], roads: context.roads ?? [] }, [], { quality: 'high', batchLandmarks: false });
+    area.scenery.traverse(o => {
+      const replaced = o.userData.replaced as string[] | undefined;
+      if (replaced) console.log('LM', replaced.slice(0, 2).join(), o.name);
+      if (o.name !== 'Ansley Above the Park' && (!replaced || !replaced.some(r => IDS.includes(r)))) return;
+      console.log('COPLANAR', replaced?.[0], o.name, JSON.stringify(coplanar(o)));
+    });
+  }
+}, 600_000);

@@ -1,0 +1,14 @@
+#!/bin/zsh
+cd /Users/samsolomon/orca/workspaces/sim-atlanta/studio-skins-5
+S=/private/tmp/claude-501/-Users-samsolomon-orca-workspaces-sim-atlanta-studio-skins-5/07a4c456-16c9-44a0-a915-4e88511c3c71/scratchpad
+BASE=$(cat $S/base.txt)
+export PATH="$(brew --prefix rustup)/bin:$PATH"
+pnpm build > $S/build.log 2>&1; echo "BUILD $?"
+pnpm test > $S/test4.log 2>&1; echo "TEST $?"; grep -E "Test Files|Tests " $S/test4.log
+pnpm test:perf > $S/perf-cand.log 2>&1; echo "PERFCAND $?"
+git show "${BASE}:web/src/terrain/model.ts" > web/src/terrain/model.ts
+pnpm test:perf > $S/perf-base.log 2>&1; echo "PERFBASE $?"
+git checkout HEAD -- web/src/terrain/model.ts
+for f in cand base; do echo "-- $f"; grep -E "^#1|TIMEOUT|OVER|^[A-Z-]+ +measured|calls" $S/perf-$f.log; done
+git status --short | grep -v '^??'
+echo VERIFY_DONE
