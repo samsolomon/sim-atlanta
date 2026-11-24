@@ -71,7 +71,11 @@ interface LaneState {
   smooth: Uint8Array;
 }
 
-const models = ['sedan', 'suv', 'box'] as const;
+/** Every kind City may draw. Low keeps sedan, SUV and box truck; high adds hatch, pickup, van and the
+ * semi (illustrative mix, picked once per slot in slotsFor). */
+const models = ['sedan', 'suv', 'box', 'hatch', 'pickup', 'van', 'semi'] as const;
+/** High-tier car mix, as cumulative shares of the non-truck slots. */
+const CAR_MIX: [Kind, number][] = [['sedan', .40], ['suv', .67], ['hatch', .79], ['pickup', .92], ['van', 1]];
 type Kind = typeof models[number];
 type RoadHeight = (x: number, z: number, run: VRoad) => number | null;
 export interface RoadTrafficOptions {
@@ -99,6 +103,8 @@ export interface TrafficCourse {
   speedMps: number;
   dailyFlow: number;
   truckShare: number;
+  /** High tier: share of trucks drawn as tractor-trailers instead of box trucks (default 0.15). */
+  semiShare?: number;
   /** Extra time offstage between trips with separate endpoints. */
   offstageM?: number;
   /** Replay allowance for moving queues; excluded from visible-car demand. */
@@ -148,7 +154,7 @@ function visibleLength(lane: TrafficCourse) {
   return lane.line.length + (lane.offstageM ?? 0) + delay * lane.speedMps;
 }
 
-function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number) {
+export function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: number, quality: 'low' | 'high' = 'low') {
   const random = rng(seed);
   const demand = routes.map(r => r.dailyFlow * peak / 3600 * (r.line.length + offstage(r)) / r.speedMps);
   const visible = routes.map(r => r.dailyFlow * peak / 3600 * visibleLength(r) / r.speedMps);
@@ -162,9 +168,20 @@ function slotsFor(routes: TrafficCourse[], cap: number, peak: number, seed: numb
     const offset = random();
     for (let j = 0; j < count; j++) {
       const u = random();
-      slots.push({ lane, phase: (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane)),
-        threshold: random(), kind: u < lane.truckShare ? 'box' : u < lane.truckShare + .35 ? 'suv' : 'sedan',
-        color: new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]) });
+      const phase = (j + offset + .65*(random()-.5)) / count * (lane.line.length + offstage(lane));
+      const threshold = random();
+      const color = new THREE.Color(PAINT[Math.floor(random()*PAINT.length)]);
+      let kind: Kind;
+      if (u < lane.truckShare) {
+        kind = quality === 'high' && u < lane.truckShare * (lane.semiShare ?? .15) ? 'semi' : 'box';
+      } else if (quality === 'high') {
+        // Reuse the passenger portion of this draw to preserve every slot's phase, threshold and paint.
+        const passenger = (u - lane.truckShare) / (1 - lane.truckShare);
+        kind = CAR_MIX.find(([, upTo]) => passenger < upTo)?.[0] ?? 'van';
+      } else {
+        kind = u < lane.truckShare + .35 ? 'suv' : 'sedan';
+      }
+      slots.push({ lane, phase, threshold, kind, color });
     }
   }
   return slots;
@@ -213,7 +230,7 @@ export class RoadTraffic {
       this.movingQueues.set(queued, new MovingQueue(queued.signals ?? [], queued.line.length, queued.speedMps, blocks));
       return queued;
     });
-    this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed) : [];
+    this.slots = this.peak > 0 ? slotsFor(courses, cap, this.peak, seed, opts.quality) : [];
     this.lanes = this.buildLanes(courses);
     if (this.heads) this.headPhases = new Uint8Array(this.heads.signals.length).fill(255);
     this.material.clippingPlanes = opts.clippingPlanes ?? [];

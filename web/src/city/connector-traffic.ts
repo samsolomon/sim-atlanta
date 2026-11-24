@@ -25,7 +25,7 @@ export class ConnectorTraffic extends RoadTraffic {
   constructor(opts: ConnectorTrafficOptions) {
     const neighbors = opts.neighbors ?? [];
     const courses = connectorTrafficRoutes(opts.city, neighbors.map(board => board.city)).map(lane => ({ ...lane,
-      rush: fifthStreetPeak(lane), speedMps: 18, dailyFlow: CONNECTOR_AADT * .5 * lane.share, truckShare: .07 }));
+      rush: fifthStreetPeak(lane), speedMps: 18, dailyFlow: CONNECTOR_AADT * .5 * lane.share, truckShare: .07, semiShare: .7 }));
     const boards = [opts, ...neighbors];
     const bounds = { ...opts.city.bounds };
     for (const { city } of neighbors) {
