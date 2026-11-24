@@ -19,9 +19,6 @@ const SEMI_TRAILER_DZ = -2.0 - 6.2, SEMI_FRONT = 3.7, SEMI_REAR = SEMI_TRAILER_D
 const SEMI_LENGTH = SEMI_FRONT - SEMI_REAR;
 export const LENGTH: Record<VehicleType, number> = { sedan: 4.885, hatch: 4.1, suv: 4.9, pickup: 5.6, van: 5.3, box: 8.2, tractor: 6.4, trailer: 14.6, semi: SEMI_LENGTH };
 
-// Shared by the moving road sedan and the lower-detail sedan baked into parking decks.
-export const SEDAN = { length: LENGTH.sedan, width: 1.84, sill: 0.195, roof: 1.445, tireRadius: 0.335 };
-
 class Kit {
   pos: number[] = [];
   col: number[] = [];
