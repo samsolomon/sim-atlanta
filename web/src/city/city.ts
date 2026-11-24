@@ -1373,6 +1373,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
+    areaRoots: () => {
+      const list: [string, typeof terrain][] = mosaic ? [...mosaic.areas, ...[...mosaic.patches].map(([k, v]) => [`patch:${k}`, v] as [string, typeof terrain])]
+        : [['downtown', terrain], ['king', east], ['auburn', north]];
+      return list.filter(([, a]) => a?.group).map(([id, a]) => ({ id, root: a!.group, bounds: a!.bounds }));
+    },
     roots: () => {
       const m = new Map<THREE.Object3D, PerfCategory>();
       const set = (o: THREE.Object3D | null | undefined, c: PerfCategory) => { if (o) m.set(o, c); };

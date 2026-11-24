@@ -36,6 +36,9 @@ export interface PerfContext {
   view?(x: number, z: number, dist: number, bearing: number, tilt: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
+  /** Each mounted area's root object and bounds, so captureDraws({ detail: true }) can attribute a
+   * draw to an area (by ancestry, else by its world centre). */
+  areaRoots?(): { id: string; root: THREE.Object3D; bounds: { minX: number; maxX: number; minZ: number; maxZ: number } }[];
   quality: string;
 }
 
@@ -692,15 +695,28 @@ export const perf = {
    * shadow depth, or post: a full-screen quad outside the scene) and its owner. Answers "what draws
    * these triangles" where the category sums (all registered geometry) can't.
    */
-  captureDraws(o: { shadow?: boolean } = {}): Promise<unknown> {
+  captureDraws(o: { shadow?: boolean; detail?: boolean } = {}): Promise<unknown> {
     if (!ctx) return Promise.resolve(null);
+    // { detail: true } also splits rows by area and program and reports each row's geometry
+    // (unique vertices and bytes), for estimating merged forms.
+    const detail = !!o.detail;
+    const areaList = detail ? ctx.areaRoots?.() ?? [] : [];
+    const areaByRoot = new Map(areaList.map(a => [a.root, a.id]));
+    const areaOf = (obj: THREE.Object3D, g: THREE.BufferGeometry) => {
+      for (let p: THREE.Object3D | null = obj; p; p = p.parent) { const id = areaByRoot.get(p); if (id) return id; }
+      if (!g.boundingSphere) g.computeBoundingSphere();
+      const { x, z } = g.boundingSphere!.center.clone().applyMatrix4(obj.matrixWorld);
+      const hit = areaList.find(a => x >= a.bounds.minX && x <= a.bounds.maxX && z >= a.bounds.minZ && z <= a.bounds.maxZ);
+      return hit ? `${hit.id}*` : 'outside*';
+    };
     // { shadow: true } forces a shadow-map redraw in the captured frame, to measure the shadow pass.
     const forceShadow = !!o.shadow;
     const { renderer, scene } = ctx;
     const roots = ctx.roots();
     const original = renderer.renderBufferDirect;
-    type Rec = { path: string; cat: string; pass: string; material: string; tri: number; calls: number };
+    type Rec = { path: string; cat: string; pass: string; material: string; tri: number; calls: number; area?: string; program?: number; inst?: number; geoms?: Set<THREE.BufferGeometry>; relookups?: number; why?: string };
     const recs = new Map<string, Rec>();
+    let camAt: number[] | null = null;
     const owner = (o: THREE.Object3D) => {
       let cat = '';
       const names: string[] = [];
@@ -726,9 +742,24 @@ export const perf = {
       const depth = (material as THREE.Material).type === 'MeshDepthMaterial' || (material as THREE.Material).type === 'MeshDistanceMaterial';
       const pass = !o.inScene ? 'post' : depth ? 'shadow' : 'main';
       // Category is part of the key: unnamed meshes in different categories share the path '(unnamed Mesh)'.
-      const key = `${pass}|${o.cat}|${o.path}|${(material as THREE.Material).type}`;
-      const r = recs.get(key) ?? { path: o.path, cat: o.cat, pass, material: (material as THREE.Material).type, tri: 0, calls: 0 };
+      if (detail && pass === 'main') camAt = [camera.position.x, camera.position.y, camera.position.z].map(Math.round);
+      const area = detail ? areaOf(object, g) : undefined;
+      const program = detail ? (renderer.properties.get(material) as { currentProgram?: { id: number } }).currentProgram?.id : undefined;
+      const key = `${pass}|${o.cat}|${o.path}|${(material as THREE.Material).type}${detail ? `|${area}|${program}` : ''}`;
+      const r = recs.get(key) ?? { path: o.path, cat: o.cat, pass, material: (material as THREE.Material).type, tri: 0, calls: 0,
+        ...(detail ? { area, program, inst: 0, geoms: new Set<THREE.BufferGeometry>() } : {}) };
       r.tri += tri; r.calls++;
+      if (detail) {
+        r.geoms!.add(g); if (inst > 1) r.inst! += inst;
+        // A draw that will look its program up again (three's needsProgramChange): the material's
+        // version moved, or it alternates between instanced and plain objects, or instance colours.
+        const mp = renderer.properties.get(material) as { __version?: number; instancing?: boolean; instancingColor?: boolean };
+        const mat = material as THREE.Material;
+        const why = mp.__version !== undefined && mp.__version !== mat.version ? 'version'
+          : mp.instancing !== undefined && mp.instancing !== !!m.isInstancedMesh ? 'instancing'
+          : m.isInstancedMesh && mp.instancingColor !== undefined && mp.instancingColor !== !!m.instanceColor ? 'instanceColor' : '';
+        if (why) { r.relookups = (r.relookups ?? 0) + 1; r.why = why; }
+      }
       recs.set(key, r);
       return original.call(this, camera, sc, geometry, material, object, group);
     };
@@ -748,7 +779,19 @@ export const perf = {
         // Meshes City hid because they have no vertices (city/empty-draws.ts): their owners should check why.
         const hiddenEmpty: string[] = [];
         scene.traverse(o => { if (o.userData.emptyHidden) hiddenEmpty.push(owner(o).path); });
-        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80), hiddenEmpty });
+        if (!detail) { resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80), hiddenEmpty }); return; }
+        // Detail: every row, each with its unique geometry's vertices, index count and bytes.
+        const rows = all.map(({ geoms, ...r }) => {
+          let verts = 0, indices = 0, bytes = 0;
+          for (const g of geoms!) {
+            verts += g.attributes.position?.count ?? 0;
+            indices += g.index?.count ?? 0;
+            for (const a of [...Object.values(g.attributes), ...(g.index ? [g.index] : [])]) bytes += (a as THREE.BufferAttribute).array?.byteLength ?? 0;
+          }
+          const attrs = [...geoms!][0] ? Object.keys([...geoms!][0].attributes).sort().join(',') : '';
+          return { ...r, geoms: geoms!.size, verts, indices, bytes, attrs };
+        });
+        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), camera: camAt, areas: areaList.map(a => ({ id: a.id, bounds: a.bounds })), rows, hiddenEmpty });
       }); });
     });
   },
