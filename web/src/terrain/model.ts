@@ -11,6 +11,7 @@ import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
+import { createViewPoint, viewpointId } from '../city/viewpoint';
 import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
 import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
 import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
@@ -250,6 +251,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
+      : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
       : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
       : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
       : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
