@@ -1,7 +1,8 @@
+import { northAvenue } from './north-ave';
 import { readFileSync } from 'node:fs';
 import { Group, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { addSection, bounds, connect, joins, midtownRows, type Area, type Board } from '../square-board/sections';
+import { addSection, bounds, connect, joins, midtownRows, type Area, type Board, type TrafficArea } from '../square-board/sections';
 import { CITY_COLORS, cityLayer, groundAudit, type LayerResult } from './ground-audit';
 import { GroundGrid } from './grid';
 import { createDowntownTerrain } from './model';
@@ -23,14 +24,6 @@ afterEach(() => vi.unstubAllGlobals());
  * Connector work) and soft planting (shrub clumps sunk into a bank on purpose).
  */
 const HELD = ['rail ballast', 'ground cover', 'landscape primitives:tread', 'landscape primitives:stone'];
-/**
- * Graded cuttings (terrain/cutting.ts) now carve the bank under ground ballast. One
- * site remains: on midtown-south the ballast drops about 6 m over 6 m where the DEM
- * dips to a road under the tracks. That needs a rail structure or profile, not a cut.
- */
-const GRADED_CUTS = [
-  { minX: -840, maxX: -760, minZ: -1935, maxZ: -1820 },
-];
 /** Inside a convex ring (either winding), in plan. */
 function insideConvex(ring: readonly (readonly [number, number])[], x: number, z: number) {
   let sign = 0;
@@ -43,9 +36,6 @@ function insideConvex(ring: readonly (readonly [number, number])[], x: number, z
   }
   return true;
 }
-const exclude = (layer: string, x: number, z: number) => layer === 'rail ballast' &&
-  GRADED_CUTS.some(b => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ);
-
 it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging layers on %s', async quality => {
   const ctx = new Proxy({}, { get: () => () => {} });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
@@ -65,10 +55,19 @@ it.each(['high', 'low'] as const)('keeps the drawn terrain under ground-hugging 
     const underBridge = mounted.get('midtown-south')!.terrainAt(370.178, -1870.121);
     expect(underBridge).not.toBeNull();
     expect(underBridge!).toBeLessThan(-18.268 - .03);
+    const south = mounted.get('midtown-south') as TrafficArea;
+    const { city, roadHeight } = south.connectorBoard;
+    const under = city.roads.find(r => r.name === northAvenue.roadName && r.tunnel)!;
+    const over = city.roads.find(r => r.name === 'Marietta Street Northwest')!;
+    const crossing = northAvenue.point(9,4);
+    const zero = grid('midtown-south').manifest.vertical.sceneZeroNavd88M;
+    expect(roadHeight(...crossing,under)).toBeCloseTo(296.6-zero,2);
+    expect(roadHeight(...crossing,over)).toBeCloseTo(south.terrainAt(...crossing)!,4);
+    expect(roadHeight(...crossing,over)!-roadHeight(...crossing,under)!).toBeGreaterThan(5.4);
     const root = new Group();
     for (const area of mounted.values()) root.add(area.group);
     const audit = groundAudit(root, [...mounted].map(([id, area]) => ({ id, bounds: area.bounds, terrainAt: area.terrainAt, terrain: [area.board] })),
-      { layer: cityLayer, colors: CITY_COLORS, step: 0.5, tolerance: 0.03, exclude });
+      { layer: cityLayer, colors: CITY_COLORS, step: 0.5, tolerance: 0.03 });
     // The low tier carves stairs but does not drape (phone memory), so it holds the treads only.
     const tierHeld = quality === 'high' ? HELD : HELD.filter(l => l.startsWith('landscape primitives'));
     const held = (l: LayerResult) => tierHeld.includes(l.layer);

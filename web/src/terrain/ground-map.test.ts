@@ -49,3 +49,60 @@ it('keeps the rectangle ground maps within each tier budget on the GPU', async (
   expect(mb('low')).toBeGreaterThan(40);   // not silently blurred further
   expect(mb('high')).toBeLessThanOrEqual(410);
 });
+
+it('keeps North Avenue sidewalks under the covers and Marietta sidewalks on top', async () => {
+  const { northAvenue } = await import('./north-ave');
+  const ctx = {
+    depth: 0,
+    first: [0, 0] as P2,
+    moves: 0,
+    strokes: [] as { first: P2; clipped: boolean }[],
+    save() {
+      this.depth++;
+    },
+    restore() {
+      this.depth--;
+    },
+    clip() {},
+    rect() {},
+    beginPath() {
+      this.moves = 0;
+    },
+    moveTo(x: number, z: number) {
+      if (!this.moves++) this.first = [x, z];
+    },
+    lineTo() {},
+    closePath() {},
+    scale() {},
+    translate() {},
+    fill() {},
+    fillRect() {},
+    setLineDash() {},
+    stroke() {
+      this.strokes.push({ first: this.first, clipped: this.depth > 0 });
+    },
+  };
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const walk = (a: P2, b: P2) => ({
+    cls: 'footway',
+    name: null,
+    sub: 'sidewalk',
+    bridge: false,
+    tunnel: false,
+    pts: [a, b],
+  });
+  const lower = walk(northAvenue.point(95, 10), northAvenue.point(155, 10));
+  const upper = walk(northAvenue.point(10, -22), northAvenue.point(12, 22));
+  groundMap(
+    {
+      bounds: { minX: -1000, maxX: -600, minZ: -2000, maxZ: -1750 },
+      buildings: [],
+      rail: [],
+      roads: [lower, upper],
+    },
+    'low',
+    northAvenue,
+  ).dispose();
+  expect(ctx.strokes).toContainEqual({ first: lower.pts[0], clipped: true });
+  expect(ctx.strokes).toContainEqual({ first: upper.pts[0], clipped: false });
+});

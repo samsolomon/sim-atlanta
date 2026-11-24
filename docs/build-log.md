@@ -2987,6 +2987,38 @@ The purple bus photographed at the Phase One launch has two axles and a CNG roof
 
 A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
 
+### 2026-11-23 — Use the terrain itself as the roof over North Avenue
+
+From above, the active rail cover used to have a notch on each side of the
+railway. The separate roof and the bank were trying to describe the same piece
+of ground. We restored the upper formation to the terrain grid and cut out just
+the intervals where the lidar sees daylight. The tracks follow that surface
+across North Avenue. Marietta's pavement continues across on its own ground triangles. The three
+western strips initially read as grass. A muted gravel bed, weeds and a pair
+of rusty edge rails on each strip now distinguish the disused crossing from
+the active railway. [Close view of the three old bridges](log/north-ave/disused-bridges.jpg),
+`cam=-862,-1830,220,50,120`.
+
+Below them, two carriageways, sidewalks and a median run through the whole
+213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
+4.5 m railway clearance and the night lighting are inferred. On low, the
+structure and changed board mesh add 3,478 triangles and one draw with the
+existing ground texture. The two height queries at Marietta put a driver on
+the appropriate street even where both streets share the same map coordinates.
+
+| Camera | Day | Night |
+| --- | --- | --- |
+| Overview, `cam=-783,-1860,235,55,350` | [14:00](log/north-ave/shared-overview-day.jpg) | [23:00](log/north-ave/shared-overview-night.jpg) |
+| Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
+
+Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
+
+On the warehouse bank two mapped sidewalks kept going across the surface above
+their own tunnel. Following their direction through the cut placed that paint
+on the lower level. At the nearby fixed-grade building, all 472 perimeter
+samples matched the original ground at both tiers. The production board passed
+`pnpm test:perf` at both qualities. [Bank close-ups at low and high](log/north-ave/shared-banks.jpg).
+
 ### 2026-11-23 — The paths across The Prado
 
 At The Prado circle the mapped pedestrian ways run across several road legs and the verge in between. The ground painter now follows those ways but clips the white bars to the carriageways. Across two Ansley boards, 33 crossing ways join 83 mapped sidewalk ways. The phone gets the warm paver colour, while the high board carries hex joints and four small yield signs in its existing landscape mesh. [Circle, fork and crossing comparisons](log/ui/ansley-street-edge/README.md).
@@ -3094,14 +3126,14 @@ On the Galaxy A16 the default view measured 23.2 fps for the baseline and 23.9 f
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
 
-### 2026-11-23 — The cream block on The Prado
+### 2026-11-24 — A selection that leaves room for the train
 
-A 469 m² footprint was enough to push a 1905 Craftsman past the 450 m² limit for generated houses. Checking the address against the historic district survey and two street views gave us the missing silhouette: a broad side gable, a shingled front porch gable and an open bay over the drive. The gold shape in the foreground turned out to be a tree. [The original view, matched day and night, and the porch](log/ui/145-the-prado/README.md).
-
+At 390 × 760, the first tap now leaves the dock visible below a compact card with the next stop, its confidence and Follow. More and a swipe reveal the complete selection. Both sizes use the same live-updating card, so expanding it keeps the trip and Follow state. A feed arrival carries its own Live chip while a position drawn between track fixes reads Inferred. [Compact](log/ui/final-selection/compact.jpg) · [Expanded](log/ui/final-selection/expanded.jpg).
 
 ### 2026-11-23 — Lacebark elm starts with the bark
 
 The first lacebark elm pairs small, fine leaf cards with long arched boughs and mottled olive, tan and cinnamon bark. The surprise came when pulling back from the trunk: the bark patches stop reading before the overall silhouette does. The shader now fades them out once they are too small on screen. The mature tree costs 194 / 102 triangles with no new texture allocation. July Front luminance is 0.248 / 0.259 against the generic canopy’s 0.248. The first crown is more open and the bark smoother than in the photos. [Seasonal sheet, 100–300 m, and bark comparison](log/ui/tree-species/options-lacebark-elm.jpg). Lab study. Web rebuild only.
+
 ### 2026-11-23 — Colour before the whole board
 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
@@ -3134,6 +3166,14 @@ every frame and compares the final positions with a fresh seek.
 
 [The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)
 
+### 2026-11-23 — The cream block on The Prado
+
+A 469 m² footprint was enough to push a 1905 Craftsman past the 450 m² limit for generated houses. Checking the address against the historic district survey and two street views gave us the missing silhouette: a broad side gable, a shingled front porch gable and an open bay over the drive. The gold shape in the foreground turned out to be a tree. [The original view, matched day and night, and the porch](log/ui/145-the-prado/README.md).
+
 ### 2026-11-23 — Finding the walls under the Prado roof
 
 The street panorama put the porch posts and the five lower windows in the same frame. Rebuilding from the front grade gave the porch a visible floor and four steps, while one low side gable could span the stepped footprint. Across the twelve boards, 442 large footprints had a residential tag or sat in mapped residential land use. Only 85 qualified for these house finishes, including the Prado itself. [Street elevation, house comparisons and tower control](log/ui/145-the-prado/README.md).
+
+### 2026-11-24 — Radio in the dock
+
+The first radio player followed boards F07 and G13. Sam wanted more of the city to stay visible. The revised player fits the track and two 44 px touch targets in one 64 px row. On the 390 px phone, the card is 374 px wide and sits 12 px above the dock. Silent placeholder tracks read “No audio yet”. [Desktop before](log/ui/final-radio/desktop.jpg) · [After](log/ui/final-radio/desktop-compact.jpg) · [Phone before](log/ui/final-radio/phone.jpg) · [After](log/ui/final-radio/phone-compact.jpg).

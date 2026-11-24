@@ -412,13 +412,23 @@ out, then the map flattens.
 
 ## Radio
 
-- A button in the dock, off until tapped, because browsers block autoplay. Tapping opens
-  a small player above the dock (Final 07): track, progress, previous / play-pause / next,
-  volume, tagged "Music later" until the tracks exist.
-- Build it against a stub playlist. The music comes later: about 10 calm, SimCity-style
-  tracks, around 30 minutes in total.
+- A button in the dock, off until tapped, because browsers block autoplay.
+- **Compact player** (Sam, 2026-11-24; tighter than boards F07/G13): one row, about 64 px
+  tall, 300 px wide on desktop. 40×40 art (radius 8) · title 14 px / 600, one line, with a
+  12 px secondary-ink subtitle ("Track 2 of 10") · a 40 px round play/pause on the
+  separator tint and a 36 px next icon (44×44 hit areas). Progress is a 2 px line along the
+  panel's bottom edge, not draggable. No "Radio" header, no ✕ (the dock button toggles;
+  Esc or a tap outside closes), no previous button and no volume row (system volume).
+- **Phones:** the same row as a floating glass card 12 px above the dock, not a sheet.
+- While playing with the player closed, the dock's radio button shows a small playing
+  state.
+- Tracks: about 10 calm city-builder tracks, around 30 minutes, generated (our own coded
+  tracks plus ElevenLabs Music). ElevenLabs tracks live in their own folder, excluded from
+  the repository's code licence and marked not for reuse.
 
 ## Follow-ups (not in this build)
+
+- **Building selection:** add City building and landmark pick events, map known buildings to catalogue entries, and provide a building card with “See the model” where an entry exists. The Final selection PR covers trains, buses and freight.
 
 - **Street view:** the tilt slider continues past 70° to a second notch, and the camera
   drops to street level (drag to look, arrows to walk, ✕ to exit). Build from the

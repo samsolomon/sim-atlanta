@@ -1,3 +1,4 @@
+import { smoothGrade as smooth } from '../terrain/underpass';
 // Grant Street SE under the eight CSX tracks. Local geometry and NAVD88
 // evidence are documented in docs/king-freight-crossings.md.
 import type { MeshLambertMaterial } from 'three';
@@ -10,11 +11,6 @@ const deckNavd = 313.66;
 const centre = (z: number) => 1381.41 + ((z - 488.14) * 0.73) / 39.29;
 const roadNavd = (z: number) => 307.66 + (z - 488.14) * 0.0046;
 const edge = (x: number, south: boolean) => (south ? 527.5 : 486.5) - (x - 1382) * (south ? 0.37 : 0.34);
-const smooth = (distance: number, width: number) => {
-  const t = Math.max(0, Math.min(1, distance / width));
-  return t * t * (3 - 2 * t);
-};
-
 // Keep the street on the actual drawn triangles. Interpolate the two portal
 // returns across the occluded pavement, feathering the approach and verges
 // back into the DEM before either terrain tier chooses its triangulation.
