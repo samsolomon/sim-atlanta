@@ -250,7 +250,39 @@ function show(d: DayGroup) {
   full.onAfterRender = far ? restoreRange : Mesh.prototype.onAfterRender;
 }
 
-interface FarJob { group: DayGroup; geometry: BufferGeometry; meshes: Mesh[]; start: number; count: number; material: Mat; rep: Mesh }
+/** A class buffer's packing: positions = stored value (normalised, -1..1) * scale + centre. */
+interface Packing { cx: number; cy: number; cz: number; s: number }
+
+/**
+ * Packs a class buffer in place: positions as normalised Int16 within the cube `centre ± s`
+ * (s = half its largest extent; a 500 m cell gives ~7.6 mm steps), normals as normalised Int8.
+ * The meshes drawing it carry the cube as their transform, a uniform scale, so normals need no
+ * correction and no shader changes. 18 bytes less per vertex than floats.
+ */
+function pack(g: BufferGeometry): Packing | null {
+  if (compactVerticesOff) return null;
+  const pos = g.getAttribute('position') as BufferAttribute, nor = g.getAttribute('normal') as BufferAttribute | undefined;
+  g.computeBoundingBox();
+  const b = g.boundingBox!, c = b.getCenter(new Vector3()), size = b.getSize(new Vector3());
+  const s = Math.max(size.x, size.y, size.z, 0.02) / 2;
+  const P = pos.array as Float32Array, q = new Int16Array(P.length);
+  for (let i = 0; i < P.length; i += 3) for (let a = 0; a < 3; a++) {
+    const v = (P[i + a] - (a === 0 ? c.x : a === 1 ? c.y : c.z)) / s;
+    q[i + a] = Math.round(Math.max(-1, Math.min(1, v)) * 32767);
+  }
+  g.setAttribute('position', new BufferAttribute(q, 3, true));
+  if (nor) {
+    const N = nor.array as Float32Array, n8 = new Int8Array(N.length);
+    for (let i = 0; i < N.length; i++) n8[i] = Math.round(Math.max(-1, Math.min(1, N[i])) * 127);
+    g.setAttribute('normal', new BufferAttribute(n8, 3, true));
+  }
+  g.boundingBox = null;
+  g.boundingSphere = null;
+  return { cx: c.x, cy: c.y, cz: c.z, s };
+}
+const place = (mesh: Mesh, k: Packing | null) => { if (k) { mesh.position.set(k.cx, k.cy, k.cz); mesh.scale.setScalar(k.s); mesh.updateMatrix(); } };
+
+interface FarJob { group: DayGroup; geometry: BufferGeometry; meshes: Mesh[]; start: number; count: number; material: Mat; rep: Mesh; packing: Packing | null }
 type FarResult = { kept: Uint32Array | null; walls?: Uint32Array; colors?: Float32Array; dropped?: number };
 
 let worker: Worker | null = null;
@@ -296,14 +328,19 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
     const pos = g.getAttribute('position') as BufferAttribute, col = g.getAttribute('color') as BufferAttribute;
     const k = col.itemSize;
     const t0 = performance.now();
+    // The analysis works in metres: unpack positions if the buffer is packed.
+    const k0 = list[0].packing;
     const pending: Promise<FarResult>[] = [];
     for (const { start, count } of list) {
       // A downtown range runs to a few MB: copy it out a chunk per task.
       const P = new Float32Array(count * 3), C = new Float32Array(count * k);
-      const src = pos.array as Float32Array, cs = col.array as Uint8Array | Float32Array;
+      const src = pos.array as Float32Array | Int16Array, cs = col.array as Uint8Array | Float32Array;
       for (let v = 0; v < count; v += COPY_CHUNK / 4) {
         const e = Math.min(count, v + COPY_CHUNK / 4);
-        P.set(src.subarray((start + v) * 3, (start + e) * 3), v * 3);
+        if (k0) {
+          const c = [k0.cx, k0.cy, k0.cz];
+          for (let i = v * 3; i < e * 3; i++) P[i] = Math.max(-1, src[start * 3 + i] / 32767) * k0.s + c[i % 3];
+        } else P.set(src.subarray((start + v) * 3, (start + e) * 3), v * 3);
         C.set(cs.subarray((start + v) * k, (start + e) * k), v * k);
         if (e < count) await slice();
       }
@@ -320,8 +357,9 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
     const total = pos.count;
     const grown: Record<string, BufferAttribute> = {};
     for (const [name, a] of Object.entries(g.attributes) as [string, BufferAttribute][]) {
-      const it = a.itemSize, src = a.array as Float32Array | Uint8Array;
-      const dst = new (src.constructor as Float32ArrayConstructor | Uint8ArrayConstructor)((total + extra) * it);
+      const it = a.itemSize, src = a.array as Float32Array;
+      // Same array type as the buffer (float, or packed Int16/Int8/Uint8).
+      const dst = new (src.constructor as Float32ArrayConstructor)((total + extra) * it);
       // A class buffer runs to tens of MB: copy it a chunk per task.
       for (let c = 0; c < src.length; c += COPY_CHUNK) {
         dst.set(src.subarray(c, Math.min(src.length, c + COPY_CHUNK)), c);
@@ -368,6 +406,7 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
       fg.boundingBox = full.boundingBox!.clone();
       fg.boundingSphere = full.boundingSphere!.clone();
       const far = new Mesh(fg, job.material);
+      place(far, job.packing);
       far.name = 'landmark batch (far)';
       // The full version keeps casting (see hideFromView).
       far.castShadow = false;
@@ -539,6 +578,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       ranges.push({ from, to: i, start: s0, count: start - s0 });
     }
     const lodable = !!lod && !!merged.getAttribute('color') && !merged.getAttribute('uv');
+    const packing = pack(merged);
     const ck = `${cell}`;
     let cellGroup = cells.get(ck);
     if (!cellGroup) {
@@ -560,8 +600,10 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       else for (let i = start; i < start + count; i++) b.expandByPoint(v.fromBufferAttribute(pos, i));
       g.boundingBox = b;
       g.boundingSphere = b.getBoundingSphere(new Sphere());
-      cellGroup!.box.union(b);
       const mesh = new Mesh(g, material);
+      place(mesh, packing);
+      // The cell's box is in the container's frame; a packed mesh's bounds are in its own.
+      cellGroup!.box.union(b.clone().applyMatrix4(mesh.matrix));
       mesh.name = name;
       mesh.castShadow = rep.castShadow;
       mesh.receiveShadow = rep.receiveShadow;
@@ -604,7 +646,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
       }
       // The far version is computed off the main thread and arrives later; until then the cell
       // draws in full.
-      if (lodable) farJobs.push({ group: dayGroup, geometry: geo, meshes: classMeshes, start: range.start, count: range.count, material: dayMaterial, rep });
+      if (lodable) farJobs.push({ group: dayGroup, geometry: geo, meshes: classMeshes, start: range.start, count: range.count, material: dayMaterial, rep, packing });
       stats.nightDraws += dayGroup.runs.length;
       cellGroup.groups.push(dayGroup);
       days.push(dayGroup);
@@ -704,4 +746,11 @@ const compactColoursOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('colours') === 'float';
+})();
+
+/** `?perf&quant=off` keeps landmark batch positions and normals as floats, for A/B runs. */
+const compactVerticesOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('quant') === 'off';
 })();
