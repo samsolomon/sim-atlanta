@@ -1,4 +1,5 @@
-import { rng, type P2 } from '../vignette/geom';
+import type { P2 } from '../vignette/geom';
+import { litHash, seedOf } from './skin-kit';
 import type { localLandmarkShell } from './landmark-shell';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
@@ -43,7 +44,8 @@ export function fourSeasons(shell: Shell) {
       draw(a, b, Math.hypot(b[0] - a[0], b[1] - a[1]));
     });
 
-  const random = rng(1992);
+  const seed = seedOf('osm:way:269843469');
+  let wall = 0;
   /**
    * Punched windows on a wall from `a` to `b` (building on the left), within the
    * 2,400-triangle landmark budget: one dark glass strip per bay column, a stone
@@ -56,12 +58,12 @@ export function fourSeasons(shell: Shell) {
     const dx = (b[0] - a[0]) / len, dz = (b[1] - a[1]) / len;
     const at = (t: number, y: number, off: number) => [a[0] + dx * t + dz * off, y, a[1] + dz * t - dx * off];
     const count = Math.max(1, Math.round(len / bay)), rows = Math.max(1, Math.round((hi - lo) / pitch));
-    const step = (hi - lo) / rows, sill = step * .19;
+    const step = (hi - lo) / rows, sill = step * .19, face = wall++;
     for (let i = 0; i < count; i++) {
       const l = (i + (1 - fill) / 2) * len / count, r = (i + (1 + fill) / 2) * len / count;
       body.quad(at(l, lo + sill, .07), at(l, hi - sill, .07), at(r, hi - sill, .07), at(r, lo + sill, .07), glass[i % glass.length]);
       for (let j = 0; j < rows; j++)
-        if (random() < occupancy)
+        if (litHash(seed, face, j, i) < occupancy)
           lights.quad(at(l, lo + j * step + sill, .11), at(l, lo + (j + 1) * step - sill, .11),
             at(r, lo + (j + 1) * step - sill, .11), at(r, lo + j * step + sill, .11), glass[0]);
     }

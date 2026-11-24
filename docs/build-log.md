@@ -3487,3 +3487,23 @@ TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" wi
 ### 2026-11-24 · Two Peachtree Pointe across a board seam
 
 Two Peachtree Pointe sits on the seam between two Brookwood boards, so each board builds its half from absolute lidar heights and skips the shared wall. Three surfaces carry the photographs: blue ribbon glass on the curved south bay, a cream precast grid of punched windows on the block, and a crown that climbs 5.5 m toward the west. The lidar matches the published heights to within half a metre: the block roof is 66 m and the crown tops out at 77.8 m. [Day](log/ui/two-peachtree-pointe/day.jpg) · [Curve and crown](log/ui/two-peachtree-pointe/curve.jpg)
+
+## 2026-11-24: Regions Plaza, and a false alarm about windows
+
+Regions Plaza is now pink granite. It has notched corners at 84 m, an arched top storey with pinnacles, and a hip roof that the lidar puts at 104 m. At night that roof is floodlit as one even glow, as in the Commons night photo. The near-black windows at noon looked like a geometry bug. I briefly suspected litFacade's winding and warned the lead, then retracted it. The real cause was the tall neighbour's shadow falling across the face. A sunlit strip of the same face measures S 12–16%, V 43–46%. The lesson: measure the pixels where the sun actually falls before blaming the mesh.
+[Before and after](log/ui/regions-plaza/compare.jpg) · [day and night](log/ui/regions-plaza/daynight.jpg) · [close](log/ui/regions-plaza/close.jpg)
+
+### 2026-11-24 · One Georgia Center's marble grid
+
+The 113 m tower at 600 West Peachtree had no name in the data. A reverse lookup and the OSM tags (built 1968) identified it as One Georgia Center, the Life of Georgia headquarters, clad in white Georgia marble. Its face is a deep eggcrate: close vertical fins and projecting floor slabs over pale glass. In City it is drawn as full-height marble strips and slabs standing 0.9 m off a glass box, with a colonnade base and a solid ribbed band at the top. The grid shades its own panes. The first glass colour passed the palette table, but the rendered-pixel check measured sunlit glass at V 37, under the floor, so the base went up to V 76 and the panes landed at V 42. A 2020 Commons night photo shows the marble uplit cool white. The first version lit the whole frame flat from pavement to crown, which read as a daytime texture pasted into the night, so the floodlight is now three height bands that fall to a third at the crown. The building is landmark tier: about 1,600 low-tier triangles and five meshes. [Before and after](log/ui/one-georgia-center/compare-west.jpg)
+
+### 2026-11-24 · SkyHouse South in white and teal
+
+SkyHouse South on 6th Street was a generic 90 m block. The 2019 lidar puts its roof at 75.6 m, with a set-back sky deck to 79.5 m. The property photograph supplied the rest: a white precast frame around teal-green glass, balcony stacks at the corners and centre, and a blue glass band under the deck. It is the first skin built under the provisional glass rules. Its photo-matched teal at V 66 rendered too dark in sun, so the base went up to V 75 to land sunlit windows at V 40–42. On the phone tier it costs about 190 triangles and one draw. [Before/after, day and night](log/ui/skyhouse-south/README.md)
+
+### 2026-11-24 · Norfolk Southern from roof slabs to towers
+
+OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13, floating over thin end masses, and the 2019 lidar predates the site. The sources didn't agree on storey counts: HOK says 17- and 10-storey towers over a five-storey podium, the structural engineer says 12 and 5 over 11, and CoStar says 22. City takes HOK's 22 and 15 floors and keeps OSM's massing by shifting its levels up two, which gives 86 m and 58 m, both inferred. Each tower is two knife-edged glass halves either side of a slot 2 m lower, as in the photos. [Before and after](log/ui/norfolk-southern/day-before-after.jpg) · [night](log/ui/norfolk-southern/night-before-after.jpg)
+
+
+**2026-11-24 — The Hard Rock building was a third of its height.** Overture gave the corner block at Peachtree and International 69.3 m, which made it a plain grey tower among the Peachtree Center towers. The 2019 lidar measures the roof at 22–26 m. Street View shows a pale stone six-storey block, with paired windows between flat piers and maroon awnings over the restaurant. The model draws that and leaves off the neon guitar and the rooftop sign, which are logos. It is a downtown landmark, so it also joins the batcher's `listed` array. [Captures and references](log/ui/hard-rock-building/README.md)
