@@ -4,6 +4,7 @@
  * sidewalks, the MARTA line (tunnel portal, open cut, viaduct), freight tracks,
  * detailed buildings and trees.
  */
+import { boxFromVertices, type FarBox } from '../city/far-board';
 import * as THREE from 'three';
 import { runSync } from '../core/slice';
 import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
@@ -189,6 +190,8 @@ const TRENCH = 6.5; // the Downtown Connector runs below street level here
 
 export class World {
   readonly group = new THREE.Group();
+  /** One far-board box per building drawn by buildBuildings (city/far-board.ts). */
+  readonly farBoxes: FarBox[] = [];
   /** 0 by day → 1 at night: lit windows. */
   readonly night = { value: 0 };
   readonly b: VData['bounds'];
@@ -847,7 +850,10 @@ export class World {
 
   /** buildBuildings as a build that yields every few buildings (core/slice.ts). Each building
    * draws from its own seeded stream, so where it yields never changes the result. */
-  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
+  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined,
+    /** Also fill farBoxes (city/far-board.ts). Off by default: a near build (house tiles) never draws
+     * them, and the oriented-box fit is about a third of its cost. */
+    withFarBoxes = false) {
     const b = new Builder();
     const shopLights = new Builder();
     const style: number[] = [];
@@ -856,7 +862,23 @@ export class World {
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
     let n = 0;
+    // One far-board box per building (city/far-board.ts), from the vertices it just added. Walls
+    // with procedural windows read darker from afar than their vertex colour.
+    let bdStart = 0;
+    let farRing: number[] | undefined;
+    const farBox = () => {
+      const end = b.pos.length / 3;
+      if (withFarBoxes && end - bdStart >= 3) {
+        let windows = 0;
+        for (let i = bdStart; i < end; i++) if ((style[i] ?? -1) >= 0) windows++;
+        const box = boxFromVertices(b.pos, b.col, bdStart, end, 1 - 0.3 * windows / (end - bdStart), farRing);
+        if (box) this.farBoxes.push(box);
+      }
+      bdStart = end;
+    };
     for (const bd of this.data.buildings) {
+      farBox();
+      farRing = undefined;
       if (++n % 6 === 0) yield 'buildings';
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
@@ -889,7 +911,9 @@ export class World {
       }
       const shop = bd.parts?.length ? null : woodruffLot(bd);
       for (const mass of masses) {
+      farBox(); // one far box per mass: a podium and its tower are two boxes, not one fat one
       const outer = mass.rings[0];
+      farRing = outer?.flat();
       if (!outer || outer.length < 3) continue;
       const before = b.pos.length / 3;
       const h = mass.h;
@@ -959,6 +983,7 @@ export class World {
       }
       }
     }
+    farBox();
     // Painted shop glass shares the building draw. Only this glass receives the
     // subdued interior light when the City's existing night uniform comes up.
     for (let i = 0; i < shopLights.pos.length; i += 3) {
@@ -978,6 +1003,7 @@ export class World {
     this.group.add(mesh);
     const cm = instanced(new THREE.BoxGeometry(1, 1, 1), '#ffffff', clutter);
     clutterCol.forEach((c, i) => cm.setColorAt(i, c));
+    cm.userData.roofClutter = true; // hidden with the buildings by a far-board area
     this.group.add(cm);
   }
 
