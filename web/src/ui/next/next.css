@@ -18,7 +18,7 @@
   --a2-track: rgba(60, 45, 30, 0.12);
   --a2-chip: rgba(255, 255, 255, 0.95);
   --a2-chip-sh: 0 1px 3px rgba(40, 30, 20, 0.16), 0 0 0 0.5px rgba(60, 45, 30, 0.12);
-  /* Text on a solid --a2-ink fill (selected 3D chip, tilt readout). */
+  /* Text on a solid --a2-ink fill (tilt readout). */
   --a2-on-ink: #fff;
   --a2-north: #c2255c;
   --a2-timetable: var(--sched);
@@ -573,7 +573,13 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-appbar :is(.a2-ib,.a2-vs), .a2-camera .a2-ib { min-width: 44px; min-height: 44px; }
 .a2-eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--a2-ink2); }
 .a2-camera { top: var(--a2-top); bottom: auto; }
-.a2-three-d[aria-pressed=true] { background: var(--a2-ink); color: var(--a2-on-ink); }
+.a2-camera .a2-three-d[aria-pressed=true] {
+  position: relative; isolation: isolate; background: transparent; color: var(--a2-ink); font-weight: 600;
+}
+.a2-camera .a2-three-d[aria-pressed=true]::before {
+  content: ''; position: absolute; inset: 3px; z-index: -1; pointer-events: none;
+  border-radius: 13px 13px 9px 9px; background: var(--a2-chip); box-shadow: var(--a2-chip-sh);
+}
 .a2-tilt { writing-mode: vertical-lr; width: 44px; height: 48px; margin: 6px 0; accent-color: var(--a2-ink); }
 /* The app focus ring, not the browser's default blue (the slider is an input, so the .a2-g button rule misses it). */
 .a2-tilt:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: -2px; border-radius: 10px; }
