@@ -1,3 +1,4 @@
+import type { Underpass } from './underpass';
 import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
 import * as THREE from 'three';
 import { segDist, type P2 } from '../vignette/geom';
@@ -75,7 +76,7 @@ export function groundMapSize(bounds: TerrainCity['bounds'], quality: TerrainQua
 }
 
 /** The board carries ground detail, so slopes, voids and rail openings share its geometry. */
-export function groundMap(data: TerrainCity, quality: TerrainQuality) {
+export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?: Underpass) {
   const canvas = document.createElement('canvas');
   Object.assign(canvas, groundMapSize(data.bounds, quality));
   const ctx = canvas.getContext('2d')!;
@@ -111,8 +112,19 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
   function stroke(r: PaintRoad, width: number, color: string | CanvasPattern) {
+    const hidden = underpass && r.name===underpass.roadName;
+    if(hidden){
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(b.minX,b.minZ,b.maxX-b.minX,b.maxZ-b.minZ);
+      const s0=underpass.spans[0].start,s1=underpass.spans.at(-1)!.end;
+      const stations=[s0,...underpass.breaks.filter(s=>s>s0 && s<s1),s1];
+      const ring=[...stations.map(s=>underpass.point(s,-24)),...stations.reverse().map(s=>underpass.point(s,24))];
+      trace(ctx,ring);ctx.closePath();ctx.clip('evenodd');
+    }
     ctx.beginPath(); trace(ctx, r.pts);
     ctx.lineWidth = width; ctx.strokeStyle = color; ctx.stroke();
+    if(hidden)ctx.restore();
   }
   // Sidewalks go down first so a casing can't cut across the next intersection.
   for (const r of roads) if (streets.has(r.cls)) stroke(r, roadWidth(r) + 5, PAL.sidewalk);

@@ -1,4 +1,5 @@
 import { crownKey } from '../trees/rollout';
+import { underpassMesh, type Underpass } from './underpass';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
@@ -44,6 +45,7 @@ export interface DowntownTerrainOptions {
   quality: TerrainQuality;
   simpleLeafClumps?: boolean;
   /** Optional continuous road axes for the painted terrain surface. */
+  underpass?: Underpass;
   boardRoads?: TerrainCity['roads'];
   boardDetails?: (builder: Builder, ground: (x:number,z:number)=>number|null, material: THREE.MeshLambertMaterial) => void;
   join?: TerrainJoins;
@@ -66,10 +68,10 @@ function checkBounds(grid: GroundGrid, city: VData) {
 }
 
 function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuality, contours: Contours,
-  join?: TerrainJoins, bottom = mesh.minY - mesh.grid.manifest.stepM, details?: DowntownTerrainOptions['boardDetails']) {
+  join?: TerrainJoins, bottom = mesh.minY - mesh.grid.manifest.stepM, details?: DowntownTerrainOptions['boardDetails'], underpass?: Underpass) {
   const { vertical, bounds: b } = mesh.grid.manifest;
   const geometry = mesh.geometry;
-  const material = new THREE.MeshLambertMaterial({ map: groundMap(city, quality) });
+  const material = new THREE.MeshLambertMaterial({ map: groundMap(city, quality, underpass) });
   // Draw true 2 m contours on the interpolated triangle surface, antialiased in screen space.
   material.onBeforeCompile = shader => {
     shader.uniforms.uContours = contours;
@@ -189,7 +191,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
-  const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails);
+  const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
+  const trench=options.underpass && underpassMesh(options.underpass,city,options.quality,bare,grid.manifest.vertical.sceneZeroNavd88M);
+  if(trench)board.add(trench.group);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
@@ -347,6 +351,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
     setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
+      trench?.setWet(factor);
       board.material.color.setScalar(1 - 0.3 * factor);
       scenery.setWet(factor);
       houses.setWet(factor);
@@ -355,6 +360,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     },
     dispose() {
       group.removeFromParent();
+      trench?.dispose();
       board.material.map?.dispose();
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }
