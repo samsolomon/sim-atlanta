@@ -1,3 +1,97 @@
+# Phone performance handoff: Claude Opus to Codex (2026-11-24 morning)
+
+From `orca_session_id:48e90760-403c-4eb9-940d-0d1f0fc0ade8` (Claude Opus, worktree `studio-phone-perf`).
+Read that session's history with `orca agent read`. This section supersedes everything below it.
+Coordinator: the Air session `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. Merge slots: the skyline lead
+`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`. Every status goes by `orca orchestration reply`.
+
+## Where things stand
+
+The A16 target is met at the default view on stack 3e: 65-67 fps at one vsync (p50 11.2 ms), 64 on
+route:north, 62.7 at night. Release builds read 26-28 fps. The pieces, all approved by Sam today:
+far-board buildings (#613), flat glass on low (#420), landmark day LOD (#524, merged), far shadows
+(#520, merged), and the traffic frame cut (#592) and static matrix freeze (#552, merged). A16 frame time is a
+step function of total cost at 11.1 / 22.2 / 33.3 ms (90 Hz). Report render + update (+GPU) against those
+lines, not fps alone. Sam's decision page: https://claude.ai/artifact/HQdi2Xwpe5pXEPw3V194Xr (private to Sam).
+
+**The open problem is 6-12 km.** A16 on 3e: 6 km 48 fps (178 calls, render 9.5), 9 km 42 fps (253 calls,
+render 12.2). Target from the coordinator: 6 km at one vsync; 9 km best effort (a steady two vsyncs is
+acceptable for now).
+
+## PRs and their status
+
+| PR | Owner | Status |
+| --- | --- | --- |
+| #593 long-task gate (`low-north`, `low-zoomout` in test:perf) | phone-perf | **Merged** 793e1d93 |
+| #520 low far shadows | phone-perf | **Merged** fbf396d1 |
+| #613 far-board buildings | perf-buildings, now Codex | Approved by Sam; my gate passed at 89adda5e (north 289-346 vs main 310-354; zoomout one 222 ms task, slicing follow-up promised). Slotted after #420, #654. |
+| #646 house near build off the frame, then #651 | tree lab | My rerun: north 70-90 ms, no task over 100 (main 310-354). Approved from perf. Slotted after #613. |
+| #435 streaming prototype (`?stream=1`) | author gone; **mine to merge** | Sam approved as is. The lead calls it after #649, #420 and the band fix. My squash in a scratch worktree is **not pushed and is stale** (predates #593/#520 in perf.ts and perf-run.mjs): redo it on current main. Squash is fine (its 28 commits conflict one by one). Flag-off must be look-neutral: pixel diff at 420 m, 3 km, default **plus a tap test**, because `pick.ts`'s hidden-ancestor check is not behind the flag. |
+| ratchet low-north 650 -> 300 | phone-perf | Send after #646/#651 land; the lead has a slot for it. Main reads north 310-378 today; with #646, 70-90. |
+| forceSinglePass on 10 two-pass transparent materials | phone-perf | Approved by the coordinator, **not started**. The 1180 Peachtree veil, World of Coca-Cola sign and bottle frost, Hilton flood, Georgia Aquarium signs, College Football HoF sign, Coda gallery glass, streetcar stop panes. Each costs 2 draws and 2 getProgram key rebuilds every frame (three flips `side` with `needsUpdate`). Day and night close-ups per building; any that sorts wrong stays two-pass. |
+| frost only on open sheets | phone-perf | After #420 lands, held for Sam. |
+| `samsolomon/far-board-draws` (78a4fcd1) | phone-perf | Measurement tooling, not a PR yet: `captureDraws({ detail: true })` (rows by area, program, material look, geometry bytes, per-frame program re-lookups), `?perf&landmarkcell=<m>`. |
+
+## Sam's decisions today that bind this area
+
+Flat glass on low (#420); far-board buildings (#613); landmark distance LOD (#524); far shadows (#520);
+tree far form (#450); streaming merged behind `?stream=1` with no further expansion work (expansion paused);
+the 0.45 shade floor; 1075 glass option B; generic buildings are the priority (studio-generic-buildings,
+#644). Mirrored glass (Westin, Truist, Georgia Power) stays: the A16 showed it free. Nearer far-board
+threshold (6/9 km): **Sam's look call, pending**; perf-buildings' pairs are with the coordinator (night loses
+crown glow and sparkle).
+
+## Coordinator rulings still open
+
+- Plan B before plan (c): look-neutral building draw cuts first, then the terrain/landscape/transport far form,
+  then nearer far-board only if Sam wants it.
+- Per-area landmark cells: ship as its own small PR with four-view numbers and A16 at 420 m and 9 km;
+  check triangles at close views and use a middle size or distance gate if they rise.
+- The recount the coordinator asked for (not yet done): building draws at 9 km over batchable meshes only,
+  **by day and at night**, plus unbatched landmark parts by reason (texture, transparent, hooked), then an
+  order by draws saved per day of work. Candidates: a texture atlas for signs (#611 has an atlas cache),
+  transparent parts merged per area with a fixed sort, hooked library materials moved to the vertex-colour path.
+
+## Measurements to build on
+
+- 9 km on main (Studio, low, A16 canvas): 266-271 draws, buildings 152 (62 distinct (area, program),
+  82 distinct (area, program, look)), trees 33, terrain 30, transport 24, vehicles 20, landscape 10.
+  Of the buildings: about 41 landmark batch draws, 14 house blocks, the rest mostly unbatched landmark parts.
+  So plan (c) as scoped saves only 13-28 draws there.
+- Landmark cell size (`?perf&landmarkcell=`, main 4c527bca + far-board-draws, Studio 6x): 500 / 1500 / 10000 m.
+  420 m Midtown 68/67/67 calls (tris 1.53M/1.56M/1.56M); 420 m downtown 104/103/103 (1.95M/2.08M/2.08M, +7%);
+  6 km 187/173/171 (1.48M/1.56M/1.57M); 9 km 266/239/235; default 381/350/347. **1500 m gets most of the
+  gain.** Since #524 the cell is also the LOD unit (far beyond 3.5 km of the cell box), so a bigger cell is
+  NOT pixel-identical: pixel diffs still to do. Render-ms columns were noisy (load ~30).
+- Far-board nearer (A16, CSS glass): 6 km 187 -> 122 calls, render 9 -> 5.8 ms with `&farm=5500`;
+  9 km 266 -> 186, render 10.1 -> 8.5 with `&farm=8500`.
+- BatchedMesh: the A16 (Mali-G68, ANGLE GLES) has WEBGL_multi_draw and MAX_TEXTURE_SIZE 8192. The advisor's
+  view: prefer HouseBlock's pattern (one per-area buffer per class, drawn whole when far, per-cell ranges near)
+  over BatchedMesh. No new programs, no matrix texture fetch on the Mali, no per-frame instance loop.
+- Per-draw CPU cost: about 45-48 us per draw on the A16 at 1x; the Studio at 6x matches it (about 46 us).
+- A16 CPU profile (stack 3b): setProgram 30.8% (uniforms 9.9, getProgram 4.2, clipping setState+projectPlanes
+  6.7). three already sorts opaque draws by material id; distinct materials are the knob.
+
+## Next steps, in order
+
+1. #435 when the lead calls it (see the table).
+2. The 9 km recount (day and night, batchable only, unbatched by reason) and the ordered proposal to the coordinator.
+3. The per-area (1500 m) landmark cell PR: pixel diffs at four views, triangles, A16 at 420 m and 9 km.
+4. The low-north ratchet PR after #646/#651.
+5. forceSinglePass with close-ups; frost-only-on-open-sheets after #420.
+6. Plan (c) for terrain/landscape/transport once the building cuts land.
+
+## Gotchas
+
+- Shared Studio: never pkill or killall by pattern. Launch your own Chrome (port 0, own user-data-dir) and kill only PIDs you started. Load average sits near 30, so alternate arms and run 3+ per arm.
+- Long-task attribution: profile with CDP from navigation on an unminified build (`vite build --minify false`), then map the samples onto `summary.longTasks`. perf.ts sets no `PERF_SAMPLING` title, and perf-trace only buffers about 2 s.
+- Before reading test:perf output, check that `/tmp/*-p.log` is newer than the build log. A stale `perf=` line fooled a wait loop once.
+- `gh pr merge` fails on drafts: mark the PR ready first.
+- A16 runs go through the coordinator: frozen `vite build --outDir <scratch>` copies served with `vite preview --host 0.0.0.0` on 46xx ports.
+- Before every merge: rebase, then `pnpm build` on the final head, then `pnpm test` and `pnpm test:perf`, then merge with a merge commit and quote `gh pr view N --json state,mergeCommit`.
+
+---
+
 # Phone performance handoff to Claude Opus
 
 2026-11-23, from `orca_session_id:c74d45e5-b1c7-4503-ad83-5440c1631917`. This section supersedes every earlier task list below. Current branch `samsolomon/low-program-headroom`, draft [#391](https://github.com/samsolomon/sim-atlanta/pull/391), base `59b8cbc9` including #377 and #381. Implementation `e5137af0`, initial evidence `d721ee3a`. **Hold #391 and #326 until the Air coordinator relays Sam’s OK.** #326 is the separate open budgets proposal on `samsolomon/studio-phone-budgets`; its measurements predate these changes. Deployment belongs to the coordinator.
