@@ -79,7 +79,7 @@ import { groundMap } from './ground-map';
 import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
-import { rolloutPlantings, rolloutRow, rolloutSpecies, treeMode } from '../trees/rollout-city';
+import { buildRolloutRow, rolloutPlantings, rolloutSpecies, treeMode } from '../trees/rollout-city';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -382,7 +382,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const namedReplace = named.length ? replacedBy(named) : null;
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
   const drawTrees = treeMode(typeof location === 'undefined' ? '' : location.search);
-  const rollout = options.rollout ? rolloutRow({
+  const rollout = options.rollout ? yield* buildRolloutRow({
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },

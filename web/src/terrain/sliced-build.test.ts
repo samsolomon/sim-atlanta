@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { runEveryStep, runSync } from '../core/slice';
@@ -56,5 +56,26 @@ it.each(['low', 'high'] as const)('a Midtown row built with a yield after every 
   sliced.dispose();
   expect(steps).toBeGreaterThan(8);
   expect(a.draws).toBeGreaterThan(20);
+  expect(b).toEqual(a);
+});
+
+// The staged rows (pnpm data) carry the canopy crowns the prototype fixture lacks, so generic
+// trees, their seasons and the tree rollout are covered too.
+const staged = new URL('../../public/data/scene/square-board/brookwood-south/', import.meta.url);
+const hasStaged = existsSync(new URL('context.json', staged));
+it.skipIf(!hasStaged).each(['low', 'high'] as const)('a staged Brookwood row with its crowns builds the same sliced as synchronously on %s', async quality => {
+  const ctx = new Proxy({}, { get: () => () => { } });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const g = () => new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', staged), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', staged))).buffer);
+  const c = JSON.parse(readFileSync(new URL('context.json', staged), 'utf8'));
+  const options = () => ({ quality, bottomY: -48, join: joins('brookwood-south'), lights: midtownLights,
+    rollout: { row: 'brookwood-south', lowCount: c.treeLowCount, allCrowns: c.trees } });
+  const sync = runSync(buildDowntownTerrain(g(), c, neighborhoodTrees(c, quality), options()));
+  const a = fingerprint(sync.group);
+  sync.dispose();
+  const sliced = await runEveryStep(buildDowntownTerrain(g(), c, neighborhoodTrees(c, quality), options()), () => { Math.random(); });
+  const b = fingerprint(sliced.group);
+  sliced.dispose();
+  expect(c.trees.length).toBeGreaterThan(100);
   expect(b).toEqual(a);
 });
