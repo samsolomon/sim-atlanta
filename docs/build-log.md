@@ -3335,7 +3335,7 @@ The mapped outline for 1075 Peachtree breaks the site into seven parts. The tall
 
 ### 2026-11-24 · 712 West Peachtree, 250 triangles
 
-The 2021 office tower postdates the lidar, so for once the mapped heights stand: an 88 m shaft, a 60 m core and a 25 m deck. The skin is nearly all material. Library curtain glass in deep blue gives it a 1.5 m mullion and a 3.83 m floor line. Two paler floors sit under the roof, a thin dark reveal runs 4 m in from each corner, and the deck has an open band per level. At 23:30 it is a dark office among lit apartment towers. The whole skin is 250 triangles (200 for the shell, 50 for lamps). One trap: a scene z axis that points south put the deck's open bands against the tower wall on the first try. [Day](log/ui/712-west-peachtree/day.jpg) · [Night](log/ui/712-west-peachtree/night.jpg)
+The 2021 office tower postdates the lidar, so for once the mapped heights stand: an 88 m shaft, a 60 m core and a 25 m deck. The skin is nearly all material. Library curtain glass in deep blue gives it a 1.5 m mullion and a 3.83 m floor line. Two paler floors sit under the roof, a thin dark reveal runs 4 m in from each corner, and the deck has an open band per level. At 23:30 it is a dark office among lit apartment towers. The first skin was 250 triangles of flat navy; review sent it back as a recolour, and the second carries spandrels, fins, a cap and a penthouse in about 600. One trap: a scene z axis that points south put the deck's open bands against the tower wall on the first try. [Day](log/ui/712-west-peachtree/day.jpg) · [Night](log/ui/712-west-peachtree/night.jpg)
 
 ### 2026-11-23 · Nomia, a tower newer than the lidar
 

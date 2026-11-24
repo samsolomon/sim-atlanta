@@ -28,8 +28,11 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
   };
   const datum = site.floorY === undefined ? s.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const roof = datum + tower.h, garageTop = datum + podium.h, random = rng(712);
-  const blue = '#2f4a6b', pale = '#7d9cbf', reveal = '#1b2838', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
-  const glass = surfaces.curtainGlass({ tint: 'blue', mullion: 1.5, floor: 3.83 });
+  // Glass value sits with the neighbouring curtain walls; spandrels and fins carry the rhythm.
+  const blue = '#66819c', spandrel = '#8a9bad', fin = '#aab6c2', pale = '#97adc2', reveal = '#3d5168',
+    transition = '#40566e', cap = '#c9ccd0', concrete = '#c3bfb6', slot = '#3b4148', roofGrey = '#8f918f';
+  const FLOOR = 3.83;
+  const glass = surfaces.curtainGlass({ tint: 'blue', mullion: 1.5, floor: FLOOR });
   const top = roof - 7.7;
 
   const shaft = local(tower.rings[0]);
@@ -48,28 +51,42 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
     s.body.quad([gx0 - 0.06, y, gz0], [gx0 - 0.06, y + 1.4, gz0], [gx0 - 0.06, y + 1.4, gz1], [gx0 - 0.06, y, gz1], slot);
   }
 
-  // Details follow the mapped shaft edges (the south wall steps twice). Each long edge gets
-  // a dark reveal 4 m in from either end; short returns stay plain glass.
-  const lo = garageTop;
+  // Details follow the mapped shaft edges (the north wall steps twice where the deck meets it).
   const edges = shaft.map((a, i): [P2, P2] => [a, shaft[(i + 1) % shaft.length]])
     .filter(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]) >= 10);
   for (const [a, b] of edges) {
     // local() makes the ring counter-clockwise in (x, z), so (dz, −dx) points outward.
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n: P2 = [(b[1] - a[1]) / len, -(b[0] - a[0]) / len];
     const at = (t: number, y: number, d = 0.08) => [a[0] + t * (b[0] - a[0]) + n[0] * d, y, a[1] + t * (b[1] - a[1]) + n[1] * d];
+    const strip = (t0: number, t1: number, y0: number, y1: number, colour: string, d = 0.08) =>
+      s.body.quad(at(t0, y0, d), at(t0, y1, d), at(t1, y1, d), at(t1, y0, d), colour);
+    // Only the north faces rise from the deck roof; the others run down to the street, where
+    // a 6 m lobby storey sits under the first spandrel.
+    const onDeck = n[1] < -0.9, lo = onDeck ? garageTop : datum + 6;
+    if (onDeck) strip(0, 1, lo, lo + FLOOR, transition, 0.06);
+    // A spandrel band at every floor line, then a parapet cap.
+    for (let y = lo + FLOOR; y < roof - 1; y += FLOOR) strip(0, 1, y - 0.45, y + 0.45, y > top ? cap : spandrel, 0.1);
+    strip(0, 1, roof - 0.9, roof + 0.4, cap, 0.12);
+    // Mullion fins every 3 m, and a deep reveal 4 m in from each end of a long face.
+    const fins = Math.round(len / 3);
+    for (let k = 1; k < fins; k++) {
+      const t = k / fins, w = 0.12 / len;
+      if (len >= 16 && (Math.abs(t * len - 4) < 1.5 || Math.abs((1 - t) * len - 4) < 1.5)) continue;
+      strip(t - w, t + w, lo + FLOOR, top, fin, 0.14);
+    }
     if (len >= 16) {
-      for (const t of [4 / len, 1 - 4 / len]) {
-        const w = 0.45 / len;
-        s.body.quad(at(t - w, lo), at(t - w, roof), at(t + w, roof), at(t + w, lo), reveal);
-      }
+      for (const t of [4 / len, 1 - 4 / len]) strip(t - 0.45 / len, t + 0.45 / len, lo + FLOOR, roof - 0.9, reveal, 0.16);
     }
     // Offices are mostly dark by 23:30: a stable few panes per floor stay lit.
-    for (let y = lo + 0.5; y + 3 < top; y += 3.83) {
+    for (let y = lo + FLOOR + 0.5; y + 3 < top; y += FLOOR) {
       if (random() > 0.35 * len / 48) continue;
       const w = Math.min(0.5, (1.5 + random() * 3) / len), t = 0.05 + random() * (0.9 - w);
       s.lights.quad(at(t, y, 0.05), at(t, y + 2.6, 0.05), at(t + w, y + 2.6, 0.05), at(t + w, y, 0.05), blue);
     }
   }
+  // A set-back rooftop penthouse.
+  const [cx, cz] = [shaft.reduce((m, p) => m + p[0], 0) / shaft.length, shaft.reduce((m, p) => m + p[1], 0) / shaft.length];
+  s.prism([[cx - 10, cz - 8], [cx + 10, cz - 8], [cx + 10, cz + 8], [cx - 10, cz + 8]], roof, roof + 4.6, '#5d6f82', '#7f8486');
   // The lobby glass on West Peachtree (the long west edge), lit after dark.
   const [la, lb] = edges.reduce((best, e) => (e[0][0] + e[1][0] < best[0][0] + best[1][0] ? e : best));
   const lobby = (t: number, y: number) => [la[0] + t * (lb[0] - la[0]) - 0.06, y, la[1] + t * (lb[1] - la[1])];

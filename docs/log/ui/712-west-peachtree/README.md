@@ -8,9 +8,15 @@ The tower postdates the 2018 USGS lidar this repo samples, so City keeps the map
 
 ## Estimates
 
-- **Reveals (estimated):** one 0.9 m dark strip 4 m in from each end of every mapped shaft edge 16 m or longer, rising from the deck roof to the parapet. They follow the stepped south wall.
-- **Top band:** the top 7.7 m (two floors) in paler blue glass.
-- **Garage:** one dark open band per 3.2 m deck on the north, east and west faces. The north face abuts its neighbour in City.
+The first version was mostly flat navy. The coordinator's review called it a recoloured block, so the shaft now carries the curtain-wall rhythm in geometry:
+
+- **Glass value:** a mid blue-grey (`#66819c`) on library curtain glass, close to its neighbours' value so it doesn't read as a dark hole.
+- **Spandrels (estimated):** a 0.9 m grey-blue band at every 3.83 m floor line. The two crown floors use a pale cap colour.
+- **Mullion fins (estimated):** a 0.24 m pale fin every 3 m. The library glass draws the 1.5 m mullions between them up close.
+- **Corner reveals (estimated):** a 0.9 m dark reveal 4 m in from each end of every mapped edge 16 m or longer, between the first spandrel and the cap.
+- **Base and deck transition:** the street faces have a 6 m lobby storey under the first spandrel. Where the north face rises from the deck roof, its first floor is darker glass.
+- **Crown:** two paler floors, a 1.3 m pale parapet cap and a 20 × 16 × 4.6 m set-back penthouse.
+- **Garage:** one dark open band per 3.2 m deck on the north, east and west faces. In City the north face abuts its neighbour.
 - **Lobby:** a glazed band on West Peachtree, lit after dark.
 
 ## Lighting
@@ -25,4 +31,4 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T<time>-05:00`, clear weather.
 |---|---|---|---|
 | From the east-south-east, both broad faces | `357,-2258,-75,52,520` | [Day](day.jpg) | [Night](night.jpg) |
 | Spec starting camera | `357,-2258,32,60,380` | [Day](start-day.jpg) | [Night](start-night.jpg) |
-| Tower base and deck from Spring Street (`&dev&mindist=20`) | `360,-2282,-140,38,260` | [Close](spring.jpg) | |
+| Close: the day camera with a 2.4× lens (`&dev`, then `__setView(-75,52,520,357,-2258,2.4)`) | `357,-2258,-75,52,520` | [Close](close.jpg) | |
