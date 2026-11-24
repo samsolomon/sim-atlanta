@@ -3653,4 +3653,15 @@ Colony House, a 1972 condominium tower beside Colony Square, was mapped at 62 m 
 
 The all-suite hotel on 14th Street is now its rose-beige precast tower, with punched windows and a balcony stack. The lidar trims it from a mapped 68 m to 56 m. The hotel's own photograph shows a brand-red entrance canopy and a name sign. Neither is drawn, so the street front stays generic. At night about 40% of rooms are lit, which reads as a hotel next to the darker offices around it.
 [Before and after](log/ui/marriott-suites/compare.jpg) · [day and night](log/ui/marriott-suites/daynight.jpg) · [close](log/ui/marriott-suites/close.jpg)
+### 2026-11-24 — SkyView turns up
+
+The Ferris wheel by Centennial Olympic Park was a 2 m-thin box 61 m tall. The
+2019 lidar was more useful than expected. Slicing the returns along the wheel's
+mapped plane gives a top height per slice, and those heights trace the top of the
+rim's circle: an axle about 29 m up, with the rim near 54 m. City now draws a
+white wheel with 21 spokes, 42 gondolas hung outside the rim, and two A-frames,
+facing the park broadside. That is 1,354 triangles in the downtown batch. At night
+the rim and spokes glow the blue-violet of most night photos. It doesn't turn,
+because a static batch costs nothing and an animated wheel wouldn't.
+[Before and after](log/ui/skyview-atlanta/compare-day.jpg) · [night](log/ui/skyview-atlanta/compare-night.jpg) · [notes](skyview-atlanta.md)
 
