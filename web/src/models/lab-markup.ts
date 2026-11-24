@@ -14,6 +14,7 @@ export const LAB_HTML = `
       <div class="inspector">
         <section class="library" aria-label="Model library">
           <div class="model-group" role="group" aria-labelledby="vehicles-label" id="vehicles"><h2 id="vehicles-label">Vehicles</h2></div>
+          <div class="model-group" role="group" aria-labelledby="consists-label" id="consists"><h2 id="consists-label">Consists</h2></div>
           <div class="model-group" role="group" aria-labelledby="people-label" id="people"><h2 id="people-label">People</h2></div>
           <div class="model-group" role="group" aria-labelledby="trees-label" id="trees"><h2 id="trees-label">Trees</h2></div>
           <div class="model-group" role="group" aria-labelledby="landscape-label" id="landscape"><h2 id="landscape-label">Landscape</h2></div>
