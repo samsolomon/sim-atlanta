@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GroundGrid } from './grid';
+import { runSync } from '../core/slice';
 import { type OpenSlot } from './openings';
-import { farSurface, nodeHeights, tessellate, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
+import { farSurface, nodeHeights, tessellateSteps, yieldPlanes, type GroundYield, type SurfaceSpec, type TerrainJoins, type TerrainQuality } from './surface-build';
 
 export { joinList, type GroundYield, type JoiningEdge, type TerrainJoins, type TerrainQuality } from './surface-build';
 
@@ -57,7 +58,10 @@ export class GroundSurface {
    * Call before the first render: earlier `sampleScene` results inside a footprint
    * are superseded. Board edges never move, so a yield must stay inside the board.
    */
-  carve(yields: readonly GroundYield[]) {
+  carve(yields: readonly GroundYield[]) { runSync(this.carveSteps(yields)); }
+
+  /** carve as a build that yields while it re-tessellates (core/slice.ts). */
+  *carveSteps(yields: readonly GroundYield[]) {
     const { bounds, stepM } = this.grid.manifest;
     // Seams must match the neighbouring board node for node, so a yield near an edge is
     // skipped (the stair still draws, uncarved) rather than failing the whole board.
@@ -69,17 +73,20 @@ export class GroundSurface {
     });
     if (!inside.length) return;
     this.yields = [...this.yields, ...inside];
-    this.build();
+    yield* this.buildSteps();
   }
 
-  private build() {
+  private build() { runSync(this.buildSteps()); }
+
+  private *buildSteps() {
     const spec = surfaceSpec(this.grid);
     if (!this.heights) {
       const { heights, minY } = nodeHeights(spec, (r, c) => this.grid.node(r, c));
       this.heights = heights;
       this.minY = minY;
     }
-    const { pos, uv, indices, starts, blockCols } = tessellate(spec, this.heights, this.quality, this.openings, this.join, this.yields);
+    const { pos, uv, indices, starts, blockCols } = yield* tessellateSteps(spec, this.heights, this.quality, this.openings, this.join, this.yields);
+    yield 'ground normals';
     this.starts = starts;
     this.blockCols = blockCols;
     // A rebuild (carve) changes the vertex count. computeVertexNormals would reuse a

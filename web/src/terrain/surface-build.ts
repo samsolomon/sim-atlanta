@@ -5,6 +5,7 @@
  */
 import underpassFloors from '../../../pipeline/prototypes/connector-footprint/underpass-floors.json';
 import { slotPlanes, splitConvex, subtractSlot, type OpenSlot } from './openings';
+import { runSync } from '../core/slice';
 
 export type JoiningEdge = { x: number; minZ: number; maxZ: number } | { z: number; minX: number; maxX: number };
 export type TerrainJoins = JoiningEdge | JoiningEdge[];
@@ -69,6 +70,12 @@ export function nodeHeights(spec: SurfaceSpec, node: (row: number, col: number) 
 // Each block is at most 2 × 2 source cells. High keeps all four; low merges flat
 // blocks and stitches their shared edges to any neighbour that needs 5 m detail.
 export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: TerrainQuality,
+  openings: readonly OpenSlot[] = [], join?: TerrainJoins, yieldList: readonly GroundYield[] = []) {
+  return runSync(tessellateSteps(spec, heights, quality, openings, join, yieldList));
+}
+
+/** tessellate as a build that yields every 8 block rows (core/slice.ts); same triangles, same order. */
+export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quality: TerrainQuality,
   openings: readonly OpenSlot[] = [], join?: TerrainJoins, yieldList: readonly GroundYield[] = []) {
     const { rows, cols, stepM, bounds } = spec;
     const blockCols = Math.ceil((cols - 1) / 2);
@@ -194,6 +201,7 @@ export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: Te
       for (const f of faces) emit(f);
     };
     for (let k = 0; k < detail.length; k++) {
+      if (k % (8 * blockCols) === 8 * blockCols - 1) yield 'ground rows';
       starts[k] = indices.length;
       blockSlots = slots.get(k);
       blockYields = yieldBlocks.get(k);

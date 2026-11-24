@@ -392,7 +392,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Carve before anything else samples the ground inside their footprints.
   const winn = winnPark(city, groundAt, options.quality);
   const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
-  if (yields.length) mesh.carve(yields);
+  if (yields.length) yield* mesh.carveSteps(yields);
   yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
   // triangles once the camera is over 2.5 km away. Render-only: placement, the audit and
@@ -420,7 +420,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   yield 'residential';
   // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
   const yardLayer = yield* homes.buildYards();
-  if (yardLayer?.yields.length) mesh.carve(yardLayer.yields);
+  if (yardLayer?.yields.length) yield* mesh.carveSteps(yardLayer.yields);
   yield 'yards carve';
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
@@ -550,6 +550,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Lower the drawn terrain under hard surfaces placed after the board was built,
      * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },
+    /** carve as a build that yields while the ground re-tessellates (sliced section builds). */
+    *carveSteps(yields: readonly GroundYield[]) { if (yields.length) { yield* mesh.carveSteps(yields); carved.push(...yields); } },
     /** Footprints carved after the board was built, for checks that scenery isn't left floating. */
     carved: carved as readonly GroundYield[],
     /**
