@@ -32,6 +32,37 @@ export type HouseLodOptions = {
 };
 export type HouseBox = { centre: [number, number]; u: [number, number]; long: number; half: number; height: number; wall: string; roof: string };
 
+/**
+ * One house placed as a far box: the oriented rectangle (centre cx, cz; unit long axis ux, uz;
+ * half extents hx along it, hz across), the foundation and top heights, the wall colour (r, g, b,
+ * linear 0–1) and the roof colour. It is the shape of city/far-board.ts FarBox plus `roof`, so the
+ * low tier's far-board mesh takes houses from here and there is one house far form.
+ */
+export interface HouseFarBox { cx: number; cz: number; ux: number; uz: number; hx: number; hz: number; y0: number; y1: number; r: number; g: number; b: number; roof: { r: number; g: number; b: number } }
+
+/** Every house's far box (low tier, via `o.box`), yielding every 200 houses (core/slice.ts). */
+export function* buildHouseBoxes(o: Pick<HouseLodOptions, 'box' | 'foundation' | 'ground'>, houses: Iterable<VBuilding>) {
+  const out: HouseFarBox[] = [];
+  if (!o.box) return out;
+  const c = new THREE.Color();
+  let n = 0;
+  for (const h of houses) {
+    if (++n % 200 === 0) yield 'house boxes';
+    const b = o.box(h);
+    if (!b) continue;
+    const y0 = o.foundation(h) ?? o.ground(b.centre[0], b.centre[1]);
+    if (y0 === null) continue;
+    // A hillside house's fitted floor (floorY) sets its height, as in the near and far forms; the
+    // walls still start at the foundation.
+    const y1 = (h.floorY ?? y0) + b.height;
+    c.set(b.wall);
+    const wall = { r: c.r, g: c.g, b: c.b };
+    c.set(b.roof);
+    out.push({ cx: b.centre[0], cz: b.centre[1], ux: b.u[0], uz: b.u[1], hx: b.long, hz: b.half, y0, y1, ...wall, roof: { r: c.r, g: c.g, b: c.b } });
+  }
+  return out;
+}
+
 // One near build per frame at most, so a camera jump into Midtown never stalls a frame on every tile.
 let lastBuildFrame = -1, frame = 0;
 // Set when a tile swaps versions or gains its near houses; City redraws its (manual) shadow map.
@@ -260,7 +291,9 @@ export function* buildHouseLod(o: HouseLodOptions) {
   // program. Past the very-far orbit a house is about 2 px: the boxes keep the ink outline and
   // side shading that give the wide view its texture (flat ground paint read flatter).
   // A forced version (the dev houses=near|far pin) stays pinned at every distance.
-  const farFar = o.box && !houseFarOff && !o.force ? yield* buildFarFar(o, tiles) : null;
+  // The boxes are also the houses' input to the low tier's far-board mesh (city/far-board.ts).
+  const boxes = yield* buildHouseBoxes(o, tiles.flatMap(t => t.houses));
+  const farFar = boxes.length && !houseFarOff && !o.force ? farFarMesh(tiles, boxes) : null;
   if (farFar) { farFar.visible = false; group.add(farFar); }
   const merged: THREE.Mesh[] = [];
   for (const members of blocks.values()) {
@@ -270,10 +303,12 @@ export function* buildHouseLod(o: HouseLodOptions) {
   }
   return {
     group, tiles,
+    /** One far box per house on the low tier (empty without `o.box`): far-board input. */
+    boxes,
     /** Phone detail (city.ts): `houseShadows: false` past a long orbit, where a house shadow is under 2 px. */
     setDetail(d: { houseShadows?: boolean; farHouses?: boolean }) {
       if (houseFarOff) return;
-      // Past the very-far ground orbit every house is about 2 px: one box each (buildFarFar)
+      // Past the very-far ground orbit every house is about 2 px: one box each (farFarMesh)
       // instead of the far blocks and tiles.
       if (d.farHouses !== undefined && farFar) for (const c of group.children) c.visible = c === farFar ? d.farHouses : !d.farHouses;
       if (d.houseShadows === undefined) return;
@@ -285,38 +320,28 @@ export function* buildHouseLod(o: HouseLodOptions) {
   };
 }
 
-/** buildFarFar: one box per house, yielding every 200 houses (core/slice.ts). */
-function* buildFarFar(o: HouseLodOptions, tiles: HouseTile[]) {
+/** farFarMesh: the far boxes as one mesh of 10-triangle boxes (four walls and a roof-coloured top). */
+function farFarMesh(tiles: HouseTile[], boxes: HouseFarBox[]) {
   const material = tiles.flatMap(t => t.farWorld.group.children).find((m): m is THREE.Mesh => (m as THREE.Mesh).isMesh && !(m as THREE.InstancedMesh).isInstancedMesh)?.material as THREE.Material | undefined;
   if (!material) return null;
   const pos: number[] = [], nor: number[] = [], col: number[] = [];
-  const c = new THREE.Color();
   const byte = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 255);
-  const tri = (a: number[], b: number[], d: number[], hex: string) => {
+  const tri = (a: number[], b: number[], d: number[], c: { r: number; g: number; b: number }) => {
     const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], e2 = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
     const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]], l = Math.hypot(n[0], n[1], n[2]) || 1;
-    c.set(hex);
     for (const v of [a, b, d]) { pos.push(v[0], v[1], v[2]); nor.push(Math.round(n[0] / l * 127), Math.round(n[1] / l * 127), Math.round(n[2] / l * 127)); col.push(byte(c.r), byte(c.g), byte(c.b)); }
   };
-  let n = 0;
-  for (const t of tiles) for (const h of t.houses) {
-    if (++n % 200 === 0) yield 'house far-far';
-    const b = o.box!(h);
-    if (!b) continue;
-    const y0 = o.foundation(h) ?? o.ground(b.centre[0], b.centre[1]);
-    if (y0 === null) continue;
-    // A hillside house's fitted floor (floorY) sets its height, as in the near and far forms; the
-    // walls still start at the foundation.
-    const y1 = (h.floorY ?? y0) + b.height, [ux, uz] = b.u, vx = -uz, vz = ux;
-    const at = (s: number, t2: number) => [b.centre[0] + ux * s * b.long + vx * t2 * b.half, b.centre[1] + uz * s * b.long + vz * t2 * b.half];
+  for (const b of boxes) {
+    const { y0, y1, ux, uz } = b, vx = -uz, vz = ux;
+    const at = (s: number, t2: number) => [b.cx + ux * s * b.hx + vx * t2 * b.hz, b.cz + uz * s * b.hx + vz * t2 * b.hz];
     const ring = [at(-1, -1), at(1, -1), at(1, 1), at(-1, 1)];
     // Wind each wall to face away from the centre, and the top to face up.
     for (let i = 0; i < 4; i++) {
       const p = ring[i], q = ring[(i + 1) % 4];
       const A = [p[0], y0, p[1]], B = [q[0], y0, q[1]], C = [q[0], y1, q[1]], D = [p[0], y1, p[1]];
-      const out = ((q[1] - p[1]) * ((p[0] + q[0]) / 2 - b.centre[0]) - (q[0] - p[0]) * ((p[1] + q[1]) / 2 - b.centre[1])) > 0;
+      const out = ((q[1] - p[1]) * ((p[0] + q[0]) / 2 - b.cx) - (q[0] - p[0]) * ((p[1] + q[1]) / 2 - b.cz)) > 0;
       // Triangle A,B,C faces along (B − A) × up; keep that pointing away from the centre.
-      if (out) { tri(A, C, B, b.wall); tri(A, D, C, b.wall); } else { tri(A, B, C, b.wall); tri(A, C, D, b.wall); }
+      if (out) { tri(A, C, B, b); tri(A, D, C, b); } else { tri(A, B, C, b); tri(A, C, D, b); }
     }
     const [p0, p1, p2, p3] = ring.map(p => [p[0], y1, p[1]]);
     const up = (p1[0] - p0[0]) * (p3[2] - p0[2]) - (p1[2] - p0[2]) * (p3[0] - p0[0]) < 0;

@@ -194,3 +194,34 @@ test('keeps a forced house version at every distance (no far-far form)', () => {
   expect(lod.group.children.every(c => c.visible)).toBe(true);
   lod.dispose();
 });
+
+test('exports one far box per house for the far-board mesh, matching the far-far boxes', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const houses = homes.city.buildings.filter(b => homes.isHouse(b.id));
+  const lod = houseLod({ houses, bounds: city.bounds, ground: () => 0, foundation: () => 0, near: homes.finishFor, far: homes.farFinishFor,
+    roofUnits: 3, box: b => homes.boxOf(b.id) });
+  expect(lod.boxes).toHaveLength(houses.length);
+  const p = (lod.group.getObjectByName('houses (far-far)') as THREE.Mesh).geometry.getAttribute('position');
+  lod.boxes.forEach((b, i) => {
+    const src = homes.boxOf(houses.find(h => homes.boxOf(h.id)!.centre[0] === b.cx && homes.boxOf(h.id)!.centre[1] === b.cz)!.id)!;
+    expect([b.hx, b.hz, b.y1 - b.y0]).toEqual([src.long, src.half, src.height]);
+    expect(Math.hypot(b.ux, b.uz)).toBeCloseTo(1);
+    // Every vertex of the house's ten triangles lies inside its exported box.
+    for (let v = i * 30; v < i * 30 + 30; v++) {
+      const dx = p.getX(v) - b.cx, dz = p.getZ(v) - b.cz;
+      expect(Math.abs(dx * b.ux + dz * b.uz)).toBeLessThanOrEqual(b.hx + 1e-3);
+      expect(Math.abs(-dx * b.uz + dz * b.ux)).toBeLessThanOrEqual(b.hz + 1e-3);
+    }
+  });
+  // Colours are linear 0–1 floats, the roof apart from the walls.
+  expect(lod.boxes.every(b => [b.r, b.g, b.b, b.roof.r, b.roof.g, b.roof.b].every(c => c >= 0 && c <= 1))).toBe(true);
+  lod.dispose();
+});
+
+test('exports no far boxes without a box source (the high tier)', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const lod = houseLod({ houses: homes.city.buildings.filter(b => homes.isHouse(b.id)), bounds: city.bounds, ground: () => 0, foundation: () => 0,
+    near: homes.finishFor, far: homes.farFinishFor, roofUnits: 3 });
+  expect(lod.boxes).toEqual([]);
+  lod.dispose();
+});
