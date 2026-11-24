@@ -900,6 +900,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let prewarmer: Prewarmer | undefined;
   let colourShown = !options.whiteModel;
   let prewarmDone = false;
+  let prewarmBatch = 2;
   let bloomWarmFrames = 0;
   // setNight gating (environment()); `?perf&night=every` applies it every frame, for A/B runs.
   const nightEveryFrame = perfEnabled && query.get('night') === 'every';
@@ -1733,8 +1734,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
     // A few never-drawn objects per frame in one scratch render, after the frame's own work.
     if (prewarmer?.pending) {
+      // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
+      // program) and halves after a slow one (a real compile), so a phone that compiles slowly
+      // never stacks several compiles into one frame.
       const t = performance.now();
-      if (prewarmer.step(low ? 6 : 12)) perf.prewarmStep(performance.now() - t);
+      if (prewarmer.step(prewarmBatch)) {
+        const ms = performance.now() - t;
+        perf.prewarmStep(ms);
+        prewarmBatch = ms > 20 ? Math.max(1, prewarmBatch >> 1) : ms < 8 ? Math.min(low ? 6 : 12, prewarmBatch * 2) : prewarmBatch;
+      }
       if (!prewarmer.pending && !prewarmDone) { prewarmDone = true; bloomWarmFrames = 1; perf.phase('city:prewarmed'); }
     }
     if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
