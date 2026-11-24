@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { neverClip } from './brookwood';
 import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
 import { BOX_40_SCALE, CONTAINER_PALETTE } from '../vignette/intermodal';
 import { MAX_UNITS, type WellLoad } from './freight-consist';
@@ -63,11 +64,9 @@ const SHORT = Math.fround(BOX_40_SCALE);
 const encode = (load: WellLoad | undefined): readonly number[] => load
   ? [load.bottom ? load.bottom.color + 1 : 0, load.top ? load.top.color + 1 : 0, load.bottom && !load.bottom.long ? SHORT : 1, load.top && !load.top.long ? SHORT : 1]
   : NO_LOAD;
-/** A plane that never clips: everything in the scene lies on its kept side. */
-const NEVER = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
 export function freightClipPlanes(planes: THREE.Plane[]) {
   if (planes.length > FREIGHT_CLIP_PLANES) throw new Error(`freight takes at most ${FREIGHT_CLIP_PLANES} clip planes`);
-  return [...planes, ...Array.from({ length: FREIGHT_CLIP_PLANES - planes.length }, () => NEVER)];
+  return [...planes, ...neverClip(FREIGHT_CLIP_PLANES - planes.length)];
 }
 
 /**

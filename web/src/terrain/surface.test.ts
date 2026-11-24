@@ -88,4 +88,11 @@ it.each(['low', 'high'] as const)('a surface built from typed arrays (the Worker
   for (const name of ['position', 'uv', 'normal'] as const)
     expect(Array.from(farWorker.getAttribute(name).array)).toEqual(Array.from(farMain.getAttribute(name).array));
   expect(Array.from(farWorker.index!.array)).toEqual(Array.from(farMain.index!.array));
+  // The settled far level adopts from the Worker the same way (sections.ts passes farLower).
+  const settledBuilt = buildSurfaceArrays({ spec, heights: nodeHeights(spec, (r, c) => grid.node(r, c)).heights, minY, quality, openings, join, farErrorM: 2, farLower: true });
+  const settledWorker = new GroundSurface(grid, quality, openings, join, settledBuilt);
+  expect(settledWorker.hasPrebuiltFar(2, true)).toBe(true);
+  expect(settledWorker.hasPrebuiltFar(2, false)).toBe(false);
+  expect(Array.from(settledWorker.farGeometry(2, 160, true).getAttribute('position').array))
+    .toEqual(Array.from(main.farGeometry(2, 160, true).getAttribute('position').array));
 });

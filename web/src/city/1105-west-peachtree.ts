@@ -166,6 +166,12 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
       led.quad([x0 + nx, y0 + ny, zf], [x1 + nx, y1 + ny, zf], [x1 - nx, y1 - ny, zf], [x0 - nx, y0 - ny, zf], steel);
     };
     for (const x of columns) bar(x, belts[0] - (out > 0 ? lobbyTop - 0.3 : 0), x, floor + frameTop, 1.3);
+    // Outriggers: each column is tied back to the glass by a steel plate (Uzun+Case: the diagonals
+    // sit on outriggers welded to the concrete frame), so the frame no longer floats 1.4 m off.
+    for (const x of columns) {
+      const lo = belts[0] - (out > 0 ? lobbyTop - 0.3 : 0), hi = floor + roof;
+      led.quad([x, lo, z], [x, hi, z], [x, hi, zf], [x, lo, zf], steel);
+    }
     for (const y of belts) bar(columns[0] - 0.65, y, columns[3] + 0.65, y, 1);
     for (const [l, r] of [[columns[0], columns[1]], [columns[2], columns[3]]]) {
       for (let m = 0; m < belts.length - 1; m++) {
