@@ -7,6 +7,9 @@ import { ConnectorTraffic } from './connector-traffic';
 import { loadArterials } from './arterials';
 import type { RoadTraffic } from './road-traffic';
 
+// These run whole staged layers over thousands of frames: about 1 s alone, but several times that
+// on the shared Studio under load, so they get a generous timeout rather than vitest's 5 s.
+
 const data = resolve(__dirname, '../../public/data/scene/downtown');
 const staged = ['vignette.json', 'arterials.json', 'traffic.json'].every(f => existsSync(resolve(data, f)));
 const J = (f: string) => JSON.parse(readFileSync(resolve(data, f), 'utf8'));
@@ -34,7 +37,7 @@ function expectSame(got: number[][], want: number[][]) {
 type Paths = { stepLegacy(ms: number, dark: number): void; step(ms: number, dark: number, view?: THREE.Frustum): void };
 const paths = (layer: RoadTraffic) => layer as unknown as Paths;
 
-describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', () => {
+describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', { timeout: 60_000 }, () => {
   const vd = staged ? J('vignette.json') : null!;
   const hourly = staged ? J('traffic.json').hourly : null!;
   // A sloped plane: interpolating the cached 2 m height profile is exact on it, so any
@@ -135,7 +138,7 @@ it('keeps a lane corner inside a profile step at its own height', async () => {
   }
 });
 
-describe.skipIf(!staged)('road traffic’s cached height profile on a hard surface', () => {
+describe.skipIf(!staged)('road traffic’s cached height profile on a hard surface', { timeout: 60_000 }, () => {
   const vd = staged ? J('vignette.json') : null!;
   const hourly = staged ? J('traffic.json').hourly : null!;
   // A drawn-terrain stand-in: a 4 m triangulated grid of random heights (a fold on every

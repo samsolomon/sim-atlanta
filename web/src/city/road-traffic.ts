@@ -294,6 +294,20 @@ export class RoadTraffic {
     });
   }
 
+  /** The hour's demand share, resolved once per clock second: building the local date costs
+   * more than the rest of a frame's signal work, and the share drifts ~0.03% a second. Any seek,
+   * drag or speed change lands on another second and recomputes. */
+  private shareAt(clockMs: number) {
+    const second = Math.floor(clockMs / 1000);
+    if (second !== this.shareSecond) {
+      this.shareSecond = second;
+      this.shareCached = hourShare(this.opts.hourly, clockMs) / this.peak;
+    }
+    return this.shareCached;
+  }
+  private shareSecond = NaN;
+  private shareCached = 0;
+
   /** Forget cached road heights, for when the ground under existing courses changes. */
   refreshHeights() {
     for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); }
@@ -386,7 +400,7 @@ export class RoadTraffic {
     this.visibleCars = 0;
     this.signalOverlaps = 0;
     if (!this.slots.length || !Number.isFinite(clockMs)) return this.finish(counts, false);
-    this.share = hourShare(this.opts.hourly, clockMs) / this.peak;
+    this.share = this.shareAt(clockMs);
     const seconds = (clockMs - Date.UTC(2026, 0, 1)) / 1000;
     if (this.heads) {
       const { mesh, signals } = this.heads, last = this.headPhases;
