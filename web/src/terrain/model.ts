@@ -410,7 +410,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // prebuilt one, else boot on the plain level and settle it in an idle slice (below).
   const settleNow = FAR_GROUND_SETTLED && mesh.hasPrebuiltFar(FAR_GROUND_ERROR_M, true);
   let farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, settleNow) : null;
-  if (farGeometry && FAR_GROUND_SETTLED && !settleNow) {
+  // Browser only: the idle swap is a visual refinement, and outside a page (tests, tools) the
+  // plain level stays so every mount builds and frees the same geometry.
+  if (farGeometry && FAR_GROUND_SETTLED && !settleNow && 'requestIdleCallback' in globalThis) {
     veryFarQueue.push(() => {
       if (disposed || !farGeometry) return;
       const settled = mesh.farGeometry(FAR_GROUND_ERROR_M, 160, true);
