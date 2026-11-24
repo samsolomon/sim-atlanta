@@ -1,0 +1,80 @@
+diff --git a/web/src/city/brookwood.ts b/web/src/city/brookwood.ts
+index d5d7c2d2..d30955f3 100644
+--- a/web/src/city/brookwood.ts
++++ b/web/src/city/brookwood.ts
+@@ -102,6 +102,7 @@ export function brookwoodGrid(manifest: GroundManifest, bytes: ArrayBuffer) {
+ // survey's origin: negative values run west of x −575, values past the survey's end run
+ // northeast. Signed extension past the board edges lets a consist leave one car at a time.
+ const route = new Line(corridor.main1.pts);
++((globalThis as any).__railDev ??= []).push({ kind: 'crescent', line: route, offset: 0 }); // DEVPROBE
+ const westLength = route.cum[corridor.main1.west.length - 1];
+ export const corridorChainage = { min: -westLength, max: route.length - westLength };
+ function chainage(x: number, z: number) {
+diff --git a/web/src/city/east-cut.ts b/web/src/city/east-cut.ts
+index c5640635..e7a9bbf1 100644
+--- a/web/src/city/east-cut.ts
++++ b/web/src/city/east-cut.ts
+@@ -41,6 +41,7 @@ export class ServiceTrack {
+   readonly clips: Record<'west' | 'east', THREE.Plane>;
+   constructor(readonly routeId: string, readonly name: 'ER' | 'EL', readonly entry: number, readonly exit: number) {
+     this.line = tracks[name];
++    ((globalThis as any).__railDev ??= []).push({ kind: 'eastcut', line: this.line, offset: 0 }); // DEVPROBE
+     this.clips = { west: mouthPlane(this.line, true), east: mouthPlane(this.line, false) };
+   }
+ 
+diff --git a/web/src/city/midtown-marta-rail.ts b/web/src/city/midtown-marta-rail.ts
+index abedd543..6f2a7310 100644
+--- a/web/src/city/midtown-marta-rail.ts
++++ b/web/src/city/midtown-marta-rail.ts
+@@ -183,6 +183,7 @@ function portal(frame: ReturnType<typeof portalFrame>, base: number) {
+  */
+ export function northLinePortalSlots(grid: { sample(x: number, z: number): number | null; manifest: { vertical: { sceneZeroNavd88M: number } } }) {
+   const lines = northLineTracks(railRows['brookwood-station'] as TransportRun[], -5700);
++  for (const line of lines) ((globalThis as any).__railDev ??= []).push({ kind: 'midtown', line, offset: 0 }); // DEVPROBE
+   if (lines.length !== 2) return [];
+   const f = portalFrame(lines);
+   const out = grid.sample(f.x + f.dx * 10, f.z + f.dz * 10);
+@@ -209,6 +210,7 @@ export function createNorthLine(
+ ) {
+   const rows = railRows['brookwood-station'] as TransportRun[];
+   const lines = northLineTracks(rows, -5700);
++  for (const line of lines) ((globalThis as any).__railDev ??= []).push({ kind: 'midtown', line, offset: 0 }); // DEVPROBE
+   if (lines.length !== 2) return;
+   const paths = northLinePaths(rf, origin, lines);
+   const roads = area.connectorBoard?.city.roads ?? [];
+diff --git a/web/src/city/streetcar-cars.ts b/web/src/city/streetcar-cars.ts
+index a4b4c9b3..4baa1006 100644
+--- a/web/src/city/streetcar-cars.ts
++++ b/web/src/city/streetcar-cars.ts
+@@ -67,6 +67,7 @@ export function pointAt(path: Path, s: number) {
+  */
+ export function createStreetcarCars(rf: RoutesFile, origin: Origin, height: Height, clippingPlanes: THREE.Plane[]) {
+   const paths = streetcarPaths(rf, origin);
++  for (const p of paths.values()) ((globalThis as any).__railDev ??= []).push({ kind: 'streetcar', line: p.line, offset: 0 }); // DEVPROBE
+   const group = new THREE.Group();
+   group.name = 'Atlanta Streetcar cars';
+   const night = { value: 0 };
+diff --git a/web/src/city/trains.ts b/web/src/city/trains.ts
+index d320d301..dea6b0ea 100644
+--- a/web/src/city/trains.ts
++++ b/web/src/city/trains.ts
+@@ -43,6 +43,7 @@ export class CityTracks {
+   private segments = new PlacementIndex<Segment>(32);
+   constructor(alignments: Alignment[]) {
+     for (const al of alignments) {
++      ((globalThis as any).__railDev ??= []).push({ kind: 'trains', line: al.line, offset: MARTA_TRACK_OFFSET }); // DEVPROBE
+       const pts = al.line.pts;
+       for (let i = 0; i + 1 < pts.length; i++) this.segments.add({ al, i }, [pts[i], pts[i + 1]], SNAP);
+     }
+diff --git a/web/src/main.ts b/web/src/main.ts
+index 5c329ff4..51d0e293 100644
+--- a/web/src/main.ts
++++ b/web/src/main.ts
+@@ -1053,6 +1053,7 @@ if (import.meta.env.DEV) Object.assign(window, {
+   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
+   __selectTrain(id: string) { selectedTrain = id; selectedBus = null; selectedFreight = null; renderTrainCard(); },
+   __trains: () => source.current,
++  __clock: clock, // DEVPROBE
+ });
+ 
+ // City and its status card must keep time even while remote Map tiles are unavailable.
