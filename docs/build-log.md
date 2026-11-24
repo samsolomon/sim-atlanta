@@ -3542,3 +3542,7 @@ Each transport mesh now orders its triangles so the parts that still read at tha
 On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
 
 [Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
+
+### 2026-11-24 · Colony House, a raw concrete slab, 14 m shorter
+
+Colony House, a 1972 condominium tower beside Colony Square, was mapped at 62 m and tagged `retail`. The 2019 lidar puts its slab roof at 47.7 m above grade, with stair and lift cores about 3 m higher. In the skin, the long faces of the bent, diagonal slab are a grid of recessed balconies, while the ends stay blank, stepped, board-formed concrete, as they look from 15th Street. The first balcony recess colour went navy-black in shade (S 100, V 13), so it became a neutral grey. A four-side contact sheet, the new standing rule after a skin shipped with balconies floating off one wall, showed nothing loose. The skin costs about 970 triangles. [Before and after](log/ui/colony-house/compare.jpg) · [Four sides](log/ui/colony-house/four-sides.jpg)

@@ -31,6 +31,7 @@ import { create10Tenth, tenTenthId } from '../city/10-10th';
 import { atlanticId, createAtlantic } from '../city/the-atlantic';
 import { create1010Midtown, midtown1010Id } from '../city/1010-midtown';
 import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
+import { createColonyHouse, colonyHouseId } from '../city/colony-house';
 import { createOneGeorgiaCenter, oneGeorgiaCenterId } from '../city/one-georgia-center';
 import { createMetropolis, metropolisId } from '../city/metropolis';
 import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
@@ -334,6 +335,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
       : site.id === midtown1010Id ? create1010Midtown(sceneryCity.buildings, site, grid)
       : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === colonyHouseId ? createColonyHouse(sceneryCity.buildings, site, grid)
       : site.id === oneGeorgiaCenterId ? createOneGeorgiaCenter(sceneryCity.buildings, site, grid)
       : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
       : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
