@@ -1,3 +1,46 @@
+# Studio Midtown Culture handoff to Claude Opus
+
+**Current worktree:** `studio-midtown-culture`, branch `samsolomon/high-piazza-people`.
+**Only active PR:** [#389 — High Museum visitors](https://github.com/samsolomon/sim-atlanta/pull/389), OPEN and held for Sam’s OK. Implementation and captures are at `8981147b12e8757df081c004e3cfb289d330a544`. All work is pushed. No local dev server or review tabs remain.
+
+### Sam’s request
+
+> there's a little kind of like courtyard in the middle where they have tables and stuff. It'd be nice to have like people sitting there or people kind of like walking around the High.
+
+The coordinator identified Sifly Piazza and asked for seats, walks across the paving, up the entry ramp and along the Peachtree lawn path, seeded Atlanta-local attendance, illustrative data, and the existing figure material. The delivery and approval thread is `msg_98d0a74d8c05` on Air terminal `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. The model-switch thread is `msg_7f3854f305d1`. Read predecessor history with `orca agent read --id orca_session_id:dfd2aaae-6c1d-4ea7-a8fb-5f9418755581 --limit 100`.
+
+### What Sam can review
+
+Six tables and eighteen chairs already existed. At Friday lunch the high tier seats six visitors and shows eight walkers. Low uses the existing walker batches. At 23:00 the museum crowd is empty. Positions, clothes and gait reproduce at a pinned clock. The fixture-derived placement and schedule are in `web/src/city/high-visitors.ts`; batching is in `street-figures.ts`. The PR contains the three requested captures.
+
+| View | City camera | Eastern time, Nov 20 2026 |
+| --- | --- | --- |
+| [Café seats](../log/ui/high-visitors/tables.jpg) | `557,-3963,145,55,48` | 13:00 |
+| [Museum at lunch](../log/ui/high-visitors/lunch.jpg) | `565,-3965,-101,55,260` | 13:00 |
+| [Museum at full night](../log/ui/high-visitors/night.jpg) | `565,-3965,-101,55,260` | 23:00 |
+
+Reproduce with `pnpm dev --port 5317` and `/?view=city&ui=classic&speed=0&q=high&dev&mindist=20&cam=557,-3963,145,55,48&t=2026-11-20T13:00:00-05:00`. Substitute the overview camera and hour from the table. The Studio helper `/tmp/high-visit-capture.py` captures all three. Inspect the actual image: during Vite reload a blank frame once passed the renderer-call check; the committed captures were inspected.
+
+### Verification and open risks
+
+- `PATH="/opt/homebrew/opt/rustup/bin:$PATH" pnpm test` passed Rust, web (1,080 passed, one skipped) and worker (five passed). The optional Python checks skipped because this worktree lacks `.venv`.
+- `pnpm test:perf` passed both tiers with twelve areas. Low measured 567 draws, 2,355,801 triangles, 90/90 programs and 393 MB post-GC heap. High measured 1,189 draws, 13,893,469 triangles, 105/140 programs and 499 MB. Low has zero program headroom. The seating batch uses the shared figure material on high only.
+- Claude cross-reviewed the implementation against main and reported no findings. Logs are `/tmp/high-visit-final-tests.log`, `/tmp/high-visit-final-perf.log` and `/tmp/high-visit-review.log`. For new Claude-authored changes use the repo cross-review skill with Codex.
+- Attendance and routes are artistic estimates tagged illustrative. The ramp follows the deck rise, and chair height follows the parent table datum. Preserve these if revising placement.
+
+### Next steps in order
+
+1. Check `orca orchestration check` and the approval thread. The coordinator has the PR, screenshots and camera strings. Wait for the coordinator to relay Sam’s explicit OK before merging anything.
+2. If Sam requests changes, revise #389, rerun the tests, browser captures, both perf tiers and cross-review as appropriate. Return the revised evidence to the coordinator and retain the hold.
+3. After approval, fetch and check mergeability. Resolve any build-log conflict by keeping both entries, then rerun checks on the synced branch. Verify the merge using `gh pr view 389 --json state,mergeCommit` before sending a merge notice. Quote the returned fields, include review image links and camera strings, and use `orca orchestration reply --id <coordinator-message-id> --from <your-session-id>`. Only the coordinator deploys. A web rebuild is required for #389.
+4. Await a new assignment after #389. Rhodes Hall #360 and Coda #366 already landed. Phone-perf’s transport heap fix #371 also landed, with 496 MB high in its verification. The Georgia Tech plant stack remains a separate backlog candidate.
+
+---
+
+## Archived predecessor handoff
+
+The material below records the earlier transfer and its historical queue.
+
 # Handoff: studio-midtown-culture → Codex 6.2, 2026-11-23
 
 ## Successor update
