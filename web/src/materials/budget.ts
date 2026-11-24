@@ -49,6 +49,7 @@ export const TEXTURE_SOURCES: Record<string, TextureSource> = {
   'trees/foliage-kit.ts': { bytes: 9 * 1_398_100, bucket: 'other', note: '9 leaf shapes x 512x512 RGBA8 plus mipmaps; eastern redbud adds cordate.' },
   'trees/ginkgo-variants.ts': { bytes: 0, bucket: 'other', note: 'leaf atlas (lab and opt-in variants)' },
   'vignette/ink.ts': { bytes: 4, bucket: 'other', note: '1x1 empty mask' },
+  'city/tilt-half.ts': { bytes: 20_736_000, bucket: 'other', note: 'half-resolution tilt-shift blur: two 1440x900 half-float targets at 2880x1800, High only' },
   'vignette/traffic.ts': { bytes: 0, bucket: 'other', note: 'headlight beam, East Portal only' },
   'vignette/world.ts': { bytes: 0, bucket: 'other', note: 'East Portal canvases' },
   // Screen-sized render targets: post-processing, not materials. Bytes scale with the viewport.

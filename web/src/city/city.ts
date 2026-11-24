@@ -26,6 +26,7 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { HalfTiltShiftPass } from './tilt-half';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -1219,8 +1220,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   composer.addPass(bloom);
   const hts = new ShaderPass(tiltShiftShader([1, 0]));
   const vts = new ShaderPass(tiltShiftShader([0, 1]));
-  composer.addPass(hts);
-  composer.addPass(vts);
+  // High blurs at half resolution and composites the focus ramp at full (city/tilt-half.ts).
+  // `?perf&tiltres=full` keeps the two full-resolution passes, for A/B runs.
+  const tiltHalf = !low && !(perfEnabled && query.get('tiltres') === 'full') ? new HalfTiltShiftPass(hts, vts) : null;
+  if (tiltHalf) composer.addPass(tiltHalf);
+  else {
+    composer.addPass(hts);
+    composer.addPass(vts);
+  }
   composer.addPass(new OutputPass());
   const grade = new ShaderPass(gradeShader());
   composer.addPass(grade);
@@ -1553,6 +1560,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       pass.uniforms.uStrength.value = tilt + wx.fog * 4;
       pass.enabled = tilt + wx.fog * 4 > 0.01 && !perfOverrides.nopass.has('tilt');
     }
+    if (tiltHalf) tiltHalf.enabled = hts.enabled;
   }
 
   // ---- loop -----------------------------------------------------------------------------
