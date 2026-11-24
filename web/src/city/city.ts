@@ -120,6 +120,7 @@ import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createAtlantaCityHall } from './atlanta-city-hall';
 import { createAmericasMart } from './americasmart';
+import { createLangdaleHall } from './langdale-hall';
 import { createHurtBuilding } from './hurt-building';
 import { createTheCenter } from './the-center';
 import { createSamNunn } from './sam-nunn';
@@ -429,6 +430,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let arena: ReturnType<typeof createStateFarmArena> = null;
   let atlantaCityHall: ReturnType<typeof createAtlantaCityHall> = null;
   let americasMart: ReturnType<typeof createAmericasMart> = null;
+  let langdaleHall: ReturnType<typeof createLangdaleHall> = null;
   let hurtBuilding: ReturnType<typeof createHurtBuilding> = null;
   let theCenter: ReturnType<typeof createTheCenter> = null;
   let samNunn: ReturnType<typeof createSamNunn> = null;
@@ -582,8 +584,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterAmericasMart = americasMart?.buildings ?? afterAtlantaCityHall;
         hurtBuilding = createHurtBuilding(afterAmericasMart, ground);
         const afterHurtBuilding = hurtBuilding?.buildings ?? afterAmericasMart;
-        theCenter = createTheCenter(afterHurtBuilding, ground);
-        const afterTheCenter = theCenter?.buildings ?? afterHurtBuilding;
+        langdaleHall = createLangdaleHall(afterHurtBuilding, ground);
+        theCenter = createTheCenter(langdaleHall?.buildings ?? afterHurtBuilding, ground);
+        const afterTheCenter = theCenter?.buildings ?? langdaleHall?.buildings ?? afterHurtBuilding;
         samNunn = createSamNunn(afterTheCenter, ground);
         const city = { ...vd, buildings: samNunn?.buildings ?? afterTheCenter,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
@@ -649,6 +652,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (arena) world.group.add(arena.group);
         if (atlantaCityHall) world.group.add(atlantaCityHall.group);
         if (americasMart) world.group.add(americasMart.group);
+        if (langdaleHall) world.group.add(langdaleHall.group);
         if (hurtBuilding) world.group.add(hurtBuilding.group);
         if (theCenter) world.group.add(theCenter.group);
         if (samNunn) world.group.add(samNunn.group);
@@ -669,7 +673,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
-            centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
+            centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, langdaleHall, theCenter,
             samNunn, candler, equitable, grady,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
@@ -1667,6 +1671,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       arena?.setNight(night);
       atlantaCityHall?.setNight(night);
       americasMart?.setNight(night);
+      langdaleHall?.setNight(night);
       hurtBuilding?.setNight(night);
       theCenter?.setNight(night);
       samNunn?.setNight(night);
