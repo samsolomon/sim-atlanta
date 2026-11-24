@@ -36,7 +36,10 @@ it('stands both towers at their lidar roofs over the sky-garden base, with the s
   expect(roof(140, -2835)).toBeCloseTo(floor + 95, 1); // tower plant screen
   expect(roof(108.5, -2840.5)).toBeCloseTo(floor + 85.6, 1); // tower roof outside the screen, at the 8th & Williams corner
   expect(roof(215, -2737)).toBeCloseTo(floor + 58.6, 1); // Spring Street tower screen
-  expect(roof(200, -2790)).toBeCloseTo(floor + 19.7, 1); // sky garden
+  const deck = floor + 19.7;
+  expect(roof(200, -2790)).toBeCloseTo(deck + 0.12, 2); // lawn above paving
+  expect(roof(183, -2779)).toBeCloseTo(deck + 4.55, 2); // canopy blade
+  expect(roof(184.15, -2779)).toBeCloseTo(deck, 2); // open slot to paving
   // Two metres in from the southwest corner along Williams, the facet slopes below the roof.
   const facet = roof(107.5, -2808);
   expect(facet).toBeGreaterThan(floor + 7.6);
