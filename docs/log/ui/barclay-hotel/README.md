@@ -32,3 +32,6 @@ No night photograph exists. Rooms are lit from the shared litHash at 50%, and th
 ![Low tier](b-low.jpg)
 ![Close views](b-close.jpg)
 ![Four-side](barclay-hotel-four-sides.jpg)
+
+## Deploy
+This is bundled City code, so visitors see it after a `web/dist` rebuild and worker redeploy. No `pnpm data` is needed.
