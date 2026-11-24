@@ -2881,6 +2881,11 @@ caught clockwise source rings hiding the facade details inside the walls. Normal
 the rings fixed that without moving their geometry. The low tier stays within budget at
 546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
 [Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
+
+### 2026-11-23 — White oak joins the Model lab
+
+White oak's four illustrative size classes run from a 4.7 × 2.4 m sapling to a 30 × 35.7 m specimen based on the Atlanta champion measurements. Two options compare rounded-lobed leaf cards against faceted clusters, with pale spreading limbs, April leaf-out, wine/russet autumn colour and a small brown early-winter residue. A costs 193 / 81 triangles; C costs 191 / 111. A's summer luminance is 0.255 high and 0.258 low against the generic 0.248. The cored trial was dropped after measuring too bright. A texture-accounting surprise: the existing atlas budget counted pixels, not RGBA bytes. Activating the eighth leaf shape adds one 1.33 MiB atlas; the declared total now correctly includes four bytes per pixel and mipmaps. [Options, references and calendar](log/ui/tree-species/options-white-oak.jpg). Sam selected A because its lobed leaves match the other trees; A is now the lab default. Winter residue remains crown-wide, a documented limit of the shared renderer. City rollout remains separate.
+
 ### 2026-11-23 — Freight gets three silhouettes
 
 The lab now has the Evolution-series GE road engine in NS-like and CSX-like paint, an NS-like SD70ACe, and a shorter CSX-like GP38-2. The SD has brow headlights, a broad clipped-corner nose and three radiator fans; the GP has a narrow short hood, four axles and two rear fans. The surprise was a published GP38-2 truck-spacing disagreement: a secondary sheet said 43 ft, while GATX says 34 ft between bolster centres. The model uses GATX. All four are merged vertex-coloured geometry, at 2,708–3,836 triangles each. The new NS inputs needed lifting through the grade so black panels still read; the approved CM44ACs stay unchanged. Lab-only selection for now; City consists are the next freight integration step after the car library. Web rebuild only. [Matched daylight](log/freight/variety/day.jpg) · [Night](log/freight/variety/night.jpg) · [Photo comparison](log/freight/variety/references.jpg) · [Sources and estimates](freight-variety.md).
@@ -2894,3 +2899,25 @@ Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow no
 ### 2026-11-23 — One CSX family in the freight lab
 
 The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — A final vertex is not another road segment
+
+At 21:00, a streetcar nose could project onto the exact end of a traffic course.
+The path returned its final vertex index, but the road-owner array has one entry
+per segment: the lookup ran one past its end and stopped City's render loop.
+Clamp to the final carrying segment, and return no surface for an absent owner.
+The exact 60 m endpoint regression and an arterial update sweep every five minutes
+through 24 hours both reproduce the old `undefined.bridge` exception with the fix
+removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
+118 calls; this was a path-boundary bug, not missing terrain or nighttime lighting.
+
+![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
+Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
+### 2026-11-23 — A quieter Rhodes Hall tower
+
+Sam wanted the floodlit tower a little less bright. Its stone wash is now 25% lower,
+while the porch lighting and dark windows stay as they were. It is a one-coefficient
+calibration, with no geometry or texture cost. Matched 21:00 frames use the same
+`301,-4675,340,60,160` camera at both tiers.
+[High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
+[Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).

@@ -95,6 +95,7 @@ export function createRhodesHall(
   });
   b.box(1.4, 2.4, 0.2, 3.5, 12.5, 4.1, trim);
   b.box(1.05, 2.1, 0.23, 3.5, 12.5, 4.12, glass);
+  const porchStart = b.pos.length / 3;
   // Three genuinely open arches: segmented voussoirs, no dark rectangles filling openings.
   for (const x of [2.5, 7.1, 11.7]) {
     for (let i = 0; i < 12; i++) {
@@ -131,7 +132,7 @@ export function createRhodesHall(
       z = pos.getZ(i);
     // Stone only: dark panes and red roofing do not become emissive.
     if (colour.getY(i) > 0.25 && Math.abs(colour.getX(i) - colour.getY(i)) < 0.15)
-      wash[i] = x > -8 && x < 1 && z > 3 ? Math.max(0.25, 1 - y / 30) : z > 8 ? 0.6 : 0;
+      wash[i] = x > -8 && x < 1 && z > 3 ? (i < porchStart ? 0.75 : 1) * Math.max(0.25, 1 - y / 30) : z > 8 ? 0.6 : 0;
   }
   mesh.geometry.setAttribute('aRhodesWash', new BufferAttribute(wash, 1));
   const night = { value: 0 },

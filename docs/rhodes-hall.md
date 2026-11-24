@@ -66,3 +66,17 @@ The reviewer’s close camera `308,-4655,180,60,30` was checked at low-tier full
 [porch openings](log/ui/rhodes-hall/porch-low-night.png). The three arches remain open,
 the stair meets the centre opening, and the roof/window surfaces stay dark; the visual
 finding is dismissed. Stone roughness remains stylized rather than individually modeled.
+
+## Tower lighting adjustment — 2026-11-23
+
+Sam asked for the tower lights to be slightly dimmer after viewing the night comparison.
+The tower-only wash multiplier is reduced to 0.75 (25% less). The porch wash, emissive
+window/bulb intensity, materials and daytime appearance are unchanged. This calibrates
+an estimated lighting intensity against Sam's visual judgement, not a new factual claim.
+Matched camera `301,-4675,340,60,160`, November 20 at 21:00 Eastern start time, both tiers.
+[High comparison](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
+[Low comparison](log/ui/rhodes-tower-dim/compare-low-night.jpg).
+
+The original spatial tower mask overlaps the western porch beam. The reduction now
+stops before porch geometry is emitted, preserving that edge's original wash too.
+A regression pins both the reduced tower peak and the unchanged overlapping beam.

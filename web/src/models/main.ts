@@ -94,6 +94,7 @@ const SPECIES: Partial<Record<string, Species>> = Object.fromEntries(SPECIES_LIS
 const SPECIES_NOTES: Record<string, string> = {
   generic: 'City’s canopy today: every crown from the canopy height map gets this faceted clump tree, coloured by a random kind. It is the baseline, and its triangles per tree are the budget a species must stay within. ',
   'willow-oak': 'Downtown’s street oak: a straight trunk under a dense oval crown of fine, narrow leaves; yellow-brown to russet late in the fall. ',
+  'white-oak': 'A broad irregular crown on pale spreading limbs, rounded-lobed blue-green leaves, wine-red to russet fall colour, and a few brown leaves held into winter. ',
   'water-oak': 'The yard and woods oak: a short trunk splitting into big ascending leaders under a wider, more open crown of small spatulate leaves; a yellow week in late fall, and some leaves held into winter. ',
   'loblolly-pine': 'The tall pine of Atlanta’s yards and woods: a long clear red-brown trunk under a high, open, irregular crown, its needles in tufts at the tips of bare twigs. Evergreen; the inner needles brown and drop in fall. ',
   'tulip-poplar': 'The city’s tallest tree: a straight column of trunk under a narrow oval crown of big square-tipped leaves, golden yellow early in the fall and bare by mid-November. ',
