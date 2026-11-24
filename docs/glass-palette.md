@@ -130,3 +130,20 @@ Each branch changes colour constants only, for buildings that are already merged
 **Signature landmarks the pick would move (Sam reviews; no change tonight):** Promenade Tower (`web/src/city/midtown-promenade.ts`). Its glass bases #5a525c, #6b626b and #4e505e are V 36, 42 and 37, so two of the three sit under the V 40 dark-glass floor before the grade. In shade from about 100 m it reads near-black navy, with the granite #826e68 showing as a pink grid. Rendered readings from the default view and a 600 m view will be added here.
 
 Skins merged before the provisional rules that aren't on a held branch yet: 1075 Peachtree, 10 10th, Metropolis (low glass), 903 Peachtree, ViewPoint. Their owners prepare branches only if Sam asks.
+
+## Shaded glass: two prototypes (held for Sam, #619)
+
+Both are dev flags and off by default. Compare them at the same camera and clock. [#619](https://github.com/samsolomon/sim-atlanta/pull/619) is a draft, with low at 81 programs and high at 93 when the flags are off.
+
+Matched off | A | B triplets:
+- [17th Street cluster, 14:00](https://github.com/samsolomon/sim-atlanta/blob/0d70dd9975d464cc96dc41849ba3b35a4ff38bd9/shade/c17-3.jpg)
+- [Midtown from the south, 14:00](https://github.com/samsolomon/sim-atlanta/blob/0d70dd9975d464cc96dc41849ba3b35a4ff38bd9/shade/mid-3.jpg)
+- [Whole board, 14:00](https://github.com/samsolomon/sim-atlanta/blob/0d70dd9975d464cc96dc41849ba3b35a4ff38bd9/shade/board-3.jpg)
+- [Dusk, 17:40](https://github.com/samsolomon/sim-atlanta/blob/0d70dd9975d464cc96dc41849ba3b35a4ff38bd9/shade/dusk-3.jpg)
+- [Off vs A pixel diff](https://github.com/samsolomon/sim-atlanta/blob/0d70dd9975d464cc96dc41849ba3b35a4ff38bd9/shade/c17-diff-off-vs-floor.jpg): only the glass towers change.
+
+**A: `?shade=floor`, glass only.** By day, any building fragment whose vertex colour reads as glass never lights below 0.6× its own colour. "Reads as glass" means blue-leaning, saturation < 0.75 and linear value 0.06–0.62. The floor fades out as the sun drops from 12° to 2°, so dusk and night are unchanged. Precast, brick, stone, roofs, deck openings, roads, bridges, terrain and trees are lit exactly as before. The pixel diff at the 17th Street camera confirms it: only the glass towers change, while the controls (deck roof S4 V54, grass S19 V35) stay identical. At 14:00 it lifts shaded glass from V25 to V44 on the 271 17th north face, and from V45 to V67 on 171 17th. The prototype adds 7 Lambert programs and unbatches building meshes. A shipping version would fold the floor into StaticLandmarkMaterial.
+
+**B: `?shade=lift`, global.** The grade's cool shadow tint becomes a slight neutral lift in the darkest tones. This touches every surface on screen: grass, roads and roofs shift too. On shaded glass it lowers saturation (S66 → S31) but leaves value unchanged (V25 → V24). It adds no programs, only a uniform.
+
+**Which leaves non-glass untouched:** A only.
