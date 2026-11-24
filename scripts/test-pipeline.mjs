@@ -1,4 +1,4 @@
-// Python checks for the building-part extraction, run by `pnpm test`.
+// Python checks for the building-part extraction and terrain transport baking, run by `pnpm test`.
 // They need the repository .venv (see README). Without it they are skipped loudly.
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -19,5 +19,7 @@ const run = (args) => {
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 run(['-m', 'unittest', 'test_building_parts']);
+// Freight centreline smoothing and surface-way baking (terrain_transport.py).
+run(['-m', 'unittest', 'test_terrain_transport']);
 // Every committed OSM board context must match what the extractor produces now.
 run(['rebake_buildings.py', '--check']);
