@@ -78,6 +78,24 @@ Five named glass families, plus bronze for when a photo shows it. Ranges are HSV
 3. The sunlit and shaded medians must stay inside the family's range as measured on the generic reference. In practice, rendered S ≤ 36 (teal 40), and rendered V in sun ≥ 40.
 4. Put the numbers in the PR body.
 
+**What base values land in range.** The grade and shadow tint raise rendered saturation more as glass gets darker. I sampled the median HSV of glass pixels in the centre of every 11:30 tile in the contact sheet. Some centres fall on shadow, slots or a neighbour, so these numbers are indicative, not exact.
+
+| Base value (V) | Rendered S compared with base S | Example: base → rendered (S/V) |
+|---|---|---|
+| 62–77 (light) | about the same, ±6 | 77 12th 30/70 → 34/47; Emmi 28/77 → 34/56; Ascent 24/66 → 29/40 |
+| 50–60 (mid) | +10 to +15 | 171 Seventeenth 34/57 → 47/44 |
+| 35–45 (dark) | +30 or more | Four Seasons 29/35 → 66/25; 1075 36/43 → 66/31; 10 10th 35/38 → 69/27 |
+
+So, to land under the rendered cap of S 36:
+
+| Base value | Use a base saturation of |
+|---|---|
+| ≥ 62 | ≤ 30 |
+| 50–60 | ≤ 22 |
+| 40–50 (the dark family) | ≤ 15. Dark glass should be near-neutral grey with only a slight cool tint. |
+
+These are starting points, not proof: the rendered-pixel check in the PR still decides. For punched-window buildings, where panes are about 4 px at the start camera and ink outlines dominate the median, take the sample from a closer camera at the same sun time.
+
 **Saturation cap:** S ≤ 36, except teal, which is ≤ 40 and photo-backed. Above that, glass reads as paint under the colour grade.
 
 ## If Sam approves
