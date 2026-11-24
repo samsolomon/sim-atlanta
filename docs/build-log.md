@@ -2853,6 +2853,9 @@ Web rebuild only; no `pnpm data`, new requests or worker change.
 [Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
 [Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
 
+### 2026-11-23 — A buried slab is not a blocked pavement
+
+The ground audit's 83 cm hit at 14th Street and 28 cm hit at the central Midtown footbridge were their buried undersides. Both tops already cleared the ground by 12 cm. Local winding can turn an underside upward, so winding alone cannot identify a walking surface. Transport now marks its slab-bottom triangle offsets for the development audit; production builds allocate no metadata and the geometry stays unchanged. Both-tier browser audits remove those two false alarms while retaining the real 8.8 cm intrusion at the south footbridge (370, −1870). A generated-deck regression reverses underside winding and also checks that 8 cm of ground above the exposed top still fails. The full suite passed 20 Rust, 950 web and 5 worker tests; Python checks skipped without `.venv`. [14th Street top](log/ground-audit/14th-street-top.jpg), daylight camera `125,-3641,30,55,45` with `dev&mindist=20`. The south footbridge remains a separate geometry issue; no surveyed deck height changed.
 ### 2026-11-23 — SCAD's stepped academic block
 
 SCAD Atlanta's 1600 Peachtree building now follows 17 mapped building parts, from the

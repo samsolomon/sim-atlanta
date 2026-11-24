@@ -81,6 +81,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const inCarvable = (q: BallastQuad) => q.every(([x, , z]) => x >= carvable.minX && x <= carvable.maxX && z >= carvable.minZ && z <= carvable.maxZ);
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
+  // Audit-only intent: a folded corner can wind a slab underside upward.
+  const buriedFaces = import.meta.env.DEV ? new Set<number>() : undefined;
   const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
   let bridgePositions: THREE.BufferAttribute;
   let structurePositions: THREE.BufferAttribute;
@@ -408,6 +410,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const down = ([x, y, z]: number[]) => [x, y - depth, z];
             if (leftSide) structures.quad(a, d, down(d), down(a), PAL.concreteDark);
             if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
+            buriedFaces?.add(structures.pos.length / 3);
+            buriedFaces?.add(structures.pos.length / 3 + 3);
             structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
           }
         }
@@ -549,6 +553,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       };
     }
     const mesh = new THREE.Mesh(geometry, material);
+    if (builder === structures && buriedFaces) mesh.userData.groundAuditBuriedFaces = buriedFaces;
     mesh.name = name;
     mesh.castShadow = !isFreight; // The structural batch also contains the freight deck undersides.
     mesh.receiveShadow = true;
