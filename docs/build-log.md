@@ -3109,6 +3109,11 @@ The wide lab now centres the projected silhouette of the train between the panel
 
 The repeated A16 probe returned in 278 ms and 569 ms with City paused. Cold builds took 16.1 s and 10.9 s. Both warm runs met the 1 s target on the 4 GB phone.
 
+
+### 2026-11-23 — River birch starts with three stems and peeling bark
+
+River birch’s first A study pairs salmon-and-cream stems with an open crown of small green leaf cards. The bark first rendered as broad, regular stripes. Finer broken layers, a raised-looking edge and darker bases on large trees made it read closer to the papery reference. The mature clump uses 190 / 134 triangles with no new texture allocation. July Front luminance is 0.245 / 0.240 against the generic canopy’s 0.248. [Seasonal sheet, bark detail and 100–300 m views](log/ui/tree-species/options-river-birch.jpg). Lab study. Web rebuild only.
+
 ### 2026-11-23 — A frame spent twenty minutes in traffic
 
 At 14:00:44.6 in the downtown simulation, one car slot started its next trip.
