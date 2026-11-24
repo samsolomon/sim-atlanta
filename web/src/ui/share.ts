@@ -18,7 +18,7 @@ export function shareUrl(page: string, target: ShareView, mode: 'live' | 'freeze
   u.searchParams.set('view', target.view);
   if (target.view === 'city') u.searchParams.set('cam', target.cam);
   // A model link names the model; there is no clock to freeze in Models.
-  if (target.view === 'models') u.searchParams.set('v', target.model);
+  if (target.view === 'models') u.searchParams.set('model', target.model);
   else if (mode === 'freeze') {
     u.searchParams.set('t', at.toISOString().replace(/\.\d{3}Z$/, 'Z'));
     u.searchParams.set('speed', '0');

@@ -117,7 +117,35 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
   const actions = document.createElement('div');
   actions.className = 'a2-card-actions';
   actions.innerHTML = '<button type="button" class="a2-btn" data-card-share>Share</button>';
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'a2-btn a2-more';
+  more.textContent = 'More ⌃';
+  more.setAttribute('aria-controls', 'card-content');
+  actions.append(more);
   card.append(actions);
+  const setExpanded = (expanded: boolean) => {
+    host.classList.toggle('a2-expanded', expanded);
+    more.setAttribute('aria-expanded', String(expanded));
+    more.textContent = expanded ? 'Less ⌄' : 'More ⌃';
+  };
+  more.onclick = () => setExpanded(!host.classList.contains('a2-expanded'));
+  let swipe: { x: number; y: number } | null = null;
+  host.addEventListener('touchstart', event => {
+    const content = card.querySelector('#card-content');
+    const item = event.touches[0];
+    swipe = event.touches.length === 1 && host.classList.contains('a2-selection')
+      && (!(content?.contains(event.target as Node)) || content.scrollTop <= 0)
+      ? { x: item.clientX, y: item.clientY } : null;
+  }, { passive: true });
+  host.addEventListener('touchcancel', () => { swipe = null; });
+  host.addEventListener('touchend', event => {
+    if (!swipe) return;
+    const touch = event.changedTouches[0];
+    const dy = touch.clientY - swipe.y;
+    if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(touch.clientX - swipe.x)) setExpanded(dy < 0);
+    swipe = null;
+  }, { passive: true });
   actions.querySelector('[data-card-share]')!.addEventListener('click', (e) => {
     e.stopPropagation(); // the share panel it opens would otherwise see an outside click
     hooks.share?.();
@@ -154,6 +182,7 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
   function render() {
     const cur = current();
     host.hidden = !cur;
+    host.classList.toggle('a2-selection', cur?.id === 'selection');
     for (const e of Object.values(entries)) e.node.classList.toggle('a2-shown', e === cur);
     host.classList.toggle('a2-full', !!cur?.full);
     host.setAttribute('aria-label', cur ? cur.title() : 'Details');
@@ -197,6 +226,7 @@ export function createDetailPanel(hooks: PanelHooks = {}) {
   // Follow the page's card: a new selection becomes the newest content; hidden → it leaves the stack.
   card.addEventListener('a2-select', () => {
     dropStops();
+    setExpanded(false);
     show('selection');
   });
   // The selection's own text changes under Key or About (a train ends its trip): keep the back row true.
