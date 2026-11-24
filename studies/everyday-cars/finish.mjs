@@ -49,58 +49,98 @@ function kit() {
 
 export function sedanFinish(near=true){
   const {faces,panel,skin,box,wheel}=kit(), bumper=2.4425, end=bumper-.023;
-  const axles=[-bumper+1.085,bumper-.975], r=.33, arch=.383;
-  // Cut the arch into the metal skirt. Each arch has an inset, open, dark lining.
-  const zs=[-end,-2.30,-1.96,-.70,.52,1.05,1.97,2.23,end];
-  const archSegments=near?10:4;
-  for(const z of axles)for(let i=0;i<=archSegments;i++)zs.push(z-arch*Math.cos(i*Math.PI/archSegments));
-  zs.sort((a,b)=>a-b);
-  function section(z){
-    const ratio=Math.abs(z)/end, w=.92-.10*Math.max(0,(ratio-.78)/.22);
-    const shoulder=.925-.13*Math.pow(ratio,3);
-    let low=.285;
-    for(const a of axles)if(Math.abs(z-a)<=arch+.000001)low=Math.max(low,r+Math.sqrt(Math.max(0,arch**2-(z-a)**2)));
-    return [[-w*.95,low,z],[w*.95,low,z],[w,Math.max(low+.03,shoulder-.135),z],
-      [w*.92,shoulder,z],[w*.71,shoulder+.043,z],[-w*.71,shoulder+.043,z],[-w*.92,shoulder,z],[-w,Math.max(low+.03,shoulder-.135),z]];
+  // AXVH70 G Leather Package profile, in longitudinal stations from rear bumper to nose.
+  const rearAxle=-bumper+1.085, frontAxle=rearAxle+2.825;
+  const r=.335, arch=.365;
+  // z, half width at shoulder, deck/hood centre height, sill height.
+  const body=[[-end,.65,.96,.36],[-2.32,.79,1.035,.255],[-2.13,.875,1.045,.22],
+    [-1.81,.912,1.075,.205],[-1.28,.92,1.065,.20],[-.67,.90,1.005,.195],
+    [.05,.898,.970,.195],[.93,.906,.951,.20],[1.13,.92,.947,.20],
+    [1.66,.916,.920,.205],[2.00,.873,.86,.21],[2.24,.805,.802,.22],[end,.61,.73,.255]];
+  function sample(stations,z){
+    const i=stations.findIndex(row=>row[0]>=z);
+    if(i<=0)return stations[i===0?0:stations.length-1];
+    const a=stations[i-1],b=stations[i],t=(z-a[0])/(b[0]-a[0]);
+    return a.map((v,j)=>v+t*(b[j]-v));
   }
-  skin(zs.map(section),bodyPaint);
-  for(const z of axles)for(const s of [-1,1]){
-    for(let i=0;i<archSegments;i++){
-      const p=(j,x)=>[s*x,r+arch*Math.sin(j*Math.PI/archSegments),z-arch*Math.cos(j*Math.PI/archSegments)];
-      panel([p(i,.87),p(i+1,.87),p(i+1,.60),p(i,.60)],dark);
+  const axles=[rearAxle,frontAxle], segments=near?12:5;
+  const zs=body.map(row=>row[0]);
+  for(const axle of axles)for(let j=0;j<=segments;j++)zs.push(axle-arch*Math.cos(j*Math.PI/segments));
+  const sections=zs.sort((a,b)=>a-b).map(z=>{
+    const [,w,top,sill]=sample(body,z);
+    let low=sill;
+    for(const axle of axles)if(Math.abs(z-axle)<=arch+.000001)low=Math.max(low,r+Math.sqrt(Math.max(0,arch**2-(z-axle)**2)));
+    const points=[[0,low], [w*.955,low],[w*.974,Math.max(low+.012,sill+.11)],
+      [w,Math.max(low+.022,top-.19)], [w*.973,top-.115],[w*.81,top-.040],[w*.46,top+.005],[0,top]];
+    return [...points,...points.slice(1,-1).reverse().map(([x,y])=>[-x,y])].map(([x,y])=>[x,y,z]);
+  });
+  skin(sections,bodyPaint);
+  for(const axle of axles)for(const side of [-1,1]){
+    for(let i=0;i<segments;i++){
+      const at=(j,x)=>[side*x,r+arch*Math.sin(j*Math.PI/segments),axle-arch*Math.cos(j*Math.PI/segments)];
+      panel([at(i,.88),at(i+1,.88),at(i+1,.64),at(i,.64)],dark);
     }
-    wheel(s*.76,r,z,s,near);
+    wheel(side*(axle===frontAxle?.790:.7925),r,axle,side,near);
   }
-  const rings=[[-1.74,.928,.80],[-1.03,1.37,.715],[-.74,1.439,.69],[-.26,1.445,.69],[.27,1.405,.69],[1.055,.946,.81]];
-  for(let i=1;i<rings.length;i++){
-    const [a,b]=[rings[i-1],rings[i]];
-    const top=(v,s)=>[s*v[2],v[1],v[0]];
-    panel([top(a,-1),top(a,1),top(b,1),top(b,-1)],i===1||i===5?wind:bodyPaint);
-    for(const s of [-1,1]){
-      const point=(t,h)=>{const z=a[0]+t*(b[0]-a[0]), y=a[1]+t*(b[1]-a[1]),w=a[2]+t*(b[2]-a[2]);return [s*(.849+h*(w-.849)),.929+h*(y-.929),z];};
-      panel([point(0,0),point(0,1),point(1,1),point(1,0)],bodyPaint);
-      const pane=(t,h)=>{const v=point(t,h);v[0]+=s*.003;return v;};
-      panel([pane(.035,.07),pane(.035,.91),pane(.966,.91),pane(.966,.07)],glass);
+  // Continuous roof crown across the car, with long rear glass narrowing onto the raised deck.
+  // z, belt height, crown height, glass-base half width, roof-edge half width
+  const canopy=[[-1.89,1.065,1.079,.67,.52],[-1.54,1.065,1.198,.82,.635],
+    [-1.15,1.038,1.34,.855,.66],[-.92,1.017,1.402,.858,.68],
+    [-.61,.993,1.437,.857,.698],[-.28,.974,1.445,.854,.71],
+    [.03,.956,1.437,.852,.72],[.28,.947,1.414,.843,.73],
+    [.47,.941,1.372,.837,.735],[.71,.938,1.283,.833,.750],[1.10,.941,1.067,.821,.775],[1.30,.942,.951,.80,.775]];
+  function roofPoint(v,side,f){
+    const [z,base,h,,w]=v;
+    return [side*w*f,h-(h-base)*.112*f*f,z];
+  }
+  for(let i=1;i<canopy.length;i++){
+    const a=canopy[i-1],b=canopy[i],paneColor=i<=3||i>=9?wind:bodyPaint;
+    for(const side of [-1,1]){
+      for(const [l,r] of [[0,.56],[.56,1]])panel([roofPoint(a,side,l),roofPoint(a,side,r),roofPoint(b,side,r),roofPoint(b,side,l)],paneColor);
+      const point=(v,t)=>[side*(v[3]+(v[4]-v[3])*t),v[1]+(roofPoint(v,side,1)[1]-v[1])*t,v[0]];
+      panel([point(a,0),point(a,1),point(b,1),point(b,0)],bodyPaint);
     }
   }
-  // Recessed lower intake, bumper shoulders, lamp pockets and boot-lid break.
-  for(const [z,y,w,h,c] of [[end+.002,.492,1.24,.225,dark],[-bumper+.013,.588,1.11,.18,shadow],[-bumper+.0075,.588,.50,.105,'#c3c2b9']])box(0,y,z,w,h,.015,c);
-  for(const s of [-1,1]){
-    const tip=(x,y,z)=>[s*x,y,z];
-    panel([tip(.32,.764,end+.015),tip(.77,.787,end+.015),tip(.81,.696,end+.015),tip(.44,.675,end+.015)],lens);
-    panel([tip(.38,.734,-end-.015),tip(.77,.770,-end-.015),tip(.78,.648,-end-.015),tip(.44,.641,-end-.015)],red);
+  // The side glass follows the roof without a mullion at every modelling station.
+  for(const [lo,hi] of [[-1.29,-.915],[-.892,-.205],[-.105,1.04]]){
+    const stops=[lo,...canopy.map(c=>c[0]).filter(z=>z>lo&&z<hi),hi];
+    for(let i=1;i<stops.length;i++)for(const side of [-1,1]){
+      const glassPoint=(z,t)=>{
+        const v=sample(canopy,z), top=roofPoint(v,side,1)[1];
+        const taper=Math.min(1,(z+1.34)/.36,(1.12-z)/.30);
+        const f=.12+(t*.84)*taper;
+        return [side*(v[3]+(v[4]-v[3])*f+.004),v[1]+(top-v[1])*f,z];
+      };
+      const a=stops[i-1],b=stops[i];
+      panel([glassPoint(a,0),glassPoint(a,1),glassPoint(b,1),glassPoint(b,0)],glass);
+    }
+  }
+  for(const side of [-1,1]){
+    const facet=(points,color)=>panel(points.map(([x,y,z])=>[side*x,y,z]),color);
+    // Both lamps turn onto the fender, following the front and rear bumper corners.
+    facet([[.26,.680,2.41],[.60,.766,2.355],[.81,.812,2.21],[.89,.824,1.92],
+      [.854,.755,2.02],[.69,.683,2.29],[.31,.636,2.417]],lens);
+    facet([[.16,.962,-2.404],[.61,1.005,-2.355],[.865,1.017,-2.08],
+      [.891,.950,-1.94],[.84,.898,-2.15],[.60,.901,-2.37],[.21,.910,-2.416]],red);
+    facet([[0,.628,bumper],[.47,.669,2.415],[.62,.602,2.39],[.72,.380,2.354],[.57,.315,2.398],[0,.312,bumper]],dark);
+    facet([[0,.84,-bumper],[.50,.866,-2.407],[.44,.693,-2.413],[0,.66,-bumper]],shadow);
     if(!near)continue;
-    box(s*.895,.34,0,.035,.055,1.98,rubber);
-    for(const z of [-.93,.02,.98]){
-      const top=.79, low=Math.abs(z)>.90?.60:.36;
-      panel([[s*.922,low,z],[s*.922,low,z+.012],[s*.922,top,z+.05],[s*.922,top,z+.037]],shadow);
+    for(const z of [-.98,-.21,.99]){
+      const [,w,h,sill]=sample(body,z);
+      const low=Math.abs(z)>.90?.62:sill+.065;
+      facet([[w+.002,low,z],[w+.004,low,z+.009],[w*.978,h-.102,z+.032],[w*.978,h-.102,z+.022]],shadow);
     }
-    for(const z of [-.78,.16])box(s*.918,.784,z,.022,.032,.16,alloy);
-    box(s*.894,.976,.73,.18,.038,.055,dark);
-    box(s*.998,1.015,.74,.156,.095,.18,bodyPaint);
-    box(s*.995,1.019,.645,.12,.066,.012,steel);
+    for(const z of [-.91,-.025]){
+      const [,w,h]=sample(body,z);
+      box(side*w,h-.125,z,.018,.025,.15,alloy);
+    }
+    box(side*.885,.982,.73,.15,.032,.047,dark);
+    box(side*.971,1.012,.72,.15,.082,.167,bodyPaint);
+    box(side*.966,1.014,.634,.112,.051,.008,steel);
+    for(const y of [.365,.420,.475,.530]){
+      facet([[0,y,bumper+.001],[.58,y,2.394],[.58,y+.009,2.394],[0,y+.009,bumper+.001]],alloy);
+    }
   }
-  if(near)for(const y of [.434,.476,.518])box(0,y,bumper-.009,1.06,.013,.018,alloy);
   return faces;
 }
 
@@ -120,7 +160,11 @@ export function tractorFinish(near=true){
   for(const s of [-1,1]){
     panel([[s*1.043,2.13,.94],[s*1.043,2.82,.94],[s*1.043,2.84,1.62],[s*1.043,2.18,1.91]],glass);
     wheel(s*.995,.51,steer,s,near,true);
-    for(const z of [tandem-.67,tandem+.67])wheel(s*1.032,.51,z,s,near,true);
+    for(const z of [tandem-.67,tandem+.67]){
+      wheel(s*1.032,.51,z,s,near,true);
+      // Add the inner casing inboard. Both 260 mm tyres retain 62 mm of sidewall clearance.
+      round(s*.710,.51,z,'x',[[-.130,.468],[-.10,.51],[.10,.51],[.130,.468]],tyre,near?16:8);
+    }
     // Swept bicycle fenders cover the crown but leave the tyre sidewall exposed.
     for(let i=0;i<12;i++){
       const p=(j,x,r)=>[s*x,.51+r*Math.sin(j*Math.PI/12),steer+r*Math.cos(j*Math.PI/12)];
