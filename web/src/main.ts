@@ -1128,7 +1128,9 @@ setInterval(() => {
     else if (params.has('bus')) selectedBus = params.get('bus');
     else if (diorama && ['illustrative:freight:downtown', 'illustrative:freight:norcross'].includes(params.get('freight') ?? '')) {
       selectedFreight = params.get('freight');
-      showCard(cityFreightCard(selectedFreight === 'illustrative:freight:norcross' ? 'NS Norcross District' : undefined), !!follow);
+      const norcross = selectedFreight === 'illustrative:freight:norcross';
+      showCard(cityFreightCard(norcross ? { line: 'NS Norcross District', railroad: 'ns' } : undefined), !!follow);
+      freightCardKey = ''; // Refresh with this passage's consist when it is on the board.
     }
   }
   followFromLink();
