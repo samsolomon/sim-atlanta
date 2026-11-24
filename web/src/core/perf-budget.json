@@ -8,14 +8,6 @@
         "why": "freight consists are built when they enter the board, after ready; vehicles agent (#424 pads freight to one clip-plane count)"
       },
       {
-        "match": "stockNight",
-        "why": "Crescent stock is built when the train enters the board, with its own clip planes; vehicles agent"
-      },
-      {
-        "match": "cq400",
-        "why": "CQ400 buses are built when they enter, with per-route clip planes; vehicles agent"
-      },
-      {
         "match": "depth,",
         "why": "shadow-depth variants compile on their first shadow pass; prewarm does not draw shadows yet"
       }
