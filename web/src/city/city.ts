@@ -1530,7 +1530,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
-    rolloutBatch.update(speciesDt, camera);
+    rolloutBatch.update(speciesDt, camera, camera.position.distanceTo(controls.target));
     if (!drive) {
       // Tighten the depth range with the orbit distance (city/depth-range.ts).
       const p = camera.position;

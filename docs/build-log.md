@@ -2781,3 +2781,21 @@ Sam selected B: #d5dfdc at 0.82 emission, with the 0.72–1 crest gradient and f
 Final captures checked north/south daylight (`713,-3672,0,50,1150` and `713,-3672,180,50,1150`), the oblique night edge (`1268,-3672,90,72,950`), and matched aerial day/night on both tiers (`800,-3710,70,50,1021`). Both veil faces remain present; the light line is visible from the oblique night view. Orca's review tab stopped advancing animation frames, so final evidence uses the repository's headless Chrome/CDP capture setup. Full tests pass (931 web tests, one skipped), and performance ceilings pass on both tiers; high-tier ready time was 4.6 s against a nonblocking 3 s target. [Matched pair, high](log/ui/midtown-skyline/napkin-b-daynight-high.jpg) · [Matched pair, low](log/ui/midtown-skyline/napkin-b-daynight-low.jpg) · [Alternate angles](log/ui/midtown-skyline/napkin-b-angle-checks.jpg).
 
 Final Claude review requested the oblique camera in daylight on both tiers. The [additional captures](log/ui/midtown-skyline/napkin-b-oblique-day.jpg) show both curved faces and end lattices without a missing section at that camera. The visual risk is dismissed for the requested view; no universal claim about arbitrary transparent overlaps is implied. Two review rounds completed; stale documentation and shared-origin/light ordering were addressed, and no blocking findings remain.
+
+### 2026-11-23 — The tree cost was a second drawing of the leaves
+
+The A16 probes recovered about5fps by disabling the species foliage mask, much more
+than switching off crown shadows. The mask drew the alpha-tested cards again and
+activated extra full-screen ink samples. Removing it everywhere made the nearby
+crape crowns visibly darker inside, so low quality now keeps the mask in close views
+and unregisters it beyond600m, restoring it below500m. High quality stays unchanged.
+
+The distance is to the orbit target, not each tree. The whole-board phone view was
+21,084m away, a surprise after discussion had assumed roughly400m. All962 registered
+species instances lose their extra mask draw in that view; the approved420m Prado
+and350m terrace views keep it. Tests cover far/near transitions, new areas mounting
+while far, and removing/reopening rows without stale mask state. The final frozen
+phone default/pan comparison still gates release.
+
+[Why the near mask stays](log/ui/tree-species/mask-clawback/1180-day-sheet.jpg) ·
+[Measurement and validation notes](tree-mask-clawback.md).
