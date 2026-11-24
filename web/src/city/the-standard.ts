@@ -2,6 +2,7 @@ import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litFacade, seedOf } from './skin-kit';
 
 export const theStandardId = 'osm:way:779716217';
 const origin: P2 = [218, -2290];
@@ -18,6 +19,9 @@ const garage: P2[] = [[-24.05, 0.9], [23.2, 0.9], [22.2, 58.5], [-14.8, 57.9], [
 export function createTheStandard(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const shell = landmarkShell(buildings, grid, site.id, 'The Standard', origin, [1, 0], [[0, -48], [15, -20], [0, 30]]);
   if (!shell) return null;
+  // Lit panes come from the shared hash: stable per building, face, floor and bay.
+  const seed = seedOf(site.id);
+  let face = 0;
   const ccw = (ring: P2[]): P2[] => {
     const area = ring.reduce((sum, [x, z], i) => {
       const [nx, nz] = ring[(i + 1) % ring.length];
@@ -63,16 +67,16 @@ export function createTheStandard(buildings: VBuilding[], site: VBuilding, grid:
       const lo = covered(a, b, length);
       if (top - lo < 1) return;
       const street = lo <= datum + 0.01;
-      if (street) shell.facade(a, b, datum + 0.4, datum + 5.6, 1, 3.4, 0.84, 0.84, storefront, 0.35);
+      if (street) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 5.6, 1, 3.4, 0.84, 0.84, storefront, 0.35);
       const from = street ? datum + 6 : lo + 0.2;
       const floors = Math.max(1, Math.round((top - 0.8 - from) / 3));
       if (isGarage) {
         // The 10-storey mid-rise wraps the garage in apartments, so its outer faces are lit rooms.
-        shell.facade(a, b, from, top - 0.8, floors, 2.4, 0.6, 0.64, punched, 0.45);
+        litFacade(shell, seed, face++, a, b, from, top - 0.8, floors, 2.4, 0.6, 0.64, punched, 0.45);
         return;
       }
       const window = (l: P2, r: P2, lo: number, hi: number) =>
-        shell.facade(l, r, lo, hi, Math.max(1, Math.round((hi - lo) / 3)), 2.4, 0.6, 0.64, punched, 0.45);
+        litFacade(shell, seed, face++, l, r, lo, hi, Math.max(1, Math.round((hi - lo) / 3)), 2.4, 0.6, 0.64, punched, 0.45);
       if (length <= 14) {
         window(a, b, from, top - 0.8);
         return;
