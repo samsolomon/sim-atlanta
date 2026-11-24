@@ -1,66 +1,47 @@
-# Handoff: studio-tree-lab → GPT-6.2
+# Studio tree lab handoff to Claude Opus
 
-Updated 2026-11-23 (America/New_York) by Codex session `48c0c9e4-ceda-4b87-adf1-6ada97d12390` at coordinator request `msg_4f8696001876`. Stop at this pushed WIP; successor continues on the same worktree. Read AGENTS.md and fetch first.
+Updated 2026-11-23, America/New_York, by Codex session `orca_session_id:a2d7d1c0-3233-4ebd-b47a-19c9ea8d494f`. Worktree `studio-tree-lab`. Read `AGENTS.md`, fetch origin, and read that session’s history. The current coordinator is on Sam’s MacBook Air, terminal `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. Use `orca orchestration reply --id <msg> --from orca_session_id:<your-session> --body '<body>'`. Direct sends from Studio have previously failed pairing. Only the coordinator deploys.
 
-## GPT-6.2 update
+## State and holds
 
-The spring revision for Sam’s second look is on this branch. Three or four low boughs carry fine twig cards with matched magenta flower cards for March and bare wood for winter. April leaf-out is reddish-purple. The approved heart-shaped summer cards, yellow fall and size range are retained. The refreshed sheet is `docs/log/ui/tree-species/options-eastern-redbud.jpg`, and the spring money shot, 300 m captures and leaf-out are in its adjoining `redbud/` directory. Mature cost is 193 / 138 triangles. Eye level position (0, 1.6, 10), target (0, 3.36, 0), FOV 58, with `/models.html?v=eastern-redbud&variant=A&size=mature&t=2026-03-22T12:00:00-04:00`. Distance camera position (0, 3.15, 300), target (0, 3.15, 0), FOV 30. Sam approved A as the Lab default. City placement belongs to a future rollout.
+- Branch `samsolomon/american-holly-lab` contains pushed first pass `805729f8` and this handoff. No open holly PR. Hold any holly merge until the coordinator relays Sam’s OK. Hold additional species rollout to City until Sam has seen the all-converted comparisons.
+- River birch A is the Lab default, verified #383 `MERGED`, `mergeCommit=dc07620e4bda00bde6ecee75c9fbd3c7685718f9`. Earlier merges: #375 lacebark elm A, #374 Callery pear A, #367 Eastern redbud A. These were Lab additions. The coordinator received verified notices.
+- Holly’s initial A is a single fruiting female exemplar, with a tall narrow crown, close-up spiny leaves, and fall/winter fruit cards nested on foliage cards. Four sizes, 192/134 triangles and two instanced draws. Atlas cost 1.33 MiB, declared. Browser sheet, TypeScript and `pnpm test` passed at `805729f8`. The Python tests skip here without `.venv`. No code for the requested revisions or preview has been written.
+- No tabs or dev servers are open in this worktree. The Lab has local GA data; the City `web/public/data/scene` directory is absent. I tested finding it at `/Users/samsolomon/Developer/sim-atlanta/web/public/data/scene` and removed my temporary symlink before handoff. Stage current data per README, or copy a known-current generated dataset into this worktree. A scene symlink is reported by Git as untracked, so keep it out of commits.
 
-## Predecessor's state at handoff
+## 1. High priority: City all-species preview
 
-Branch **`samsolomon/eastern-redbud-lab`** contains the unmerged first redbud lab study and this handoff. No redbud PR opened. Code, sheet and docs are committed together as WIP. The model is intentionally not an approved default or City rollout. All servers and tabs owned by this session are closed at handoff.
+Coordinator `msg_f111a77c7cc5`. Sam’s words, looking at Ansley Park overhead at 14:00 on November 20, about 150 m:
 
-Three preceding tasks are approved and verified merged (`gh pr view --json state,mergeCommit`):
+> “One thing we should do pretty soon is take a look with all of the trees converted... looking at this Ansley Park screen with the mixed trees, I'm a little worried about how the more detailed trees are going to look.”
 
-- Magnolia A3, **#345**, MERGED `f1f638b0a4714feb6d6f31c2098fe4cb82a3b194`: tidy upright lower skirt, warm-white specks; high A3 luminance +7.9% vs A, low +6.2%. `Look.preferred='A3'`, `tidySkirt` optional. Sheet `docs/log/ui/tree-species/options-magnolia-a3-pick.jpg`.
-- Dogwood A round 2, **#352**, MERGED `ab68dea70208ff535920f8795edb03d8e560999d`: dense dome with three layers, low fork/curving limbs, daylight white bloom, inset top tips, finer horizontal winter mesh. 195/146 triangles. Sheet `options-dogwood-final-tidy.jpg` (before/after bloom/winter), full `options-flowering-dogwood-round-2.jpg`.
-- White oak A, **#353**, MERGED `b1ad388f1e5287538268f255dea2e6d3a3b0677a`: Sam chose lobed cards, preferred A. 193/81 triangles plus bounded near tips. Winter residue stays crown-wide, documented with Sam's authorization to retain that limitation if localizing isn't cheap. Sheet `options-white-oak.jpg`.
+The coordinator says the few converted trees look like dithered fuzz beside the crisp, faceted generic clumps. Requested:
 
-Coordinator and tree-species received verified merge notices and API/cameras. Next City rollout is **elm A, dogwood A, magnolia A3, white oak A, willow oak A, water oak A**. Tree-species owns City integration, coordinator alone deploys.
+1. Add an opt-in switch such as `?trees=all-species` to model every City tree under the current placement mix. Keep it an isolated preview and preserve the ordinary view. Start from current `origin/main` on a separate preview branch so this check can be made before further rollout and without holly changes.
+2. Shoot matched off/on pairs at Ansley Park (Sam’s camera if available, otherwise about 150 m overhead), Piedmont Park, a Midtown street and a far skyline view. Each at noon in November, July and January, and once at night. Send the pairs and give an honest read. Report draw calls and triangles by tier with the preview on. The coordinator proposed silhouette, proportion, colour and branching in the same faceted clump language, with leaf cards reserved for a close LOD if the detailed trees clash.
+3. Inspect `web/src/trees/rollout.ts` first. It plans context-specific species choices from canopy crowns and size eligibility; some crowns deliberately stay generic. Work out and disclose how the preview assigns those unassigned crowns while preserving existing calibrated placements, trees managed elsewhere, tier identity and the placement mix. Do not silently call a generic remainder an assigned species. `trees/rollout-city.ts` batches each look across City, has low-detail one-form controls, fixed bounds and ink-mask distance gates. `terrain/model.ts` connects board rows to it. Check `docs/tree-species.md` and `docs/handoffs/studio-tree-species.md` for prior placement and performance decisions; coordinate with the tree-species owner (receives separate rollouts).
+4. Use `?view=city&cam=1194,-4352,20,50,420&t=2026-11-20T14:00:00-05:00` for the established Prado setup; it is a fallback, not Sam’s exact shot. Try tilt about 20° and distance 150 m for the overhead aesthetic and save the actual tested strings. Piedmont 10th Street gate reference target is x=1739, z=-3112. Its documented close shot uses `cam=1739,-3112,0,60,25`; use a normal distance for this task. Use July/January noon and a full-night clock on the same cameras. Capture both tiers and report `__perf.report()` at the same settings.
 
-## Current request and redbud WIP
+## 2. American holly A revision
 
-Coordinator `msg_5ab24a940328`: rank 2–3 next species by recorded Ansley/Midtown observations and inventory, then start first, keep A-style cards. Proposal sent in one message (`msg_cf891ee46c13`):
+Coordinator `msg_3d013e341010`. Sam’s exact words in the note: hollies “usually end up more like big bushes instead of trees” and he wants them to read as spiky. The coordinator’s requested direction:
 
-1. Redbud: explicit pink tree in Westminster/Winn March Street View; TA 4.6% alive in-board plantings / 6.1% street strips/wells; GT 2.6%.
-2. Callery/Bradford pear: C11 9.0% crown-squared / 4.5% stems. White-flowering Peachtree Circle ornamental remains unidentified, not pear evidence.
-3. Chinese/lacebark elm: C11 5.7% crown-squared / 6.7% stems, TA 3.5%, Midtown Alliance specified. Less new value because current elm stands in for it.
+1. “Shape: drop the bare trunk and the narrow top crown. Make the mature tree a dense, broad pyramid with foliage to the ground and no visible trunk; the reference photo is much broader than the model.”
+2. “Add a shrub form: a big rounded hedge or screen bush 2-4 m tall (the Nellie R. Stevens / Burford hollies common in Atlanta yards). In City placement, shrubs should outnumber trees, mostly as foundation plantings and screens beside houses.”
+3. “Spikiness at City distance: individual spines won't resolve at 100-400 m, so carry it through the silhouette and light. Use jagged, notched outer cards instead of soft blobs, glossy glints (reuse the magnolia sheen material; add no new shader program, since low tier is at 90/90), and a darker, bluer green with more contrast than the neighbouring trees.”
+4. “Berries: make the winter clusters slightly larger and put them on the outer surface, so they read from street distance.”
+5. “Bug: the close-up shows brownish outlines around the leaf cards (fruit.png). Remove them.”
+6. “Deliver: the same-layout sheet with tree and shrub forms side by side, plus a City view at normal distance by day and at night, with triangles and draws for both tiers. Don't merge until I relay Sam's OK.”
 
-River birch follows; holly/Leyland lack comparable quantified support. Five Ansley views are qualitative, not frequency counts; C11 excludes Midtown/Ansley. Full rationale in docs/tree-species.md.
+Pointers and design risks, all unimplemented:
 
-Implemented in `web/src/trees/redbud.ts` and registries: four illustrative sizes, low vase, heart-shaped A cards, March pink / April leaves / October yellow / November bare. New `cordate` atlas shape in `foliage-kit.ts`, ninth atlas declared in materials budget (+1.33 MiB). No shaders or City placement changed. One option only: user asked A-style consistency, so looks.test.ts now permits 1–3 base options instead of requiring 2–3.
+- `web/src/trees/american-holly.ts` has tree habit, palette, sizes and Look. `web/src/trees/foliage-kit.ts` has spiny leaf painter, fruit tile and card placement. Fruit initially floated when put beyond its support; keep it on an outer foliage plane with enough coverage, rather than scattering detached berries. Current sheet is `docs/log/ui/tree-species/options-american-holly.jpg`; close-up `docs/log/ui/tree-species/american-holly/fruit.png`. Photos remain in `/tmp/holly-form.jpg` and `/tmp/holly-fruit.jpg`; source and credits in `docs/tree-species.md#american-holly`.
+- Brown line comes from ink mode 2. `web/src/vignette/ink.ts` uses warm `uFoliageInk` for modes above 1.5. Try neutral silhouette mode 1 on both forms. The low-tier City mask drops out at wide orbits by design.
+- Magnolia A3 uses existing `specks: 0.18` (low uses 0.6 times the value). The compile key also includes `bloomWash`, `bloomLift` and `bloomFill`. Simply setting the same speck amount on holly will still add a program unless those parameters align. Magnolia has wash 0.12 and default lift/fill; holly currently has default wash and lift 0.65. A possible fix is to make the wash a per-material uniform and reuse the exact magnolia program, with shared code and no wash on holly. Measure actual programs on both tiers, with magnolia present and after pan. Do not tint the foliage red to make a cache key match. Near vs far shader, mask, and shadows must still agree.
+- City yard placement source is `residential.ts`’s foundation runs and clipped hedges; low currently skips those shrubs. Consider bounded deterministic replacements/placements that use accepted yard clearances, reuse the rollout batch, and preserve both tiers’ planting identity. Avoid blocking paths, drives, sidewalks, house footprints, terrace work and existing trees. Turf grade, hard-cover overlaps, stem count, evergreen appearance and seasonal replay all need browser checks. As of handoff no holly City wiring or merge is authorized.
+- Holly eye camera `(0,1.6,15)` to `(0,5.04,0)`, FOV 58. Fruit close-up `(-4.6,3.8,0)` to `(0,3.9,0)`, FOV 43. Lab `/models.html?v=american-holly&variant=A&size=mature&t=2026-12-06T12:00:00-05:00`. Far comparison at z=100 or 300, target y=4.725, FOV 30. The first-pass capture and sheet scripts are in `/tmp/capture-holly.py` and `/tmp/sheet-holly.py`; update the closed tab IDs before reuse. Pillow is at `/tmp/tree-sheet-venv/bin/python`.
 
-**The spring treatment needs work before promotion.** Existing bloom wash makes large pink hearts, whereas reference flowers trace bare branches. This is clearly documented and labelled on the sheet, not passed off as finished. Summer/winter skeleton is also a first pass (thin straight forks); compare the reference before claiming a characteristic redbud. Do not automatically merge or send to City as approved.
+## Checks and release routine
 
-Sheet: `docs/log/ui/tree-species/options-eastern-redbud.jpg`, individual captures in `redbud/` next to it. Source photo: Dcrjsr, CC BY 3.0, NC State https://plants.ces.ncsu.edu/plants/cercis-canadensis/ . UF source https://ask.ifas.ufl.edu/publication/st145 . Sources support heart-shaped leaves, broad low vase, early pink bloom, yellow autumn and usual 20–30 ft height; nominal sizes/callipers/calendar are explicitly estimated/inferred. No night reference claimed.
-
-185 high / 85 low triangles incl carpet, no tips. Summer Front high luminance/saturation .236/.808, low .260/.773 after lowLift −.015. Front camera `(0,3.15,23.4)` target `(0,3.15,0)`, FOV30; eye `(0,1.6,10)` target `(0,3.36,0)`, FOV58. URLs `/models.html?v=eastern-redbud&variant=A&size=mature&t=2026-03-22T12:00:00-04:00` for bloom; July1 summer, Oct28 fall, Jan15 winter, `tier=low`.
-
-## Next steps
-
-1. Send coordinator the pushed WIP sheet and honest spring limitation if needed; status at milestones. Resume redbud by making bloom follow wood within budget (consider optional geometry path, do not affect other species). Preserve A-style leaf cards. Review low fork against the reference.
-2. Browser-check seasonal high/low, all four sizes and night, remeasure brightness, pnpm test and cross-review before PR. This WIP's two review rounds are complete; new substantive iteration may get its own review.
-3. After Sam's eye, finish redbud on this task branch/PR. Pear then Chinese elm are proposed, not yet commanded builds. Supply looks API help to tree-species as needed.
-
-## Validation at handoff
-
-- `pnpm test` passes in `/tmp/redbud-picked-tests.log`. Initial failure was only the obsolete requirement for ≥2 options; fixed to allow 1. No weakened geometry budgets.
-- `pnpm --dir web exec tsc --noEmit` passes, `/tmp/redbud-final-tsc.log`.
-- Browser seasonal/sizes/eye/night/high/low captures taken and sheet inspected. Low-tier final capture `/tmp/redbud-low.log`.
-- Claude cross-review twice, clean: `/tmp/redbud-review.log`, `/tmp/redbud-review-2.log`. Both explicitly call out documented draft bloom limitation.
-- Python pipeline tests skip: repo `.venv` absent. Temporary `/tmp/tree-sheet-venv` is Pillow only, not pipeline environment. Existing generated-data bridge warnings are unrelated.
-- No City perf run: City reads rollout-city registry, which this task does not modify.
-
-## Coordination / tooling
-
-Orca `/Applications/Orca.app/Contents/Resources/bin/orca`. Coordinator on Air `term_05a952fa-de06-4064-8655-3e98e1caf1e0`. `send --on air` failed pairing token; **reply works**:
-
-`orca orchestration reply --id <message> --from orca_session_id:<your-session> --body '...'`
-
-Coordinator model handoff: `msg_4f8696001876`; next-species task `msg_5ab24a940328`; whiteoak approval `msg_743b21013487`. Tree-species session `752c9656-15cc-4501-99e1-e59257d6fdcb`, reply target `msg_270a1481b510`. Check via `orca orchestration check`.
-
-**Never announce MERGED without `gh pr view N --json state,mergeCommit` returning MERGED.** Main moves fast; keep BOTH entries in build-log conflicts and rerun tests. Only coordinator deploys. Remote review tab access was unavailable due pairing; send GitHub screenshot links and cameras.
-
-Fresh GTFS is in `web/public/data/ga`. Brookwood historical-date failures were fixed by owner in #342; no action outstanding. Winn carpet overlap: owner coordinated with tree-species to suppress overlapping carpet discs only inside painted ravine; no tree-lab changes owed.
-
-Capture scripts are temporary: `/tmp/capture-redbud.py`, `/tmp/capture-redbud-low.py`, `/tmp/sheet-redbud.py`; page IDs in them are closed, replace on reuse. Run Pillow script with `/tmp/tree-sheet-venv/bin/python`. Current own dev terminal `term_a26813c4-3023-4512-9c56-c85d8f04a64a` (:5833) and pages `65f8fc09-3ee5-4d7e-ae43-f3324bb0827c`, `9a3a0b70-78dd-4d24-80a9-9e0f120b41a7` are being closed for handoff. Earlier tree task tabs/servers already closed.
+- `pnpm --filter web dev --port 5833` for browser review. Use Orca tabs. `VITEST_MAX_FORKS=2 VITEST_MAX_THREADS=2 pnpm test` keeps parallel City tests within timeout on the busy Studio. Run TypeScript, checked browser captures, and `pnpm review` per repo guide. City changes need `pnpm test:perf`, plus view-specific metrics and ground contact checked where placement changes terrain contact.
+- If main moves and the build log conflicts, keep both entries and rerun tests. Before announcing any merge, use `gh pr view <n> --json state,mergeCommit` and quote the verified fields. Do not merge either on hold. Close own tabs and stop own servers at completion.
