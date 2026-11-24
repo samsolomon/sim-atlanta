@@ -103,6 +103,16 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   ctx.translate(-b.minX, -b.minZ);
   ctx.fillStyle = '#b5bd97';
   ctx.fillRect(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ);
+  // Broad Street face of the Empire Building footprint and the mapped sidewalk
+  // opposite it. Clip the sidewalk segment to the two ends of the facade.
+  // Paint beneath mapped land cover so lawns still take precedence.
+  if (data.buildings?.some(building => building.id === '06942e29-e032-4d6b-a30f-7e1f4bc9f2a4')) {
+    ctx.beginPath();
+    trace(ctx, [[119.6, -118.43], [167.1, -159.15], [163.72, -163.09], [117.78, -120.56]]);
+    ctx.closePath();
+    ctx.fillStyle = PAL.sidewalk;
+    ctx.fill();
+  }
   // Keep the illustrative stripes legible on coarse maps without allocating a second
   // texture or changing the 2.6 m parking spacing. Widths follow the texel up to the
   // old low-tier 0.98 m; the 1.38 m low tier keeps those proportions and antialiases,
