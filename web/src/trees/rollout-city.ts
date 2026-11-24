@@ -21,7 +21,8 @@ import { southernMagnoliaLook, crapeMyrtleLook } from './magnolia-crape';
 import { loblollyPineLook } from './pine-poplar';
 import { sweetgumLook } from './maple-sweetgum';
 import { japaneseMapleLook } from './japanese-maple';
-import { crownKey, genericPlan, planRollout, positionSeed, tierPlan, type Crown, type RoundTwoRow, type RolloutSpecies } from './rollout';
+import { runSync } from '../core/slice';
+import { crownKey, genericPlan, buildPlanRollout, type planRollout, positionSeed, tierPlan, type Crown, type RoundTwoRow, type RolloutSpecies } from './rollout';
 import type { TreePlacement } from './render';
 import type { TreeQuality } from './species';
 
@@ -82,7 +83,12 @@ export interface RolloutRowInput {
 
 /** Plans a row; returns what the generic World needs before its trees are built. */
 export function rolloutRow(input: RolloutRowInput) {
-  const full = planRollout({
+  return runSync(buildRolloutRow(input));
+}
+
+/** rolloutRow as a build (core/slice.ts): the plan yields between crowns. */
+export function* buildRolloutRow(input: RolloutRowInput) {
+  const full = yield* buildPlanRollout({
     roundTwo: input.roundTwo, crowns: input.allCrowns, roads: input.roads, ground: input.ground, bounds: input.bounds, inAnsley: input.inAnsley,
     preview: input.preview,
     buildings: input.buildings.map(b => b.rings[0] as P2[]),
