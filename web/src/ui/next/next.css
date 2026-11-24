@@ -64,6 +64,9 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .a2-g { --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
 }
+/* Low-tier City (html.glass-flat, set in main.ts): no backdrop-filter over the canvas, so the browser
+   presents it directly; the denser long-panel tint carries legibility instead of the blur. */
+:root.glass-flat .a2-g { -webkit-backdrop-filter: none; backdrop-filter: none; --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
 .a2-g :is(button, a) { font: inherit; color: inherit; }
 .a2-g :is(button, a):focus-visible, .a2-credit a:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
 .a2-ic { display: inline-grid; width: 20px; height: 20px; }
