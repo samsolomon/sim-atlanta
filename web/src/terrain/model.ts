@@ -13,7 +13,6 @@ import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { colony100Id, colony400Id, createColony100, createColony400 } from '../city/colony-square';
 import { createWinship, winshipId } from '../city/winship';
-import { colony100Id, createColony100 } from '../city/colony-square';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
