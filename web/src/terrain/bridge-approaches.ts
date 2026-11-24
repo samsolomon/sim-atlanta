@@ -38,6 +38,8 @@ export interface Portal {
   slope?: number;
   /** An inferred landing (transport.ts landingPortals): no link ramp starts on it. */
   landing?: boolean;
+  /** The deck a landing approach continues: it samples the approach, even as a motorway. */
+  road?: P2[];
 }
 
 // The gridded bare earth may continue at freeway level several cells beyond
@@ -219,7 +221,7 @@ export function bridgeApproaches(
   // Ground links may join the upper street on the land side of the abutment.
   // A shared source vertex distinguishes a real merge from a lower ramp that
   // merely passes through the footprint in plan.
-  const connected = new Set<P2[]>();
+  const connected = new Set<P2[]>(portals.flatMap((portal) => (portal.road ? [portal.road] : [])));
   const streetNodes = new Set(
     roads
       .filter((r) => ['secondary', 'tertiary'].includes(r.cls))

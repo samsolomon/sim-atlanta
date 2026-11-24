@@ -23,6 +23,8 @@ type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
 const DECK_LIFT = .12, LANDING_BAND_M = 1.5, LANDING_BANK_M = 1, LANDING_TOLERANCE_M = .06;
 /** A deck that must arrive this far above the board gets a landing approach. */
 const LANDING_RISE_M = .5, LANDING_RISE_MAX_M = 2.5, LANDING_GRADE = .08;
+/** The least grade at which draw() brings an inferred deck down from a clearance. */
+const DECK_DESCENT = .15;
 
 export interface FreightTreadPoint {
   s: number;
@@ -656,9 +658,9 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
     const radius = roadWidth(road) / 2, clearance = ['path','footway','steps','pedestrian','cycleway'].includes(road.cls) ? 2.5 : 5;
     for (let i = 1; i < road.pts.length; i++) routes.push({ a: road.pts[i - 1], b: road.pts[i], radius, clearance });
   }
-  const portals: { edge: number[][]; direction: number[]; curbs: number[]; slope: number; landing: true }[] = [];
+  const portals: { edge: number[][]; direction: number[]; curbs: number[]; slope: number; landing: true; road: P2[] }[] = [];
   for (const run of data.roads) {
-    if (run.kind !== 'bridge' || run.deckNavd88M || run.deckWeight || run.pts.length < 2 || run.cls === 'motorway' ||
+    if (run.kind !== 'bridge' || run.deckNavd88M || run.deckWeight || run.pts.length < 2 || (run.cls === 'motorway' && run.sub !== 'link') ||
       ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls)) continue;
     const line = new Line(run.pts);
     const width = run.crossSection?.width ?? roadWidth(run), seam = Math.min(width, line.length / 2);
@@ -677,8 +679,24 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
           const fromEnd = last ? line.length - at : at;
           if (fromEnd <= radius || fromEnd > seam + radius) continue;
           const c = line.at(at), h = bare(c.x, c.z);
-          if (h !== null) need = Math.max(need, h + clearance + 1);
+          // draw() keeps the clearance within the route's radius, then descends at DECK_DESCENT.
+          if (h !== null) need = Math.max(need, h + clearance + 1 - DECK_DESCENT * (fromEnd - radius));
         }
+      }
+      // A deck the board cuts at its far end carries its height across the cut (draw):
+      // there, the highest ground across its width. The neighbouring board continues
+      // the road from the seam, so this end must still come down to the street.
+      const far = last ? run.pts[0] : run.pts.at(-1)!;
+      if (far[0] === bounds.minX || far[0] === bounds.maxX || far[1] === bounds.minZ || far[1] === bounds.maxZ) {
+        const c = line.at(last ? 0 : line.length);
+        let carried = -Infinity;
+        for (let i = 0; i <= 6; i++) {
+          const off = width * (i / 6 - .5);
+          const x = Math.min(bounds.maxX, Math.max(bounds.minX, c.x + off * c.nx)), z = Math.min(bounds.maxZ, Math.max(bounds.minZ, c.z + off * c.nz));
+          const h = bare(x, z);
+          if (h !== null) carried = Math.max(carried, h);
+        }
+        need = Math.max(need, carried + DECK_LIFT - LANDING_GRADE * line.length);
       }
       // Past a few metres the deck end needs surveyed structure, not an inferred causeway.
       if (need - bank < LANDING_RISE_M || need - bank > LANDING_RISE_MAX_M) continue;
@@ -701,7 +719,7 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
       const half = width / 2;
       const side = (k: number) => [at.x - k * out * half * at.nx, at.z - k * out * half * at.nz, need + zero];
       // Down to the street at a steady grade, so the approach ends where that grade meets it.
-      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1], slope: -LANDING_GRADE, landing: true });
+      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1], slope: -LANDING_GRADE, landing: true, road: run.pts });
     }
   }
   return portals;

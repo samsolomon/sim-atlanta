@@ -166,3 +166,29 @@ for (const quality of ['low', 'high'] as const)
     // And arrives at no more than a steep street's grade.
     expect(worst.grade).toBeLessThan(0.16);
   }, 300000);
+
+// Connector link decks the north-band board receives at its seam with downtown carry
+// their height across the cut; the street that continues them must rise to meet them.
+it.each(['low', 'high'] as const)('carries the Connector links down from the downtown seam on %s', (quality) => {
+  const { grid, city } = board('north-band'), zero = grid.manifest.vertical.sceneZeroNavd88M;
+  const surface = new GroundSurface(grid, quality), bare = surface.sampleScene.bind(surface);
+  const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)], zero, bare, city.bounds, city.roads);
+  const transport = createSurfaceTransport(city, grid, approach.groundAt);
+  let worst = 0, n = 0;
+  for (const run of city.terrainTransport!.roads) {
+    if (run.kind !== 'bridge' || run.cls !== 'motorway' || run.sub !== 'link' || run.pts[0][1] !== city.bounds.maxZ) continue;
+    const line = new Line(run.pts), end = line.at(line.length), back = line.at(line.length - Math.min(0.3, line.length / 2));
+    const deck = transport.deckAt(back.x, back.z, run);
+    const beyond = approach.groundAt(end.x + end.dx * 0.3, end.z + end.dz * 0.3);
+    if (deck === null || beyond === null) continue;
+    n++;
+    worst = Math.max(worst, Math.abs(deck - 0.12 - beyond));
+  }
+  console.info(quality, 'seam links', n, worst.toFixed(2));
+  expect(n).toBeGreaterThanOrEqual(2);
+  expect(worst).toBeLessThan(0.3);
+  transport.dispose();
+  approach.geometry.dispose();
+  approach.walls.dispose();
+  surface.geometry.dispose();
+});
