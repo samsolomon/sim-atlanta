@@ -29,13 +29,16 @@ describe('detail cull', () => {
     named.name = 'crown lights';
     const trees = new THREE.InstancedMesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshLambertMaterial(), 4);
     const big = new THREE.Mesh(new THREE.BoxGeometry(200, 200, 200), new THREE.MeshLambertMaterial());
-    root.add(small, lamp, named, trees, big);
+    const batches = new THREE.Group(); batches.name = 'Landmark batches';
+    const batched = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshLambertMaterial());
+    batches.add(batched);
+    root.add(small, lamp, named, trees, big, batches);
     root.updateMatrixWorld();
     const cull = new DetailCull(() => [root]);
     cull.update(camera(2000), 892);
     expect(small.layers.isEnabled(0)).toBe(false);
     expect(small.layers.isEnabled(CULL_LAYER)).toBe(true);
-    for (const kept of [lamp, named, trees, big]) expect(kept.layers.isEnabled(0)).toBe(true);
+    for (const kept of [lamp, named, trees, big, batched]) expect(kept.layers.isEnabled(0)).toBe(true);
     expect(cull.count).toBe(1);
     // Close in: the small mesh comes back.
     cull.update(camera(20), 892, performance.now() + 1000);

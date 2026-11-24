@@ -13,6 +13,8 @@
  * - anything that could glow: emissive, additive, transparent, or named for lights, lamps, glows,
  *   crowns, signs, beacons or windows, so a lit crown or a lamp's sparkle survives at any distance
  * - objects tagged `userData.keepDetail`
+ * - anything under a landmark batch group or cell: the batches move their own meshes between
+ *   layers for their distance LOD, and the rings select cells through setCellDetail instead
  */
 import * as THREE from 'three';
 
@@ -29,8 +31,12 @@ export function nextCulled(culled: boolean, px: number, inPx = 0.75, outPx = 1.0
   return culled ? px < outPx : px < inPx;
 }
 
+/** Landmark batches own their meshes' layers (far cells move to a shadow-only layer). */
+const OWN_LAYERS = /^(Downtown )?[Ll]andmark batches$/;
+
 function mightGlow(o: THREE.Object3D) {
   if (o.userData.keepDetail) return true;
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (OWN_LAYERS.test(p.name) || p.userData.cell) return true;
   for (let p: THREE.Object3D | null = o; p; p = p.parent) if (p.name && KEEP_NAME.test(p.name)) return true;
   const m = (o as THREE.Mesh).material;
   for (const mat of Array.isArray(m) ? m : [m]) {
