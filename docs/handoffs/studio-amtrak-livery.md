@@ -1,6 +1,19 @@
 # Handoff: studio-amtrak-livery (rolling stock)
 
-## Current state: Claude → Codex, 2026-11-24 (read this first)
+## Current handoff · 2026-11-24
+
+The vehicle owner is accountable for rolling-stock and road-body contributions. The connector owner integrates the combined traffic feature into main and owns queue behavior, per-instance brake state and matched motion clips.
+
+| Work | Exact revision and evidence | Next action |
+| --- | --- | --- |
+| Freight stack through #639 | Merged on main at `2f29cdc6bea7aeb74e9cf24e134fbdfb5111a47c`. Each of the eight final heads passed the full suite, production build and both-tier performance checks. The final sweeps measured 82 low and 94 high shader programs with zero late compiles. [Matched Lab and Brookwood frames](https://github.com/samsolomon/sim-atlanta/blob/8480b378/docs/log/freight/integrated-9f85d801/matched.jpg) · [Norcross restore](https://github.com/samsolomon/sim-atlanta/blob/8480b378/docs/log/freight/integrated-9f85d801/shared-norcross.jpg) · [Downtown restore](https://github.com/samsolomon/sim-atlanta/blob/8480b378/docs/log/freight/integrated-9f85d801/shared-downtown.jpg) | Freight integration is complete. |
+| Streetcar door decals | Prepared at `f39dc614fde34a206643b3b9ff01cef46d138467` on `samsolomon/streetcar-door-decals`. The trim covers body stripes and window film. A geometry regression is written. **Pending** test execution, review and matched captures. | On capture clearance, verify both sides at both cab ends against the original in identical lighting and framing. Capture Model Lab and City, then submit the comparison for visual approval. |
+| Seven road body styles (#541) | Source `c23bd25fdbbf10c36ec13d6fed262409b2df16ea`. [Earlier static vehicle comparison](https://github.com/samsolomon/sim-atlanta/blob/c23bd25f/docs/log/traffic/vehicle-variety/comparison.jpg). **Pending** integration with #592, independent contribution review, final tests and motion evidence. | Coordinate edits to `road-traffic.ts` and the vehicle material with the connector owner. Preserve the traffic cap and starting-position random sequence. Deliver the reviewed model revision to that owner for one combined integration. Capture Fifth Street rush-hour direction and braking first, then a Midtown signal discharge and close body-style view. Visual approval remains pending. |
+| Xpress coach (#404) | Held candidate `bcd9c5b037980307542506bc791777040066ee4e`. [Model evidence and checks](https://github.com/samsolomon/sim-atlanta/pull/404). | Await visual approval before final-base verification. |
+
+Keep the road-vehicle and streetcar worktrees active. The pending branches share a verification resource, and road-traffic code overlaps the connector owner's work.
+
+## Historical handoff · Claude → Codex, 2026-11-24
 
 This section is written by the Claude Opus session **`orca_session_id:bceb5cfc-138b-456e-a77d-4537701e21ef`**. Read its history with `orca agent read`. Everything below this section is earlier history, kept for reference.
 
