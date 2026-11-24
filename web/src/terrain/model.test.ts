@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { World, type VData, type VRoad } from '../vignette/world';
+import { BaseStyle } from '../vignette/generic-v2';
 import { GroundGrid } from './grid';
 import { createDowntownTerrain } from './model';
 
@@ -36,12 +37,14 @@ it('grounds scenery, omits decks, forwards wet/season/night and releases its own
   expect(facades).toHaveLength(1);
   const mesh = facades[0], base = mesh.geometry.getAttribute('aBase'), pos = mesh.geometry.getAttribute('position');
   const style = mesh.geometry.getAttribute('aStyle');
-  const materialBases = new Set<number>(), roofHeights = new Set<number>();
+  const materialBases = new Set<number>(), shaftBases = new Set<number>(), roofHeights = new Set<number>();
   for (let i = 0; i < pos.count; i++) {
     if (style.getX(i) < 0) roofHeights.add(pos.getY(i));
-    else materialBases.add(base.getX(i));
+    else if (style.getX(i) >= BaseStyle.Lobby) materialBases.add(base.getX(i));
+    else shaftBases.add(base.getX(i));
   }
   expect(materialBases).toEqual(new Set([-6, 0])); // footprint-edge low is between its corners
+  expect(shaftBases).toEqual(new Set([Math.fround(-6 + 4.6), Math.fround(4.6)])); // shafts start above the flush bases
   expect(roofHeights).toEqual(new Set([9, 20]));
   expect(area.board.userData.lit).toBeUndefined(); // Control passes the target explicitly to buildLights
   const trunks: THREE.InstancedMesh[] = [];
