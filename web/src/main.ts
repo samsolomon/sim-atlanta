@@ -23,6 +23,7 @@ import { TrainSource } from './core/trains';
 import { railStatus } from './ui/status';
 import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
+import { carries, followLabel, inCityArea, type Selection } from './core/carry';
 import { mountGlassDebug, setGlassMode } from './ui/glass';
 
 const DATA = '/data/ga';
@@ -83,6 +84,18 @@ const followStatus = followPanel.querySelector<HTMLElement>('.follow-status')!;
 let lastStatusHTML = '';
 function updateFollowPanel() {
   if (!follow) return;
+  if (view3d.hidden) {
+    // Map: the button opens City following this vehicle ("Follow in 3D"); nothing is followed here.
+    card.classList.remove('following-trip');
+    followStatus.hidden = true;
+    recenter.hidden = true;
+    const label = followLabel('map', false, selectedInCityArea());
+    followAction.hidden = !label;
+    followAction.removeAttribute('aria-disabled');
+    if (label && followAction.textContent !== label) followAction.textContent = label;
+    followPanel.hidden = !label;
+    return;
+  }
   card.classList.toggle('following-trip', follow.active);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const noun = selectedBus ? 'bus' : 'train';
@@ -105,12 +118,22 @@ function updateFollowPanel() {
   if (lastStatusHTML !== html) followStatus.innerHTML = lastStatusHTML = html;
   followStatus.hidden = !text;
   followAction.hidden = follow.phase === 'lost' || follow.phase === 'outside';
-  const action = follow.active ? 'Stop following' : `Follow ${noun}`;
+  // Before City has drawn the vehicle (Follow in 3D, City still loading), the follow is pending.
+  const action = pendingFollow ? 'Opening City…' : followLabel('city', follow.active, true)!;
   if (followAction.textContent !== action) followAction.textContent = action;
+  // aria-disabled, not disabled: a keyboard user's focus stays on the button while City opens.
+  if (pendingFollow) followAction.setAttribute('aria-disabled', 'true');
+  else followAction.removeAttribute('aria-disabled');
   recenter.hidden = !(reduced && follow.active);
 }
 followAction.addEventListener('click', () => {
-  if (!follow || !diorama) return;
+  if (!follow || pendingFollow) return;
+  // Map: open City; the selection carries and City starts following it once it can.
+  if (view3d.hidden) {
+    if (selectedTrain || selectedBus) shell.setView('city');
+    return;
+  }
+  if (!diorama) return;
   if (follow.active) follow.stop();
   else if (selectedTrain) {
     const train = source.find(selectedTrain);
@@ -157,13 +180,15 @@ let shownKey = '';
 /** A2c: move the camera so a new selection sits in the middle of the open area beside the detail
  * panel (above it on phones). Follow, when it runs, drives the camera itself. */
 function focusSelection() {
-  if (follow?.active) return;
-  const t = selectedTrain ? source.find(selectedTrain) : null;
-  const b = !t && selectedBus ? buses.current().find((x) => x.id === selectedBus) : null;
-  const at = t ? { lon: t.lon, lat: t.lat } : b ? b.position.value : null;
+  if (follow?.active || pendingFollow) return;
+  const at = selectedAt();
   if (!at) return;
   const phone = innerWidth <= 600;
-  const r = document.querySelector('.a2-panel')?.getBoundingClientRect();
+  const panel = document.querySelector<HTMLElement>('.a2-panel');
+  const r = panel?.getBoundingClientRect();
+  // Desktop: the open area is left of the camera group, which rides 12 px from the panel's left
+  // edge (8 px screen edge + panel + 12 px + 44 px group). offsetWidth ignores the panel's slide-in.
+  const besidePanel = panel && panel.offsetWidth ? 8 + panel.offsetWidth + 12 + 44 : 0;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (diorama) {
     const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
@@ -173,13 +198,13 @@ function focusSelection() {
     // desktop (the panel is on the right), below it on phones (the sheet is at the bottom).
     // Vertical screen pixels cover more ground in a tilted view (about 1/cos of the tilt).
     const tiltStretch = 1 / Math.max(0.35, Math.cos((c.tilt * Math.PI) / 180));
-    const off = (((phone ? r?.height ?? 0 : r?.width ?? 0) + 16) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
+    const off = ((phone ? (r?.height ?? 0) + 16 : besidePanel) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
     const [dx, dz] = phone ? [-Math.sin(br) * off, Math.cos(br) * off] : [Math.cos(br) * off, Math.sin(br) * off];
     diorama.glide(x + dx, z + dz);
   } else if (map) {
     // Offset the centre by projection rather than MapLibre's padding, which would persist as
     // camera state and skew the map's centre (and share links) after the panel closes.
-    const half = ((r?.[phone ? 'height' : 'width'] ?? 0) + 16) / 2;
+    const half = (phone ? (r?.height ?? 0) + 16 : besidePanel) / 2;
     const p = map.project([at.lon, at.lat]);
     const centre = map.unproject([p.x + (phone ? 0 : half), p.y + (phone ? half : 0)]);
     map.easeTo({ center: centre, duration: reduced ? 0 : 450 });
@@ -188,6 +213,7 @@ function focusSelection() {
 function hideCard() {
   shownKey = '';
   selectedMapFeature = undefined;
+  pendingFollow = null;
   follow?.stop();
   card.classList.remove('following-trip');
   followPanel.hidden = true;
@@ -197,6 +223,57 @@ function hideCard() {
   selectedFreight = null;
 }
 document.addEventListener('keydown', (e) => e.key === 'Escape' && hideCard());
+
+/** The selection as the view switch sees it. */
+function selection(): Selection {
+  if (selectedTrain) return { kind: 'train', id: selectedTrain };
+  if (selectedBus) return { kind: 'bus', id: selectedBus };
+  if (selectedFreight) return { kind: 'freight', id: selectedFreight };
+  return card.hidden ? null : { kind: 'other' };
+}
+/** Where the selected train or bus is now, or null. */
+function selectedAt(): { lon: number; lat: number } | null {
+  const t = selectedTrain ? source.find(selectedTrain) : null;
+  if (t && Number.isFinite(t.lon) && Number.isFinite(t.lat)) return { lon: t.lon, lat: t.lat };
+  const b = !t && selectedBus && clock.isRealTime() ? buses.current().find((x) => x.id === selectedBus) : null;
+  return b ? b.position.value : null;
+}
+function selectedInCityArea() {
+  const at = selectedAt();
+  if (!at) return false;
+  const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
+  return inCityArea(x, z);
+}
+/** A vehicle carried into City, followed once City is up and its area has mounted. */
+let pendingFollow: { kind: 'train' | 'bus'; id: string; since?: number } | null = null;
+function startPendingFollow() {
+  if (!pendingFollow || !follow || !diorama || !cityLoading.hidden) return;
+  const p = pendingFollow;
+  if (p.kind === 'train' ? selectedTrain !== p.id : selectedBus !== p.id) {
+    pendingFollow = null; // the selection changed or closed while City loaded
+    return;
+  }
+  const at = selectedAt();
+  if (!at) {
+    pendingFollow = null;
+    return;
+  }
+  // As for a review link: wait (up to 20 s) for the vehicle's area to mount, so the follow does not
+  // end at a loading edge.
+  const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
+  p.since ??= performance.now();
+  if (!diorama.onBoard(x, z) && performance.now() - p.since < 20_000) return;
+  pendingFollow = null;
+  if (p.kind === 'train') {
+    const t = source.find(p.id);
+    if (t) follow.start({ kind: 'train', id: t.id, pathId: t.pathId, tier: t.s.tier });
+    renderTrainCard();
+  } else {
+    const b = clock.isRealTime() && buses.current().find((x) => x.id === p.id);
+    if (b) follow.start({ kind: 'bus', id: b.id, tier: b.position.tier });
+    renderBusCard();
+  }
+}
 
 function renderTrainCard() {
   if (!selectedTrain) return;
@@ -223,13 +300,13 @@ function renderTrainCard() {
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
       !view3d.hidden, (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
-    !!follow && !view3d.hidden,
+    !!follow,
   );
 }
 
 function renderBusCard() {
   const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
-  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
+  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow);
   else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
   else if (selectedBus && selectedBus === params.get('bus')) {
     if (clock.isRealTime() && !buses.firstPollComplete) return showCard('<h2>Checking bus location…</h2>');
@@ -555,7 +632,18 @@ async function openCity() {
     return;
   }
   perf.phase('city:open');
-  hideCard();
+  // A selected train or bus carries into City, which follows it once it can (Follow in 3D);
+  // anything else closes.
+  const carried = selection();
+  if (follow && carries(carried, 'city', clock.isRealTime()) && (carried?.kind === 'train' || carried?.kind === 'bus') && selectedInCityArea()) {
+    follow.stop();
+    // The vehicle chosen on the Map supersedes even a link target that has yet to arrive.
+    followRoute = null;
+    followBus = null;
+    pendingFollow = { kind: carried.kind, id: carried.id };
+    updateFollowPanel();
+  } else hideCard();
+  const carriedAt = pendingFollow ? selectedAt() : null;
   const load = ++cityLoad;
   cityAbort?.abort();
   const abort = cityAbort = new AbortController();
@@ -571,7 +659,8 @@ async function openCity() {
   const overMap = !opening && !keepPose && !!map && !reducedMotion() && mapOnCityScale(map);
   if (overMap) {
     document.body.classList.add('city-over-map');
-    await tiltMapTo(map!, cityTilt);
+    // City opens on the carried vehicle: the map moves there in the same ease as its tilt.
+    await tiltMapTo(map!, cityTilt, carriedAt);
     if (load !== cityLoad) return;
   }
   try {
@@ -633,7 +722,10 @@ async function openCity() {
   } else if (opening && params.get('board') === 'midtown' && params.get('site') === 'williams') {
     diorama.lookAt(95.5, -1701.8, { bearing: 0, tilt: 46, metresPerPixel: .32 });
   } else if (!opening && map) {
-    // Read the current Map camera after loading: keyboard movement may have continued.
+    // Read the current Map camera after loading: keyboard movement may have continued. A carried
+    // vehicle that City reached without the over-map ease puts the map on it first.
+    const at = pendingFollow && !overMap ? selectedAt() : null;
+    if (at) map.jumpTo({ center: [at.lon, at.lat] });
     const c = map.getCenter();
     const [mx, mz] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
     diorama.lookAt(mx, mz, {
@@ -672,6 +764,7 @@ async function openCity() {
   void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
+  startPendingFollow();
 }
 
 // ---- Graphics (A2c menu): Auto, High or Low for City, remembered per viewer ----------------------
@@ -750,7 +843,12 @@ async function applyGraphics() {
   // Rebuild City at the same camera with the new tier.
   const t = diorama.target(), c = diorama.camera();
   keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
-  hideCard();
+  // A follow carries through the rebuild (Auto can step down to Low seconds after a follow starts);
+  // openCity resumes it. Other selections close.
+  const followed = follow?.vehicle ?? pendingFollow ?? undefined;
+  if (!followed || followed.kind === 'freight') hideCard();
+  else if (followed.kind === 'train') { selectedTrain = followed.id; selectedBus = selectedFreight = null; }
+  else { selectedBus = followed.id; selectedTrain = selectedFreight = null; }
   cityLoad++;
   cityAbort?.abort();
   diorama.dispose();
@@ -785,12 +883,12 @@ function matchCityLens(m: maplibregl.Map) {
   m.setMaxPitch(80);
   m.setVerticalFieldOfView(CITY_FOV);
 }
-function tiltMapTo(m: maplibregl.Map, pitch: number): Promise<void> {
+function tiltMapTo(m: maplibregl.Map, pitch: number, center?: { lon: number; lat: number } | null): Promise<void> {
   matchCityLens(m);
   return new Promise((done) => {
     const t = setTimeout(done, 1300);
     m.once('moveend', () => { clearTimeout(t); done(); });
-    m.easeTo({ pitch, duration: 1000 });
+    m.easeTo({ pitch, duration: 1000, ...(center ? { center: [center.lon, center.lat] as [number, number] } : {}) });
   });
 }
 function flattenMap(m: maplibregl.Map, animate: boolean) {
@@ -838,7 +936,19 @@ function closeCity(keepMapView = false, writeUrl = true) {
   cancelMapExit();
   document.body.classList.remove('city-over-map');
   keepPose = null;
-  hideCard();
+  // A train or bus carries back to the Map (its card stays, the map centres on it); a City freight
+  // train is not drawn there, so its card closes.
+  // A tier handoff since the last card refresh followed a new trip id: adopt it before the follow ends.
+  const followed = follow?.vehicle;
+  if (followed?.kind === 'train' && selectedTrain && selectedTrain !== followed.id && follow!.lineage.includes(selectedTrain)) {
+    selectedTrain = followed.id;
+    shownKey = followed.id;
+  }
+  const keep = carries(selection(), 'map', clock.isRealTime());
+  if (keep) {
+    follow?.stop();
+    pendingFollow = null;
+  } else hideCard();
   cityLoad++;
   cityAbort?.abort();
   cityAbort = null;
@@ -866,6 +976,13 @@ function closeCity(keepMapView = false, writeUrl = true) {
   shell.setNote(null);
   if (writeUrl) setViewParam('map');
   map?.resize();
+  if (keep) {
+    if (selectedTrain) renderTrainCard();
+    else if (selectedBus) renderBusCard();
+    // After the flatten (1 s) so the two eases don't cut each other short.
+    if (map && keepMapView && !reducedMotion()) map.once('moveend', () => requestAnimationFrame(focusSelection));
+    else requestAnimationFrame(focusSelection);
+  }
 }
 
 // ---- Models (A2c): the Model lab as the third view -------------------------------------
@@ -1126,6 +1243,9 @@ if (import.meta.env.DEV) Object.assign(window, {
   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
   __selectTrain(id: string) { selectedTrain = id; selectedBus = null; selectedFreight = null; renderTrainCard(); },
   __trains: () => source.current,
+  // Dev: select a live bus as a tap would (both views); __buses() lists ids and positions.
+  __selectBus(id: string) { selectedBus = id; selectedTrain = null; selectedFreight = null; renderBusCard(); },
+  __buses: () => buses.current(),
 });
 
 // City and its status card must keep time even while remote Map tiles are unavailable.
@@ -1154,6 +1274,7 @@ setInterval(() => {
     }
   }
   followFromLink();
+  startPendingFollow();
   if (selectedTrain) renderTrainCard();
   else if (selectedBus) renderBusCard();
   else if (selectedFreight) { refreshFreightCard(); if (follow) updateFollowPanel(); }

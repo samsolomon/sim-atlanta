@@ -768,7 +768,7 @@ function fitModel(animate: boolean) {
   const right = !phone && details ? details.left : stage.right;
   const top = !browser && card ? card.bottom : stage.top;
   const bottom = Math.min(dock?.top ?? stage.bottom, phone && details ? details.top : stage.bottom,
-    visibleRect('.a2-details-btn')?.top ?? stage.bottom);
+    phone ? visibleRect('.a2-details-btn')?.top ?? stage.bottom : stage.bottom);
   const width = right - left, height = bottom - top;
   if (width < 44 || height < 44) return;
 
