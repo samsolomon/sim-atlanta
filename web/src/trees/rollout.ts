@@ -388,3 +388,25 @@ export function tierPlan(plan: RolloutPlan, tierCrowns: Crown[]): RolloutPlan {
     preview: plan.preview,
   };
 }
+
+/**
+ * City's default since Sam's 24 November call: every planned species tree drawn as a generic
+ * low-poly crown, at the same trunk and size, so canopy density does not change. A species on
+ * a canopy crown hands that crown back to the generic World (its canopy size is the species'
+ * size); a planted species (an island's maples, crapes and Beverly elm) becomes a planted
+ * generic broadleaf at its own height and spread. The plan itself is untouched, so
+ * `?trees=species` still draws it (trees/rollout-city.ts treeMode). No species, no carpets.
+ */
+export function genericPlan(plan: RolloutPlan): RolloutPlan {
+  const onCanopy = new Set(plan.species.map(s => crownKey(s.x, s.z)).filter(k => plan.context.has(k)));
+  const planted = plan.species.filter(s => !plan.context.has(crownKey(s.x, s.z)));
+  const enlarged = new Map(plan.enlarged);
+  for (const s of planted) enlarged.set(crownKey(s.x, s.z), { h: s.heightM, r: s.spreadM / 2 });
+  return {
+    ...plan,
+    replaced: new Set([...plan.replaced].filter(k => !onCanopy.has(k))),
+    species: [],
+    enlarged,
+    added: [...plan.added, ...planted.map(s => ({ crown: [s.x, s.z, s.heightM, s.spreadM / 2] as Crown }))],
+  };
+}

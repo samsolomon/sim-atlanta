@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { lonLatToScene } from '../core/places';
-import { MIX, crownKey, planRollout, tierPlan, type Crown } from './rollout';
+import { MIX, crownKey, genericPlan, planRollout, tierPlan, type Crown } from './rollout';
+import { treeMode } from './rollout-city';
 
 const scene = new URL('../../public/data/scene/square-board/', import.meta.url);
 const places = new URL('../../public/data/ga/neighborhoods.json', import.meta.url);
@@ -191,5 +192,38 @@ describe('all-species preview (?trees=all-species)', () => {
     const managed = planRollout({ crowns: c.trees, roads: c.roads, ground: c.ground, bounds: c.bounds, inAnsley: ansley(),
       preview: { drawn, managed: (mx, mz) => mx === x && mz === z } });
     expect(managed.replaced.has(crownKey(x, z))).toBe(false);
+  });
+});
+
+describe('generic default (Sam, 24 November)', () => {
+  it('reads the tree switch: generic unless species or all-species is asked for', () => {
+    expect(treeMode('')).toBe('generic');
+    expect(treeMode('?view=city&trees=bogus')).toBe('generic');
+    expect(treeMode('?trees=species')).toBe('species');
+    expect(treeMode('?view=city&trees=all-species')).toBe('all-species');
+  });
+
+  it.skipIf(!staged)('puts a generic crown wherever a species tree stood, at its size, at both tiers', () => {
+    let total = 0;
+    for (const row of ROWS) for (const tier of ['high', 'low'] as const) {
+      const { crowns, p } = plan(row, tier, true);
+      const g = genericPlan(p);
+      expect(g.species).toEqual([]);
+      // Canopy crowns go back to the World: nothing a species replaced stays replaced.
+      for (const s of p.species) expect(g.replaced.has(crownKey(s.x, s.z))).toBe(false);
+      // Drawn generic crowns: the tier's own (less cleared and still replaced) plus planted ones.
+      const drawn = (q: typeof p) => crowns.filter(([x, z]) => !q.replaced.has(crownKey(x, z)) && !q.cleared.has(crownKey(x, z))).length + q.added.length;
+      expect(drawn(g)).toBe(drawn(p) + p.species.length);
+      // A planted species becomes a planted generic broadleaf at its own height and spread.
+      for (const s of p.species.filter(s => !p.context.has(crownKey(s.x, s.z)))) {
+        expect(g.added.some(a => a.crown[0] === s.x && a.crown[1] === s.z && a.crown[2] === s.heightM && a.crown[3] === s.spreadM / 2)).toBe(true);
+        expect(g.enlarged.get(crownKey(s.x, s.z))).toEqual({ h: s.heightM, r: s.spreadM / 2 });
+      }
+      // The ordinary generic plan (Ansley sizing, pairs, islands) is otherwise unchanged.
+      expect(g.cleared).toBe(p.cleared);
+      for (const [k, v] of p.enlarged) expect(g.enlarged.get(k)).toEqual(v);
+      total += p.species.length;
+    }
+    expect(total).toBeGreaterThan(2000);
   });
 });

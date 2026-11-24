@@ -21,7 +21,7 @@ import { southernMagnoliaLook, crapeMyrtleLook } from './magnolia-crape';
 import { loblollyPineLook } from './pine-poplar';
 import { sweetgumLook } from './maple-sweetgum';
 import { japaneseMapleLook } from './japanese-maple';
-import { crownKey, planRollout, positionSeed, tierPlan, type Crown, type RoundTwoRow, type RolloutSpecies } from './rollout';
+import { crownKey, genericPlan, planRollout, positionSeed, tierPlan, type Crown, type RoundTwoRow, type RolloutSpecies } from './rollout';
 import type { TreePlacement } from './render';
 import type { TreeQuality } from './species';
 
@@ -49,7 +49,18 @@ export function treeProbe(search: string, quality: TreeQuality) {
  * Any other value, or none, is the ordinary view.
  */
 export function allSpeciesPreview(search: string) {
-  return new URLSearchParams(search).get('trees') === 'all-species';
+  return treeMode(search) === 'all-species';
+}
+
+/**
+ * Which trees City draws (Sam, 24 November: generic low-poly everywhere for now). `generic`, the
+ * default, keeps every planned tree's position and size as a generic crown; `?trees=species`
+ * draws today's species rollout; `?trees=all-species` the full-conversion preview.
+ */
+export type TreeMode = 'generic' | 'species' | 'all-species';
+export function treeMode(search: string): TreeMode {
+  const t = new URLSearchParams(search).get('trees');
+  return t === 'species' || t === 'all-species' ? t : 'generic';
 }
 
 export interface RolloutRowInput {
@@ -65,6 +76,8 @@ export interface RolloutRowInput {
   inAnsley?: (x: number, z: number) => boolean;
   /** The all-species preview's filters (trees/rollout.ts RolloutInput.preview), when it is on. */
   preview?: NonNullable<Parameters<typeof planRollout>[0]['preview']>;
+  /** Draw every planned species tree as a generic crown (treeMode 'generic'). */
+  generic?: boolean;
 }
 
 /** Plans a row; returns what the generic World needs before its trees are built. */
@@ -74,7 +87,8 @@ export function rolloutRow(input: RolloutRowInput) {
     preview: input.preview,
     buildings: input.buildings.map(b => b.rings[0] as P2[]),
   });
-  const plan = tierPlan(full, input.tierCrowns);
+  const tier = tierPlan(full, input.tierCrowns);
+  const plan = input.generic ? genericPlan(tier) : tier;
   const addedKeys = new Set(plan.added.map(a => crownKey(a.crown[0], a.crown[1])));
   return {
     plan,
