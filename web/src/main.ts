@@ -688,6 +688,7 @@ function flattenMap(m: maplibregl.Map, animate: boolean) {
 
 /** City → Map (A2c): the map takes City's exact view underneath, colour fades off it, then the
  * map flattens. Other exits (Models, errors) use closeCity directly. */
+let mapArrival: Promise<void> = Promise.resolve();
 async function leaveCityToMap() {
   const m = map;
   if (!diorama || !m || reducedMotion()) return closeCity();
@@ -845,7 +846,7 @@ const shellOptions: ShellOptions = {
     }
     if (v === 'city') void openCity();
     else if (v === 'models') void openModels();
-    else void leaveCityToMap();
+    else mapArrival = leaveCityToMap();
   },
   center() {
     if (diorama) {
@@ -885,7 +886,7 @@ const shellOptions: ShellOptions = {
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
   searchModels: () => labView?.openBrowser(),
-  goToPlace(lon, lat) { map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
+  async goToPlace(lon, lat) { await mapArrival; if (!view3d.hidden || inModels()) return; map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
   outsideCity() {
     const c = map?.getCenter();
     if (!c) return false;

@@ -511,7 +511,7 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 .a2-radio-title { padding: 0 10px 0 2px; font-size: 12px; color: var(--a2-ink2); white-space: nowrap; }
 /* Below desktop the title would crowd the camera column (and an ellipsis could cut 'no audio yet'):
    the button's label carries it instead, as on phones. */
-@media (max-width: 780px) { .a2-radio-title { display: none !important; } }
+
 @media (max-width: 600px) {
   .a2-radio { width: 44px; height: 44px; }
   .a2-radio-title { display: none; }

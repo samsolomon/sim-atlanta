@@ -3008,6 +3008,10 @@ At the same lab camera, the lit windshield had made the XN40 cab as bright as th
 
 The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
 
+### 2026-11-23 — A common roof profile for the Rapid buses
+
+The first rounded XE60 covers still looked flatter than the XN40 pod at the same camera. Both models now use the XN40’s 36 cm crown, curved ends and shoulder bevel. A short strip of exposed roof ahead of the XE60 cover makes the front curve visible. The electric bus keeps its 3.30 m roof height and carries one shroud on each side of the joint. Sampling the same curves at low detail brings the XE60 to 1,286 triangles. [XE60 and XN40 at the same scale, day and night](log/rapid-buses/roof-profiles.jpg).
+
 ### 2026-11-23 — Three footprints at Tech Square
 
 Coda's 118.9 m tower shares its block with a five-floor computing center and
@@ -3063,3 +3067,10 @@ Map and City now share one tab. The 3D button and tilt control use the existing 
 ### 2026-11-24 — Fit the cab between the controls
 
 At 390 × 760 the lab fits the leading 35% of the cab car. At 1440 × 900 it fits the two-car train between the catalogue and Details. Both use the same eight box corners and a 12% margin. Returning from Models to the frozen Midtown Low camera took 1.69 s on the Studio, timed from tapping Map to City's completed reveal. [Phone cab](log/ui/final-models/phone.jpg) · [Wide catalogue](log/ui/final-models/wide.jpg).
+### 2026-11-23 — The second copy of the bridge
+
+With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
+
+### 2026-11-23 — Grant Street runs beneath the CSX yard
+
+The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).

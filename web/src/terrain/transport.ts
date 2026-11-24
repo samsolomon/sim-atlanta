@@ -571,8 +571,15 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   }
   const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z), carvable);
   cutting.push(...footbridgeYields);
+  // The mesh attributes now own their copies. Drop build-time arrays held by the transport closures.
+  const hasBridge = seventeenth.pos.length > 0;
+  for (const builder of [structures, seventeenth, freight]) {
+    builder.pos.length = 0;
+    builder.col.length = 0;
+  }
+  uv.length = 0;
   return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
-    setNight: seventeenth.pos.length ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
+    setNight: hasBridge ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }
     map.dispose();
