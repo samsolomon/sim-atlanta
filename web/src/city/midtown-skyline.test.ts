@@ -393,6 +393,8 @@ it('replaces Alexan on 8th at its lidar roof', () => {
   expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
   const y = meshes[1].geometry.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(71);
+});
+
 it('puts The M by Radius at its lidar roof with the arched crown on the south face', () => {
   const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536899754');
   const model = createSkylineLandmark([building], building, 0, () => 0)!;
