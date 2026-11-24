@@ -2,7 +2,6 @@ import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, litHash, outwardSign, ramp, seedOf, shadedQuad, wound } from './skin-kit';
 
@@ -53,7 +52,7 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   // The towers' own street faces carry the same storefront line.
   for (const key of ['southBase', 'northBase', 'deck', 'podium', 'southWest', 'south', 'southStep', 'northWest', 'north', 'northStep'] as const) {
     const { ring, h } = P[key];
-    if (key.endsWith('Base')) shell.prism(ring, footing, floor + h, precast, '#8e9294', { wall: surfaces.precast({ width: 3, height: 4.6 }) });
+    if (key.endsWith('Base')) shell.prism(ring, footing, floor + h, precast, '#8e9294');
     faces(ring, (a, b, length) => {
       if (!open(ring, a, b, length, floor + 2)) return;
       const steps = Math.max(1, Math.ceil(length / 6));
@@ -69,7 +68,7 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   // The garage podium: precast with three dark bands of openings, and the amenity deck.
   for (const key of ['podium', 'deck'] as const) {
     const { ring, h } = P[key];
-    shell.prism(ring, footing, floor + h, precast, key === 'deck' ? '#7b8a62' : '#a7aaa6', { wall: surfaces.precast({ width: 3, height: 4.1 }) });
+    shell.prism(ring, footing, floor + h, precast, key === 'deck' ? '#7b8a62' : '#a7aaa6');
     faces(ring, (a, b, length) => {
       if (length < 6 || !open(ring, a, b, length, floor + 12)) return;
       const p = along(a, b, length, 1, 0.05 * out), q = along(a, b, length, length - 1, 0.05 * out);
@@ -167,6 +166,7 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   }
   const result = shell.finish('#f2d3a2', 0.62);
   // By day the lamp quads must darken with the shaded wall they sit on, or they show as panes.
-  result.group.children.forEach(m => { m.receiveShadow = true; });
+  // Matching the body's shadow flags also lets the landmark batcher draw both as one by day.
+  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
   return result;
 }

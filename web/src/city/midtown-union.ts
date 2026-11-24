@@ -95,10 +95,11 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
       // A broad spandrel band every floor, so the 3.6 m rhythm survives the 450 m orbit.
       const p = along(a, b, length, 0, 0.05 * out), q = along(a, b, length, length, 0.05 * out);
       for (let y = Math.ceil((lo - floor - 0.5) / 3.6) * 3.6 + floor + 0.5; y < hi - 2; y += 3.6) {
-        // Each band is the glass at its height, a fifth darker: a joint, not a ribbon window.
+        // Each band is a pale aluminium spandrel line, lighter than the glass, so the floors read from
+        // the orbit the way 999 Peachtree's do; still a joint, not a ribbon window.
         const n = body.pos.length;
         body.quad([p[0], y, p[1]], [p[0], y + 0.8, p[1]], [q[0], y + 0.8, q[1]], [q[0], y, q[1]], glassLow[tone]);
-        const c = hex(glassLow[tone], glassHigh[tone], (y - floor) / 97.2).map(v => v * 0.62);
+        const c = hex(glassLow[tone], glassHigh[tone], (y - floor) / 97.2).map(v => Math.min(1, v * 0.45 + 0.3));
         for (let v = n; v < body.pos.length; v += 3) body.col.splice(v, 3, ...c);
       }
     });
@@ -218,7 +219,11 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
     const lo = hex(glassLow[tone], glassHigh[tone], (y - floor) / 97.2), hi = hex(glassLow[tone], glassHigh[tone], (y + 2.8 - floor) / 97.2);
     for (let v = n; v < lights.pos.length; v += 3) lights.col.splice(v, 3, ...(lights.pos[v + 1] > y + 1 ? hi : lo));
   }
-  return shell.finish('#f4dcae', 0.6);
+  const result = shell.finish('#f4dcae', 0.6);
+  // The lamp quads share the body's shadow flags: they darken with shaded walls by day, and the
+  // landmark batcher draws both as one then.
+  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
+  return result;
 }
 
 function hex(a: string, b: string, t: number): number[] {

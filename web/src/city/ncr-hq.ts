@@ -2,7 +2,6 @@ import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, litHash, outwardSign, ramp, seedOf, wound } from './skin-kit';
 
@@ -117,15 +116,16 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
     });
     // The sloping facet.
     tri(body, [[C[0], lo, C[1]], [Ca[0], hi, Ca[1]], [Cb[0], hi, Cb[1]]], [facetAt(lo), facetAt(hi), facetAt(hi)]);
-    roof(roofRing, hi, '#6c777e');
+    // Pale membrane roofs, so the roof doesn't read as the glass wrapped over the top.
+    roof(roofRing, hi, '#b3b7b6');
     // Glass plant screen, set in 3 m.
     const screenRing = inset(roofRing, 3);
     faces(screenRing, (a, b) => quad(body, [[a[0], hi, a[1]], [a[0], floor + screen, a[1]], [b[0], floor + screen, b[1]], [b[0], hi, b[1]]], glassAt));
-    roof(screenRing, floor + screen, '#59646b');
+    roof(screenRing, floor + screen, '#9ea4a6');
   }
 
   // Garage base: pale louvre bands over a glazed street storey, with the sky garden on top.
-  shell.prism(baseR, footing, floor + heights.base, '#c9ccca', '#77905c', { wall: surfaces.precast({ width: 3, height: 3.2 }) });
+  shell.prism(baseR, footing, floor + heights.base, '#c9ccca', '#77905c');
   faces(baseR, (a, b, length) => {
     const m = along(a, b, length, length / 2, 1.5 * out);
     if (length < 4 || pointInRing(m[0], m[1], towerR) || pointInRing(m[0], m[1], annexR)) return;
@@ -155,7 +155,8 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
 
   const result = shell.finish('#f2dcb0', 0.6);
   // The lamp quads darken with the shaded wall they sit on, or they show as pale panes by day.
-  result.group.children.forEach(m => { m.receiveShadow = true; });
+  // Matching the body's shadow flags also lets the landmark batcher draw both as one by day.
+  result.group.children.forEach(m => { m.receiveShadow = m.castShadow = true; });
   return result;
 }
 

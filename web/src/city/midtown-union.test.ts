@@ -1,4 +1,4 @@
-import { Raycaster, Vector3 } from 'three';
+import { Material, Mesh, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
@@ -28,6 +28,11 @@ it('stands the glass shaft on the mapped parts over the 17th Street garage', () 
   const result = createMidtownUnion([site, other], site, grid)!;
   expect(result.buildings).toEqual([other]);
   result.group.updateMatrixWorld(true);
+  // Batchable: no hooked (library-painted) material, and the lamps share the body's shadow flags.
+  for (const m of result.group.children as Mesh[]) {
+    expect((m.material as Material).onBeforeCompile).toBe(Material.prototype.onBeforeCompile);
+    expect(m.castShadow && m.receiveShadow).toBe(true);
+  }
   const roof = (x: number, z: number) =>
     new Raycaster(new Vector3(x, 500, z), new Vector3(0, -1, 0)).intersectObject(result.group)[0]?.point.y + 300;
   // Floor is the lowest grade less 0.35 m plus 0.35 m: 270 m NAVD88.
