@@ -70,6 +70,10 @@ These sheets compare **current** (left) and **proposed** (right) at 20:00, 23:30
 - [Midtown, `cam=800,-3710,70,50,1021`](log/ui/night-occupancy/mid-sheet.jpg)
 - [Downtown, `cam=330,-700,40,55,1150`](log/ui/night-occupancy/dt-sheet.jpg)
 
+- [Default City camera, whole board, no camera link: 20:00 and 23:30](log/ui/night-occupancy/default-sheet.jpg)
+
+**At the default camera the two models look almost the same.** From about 20 km, a window is under a pixel, and street lamps and arterials make up most of the night picture. At 20:00 the proposal is slightly brighter over Midtown's residential towers; at 23:30 the difference is hard to see. The occupancy model matters once someone zooms to a district (the Midtown and Downtown sheets), which is where the generic boxes outshine the skins today.
+
 Under the proposal:
 - **20:00** is the brightest hour. Residential and hotel towers glow, and offices still show working floors.
 - **23:30** has offices sparse and homes and hotels moderate. The skinned landmarks now sit inside the range of the generic boxes instead of below it.
