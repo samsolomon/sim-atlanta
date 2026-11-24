@@ -191,3 +191,29 @@ it('settles the very-far ground below the DEM with exact rims, at a fifth of the
   expect(interiorWorst).toBeLessThan(0.05);
   expect(rimWorst).toBeLessThanOrEqual(VERY_FAR_ERROR_M);
 }, 300_000);
+
+it('swaps a mounted low board to its settled far level once the idle settle runs', async () => {
+  const { vi } = await import('vitest');
+  const { PerspectiveCamera } = await import('three');
+  const { createDowntownTerrain, FAR_GROUND_M, farSettleForTests } = await import('./model');
+  const { bounds } = await import('../square-board/sections');
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  farSettleForTests.enable();
+  try {
+    const b = bounds['south-band'], path = 'square-board/south-band';
+    const area = createDowntownTerrain(grid(path), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const camera = new PerspectiveCamera();
+    camera.position.set(b.maxX + FAR_GROUND_M + 10, 0, b.minZ); area.update(0, camera);
+    const plain = area.board.geometry;
+    const near = new GroundSurface(grid(path), 'low');
+    // Before the idle slice the board draws the plain level, which stands above the DEM inside.
+    expect(aboveDem(plain, near, 165).interior).toBeGreaterThan(0.5);
+    farSettleForTests.flush();
+    const settled = area.board.geometry;
+    expect(settled).not.toBe(plain);
+    expect(settled.index!.count).toBe(plain.index!.count);
+    expect(aboveDem(settled, near, 165).interior).toBeLessThan(0.05);
+    area.dispose(); near.geometry.dispose();
+  } finally { farSettleForTests.enable(false); vi.unstubAllGlobals(); }
+});

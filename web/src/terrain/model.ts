@@ -260,6 +260,13 @@ const veryFarOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('veryfar') === '0';
 })();
+const inPage = typeof window !== 'undefined';
+let settleInTests = false;
+/** Tests: queue the idle far-level settling outside a page, and run every queued build now. */
+export const farSettleForTests = {
+  enable(on = true) { settleInTests = on; },
+  flush() { while (veryFarQueue.length) veryFarQueue.shift()!(); },
+};
 /** One very-far build per idle slice across all boards: several hundred ms on a phone if done at once. */
 const veryFarQueue: (() => void)[] = [];
 let veryFarPumping = false;
@@ -410,9 +417,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // prebuilt one, else boot on the plain level and settle it in an idle slice (below).
   const settleNow = FAR_GROUND_SETTLED && mesh.hasPrebuiltFar(FAR_GROUND_ERROR_M, true);
   let farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M, 160, settleNow) : null;
-  // Browser only: the idle swap is a visual refinement, and outside a page (tests, tools) the
-  // plain level stays so every mount builds and frees the same geometry.
-  if (farGeometry && FAR_GROUND_SETTLED && !settleNow && 'requestIdleCallback' in globalThis) {
+  // In a page only (Safari has no requestIdleCallback: the queue falls back to a timer). Outside
+  // one (tests, tools) the plain level stays, so every mount builds and frees the same geometry.
+  if (farGeometry && FAR_GROUND_SETTLED && !settleNow && (inPage || settleInTests)) {
     veryFarQueue.push(() => {
       if (disposed || !farGeometry) return;
       const settled = mesh.farGeometry(FAR_GROUND_ERROR_M, 160, true);
