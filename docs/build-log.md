@@ -3440,3 +3440,6 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+### 2026-11-24 · The Medical Arts Building, from its nomination
+
+No good public photographs of the 1927 Medical Arts Building turned up, but the 2016 National Register nomination describes every elevation in turn. That was enough to model it. The two-storey limestone base and orange terracotta band run on Peachtree and the north side. A pilastered capital and a cornice turn both corners and stop. On the north side, a tile panel sits between heightened bays. The south wall is plain red brick with a blank strip where the elevator core sits. The nomination's "60 feet of frontage, 140 feet deep" matched the Overture outline. The lidar put the elevator penthouse and stair head at 357 m and 362 m NAVD88, exactly where the nomination says the two-storey penthouse stands. The building has been boarded since at least 2016, so it is the first skin with no lamp mesh at all. It costs about 470 triangles and goes straight into the downtown landmark batch. [Before and after](log/ui/medical-arts/compare-ne.jpg)
