@@ -16,11 +16,26 @@ const PHASES = ['red', 'amber', 'green'] as const;
 const HEIGHT_STEP = 2;
 /** A profile sample whose road surface is missing (a hole, a tunnel or off the board). */
 const NO_ROAD = -Infinity;
+/** Largest gap (m) allowed between a step's interpolation and the drawn road at its midpoint. */
+const PROFILE_TOLERANCE = .005;
+/** Fractions of a step checked against the drawn road before it may interpolate. */
+const CHECKS = [.5, .25, .75, .125, .375, .625, .875];
 /** Metres around a car's footprint that still count as on screen: its long low-sun shadow, and
  * an off-screen car that would block a visible one at the same spot. */
 const CULL_MARGIN = 30;
 /** Scene heights a car can occupy, for culling before its height is known. */
 const CULL_Y = [-80, 150] as const;
+
+/** For each profile step of a line: the single vertex strictly inside it, -1, or -2 for several. */
+function corners(line: Line, steps: number) {
+  const out = new Int32Array(steps).fill(-1);
+  for (let v = 1; v < line.pts.length - 1; v++) {
+    const at = line.cum[v], i = Math.floor(at / HEIGHT_STEP);
+    if (at === i * HEIGHT_STEP || i >= steps) continue; // on a sample: already exact
+    out[i] = out[i] === -1 ? v : -2;
+  }
+  return out;
+}
 
 /** `line.at` without allocating: writes x, z into `out`. */
 function pointAt(line: Line, s: number, out: { x: number; z: number }) {
@@ -46,6 +61,13 @@ interface LaneState {
   /** Road height every HEIGHT_STEP metres (NaN until first sampled), and the source road index there. */
   heights: Float64Array;
   runs: Int32Array;
+  /** Per step: the one lane vertex strictly inside it (its index), -1 for none, -2 for several. */
+  corner: Int32Array;
+  /** Road height at each lane vertex (NaN until first sampled), for corners inside a step. */
+  vertexHeights: Float64Array;
+  /** Per step: 0 untested, 1 interpolates within PROFILE_TOLERANCE, 2 sample exactly (a deck
+   * edge, a step in the drawn surface or a terrain fold inside it). */
+  smooth: Uint8Array;
 }
 
 const models = ['sedan', 'suv', 'box'] as const;
@@ -266,14 +288,15 @@ export class RoadTraffic {
         timed: !course.closed && (!!course.signals?.length || !!queue),
         period: course.line.length + offstage(course),
         active: [], trips: slots.map(() => ({ start: 0, length: 0 })),
-        heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n),
+        heights: new Float64Array(n).fill(NaN), runs: new Int32Array(n), corner: corners(course.line, n),
+        vertexHeights: new Float64Array(course.line.pts.length).fill(NaN), smooth: new Uint8Array(n),
       }];
     });
   }
 
   /** Forget cached road heights, for when the ground under existing courses changes. */
   refreshHeights() {
-    for (const lane of this.lanes) lane.heights.fill(NaN);
+    for (const lane of this.lanes) { lane.heights.fill(NaN); lane.vertexHeights.fill(NaN); lane.smooth.fill(0); }
   }
 
   /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
@@ -281,19 +304,50 @@ export class RoadTraffic {
     const i = Math.floor(s / HEIGHT_STEP), length = lane.course.line.length;
     // The last step is shorter: its upper sample sits at the lane's end, not a full step on.
     const s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
-    const f = span > 0 ? (s - s0) / span : 0;
-    const a = this.profile(lane, i);
-    const b = f > 0 ? this.profile(lane, i + 1) : a;
-    if (a === NO_ROAD && b === NO_ROAD) return null;
-    const roads = lane.course.roads;
-    if (a === NO_ROAD || b === NO_ROAD || (f > 0 && roads[lane.runs[i]] !== roads[lane.runs[i + 1]])) {
-      // The drawn road starts, ends or changes owner inside this step (a board edge, a hole,
-      // onto a deck): sample exactly, as cars did before the profile.
-      const line = lane.course.line;
-      const y = this.opts.roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(line.vertexAt(s)))]);
-      return y === null || !Number.isFinite(y) ? null : y;
+    if (!(span > 0) || s <= s0) {
+      const a = this.profile(lane, i);
+      return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
     }
-    return a + (b - a) * f;
+    let smooth = lane.smooth[i];
+    if (!smooth) {
+      // First use of this step: keep interpolating only if the drawn road agrees at its eighths,
+      // which catches deck edges, steps in the surface and terrain folds.
+      smooth = 1;
+      for (const t of CHECKS) {
+        const at = s0 + span * t, p = pointAt(lane.course.line, at, this.point);
+        const want = this.exactHeight(lane, at, p.x, p.z), got = this.interpolate(lane, i, s0, span, at);
+        if (want === null || got === null || Math.abs(want - got) > PROFILE_TOLERANCE) { smooth = 2; break; }
+      }
+      lane.smooth[i] = smooth;
+    }
+    return smooth === 1 ? this.interpolate(lane, i, s0, span, s) : this.exactHeight(lane, s, x, z);
+  }
+
+  /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
+  private interpolate(lane: LaneState, i: number, s0: number, span: number, s: number): number | null {
+    const a = this.profile(lane, i), b = this.profile(lane, i + 1);
+    const roads = lane.course.roads, corner = lane.corner[i];
+    if (a === NO_ROAD || b === NO_ROAD || corner === -2 || roads[lane.runs[i]] !== roads[lane.runs[i + 1]]) return null;
+    if (corner >= 0) {
+      // The lane turns inside this step: interpolate to the corner's own height on each side,
+      // so a bend never cuts a chord below the road.
+      const at = lane.course.line.cum[corner];
+      let h = lane.vertexHeights[corner];
+      if (h !== h) {
+        const [vx, vz] = lane.course.line.pts[corner];
+        const y = this.opts.roadHeight(vx, vz, roads[Math.min(roads.length - 1, corner)]);
+        h = lane.vertexHeights[corner] = y === null || !Number.isFinite(y) ? NO_ROAD : y;
+      }
+      if (h === NO_ROAD) return null;
+      return s <= at ? a + (h - a) * ((s - s0) / (at - s0)) : h + (b - h) * ((s - at) / (s0 + span - at));
+    }
+    return a + (b - a) * ((s - s0) / span);
+  }
+
+  private exactHeight(lane: LaneState, s: number, x: number, z: number) {
+    const { line, roads } = lane.course;
+    const y = this.opts.roadHeight(x, z, roads[Math.min(roads.length - 1, Math.floor(line.vertexAt(s)))]);
+    return y === null || !Number.isFinite(y) ? null : y;
   }
 
   private profile(lane: LaneState, i: number) {
