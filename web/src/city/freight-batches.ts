@@ -2,6 +2,17 @@ import * as THREE from 'three';
 import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
 import { MAX_UNITS } from './freight-consist';
 
+/** Every freight material carries this many clipping planes. three.js compiles one program per
+ * clipping-plane count, so padding downtown (4 board edges + 0–2 mouth cuts) and Brookwood (2
+ * edges) to one count lets all instanced freight share a single shader program. */
+export const FREIGHT_CLIP_PLANES = 6;
+/** A plane that never clips: everything in the scene lies on its kept side. */
+const NEVER = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
+export function freightClipPlanes(planes: THREE.Plane[]) {
+  if (planes.length > FREIGHT_CLIP_PLANES) throw new Error(`freight takes at most ${FREIGHT_CLIP_PLANES} clip planes`);
+  return [...planes, ...Array.from({ length: FREIGHT_CLIP_PLANES - planes.length }, () => NEVER)];
+}
+
 /**
  * A train draws one instanced batch per car kind and clipping material, whatever its length, on both
  * tiers. Poses are plain Object3Ds (for picking and follow); their kind can change between passages.

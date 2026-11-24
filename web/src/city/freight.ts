@@ -1,4 +1,4 @@
-import { FreightBatches } from './freight-batches';
+import { FreightBatches, freightClipPlanes } from './freight-batches';
 import * as THREE from 'three';
 import type { FreightTreadPoint } from '../terrain/transport';
 import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING } from '../vignette/freight-stock';
@@ -84,7 +84,7 @@ export class CityFreight {
     const startCut = cutPlane(points[0], points[1]);
     const endCut = cutPlane(points[last], points[last - 1]);
     const materials = [[], [startCut], [endCut], [startCut, endCut]].map(cuts =>
-      new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [...this.edges, ...cuts] }));
+      new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: freightClipPlanes([...this.edges, ...cuts]), clipShadows: true }));
     this.materials.push(...materials);
     const poses = Array.from({ length: MAX_UNITS }, () => {
       const pose = this.batches.createPose(materials[0]);

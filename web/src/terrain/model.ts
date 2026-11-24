@@ -12,6 +12,9 @@ import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
 import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
 import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
+import { create10Tenth, tenTenthId } from '../city/10-10th';
+import { atlanticId, createAtlantic } from '../city/the-atlantic';
+import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -246,6 +249,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
       : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
       : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
+      : site.id === tenTenthId ? create10Tenth(sceneryCity.buildings, site, grid)
+      : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
+      : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {

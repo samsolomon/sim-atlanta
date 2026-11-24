@@ -80,6 +80,18 @@ Each passage is a pure function of the line, the signed slot and `CONSIST_VERSIO
   - `t=2026-11-23T14:02-05:00&speed=60`: 88 → 90.
   - `22:02` swept: 91 → 93.
   - The swept night baseline already exceeds the 90 ceiling that the stock 14:00 perf clock reports.
+- **Clip-plane padding.** three.js compiles one program per clipping-plane count. So every freight material is padded to 6 planes (`FREIGHT_CLIP_PLANES`) with planes that never clip, and all instanced freight shares one program. The same production builds, measured on the low tier before and after padding:
+
+  | URL | Programs before | Programs after |
+  | --- | ---: | ---: |
+  | Stock `2026-11-20T14:00` | 82 | 80 |
+  | Day `2026-11-23T14:44` | 81 | 80 |
+  | Night `22:22:30` | 86 | 84 |
+  | Day sweep `14:02&speed=60` | 84 | 82 |
+  | Night sweep `22:02&speed=60` | 87 | 85 |
+
+  Draws were unchanged. Mouth and board-edge cuts still clip ([downtown mouth](log/freight/consists/clip-mouth.jpg), [Brookwood west edge](log/freight/consists/clip-edge.jpg)).
+- **Not changed yet.** Road traffic's instanced, clipped Lambert cars (`road-traffic.ts`) carry the 4 board-edge planes. Padded to the same 6, they would share the freight program. Buses and streetcars set clip planes too, but they are not instanced Lambert in the same way; check their program keys before padding.
 - **Card.** It reads the passage record: railroad, consist summary and lead unit. It is no longer derived from the line name, which closes #291's plausible finding. It stays Illustrative.
 
 ## Passage selection and power

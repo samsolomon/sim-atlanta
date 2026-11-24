@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { CityFreight, DOWNTOWN_ENTRY_MS, DOWNTOWN_SLOT_MS } from './freight';
 import { FREIGHT_LENGTH } from '../vignette/freight-stock';
+import { FREIGHT_CLIP_PLANES } from './freight-batches';
 
 const point = (s: number, rise = .02) => ({ s, position: new THREE.Vector3(s, s * rise, 0) });
 /** Slot 0 runs up the chainage from the first section's start. */
@@ -17,11 +18,14 @@ it('follows both trucks across joined treads and clips a car at a mapped cover g
   expect(lead.position.y).toBeCloseTo(lead.position.x * .02);
   // The lead faces the direction of travel (+x here).
   expect(new THREE.Vector3(0, 0, 1).applyQuaternion(lead.quaternion).x).toBeGreaterThan(.99);
-  expect(lead.material.clippingPlanes).toHaveLength(0); // crosses the joined seam
+  // Materials are padded to FREIGHT_CLIP_PLANES with planes that never clip; count the real ones.
+  const real = () => lead.material.clippingPlanes!.filter(p => p.constant < 1e5);
+  expect(lead.material.clippingPlanes).toHaveLength(FREIGHT_CLIP_PLANES);
+  expect(real()).toHaveLength(0); // crosses the joined seam
   freight.update(at(108));
   expect(lead.visible).toBe(true);
-  expect(lead.material.clippingPlanes).toHaveLength(1);
-  expect(lead.material.clippingPlanes![0].distanceToPoint(point(101).position)).toBeLessThan(0);
+  expect(real()).toHaveLength(1);
+  expect(real()[0].distanceToPoint(point(101).position)).toBeLessThan(0);
   freight.update(at(310));
   // Nothing is drawn wholly inside the cover between 100 m and 350 m.
   for (const car of freight.poses.children.filter(c => c.visible)) {
@@ -79,4 +83,15 @@ it('draws one instanced batch per car kind and clip material, matching every vis
   } finally {
     freight.dispose();
   }
+});
+
+it('gives every freight material the same clipping-plane count, so instanced freight shares one program', () => {
+  const freight = new CityFreight([[point(0), point(150)], [point(180), point(350)]], [new THREE.Plane(new THREE.Vector3(1, 0, 0), 10)]);
+  for (const head of [20, 160, 300]) {
+    freight.update(at(head));
+    for (const mesh of freight.group.children.filter((m): m is THREE.InstancedMesh => m instanceof THREE.InstancedMesh)) {
+      expect((mesh.material as THREE.Material).clippingPlanes).toHaveLength(FREIGHT_CLIP_PLANES);
+    }
+  }
+  freight.dispose();
 });

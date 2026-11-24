@@ -1,4 +1,4 @@
-import { FreightBatches } from './freight-batches';
+import { FreightBatches, freightClipPlanes } from './freight-batches';
 import * as THREE from 'three';
 import { Line, type P2 } from '../vignette/geom';
 import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING } from '../vignette/freight-stock';
@@ -40,7 +40,7 @@ export function freightPass(clockMs: number, lineLength: number): FreightPass | 
 export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], highTier = true) {
   const line = new Line(pts);
   const batches = new FreightBatches(!highTier);
-  const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: planes, clipShadows: true });
+  const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: freightClipPlanes(planes), clipShadows: true });
   const cars = Array.from({ length: MAX_UNITS }, () => {
     const car = batches.createPose(material);
     car.userData.trainId = 'illustrative:freight:norcross';
