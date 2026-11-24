@@ -1,5 +1,5 @@
 import { crownKey } from '../trees/rollout';
-import { underpassMesh, type Underpass } from './underpass';
+import { daylightSlots, underpassMesh, type Underpass } from './underpass';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
@@ -188,12 +188,14 @@ export function takeGroundLodChange() { const c = groundLodChanged; groundLodCha
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
-  const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
+  const zero = grid.manifest.vertical.sceneZeroNavd88M;
+  const openings = options.underpass ? [...(options.openings ?? []), ...daylightSlots(options.underpass, zero)] : options.openings;
+  const mesh = new GroundSurface(grid, options.quality, openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
-  const trench=options.underpass && underpassMesh(options.underpass,city,options.quality,bare,grid.manifest.vertical.sceneZeroNavd88M);
-  if(trench)board.add(trench.group);
+  const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero);
+  if (trench) board.add(trench.group);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
@@ -349,7 +351,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
-    setNight(factor: number) { lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
+    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       trench?.setWet(factor);
       board.material.color.setScalar(1 - 0.3 * factor);
@@ -360,7 +362,6 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     },
     dispose() {
       group.removeFromParent();
-      trench?.dispose();
       board.material.map?.dispose();
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }

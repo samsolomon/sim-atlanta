@@ -17,6 +17,8 @@ export function slotPlanes({ start, end, halfWidthM, crossAxis }: OpenSlot) {
   }
   const [vx, vz] = crossAxis ?? [dz / length, -dx / length];
   const determinant = dx * vz - dz * vx;
+  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-9 || Math.abs(Math.hypot(vx,vz)-1) > 1e-5)
+    throw new Error('Invalid open-slot cross axis');
   const along = (px: number, pz: number) => ((px - x) * vz - (pz - z) * vx) * length / determinant;
   const across = (px: number, pz: number) => (dx * (pz - z) - dz * (px - x)) / determinant;
   const planes: Plane[] = [

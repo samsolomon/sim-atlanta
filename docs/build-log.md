@@ -3095,3 +3095,26 @@ The bare-earth DEM put eight freight tracks at road level. April 2019 lidar stil
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
 
 On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)
+
+### 2026-11-23 — Use the terrain itself as the roof over North Avenue
+
+From above, the eight-track crossing used to have a notch on each side of the
+railway. The separate roof and the bank were trying to describe the same piece
+of ground. We restored the upper formation to the terrain grid and cut out just
+the intervals where the lidar sees daylight. The tracks follow that surface
+across North Avenue. Marietta's pavement and the grass on the three disused
+strips also continue across on their own ground triangles.
+
+Below them, two carriageways, sidewalks and a median run through the whole
+213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
+4.5 m railway clearance and the night lighting are inferred. On low, the
+structure and changed board mesh add 2,590 triangles and two draws with the
+existing ground texture. The two height queries at Marietta put a driver on
+the appropriate street even where both streets share the same map coordinates.
+
+| Camera | Day | Night |
+| --- | --- | --- |
+| Overview, `cam=-783,-1860,235,55,350` | [14:00](log/north-ave/shared-overview-day.jpg) | [23:00](log/north-ave/shared-overview-night.jpg) |
+| Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
+
+Both views use 20 November 2026, Eastern time, at low quality.

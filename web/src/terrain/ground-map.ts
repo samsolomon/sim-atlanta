@@ -1,7 +1,7 @@
 import type { Underpass } from './underpass';
 import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
 import * as THREE from 'three';
-import { segDist, type P2 } from '../vignette/geom';
+import { Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { PAL } from '../vignette/world';
 import type { TerrainQuality } from './surface';
@@ -107,6 +107,29 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
   paintActiveOval(ctx, data.bounds);
   paintWinnPark(ctx, data);
 
+  // The ballast shoulder is paint on the same ground triangles as the bank.
+  // It narrows into the existing 4.2 m track ribbons at both ends.
+  const railCover = underpass?.spans.find(span => span.type === 'rail-ballast');
+  if (underpass && railCover) {
+    for (const run of data.terrainTransport?.rail ?? []) {
+      const line = new Line(run.pts);
+      let previous: P2[] | undefined;
+      for (let d = 0; line.length; d = Math.min(d+3,line.length)) {
+        const p = line.at(d), [s,t] = underpass.local(p.x,p.z);
+        const station = s - (railCover.bankSkew ?? 0)*t;
+        const within = station >= railCover.start && station <= railCover.end && Math.abs(t)<55;
+        const half = 2.05 + 1.55*Math.max(0,Math.min(1,(55-Math.abs(t))/15));
+        const row: P2[] = [[p.x-p.nx*half,p.z-p.nz*half],[p.x+p.nx*half,p.z+p.nz*half]];
+        if(within && previous){
+          ctx.beginPath();trace(ctx,[previous[0],previous[1],row[1],row[0]]);
+          ctx.closePath();ctx.fillStyle=PAL.ballastFreight;ctx.fill();
+        }
+        previous=within ? row : undefined;
+        if(d===line.length)break;
+      }
+    }
+  }
+
   const roads: PaintRoad[] = [...data.roads.filter(r => !r.bridge && !r.tunnel),
     ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
@@ -119,7 +142,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
       ctx.rect(b.minX,b.minZ,b.maxX-b.minX,b.maxZ-b.minZ);
       const s0=underpass.spans[0].start,s1=underpass.spans.at(-1)!.end;
       const stations=[s0,...underpass.breaks.filter(s=>s>s0 && s<s1),s1];
-      const ring=[...stations.map(s=>underpass.point(s,-24)),...stations.reverse().map(s=>underpass.point(s,24))];
+      const ring=[...stations.map(s=>underpass.point(s,-underpass.halfWidth-8)),...stations.reverse().map(s=>underpass.point(s,underpass.halfWidth+8))];
       trace(ctx,ring);ctx.closePath();ctx.clip('evenodd');
     }
     ctx.beginPath(); trace(ctx, r.pts);

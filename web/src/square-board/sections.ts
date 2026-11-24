@@ -1,5 +1,5 @@
-import { daylightSlots, underpassFloor } from '../terrain/underpass';
-import { northAvenue, northAveGround } from '../terrain/north-ave';
+import { underpassFloor, underpassGround } from '../terrain/underpass';
+import { northAvenue } from '../terrain/north-ave';
 import { midtownConnectorGround } from '../terrain/midtown-connector-ground';
 import { midtownConnectorDecks } from '../terrain/midtown-connector-decks';
 import { midtownConnectorPiers } from '../terrain/midtown-connector-piers';
@@ -120,7 +120,9 @@ export async function gridAt(path: string, signal: AbortSignal, northBand = fals
     throw Error('Ground checksum mismatch at ' + path);
   const terrain = midtownConnectorGround(manifest, bytes);
   if (brookwood) return brookwood(manifest, terrain);
-  return northBand ? northConnectorGround(manifest, bytes) : new GroundGrid(manifest, path.endsWith('/midtown-south') ? northAveGround(manifest,terrain) : terrain);
+  if (northBand) return northConnectorGround(manifest, bytes);
+  if (path.endsWith('/midtown-south')) underpassGround(northAvenue, manifest, terrain);
+  return new GroundGrid(manifest, terrain);
 }
 
 async function readPatch(id: Patch | MidtownRow, signal: AbortSignal, dataRoot = '/data', brookwood?: BrookwoodGrid) {
@@ -160,7 +162,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         separateBuilding: id === 'brookwood-station' ? 'osm:way:265350477' : id === 'north-band' ? options?.northBuilding : undefined,
         lights: id in rowBounds ? midtownLights : undefined,
         underpass: id === 'midtown-south' ? northAvenue : undefined,
-        openings: id === 'midtown-south' ? daylightSlots(northAvenue,grid.manifest.vertical.sceneZeroNavd88M) : id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
+        openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
         rollout: context.treeLowCount !== undefined ? { row: id, lowCount: context.treeLowCount, allCrowns: context.trees, inAnsley } : undefined,
       });
@@ -184,18 +186,18 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           decks.deckAt(x, z, run) ?? transports[1]?.deckAt(x, z, run) ?? null;
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
-        const roadHeight=cityRoadHeight(city, area.groundAt, deckHeight);
+        const roadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
         added.set(id, {
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
-          connectorBoard: { city, roadHeight: id === 'midtown-south' ? (x,z,road) => {
-            if(road.name==='North Avenue Northwest'){
-              const [s,t]=northAvenue.local(x,z);
-              if(s>=northAvenue.start && s<=northAvenue.end && Math.abs(t)<=northAvenue.halfWidth)
-                return underpassFloor(northAvenue,s,t,area.terrainAt,grid.manifest.vertical.sceneZeroNavd88M);
+          connectorBoard: { city, roadHeight: id !== 'midtown-south' ? roadHeight : (x, z, road) => {
+            if (road.name === northAvenue.roadName) {
+              const [s, t] = northAvenue.local(x, z);
+              if (s >= northAvenue.start && s <= northAvenue.end && Math.abs(t) <= northAvenue.halfWidth)
+                return underpassFloor(northAvenue, s, t, area.terrainAt, grid.manifest.vertical.sceneZeroNavd88M);
             }
-            return roadHeight(x,z,road);
-          } : roadHeight },
+            return roadHeight(x, z, road);
+          } },
           dispose() {
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();
