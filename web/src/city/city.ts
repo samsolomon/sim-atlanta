@@ -70,6 +70,7 @@ import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
+import { createDavisons } from './davisons';
 import { createRitzCarlton } from './ritz-carlton-atlanta';
 import { createSouthernBell } from './southern-bell';
 import { createRhodesHaverty } from './rhodes-haverty';
@@ -365,6 +366,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
+  let davisons: ReturnType<typeof createDavisons> = null;
   let ritzCarlton: ReturnType<typeof createRitzCarlton> = null;
   let southernBell: ReturnType<typeof createSouthernBell> = null;
   let rhodesHaverty: ReturnType<typeof createRhodesHaverty> = null;
@@ -458,8 +460,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
         const afterFultonBank = fultonBank?.buildings ?? afterFiftyFiveParkPlace;
-        ritzCarlton = createRitzCarlton(afterFultonBank, ground);
-        const afterRitzCarlton = ritzCarlton?.buildings ?? afterFultonBank;
+        davisons = createDavisons(afterFultonBank, ground);
+        ritzCarlton = createRitzCarlton(davisons?.buildings ?? afterFultonBank, ground);
+        const afterRitzCarlton = ritzCarlton?.buildings ?? davisons?.buildings ?? afterFultonBank;
         southernBell = createSouthernBell(afterRitzCarlton, ground);
         const afterSouthernBell = southernBell?.buildings ?? afterRitzCarlton;
         rhodesHaverty = createRhodesHaverty(afterSouthernBell, ground);
@@ -560,6 +563,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
+        if (davisons) world.group.add(davisons.group);
         if (ritzCarlton) world.group.add(ritzCarlton.group);
         if (southernBell) world.group.add(southernBell.group);
         if (rhodesHaverty) world.group.add(rhodesHaverty.group);
@@ -1366,6 +1370,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     parkPlaceTower?.setNight(night);
     fiftyFiveParkPlace?.setNight(night);
     fultonBank?.setNight(night);
+    davisons?.setNight(night);
     ritzCarlton?.setNight(night);
     southernBell?.setNight(night);
     rhodesHaverty?.setNight(night);
