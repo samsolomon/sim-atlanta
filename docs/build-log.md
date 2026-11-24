@@ -3399,7 +3399,7 @@ The first render of Hanover Midtown was the generic box, because the mapped podi
 
 ### 2026-11-24 · Loews and the hotel next door
 
-Loews Atlanta's mapped height of 79.9 m looked low for a 2010 tower, but the lidar agrees. The roof is at 405 m NAVD88 over a 295 m street, with the Peachtree half rising to 411.5 m and the west wing stopping at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
+Loews Atlanta's parts carry a mapped 79.9 m, which is no roof at all. The lidar puts the tower at 405 m NAVD88 over a 295 m street, and the Peachtree half at 411.5 m, about 117 m, which matches the site's mapped 118.3 m. The west wing stops at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
 
 ### 2026-11-24 · Sora at Spring Quarter, part by part
 
