@@ -91,8 +91,9 @@ try {
         await until("window.__buses().some(b => b.id === 'marta:bus:delayed')");
       }
       await until('window.__follow.active');
-      // The resolver runs every 500 ms. An immediate assertion misses a stale link.
-      await sleep(2200);
+      // A linked route can wait up to 20 s for a neighboring tile to mount.
+      // Allow that grace period and several 500 ms ticks before checking an explicit train.
+      await sleep(kind === 'route' && explicit ? 22_200 : 2200);
       const actual = await evaluate(`(() => {
         const id = window.__follow.vehicle?.id;
         return { id, route: window.__trains().find(t => t.id === id)?.routeId };
