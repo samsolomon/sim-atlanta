@@ -95,7 +95,7 @@ export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding
       if (f === entrance) {
         const [cx, , cz] = at(f, 0.5, 0, 0);
         s.body.box(2.4, 0.5, Math.min(12, f.length * 0.6), cx + 1.2, H.grade + 5.2, cz, canopy);
-        s.lights.quad(at(f, 0.35, H.grade + 0.4, 0.15), at(f, 0.35, H.grade + 4.4, 0.15), at(f, 0.65, H.grade + 4.4, 0.15), at(f, 0.65, H.grade + 0.4, 0.15), storefront);
+        s.lights.quad(at(f, 0.35, H.grade + 0.4, 0.17), at(f, 0.35, H.grade + 4.4, 0.17), at(f, 0.65, H.grade + 4.4, 0.17), at(f, 0.65, H.grade + 0.4, 0.17), storefront);
       }
       // Offices: about 6% of window bays lit at night.
       for (let j = 0; j < n; j++) for (let k = 0; k < piers; k++) {
