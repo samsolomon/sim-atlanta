@@ -22,18 +22,27 @@ export default {
     transformIndexHtml() {
       return [{ tag: 'script', injectTo: 'head-prepend', children: `
         const fixtureFixes = ${JSON.stringify(fixes)};
-        const start = Date.now(), originalFetch = window.fetch.bind(window);
+        let start;
+        const originalFetch = window.fetch.bind(window);
+        const elapsed = () => start === undefined ? 0 : (performance.now() - start) / 1000;
+        window.__railReplaySeconds = elapsed;
+        setInterval(() => {
+          const label = document.getElementById('rail-fixture-time');
+          if (label) label.textContent = elapsed().toFixed(1) + ' s · 1×';
+        }, 100);
         window.fetch = (input, opts) => {
           const url = new URL(input instanceof Request ? input.url : input, location.href);
           if (url.pathname !== '/api/marta/rail') return originalFetch(input, opts);
-          const fetched = Date.now(), i = Math.min(6, Math.floor((fetched-start)/30000));
+          start ??= performance.now();
+          const fetched = Date.now(), seconds = elapsed();
+          const i = Math.min(6, Math.floor((seconds + 0.02) / 30));
           const train = {id:'marta:train:101', line:'BLUE', direction:'W', destination:'H E Holmes',
-            at:start+i*30000-5000, ...fixtureFixes[i]};
+            at:Math.round(fetched-seconds*1000+i*30000-5000), ...fixtureFixes[i]};
           return Promise.resolve(Response.json({fetched, trains:[train]}));
         };
       ` }, { tag: 'aside', injectTo: 'body', attrs: {
         style: 'position:fixed;z-index:10000;top:0;left:50%;transform:translateX(-50%);background:#fff4be;color:#222;padding:4px 10px;font:14px system-ui;pointer-events:none'
-      }, children: 'Synthetic replay · Train 101 · 40 s display delay' }];
+      }, children: 'Synthetic replay · Train 101 · 40 s display delay · <span id="rail-fixture-time">0.0 s · 1×</span>' }];
     },
   }],
 };
