@@ -1,67 +1,64 @@
-# Handoff: studio-rectangle-default (release packager + Follow)
+# Handoff for studio-rectangle-default
 
-Claude (Opus 5.5), session `orca_session_id:f4705eb0-457d-47df-aca6-992847d53ceb`, handing to Codex on 2026-11-23.
+Codex GPT-6.2 session `orca_session_id:75355e85-c0af-4497-b5d4-86533a9e9ed8` hands this worktree to Claude Opus. The earlier Codex session is `orca_session_id:d460b6b8-d706-4545-8a60-370d9ba9369c`.
 
-## State
+## State at handoff
 
-- No open PRs or uncommitted work of mine. The worktree is clean on `main`. My merged work: #175 and #180 (west-edge shadows and the perimeter test), #238 (Follow any vehicle), #261 (timetable→live handoff).
-- **Releases packaged, newest first** (all Taildropped to `sams-macbook-air`; the coordinator deploys):
-  - `bc32b09`, the phones release: `e3a3239c…315e`. No data change.
-  - `94e2d8e`, A2c default: `b630dabb…b79e`. Changed `downtown/vignette.json` (#215).
-  - `d1866d5`: a held candidate, superseded.
-  - Earlier: `fd2ccc7`, `82a0d5f`, `22b175d`.
-  - Archives are in `~/Developer/sim-atlanta-release-<sha>/`. Diff the next release's `web/dist/data` against the newest one the coordinator says is live.
-- **Not mine but in flight:** #310 removes `?ui=classic` and is meant for the *next* release. #326 (perf budgets) and #291 (freight locomotive) belong to other agents.
+- Branch `samsolomon/handoff-studio-rectangle-opus` is a docs-only handoff off `origin/main` at `59b8cbc9`. This handoff has no PR. There is no WIP and no open or held PR owned by this workstream. Keep every coordinator merge hold in force until the coordinator relays Sam's OK.
+- #338, freight Follow, is `MERGED` at `f70efec304469f65d3d4f1b56d2404cf66137746`. Prior handoff PR #332 is `MERGED` at `eb538980e2d1e726d0a449eaa3bb000ed3a6d816`. Earlier completed Follow work includes #238 and #261. [Freight review and cameras](../log/ui/follow/freight-review.jpg)
+- Passenger night checks are complete. Both production packages requested in this session were sent to the Air. The coordinator owns deployment. The newest package is `b71b863f`. The production verifier passed at handoff: all 95 public assets matched and the MARTA rail response had the expected shape.
+- No dev server or browser session owned by this worktree is running. Port 8787 currently belongs to the Midtown Connector worktree's Worker. Coordinate before using or stopping it.
 
-## Sam's decisions (2026-11-23)
+## Coordinator requests, quoted from the messages
 
-- Follow is on by default (`?follow=0` turns it off).
-- "Underground" comes only from mapped data:
-  - OSM `tunnel=yes` North Line ways (`fixtures/midtown-tunnel.json`);
-  - downtown cover from #281;
-  - baked rail spans, which decide wherever they exist.
-- The tier chip on a follow status is the *position's* tier. A timetable→live handoff is labelled **Inferred**, because MARTA's live feed has no trip ids.
-- #231: tiers appear only on selected cards and in the scene-wide Live/Timetable word, never as ambient notes.
-- Review screenshots are captioned BEFORE/AFTER composites, with the money shot first. Merge notices link to the images in `docs/log` on GitHub.
-- A2c is the interface. `?ui=classic` lasts one release (gone with #310).
+> You are the release packager: package only when the coordinator asks. Otherwise finish the passenger live-feed night checks in the handoff.
 
-## Next steps
+> Coordinator: package a production release from main at ccae1bc1, using the release recipe in your handoff (test:release strict, build, tarball with SHA256SUMS, smoke/verify-production.py, RELEASE.md), Taildrop it to sams-macbook-air, and send me the SHA-256. Keep ?ui=classic (#310 is not in this one). In RELEASE.md, list user-visible changes since bc32b09 in plain words: City species trees (crape myrtle, loblolly, sweetgum, Japanese maple) with the phone fix (#336, #348); napkin crown B (#341); King Memorial CSX track (#334); freight locomotive detail and four new locomotives (#291, #347); traffic turns and streetcar queues (#340, #346) plus the 21:00 fix (#354); freight Follow (#338); Ansley houses and Winn Park (#343, #349); Rhodes Hall and its uplight, SCAD, Woodruff service side (#344, #360, #351, #337); the Arts Center slab (#339); footbridge contact (#356); and lab-only trees (magnolia, dogwood, white oak, elm). Say whether pnpm data is needed: if fresh GTFS data is regenerated, pre-Nov-22 cameras lose the Crescent, so prefer existing data unless a PR requires new data. Include review cameras with day and night URLs.
 
-1. **Follow PR B: the two illustrative freights.** City freight (`city/freight.ts`) and the Brookwood Norcross freight (`brookwood.ts`). Each needs a stable consist id and per-car `userData.trainId` / `lengthM` (local +z along the track).
-   - Add a `freight` branch to `locate()` in `city.ts`.
-   - The card must stay `illustrative`.
-   - `pick.ts` currently returns `{kind:'freight'}` with no id.
-2. **Package releases** when the coordinator asks. The recipe:
-   - On `main`, run `pnpm data:city` (it includes `data:midtown`) if any PR needs data, then `pnpm build`.
-   - Run `pnpm test:release`.
-   - `cmp` every `web/dist` non-asset file against the last live release.
-   - Copy the previous release's `worker/` and `smoke/verify-production.py`.
-   - Write `RELEASE.md`: highlights, a data table, about 20 day/night cameras, and smoke results.
-   - Generate `SHA256SUMS`, tar with `COPYFILE_DISABLE=1`, and verify after extracting.
-   - `tailscale file cp … sams-macbook-air:`, then send the SHA-256.
-3. **Night live checks of Follow** have never been done (daytime only).
+> Coordinator: package a production release from main at b71b863f with your recipe (test:release strict, build, tarball, SHA256SUMS, smoke/verify-production.py, RELEASE.md), Taildrop it to sams-macbook-air, and send me the SHA-256. This release removes ?ui=classic (#310) and ships the new interface: Final dock, Models page, phone selection card, compact radio. Say whether pnpm data is needed (I expect not; route 49 is NOT merged yet). In RELEASE.md list the user-visible changes since ccae1bc1 in plain words: the new interface (#373, #376, #379, #382); tree round 2 (#363) and the lab species (redbud, Callery pear, lacebark elm, river birch); Grant Street rail bridge (#370) and the North Avenue underpass (#380); Coda (#366) and the Rhodes uplight (#360); Rapid A-Line buses and the XE60 roof (#358, #364, #369); Ansley terraces and street edge (#362, #365); load-time staging (#359); the heap fix (#371); the streetcar replay stutter fix (#378). Include day/night review cameras, and smoke-check the dock, Models and selection on desktop and phone emulation.
 
-## Promises to other agents
+> Then take no new work: the Claude successor will read your session history and continue. Merge holds stay in force; nothing merges until I relay Sam's OK.
 
-- studio-ui-a2c (`d577649d-8640-473a-8c9b-461abf2b616a`): user gestures go through `manualCamera()`, which cancels Follow. `#train-follow`, `[data-follow]`, `[data-recenter]`, `.follow-status` and `showCard(html, canFollow)` stay stable.
-- studio-midtown-marta (`84ff6fd9-a68e-4888-aa2a-4477f88e5ff0`): streetcar cars join Follow through `locate()`'s car list. Done in #278; nothing owed.
-- studio-midtown-connector (`86c22ca9-ab18-4b2b-ae71-9fa693233f45`) owns `downtownCoverAt` in `vehicle-follow.ts` (#281).
+## Packages and verification
 
-## Servers and ports
+Archives, unpacked app and Worker, SHA files, per-release notes, camera tables and smoke screenshots live under `~/Developer/sim-atlanta-release-<sha>/` and next to those folders as `.tar.gz` and `.tar.gz.sha256`. Both packages were Taildropped to `sams-macbook-air` and reported through the coordinator reply route.
 
-None are running.
-- When used: Vite on `127.0.0.1:5418`, release dist on `:5420` (`python3 -m http.server`), and a live-API forwarder on `:8787`.
-- The forwarder (`scratchpad/liveproxy.mjs`) relays `/api/marta/{rail,bus}` to production's public cached endpoint when 1Password isn't unlocked for `pnpm secrets:local`.
-- Background jobs are killed when their time limit runs out. Pass a long timeout, or the server silently disappears.
+| Release | Compared against | Archive SHA-256 | Verification |
+| --- | --- | --- | --- |
+| `b71b863f` | `ccae1bc1` | `80b0f06ac93b68d38dc1695d99b54dea107f1b4abf4fad5eae2a44e3d334bfea` | 112 manifest entries checked after extraction, 95 local HTTP assets. Strict tests 20 Rust, 11 pipeline, 1,071 web with one skip, 5 Worker. Desktop and phone checked Final dock, radio, Models search/XE60 Details, warm return and selection. An old classic URL opens Final. |
+| `ccae1bc1` | `bc32b09` | `de404a41230783bb1d742ed39f0705f1a855afbf84001e9086f6420c0e22c6d3` | 118 manifest entries checked after extraction, 102 local HTTP assets. Strict tests 20 Rust, 11 pipeline, 987 web with one skip, 5 Worker. Classic still worked. Phone auto chose Low. Edgewood at 21:00 rendered. Downtown freight Follow said Illustrative. |
 
-## Rules that bit me
+Public data was byte-identical across both comparisons (52 files). Both packages reused the previous Worker bundle and smoke verifier. `b71b863f` excludes the Route 49 work in flight. Check its merge state independently on future release requests.
 
-- `cargo` isn't on PATH on the Studio. Run `PATH="$(brew --prefix rustup)/bin:$PATH"`.
-- `pnpm test:release` needs a per-worktree `.venv` with shapely. Delete `pipeline/scripts/__pycache__` afterwards; it isn't gitignored.
-- Orca's `set device` doesn't resize the tab. For phone captures, use headless Chrome over CDP: `Emulation.setDeviceMetricsOverride`, plus a UA override and touch emulation so the device tier picks Low.
-- Never `git reset --soft origin/main` to squash after `origin/main` has moved. It folds other PRs' reversions into your commit. Rebase instead.
-- `docs/build-log.md` conflicts on almost every rebase, because everyone appends. Keep both sides.
-- `main` moves every few minutes, so rebase right before `gh pr merge`.
-- Pipe CDP script output through `grep -v`, not `head`. `head` closes the pipe and leaves headless Chrome running.
-- Under load (load average around 15), a few vitest files can time out. Rerun before calling it a regression.
-- Release-note claims need checking against the code. #317's ashlar wasn't wired into any house, and the lab model keys differ from their display names.
+## Camera strings and checks
+
+City camera format is `cam=x,z,bearing,tilt,distance`. Use `/?view=city&q=low&weather=clear&speed=0&t=TIME&cam=CAM` for a pinned review. Match day and full night, usually November 20 at 14:00 and 21:00 ET. Use `q=high` for the High pass. For the real-time checks omit `t` and `speed`.
+
+| Check | Camera or link |
+| --- | --- |
+| Final dock and radio | `565,-3965,-101,55,421`, `2026-11-20T14:00:00-05:00`. Add `ui=classic` to check old links reach Final. |
+| Phone compact and expanded selection | `482,-3063,-83,63,600`, `2026-11-20T13:30:00-05:00`, `follow=marta:route:RED`. Confirm Scheduled, visible dock in compact view, and Follow stays active through More and collapse. |
+| Models | From the dock, search XE60 and inspect Articulation in Details. Verify the original City canvas is reused on return. Direct URLs `/?view=models&v=xe60` and `/?view=models&v=xe60&night=1`. |
+| Downtown freight | Day `921,549,-148,26,300` at 14:12:35, night `-505,-900,-148,26,300` at 22:12:35. Tap a visible car, then Follow. |
+| Norcross freight | `-654,-4519,-148,26,300` at 14:21:25 and 22:21:25. Confirm Illustrative and end on board exit. |
+| Edgewood queue | `588,-65,0,50,180` at 21:00 for the course endpoint, and 12:08 for queue rollover. |
+| Rhodes Hall | `301,-4675,340,60,160`, matched day and full night. |
+| Grant Street and North Avenue | `1390,505,0,55,300` and `-783,-1860,235,55,350`; closer below-deck cameras are in the project survey notes. |
+
+The live passenger check used City Low at `53c29a11`, with local Vite relaying public cached MARTA endpoints at the real clock around 20:18–20:21 ET, solar elevation −34° to −35°. The Red Line camera moved 1,041 m through mapped Midtown tunnel, from `489,-3026,-148,26,300` to `410,-1988,-148,26,300`. Route 49 bus 5106 moved 449 m across a live update, from `878,-895,-148,26,300` to `549,-1200,-148,26,300`. Stop/restart passed on both. Pinning the clock switched Live to Timetable. The board-wide tier and cards were checked independently. Evidence is in `~/Developer/sim-atlanta-passenger-night-2026-11-23/`. The review sheet and moving-bus frame were Taildropped. The Route 49 bus check used a public feed observation. The later Route 49 feature branch adds separate functionality.
+
+## Next steps, in order
+
+1. Read `AGENTS.md`, this handoff, and `orca agent read --id orca_session_id:75355e85-c0af-4497-b5d4-86533a9e9ed8 --limit 100`. Establish the reply route using a fresh inbound coordinator message with your own session ID. The last inbound handoff thread was `msg_97d689062a0d` from `term_09e1b3da-5f48-4755-abf8-92a571a1f474` on Sam's Air. Use `orca orchestration check` for replies. Direct Studio-to-Air sends have failed with a rejected pairing token; `orca orchestration reply --id <incoming-message> --from <your-session> --body ...` works.
+2. Wait for the next coordinator release request. There is no outstanding release, night check or approval request in this workstream. Only the coordinator deploys. Before a MERGED notice, run `gh pr view <n> --json state,mergeCommit` and quote both values.
+3. For the next release, fetch and verify the requested commit is on `origin/main`. Build at that exact commit, and compare with the last confirmed deployed package. Use existing GTFS and public board files unless a change requires new inputs. If the City datasets must be rebuilt, `pnpm data:city` includes `data:midtown`. Check the actual changed files before claiming any rebuild dependency.
+4. Run `pnpm build` and `pnpm test:release`. On this host, use `PATH="$(brew --prefix rustup)/bin:$PATH"` and the per-worktree `.venv`. A three-worker Vitest cap worked for both releases (`VITEST_MAX_THREADS=3 VITEST_MIN_THREADS=1 VITEST_MAX_FORKS=3 VITEST_MIN_FORKS=1`). Compare every non-asset file with `cmp`. If Worker source/config is unchanged, copy the last live release's `worker/`; copy `smoke/verify-production.py`.
+5. Smoke the staged build with headless Chrome, inspect screenshots, and write `RELEASE.md` with the data comparison, smoke results and day/night review URLs. The last smoke script is `/tmp/sim-release-b71b863f/smoke.mjs`. CDP sets viewport, phone UA, and five touch points. Verify the served file count and the deployed MARTA rail schema. The full production verifier runs after deployment.
+6. Generate `SHA256SUMS`, archive with `COPYFILE_DISABLE=1`, extract in a temp dir, check the manifest and compare the extracted tree to staging. On this host the Taildrop CLI is `/Applications/Tailscale.app/Contents/MacOS/Tailscale file cp`. Send the tarball and sidecar to `sams-macbook-air:`, then reply with the SHA, evidence, and any caveats. Stop only your own test servers and close your browser sessions.
+
+## Risks and maintained contracts
+
+- The rolling Amtrak GTFS starts November 22 in the fresh feed observed during #342. Regenerating it would remove the Crescent from November 20 demo links. The historical contract tests use a pinned fixture. [GTFS investigation](../brookwood-gtfs-regression.md)
+- Headless desktop High logged Three.js `currentProgram.isReady` during asynchronous shader precompile on `bc32b09`, `ccae1bc1` and `b71b863f`. The captured views finished rendering, and the Final phone smoke had no uncaught errors. Physical-device performance was outside the packaging smoke. Some current tests also report a Lake Clara Meer survey/fixture warning despite passing.
+- Follow defaults on. Covered rail is decided by the baked spans where present, then mapped tunnel and cover data. Linked inferred handoffs retain their Inferred label, and freight stays Illustrative. User camera gestures cancel Follow through `manualCamera()`. The UI contracts are `#train-follow`, `[data-follow]`, `[data-recenter]`, `.follow-status` and `showCard(html, canFollow)`.
+- Review shots use captioned comparisons, strongest frame first. Link repository evidence and cameras in merge notices. Preserve both append-only build-log entries on rebase conflicts and rerun tests.
