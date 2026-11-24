@@ -41,9 +41,10 @@ export function createLilliMidtown(buildings: VBuilding[], site: VBuilding, grid
     });
   const datum = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const roof = datum + 78, crownTop = datum + 86, plantTop = datum + 89, shop = datum + 8;
-  const white = '#e8e8e4', roofColor = '#8d8f8c';
-  // Grey glass with irregular opaque grey panels, as in the dusk photograph.
-  const glass = ['#7c8b94', '#74838c', '#8f989d'];
+  // Brasfield & Gorrie dusk exterior: neutral charcoal-grey glass, less blue than the generic
+  // curtain walls, framed by bold white slab edges and white verticals, with irregular grey panels.
+  const white = '#f2f2ee', roofColor = '#b9bab5';
+  const glass = ['#6e7377', '#74797c', '#878b8d'];
   const storefront = ['#6a7b84', '#6e818a'];
 
   const slab = local(tower.rings[0]);
@@ -53,8 +54,19 @@ export function createLilliMidtown(buildings: VBuilding[], site: VBuilding, grid
     const behindShop = (a[1] + b[1]) / 2 > 8;
     if (!behindShop) litFacade(shell, seed, face++, a, b, datum + 0.4, datum + 5.6, 1, high ? 3.4 : 10, 0.86, 0.84, storefront, 0.4);
     const from = behindShop ? shop + 0.3 : datum + 6;
+    // Panes fill less of each floor than before, so the white slab edge reads as a band.
     litFacade(shell, seed, face++, a, b, from, roof - 0.6, Math.max(1, Math.round((roof - 0.6 - from) / 3.15)),
-      high ? (length > 20 ? 3 : 2.8) : 6, 0.93, 0.78, glass, 0.32);
+      high ? (length > 20 ? 3 : 2.8) : 6, 0.93, 0.66, glass, 0.32);
+    // White frame verticals at roughly 9 m, standing just proud of the glass.
+    if (length > 9) {
+      const n = Math.round(length / 9);
+      const out = (t: number, y: number): [number, number, number] =>
+        [a[0] + t * (b[0] - a[0]) + 0.14 * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - 0.14 * (b[0] - a[0]) / length];
+      for (let k = 1; k < n; k++) {
+        const t = k / n, w = 0.35 / length;
+        shell.body.quad(out(t - w, from), out(t - w, roof), out(t + w, roof), out(t + w, from), white);
+      }
+    }
   });
   const top = ccw(crown);
   shell.prism(top, roof, crownTop, white, roofColor);
