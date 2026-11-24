@@ -284,7 +284,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
-  // Streaming prototype: by camera distance, streamed areas swap to a cheap LOD or stop drawing.
+  // Streaming prototype: draw only what the camera can see (fogged-out areas, sub-pixel meshes).
   const streamModule = mosaic && midtown && query.get('stream') === '1'
     ? await import('./stream/manager').catch(error => { console.warn('City streaming unavailable', error); return undefined; })
     : undefined;
@@ -915,8 +915,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let areasHeld = !!options.whiteModel;
   let heldAt: { x: number; z: number } | undefined;
   function approachMosaic(x: number, z: number, needed = false) {
-    // Streaming: a needed point draws at least its LOD at once.
-    if (stream && needed) stream.need(x, z);
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, mosaicMounted,
       direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
@@ -949,18 +947,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
   }
   if (streamModule && terrain) {
-    stream = new streamModule.StreamManager(streamModule.ringConfig(low, query), low, terrain.bottomY, DATA, {
+    stream = new streamModule.StreamManager({
       full: id => mosaic?.patches.get(id),
       changed: () => {
         // Brookwood's station model draws with its rows.
         if (brookwood) brookwood.group.visible = ['brookwood-station', 'brookwood-south'].some(id => mosaic?.patches.get(id as 'brookwood-south')?.group.visible);
         renderer.shadowMap.needsUpdate = true;
       },
+      // Scenery only: vehicles, people and weather are never detail-culled.
+      detailRoots: () => [world.group, terrain?.group, east?.group, north?.group, transport?.group,
+        ...(mosaic ? Array.from(mosaic.patches.values(), a => a.group) : [])],
     });
-    scene.add(stream.group);
-    // Visible LOD blocks occlude vehicle taps, as the full buildings they stand in for do.
-    scenery.push(stream.group);
-    stream.setSeason(local(new Date(options.clockMs())).doy);
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1121,7 +1118,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     return null;
   }
   const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
-  const targetY = (x: number, z: number) => patchY(x, z) ?? stream?.groundAt(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
+  const targetY = (x: number, z: number) => patchY(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
     if (drive) return;
     const t = controls.target;
@@ -1260,7 +1257,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         set(a?.group, 'transport'); set(a?.board, 'terrain'); set(a?.scenery, 'scenery');
       }
       set(brookwood?.group, 'transport');
-      set(stream?.group, 'scenery');
       set(transport?.group, 'transport');
       set(world.group, 'transport'); // streetcar track, MARTA guideway, lamps; landmarks are tagged
       return m;
@@ -1280,7 +1276,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ray.setFromCamera(ndc, camera);
     const hit = new THREE.Vector3();
     if (terrain) {
-      const surface = ray.intersectObjects(mosaic ? [...Array.from(mosaic.areas.values(), a => a.board), ...(stream?.grounds() ?? [])] : east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
+      const surface = ray.intersectObjects(mosaic ? Array.from(mosaic.areas.values(), a => a.board) : east && north ? [terrain.board, east.board, north.board] : east ? [terrain.board, east.board] : [terrain.board], false)[0];
       if (surface) {
         glideTo = surface.point;
         glideTo.y = targetY(glideTo.x, glideTo.z);
@@ -1636,7 +1632,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
-    stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far);
+    stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far, renderer.domElement.height);
     figures?.update(sceneTime, camera, container.clientHeight);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
@@ -1875,7 +1871,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       east?.setSeason(day);
       north?.setSeason(day);
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
-      stream?.setSeason(day);
     },
     drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, [...(brookwood?.cars.children ?? []), ...streetcar.cars()]),
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),

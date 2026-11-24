@@ -1,273 +1,126 @@
 /**
- * Streaming prototype (?stream=1): decides each streamed area's ring from the camera and swaps
- * what draws. The streamed areas are the square board's north and south bands with their corners
- * and the Midtown and Brookwood rows; downtown, King Memorial and Sweet Auburn always draw.
+ * Streaming prototype (?stream=1): City draws only what the camera can see, without changing
+ * what it looks like.
  *
- * Full areas still load at boot exactly as today. A full build is one long main-thread job, so
- * rebuilding one while the camera pans would hitch; until builds are sliced, the rings only change
- * visibility:
+ * Every area still loads at boot exactly as today. A full build is one long main-thread job, so
+ * building or freeing areas while the camera moves would stall; that waits for sliced builds
+ * (docs/expansion-plan.md). Two rules decide what draws:
  *
- *   near      the full area draws, its LOD is hidden
- *   mid       the full area is hidden, a cheap LOD draws (coarse ground, building blocks, forest
- *             mass: three batched meshes on a shader program City already has)
- *   unloaded  neither draws, and the LOD's buffers are freed
+ * - **Fog:** an area whose nearest point lies past the fog's full-strength distance renders as
+ *   pure fog colour, so it is hidden (`group.visible`). Fog reaches full strength at 3x the orbit
+ *   distance, so this only bites in close views.
+ * - **Detail:** a mesh that projects below about a pixel is moved off the render layer
+ *   (detail-cull.ts). Lights, glows and lit crowns are kept by rule.
  *
- * LODs load and unload freely: a Worker fetches and builds them from the shipped files, and their
- * uploads run as load-budget jobs (ground, then blocks, then forest). A full area stays visible
- * until its LOD is ready, so a swap never leaves a hole.
+ * Each streamed area draws once, unculled, when it mounts, so hiding it never defers its upload
+ * to the frame it first returns.
  */
 import * as THREE from 'three';
-import { loadBudget, type LoadStage } from '../../core/load-budget';
 import { perf } from '../../core/perf';
 import type { Board } from '../../square-board/sections';
 import { bounds as boardBounds } from '../../square-board/sections';
-import { boxDistance, nextRing, type Ring, type RingConfig } from './rings';
-import { forestTint, LodWorker, lodMaterials, lodMeshes, type LodArea } from './lod';
+import { DetailCull } from './detail-cull';
 
-/** The areas the rings swap. */
+/** The areas the fog rule can hide; downtown, King Memorial and Sweet Auburn always draw. */
 export const STREAMED: readonly Board[] = ['south-band', 'south-corner', 'north-band', 'north-corner',
   'midtown-south', 'midtown-central', 'midtown-upper', 'brookwood-south', 'brookwood-station'];
 
-interface Unit {
-  id: Board;
-  ring: Ring;
-  since: number;
-  offscreenSince: number | null;
-  lod?: LodArea;
-  lodLoading: boolean;
-  lodAbort?: AbortController;
-  neededUntil: number;
-  distance: number;
-  fullShown: boolean | null;
-  /** The full area's first frames: it draws unculled once, so hiding it never defers its upload. */
-  warmFrames: number;
-  warmed: THREE.Object3D | null;
+/**
+ * View depth is at most the eye distance, and at the frame's corner it is about cos(15°) of it on
+ * City's 22° lens. An area is past the fog only once its nearest point is past fogFar / 0.94.
+ */
+const DEPTH_MARGIN = 0.94;
+
+/** Hidden when the area's nearest point is past the fog (with a 5% gap before it returns). */
+export function pastFog(hidden: boolean, distance: number, fogFar: number) {
+  const edge = fogFar / DEPTH_MARGIN;
+  return hidden ? distance > edge * 0.95 : distance > edge;
 }
 
-/** What City lends the manager: its mounted full areas, and a note when what draws changes. */
+/** Eye distance to a box lying on the ground plane at height y. */
+export function boxDistance(b: { minX: number; maxX: number; minZ: number; maxZ: number }, x: number, y: number, z: number, groundY = 0) {
+  const dx = Math.max(b.minX - x, 0, x - b.maxX);
+  const dz = Math.max(b.minZ - z, 0, z - b.maxZ);
+  return Math.hypot(dx, dz, y - groundY);
+}
+
+interface Unit { id: Board; hidden: boolean; warmed: THREE.Object3D | null; warmFrames: number }
+
 export interface StreamHooks {
   full(id: Board): { group: THREE.Object3D } | undefined;
   /** A full area was shown or hidden (City redraws shadows and hides attached roots). */
-  changed(id: Board, fullShown: boolean): void;
-}
-
-export interface StreamStats {
-  rings: Record<string, Ring>;
-  /** Streamed full areas drawing now. */
-  full: string[];
-  /** Streamed full areas mounted but hidden. */
-  hidden: string[];
-  lod: string[];
-  lodTriangles: number;
-  lodBytes: number;
-  lodLoads: number;
-  lodDrops: number;
-  swaps: number;
+  changed(id: Board, shown: boolean): void;
+  /** Roots whose small meshes may be culled (scenery, never vehicles). */
+  detailRoots(): Iterable<THREE.Object3D | undefined | null>;
 }
 
 export class StreamManager {
-  private units: Unit[];
-  private worker = new LodWorker();
-  readonly materials = lodMaterials();
-  readonly group = new THREE.Group();
-  /** Meshes drawn once here, invisibly, so their buffers upload in their own budgeted frame. */
-  private uploads = new THREE.Group();
-  /** Same shader program as the LOD materials (colour and depth writes are not program keys). */
-  private uploadMaterial = Object.assign(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
-    { colorWrite: false, depthWrite: false });
-  private frustum = new THREE.Frustum();
-  private m = new THREE.Matrix4();
-  private box = new THREE.Box3();
+  private units: Unit[] = STREAMED.map(id => ({ id, hidden: false, warmed: null, warmFrames: 0 }));
+  readonly detail: DetailCull;
   private lastTick = -Infinity;
-  private counts = { lodLoads: 0, lodDrops: 0, lodBytes: 0, swaps: 0 };
-  private tint = new THREE.Color();
-  private disposed = false;
+  private swaps = 0;
+  private night = -1;
 
-  constructor(private readonly cfg: RingConfig, private readonly low: boolean, private readonly bottomY: number,
-    private readonly dataRoot: string, private readonly hooks: StreamHooks) {
-    this.group.name = 'stream LOD';
-    this.uploads.name = 'stream LOD uploads';
-    this.group.add(this.uploads);
-    this.units = STREAMED.map(id => ({ id, ring: 'unloaded' as Ring, since: 0, offscreenSince: null,
-      lodLoading: false, neededUntil: 0, distance: Infinity, fullShown: null, warmFrames: 0, warmed: null }));
-    loadBudget.frameMs = low ? 4 : 8;
-  }
-
-  /** A camera link, search result or followed vehicle points at (x, z): draw something there now. */
-  need(x: number, z: number, ms = 15000) {
-    const now = performance.now();
-    for (const u of this.units) if (inside(boardBounds[u.id], x, z, 150)) u.neededUntil = now + ms;
-    this.lastTick = -Infinity;
+  constructor(private readonly hooks: StreamHooks) {
+    this.detail = new DetailCull(hooks.detailRoots);
   }
 
   /**
-   * A full area just mounted. Before a ring may hide it, it draws once with frustum culling off,
+   * A full area just mounted. Before a rule may hide it, it draws once with frustum culling off,
    * so its buffers upload and its shaders compile during boot's load, not on the frame it first
-   * comes near (that would be the same stall as a rebuild, in a new place).
+   * comes back.
    */
   mounted() {
     this.lastTick = -Infinity;
+    this.detail.invalidate();
     for (const u of this.units) {
       const full = this.hooks.full(u.id);
       if (!full || u.warmed === full.group) continue;
       u.warmed = full.group;
-      u.fullShown = null;
       const culled: THREE.Object3D[] = [];
       full.group.traverse(o => { if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); } });
       u.warmFrames = 3;
+      full.group.visible = true;
+      u.hidden = false;
       const restore = () => { if (--u.warmFrames > 0) requestAnimationFrame(restore); else for (const o of culled) o.frustumCulled = true; };
       requestAnimationFrame(restore);
-      full.group.visible = true;
     }
   }
 
-  /** Night: the blocks keep a trace of warmth; the near ring's lit windows have no LOD form yet. */
-  setNight(factor: number) { this.materials.blocks.emissive.setRGB(0.030, 0.024, 0.014).multiplyScalar(factor); }
-
-  groundAt(x: number, z: number) {
-    for (const u of this.units) {
-      const y = u.lod?.groundAt(x, z);
-      if (y != null) return y;
-    }
-    return null;
+  /** Night lights a mesh's emissive; the glow rule must see it even with a still camera. */
+  setNight(factor: number) {
+    if (Math.abs(factor - this.night) > 0.02) { this.night = factor; this.detail.invalidate(); }
   }
 
-  /** LOD grounds drawing now, for picks on the board. */
-  grounds() { return this.units.flatMap(u => u.lod?.group.visible ? [u.lod.ground] : []); }
-
-  setSeason(doy: number) { this.materials.forest.color.copy(forestTint(doy, this.tint)); }
-
-  update(camera: THREE.Camera, target: THREE.Vector3, fogFar: number, now = performance.now()) {
-    if (this.disposed || now - this.lastTick < 200) return;
+  update(camera: THREE.PerspectiveCamera, target: THREE.Vector3, fogFar: number, heightPx: number, now = performance.now()) {
+    if (this.units.every(u => u.warmFrames === 0)) this.detail.update(camera, heightPx, now);
+    if (now - this.lastTick < 200) return;
     this.lastTick = now;
-    const groundY = target.y;
-    this.m.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    this.frustum.setFromProjectionMatrix(this.m);
     const p = camera.position;
     for (const u of this.units) {
-      const b = boardBounds[u.id];
-      const d = boxDistance(b, p.x, p.y, p.z, groundY);
-      this.box.min.set(b.minX, groundY - 80, b.minZ);
-      this.box.max.set(b.maxX, groundY + 320, b.maxZ);
-      const visible = this.frustum.intersectsBox(this.box);
-      u.distance = d;
-      if (visible) u.offscreenSince = null;
-      else u.offscreenSince ??= now;
-      const next = nextRing(u.ring, {
-        distance: d, fogFar, visible, offscreenFor: u.offscreenSince === null ? 0 : now - u.offscreenSince,
-        inRingFor: now - u.since, needed: u.neededUntil > now,
-        atTarget: inside(b, target.x, target.z, 250),
-      }, this.cfg);
-      if (next !== u.ring) {
-        u.ring = next;
-        u.since = now;
-        perf.ring(u.id, next);
-      }
-      this.apply(u);
-      if (u.lodLoading) loadBudget.reprioritize('lod:' + u.id, d);
+      const full = this.hooks.full(u.id);
+      if (!full || u.warmFrames > 0) continue;
+      const hidden = pastFog(u.hidden, boxDistance(boardBounds[u.id], p.x, p.y, p.z, target.y), fogFar);
+      if (hidden === u.hidden) continue;
+      u.hidden = hidden;
+      full.group.visible = !hidden;
+      this.swaps++;
+      perf.ring(u.id, hidden ? 'far' : 'near');
+      this.hooks.changed(u.id, !hidden);
     }
   }
 
-  private apply(u: Unit) {
-    if (u.ring === 'mid') this.ensureLod(u);
-    const lodReady = !!u.lod && !u.lodLoading;
-    // A full area draws when near, and as a stand-in until its LOD is ready.
-    const showFull = u.warmFrames > 0 || u.ring === 'near' || (u.ring === 'mid' && !lodReady);
-    const showLod = u.ring === 'mid' && lodReady;
-    if (u.lod) u.lod.group.visible = showLod;
-    const full = this.hooks.full(u.id);
-    if (full && u.fullShown !== showFull) {
-      full.group.visible = showFull;
-      if (u.fullShown !== null) this.counts.swaps++;
-      u.fullShown = showFull;
-      this.hooks.changed(u.id, showFull);
-    }
-    // Free an LOD that nothing will draw soon: unloaded, or near for a while.
-    if (u.ring === 'unloaded' || (u.ring === 'near' && performance.now() - u.since > 20000)) this.dropLod(u);
-  }
+  /** Every rule has been applied since the last mount. */
+  get settled() { return this.units.every(u => u.warmFrames === 0) && !this.detail.stale; }
 
-  private ensureLod(u: Unit) {
-    if (u.lod || u.lodLoading) return;
-    u.lodLoading = true;
-    const abort = u.lodAbort = new AbortController();
-    void (async () => {
-      const { result, bytes } = await this.worker.build(`${this.dataRoot}/scene/square-board/${u.id}`,
-        { groundStepM: this.low ? 20 : 10, forestCellM: this.low ? 40 : 30, bottomY: this.bottomY });
-      if (abort.signal.aborted) return;
-      this.counts.lodBytes += bytes;
-      const { area, parts } = lodMeshes(u.id, result, boardBounds[u.id], this.materials);
-      area.bytes = bytes;
-      area.group.visible = false;
-      this.group.add(area.group);
-      u.lod = area;
-      // Upload one part per frame job, ground first: each draws once, invisibly and unculled, so
-      // its GPU upload lands in that frame and not all at once when the LOD is revealed.
-      await Promise.all(parts.map(([stage, mesh]) => loadBudget.enqueue('lod:' + u.id, stage as LoadStage, () => {
-        mesh.updateMatrix();
-        const { material, castShadow } = mesh;
-        Object.assign(mesh, { material: this.uploadMaterial, castShadow: false, frustumCulled: false });
-        mesh.userData.streamLod = u.id;
-        this.uploads.add(mesh);
-        return new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => {
-          Object.assign(mesh, { material, castShadow, frustumCulled: true });
-          // A dropped LOD has already freed this geometry: never draw it again.
-          if (abort.signal.aborted) mesh.removeFromParent();
-          else area.group.add(mesh);
-          done();
-        })));
-      }, { signal: abort.signal, priority: u.distance })));
-      if (abort.signal.aborted) return;
-      this.counts.lodLoads++;
-      u.lodLoading = false;
-      this.apply(u);
-    })().catch(error => {
-      if (!abort.signal.aborted && (error as Error)?.name !== 'AbortError') console.warn('stream LOD failed', u.id, error);
-      // The full area keeps drawing; a later approach retries.
-      if (u.lodAbort === abort) { u.lodLoading = false; u.lod?.dispose(); u.lod = undefined; }
-    });
-  }
-
-  private dropLod(u: Unit) {
-    if (!u.lod && !u.lodLoading) return;
-    u.lodAbort?.abort();
-    u.lodAbort = undefined;
-    u.lodLoading = false;
-    // Pull any mesh still waiting to upload, so a freed geometry is never drawn again.
-    for (const m of [...this.uploads.children]) if (m.userData.streamLod === u.id) m.removeFromParent();
-    if (u.lod) { u.lod.dispose(); u.lod = undefined; this.counts.lodDrops++; }
-  }
-
-  /** Every area is in its ring, with its LOD ready where one draws. */
-  get settled() { return this.units.every(u => !u.lodLoading && (u.ring !== 'mid' || !!u.lod)); }
-
-  stats(): StreamStats {
-    const rings: Record<string, Ring> = {};
-    for (const u of this.units) rings[u.id] = u.ring;
-    const mounted = this.units.filter(u => this.hooks.full(u.id));
+  stats() {
     return {
-      rings,
-      full: mounted.filter(u => u.fullShown).map(u => u.id),
-      hidden: mounted.filter(u => u.fullShown === false).map(u => u.id),
-      lod: this.units.filter(u => u.lod?.group.visible).map(u => u.id),
-      lodTriangles: this.units.reduce((n, u) => n + (u.lod?.triangles ?? 0), 0),
-      lodBytes: this.counts.lodBytes, lodLoads: this.counts.lodLoads, lodDrops: this.counts.lodDrops, swaps: this.counts.swaps,
+      shown: this.units.filter(u => this.hooks.full(u.id) && !u.hidden).map(u => u.id),
+      hidden: this.units.filter(u => u.hidden).map(u => u.id),
+      detailCulled: this.detail.count,
+      swaps: this.swaps,
     };
   }
 
-  dispose() {
-    this.disposed = true;
-    for (const u of this.units) this.dropLod(u);
-    this.worker.dispose();
-    this.group.removeFromParent();
-    for (const m of Object.values(this.materials)) m.dispose();
-    this.uploadMaterial.dispose();
-  }
+  dispose() { this.detail.dispose(); }
 }
-
-function inside(b: { minX: number; maxX: number; minZ: number; maxZ: number }, x: number, z: number, pad = 0) {
-  return x >= b.minX - pad && x <= b.maxX + pad && z >= b.minZ - pad && z <= b.maxZ + pad;
-}
-
-/** Every board of the square, mounted or not. */
-export function allBoardRects() { return Object.values(boardBounds); }
-export { ringConfig } from './rings';
