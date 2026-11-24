@@ -66,4 +66,7 @@ Both towers use one palette so they read as a pair and a step away from the gene
 - One continuous dark mechanical band at the fourteenth window floor.
 - A two-storey blank crown under the parapet.
 
-100 Colony Square (skins-6): mirrors the palette and keeps its own near-square punched rhythm. See its PR.
+100 Colony Square (skins-6): the palette, with 100's own rhythm from the [2025 Commons photograph](https://commons.wikimedia.org/wiki/File:AColonySq1002511-0966.jpg). The photograph shows a crisp white square shaft with about 18 small square windows per face in a dominant white grid, no floor bands, narrow blank corners and a tall blank crown.
+- Rhythm: 2.2 m bays, windows 1.25 × 1.8 m (pier 0.95 m, spandrel 1.8 m), piers 0.25 m proud, 2.4 m blank corners, crown #f8f6f0.
+- At 600 m the 2.2 m grid blurs, so the windows are sized to give the field a mid-dark tone, framed by the bright corners and crown. That coarse read, a white frame around a dark speckled field, sets it apart from 400's continuous slots and the pale generic slabs.
+- Night: offices, 1 in 16 windows lit by litHash. Full night is a gap.
