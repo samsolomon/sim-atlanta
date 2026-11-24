@@ -60,3 +60,14 @@ Clock 2026-11-20. Prefix each camera with `/?view=city&cam=`.
 | Start cam, day / night / low tier | `-376,-4188,32,60,339` | 11:30 / 23:30 / 11:30 `&q=low` |
 | North face, day / night (the money shot) | `-376,-4188,200,70,600` | 11:30 / 23:30 |
 | Base and lower floors (close) | `-376,-4175,200,62,220` with `&dev&mindist=20` | 11:30 |
+
+## Strengthening (recognition audit, 2026-11-24)
+
+The audit rated #451 BORDERLINE: "Dark box, no base or crown". Two Dec 2025 Street View panoramas ([17th Street](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.79120,-84.39560&heading=0&pitch=35&fov=100), [south-west corner](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.79090,-84.39640&heading=20&pitch=40&fov=90)) show what #451 missed, and the lead confirmed these features:
+
+- **Base:** the seven parking levels are clad in large **mid-grey panels with a visible joint grid** (`#8e9294`, joints `#6f7375`), not dark glass, over a **glazed lobby with round columns** at grade. The lobby is lit at night. The large "271" numerals and the tenant sign are left out.
+- **Shaft:** the pale floor bands now run across the east mass too, slimmer, as the photos show.
+- **Crown:** the 20 ft glass parapet is lighter (`#b4c1c7`), so it reads as a band at the top.
+- **Unchanged:** the glass (`#7e8c94`, the approved value) is not pushed.
+
+The skin is 677 triangles, up from about 460, and adds no material. [Before and after](strengthen-compare.jpg) · [Four sides](strengthen-four-sides.jpg)
