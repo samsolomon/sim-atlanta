@@ -41,6 +41,25 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
       for (let t = 2.3; t < e.length - 1; t += 5.1) shell.body.quad(at(t, lo + 2), at(t + .9, lo + 2.6), at(t + .9, lo + 2.75), at(t, lo + 2.15), vein);
     }
   };
+  // Paired windows (2023 Commons photographs): two large dark panes either side of a narrow
+  // mullion, the pairs separated by wide marble piers, about 6.4 m on centre. The pairs read as a
+  // vertical rhythm where a uniform grid would blur to generic texture.
+  const paired = (ring: P2[], lo: number, hi: number, floor = 3.9) => {
+    const rows = Math.max(1, Math.round((hi - lo) / floor));
+    for (const e of edges(ring)) {
+      const n = Math.max(1, Math.round(e.length / 6.4)), m = e.length / n;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < n; c++) {
+        const y0 = lo + r * (hi - lo) / rows + .7, y1 = y0 + 2.5;
+        const at = (t: number, y: number, o: number) => [e.x + e.tx * t + e.nx * o, y, e.z + e.tz * t + e.nz * o];
+        const t0 = c * m + m / 2 - 1.95, t1 = c * m + m / 2 + 1.95;
+        shell.body.quad(at(t0, y0, .03), at(t1, y0, .03), at(t1, y1, .03), at(t0, y1, .03), frame);
+        for (const [a, b] of [[t0 + .15, c * m + m / 2 - .18], [c * m + m / 2 + .18, t1 - .15]]) {
+          const lit = ((c * 7 + r * 13 + Math.round(e.x) + (a > c * m + m / 2 ? 3 : 0)) % 9) === 0;
+          (lit ? shell.lights : shell.body).quad(at(a, y0 + .15, .05), at(b, y0 + .15, .05), at(b, y1 - .15, .05), at(a, y1 - .15, .05), glass[(c + r) % 3]);
+        }
+      }
+    }
+  };
   // Punched windows in deep reveals with dark frames, `cols` per bay group.
   const punched = (ring: P2[], lo: number, hi: number, floor = 3.9) => {
     const rows = Math.max(1, Math.round((hi - lo) / floor));
@@ -62,7 +81,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
     const xs = ring.map(q => q[0]);
     if (Math.min(...xs) > 20) continue; // the slab and tower are rebuilt below
     shell.prism(ring, shell.base, H.wing, marble, '#c9c7c0');
-    punched(ring, 1, H.wing - 1.2);
+    paired(ring, 1, H.wing - 1.2);
     ashlar(ring, shell.base, H.wing);
     band(ring, H.wing - .6, H.wing, .3);
   }
@@ -70,7 +89,7 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
   // Main slab: eleven storeys to a strong cornice, then a recessed top floor of deep-set windows.
   const slab = box(SLAB.x0, SLAB.x1, SLAB.z0, SLAB.z1);
   shell.prism(slab, shell.base, H.slab, marble, '#d4d2cb');
-  punched(slab, 8.6, H.slab - 1.6);
+  paired(slab, 8.6, H.slab - 1.6);
   ashlar(slab, shell.base, H.slab);
   band(slab, H.slab - 1.6, H.slab - .6, .45);
   band(slab, H.slab - .6, H.slab, .8);
@@ -116,24 +135,19 @@ export function federalReserve(shell: Shell, ground: LocalGround) {
       crown.quad(at(t + d - .5, lo), at(t + d + .5, lo), at(t + d + .5, hi), at(t + d - .5, hi), frame);
   }
 
-  // Peachtree loggia along the slab: freestanding Corinthian columns, arched openings.
+  // Peachtree loggia along the slab (2023 photographs): two storeys of square marble piers under a
+  // flat lintel, glazing recessed deep behind them. The salvaged Corinthian columns stand apart, on
+  // the lawn below.
   const lx = SLAB.x1, disc = (x: number, z: number, r: number, n = 10): P2[] => Array.from({ length: n }, (_, i) => [x + r * Math.cos(i * 2 * Math.PI / n), z + r * Math.sin(i * 2 * Math.PI / n)]);
   const lz0 = SLAB.z0 + 6, lz1 = SLAB.z1 - 4, bays = 10;
   for (let k = 0; k <= bays; k++) {
     const z = lz0 + k * (lz1 - lz0) / bays;
-    shell.prism(disc(lx + 1.6, z, .45), shell.base, 7.4, marble, marble);
-    shell.prism(disc(lx + 1.6, z, .62), 6.9, 7.6, '#e2ded4', '#e2ded4');
-    if (k < bays) {
-      const zm = z + (lz1 - lz0) / bays / 2, r = (lz1 - lz0) / bays / 2 - .5;
-      for (let a = 0; a < 8; a++) {
-        const p = (t: number) => [lx + 1.62, 5.6 + r * .7 * Math.sin(t), zm + r * Math.cos(t)];
-        const a0 = a * Math.PI / 8, a1 = (a + 1) * Math.PI / 8;
-        shell.body.quad(p(a0), p(a1), [lx + 1.62, 8.4, zm + r * Math.cos(a1)], [lx + 1.62, 8.4, zm + r * Math.cos(a0)], marble);
-      }
-    }
+    shell.prism(box(lx + 1, lx + 2.4, z - .6, z + .6), shell.base, 7.6, marble, marble);
   }
   shell.prism(box(lx, lx + 2.4, lz0 - .7, lz1 + .7), 7.6, 8.6, marble, marble);
-  shell.body.quad([lx + .02, .4, lz0], [lx + .02, .4, lz1], [lx + .02, 7, lz1], [lx + .02, 7, lz0], '#3b454e');
+  shell.body.quad([lx + .02, .4, lz0], [lx + .02, .4, lz1], [lx + .02, 7.5, lz1], [lx + .02, 7.5, lz0], '#2f3840');
+  // The loggia's soffit, so the recess reads dark from above too.
+  shell.body.quad([lx, 7.55, lz0], [lx, 7.55, lz1], [lx + 2.4, 7.55, lz1], [lx + 2.4, 7.55, lz0], '#8f8c86');
   for (let k = 0; k <= bays; k++) { const z = lz0 + k * (lz1 - lz0) / bays; wash.quad([lx + 2.2, .2, z - .5], [lx + 2.2, .2, z + .5], [lx + 2.2, 5.5, z + .3], [lx + 2.2, 5.5, z - .3], '#ffe7bd'); }
 
   // Pedimented entrance portico on the tower's Peachtree face: four square piers,
