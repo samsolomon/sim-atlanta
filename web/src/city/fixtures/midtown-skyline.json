@@ -110,5 +110,12 @@
     "x": 219.5,
     "z": -2681.5,
     "heightM": 89.5
+  },
+  "twoMidtownPlaza": {
+    "id": "osm:way:269636880",
+    "name": "Two Midtown Plaza",
+    "x": 395,
+    "z": -4194,
+    "heightM": 79
   }
 }
