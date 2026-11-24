@@ -5,6 +5,7 @@ import { bedFlags, cuttingYields, type BallastQuad } from './cutting';
 import { drapeTriangle, type DrapeGround } from './drape';
 import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
+import { colourDrop, orderForFar, registerFar } from './far-form';
 import * as THREE from 'three';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
@@ -70,6 +71,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   group.name = 'Surface transport';
   group.userData.structuralHeightTier = 'illustrative';
   const structures = new Builder(), freight = new Builder(), uv: number[] = [];
+  // Structure triangles the far form skips (far-form.ts): deck undersides, parapet tops and
+  // inner faces. Lane markings are matched by colour when the mesh is built.
+  const farDrop = new Set<number>();
+  const dropNext = (quads: number) => { const t = structures.pos.length / 9; for (let i = 0; i < 2 * quads; i++) farDrop.add(t + i); };
   const bounds = city.bounds;
   const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const sidepaths = westsidePaths(city);
@@ -296,6 +301,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const p = offset(a, otherA, -.28), q = offset(b, otherB, -.28);
       const up = ([x,y,z]: number[]) => [x,y+.85,z];
       structures.quad(a,b,up(b),up(a),PAL.concrete);
+      dropNext(2);
       structures.quad(q,p,up(p),up(q),PAL.concrete);
       structures.quad(up(a),up(b),up(q),up(p),PAL.concrete);
     }
@@ -421,6 +427,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
             buriedFaces?.add(structures.pos.length / 3);
             buriedFaces?.add(structures.pos.length / 3 + 3);
+            // A road deck's top casts the deck's shadow, so its underside is redundant far away.
+            // A freight deck's top is in the freight mesh, which doesn't cast: its underside is
+            // the viaduct's only horizontal shadow caster and must stay in the far prefix.
+            if (use !== 'freight') dropNext(1);
             structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
           }
         }
@@ -534,10 +544,24 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
   const bridgeNight = { value: 0 };
+  let farKeep = 0;
   for (const [builder, name] of [[structures, 'Decks and embedded rails'], [seventeenth, '17th Street Bridge'], [freight, 'Freight track']] as const) {
     if (!builder.pos.length) continue;
     const geometry = builder.geometry();
     const isFreight = builder === freight;
+    if (builder === structures) {
+      const marking = colourDrop(geometry, [PAL.lineWhite, PAL.lineYellow]);
+      const { keep, newOfOld } = orderForFar(geometry, t => farDrop.has(t) || marking(t));
+      farKeep = keep;
+      // deckAt and the ground audit index triangles by their first vertex.
+      const remap = (i: number) => 3 * newOfOld[i / 3];
+      for (const [run, list] of roadTreads) if (!bridgeRuns.has(run)) roadTreads.set(run, list.map(remap));
+      if (buriedFaces) {
+        const moved = [...buriedFaces].map(remap);
+        buriedFaces.clear();
+        for (const i of moved) buriedFaces.add(i);
+      }
+    }
     if (builder === seventeenth) bridgePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
     if (builder === structures) structurePositions = geometry.getAttribute('position') as THREE.BufferAttribute;
     if (isFreight) geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
@@ -566,6 +590,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     mesh.name = name;
     mesh.castShadow = !isFreight; // The structural batch also contains the freight deck undersides.
     mesh.receiveShadow = true;
+    if (builder === structures) registerFar(mesh, farKeep, { shadow: 'always' });
     group.add(mesh);
     meshes.push(mesh);
   }

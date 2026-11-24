@@ -28,6 +28,11 @@ export function alexanOn8th(shell: Shell) {
   const out = outwardSign(ring), pitch = (ROOF - 3.5 - BASE) / FLOORS, seed = seedOf(alexanId);
   shell.prism(ring, shell.base, ROOF, PANEL, '#a9a69f');
   const east = Math.max(...ring.map(([x]) => x));
+  /** Whether the corner at the start of edge `i` turns outward (convex) for this counter-clockwise ring. */
+  const convex = (i: number) => {
+    const n = ring.length, a = ring[(i - 1 + n) % n], b = ring[i % n], c = ring[(i + 1) % n];
+    return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) > 0;
+  };
   faces(ring, (a, b, len, face) => {
     const p = (t: number, y: number, off: number) => { const [x, z] = along(a, b, len, t, out * off); return [x, y, z]; };
     const westPeachtree = Math.abs(a[0] - east) < 2 && Math.abs(b[0] - east) < 2;
@@ -64,13 +69,18 @@ export function alexanOn8th(shell: Shell) {
         body.quad(p(slot[0], y - .12, .14), p(slot[0], y + .12, .14), p(slot[1], y + .12, .14), p(slot[1], y - .12, .14), '#c9d4d8');
       }
     }
-    // Balcony stacks: a charcoal slab edge and a glass rail each floor, glazed doors behind.
-    if (stack) for (const [s0, s1] of [[.4, stack - .4], [len - stack + .4, len - .4]]) {
+    // Balcony stacks at the slab's outside corners only (an inside corner would push them into
+    // the other wing): per floor, a charcoal slab running from the wall out 1.7 m with its front
+    // edge, a glass rail along that edge, and the glazed doors behind.
+    const ends = [[.4, stack - .4, convex(face)], [len - stack + .4, len - .4, convex(face + 1)]] as const;
+    if (stack) for (const [s0, s1, outside] of ends) {
+      if (!outside) continue;
       body.quad(p(s0, BASE, .06), p(s0, ROOF - 4, .06), p(s1, ROOF - 4, .06), p(s1, BASE, .06), WINDOW);
       for (let j = 0; j < FLOORS; j++) {
         const y = BASE + j * pitch;
+        body.quad(p(s0, y, .06), p(s0, y, 1.7), p(s1, y, 1.7), p(s1, y, .06), SLAB);
         body.quad(p(s0, y - .3, 1.7), p(s0, y, 1.7), p(s1, y, 1.7), p(s1, y - .3, 1.7), SLAB);
-        body.quad(p(s0, y, 1.75), p(s0, y + 1, 1.75), p(s1, y + 1, 1.75), p(s1, y, 1.75), RAIL);
+        body.quad(p(s0, y, 1.68), p(s0, y + 1, 1.68), p(s1, y + 1, 1.68), p(s1, y, 1.68), RAIL);
         if (litHash(seed, face + 40, j, s0 > 1 ? 1 : 0) < .35)
           lights.quad(p(s0 + .3, y + .3, .1), p(s0 + .3, y + pitch - .5, .1), p(s1 - .3, y + pitch - .5, .1), p(s1 - .3, y + .3, .1), WINDOW);
       }
@@ -78,6 +88,8 @@ export function alexanOn8th(shell: Shell) {
     // The white top band and dark canopy edge.
     body.quad(p(0, ROOF - 4, .08), p(0, ROOF - .5, .08), p(len, ROOF - .5, .08), p(len, ROOF - 4, .08), STRIP);
     body.quad(p(-.2, ROOF - .5, .6), p(-.2, ROOF, .6), p(len + .2, ROOF, .6), p(len + .2, ROOF - .5, .6), SLAB);
+    // The canopy's top runs back to the wall, so its edge never floats.
+    body.quad(p(-.2, ROOF, .02), p(-.2, ROOF, .6), p(len + .2, ROOF, .6), p(len + .2, ROOF, .02), SLAB);
   });
   return shell.finish('#ffdfb0', .7);
 }

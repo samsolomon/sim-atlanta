@@ -45,25 +45,39 @@ City keeps OSM's massing and shifts its level counts up two to HOK's totals. Pod
 
 No full-night exterior photograph was found, so this is an evidence gap. Searched: Commons and the project pages. As an office building at 23:30, it is mostly dark: about 8% of tower bays are lit, as illustrative occupancy. The glass hub, pavilion and street lobby glow. There is no crown or logo lighting.
 
+## Rework: what makes it recognisable
+
+An audit failed the first version (#507), because its after view was hard to tell from the generic blue boxes beside it. The 2022 photos show two identifiers, and the rework models both:
+
+1. **Sail roofs.** Each glass half's top edge rakes up toward its tower's central slot, so the towers end in sharp peaks rather than flat tops. City raises each half's roof linearly by 6 m (estimated) toward the slot. The rake runs along the normal of the half's face nearest the slot, so the whole slot edge is the peak, as the photos show. A dark band 0.08 m proud of the wall follows the rake. Each half's walls run straight up to the raked edge, with no hidden flat roof.
+2. **A deep, near-black slot.** A full-height dark recess splits each tower against bright halves of deeper blue. The slot and the recessed end shoulders are a dark reveal, and the halves are a more saturated blue than the generic glass around them.
+
+There is no new geometry beyond the raked caps, and no new material.
+
 ## Glass
 
-All glass follows the provisional base-value table. Rendered medians are at 11:30 on the high tier.
+Rendered values are medians at 11:30 on the high tier, from the south-west close view and the money shot.
 
 | Surface | Base hex | Base S/V | Rendered S/V |
 |---|---|---|---|
-| Curtain wall | `#90a4b5` | 20% / 71% | sunlit (south) 13% / 62%; shaded (west) 59% / 35% |
-| Spandrels and mullions | `#7d848b` | 10% / 55% | |
-| Slot | `#73777b` | 6% / 48% | |
-| Podium | `#83909a` | 15% / 60% | |
-| Generic glass, same frame | | | sunlit 7% / 74%; shaded 32% / 44% |
+| Halves | `#7a93ad` | 29% / 68% | sunlit 31% / 60% |
+| Slot and shoulders | `#7b8087` | 9% / 53% | in their own shade, 67% / 20% |
+| Floor lines and mullions | `#5f6f7e` | 24% / 49% | |
+| Podium | `#6f7d8a` | 20% / 54% | |
+| Hub | `#4f5964` | 21% / 39% | |
+| Generic glass tower, same frame | | | 32–34% / 44–45% |
+
+The halves are deeper and more saturated than the generic glass, and still within the sunlit cap (S ≤ 36, V ≥ 40). The slot's value contrast against the halves (V 20 against 60) carries the read.
 
 ## Captures
 
 | View | Camera | Clock, 20 November 2026 | Image |
 |---|---|---|---|
-| From the south, pulled back (money shot) | `326,-2132,20,56,650` | 11:30 AM / 11:30 PM | [Day](day-before-after.jpg) · [Night](night-before-after.jpg) |
+| From the south, pulled back (#507's money shot) | `326,-2132,20,56,650` | 11:30 AM / 11:30 PM | [Day](day-before-after.jpg) · [Night](night-before-after.jpg) |
+| Rework recognition view, from the south-west | `326,-2132,20,56,650` with `&dev`, then `__setView(45, 66, 650, 315, -2125, 1.5)` | 11:30 AM | [Before and after](rework-before-after.jpg) |
+| Four sides at 450 m | `__setView(bearing, 42, 450, 330, -2135, 1)` with bearings 0, 90, 180 and 270, labelled by the face shown | 11:30 AM | [Sheet](four-sides.jpg) |
 | Starting cam | `326,-2132,32,60,450` | 11:30 AM / 11:30 PM | [Day](start-day-before-after.jpg) · [Night](start-night-before-after.jpg) |
-| Close, short tower and slot | `326,-2132,20,56,650` with `&dev`, then `__setView(20, 56, 650, 318, -2120, 2.0)` | 11:30 AM / 11:30 PM | [Day](close-day.jpg) · [Night](close-night.jpg) |
+| Close, from the south-west | `326,-2132,20,56,650` with `&dev`, then `__setView(45, 66, 650, 315, -2125, 1.5)` | 11:30 AM / 11:30 PM | [Day](close-day.jpg) · [Night](close-night.jpg) |
 | Low tier | `326,-2132,20,56,650` with `&q=low` | 11:30 AM / 11:30 PM | [Day](low-day.jpg) · [Night](low-night.jpg) |
 
 ## Budget

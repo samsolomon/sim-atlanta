@@ -1,6 +1,6 @@
 import { BoxGeometry, Color, Float32BufferAttribute, Group, Mesh, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { batchLandmarks, StaticLandmarkMaterial } from './landmark-batch';
+import { batchLandmarks, StaticLandmarkMaterial, buildLandmarkBatches } from './landmark-batch';
 
 /** A landmarkShell-like site: a shadowed body and an unshadowed lit-window mesh with its own night factor. */
 function landmark(x: number, glow = '#f2d5a5', factor = 0.64, z = 20) {
@@ -73,6 +73,9 @@ describe('batchLandmarks', () => {
     const b = batchLandmarks([a, c], container);
     const body = meshes(b.group).find(m => m.castShadow)!;
     expect((body.material as MeshLambertMaterial).color.getHex()).toBe(0xffffff);
+    // Stored as normalised bytes.
+    expect(body.geometry.attributes.color.array).toBeInstanceOf(Uint8Array);
+    expect(body.geometry.attributes.color.normalized).toBe(true);
     const col = body.geometry.attributes.color;
     const reds = new Set(Array.from({ length: col.count }, (_, i) => col.getY(i).toFixed(2)));
     expect([...reds].sort()).toEqual(['0.00', '0.50']);
@@ -129,5 +132,27 @@ describe('batchLandmarks', () => {
       if (face.dot(normal.fromBufferAttribute(n, t)) > 0) agree++;
     }
     expect(agree).toBe(p.count / 3);
+  });
+
+  it('builds the same batches as a sliced generator as all at once', () => {
+    const make = () => {
+      const container = new Group();
+      const sites = [10, 30, 50, 1100].map(x => landmark(x, x === 30 ? '#e4d3a2' : '#f2d5a5'));
+      for (const s of sites) container.add(s.group);
+      return { container, sites };
+    };
+    const a = make(), b = make();
+    const whole = batchLandmarks(a.sites, a.container);
+    const steps = buildLandmarkBatches(b.sites, b.container);
+    const labels: (string | void)[] = [];
+    let step = steps.next();
+    while (!step.done) { labels.push(step.value); step = steps.next(); }
+    const sliced = step.value;
+    expect(labels.filter(l => l === 'landmark probe')).toHaveLength(4);
+    expect(labels).toContain('landmark cell');
+    const shape = (g: Group) => meshes(g).map(m => [m.name, m.geometry.drawRange.start, m.geometry.drawRange.count, m.visible,
+      Array.from(m.geometry.attributes.position.array as Float32Array).reduce((x, y) => x + y, 0).toFixed(3)]);
+    expect(shape(sliced.group)).toEqual(shape(whole.group));
+    expect(sliced.stats.merged).toBe(whole.stats.merged);
   });
 });

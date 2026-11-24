@@ -1,5 +1,5 @@
 import {
-  Box3, type BufferAttribute, BufferGeometry, type Color, DoubleSide, Float32BufferAttribute, Group, type InterleavedBufferAttribute,
+  Box3, BufferAttribute, BufferGeometry, type Color, DoubleSide, Float32BufferAttribute, Group, type InterleavedBufferAttribute,
   Material, Matrix4, Mesh, MeshLambertMaterial, type Object3D, Sphere, Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -93,18 +93,22 @@ function normalized(mesh: Mesh, bake: Color | null, matrix: Matrix4) {
     const a = src.getAttribute(n) as BufferAttribute | undefined;
     if (a) g.setAttribute(n, new Float32BufferAttribute(toFloat(a), a.itemSize));
   }
+  // Colours as normalised bytes: a quarter of float storage, same program; landmark colours
+  // never exceed 1.
   const vc = src.getAttribute('color') as BufferAttribute | undefined;
+  const byte = (v: number) => compactColoursOff ? v : Math.round(Math.min(1, Math.max(0, v)) * 255);
+  const array = (n: number) => compactColoursOff ? new Float32Array(n) : new Uint8Array(n);
   if (mat.vertexColors && vc) {
-    const out = new Float32Array(vc.count * vc.itemSize), div = vc.normalized ? normScale(vc.array) : 1;
+    const out = array(vc.count * vc.itemSize), div = vc.normalized ? normScale(vc.array) : 1;
     for (let i = 0; i < vc.count; i++) for (let c = 0; c < vc.itemSize; c++) {
       const v = vc.array[i * vc.itemSize + c] / div;
-      out[i * vc.itemSize + c] = bake && c < 3 ? v * [bake.r, bake.g, bake.b][c] : v;
+      out[i * vc.itemSize + c] = byte(bake && c < 3 ? v * [bake.r, bake.g, bake.b][c] : v);
     }
-    g.setAttribute('color', new Float32BufferAttribute(out, vc.itemSize));
+    g.setAttribute('color', new BufferAttribute(out, vc.itemSize, !compactColoursOff));
   } else if (bake) {
-    const n = g.getAttribute('position').count, out = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { out[i * 3] = bake.r; out[i * 3 + 1] = bake.g; out[i * 3 + 2] = bake.b; }
-    g.setAttribute('color', new Float32BufferAttribute(out, 3));
+    const n = g.getAttribute('position').count, out = array(n * 3);
+    for (let i = 0; i < n; i++) { out[i * 3] = byte(bake.r); out[i * 3 + 1] = byte(bake.g); out[i * 3 + 2] = byte(bake.b); }
+    g.setAttribute('color', new BufferAttribute(out, 3, !compactColoursOff));
   }
   if (src !== mesh.geometry) src.dispose();
   g.applyMatrix4(matrix);
@@ -195,7 +199,26 @@ interface DayGroup { look: string; runs: Run[]; mesh: Mesh | null }
  * is left at night 0; City sets the real value on its next frame. Run before City applies board
  * clipping.
  */
-export function batchLandmarks(entries: readonly LandmarkEntry[], container: Object3D, o: { cellM?: number; name?: string } = {}) {
+export interface LandmarkBatchOptions { cellM?: number; name?: string }
+export interface LandmarkBatches {
+  group: Group; stats: BatchStats; cells: Map<string, Group>;
+  /** Mirror each landmark's night state onto its batch: call after their setNight. */
+  sync(): void;
+}
+
+/** batchLandmarks, all at once. */
+export function batchLandmarks(entries: readonly LandmarkEntry[], container: Object3D, o: LandmarkBatchOptions = {}): LandmarkBatches {
+  const build = buildLandmarkBatches(entries, container, o);
+  for (let step = build.next(); ; step = build.next()) if (step.done) return step.value;
+}
+
+/**
+ * batchLandmarks as a sliced build step: yields a label after each landmark's probe and after each
+ * cell class is merged, so an area build can spread it over frames. Nothing is shared across a
+ * yield, so the result does not depend on where it pauses. `stats.ms` is then wall time.
+ */
+export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], container: Object3D,
+  o: LandmarkBatchOptions = {}): Generator<string | void, LandmarkBatches, void> {
   const t0 = performance.now();
   const cellM = o.cellM ?? CELL_M;
   const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0 };
@@ -252,6 +275,7 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
         { mesh, bake, day: looks[looks.length - 1], run: looks.join(';') });
       stats.candidates++;
     });
+    yield 'landmark probe';
   }
 
   const group = new Group();
@@ -348,6 +372,7 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
       // Sources still drive their runs' copies through sync(), but never draw again.
       if (!users.get(mat)) mat.dispose();
     }
+    yield 'landmark cell';
   }
 
   // sync() lives outside this scope: a closure here would keep this function's maps, and with
@@ -407,4 +432,11 @@ export const landmarkBatchOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('batch') === 'off';
+})();
+
+/** `?perf&colours=float` keeps landmark batch colours as floats, for A/B runs from one build. */
+const compactColoursOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('colours') === 'float';
 })();

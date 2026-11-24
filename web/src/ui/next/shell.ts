@@ -9,7 +9,7 @@
  */
 import './next.css';
 import type { AtmosphereOverride } from '../../core/atmosphere';
-import { fetchLive, type Weather } from '../../core/weather';
+import { fetchLive, weatherFresh, type Weather } from '../../core/weather';
 import { findPlaces, loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
@@ -648,7 +648,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const s = o.live();
     const preview = weatherChoice !== 'Auto';
     // Weather is live data: show it only when the clock is the real present.
-    const wxNow = s.realTime && !preview ? weather : null;
+    // An observation that has aged past the reported limit between polls stops reading as reported.
+    const wxNow = s.realTime && !preview ? weatherFresh(weather) : null;
     const loadingNote = o.loading?.() ?? null;
     const conf = confidence(s, !!wxNow, preview, !!loadingNote);
     const night = sunPosition(now).elevation < -2;

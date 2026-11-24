@@ -26,6 +26,7 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -36,6 +37,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -66,9 +68,11 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
+import { createMuseumTower } from './museum-tower';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createHardRock } from './hard-rock';
+import { createTheLandmark } from './the-landmark';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -103,6 +107,7 @@ import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
 import { createMedicalArts } from './medical-arts';
+import { createJwMarriott } from './jw-marriott-downtown';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -131,7 +136,9 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
+import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
@@ -370,9 +377,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
+  let museumTower: ReturnType<typeof createMuseumTower> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let hardRock: ReturnType<typeof createHardRock> = null;
+  let theLandmark: ReturnType<typeof createTheLandmark> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -407,6 +416,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let marquisOne: ReturnType<typeof createMarquisOne> = null;
   let medicalArts: ReturnType<typeof createMedicalArts> = null;
+  let jwMarriott: ReturnType<typeof createJwMarriott> = null;
   let marquisTwo: ReturnType<typeof createMarquisTwo> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -457,7 +467,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         marquisTwo = createMarquisTwo(afterOne, ground);
         const afterTwo = marquisTwo?.buildings ?? afterOne;
         medicalArts = createMedicalArts(afterTwo, ground);
-        const hotelSite = medicalArts?.buildings ?? afterTwo;
+        const afterMedicalArts = medicalArts?.buildings ?? afterTwo;
+        jwMarriott = createJwMarriott(afterMedicalArts, ground);
+        const hotelSite = jwMarriott?.buildings ?? afterMedicalArts;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -475,8 +487,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHealey = healey?.buildings ?? towerSite;
         hardRock = createHardRock(afterHealey, ground);
         const afterHardRock = hardRock?.buildings ?? afterHealey;
-        parkPlaceTower = createParkPlaceTower(afterHardRock, ground);
-        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHardRock;
+        theLandmark = createTheLandmark(afterHardRock, ground);
+        const afterLandmark = theLandmark?.buildings ?? afterHardRock;
+        parkPlaceTower = createParkPlaceTower(afterLandmark, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterLandmark;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
@@ -523,8 +537,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         footballHall = createFootballHall(afterTwoPeachtree, ground);
         const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
-        oneParkTower = createOneParkTower(afterFootballHall, ground);
-        const afterOnePark = oneParkTower?.buildings ?? afterFootballHall;
+        museumTower = createMuseumTower(afterFootballHall, ground);
+        const afterMuseumTower = museumTower?.buildings ?? afterFootballHall;
+        oneParkTower = createOneParkTower(afterMuseumTower, ground);
+        const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
         const afterPower = georgiaPower?.buildings ?? afterOnePark;
         georgiaPacific = createGeorgiaPacific(afterPower, groundAt);
@@ -573,6 +589,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
         if (medicalArts) world.group.add(medicalArts.group);
+        if (jwMarriott) world.group.add(jwMarriott.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -584,9 +601,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
+        if (museumTower) world.group.add(museumTower.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (hardRock) world.group.add(hardRock.group);
+        if (theLandmark) world.group.add(theLandmark.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -634,8 +653,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
-            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, hardRock, fiftyFiveParkPlace,
+            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
+            fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -706,7 +726,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   renderer.info.autoReset = false;
   renderer.localClippingEnabled = true;
-  renderer.setPixelRatio(perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2)));
+  // The tier's (or ?perf&pr's) ratio for the display City is on now; see watchPixelRatio below.
+  const wantedPixelRatio = () => perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(wantedPixelRatio());
   renderer.shadowMap.enabled = perfOverrides.shadow !== 'off';
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
@@ -718,6 +740,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   perf.phase('city:renderer');
 
   const scene = new THREE.Scene();
+  // `?perf&freeze=off` keeps three.js recomposing every static matrix each frame, for A/B runs.
+  const freezeOn = !(perfEnabled && new URLSearchParams(location.search).get('freeze') === 'off');
+  if (freezeOn) freezeSelf(scene);
+  let staticFrozen = !freezeOn;
   const bg = new THREE.Color('#e7e2d8');
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
@@ -929,6 +955,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
     scenery.push(area.group);
+    // The area is in place: its board and scenery never move again (city/freeze.ts). Its transport
+    // subgroup keeps updating (freight runs in it).
+    if (freezeOn) {
+      freezeSelf(area.group);
+      freezeStatic(area.board);
+      freezeStatic(area.scenery);
+    }
     area.setSeason(local(new Date(options.clockMs())).doy);
     if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
@@ -1211,6 +1244,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
+  // `?perf&aoblend=old` keeps GTAOPass's copy-then-blend output, for A/B runs.
+  const aoBlend = gtao && !(perfEnabled && query.get('aoblend') === 'old') ? new ShaderPass({
+    name: 'AoBlend',
+    uniforms: { tDiffuse: { value: null }, tAO: { value: null }, intensity: { value: 1 } },
+    vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    // GTAOBlendShader's colour, applied as its multiply blend did: dst * mix(1, ao, intensity).
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tDiffuse, tAO;
+      uniform float intensity;
+      varying vec2 vUv;
+      void main() {
+        vec4 c = texture2D(tDiffuse, vUv);
+        vec4 ao = texture2D(tAO, vUv);
+        gl_FragColor = vec4(c.rgb * mix(vec3(1.0), ao.rgb, intensity), c.a * ao.a);
+      }`,
+  }) : null;
   if (gtao) {
     // Read the scene pass's own depth instead of re-rendering the whole scene with a normal
     // override (which doubled draw calls and triangles). The scene is flat-shaded, so normals
@@ -1226,6 +1275,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
+    if (aoBlend) {
+      // GTAOPass's default output copies the whole frame, then multiplies the AO over it with
+      // blending: two full-resolution passes. One pass that multiplies as it copies does the same.
+      gtao.output = GTAOPass.OUTPUT.Off;
+      gtao.needsSwap = false;
+      aoBlend.uniforms.tAO.value = gtao.pdRenderTarget.texture;
+      aoBlend.uniforms.intensity.value = gtao.blendIntensity;
+      composer.addPass(aoBlend);
+    }
   }
   // `?perf&bloom=device` keeps the old device-px bloom, for A/B runs.
   const bloomCss = !(perfEnabled && query.get('bloom') === 'device');
@@ -1276,10 +1334,24 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ink.enabled = inkWanted;
     grade.enabled = !perfOverrides.nopass.has('grade');
     if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
+    if (aoBlend) aoBlend.enabled = !perfOverrides.nopass.has('gtao');
   }
   const ro = new ResizeObserver(resize);
   ro.observe(container);
   resize();
+  // A window dragged to a display with another devicePixelRatio doesn't resize the container, so
+  // the frame loop checks the ratio itself (one global read; a resolution media query's change
+  // event isn't fired everywhere). The buffer, the composer and every pass's targets follow it.
+  let seenDpr = devicePixelRatio;
+  const followPixelRatio = () => {
+    if (devicePixelRatio === seenDpr) return;
+    seenDpr = devicePixelRatio;
+    const pr = wantedPixelRatio();
+    if (pr === renderer.getPixelRatio()) return;
+    renderer.setPixelRatio(pr);
+    composer.setPixelRatio(pr);
+    resize();
+  };
   const perfContext: Parameters<typeof perf.attach>[0] = {
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
@@ -1325,6 +1397,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  // Sliced area builds (?slice=1) take a smaller share of each frame while the camera is dragged.
+  controls.addEventListener('start', () => { sliceInput.dragging = true; });
+  controls.addEventListener('end', () => { sliceInput.dragging = false; });
   // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
@@ -1408,6 +1483,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  let shadowLodDirty = false;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
 
@@ -1420,20 +1496,36 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
-    const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
+    // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
+    updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    // Low: a swap marks the map dirty and redraws within the same 250 ms gap as a camera move, so
+    // a fly-over that swaps tiles every few frames redraws ~4 times a second, not every swap (route:north
+    // logged 206-216 redraws in 10 s, each about a million triangles). High redraws on each swap.
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
+      if (low && !perfOverrides.shadowGapOld) shadowLodDirty = true; else renderer.shadowMap.needsUpdate = true;
+      // A late swap changes what draws: ?perf=run must not sample before it settles.
+      if (perfEnabled) perf.phase('lod:swap');
+    }
+    // Low re-centres on a step that grows with the orbit (0.15 x, at least 80 m): from far away the
+    // same 80 m step came round many times a second while panning, for shadows a few pixels wide.
+    // Capped at a quarter of the shadow box (260 m on low): an uncapped 0.15 x orbit is ~3.2 km at
+    // the default view, three times the box, and with the 0.6 hysteresis the target could pan ~1.9 km
+    // away from its shadows before the box followed. Far orbits are the far-shadow rule's to handle.
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? shadowStepM(camera.position.distanceTo(t), SHADOW_STEP_M, 2 * SH) : SHADOW_STEP_M;
+    const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
     // Hysteresis: re-centre only once the target is 0.6 of a step from the current centre on an
     // axis (a fresh centre is at most half a step away), so a target resting on a cell boundary
     // cannot flip the shadow box back and forth.
-    const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
+    const off = (v: number, c: number) => Math.abs(v - c) > step * 0.6;
     const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+    if ((moved || turned || shadowLodDirty) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
       renderer.shadowMap.needsUpdate = true;
+      shadowLodDirty = false;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
       shadowElev = el;
@@ -1476,6 +1568,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       marquisOne?.setNight(night);
       marquisTwo?.setNight(night);
       medicalArts?.setNight(night);
+      jwMarriott?.setNight(night);
       hilton?.setNight(night);
       altitude?.setNight(night);
       twelve?.setNight(night);
@@ -1487,9 +1580,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       flatiron?.setNight(night);
       healey?.setNight(night);
       footballHall?.setNight(night);
+      museumTower?.setNight(night);
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
       hardRock?.setNight(night);
+      theLandmark?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
       davisons?.setNight(night);
@@ -1615,6 +1710,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    followPixelRatio();
+    if (!staticFrozen) {
+      // Downtown's world, board and scenery are all built by the first frame.
+      staticFrozen = true;
+      freezeStatic(world.group);
+      freezeSelf(terrain?.group);
+      freezeStatic(terrain?.board);
+      freezeStatic(terrain?.scenery);
+      freezeStatic(rolloutBatch.group);
+    }
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -1758,6 +1863,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    if (import.meta.env.DEV && freezeOn && frames % 120 === 0) {
+      const moved = checkFrozen(scene);
+      if (moved.length) console.error(`Frozen objects moved without refreeze() (city/freeze.ts): ${moved.length}`, moved.slice(0, 10));
+    }
     // A few never-drawn objects per frame in one scratch render, after the frame's own work.
     if (prewarmer?.pending) {
       // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
@@ -1787,7 +1896,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       brookwood?.cars, (northLine as { group?: THREE.Object3D } | undefined)?.group, rain.mesh, snow.mesh],
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
-    skipPasses: [gtao],
+    skipPasses: [gtao, aoBlend],
     mode: options.whiteModel,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());
@@ -1807,6 +1916,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
   if (!perfOverrides.prewarmOff) {
     prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    perf.setPrewarmPending(() => prewarmer?.pending ?? 0);
     const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
     requestPrewarm = () => setTimeout(rescan, 500);
     // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
@@ -1960,6 +2070,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setAtmosphere(a, now) {
       atm = a;
       const day = local(now).doy;
+      sliceInput.dayOfYear = day;
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
       north?.setSeason(day);
@@ -1982,6 +2093,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     dispose() {
       prewarmer?.dispose();
+      perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();
