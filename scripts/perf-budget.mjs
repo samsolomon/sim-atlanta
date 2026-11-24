@@ -40,11 +40,19 @@ try {
     const json = join(tmp, `${tier}.json`);
     // An entry may name its tier and clock (high-night is the high tier at 22:00).
     const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run`;
-    const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : []), url],
-      { env: { ...process.env, PERF_JSON: json }, stdio: 'inherit' });
-    if (r.status !== 0) { failed = true; continue; }
-    const s = JSON.parse(readFileSync(json, 'utf8'))[0]?.summary;
-    if (!s) { console.error(`${tier}: no result`); failed = true; continue; }
+    // One retry on a run that failed or was invalid (another agent's load can stall a headless GPU),
+    // with the reason printed either way; a second failure fails the check.
+    let s = null;
+    for (let attempt = 1; attempt <= 2 && !s; attempt++) {
+      const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : []), url],
+        { env: { ...process.env, PERF_JSON: json }, stdio: 'inherit' });
+      let res = null;
+      try { res = JSON.parse(readFileSync(json, 'utf8'))[0]; } catch { /* no result file */ }
+      const why = r.status !== 0 ? `perf-run exited ${r.status ?? r.signal}${res?.error ? ': ' + res.error : ''}` : !res?.summary ? 'no result' : null;
+      if (why) console.error(`${tier}: run ${attempt} failed (${why})${attempt === 1 ? '; retrying once' : ''}`);
+      else s = res.summary;
+    }
+    if (!s) { failed = true; continue; }
     // A partial board comes in under every ceiling, so it must fail rather than pass quietly.
     if (s.areas < 12) { console.error(`${tier}: only ${s.areas} of 12 areas mounted; check the staged data`); failed = true; continue; }
     console.log(`\n${tier.toUpperCase()}            measured     ceiling      target`);
@@ -63,7 +71,7 @@ try {
   for (const tier of ['low', 'high']) {
     const json = join(tmp, `sweep-${tier}.json`);
     const r = spawnSync('node', [join(root, 'scripts/program-sweep.mjs'), '--url', `http://127.0.0.1:${port}`, '--q', tier, '--quick', '--json', json], { stdio: ['ignore', 'ignore', 'inherit'] });
-    if (r.status !== 0) { console.error(`${tier} sweep: failed to run`); failed = true; continue; }
+    if (r.status !== 0) { console.error(`${tier} sweep: failed to run (program-sweep exited ${r.status ?? r.signal}; its error is above)`); failed = true; continue; }
     const sweep = JSON.parse(readFileSync(json, 'utf8'));
     const late = sweep.rows.flatMap(row => row.newPrograms.map(p => ({ step: row.label, text: `${p.owners.map(o => `${o.path} ${o.type}`).join('; ')} ${p.key}`, owners: p.owners })));
     const unexplained = late.filter(p => !allow.some(a => p.text.includes(a.match)));
@@ -75,4 +83,5 @@ try {
   server.kill();
   rmSync(tmp, { recursive: true, force: true });
 }
+if (failed) console.error('test:perf FAILED: see the reasons above (OVER CEILING, LATE COMPILE, or a run that failed twice).');
 process.exit(failed ? 1 : 0);

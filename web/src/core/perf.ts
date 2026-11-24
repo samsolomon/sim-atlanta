@@ -497,11 +497,13 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
-  // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
+  // Areas mount as the camera approaches, the shader prewarm runs after colour, and house and ground
+  // LOD swaps log a phase: wait for the prewarm to finish, then until no phase has landed for quietMs.
   const settleStart = performance.now();
   while (performance.now() - settleStart < maxWaitMs) {
     const last = phases[phases.length - 1]?.ms ?? 0;
-    if (performance.now() - last > quietMs) break;
+    const prewarmed = perfOverrides.prewarmOff || phases.some(p => p.name === 'city:prewarmed');
+    if (prewarmed && performance.now() - last > quietMs) break;
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;

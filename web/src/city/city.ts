@@ -1427,7 +1427,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
     // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
     updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) renderer.shadowMap.needsUpdate = true;
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
+      renderer.shadowMap.needsUpdate = true;
+      // A late swap changes what draws: ?perf=run must not sample before it settles.
+      if (perfEnabled) perf.phase('lod:swap');
+    }
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
