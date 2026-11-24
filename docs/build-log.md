@@ -2921,3 +2921,11 @@ calibration, with no geometry or texture cost. Matched 21:00 frames use the same
 `301,-4675,340,60,160` camera at both tiers.
 [High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
 [Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
+
+### 2026-11-23 — Rhodes Hall at 21:00
+
+At a 160 m orbit, the earlier 25% reduction still made the tower read as one lit
+block. Two studies put the brightest stone at the 0.5 m base and fade the wash
+to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
+region in plan, so the falloff follows the tower's own masonry vertices.
+[Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
