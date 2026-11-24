@@ -2944,6 +2944,10 @@ calibration, with no geometry or texture cost. Matched 21:00 frames use the same
 [High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
 [Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
 
+### 2026-11-23 — Two purple buses for the A-Line
+
+The purple bus photographed at the Phase One launch has two axles and a CNG roof pod. The 60-foot electric bought for the line has three axles and a folding joint. The Model Lab now puts the two silhouettes side by side in the vehicle list. Turning the electric trailer through 35° keeps both ends of the silver bellows attached. Its low-detail model uses 1,190 triangles across three meshes. [See the photographs and matched day/night studies](marta-rapid-buses.md#review-views).
+
 ### 2026-11-23 — The Midtown South footbridge
 
 A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
@@ -2955,3 +2959,7 @@ block. Two studies put the brightest stone at the 0.5 m base and fade the wash
 to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
 region in plan, so the falloff follows the tower's own masonry vertices.
 [Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
+
+### 2026-11-23 — Rapid bus glazing at night
+
+At the same lab camera, the lit windshield had made the XN40 cab as bright as the passenger compartment. The revised Rapid studies keep the windshield dark and show the amber destination sign above it. Both buses now use the XN40 purple and cooler passenger lighting, with the emission multiplier reduced from 0.6 to 0.4. On the XE60, individual panes sit inside a dark frame. [Compare the matched day and night views](marta-rapid-buses.md#review-views).
