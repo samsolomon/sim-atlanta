@@ -1,5 +1,5 @@
 /**
- * Maps-style camera input for City (A2c; off under ?ui=classic), like Apple and Google Maps:
+ * Maps-style camera input for City (A2c), like Apple and Google Maps:
  *   mouse: drag pans, right-drag or Ctrl-drag rotates and tilts, scroll zooms toward the cursor,
  *          double-click zooms in
  *   touch: one finger pans, pinch zooms, two fingers dragged up or down tilt, twisting two

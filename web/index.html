@@ -9,34 +9,16 @@
   <body>
     <div id="map" role="application" aria-label="Rail map"></div>
 
-    <!-- Time controls: kept for later, hidden unless ?controls=1 (see main.ts). -->
-    <section id="timectl" class="timectl glass" hidden aria-label="Time">
-      <p class="clock"><time id="clock">--:--</time> <span id="clock-note">now</span></p>
-      <input id="scrub" type="range" min="-720" max="720" step="5" value="0" aria-label="Shift time (minutes)" />
-      <div class="scrub-row">
-        <button id="now" type="button">Now</button>
-        <div class="speed" role="group" aria-label="Playback speed">
-          <button type="button" data-speed="1" aria-pressed="true">1×</button>
-          <button type="button" data-speed="30" aria-pressed="false">30×</button>
-        </div>
-      </div>
-    </section>
-
     <section id="view3d" hidden aria-label="Atlanta in 3D">
       <div id="view3d-canvas"></div>
+      <!-- City puts its "Show full board" retry here; the A2c menu offers it (ui/next/shell.ts). -->
+      <div id="city-info" hidden></div>
       <div id="city-loading" role="status" hidden>
         <p>Atlanta, in miniature</p>
         <span id="city-progress">Loading buildings, streets and trees…</span>
         <small class="city-source">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></small>
         <a id="early-map" href="?view=map" hidden>Open Map</a>
       </div>
-      <button class="city-info-toggle" type="button" popovertarget="city-info" aria-label="About this City view" title="About this City view"><span aria-hidden="true">i</span></button>
-      <aside id="city-info" popover aria-labelledby="city-info-title">
-        <strong id="city-info-title">About this City view</strong>
-        <p>Unofficial. Buildings &amp; track © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, Overture Maps. <span id="city-ground-source">Flat board</span> · MARTA data.</p>
-        <p>Rail and bridge heights are schematic.<span id="city-freight-attrib" hidden> Illustrative freight loop.</span><span id="city-traffic-attrib" hidden> Illustrative road traffic.</span><span id="city-people-attrib" hidden> Walkers and cyclists are illustrative.</span></p>
-        <a href="/about">About &amp; credits</a>
-      </aside>
     </section>
 
     <aside id="card" class="glass" hidden aria-live="polite">

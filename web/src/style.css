@@ -4,28 +4,14 @@
 html, body { margin: 0; height: 100%; background: var(--paper-2); color: var(--ink); }
 #map { position: fixed; inset: 0; }
 .maplibregl-ctrl-attrib { background: rgba(251, 249, 244, 0.7) !important; color: var(--ink-2); }
-/* A2c (data-ui=next, set by start.ts before paint unless ?ui=classic): the shell carries the credits and City info. */
-:root[data-ui='next'] :is(.maplibregl-ctrl-attrib, .city-info-toggle) { display: none !important; }
+/* A2c (data-ui=next, set by start.ts before paint): the shell carries the credits. */
+:root[data-ui='next'] .maplibregl-ctrl-attrib { display: none !important; }
 
 button {
   font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--paper);
   border-radius: 8px; padding: 4px 10px; cursor: pointer; color: var(--ink);
 }
 button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
-
-/* ---- hidden time controls (?controls=1) ---- */
-.timectl {
-  position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 4;
-  width: min(280px, calc(100vw - 24px)); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 6px;
-}
-.timectl[hidden] { display: none; }
-.clock { margin: 0; font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; }
-.clock span { color: var(--ink-2); font-weight: 500; font-size: 12px; }
-.clock.shifted span { color: var(--freight); }
-.timectl input { width: 100%; accent-color: var(--ink); }
-.scrub-row { display: flex; justify-content: space-between; align-items: center; }
-.speed { display: flex; gap: 4px; }
-.speed button[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
 /* ---- City (3D) ---- */
 #view3d { position: fixed; inset: 0; z-index: 1; background: var(--paper-2); }
@@ -37,31 +23,8 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 #city-loading p { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
 #city-progress { color: var(--ink-2); font-size: 14px; }
 #view3d { --info-bottom: max(12px, env(safe-area-inset-bottom)); --info-right: max(12px, env(safe-area-inset-right)); }
-body:has(#timectl:not([hidden])) #view3d { --info-bottom: var(--above-playback, 138px); }
-#city-loading:not([hidden]) ~ .city-info-toggle { display: none; }
 .city-source { margin-top: 12px; font-size: 12px; color: var(--ink-2); }
-.city-source a, #city-info a { color: inherit; }
-.city-info-toggle {
-  position: absolute; bottom: var(--info-bottom); right: var(--info-right);
-  width: 44px; height: 44px; display: grid; place-items: center; padding: 0;
-  border: 0; border-radius: 50%; background: transparent;
-}
-.city-info-toggle span {
-  width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%;
-  border: 1px solid var(--line); background: var(--glass-solid); box-shadow: 0 1px 4px #0003;
-  font: bold 19px/1 Georgia, serif;
-}
-#city-info {
-  position: fixed; inset: auto var(--info-right) calc(var(--info-bottom) + 46px) auto;
-  margin: 0; padding: 14px 16px; width: min(290px, calc(100vw - 24px));
-  max-height: calc(100dvh - var(--info-bottom) - 60px); overflow-y: auto;
-  border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 3px 14px #0002;
-  color: var(--ink); background: var(--glass-solid); font-size: 13px; line-height: 1.45;
-}
-#city-info p { margin: 8px 0; }
-@media (min-width: 601px) {
-  body:has(#card:not([hidden])) #city-info { max-width: calc(100vw - 380px); }
-}
+.city-source a { color: inherit; }
 
 /* ---- vehicle / place card ---- */
 #card {
@@ -114,32 +77,6 @@ body:has(#timectl:not([hidden])) #view3d { --info-bottom: var(--above-playback, 
   .in3d #card .close { min-width: 44px; min-height: 44px; top: 0; right: 0; }
 }
 
-/* The optional replay panel and view switch share the last row on narrow screens. */
-@media (max-width: 600px) {
-  body:has(#timectl:not([hidden])) {
-    --dock-bottom: max(24px, calc(env(safe-area-inset-bottom) + 10px));
-    --above-playback: calc(var(--dock-bottom) + 116px);
-    display: grid; height: 100dvh; max-width: 470px; margin-inline: auto;
-    grid-template-columns: max-content minmax(0, 1fr);
-    align-content: end; align-items: end; gap: 8px;
-    padding: 0 max(10px, env(safe-area-inset-right)) var(--dock-bottom) max(10px, env(safe-area-inset-left));
-  }
-  body:has(#timectl:not([hidden])) .switch {
-    position: relative; inset: auto; transform: none; grid-area: 2 / 1;
-  }
-  body:has(#timectl:not([hidden])) .switch button { min-width: 44px; height: 44px; justify-content: center; padding: 0 10px; }
-  #timectl:not([hidden]) { position: relative; inset: auto; width: auto; grid-area: 2 / 2; padding: 6px 8px; gap: 2px; }
-  #timectl input { margin: 0; height: 26px; }
-  #timectl button { min-width: 44px; min-height: 44px; padding: 4px 8px; }
-  body:has(#timectl:not([hidden])) .hint,
-  body:not(.in3d):has(#timectl:not([hidden])) #card {
-    position: relative; inset: auto; transform: none; grid-area: 1 / 1 / 2 / 3; justify-self: center;
-  }
-  body:not(.in3d):has(#timectl:not([hidden])) #card { max-height: calc(100dvh - 220px); overflow-y: auto; }
-  .in3d:has(#timectl:not([hidden])):has(.hint) #view3d { --info-bottom: calc(var(--above-playback) + 40px); }
-  .in3d:has(#timectl:not([hidden])) #card { max-height: calc(100dvh - var(--card-top) - var(--above-playback)); }
-}
-
 /* ---- ?tune palette panel (design tool) ---- */
 .tuner {
   position: fixed; z-index: 7; left: 14px; top: 74px; width: 300px; max-height: calc(100vh - 170px); overflow: auto;
@@ -175,3 +112,67 @@ body:has(.rail-overview):not(.in3d) .hint { display: none; }
 .rail-overview svg { width: 100%; flex: 1; min-height: 0; }
 .rail-overview text { fill: var(--ink); font-size: 1200px; }
 .rail-overview figcaption { margin-top: 8px; font-size: 14px; }
+
+/* ---- shared chrome (was ui/shell.css with the pre-A2c shell) ---- */
+[hidden] { display: none !important; }
+:root {
+  --glass-a: rgba(255, 255, 255, 0.36);
+  --glass-b: rgba(246, 242, 233, 0.22);
+  --rim: 1;
+  --hairline: rgba(60, 45, 30, 0.14);
+}
+/* Dark glass after dusk, as in an OS night mode: light text on smoked glass, a dimmer rim. */
+:root[data-theme='dark'] {
+  --ink: #eef0f3;
+  --ink-2: #aab2be;
+  --paper: #1c2129;
+  --line: rgba(255, 255, 255, 0.14);
+  --glass-a: rgba(40, 46, 58, 0.5);
+  --glass-b: rgba(22, 26, 34, 0.42);
+  --glass-solid: rgba(28, 33, 42, 0.95);
+  --rim: 0.45;
+  --hairline: rgba(0, 0, 0, 0.45);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme='dark'] .glass::after { background: radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 60%); }
+.glass, .glass * { transition: color 0.6s ease, background-color 0.6s ease; }
+
+/* Glass: Monaco's frosted blur plus a Liquid Glass-style lit edge (bright at the top-left and
+   bottom-right, fading between) and a soft specular sheen across the top. */
+.glass {
+  isolation: isolate; /* every glass element is position: fixed (or a <dialog>), which anchors the pseudo-elements */
+  color: var(--ink);
+  background: rgba(251, 249, 244, 0.94);
+  border: 0;
+  box-shadow:
+    0 0 0 0.5px var(--hairline),
+    0 12px 32px rgba(60, 45, 30, 0.16),
+    0 2px 6px rgba(60, 45, 30, 0.08),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0.5px rgba(255, 255, 255, 0.35);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass {
+    background: linear-gradient(160deg, var(--glass-a), var(--glass-b));
+    -webkit-backdrop-filter: blur(20px) saturate(1.15) brightness(1.05);
+    backdrop-filter: blur(20px) saturate(1.15) brightness(1.05);
+  }
+}
+.glass::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 1;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, var(--rim)) 0%, rgba(255, 255, 255, calc(var(--rim) * 0.55)) 18%, rgba(255, 255, 255, 0.08) 42%,
+    rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, calc(var(--rim) * 0.5)) 85%, rgba(255, 255, 255, calc(var(--rim) * 0.9)) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.glass::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 60%);
+}
+/* Truth-tier chips on dark glass: the same hues, lifted for contrast. */
+:root[data-theme='dark'] .chip.live { color: #6fd58a; }
+:root[data-theme='dark'] .chip.scheduled { color: #8cb8f2; }
+:root[data-theme='dark'] .chip.reported { color: #ff9a6a; }
+:root[data-theme='dark'] .chip.inferred { color: #e6c05a; }
+:root[data-theme='dark'] .chip.illustrative { color: #bba6ff; }

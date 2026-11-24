@@ -6,8 +6,8 @@ import { showRailOverview } from './map/overview';
 import { DEFAULT_PALETTE, PALETTES, applyPalette, dioramaBaseStyle, paletteFor, type Palette } from './map/basestyle';
 import { SkyLayer } from './map/sky-layer';
 import { atmosphere, type Atmosphere, type AtmosphereOverride } from './core/atmosphere';
-import { createShell, type ShellOptions, type View } from './ui/shell';
-import { uiNext } from './ui/flag';
+import type { ShellOptions, View } from './ui/shell-api';
+import { createShellNext } from './ui/next/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
 import { place as stationName, busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
@@ -137,7 +137,7 @@ let shownKey = '';
 /** A2c: move the camera so a new selection sits in the middle of the open area beside the detail
  * panel (above it on phones). Follow, when it runs, drives the camera itself. */
 function focusSelection() {
-  if (!uiNext(location.search) || follow?.active) return;
+  if (follow?.active) return;
   const t = selectedTrain ? source.find(selectedTrain) : null;
   const b = !t && selectedBus ? buses.current().find((x) => x.id === selectedBus) : null;
   const at = t ? { lon: t.lon, lat: t.lat } : b ? b.position.value : null;
@@ -195,7 +195,7 @@ function renderTrainCard() {
   }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
-      !view3d.hidden, uiNext(location.search), (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
+      !view3d.hidden, true, (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
     !!follow && !view3d.hidden,
   );
 }
@@ -430,40 +430,12 @@ function addMapLayers(map: maplibregl.Map) {
   requestAnimationFrame(frame);
 }
 
-// ---- controls ---------------------------------------------------------------
-const clockEl = document.getElementById('clock') as HTMLTimeElement;
-const clockNote = document.getElementById('clock-note')!;
-const scrub = document.getElementById('scrub') as HTMLInputElement;
-const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: meta.timezone, weekday: 'short', hour: 'numeric', minute: '2-digit' });
-
+// ---- clock -------------------------------------------------------------------
 function updateClock(now: Date) {
   // Live weather belongs only to the real present: recompute as soon as the clock leaves or returns.
   // A sped-up or scrubbed clock moves the sun too: recompute every 5 simulated minutes.
   if (clock.isRealTime() !== atmRealTime || Math.abs(now.getTime() - atmAt) > 5 * 60_000) updateAtmosphere();
-  clockEl.textContent = timeFmt.format(now);
-  clockEl.dateTime = now.toISOString();
-  const shifted = !clock.isRealTime();
-  clockNote.textContent = shifted ? 'time-shifted' : 'now';
-  clockEl.parentElement!.classList.toggle('shifted', shifted);
 }
-
-scrub.addEventListener('input', () => {
-  clock.offsetMin = Number(scrub.value);
-});
-document.getElementById('now')!.addEventListener('click', () => {
-  clock.reset();
-  scrub.value = '0';
-  setSpeed(1);
-});
-const speedButtons = [...document.querySelectorAll<HTMLButtonElement>('.speed button')];
-function setSpeed(s: number) {
-  if (clock.speed !== 1 && s === 1) clock.pinned = true;
-  clock.rebase();
-  clock.speed = s;
-  speedButtons.forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.speed) === s)));
-}
-speedButtons.forEach((b) => b.addEventListener('click', () => setSpeed(Number(b.dataset.speed))));
-setSpeed(clock.speed);
 
 // ---- views: Map (MapLibre) and City (3D, loaded on demand) -------------------------------
 // ?view=city opens City directly (?view=3d still works). The URL hash belongs to MapLibre.
@@ -492,16 +464,13 @@ async function openCity() {
   view3d.hidden = false;
   sky.stopAnimation();
   cityLoading.hidden = false;
-  document.getElementById('city-freight-attrib')!.hidden = true;
-  document.getElementById('city-people-attrib')!.hidden = true;
-  document.getElementById('city-traffic-attrib')!.hidden = true;
   cityProgress.textContent = 'Loading buildings, streets and trees…';
   document.body.classList.add('in3d');
   shell.setNote(null);
   let areaNote: string | null = null;
   // A2c Map → City (brief: "Map to City", option B): the map tilts to City's angle while City
   // loads, white buildings stand on it, then the coloured scene cross-fades over it. No zoom.
-  const overMap = uiNext(location.search) && !opening && !keepPose && !!map && !reducedMotion() && mapOnCityScale(map);
+  const overMap = !opening && !keepPose && !!map && !reducedMotion() && mapOnCityScale(map);
   if (overMap) {
     document.body.classList.add('city-over-map');
     await tiltMapTo(map!, cityTilt);
@@ -514,8 +483,8 @@ async function openCity() {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
       areaNote: text => { areaNote = text; autoNote = false; shell.setNote(text); },
-      mapGestures: uiNext(location.search),
-      whiteModel: !uiNext(location.search) ? false : overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
+      mapGestures: true,
+      whiteModel: overMap ? (cityBuiltOnce ? 'fade' : 'map') : 'paper',
       trains: () => source.update(),
       scheduledStreetcarsAt: ms => schedule.trainsAt(new Date(ms)).filter(t => t.routeId === 'marta:route:STREETCAR'),
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
@@ -530,7 +499,7 @@ async function openCity() {
         selectedFreight = hit?.kind === 'freight' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line, uiNext(location.search)), !!follow);
+        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line, true), !!follow);
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
@@ -541,10 +510,6 @@ async function openCity() {
     }
     diorama = d;
     if (import.meta.env.DEV) Object.assign(window, { __city: d });
-    document.getElementById('city-freight-attrib')!.hidden = !d.hasFreight;
-    document.getElementById('city-people-attrib')!.hidden = !d.hasPeople;
-    document.getElementById('city-traffic-attrib')!.hidden = !d.hasTraffic;
-    document.getElementById('city-ground-source')!.textContent = d.measuredGround ? 'USGS terrain' : 'Flat board';
   } catch (err) {
     if (load !== cityLoad) return;
     keepPose = null;
@@ -609,7 +574,7 @@ let graphics: Graphics = (() => {
   }
 })();
 /** undefined lets createCity pick (?q=, then the device). Only A2c offers the choice. */
-const chosenQuality = () => !uiNext(location.search) || params.has('q') ? undefined
+const chosenQuality = () => params.has('q') ? undefined
   : graphics !== 'auto' ? graphics : autoLow ? 'low' as const : undefined;
 // Auto steps down to Low for the session when City runs under 20 fps at High (core/perf.ts
 // watchSlow). Session only, so a better moment can try High again.
@@ -625,7 +590,7 @@ let autoNote = false;
 function watchAutoGraphics(quality: 'low' | 'high', load: number) {
   stopWatchSlow?.();
   stopWatchSlow = null;
-  if (!uiNext(location.search) || graphics !== 'auto' || params.has('q') || autoLow || quality !== 'high') return;
+  if (graphics !== 'auto' || params.has('q') || autoLow || quality !== 'high') return;
   stopWatchSlow = perf.watchSlow(() => {
     stopWatchSlow = null;
     if (graphics !== 'auto' || load !== cityLoad || !diorama) return;
@@ -665,7 +630,7 @@ async function setGraphics(g: Graphics) {
 /** Rebuild City if the tier on screen isn't the chosen one. Also runs after every City load, so a
  * choice made while City was loading still lands. */
 async function applyGraphics() {
-  if (!diorama || !uiNext(location.search)) return;
+  if (!diorama) return;
   const { pickQuality } = await import('./city/city');
   if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
   // Rebuild City at the same camera with the new tier.
@@ -725,7 +690,7 @@ function flattenMap(m: maplibregl.Map, animate: boolean) {
  * map flattens. Other exits (Models, errors) use closeCity directly. */
 async function leaveCityToMap() {
   const m = map;
-  if (!uiNext(location.search) || !diorama || !m || reducedMotion()) return closeCity();
+  if (!diorama || !m || reducedMotion()) return closeCity();
   const load = cityLoad;
   const leave = ++leaving;
   clearTimeout(overMapTimer);
@@ -755,7 +720,6 @@ function closeCity(keepMapView = false) {
   clearTimeout(overMapTimer);
   document.body.classList.remove('city-over-map');
   keepPose = null;
-  document.getElementById('city-info')!.hidePopover?.();
   hideCard();
   cityLoad++;
   cityAbort?.abort();
@@ -902,8 +866,6 @@ const shellOptions: ShellOptions = {
     u.searchParams.delete('speed');
     history.replaceState(null, '', u);
     clock.reset();
-    scrub.value = '0';
-    setSpeed(1);
     updateAtmosphere();
   },
   onClock() {
@@ -935,11 +897,11 @@ const shellOptions: ShellOptions = {
   },
   loading: () => (!view3d.hidden && !cityLoading.hidden ? 'Building the city…' : null),
   // A link's ?q= decides the tier until the viewer picks one, so the menu shows that.
-  graphics: uiNext(location.search) ? {
+  graphics: {
     get: () => (params.get('q') === 'high' || params.get('q') === 'low' ? params.get('q') as Graphics : graphics),
     set: (g) => void setGraphics(g),
     autoResolved: () => (autoLow ? 'low' : null),
-  } : undefined,
+  },
   resetModelView: () => labView?.reset(),
   viewEscape: () => (inModels() ? labView?.escape() ?? false : false),
   shareTarget() {
@@ -959,10 +921,8 @@ const shellOptions: ShellOptions = {
     return { view: 'map' as const, hash: `#${map.getZoom().toFixed(2)}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}${b ? `/${b}` : ''}` };
   },
 };
-// The A2c interface (docs/ui-controls-brief.md); ?ui=classic keeps the old shell for one release.
-const shell = uiNext(location.search)
-  ? (await import('./ui/next/shell')).createShellNext(shellOptions)
-  : createShell(shellOptions);
+// The A2c interface (docs/ui-controls-brief.md).
+const shell = createShellNext(shellOptions);
 if (import.meta.env.DEV) Object.assign(window, {
   __shell: shell,
   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
@@ -985,9 +945,6 @@ setInterval(() => {
   else if (selectedFreight && follow) updateFollowPanel();
 }, 500);
 
-// Hidden time controls (kept for later): ?controls=1 shows them.
-// Under A2c, Time & weather in the subject card replaces it.
-document.getElementById('timectl')!.hidden = params.get('controls') !== '1' || uiNext(location.search);
 
 if (landing === 'city') shell.setView('city');
 else if (landing === 'models') {
