@@ -3585,3 +3585,20 @@ The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. 
 ### 2026-11-24 — Four shader programs from a number in a key
 
 The phone tier was at 86 of 86 shader programs, with nightly skins and features landing on top. A sweep that pairs every compiled program with its owner and three.js cache key showed four of them differed from shared programs in one field only: `numClippingPlanes`. Brookwood clips to its north and west board edges, two planes, while most of City clips to four, so its corridor materials, its freight and their shadow-depth variant each had a program of their own. Padding Brookwood's plane list with two planes that never clip (10,000 km below the board) merges them into the shared programs. The phone tier drops from 85 at ready and 86 at the sweep's peak to 81 and 82, and the last late shadow-depth compile disappears. High drops by five. The frames don't change. [Brookwood by day](log/perf/clip-pad/brookwood-1400.png) · [at night](log/perf/clip-pad/brookwood-2200.png)
+
+### 2026-11-24 — Downtown's Museum Tower and Midtown's SkyHouse
+
+Museum Tower at Centennial Hill is the first of my skins mounted downtown, so it
+goes in the batcher's listed array.
+- Its red-brown brick shaft has glass corner bays and a cream crown band whose
+  piers carry amber uplights. The source is one 2012 photograph, marked reported.
+- The lidar puts its planted roof deck at 84 m and the penthouse at 94 m.
+
+The M by Radius opened in 2013 as SkyHouse Midtown.
+- It is mapped at 90 m, but the 2019 lidar reads 77 m at the roof edge.
+- It keeps the series' arched crown screen with a teal edge, over pale glass and
+  silver piers.
+
+Neither skin adds a draw on the low tier, and each adds about 0.2 MB of geometry.
+[Museum Tower](museum-tower.md) · [The M by Radius](m-by-radius.md)
+
