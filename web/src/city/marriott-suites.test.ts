@@ -32,7 +32,7 @@ it('raises the hotel tower to its lidar roof over its low wings, leanly', () => 
   const floor = 285;
   expect(roof(476, -3606)).toBeCloseTo(floor + 59, 1); // rooftop plant
   expect(roof(495, -3614)).toBeCloseTo(floor + 56.4, 1); // tower roof
-  expect(roof(495, -3565)).toBeCloseTo(floor + 13.1, 1); // north wing
+  expect(roof(495, -3565)).toBeCloseTo(floor + 13.1, 1); // south wing
   let triangles = 0;
   result.group.traverse(o => { if ('geometry' in o) triangles += (o as { geometry: { attributes: { position: { count: number } } } }).geometry.attributes.position.count / 3; });
   expect(triangles).toBeLessThan(3000);

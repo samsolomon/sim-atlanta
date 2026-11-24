@@ -8,9 +8,9 @@ export const marriottSuitesId = 'osm:way:269843461';
 const origin: P2 = [477, -3600];
 
 // The all-suite hotel at 35 14th Street: a 19-storey pale rose-beige precast tower with punched
-// windows and stacked balcony recesses, a projecting bay of balconies over the 14th Street entry,
-// and low wings behind. Heights from the April 2019 lidar above median grade: tower roof 56.4 m
-// (p50), plant to 59 m; north wing about 13 m, west wing about 6 m.
+// windows and stacked balcony recesses, an entry block on 14th Street (north; z is -north), and
+// low wings to the south and west. Heights from the April 2019 lidar above median grade: tower roof
+// 56.4 m (p50), plant to 59 m; south wing about 13 m, west wing about 6 m, entry block about 7 m.
 const towerPart = 'osm:way:885777448';
 const wings: [string, number][] = [['osm:way:885777451', 13.1], ['osm:way:885777455', 6.1], ['osm:way:885777450', 7.3]];
 const roofH = 56.4, plantH = 59, base = 7.5, storey = 2.85;
@@ -66,10 +66,12 @@ export function createMarriottSuites(buildings: VBuilding[], site: VBuilding, gr
     const p = along(a, b, length, 0.6, 0.05 * out), q = along(a, b, length, length - 0.6, 0.05 * out);
     lights.quad([p[0], footing, p[1]], [p[0], floor + 4.4, p[1]], [q[0], floor + 4.4, q[1]], [q[0], footing, q[1]], glass);
   });
-  // The entrance canopy on 14th Street (the south face): a plain dark canopy, no branding.
-  const south = t.reduce((m, p) => (p[1] > m ? p[1] : m), -Infinity);
-  const can: P2[] = [[-6, south - 0.2], [6, south - 0.2], [6, south + 4.5], [-6, south + 4.5]];
-  shell.prism(wound(can, 1), floor + 4.6, floor + 5.6, canopy, canopy);
+  // The entrance canopy on 14th Street: a plain dark slab over the entry block's street face
+  // (no branding), projecting 2 m, inside the site's mapped outline plus the canopy allowance.
+  const entry = L(part('osm:way:885777450')!);
+  const north = Math.min(...entry.map(p => p[1])), ex = entry.map(p => p[0]);
+  const can: P2[] = [[Math.min(...ex) + 1, north - 2], [Math.max(...ex) - 1, north - 2], [Math.max(...ex) - 1, north + 0.5], [Math.min(...ex) + 1, north + 0.5]];
+  shell.prism(wound(can, 1), floor + 4.6, floor + 5.2, canopy, canopy);
   return shell.finish('#f4d6a8', 0.62);
 }
 
