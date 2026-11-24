@@ -2852,3 +2852,14 @@ Web rebuild only; no `pnpm data`, new requests or worker change.
 
 [Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
 [Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
+
+### 2026-11-23 — SCAD's stepped academic block
+
+SCAD Atlanta's 1600 Peachtree building now follows 17 mapped building parts, from the
+northern parking decks to the 23.1 m inferred academic roof. Deep charcoal piers and
+recessed windows follow the newer exterior photos; an older night photograph supplies
+only the warm lobby lighting, because the building was still pale then. The first render
+caught clockwise source rings hiding the facade details inside the walls. Normalizing
+the rings fixed that without moving their geometry. The low tier stays within budget at
+546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
+[Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
