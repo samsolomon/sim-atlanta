@@ -11,6 +11,10 @@ The downtown rail maintainer owns integration of the freight portals, Five Point
 3. **CQ400 seating.** Branch `samsolomon/cq400-bogies` at `a7a95322` follows the cut faces. The earlier probe measured worst swing falling from 0.64 m to 0.46 m. Rebase and verify the frames before opening the PR. [Earlier four-site comparison](https://github.com/samsolomon/sim-atlanta/blob/772bb993/docs/log/passenger-swing/bogies/cq400-before-after.jpg?raw=true)
 4. **#427 landuse paving.** Downtown rail owns approved commercial/retail paving and the bounded Robinson frontage at `b1a9ce162408d20c2a8bb3015f46899cb91159dc`. Campus-wide paving stays off. Ticket 427 is queued for the matched door and campus-edge images, final-base tests, perf and review before explicit transfer.
 
+## Rail references for expansion
+
+Grant Street remains the rail-over-road control for the current first-bake pilot. For future yard expansion, use Norfolk Southern Inman Yard as the reference for a shared graded track bed carrying parallel tracks. Verify each switch connection against source geometry or imagery before representing it as connected.
+
 ## Separate LiveMarta motion study
 
 **Active candidate service — port 5766.** Train 101 uses a 40 s playback delay and an 8 s braking tail on ordinary intervals at candidate code `dad26db8b51e9233637caf561fa1ad7a49686842`. Sampling the served module at 10 ms gave 6.67 m/s at replay 75, 90 and 105 s, a 30 s hold at the 600 m platform, and a 10 s midtrack hold when a report arrived 20 s late. Zero sampled overshoot. Both previews remain available for City. Full app clips and checks pending the capture slot.
