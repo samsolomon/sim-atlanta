@@ -614,7 +614,9 @@ export const perf = {
         if (p.name && names.length < 4) names.push(p.name);
         if (p === scene) inScene = true;
       }
-      return { cat: cat || (inScene ? 'untagged' : 'post'), path: names.reverse().join(' / ') || `(unnamed ${o.type})`, inScene };
+      // Unnamed owners get their parent's name, or their object id, so they don't merge into one row.
+      const label = names.reverse().join(' / ') || (o.parent?.name ? `${o.parent.name} / (unnamed ${o.type})` : `(unnamed ${o.type} #${o.id})`);
+      return { cat: cat || (inScene ? 'untagged' : 'post'), path: label, inScene };
     };
     renderer.renderBufferDirect = function (camera, sc, geometry, material, object, group) {
       const g = geometry as THREE.BufferGeometry;
@@ -627,7 +629,8 @@ export const perf = {
       const o = owner(object);
       const depth = (material as THREE.Material).type === 'MeshDepthMaterial' || (material as THREE.Material).type === 'MeshDistanceMaterial';
       const pass = !o.inScene ? 'post' : depth ? 'shadow' : 'main';
-      const key = `${pass}|${o.path}|${(material as THREE.Material).type}`;
+      // Category is part of the key: unnamed meshes in different categories share the path '(unnamed Mesh)'.
+      const key = `${pass}|${o.cat}|${o.path}|${(material as THREE.Material).type}`;
       const r = recs.get(key) ?? { path: o.path, cat: o.cat, pass, material: (material as THREE.Material).type, tri: 0, calls: 0 };
       r.tri += tri; r.calls++;
       recs.set(key, r);
