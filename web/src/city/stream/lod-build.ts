@@ -45,8 +45,17 @@ const ROAD_HALF: Record<string, number> = { motorway: 8, trunk: 7, primary: 6.5,
 const C = {
   ground: [0.62, 0.66, 0.50], road: [0.42, 0.43, 0.45], paved: [0.70, 0.68, 0.63], park: [0.50, 0.62, 0.38],
   water: [0.45, 0.58, 0.66], skirt: [0.71, 0.59, 0.46],
-  wall: [0.80, 0.77, 0.71], tower: [0.66, 0.70, 0.74], house: [0.84, 0.76, 0.64], roof: [0.74, 0.72, 0.68],
 } as const;
+// City's palette as it reads from the mid ring: glass towers, cream, tan, brick and grey mid-rises,
+// pale roofs with the odd green one, and warm house roofs.
+const TOWER: RGB[] = [[0.68, 0.75, 0.84], [0.62, 0.70, 0.80], [0.74, 0.78, 0.84]];
+const MIDRISE: RGB[] = [[0.88, 0.84, 0.76], [0.78, 0.70, 0.60], [0.66, 0.40, 0.33], [0.74, 0.74, 0.74], [0.84, 0.80, 0.72]];
+const HOUSE: RGB[] = [[0.90, 0.86, 0.78], [0.80, 0.70, 0.58], [0.72, 0.48, 0.38]];
+const ROOF: RGB[] = [[0.90, 0.88, 0.84], [0.86, 0.85, 0.82], [0.80, 0.80, 0.78], [0.55, 0.66, 0.40]];
+const HOUSE_ROOF: RGB[] = [[0.55, 0.36, 0.30], [0.48, 0.44, 0.42], [0.62, 0.52, 0.44]];
+const hash = (x: number, z: number) => { const h = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return h - Math.floor(h); };
+const pick = (list: RGB[], t: number) => list[Math.floor(t * list.length) % list.length];
+const shade = (c: RGB, k: number): RGB => [c[0] * k, c[1] * k, c[2] * k];
 type RGB = readonly number[];
 
 /** sRGB to linear, since the material treats vertex colours as linear. */
@@ -206,12 +215,18 @@ export function buildLod(ctx: LodContext, m: LodGroundManifest, bytes: ArrayBuff
     for (const [x, z] of box) base = Math.min(base, sample(x, z) ?? Infinity);
     if (!Number.isFinite(base)) continue;
     const top = base + h;
-    const wall = h > 40 ? C.tower : /house|detached|residential|semi/.test(bd.cls ?? '') && h < 14 ? C.house : C.wall;
+    const t = hash(box[0][0], box[0][1]);
+    const house = /house|detached|residential|semi|terrace/.test(bd.cls ?? '') || (h < 11 && w * d < 400);
+    const wall = h > 40 ? pick(TOWER, t) : house ? pick(HOUSE, t) : pick(MIDRISE, t);
+    const roof = house ? pick(HOUSE_ROOF, t * 7 % 1) : pick(ROOF, t * 5 % 1);
+    // Walls darken toward the street, a cheap stand-in for the near ring's ground-floor shadow.
+    const foot = shade(wall, 0.82);
     for (let i = 0; i < 4; i++) {
       const [ax, az] = box[i], [bx, bz] = box[(i + 1) % 4];
-      blocks.quad([ax, base, az], [bx, base, bz], [bx, top, bz], [ax, top, az], wall);
+      blocks.tri3([ax, base, az], [bx, base, bz], [bx, top, bz], foot, foot, wall);
+      blocks.tri3([ax, base, az], [bx, top, bz], [ax, top, az], foot, wall, wall);
     }
-    blocks.quad([box[0][0], top, box[0][1]], [box[3][0], top, box[3][1]], [box[2][0], top, box[2][1]], [box[1][0], top, box[1][1]], C.roof);
+    blocks.quad([box[0][0], top, box[0][1]], [box[3][0], top, box[3][1]], [box[2][0], top, box[2][1]], [box[1][0], top, box[1][1]], roof);
     buildings++;
   }
 

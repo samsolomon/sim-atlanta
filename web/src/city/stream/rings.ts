@@ -24,6 +24,10 @@ export interface RingConfig {
   offscreenMs: number;
   /** Minimum time in a ring before a demotion. */
   dwellMs: number;
+  /** Full builds (one long main-thread job) wait until the camera has rested this long... */
+  restMs: number;
+  /** ...or until a near section has waited this long (follow mode never rests). */
+  maxWaitMs: number;
 }
 
 export function ringConfig(low: boolean, query?: URLSearchParams): RingConfig {
@@ -31,13 +35,16 @@ export function ringConfig(low: boolean, query?: URLSearchParams): RingConfig {
     const v = Number(query?.get(key));
     return query?.has(key) && Number.isFinite(v) && v > 0 ? v : fallback;
   };
-  const nearIn = num('near', low ? 1800 : 3000);
+  // City's 22° lens makes a 3 km orbit read like 1 km on a normal lens, so the near ring is wide.
+  const nearIn = num('near', low ? 3000 : 4500);
   return {
     nearIn,
     nearOut: num('nearOut', nearIn * 1.3),
     midMax: num('mid', 40000),
     offscreenMs: num('offscreen', 6000),
-    dwellMs: num('dwell', 2500),
+    dwellMs: num('dwell', 4000),
+    restMs: query?.get('rest') === '0' ? 0 : num('rest', 400),
+    maxWaitMs: num('maxwait', 2500),
   };
 }
 
@@ -52,8 +59,11 @@ export interface RingInput {
   offscreenFor: number;
   /** How long the area has been in its current ring, ms. */
   inRingFor: number;
-  /** A camera link, search result or followed vehicle needs this area now. */
+  /** A camera link, search result or followed vehicle points here: draw at least the LOD now,
+   *  on or off screen, and let distance decide whether it goes near. */
   needed?: boolean;
+  /** The orbit target lies on this area (within a margin): it is what the view is about. */
+  atTarget?: boolean;
 }
 
 export function nextRing(current: Ring, input: RingInput, cfg: RingConfig): Ring {
@@ -63,18 +73,18 @@ export function nextRing(current: Ring, input: RingInput, cfg: RingConfig): Ring
   // Fog also bounds the near ring: a close orbit sees only a few hundred metres.
   const nearIn = Math.min(cfg.nearIn, input.fogFar * 0.8);
   const nearOut = Math.min(cfg.nearOut, input.fogFar);
-  if (needed || d < nearIn) return 'near';
-  const canDemote = inRingFor >= cfg.dwellMs;
+  if (d < nearIn || (input.atTarget && d < input.fogFar)) return 'near';
+  const canDemote = inRingFor >= cfg.dwellMs && !needed;
   switch (current) {
     case 'near':
-      if (d <= nearOut || !canDemote) return 'near';
+      if (d <= nearOut || input.atTarget || !canDemote) return 'near';
       return d > midOut ? 'unloaded' : 'mid';
     case 'mid':
       if (!canDemote) return 'mid';
       if (d > midOut || (!visible && offscreenFor >= cfg.offscreenMs)) return 'unloaded';
       return 'mid';
     case 'unloaded':
-      return visible && d < midIn ? 'mid' : 'unloaded';
+      return needed || (visible && d < midIn) ? 'mid' : 'unloaded';
   }
 }
 

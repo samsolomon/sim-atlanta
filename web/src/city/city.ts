@@ -1666,7 +1666,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
-    stream?.update(camera, controls.target.y, (scene.fog as THREE.Fog).far);
+    stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far);
     figures?.update(sceneTime, camera, container.clientHeight);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);

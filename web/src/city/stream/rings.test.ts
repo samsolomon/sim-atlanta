@@ -29,13 +29,20 @@ describe('stream rings', () => {
     expect(nextRing('unloaded', { ...base, distance: 600, fogFar: 660 }, cfg)).not.toBe('near');
     expect(nextRing('unloaded', { ...base, distance: 400, fogFar: 660 }, cfg)).toBe('near');
   });
-  it('a needed area goes near at any distance', () => {
-    expect(nextRing('unloaded', { ...base, distance: 1e5, visible: false, needed: true }, cfg)).toBe('near');
+  it('a needed area draws at least its LOD at once, and never thrashes back to near', () => {
+    expect(nextRing('unloaded', { ...base, distance: 1e5, visible: false, needed: true }, cfg)).toBe('mid');
+    expect(nextRing('mid', { ...base, distance: 1e5, visible: false, offscreenFor: 1e6, needed: true }, cfg)).toBe('mid');
+    expect(nextRing('mid', { ...base, distance: cfg.nearIn - 1, needed: true }, cfg)).toBe('near');
   });
   it('measures the eye to the nearest point of the box', () => {
     const b = { minX: 0, maxX: 100, minZ: 0, maxZ: 100 };
     expect(boxDistance(b, 50, 0, 50)).toBe(0);
     expect(boxDistance(b, 130, 40, 50)).toBe(50);
+  });
+  it('the area under the orbit target goes near inside the fog, and stays near', () => {
+    expect(nextRing('mid', { ...base, distance: 1e4, atTarget: true }, cfg)).toBe('near');
+    expect(nextRing('near', { ...base, distance: 1e4, atTarget: true }, cfg)).toBe('near');
+    expect(nextRing('mid', { ...base, distance: 1e4, fogFar: 9000, atTarget: true }, cfg)).toBe('unloaded');
   });
   it('reads radii from the query', () => {
     const c = ringConfig(false, new URLSearchParams('near=900&mid=3000'));
