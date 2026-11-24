@@ -67,6 +67,30 @@ The envelope follows Greenbrier's 30,600-gallon ethanol tank car drawing: 59 ft 
 
 **Use in trains.** Tanks join the manifest car list, and unit trains now choose grain hoppers or tanks. `CONSIST_VERSION` is 2, so every slot is re-dealt.
 
+### Built: open mill gondola
+
+The envelope follows Greenbrier's [52 ft 2,791 cu ft mill gondola](https://gbrx.com/wp-content/uploads/2024/08/52-2791-cu.-ft.-Mill-Gondola.pdf):
+- 57 ft 9.5 in (17.61 m) over couplers;
+- 52 ft 6 in × 9 ft 8 in × 5 ft 6 in inside;
+- 9 ft 1.8 in (2.79 m) extreme height, to Plate C.
+
+**Estimated from photographs:**
+- the 12.9 m truck centres;
+- the side-post spacing;
+- the end ribs;
+- the scrap heap.
+
+**Loads.** There are two baked loads:
+- `gondolaEmpty`;
+- `gondolaScrap`, a seeded heap of rust-and-grey slabs that stays below the top chord.
+
+**Model:**
+- Weathered oxide, with no lettering.
+- Triangles: empty 872 high and 656 low; scrap 1,232 high and 776 low.
+- Lab entries: `freightGondolaScrap` and `freightGondolaEmpty`.
+
+**Use in trains.** Both loads join the manifest car list. `CONSIST_VERSION` is now 3.
+
 ### Built: City consists
 
 Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.
