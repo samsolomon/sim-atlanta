@@ -53,7 +53,24 @@ These are the downtown-generics priority, assigned by the lead.
 - **Footprint:**
   - `skin-footprint.test.ts` must pass: 0 past the allowance (default projection 2.5 m) and 0 detached.
   - Declare a photographed projection with a reason via `group.userData.footprint = { maxProjection }`.
-  - Downtown `city.ts` landmarks aren't covered, so run a local harness. Copy the shape of the deleted `_tmp_ccc_footprint.test.ts` in this branch's history (commit `db8c1a22` era) or rewrite it: build the skin from `web/public/data/scene/downtown/vignette.json` and call `footprintReport` and `detachedParts`.
+  - Downtown `city.ts` landmarks aren't covered, so run a throwaway vitest harness (delete it after use):
+
+```ts
+import { readFileSync } from 'node:fs';
+import { it } from 'vitest';
+import { GroundGrid } from '../terrain/grid';
+import { createX, xId } from './x';
+import { detachedParts, footprintReport } from './skin-kit';
+it('x footprint', () => {
+  const dir = new URL('../../public/data/scene/downtown/', import.meta.url);
+  const grid = new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', dir))).buffer);
+  const all: { id: string; rings: [number, number][][] }[] = [];
+  const walk = (o: any) => { if (o && typeof o === 'object') { if (Array.isArray(o)) o.forEach(walk); else { if (o.id && o.rings) all.push(o); Object.values(o).forEach(walk); } } };
+  walk(JSON.parse(readFileSync(new URL('vignette.json', dir), 'utf8')));
+  const site = all.find(b => b.id === xId)!, m = createX(all as never, grid)!;
+  console.log(JSON.stringify({ ...footprintReport(m.group, [site.rings[0]], { bottom: -40, ...m.group.userData.footprint }), detached: detachedParts(m.group, [site.rings[0]]).length }));
+});
+```
 - **Layers:** keep coplanar layers at least 4 cm off their wall, with 4–8 cm preferred. Under 3 cm z-fights into black teeth at 400–600 m.
 - **Batching:**
   - Vertex colour only on static parts (library surfaces cost a draw).
