@@ -312,7 +312,11 @@ export function createShellNext(o: ShellOptions): ShellApi {
     progress.max = t?.durationS ?? 1;
     progress.value = radio.elapsedS;
   };
-  dockNext.onclick = () => radio?.next();
+  dockNext.onclick = () => {
+    if (!radio?.loaded) return;
+    radio.next();
+    if (!radio.playing) radio.toggle();
+  };
   play.onclick = () => radio?.toggle();
   next.onclick = () => radio?.next();
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn, dockNext);
