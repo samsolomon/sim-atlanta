@@ -1,3 +1,4 @@
+import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
 import * as THREE from 'three';
 import { segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
@@ -109,24 +110,33 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
     ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
-  function stroke(r: PaintRoad, width: number, color: string) {
+  function stroke(r: PaintRoad, width: number, color: string | CanvasPattern) {
     ctx.beginPath(); trace(ctx, r.pts);
     ctx.lineWidth = width; ctx.strokeStyle = color; ctx.stroke();
   }
   // Sidewalks go down first so a casing can't cut across the next intersection.
   for (const r of roads) if (streets.has(r.cls)) stroke(r, roadWidth(r) + 5, PAL.sidewalk);
+  const localStreets = roads.filter(r => r.cls === 'residential' && ansleyStreet(r));
+  const pavers = localStreets.length ? paverSurface(quality === 'high') : PAL.sidewalk;
+  for (const r of localStreets) {
+    const width = roadWidth(r);
+    stroke(r, width+5, pavers);
+    stroke(r, width+1.9, '#819272');
+    stroke(r, width+.6, '#aba99f');
+  }
   const sidepaths = westsidePaths(data);
   for (const r of roads) if (sidepaths.has(r)) paintMangumVerge(ctx, r.pts);
   const crosswalks = roads.filter(r => r.sub === 'crosswalk');
+  const crossings = roads.filter(ansleyCrossing);
   for (const r of roads) {
-    if (r.sub === 'crosswalk') continue;
+    if (r.sub === 'crosswalk' || ansleyCrossing(r)) continue;
     if (sidepaths.has(r)) {
       stroke(r, pathWidth, pathConcrete);
       paintPathPanels(ctx, r.pts, texelM);
       continue;
     }
     const w = roadWidth(r);
-    stroke(r, w, paths.has(r.cls) ? PAL.sidewalk : r.cls === 'motorway' ? PAL.asphaltHwy : PAL.asphalt);
+    stroke(r, w, r.sub === 'sidewalk' && ansleyStreet(r) ? pavers : paths.has(r.cls) ? PAL.sidewalk : r.cls === 'motorway' ? PAL.asphaltHwy : PAL.asphalt);
   }
   for (const r of roads) {
     if (r.cls === 'motorway' && r.sub !== 'link') {
@@ -145,12 +155,22 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
   ctx.setLineDash([]);
 
+  paintPradoIslands(ctx, data.bounds);
+  if (crossings.length) {
+    ctx.save();
+    clipCarriageways(ctx, roads.filter(r => streets.has(r.cls) || r.cls === 'living_street')
+      .map(r => ({pts:r.pts, width:roadWidth(r)})));
+    ctx.setLineDash([Math.max(.72,markTexel),Math.max(.78,markTexel)]);
+    for (const r of crossings) stroke(r, 3.1, '#e3dfcf');
+    ctx.restore();
+  }
+
   // Supplement mapped crossing ways with point-only zebras snapped to at-grade streets.
   if (data.points?.crossing?.length) {
     type Segment = { a: P2; b: P2; road: PaintRoad };
     const index = new PlacementIndex<Segment>(24);
     for (const r of roads) {
-      if (!streets.has(r.cls) && r.sub !== 'crosswalk') continue;
+      if (!streets.has(r.cls) && r.sub !== 'crosswalk' && !ansleyCrossing(r)) continue;
       for (let i = 1; i < r.pts.length; i++) {
         const a = r.pts[i - 1], b = r.pts[i];
         index.add({ a, b, road: r }, [a, b], 3);
@@ -161,7 +181,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
       let best: Segment | undefined, dist = 3;
       for (const seg of index.at(x, z)) {
         const d = segDist(x, z, seg.a, seg.b);
-        if (seg.road.sub === 'crosswalk' && d <= 3) { best = undefined; break; }
+        if ((seg.road.sub === 'crosswalk' || ansleyCrossing(seg.road)) && d <= 3) { best = undefined; break; }
         if (d < dist) { best = seg; dist = d; }
       }
       if (!best) continue;
