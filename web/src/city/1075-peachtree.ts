@@ -141,26 +141,45 @@ function panel(s: Shell, a: P2, b: P2, t0: number, t1: number, lo: number, hi: n
   (lit ? s.lights : s.body).quad(p(t0, lo), p(t0, hi), p(t1, hi), p(t1, lo), color);
 }
 
-/** Floor lines, the vertical mullion rhythm and a sparse, stable set of lit office panes. */
+/**
+ * How far the true curve bulges beyond the chord a → b: the largest outward distance of any mapped
+ * vertex between its ends. Layers on a chord stand this much further out, so none cuts the wall.
+ */
+function bulge(plan: P2[], a: P2, b: P2) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz);
+  let most = 0;
+  for (const [x, z] of plan) {
+    const t = ((x - a[0]) * dx + (z - a[1]) * dz) / (l * l);
+    const d = ((x - a[0]) * dz - (z - a[1]) * dx) / l;
+    if (t > 0.001 && t < 0.999 && d < 1.5) most = Math.max(most, d);
+  }
+  return most;
+}
+
+/**
+ * Floor lines, the vertical mullion rhythm and a sparse, stable set of lit office panes. Layers
+ * stand at least 4 cm apart so none z-fights at City range: lit panes 0.09, floor lines 0.15,
+ * mullions 0.21 (the reveal at 0.2 only meets the floor lines).
+ */
 function curtain(s: Shell, solids: Solid[], self: Solid, grade: Grade, hi: number, seed: number) {
   exposed(self.bands, solids, self, (a, b, length, from, edge) => {
     const bottom = Math.max(grade(a, b) + 8.6, from);
     if (hi - bottom < 1) return;
     const bays = Math.max(1, Math.round(length / 4.6)), ribs = Math.max(1, Math.round(length / 9.2));
+    const k = bulge(self.plan, a, b);
     // Short chords of the curves go without floor lines; at City range they read as one face.
-    // They stand 0.15 m out, clear of the true curve between a chord's ends.
-    if (length >= 5) for (let y = hi - pitch; y > bottom; y -= pitch) panel(s, a, b, 0, 1, y - 0.8, y, 0.15, band);
+    if (length >= 5) for (let y = hi - pitch; y > bottom; y -= pitch) panel(s, a, b, 0, 1, y - 0.8, y, k + 0.15, band);
     // Paired-module mullions; the 1.5 m mullions themselves would shimmer at City range.
     for (let i = 1; i < ribs; i++) {
       const w = 0.15 / length;
-      panel(s, a, b, i / ribs - w, i / ribs + w, bottom, hi, 0.16, mullion);
+      panel(s, a, b, i / ribs - w, i / ribs + w, bottom, hi, k + 0.21, mullion);
     }
     let floor = 0;
     for (let y = hi - pitch; y - pitch > bottom; y -= pitch, floor++) {
       for (let i = 0; i < bays; i++) {
         // Offices at 23:30: about one pane in twenty, fewer near the top.
         if (hash(floor, i, edge * 31 + seed) >= (floor < 4 ? 0.03 : 0.05)) continue;
-        panel(s, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, y - pitch + 0.12, y - 0.42, 0.13, glassLit, true);
+        panel(s, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, y - pitch + 0.12, y - 0.42, k + 0.09, glassLit, true);
       }
     }
   });
@@ -178,7 +197,7 @@ function podium(s: Shell, self: Solid, solids: Solid[], grade: Grade) {
     if (screenHi - screenLo < 2) return;
     for (let i = 0; i < bays; i++) panel(s, a, b, i / bays + pier / 2, (i + 1) / bays - pier / 2, screenLo, screenHi, 0.05, screen);
     // Precast spandrels every third garage level (about 9.6 m) split the screens into panels.
-    for (let y = screenLo + 9.6; y < screenHi - 3; y += 9.6) panel(s, a, b, 0, 1, y - 0.45, y + 0.45, 0.08, precast);
+    for (let y = screenLo + 9.6; y < screenHi - 3; y += 9.6) panel(s, a, b, 0, 1, y - 0.45, y + 0.45, 0.11, precast);
     panel(s, a, b, 0, 1, screenHi, screenHi + 0.5, 0.1, precastDark);
   });
 }
@@ -213,7 +232,7 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
     const centroidZ = plan.reduce((sum, [, z]) => sum + z, 0) / plan.length + origin[1];
     const isNorth = crownPart && part.id === northBlockId && centroidZ < -3345 && !north;
     const solid: Solid = part.id === crownBlockId ? { plan, bands: simplify(plan, 3), top: crownRoof, cutZ }
-      : isNorth ? { plan, bands: simplify(plan, 3.5), top: northRoof, cutZ }
+      : isNorth ? { plan, bands: simplify(plan, 1.5), top: northRoof, cutZ }
       : { plan, bands: plan, top: (part.id === northBlockId ? undefined : roofs[part.id]) ?? floor + part.h, cutZ };
     if (part.id === crownBlockId) crown = solid;
     else if (isNorth) north = solid;
@@ -233,13 +252,14 @@ export function create1075Peachtree(buildings: VBuilding[], site: VBuilding, gri
    */
   const base = (solid: Solid) => exposed(solid.bands, solids, solid, (a, b, length, from) => {
     const street = grade(a, b);
-    if (from > street + 1 || length < 3) return;
+    // The entrance curve is drawn in 1.5 m chords, so keep short runs: they carry the lit lobby.
+    if (from > street + 1 || length < 1) return;
     const mx = (a[0] + b[0]) / 2 + origin[0] - entrance[0], mz = (a[1] + b[1]) / 2 + origin[1] - entrance[1];
-    const lit = Math.hypot(mx, mz) < 16;
-    panel(s, a, b, 0, 1, street + 0.2, street + 8.2, 0.05, lit ? lobby : storefront, lit);
-    panel(s, a, b, 0, 1, street + 8.2, street + 8.6, 0.08, mullion);
+    const lit = Math.hypot(mx, mz) < 16, k = bulge(solid.plan, a, b);
+    panel(s, a, b, 0, 1, street + 0.2, street + 8.2, k + 0.05, lit ? lobby : storefront, lit);
+    panel(s, a, b, 0, 1, street + 8.2, street + 8.6, k + 0.08, mullion);
     const mullions = Math.round(length / 3);
-    for (let i = 1; i < mullions; i++) panel(s, a, b, i / mullions - 0.1 / length, i / mullions + 0.1 / length, street + 0.2, street + 8.2, 0.08, mullion);
+    for (let i = 1; i < mullions; i++) panel(s, a, b, i / mullions - 0.1 / length, i / mullions + 0.1 / length, street + 0.2, street + 8.2, k + 0.11, mullion);
   });
 
   if (north) {
