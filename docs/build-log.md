@@ -3604,3 +3604,5 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+
+**2026-11-24 — The Renaissance Midtown.** Here the map and the lidar agree, with a 64 m roof and plant to 66.5 m, so the work was the facade. Street View shows a tan precast slab with punched windows and a recessed glass slot down the West Peachtree end, sitting on a dark podium. The slot gets its own lit rooms, so at night it reads as a thin vertical line on the narrow end. [Captures and references](log/ui/renaissance-midtown/README.md)
