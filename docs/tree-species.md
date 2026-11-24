@@ -914,7 +914,7 @@ River birch follows (C11 2.6% crown share; GT 1.0%). Holly and Leyland cypress l
 
 ### Eastern redbud
 
-`web/src/trees/redbud.ts`, *Cercis canadensis*. **Lab candidate awaiting Sam’s review.** A-style cards retain the common silhouette ink, with a dedicated heart-shaped leaf atlas and an irregular, low-branching vase. [Spring and seasonal comparison sheet](log/ui/tree-species/options-eastern-redbud.jpg).
+`web/src/trees/redbud.ts`, *Cercis canadensis*. **Sam approved A as the Model Lab default.** City placement is queued for a future rollout. A-style cards retain the common silhouette ink, with a dedicated heart-shaped leaf atlas and an irregular, low-branching vase. [Spring and seasonal comparison sheet](log/ui/tree-species/options-eastern-redbud.jpg).
 
 [UF/IFAS ST145](https://ask.ifas.ufl.edu/publication/st145) describes a rounded vase that broadens with age, low branching, brown/grey bark, pink flowers before leaves and variable yellow autumn colour. It gives a usual height of 20–30 ft, spread 15–25 ft and occasional 35-ft specimens. [NC State](https://plants.ces.ncsu.edu/plants/cercis-canadensis/) gives the wider 20–35-ft spread and illustrates the heart-shaped foliage and flowers. The daylight bloom reference on the sheet is Dcrjsr's photograph from NC State, CC BY 3.0; it shows flowers tracing bare limbs rather than a solid pink canopy. No nighttime reference is claimed.
 

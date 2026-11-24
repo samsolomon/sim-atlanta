@@ -70,7 +70,7 @@ export const easternRedbud: typeof base = {
   },
 };
 export const easternRedbudLook: Look = {
-  species: easternRedbud, habit, leaf: 'cordate', palette, lowLift: -0.015,
+  species: easternRedbud, preferred: 'A', habit, leaf: 'cordate', palette, lowLift: -0.015,
   bloomColour: '#e46cbb', bloomFill: 0.68, branchBloom: true,
   options: [{ id: 'A', label: 'Heart-leaf vase', technique: 'cards', ink: 2,
     units: { high: 21, low: 13 }, cover: 0.8,
