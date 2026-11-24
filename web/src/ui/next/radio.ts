@@ -43,6 +43,7 @@ export interface RadioOptions {
   storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
   audio?: RadioAudio;
   random?: () => number;
+  deferInitialPrefetch?: boolean;
 }
 
 export interface Radio {
@@ -60,6 +61,7 @@ export interface Radio {
   toggle(): void;
   next(): void;
   switchStation(dir: 1 | -1): void;
+  selectStation(id: string): void;
   onChange(fn: () => void): void;
 }
 
@@ -160,7 +162,7 @@ export function createRadio(o: RadioOptions): Radio {
     station = startStation(stations, o.sceneHour(), remembered);
     shown = upcoming = pick(station);
     loaded = true;
-    prefetchUpcoming();
+    if (!o.deferInitialPrefetch) prefetchUpcoming();
     if (playing && ctx && !primary() && upcoming) crossfade(0, upcoming);
     changed();
   }).catch((error: unknown) => {
@@ -582,7 +584,12 @@ export function createRadio(o: RadioOptions): Radio {
     switchStation(dir) {
       if (!loaded || !station) return;
       const i = stations.indexOf(station);
-      station = stations[(i + dir + stations.length) % stations.length];
+      radio.selectStation(stations[(i + dir + stations.length) % stations.length].id);
+    },
+    selectStation(id) {
+      const selected = stations.find((item) => item.id === id);
+      if (!loaded || !selected || selected === station) return;
+      station = selected;
       try {
         o.storage?.setItem(STATION_KEY, station.id);
       } catch {
