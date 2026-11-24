@@ -1,3 +1,45 @@
+# Handoff: studio-midtown-skyline → gpt-6.2
+
+## Current state — 2026-11-23 local / 2026-11-24 UTC
+
+- **Branch:** `samsolomon/studio-colony-square`, pushed. Research commit `fee824c6`; this handoff is the next commit. **No open PR, no production code changes on this branch.**
+- **1180 Peachtree B is finished:** PR #341, verified via `gh pr view 341 --json state,mergeCommit`: `state: MERGED`, merge commit `95acb6c4b8b56e94af95f5028579b5a89a25668d`. Coordinator received the verified notice and matched pairs. Only the coordinator deploys; deployment status is not known here.
+- B uses #d5dfdc, strength .82, height multiplier .72–1, depthWrite true and opacity .88 by day / 1 at night. Missing veil depth caused the mottling because ink read objects behind it. Separate veil origins fix distance sorting; edge light draws afterward with depth testing. Veil ceiling tightened to .61 (~.605 actual peak).
+- Tests passed: Rust/pipeline/worker and 931 web tests, 1 skipped. Performance ceilings passed; high-tier ready time 4.6 s exceeded the nonblocking 3 s target. Two Claude cross-review rounds completed. Alternate daylight and night angles were checked.
+- Evidence on main: `docs/log/ui/midtown-skyline/napkin-b-daynight-high.jpg`, `napkin-b-daynight-low.jpg`, `napkin-b-angle-checks.jpg`, `napkin-b-oblique-day.jpg`. Aerial camera `800,-3710,70,50,1021`, 2026-11-20 14:00 and 23:30 ET.
+
+## Next work — Colony Square 100 and 400
+
+Read **`docs/research/colony-square.md`** first. It contains source links, inspected photo notes, lidar statistics, and architecture/product-design plan reviews. No implementation has started.
+
+1. Inspect the full-resolution Commons tower photographs already linked in the research doc. Reconcile OSM part outlines with lidar: several supposedly low parts contain high tower returns. Do not blindly build the generated 86.2 m `podium` on 400.
+2. Finish measured roof/parapet/core sections. Preliminary lidar: 100 ground 296.08 m NAVD88, core median 96.31 m above ground; 400 ground 296.30 m, core p90 91.12 m (generic currently 94 m). Shaft medians are 89.18 and 83.15 m, but upper returns need interpretation before assigning parapets. Acquisition predates the modern retail redevelopment.
+3. Implement the towers through the existing `midtown-skyline.ts` registry and local shell, with a dedicated module/fixture. Model recessed window grids, concrete piers/bases, roof screens, and photographed contemporary entry additions. Use library materials, preserve parent IDs, ground on 3DEP. Scope the tower bases carefully against the surrounding plaza.
+4. Full-night Urbanize photos were inspected: warm offices, bright entry/soffit lighting, string lights, and holiday-coloured accents. **Nonseasonal crown lighting remains a source gap.** Do not turn the holiday red accent into permanent lighting. Day/dusk design-team imagery was also inspected in a fresh Orca tab.
+5. Capture matched day/night and both tiers; run tests/perf, cross-review and a dedicated PR. Coordinator expects screenshots, camera strings and verified merge state/commit. Remaining backlog after Colony Square: 1075 Peachtree, 12th & Midtown, Peachtree Summit seam recheck.
+
+## Coordination and promises
+
+- Coordinator: `term_05a952fa-de06-4064-8655-3e98e1caf1e0` on Air. Saved environment `air` rejects direct-send pairing tokens. **Reply routing works.** Use `orca orchestration reply --id <message> --from <YOUR session id> --body ...`; do not impersonate this predecessor's session.
+- Current migration thread: `msg_92f9111f6941`. Colony research thread: `msg_1bc5e6559143`. Predecessor Codex session: `orca_session_id:f9351f4d-5bff-422e-895e-42277adf4c92`.
+- Coordinator already received the Colony research link and the height/footprint/source gaps. No Sam approval is pending; continue research and implementation.
+- **Before every MERGED notice:** run `gh pr view <n> --json state,mergeCommit` and quote the returned state and commit. On a build-log conflict, keep both entries and rerun tests.
+- Keep the `TODO(tree-lab)` / `crapeMyrtleStandIn` promise on 1180. Historical agent IDs and other background promises are retained below.
+
+## Cleanup, tools and scratch evidence
+
+- Own server was Vite :5187; stopped. Orca reports no tabs in this worktree. No worker/API server was started. Do not stop other agents' servers.
+- `/tmp/colony-research/`: `measure.py`, `measure.txt`, `lidar.npz`, photo downloads/contact sheets. Measurement uses existing `king_memorial_corridor.ept_points`; cached tiles are in `data/raw/ept/`. Scratch files are not committed; research statistics and sources are committed.
+- `/tmp/1180-review/`: tests/review/perf logs and capture helpers. `chrome-capture.mjs` adapts the repo's `scripts/perf-run.mjs` CDP setup, taking URL arguments with `--desktop --out <dir>` and saving numbered PNGs. Final headless Chrome sessions closed themselves.
+- Orca's browser eventually stopped advancing requestAnimationFrame even with visible/active tab. Fixed sleeps and awaiting the reveal did not recover it. Final verification used Chrome/CDP; inspect screenshots, never assume readiness from the loading text alone.
+- `pnpm review` **does work now** and runs Claude for Codex. Earlier historical notes saying unavailable are obsolete. Use the repo cross-review skill, at most two rounds.
+- Cargo: prepend `/opt/homebrew/opt/rustup/bin` to PATH. Python dependencies are in `.venv`.
+- Plan-review skills were found at `/Users/samsolomon/.claude/skills/architect-plan-review/SKILL.md` and `product-design-plan-review/SKILL.md`; reviews are recorded in the Colony research doc.
+
+---
+
+## Historical handoff and work log (superseded by current state above)
+
 # Handoff: studio-midtown-skyline (Claude → Codex), 2026-11-24
 
 ## Original Claude handoff state (historical)
