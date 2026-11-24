@@ -15,7 +15,7 @@
 | FAIL | Promenade Central (#164) | small–medium | lead | Untouched tonight (Sam-reviewed); listed for Sam |
 | BORDERLINE | Marquis Two (#406) | large | skins-1 | In the Marquis rework |
 | BORDERLINE | NCR HQ (#437) | large | skins-6 | Later pass |
-| BORDERLINE | 271 Seventeenth (#451) | large | culture | Later pass |
+| BORDERLINE | 271 Seventeenth (#451) | large | skins-4 | Strengthening in progress |
 | BORDERLINE | Loews Atlanta (#455) | large | skins-5 | Later pass |
 | BORDERLINE | Winship (#487) | large | skins-7 | Later pass |
 | BORDERLINE | The Landmark (#515) | large | skins-7 | Needs a 400–600 m shot |
