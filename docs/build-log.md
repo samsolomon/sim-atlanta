@@ -3809,3 +3809,7 @@ A separate corner test swept the vertices of the 8.2 m box truck every five cent
 ### 2026-11-24 · Brake lights on the streetcar alignment
 
 On Edgewood Avenue a simulated car could wait through a red light with its brake lamps dark. This street uses the queue solver that can also hold cars behind a scheduled streetcar. It supplied the position but never supplied the lamp state. In a matched 72-frame City replay the car now lights both lamps at red and releases them on green. Its position and heading match the earlier build throughout. [Red signal](log/ui/traffic-motion/edgewood-red.jpg) · [Green signal](log/ui/traffic-motion/edgewood-release.jpg)
+
+### 2026-11-24 — NCR’s lower podium garden
+
+At 19.7 m above the site datum, the garage roof had read as a single lawn with a solid pavilion. The revised model breaks it into paving, planted beds, an irregular lawn and a canopy on four posts. The rust-coloured planter appears to the right of the pavilion apron in two built photographs and to the left in the lawn-level City capture. Its compass position is inferred. City accepted the garden at normal viewing scale and retained that alignment for follow-up. [Photographs, lawn-level capture and overhead](log/ui/ncr-hq/README.md#lower-podium-garden-reference-check).
