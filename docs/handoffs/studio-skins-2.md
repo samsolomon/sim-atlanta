@@ -1,24 +1,55 @@
 # Studio skins 2 handoff
 
-Sam asked to "skin the remaining large/important buildings". The Air coordinator now relays merge OKs (Sam delegated building skins to it); nothing merges without that OK. Send every status by replying to the coordinator's latest message with `orca orchestration reply`, including PR links, the blob URLs of the day, night and close images, the cam strings, and `pnpm test` and `test:perf` results for both tiers. Each PR body embeds the day and night images side by side, plus the close view, with the cam string under each.
+**Claude session:** `orca_session_id:4695b411-cb1b-417d-a6c6-ce083fc4479c`. Read its history with `orca agent read` for full context. The predecessor was Codex `94a6c83c-dbc8-48c0-b7be-57ef54461228`.
 
-## Done
+Sam's request: "skin the remaining large/important buildings." The skyline lead (`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`) assigns rows, approves skins (Sam delegated) and merges them in trains. **Never merge a skin PR yourself.** Report each PR to the lead by replying to the lead's latest message (`orca orchestration reply --id <their incoming msg id>`; replying with your own id loops back to you). The Air coordinator relays Sam's decisions.
 
-| Building | PR | State |
-|---|---|---|
-| 171 Seventeenth | [#388](https://github.com/samsolomon/sim-atlanta/pull/388) | Merged `670d0bf4` after the crown and stone-base revision |
-| 903 Peachtree | [#392](https://github.com/samsolomon/sim-atlanta/pull/392) | Merged `c88fbbbb` after the residential night-window revision |
+## Open PRs (all pushed; worktree clean)
 
-## In flight
+| PR | Building | Head | Status |
+|---|---|---|---|
+| #533 | Lilli Midtown | `7fca0228` | Approved by the lead; waiting for train 8c |
+| #591 | Circa 730 | `f1e29923` | Approved by the lead; waiting for train 8c |
+| #563 | Trace Midtown | `2cc9f035` | Approved; in the train 8 queue. **Open:** high-tier geometry +0.5 MB, over the ~0.2 target. I offered to collapse the high-tier balcony slabs to a strip; no answer yet |
+| #617 | 715 Peachtree | `1df90cb0` | Sent to the lead for review |
+| #634 | Olympia Building (downtown) | `818737e0` | Sent to the lead for review |
+| #642 | Elevance Health Technology Center | `70b31518` | Sent to the lead for review. Ships **without the 16th-floor sky bridge to 712 West Peachtree** (option b, my stated default; the lead never answered). The bridge spans 12.3 m past the footprint, beyond the audit's 2.5 m. Follow-up: a per-part allowance in `skin-footprint.test.ts` / `skin-kit`, then add the bridge (code in the history at `47bc6c98`) |
 
-1. **999 Peachtree** (`samsolomon/999-peachtree`): central blue curtain wall between pale stone wings, recessed Peachtree entrance, no crown lighting because no night photo was found. Review cam `782,-3018,70,50,520`, close `716,-3026,80,60,240`, day 11:30 and night 23:30. See `docs/log/ui/999-peachtree/README.md`.
-2. **10 10th** (`samsolomon/10-10th`, WIP): brick shaft with a silver ribbon-window bay at the southeast corner, two silver top floors, a two-storey podium along 10th and a penthouse. Height comes from the 2019 lidar (64.6 m roof, 68.4 m penthouse), not the inferred parts. The start cam `414,-3104,32,60,300` is blocked by neighbouring towers, so use `414,-3104,325,48,420`.
-3. Then the overnight queue rows in `docs/building-skins.md` on `samsolomon/studio-building-skins`: Nomia, The Proscenium, Hanover Midtown, and Sora at Spring Quarter. Follow the building names; the rank numbers change.
+Latest pushes on #563, #617, #634 and #642 are the coplanar-layer fix (all layers ≥ 3 cm off the wall), which was offset-only (tsc clean, footprint test passes). They still need a rebase and full re-measure before their trains.
 
-## Rules and checks
+Merged earlier: 171 Seventeenth #388, 903 #392, 999 #408, 10 10th #419, Nomia #422, Proscenium #433, Hanover #448, Sora #457, Modera #473, The Standard #475, Crest #526, and the four-side sheet script #549. The Modera Parkside strengthening moved to the culture agent.
 
-- Use `landmarkShell` and vertex colours only. Add no painted surfaces or new material variants. On main `bab9d038`, low is at 85/90 programs and high at 100/140.
-- Night windows follow the building type: offices mostly dark at 23:00–23:30, residential and hotel buildings noticeably lit (903 uses 0.32). Crowns and glass get clean, even surfaces, with no speckle.
-- Every PR edits the same dispatch in `web/src/terrain/model.ts` and appends to `docs/build-log.md`. When rebasing, keep both dispatch arms and both log entries.
-- Run `pnpm test` and `pnpm test:perf` one after the other. Running them at the same time makes the east-rail test time out. Main moves often: rebase, rerun, and merge right away. If only unrelated PRs land during the run, rebase once more and merge.
-- Before capturing, wait until `window.__cityDev.areaCount()` returns 12 and "Building the city" has cleared, then wait about 14 s more for textures to finish uploading. Take every final shot from a fresh `cam=` URL load.
+## Next steps, in order
+
+1. When the lead calls a train or asks: rebase each open PR on main, rerun `pnpm build`, `pnpm test` and `pnpm test:perf` against a same-session baseline, then update the PR body.
+2. Trace's geometry: act on the lead's answer.
+3. The Elevance bridge follow-up, as above.
+4. Take new rows from the lead. Priority is **downtown named generics first** (around the Westin, Bank of America and Peachtree Center blocks); expansion is paused.
+
+## Sam's and the coordinator's decisions that affect skins
+
+The coordinator named these decisions from today; see their messages and docs for details. I only applied the ones marked *.
+- Flat glass; far-board; landmark LOD; far shadows; tree far form; streaming flag; 1075 glass B.
+- *Expansion paused; generic buildings are the priority (downtown first).
+- *0.45 shade floor (#631): shaded glass is floored in the shader. Pick glass against the **sunlit** rule only: rendered sunlit S ≤ 36 (teal 40) and V ≥ 40, using the base table in `docs/glass-palette.md`. Don't compensate for shade, and don't report shade readings.
+
+Standing rules for every skin PR:
+- Features come first, from photos of the real building, cited. Plain passes if the building is plain.
+- Lidar-check the height (estimated, post-2019 and parking polygons can hide phantom towers).
+- Before/after money shot at 400–600 m.
+- Day 11:30 and night 23:30, a close view, and a four-side sheet (`node scripts/four-side-sheet.mjs …`; needs `pnpm dev`; panels are labelled by the face shown, and bearing 0 shows the south face).
+- `skin-footprint.test.ts`: in the footprint, 0 detached. It doesn't cover downtown `city.ts` landmarks.
+- Coplanar layers ≥ 3 cm off the wall; 4–8 cm is better.
+- Low tier: ≤ 2,400 triangles and about +0.2 MB geometry per tier, with deltas against a same-session baseline on the merge-base.
+- `litFacade` from `skin-kit`, vertex colours only, night changes only through `setNight`.
+- No logos (Olympia's sign is a blank neutral panel).
+- Downtown skins mount in `city.ts`: the chain, `world.group.add`, the `listed` array and `setNight`.
+
+## Gotchas
+
+- **Shared Studio:** never pattern-kill (`pkill`/`killall`); stop only PIDs you recorded. Drive only a Chrome you launched (`chrome-cdp launchChrome`). Run build, test and perf one after another; under load, `residential`/`east-rail` tests time out, so rerun them alone.
+- **Dispatch conflicts:** every Midtown skin edits the dispatch in `web/src/terrain/model.ts`. On rebase, keep one arm per id; my resolver once left a duplicate Lilli arm.
+- **Podium excludes the tower:** start tower parts at grade. Rotated-frame probes and multi-ring parts can silently null a skin.
+- **Hidden faces:** many review faces are hidden or shaded at 11:30 (Circa, Lilli's base, Five Points). Say so in the PR rather than inventing contrast.
+- **zsh:** in `git show`, brace the variable: `"${b}:path"` (unbraced `$b:w…` is a modifier).
+- **Dev server:** I ran `pnpm dev --host 127.0.0.1 --port 5178`. On the default host, use `--base http://localhost:<port>` for the sheet script.
