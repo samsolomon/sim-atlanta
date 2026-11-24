@@ -3581,3 +3581,7 @@ The Codex review caught that my first test recorded only each board's single wor
 The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. It's built one board per idle slice once the camera passes 10 km. At the default view the low tier draws 94,710 fewer triangles, with the same draw count and 0.6 MB more geometry.
 
 [The default view, before and after](log/very-far-ground/strip-orbit-21k.jpg) · [Why settle: 2 m, settled 8 m, plain 8 m at 12 km](log/very-far-ground/crop-12k-2m-settled-raw.png)
+
+### 2026-11-24 · Making the JW Marriott recognisable
+
+The first JW Marriott skin passed every numeric check and still failed the audit, because from 480 m it could have been any pale glass slab. The rework started from the question of what makes it *this* building in a street photo: crisp white balcony slabs at every floor, wrapping the corners, and a bluer glass than the towers around it. The bands are now bright white, deeper and proud of the glass, and the stepped top gets white caps. The glass moved from S 9 to a rendered S 34 at hue 213, against a generic neighbour at S 20 and hue 199, so the slab now differs from it in hue as well as saturation. That is still under the S 36 cap. It cost two cap rings of geometry and no new material. [Before and after](log/ui/jw-marriott-downtown/rework-compare.jpg)
