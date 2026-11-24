@@ -41,7 +41,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 
 export function createShellNext(o: ShellOptions): ShellApi {
   let view = o.view;
-  let mapMode: View = view === 'map' ? 'map' : 'city';
+  let mapMode: View = new URL(location.href).searchParams.get('view') === 'models' ? 'city' : view;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const coarse = matchMedia('(pointer: coarse)');
 

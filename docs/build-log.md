@@ -2987,6 +2987,38 @@ The purple bus photographed at the Phase One launch has two axles and a CNG roof
 
 A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
 
+### 2026-11-23 — Use the terrain itself as the roof over North Avenue
+
+From above, the active rail cover used to have a notch on each side of the
+railway. The separate roof and the bank were trying to describe the same piece
+of ground. We restored the upper formation to the terrain grid and cut out just
+the intervals where the lidar sees daylight. The tracks follow that surface
+across North Avenue. Marietta's pavement continues across on its own ground triangles. The three
+western strips initially read as grass. A muted gravel bed, weeds and a pair
+of rusty edge rails on each strip now distinguish the disused crossing from
+the active railway. [Close view of the three old bridges](log/north-ave/disused-bridges.jpg),
+`cam=-862,-1830,220,50,120`.
+
+Below them, two carriageways, sidewalks and a median run through the whole
+213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
+4.5 m railway clearance and the night lighting are inferred. On low, the
+structure and changed board mesh add 3,478 triangles and one draw with the
+existing ground texture. The two height queries at Marietta put a driver on
+the appropriate street even where both streets share the same map coordinates.
+
+| Camera | Day | Night |
+| --- | --- | --- |
+| Overview, `cam=-783,-1860,235,55,350` | [14:00](log/north-ave/shared-overview-day.jpg) | [23:00](log/north-ave/shared-overview-night.jpg) |
+| Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
+
+Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
+
+On the warehouse bank two mapped sidewalks kept going across the surface above
+their own tunnel. Following their direction through the cut placed that paint
+on the lower level. At the nearby fixed-grade building, all 472 perimeter
+samples matched the original ground at both tiers. The production board passed
+`pnpm test:perf` at both qualities. [Bank close-ups at low and high](log/north-ave/shared-banks.jpg).
+
 ### 2026-11-23 — The paths across The Prado
 
 At The Prado circle the mapped pedestrian ways run across several road legs and the verge in between. The ground painter now follows those ways but clips the white bars to the carriageways. Across two Ansley boards, 33 crossing ways join 83 mapped sidewalk ways. The phone gets the warm paver colour, while the high board carries hex joints and four small yield signs in its existing landscape mesh. [Circle, fork and crossing comparisons](log/ui/ansley-street-edge/README.md).
@@ -3074,6 +3106,10 @@ whatever space the panels leave clear.
 ### 2026-11-24 — The dock stays put when the map tilts
 
 Map and City now share one tab. The 3D button and tilt control use the existing white-model arrival. On a 390 × 760 phone, moving Share to the dock leaves just two camera controls over the scene. The desktop and phone captures show the same shifted clock and Midtown camera, `565,-3965,-101,55,421`. [Desktop](log/ui/final-dock/city.jpg) · [Phone](log/ui/final-dock/phone.jpg).
+
+### 2026-11-24 — Fit the cab between the controls
+
+At 390 × 760 the lab fits the leading 35% of the cab car. At 1440 × 900 it fits the two-car train between the catalogue and Details. Both use the same eight box corners and a 12% margin. Returning from Models to the frozen Midtown Low camera took 1.69 s on the Studio, timed from tapping Map to City's completed reveal. [Phone cab](log/ui/final-models/phone.jpg) · [Wide catalogue](log/ui/final-models/wide.jpg).
 ### 2026-11-23 — The second copy of the bridge
 
 With all 12 areas loaded, three fresh Chrome runs held 571 MB after garbage collection on High. Deck and ballast builders still held their original JavaScript arrays after Three.js copied the same positions, colours and track UVs into mesh attributes. Emptying those scratch arrays once construction finishes brought High to 495 MB and Low to 389 MB. The deck-height queries still read the mesh positions, and the 17th Street Bridge still lights its piers at night. Camera `-28,-4184,12,65,540`. [Day](log/phone/transport-heap-day.jpg) · [Night](log/phone/transport-heap-night.jpg)
@@ -3090,47 +3126,26 @@ On the Galaxy A16 the default view measured 23.2 fps for the baseline and 23.9 f
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
 
+### 2026-11-24 — A selection that leaves room for the train
+
+At 390 × 760, the first tap now leaves the dock visible below a compact card with the next stop, its confidence and Follow. More and a swipe reveal the complete selection. Both sizes use the same live-updating card, so expanding it keeps the trip and Follow state. A feed arrival carries its own Live chip while a position drawn between track fixes reads Inferred. [Compact](log/ui/final-selection/compact.jpg) · [Expanded](log/ui/final-selection/expanded.jpg).
+
 ### 2026-11-23 — Lacebark elm starts with the bark
 
 The first lacebark elm pairs small, fine leaf cards with long arched boughs and mottled olive, tan and cinnamon bark. The surprise came when pulling back from the trunk: the bark patches stop reading before the overall silhouette does. The shader now fades them out once they are too small on screen. The mature tree costs 194 / 102 triangles with no new texture allocation. July Front luminance is 0.248 / 0.259 against the generic canopy’s 0.248. The first crown is more open and the bark smoother than in the photos. [Seasonal sheet, 100–300 m, and bark comparison](log/ui/tree-species/options-lacebark-elm.jpg). Lab study. Web rebuild only.
-### 2026-11-23 — Use the terrain itself as the roof over North Avenue
-
-From above, the active rail cover used to have a notch on each side of the
-railway. The separate roof and the bank were trying to describe the same piece
-of ground. We restored the upper formation to the terrain grid and cut out just
-the intervals where the lidar sees daylight. The tracks follow that surface
-across North Avenue. Marietta's pavement continues across on its own ground triangles. The three
-western strips initially read as grass. A muted gravel bed, weeds and a pair
-of rusty edge rails on each strip now distinguish the disused crossing from
-the active railway. [Close view of the three old bridges](log/north-ave/disused-bridges.jpg),
-`cam=-862,-1830,220,50,120`.
-
-Below them, two carriageways, sidewalks and a median run through the whole
-213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
-4.5 m railway clearance and the night lighting are inferred. On low, the
-structure and changed board mesh add 3,478 triangles and one draw with the
-existing ground texture. The two height queries at Marietta put a driver on
-the appropriate street even where both streets share the same map coordinates.
-
-| Camera | Day | Night |
-| --- | --- | --- |
-| Overview, `cam=-783,-1860,235,55,350` | [14:00](log/north-ave/shared-overview-day.jpg) | [23:00](log/north-ave/shared-overview-night.jpg) |
-| Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
-
-Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
-
-On the warehouse bank two mapped sidewalks kept going across the surface above
-their own tunnel. Following their direction through the cut placed that paint
-on the lower level. At the nearby fixed-grade building, all 472 perimeter
-samples matched the original ground at both tiers. The production board passed
-`pnpm test:perf` at both qualities. [Bank close-ups at low and high](log/north-ave/shared-banks.jpg).
-
 
 ### 2026-11-23 — Colour before the whole board
 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
 
 On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)
+
+The first Galaxy A16 runs changed the return design. Rebuilding a warm City took 12.8 and 15.2 s there, compared with 16.8 and 15.7 s for the first City build in a fresh document. Models now pauses the completed City's frame loop and keeps its WebGL context. The Studio warm run fell to 0.38 s. The two legs of the device probe share a frozen camera and a warm HTTP cache.
+
+The wide lab now centres the projected silhouette of the train between the panels. The eight box corners are tested in screen space, so the far end no longer leaves a large empty margin. [Desktop](log/ui/final-models/desktop-final.jpg) · [Phone](log/ui/final-models/phone-final.jpg).
+
+The repeated A16 probe returned in 278 ms and 569 ms with City paused. Cold builds took 16.1 s and 10.9 s. Both warm runs met the 1 s target on the 4 GB phone.
+
 
 ### 2026-11-23 — River birch starts with three stems and peeling bark
 
