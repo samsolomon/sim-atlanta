@@ -1,0 +1,146 @@
+{
+  "pc-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7434187,
+    "calls": 183,
+    "areas": 12
+  },
+  "close-high-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 6573358,
+    "calls": 174,
+    "areas": 12
+  },
+  "pc-high-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7343528,
+    "calls": 196,
+    "areas": 12
+  },
+  "sam-low-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1527546,
+    "calls": 74,
+    "areas": 12
+  },
+  "close-low-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1474963,
+    "calls": 71,
+    "areas": 12
+  },
+  "close-low-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1454079,
+    "calls": 71,
+    "areas": 12
+  },
+  "close-low-night-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1453862,
+    "calls": 71,
+    "areas": 12
+  },
+  "pc-low-day-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1717174,
+    "calls": 82,
+    "areas": 12
+  },
+  "pc-low-night-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1699842,
+    "calls": 82,
+    "areas": 12
+  },
+  "sam-low-day-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1546241,
+    "calls": 74,
+    "areas": 12
+  },
+  "close-low-day-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1473562,
+    "calls": 71,
+    "areas": 12
+  },
+  "close-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 6662433,
+    "calls": 161,
+    "areas": 12
+  },
+  "sam-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7138133,
+    "calls": 167,
+    "areas": 12
+  },
+  "sam-low-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1545278,
+    "calls": 74,
+    "areas": 12
+  },
+  "pc-low-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1699446,
+    "calls": 82,
+    "areas": 12
+  },
+  "pc-high-day-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7431199,
+    "calls": 183,
+    "areas": 12
+  },
+  "sam-high-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7048266,
+    "calls": 180,
+    "areas": 12
+  },
+  "sam-low-night-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1526541,
+    "calls": 74,
+    "areas": 12
+  },
+  "sam-high-night-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7038558,
+    "calls": 180,
+    "areas": 12
+  },
+  "pc-low-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1718362,
+    "calls": 82,
+    "areas": 12
+  },
+  "close-high-night-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 6564442,
+    "calls": 174,
+    "areas": 12
+  },
+  "close-high-day-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C64%2C70&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 6655117,
+    "calls": 161,
+    "areas": 12
+  },
+  "pc-high-night-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=835%2C-4050%2C40%2C58%2C160&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7332356,
+    "calls": 196,
+    "areas": 12
+  },
+  "sam-high-day-before": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=1280%2C-3950%2C40%2C58%2C160&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7130017,
+    "calls": 167,
+    "areas": 12
+  }
+}
