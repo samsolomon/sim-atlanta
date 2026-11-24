@@ -74,7 +74,7 @@ export function tessellate(spec: SurfaceSpec, heights: Float32Array, quality: Te
   return runSync(tessellateSteps(spec, heights, quality, openings, join, yieldList));
 }
 
-/** tessellate as a build that yields every 8 block rows (core/slice.ts); same triangles, same order. */
+/** tessellate as a build that yields every 2 block rows (core/slice.ts); same triangles, same order. */
 export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quality: TerrainQuality,
   openings: readonly OpenSlot[] = [], join?: TerrainJoins, yieldList: readonly GroundYield[] = []) {
     const { rows, cols, stepM, bounds } = spec;
@@ -201,7 +201,7 @@ export function* tessellateSteps(spec: SurfaceSpec, heights: Float32Array, quali
       for (const f of faces) emit(f);
     };
     for (let k = 0; k < detail.length; k++) {
-      if (k % (8 * blockCols) === 8 * blockCols - 1) yield 'ground rows';
+      if (k % (2 * blockCols) === 2 * blockCols - 1) yield 'ground rows';
       starts[k] = indices.length;
       blockSlots = slots.get(k);
       blockYields = yieldBlocks.get(k);
@@ -471,11 +471,12 @@ export function* typedSteps<T extends Float32Array | Uint16Array | Uint32Array>(
   return out;
 }
 
-/** vertexNormals as a build that yields every few thousand triangles (same result). */
-export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<number>): Build<Float32Array> {
+/** vertexNormals as a build that yields every few thousand triangles (same result); `label`
+ * names its steps (far normals, or ground normals for a near re-cut). */
+export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<number>, label = 'far normals'): Build<Float32Array> {
   const n = new Float32Array(pos.length);
   for (let i = 0; i < indices.length; i += 3) {
-    if (i % 3072 === 3069) yield 'far normals';
+    if (i % 3072 === 3069) yield label;
     const a = indices[i] * 3, b = indices[i + 1] * 3, c = indices[i + 2] * 3;
     const ax = pos[a], ay = pos[a + 1], az = pos[a + 2];
     const bx = pos[b], by = pos[b + 1], bz = pos[b + 2];
@@ -484,7 +485,7 @@ export function* vertexNormalsSteps(pos: ArrayLike<number>, indices: ArrayLike<n
     const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     for (const k of [a, b, c]) { n[k] += nx; n[k + 1] += ny; n[k + 2] += nz; }
   }
-  yield 'far normals';
+  yield label;
   for (let k = 0; k < n.length; k += 3) {
     const inv = 1 / (Math.sqrt(n[k] * n[k] + n[k + 1] * n[k + 1] + n[k + 2] * n[k + 2]) || 1);
     n[k] *= inv; n[k + 1] *= inv; n[k + 2] *= inv;

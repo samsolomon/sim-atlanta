@@ -212,10 +212,14 @@ export function batchLandmarks(entries: readonly LandmarkEntry[], container: Obj
   for (let step = build.next(); ; step = build.next()) if (step.done) return step.value;
 }
 
+/** Vertices normalised per step while a class's parts are prepared (buildLandmarkBatches). */
+const PART_STEP = 40_000;
+
 /**
- * batchLandmarks as a sliced build step: yields a label after each landmark's probe and after each
- * cell class is merged, so an area build can spread it over frames. Nothing is shared across a
- * yield, so the result does not depend on where it pauses. `stats.ms` is then wall time.
+ * batchLandmarks as a sliced build step: yields a label after each landmark's probe, while a cell
+ * class's parts are prepared, and after each class is merged, so an area build can spread it over
+ * frames. Nothing is shared across a yield, so the result does not depend on where it pauses.
+ * `stats.ms` is then wall time.
  */
 export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], container: Object3D,
   o: LandmarkBatchOptions = {}): Generator<string | void, LandmarkBatches, void> {
@@ -292,7 +296,15 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   for (const { cell, members } of ordered) {
     if (members.length < 2) { skip('alone in its cell'); continue; }
     members.sort((a, b) => a.day < b.day ? -1 : a.day > b.day ? 1 : a.run < b.run ? -1 : a.run > b.run ? 1 : 0);
-    const parts = members.map(mb => normalized(mb.mesh, mb.bake, m.multiplyMatrices(toContainer, mb.mesh.matrixWorld)));
+    // A big class takes several steps: its parts a few at a time, then the merge.
+    const parts: BufferGeometry[] = [];
+    let vertices = 0;
+    for (const mb of members) {
+      parts.push(normalized(mb.mesh, mb.bake, m.multiplyMatrices(toContainer, mb.mesh.matrixWorld)));
+      vertices += parts[parts.length - 1].getAttribute('position').count;
+      if (vertices >= PART_STEP) { vertices = 0; yield 'landmark parts'; }
+    }
+    if (parts.length > 1) yield 'landmark parts';
     const merged = mergeGeometries(parts);
     if (!merged) throw new Error(`landmark batch: could not merge ${members.length} meshes in cell ${cell}`);
     const counts = parts.map(p => p.getAttribute('position').count);
