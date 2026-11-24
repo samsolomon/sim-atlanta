@@ -159,7 +159,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         lights: id in rowBounds ? midtownLights : undefined,
         openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined,
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
-        rollout: context.treeLowCount !== undefined ? { allCrowns: context.trees, inAnsley } : undefined,
+        rollout: context.treeLowCount !== undefined ? { row: id, lowCount: context.treeLowCount, allCrowns: context.trees, inAnsley } : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {

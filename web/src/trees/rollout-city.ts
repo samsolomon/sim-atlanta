@@ -14,22 +14,26 @@ import type { VBuilding, VGround, VRoad, World } from '../vignette/world';
 import { createLook, type Look } from './looks';
 import { hash01 } from './species';
 import { treeDims } from './render';
-import { crapeMyrtleLook } from './magnolia-crape';
+import { americanElmLook, floweringDogwoodLook } from './elm-dogwood';
+import { willowOakLook, waterOakLook } from './oaks';
+import { whiteOakLook } from './white-oak';
+import { southernMagnoliaLook, crapeMyrtleLook } from './magnolia-crape';
 import { loblollyPineLook } from './pine-poplar';
 import { sweetgumLook } from './maple-sweetgum';
 import { japaneseMapleLook } from './japanese-maple';
-import { crownKey, planRollout, positionSeed, tierPlan, type Crown, type RolloutSpecies } from './rollout';
+import { crownKey, planRollout, positionSeed, tierPlan, type Crown, type RoundTwoRow, type RolloutSpecies } from './rollout';
 import type { TreePlacement } from './render';
 import type { TreeQuality } from './species';
 
 export const ROLLOUT_LOOKS: Record<RolloutSpecies, Look> = {
+  'american-elm': americanElmLook, 'flowering-dogwood': floweringDogwoodLook,
+  'southern-magnolia': southernMagnoliaLook, 'white-oak': whiteOakLook,
+  'willow-oak': willowOakLook, 'water-oak': waterOakLook,
   'crape-myrtle': crapeMyrtleLook,
   'loblolly-pine': loblollyPineLook,
   'sweetgum': sweetgumLook,
   'japanese-maple': japaneseMapleLook,
 };
-/** Sam's pick for every rolled-out species. */
-const OPTION = 'A';
 
 /** Diagnostic only: never change an ordinary visit, or the high tier. */
 export function treeProbe(search: string, quality: TreeQuality) {
@@ -46,6 +50,7 @@ export interface RolloutRowInput {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   /** Every canopy-map crown in the row (the high tier's list). */
   allCrowns: Crown[];
+  roundTwo?: RoundTwoRow;
   /** This tier's crowns (a subset of allCrowns at low detail). */
   tierCrowns: Crown[];
   inAnsley?: (x: number, z: number) => boolean;
@@ -54,7 +59,7 @@ export interface RolloutRowInput {
 /** Plans a row; returns what the generic World needs before its trees are built. */
 export function rolloutRow(input: RolloutRowInput) {
   const full = planRollout({
-    crowns: input.allCrowns, roads: input.roads, ground: input.ground, bounds: input.bounds, inAnsley: input.inAnsley,
+    roundTwo: input.roundTwo, crowns: input.allCrowns, roads: input.roads, ground: input.ground, bounds: input.bounds, inAnsley: input.inAnsley,
     buildings: input.buildings.map(b => b.rings[0] as P2[]),
   });
   const plan = tierPlan(full, input.tierCrowns);
@@ -147,7 +152,8 @@ export class RolloutBatch {
       const renderedLook = this.quality === 'low'
         ? { ...look, options: look.options.map(o => ({ ...o, ink: undefined })) }
         : look;
-      const l = createLook(placements, renderedLook, OPTION, this.quality, groundAt, { carpet: false });
+      const option = look.preferred ?? 'A';
+      const l = createLook(placements, renderedLook, option, this.quality, groundAt, { carpet: false });
       if (!l) continue;
       l.group.userData.perf = 'trees';
       const tips: THREE.Object3D[] = [];
@@ -158,7 +164,7 @@ export class RolloutBatch {
           if (probe === 'shadow-off') o.castShadow = false;
           // The foliage-mask pass also respects mesh visibility.
           if (probe === 'foliage-off') o.visible = false;
-          const mode = look.options.find(o => o.id === OPTION)?.ink;
+          const mode = look.options.find(o => o.id === option)?.ink;
           if (this.quality === 'low' && mode && o instanceof THREE.InstancedMesh) this.masks.push({ mesh: o, mode });
         }
         if (o.name.endsWith(' leaf tips')) tips.push(o);

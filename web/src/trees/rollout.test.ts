@@ -19,11 +19,12 @@ function ansley() {
     return c;
   };
 }
-function plan(row: string, tier: 'high' | 'low') {
+function plan(row: string, tier: 'high' | 'low', roundTwo = false) {
   const c = JSON.parse(readFileSync(new URL(`${row}/context.json`, scene), 'utf8'));
   const crowns: Crown[] = tier === 'high' ? c.trees : c.trees.slice(0, c.treeLowCount);
   // Planned once from the full list, then cut to the tier, as City does.
-  const full = planRollout({ crowns: c.trees, roads: c.roads, ground: c.ground, buildings: c.buildings.map((b: { rings: number[][][] }) => b.rings[0]), bounds: c.bounds, inAnsley: ansley() });
+  const low: Crown[] = c.trees.slice(0, c.treeLowCount);
+  const full = planRollout({ roundTwo: roundTwo ? { id: row, eligible: new Set(low.map(([x,z]) => crownKey(x,z))) } : undefined, crowns: c.trees, roads: c.roads, ground: c.ground, buildings: c.buildings.map((b: { rings: number[][][] }) => b.rings[0]), bounds: c.bounds, inAnsley: ansley() });
   return { crowns, p: tierPlan(full, crowns) };
 }
 
@@ -31,6 +32,24 @@ describe('tree rollout plan', () => {
   it('only uses the four rolled-out species, and the street mix only crape myrtle', () => {
     expect(Object.keys(MIX.street)).toEqual(['crape-myrtle']);
     expect(Object.keys(MIX.park).sort()).toEqual(['loblolly-pine', 'sweetgum']);
+  });
+
+  it.skipIf(!staged)('shares at most 300 round-two trees including the Beverly specimen between tiers', () => {
+    const counts = new Map<string, number>();
+    const first = new Set(['crape-myrtle', 'japanese-maple', 'sweetgum', 'loblolly-pine']);
+    for (const row of ROWS) {
+      const low = plan(row, 'low', true).p.species.filter(s => !first.has(s.species));
+      const high = plan(row, 'high', true).p.species.filter(s => !first.has(s.species));
+      expect(low).toEqual(high);
+      for (const s of low) counts.set(s.species, (counts.get(s.species) ?? 0) + 1);
+      if (row === 'brookwood-south') {
+        const island = low.filter(s => Math.hypot(s.x - 1306, s.z + 4827) < 4);
+        expect(island).toHaveLength(1);
+        expect(island[0]).toMatchObject({ species: 'american-elm', size: 'specimen' });
+      }
+    }
+    expect(counts.size).toBe(6);
+    expect([...counts.values()].reduce((a,b) => a+b, 0)).toBeLessThanOrEqual(300);
   });
 
   it.skipIf(!staged)('gives a crown the same species at both tiers', () => {

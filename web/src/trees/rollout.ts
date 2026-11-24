@@ -20,12 +20,29 @@ import type { P2 } from '../vignette/geom';
 import type { VGround, VRoad } from '../vignette/world';
 import { hash01 } from './species';
 
-export type RolloutSpecies = 'crape-myrtle' | 'loblolly-pine' | 'sweetgum' | 'japanese-maple';
+type FirstSpecies = 'crape-myrtle' | 'loblolly-pine' | 'sweetgum' | 'japanese-maple';
+const SECOND_MIX = {
+  // Percent of all street, yard and park crowns, in that order (docs/tree-species.md).
+  'american-elm': [18, 1, 2],
+  'flowering-dogwood': [1, 5, 3],
+  'southern-magnolia': [2, 6, 2],
+  'white-oak': [0, 6, 8],
+  'willow-oak': [24, 10, 3],
+  'water-oak': [5, 14, 12],
+} as const;
+type SecondSpecies = keyof typeof SECOND_MIX;
+export type RolloutSpecies = FirstSpecies | SecondSpecies;
+
+// Partition the 300 places across the five canopy rows so streaming order cannot affect picks.
+const rowLimits: Readonly<Partial<Record<string, number>>> = {
+  'midtown-south': 40, 'midtown-central': 40, 'midtown-upper': 75,
+  'brookwood-south': 95, 'brookwood-station': 50,
+};
 export type Context = 'street' | 'yard' | 'park';
 export type Crown = [number, number, number, number];
 
 /** Percent of crowns per context for the rolled-out species; the rest stay generic. */
-export const MIX: Record<Context, Partial<Record<RolloutSpecies, number>>> = {
+export const MIX: Record<Context, Partial<Record<FirstSpecies, number>>> = {
   // #225 street mix: crape myrtle 8. Loblolly (1) is never curbside; sweetgum is 0 on streets.
   street: { 'crape-myrtle': 8 },
   // #225 yard mix (crape myrtle 6, loblolly 8, sweetgum 5) plus Japanese maple from "other
@@ -37,14 +54,14 @@ export const MIX: Record<Context, Partial<Record<RolloutSpecies, number>>> = {
 const ANSLEY_YARD_MAPLE = 8;
 
 /** Crown size each species can honestly take (height and crown radius, metres). */
-const FITS: Record<RolloutSpecies, (h: number, r: number) => boolean> = {
+const FITS: Record<FirstSpecies, (h: number, r: number) => boolean> = {
   'crape-myrtle': (h, r) => h <= 10 && r <= 5,
   'japanese-maple': (h, r) => h <= 9 && r <= 5,
   'loblolly-pine': (h, r) => h >= 9 && r <= 10,
   'sweetgum': (h, r) => h >= 8 && h <= 33,
 };
 /** Height at which a crown is drawn with the species' specimen form. */
-const SPECIMEN_AT: Record<RolloutSpecies, number> = { 'crape-myrtle': 9, 'japanese-maple': 7, 'loblolly-pine': 30, 'sweetgum': 22 };
+const SPECIMEN_AT: Record<FirstSpecies, number> = { 'crape-myrtle': 9, 'japanese-maple': 7, 'loblolly-pine': 30, 'sweetgum': 22 };
 
 const DRIVABLE = new Set(['primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'trunk']);
 const HALF_WIDTH: Record<string, number> = { trunk: 7, primary: 6.5, secondary: 5.5, tertiary: 4.5, residential: 3.75, unclassified: 3.5 };
@@ -120,7 +137,14 @@ function roadIndex(roads: VRoad[]) {
   };
 }
 
+export interface RoundTwoRow {
+  id: string;
+  /** Same eligible low-tier locations on both tiers, excluding junctions and named sites. */
+  eligible: ReadonlySet<string>;
+}
+
 export interface RolloutInput {
+  roundTwo?: RoundTwoRow;
   crowns: Crown[];
   roads: VRoad[];
   ground?: VGround[];
@@ -130,7 +154,9 @@ export interface RolloutInput {
   inAnsley?: (x: number, z: number) => boolean;
 }
 
-export function planRollout({ crowns, roads, ground = [], buildings = [], bounds, inAnsley = () => false }: RolloutInput): RolloutPlan {
+export function planRollout({ crowns, roads, ground = [], buildings = [], bounds, roundTwo, inAnsley = () => false }: RolloutInput): RolloutPlan {
+  let places = roundTwo ? rowLimits[roundTwo.id] ?? 0 : 0;
+  const candidates: PlacedSpecies[] = [];
   const near = roadIndex(roads);
   const parks = ground.filter(g => PARKLIKE.has(g.kind) || (g.kind === 'grass' && ringArea(g.rings[0]) > 2000));
   const plan: RolloutPlan = { replaced: new Set(), species: [], enlarged: new Map(), added: [], cleared: new Set(), context: new Map() };
@@ -147,6 +173,12 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
     if (isl.round) {
       // One large hardwood at the centre (the generic broadleaf, at specimen size).
       const big: Crown = [isl.cx, isl.cz, 24, Math.min(10, Math.sqrt(isl.area / Math.PI) + 4)];
+      if (places && roundTwo?.id === 'brookwood-south' && Math.hypot(isl.cx - 1306, isl.cz + 4827) < 4) {
+        plan.species.push({ species: 'american-elm', x: isl.cx, z: isl.cz, heightM: big[2],
+          spreadM: 2 * big[3], size: 'specimen', seed: positionSeed(isl.cx, isl.cz) });
+        places--;
+        continue;
+      }
       plan.added.push({ crown: big });
       plan.enlarged.set(crownKey(big[0], big[1]), { h: big[2], r: big[3] });
     } else {
@@ -175,8 +207,8 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
     const weights = { ...MIX[ctx] };
     if (ansley && ctx === 'yard') weights['japanese-maple'] = ANSLEY_YARD_MAPLE;
     let u = hash01(seed, 21) * 100;
-    let pick: RolloutSpecies | null = null;
-    for (const [sp, w] of Object.entries(weights) as [RolloutSpecies, number][]) {
+    let pick: FirstSpecies | null = null;
+    for (const [sp, w] of Object.entries(weights) as [FirstSpecies, number][]) {
       if (u < w) { pick = sp; break; }
       u -= w;
     }
@@ -184,6 +216,19 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
       plan.replaced.add(key);
       plan.species.push({ species: pick, x, z, heightM: h, spreadM: r * 2, size: h >= SPECIMEN_AT[pick] ? 'specimen' : 'mature', seed });
       continue;
+    }
+    if (!pick && places && roundTwo?.eligible.has(key)) {
+      const contextIndex = ctx === 'street' ? 0 : ctx === 'yard' ? 1 : 2;
+      for (const species of Object.keys(SECOND_MIX) as SecondSpecies[]) {
+        u -= SECOND_MIX[species][contextIndex];
+        if (u >= 0) continue;
+        const fits = species === 'flowering-dogwood' ? h >= 3 && h <= 12 && r <= 6
+          : species === 'southern-magnolia' ? h >= 6 && h <= 30 && r <= 12
+          : h >= 8 && h <= 40 && r <= 17;
+        if (fits) candidates.push({ species, x, z, heightM: h, spreadM: 2 * r, seed,
+          size: h >= 24 ? 'specimen' : 'mature' });
+        break;
+      }
     }
     if (!ansley) continue;
     // Ansley skew: about 40% of the remaining broadleaf crowns at specimen size (25–35 m).
@@ -214,6 +259,11 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
       plan.added.push({ crown: [mx, mz, size.h, size.r], from: key });
       plan.enlarged.set(pk, size);
     }
+  }
+  candidates.sort((a, b) => hash01(a.seed, 73) - hash01(b.seed, 73));
+  for (const tree of candidates.slice(0, places)) {
+    plan.species.push(tree);
+    plan.replaced.add(crownKey(tree.x, tree.z));
   }
   return plan;
 }

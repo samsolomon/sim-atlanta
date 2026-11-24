@@ -1,3 +1,4 @@
+import { crownKey } from '../trees/rollout';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
@@ -52,7 +53,7 @@ export interface DowntownTerrainOptions {
   lights?: Parameters<World['buildLights']>[3];
   /** The tree rollout (trees/rollout-city.ts) for a canopy-map row: every crown of the row (the
    *  high tier's list) and the Ansley Park test. */
-  rollout?: { allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
+  rollout?: { row: string; lowCount: number; allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -253,6 +254,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
   const rollout = options.rollout ? rolloutRow({
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
+    roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
+      .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
     allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
   }) : null;
   if (rollout) streetTrees = rollout.crowns;
