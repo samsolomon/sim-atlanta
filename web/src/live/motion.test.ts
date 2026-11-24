@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appendFix, playback, type Knot } from './motion';
+import { appendFix, appendReservedFix, RESERVE_DELAY_MS, playback, type Knot } from './motion';
 
 describe('live rail motion on 30-second reports', () => {
   it.each([
@@ -21,4 +21,26 @@ describe('live rail motion on 30-second reports', () => {
       expect(Math.abs(drawn[t + 1] - drawn[t] - v)).toBeLessThan(1);
     });
   });
+});
+
+it.each([0, 2, 5, 20])('keeps Train 101 bounded with a report %i seconds late', late => {
+  const arrivals = [0, 30, 60, 90 + late, 120, 150, 180];
+  const fixes = [0, 200, 400, 600, 600, 800, 900];
+  const history: Knot[] = [];
+  let newest = 0, previous = 0;
+  for (let quarter = 0; quarter <= 880; quarter++) {
+    const t = quarter / 4;
+    const index = arrivals.indexOf(t);
+    if (index >= 0) {
+      newest = fixes[index];
+      appendReservedFix(history, newest, t * 1000);
+    }
+    const s = playback(history, t * 1000, RESERVE_DELAY_MS);
+    expect(s).toBeGreaterThanOrEqual(previous - 1e-8);
+    expect(s).toBeLessThanOrEqual(newest + 1e-8);
+    if (!late && [75, 90, 105].includes(t)) expect((s - previous) * 4).toBeCloseTo(200 / 30);
+    if (!late && t >= 130 && t <= 160) expect(s).toBe(600);
+    if (late === 20 && t >= 100 && t <= 110) expect(s).toBe(400);
+    previous = s;
+  }
 });
