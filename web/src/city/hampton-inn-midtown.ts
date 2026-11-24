@@ -15,8 +15,8 @@ import { litFacade, seedOf } from './skin-kit';
 export const hamptonMidtownId = 'osm:way:885304559';
 
 const grey = '#d9dad6',
-  tan = '#b89c7c',
-  bronze = '#3b3029',
+  tan = '#c2b29c',
+  bronze = '#76604a',
   glass = '#8a9499',
   cornerGlass = '#7d9099',
   base = '#5d6a70',
@@ -91,19 +91,19 @@ export function createHamptonInnMidtown(buildings: VBuilding[], site: VBuilding,
     s.body.quad([ga[0], lobby, ga[1]], [ga[0], roomsTop, ga[1]], [gb[0], roomsTop, gb[1]], [gb[0], lobby, gb[1]], cornerGlass);
     // The dark-bronze frame: a post at each end of the chamfer and a lintel
     // arching over the roof terrace, all built as touching prisms.
-    const top = parapet + 3.5, w = 1.2, rect = (c: P2, ux: number, uz: number, l0: number, l1: number, o0: number, o1: number): P2[] => [
+    const top = parapet + 1.2, w = 0.55, rect = (c: P2, ux: number, uz: number, l0: number, l1: number, o0: number, o1: number): P2[] => [
       [c[0] + ux * l0 + nx * o0, c[1] + uz * l0 + nz * o0], [c[0] + ux * l1 + nx * o0, c[1] + uz * l1 + nz * o0],
       [c[0] + ux * l1 + nx * o1, c[1] + uz * l1 + nz * o1], [c[0] + ux * l0 + nx * o1, c[1] + uz * l0 + nz * o1]];
     const ux = dx / len, uz = dz / len;
     for (const p of [a, b]) {
       const sgn = p === a ? 1 : -1;
-      s.prism(rect(p, ux, uz, sgn > 0 ? 0 : -w, sgn > 0 ? w : 0, -0.1, w), lobby, top, bronze, bronze);
+      s.prism(rect(p, ux, uz, sgn > 0 ? 0 : -w, sgn > 0 ? w : 0, -0.05, w), lobby, top, bronze, bronze);
     }
     const steps = 5;
     for (let k = 0; k < steps; k++) {
       const t0 = k / steps, t1 = (k + 1) / steps, tm = (t0 + t1) / 2;
-      const lift = Math.sin(Math.PI * tm) * 2.4;
-      s.prism(rect(a, ux, uz, t0 * len - 0.05, t1 * len + 0.05, -0.1, w), top - w + lift, top + lift, bronze, bronze);
+      const lift = Math.sin(Math.PI * tm) * 1.0;
+      s.prism(rect(a, ux, uz, t0 * len - 0.05, t1 * len + 0.05, -0.05, w), top - w + lift - 0.3, top + lift, bronze, bronze);
     }
   }
   return s.finish('#f6d9a8', 0.55);

@@ -15,8 +15,8 @@ The model is:
 
 All four come from the [Hilton rendering via Hospitality Net](https://www.hospitalitynet.org/announcement/41004561/hampton-inn-suites-by-hilton-atlanta-midtown.html) and the [Street View at 15th Street, September 2024](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78870,-84.38690&heading=225&pitch=30&fov=90). The Street View was viewed, not copied.
 
-1. **Two-tone slab.** Pale grey precast `#d9dad6` with a warm tan centre field `#b89c7c` on the long north and south faces. Both colours come from the rendering, where the tan field reads clearly against the grey.
-2. **Dark-bronze frame** `#3b3029`. It climbs the glazed NW chamfer at West Peachtree and 15th and arches over the roof terrace. Two posts and five lintel steps are built as touching prisms, so the frame reads as one member and passes the detachment check.
+1. **Two-tone slab.** Pale grey precast `#d9dad6` with a tan/buff centre field `#c2b29c` on the long north and south faces. Both colours come from the rendering, where the tan field reads clearly against the grey.
+2. **Dark-bronze frame** `#76604a`, a slim 0.55 m member. It climbs the glazed NW chamfer at West Peachtree and 15th and arches over the roof terrace. Two posts and a five-step lintel, about 1 m above the lounge parapet, are built as touching prisms, so the frame reads as one member and passes the detachment check.
 3. **Glazed rooftop lounge** on the 20th floor, set back from the terrace.
 4. **Red-trimmed base** on West Peachtree.
 
@@ -32,7 +32,8 @@ The window glass is `#8a9499` (S10 V60). At 11:30, high tier, from camera `383,-
 |---|---|---|---|
 | Grey wall, sunlit | 44 | 14 | 60 |
 | Panes in the grey | 200 | 13 | 35 |
-| Tan field, shaded | 32 | 53 | 32 |
+| Tan field, sunlit | 36 | 36 | 80 |
+| Tan field, shaded | 31 | 26 | 33 |
 | Generic tower, sunlit | 147 | 5 | 67 |
 
 ## Lighting
