@@ -428,7 +428,6 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === crestOnPeachtreeId ? createCrestOnPeachtree(sceneryCity.buildings, site, grid, options.quality)
       : site.id === twoPeachtreePointeId ? createTwoPeachtreePointe(sceneryCity.buildings, site, grid)
-      : site.id === lilliMidtownId ? createLilliMidtown(sceneryCity.buildings, site, grid)
       : site.id === lilliMidtownId ? createLilliMidtown(sceneryCity.buildings, site, grid, options.quality)
       : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
       : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
