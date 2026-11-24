@@ -354,6 +354,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       <button type="button" class="a2-mi" data-act="key">${SVG('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M11 7h9M11 17h9"/>')}<span>Key<small>What the colours and labels mean</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="board" hidden>${SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 5v14"/>')}<span>Show full board<small>Every City area, or retry one that failed</small></span>${chev}</button>
       <button type="button" class="a2-mi" data-act="about">${SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}<span>About &amp; credits<small>How it works and where the data comes from</small></span>${chev}</button>
+      <a class="a2-mi" href="https://github.com/samsolomon/sim-atlanta" target="_blank" rel="noopener">${SVG('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>')}<span>Source code<small>Open source on GitHub</small></span><span class="a2-chev">${SVG('<path d="M7 17L17 7M9 7h8v8"/>')}</span></a>
     </div>
     <div class="a2-sep"></div>
     <div class="a2-menu-gfx">
