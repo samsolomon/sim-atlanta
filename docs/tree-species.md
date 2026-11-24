@@ -1011,6 +1011,13 @@ unchanged at every clock (79, 82 and 83), and so is `motion=pan` (80, 83). Geome
 Museum ginkgo's two (trees/render.ts) and, under `?trees=species`, the rollout looks that
 `fitBounds` re-enables. The Studio pins 60 fps, so the frame-rate effect needs an A16 run.
 
+**Far-tree shadows.** Past a 9 km orbit (back at about 7.6 km), the far form stops casting.
+I first set this at 2.5 km from a far crop, but the coordinator asked for a re-check after houses
+showed 7 px shadows at 2.6 km. Matched on/off frames show tree shadows still read at 2.6 and
+4 km and faintly at 6 km, and are indistinguishable at 9.2 km
+([sheet](log/ui/tree-species/far-form/shadow-recheck.jpg)). At the default view (about 20 km),
+the shadow pass still drops from 971k to 780k triangles per redraw.
+
 `&perf=run&farform=0&treecell=0` draws the trees as before, for comparisons. Sheets:
 [default](log/ui/tree-species/far-form/far-default.jpg),
 [Ansley 900 m](log/ui/tree-species/far-form/far-a900.jpg) and

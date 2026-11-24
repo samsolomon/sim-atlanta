@@ -1943,7 +1943,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const HOUSE_SHADOWS_M = low ? 9000 : 0;
   let houseNoShadow = false;
   // Low tier: the far-form trees cast no shadow beyond this orbit (trees/far-canopy.ts).
-  const FAR_SHADOWS_M = low ? 2500 : 0;
+  const FAR_SHADOWS_M = low ? 9000 : 0;
   let farNoShadow = false;
   // Areas (and the downtown World) that already carry the current detail; a newly mounted or
   // swapped area is caught here without allocating every frame.
@@ -1951,9 +1951,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   function treeDetail() {
     const d = camera.position.distanceTo(controls.target);
     const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    // Past FAR_SHADOWS_M the far form stops casting: its shadows are 1-3 px there, and an area's
-    // far mesh is submitted whole to the shadow pass (191k triangles at the default view, 8% of
-    // them inside the shadow box). Hysteresis as for the far form.
+    // Past FAR_SHADOWS_M the far form stops casting: its shadows are 1-2 px there (at 2.6-6 km
+    // they still read, measured), and an area's far mesh is submitted whole to the shadow pass
+    // (191k triangles at the default view, 8% of them inside the shadow box). 9 km, as for houses.
     const noShadow = FAR_SHADOWS_M > 0 && (farNoShadow ? d > FAR_SHADOWS_M * 0.84 : d > FAR_SHADOWS_M);
     // Past HOUSE_SHADOWS_M houses stop casting: an 8 m house shadow is under 2 px there on the A16, and a
     // 2.4 km far block goes whole into the shadow pass (100k triangles at the default view).
