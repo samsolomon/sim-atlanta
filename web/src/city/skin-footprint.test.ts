@@ -90,7 +90,6 @@ const KNOWN: Record<string, number> = {
  * part fails.
  */
 const KNOWN_DETACHED: Record<string, number> = {
-  'osm:way:536728181': 246, // Mayfair Tower Condominiums, midtown-upper, worst 0.62 m off
   'osm:way:1021839184': 84, // EUHM staff deck, midtown-south, worst 0.67 m off
   'osm:way:269542143': 29, // Emmi Midtown, brookwood-south, worst 0.52 m off
   'osm:way:235006952': 11, // Midtown station east entrance, midtown-central, worst 0.32 m off
