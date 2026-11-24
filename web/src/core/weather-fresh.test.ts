@@ -42,16 +42,31 @@ it('accepts a fresh observation when the client clock runs behind', async () => 
   expect(await getCurrent('/api/weather', 1000, () => NOW - 2 * 60 * MIN)).not.toBeNull();
 });
 
-it('stamps live weather with its observation time and lets it age out of "reported"', async () => {
+it('stamps live weather with its observation time and lets it age out of "reported" by elapsed time', async () => {
   vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
   try {
     serve(current(NOW - 10 * MIN));
     const w = await fetchLive();
     expect(w?.live).toBe(true);
     expect(w?.observedAt).toBe(NOW - 10 * MIN);
-    expect(weatherFresh(w, NOW)).toBe(w);
-    expect(weatherFresh(w, NOW + 55 * MIN)).toBeNull();
-    expect(weatherFresh(null, NOW)).toBeNull();
+    expect(w?.ageAtFetchMs).toBe(10 * MIN);
+    const t0 = w!.fetchedPerf!;
+    expect(weatherFresh(w, t0)).toBe(w);
+    expect(weatherFresh(w, t0 + 49 * MIN)).toBe(w);
+    expect(weatherFresh(w, t0 + 51 * MIN)).toBeNull();
+    expect(weatherFresh(null, t0)).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('keeps fresh weather reported when the client wall clock runs two hours behind (cross-review P2)', async () => {
+  vi.useFakeTimers({ now: NOW - 2 * 60 * MIN, toFake: ['Date'] });
+  try {
+    serve(current(NOW - 10 * MIN)); // the Date header is the server's NOW
+    const w = await fetchLive();
+    expect(w).not.toBeNull();
+    expect(weatherFresh(w, w!.fetchedPerf! + MIN)).toBe(w);
   } finally {
     vi.useRealTimers();
   }

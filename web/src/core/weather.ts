@@ -17,6 +17,10 @@ export interface Weather {
   live: boolean;
   /** When the observation was valid (ms), for live weather. */
   observedAt?: number;
+  /** Its age when fetched, by the server's clock when known (ms). */
+  ageAtFetchMs?: number;
+  /** performance.now() at fetch, so later aging never depends on the client's wall clock. */
+  fetchedPerf?: number;
 }
 
 /**
@@ -26,10 +30,14 @@ export interface Weather {
  */
 export const WEATHER_MAX_AGE_MS = 60 * 60_000;
 
-/** A live observation that is still current enough to show as reported. */
-export function weatherFresh(w: Weather | null, now = Date.now()): Weather | null {
-  if (!w || !w.live || w.observedAt === undefined) return null;
-  return freshness(w.observedAt, null, now, WEATHER_MAX_AGE_MS) === 'fresh' ? w : null;
+/**
+ * A live observation that is still current enough to show as reported. It ages from its
+ * server-relative age at fetch by monotonic time, so a client clock that runs behind or ahead
+ * neither hides fresh weather nor keeps old weather.
+ */
+export function weatherFresh(w: Weather | null, perfNow = performance.now()): Weather | null {
+  if (!w || !w.live || w.ageAtFetchMs === undefined || w.fetchedPerf === undefined) return null;
+  return w.ageAtFetchMs + (perfNow - w.fetchedPerf) <= WEATHER_MAX_AGE_MS ? w : null;
 }
 
 export const PRESETS: Record<WeatherKind, Weather> = {
@@ -61,20 +69,25 @@ export function fromWmo(code: number, cloudPct: number, precipMm: number, visM: 
 
 /** `time` is Unix seconds (requested with timeformat=unixtime). */
 type Current = { time?: number; weather_code: number; cloud_cover: number; precipitation: number; visibility?: number; temperature_2m?: number };
-const parse = (c: Current) => ({
+type Reading = { current: Current; ageMs: number; fetchedPerf: number };
+const parse = ({ current: c, ageMs, fetchedPerf }: Reading): Weather => ({
   ...fromWmo(c.weather_code, c.cloud_cover, c.precipitation, c.visibility, c.temperature_2m),
   observedAt: c.time! * 1000,
+  ageAtFetchMs: Math.max(0, ageMs),
+  fetchedPerf,
 });
 
 /** Current conditions, or null when unavailable, undated, stale or from the future. */
-export async function getCurrent(url: string | URL, ms: number, now = Date.now): Promise<Current | null> {
+export async function getCurrent(url: string | URL, ms: number, now = Date.now): Promise<Reading | null> {
   try {
     // Never from the browser cache: an old cached reading must not pass as the present.
     const r = await fetch(url, { signal: AbortSignal.timeout(ms), cache: 'no-store' });
     if (!r.ok) return null;
     const current = ((await r.json()) as { current?: Current }).current ?? null;
     if (!current || typeof current.time !== 'number') return null;
-    return freshness(current.time * 1000, serverDate(r), now(), WEATHER_MAX_AGE_MS) === 'fresh' ? current : null;
+    const observed = current.time * 1000, server = serverDate(r), client = now();
+    if (freshness(observed, server, client, WEATHER_MAX_AGE_MS) !== 'fresh') return null;
+    return { current, ageMs: (server ?? client) - observed, fetchedPerf: performance.now() };
   } catch {
     return null;
   }
