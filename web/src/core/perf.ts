@@ -239,7 +239,7 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 
 function frames(windowMs: number) {
   const idx = recent(windowMs);
-  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, over33: 0, over50: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, over33: 0, over50: 0, vsync: vsyncBuckets([]), updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
@@ -256,7 +256,28 @@ function frames(windowMs: number) {
     trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
     trafficMean: Math.round(tf.reduce((a, b) => a + b, 0) / tf.length * 1000) / 1000,
     trafficP50: Math.round(pct(tf, 0.5) * 1000) / 1000, trafficP95: Math.round(pct(tf, 0.95) * 1000) / 1000,
+    vsync: vsyncBuckets(dts),
   };
+}
+
+/**
+ * Share of frames landing on 1, 2, 3 and 4+ display refreshes. Frames on a fixed-rate panel come in
+ * multiples of its interval (11.1 ms at 90 Hz on the A16, 16.7 ms at 60 Hz), so a saving only shows
+ * in fps once it moves frames down a step; these shares show how close a build is to that step.
+ * The interval comes from &hz, or from the fastest frames snapped to a common panel rate.
+ */
+function vsyncBuckets(dts: number[]) {
+  if (!dts.length) return { intervalMs: 0, x1: 0, x2: 0, x3: 0, x4plus: 0 };
+  // &hz=90 names the panel's rate (the A16). Otherwise snap the fastest frames to a panel rate, which
+  // only works when some frames reach one refresh; a CPU-throttled run needs &hz.
+  const named = Number(params.get('hz'));
+  const fast = pct(dts, 0.02);
+  const hz = named > 0 ? named : [144, 120, 90, 60].reduce((best, r) => Math.abs(1000 / r - fast) < Math.abs(1000 / best - fast) ? r : best, 60);
+  const interval = 1000 / hz;
+  const n = [0, 0, 0, 0];
+  for (const d of dts) n[Math.min(3, Math.max(0, Math.round(d / interval) - 1))]++;
+  const share = (k: number) => Math.round((n[k] / dts.length) * 1000) / 10;
+  return { intervalMs: r1(interval), x1: share(0), x2: share(1), x3: share(2), x4plus: share(3) };
 }
 
 // ---- memory inventory --------------------------------------------------------------------
@@ -611,7 +632,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   const at = (n: string) => phases.find(p => p.name === n)?.ms ?? null;
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
   const summary = {
-    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, over33: f.over33, over50: f.over50, updateP50: f.updateP50, renderP50: f.renderP50,
+    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, over33: f.over33, over50: f.over50, vsync: f.vsync, updateP50: f.updateP50, renderP50: f.renderP50,
     trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,

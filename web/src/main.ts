@@ -475,7 +475,9 @@ let cityQuality: 'low' | 'high' | null = null;
 /** Low-tier City drops CSS backdrop-filter so the canvas is presented directly ("flat" glass). */
 function applyGlassMode() {
   const cityShown = !view3d.hidden && document.body.classList.contains('in3d');
-  setGlassMode(cityShown && (diorama?.quality ?? cityQuality) === 'low' ? 'flat' : 'css');
+  // ?perf&glass=css keeps the browser blur on low (measurement stack A/B only).
+  const forceCss = perf.enabled && new URLSearchParams(location.search).get('glass') === 'css';
+  setGlassMode(!forceCss && cityShown && (diorama?.quality ?? cityQuality) === 'low' ? 'flat' : 'css');
 }
 new MutationObserver(applyGlassMode).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 new MutationObserver(applyGlassMode).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
