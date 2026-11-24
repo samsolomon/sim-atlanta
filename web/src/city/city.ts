@@ -26,6 +26,7 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -739,6 +740,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   perf.phase('city:renderer');
 
   const scene = new THREE.Scene();
+  // `?perf&freeze=off` keeps three.js recomposing every static matrix each frame, for A/B runs.
+  const freezeOn = !(perfEnabled && new URLSearchParams(location.search).get('freeze') === 'off');
+  if (freezeOn) freezeSelf(scene);
+  let staticFrozen = !freezeOn;
   const bg = new THREE.Color('#e7e2d8');
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
@@ -950,6 +955,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
     scenery.push(area.group);
+    // The area is in place: its board and scenery never move again (city/freeze.ts). Its transport
+    // subgroup keeps updating (freight runs in it).
+    if (freezeOn) {
+      freezeSelf(area.group);
+      freezeStatic(area.board);
+      freezeStatic(area.scenery);
+    }
     area.setSeason(local(new Date(options.clockMs())).doy);
     if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
@@ -1699,6 +1711,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
     followPixelRatio();
+    if (!staticFrozen) {
+      // Downtown's world, board and scenery are all built by the first frame.
+      staticFrozen = true;
+      freezeStatic(world.group);
+      freezeSelf(terrain?.group);
+      freezeStatic(terrain?.board);
+      freezeStatic(terrain?.scenery);
+      freezeStatic(rolloutBatch.group);
+    }
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -1842,6 +1863,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    if (import.meta.env.DEV && freezeOn && frames % 120 === 0) {
+      const moved = checkFrozen(scene);
+      if (moved.length) console.error(`Frozen objects moved without refreeze() (city/freeze.ts): ${moved.length}`, moved.slice(0, 10));
+    }
     // A few never-drawn objects per frame in one scratch render, after the frame's own work.
     if (prewarmer?.pending) {
       // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
