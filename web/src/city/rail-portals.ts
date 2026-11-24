@@ -139,7 +139,8 @@ export function railPortalOpenings(mouths: readonly RailMouth[]): OpenSlot[] {
 }
 
 const SLOT_MARGIN = 0.6,
-  SLOT_END = 16;
+  /** The terrain opening and the lid run the full tube length, so no ground cuts into the roof. */
+  SLOT_END = 22.5;
 /** No landcover is mapped over either tube, so the lid takes the board's base ground paint
  * (ground-map.ts) and reads as the same ground, not a stripe. */
 const LID = '#b5bd97';
@@ -204,18 +205,23 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground) {
     // the tube roof, plus outer walls down to the cut, so nothing dark shows from above.
     const outer = h + SLOT_MARGIN + 0.1,
       zero = ground.manifest.vertical.sceneZeroNavd88M;
-    const lid = (w: number) => {
-      const g = ground.sample(m.x + m.dx * w, m.z + m.dz * w);
-      return Math.max(m.railY + clear + 0.35, g === null ? m.coverY : g - zero) + 0.03;
+    // Draped on the ground at each corner (a cross-slope would otherwise bury one edge).
+    const lid = (u: number, w: number) => {
+      const g = ground.sample(m.x - m.dz * u + m.dx * w, m.z + m.dx * u + m.dz * w);
+      return Math.max(m.railY + clear + 0.35, g === null ? m.coverY : g - zero) + 0.12;
     };
-    for (let w = 0.6; w < SLOT_END + 1; w += 1) {
-      const w1 = Math.min(SLOT_END + 1, w + 1),
-        a = lid(w),
-        b = lid(w1);
-      quad([-outer, a, w], [outer, a, w], [outer, b, w1], [-outer, b, w1], LID);
-      for (const u of [-outer, outer]) quad([u, y0, w], [u, a, w], [u, b, w1], [u, y0, w1], CONCRETE_SIDE);
+    const cols = [-outer, -outer / 2, 0, outer / 2, outer];
+    for (let w = 0.6; w < SLOT_END + 0.5; w += 1) {
+      const w1 = Math.min(SLOT_END + 0.5, w + 1);
+      for (let c = 1; c < cols.length; c++) {
+        const u0 = cols[c - 1],
+          u1 = cols[c];
+        quad([u0, lid(u0, w), w], [u1, lid(u1, w), w], [u1, lid(u1, w1), w1], [u0, lid(u0, w1), w1], LID);
+      }
+      for (const u of [-outer, outer]) quad([u, y0, w], [u, lid(u, w), w], [u, lid(u, w1), w1], [u, y0, w1], CONCRETE_SIDE);
     }
-    quad([-outer, m.railY + clear, 0.6], [-outer, lid(0.6), 0.6], [outer, lid(0.6), 0.6], [outer, m.railY + clear, 0.6], CONCRETE);
+    for (let c = 1; c < cols.length; c++)
+      quad([cols[c - 1], m.railY + clear, 0.6], [cols[c - 1], lid(cols[c - 1], 0.6), 0.6], [cols[c], lid(cols[c], 0.6), 0.6], [cols[c], m.railY + clear, 0.6], CONCRETE);
     // The ballast also covers the cut floor in front of the face, so no grass shows at the mouth.
     quad([-h - 1.4, m.railY + 0.05, -4], [-h - 1.4, m.railY + 0.05, 0.6], [h + 1.4, m.railY + 0.05, 0.6], [h + 1.4, m.railY + 0.05, -4], BALLAST);
   }
