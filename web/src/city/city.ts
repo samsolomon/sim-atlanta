@@ -320,7 +320,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     perf.phase(`stage:${name}`);
   };
   // The night light map is 2 m texels on low (7 MB instead of 28 MB for downtown's 2 km board).
-  const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048 };
+  const worldOptions = { cityFacades: true, terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: (ReturnType<typeof createDowntownTerrain> & { connectorBoard: ConnectorBoard }) | undefined;
   let downtownBatches: ReturnType<typeof batchLandmarks> | undefined;

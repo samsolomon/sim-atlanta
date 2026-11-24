@@ -1,5 +1,5 @@
 /**
- * Generic buildings v2 (`?generic=v2`, default off until Sam picks): archetypes for Atlanta's
+ * Generic buildings v2 (City default, with `?generic=legacy` rollback): archetypes for Atlanta's
  * ordinary stock, so unskinned blocks stop reading as one pale blue-grey glass box.
  *
  * Each archetype is a wall palette, a cap and base treatment, and a facade pattern in the
@@ -25,12 +25,13 @@ export type Arch = (typeof Arch)[keyof typeof Arch];
 export const BaseStyle = { Lobby: 52, Arcade: 53, Plinth: 54, Shopfront: 55 } as const;
 export const ARCH_NAMES = ['precast', 'banded', 'brick', 'limestone', 'residential', 'deck', 'shop', 'glass'] as const;
 
-/** `?generic=v2` turns the archetypes on (City and the vignette). Tests call setGenericV2. */
-let on = (() => {
-  try { return new URLSearchParams(globalThis.location?.search ?? '').get('generic') === 'v2'; } catch { return false; }
-})();
-export function genericV2() { return on; }
-export function setGenericV2(v: boolean) { on = v; }
+/** City chooses v2 for an unspecified mode. Other World consumers opt in explicitly. */
+const requested = new URLSearchParams(globalThis.location?.search ?? '').get('generic');
+let override: boolean | undefined;
+export function genericV2(cityDefault = false) {
+  return override ?? (requested === 'v2' || (requested !== 'legacy' && cityDefault));
+}
+export function setGenericV2(value: boolean | undefined) { override = value; }
 
 /** What one generic building looks like under v2. Colours are sRGB hex (vertex colours). */
 export interface GenericLook {

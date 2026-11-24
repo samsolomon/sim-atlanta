@@ -1,6 +1,6 @@
 import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { expect, it } from 'vitest';
-import { genericV2, setGenericV2 } from './generic-v2';
+import { setGenericV2 } from './generic-v2';
 import { World, type VBuilding } from './world';
 
 // A 40 x 40 m parent reported at 200 m whose mapped parts are a 150 m tower,
@@ -40,7 +40,6 @@ it('keeps a building without parts as one box at its own height', () => {
 });
 
 it('simplifies a low-tier v2 tower while preserving its facade style and storey origins', () => {
-  const previous = genericV2();
   try {
     setGenericV2(true);
     const high = shell([parent], 'high').geometry;
@@ -55,6 +54,6 @@ it('simplifies a low-tier v2 tower while preserving its facade style and storey 
     expect(shaftStyles(high).size).toBe(1);
     expect(shaftStyles(low)).toEqual(shaftStyles(high));
   } finally {
-    setGenericV2(previous);
+    setGenericV2(undefined);
   }
 });

@@ -1,6 +1,6 @@
-# Generic buildings v2 (`?generic=v2`)
+# Generic building exteriors
 
-**Status:** prototype for Sam (2026-11-24). Off by default. Nothing changes until he picks.
+City uses the eight facade archetypes by default. Add `generic=legacy` to a City URL to restore the original building exteriors. The standalone vignette retains its original default and accepts `generic=v2` for comparison.
 
 ## Problem
 

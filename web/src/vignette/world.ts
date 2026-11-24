@@ -95,6 +95,8 @@ export interface VData {
  * the City board is ~10× larger, so it is flat with a coarse grid and lighter trees.
  */
 export interface WorldOptions {
+  /** Use the City facade archetypes unless the URL selects legacy buildings. */
+  cityFacades?: boolean;
   terrain: 'trench' | 'flat';
   /** Leaf clumps per deciduous canopy (10 on desktop, fewer on phones). */
   clumps: number;
@@ -857,7 +859,7 @@ export class World {
     const clutter: THREE.Matrix4[] = [];
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
-    const v2 = genericV2();
+    const v2 = genericV2(this.opts.cityFacades);
     let n = 0;
     for (const bd of this.data.buildings) {
       if (++n % 6 === 0) yield 'buildings';
