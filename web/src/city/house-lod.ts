@@ -304,7 +304,9 @@ function* buildFarFar(o: HouseLodOptions, tiles: HouseTile[]) {
     if (!b) continue;
     const y0 = o.foundation(h) ?? o.ground(b.centre[0], b.centre[1]);
     if (y0 === null) continue;
-    const y1 = y0 + b.height, [ux, uz] = b.u, vx = -uz, vz = ux;
+    // A hillside house's fitted floor (floorY) sets its height, as in the near and far forms; the
+    // walls still start at the foundation.
+    const y1 = (h.floorY ?? y0) + b.height, [ux, uz] = b.u, vx = -uz, vz = ux;
     const at = (s: number, t2: number) => [b.centre[0] + ux * s * b.long + vx * t2 * b.half, b.centre[1] + uz * s * b.long + vz * t2 * b.half];
     const ring = [at(-1, -1), at(1, -1), at(1, 1), at(-1, 1)];
     // Wind each wall to face away from the centre, and the top to face up.

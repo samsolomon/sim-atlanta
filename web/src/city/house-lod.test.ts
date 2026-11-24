@@ -170,3 +170,17 @@ test('draws every house past the very-far orbit as one outward-facing box, in on
   expect(farFar.visible).toBe(false);
   lod.dispose();
 });
+
+test('raises a far-far box to a hillside house fitted floor', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const houses = homes.city.buildings.filter(b => homes.isHouse(b.id)).map((b, i) => i === 0 ? { ...b, floorY: 4 } : b);
+  const lod = houseLod({ houses, bounds: city.bounds, ground: () => 0, foundation: () => 0, near: homes.finishFor, far: homes.farFinishFor,
+    roofUnits: 3, box: b => homes.boxOf(b.id) });
+  const g = (lod.group.getObjectByName('houses (far-far)') as THREE.Mesh).geometry.getAttribute('position');
+  // The first house's ten triangles: its walls still start at the foundation (0) and its top
+  // sits on the fitted floor plus the box height.
+  const ys = Array.from({ length: 30 }, (_, i) => g.getY(i));
+  expect(Math.min(...ys)).toBe(0);
+  expect(Math.max(...ys)).toBeCloseTo(4 + homes.boxOf(houses[0].id)!.height);
+  lod.dispose();
+});
