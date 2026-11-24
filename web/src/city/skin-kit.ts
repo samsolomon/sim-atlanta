@@ -296,3 +296,97 @@ export function detachedParts(object: { updateMatrixWorld(force?: boolean): void
   }
   return out.sort((a, b) => b.reach - a.reach);
 }
+
+export interface CoplanarReport {
+  /** Overlapping, same-facing triangle pairs whose planes sit 5 mm to `maxGap` apart. */
+  pairs: number;
+  /** The closest such pair: its gap in metres and a world point on it. */
+  worst: { gap: number; at: V3 } | null;
+}
+
+/**
+ * Coplanar-layer lint (method from skins-5): flags layers drawn over a wall, such as window slots,
+ * panels, lit strips and mesh, that stand less than `maxGap` (3 cm) off it. Depth precision runs
+ * out there at City's 400-600 m orbit, and the layers z-fight into black teeth.
+ *
+ * A pair counts when the two triangles face the same way (normals within 1.8°), at least one vertex
+ * of each overlaps the other's extent in the shared plane (5 cm margin, so edge-touching panels
+ * don't count), and the mean point-to-plane distance is from 5 mm (float noise at City
+ * coordinates) up to `maxGap`. Triangles sharing two vertices are one quad's halves. Back-to-back
+ * faces, such as two masses meeting inside a building, face opposite ways and are never flagged.
+ * Positions are taken relative to the object's centre, so plane offsets stay exact far from origin.
+ */
+export function coplanarLayers(object: { updateMatrixWorld(force?: boolean): void; traverse(f: (o: unknown) => void): void },
+  maxGap = 0.03, minGap = 0.005): CoplanarReport {
+  object.updateMatrixWorld(true);
+  const raw: V3[][] = [];
+  object.traverse(o => {
+    const mesh = o as { isMesh?: boolean; geometry?: { index?: { count: number; getX(i: number): number } | null; getAttribute(n: string): { count: number; getX(i: number): number; getY(i: number): number; getZ(i: number): number } | undefined }; matrixWorld?: { elements: number[] } };
+    const pos = mesh.isMesh ? mesh.geometry?.getAttribute('position') : undefined;
+    if (!pos || !mesh.matrixWorld) return;
+    const e = mesh.matrixWorld.elements, index = mesh.geometry!.index;
+    const at = (i: number): V3 => {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      return [e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14]];
+    };
+    const count = index ? index.count : pos.count;
+    for (let t = 0; t + 2 < count; t += 3) raw.push([0, 1, 2].map(k => at(index ? index.getX(t + k) : t + k)));
+  });
+  if (!raw.length) return { pairs: 0, worst: null };
+  const c: V3 = [0, 0, 0];
+  for (const tri of raw) for (const p of tri) for (let k = 0; k < 3; k++) c[k] += p[k] / (raw.length * 3);
+  interface T { p: V3[]; n: V3; d: number; e1: V3; e2: V3; box: [number, number, number, number]; key: string }
+  const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = (a: V3): V3 => { const l = Math.hypot(...a); return [a[0] / l, a[1] / l, a[2] / l]; };
+  let reach = 0;
+  const tris: T[] = [];
+  for (const tri of raw) {
+    const p = tri.map(q => [q[0] - c[0], q[1] - c[1], q[2] - c[2]] as V3);
+    const n0 = cross([p[1][0] - p[0][0], p[1][1] - p[0][1], p[1][2] - p[0][2]], [p[2][0] - p[0][0], p[2][1] - p[0][1], p[2][2] - p[0][2]]);
+    if (Math.hypot(...n0) < 1e-6) continue;
+    const n = unit(n0);
+    const e1 = unit(cross(n, Math.abs(n[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0])), e2 = cross(n, e1);
+    const xs = p.map(q => dot(q, e1)), ys = p.map(q => dot(q, e2));
+    for (const q of p) reach = Math.max(reach, Math.hypot(...q));
+    tris.push({ p, n, d: dot(p[0], n), e1, e2, box: [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)],
+      key: n.map(v => Math.round(v * 40)).join() });
+  }
+  // Same-facing pairs share a normal bucket or sit in a neighbouring one: index every bucket, then
+  // look in the 27 around it. Within a bucket, sort by plane offset and sweep a window wide enough
+  // for the normals' spread across the object.
+  const buckets = new Map<string, T[]>();
+  for (const t of tris) (buckets.get(t.key) ?? buckets.set(t.key, []).get(t.key)!).push(t);
+  for (const list of buckets.values()) list.sort((a, b) => a.d - b.d);
+  const window = maxGap + 0.035 * reach;
+  const same = (a: V3, b: V3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 0.005;
+  let pairs = 0;
+  let worst: CoplanarReport['worst'] = null;
+  for (const [key, list] of buckets) {
+    const k = key.split(',').map(Number);
+    const near: T[][] = [];
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let l = -1; l <= 1; l++) {
+      const other = buckets.get([k[0] + i, k[1] + j, k[2] + l].join());
+      if (other && (other !== list ? [k[0] + i, k[1] + j, k[2] + l].join() > key : true)) near.push(other);
+    }
+    list.forEach((A, ai) => { for (const other of near) {
+      // Binary search the window start in the other bucket.
+      let lo = 0, hi = other.length;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (other[m].d < A.d - window) lo = m + 1; else hi = m; }
+      for (let j = lo; j < other.length && other[j].d <= A.d + window; j++) {
+        const B = other[j];
+        if (other === list && j <= ai) continue;
+        if (dot(A.n, B.n) < 0.9995) continue;
+        if (B.p.filter(q => A.p.some(r => same(q, r))).length >= 2) continue;
+        const gap = Math.abs(B.p.reduce((s, q) => s + dot(q, A.n) - A.d, 0) / 3);
+        if (gap < minGap || gap >= maxGap) continue;
+        const xs = B.p.map(q => dot(q, A.e1)), ys = B.p.map(q => dot(q, A.e2));
+        const m = 0.05;
+        if (A.box[1] - m < Math.min(...xs) || Math.max(...xs) - m < A.box[0] || A.box[3] - m < Math.min(...ys) || Math.max(...ys) - m < A.box[2]) continue;
+        pairs++;
+        if (!worst || gap < worst.gap) worst = { gap, at: [A.p[0][0] + c[0], A.p[0][1] + c[1], A.p[0][2] + c[2]] };
+      }
+    } });
+  }
+  return { pairs, worst };
+}
