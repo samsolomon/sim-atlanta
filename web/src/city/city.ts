@@ -289,6 +289,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
+  // Streaming prototype: draw only what the camera can see (fogged-out areas, sub-pixel meshes).
+  const streamModule = mosaic && midtown && query.get('stream') === '1'
+    ? await import('./stream/manager').catch(error => { console.warn('City streaming unavailable', error); return undefined; })
+    : undefined;
+  options.signal?.throwIfAborted();
+  let stream: import('./stream/manager').StreamManager | undefined;
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -353,6 +359,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     streetcarDowntown?.dispose();
     stopsDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
+    stream?.dispose();
     mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
@@ -963,7 +970,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let heldAt: { x: number; z: number } | undefined;
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
-    mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+    mosaic?.approach(x, z, quality, eastController.signal, mosaicMounted,
+      direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  function mosaicMounted(added: Map<string, NonNullable<typeof east>>, target?: { x: number; z: number }) {
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -976,6 +986,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
+      stream?.mounted();
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       void extendMidtownArterials(added.keys());
@@ -988,7 +999,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  if (streamModule && terrain) {
+    stream = new streamModule.StreamManager({
+      full: id => mosaic?.patches.get(id),
+      changed: () => {
+        // Brookwood's station model draws with its rows.
+        if (brookwood) brookwood.group.visible = ['brookwood-station', 'brookwood-south'].some(id => mosaic?.patches.get(id as 'brookwood-south')?.group.visible);
+        renderer.shadowMap.needsUpdate = true;
+      },
+      // Scenery only: vehicles, people and weather are never detail-culled.
+      detailRoots: () => [world.group, terrain?.group, east?.group, north?.group, transport?.group,
+        ...(mosaic ? Array.from(mosaic.patches.values(), a => a.group) : [])],
+    });
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1284,6 +1307,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
+    view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
@@ -1535,6 +1559,71 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
     }
     downtownBatches?.sync(); // after every downtown landmark's setNight
+    world.setNight(night);
+    platforms?.setNight(night);
+    floyd?.setNight(night);
+    eastRail?.setNight(night);
+    hyatt?.setNight(night);
+    marquis?.setNight(night);
+    marquisOne?.setNight(night);
+    marquisTwo?.setNight(night);
+    hilton?.setNight(night);
+    altitude?.setNight(night);
+    twelve?.setNight(night);
+    truist?.setNight(night);
+    westin?.setNight(night);
+    peachtreeCenter?.setNight(night);
+    peachtree?.setNight(night);
+    library?.setNight(night);
+    flatiron?.setNight(night);
+    healey?.setNight(night);
+    footballHall?.setNight(night);
+    oneParkTower?.setNight(night);
+    parkPlaceTower?.setNight(night);
+    fiftyFiveParkPlace?.setNight(night);
+    fultonBank?.setNight(night);
+    davisons?.setNight(night);
+    ritzCarlton?.setNight(night);
+    southernBell?.setNight(night);
+    rhodesHaverty?.setNight(night);
+    empireBuilding?.setNight(night);
+    commerceBuilding?.setNight(night);
+    hundredEdgewood?.setNight(night);
+    metropolitan?.setNight(night);
+    mariettaBackdrop?.setNight(night);
+    one12Courtland?.setNight(night);
+    citizensTrust?.setNight(night);
+    fultonGovernmentCenter?.setNight(night);
+    georgiaAquarium?.setNight(night);
+    worldOfCocaCola?.setNight(night);
+    williams250?.setNight(night);
+    fultonCourthouse?.setNight(night);
+    peachtreeOffices?.setNight(night);
+    williamOliver?.setNight(night);
+    omniAtlanta?.setNight(night);
+    fivePointsPlaza?.setNight(night);
+    twoPeachtree?.setNight(night);
+    georgiaPower?.setNight(night);
+    georgiaPacific?.setNight(night);
+    russell?.setNight(night);
+    centennial?.setNight(night);
+    capitol?.setNight(night);
+    arena?.setNight(night);
+    atlantaCityHall?.setNight(night);
+    americasMart?.setNight(night);
+    hurtBuilding?.setNight(night);
+    theCenter?.setNight(night);
+    samNunn?.setNight(night);
+    candler?.setNight(night);
+    equitable?.setNight(night);
+    grady?.setNight(night);
+    terrain?.setNight(night);
+    east?.setNight(night);
+    north?.setNight(night);
+    stopsDowntown?.setNight(night);
+    northStops?.setNight(night);
+    if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
+    stream?.setNight(night);
     bloom.strength = 0.55 * night;
     // A one-frame warm-up runs bloom at strength 0 by day (it adds nothing), so its blur shaders compile
     // then and not on the first dusk frame.
@@ -1687,6 +1776,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
+    stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far, renderer.domElement.height);
     figures?.update(sceneTime, camera, container.clientHeight);
     // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
     if (trafficHeightsStale) {
@@ -1814,6 +1904,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     options.signal?.addEventListener('abort', () => clearInterval(rescanTimer), { once: true });
     void (whiteModel?.revealed ?? Promise.resolve()).then(() => { colourShown = true; rescan(); });
   }
+  // Streaming: a handle for the perf harness and dev checks.
+  if (stream && (import.meta.env.DEV || perfEnabled)) Object.assign(window, { __stream: {
+    rings: () => stream!.stats(),
+    settled: () => stream!.settled,
+    setCamera: (x: number, z: number, dist = 700, bearing = 0, tilt = 55) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
+    areas: () => mosaic ? [...mosaic.areas.keys()] : [],
+  } });
   let firstFrame = false;
   // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.

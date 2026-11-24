@@ -33,10 +33,14 @@ export interface PerfContext {
   pan?(dxPx: number, dyPx: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
+  /** Frame a camera target (metres) at a distance, bearing clockwise from north and tilt from
+   * vertical, in degrees (for ?perf=run&motion=route:<name>). */
+  view?(x: number, z: number, dist: number, bearing: number, tilt: number): void;
   quality: string;
 }
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
+const streaming = params.get('stream') === '1';
 const mode = params.get('perf');
 /** `?perf` or `?perf=run`; off otherwise. */
 export const perfEnabled = mode !== null && mode !== '0' && mode !== 'off';
@@ -99,6 +103,59 @@ const phases: Phase[] = [];
 let ctx: PerfContext | null = null;
 let lastResult: unknown = null;
 const prewarmSteps: number[] = [];
+
+/** Streamed-area rings (?stream=1). The ring manager reports each transition. */
+export type StreamRing = 'near' | 'mid' | 'far' | 'unloaded';
+const rings = new Map<string, StreamRing>();
+const ringLog: { area: string; from: StreamRing | null; to: StreamRing; ms: number }[] = [];
+/** Transitions that return an area to the ring it just left within this window count as thrash. */
+const THRASH_MS = 3000;
+function ring(area: string, to: StreamRing) {
+  const from = rings.get(area) ?? null;
+  if (from === to) return;
+  rings.set(area, to);
+  const ms = Math.round(performance.now());
+  ringLog.push({ area, from, to, ms });
+  if (perfEnabled) console.info('PERF_RING', area, from, to, ms);
+  // A user-timing mark, so a Chrome trace lines up ring swaps with long frames.
+  if (perfEnabled) try { performance.mark(`ring:${area}:${from ?? 'none'}>${to}`); } catch { /* old browser */ }
+}
+function thrash() {
+  let n = 0;
+  const last = new Map<string, { from: StreamRing | null; ms: number }>();
+  for (const t of ringLog) {
+    const prev = last.get(t.area);
+    if (prev && prev.from === t.to && t.ms - prev.ms < THRASH_MS) n++;
+    last.set(t.area, { from: t.from, ms: t.ms });
+  }
+  return n;
+}
+/** Queue state from the streaming loader (core/load-budget.ts registers itself here). */
+let streamSource: (() => { pending: number; stats: unknown }) | null = null;
+
+/** Camera routes for ?perf=run&motion=route:<name>: targets in metres, flown at constant speed out and
+ * back over the sample. `north` runs Five Points to Brookwood through every Midtown row; `loop` circles
+ * the south and east patches. */
+const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: number[] }> = {
+  north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
+  // Wide: a 4 km orbit down the board keeps mid-ring LOD in frame. Dolly: from the whole board into
+  // Brookwood, so far areas become near for the first time (a first-show upload would stall here).
+  wide: { dist: 4000, bearing: 0, tilt: 45, path: [[400, -300], [400, -4300]] },
+  dolly: { dist: 9000, bearing: 0, tilt: 40, path: [[400, -2300], [500, -5200]], dists: [9000, 600] },
+  loop: { dist: 700, bearing: 30, tilt: 50, path: [[0, -300], [0, 900], [1400, 900], [1400, -900], [0, -1500], [0, -300]] },
+};
+function routeAt(path: [number, number][], u: number): [number, number] {
+  const seg = path.slice(1).map((p, i) => Math.hypot(p[0] - path[i][0], p[1] - path[i][1]));
+  let d = u * seg.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < seg.length; i++) {
+    if (d <= seg[i] || i === seg.length - 1) {
+      const f = seg[i] ? Math.min(1, d / seg[i]) : 0;
+      return [path[i][0] + (path[i + 1][0] - path[i][0]) * f, path[i][1] + (path[i + 1][1] - path[i][1]) * f];
+    }
+    d -= seg[i];
+  }
+  return path[path.length - 1];
+}
 
 function heapMB(): number | null {
   const m = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
@@ -186,6 +243,7 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 function frames(windowMs: number) {
   const idx = recent(windowMs);
   if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, over33: 0, over50: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
@@ -196,6 +254,8 @@ function frames(windowMs: number) {
   return {
     fps: r1(((idx.length - 1) * 1000) / Math.max(1, span)), frames: idx.length,
     p50: r1(pct(dts, 0.5)), p95: r1(pct(dts, 0.95)), max: r1(Math.max(...dts)),
+    // Long frames: a pan's hitches, which a percentile hides when there are only a few.
+    over33: dts.filter(d => d > 34).length, over50: dts.filter(d => d > 50).length,
     updateP50: r1(pct(up, 0.5)), renderP50: r1(pct(rn, 0.5)), renderP95: r1(pct(rn, 0.95)),
     trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
     trafficMean: Math.round(tf.reduce((a, b) => a + b, 0) / tf.length * 1000) / 1000,
@@ -430,6 +490,8 @@ function rendererInfo() {
     programs: renderer.info.programs?.length ?? 0,
     programKinds: (renderer.info.programs ?? []).reduce<Record<string, number>>((o, p) => { const k = (p as { name?: string }).name || '?'; o[k] = (o[k] ?? 0) + 1; return o; }, {}),
     shadowMap: { enabled: renderer.shadowMap.enabled, autoUpdate: renderer.shadowMap.autoUpdate },
+    /** Live GPU geometries and textures; a streamed area that unmounts cleanly returns these to baseline. */
+    gpuObjects: { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures },
   };
 }
 
@@ -505,16 +567,33 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
-  // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
   const settleStart = performance.now();
-  while (performance.now() - settleStart < maxWaitMs) {
-    const last = phases[phases.length - 1]?.ms ?? 0;
-    if (performance.now() - last > quietMs) break;
-    await sleep(250);
+  if (streaming) {
+    // Streamed areas: settled once the loader is idle and neither a ring nor a load phase (boot still
+    // mounts every area under stream) has changed for quietMs.
+    while (performance.now() - settleStart < maxWaitMs) {
+      const last = Math.max(ringLog[ringLog.length - 1]?.ms ?? 0, phases[phases.length - 1]?.ms ?? 0);
+      // A LOD still building in the worker isn't in the loader's queue yet; the stream manager knows.
+      const streamSettled = (globalThis as { __stream?: { settled?(): boolean } }).__stream?.settled?.() ?? true;
+      if ((!streamSource || !streamSource().pending) && streamSettled && performance.now() - last > quietMs) break;
+      await sleep(250);
+    }
+    phase('stream:settled');
+  } else {
+    // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
+    while (performance.now() - settleStart < maxWaitMs) {
+      const last = phases[phases.length - 1]?.ms ?? 0;
+      if (performance.now() - last > quietMs) break;
+      await sleep(250);
+    }
   }
   const shadowBefore = shadowUpdates;
+  const ringsBefore = ringLog.length;
   const motion = params.get('motion');
-  let turning = motion === 'orbit' || motion === 'pan';
+  const route = motion?.startsWith('route:') ? ROUTES[motion.slice(6)] : undefined;
+  if (route) sampleMs = 20000;
+  document.title = 'PERF_SAMPLING';
+  let turning = motion === 'orbit' || motion === 'pan' || !!route;
   if (turning) {
     const t0 = performance.now();
     let last = t0;
@@ -522,7 +601,15 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     const turn = (now: number) => {
       if (!turning) return;
       if (motion === 'orbit') ctx?.rotate?.(((now - last) / 1000) * 12);
-      else {
+      else if (route) {
+        // Out and back: u runs 0 -> 1 -> 0 over the sample.
+        const k = Math.min(1, (now - t0) / sampleMs);
+        const u = k < 0.5 ? k * 2 : 2 - k * 2;
+        const [x, z] = routeAt(route.path, u);
+        // A dolly eases its distance geometrically, so the zoom reads as steady.
+        const dist = route.dists ? route.dists[0] * Math.pow(route.dists[1] / route.dists[0], u) : route.dist;
+        ctx?.view?.(x, z, dist, route.bearing, route.tilt);
+      } else {
         const next = 150 * Math.sin(((now - t0) / 4000) * 2 * Math.PI);
         ctx?.pan?.(next - x, 0);
         x = next;
@@ -543,6 +630,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   const summary = {
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
     trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
+    quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, over33: f.over33, over50: f.over50, updateP50: f.updateP50, renderP50: f.renderP50,
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
@@ -552,8 +640,12 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     dataMs: at('city:data'), rendererMs: at('city:renderer'), firstFrameMs: at('city:first-frame'), readyMs: at('ready'),
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
     motion: params.get('motion') ?? 'static',
+    stream: streaming, settledMs: at('stream:settled'),
+    ringTransitions: ringLog.length, ringTransitionsInSample: ringLog.length - ringsBefore, ringThrash: thrash(),
+    rings: Object.fromEntries(rings),
   };
-  const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
+  const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample,
+    stream: streaming ? { ringLog: ringLog.map(t => ({ ...t })), loader: streamSource?.().stats ?? null } : undefined };
   lastResult = r;
   const line = 'PERF_RESULT ' + JSON.stringify(r);
   console.info(line);
@@ -741,6 +833,12 @@ export const perf = {
     const list = (ctx?.renderer.info.programs ?? []) as unknown as { id: number; name?: string; cacheKey?: string; usedTimes?: number }[];
     return list.map(p => ({ id: p.id, name: p.name ?? '', key: p.cacheKey ?? '', used: p.usedTimes ?? 0 }));
   },
+  ring,
+  /** Streaming loader work still queued or in flight (0 without ?stream). */
+  streamPending() { return streamSource?.().pending ?? 0; },
+  ringSummary() { return { rings: Object.fromEntries(rings), transitions: ringLog.length, thrash: thrash() }; },
+  /** The streaming loader registers its queue here so a run can wait for it to drain. */
+  setStreamSource(source: typeof streamSource) { streamSource = source; },
   get phases() { return phases.map(p => ({ ...p })); },
   get result() { return lastResult; },
 };
