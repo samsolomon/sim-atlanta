@@ -180,9 +180,10 @@ Not yet: Street view, layers and tours (see Follow-ups).
   fingers: drag up or down to tilt, twist to turn, pinch to zoom"), so the
   "Drag to look around · WASD to move" hint no longer appears on Map.
 - **First-visit hint** (Final 01, P1): one glass line above the dock that leads with the
-  reason to interact. Desktop: "**Tap a train** for where it's going · **drag** to move ·
-  **two-finger scroll** to tilt" (mouse: "right-drag to tilt"). Phone: "**Tap a train** for
-  where it's going. Pinch to zoom, two fingers to tilt." It has a "Got it" and also goes
+  reason to interact, covering trains and buildings alike. Desktop: "**Click anything** to
+  inspect · **drag** to move · **two-finger scroll** to tilt" (mouse: "right-drag to tilt").
+  Phone: "**Tap anything** to inspect. Pinch to zoom, two fingers to tilt." It has a
+  "Got it" and also goes
   after the first gesture; it never returns once dismissed (per-viewer storage).
 
 ## 3D and tilt (in the camera group)
