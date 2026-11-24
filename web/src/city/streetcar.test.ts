@@ -4,21 +4,27 @@ import { lonLatToScene } from '../core/places';
 import type { RoutesFile } from '../model/types';
 import { roadWidth } from '../terrain/transport-data';
 import { pointInRing, segDist, type P2 } from '../vignette/geom';
+import { streetcarShapes } from './streetcar-shape';
 import { buildStreetcarTrack, poleBlocked, roadSurface, STREETCAR_ROUTE, streetcarLines, withoutTram } from './streetcar';
 
 const origin = { lon: -84.3916, lat: 33.7539 };
 const data = (p: string) => new URL('../../public/data/' + p, import.meta.url);
 const ready = existsSync(data('ga/routes.json')) && existsSync(data('scene/downtown/vignette.json'));
 
-it.skipIf(!ready)('lays one track network over every GTFS streetcar shape', () => {
+it.skipIf(!ready)('lays one track network over every filleted streetcar shape the cars run on', () => {
   const rf: RoutesFile = JSON.parse(readFileSync(data('ga/routes.json')).toString());
   const lines = streetcarLines(rf, origin);
   expect(lines.length).toBeGreaterThan(0);
+  const near = (x: number, z: number) => Math.min(...lines.flatMap((l) => l.pts.slice(1).map((b, k) => segDist(x, z, l.pts[k], b))));
+  // Every point a car can stand on has a drawn rail under it, including the shared corners.
+  for (const shape of streetcarShapes(rf, origin, STREETCAR_ROUTE)) for (const [x, z] of shape.pts) expect(near(x, z), `${shape.id} at ${x.toFixed(0)},${z.toFixed(0)}`).toBeLessThan(2.6);
+  // Raw GTFS vertices stay under the track, except at a filleted corner, which the arc cuts by its shift.
+  const corners = streetcarShapes(rf, origin, STREETCAR_ROUTE).flatMap((s) => s.corners);
   for (const path of rf.paths.filter((p) => p.routeId === STREETCAR_ROUTE))
     for (let i = 0; i + 1 < path.coords.length; i += 2) {
       const [x, z] = lonLatToScene(origin, path.coords[i], path.coords[i + 1]);
-      const d = Math.min(...lines.flatMap((l) => l.pts.slice(1).map((b, k) => segDist(x, z, l.pts[k], b))));
-      expect(d).toBeLessThan(2.6);
+      const cut = corners.find((c) => Math.hypot(c.at[0] - x, c.at[1] - z) < c.shift + 25);
+      expect(near(x, z), `raw ${path.id} at ${x.toFixed(0)},${z.toFixed(0)}`).toBeLessThan(cut ? cut.shift + 2.6 : 2.6);
     }
 });
 

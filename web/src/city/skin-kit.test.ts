@@ -101,3 +101,37 @@ it('measures how far a mesh reaches past its footprint and its top', async () =>
   box.position.set(5, 1, 5);
   expect(footprintReport(group, [square]).worst).toBe(0);
 });
+
+it('flags a part hanging off the wall but not a slab that runs back to it', async () => {
+  const { Group, Mesh, MeshBasicMaterial } = await import('three');
+  const { detachedParts } = await import('./skin-kit');
+  const square: [number, number][] = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  const body = new Builder();
+  // The building's south and east walls, and a balcony slab from the east wall out to 1.7 m
+  // with a rail at its edge.
+  body.quad([0, 0, 0], [0, 9, 0], [10, 9, 0], [10, 0, 0], '#ffffff');
+  body.quad([10, 0, 0], [10, 9, 0], [10, 9, 10], [10, 0, 10], '#ffffff');
+  body.quad([10, 3, 2], [11.7, 3, 2], [11.7, 3, 4], [10, 3, 4], '#ffffff');
+  body.quad([11.7, 3, 2], [11.7, 4, 2], [11.7, 4, 4], [11.7, 3, 4], '#ffffff');
+  const attached = new Group();
+  attached.add(new Mesh(body.geometry(), new MeshBasicMaterial()));
+  expect(detachedParts(attached, [square])).toEqual([]);
+  // Alexan before #550: a stack of vertical plates 1.7 m off the wall, each 0.2 m above the
+  // last (so they cluster with each other) but joined to nothing on the building.
+  const plate = new Builder();
+  for (let y = 3; y < 9; y += 1.2) plate.quad([11.7, y, 6], [11.7, y + 1, 6], [11.7, y + 1, 8], [11.7, y, 8], '#ffffff');
+  attached.add(new Mesh(plate.geometry(), new MeshBasicMaterial()));
+  const found = detachedParts(attached, [square]);
+  expect(found).toHaveLength(1);
+  expect(found[0].gap).toBeCloseTo(1.7);
+  // A window pane laid 0.07 m off a wall that itself sits 0.5 m outside a simplified outline
+  // still belongs to the building: not detached.
+  const pane = new Builder();
+  pane.quad([10.07, 5, 6], [10.07, 6, 6], [10.07, 6, 7], [10.07, 5, 7], '#ffffff');
+  const wall = new Builder();
+  wall.quad([10, 0, 0], [10, 9, 0], [10, 9, 10], [10, 0, 10], '#ffffff');
+  wall.quad([0, 9, 0], [0, 9, 10], [10, 9, 10], [10, 9, 0], '#ffffff'); // the roof, mostly inside the outline
+  const g2 = new Group();
+  g2.add(new Mesh(wall.geometry(), new MeshBasicMaterial()), new Mesh(pane.geometry(), new MeshBasicMaterial()));
+  expect(detachedParts(g2, [[[0, 0], [9.5, 0], [9.5, 10], [0, 10]]])).toEqual([]);
+});

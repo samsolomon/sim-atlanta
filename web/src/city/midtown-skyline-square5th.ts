@@ -91,7 +91,7 @@ export function squareOn5th(shell: Shell) {
   });
 
   // Grey canopy over the Spring Street (east) and south frontages.
-  shell.prism([[30.6, -10], [32.4, -10], [32.4, 10], [30.6, 10]], 4.4, 4.8, CANOPY, CANOPY);
+  shell.prism([[29.8, -10], [32.4, -10], [32.4, 10], [29.8, 10]], 4.4, 4.8, CANOPY, CANOPY); // from inside the wall line (u ≈ 30), so it attaches
 
   // Four concrete fins on the north face, rising past the roof to carry the open frame.
   const north = Math.min(...ring.map(([, v]) => v));

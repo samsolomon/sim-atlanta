@@ -31,13 +31,20 @@ const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const SVG = (body: string, box = 24) =>
   `<svg viewBox="0 0 ${box} ${box}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const CARET = SVG('<path d="M6 9l6 6 6-6"/>');
-const COMPASS = `<svg viewBox="0 0 32 32" aria-hidden="true" class="a2-needle"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/><g><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></g></svg>`;
+// The ring stays put; the needle is its own SVG on its own compositor layer, turned by a CSS
+// transform, so a turning camera never repaints or re-rasters the compass.
+const COMPASS = `<span class="a2-needle" aria-hidden="true"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><svg viewBox="0 0 32 32" class="a2-needle-turn"><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></svg></span>`;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
   e.innerHTML = html;
   return e;
+}
+
+/** Set text only when it differs, so a periodic refresh doesn't invalidate style for nothing. */
+function setText(el: HTMLElement, text: string) {
+  if (el.textContent !== text) el.textContent = text;
 }
 
 export function createShellNext(o: ShellOptions): ShellApi {
@@ -449,11 +456,13 @@ export function createShellNext(o: ShellOptions): ShellApi {
   compass.addEventListener('click', () => o.north?.());
   zoomIn.addEventListener('click', () => o.zoom(1));
   zoomOut.addEventListener('click', () => o.zoom(-1));
-  const needle = compass.querySelector<SVGGElement>('g')!;
+  const needle = compass.querySelector<SVGSVGElement>('.a2-needle-turn')!;
   let shownBearing = NaN;
+  let labelTimer = 0;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
-    if (!tilt.matches(':active, :focus-visible')) tilt.value = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    const tiltNow = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    if (tilt.value !== tiltNow && !tilt.matches(':active, :focus-visible')) tilt.value = tiltNow;
     const show = view !== 'models';
     if (compass.hidden === show) {
       compass.hidden = !show;
@@ -462,8 +471,10 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     if (!Number.isFinite(shownBearing) || Math.abs(b - shownBearing) > 0.1) {
       shownBearing = b;
-      needle.setAttribute('transform', `rotate(${(-b).toFixed(1)} 16 16)`);
-      compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((b % 360) + 360) % 360)}°)`);
+      needle.style.transform = `rotate(${(-b).toFixed(1)}deg)`;
+      // Screen readers get the heading once the turn settles, not a label rewrite every frame.
+      clearTimeout(labelTimer);
+      labelTimer = window.setTimeout(() => compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((shownBearing % 360) + 360) % 360)}°)`), 250);
     }
     requestAnimationFrame(watchBearing);
   };
@@ -639,7 +650,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const t = performance.now();
     if (t - lastTick < 500) return;
     lastTick = t;
-    if (radio && !radioPanel.hidden) progress.value = radio.elapsedS;
+    if (radio && !radioPanel.hidden && progress.value !== radio.elapsedS) progress.value = radio.elapsedS;
     const c = o.center();
     const mpp = o.metresPerPixel?.() ?? null;
     threeD.classList.toggle('a2-outside', !!outside());
@@ -656,35 +667,38 @@ export function createShellNext(o: ShellOptions): ShellApi {
     let svg: string;
     if (wxNow) {
       svg = weatherIcon(wxNow, night);
-      wxText.textContent = `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`;
+      setText(wxText, `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`);
     } else if (s.realTime && !preview) {
       // At the present with no observation yet (or the fetch failed): show no condition at all,
       // never a guessed one in the observed-weather slot.
       svg = '';
-      wxText.textContent = '';
+      setText(wxText, '');
     } else {
       // A shifted clock or a chosen sky is a scene setting: its icon only, no words, so it never
       // reads as a reported condition (#231).
       const sk = skyLabel(o.sky?.() ?? { cloud: 0, rain: 0, fog: 0, snow: 0 });
       svg = weatherIcon({ kind: sk.kind, label: sk.snow ? 'snow' : sk.label, cloud: 0, rain: 0, fog: 0, live: false }, night);
       // At the present, a picked sky says so in words, so it can't pass for the observed one.
-      wxText.textContent = s.realTime && preview ? `Chosen: ${sk.label}` : '';
-      wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
+      setText(wxText, s.realTime && preview ? `Chosen: ${sk.label}` : '');
+      if (wx.title !== `Scene sky: ${sk.label.toLowerCase()}`) wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
     }
-    wx.hidden = !svg;
-    if (wxText.textContent) wx.removeAttribute('title');
+    if (wx.hidden !== !svg) wx.hidden = !svg;
+    if (wxText.textContent && wx.hasAttribute('title')) wx.removeAttribute('title');
     if (wxIcon.dataset.svg !== svg) {
       wxIcon.innerHTML = svg;
       wxIcon.dataset.svg = svg;
     }
-    timeText.textContent = timeFmt.format(now);
-    tierDot.className = `a2-dot a2-dot-${conf.tier}`;
-    tierText.textContent = confidenceWords(conf).join(' · ');
+    // Write only what changed: this runs twice a second, and each DOM write re-styles the card.
+    setText(timeText, timeFmt.format(now));
+    const dotClass = `a2-dot a2-dot-${conf.tier}`;
+    if (tierDot.className !== dotClass) tierDot.className = dotClass;
+    setText(tierText, confidenceWords(conf).join(' · '));
     tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
-    tierDate.textContent = dateFmt.format(now);
-    tierDate.hidden = !conf.shifted;
-    nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`);
+    setText(tierDate, dateFmt.format(now));
+    if (tierDate.hidden !== !conf.shifted) tierDate.hidden = !conf.shifted;
+    if (nowBtn.hidden !== !conf.shifted) nowBtn.hidden = !conf.shifted;
+    const label = `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`;
+    if (open.getAttribute('aria-label') !== label) open.setAttribute('aria-label', label);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(loadingNote ?? areaNote ?? feedNote);
@@ -729,7 +743,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   function showNotice(text: string | null) {
     if (notice.textContent !== (text ?? '')) notice.textContent = text ?? '';
-    notice.hidden = !text;
+    if (notice.hidden !== !text) notice.hidden = !text;
   }
 
   // ---- views --------------------------------------------------------------------------------
