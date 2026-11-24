@@ -3638,3 +3638,8 @@ Luxe's white tower and its rounded blue glass corner now stand on 12th Street, a
 ### 2026-11-24 · The Crowne Plaza was 17 m shorter
 
 The second of the two unnamed masses near the North Avenue and Connector sightline is a 1972 slab at 590 West Peachtree. OSM tags it 4 levels and 98 m. A hotel listing names it the Crowne Plaza Atlanta Midtown, and the 2019 lidar puts its roof at 81 m, so City had been drawing it 17 m too tall next to One Georgia Center. Street View shows a white slab with blank ends and a white grid of piers and floor slabs on its long faces. That grid comes to about 620 triangles, roughly routine-skin size. The first window glass sent the shaded faces navy (S 91), so the base went paler, landing sunlit glass at S 8 and V 47. [Before and after](log/ui/crowne-plaza-midtown/compare.jpg)
+## 2026-11-24: Hanover House, concrete and bronze
+
+Colony Square's Brutalist slab is now concrete, with bronze glass bays scattered among blank panels across its long faces, a slot up each end wall, and raked aprons at its base. The irregular panel pattern comes from the same shared hash that lights windows, on a different slot, so it is stable and has no lattice. The lidar roof is 53.1 m, against a mapped 62 m. It costs under 1,200 triangles.
+[Before and after](log/ui/hanover-house/compare.jpg) · [day and night](log/ui/hanover-house/daynight.jpg) · [close](log/ui/hanover-house/close.jpg)
+
