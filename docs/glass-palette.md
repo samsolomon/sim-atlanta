@@ -72,6 +72,12 @@ Five named glass families, plus bronze for when a photo shows it. Ranges are HSV
 
 **Dark-glass floor:** no daytime glass base below **V 40**, or mean pane luminance about 0.16. At V 35–38, a 500–600 m view loses the mullion, band and setback detail that skins model. That is what happened with Four Seasons and 10 10th tonight, and with #451. Night is unaffected, because lit panes are emissive.
 
+**Check rendered pixels, not only the constant.** The colour grade, sky fill and shadow tint shift glass away from its base constant: MAA Midtown's corner (`#7fa3bd`, S 33) renders deeper blue than that in its sheet. Apply both rules to the base constant **and** to rendered pixels:
+1. In the 11:30 high-tier shot, sample the median HSV of one sunlit and one shaded patch of glass. Avoid mullions and lit panes.
+2. Sample a generic glass tower in the same frame as a reference.
+3. The sunlit and shaded medians must stay inside the family's range as measured on the generic reference. In practice, rendered S ≤ 36 (teal 40), and rendered V in sun ≥ 40.
+4. Put the numbers in the PR body.
+
 **Saturation cap:** S ≤ 36, except teal, which is ≤ 40 and photo-backed. Above that, glass reads as paint under the colour grade.
 
 ## If Sam approves
