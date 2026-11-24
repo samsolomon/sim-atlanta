@@ -15,6 +15,7 @@ import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
 import { create10Tenth, tenTenthId } from '../city/10-10th';
 import { atlanticId, createAtlantic } from '../city/the-atlantic';
 import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
+import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -252,6 +253,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === tenTenthId ? create10Tenth(sceneryCity.buildings, site, grid)
       : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
       : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {

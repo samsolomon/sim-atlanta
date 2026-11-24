@@ -27,7 +27,7 @@ const officePitch = 3.4, roomPitch = 3.1;
 
 // Flat vertex colours: a painted library surface compiles its own program, and the low tier
 // has no program to spare.
-const glass = '#4d6c72', glassLit = '#4f6e74', band = '#5b777c', steel = '#c9cdcb';
+const glass = '#4d6c72', glassLit = '#4f6e74', band = '#5b777c', steel = '#bcc4c7';
 const screenGlass = '#6d8a8e', roofDeck = '#8e928e';
 const hotelWall = '#d8cdb8', hotelWindow = '#4a5860', condoWall = '#e9e8e2', condoGlass = '#55666c';
 const deck = '#c2c0b8', lawn = '#77905a', storefront = '#34444a';
@@ -93,7 +93,8 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
 
   let tower: P2[] | null = null;
   for (const part of site.parts ?? []) {
-    if (part.rings.length !== 1) continue;
+    // The deck's two holes are exactly the 19.8 m parts, so every part's outer ring is enough.
+    if (!part.rings.length) continue;
     const plan = local(part.rings[0]);
     if (part.id === towerId) { tower = plan; continue; }
     if (part.id === condoId) {
@@ -180,7 +181,7 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
     ...built,
     setNight(night: number) {
       built.setNight(night);
-      ledMesh.material.emissiveIntensity = night * 0.9;
+      ledMesh.material.emissiveIntensity = night * 0.7;
     },
   };
 }
