@@ -50,7 +50,7 @@ import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
 import { createNorfolkSouthern, norfolkSouthernId } from '../city/norfolk-southern';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
-import { runSync } from '../core/slice';
+import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -249,7 +249,7 @@ export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
  * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
  * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
  * error at City's tilt is under a pixel there; only the default (~21 km) and wider orbits reach
- * it. 115k -> 19k ground triangles across the 12 boards. Opt-in for now: `?veryfar=1`.
+ * it. 115k -> 19k ground triangles across the 12 boards. `?veryfar=0` keeps the far level.
  */
 export const VERY_FAR_M = 12000, VERY_FAR_BUILD_M = 10000, VERY_FAR_ERROR_M = 8;
 /**
@@ -257,21 +257,31 @@ export const VERY_FAR_M = 12000, VERY_FAR_BUILD_M = 10000, VERY_FAR_ERROR_M = 8;
  * 145 ms task on the Studio (600+ ms on the A16), so in an idle gap mid-flight it stalled a frame,
  * and at the static default view the phone is never idle, so it never built. Off: nothing queued.
  */
-let veryFarOff = new URLSearchParams(globalThis.location?.search ?? '').get('veryfar') !== '1';
+let veryFarOff = new URLSearchParams(globalThis.location?.search ?? '').get('veryfar') === '0';
 /** Tests: turn the very-far level on or off. */
 export function setVeryFarForTests(on: boolean) { veryFarOff = !on; }
-/** One very-far build per idle slice across all boards: several hundred ms on a phone if done at once. */
-const veryFarQueue: (() => void)[] = [];
-let veryFarPumping = false;
-function pumpVeryFar() {
-  if (veryFarPumping) return;
-  veryFarPumping = true;
-  const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 16));
-  const step = () => {
-    veryFarQueue.shift()?.();
-    if (veryFarQueue.length) idle(step); else veryFarPumping = false;
-  };
-  idle(step);
+/**
+ * Very-far levels build in the background, one board at a time, a few milliseconds per frame
+ * (core/slice.ts runBudgeted): one board's settled level is ~145 ms of work on the Studio and
+ * 600+ ms on the A16, which as a single task stalled a frame. Stats: the longest step and slice.
+ */
+export const veryFarStats = emptySliceStats();
+if (import.meta.env?.DEV) (globalThis as { __veryFarStats?: typeof veryFarStats }).__veryFarStats = veryFarStats;
+export const VERY_FAR_BUDGET_MS = 3;
+let veryFarChain: Promise<unknown> = Promise.resolve();
+/** Abandon a queued build as soon as its board is disposed (a tier switch, a new City). */
+function* whileAlive<T>(build: Build<T>, alive: () => boolean): Build<T | null> {
+  for (;;) {
+    if (!alive()) return null;
+    const r = build.next();
+    if (r.done) return r.value;
+    yield r.value;
+  }
+}
+function queueVeryFar<T>(build: () => Build<T>, done: (value: T) => void, alive: () => boolean) {
+  veryFarChain = veryFarChain.then(() => !alive() ? null : runBudgeted(whileAlive(build(), alive), {
+    budgetMs: () => (sliceInput.dragging ? 1 : VERY_FAR_BUDGET_MS), stats: veryFarStats,
+  })).then(v => { if (v !== null) done(v as T); }, () => {});
 }
 let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
@@ -575,8 +585,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       const next = far ? d > 0.9 * FAR_GROUND_M : d > FAR_GROUND_M;
       if (!veryFarOff && !veryFarQueued && d > VERY_FAR_BUILD_M) {
         veryFarQueued = true;
-        veryFarQueue.push(() => { if (!disposed) veryFarGeometry = mesh.farGeometry(VERY_FAR_ERROR_M, 160, true); });
-        pumpVeryFar();
+        queueVeryFar(() => mesh.farGeometrySteps(VERY_FAR_ERROR_M, 160, true), g => { if (disposed) g.dispose(); else veryFarGeometry = g; }, () => !disposed);
       }
       // The houses' far-far form switches on the very-far ground's distances, not its build.
       const nextHouses = farHouses ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M;
