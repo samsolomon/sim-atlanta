@@ -936,7 +936,7 @@ The mature model uses 195 / 135 triangles at high / low detail, three instanced 
 
 ### Lacebark elm
 
-`web/src/trees/lacebark-elm.ts`, *Ulmus parvifolia*, also called Chinese elm. The A study depicts a broad street-tree crown with drooping fine shoots, small glossy leaves, and patches of olive, tan and cinnamon bark. The ranked inventory counts above describe existing trees, and this study is scoped to the Lab. [Seasonal and distance sheet](log/ui/tree-species/options-lacebark-elm.jpg).
+`web/src/trees/lacebark-elm.ts`, *Ulmus parvifolia*, also called Chinese elm. Sam approved A as the Model Lab default. It depicts a broad street-tree crown with drooping fine shoots, small glossy leaves, and patches of olive, tan and cinnamon bark. The ranked inventory counts above describe existing trees, and this study is scoped to the Lab. [Seasonal and distance sheet](log/ui/tree-species/options-lacebark-elm.jpg).
 
 [NC State Plant Toolbox](https://plants.ces.ncsu.edu/plants/ulmus-parvifolia/) describes exfoliating bark and a typical tree around 40–50 ft tall and wide. [UF/IFAS ST652](https://edis.ifas.ufl.edu/publication/ST652/pdf) describes drooping limbs and an inconspicuous late flower display. The sheet compares Cathy DeWitt’s Moore County form and Wake County late-winter bark photographs (CC BY 4.0). Both are daylight references. The night frame shows the Lab’s lighting treatment.
 

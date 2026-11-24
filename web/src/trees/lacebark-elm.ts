@@ -101,7 +101,7 @@ if (barkDetail > 0.) {
 }
 
 export const lacebarkElmLook: Look = {
-  species: lacebarkElm, habit, leaf: 'oval', palette, barkMaterial, cardLeafM: 0.14, lowLift: 0.055,
+  species: lacebarkElm, preferred: 'A', habit, leaf: 'oval', palette, barkMaterial, cardLeafM: 0.14, lowLift: 0.055,
   options: [{ id: 'A', label: 'Fine drooping sprays', technique: 'cards', ink: 2, specks: 0.04,
     units: { high: 24, low: 15 }, cover: 0.79,
     note: 'A broad crown of small glossy leaves and arching twigs over mottled olive, tan and cinnamon bark.' }],
