@@ -55,11 +55,15 @@ const TRAIL_KEY = 'perf-trail';
  *                 every frame), for A/B update-ms runs on a device; &traffic=nocull keeps the new
  *                 path but poses off-screen cars too (to compare drawn cars with legacy)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
+ *   &treecell=400 low tier: generic tree cell size in metres (0: one batch per area).
+ *   &farform=0    low tier: keep the near generic trees past the far-tree orbit instead of
+ *                 their far form (trees/far-canopy.ts), for before/after comparisons.
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
   if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, farForm: true, treeCellM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -73,6 +77,10 @@ export const perfOverrides = (() => {
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
     trafficLegacy: params.get('traffic') === 'legacy',
     trafficNoCull: params.get('traffic') === 'nocull',
+    /** &farform=0: keep the near generic trees past the far-tree orbit (the pre-far-form view). */
+    farForm: params.get('farform') !== '0',
+    /** &treecell=400: low-tier generic tree cell size in metres (0: one batch per area). */
+    treeCellM: params.has('treecell') ? Math.max(0, Number(params.get('treecell')) || 0) : null,
   };
 })();
 
