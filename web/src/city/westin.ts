@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import { mirroredGlass } from './mirrored-glass';
@@ -121,7 +122,7 @@ export function createWestin(buildings: VBuilding[], groundAt: (x: number, z: nu
   // The small northeast lobe on the mapped part is the external elevator shaft.
   drum(296.65, -627.2, 3.6, PODIUM, TOP - 0.35, 24, '#708596');
   drum(296.65, -627.2, 3.72, TOP - 0.35, TOP + 0.25, 24, '#bbbfbd');
-  const trim = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  const trim = new THREE.Mesh(b.geometry(), new StaticLandmarkMaterial());
   const remaining = buildings.filter(b => b !== base);
   const daylight = { value: 1 };
   const probeY = ground + (PODIUM + TOP) / 2;

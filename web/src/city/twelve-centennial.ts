@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { Builder, hashStr, pointInRing, type P2 } from '../vignette/geom';
@@ -158,7 +159,7 @@ export function createTwelveCentennial(buildings: VBuilding[], grid: GroundGrid)
   const group = new Group();
   group.name = 'Twelve Centennial Park Tower I';
   group.position.y = -grid.manifest.vertical.sceneZeroNavd88M;
-  const mesh = new Mesh(solid.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  const mesh = new Mesh(solid.geometry(), new StaticLandmarkMaterial());
   mesh.castShadow = mesh.receiveShadow = true;
   const lights = new MeshLambertMaterial({
     vertexColors: true,

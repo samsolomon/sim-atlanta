@@ -28,9 +28,6 @@ export function createWhiteModel(o: {
   /** Passes to skip while white: ambient occlusion runs at CSS resolution and, against the
    * swapped materials, came out cropped on the High tier. The white model doesn't need it. */
   skipPasses?: ({ enabled: boolean } | null | undefined)[];
-  /** Low tier: skip the up-front compileAsync (it raises the memory peak); colour compiles in its
-   * first frame, under the still, as before. */
-  lowMemory?: boolean;
   /**
    * 'paper': the white model fades in over the paper, then colour (first open from a link).
    * 'map': white buildings only, over a transparent background, standing on the tilted 2D map
@@ -225,15 +222,10 @@ export function createWhiteModel(o: {
         ro = new ResizeObserver(() => this.check());
         ro.observe(o.container);
         phase = 'compiling';
-        // compileAsync can stall (it waits on every program reporting ready); never hold the city
-        // hostage to it. Whatever isn't warm compiles in the first colour frame, under the still.
-        const ceiling = new Promise((r) => setTimeout(r, 2500));
-        // Dev: ?white=hold keeps the white model on screen, to judge it against the colour render.
+        // The first colour frame behind the still warms the actual composer programs, including
+        // each mesh's clipping planes. A separate canvas precompile retains unused variants.
         const hold = import.meta.env.DEV && new URLSearchParams(location.search).get('white') === 'hold';
-        if (!hold && o.lowMemory) phase = 'colour';
-        else if (!hold) void Promise.race([o.renderer.compileAsync(o.scene, o.camera).catch(() => undefined), ceiling]).then(() => {
-          if (phase === 'compiling') phase = 'colour';
-        });
+        if (!hold) phase = 'colour';
       } else if (this.check()) {
         // dropped
       } else if (phase === 'colour') {
@@ -287,11 +279,7 @@ export function createWhiteModel(o: {
       } else if (mode === 'map') phase = 'white';
       else {
         // Built before: colour compiles behind the map, then cross-fades in.
-        phase = 'compiling';
-        const ceiling = new Promise((r) => setTimeout(r, 2500));
-        void Promise.race([o.lowMemory ? undefined : o.renderer.compileAsync(o.scene, o.camera).catch(() => undefined), ceiling]).then(() => {
-          if (phase === 'compiling') phase = 'colour';
-        });
+        phase = 'colour';
       }
     },
     /** A user gesture during the fade would slide the scene under a still: drop the still. */

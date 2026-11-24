@@ -8,7 +8,7 @@ it('follows both trucks across joined treads and clips a car at a mapped cover g
   const start = Date.parse('2026-11-20T19:12:02Z');
   const move = (head: number) => freight.update(start + head / 4.5 * 1000);
   move(42);
-  const lead = freight.group.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>;
+  const lead = freight.poses.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>;
   expect(lead.userData.trainId).toBe('illustrative:freight:downtown');
   expect(lead.position.x).toBeCloseTo(42 - 22.3 / 2);
   expect(lead.position.y).toBeCloseTo(lead.position.x * .02);

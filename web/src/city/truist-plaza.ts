@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -212,7 +213,7 @@ export function createTruistPlaza(buildings: VBuilding[], groundAt: (x: number, 
   group.name = 'Truist Plaza';
   group.position.set(x, ground, z);
   group.rotation.y = -angle;
-  const metal = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const metal = new StaticLandmarkMaterial();
   const rim = new THREE.MeshLambertMaterial({
     vertexColors: true,
     side: THREE.DoubleSide,

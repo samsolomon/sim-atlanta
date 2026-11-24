@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
@@ -255,7 +256,7 @@ export function createGeorgiaPower(buildings: VBuilding[], grid: GroundGrid) {
   }
   const base = new THREE.Mesh(
     shell.geometry(),
-    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    new StaticLandmarkMaterial(),
   );
   base.castShadow = base.receiveShadow = true;
   group.add(base);

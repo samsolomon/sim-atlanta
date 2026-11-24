@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import type { VBuilding } from '../vignette/world';
@@ -109,7 +110,7 @@ export function localLandmarkShell(
     group.name = name;
     group.position.set(origin[0], originY, origin[1]);
     group.rotation.y = -angle;
-    const shell = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+    const shell = new Mesh(body.geometry(), new StaticLandmarkMaterial());
     // Only painted meshes change program; the rest stay exactly as they were.
     if (painter.painted && surfaceDefaults.enabled) {
       shell.geometry.setAttribute('aSurface', painter.attribute());

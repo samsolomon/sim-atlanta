@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import {
   CanvasTexture,
   DoubleSide,
@@ -166,7 +167,7 @@ export function createAltitudeApartments(buildings: VBuilding[], grid: GroundGri
   const group = new Group();
   group.name = 'Altitude Apartments';
   group.position.y = -grid.manifest.vertical.sceneZeroNavd88M;
-  const mass = new Mesh(solid.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  const mass = new Mesh(solid.geometry(), new StaticLandmarkMaterial());
   mass.castShadow = mass.receiveShadow = true;
   const occupied = new MeshLambertMaterial({
     vertexColors: true,

@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -200,7 +201,7 @@ export function createCongressCenter(buildings: VBuilding[], grid: GroundGrid) {
       b.box(0.9, 0.45, 5.5, x + inward * 0.46, level - datum + 5.0, z, '#a3a29a');
     }
   }
-  const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+  const mesh = new THREE.Mesh(b.geometry(), new StaticLandmarkMaterial());
   mesh.name = 'Georgia World Congress Center';
   mesh.position.y = datum - grid.manifest.vertical.sceneZeroNavd88M;
   mesh.castShadow = mesh.receiveShadow = true;

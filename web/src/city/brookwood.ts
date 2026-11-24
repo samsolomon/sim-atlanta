@@ -468,7 +468,7 @@ function facade(start: P2, end: P2, count: number, inscription: string, floor: n
 }
 
 /** Attach to the City mosaic at its existing vertical datum. */
-export function createBrookwood(sceneZero: number) {
+export function createBrookwood(sceneZero: number, instanceFreight = true) {
   const b = new Builder(),
     lamps = new Builder();
   const bed = (x: number) => elevation(x) - sceneZero;
@@ -538,7 +538,7 @@ export function createBrookwood(sceneZero: number) {
     m.clippingPlanes = [northEdge, westEdge];
     m.clipShadows = true;
   }
-  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, [northEdge, westEdge]);
+  const freight = createNorcrossFreight(corridor.main2.pts, (x) => bed(x) + 0.32, [northEdge, westEdge], instanceFreight);
   group.add(freight.group);
   let crescentOnCorridor = false;
   function update(states: TrainState[], dark: number) {
@@ -586,6 +586,7 @@ export function createBrookwood(sceneZero: number) {
     /** Advance the illustrative Main 2 freight after `update` has placed any Crescent. */
     updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor),
     freight: freight.group,
+    freightPoses: freight.poses,
     get freightCars() { return freight.visibleCars; },
     bounds: brookwoodBounds,
     setNorthEdge(z: number) {

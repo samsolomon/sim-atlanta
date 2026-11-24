@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } from 'three';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import type { GroundGrid } from '../terrain/grid';
@@ -182,7 +183,7 @@ export function createRussellBuilding(buildings: VBuilding[], grid: GroundGrid) 
   group.name = 'Richard B. Russell Federal Building';
   group.rotation.y = -angle;
   group.position.set(-399.36, -grid.manifest.vertical.sceneZeroNavd88M, 17.54);
-  const body = new Mesh(shell.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  const body = new Mesh(shell.geometry(), new StaticLandmarkMaterial());
   body.castShadow = body.receiveShadow = true;
   group.add(body);
   const panes = new Mesh(
