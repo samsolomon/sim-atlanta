@@ -34,7 +34,8 @@ class FakeElement {
   private handlers = new Map<string, (() => void)[]>();
   addEventListener(t: string, fn: () => void) { this.handlers.set(t, [...(this.handlers.get(t) ?? []), fn]); }
   emit(t: string) { (this.handlers.get(t) ?? []).forEach((fn) => fn()); }
-  play() { this.paused = false; return Promise.resolve(); }
+  playError: Error | null = null;
+  play() { if (this.playError) return Promise.reject(this.playError); this.paused = false; return Promise.resolve(); }
   pause() { this.paused = true; }
   removeAttribute(a: string) { if (a === 'src') this.src = ''; }
   load() {}
@@ -57,10 +58,11 @@ let els: FakeElement[];
 const audio: RadioAudio = {
   context: () => (ctx = new FakeContext()) as unknown as AudioContext,
   element: () => { const e = new FakeElement(); els.push(e); return e as unknown as HTMLAudioElement; },
-  source: (url) => { fetched.push(url); return Promise.resolve(url); },
+  source: (url) => { fetched.push(url); return hold ? hold.then(() => url) : Promise.resolve(url); },
   release: () => {},
 };
 let fetched: string[] = [];
+let hold: Promise<void> | null = null;
 /** Let the decks' fetched sources settle. */
 const flush = async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); };
 function make(hour = 14, storage: Map<string, string> = new Map()) {
@@ -82,6 +84,7 @@ const mp3 = () => els.filter((e) => e.src.endsWith('.mp3'));
 beforeEach(() => {
   els = [];
   fetched = [];
+  hold = null;
   vi.useFakeTimers();
 });
 afterEach(() => vi.useRealTimers());
@@ -204,5 +207,45 @@ describe('radio engine', () => {
     const first = r.track;
     mp3()[0].emit('ended');
     expect(r.track).not.toBe(first);
+  });
+
+  it('ignores the silent unlock clip’s events while the first file is still loading', async () => {
+    let release!: () => void;
+    hold = new Promise((r) => (release = r));
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const first = r.track;
+    const deck = els[0];
+    deck.duration = 0.05;
+    deck.currentTime = 0.05;
+    deck.emit('timeupdate');
+    deck.emit('ended');
+    await flush();
+    expect(r.track).toBe(first);
+    expect(fetched).toHaveLength(1); // no preload, no skip
+    release();
+    await flush();
+    expect(deck.src).toBe(`/music/tracks/${first!.id}.mp3`);
+  });
+
+  it('stays on the outgoing track if the incoming one won’t play', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const first = r.track;
+    const a = mp3()[0];
+    els.forEach((e) => { if (e !== a) e.playError = new DOMException('bad file', 'NotSupportedError'); });
+    a.duration = 180;
+    a.currentTime = 175.1;
+    a.emit('timeupdate');
+    await flush();
+    expect(r.playing).toBe(true);
+    expect(r.track).toBe(first);
+    expect(a.paused).toBe(false);
+    expect(deckGain(els.indexOf(a)).last('set')?.[1]).toBe(1); // back at (or held at) full level
+    expect(els.find((e) => e !== a)!.src).toBe(''); // the failed deck lets its file go
   });
 });

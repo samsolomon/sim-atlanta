@@ -239,16 +239,37 @@ export function createRadio(o: RadioOptions): Radio {
       return d.el.play().catch((e: unknown) => {
         // A pause or track change aborts the pending play: that's not a failure.
         if (e instanceof DOMException && e.name === 'AbortError') return;
-        if (d.role === 'primary' || d.role === 'incoming') {
-          playing = false;
-          changed();
-        }
+        failed(d);
       });
     });
   }
 
+  /** True once the deck's own track is the element's source: until then its events come from the
+   * silent unlock clip and must not move the playlist. */
+  const sounding = (d: Deck) => !!d.blob && d.el.src === d.blob;
+
+  /** A track that fetched but won't play (an undecodable file, a blocked start). */
+  function failed(d: Deck) {
+    if (fading && d === fading.inc) {
+      // Mid-crossfade: stay on the outgoing track, back at full level.
+      const out = fading.out;
+      fading = null;
+      retire(d);
+      out.role = 'primary';
+      ramp(out, 1, PAUSE_RAMP_S);
+      shown = out.track;
+      changed();
+      return;
+    }
+    if (d.role === 'primary' || d.role === 'incoming') {
+      // Nothing else is sounding: stop cleanly, so the button and the speakers agree.
+      playing = false;
+      pause();
+    }
+  }
+
   function onTime(d: Deck) {
-    if (!playing || !d.track) return;
+    if (!playing || !d.track || !sounding(d)) return;
     const t = d.el.currentTime;
     if (fading && d === fading.inc) {
       if (!fading.midDone && t >= fading.dur / 2) {
@@ -269,6 +290,7 @@ export function createRadio(o: RadioOptions): Radio {
   }
 
   function onPlaying(d: Deck) {
+    if (!sounding(d)) return;
     // Schedule a crossfade's ramps only once the incoming track is actually sounding, so a slow
     // fetch never leaves a gap: until then the outgoing track keeps playing at full level.
     if (fading && d === fading.inc && !fading.scheduled) {
@@ -279,6 +301,7 @@ export function createRadio(o: RadioOptions): Radio {
   }
 
   function onEnded(d: Deck) {
+    if (!sounding(d)) return;
     if (fading && d === fading.out) {
       d.el.pause();
       return;
