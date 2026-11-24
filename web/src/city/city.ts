@@ -861,8 +861,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const fillTrafficHeights = (budget: number) => {
     if (trafficIdleStopped) return;
     if (budget > 0 && !sliceInput.dragging && sliceInput.building === 0 && !document.hidden) {
-      const deadline = performance.now() + budget;
+      const started = performance.now(), deadline = started + budget;
       for (const layer of [traffic, arterials, midtownArterials]) if (layer && !layer.fillIdle(deadline)) break;
+      perf.idleTask(performance.now() - started);
     }
     idle(fillTrafficHeights);
   };

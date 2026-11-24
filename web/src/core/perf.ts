@@ -89,6 +89,7 @@ const updateMs = new Float32Array(N);
 /** CPU ms the road-traffic layers spent in update() during each frame (all instances summed). */
 const trafficMs = new Float32Array(N);
 let trafficNow = 0;
+let idleTasks = 0, idleMaxMs = 0;
 const renderMs = new Float32Array(N);
 const tris = new Float32Array(N);
 let head = 0;
@@ -641,6 +642,9 @@ export const perf = {
   setPrewarmPending(fn: (() => number) | null) { prewarmPending = fn; },
   /** Add CPU ms spent in road-traffic update() to the current frame. */
   traffic(ms: number) { trafficNow += ms; },
+  /** One idle-time task's main-thread ms (the coordinator's rule: report the longest at 6x). */
+  idleTask(ms: number) { idleTasks++; idleMaxMs = Math.max(idleMaxMs, ms); },
+  get idle() { return { tasks: idleTasks, maxMs: Math.round(idleMaxMs * 100) / 100 }; },
   /**
    * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
    * count (drawRange, material group and instance count, as three.js computes it), its pass (main,
