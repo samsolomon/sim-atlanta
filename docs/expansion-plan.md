@@ -1,10 +1,11 @@
 # Expansion plan: from Five Points to I-285 and the airport
 
-Draft, 2026-11-23. This plan covers how City grows from today's 19 km² board to a square that
+Draft, 2026-11-24. This plan covers how City grows from today's 19 km² board to a square that
 encloses I-285 and all of Hartsfield-Jackson. It proposes a tile scheme, checks what Cloudflare's
 free plan allows, compares the four directions City could grow first, treats trees as a cost of
 their own, and lists the pipeline work. The streaming prototype behind `?stream=1` supplies the
-measured numbers. Every `TODO(measured)` is a slot for one of them. Figures marked *estimate* come
+measured numbers for today's board (section 0). The remaining `TODO(measured)` slots are per direction,
+and they fill once a direction's first tiles are baked. Figures marked *estimate* come
 from arithmetic on shipped data or public sources, not from a device run.
 
 Coordinates are City scene metres, with the origin at Five Points (lon −84.3916, lat 33.7539),
@@ -70,16 +71,26 @@ What a direction needs in order to hold the bar:
 - **What isn't saved:** heap and GPU memory, which stay at today's level until full areas can be
   freed and rebuilt without a stall (gate 4).
 
-Measured numbers (Studio headless, `q=low`; counts, not fps):
+Measured on 2026-11-24, from one build of the prototype (`e8557bb4`) per device. Each cell is today → `?stream=1`.
 
-| Camera | Today | `?stream=1` |
-|---|---|---|
-| Default open | 2.36M triangles, 541 draws, 394 MB heap (perf.md) | 3 full + 9 LOD areas; LOD totals 224k triangles; 5.65 MB fetched |
-| Midtown street (`cam=640,-3150,250,68,220`) | 1.39M triangles, 434 MB heap after GC | 681k triangles, 309 MB heap after GC |
-| A16 fps, default, still / panning | 24.8 / 25.1 | TODO(measured) |
-| A16 pan frame time p95 / max | TODO(measured) | TODO(measured) |
-| A16 worst stream-in frame | n/a | TODO(measured) |
-| Desktop pan frame time p95 / max | TODO(measured) | TODO(measured) |
+| Run | fps | Worst frame | Draws |
+|---|---|---|---|
+| Galaxy A16, `q=low`, default camera, still | 23.3 → 30.7 | | 562 → 290 |
+| A16, north pan | 34.0 → 36.7 | 367 → 222 ms | |
+| A16, wide pan | 29.6 → 35.9 | 178 → 156 ms | |
+| A16, dolly | 29.7 → 33.3 | 300 → 178 ms | |
+| M5 Air, `q=high`, default camera, still | 34.0 → 47.5 | 100–183 → 68–83 ms | 1,229 → 631 |
+| M5 Air, north pan | 39.2 → 42.5 | 233 → 216 ms | |
+| M5 Air, wide pan (single run) | 32.2 → 33.1 | 100 → **332 ms** | |
+| M5 Air, dolly | 35.7 → 37.9 | 198 → 166 ms | |
+
+The wide pan's 332 ms frame on the M5 is open. The lead's sweep of shader programs shows that a shader
+compiled on its first use mid-pan costs frames of 100 ms or more. That fix is a separate guard
+(`samsolomon/program-guard`), and the guard has to cover the LOD's materials too.
+
+Programs are unchanged on every run (low 85 at 14:00 and 89 at 22:00). Heap after GC is **higher**:
++23 MB on low and +51 MB on high, because the LOD sits on top of full areas that are still loaded. The
+A16 holds 30 fps still but not yet while panning on every route. Panning is the bar.
 
 ## 1. Tile scheme for the whole square
 
