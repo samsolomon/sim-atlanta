@@ -44,7 +44,7 @@
     "ceiling": {
       "triangles": 7500000,
       "calls": 510,
-      "programs": 103,
+      "programs": 100,
       "textureMB": 890,
       "geometryMB": 300,
       "heapAfterGcMB": 570
@@ -66,7 +66,7 @@
     "ceiling": {
       "triangles": 7500000,
       "calls": 630,
-      "programs": 103
+      "programs": 99
     },
     "target": {
       "calls": 600
