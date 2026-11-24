@@ -67,3 +67,15 @@ Claude agent `orca_session_id:e5348118-da22-4978-9d69-ad882db9e7a9` → Codex, 2
 - Freight PR 2 is on `samsolomon/freight-locomotive-variety`: ES44AC/ES44AH,
   SD70ACe and GP38-2 lab studies. References/cameras: `docs/freight-variety.md`.
   City still uses the approved CM44AC-family units pending PR 4.
+
+### Queue update from Sam — after #347
+
+Prioritize the purple articulated MARTA bus before the remaining freight-car work.
+Identify the actual service, make/model, 60 ft configuration, and routes entering
+or inside the board; do not assume Summerhill BRT or a particular Xcelsior variant.
+Gather dated day and, if available, night photos. Send the coordinator one summary
+with photo links before modelling. Then add a logo-free model beside the XN40 in
+the lab, including a joint that bends on curves, reference livery colours, and a
+phone performance cost note. Coordinate its vehicle-type ID with the connector
+agent before integration. Coordinator thread: `msg_8f9a7007f319`.
+#347 remains awaiting Sam's approval of the revised colour/silhouette sheets.
