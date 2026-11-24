@@ -214,6 +214,22 @@ export function bridgeApproaches(
       const mx = (u[0] + v[0]) / 2 + out[0] * 0.6, mz = (u[2] + v[2]) / 2 + out[1] * 0.6;
       const beside = other(mx, mz, owner);
       if (beside !== null && beside >= Math.min(u[1], v[1]) - 0.3) continue;
+      if (landingOwners.has(owner)) {
+        // A landing is a low fill, not a structure: grade its sides down to the board
+        // at 1:2 on the board's own paint, so no wall face or ink edge stands out.
+        portalIndex = owner;
+        const foot = (p: number[]) => {
+          const rise = Math.max(0, p[1] - (bare(p[0], p[2]) ?? p[1]));
+          const x = p[0] + out[0] * 2 * rise, z = p[2] + out[1] * 2 * rise;
+          return [x, bare(x, z) ?? p[1] - rise, z];
+        };
+        const [fu, fv] = [foot(u), foot(v)];
+        if (fu[0] !== u[0] || fv[0] !== v[0] || fu[2] !== u[2] || fv[2] !== v[2]) {
+          tri(u, v, fv);
+          tri(u, fv, fu);
+        }
+        continue;
+      }
       skirt(u, v);
     }
   }
