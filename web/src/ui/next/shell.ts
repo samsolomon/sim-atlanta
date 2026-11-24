@@ -241,37 +241,27 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Radio', 'aria-expanded': 'false', 'aria-controls': 'a2-radio-player' }, NOTE);
   const radioPanel = el('section', { class: 'a2-dock-pop a2-g a2-player', id: 'a2-radio-player', hidden: '', 'aria-label': 'Radio' });
   const play = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Play' });
-  const previous = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Previous track' }, SVG('<path d="M6 5v14M19 5l-10 7 10 7z"/>'));
   const next = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Next track' }, SVG('<path d="M18 5v14M5 5l10 7-10 7z"/>'));
-  const closePlayer = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Close radio' }, SVG('<path d="m6 6 12 12M18 6 6 18"/>'));
-  const playerHeader = el('div', { class: 'a2-player-head' });
-  playerHeader.append(el('h2', {}, 'Radio'), closePlayer);
   const radioTitle = el('strong');
   const trackNote = el('span');
   const trackInfo = el('div', { class: 'a2-track-info' });
   trackInfo.append(radioTitle, trackNote);
   const progress = el('progress', { 'aria-label': 'Track progress' });
-  const transport = el('div', { class: 'a2-transport' });
-  transport.append(previous, play, next);
-  const volume = el('input', { type: 'range', min: '0', max: '1', step: '0.01', value: '0.55', 'aria-label': 'Volume' });
-  const volumeRow = el('label', { class: 'a2-volume' }, SVG('<path d="M4 10v4h4l5 4V6l-5 4z"/>'));
-  volumeRow.append(volume);
-  radioPanel.append(playerHeader, trackInfo, progress, transport, volumeRow);
+  radioPanel.append(trackInfo, play, next, progress);
   let radio: Radio | null = null;
   const showRadio = () => {
     if (!radio) return;
-    radioTitle.textContent = `Track ${radio.index + 1} · ${radio.track.title}`;
-    trackNote.textContent = PLAYLIST.length + (radio.track.src ? ' tracks' : ' tracks · no audio yet');
+    radioTitle.textContent = radio.track.title;
+    trackNote.textContent = radio.track.src ? `Track ${radio.index + 1} of ${PLAYLIST.length}` : 'No audio yet';
     play.innerHTML = SVG(radio.playing ? '<path d="M9 5v14M15 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>');
     play.setAttribute('aria-label', radio.playing ? 'Pause' : 'Play');
+    radioBtn.classList.toggle('a2-playing', radio.playing);
+    radioBtn.setAttribute('aria-label', radio.playing ? 'Radio, playing' : 'Radio');
     progress.max = radio.track.durationS;
     progress.value = radio.elapsedS;
   };
   play.onclick = () => radio?.toggle();
-  previous.onclick = () => radio?.previous();
   next.onclick = () => radio?.next();
-  volume.oninput = () => { if (radio) radio.volume = volume.valueAsNumber; };
-  closePlayer.onclick = () => { closePops(); radioBtn.focus(); };
   bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn);
   const searchBtn = el('button', { type: 'button', class: 'a2-ib a2-search-icon', 'aria-label': 'Search Atlanta' }, SVG('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>'));
   const searchWrap = el('div', { class: 'a2-dock-field' });
@@ -577,7 +567,6 @@ export function createShellNext(o: ShellOptions): ShellApi {
   radioBtn.onclick = () => toggle(radioPanel, radioBtn, () => {
     if (!radio) {
       radio = createRadio();
-      radio.volume = volume.valueAsNumber;
       radio.onChange(showRadio);
     }
     showRadio();
@@ -620,6 +609,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
+    if (!radioPanel.hidden && !radioPanel.contains(t) && !radioBtn.contains(t)) closePops();
     if (![subject, bar, cam, ...pops.map(([p]) => p)].some((c) => c.contains(t))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
