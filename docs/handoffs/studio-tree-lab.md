@@ -4,7 +4,7 @@ Updated 2026-11-23 (America/New_York) by Codex session `48c0c9e4-ceda-4b87-adf1-
 
 ## GPT-6.2 update
 
-The spring revision is on this branch for Sam’s eye. A-style heart-shaped foliage remains, while an atlas strip paints clusters along bare scaffold branches and lateral twigs. Leaves come after the flower display. The refreshed sheet is `docs/log/ui/tree-species/options-eastern-redbud.jpg` and the matched spring money shot is `redbud/spring.png` alongside it. Mature cost is 193 / 91 triangles, July Front luminance is 0.236 / 0.259. Review camera is Eye level, position (0, 1.6, 10), target (0, 3.36, 0), FOV 58, with `/models.html?v=eastern-redbud&variant=A&size=mature&t=2026-03-22T12:00:00-04:00`. The tree is still a lab candidate pending approval.
+The spring revision for Sam’s second look is on this branch. Three or four low boughs carry fine twig cards with matched magenta flower cards for March and bare wood for winter. April leaf-out is reddish-purple. The approved heart-shaped summer cards, yellow fall and size range are retained. The refreshed sheet is `docs/log/ui/tree-species/options-eastern-redbud.jpg`, and the spring money shot, 300 m captures and leaf-out are in its adjoining `redbud/` directory. Mature cost is 193 / 138 triangles. Eye level position (0, 1.6, 10), target (0, 3.36, 0), FOV 58, with `/models.html?v=eastern-redbud&variant=A&size=mature&t=2026-03-22T12:00:00-04:00`. Distance camera position (0, 3.15, 300), target (0, 3.15, 0), FOV 30. The tree is a lab candidate pending approval.
 
 ## Predecessor's state at handoff
 

@@ -178,22 +178,7 @@ export function leafAtlas(shape: LeafShape): THREE.Texture | null {
     if (cell === SOLID) {
       g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`;
       g.fillRect(ox + 2, oy + 2, CELL - 4, (shape === 'cordate' ? CELL * 0.54 : CELL) - 4);
-      if (shape === 'cordate') {
-        const flower = rng(483);
-        // One triangle in the lower part of the cell. Petal clusters thin toward its tip.
-        for (let i = 0; i < 14; i++) {
-          const x = (i + 1 + flower() * 0.65) / 17;
-          const y = 0.78 + (flower() - 0.5) * 0.16 * (1 - x);
-          for (let j = 0; j < 5; j++) {
-            g.fillStyle = j % 3 ? '#fff' : '#aaa';
-            g.beginPath();
-            g.ellipse(ox + CELL * (x + (flower() - 0.5) * 0.035),
-              oy + CELL * (y + (flower() - 0.5) * 0.16 * (1 - x)),
-              3 + flower() * 2, (7 + flower() * 6) * (1 - x), flower() - 0.5, 0, Math.PI * 2);
-            g.fill();
-          }
-        }
-      }
+      if (shape === 'cordate') paintBranchFans(g, ox, oy);
       continue;
     }
     // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).
@@ -248,7 +233,7 @@ export function shade(depth: number, up: number) {
 /** Collects triangles with colour, UV and the per-mass tone and drop attributes. */
 export class FoliageBuilder {
   pos: number[] = []; col: number[] = []; uv: number[] = []; mass: number[] = [];
-  /** `bloom` > 0 marks a flower chip: its bloom order (0–1], shown while the tree's bloom share is at least that. */
+  /** Positive bloom values give the flower order (0–1]. A negative value marks permanent wood. */
   tri(p: THREE.Vector3[], c: THREE.Color, u: Pick<Unit, 'tone' | 'drop'>, uvs: [number, number][] = [cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5), cellUV(SOLID, 0.5, 0.5)], bloom = 0) {
     p.forEach((v, i) => { this.pos.push(v.x, v.y, v.z); this.col.push(c.r, c.g, c.b); this.uv.push(...uvs[i]); this.mass.push(u.tone, u.drop, bloom); });
   }
@@ -370,9 +355,10 @@ export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, bloomFill = 0, sp
       .replace('#include <project_vertex>', '#include <project_vertex>\nvFacePos = mvPosition.xyz;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 vLeaves = aLeaves;
-vChip = aMass.z > 0.0 ? 1.0 : 0.0;
+vChip = aMass.z != 0.0 ? 1.0 : 0.0;
 if (aMass.z > 0.0) { if (aMass.z > aBloom.a) transformed = vec3(0.0); }
-${textured ? '' : 'else if (aMass.y > aLeaves) transformed = vec3(0.0);'}`);
+if (aMass.z < 0.0 && aLeaves >= aMass.y) transformed = vec3(0.0);
+${textured ? '' : 'else if (aMass.z == 0.0 && aMass.y > aLeaves) transformed = vec3(0.0);'}`);
     // Textured cards thin leaf by leaf: each painted leaf's alpha (0.56–1) is its drop order.
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vLeaves;\nvarying float vChip;\nvarying vec3 vFacePos;')
@@ -454,9 +440,9 @@ vSpeckPos = transformed;
 #ifdef USE_INSTANCING_COLOR
   // Flower chips take the bloom colour; in flower, the leaf clusters with the highest tone turn
   // wholly to it too (bloomWash), as patches of blossom rather than a brown mix.
-  bool blossom = aMass.z > 0.0 || aMass.x > 1.0 - ${bloomWash.toFixed(3)} * aBloom.a;
+  bool blossom = aMass.z > 0.0 || (aMass.z == 0.0 && aMass.x > 1.0 - ${bloomWash.toFixed(3)} * aBloom.a);
   // bloomLift: blossom keeps less of the interior shade than leaves (white bracts read white).
-  vColor.xyz = blossom ? mix(color.xyz, vec3(1.0), ${bloomLift.toFixed(3)}) * aBloom.rgb : color.xyz * mix(instanceColor.xyz, aToneB, aMass.x);
+  vColor.xyz = blossom ? mix(color.xyz, vec3(1.0), ${bloomLift.toFixed(3)}) * aBloom.rgb : color.xyz * (aMass.z < 0.0 ? vec3(1.0) : mix(instanceColor.xyz, aToneB, aMass.x));
 #endif`);
     if (bloomFill > 0) {
       sh.vertexShader = sh.vertexShader
@@ -478,22 +464,86 @@ vSpeckPos = transformed;
   return m;
 }
 
-/** One tapered flower card per limb, with its painted clusters centred on the wood. */
+/** Matched winter and spring tiles, with padding between the solid fill and both fan tiles. */
+const FAN_TILE = 108, FAN_TOP = 143, WOOD_X = 8, BLOOM_X = 140;
+
+function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
+  const random = rng(483);
+  const stroke = (x: number, y: number, bx: number, by: number, width: number, flowerSpacing: number) => {
+    g.strokeStyle = '#e0d8cb';
+    g.lineWidth = width;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(ox + WOOD_X + x, oy + FAN_TOP + y);
+    g.lineTo(ox + WOOD_X + bx, oy + FAN_TOP + by);
+    g.stroke();
+    const count = Math.ceil(Math.hypot(bx - x, by - y) / flowerSpacing);
+    for (let i = 0; i < count; i++) {
+      const t = (i + random()) / count;
+      const cx = ox + BLOOM_X + x + (bx - x) * t, cy = oy + FAN_TOP + y + (by - y) * t;
+      for (let j = 0; j < 4; j++) {
+        g.fillStyle = j === 0 ? '#aaa' : j === 1 ? '#ddd' : '#fff';
+        g.beginPath();
+        g.ellipse(cx + (random() - 0.5) * 4.8, cy + (random() - 0.5) * 4.8,
+          0.8 + random() * 1.35, 0.65 + random() * 1.3, random() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+  };
+  // A bent shoot with alternating lateral twigs. Each fine fork has two shorter shoots.
+  stroke(53, 102, 47, 67, 2.3, 5);
+  stroke(47, 67, 57, 27, 1.7, 4);
+  stroke(57, 27, 63, 7, 0.9, 4);
+  for (const [x, y, bx, by] of [[50, 84, 15, 49], [47, 68, 85, 41], [50, 54, 18, 23],
+    [54, 39, 88, 16], [57, 27, 41, 9], [52, 96, 96, 67], [48, 76, 10, 67]]) {
+    stroke(x, y, bx, by, 1.15, 3.4);
+    for (let j = 0; j < 2; j++) {
+      const t = 0.35 + j * 0.32;
+      const fx = x + (bx - x) * t, fy = y + (by - y) * t;
+      stroke(fx, fy, fx + (bx - x) * 0.27, fy - 10 - random() * 6, 0.82, 3);
+    }
+  }
+}
+
+/** Cards rooted in the scaffold, with fine wood and seasonal blossoms sharing the same pattern. */
 export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: number) {
   const random = rng(seed);
   const scale = new THREE.Vector3(d.spreadM / 2, d.heightM, d.spreadM / 2);
   const up = new THREE.Vector3(0, 1, 0);
-  const uv = [cellUV(SOLID, 0, 0), cellUV(SOLID, 0, 0.44), cellUV(SOLID, 1, 0.22)];
-  const flower = { tone: 1, drop: 0 };
-  for (const seg of segs.slice(1)) {
+  const wood = new THREE.Color('#76635a');
+  const quadUV = (x: number) => [[0, 1], [1, 1], [1, 0], [0, 0]].map(([u, v]) =>
+    cellUV(SOLID, (x + u * FAN_TILE) / CELL, 1 - (FAN_TOP + v * FAN_TILE) / CELL));
+  const walk = (seg: Seg, fraction: number, turn: number, length: number, rise: number) => {
     const a = new THREE.Vector3(...seg.a).multiply(scale), tip = new THREE.Vector3(...seg.b).multiply(scale);
-    const along = tip.clone().sub(a).normalize();
-    const across = up.clone().cross(along).normalize().applyAxisAngle(along, (random() - 0.5) * Math.PI);
-    // Slightly exaggerated for readability at lab scale. The strip narrows with the twig.
-    const width = Math.min(0.2, d.heightM * 0.034) + seg.r0 * scale.x;
-    const start = a.clone().lerp(tip, 0.08);
-    b.tri([start.clone().addScaledVector(across, -width), start.clone().addScaledVector(across, width), tip],
-      WHITE, flower, uv, 0.12 + 0.87 * random());
+    const root = a.clone().lerp(tip, fraction);
+    const outward = tip.clone().sub(a).setY(0).normalize().applyAxisAngle(up, turn);
+    const shoot = outward.clone().multiplyScalar(scale.x * length).addScaledVector(up, scale.y * rise);
+    const width = scale.x * (0.24 + length * 0.29) * (0.88 + random() * 0.24);
+    const side = up.clone().cross(shoot).normalize()
+      .applyAxisAngle(shoot.clone().normalize(), (random() - 0.5) * 1.8).multiplyScalar(width);
+    const mirror = random() < 0.5;
+    // The visible twig network recedes as the canopy closes. Keep this separate from bloom order.
+    const tone = { tone: 1, drop: 0.72 + 0.25 * ((fraction + turn + 4) % 1) };
+    for (const [cell, color, order] of [[WOOD_X, wood, -1], [BLOOM_X, WHITE, 0.12 + random() * 0.83]] as const) {
+      const foot = root.clone();
+      // Lift the paired petals slightly to break coplanar overlap with the wood.
+      if (order > 0) foot.addScaledVector(up, scale.y * 0.004);
+      const end = foot.clone().add(shoot);
+      const p = [foot.clone().sub(side), foot.clone().add(side), end.clone().add(side), end.clone().sub(side)];
+      const uv = quadUV(cell);
+      if (mirror) { [uv[0], uv[1]] = [uv[1], uv[0]]; [uv[2], uv[3]] = [uv[3], uv[2]]; }
+      b.tri([p[0], p[1], p[2]], color, tone, [uv[0], uv[1], uv[2]], order);
+      b.tri([p[0], p[2], p[3]], color, tone, [uv[0], uv[2], uv[3]], order);
+    }
+  };
+  for (let i = 1; i < segs.length; i += 2) {
+    const inner = segs[i], outer = segs[i + 1];
+    const turn = i % 4 === 1 ? -1 : 1;
+    walk(inner, 0.64, turn * 0.98, 0.42, 0.19);
+    walk(outer, 0.24, -turn * 0.65, 0.56, 0.32);
+    walk(outer, 0.68, turn * 0.36, 0.42, 0.22);
+    // Shoots from opposing boughs fill the interior without making a solid canopy.
+    if (i === 1 || i === 5) walk(outer, 0.49, Math.PI - turn * 0.37, 0.53, 0.29);
   }
 }
 
