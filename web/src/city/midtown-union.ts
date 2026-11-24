@@ -1,6 +1,6 @@
 import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
-import type { P2 } from '../vignette/geom';
+import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
 
@@ -50,6 +50,10 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
     [[0, 0], [-35, -15], [38, 0]]);
   if (!shell) return null;
   const floor = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
+  // Heights count from `floor`; walls that meet the ground start 1 m lower, so a dip in the
+  // terrain between two footprint corners never opens a slit under them.
+  const footing = Math.min(floor, shell.base) - 0.65;
+  const ground = ([x, z]: P2) => grid.sample(x + origin[0], z + origin[1]) ?? floor;
   const sign = Math.sign(shell.ring.reduce((s, [x, z], i) => {
     const [a, b] = shell.ring[(i + 1) % shell.ring.length]; return s + x * b - a * z;
   }, 0)) * -1;
@@ -84,7 +88,7 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
   // The office shaft: three glass masses at their mapped heights, set on the garage or the lobby.
   const masses: [P2[], number, number][] = [[prowR, 97.2, 0], [southR, 97.2, 1], [middleR, 93.6, 2], [sliverR, 90, 3]];
   for (const [ring, h, tone] of masses) {
-    const lo = ring === middleR ? floor + deckH : ring === sliverR ? floor : floor + lobbyH, hi = floor + h;
+    const lo = ring === middleR ? floor + deckH : ring === sliverR ? footing : floor + lobbyH, hi = floor + h;
     faces(ring, (a, b, length) => {
       glassWall(a, b, lo, hi, tone, floor + 97.2);
       if (length < 14) return;
@@ -101,16 +105,16 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
     roof(ring, hi);
   }
   // The middle mass sits on the garage; under it the walls are the garage's.
-  shell.prism(middleR, floor, floor + deckH, '#8d8f8e', '#8d8f8e');
+  shell.prism(middleR, footing, floor + deckH, '#8d8f8e', '#8d8f8e');
   shell.prism(courtR, floor + deckH, floor + 93.6, '#4a6a82', '#6c7a83');
   // A glass screen hides the roof plant on the tallest mass, set in 2.5 m.
-  const screen = inset(prowR, 2.5);
+  const screen = inset(simplify(prowR, 2), 2.5);
   shell.prism(screen, floor + 97.2, floor + 99.6, glassHigh[0], '#59656e');
 
   // Recessed double-height lobby glazing under a timber soffit, with raking columns.
   for (const ring of [prowR, southR]) {
-    const recessed = inset(ring, 2.2);
-    shell.prism(recessed, floor, floor + lobbyH - 0.6, '#2c3a43', '#2c3a43');
+    const recessed = inset(simplify(ring, 2), 2.2);
+    shell.prism(recessed, footing, floor + lobbyH - 0.6, '#2c3a43', '#2c3a43');
     shell.prism(ring, floor + lobbyH - 0.6, floor + lobbyH, '#b78a58', '#b78a58');
     faces(recessed, (a, b, length) => {
       const p = along(a, b, length, 0.4, 0.04 * out), q = along(a, b, length, length - 0.4, 0.04 * out);
@@ -136,7 +140,7 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
   }
 
   // The garage: grey, charcoal and white panels set on a diagonal, with gold slots.
-  shell.prism(garageR, floor, floor + deckH, '#8d8f8e', '#7d8a62');
+  shell.prism(garageR, footing, floor + deckH, '#8d8f8e', '#7d8a62');
   shell.prism(inset(garageR, 4), floor + deckH, floor + deckH + 0.4, '#6f7d58', '#6b7f4f');
   let slot = 0;
   for (const ring of [garageR, middleR]) {
@@ -144,28 +148,45 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
       // Only the street faces of the middle mass sit on the garage; its other sides adjoin the tower.
       const mid = along(a, b, length, length / 2);
       if (ring === middleR && (mid[1] > -12 || mid[0] < -15)) return;
-      // The street falls toward West Peachtree, so the storefront follows the face's own grade.
-      const grade = Math.max(floor, ...[a, b].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? floor));
-      const lo = Math.max(floor + 5.2, grade + 5), hi = floor + deckH - 0.4, rows = 4, rowH = (hi - lo) / rows;
+      // Skip faces shared with another part: just outside them is still building.
+      const beyond = along(a, b, length, length / 2, 1.5 * out);
+      if ([prowR, southR, middleR, courtR, garageR].some(r => r !== ring && pointInRing(beyond[0], beyond[1], r))) return;
+      // The street falls toward West Peachtree, so the storefront and the panel field above it
+      // follow the ground sampled along the face.
+      const steps = Math.max(1, Math.ceil(length / 6));
+      const grades = Array.from({ length: steps + 1 }, (_, k) => Math.max(floor, ground(along(a, b, length, k * length / steps))));
+      const gradeAt = (u: number) => {
+        const t = Math.min(steps, Math.max(0, u / length * steps)), k = Math.min(steps - 1, Math.floor(t));
+        return grades[k] + (grades[k + 1] - grades[k]) * (t - k);
+      };
+      const hi = floor + deckH - 0.4, rows = 4;
+      const level = (u: number, f: number) => {
+        const lo = Math.max(floor + 5.2, gradeAt(u) + 5);
+        return lo + (hi - lo) * f;
+      };
       const cols = Math.max(1, Math.round(length / 7.5)), colW = length / cols;
       for (let r = 0; r < rows; r++)
         for (let c = 0; c < cols; c++) {
           // Shift each row by half a panel so the fields read as diagonal chevrons.
           const u0 = c * colW + (r % 2) * colW * 0.5, u1 = Math.min(length, u0 + colW);
-          const y0 = lo + r * rowH, y1 = y0 + rowH;
           const p = along(a, b, length, u0, 0.06 * out), q = along(a, b, length, u1, 0.06 * out);
           const color = panels[(c - r + 40 + slot) % panels.length];
-          body.quad([p[0], y0, p[1]], [p[0], y1 - 0.25, p[1]], [q[0], y1 + 0.6, q[1]], [q[0], y0 + 0.85, q[1]], color);
+          const rowH = (level(u0, 1) - level(u0, 0)) / rows;
+          body.quad([p[0], level(u0, r / rows), p[1]], [p[0], level(u0, (r + 1) / rows) - 0.25, p[1]],
+            [q[0], Math.min(hi, level(u1, (r + 1) / rows) + 0.6), q[1]], [q[0], level(u1, r / rows) + 0.85, q[1]], color);
           if ((c - r + 40 + slot) % panels.length === 1) {
             const s0 = along(a, b, length, u0 + colW * 0.3, 0.1 * out), s1 = along(a, b, length, u0 + colW * 0.62, 0.1 * out);
-            const ys = y0 + rowH * 0.45;
+            const ys = level(u0 + colW * 0.3, r / rows) + rowH * 0.45;
             body.quad([s0[0], ys, s0[1]], [s0[0], ys + 0.9, s0[1]], [s1[0], ys + 1.1, s1[1]], [s1[0], ys + 0.2, s1[1]], gold);
           }
         }
       slot++;
-      // Retail glazing under the panels.
-      const p = along(a, b, length, 0.5, 0.05 * out), q = along(a, b, length, length - 0.5, 0.05 * out);
-      lights.quad([p[0], floor + 0.4, p[1]], [p[0], grade + 4.4, p[1]], [q[0], grade + 4.4, q[1]], [q[0], floor + 0.4, q[1]], '#34444c');
+      // Retail glazing under the panels, one pane per sampled step so its head follows the street.
+      for (let k = 0; k < steps; k++) {
+        const u0 = Math.max(0.5, k * length / steps), u1 = Math.min(length - 0.5, (k + 1) * length / steps);
+        const p = along(a, b, length, u0, 0.05 * out), q = along(a, b, length, u1, 0.05 * out);
+        lights.quad([p[0], footing, p[1]], [p[0], gradeAt(u0) + 4.4, p[1]], [q[0], gradeAt(u1) + 4.4, q[1]], [q[0], footing, q[1]], '#34444c');
+      }
     });
   }
 
@@ -181,19 +202,20 @@ export function createMidtownUnion(buildings: VBuilding[], site: VBuilding, grid
     });
     return best;
   };
-  const litFloors: [P2[], number, P2][] = [
-    [prowR, 11, [-1, 0]], [prowR, 19, [0, -1]], [southR, 14, [0, 1]], [southR, 7, [0, 1]], [middleR, 22, [0, -1]],
+  const litFloors: [P2[], number, P2, number][] = [
+    [prowR, 11, [-1, 0], 0], [prowR, 19, [0, -1], 0], [southR, 14, [0, 1], 1], [southR, 7, [0, 1], 1], [middleR, 22, [0, -1], 2],
   ];
-  for (const [ring, level, dir] of litFloors) {
+  for (const [ring, level, dir, tone] of litFloors) {
     const face = facing(ring, dir);
     const a = ring[face], b = ring[(face + 1) % ring.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const y = floor + lobbyH + (level - 2) * 3.6 + 0.5;
+    // A whole storey between two joints (joints are 0.8 m tall, every 3.6 m from floor + 0.5).
+    const y = floor + 0.5 + level * 3.6 + 0.8;
     const p = along(a, b, length, length * 0.15, 0.08 * out), q = along(a, b, length, length * 0.7, 0.08 * out);
     // By day the strip keeps the glass tone at its height, so only the night shows it.
     const n = lights.pos.length;
-    lights.quad([p[0], y, p[1]], [p[0], y + 2.6, p[1]], [q[0], y + 2.6, q[1]], [q[0], y, q[1]], '#42606f');
-    const lo = hex(glassLow[0], glassHigh[0], (y - floor) / 97.2), hi = hex(glassLow[0], glassHigh[0], (y + 2.6 - floor) / 97.2);
+    lights.quad([p[0], y, p[1]], [p[0], y + 2.8, p[1]], [q[0], y + 2.8, q[1]], [q[0], y, q[1]], '#42606f');
+    const lo = hex(glassLow[tone], glassHigh[tone], (y - floor) / 97.2), hi = hex(glassLow[tone], glassHigh[tone], (y + 2.8 - floor) / 97.2);
     for (let v = n; v < lights.pos.length; v += 3) lights.col.splice(v, 3, ...(lights.pos[v + 1] > y + 1 ? hi : lo));
   }
   return shell.finish('#f4dcae', 0.6);
@@ -213,4 +235,15 @@ function inset(ring: P2[], d: number): P2[] {
     const l = Math.hypot(x - cx, z - cz) || 1;
     return [x - (x - cx) / l * d, z - (z - cz) / l * d];
   });
+}
+
+/** Drops vertices that close an edge shorter than `min` metres (the mapped parts' small jogs). */
+function simplify(ring: P2[], min: number): P2[] {
+  const out: P2[] = [];
+  for (const p of ring) {
+    const last = out[out.length - 1];
+    if (!last || Math.hypot(p[0] - last[0], p[1] - last[1]) >= min) out.push(p);
+  }
+  while (out.length > 3 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1]) < min) out.pop();
+  return out;
 }

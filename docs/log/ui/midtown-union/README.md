@@ -14,7 +14,7 @@ The 26-storey office tower at 1331 Spring Street (Cooper Carry for Granite Prope
 
 ## Model
 
-All of it is vertex colours on `landmarkShell`'s StaticLandmarkMaterial body plus its lamp mesh, with no library surfaces and no new shader program. The glass shades from the street-level tone up to the sky reflection near the top. A broad joint every 3.6 m is the same glass, darker, so the curtain wall keeps its floor rhythm at the 450 m orbit without per-pane speckle. The garage's storefront band follows each face's own sampled grade, because the street falls toward West Peachtree. The tower adds 1,296 body triangles and 64 lamp triangles.
+All of it is vertex colours on `landmarkShell`'s StaticLandmarkMaterial body plus its lamp mesh. The concrete columns, timber soffit and garage walls skip the material library on purpose: a painted body compiles another shader program, and the skins agreed to hold low tier under its 90-program ceiling until the phone budget work lands. At the 450 m orbit the library's sub-metre detail fades out anyway. The glass shades from the street-level tone up to the sky reflection near the top. A broad joint every 3.6 m is the same glass, darker, so the curtain wall keeps its floor rhythm at the 450 m orbit without per-pane speckle. The street falls toward West Peachtree, so the garage's storefront head and panel field follow the ground sampled every 6 m along each face. Walls that meet the ground start 1 m below the lowest corner. The tower adds 1,296 body triangles and 64 lamp triangles.
 
 | View | Camera | Local time, 20 November 2026 | Capture |
 |---|---|---|---|
