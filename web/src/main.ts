@@ -534,6 +534,7 @@ async function openCity() {
       return;
     }
     diorama = d;
+    perf.phase('city:built');
     if (import.meta.env.DEV) Object.assign(window, { __city: d });
   } catch (err) {
     if (load !== cityLoad) return;
@@ -546,6 +547,7 @@ async function openCity() {
     return;
   }
   if (lastAtm) diorama.setAtmosphere(lastAtm, clock.now());
+  perf.phase('city:atmosphere');
   let offBoard = false;
   // Arriving from Map keeps its camera within the loaded City board.
   // A Graphics change rebuilds City where it was; otherwise a link's camera opens it.
@@ -573,6 +575,7 @@ async function openCity() {
   }
   if (offBoard) document.body.classList.remove('city-over-map');
   // A2c: the white model holds until colour starts; only then is City "here" (Live, credit, vehicles).
+  perf.phase('city:placed');
   diorama.beginReveal(offBoard && overMap ? 'paper' : undefined);
   await diorama.revealed;
   if (load !== cityLoad) return;
