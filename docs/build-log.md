@@ -3809,3 +3809,9 @@ A separate corner test swept the vertices of the 8.2 m box truck every five cent
 ### 2026-11-24 · Brake lights on the streetcar alignment
 
 On Edgewood Avenue a simulated car could wait through a red light with its brake lamps dark. This street uses the queue solver that can also hold cars behind a scheduled streetcar. It supplied the position but never supplied the lamp state. In a matched 72-frame City replay the car now lights both lamps at red and releases them on green. Its position and heading match the earlier build throughout. [Red signal](log/ui/traffic-motion/edgewood-red.jpg) · [Green signal](log/ui/traffic-motion/edgewood-release.jpg)
+
+### 2026-11-24 — Letting sunset last past the direct light
+
+At 17:00 in the southwest view, the setting sun caught the Midtown towers. By 17:33 the first golden-hour study had already fallen back to the same deep blue as the original scene. Sam selected the right-hand treatment in the [synchronized sunset loop](https://share.onorca.dev/a/hLdwfw5Ebqww). It lets direct honey light fade from the façades first, then keeps an amber horizon and cooler skylight on the shaded streets. At 17:47 the tower bases are still legible. At 18:15 the three versions have the same central mean RGB to one decimal place.
+
+The loop uses 91 one-minute frames per version, from 16:45 to 18:15 EST on November 20, with clear weather, High quality, fixed exposure and camera `565,-3965,62,72,2100`. [Five matched moments from the selected study](log/city-sky/sunset-transition.jpg)
