@@ -195,7 +195,7 @@ function renderTrainCard() {
   }
   showCard(
     trainCard(t, schedule.routes.get(t.routeId), t.nextStop ? schedule.stops.get(t.nextStop) : undefined, schedule.vehicleTypes.get(t.vehicleType),
-      !view3d.hidden, true, (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
+      !view3d.hidden, (!view3d.hidden && diorama?.drawnAt(t.id)) || {}),
     !!follow && !view3d.hidden,
   );
 }
@@ -499,7 +499,7 @@ async function openCity() {
         selectedFreight = hit?.kind === 'freight' ? hit.id : null;
         if (selectedTrain) renderTrainCard();
         else if (selectedBus) renderBusCard();
-        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line, true), !!follow);
+        else if (hit?.kind === 'freight') showCard(cityFreightCard(hit.line), !!follow);
         else hideCard();
       },
       progress: (label) => { if (load === cityLoad) cityProgress.textContent = label; },
