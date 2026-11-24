@@ -33,10 +33,14 @@ export interface PerfContext {
   pan?(dxPx: number, dyPx: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
+  /** Frame a camera target (metres) at a distance, bearing clockwise from north and tilt from
+   * vertical, in degrees (for ?perf=run&motion=route:<name>). */
+  view?(x: number, z: number, dist: number, bearing: number, tilt: number): void;
   quality: string;
 }
 
 const params = new URLSearchParams(globalThis.location?.search ?? '');
+const streaming = params.get('stream') === '1';
 const mode = params.get('perf');
 /** `?perf` or `?perf=run`; off otherwise. */
 export const perfEnabled = mode !== null && mode !== '0' && mode !== 'off';
@@ -81,6 +85,53 @@ let shadowUpdates = 0;
 const phases: Phase[] = [];
 let ctx: PerfContext | null = null;
 let lastResult: unknown = null;
+
+/** Streamed-area rings (?stream=1). The ring manager reports each transition. */
+export type StreamRing = 'near' | 'mid' | 'far' | 'unloaded';
+const rings = new Map<string, StreamRing>();
+const ringLog: { area: string; from: StreamRing | null; to: StreamRing; ms: number }[] = [];
+/** Transitions that return an area to the ring it just left within this window count as thrash. */
+const THRASH_MS = 3000;
+function ring(area: string, to: StreamRing) {
+  const from = rings.get(area) ?? null;
+  if (from === to) return;
+  rings.set(area, to);
+  const ms = Math.round(performance.now());
+  ringLog.push({ area, from, to, ms });
+  if (perfEnabled) console.info('PERF_RING', area, from, to, ms);
+}
+function thrash() {
+  let n = 0;
+  const last = new Map<string, { from: StreamRing | null; ms: number }>();
+  for (const t of ringLog) {
+    const prev = last.get(t.area);
+    if (prev && prev.from === t.to && t.ms - prev.ms < THRASH_MS) n++;
+    last.set(t.area, { from: t.from, ms: t.ms });
+  }
+  return n;
+}
+/** Queue state from the streaming loader (core/load-budget.ts registers itself here). */
+let streamSource: (() => { pending: number; stats: unknown }) | null = null;
+
+/** Camera routes for ?perf=run&motion=route:<name>: targets in metres, flown at constant speed out and
+ * back over the sample. `north` runs Five Points to Brookwood through every Midtown row; `loop` circles
+ * the south and east patches. */
+const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][] }> = {
+  north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
+  loop: { dist: 700, bearing: 30, tilt: 50, path: [[0, -300], [0, 900], [1400, 900], [1400, -900], [0, -1500], [0, -300]] },
+};
+function routeAt(path: [number, number][], u: number): [number, number] {
+  const seg = path.slice(1).map((p, i) => Math.hypot(p[0] - path[i][0], p[1] - path[i][1]));
+  let d = u * seg.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < seg.length; i++) {
+    if (d <= seg[i] || i === seg.length - 1) {
+      const f = seg[i] ? Math.min(1, d / seg[i]) : 0;
+      return [path[i][0] + (path[i + 1][0] - path[i][0]) * f, path[i][1] + (path[i + 1][1] - path[i][1]) * f];
+    }
+    d -= seg[i];
+  }
+  return path[path.length - 1];
+}
 
 function heapMB(): number | null {
   const m = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
@@ -471,16 +522,30 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {}) {
   const t0 = performance.now();
   while (!phases.some(p => p.name === 'ready') && performance.now() - t0 < 180000) await sleep(250);
-  // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
   const settleStart = performance.now();
-  while (performance.now() - settleStart < maxWaitMs) {
-    const last = phases[phases.length - 1]?.ms ?? 0;
-    if (performance.now() - last > quietMs) break;
-    await sleep(250);
+  if (streaming) {
+    // Streamed areas: settled once the loader is idle and no ring has changed for quietMs.
+    while (performance.now() - settleStart < maxWaitMs) {
+      const lastRing = ringLog[ringLog.length - 1]?.ms ?? 0;
+      if ((!streamSource || !streamSource().pending) && performance.now() - lastRing > quietMs) break;
+      await sleep(250);
+    }
+    phase('stream:settled');
+  } else {
+    // Areas mount as the camera approaches: wait until no phase has landed for quietMs.
+    while (performance.now() - settleStart < maxWaitMs) {
+      const last = phases[phases.length - 1]?.ms ?? 0;
+      if (performance.now() - last > quietMs) break;
+      await sleep(250);
+    }
   }
   const shadowBefore = shadowUpdates;
+  const ringsBefore = ringLog.length;
   const motion = params.get('motion');
-  let turning = motion === 'orbit' || motion === 'pan';
+  const route = motion?.startsWith('route:') ? ROUTES[motion.slice(6)] : undefined;
+  if (route) sampleMs = 20000;
+  document.title = 'PERF_SAMPLING';
+  let turning = motion === 'orbit' || motion === 'pan' || !!route;
   if (turning) {
     const t0 = performance.now();
     let last = t0;
@@ -488,7 +553,12 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     const turn = (now: number) => {
       if (!turning) return;
       if (motion === 'orbit') ctx?.rotate?.(((now - last) / 1000) * 12);
-      else {
+      else if (route) {
+        // Out and back: u runs 0 -> 1 -> 0 over the sample.
+        const k = Math.min(1, (now - t0) / sampleMs);
+        const [x, z] = routeAt(route.path, k < 0.5 ? k * 2 : 2 - k * 2);
+        ctx?.view?.(x, z, route.dist, route.bearing, route.tilt);
+      } else {
         const next = 150 * Math.sin(((now - t0) / 4000) * 2 * Math.PI);
         ctx?.pan?.(next - x, 0);
         x = next;
@@ -515,8 +585,12 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     dataMs: at('city:data'), rendererMs: at('city:renderer'), firstFrameMs: at('city:first-frame'), readyMs: at('ready'),
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
     motion: params.get('motion') ?? 'static',
+    stream: streaming, settledMs: at('stream:settled'),
+    ringTransitions: ringLog.length, ringTransitionsInSample: ringLog.length - ringsBefore, ringThrash: thrash(),
+    rings: Object.fromEntries(rings),
   };
-  const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
+  const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample,
+    stream: streaming ? { ringLog: ringLog.map(t => ({ ...t })), loader: streamSource?.().stats ?? null } : undefined };
   lastResult = r;
   const line = 'PERF_RESULT ' + JSON.stringify(r);
   console.info(line);
@@ -590,6 +664,10 @@ export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
+  ring,
+  ringSummary() { return { rings: Object.fromEntries(rings), transitions: ringLog.length, thrash: thrash() }; },
+  /** The streaming loader registers its queue here so a run can wait for it to drain. */
+  setStreamSource(source: typeof streamSource) { streamSource = source; },
   get phases() { return phases.map(p => ({ ...p })); },
   get result() { return lastResult; },
 };
