@@ -59,7 +59,7 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
     });
   // Pale grey render with white trim, as in the listing's aerial; grey metal balcony rails.
   const wall = '#e4e4df', trim = '#f1f1ec', rail = '#8a9194', roofColor = '#8f908c';
-  const windows = ['#6f7f88', '#76868f'];
+  const windows = ['#8a9ba5', '#91a1aa'];
   const storefront = ['#6a7b84', '#6e818a'];
   const pitch = (roof - 0.9 - ground) / 11;
 
