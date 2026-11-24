@@ -34,7 +34,7 @@ import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
-import { PlacementIndex } from '../vignette/spatial';
+import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
@@ -391,8 +391,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
     // Indexed: a linear scan over every site ring per lamp candidate was ~40% of a Midtown row's build.
-    const siteIndex = new PlacementIndex<P2[]>().addAll(sites);
-    const onSite = (x: number, z: number) => siteIndex.at(x, z).some(ring => pointInRing(x, z, ring));
+    const onSite = insideAny(sites);
     const reclaimedBed = (x: number,z: number) => {
       if (!options.underpass) return false;
       const [s,t] = options.underpass.local(x,z);
