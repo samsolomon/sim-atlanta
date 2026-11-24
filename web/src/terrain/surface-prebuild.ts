@@ -22,7 +22,12 @@ function start() {
     if (e.data.built) p.resolve(e.data.built);
     else p.reject(Error(e.data.error ?? 'surface worker failed'));
   };
-  worker.onerror = e => { for (const p of pending.values()) p.reject(Error(e.message)); pending.clear(); };
+  // A Worker that fails (to load, or later) is dropped, so the next request starts a fresh one.
+  worker.onerror = e => {
+    worker?.terminate(); worker = undefined;
+    for (const p of pending.values()) p.reject(Error(e.message || 'surface worker failed'));
+    pending.clear();
+  };
   return worker;
 }
 
@@ -33,8 +38,13 @@ export function prebuildSurface(grid: GroundGrid, quality: TerrainQuality, openi
   const input = { spec, heights, minY, quality, openings: openings ? [...openings] : [], join, farErrorM };
   if (typeof Worker === 'undefined') return Promise.resolve(buildSurfaceArrays(input));
   const id = ++seq;
-  return new Promise((resolve, reject) => {
+  // The heights are transferred, so keep a copy for the inline fallback.
+  const fallback = { ...input, heights: heights.slice() };
+  return new Promise<BuiltSurface>((resolve, reject) => {
     pending.set(id, { resolve, reject });
     start().postMessage({ id, input }, [heights.buffer]);
+  }).catch(error => {
+    console.warn('Surface worker unavailable; building on the main thread', error);
+    return buildSurfaceArrays(fallback);
   });
 }
