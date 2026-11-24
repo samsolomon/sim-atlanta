@@ -1,39 +1,42 @@
 # Studio Midtown Culture handoff to Claude Opus
 
 **Current worktree:** `studio-midtown-culture`, branch `samsolomon/high-piazza-people`.
-**Only active PR:** [#389 — High Museum visitors](https://github.com/samsolomon/sim-atlanta/pull/389), OPEN and held for Sam’s OK. Implementation and captures are at `8981147b12e8757df081c004e3cfb289d330a544`. All work is pushed. No local dev server or review tabs remain.
+**Only active PR:** [#389 — High Museum visitors](https://github.com/samsolomon/sim-atlanta/pull/389), OPEN and held for Sam’s OK. Owner: Claude Opus session `ba45f7e8-2a67-4069-ae27-fc13f736da26`. Coordinator thread for this revision: `msg_fd1939706770`.
 
-### Sam’s request
+### Sam’s requests
 
 > there's a little kind of like courtyard in the middle where they have tables and stuff. It'd be nice to have like people sitting there or people kind of like walking around the High.
 
-The coordinator identified Sifly Piazza and asked for seats, walks across the paving, up the entry ramp and along the Peachtree lawn path, seeded Atlanta-local attendance, illustrative data, and the existing figure material. The delivery and approval thread is `msg_98d0a74d8c05` on Air terminal `term_09e1b3da-5f48-4755-abf8-92a571a1f474`. The model-switch thread is `msg_7f3854f305d1`. Read predecessor history with `orca agent read --id orca_session_id:dfd2aaae-6c1d-4ea7-a8fb-5f9418755581 --limit 100`.
+> I like the little table models at the High. The only thing I might be a little bit worried about are like where they're positioned. It's kind of hard to see here.
 
-### What Sam can review
+The second request came with a screenshot circling the open paved square, between the Woodruff canopy slab and the High's entrance slab. The coordinator asked for the tables there, checked against photos, umbrellas only if November photos show them, seated figures kept, walkers crossing, and readability at the 250–450 m orbit.
 
-Six tables and eighteen chairs already existed. At Friday lunch the high tier seats six visitors and shows eight walkers. Low uses the existing walker batches. At 23:00 the museum crowd is empty. Positions, clothes and gait reproduce at a pinned clock. The fixture-derived placement and schedule are in `web/src/city/high-visitors.ts`; batching is in `street-figures.ts`. The PR contains the three requested captures.
+### State (revision 2)
+
+- Twelve tables in three rows of four at local u −48…−34.5, v 17…25 in `fixtures/arts-campus.json`, inside the grove that the leaf-on Esri aerial shows. Sources are in `docs/arts-campus.md`.
+- Each table has four red chairs, a warm `#f5ead4` top, and a furled cream umbrella at every other table. `umbrellas: 'open'` in `arts-campus.ts` gives the open variant offered to Sam.
+- Ten seats are set by `highSeated(crowd)`. Walker routes avoid the grove, and a test enforces a 1.3 m clearance.
+- No new material or batch. Low remains at 90/90 programs.
 
 | View | City camera | Eastern time, Nov 20 2026 |
 | --- | --- | --- |
-| [Café seats](../log/ui/high-visitors/tables.jpg) | `557,-3963,145,55,48` | 13:00 |
-| [Museum at lunch](../log/ui/high-visitors/lunch.jpg) | `565,-3965,-101,55,260` | 13:00 |
-| [Museum at full night](../log/ui/high-visitors/night.jpg) | `565,-3965,-101,55,260` | 23:00 |
+| [Lunch](../log/ui/high-visitors/lunch.jpg) · [Night](../log/ui/high-visitors/night.jpg) | `565,-3965,-101,55,260` | 13:00 · 23:00 |
+| [Café grove close-up](../log/ui/high-visitors/tables.jpg) · [open umbrellas](../log/ui/high-visitors/tables-open.jpg) | `520,-3955,-101,50,60` + `&dev&mindist=20` | 13:00 |
+| [Before/after](../log/ui/high-visitors/compare-lunch.jpg) · [day/night](../log/ui/high-visitors/day-night.jpg) · [umbrella options](../log/ui/high-visitors/umbrella-options.jpg) | as above | |
 
-Reproduce with `pnpm dev --port 5317` and `/?view=city&ui=classic&speed=0&q=high&dev&mindist=20&cam=557,-3963,145,55,48&t=2026-11-20T13:00:00-05:00`. Substitute the overview camera and hour from the table. The Studio helper `/tmp/high-visit-capture.py` captures all three. Inspect the actual image: during Vite reload a blank frame once passed the renderer-call check; the committed captures were inspected.
+Checks:
+- `pnpm test`: all passed. Rust passed. Web passed 1,082, with one skip. Python skipped because there is no `.venv`. `east-rail` timed out once under capture load, then passed when rerun alone and in the full rerun.
+- `pnpm test:perf`, low: 567 draws, 2,357,089 triangles, 90/90 programs, 393 MB.
+- `pnpm test:perf`, high: 1,191 draws, 13,895,605 triangles, 105/140 programs, 500 MB.
+- Codex cross-review: no findings.
 
-### Verification and open risks
+### Next steps
 
-- `PATH="/opt/homebrew/opt/rustup/bin:$PATH" pnpm test` passed Rust, web (1,080 passed, one skipped) and worker (five passed). The optional Python checks skipped because this worktree lacks `.venv`.
-- `pnpm test:perf` passed both tiers with twelve areas. Low measured 567 draws, 2,355,801 triangles, 90/90 programs and 393 MB post-GC heap. High measured 1,189 draws, 13,893,469 triangles, 105/140 programs and 499 MB. Low has zero program headroom. The seating batch uses the shared figure material on high only.
-- Claude cross-reviewed the implementation against main and reported no findings. Logs are `/tmp/high-visit-final-tests.log`, `/tmp/high-visit-final-perf.log` and `/tmp/high-visit-review.log`. For new Claude-authored changes use the repo cross-review skill with Codex.
-- Attendance and routes are artistic estimates tagged illustrative. The ramp follows the deck rise, and chair height follows the parent table datum. Preserve these if revising placement.
+1. Wait for Sam’s OK and his umbrella choice relayed by the coordinator. If he picks open, change `umbrellas` to `'open'`. Then reshoot lunch, night and close-up at the cameras above, rerun tests and both perf tiers, and update the docs text that says furled.
+2. On approval, sync main, keep both build-log entries, rerun checks, merge, and quote `gh pr view 389 --json state,mergeCommit`. A web rebuild is needed, and only the coordinator deploys.
+3. Gap for the tree agent: the café grove's deciduous trees, about 6–10 in a grid, at local u −50…−28, v 16…30. Keep crowns clear of the 2.65 m umbrella tops.
 
-### Next steps in order
-
-1. Check `orca orchestration check` and the approval thread. The coordinator has the PR, screenshots and camera strings. Wait for the coordinator to relay Sam’s explicit OK before merging anything.
-2. If Sam requests changes, revise #389, rerun the tests, browser captures, both perf tiers and cross-review as appropriate. Return the revised evidence to the coordinator and retain the hold.
-3. After approval, fetch and check mergeability. Resolve any build-log conflict by keeping both entries, then rerun checks on the synced branch. Verify the merge using `gh pr view 389 --json state,mergeCommit` before sending a merge notice. Quote the returned fields, include review image links and camera strings, and use `orca orchestration reply --id <coordinator-message-id> --from <your-session-id>`. Only the coordinator deploys. A web rebuild is required for #389.
-4. Await a new assignment after #389. Rhodes Hall #360 and Coda #366 already landed. Phone-perf’s transport heap fix #371 also landed, with 496 MB high in its verification. The Georgia Tech plant stack remains a separate backlog candidate.
+Capture helper (not committed): the session scratchpad `cap.py` follows the old `/tmp/high-visit-capture.py` pattern, with a 15 s settle. Blank beige frames still pass the renderer-call check, so inspect every image.
 
 ---
 
