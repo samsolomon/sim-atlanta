@@ -37,7 +37,7 @@
       "triangles": 6850000,
       "calls": 475,
       "programs": 100,
-      "textureMB": 890,
+      "textureMB": 1030,
       "geometryMB": 300,
       "heapAfterGcMB": 570
     },

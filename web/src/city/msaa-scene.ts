@@ -30,6 +30,9 @@ export class MsaaScenePass extends Pass {
     renderer.setRenderTarget(this.target);
     renderer.render(this.scene, this.camera);
     // render() resolves the multisampled target into its colour and depth textures as it ends.
+    // The composer's targets get GPU storage only when first drawn into, which on the first frame
+    // and after every resize is this copy; copyTextureToTexture doesn't allocate a destination.
+    renderer.initRenderTarget(read);
     renderer.copyTextureToTexture(this.target.texture, read.texture);
     renderer.autoClear = autoClear;
   }

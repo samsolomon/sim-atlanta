@@ -106,11 +106,17 @@ Low triangle headroom on 2026-11-23: 2.6M − 2.36M = 240k. About 30 building sk
 | Triangles | 6.22M with the landmark day LOD (6.54M before; 13.90M before #421) | 6.85M | 6.5M |
 | Draw calls | 432 with lit panes in the body batch (462 after landmark batching; 597; 1,199 before #421) | 475 | 550 |
 | Programs | 89 | 140 | 140 |
-| Texture MB | 808 | 890 | 500 |
+| Texture MB | 984.6 after #654, which counts the canvas's buffers and MSAA resolves (808 before, on the old counter) | 1030 | 500 |
 | Geometry MB | 286 | 300 | 250 |
 | JS heap after GC | 510 MB | 570 MB | 500 MB |
 
 #421 halved high draws and triangles: GTAO had re-rendered the whole scene with a normal override.
+#654 multisamples High's scene draw (2x) so sub-pixel floor lines stop crawling, and turns off the
+canvas's MSAA, which only ever smoothed post's full-screen quads. The texture counter now includes
+the canvas's own buffers and each multisampled target's resolve textures, which it had never seen.
+Counted High memory rose from 767 to 984.6 MB, but real GPU memory fell about 24 MB: main under the
+new counter would read about 1009 MB, its 4x canvas buffers included. The ceiling moved 890 to 1030
+on the new counter (coordinator, 2026-11-24).
 The draw ceiling leaves room for about ten building skins at +1 to +4 draws each.
 
 `high-night` repeats the high check at 22:00, where lit windows and lamps add draws and programs:
