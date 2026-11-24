@@ -29,4 +29,15 @@ it('replaces the 86 m extrusion with the lidar-height slab', () => {
   expect(h(908, -684)).toBeCloseTo(64.6, 0); // parapet deck off the penthouse
   expect(h(921.9, -691.9)).toBeCloseTo(67.9, 0); // penthouse
   expect(createTheLandmark([other], grid)).toBeNull();
+  // Both long sides read the same: concrete wings either side of a brick middle.
+  const colourAt = (x: number, z: number, dirX: number, dirZ: number) => {
+    const hit = new Raycaster(new Vector3(x, 330 - 323.8, z), new Vector3(dirX, 0, dirZ).normalize()).intersectObject(model.group)[0];
+    const c = (hit.object as import('three').Mesh).geometry.getAttribute('color');
+    return [c.getX(hit.face!.a), c.getY(hit.face!.a), c.getZ(hit.face!.a)].map(v => Math.round(v * 100));
+  };
+  // Long-face normal in world: (0.46, 0.89) points south-southeast.
+  const n = [0.46, 0.89];
+  const wingS = colourAt(921.9 - 18 * 0.887 + n[0] * 30, -691.9 + 18 * 0.461 + n[1] * 30, -n[0], -n[1]);
+  const wingN = colourAt(921.9 - 18 * 0.887 - n[0] * 30, -691.9 + 18 * 0.461 - n[1] * 30, n[0], n[1]);
+  expect(wingS).toEqual(wingN);
 });

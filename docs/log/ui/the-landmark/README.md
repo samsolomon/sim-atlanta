@@ -16,9 +16,9 @@ The Landmark is a 1963 residential slab, now condominiums, on Piedmont Avenue be
 
 ## Model
 
-- **Walls.** The long middle of each long face is brick (`#a38672`) with paired windows. The notched outline breaks each long face into a brick middle with short end bands. Those bands and the narrow ends are pale concrete (`#d9d4c8`) with a two-column window slot, as the photographs show.
+- **Walls.** The middle of each long face (|u| < 12 m) is a brick field (`#a38672`): an even window grid, with wider piers between the pairs. The wings either side and the narrow ends are pale concrete (`#d9d4c8`), with a two-column window slot, as the photographs show.
 - **Glass.** `#8a9499` (S10 V60). Rendered at 11:30, high tier, the sunlit panes read about H100 S6 V52. A sunlit generic glass tower in the same frame reads H136 S5 V77.
-- **Night.** About 26% of the panes on the long faces are lit (residential), and 20% in the end slots, using skin-kit `litFacade`. The lobby glazing is lit. The crown is unlit.
+- **Night.** No reliable night exterior was found, so this is the gap. The lighting is illustrative residential occupancy: about 26% of the panes on the long faces are lit (residential), and 20% in the end slots, using skin-kit `litFacade`. The lobby glazing is lit. The crown is unlit.
 
 **Estimated:** window pairing, floor height and penthouse size. The base awnings are omitted; they are too small to read at City's orbit.
 
@@ -30,6 +30,7 @@ The Landmark is a 1963 residential slab, now condominiums, on Piedmont Avenue be
 | Same | `922,-692,333,58,300` | 11:30 PM EST | [Night](night.jpg) |
 | Narrow end, looking northeast | `922,-692,60,52,330` | 11:30 AM EST | [End](end.jpg) |
 | Same | `922,-692,60,52,330` | 11:30 PM EST | [End at night](end-night.jpg) |
+| Opposite long face, looking south-southeast | `922,-692,153,58,300` | 11:30 AM EST | [North face](north.jpg) |
 | End bands and brick (close) | `905,-675,333,62,90` | 11:30 AM EST | [Close](close.jpg) |
 
 The bearing is the camera's heading. Use `/?view=city&cam=<camera>&t=2026-11-20T<clock>`. The close view adds `&dev&mindist=20`.
