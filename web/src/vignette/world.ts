@@ -9,6 +9,7 @@ import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
+import { FAR_PER_TREE, farCanopyInstances, type FarInstances } from '../trees/far-canopy';
 import { PlacementIndex } from './spatial';
 import { SIDING_GLSL } from '../materials/siding';
 
@@ -95,6 +96,9 @@ export interface WorldOptions {
   clumps: number;
   /** Largest side of the night light map in texels. */
   lightMapMax: number;
+  /** Swap the generic trees for their one-draw far form (trees/far-canopy.ts) under
+   *  setDetail({ farTrees }): City's low tier. */
+  farForm?: boolean;
 }
 export const EAST_PORTAL: WorldOptions = { terrain: 'trench', clumps: 10, lightMapMax: 4096 };
 
@@ -1063,8 +1067,18 @@ export class World {
       box.expandByPoint(corner.set(t.x - R, t.y - 1, t.z - R)).expandByPoint(corner.set(t.x + R, t.y + top, t.z + R));
     }
     const bounds = box.isEmpty() ? null : box.getBoundingSphere(new THREE.Sphere());
-    for (const im of [this.canopy, this.pines, this.trunks, this.branches]) {
-      if (!bounds) continue;
+    if (this.opts.farForm && n) {
+      // One instanced draw per area past the far-tree orbit, on the same leaf material.
+      this.far = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1), leafMat, n * FAR_PER_TREE);
+      this.far.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * FAR_PER_TREE * 3), 3);
+      this.far.name = 'far trees';
+      this.far.castShadow = this.far.receiveShadow = true;
+      this.far.visible = false;
+      this.farOut = { matrices: this.far.instanceMatrix.array as Float32Array, colors: this.far.instanceColor.array as Float32Array, count: 0 };
+      this.group.add(this.far);
+    }
+    for (const im of [this.canopy, this.pines, this.trunks, this.branches, this.far]) {
+      if (!bounds || !im) continue;
       im.boundingSphere = bounds.clone();
       im.boundingBox = box.clone();
     }
@@ -1080,6 +1094,8 @@ export class World {
   }
 
   private canopy?: THREE.InstancedMesh;
+  private far?: THREE.InstancedMesh;
+  private farOut?: FarInstances;
   private pines?: THREE.InstancedMesh;
   private trunks?: THREE.InstancedMesh;
   private branches?: THREE.InstancedMesh;
@@ -1101,6 +1117,10 @@ export class World {
     if (!this.branches) return;
     this.branches.visible = this.branchesShow && !this.detail.farTrees;
     this.branches.castShadow = this.detail.branchShadows;
+    if (!this.far) return;
+    // Far form: the whole near tree (clumps, pine tiers, trunk) gives way to one draw.
+    this.far.visible = this.detail.farTrees;
+    for (const im of [this.canopy, this.pines, this.trunks]) if (im) im.visible = !this.detail.farTrees;
   }
   private seasonDoy = -1;
 
@@ -1203,6 +1223,11 @@ export class World {
     for (const im of [canopy, pines]) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
+    }
+    if (this.far && this.farOut) {
+      this.far.count = farCanopyInstances(this.trees, doy, this.farOut).count;
+      this.far.instanceMatrix.needsUpdate = true;
+      this.far.instanceColor!.needsUpdate = true;
     }
   }
 
