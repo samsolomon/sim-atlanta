@@ -94,7 +94,7 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
         for (let b = 0; b < bays; b++) {
           if (litHash(seed, face * 8 + k, j, b) >= 0.06) continue;
           const bl = l + ((r - l) * b) / bays, br = l + ((r - l) * (b + 1)) / bays;
-          panel(f, bl + 0.2 / f.length, br - 0.2 / f.length, y + 1.1, y + 2.9, 0.06, windows, true);
+          panel(f, bl + 0.2 / f.length, br - 0.2 / f.length, y + 1.1, y + 2.9, 0.09, windows, true);
         }
       });
     }
@@ -115,7 +115,7 @@ export function createTenPeachtreePlace(buildings: VBuilding[], site: VBuilding,
     if (south && broad) {
       // The Peachtree Place entrance: a tall recessed glass bay with a lunette over the setback.
       panel(f, 0.44, 0.56, H.grade + 0.3, H.grade + 14, 0.06, lobby);
-      s.lights.quad(at(f, 0.46, H.grade + 0.3, 0.07), at(f, 0.46, H.grade + 5, 0.07), at(f, 0.54, H.grade + 5, 0.07), at(f, 0.54, H.grade + 0.3, 0.07), lobby);
+      s.lights.quad(at(f, 0.46, H.grade + 0.3, 0.1), at(f, 0.46, H.grade + 5, 0.1), at(f, 0.54, H.grade + 5, 0.1), at(f, 0.54, H.grade + 0.3, 0.1), lobby);
       const cy = H.grade + 28.2, r = 4.2, mid = 0.5;
       for (let k = 0; k < 6; k++) {
         const a0 = (k / 6) * Math.PI, a1 = ((k + 1) / 6) * Math.PI;
