@@ -7,8 +7,8 @@ export type BoxcarPaint = 'oxide' | 'faded' | 'blue';
  * the photos because the City colour grade crushes dark blues. No lettering or numbers. */
 const PAINT = {
   oxide: { body: '#9c5940', rib: '#854632', roof: '#8a8177', roofRib: '#a59b8c', patch: null },
-  faded: { body: '#a86a52', rib: '#8f5640', roof: '#8d857c', roofRib: '#9c9488', patch: '#7e4232' },
-  blue: { body: '#3f5d84', rib: '#33506f', roof: '#5f6a76', roofRib: '#6c7783', patch: null },
+  faded: { body: '#a2735e', rib: '#8c604e', roof: '#958d84', roofRib: '#a39b91', patch: '#7c4434' },
+  blue: { body: '#34465e', rib: '#2b3b50', roof: '#59626c', roofRib: '#666f79', patch: null },
 } as const;
 
 /** 50-foot-class boxcar: sliding door, exterior posts and a ribbed roof above the shared underframe. */

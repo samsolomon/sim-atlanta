@@ -17,13 +17,18 @@ describe('boxcar paint variants', () => {
   });
 
   it('faces every painted-out patch outward', () => {
-    const g = freightGeometry('boxcarFaded'), base = freightGeometry('boxcar').getAttribute('position').count;
+    const g = freightGeometry('boxcarFaded');
     const p = g.getAttribute('position'), a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
-    for (let i = base; i < p.count; i += 3) {
+    let patches = 0;
+    for (let i = 0; i < p.count; i += 3) {
       a.fromBufferAttribute(p, i); b.fromBufferAttribute(p, i + 1); c.fromBufferAttribute(p, i + 2);
+      // Patches are the only triangles lying flat in the plane x = ±1.523.
+      if (![a, b, c].every((v) => Math.abs(Math.abs(v.x) - 1.523) < 1e-4)) continue;
+      patches++;
       const n = b.sub(a).cross(c.sub(a));
       expect(Math.sign(n.x)).toBe(Math.sign(a.x));
     }
+    expect(patches).toBe(12);
     g.dispose();
   });
 });
