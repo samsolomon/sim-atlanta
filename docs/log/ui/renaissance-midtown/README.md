@@ -19,7 +19,8 @@ These are Google Street View panoramas, viewed in an Orca tab. None of the image
 
 ## Estimates
 
-- Bays: windows at about 3.2 m on the long faces, two columns beside the slot on the ends.
+- Bays: windows at about 3.2 m on the long faces, two columns either side of the slot on the ends. The facade is laid out on the slab's four true faces, not the OSM ring's split segments.
+- The slot is recessed in life and drawn flush, as a colour band with its own panes.
 - Podium height and canopy depth.
 - Plant box size and position.
 
@@ -39,6 +40,7 @@ There is no full-night exterior photograph, so that gap is recorded here. As a h
 | Same | `354,-2719,260,58,300` | 11:30 PM EST | [Night](night.jpg) |
 | South long face, looking north | `354,-2719,350,55,300` | 11:30 AM EST | [South](south.jpg) |
 | Same | `354,-2719,350,55,300` | 11:30 PM EST | [South at night](south-night.jpg) |
+| Abercrombie (west) end, looking east | `354,-2719,80,58,300` | 11:30 AM EST | [West](west.jpg) |
 | Podium and slot (close) | `380,-2719,270,50,110` | 11:30 AM EST | [Close](close.jpg) |
 
 The bearing is the camera's heading. Use `/?view=city&cam=<camera>&t=2026-11-20T<clock>`. The close view adds `&dev&mindist=20`.

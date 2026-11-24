@@ -6,8 +6,8 @@ import { litFacade, seedOf } from './skin-kit';
 
 /**
  * Renaissance Atlanta Midtown Hotel (866 West Peachtree): a 21-storey slab of
- * tan precast with punched windows over a dark podium, and a recessed glass
- * slot down the middle of each narrow end. Lidar (April 2019): roof p50 61.5,
+ * tan precast with punched windows over a dark podium, and a full-height glass
+ * slot down the middle of each narrow end (recessed in life, drawn flush here). Lidar (April 2019): roof p50 61.5,
  * p95 66.5 m above grade; the mapped 64 m stands. The roof sign is a logo and
  * is left off.
  */
@@ -40,26 +40,34 @@ export function createRenaissanceMidtown(buildings: VBuilding[], site: VBuilding
   s.prism(plan, top, parapet, precast, roofDeck);
   s.body.box(12, plant - parapet, 9, -4, (plant + parapet) / 2, 0, '#b3ada2');
 
-  plan.forEach((a, face) => {
-    const b = plan[(face + 1) % plan.length];
+  // Lay the facade out on the slab's four true faces, not the OSM ring's split
+  // segments, so bays, slot and storefront run unbroken along each face.
+  const us = plan.map(p => p[0]), vs = plan.map(p => p[1]);
+  const [u0, u1, v0, v1] = [Math.min(...us), Math.max(...us), Math.min(...vs), Math.max(...vs)];
+  const faces: [P2, P2][] = [[[u0, v0], [u1, v0]], [[u1, v0], [u1, v1]], [[u1, v1], [u0, v1]], [[u0, v1], [u0, v0]]];
+  faces.forEach(([a, b], face) => {
     const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
-    if (len < 3) return;
     const at = (t: number, y: number, out: number) => [a[0] + t * dx + out * dz / len, y, a[1] + t * dz - out * dx / len];
+    const pt = (t: number): P2 => [a[0] + t * dx, a[1] + t * dz];
     const quad = (l: number, r: number, y0: number, y1: number, out: number, c: string, lit = false) =>
       (lit ? s.lights : s.body).quad(at(l, y0, out), at(l, y1, out), at(r, y1, out), at(r, y0, out), c);
     const narrow = Math.abs(dz) > Math.abs(dx);
     if (narrow) {
-      // Recessed glass slot down the middle of the end, with its own lit rooms.
+      // Full-height glass slot down the middle of each end (drawn flush), with
+      // its own lit rooms, and two window columns either side of it.
       quad(0.38, 0.62, podiumTop, parapet, 0.04, slot);
-      litFacade(s, seed, face + 16, at(0.38, 0, 0.06).filter((_, i) => i !== 1) as P2,
-        at(0.62, 0, 0.06).filter((_, i) => i !== 1) as P2, podiumTop, top, floors, len * 0.12, 0.9, 0.8, [slot], 0.3);
+      litFacade(s, seed, face + 16, pt(0.38), pt(0.62), podiumTop, top, floors, len * 0.12, 0.9, 0.8, [slot], 0.3);
+      litFacade(s, seed, face, pt(0.04), pt(0.36), podiumTop, top, floors, len * 0.16, 0.45, 0.5, [glass], 0.3);
+      litFacade(s, seed, face + 8, pt(0.64), pt(0.96), podiumTop, top, floors, len * 0.16, 0.45, 0.5, [glass], 0.3);
+    } else {
+      // Hotel rooms: punched windows, noticeably lit at night.
+      const bays = Math.max(1, Math.round(len / 3.2));
+      litFacade(s, seed, face, a, b, podiumTop, top, floors, len / bays, 0.45, 0.5, [glass], 0.3);
     }
-    // Hotel rooms: punched windows, noticeably lit at night.
-    const bays = Math.max(1, Math.round(len / 3.2));
-    if (!narrow || len > 12) litFacade(s, seed, face, a, b, podiumTop, top, floors, len / bays, narrow ? 0.3 : 0.45, 0.5, [glass], 0.3);
     // Podium: storefront glazing lit, a dark canopy band over it.
     quad(0.03, 0.97, g0 + 0.3, g0 + 4.6, 0.05, storefront, true);
     quad(0, 1, g0 + 4.6, g0 + 5.4, 0.3, '#3d4143');
   });
+
   return s.finish('#f5d8a8', 0.55);
 }
