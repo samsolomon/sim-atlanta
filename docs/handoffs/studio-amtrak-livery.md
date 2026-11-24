@@ -105,3 +105,69 @@ Send sourced ID/dimensions and export proposal to connector before integration.
 Before any MERGED notice, run `gh pr view <n> --json state,mergeCommit` and quote
 both returned values. A failed merge is not a merge. Resolve build-log append
 conflicts by retaining both entries, then rerun tests.
+
+## READY FOR 6.2 — 2026-11-23 (Codex handoff)
+
+Current branch: `samsolomon/marta-articulated-bus`, based on merged #347.
+No bus PR yet. Push contains a compiling, unintegrated XE60 geometry WIP plus
+research and reviewed plan; it does not change any user-visible model yet.
+
+### Completed since the earlier notes
+
+- #347 **verified MERGED** using `gh pr view 347 --json state,mergeCommit`:
+  `8b78ddabeaf7dbbbc6b8445e1d38a0173826bf76`. GP38-2 and ES44AH both navy
+  YN3. GP reference replaced with Mark Levisay, 2513, November 10 2014.
+  Rebased full tests passed (959 web, one existing skip; Rust/pipeline/worker
+  passed), both performance tiers passed; final Claude review no findings.
+  Coordinator notified with screenshots/cameras and web-rebuild-only requirement.
+- Research summary sent to coordinator **before modelling**, then clarified Phase
+  One purple buses 7108–7112 are XN40 rigid CNG, not articulated XN60.
+- Coordinator explicitly requested **both** XE60 and a cheap purple Rapid XN40
+  livery in one lab PR (`msg_3443a83811b5`). XE60 copy: bought for A-Line,
+  return to revenue service unverified. No claim the bus is currently running.
+
+### Current WIP and next steps (in order)
+
+1. Read `docs/marta-rapid-buses.md` (all sources, dates, uncertainty, dimensions)
+   and `docs/plans/marta-rapid-buses.md` (architect/product reviews applied).
+2. Inspect `web/src/vignette/xe60.ts`: front/rear/bellows geometries, shared shader
+   with explicit angle and per-instance angle option, `XE60_LAYOUT`/`xe60Pose`.
+   Four focused tests pass; `pnpm --filter web exec tsc --noEmit` passed.
+   **No browser render, full suite, or cross-review yet for this branch.**
+3. Finish prototype integration: matching shadow/depth deformation for bellows,
+   a preview owner disposing shared geometry/material once, lab `xe60` entry,
+   angle slider/output/Straight reset in `lab-markup.ts`, existing Detail controls.
+   Check geometry proportions and joint closure at +/-35deg in browser, correct
+   any problems before claiming it finished. Current high/low model is preliminary.
+4. Add `xn40Rapid` art/livery option to existing `busGeometry` without changing
+   default XN40. Current BusLivery fields map old slashes: merely changing colours
+   will not draw Rapid's thin blue/gold/orange belt correctly. Use an optional
+   Rapid paint style, purple CNG pod, lavender diagonal lower accents, no logos.
+5. Confirm IDs/exports with connector, measure exact low/high triangles/bytes and
+   batches. Proposed low target <=1500 total / <=3 shared instanced batches.
+   Do not claim measured phone FPS from triangle counts. No City motion changes.
+6. Capture matched day/night straight/bent XE60 and XN40 Rapid with source links;
+   no reliable exact-fleet night photo found. Photo publication dates known,
+   actual capture dates not known. Do not call these Commons/CC assets.
+7. Full pnpm test/build, browser + perf as appropriate, cross-review, open one lab
+   PR; send coordinator shots/cameras and await visual merge approval for buses.
+8. Remaining freight car library and City consists come after this bus task.
+
+### What is owed / coordination
+
+- Coordinator thread `msg_3443a83811b5`: both variants and one lab PR.
+- Connector `orca_session_id:1f9238ff-2c34-4398-9612-0425e769c083`, thread
+  `msg_98ec3c022c8c`: exact dimension/export proposal after validation; proposed
+  `xe60` / `marta:vt:xe60`, and `xn40Rapid` livery on `marta:vt:xn40`. Already
+  told them Phase One uses XN40 and not to infer XE60 from the route alone.
+- Model move coordinator thread `msg_e265027a749f`; send READY FOR 6.2 when pushed.
+- Direct Air send fails pairing; use orchestration reply threads as documented.
+
+### Scratch/tools
+
+`/tmp/marta-articulated/`: `xe60-side.jpg` (MARTA/Urbanize published Jan5 2026),
+`xe60-front.png` (CBS Jan27 2026), `phase-one.jpg` (official 7108). Links in research.
+Previous freight captures/scripts in `/tmp/freight-pr2/`. `.venv` has Pillow and
+pipeline dependencies. Rust PATH still needs stable-aarch64-apple-darwin/bin.
+Complete generated data is present and ignored; don't regenerate to fix old dates.
+No dev server running. Research tabs are closed at handoff. Do not edit main.

@@ -240,9 +240,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
-  const homes = residential(sceneryCity, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings);
+  const homes = residential(sceneryCity, options.finishFor, groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
+  // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
+  const yardLayer = homes.yards();
+  if (yardLayer?.yields.length) mesh.carve(yardLayer.yields);
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
@@ -267,7 +270,6 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   scenery.group.add(houses.group);
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   // Yards by rule around every house (walks, drives, foundation planting).
-  const yardLayer = homes.yards();
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
   const oval = activeOval(city.bounds, groundAt, options.quality);

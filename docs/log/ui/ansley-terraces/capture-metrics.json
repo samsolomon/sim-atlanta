@@ -1,0 +1,44 @@
+{
+  "row-low-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&ui=classic&cam=1503%2C-4056%2C70%2C60%2C150&q=low&t=2026-11-20T14%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 71,
+    "triangles": 1179699
+  },
+  "row-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&ui=classic&cam=1503%2C-4056%2C70%2C60%2C150&q=high&t=2026-11-20T14%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 167,
+    "triangles": 5717813
+  },
+  "row-high-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&ui=classic&cam=1503%2C-4056%2C70%2C60%2C150&q=high&t=2026-11-20T23%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 180,
+    "triangles": 5637394
+  },
+  "steps-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&ui=classic&cam=1503%2C-4056%2C70%2C60%2C45&q=high&t=2026-11-20T14%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 170,
+    "triangles": 5720197
+  },
+  "steps-high-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&ui=classic&cam=1503%2C-4056%2C70%2C60%2C45&q=high&t=2026-11-20T23%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 183,
+    "triangles": 5640562
+  },
+  "piers-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&ui=classic&cam=916%2C-4352%2C180%2C60%2C45&q=high&t=2026-11-20T14%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 264,
+    "triangles": 10402591
+  },
+  "row-high-night-before": {
+    "url": "http://localhost:5418/?view=city&dev=&mindist=20&ui=classic&cam=1503%2C-4056%2C70%2C60%2C150&q=high&t=2026-11-20T23%3A00%3A00-05%3A00",
+    "areas": 12,
+    "drawCalls": 180,
+    "triangles": 5630342
+  }
+}

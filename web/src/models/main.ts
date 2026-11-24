@@ -9,7 +9,8 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type MartaLine } from '../vignette/cq400';
 import { gradeShader } from '../vignette/grade';
-import { busGeometry, busMaterial } from '../vignette/xcelsior';
+import { xe60Geometry, xe60Material, xe60DepthMaterial, xe60Pose } from '../vignette/xe60';
+import { busGeometry, RAPID_LIVERY, busMaterial } from '../vignette/xcelsior';
 import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
 import { s70Geometry } from '../vignette/streetcar';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
@@ -70,6 +71,8 @@ const role = { value: 1 };
 let line: MartaLine = 'gold';
 const models = {
   cq400: 'Stadler CQ400',
+  xe60: 'New Flyer XE60 articulated electric',
+  xn40Rapid: 'New Flyer XN40 · Rapid A-Line',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
   cm44ac: 'GE/Wabtec CM44AC, CSX-like',
@@ -388,7 +391,20 @@ function buildMaterials() {
     + `${Math.round(materialScene.triangles).toLocaleString()} triangles, 0 texture bytes.`;
   landscapeReport.hidden = false;
 }
+const jointSlider = document.querySelector<HTMLInputElement>('#joint-angle')!;
+const jointAngle = { value: 0 };
+let trailer: THREE.Mesh | undefined;
+function setJoint() {
+  const pose = xe60Pose(THREE.MathUtils.degToRad(Number(jointSlider.value)));
+  jointAngle.value = pose.angle;
+  if (trailer) trailer.rotation.y = pose.rear.yaw;
+  document.getElementById('joint-value')!.textContent = jointSlider.value + '°';
+}
+jointSlider.oninput = setJoint;
+document.getElementById('joint-reset')!.onclick = () => { jointSlider.value = '0'; setJoint(); };
 function build() {
+  trailer = undefined;
+  document.getElementById('articulation')!.hidden = model !== 'xe60';
   houseScene?.dispose();
   houseScene = null;
   materialScene?.dispose();
@@ -400,12 +416,15 @@ function build() {
   station?.dispose();
   station = undefined;
   platformReport.hidden = true;
+  const retiredMaterials = new Set<THREE.Material>();
   for (const c of cars) {
+    c.customDepthMaterial?.dispose();
     scene.remove(c);
     c.geometry.dispose();
     const materials = Array.isArray(c.material) ? c.material : [c.material];
-    for (const material of materials) material.dispose();
+    for (const material of materials) retiredMaterials.add(material);
   }
+  retiredMaterials.forEach(material => material.dispose());
   cars = [];
   figure?.dispose();
   figure = undefined;
@@ -573,8 +592,25 @@ function build() {
     model === 'cq400'
       ? 'One cab car and one middle car of a four-car MARTA set.'
       : 'MARTA’s 40-foot compressed-natural-gas bus. The roof enclosures hold its fuel tanks. The body and wheelbase follow New Flyer’s published dimensions.';
-  if (model === 'xn40') {
-    const bus = new THREE.Mesh(busGeometry(), busMaterial(night));
+  if (model === 'xe60') {
+    document.getElementById('blurb')!.textContent = 'MARTA bought the 60-foot electric XE60 for the A-Line. Its return to revenue service is unverified.';
+    document.getElementById('tier')!.hidden = false;
+    const parts = xe60Geometry(treeQuality);
+    const material = xe60Material(night, jointAngle);
+    const front = new THREE.Mesh(parts.front, material);
+    trailer = new THREE.Mesh(parts.rear, material);
+    const bellows = new THREE.Mesh(parts.bellows, material);
+    bellows.customDepthMaterial = xe60DepthMaterial(jointAngle);
+    front.position.z = 7;
+    trailer.position.z = bellows.position.z = front.position.z + xe60Pose(0).rear.z;
+    cars = [front, trailer, bellows];
+    for (const part of cars) { part.castShadow = part.receiveShadow = true; scene.add(part); }
+    setJoint();
+    return;
+  }
+  if (model === 'xn40' || model === 'xn40Rapid') {
+    if (model === 'xn40Rapid') document.getElementById('blurb')!.textContent = 'The A-Line opened with purple 40-foot XN40 buses powered by compressed natural gas.';
+    const bus = new THREE.Mesh(busGeometry(model === 'xn40Rapid' ? RAPID_LIVERY : undefined), busMaterial(night));
     bus.position.z = 0;
     bus.castShadow = bus.receiveShadow = true;
     cars = [bus];
@@ -819,7 +855,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || ['es44acNs', 'es44ah', 'sd70ace', 'gp382'].includes(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, cm44ac: FREIGHT_VIEWS, cm44acNs: FREIGHT_VIEWS, es44acNs: FREIGHT_VIEWS, es44ah: FREIGHT_VIEWS, sd70ace: FREIGHT_VIEWS, gp382: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || ['es44acNs', 'es44ah', 'sd70ace', 'gp382'].includes(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, cm44ac: FREIGHT_VIEWS, cm44acNs: FREIGHT_VIEWS, es44acNs: FREIGHT_VIEWS, es44ah: FREIGHT_VIEWS, sd70ace: FREIGHT_VIEWS, gp382: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -833,7 +869,7 @@ function selectModel(id: Model) {
   history.replaceState(null, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'cm44ac', 'cm44acNs', 'es44acNs', 'es44ah', 'sd70ace', 'gp382', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'cm44ac', 'cm44acNs', 'es44acNs', 'es44ah', 'sd70ace', 'gp382', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
