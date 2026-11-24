@@ -3503,3 +3503,7 @@ OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13,
 
 
 **2026-11-24 — The Hard Rock building was a third of its height.** Overture gave the corner block at Peachtree and International 69.3 m, which made it a plain grey tower among the Peachtree Center towers. The 2019 lidar measures the roof at 22–26 m. Street View shows a pale stone six-storey block, with paired windows between flat piers and maroon awnings over the restaurant. The model draws that and leaves off the neon guitar and the rooftop sign, which are logos. It is a downtown landmark, so it also joins the batcher's `listed` array. [Captures and references](log/ui/hard-rock-building/README.md)
+
+### 2026-11-24 · Crest on Peachtree's mural
+
+From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
