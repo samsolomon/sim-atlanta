@@ -107,15 +107,16 @@ export class CityBuses {
     }
   }
 
-  mount(board: ConnectorBoard) {
+  mount(board: ConnectorBoard, needsRoad:(pts:P2[])=>boolean) {
     if (this.mounted.has(board)) return false;
     this.mounted.add(board);
-    this.areas.push(board.city.bounds);
-    const runs = board.city.roads.filter(r => !r.tunnel && BUS_STREETS.has(r.cls)).map(road => {
+    const runs = board.city.roads.filter(r => !r.tunnel && BUS_STREETS.has(r.cls) && needsRoad(r.pts)).map(road => {
       const run: TransportRun = {kind:road.bridge ? 'bridge' : 'ground', cls:road.cls, name:road.name, pts:road.pts};
       this.heights.set(run,(x,z) => board.roadHeight(x,z,road));
       return run;
     });
+    if (!runs.length) return false;
+    this.areas.push(board.city.bounds);
     this.indexRuns(runs);
     this.rejected.clear();
     return true;
@@ -127,13 +128,14 @@ export class CityBuses {
     const [x, z] = this.project(b.position.value.lon, b.position.value.lat);
     // Reported heading in scene terms (atan2(dx, dz)); GTFS bearing is clockwise from north (−z).
     const want = b.bearing ? Math.atan2(Math.sin((b.bearing.value * Math.PI) / 180), -Math.cos((b.bearing.value * Math.PI) / 180)) : null;
-    return this.laneAt(x, z, want);
+    return this.laneAt(x, z, want, false, b.routeId?.value === 'marta:route:49');
   }
 
-  laneAt(x: number, z: number, want: number | null, timetable = false): BusLanePoint | null {
+  laneAt(x: number, z: number, want: number | null, timetable = false, includeMounted = timetable): BusLanePoint | null {
     if (!this.areas.some(bd => x >= bd.minX && x <= bd.maxX && z >= bd.minZ && z <= bd.maxZ)) return null;
     let best: { d: number; score: number; a: P2; c: P2; run: TransportRun } | null = null;
     for (const [a, c, run] of this.index.at(x, z)) {
+      if (!includeMounted && this.heights.has(run)) continue;
       const direction = timetable && this.directions.get(run.pts);
       if (direction && want !== null) {
         const dot = (c[0]-a[0])*Math.sin(want) + (c[1]-a[1])*Math.cos(want);

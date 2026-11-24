@@ -21,6 +21,24 @@ function directedPath(
   for (let i = 0; i < shape.coords.length; i += 2) pts.push(project(shape.coords[i], shape.coords[i + 1]));
   const line = new Line(pts);
   const path = { line, cum: shape.cum };
+  // Additional board roads are indexed only in the corridor used by this route.
+  // Sample both paths and candidate segments so long roads crossing a cell are retained.
+  const cells = new Set<string>();
+  const cell = (x: number, z: number) => `${Math.floor(x / 32)},${Math.floor(z / 32)}`;
+  for (let s = 0; s <= line.length + 12; s += 12) {
+    const p = line.at(s);
+    for (const dx of [-32, 0, 32]) for (const dz of [-32, 0, 32]) cells.add(cell(p.x + dx, p.z + dz));
+  }
+  function needsRoad(pts: P2[]) {
+    for (let i = 1; i < pts.length; i++) {
+      const [ax, az] = pts[i - 1],
+        [bx, bz] = pts[i];
+      const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 16));
+      for (let k = 0; k <= steps; k++)
+        if (cells.has(cell(ax + ((bx - ax) * k) / steps, az + ((bz - az) * k) / steps))) return true;
+    }
+    return false;
+  }
   const sampleAnchors = () =>
     Array.from({ length: Math.ceil(line.length / 3) + 1 }, (_, i) => {
       const p = line.at(i * 3);
@@ -74,6 +92,7 @@ function directedPath(
   }
   return {
     at,
+    needsRoad,
     lights,
     get anchors() {
       return anchors;
@@ -98,8 +117,8 @@ export function createTimetableBuses(
   let queueAt:
     | ((key: string, axis: 0 | 1, dx: number, dz: number, time: number) => { tail: number; count: number })
     | undefined;
-  const dayCache = new Map<
-    number,
+  const hourCache = new Map<
+    string,
     {
       id: string;
       path: ReturnType<typeof directedPath>;
@@ -109,38 +128,53 @@ export function createTimetableBuses(
       start: number;
     }[]
   >();
-  function posesAt(ms: number) {
+  function posesAt(ms: number, activeService?: (date: number) => void) {
     const seconds = (ms - TRAFFIC_EPOCH_MS) / 1000;
     const active = [];
     for (const day of serviceDays(new Date(ms), table.timezone)) {
       const midnight = Math.round(seconds - day.secs);
-      let trips = dayCache.get(midnight);
+      // Car replay queries past instants. Keep only the plans that intersect each
+      // sampled hour, including trips carried over from the previous service day.
+      const hour = Math.floor(seconds / 3600);
+      const key = `${midnight}/${hour}`;
+      let trips = hourCache.get(key);
       if (!trips) {
         trips = [];
-        if (dayCache.size >= 4) dayCache.clear();
-        dayCache.set(midnight, trips);
+        if (hourCache.size >= 8) hourCache.delete(hourCache.keys().next().value!);
+        hourCache.set(key, trips);
         for (const [i, [pi, si, start]] of table.trips.entries()) {
-          if (!serviceRuns(table.services[si], day)) continue;
+          if (midnight + start >= (hour + 1) * 3600 || !serviceRuns(table.services[si], day)) continue;
           const pattern = table.patterns[pi],
             path = paths.get(pattern.pathId);
           if (!path) continue;
+          const points = busTimeline(pattern, midnight + start, path.lights, BUS_LENGTH, (signal, time) => {
+            const light = path.lights.find((l) => l.key === signal.key);
+            return light && queueAt?.(light.key, light.axis, light.dx, light.dz, time);
+          });
+          if (points.at(-1)!.departure < hour * 3600) continue;
           trips.push({
             id: `marta:bus-trip:49-${day.ymd}-${i}`,
             serviceDate: day.ymd,
             headsign: pattern.headsign,
             start,
             path,
-            points: busTimeline(pattern, midnight + start, path.lights, BUS_LENGTH, (signal, time) => {
-              const light = path.lights.find((l) => l.key === signal.key);
-              return light && queueAt?.(light.key, light.axis, light.dx, light.dz, time);
-            }),
+            points,
           });
         }
       }
       for (const trip of trips) {
         const s = busDistance(trip.points, seconds);
-        const point = s === null ? null : trip.path.at(s);
-        if (point) active.push({ id: trip.id, point, headsign: trip.headsign, start: trip.start, serviceDate:trip.serviceDate });
+        if (s === null) continue;
+        activeService?.(trip.serviceDate);
+        const point = trip.path.at(s);
+        if (point)
+          active.push({
+            id: trip.id,
+            point,
+            headsign: trip.headsign,
+            start: trip.start,
+            serviceDate: trip.serviceDate,
+          });
       }
     }
     return active;
@@ -201,16 +235,17 @@ export function createTimetableBuses(
     };
   }
   return {
+    needsRoad: (pts: P2[]) => [...paths.values()].some((path) => path.needsRoad(pts)),
     calendar: {
-      first: Math.min(...table.services.flatMap(s => [s.start,...s.added]).filter(Boolean)),
-      last: Math.max(...table.services.flatMap(s => [s.end,...s.added])),
+      first: Math.min(...table.services.flatMap((s) => [s.start, ...s.added]).filter(Boolean)),
+      last: Math.max(...table.services.flatMap((s) => [s.end, ...s.added])),
     },
     posesAt,
     blocksFor,
     observe,
     setQueue(fn: typeof queueAt) {
       queueAt = fn;
-      dayCache.clear();
+      hourCache.clear();
       samples.clear();
     },
     refresh() {

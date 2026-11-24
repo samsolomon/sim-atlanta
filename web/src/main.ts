@@ -234,6 +234,9 @@ function followFromLink() {
   if (followBus && follow && diorama && clock.isRealTime()) {
     const bus = buses.current().find(b => b.id === followBus);
     if (bus) {
+      const [x,z] = lonLatToScene(CITY_ORIGIN,bus.position.value.lon,bus.position.value.lat);
+      followLinkOpened ??= performance.now();
+      if (diorama.onBoard(x,z,true) && !diorama.onBoard(x,z) && performance.now()-followLinkOpened < 20_000) return;
       followBus = null;
       selectedBus = bus.id;
       selectedTrain = null; selectedFreight = null;
@@ -937,7 +940,7 @@ const shellOptions: ShellOptions = {
     cityFreight: diorama?.hasFreight ?? false,
     cityTraffic: diorama?.hasTraffic ?? false,
     busCalendar: diorama?.busCalendar,
-    cityBusDay: diorama && !clock.isRealTime() ? Number(atlantaDate(clock.now().getTime()).replaceAll('-','')) : undefined,
+    cityBusDay: diorama && !clock.isRealTime() ? (diorama.activeBusServiceDate ?? Number(atlantaDate(clock.now().getTime()).replaceAll('-',''))) : undefined,
     buses: buses.unavailable ? null : buses.current().length,
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),

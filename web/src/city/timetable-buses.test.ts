@@ -59,7 +59,11 @@ it('keeps yesterday’s added after-midnight trip on its owned deck, with a stab
   expect(streets.mesh.geometry.attributes.position.count / 3).toBeLessThanOrEqual(1000);
   const model = createTimetableBuses(data, origin, streets, [], []);
   const time = Date.parse('2026-11-20T01:00:45-05:00');
-  const poses = model.posesAt(time);
+  let serviceDate;
+  const poses = model.posesAt(time, (day) => {
+    serviceDate = day;
+  });
+  expect(serviceDate).toBe(20261119);
   expect(poses).toHaveLength(1);
   streets.timetable(poses);
   expect(streets.positions[0].y).toBe(8);
@@ -71,5 +75,7 @@ it('keeps yesterday’s added after-midnight trip on its owned deck, with a stab
 
 it('shows a 25:15 scheduled start on the next Atlanta date', async () => {
   const { timetableBusCard } = await import('../map/card');
-  expect(timetableBusCard({headsign:'North',start:25*3600+15*60,serviceDate:20261130})).toContain('2026-12-01 at 1:15');
+  expect(timetableBusCard({ headsign: 'North', start: 25 * 3600 + 15 * 60, serviceDate: 20261130 })).toContain(
+    '2026-12-01 at 1:15',
+  );
 });

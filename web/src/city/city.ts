@@ -162,6 +162,7 @@ export interface CityView {
   quality: Quality;
   /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
   busCalendar?: {first:number;last:number};
+  activeBusServiceDate?: number;
   timetableBus(id: string): { headsign:string; start:number; serviceDate:number } | undefined;
   buses: Pick<CityBuses, 'occupies' | 'summary'>;
   /** Where City draws this train right now, for its card: a car out on the North Line open
@@ -759,7 +760,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     let extended = false;
     for (const board of neighbors) {
-      if (!buses.mount(board)) continue;
+      if (!timetable || !buses.mount(board,timetable.needsRoad)) continue;
       extended = true;
       const bounds = board.city.bounds;
       busEdges[0].constant = Math.max(busEdges[0].constant, -bounds.minX);
@@ -801,6 +802,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (x>=r.minX && x<=r.maxX && z>=r.minZ && z<=r.maxZ) return height(x,z);
       return null;
     }, trafficOptions.roadHeight) : undefined;
+  let activeBusServiceDate: number | undefined;
   let timetableMode = false;
   const movingBlocks = (course:TrafficCourse) => {
     const tram = streetcarBlocks?.(course);
@@ -1552,7 +1554,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses.night.value = atm.dark;
     const liveFixes = options.buses?.() ?? null;
     timetableMode = liveFixes === null && !!options.buses;
-    scheduledPoses = timetableMode && timetable ? timetable.posesAt(options.clockMs()) : [];
+    activeBusServiceDate = undefined;
+    scheduledPoses = timetableMode && timetable ? timetable.posesAt(options.clockMs(), day => { activeBusServiceDate = day; }) : [];
     if (scheduledPoses.length) buses.timetable(scheduledPoses);
     else {
       buses.update(liveFixes);
@@ -1748,6 +1751,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hasPeople: !!figures,
     buses,
     busCalendar: timetable?.calendar,
+    get activeBusServiceDate() { return activeBusServiceDate; },
     timetableBus: id => scheduledPoses.find(p => p.id === id),
     get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length || midtownArterials?.group.children.length); },
     bounds: b,
