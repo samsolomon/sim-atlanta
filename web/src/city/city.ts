@@ -1226,8 +1226,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const vts = new ShaderPass(tiltShiftShader([0, 1]));
   composer.addPass(hts);
   composer.addPass(vts);
-  composer.addPass(new OutputPass());
-  const grade = new ShaderPass(gradeShader());
+  // Grade does OutputPass's tone mapping and sRGB output itself (one fewer full-resolution pass).
+  // `?perf&output=pass` keeps the separate pass, for A/B runs.
+  const outputPass = perfEnabled && query.get('output') === 'pass';
+  if (outputPass) composer.addPass(new OutputPass());
+  const grade = new ShaderPass(gradeShader({ output: !outputPass }));
   composer.addPass(grade);
   const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
