@@ -106,17 +106,22 @@ export function createEmpireBuilding(buildings: VBuilding[], grid: GroundGrid) {
       const grade = grid.sample(119.6 + (47.5 * u + 40.72 * v) / norm, -118.43 + (-40.72 * u + 47.5 * v) / norm);
       if (grade === null) continue;
       const lo = i === door ? grade : grade + 1.35,
-        spring = 327.5;
+        spring = 327.5,
+        lintel = 326.38;
       panel(c - r, c + r, lo, spring, 0.14, kind === 'n' ? shade : glass);
       if (i === door) {
         // Shutze's stone surround frames a pair of bronze doors. Only the
         // small upper lights of each leaf catch the banking hall's warm light.
-        panel(c - r, c + r, lo, 326.65, 0.21, stone);
+        panel(c - r, c + r, lo, lintel, 0.21, stone);
         for (const sign of [-1, 1]) {
           const mid = c + sign * r * 0.32;
           panel(mid - r * 0.3, mid + r * 0.3, lo, lo + 3.05, 0.24, '#493b32');
           panel(mid - r * 0.22, mid + r * 0.22, lo + 1.45, lo + 2.75, 0.26, '#85705c', true);
         }
+      } else if (kind === 'a') {
+        // Under the arches the window is a narrower aedicule; rusticated jambs fill the sides.
+        for (const side of [-1, 1]) panel(c + side * r * 0.62, c + side * r, lo, spring, 0.21, stone);
+        panel(c - 0.075, c + 0.075, lo, lintel, 0.21, '#8f8575');
       } else if (kind !== 'n') {
         panel(c - 0.075, c + 0.075, lo, spring, 0.21, '#8f8575');
         panel(c - r, c + r, spring - 0.38, spring - 0.27, 0.21, '#8f8575');
@@ -142,8 +147,12 @@ export function createEmpireBuilding(buildings: VBuilding[], grid: GroundGrid) {
           }
         }
         if (kind === 'a') {
-          body.tri(at(c - r, 327, 0.38), at(c + r, 327, 0.38), at(c, 328.1, 0.38), '#b4a48b');
-          panel(c - r, c + r, 326.7, 327, 0.4, stone);
+          // Each opening's pediment spans about three quarters of the arch and sits wholly
+          // below the impost band; the glazed lunette rises above the band (SAH photo 4).
+          const half = r * 0.75;
+          panel(c - half, c + half, lintel, lintel + 0.22, 0.4, stone);
+          body.tri(at(c - half, lintel + 0.22, 0.4), at(c + half, lintel + 0.22, 0.4), at(c, spring - 0.22, 0.4), '#b4a48b');
+          panel(c - r, c + r, spring - 0.1, spring + 0.12, 0.3, stone);
         }
       }
       if (kind !== 'n') panel(c - r * 0.78, c + r * 0.78, 331.1, 333.2, 0.12, glass);

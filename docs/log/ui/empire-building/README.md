@@ -15,3 +15,14 @@ Architect review, November 23. Use the original Commerce neighbor fixture and ve
 | Roof and return | `151,-133,60,31,255` | [Day](roof-day.jpg) | [Night](roof-night.jpg) |
 
 The low-tier roof camera rose from 1,531,428 triangles and 124 draws to 1,533,686 and 126. All shots use November 20, 2026, clear weather and a paused clock. The close frontage uses dev mindist=20. Web rebuild only.
+
+## Broad Street pediments (November 23)
+
+The coordinator asked whether the pediments sat where the real ones do. They didn't. SAH Archipedia's fourth image shows the three rusticated arches up close. In each arch a pediment about three quarters of the span crowns a rectangular opening with an entablature. It sits wholly below an impost band at the springline, and the lunette rises above the band. The model had drawn full-span pediments straddling the springline. They now span 0.75 of the arch and sit on an entablature at 326.4 m, with the apex 0.22 m below the band. The window arches gain rusticated jambs, so the opening narrows to match the door's aedicule. [SAH image 4](https://archipedia-images.s3.amazonaws.com/360/GA-01-121-0042_004.jpg)
+
+The photograph also shows one lunette filled with stone and one arched aedicule with a finial. Their positions on this elevation couldn't be confirmed, so they aren't modelled.
+
+| View | Camera | Comparison |
+| --- | --- | --- |
+| Arches, day 11:30 | `144,-131,140,62,35` with `&dev&mindist=20`, then `__setView(140,62,35,146,-133,0.62)` | [Before and after](arches-day-before-after.jpg) |
+| Arches, night 23:30 | same | [Before and after](arches-night-before-after.jpg) |
