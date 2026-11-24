@@ -44,7 +44,7 @@ export function createLilliMidtown(buildings: VBuilding[], site: VBuilding, grid
   // Brasfield & Gorrie dusk exterior: neutral charcoal-grey glass, less blue than the generic
   // curtain walls, framed by bold white slab edges and white verticals, with irregular grey panels.
   const white = '#f2f2ee', roofColor = '#b9bab5';
-  const glass = ['#6e7377', '#74797c', '#878b8d'];
+  const glass = ['#868b8f', '#8c9194', '#9b9fa1'];
   const storefront = ['#6a7b84', '#6e818a'];
 
   const slab = local(tower.rings[0]);
