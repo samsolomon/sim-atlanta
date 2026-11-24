@@ -2,30 +2,9 @@
 
 ## Current state and next steps (2026-11-24)
 
-The final sheet was approved. [PR #644](https://github.com/samsolomon/sim-atlanta/pull/644)
-is still a draft, with the City default and explicit legacy rollback pushed. The feature
-head is `fdcc83d8`, based on main `d93c51d8`. Release 12 has a provisional slot after
-#654, #613, #446 and Fifth Street. Release 11 currently has priority. All captures, servers
-and queued check processes for this worktree have stopped.
+Sam approved the City default. [PR #644](https://github.com/samsolomon/sim-atlanta/pull/644) integrates release 12 (`39bf4022`). The tested code is `a5f60d1e`. The strict suite and perf checks passed, including Low at 175.8 MB and High at 297.1 MB geometry. At downtown-wide, both the default versus explicit v2 and legacy versus release 12 matched in all 1,600,000 pixels on each tier. Use a fresh browser profile for each frame, with seeded randomness and simulation and animation time held fixed. The East Portal illustration's exported world GLB matched byte for byte. [Matched comparison](../log/ui/generic-buildings/release-12-comparison.jpg).
 
-1. After the release pause lifts, run heavy checks serially via the shared `.perf-run 644`
-   wrapper. Run the full `pnpm test` suite with the pipeline Python environment available
-   and run `pnpm test:perf`. The prototype passed the production budgets at 169.9 MB
-   low and 291.2 MB high, including high-night at 291.5 MB. The first full suite passed.
-   A subsequent concurrent run hit six timeouts. The post-activation unit check for
-   building parts and the URL selector passed all four tests.
-2. Finish the post-activation visual comparison. The approved prototype matched its
-   main merge-base at both tiers (zero changed pixels out of 1.6 million each). Now compare
-   the default to explicit v2, and legacy to current main, on each tier at the downtown-wide
-   camera. Pin simulation time and the film-grain animation timestamp. Finish the Old
-   Fourth Ward night frame and third glass probe, then inspect the complete sheet. The PR
-   currently embeds the approved prototype sheet.
-3. Run the cross-model review for the default-switch diff and triage findings. The two
-   pre-activation rounds are complete. A reversed deck-footprint predicate was fixed and
-   the second round reported no findings.
-4. Update the PR body with candidate results and screenshots. Mark it ready and confirm
-   readiness with the merge lead. Wait for the slot. After merge, notify the far-board
-   owner so its distant wall tones can follow.
+The lead owns the merge slot. After merge, notify the #613 owner so the far-board mesh can pick up the facade tone. Release 12 does not contain that mesh. The PR body tracks final review and readiness.
 
 City uses the eight facade archetypes by default. Add `generic=legacy` to a City URL for the previous appearance. The standalone vignette still opts in with `generic=v2`.
 
