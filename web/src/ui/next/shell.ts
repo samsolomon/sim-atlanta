@@ -30,7 +30,7 @@ const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const SVG = (body: string, box = 24) =>
   `<svg viewBox="0 0 ${box} ${box}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const CARET = SVG('<path d="M6 9l6 6 6-6"/>');
-const COMPASS = `<svg viewBox="0 0 32 32" aria-hidden="true" class="a2-needle"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/><g><path d="M16 5l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></g></svg>`;
+const COMPASS = `<svg viewBox="0 0 32 32" aria-hidden="true" class="a2-needle"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2"/><g><text x="16" y="10" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">N</text><path d="M16 11l3.2 11h-6.4z" class="a2-north"/><path d="M16 27l3.2-11h-6.4z" fill="currentColor" opacity=".55"/></g></svg>`;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -280,7 +280,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const searchBtn = el('button', { type: 'button', class: 'a2-ib a2-search-icon', 'aria-label': 'Search Atlanta' }, SVG('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>'));
   const searchWrap = el('div', { class: 'a2-dock-field' });
   const search = el('input', { type: 'search', placeholder: 'Search Atlanta', 'aria-label': 'Search Atlanta' });
-  searchWrap.append(search, el('kbd', {}, /Mac/i.test(navigator.platform) ? '⌘K' : 'Ctrl K'));
+  const searchGlyph = el('span', { class: 'a2-search-glyph', 'aria-hidden': 'true' }, searchBtn.innerHTML);
+  searchWrap.append(searchGlyph, search, el('kbd', {}, /Mac/i.test(navigator.platform) ? '⌘K' : 'Ctrl K'));
   bar.insertBefore(searchWrap, radioBtn);
   bar.insertBefore(searchBtn, radioBtn);
   const resultsPanel = el('section', { class: 'a2-dock-pop a2-results a2-g', hidden: '', 'aria-label': 'Search results' });
@@ -289,7 +290,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   resultsPanel.append(cancel, results);
   function placeSearch() {
     if (phone.matches) resultsPanel.prepend(search);
-    else searchWrap.prepend(search);
+    else searchGlyph.after(search);
   }
   placeSearch();
   phone.addEventListener('change', placeSearch);
@@ -514,7 +515,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const hintWords = el('span');
   if (!seen) {
     hint = el('p', { class: 'a2-hint a2-g', role: 'note' });
-    const gotIt = el('button', { type: 'button', class: 'a2-btn' }, 'Got it');
+    const gotIt = el('button', { type: 'button', class: 'a2-got-it' }, 'Got it');
     hintWords.textContent = hintText(view, coarse.matches);
     hint.append(hintWords, gotIt);
     const dismiss = () => {
@@ -530,7 +531,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       }
     };
     gotIt.onclick = dismiss;
-    for (const target of scene()) for (const ev of ['pointerdown', 'wheel']) target?.addEventListener(ev, dismiss, { once: true, passive: true });
+    for (const target of scene()) for (const ev of ['pointerdown', 'wheel']) target?.addEventListener(ev, dismiss, { once: true, passive: true, capture: true });
   }
 
   const panelHost = createDetailPanel({ allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
@@ -677,7 +678,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       wxIcon.innerHTML = svg;
       wxIcon.dataset.svg = svg;
     }
-    timeText.textContent = (conf.shifted ? dayTimeFmt : timeFmt).format(now);
+    timeText.textContent = timeFmt.format(now);
     tierDot.className = `a2-dot a2-dot-${conf.tier}`;
     tierText.textContent = confidenceWords(conf).join(' · ');
     tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
@@ -753,7 +754,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
       o.onView(v);
     }
   }
-  viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+  viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === (view === 'city' ? 'map' : view))));
   document.body.classList.toggle('a2-in-models', view === 'models');
 
   // ---- keyboard -----------------------------------------------------------------------------

@@ -33,8 +33,7 @@ export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeat
   };
 }
 
-/** The one scene-wide word (Sam, 2026-11-23, #231): Live or Timetable. Ambient scenery, the
- * sky included, carries no on-screen tier; the Key and About explain it. */
+/** The Final subject card names rail and weather confidence separately. */
 export function confidenceWords(c: Confidence): string[] {
   if (c.tier === 'loading') return [];
   const rail = c.tier === 'live' ? 'Live trains' : 'Timetable';
@@ -44,6 +43,7 @@ export function confidenceWords(c: Confidence): string[] {
 /** The first-visit hint, matched to the view and the input. */
 export function hintText(view: View, touch: boolean): string {
   if (view === 'models') return touch ? 'Drag to turn the model · pinch to zoom' : 'Drag to turn the model · scroll to zoom';
+  if (view === 'map') return touch ? 'Tap anything to inspect. Pinch to zoom.' : 'Click anything to inspect · drag to move · scroll to zoom';
   return touch ? 'Tap anything to inspect. Pinch to zoom, two fingers to tilt.' : 'Click anything to inspect · drag to move · two-finger scroll to tilt';
 }
 

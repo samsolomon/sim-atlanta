@@ -52,7 +52,9 @@ export function mapGestures(
   let trackpad = false;
   el.addEventListener('wheel', e => {
     if (e.timeStamp - lastWheel > 140) {
-      trackpad = e.deltaMode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
+      const wheelNotch = Math.abs(e.deltaY) / 4.000244140625; // MapLibre's macOS wheel increment
+      const notched = wheelNotch > 0 && Math.abs(wheelNotch - Math.round(wheelNotch)) < 1e-6;
+      trackpad = !notched && e.deltaMode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
     }
     lastWheel = e.timeStamp;
     if (!trackpad || e.ctrlKey || !e.isTrusted) return;

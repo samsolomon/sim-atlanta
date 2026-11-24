@@ -530,8 +530,12 @@ System UI sans throughout.
   - night: `rgba(255,255,255,.20)` on a `rgba(0,0,0,.22)` track
   - never a dark fill
 - **Dock (desktop):** centred, `bottom: 8px`, 52 px tall, about 556 px wide; 40×40 icon
-  buttons, 1 px separators. Map | Models is the standard segmented control. Search field
-  210×38 px, radius 10 px, 14 px placeholder, ⌘K hint 11 px / 600. The pressed button gets
+  buttons, 1 px separators. Map | Models is the standard segmented control. Search field 210×38 px, radius 10 px, **light fill** `rgba(255,255,255,.75)` (night
+  `.10`) with an inset 1 px separator ring, never the grey separator tint, which reads as
+  disabled; 17 px glyph and 14 px placeholder in secondary ink; focused: ink text and a
+  1.5 px ink ring. ⌘K hint 11 px / 600. First-visit hint **"Got it"** is plain 13 px / 600
+  secondary-ink text (no fill), with a padded 44 px hit area. Phone dock icons, search
+  included, are 19 px glyphs at 1.8 stroke in 44 px hit areas. The pressed button gets
   the separator tint. Popovers sit 68 px from the bottom, aligned to their button (menu to
   the dock's left edge, share to its right edge, others centred). **Phone dock:** full
   width, 52 px, `bottom: 34px`, search as an icon.

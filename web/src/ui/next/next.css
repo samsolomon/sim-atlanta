@@ -619,3 +619,17 @@ body.city-over-map #city-loading { background: transparent !important; }
   body:has(.a2-browser:not([hidden]),.a2-model-details.a2-open) .a2-details-btn { display: none; }
 }
 .a2-model-row[aria-current=true]::after { content: 'Showing'; margin-left: auto; color: var(--a2-ink2); font-size: 12px; }
+.a2-dock-field { box-sizing: border-box; width: 210px; height: 38px; padding: 0 9px; gap: 7px; background: rgba(255,255,255,.75); box-shadow: inset 0 0 0 1px var(--a2-sep); color: var(--a2-ink2); }
+.a2-dock-field:focus-within { box-shadow: inset 0 0 0 1.5px var(--a2-ink); }
+.a2-dock-field input { width: 0; min-width: 0; flex: 1; padding: 0; outline: none; color: var(--a2-ink); font-size: 14px; }
+.a2-dock-field input::placeholder { opacity: 1; color: var(--a2-ink2); }
+.a2-dock-field kbd { padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,.6); box-shadow: inset 0 0 0 1px var(--a2-sep); }
+.a2-search-glyph,.a2-search-glyph svg { display: block; width: 17px; height: 17px; }
+.a2-search-icon svg { width: 19px; height: 19px; stroke-width: 1.8; }
+.a2-hint { gap: 12px; padding-inline: 14px; }
+.a2-got-it { position: relative; border: 0; background: transparent; color: var(--a2-ink2); font-size: 13px !important; font-weight: 600 !important; padding: 0; min-width: 44px; cursor: pointer; }
+.a2-got-it:hover { text-decoration: underline; }
+.a2-camera > :is(.a2-compass,.a2-reset) { width: 44px; height: 44px; background: linear-gradient(160deg,var(--a2-ga),var(--a2-gb)); }
+.a2-camera .a2-needle { display: block; width: 32px; height: 32px; }
+:root[data-theme=dark] .a2-dock-field,:root[data-theme=dark] .a2-dock-field kbd { background: rgba(255,255,255,.10); }
+@media(min-width:601px) { .a2-appbar { padding-inline: 8px; gap: 6px; } }
