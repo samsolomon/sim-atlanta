@@ -122,3 +122,44 @@ Sam selected B via coordinator msg_6a895c5d57ac. The source is now the selected 
 - Every survey row has a proposed City camera. Colony Square starting targets are `cam=794,-3754,32,60,282` (400) and `cam=819,-3670,32,60,288` (100). Cluster overview `cam=800,-3710,70,50,1021`. These are starting points; save the actual entrance and roof-return frames. For low and high, use `/?view=city&q=low&weather=clear&speed=0&t=2026-11-20T11:30:00-05:00&cam=794,-3754,32,60,282`, repeat at 23:30 and with q=high. Capture BEFORE/AFTER pairs at the same viewport.
 - Use pnpm test, pnpm build, pnpm test:perf and pnpm review before merging a visual PR; use pnpm audit:ground against the dev server for ground contact. Cargo path is noted above. Low/high baseline on #386 independently reproduced 562/1179 draws, 90/105 programs and 392/499 MB after GC, all 12 areas. Current program ceilings are 90/140; draw ceilings 600/1250. No spare low-tier shader variant at this baseline. landmarkShell uses StaticLandmarkMaterial; the high-tier downtown batch excludes custom shader hooks and does not automatically cover Midtown.
 - No research or review tabs were opened by this session. Performance harness terminated its own Chrome and preview server. No worktree Vite server remains running.
+
+
+## Opus session, 2026-11-23/24 (orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529)
+
+The coordinator replies to this session. Its welcome message was msg_bb2e23eb596c. The coordinator approves skins; this lead sequences merges and sends merge reports.
+
+**Merged by this session**
+- #403 1100 Peachtree. Skyline registry, lidar heights.
+- #407 Fixed a tsc error that #403 left on main. **Run `pnpm build` (tsc) before every merge.** Neither vitest nor test:perf typechecks.
+- #413 The Campanile, drawn as its stripped 2026 frame. Reference date: AJC photos of 19 May 2026.
+- Skin merge train 1, #445 at 4cf6f874: #422, #426, #428, #429, #430, #431, #433, #434 and #437. **This is the release 3 cut.**
+- Skin merge train 2, #447 at f3e5fe5a: #438, #439, #444.
+
+**Open**
+- #449 untracks two `.pyc` files. It is approved and merges after perf-buildings' #441 and #442.
+- Train 3 starts only after #441 and #442 land and low tier has been re-measured. Approved for it: #448 Hanover Midtown. Coming: Sora (skins-2), 271 Seventeenth (skins-4), Twelve Midtown (skins-3), Loews (skins-5), 1355 Peachtree (skins-6), 400 Colony Square (skins-7), Square on 5th (culture agent), Atlantic House (skins-1).
+- The shared lit-pane hash in skin-kit is skins-6's, reviewed by skins-7. Afterwards skins-7 converts #402 and skins-1 converts Marquis One. The reason: a linear modulus draws diagonal staircases of lit windows.
+
+**Docs delivered (branch `samsolomon/studio-building-skins`, no PR)**
+- `docs/building-skins.md`: re-ranked using a runtime drawn-footprint probe and 2019 lidar heights. It now carries owners, merge status and the merge-train rule.
+- `docs/building-skins-extension.md` and its CSV rank key buildings in the north, south, east and west extension boxes, with lidar from the B2 and B3 collections. B2 has no returns over Buckhead.
+
+**Proposal waiting for Sam**
+- `docs/night-occupancy.md` on `samsolomon/night-occupancy-proto`: one shared lit-window model by building use and hour, behind `?occ=proposed`. **Don't open a PR until Sam decides.**
+
+**Merge train recipe**
+1. Branch from main.
+2. `git merge --no-ff origin/<head>` for each PR in approved order.
+3. Resolve `web/src/terrain/model.ts` and `docs/build-log.md` by keeping both sides.
+4. Run tsc, `pnpm build`, `pnpm test`, the worker tests and `pnpm test:perf` (low, high and high-night).
+5. Open one PR and merge it with a merge commit.
+6. Verify each PR shows MERGED.
+7. Quote `gh pr view` to the coordinator.
+
+East-rail's King Memorial test times out at 5 s when Studio load is around 50; it passes alone.
+
+**Ceilings (#425):** low 600 calls and 85 programs; high 700; high-night 720. Main after train 2: low 586, high 634, high-night 677.
+
+**Tools in scratch, not in the repo:**
+- `/tmp/sky-lidar-h.py`: lidar heights by footprint or part id, with ground from a 3–20 m ring.
+- `shot.py`: waits for `__city.revealed`, then `__setView`.
