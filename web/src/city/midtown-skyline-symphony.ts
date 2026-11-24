@@ -50,6 +50,8 @@ function curtainWall() {
 }
 
 export function symphonyTower(shell: Shell) {
+  /** Terrace crape myrtles in the landmark's local frame (u, v and terrace height). */
+  const terraceTrees: { u: number; v: number; y: number }[] = [];
   const wall = curtainWall();
   const skin = new Builder(), uv: number[] = [];
   // Every exterior wall gets the same atlas, 0.06 m proud of the massing.
@@ -130,28 +132,10 @@ export function symphonyTower(shell: Shell) {
     const nx = -(b - z) / len, nz = (a - x) / len; // inward for this ring's winding, checked below
     const mx = (x + a) / 2, mz = (z + b) / 2;
     const inward = Math.hypot(mx + nx * 2.4 + 63, mz + nz * 2.4) < Math.hypot(mx - nx * 2.4 + 63, mz - nz * 2.4) ? 2.4 : -2.4;
-    crapeMyrtleStandIn(mx + nx * inward, mz + nz * inward, top, `${i}`);
+    terraceTrees.push({ u: mx + nx * inward, v: mz + nz * inward, y: top });
   });
-  // TODO(tree-lab): swap for the tree lab's crape myrtle (createLook, web/src/trees/looks.ts)
-  // once Sam picks its rendering. Multi-stem, about 4.5 m, fall canopy (illustrative).
-  function crapeMyrtleStandIn(x: number, z: number, y: number, seed: string) {
-    const r = (k: number) => { const h = Math.sin((x * 12.9 + z * 78.2 + k * 37.7) + seed.length) * 43758.5; return h - Math.floor(h); };
-    for (let k = 0; k < 4; k++) {
-      const a = k * Math.PI / 2 + r(k), lean = .5, h = 2.6;
-      const foot = [x + Math.cos(a) * .15, y, z + Math.sin(a) * .15], head = [x + Math.cos(a) * lean, y + h, z + Math.sin(a) * lean];
-      shell.body.quad([foot[0] - .06, foot[1], foot[2]], [foot[0] + .06, foot[1], foot[2]], [head[0] + .05, head[1], head[2]], [head[0] - .05, head[1], head[2]], '#c7ad92');
-      shell.body.quad([foot[0], foot[1], foot[2] - .06], [foot[0], foot[1], foot[2] + .06], [head[0], head[1], head[2] + .05], [head[0], head[1], head[2] - .05], '#c7ad92');
-    }
-    const canopy = ['#c4532f', '#d27a34', '#b8402e'];
-    for (let k = 0; k < 3; k++) {
-      const cx = x + (r(k + 9) - .5) * 1.2, cz = z + (r(k + 19) - .5) * 1.2, cy = y + 3.1 + r(k + 29) * .8, s = 1.1;
-      const ring = [[s, 0], [0, s], [-s, 0], [0, -s]].map(([u, v]) => [cx + u, cy, cz + v]);
-      for (let q = 0; q < 4; q++) {
-        shell.body.tri(ring[q], ring[(q + 1) % 4], [cx, cy + .9, cz], canopy[k % 3]);
-        shell.body.tri(ring[(q + 1) % 4], ring[q], [cx, cy - .6, cz], canopy[(k + 1) % 3]);
-      }
-    }
-  }
+  // Drawn by the tree rollout as Sam's crape myrtle A (createSkylineLandmark hands these spots
+  // on in world coordinates). Multi-stem, about 4.5 m (illustrative).
   wing.ring.forEach(([x, z], i) => {
     const [a, b] = wing.ring[(i + 1) % wing.ring.length];
     if (Math.min(x, a) > -30) return; // the tower wall, not an edge
@@ -254,7 +238,7 @@ export function symphonyTower(shell: Shell) {
   lattice.name = '1180 veil frames';
   for (const mesh of [glass, lattice]) { mesh.castShadow = mesh.receiveShadow = true; model.group.add(mesh); }
   model.group.add(...veil);
-  return { ...model, setNight(night: number) {
+  return { ...model, terraceTrees, setNight(night: number) {
     model.setNight(night);
     wall.material.emissiveIntensity = 1.6 * night;
     veilMaterial.emissiveIntensity = .82 * night;

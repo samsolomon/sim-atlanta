@@ -2681,6 +2681,35 @@ The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
 
+## 2026-11-23 — Four tree species share a City-wide batch
+
+The first City rollout brings Sam's A choices for crape myrtle, loblolly pine,
+sweetgum and Japanese maple into the canopy. Ansley keeps its larger specimen
+crowns, facing street pairs and planted islands. The roof garden at 1180 Peachtree
+now uses the same crape model as the lab. Counting the actual planting loop turned
+up eight trees, correcting the handoff's seven.
+
+Batching matters more than the number of board rows: against current main, the low
+view adds nine calls and 44,752 triangles; the moving pan adds nine and 46,744.
+After bringing in main's far-ground reduction, the default total is 2.379M triangles,
+not the earlier 3.397M. Both performance tiers pass. Cross-review also found that
+the separate square-board preview removed generic crowns without mounting their
+replacements; it now mounts and updates the species batch too.
+
+Phone-perf accepted the bounded winter-limb exception. Sam approved the Ansley
+canopy and 1180 garden, and the coordinator authorized merge after the A16 check.
+The A16 averaged 22.0 fps at default and 22.7 while panning, versus production's
+24.9 and 26.0. The roughly 12% reduction needs attribution: the tested b4993131 did not include
+several main changes initially cited in the comparison. The coordinator approved
+merge while phone-perf prepares a frozen d1411a9e/b4993131 comparison; release
+packaging waits for that result. Full run values are recorded in PR #336.
+
+[1180 before/after](log/ui/tree-species/rollout/1180-day-sheet.jpg) ·
+[The Prado before/after](log/ui/tree-species/rollout/prado-day-sheet.jpg) ·
+[Winter far-detail comparison](log/ui/tree-species/rollout/winter-sheet.jpg).
+The winter species limbs cost 13,974 submitted triangles across three instanced
+meshes, with shadows disabled. They preserve the otherwise missing bare silhouettes.
+
 ### 2026-11-23 — Arterial cars turn on their incoming green
 
 The illustrative arterial fleet can now turn between permitted directed roads at
