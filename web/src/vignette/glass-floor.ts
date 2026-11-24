@@ -1,6 +1,6 @@
 /**
  * Shaded glass never renders below a share of its own colour (Sam, 2026-11-24: option A, glass
- * only; strength still being picked from a strip). Without it, a north face or a face in a
+ * only, at 0.45x, picked from a strip of 0.35x, 0.45x and 0.6x). Without it, a north face or a face in a
  * neighbour's shadow drops light glass to near-black navy, which reads as a dark hole rather
  * than glass. The floor sits below the sunlit value, so a tower keeps its sun-versus-shade step
  * and reads as a solid, not a glossy sheet.
@@ -18,7 +18,7 @@
  */
 import { ShaderLib } from 'three';
 
-/** The floor as a share of the fragment's own linear colour (0.45 pending Sam's pick). */
+/** The floor as a share of the fragment's own linear colour. Sam picked 0.45x: 0.6x read as a sheen. */
 export const GLASS_FLOOR = 0.45;
 
 /** Sun light (colour × intensity, max channel) at which the floor is at full strength. */
