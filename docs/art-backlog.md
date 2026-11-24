@@ -11,6 +11,11 @@ Ideas to use when we get to the detailed modelling. They're not scheduled yet.
   line a train is on.
 - Model the cars from the reference photos/video: a generic look-alike, no MARTA logos.
 
+## Intermodal container transfer (deferred)
+
+- Model and animate a terminal handler lifting a container from a well car and lowering it onto a truck chassis. Verify the equipment used at the modeled terminal from site-specific photos or operator documentation before choosing a gantry crane or mobile handler.
+- Treat each simulated transfer as illustrative activity.
+
 ## Camera
 - "Ride along": attach the camera to a train and see the world from it. The path + distance
   model already supports this.
