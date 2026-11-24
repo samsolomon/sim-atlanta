@@ -1,10 +1,10 @@
 # One Coca-Cola Plaza
 
-The 1979 Coca-Cola headquarters tower on North Avenue uses the mapped outline `osm:way:536717630` (about 47 × 48 m, mapped 122.8 m and 29 floors). The April 2019 lidar puts the roof at p50 116.0, p95 122.8 and maximum 125.2 m above grade. The model reads those as the deck inside the parapet, the central penthouse and the four corner piers.
+The Coca-Cola headquarters tower (completed 1979; SKYDB gives 1980) on North Avenue uses the mapped outline `osm:way:536717630` (about 47 × 48 m, mapped 122.8 m and 29 floors). The April 2019 lidar puts the roof at p50 116.0, p95 122.8 and maximum 125.2 m above grade. The model reads those as the deck inside the parapet, the central penthouse and the four corner piers.
 
 ## References
 
-- [SKYDB building page and three exterior photographs](https://www.skydb.net/building/204849954/one-coca-cola-plaza/): a west face with the blank top band, a distant view from the Connector side, and a two-face close view showing the corner pier rising above the parapet.
+- [SKYDB building page and three exterior photographs](https://www.skydb.net/building/204849954/one-coca-cola-plaza/): a single face with the blank top band, a distant view over a highway fence, and a two-face close view showing the corner shaft rising above the parapet.
 - [Wikimedia Commons, northeast view from the Guggenheim building, 17 July 2016](https://commons.wikimedia.org/wiki/File:Coca-Cola_Tower_and_Guggenheim_Building,_Atlanta,_Northeast_view_20160717_1.jpg): the second angle. Two faces show the same eggcrate grid, the solid corner shafts and the blank sign band.
 - [Wikimedia Commons category](https://commons.wikimedia.org/wiki/Category:Coca-Cola_headquarters) for further daytime views.
 
@@ -25,9 +25,10 @@ No full-night exterior of this tower was available. The 2011 anniversary project
 
 | View | Camera | Local time, November 20, 2026 | Capture |
 |---|---|---|---|
-| Starting camera | `-465,-1887,32,60,368` | 11:30 AM EST | [Day](day.jpg) |
-| Starting camera | `-465,-1887,32,60,368` | 11:30 PM EST | [Night](night.jpg) |
-| Crown and two faces from the southwest, over Georgia Tech | `-420,-1960,215,66,900` | 11:30 AM EST | [Crown](crown.jpg) |
-| Lobby columns (close) | `-452,-1925,200,72,110` | 11:30 AM EST | [Close](close.jpg) |
+| Starting camera, looking north-northeast | `-465,-1887,32,60,368` | 11:30 AM EST | [Day](day.jpg) |
+| Starting camera, looking north-northeast | `-465,-1887,32,60,368` | 11:30 PM EST | [Night](night.jpg) |
+| Crown and two faces, looking southwest over Georgia Tech | `-420,-1960,215,66,900` | 11:30 AM EST | [Crown](crown.jpg) |
+| Crown and two faces, looking southwest over Georgia Tech | `-420,-1960,215,66,900` | 11:30 PM EST | [Crown at night](crown-night.jpg) |
+| North Avenue face lobby columns, looking south (close) | `-452,-1925,200,72,110` | 11:30 AM EST | [Close](close.jpg) |
 
-Use `/?view=city&cam=<camera>&t=2026-11-20T<clock>`. The close view also uses `&dev&mindist=20`.
+The bearing is the camera's heading. Use `/?view=city&cam=<camera>&t=2026-11-20T<clock>`. The close view also uses `&dev&mindist=20`.
