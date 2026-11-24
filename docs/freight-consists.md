@@ -117,6 +117,19 @@ Triangles:
 
 Low tier draws each side's load as one wrapped block. Both loads join the manifest list. `CONSIST_VERSION` is now 4.
 
+### Built: enclosed autorack
+
+The envelope follows Greenbrier's [Multi-Max](https://www.gbrx.com/?p=920): 93 ft 10 in (28.60 m) over couplers, 89 ft 9.5 in inside, 10 ft 8.4 in extreme width and 19 ft (5.79 m) to Plate J. Greenbrier doesn't list truck centres. The model uses the 64 ft (19.51 m) given for its Auto-Max deck conversion, which is a different car.
+
+**Model details:**
+- *Estimated:* the screen bands, rib count, roof arch and end doors.
+- *Colour:* grey screened sides on a brown flat, with no lettering.
+- *Triangles:* 1,094 high and 446 low.
+- *Lab:* the entry is `freightAutorack`.
+- *Recipes:* autoracks join the manifest list and are a unit-train option (an automotive train). `CONSIST_VERSION` is 5.
+
+**Curve clearance.** The drawn downtown track has kinks of about 41–70 m radius at (−372, −605) and (−8, −54). Over a 30 s sped-up run, 1,567 adjacent car pairs gave a 5th-percentile radius of 268 m. At 41 m, the ends of a 28.6 m car on 19.5 m truck centres swing about 1.33 m outside the rail centreline and its middle 1.16 m inside, against 0.42 m for the boxcar. Brookwood's tightest is about 296 m, where the overhang is about 0.18 m. Autoracks therefore run only at Brookwood: `DOWNTOWN_PROFILE.exclude` keeps them off the downtown line until the cut's drawn curvature is smoothed or verified.
+
 ### Built: City consists
 
 Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.

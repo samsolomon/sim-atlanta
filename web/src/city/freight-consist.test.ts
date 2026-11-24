@@ -46,10 +46,10 @@ describe('seeded freight passages', () => {
       }
       if (p.recipe === 'unit') {
         expect(new Set(cars.map(u => u.kind)).size).toBe(1);
-        expect(['grainHopper', 'tank']).toContain(cars[0].kind);
+        expect(['grainHopper', 'tank', 'autorack']).toContain(cars[0].kind);
       }
       // No double stacks downtown until the cut's clearance is verified.
-      if (profile.railroad === 'csx') expect(cars.some(u => u.kind.startsWith('well'))).toBe(false);
+      if (profile.railroad === 'csx') expect(cars.some(u => u.kind.startsWith('well') || u.kind === 'autorack')).toBe(false);
     }
     expect([...recipes].sort()).toEqual(['csx:manifest', 'csx:unit', 'ns:intermodal', 'ns:manifest', 'ns:unit']);
     // About one multi-unit passage in twelve borrows a foreign trailing unit.
