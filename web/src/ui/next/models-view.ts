@@ -13,13 +13,11 @@ const X = SVG('<path d="M6 6l12 12M18 6L6 18"/>');
 
 /** A small swatch per model, coloured by the kind of service (never the agency). */
 export function swatchFor(group: string, id: string): string {
-  if (/freight|cm44|ac44/i.test(id)) return 'var(--freight)';
+  if (/freight|cm44|ac44|es44|sd70|gp382/i.test(id)) return 'var(--freight)';
   if (/xn40|xe60|bus/i.test(id)) return 'var(--bus)';
   if (/cq400|s70|streetcar|marta/i.test(id)) return 'var(--city-rail)';
   if (/^vehicles$/i.test(group)) return 'var(--intercity)';
-  if (/^trees$/i.test(group)) return '#5f8f3e';
-  if (/^people$/i.test(group)) return '#8a8479';
-  return '#b8a98c';
+  return '#958f84';
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, html = ''): HTMLElementTagNameMap[K] {

@@ -1,4 +1,5 @@
 import { perf } from './core/perf';
+import { prefetchCity } from './core/prefetch';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { initialView } from './core/initial-view';
@@ -28,6 +29,12 @@ const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.js
 const params = new URLSearchParams(location.search);
 
 const landing = initialView(location.search, location.hash);
+// A City landing starts City's code and first data now, alongside the timetable and the shell,
+// instead of after them (phone load time; core/prefetch.ts).
+if (landing === 'city') {
+  void import('./city/city');
+  prefetchCity(`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/data`);
+}
 let map: maplibregl.Map | null = null;
 const mapCentre: [number, number] = [-84.39, 33.76];
 
@@ -441,6 +448,7 @@ function updateClock(now: Date) {
 // ?view=city opens City directly (?view=3d still works). The URL hash belongs to MapLibre.
 // City is the downtown diorama (city/city.ts), in the same atmosphere as the Map.
 let diorama: CityView | null = null;
+let parkedCity: CityView | null = null;
 let lastAtm: Atmosphere | null = null;
 const view3d = document.getElementById('view3d')!;
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
@@ -452,6 +460,23 @@ let cityLoad = 0; // bumped whenever City opens or closes, so a load that finish
 let cityTilt = 55; // retain the user's City tilt while Map remains flat
 let opening = landing === 'city';
 async function openCity() {
+  if (parkedCity) {
+    const city = parkedCity;
+    parkedCity = null;
+    if (city.resume()) {
+      diorama = city;
+      view3d.hidden = false;
+      document.body.classList.add('in3d');
+      if (keepPose) city.lookAt(keepPose.x, keepPose.z, keepPose);
+      keepPose = null;
+      if (lastAtm) city.setAtmosphere(lastAtm, clock.now());
+      watchAutoGraphics(city.quality, cityLoad);
+      setViewParam('city');
+      await applyGraphics();
+      return;
+    }
+    city.dispose();
+  }
   if (diorama) {
     leaving++; // cancels a City → Map fade in progress
     return;
@@ -753,7 +778,7 @@ function closeCity(keepMapView = false, writeUrl = true) {
 
 // ---- Models (A2c): the Model lab as the third view -------------------------------------
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
-// while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
+// while this section is hidden. A completed City keeps its renderer and scene with the frame loop paused.
 let labRoot: HTMLElement | null = null;
 let labView: { enter(): void; openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
@@ -762,7 +787,17 @@ let pendingModel: string | null = null;
 const inModels = () => !!labRoot && !labRoot.hidden;
 async function openModels() {
   hideCard();
-  if (diorama || !view3d.hidden) closeCity(false, false);
+  if (diorama && cityLoading.hidden) {
+    leaving++;
+    clearTimeout(overMapTimer);
+    stopWatchSlow?.();
+    stopWatchSlow = null;
+    diorama.pause();
+    parkedCity = diorama;
+    diorama = null;
+    view3d.hidden = true;
+    document.body.classList.remove('in3d', 'city-over-map');
+  } else if (!view3d.hidden) closeCity(false, false);
   if (!labRoot) {
     labRoot = Object.assign(document.createElement('section'), { id: 'lab-root' });
     labRoot.setAttribute('aria-label', 'Models');
@@ -829,7 +864,7 @@ document.getElementById('early-map')!.hidden = true;
 const shellOptions: ShellOptions = {
   view: 'map',
   onView(v: View) {
-    const before = new URL(location.href).searchParams.get('view');
+    const before = initialView(location.search, location.hash);
     if ((v === 'models' || inModels()) && before !== v) {
       const pose = diorama && shellOptions.shareTarget?.();
       if (pose?.view === 'city') {
@@ -846,7 +881,11 @@ const shellOptions: ShellOptions = {
     }
     if (v === 'city') void openCity();
     else if (v === 'models') void openModels();
-    else mapArrival = leaveCityToMap();
+    else if (parkedCity) {
+      diorama = parkedCity;
+      parkedCity = null;
+      closeCity();
+    } else mapArrival = leaveCityToMap();
   },
   center() {
     if (diorama) {

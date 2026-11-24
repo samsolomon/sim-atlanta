@@ -9,6 +9,8 @@ import { alignment } from '../vignette/alignment';
 import { CAR_WIDTH } from '../vignette/cq400';
 import { MARTA_TRACK_OFFSET } from '../vignette/world';
 import { buildEastRail, ENCLOSURES, extendRail, joinedGround, STATION_BUILDING, type CorridorPack } from './east-rail';
+import kingRail from './fixtures/king-rail.json';
+import { grantFormation } from './grant-street';
 import { terrainAlignment } from './terrain-rail';
 
 const data = resolve(__dirname, '../../public/data');
@@ -129,6 +131,43 @@ describe.skipIf(!staged)('MARTA east of the board', () => {
     rail.setNight(1);
     expect(lights.visible).toBe(true);
     rail.dispose();
+  });
+
+  it('keeps King Memorial guideway supports clear of the CSX mains and yard leads', () => {
+    const rail = buildEastRail(extended, rf, J<CorridorPack>('scene/king-memorial/corridor.json'), eastGround, zero);
+    const ray = new THREE.Raycaster();
+    const hits: string[] = [];
+    let tested = 0;
+    try {
+      for (const run of kingRail.filter(r => r.cls === 'standard_gauge')) {
+        for (let i = 1; i < run.pts.length; i++) {
+          const [ax, az] = run.pts[i-1], [bx, bz] = run.pts[i];
+          const len = Math.hypot(bx-ax, bz-az);
+          if (!len) continue;
+          const ux = (bx-ax)/len, uz = (bz-az)/len;
+          // Sweep the modeled 3.2 m locomotive width at mid-body height.
+          // The 0.8 m spacing is narrower than the 1.6 m guideway columns.
+          for (let d = 0; d < len; d += 8) {
+            const end = Math.min(d+8,len);
+            const h0 = eastGround(ax+d*ux,az+d*uz), h1 = eastGround(ax+end*ux,az+end*uz);
+            if (h0 === null || h1 === null) continue;
+            const y0 = grantFormation(ax + d * ux, h0, zero);
+            const y1 = grantFormation(ax + end * ux, h1, zero);
+            const direction = new THREE.Vector3((end-d)*ux,y1-y0,(end-d)*uz);
+            ray.far = direction.length();
+            direction.normalize();
+            for (const offset of [-1.6,-.8,0,.8,1.6]) {
+              ray.set(new THREE.Vector3(ax+d*ux-offset*uz,y0+2,az+d*uz+offset*ux),direction);
+              const hit = ray.intersectObject(rail.mesh,false)[0];
+              if (hit) hits.push(run.id + ' at ' + hit.point.toArray().map(n=>n.toFixed(1)).join(','));
+            }
+            tested += end-d;
+          }
+        }
+      }
+      expect(tested).toBeGreaterThan(2000);
+      expect(hits).toEqual([]);
+    } finally { rail.dispose(); }
   });
 
   it('leaves the street level under the platforms open between the columns', () => {

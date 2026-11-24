@@ -176,9 +176,11 @@ export function leafAtlas(shape: LeafShape): THREE.Texture | null {
   for (let cell = 0; cell < 4; cell++) {
     const ox = (cell % 2) * CELL, oy = Math.floor(cell / 2) * CELL;
     if (cell === SOLID) {
+      const branchFans = shape === 'cordate' || shape === 'oval';
       g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`;
-      g.fillRect(ox + 2, oy + 2, CELL - 4, (shape === 'cordate' ? CELL * 0.54 : CELL) - 4);
-      if (shape === 'cordate') paintBranchFans(g, ox, oy);
+      g.fillRect(ox + 2, oy + 2, CELL - 4, (branchFans ? CELL * 0.54 : CELL) - 4);
+      if (branchFans) paintBranchFans(g, ox, oy, shape === 'cordate');
+      if (shape === 'oval') paintFlowerMass(g, ox + BLOOM_X, oy + FAN_TOP);
       continue;
     }
     // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).
@@ -355,7 +357,7 @@ export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, bloomFill = 0, sp
       .replace('#include <project_vertex>', '#include <project_vertex>\nvFacePos = mvPosition.xyz;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 vLeaves = aLeaves;
-vChip = aMass.z != 0.0 ? 1.0 : 0.0;
+vChip = aMass.z > 0.0 && aMass.y < 0.0 ? 2.0 : (aMass.z != 0.0 ? 1.0 : 0.0);
 if (aMass.z > 0.0) { if (aMass.z > aBloom.a) transformed = vec3(0.0); }
 if (aMass.z < 0.0 && aLeaves >= aMass.y) transformed = vec3(0.0);
 ${textured ? '' : 'else if (aMass.z == 0.0 && aMass.y > aLeaves) transformed = vec3(0.0);'}`);
@@ -371,6 +373,7 @@ ${textured ? '' : 'else if (aMass.z == 0.0 && aMass.y > aLeaves) transformed = v
         // (it also clears dark, steeply angled cards from the crown's interior).
         ? `float facing = abs(dot(normalize(cross(dFdx(vFacePos), dFdy(vFacePos))), normalize(vFacePos)));
 if (vChip < 0.5) diffuseColor.a *= smoothstep(0.12, 0.35, facing);
+if (vChip > 1.5) diffuseColor.a *= smoothstep(0.16, 0.48, facing);
 #include <alphatest_fragment>
 if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.005)) discard;`
         : '#include <alphatest_fragment>');
@@ -383,7 +386,7 @@ if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.
       sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
   vec4 texel = texture2D(map, vMapUv);
   diffuseColor.a *= texel.a;
-  diffuseColor.rgb *= mix(1.0, texel.r, 0.25);
+  diffuseColor.rgb *= vChip > 1.5 ? texel.r : mix(1.0, texel.r, 0.25);
 #endif`);
     }
     if (specks > 0 && textured) {
@@ -467,7 +470,7 @@ vSpeckPos = transformed;
 /** Matched winter and spring tiles, with padding between the solid fill and both fan tiles. */
 const FAN_TILE = 108, FAN_TOP = 143, WOOD_X = 8, BLOOM_X = 140;
 
-function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
+function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number, withFlowers: boolean) {
   const random = rng(483);
   const stroke = (x: number, y: number, bx: number, by: number, width: number, flowerSpacing: number) => {
     g.strokeStyle = '#e0d8cb';
@@ -486,7 +489,7 @@ function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
         g.beginPath();
         g.ellipse(cx + (random() - 0.5) * 4.8, cy + (random() - 0.5) * 4.8,
           0.8 + random() * 1.35, 0.65 + random() * 1.3, random() * Math.PI, 0, Math.PI * 2);
-        g.fill();
+        if (withFlowers) g.fill();
       }
     }
   };
@@ -505,14 +508,70 @@ function paintBranchFans(g: CanvasRenderingContext2D, ox: number, oy: number) {
   }
 }
 
+/** A spray of small corymbs, separated by narrow gaps even at peak bloom. */
+function paintFlowerMass(g: CanvasRenderingContext2D, ox: number, oy: number) {
+  const random = rng(712);
+  for (let i = 0; i < 76; i++) {
+    const angle = i * Math.PI * (3 - Math.sqrt(5));
+    const r = 47 * Math.sqrt((i + random()) / 76);
+    const x = ox + 54 + Math.cos(angle) * r + (random() - 0.5) * 5;
+    const y = oy + 54 + Math.sin(angle) * r * 0.93 + (random() - 0.5) * 5;
+    const grey = 202 + Math.floor(random() * 53);
+    for (let j = 0; j < 9; j++) {
+      const a = random() * Math.PI * 2;
+      const dist = 4.9 * Math.sqrt(random());
+      const px = x + Math.cos(a) * dist, py = y + Math.sin(a) * dist;
+      const petal = 0.8 + random() * 0.65;
+      const value = Math.min(255, grey + Math.floor(random() * 24));
+      g.fillStyle = `rgb(${value},${value},${value})`;
+      g.beginPath();
+      for (let k = 0; k < 5; k++) {
+        const turn = a + k * Math.PI * 2 / 5;
+        const fx = px + Math.cos(turn) * petal, fy = py + Math.sin(turn) * petal;
+        g.moveTo(fx + petal, fy);
+        g.arc(fx, fy, petal, 0, Math.PI * 2);
+      }
+      g.fill();
+    }
+  }
+}
+
+const fanUV = (x: number) => [[0, 1], [1, 1], [1, 0], [0, 0]].map(([u, v]) =>
+  cellUV(SOLID, (x + u * FAN_TILE) / CELL, 1 - (FAN_TOP + v * FAN_TILE) / CELL));
+
+/** Dense bloom across the crown, with its own petal texture and no dependency on leaf-out. */
+export function crownBlossoms(b: FoliageBuilder, units: Unit[], seed: number) {
+  const random = rng(seed);
+  const up = new THREE.Vector3(0, 1, 0);
+  const uv = fanUV(BLOOM_X);
+  const crownTop = Math.max(...units.map(u => u.c[1]));
+  for (const [i, u] of units.entries()) {
+    const c = new THREE.Vector3(...u.c);
+    const normal = new THREE.Vector3(...u.n).setY((random() - 0.5) * 0.95).applyAxisAngle(up, (random() - 0.5) * 1.3);
+    if (normal.lengthSq() < 0.05) normal.set(Math.cos(u.tone * 8), 0.3, Math.sin(u.tone * 8));
+    normal.normalize();
+    const across = up.clone().cross(normal).normalize();
+    const rise = normal.clone().cross(across);
+    // Dense cards fall away before leaf-out. A small late cluster can linger on the wood.
+    const w = u.r * (i === 0 ? 0.43 : 1.28);
+    const p = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) =>
+      c.clone().addScaledVector(across, x * w).addScaledVector(rise, y * w * 0.99));
+    const order = 0.24 + random() * 0.74;
+    const opensAt = i === 0 ? 0.045 : order;
+    const colour = WHITE.clone().multiplyScalar(0.70 + 0.30 * Math.min(1, u.c[1] / crownTop));
+    // Negative drop is reserved for blossom cards that carry their own texture shading.
+    const petal = { tone: u.tone, drop: -1 };
+    b.tri([p[0], p[1], p[2]], colour, petal, [uv[0], uv[1], uv[2]], opensAt);
+    b.tri([p[0], p[2], p[3]], colour, petal, [uv[0], uv[2], uv[3]], opensAt);
+  }
+}
+
 /** Cards rooted in the scaffold, with fine wood and seasonal blossoms sharing the same pattern. */
-export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: number) {
+export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: number, withFlowers: boolean) {
   const random = rng(seed);
   const scale = new THREE.Vector3(d.spreadM / 2, d.heightM, d.spreadM / 2);
   const up = new THREE.Vector3(0, 1, 0);
   const wood = new THREE.Color('#76635a');
-  const quadUV = (x: number) => [[0, 1], [1, 1], [1, 0], [0, 0]].map(([u, v]) =>
-    cellUV(SOLID, (x + u * FAN_TILE) / CELL, 1 - (FAN_TOP + v * FAN_TILE) / CELL));
   const walk = (seg: Seg, fraction: number, turn: number, length: number, rise: number) => {
     const a = new THREE.Vector3(...seg.a).multiply(scale), tip = new THREE.Vector3(...seg.b).multiply(scale);
     const root = a.clone().lerp(tip, fraction);
@@ -525,25 +584,27 @@ export function branchBlooms(b: FoliageBuilder, segs: Seg[], d: Dims, seed: numb
     // The visible twig network recedes as the canopy closes. Keep this separate from bloom order.
     const tone = { tone: 1, drop: 0.72 + 0.25 * ((fraction + turn + 4) % 1) };
     for (const [cell, color, order] of [[WOOD_X, wood, -1], [BLOOM_X, WHITE, 0.12 + random() * 0.83]] as const) {
+      if (!withFlowers && order > 0) continue;
       const foot = root.clone();
       // Lift the paired petals slightly to break coplanar overlap with the wood.
       if (order > 0) foot.addScaledVector(up, scale.y * 0.004);
       const end = foot.clone().add(shoot);
       const p = [foot.clone().sub(side), foot.clone().add(side), end.clone().add(side), end.clone().sub(side)];
-      const uv = quadUV(cell);
+      const uv = fanUV(cell);
       if (mirror) { [uv[0], uv[1]] = [uv[1], uv[0]]; [uv[2], uv[3]] = [uv[3], uv[2]]; }
       b.tri([p[0], p[1], p[2]], color, tone, [uv[0], uv[1], uv[2]], order);
       b.tri([p[0], p[2], p[3]], color, tone, [uv[0], uv[2], uv[3]], order);
     }
   };
-  for (let i = 1; i < segs.length; i += 2) {
+  for (let i = 1; i + 1 < segs.length; i += 2) {
     const inner = segs[i], outer = segs[i + 1];
+    if (inner.b !== outer.a) break;
     const turn = i % 4 === 1 ? -1 : 1;
     walk(inner, 0.64, turn * 0.98, 0.42, 0.19);
     walk(outer, 0.24, -turn * 0.65, 0.56, 0.32);
-    walk(outer, 0.68, turn * 0.36, 0.42, 0.22);
+    if (withFlowers) walk(outer, 0.68, turn * 0.36, 0.42, 0.22);
     // Shoots from opposing boughs fill the interior without making a solid canopy.
-    if (i === 1 || i === 5) walk(outer, 0.49, Math.PI - turn * 0.37, 0.53, 0.29);
+    if (withFlowers && (i === 1 || i === 5)) walk(outer, 0.49, Math.PI - turn * 0.37, 0.53, 0.29);
   }
 }
 

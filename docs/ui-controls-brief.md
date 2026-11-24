@@ -163,9 +163,7 @@ Not yet: Street view, layers and tours (see Follow-ups).
   the dock's top, 44 px tall, radius 12, 14 px / 600 label. Like every control that floats
   over the scene, it uses the dock's glass recipe (fill, blur, ring, shadow), never a flat
   chip.
-- **Returning to Map:** City is disposed on the way into Models today
-  (`web/src/main.ts`), so coming back replays the white-model arrival (1–5 s). Pausing
-  City instead is worth measuring on the Galaxy A16; until then, accept the rebuild.
+- **Returning to Map:** keep a completed City resident while Models is open. Pause its frame loop and resume the same camera and scene on return. Rebuild after context loss or an interrupted first load. The Galaxy A16 measured 12.8–15.2 s for a warm rebuild on November 24.
 
 ## Selected states
 
