@@ -4,6 +4,7 @@ import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
+import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -229,7 +230,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : midtownLandmarkIds.has(site.id) ? createMidtownLandmark
       : curatedIds.has(site.id) ? createCuratedLandscape
       : site.id === gazeboId ? createClaraMeer : null;
-    const landmark = create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
+    const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
+      : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };

@@ -3242,3 +3242,7 @@ The fix starts on the board. The site's existing DEM regrade now levels the road
 Markings were the second seam. The board paints one yellow line down each mapped carriageway. At the mouths those lines are 1–1.7 m from the pale dashes the cut drew. The cut now carries the board's own line from mouth to mouth, and the median nose and kerbs grow from zero width over 12 m. The low tier spends 921 more triangles on the underpass, which now totals 4,399 against a 5,000 cap. It adds no shader program; low holds 85 of 90 after rebasing on main.
 
 [West mouth, before and after](log/underpass-road-joins/join-compare-na-west-a-high-14.jpg) · [East mouth](log/underpass-road-joins/join-compare-na-east-a-high-14.jpg) · [West at night](log/underpass-road-joins/join-compare-na-west-a-high-23.jpg)
+
+### 2026-11-23 · 171 Seventeenth at the bridge
+
+From the Connector, the 71 × 36 m office tower reads as three shapes. The stone-framed west wing steps down 9 m from the ribbon-glazed shaft, and the crown rises 8 m above it. In the night photograph the brightest surface was the broad glass crown itself. The City model gives that surface a warm glow and shares its window lighting with the scattered panes below. The skin uses 3,848 triangles across two meshes and keeps the low tier at 90 shader programs. [Matched day and night views](log/ui/171-seventeenth/README.md)
