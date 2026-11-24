@@ -24,6 +24,7 @@ import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
 import { createMetropolis, metropolisId } from '../city/metropolis';
 import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
 import { createNcrHq, ncrId } from '../city/ncr-hq';
+import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -270,6 +271,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
       : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
       : site.id === ncrId ? createNcrHq(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
