@@ -76,6 +76,7 @@ import { createHardRock } from './hard-rock';
 import { createTheLandmark } from './the-landmark';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
+import { createCarnegieGarage } from './carnegie-garage';
 import { createDavisons } from './davisons';
 import { createRitzCarlton } from './ritz-carlton-atlanta';
 import { createSouthernBell } from './southern-bell';
@@ -389,6 +390,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let theLandmark: ReturnType<typeof createTheLandmark> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
+  let carnegieGarage: ReturnType<typeof createCarnegieGarage> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
   let ritzCarlton: ReturnType<typeof createRitzCarlton> = null;
   let southernBell: ReturnType<typeof createSouthernBell> = null;
@@ -501,9 +503,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
         const afterFultonBank = fultonBank?.buildings ?? afterFiftyFiveParkPlace;
-        davisons = createDavisons(afterFultonBank, ground);
-        ritzCarlton = createRitzCarlton(davisons?.buildings ?? afterFultonBank, ground);
-        const afterRitzCarlton = ritzCarlton?.buildings ?? davisons?.buildings ?? afterFultonBank;
+        carnegieGarage = createCarnegieGarage(afterFultonBank, ground);
+        const afterGarage = carnegieGarage?.buildings ?? afterFultonBank;
+        davisons = createDavisons(afterGarage, ground);
+        ritzCarlton = createRitzCarlton(davisons?.buildings ?? afterGarage, ground);
+        const afterRitzCarlton = ritzCarlton?.buildings ?? davisons?.buildings ?? afterGarage;
         southernBell = createSouthernBell(afterRitzCarlton, ground);
         const afterSouthernBell = southernBell?.buildings ?? afterRitzCarlton;
         rhodesHaverty = createRhodesHaverty(afterSouthernBell, ground);
@@ -616,6 +620,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (theLandmark) world.group.add(theLandmark.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
+        if (carnegieGarage) world.group.add(carnegieGarage.group);
         if (davisons) world.group.add(davisons.group);
         if (ritzCarlton) world.group.add(ritzCarlton.group);
         if (southernBell) world.group.add(southernBell.group);
@@ -665,7 +670,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
             peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
             fiftyFiveParkPlace,
-            fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
+            fultonBank, carnegieGarage, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
@@ -1637,6 +1642,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       theLandmark?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
+      carnegieGarage?.setNight(night);
       davisons?.setNight(night);
       ritzCarlton?.setNight(night);
       southernBell?.setNight(night);
