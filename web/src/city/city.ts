@@ -161,6 +161,8 @@ export interface CityView {
    * Recomputed on every call, so it follows the train into a tunnel or along a corridor. */
   drawnAt(trainId: string): { inferredTrack: boolean; inferredBerth: boolean };
   stats(): { roadVehicles: number; arterialCars: number; freightCars: number; surfaceCars: number; buses: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
+  pause(): void;
+  resume(): boolean;
   dispose(): void;
   /** Resolves when colour starts to show (at once without the white model). */
   revealed: Promise<void>;
@@ -1686,6 +1688,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   console.info(`City: built in ${Math.round(buildMs)} ms (${Math.round(performance.now() - t0)} ms including yields), quality ${quality}`);
   console.info('City build stages (ms)', stages);
   return {
+    pause() {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    },
+    resume() {
+      if (renderer.getContext().isContextLost()) return false;
+      lastFrame = fpsT = performance.now();
+      frames = 0;
+      if (!raf) raf = requestAnimationFrame(frame);
+      return true;
+    },
     measuredGround: !!terrain,
     hasFreight: !!freight,
     hasPeople: !!figures,

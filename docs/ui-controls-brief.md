@@ -126,6 +126,13 @@ Not yet: Street view, layers and tours (see Follow-ups).
   when a model exists. It switches to Models with that model loaded.
 - **Details panel** (right): camera (Front, Side, Rear, Top), display (Day, Night, Ink),
   line colour and platform where they apply.
+- **One surface:** the card and the browser are one glass panel (left 8, top 8, bottom
+  72, 400 px wide), not two stacked panels. The chevron after the model name is the
+  collapse control (⌄ closed, ⌃ open); desktop has no ✕ and no "Models" header. Only the
+  list scrolls (header, search and chips stay put), with an overlay scrollbar: 6 px thumb
+  `rgba(60,45,30,.28)` (night `rgba(255,255,255,.3)`), no track or gutter, 3 px from the
+  edge, plus a 16 px fade at a list edge that has more to scroll. Phones use a sheet
+  titled "Models" with ✕ (P7).
 - **Browser:** ⌄ on the model card grows the card down the left side into the browser
   (Final 10). It has search, category chips with counts, a Recent row once the catalogue
   is large, and a list whose rows have a thumbnail coloured by service, a name and one
@@ -152,10 +159,11 @@ Not yet: Street view, layers and tours (see Follow-ups).
     wide-screen case (browser and Details open) still needs tuning in the build, because
     the first pass framed the train too small.
 - **"Compare with a photo"** is a modelling tool, so it goes behind `?dev`.
-- **Phones:** Details is a button above the dock (P6).
-- **Returning to Map:** City is disposed on the way into Models today
-  (`web/src/main.ts`), so coming back replays the white-model arrival (1–5 s). Pausing
-  City instead is worth measuring on the Galaxy A16; until then, accept the rebuild.
+- **Phones:** Details is a button above the dock (P6): right 8 px, its bottom 12 px above
+  the dock's top, 44 px tall, radius 12, 14 px / 600 label. Like every control that floats
+  over the scene, it uses the dock's glass recipe (fill, blur, ring, shadow), never a flat
+  chip.
+- **Returning to Map:** keep a completed City resident while Models is open. Pause its frame loop and resume the same camera and scene on return. Rebuild after context loss or an interrupted first load. The Galaxy A16 measured 12.8–15.2 s for a warm rebuild on November 24.
 
 ## Selected states
 

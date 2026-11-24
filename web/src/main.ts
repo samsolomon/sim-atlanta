@@ -448,6 +448,7 @@ function updateClock(now: Date) {
 // ?view=city opens City directly (?view=3d still works). The URL hash belongs to MapLibre.
 // City is the downtown diorama (city/city.ts), in the same atmosphere as the Map.
 let diorama: CityView | null = null;
+let parkedCity: CityView | null = null;
 let lastAtm: Atmosphere | null = null;
 const view3d = document.getElementById('view3d')!;
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
@@ -459,6 +460,23 @@ let cityLoad = 0; // bumped whenever City opens or closes, so a load that finish
 let cityTilt = 55; // retain the user's City tilt while Map remains flat
 let opening = landing === 'city';
 async function openCity() {
+  if (parkedCity) {
+    const city = parkedCity;
+    parkedCity = null;
+    if (city.resume()) {
+      diorama = city;
+      view3d.hidden = false;
+      document.body.classList.add('in3d');
+      if (keepPose) city.lookAt(keepPose.x, keepPose.z, keepPose);
+      keepPose = null;
+      if (lastAtm) city.setAtmosphere(lastAtm, clock.now());
+      watchAutoGraphics(city.quality, cityLoad);
+      setViewParam('city');
+      await applyGraphics();
+      return;
+    }
+    city.dispose();
+  }
   if (diorama) {
     leaving++; // cancels a City → Map fade in progress
     return;
@@ -722,7 +740,7 @@ async function leaveCityToMap() {
   closeCity(true);
 }
 
-function closeCity(keepMapView = false) {
+function closeCity(keepMapView = false, writeUrl = true) {
   stopWatchSlow?.();
   stopWatchSlow = null;
   clearTimeout(overMapTimer);
@@ -754,21 +772,32 @@ function closeCity(keepMapView = false) {
   if (lastAtm) paintMapAtmosphere?.(lastAtm);
   document.body.classList.remove('in3d');
   shell.setNote(null);
-  setViewParam('map');
+  if (writeUrl) setViewParam('map');
   map?.resize();
 }
 
 // ---- Models (A2c): the Model lab as the third view -------------------------------------
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
-// while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
+// while this section is hidden. A completed City keeps its renderer and scene with the frame loop paused.
 let labRoot: HTMLElement | null = null;
-let labView: { openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
+let labView: { enter(): void; openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
 let sceneTitle = document.title;
+let pendingModel: string | null = null;
 const inModels = () => !!labRoot && !labRoot.hidden;
 async function openModels() {
   hideCard();
-  if (diorama || !view3d.hidden) closeCity();
+  if (diorama && cityLoading.hidden) {
+    leaving++;
+    clearTimeout(overMapTimer);
+    stopWatchSlow?.();
+    stopWatchSlow = null;
+    diorama.pause();
+    parkedCity = diorama;
+    diorama = null;
+    view3d.hidden = true;
+    document.body.classList.remove('in3d', 'city-over-map');
+  } else if (!view3d.hidden) closeCity(false, false);
   if (!labRoot) {
     labRoot = Object.assign(document.createElement('section'), { id: 'lab-root' });
     labRoot.setAttribute('aria-label', 'Models');
@@ -795,6 +824,13 @@ async function openModels() {
     shell.setNote('Models couldn’t load here, so this is the map');
     return;
   }
+  if (!inModels()) return;
+  labView?.enter();
+  const target = new URL(location.href).searchParams.get('model');
+  if (target && labView?.model() !== target) {
+    labRoot.querySelector<HTMLButtonElement>(`.library [data-model="${CSS.escape(target)}"]`)?.click();
+  }
+  setViewParam('models');
   (window as unknown as { __lab?: { resize?(): void } }).__lab?.resize?.();
 }
 function leaveModels() {
@@ -813,17 +849,43 @@ function labZoom(dir: 1 | -1) {
 function setViewParam(v: View) {
   const u = new URL(location.href);
   u.searchParams.set('view', v);
-  history.replaceState(null, '', u);
+  if (v === 'models') {
+    const id = pendingModel ?? u.searchParams.get('model') ?? labView?.model() ?? u.searchParams.get('v') ?? 'cq400';
+    u.searchParams.set('model', id);
+    u.searchParams.delete('v');
+  } else {
+    u.searchParams.delete('model');
+    u.searchParams.delete('v');
+  }
+  history.replaceState(history.state, '', u);
 }
 
 document.getElementById('early-map')!.hidden = true;
 const shellOptions: ShellOptions = {
   view: 'map',
   onView(v: View) {
-    if (v !== 'models') leaveModels();
+    const before = initialView(location.search, location.hash);
+    if ((v === 'models' || inModels()) && before !== v) {
+      const pose = diorama && shellOptions.shareTarget?.();
+      if (pose?.view === 'city') {
+        const u = new URL(location.href);
+        u.searchParams.set('cam', pose.cam);
+        history.replaceState(history.state, '', u);
+      }
+      history.pushState(null, '', location.href);
+      setViewParam(v);
+    }
+    if (v !== 'models') {
+      if (inModels() && v === 'city') keepPose = parseCityCamera(new URL(location.href).searchParams.get('cam')) ?? null;
+      leaveModels();
+    }
     if (v === 'city') void openCity();
     else if (v === 'models') void openModels();
-    else mapArrival = leaveCityToMap();
+    else if (parkedCity) {
+      diorama = parkedCity;
+      parkedCity = null;
+      closeCity();
+    } else mapArrival = leaveCityToMap();
   },
   center() {
     if (diorama) {
@@ -947,6 +1009,18 @@ const shellOptions: ShellOptions = {
 };
 // The A2c interface (docs/ui-controls-brief.md).
 const shell = createShellNext(shellOptions);
+addEventListener('popstate', () => {
+  const v = initialView(location.search, location.hash);
+  shell.setView(v);
+});
+cardContent.addEventListener('click', e => {
+  const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-see-model]');
+  if (!link || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  pendingModel = link.dataset.seeModel!;
+  shell.setView('models');
+  pendingModel = null;
+});
 if (import.meta.env.DEV) Object.assign(window, {
   __shell: shell,
   // Dev: select a train as a tap would, for checks that can't land a tap on a moving car.
@@ -976,3 +1050,10 @@ else if (landing === 'models') {
   shell.setView('models');
 }
 else if (!openMap()) shell.setNote('Interactive graphics unavailable · MARTA rail overview');
+
+if (import.meta.env.DEV && params.get('perf') === 'models-return') {
+  void import('./core/models-return').then(({ measureModelsReturn }) => measureModelsReturn(
+    () => !inModels() && !!diorama && !view3d.hidden && cityLoading.hidden,
+    () => inModels() && !!labView && !!(window as unknown as { __lab?: { framed(): boolean } }).__lab?.framed(),
+  ));
+}

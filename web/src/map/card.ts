@@ -169,6 +169,7 @@ function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | unde
   if (city && t.routeId === 'amtrak:route:Crescent') units = 'Two locomotives, three coaches, café, diner, sleeper and baggage-dorm';
   else if (vt) units = route?.mode === 'heavy_rail' ? `${vt.typicalUnits}` : `${vt.typicalUnits} × ${vt.name}`;
   const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
+  const model = ({ 'marta:vt:heavy-rail': 'cq400', 'marta:vt:streetcar': 's70', 'amtrak:vt:long-distance': 'crescent' } as Record<string, string>)[t.vehicleType];
   return `
     <p class="a2-kicker"><span class="a2-svc" style="background:${esc(swatch)}"></span>${esc(service)} · ${esc(line)}${route ? `<span class="dot" style="background:${esc(routeColor(route))}"></span>` : ''}</p>
     <h2>${esc(destination(t.headsign))}</h2>
@@ -180,5 +181,6 @@ function trainCardA2c(t: TrainState, route: Route | undefined, next: Stop | unde
         ? row('Position', `${t.observedAt ? `reported ${ago(t.observedAt)}` : 'report time unknown'} by ${esc(route?.operator)} ${chip('live', 'Live')}`)
         : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
     </dl>
-    ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}`;
+    ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}
+    ${model ? `<a class="a2-allstops" data-see-model="${model}" href="?view=models&amp;model=${model}">See the model <span aria-hidden="true">›</span></a>` : ''}`;
 }
