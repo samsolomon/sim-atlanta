@@ -75,3 +75,11 @@ crowns east of the junction. This is an explicit visual tradeoff for coordinator
 approval, not a claim that far pixels are unchanged. The600m threshold preserves the
 approved close views while removing the full-screen mask cost from the phone's
 whole-board default and pan views.
+
+Sam accepted the darker far-crown interiors at low beyond 600 m through the
+coordinator on 2026-11-23. Final A16 default/pan results and the coordinator's
+merge OK remain pending; the frozen rendering candidate is fb699bbb.
+
+Follow-up idea: if the darker far look becomes distracting, try replacing distant
+species crowns at low quality with a single clump. Preserve the approved near
+views and measure both appearance and A16 performance before adopting it.
