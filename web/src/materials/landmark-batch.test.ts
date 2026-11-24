@@ -33,9 +33,10 @@ describe('batchLandmarks', () => {
     // Three bodies plus three lamp sets in one cell; the far site is alone in its cell.
     expect(b.stats.merged).toBe(6);
     expect(sites.map(s => s.group.children.length)).toEqual([0, 0, 0, 2]);
-    const positions = meshes(b.group).map(m => m.geometry.attributes.position);
-    const found = positions.some(p => Array.from({ length: p.count }, (_, i) => new Vector3().fromBufferAttribute(p, i).add(container.position))
-      .some(v => v.distanceTo(expected) < 1e-4));
+    // Packed positions: read through each mesh's transform; Int16 steps here are well under 1 mm.
+    const found = meshes(b.group).some(m => Array.from({ length: m.geometry.attributes.position.count },
+      (_, i) => m.localToWorld(new Vector3().fromBufferAttribute(m.geometry.attributes.position, i)))
+      .some(v => v.distanceTo(expected) < 1e-3));
     expect(found).toBe(true);
     const body = meshes(b.group).find(m => m.castShadow)!;
     expect(body.receiveShadow).toBe(true);
@@ -226,5 +227,25 @@ describe('batchLandmarks', () => {
       Array.from(m.geometry.attributes.position.array as Float32Array).reduce((x, y) => x + y, 0).toFixed(3)]);
     expect(shape(sliced.group)).toEqual(shape(whole.group));
     expect(sliced.stats.merged).toBe(whole.stats.merged);
+  });
+
+  it('packs positions as Int16 and normals as Int8 within 1/32767 of the cell, through the mesh transform', () => {
+    const container = new Group();
+    const sites = [10, 300].map(x => landmark(x));
+    for (const s of sites) container.add(s.group);
+    const before = sites[1].body.localToWorld(new Vector3().fromBufferAttribute(sites[1].body.geometry.attributes.position, 5));
+    const b = batchLandmarks(sites, container);
+    container.add(b.group);
+    container.updateMatrixWorld(true);
+    const body = meshes(b.group).find(m => m.castShadow)!;
+    const p = body.geometry.attributes.position, n = body.geometry.attributes.normal;
+    expect(p.array).toBeInstanceOf(Int16Array);
+    expect(n.array).toBeInstanceOf(Int8Array);
+    const step = body.scale.x / 32767;
+    const near = Math.min(...Array.from({ length: p.count }, (_, i) => body.localToWorld(new Vector3().fromBufferAttribute(p, i)).distanceTo(before)));
+    expect(near).toBeLessThan(step * 2);
+    // Uniform scale, so normals come back as stored.
+    expect(body.scale.x).toBe(body.scale.y);
+    for (let i = 0; i < n.count; i++) expect(new Vector3().fromBufferAttribute(n, i).length()).toBeCloseTo(1, 1);
   });
 });
