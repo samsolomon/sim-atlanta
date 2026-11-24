@@ -7,10 +7,10 @@ import { resolve } from 'node:path';
 const file = resolve(__dirname, '../../public/data/scene/downtown/vignette.json');
 type Run = { cls: string; kind: string; pts: number[][]; freightS?: [number, number] };
 
-/** Data baked before the smoothing (a stale checkout without `pnpm data`) has about 110 freight vertices;
- * the fillets roughly double that. Skip rather than fail on stale data. */
+/** Data baked before the smoothing (a stale checkout without `pnpm data`) has 79 freight vertices; the
+ * fillets bring it to 176. Skip rather than fail on stale data. */
 const smoothed = () => existsSync(file) && (JSON.parse(readFileSync(file, 'utf8')) as { terrainTransport?: { rail: Run[] } })
-  .terrainTransport?.rail.filter(r => r.freightS).reduce((n, r) => n + r.pts.length, 0)! > 200;
+  .terrainTransport?.rail.filter(r => r.freightS).reduce((n, r) => n + r.pts.length, 0)! > 120;
 describe.skipIf(!smoothed())('downtown freight centreline curvature (needs pnpm data after #512)', () => {
   it('keeps a 140 m radius over 12 m chords away from junctions and board edges', () => {
     const rail = (JSON.parse(readFileSync(file, 'utf8')) as { terrainTransport: { rail: Run[] } }).terrainTransport.rail;
