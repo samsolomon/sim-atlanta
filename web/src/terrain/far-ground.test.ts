@@ -233,3 +233,28 @@ it('builds the very-far level in short steps, with the same result as one build'
   expect(p99).toBeLessThan(2.5);
   expect(steps.length).toBeGreaterThan(100);
 }, 120_000);
+
+it('abandons a queued very-far build once its board is disposed', async () => {
+  const { vi } = await import('vitest');
+  const frames: (() => void)[] = [];
+  vi.stubGlobal('requestAnimationFrame', (cb: () => void) => { frames.push(cb); return frames.length; });
+  try {
+    const { PerspectiveCamera } = await import('three');
+    const { createDowntownTerrain, VERY_FAR_BUILD_M, veryFarStats } = await import('./model');
+    const { bounds } = await import('../square-board/sections');
+    const ctx = new Proxy({}, { get: () => () => {} });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+    const spy = vi.spyOn(GroundSurface.prototype, 'farGeometrySteps');
+    const b = bounds['south-band'];
+    const area = createDowntownTerrain(grid('square-board/south-band'), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const camera = new PerspectiveCamera();
+    camera.position.set(b.maxX + VERY_FAR_BUILD_M + 10, 0, b.minZ); area.update(0, camera);
+    area.dispose();
+    const before = veryFarStats.totalMs;
+    for (let i = 0; i < 20 && frames.length; i++) { frames.shift()!(); await new Promise(r => setTimeout(r, 0)); }
+    await new Promise(r => setTimeout(r, 0));
+    // Either never started, or stopped at its first check: no slices of work after disposal.
+    expect(veryFarStats.totalMs - before).toBeLessThan(5);
+    spy.mockRestore();
+  } finally { vi.unstubAllGlobals(); }
+});

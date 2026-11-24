@@ -269,10 +269,19 @@ export const veryFarStats = emptySliceStats();
 if (import.meta.env?.DEV) (globalThis as { __veryFarStats?: typeof veryFarStats }).__veryFarStats = veryFarStats;
 export const VERY_FAR_BUDGET_MS = 3;
 let veryFarChain: Promise<unknown> = Promise.resolve();
-function queueVeryFar<T>(build: () => Build<T>, done: (value: T) => void) {
-  veryFarChain = veryFarChain.then(() => runBudgeted(build(), {
+/** Abandon a queued build as soon as its board is disposed (a tier switch, a new City). */
+function* whileAlive<T>(build: Build<T>, alive: () => boolean): Build<T | null> {
+  for (;;) {
+    if (!alive()) return null;
+    const r = build.next();
+    if (r.done) return r.value;
+    yield r.value;
+  }
+}
+function queueVeryFar<T>(build: () => Build<T>, done: (value: T) => void, alive: () => boolean) {
+  veryFarChain = veryFarChain.then(() => !alive() ? null : runBudgeted(whileAlive(build(), alive), {
     budgetMs: () => (sliceInput.dragging ? 1 : VERY_FAR_BUDGET_MS), stats: veryFarStats,
-  })).then(done, () => {});
+  })).then(v => { if (v !== null) done(v as T); }, () => {});
 }
 let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
@@ -576,7 +585,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       const next = far ? d > 0.9 * FAR_GROUND_M : d > FAR_GROUND_M;
       if (!veryFarOff && !veryFarQueued && d > VERY_FAR_BUILD_M) {
         veryFarQueued = true;
-        queueVeryFar(() => mesh.farGeometrySteps(VERY_FAR_ERROR_M, 160, true), g => { if (disposed) g.dispose(); else veryFarGeometry = g; });
+        queueVeryFar(() => mesh.farGeometrySteps(VERY_FAR_ERROR_M, 160, true), g => { if (disposed) g.dispose(); else veryFarGeometry = g; }, () => !disposed);
       }
       // The houses' far-far form switches on the very-far ground's distances, not its build.
       const nextHouses = farHouses ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M;
