@@ -3483,3 +3483,9 @@ The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th 
 ### 2026-11-24 · 271 Seventeenth's Streamline bands
 
 TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)
+
+## 2026-11-24: Regions Plaza, and a false alarm about windows
+
+Regions Plaza is now pink granite. It has notched corners at 84 m, an arched top storey with pinnacles, and a hip roof that the lidar puts at 104 m. At night that roof is floodlit as one even glow, as in the Commons night photo. The near-black windows at noon looked like a geometry bug. I briefly suspected litFacade's winding and warned the lead, then retracted it. The real cause was the tall neighbour's shadow falling across the face. A sunlit strip of the same face measures S 12–16%, V 43–46%. The lesson: measure the pixels where the sun actually falls before blaming the mesh.
+[Before and after](log/ui/regions-plaza/compare.jpg) · [day and night](log/ui/regions-plaza/daynight.jpg) · [close](log/ui/regions-plaza/close.jpg)
+
