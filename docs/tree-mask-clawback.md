@@ -77,8 +77,7 @@ approved close views while removing the full-screen mask cost from the phone's
 whole-board default and pan views.
 
 Sam accepted the darker far-crown interiors at low beyond 600 m through the
-coordinator on 2026-11-23. Final A16 default/pan results and the coordinator's
-merge OK remain pending; the frozen rendering candidate is fb699bbb.
+coordinator on 2026-11-23. The coordinator approved the merge after all-12-area A16 runs at low quality on frozen fb699bbb. Default averaged 26.0 fps against 27.3 baseline and 23.0 forced-mask. Pan averaged 25.3 fps against 26.1 baseline and 22.5 forced-mask.
 
 Follow-up idea: if the darker far look becomes distracting, try replacing distant
 species crowns at low quality with a single clump. Preserve the approved near

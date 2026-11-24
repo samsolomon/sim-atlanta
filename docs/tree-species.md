@@ -305,7 +305,9 @@ The willow oak row is superseded by [Species options](#willow-oak), which use so
 - Ginkgo: C4.
 - Sweetgum: A ("looks good").
 - American elm: A, vase of branch-mass cards ("looks good"). It joins City in the next round, with the oaks.
-- Still to pick: the magnolia (gloss round 2: A and speck densities A1–A3) and the dogwood (round 2 pending).
+- Magnolia: A3, with a tidier skirt and whiter gloss.
+- Dogwood: A, fuller layered crown and white bloom, approved with final twig tidy-ups.
+- White oak A: rounded-lobed leaf cards, selected by Sam on 2026-11-23.
 - The shared crown fixes (crowning tuft, edge-on fade, outline clamp) are approved as the base for the remaining species.
 
 All picks are lab defaults. City rollout waits on a placement and cost proposal per species.
@@ -601,6 +603,10 @@ Crown luminance / saturation (Front, 1 Jul): A 0.232 / 0.832, A1 0.299 / 0.726, 
 
 Crown luminance / saturation (Front, 1 Jul, high): A 0.201 / 0.862, A1 0.205, A2 0.210, A3 0.218 / 0.845; low A 0.211. The specks add 2–8%, not round 1's 30%. The pick reads the atlas at full size (`textureLod`), so mipmaps cannot blend neighbouring leaves into new ids at range, and it hashes tree space, not world position, to keep `sin()` precise far from the origin. Other species measure as before (willow oak 0.256, tulip poplar 0.240, sweetgum 0.255, crape myrtle 0.246, elm 0.249). The cone is deliberately darker than the generic canopy (0.248), as the reference is. At eye level the specks are subtle; they show best in the day row and at 300 m as a faint sun-side sparkle.
 
+**A3 picked, 2026-11-23.** [Follow-up sheet](log/ui/tree-species/options-magnolia-a3-pick.jpg). Sam chose A3. It is the lab default on a direct magnolia URL without `variant`, and the lineup Default pick. The comparison variants remain available. The lower mass band rises slightly and its card edges and matching near tips pull inward and stay near the crown base, rather than dangling to the ground. The cone remains. Leaf colours compensate for the brighter shaped surface to keep the dark base near the prior 0.201 luminance.
+
+The gloss target is a whiter warm white. Low-detail speck density is 60% of high because fewer, larger cards otherwise exceeded the +10% brightness ceiling. At matched Front on July 1: high A 0.203, A3 0.219 (+7.9%); low A 0.209, A3 0.222 (+6.2%). Eye-level A3 night luminance is 0.018 and the gloss is off. Cost remains 193 / 113 triangles plus the bounded near-tip pool. `Look.preferred` exposes the pick; tree-species should use A3 for the next City rollout alongside elm and oaks. This change does not itself add magnolia to City.
+
 ### Japanese maple
 
 `web/src/trees/japanese-maple.ts`, Sam's request (23 Nov). Red Japanese maples are "everywhere in front yards and on the traffic islands" of Ansley Park: low, wide, layered, umbrella-shaped, on several leaning trunks. They are "the colour accents". The sources describe a "low, dense, rounded top and spreading branches" ([NC State](https://plants.ces.ncsu.edu/plants/acer-palmatum/)) that is "typically multi-trunked", with "muscular-looking, picturesque, grey" trunks ([UF ST023](https://ask.ifas.ufl.edu/publication/ST023/pdf)).
@@ -651,25 +657,29 @@ The weeping laceleaf mound (about 2 m, cascading to the ground, on Sam's ivy ban
 
 ### Flowering dogwood
 
-`web/src/trees/elm-dogwood.ts`. "Branches on the lower half of the crown grow horizontally, those in the upper half are more upright … a strikingly horizontal impact" ([UF ST185](https://ask.ifas.ufl.edu/publication/ST185/pdf)). The crown is drawn as tiers of flat masses (3, 3 and 2) on near-level limbs. It has one trunk: UF says "typically multi-trunked", but 96% of GT's 339 dogwoods are single-stem.
+`web/src/trees/elm-dogwood.ts`. "Branches on the lower half of the crown grow horizontally, those in the upper half are more upright … a strikingly horizontal impact" ([UF ST185](https://ask.ifas.ufl.edu/publication/ST185/pdf)). The crown is drawn as three tiers of flat masses (2 per tier at high detail) on near-level limbs. It has one trunk: UF says "typically multi-trunked", but 96% of GT's 339 dogwoods are single-stem.
 
-**Bloom.** The bracts open on bare or barely leafing twigs. In bloom the crown stays present and washes white (`bloomWash` 0.8), with early green between, because the bracts dominate the crown. Georgia USA-NPN has 39 tree-years: open flowers Mar 28 to Apr 9 (medians), full flowering Apr 1–13. The Atlanta Dogwood Festival runs Apr 10–12, 2026, and a [dated Oakland Cemetery photo](https://commons.wikimedia.org/wiki/File:Oakland_Cemetery_dogwood_tree_and_downtown_Atlanta_skyline.jpg) shows full bloom on 29 Mar 2017. Red berries from late September are not drawn.
+**Bloom.** The bracts open on bare or barely leafing twigs. In bloom the crown stays present and washes white (`bloomWash` 1), with early green between, because the bracts dominate the crown. Georgia USA-NPN has 39 tree-years: open flowers Mar 28 to Apr 9 (medians), full flowering Apr 1–13. The Atlanta Dogwood Festival runs Apr 10–12, 2026, and a [dated Oakland Cemetery photo](https://commons.wikimedia.org/wiki/File:Oakland_Cemetery_dogwood_tree_and_downtown_Atlanta_skyline.jpg) shows full bloom on 29 Mar 2017. Red berries from late September are not drawn.
 
 **Options:**
-- A · layered branch-mass cards: 189 / 109, plus 90 in tips.
-- B · cored layers: 183 / 129.
-- C · faceted layers: 169 / 109.
+- A · layered branch-mass cards: 195 / 146. Close-up tips removed because they did not follow flattened cards.
+- B · cored layers: retained as a comparison, with reduced card counts to fit the twig budget.
+- C dropped per Sam.
 
 | Class | Height (m) | Spread (m) | Calliper (m) | Nominal | Basis |
 |---|---|---|---|---|---|
-| Sapling | 1.5–4 | 1–4 | 0.03–0.12 | 3 / 2.6 / 0.07 | GT under 15 cm DBH: median 3.4 m by 2.7 m |
-| Young | 4–7 | 3–7.5 | 0.12–0.3 | 6 / 5.5 / 0.2 | GT 15–30 cm medians: 6.4 m by 5.5 m |
-| Mature | 6–9.3 | 4.6–11.1 | 0.3–0.5 | 7.5 / 8 / 0.35 | NC State 4.6–7.6 m by 4.6–9.1 m; UF 6.1–9.1 m by 7.6–9.1 m; GT 30–61 cm medians 8.2 m by 7.2 m |
+| Sapling | 1.5–4 | 1–4 | 0.03–0.12 | 2.5 / 3 / 0.07 | GT under 15 cm DBH: median 3.4 m by 2.7 m |
+| Young | 4–7 | 3–7.5 | 0.12–0.3 | 5 / 6.5 / 0.2 | GT 15–30 cm medians: 6.4 m by 5.5 m |
+| Mature | 6–9.3 | 4.6–11.1 | 0.3–0.5 | 6 / 9 / 0.45 | NC State 4.6–7.6 m by 4.6–9.1 m; UF 6.1–9.1 m by 7.6–9.1 m; GT 30–61 cm medians 8.2 m by 7.2 m |
 | Specimen | 8–12.9 | 9–13.7 | 0.45–0.65 | 9.1 / 13.7 / 0.6 | Champions: 458 Ponce de Leon Ave, 9.1 × 13.7 m; Peachtree Christian courtyard, 12.9 × 12.2 m |
 
 **Fall.** "Red to reddish purple" (NC State), "red to maroon" in sun (UF). Georgia USA-NPN puts coloured leaves Oct 3–20 and falling leaves Oct 5–22, with the latest on Nov 21. Sam saw red-maroon dogwoods at Ansley yard edges on 23 Nov, so the lab keeps them red-maroon into November and bare by early December.
 
 **Brightness.** Option A against the generic tree: elm 0.249 / 0.818 high and 0.249 / 0.806 low; dogwood 0.238 / 0.749 and 0.247 / 0.739.
+
+**Round 2 review draft (2026-11-23).** [Matched seasonal sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). Mature height/spread is an illustrative 6 × 9 m, with a 1.25 m fork, three jointed scaffold limbs (two at low detail) and paired horizontal terminal twigs. Each crossed foliage card is flattened to 34% of its vertical extent; the old flat setting only flattened the cluster centres. Separate bloom chips were removed in the final pass; the white crown wash supplies the bracts without floating geometry. A cool-white input (#edf4ff) compensates for the global warm grade; a daylight-gated diffuse fill lifts the shaded bracts and switches off with the sun at night. Day bloom saturation is 0.018. Final standard Front summer crownStats: high 0.247 / 0.823 luminance / saturation, low 0.249 / 0.828. Camera position (0, 1.6, 11.25), target (0, 2.88, 0), FOV 58. Winter density and the sparse comparison B still need Sam's eye. All four sizes were checked in summer and winter at both tiers; terminal endpoints stay within 0.971 nominal crown radii. The branch tips intentionally extend beyond some leaf patches. The reference is Marc Merlin's Oakland Cemetery photograph, CC BY-SA 4.0, linked above; no reliable matching night photograph was used.
+
+**Approved A, 2026-11-23.** Sam approved the full dome, tiers, low fork and white bloom. [Final bloom/winter tidy-ups](log/ui/tree-species/options-dogwood-final-tidy.jpg) pull the upper wood below the crown and replace blunt twig forks with three staggered, tapered fine twigs per horizontal branch. The actual cone tips use three triangles each, funding more twigs within 195 / 146 triangles. The crown's white wash replaces separate bloom chips. A is now the direct lab and lineup default; dogwood joins elm, magnolia A3 and oaks in the next City rollout, not in this lab-only change.
 
 ### Pair 2 gaps
 
@@ -696,7 +706,7 @@ Sam asked for the feel of Ansley's trees, not a survey (23 Nov). These notes com
 
 
 
-**Rollout status (2026-11-23):** Draft PR #336 implements crape myrtle A, loblolly A, sweetgum A and Japanese maple A, using these mixes and the Ansley placement rules. Oaks remain generic; magnolia awaits a gloss decision. The High Museum ginkgo is unchanged. The wider proposal has two tiers:
+**Rollout status (2026-11-23):** Draft PR #336 implements crape myrtle A, loblolly A, sweetgum A and Japanese maple A, using these mixes and the Ansley placement rules. Oaks remain generic; magnolia A3 joins elm and oaks in the next rollout. The High Museum ginkgo is unchanged. The wider proposal has two tiers:
 
 1. **Reported.** Inventory points are placed by species, at their measured sizes where given. The sources are the City 2011 census (Downtown only), Georgia Tech's campus inventory, Trees Atlanta plantings, and OSM species tags. Their licences are unclear (see [Where ginkgos are](#where-ginkgos-are)), so we would ask the owners before shipping derived positions.
 2. **Illustrative.** Every other canopy crown takes a species drawn deterministically from its crown id, weighted by context. Each crown's context (street, yard, park and woods, or campus) would come from the land use and road masks the parks staging already has.
@@ -865,3 +875,29 @@ Additional terrace checks: [low daylight](log/ui/tree-species/rollout/1180-low-d
 and [low night](log/ui/tree-species/rollout/1180-low-night-sheet.jpg).
 Raw [paired counts](log/ui/tree-species/rollout/paired-results.json) and
 [pan counts](log/ui/tree-species/rollout/pan-results.json) preserve the measurement runs.
+
+### White oak
+
+`web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.
+
+The [research handoff](handoffs/studio-tree-lab-white-oak.md) records the Georgia Tech inventory, Atlanta champions and Georgia USA-NPN calculations. Source units and the conversion method remain inferred as described there. Nominal sizes below are illustrative combinations within the measured ranges, not one surveyed tree, except the specimen's height/spread pair from the 2016 Atlanta champion at Vaughn Street.
+
+| Class | Height / spread / calliper, m | Basis |
+|---|---|---|
+| Sapling | 4.7 / 2.4 / 0.08 | GT QUAL under 15 cm DBH, medians 4.7 m high and 2.4 m wide |
+| Young | 9.1 / 5 / 0.22 | GT 15–30 cm DBH medians |
+| Mature | 25.3 / 22.1 / 0.95 | GT large-tree height and crown medians, combined illustratively; crown base about 6 m |
+| Specimen | 30 / 35.7 / 1.7 | Atlanta champion 2016 height/spread; circumference 211.2 inches implies about 1.71 m diameter |
+
+**References viewed:** [Dcrjsr's open-grown Duke Forest white oak](https://commons.wikimedia.org/wiki/File:Large_white_oak_at_old_house_site.jpg), 11 Nov 2011, CC BY 3.0, shows thick spreading limbs and russet leaves; [Huron H. Smith's Athens winter white oak](https://commons.wikimedia.org/wiki/File:The_tree_that_owns_itself_(4987035786).jpg), 1910, Field Museum, no known restrictions, shows the bare crown's broad outline. [NC State](https://plants.ces.ncsu.edu/plants/quercus-alba/) and [UF/IFAS ST541](https://ask.ifas.ufl.edu/publication/ST541/pdf) describe the broad crown, pale scaly bark and rounded leaf lobes. No nighttime reference is used; the night panel checks the lab's illustrative lighting.
+
+**Calendar:** Georgia NPN puts median budbreak near April 1 and expansion near April 13; the lab reaches full leaf by May. Blue-green summer lasts through September. Wine-red/russet develops in October, brown leaves drop through November, and a small residual of brown leaves persists into early winter. The retention strength and interpolation are illustrative. Published descriptions and photographs concentrate marcescence on lower limbs and young trees; the current renderer distributes retained leaves through the crown instead. This remains a known limit: restricting retention spatially would require coordinated changes to the shared foliage visibility, ink mask, shadows and near tips, beyond a cheap species-only adjustment. Acorns and bark plates are not individually modelled.
+
+| Option | High / low triangles | High / low draws for one size | Near-tip cost |
+|---|---|---|---|
+| A · broad lobed-leaf masses | 193 / 81 | 4 / 3 | 120 triangles per eligible near tree, bounded by the existing TIP_CAP pool |
+| C · faceted spreading crown | 191 / 111 | 3 / 3 | none |
+
+All counts include the seven-triangle leaf carpet. A uses the established silhouette ink; C gives a faceted comparison. The cored trial was dropped because its summer luminance exceeded the generic canopy target by about 10%. The eighth leaf-atlas shape adds 1,398,100 bytes (512×512 RGBA8 with mipmaps) when used; the budget entry also corrects the previous seven-atlas estimate, which counted pixels instead of bytes. No new texture source or material-library texture is introduced, and no City geometry or placement changes in this step.
+
+White-oak standard Front summer crownStats (July 1): A high 0.255 luminance / 0.772 saturation, A low 0.258 / 0.779; C high 0.236 / 0.813 and low 0.236 / 0.803. The generic target is 0.248 / 0.806. All are within about 5% on the measured fields. The eye-level A camera is (0,1.6,27.625) toward (0,12.144,0), FOV 58; standard Front is (0,11.385,63.66) toward (0,11.385,0), FOV 30.

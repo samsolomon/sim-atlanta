@@ -1,0 +1,78 @@
+{
+  "label": "downtown-night",
+  "selectedAt": "2026-11-21T03:12:35.000Z",
+  "start": {
+    "status": "Following train · position Illustrative",
+    "camera": {
+      "x": -435.4128398892014,
+      "z": -1011.3403045566812,
+      "bearing": -148.00000000000003,
+      "tilt": 26.000000000000007,
+      "metresPerPixel": 0.129586872758479
+    }
+  },
+  "end": "Follow ended · freight no longer drawn",
+  "ended": true,
+  "samples": [
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -437.4128199121792,
+        "z": -1015.082853130529,
+        "bearing": -148.00000000000003,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -476.11616039423575,
+        "z": -1096.6037640392194,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -503.09388137073813,
+        "z": -1181.7585596382867,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -520.5943633909021,
+        "z": -1269.8932539817577,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -531.2826186281727,
+        "z": -1359.1330117885318,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    },
+    {
+      "status": "Following train · position Illustrative",
+      "camera": {
+        "x": -535.0732199954499,
+        "z": -1404.5457984786774,
+        "bearing": -148,
+        "tilt": 26.000000000000007,
+        "metresPerPixel": 0.129586872758479
+      }
+    }
+  ]
+}

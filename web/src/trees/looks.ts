@@ -39,6 +39,8 @@ export interface LookOption {
   specks?: number;
   /** Tufts: 0 round clusters, 1 flat pads facing up (a pine's needle tufts). */
   flat?: number;
+  /** Vertical scale of each crossed card, for flat horizontal tiers. */
+  cardHeight?: number;
   /** Lobes only: vertical squash (pads). */
   squash?: number;
   /** Cluster size as a fraction of its branch mass: higher closes each mass. */
@@ -64,6 +66,10 @@ export interface Look {
   leaf: LeafShape;
   /** Leaf paint: base lightness range for the atlas (cards multiply the season colour). */
   options: LookOption[];
+  /** Approved lab default, leaving comparison ordering intact. */
+  preferred?: string;
+  /** Pull the lowest card edges inward and hold them near the crown base. */
+  tidySkirt?: boolean;
   palette(doy: number, offset: number): Palette;
   /** Cultivar colourways (a Japanese maple's scarlet, Bloodgood burgundy, orange-red): each tree
    *  takes one by its seed; repeat an entry to weight it. `palette` stays the species default. */
@@ -83,6 +89,8 @@ export interface Look {
   bloomWash?: number;
   /** How far blossom escapes the crown's interior shade, 0–1 (0: shaded like the leaves). */
   bloomLift?: number;
+  /** Daylight-only diffuse fill for translucent white bracts. */
+  bloomFill?: number;
 }
 
 // ---- calendar ------------------------------------------------------------------------------
@@ -183,6 +191,22 @@ function lookClusters(look: Look, opt: LookOption, size: SizeClass, q: TreeQuali
     .map(u => look.toneByLight ? { ...u, tone: Math.min(0.97, Math.max(0, (u.depth - 0.45) / 0.5)) } : u);
 }
 
+/** Apply the same lower-crown shaping to cards and their near leaf tips. */
+function tidySkirt(g: THREE.BufferGeometry, e: ReturnType<typeof envelope>, enabled?: boolean, round = true) {
+  if (!enabled) return g;
+  const p = g.getAttribute('position');
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i);
+    const weight = Math.max(0, Math.min(1, (e.y0 + e.H * 0.2 - y) / (e.H * 0.2)));
+    const inset = 1 - weight * 0.15;
+    p.setXYZ(i, p.getX(i) * inset, y < e.y0 ? e.y0 + (y - e.y0) * 0.1 : y, p.getZ(i) * inset);
+  }
+  p.needsUpdate = true;
+  if (round) return crownNormals(g, outwardOf(e));
+  g.computeVertexNormals();
+  return g;
+}
+
 /** Foliage for one option and size class, in unit space (crown radius 1, height 1). */
 export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: TreeQuality) {
   const d = look.species.sizes[size];
@@ -195,7 +219,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {
-    unitCards(b, clusters, seed, 1.25);
+    unitCards(b, clusters, seed, 1.25, opt.cardHeight);
   }
   let g = b.geometry();
   if (opt.technique !== 'lobes' && opt.technique !== 'stars') crownNormals(g, outwardOf(e));
@@ -209,7 +233,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
     g.dispose();
     g = both;
   }
-  return g.scale(1 / e.R, 1 / e.H, 1 / e.R);
+  return tidySkirt(g, e, look.tidySkirt, opt.technique !== 'lobes').scale(1 / e.R, 1 / e.H, 1 / e.R);
 }
 
 /** Near leaf tips for one option and size class, in unit space; null when the option has none. */
@@ -220,7 +244,7 @@ export function lookTips(look: Look, opt: LookOption, size: SizeClass, q: TreeQu
   const seed = look.species.id.length * 1000 + size.length * 10 + 1;
   const b = new FoliageBuilder();
   leafTips(b, lookClusters(look, opt, size, q, opt.units.high, seed), look.leaf, opt.tips, seed + 5);
-  return crownNormals(b.geometry(), outwardOf(e)).scale(1 / e.R, 1 / e.H, 1 / e.R);
+  return tidySkirt(crownNormals(b.geometry(), outwardOf(e)), e, look.tidySkirt).scale(1 / e.R, 1 / e.H, 1 / e.R);
 }
 
 const tris = (g: THREE.BufferGeometry) => (g.index ? g.index.count : g.attributes.position.count) / 3;
@@ -255,8 +279,8 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const textured = opt.technique === 'cards' || opt.technique === 'cored';
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
-    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
-    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, specks: opt.specks, map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
+    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
+    : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, specks: (opt.specks ?? 0) * (quality === 'low' ? 0.6 : 1), map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
   const depthMat = foliageDepth(leafMat);
   // Foliage meshes registered with the ink's foliage mask: outlined at the crown's silhouette only.

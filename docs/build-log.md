@@ -2681,6 +2681,12 @@ The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
 
+### 2026-11-23 — Dogwood round 2, review draft
+
+The dogwood's floating crown came from two different scales: bloom chips sat more than a cluster radius outside the foliage, and the near leaf tips stayed upright when the crown cards were flattened. The early draft removed those tips, pulled the chips inward, and spent saved geometry on horizontal twigs above a 1.25 m fork; the final pass below removes separate chips entirely. The mature illustrative tree is 6 m tall and 9 m wide. It costs 193 triangles at high detail and 149 at low, including the carpet. Summer eye-level luminance is 0.248. The surprising part was that flattening cluster centres alone never made flat tiers: the crossed cards also needed their vertical extent reduced. [Seasonal review sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). The warm daylight grade and winter twig density remain visual review items.
+
+Sam kept the layered habit and fall colour, but asked for a fuller dome and fewer main limbs. The next pass uses three jointed scaffold limbs above a 45 cm mature trunk, larger overlapping leaf masses, and paired twig forks. It still costs 193 / 149 triangles. White bracts needed daylight-only diffuse fill as well as white paint: their measured saturation fell to 0.018, while the fill switches off at night. The summer crown is 0.236 luminance / 0.842 saturation. The matching camera and Atlanta reference remain on the sheet.
+
 ## 2026-11-23 — Four tree species share a City-wide batch
 
 The first City rollout brings Sam's A choices for crape myrtle, loblolly pine,
@@ -2799,3 +2805,136 @@ phone default/pan comparison still gates release.
 
 [Why the near mask stays](log/ui/tree-species/mask-clawback/1180-day-sheet.jpg) ·
 [Measurement and validation notes](tree-mask-clawback.md).
+## 2026-11-23 — Freight joins Follow (initial checks)
+
+The downtown seven-car and Norcross ten-car illustrative consists now carry separate stable ids through picking and the existing Follow control. Their positions update before the camera lookup. Follow uses cars surviving their material clip planes and ends when none remain; it makes no tunnel claim. Both cards retain Illustrative labels.
+
+The easy-to-miss detail was update order: freight previously moved after the camera had already resolved its target. Initial browser checks picked and followed both consists. [Downtown capture](log/ui/follow/freight-downtown.jpg): 2026-11-20 14:12:35 ET, starting camera `900,545,0,35,300`; [Norcross capture](log/ui/follow/freight-norcross.jpg): 14:20:50 ET, starting camera `-790,-4385,0,35,300`. Follow then applies its standard bearing -148°, tilt 26°, distance 300 m.
+
+Validation: 20 Rust, 11 pipeline, 914 web tests (one skipped), five worker tests; production build and both performance tiers passed. Cross-model review found no blocking code issue. Initial captures are retained below; final replay checks and the review sheet are recorded in the completion entry. Web rebuild required; no data rebuild.
+
+## 2026-11-23 — Freight Follow replay checks complete
+
+Both illustrative consists passed day and full-night browser replays. The camera moved with the drawn cars through the downtown sections, then stopped when no cars remained drawn. Norcross followed to the mounted board edge and reported “train left the board” in both runs. Downtown ends with “freight no longer drawn”; it does not invent an underground location or a timetable trip. The selected card and active Follow position remain Illustrative.
+
+[Before Follow / after Follow / exit review sheet](log/ui/follow/freight-review.jpg). These compare interaction states, not two software versions. The browser advanced the pinned clock in 2-second steps, with camera and status samples saved in the four `*-check.json` files alongside the sheet. Cameras at the start of Follow:
+
+| Consist | Pinned time | Camera |
+| --- | --- | --- |
+| Downtown day | 2026-11-20T14:12:35-05:00 | `921,549,-148,26,300` |
+| Downtown night | 2026-11-20T22:12:35-05:00 | `-505,-900,-148,26,300` |
+| Norcross day | 2026-11-20T14:21:25-05:00 | `-654,-4519,-148,26,300` |
+| Norcross night | 2026-11-20T22:21:25-05:00 | `-654,-4519,-148,26,300` |
+
+Rebased validation: 20 Rust, 11 pipeline, 931 web tests (one skipped), five worker tests; build and type check passed. Perf Low: 2,382,511 triangles / 540 calls; High: 13,783,617 / 1,169, both below ceilings. Claude's second review found no code defect; its remaining visual finding is dismissed by these replays and screenshots. No live-feed night check is claimed: freight has no live feed. Web rebuild only; no data rebuild or worker change.
+
+### 2026-11-23 — Ansley gets more than a colour change
+
+Ansley's house mix now includes two-storey Foursquares with broad white-railed porches, alongside newer limestone and white-brick houses with dark slate roofs and black window frames. The forms follow Sam's neighbourhood observations without copying addresses. The surprising cost was small: across nine boards, the extra house detail is 7,580 triangles on high and 1,037 on low. Balusters and dormers belong to high; low keeps the porch rails. Cross-review caught a 12 × 8 m Foursquare whose dormer could poke through its shallow ridge. Keeping the established 2.7 m minimum rise fixed it, and a geometry test fails when that guard is removed. Painted shingles also needed a geographic guard so adding Ansley colours did not recolour Home Park. Requires a web rebuild, with deployment left to the coordinator. [Day comparison](log/ui/ansley-houses/sam-high-day-compare.jpg) · [Night comparison](log/ui/ansley-houses/sam-high-night-compare.jpg) · [Cameras and measurements](log/ui/ansley-houses/README.md)
+### 2026-11-23 — Rhodes Hall's open porch
+
+Rhodes Hall replaces one generic Brookwood South footprint with a granite tower,
+rounded bay, steep roof and three open porch arches. The tower reaches an estimated
+22.65 m, and a 3.5 m stair uses the shared terrain carve. The night reference was the
+surprise: most windows are dark while floodlights pick out the rough tower and porch.
+A stone-only shader wash reproduces that distinction without point lights or texture
+bytes. Low tier stays within its ceilings at 2.38 million triangles, 543 calls and
+432 MB post-GC heap. [Daylight](log/ui/rhodes-hall/high-day.png) ·
+[Full night](log/ui/rhodes-hall/high-night.png) · [Sources and estimates](rhodes-hall.md).
+### 2026-11-23 — A timetable test outlives its timetable
+
+A fresh Amtrak download broke both Brookwood corridor tests without changing a single path vertex. The new feed began its service calendars on November 22; the tests asked for November 20. Zero trains was the correct answer. A 15 KB recorded fixture now keeps the historical geometry, calendar and timetable together, so the edge-to-edge and freight-yield regressions also run without generated data. The same two checks pass on November 23 with the fresh feed. Regenerating production data will remove the old November 20 Crescent from demo links; it does not require a berth or consist fix. [Investigation and fixture provenance](brookwood-gtfs-regression.md).
+
+### 2026-11-23 — Magnolia A3 selected
+
+Sam picked the dense leaf specks on the dark cone, with a tidier lower edge and whiter gloss. Pulling only the leaf masses upward did not stop their cards and near tips from hanging downward, so both now share a lower-edge shaping step. The subtlety budget mattered most at low detail: fewer, larger cards pushed the first pass to +15% luminance. Reducing low-detail speck density brought A3 to +6.2% over A (0.222 versus 0.209); high detail is +7.9% (0.219 versus 0.203). Geometry remains 193 / 113 triangles. [Matched comparison sheet](log/ui/tree-species/options-magnolia-a3-pick.jpg).
+
+### 2026-11-23 — A car stays behind the streetcar
+
+The previous overlap guard made cars disappear when they met the S70. Three
+same-direction downtown arterial courses now replay their illustrative cars against
+the streetcar timetable. Cars wait behind its rear with a 2 m bumper gap, then
+follow when it moves. Each delayed car checks the traffic light again; it cannot
+borrow a green it missed while waiting. Adjacent lanes, crossing roads and bridges
+keep the occupancy guard. The streetcar's timetable motion is unchanged.
+
+The awkward part was time. A snapshot clamp can move a car backwards when a tram
+enters its lane, and an ordinary frame simulation cannot reproduce a clock seek.
+The queue uses half-second checkpoints and interpolates between them. A regression
+caught a 3 m backwards jump between fractional frames before that interpolation.
+Cross-review caught another trap: caching every frame's fractional timestamp
+would evict the replay history after about 40 s. Only grid samples are cached now,
+and the cache retains a complete course period, bounded at 7,200 samples. In a
+10,800-frame browser probe, updates took 0.3 ms at the median and 0.6 ms at the 99th
+percentile. The largest warm frame was 4.3 ms; the initial time jump took 45 ms.
+
+The Edgewood frame uses `cam=588,-65,0,50,100`, high tier,
+`t=2026-11-20T17:08:23Z&speed=0&dev&mindist=20`. It shows the car held behind the
+streetcar instead of absent. [Queue model and limits](streetcar-traffic-queues.md).
+Web rebuild only; no `pnpm data`, new requests or worker change.
+
+[Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
+[Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
+
+### 2026-11-23 — Dogwood A approved, wood tucked inside bloom
+
+Sam approved the fuller layered dome and white bloom, with two last changes: no dark sticks above the bracts and finer winter branches. Shorter upper scaffolds now stay inside the crown. Three tapered twigs replace each blunt fork; a pointed three-sided twig costs three triangles, fewer than a two-sided strip with a blunt end. That geometry saving, plus dropping separate bloom chips in favour of the existing white crown wash, keeps the finished model at 195 high / 146 low triangles. [Bloom and winter before/after](log/ui/tree-species/options-dogwood-final-tidy.jpg).
+
+### 2026-11-23 — A buried slab is not a blocked pavement
+
+The ground audit's 83 cm hit at 14th Street and 28 cm hit at the central Midtown footbridge were their buried undersides. Both tops already cleared the ground by 12 cm. Local winding can turn an underside upward, so winding alone cannot identify a walking surface. Transport now marks its slab-bottom triangle offsets for the development audit; production builds allocate no metadata and the geometry stays unchanged. Both-tier browser audits remove those two false alarms while retaining the real 8.8 cm intrusion at the south footbridge (370, −1870). A generated-deck regression reverses underside winding and also checks that 8 cm of ground above the exposed top still fails. The full suite passed 20 Rust, 950 web and 5 worker tests; Python checks skipped without `.venv`. [14th Street top](log/ground-audit/14th-street-top.jpg), daylight camera `125,-3641,30,55,45` with `dev&mindist=20`. The south footbridge remains a separate geometry issue; no surveyed deck height changed.
+
+### 2026-11-23 — Winn Park under the canopy
+
+The western ravine now reads as leaf litter and low planting instead of uninterrupted lawn. A narrow earth walk meets a stone terrace, a bench, a channel edge and a small pond. Ground paint carries the idea on both tiers; high adds just 1,263 triangles, while low adds none. The pond and terrace cut the terrain instead of floating above it. Ground-contact checked 4,149 exposed-face samples and 4,036 water samples without a penetration. The surprise was above the ground: the tree rollout's flat leaf carpets crossed the water like orange lids. Winn already paints its litter, so we agreed with the tree owners to omit only the overlapping discs and leave every tree intact. Requires a web rebuild. [Day comparison](log/ui/winn-park/ravine-high-day-compare.jpg) · [Night comparison](log/ui/winn-park/ravine-high-night-compare.jpg) · [References and checks](winn-park.md)
+
+### 2026-11-23 — SCAD's stepped academic block
+
+SCAD Atlanta's 1600 Peachtree building now follows 17 mapped building parts, from the
+northern parking decks to the 23.1 m inferred academic roof. Deep charcoal piers and
+recessed windows follow the newer exterior photos; an older night photograph supplies
+only the warm lobby lighting, because the building was still pale then. The first render
+caught clockwise source rings hiding the facade details inside the walls. Normalizing
+the rings fixed that without moving their geometry. The low tier stays within budget at
+546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
+[Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
+
+### 2026-11-23 — White oak joins the Model lab
+
+White oak's four illustrative size classes run from a 4.7 × 2.4 m sapling to a 30 × 35.7 m specimen based on the Atlanta champion measurements. Two options compare rounded-lobed leaf cards against faceted clusters, with pale spreading limbs, April leaf-out, wine/russet autumn colour and a small brown early-winter residue. A costs 193 / 81 triangles; C costs 191 / 111. A's summer luminance is 0.255 high and 0.258 low against the generic 0.248. The cored trial was dropped after measuring too bright. A texture-accounting surprise: the existing atlas budget counted pixels, not RGBA bytes. Activating the eighth leaf shape adds one 1.33 MiB atlas; the declared total now correctly includes four bytes per pixel and mipmaps. [Options, references and calendar](log/ui/tree-species/options-white-oak.jpg). Sam selected A because its lobed leaves match the other trees; A is now the lab default. Winter residue remains crown-wide, a documented limit of the shared renderer. City rollout remains separate.
+
+### 2026-11-23 — Freight gets three silhouettes
+
+The lab now has the Evolution-series GE road engine in NS-like and CSX-like paint, an NS-like SD70ACe, and a shorter CSX-like GP38-2. The SD has brow headlights, a broad clipped-corner nose and three radiator fans; the GP has a narrow short hood, four axles and two rear fans. The surprise was a published GP38-2 truck-spacing disagreement: a secondary sheet said 43 ft, while GATX says 34 ft between bolster centres. The model uses GATX. All four are merged vertex-coloured geometry, at 2,708–3,836 triangles each. The new NS inputs needed lifting through the grade so black panels still read; the approved CM44ACs stay unchanged. Lab-only selection for now; City consists are the next freight integration step after the car library. Web rebuild only. [Matched daylight](log/freight/variety/day.jpg) · [Night](log/freight/variety/night.jpg) · [Photo comparison](log/freight/variety/references.jpg) · [Sources and estimates](freight-variety.md).
+
+Cross-review found an unexpected coupling: City's terrain-opening cutoff used the shortest truck spacing in the whole library, so a lab-only switcher lowered it. Computing the cutoff from the actual City consist keeps the 12 m threshold. An 11 m test sliver catches the regression with that one-line fix reverted.
+
+### 2026-11-23 — Navy paint and distinct cooling silhouettes
+
+Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow nose and frame stripe, while the GP38-2 pairs a stronger blue cab with the grey YN2 hood. The GE radiator was still a box despite its underside detail: replacing its outer faces with angled wings makes the shape read from the matched lab camera. The SD instead has a flat-sided radiator and taller, squarer nose. The revised models use 2,684–3,828 triangles. [Day lineup](log/freight/variety/day.jpg) · [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — One CSX family in the freight lab
+
+The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — A final vertex is not another road segment
+
+At 21:00, a streetcar nose could project onto the exact end of a traffic course.
+The path returned its final vertex index, but the road-owner array has one entry
+per segment: the lookup ran one past its end and stopped City's render loop.
+Clamp to the final carrying segment, and return no surface for an absent owner.
+The exact 60 m endpoint regression and an arterial update sweep every five minutes
+through 24 hours both reproduce the old `undefined.bridge` exception with the fix
+removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
+118 calls; this was a path-boundary bug, not missing terrain or nighttime lighting.
+
+![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
+Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
+### 2026-11-23 — A quieter Rhodes Hall tower
+
+Sam wanted the floodlit tower a little less bright. Its stone wash is now 25% lower,
+while the porch lighting and dark windows stay as they were. It is a one-coefficient
+calibration, with no geometry or texture cost. Matched 21:00 frames use the same
+`301,-4675,340,60,160` camera at both tiers.
+[High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
+[Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).

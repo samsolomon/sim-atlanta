@@ -52,6 +52,7 @@ import { loadArterials } from './arterials';
 import { cityRoadHeight } from './road-height';
 import { buildStreetcarTrack, poleBlocked, roadSurface, streetcarLines, withoutTram } from './streetcar';
 import { createStreetcarCars, streetcarCovers } from './streetcar-cars';
+import { streetcarTraffic } from './streetcar-traffic';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
 import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
@@ -188,6 +189,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Arrive as a white study model, then fade colour in (A2c step 9; see white-model.ts). */
   whiteModel?: false | 'paper' | 'map' | 'fade';
   trains: () => TrainState[];
+  /** Timetable-only historical samples for deterministic streetcar following. */
+  scheduledStreetcarsAt?: (clockMs: number) => readonly TrainState[];
   /** Where the timetable stops trains along a path (for platform berthing). */
   stopDistances?: (pathId: string, stopId: string) => number[];
   clockMs: () => number;
@@ -756,8 +759,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(next.group);
   }
   const corridors = trafficOptions && loadArterials(arterialData, vd).corridors;
+  const movingBlocks = trafficOptions && options.scheduledStreetcarsAt
+    ? streetcarTraffic(rf, manifest.origin, options.scheduledStreetcarsAt, (x,z) => {
+      for (const { bounds:r, height } of streetcarSurface)
+        if (x>=r.minX && x<=r.maxX && z>=r.minZ && z<=r.maxZ) return height(x,z);
+      return null;
+    }, trafficOptions.roadHeight) : undefined;
   const arterials = trafficOptions && corridors?.length
-    ? new ArterialTraffic({ ...trafficOptions, arterials: corridors })
+    ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
     : undefined;
   if (traffic) scene.add(traffic.group);
   if (arterials) scene.add(arterials.group);
@@ -1439,6 +1448,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       return { id: t.id, pathId: t.pathId, tier: t.s.tier, routeId: t.routeId, heading: t.heading, x, z, cars,
         hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
+    if (v.kind === 'freight') {
+      const cars = [...(freight?.group.children ?? []), ...(brookwood?.freight.children ?? [])]
+        .filter(c => c.userData.trainId === v.id).flatMap(c => drawnCar(c) ?? []);
+      if (!cars.length) return null;
+      return { id: v.id, tier: 'illustrative', x: cars[0].x, z: cars[0].z, cars, hidden: null };
+    }
     if (v.kind === 'bus') {
       const bus = options.buses?.()?.find(b => b.id === v.id);
       if (!bus) return null;
@@ -1492,6 +1507,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (brookwood) {
       trains.surfaceCars += brookwood.update(states, atm.dark);
     }
+    const sceneTime = options.clockMs();
+    freight?.update(sceneTime);
+    brookwood?.updateFreight(sceneTime);
     const followed = options.follow?.vehicle;
     let fix = followed ? locate(followed, states) : null;
     // A timetable trip replaced by live rail (or the reverse) hands off to its nearest match.
@@ -1520,10 +1538,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
-    const sceneTime = options.clockMs();
     figures?.update(sceneTime, camera, container.clientHeight);
-    freight?.update(sceneTime);
-    brookwood?.updateFreight(sceneTime);
     traffic?.update(sceneTime, atm.dark);
     arterials?.update(sceneTime, atm.dark);
     midtownArterials?.update(sceneTime, atm.dark);

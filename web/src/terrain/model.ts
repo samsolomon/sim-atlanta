@@ -12,6 +12,8 @@ import { GroundGrid } from './grid';
 import { GroundSurface, joinList, type GroundYield, type TerrainJoins, type TerrainQuality } from './surface';
 import type { OpenSlot } from './openings';
 import type { TerrainCity } from './transport-data';
+import { createScadAtlanta, scadAtlantaId } from '../city/midtown-culture-scad';
+import { createRhodesHall, rhodesHallId } from '../city/midtown-culture-rhodes';
 import { createMitchellHouse, mitchellId } from '../city/midtown-culture-mitchell';
 import { createVarsity, varsityId } from '../city/midtown-culture-varsity';
 import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
@@ -23,6 +25,7 @@ import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
 import { houseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
+import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
@@ -201,6 +204,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const landmarks: NonNullable<ReturnType<typeof createMidtownLandmark>>[] = [];
   for (const site of city.buildings) {
     const create = skylineIds.has(site.id) ? createSkylineLandmark
+      : site.id === scadAtlantaId ? createScadAtlanta
+      : site.id === rhodesHallId ? createRhodesHall
       : site.id === mitchellId ? createMitchellHouse
       : site.id === varsityId ? createVarsity
       : techIds.has(site.id) ? createTechLandmark
@@ -217,7 +222,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   }
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
   // Carve before anything else samples the ground inside their footprints.
-  const yields = landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []);
+  const winn = winnPark(city, groundAt, options.quality);
+  const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
   if (yields.length) mesh.carve(yields);
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
   // triangles once the camera is over 2.5 km away. Render-only: placement, the audit and
@@ -267,10 +273,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // Piedmont Park furniture at mapped points, entrance map kiosks (high tier) and the 10th Street gate.
   const park = piedmontPark(city, groundAt, options.quality);
   if (park) { park.group.userData.perf = 'landscape'; scenery.group.add(park.group); }
+  if (winn) { winn.group.userData.perf = 'landscape'; scenery.group.add(winn.group); }
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
   // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
-  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt) : null;
+  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
+    city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
   // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
   const planted = rolloutPlantings(landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
     .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ), options.quality);
@@ -349,6 +357,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       yardLayer?.dispose();
       oval?.dispose();
       park?.dispose();
+      winn?.dispose();
       houses.dispose();
       scenery.dispose();
       group.clear();
