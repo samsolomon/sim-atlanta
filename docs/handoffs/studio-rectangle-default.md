@@ -1,5 +1,82 @@
 # Handoff for studio-rectangle-default
 
+## Claude Opus → Codex handoff (2026-11-24)
+
+Claude Opus session **`orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d`** hands this worktree to Codex (gpt-6.2-astra or gpt-6.2-sol). Read its history with `orca agent read --id orca_session_id:7130640f-bf32-49f2-80aa-bb14558a400d`. The earlier sessions are listed below.
+
+### Role
+
+This worktree is the **Studio release packager**. It writes no feature code and owns no PRs. When the coordinator (Sam's MacBook Air, `term_09e1b3da-5f48-4755-abf8-92a571a1f474`) sends **"Release N: go <sha>"**, it:
+1. Verifies the commit is on `origin/main`.
+2. Builds and runs the strict `test:release`.
+3. Diffs the data and Worker against the last live release.
+4. Runs the standing smoke set.
+5. Seals the package with `SHA256SUMS`, Taildrops it to `sams-macbook-air`, and reports.
+
+Only the coordinator deploys. Reply to the coordinator's message ID (`orca orchestration reply --id <their msg id>`), never your own. Send interim status at each stage, because the coordinator chases silence.
+
+### Current state
+
+- Branch `samsolomon/handoff-studio-rectangle-opus` is docs only, with no PR. There is no WIP and no open or held PR owned by this workstream.
+- **Production: release 10, `8729e1cc`, live as Worker `631ca0f8`.** All of its post-Taildrop items (the train 8b skins) are done and reported.
+- **Next release:** once #593, #420, #524, #520, #435, #631 and #625 have landed (Sam approved them on the morning of 2026-11-24), the coordinator sends the go with the commit. #435 is the streaming flag, which brings back `route:north` and `route:loop`. Add those to the long-task check, comparing with the previous release rather than an absolute bar, because house-tile builds of 100–590 ms are a known issue with a fix in progress.
+- No servers, Workers or Chrome sessions of this worktree are running.
+
+### Sam's decisions affecting the area (as relayed 2026-11-24)
+
+Flat glass; far-board; landmark LOD; far shadows; tree far form; the streaming flag; a 0.45 shade floor; 1075 glass B; expansion paused; generic buildings as the priority.
+
+For the packager, these mean: expect the related PRs in upcoming releases, and check them with the matched-frame comparison against the last live release. Earlier rulings still stand:
+- Low-poly trees by default, with `?trees=species`.
+- Very-far ground on by default on Low, with `?veryfar=0` to turn it off.
+- Idle work must be sliced into short tasks.
+- No pattern kills.
+- Drive only a browser you launched yourself.
+
+### Coordinator's standing rulings for every release
+
+- **Matched frames against the last live release.** Serve both staged `web/dist` folders on two local ports, capture identical pinned URLs and report the share of pixels whose difference exceeds 32/255. Attribute every changed region. This is required for any change that claims to be invisible.
+- **Deck-over-road shadow set** (`planDecks.json`, inside `planFix.json` together with near, default and freight-kink frames). It caught #514's viaduct banding.
+- **Far-orbit shadow follow** on Low at 3, 6, 12 and 21 km (`smoke9.mjs`). It caught #534's lag.
+- **6x CPU long tasks**, three runs per build (`smoke10.mjs`): a Midtown pan at 700 m and a 33-tick zoom-out from 3 km to 22.9 km. Fail anything more than 1.5x the previous release's worst. It caught #538's idle task.
+- **P0 live data**: run `wrangler dev` on the bundle from a temp folder with a **canary** `.dev.vars`. Check that every `/api/*` route returns `no-store` with a current `Date`, and grep for leaks of the canary key. Run `smoke7.mjs` for the client status line: a stale feed must read Timetable and old weather must read "illustrative sky". Never put `.dev.vars` in a package; check the tarball for it.
+- **Core regression** (`smoke.mjs` and `smoke2.mjs`, desktop and phone) **before** the Taildrop.
+- Skins from four sides, day and night, can follow the Taildrop. Label them as pending.
+
+### Tools (all in `~/Developer/sim-atlanta-release-tools/`)
+
+| Tool | What it does |
+| --- | --- |
+| `smoke.mjs` | Core flow |
+| `smoke2.mjs` | Tree count from the scene, night chip, piazza |
+| `smoke6.mjs` | Plan-driven captures: `PLAN=<json>`, optional `waitMs` and `scene` actions, plus a Worker-constructor probe |
+| `smoke7.mjs` | Live-feed stubs: `RAIL=fresh\|stale10\|502`, `WEATHER=fresh\|old90\|none` |
+| `smoke8.mjs` | Fly and geometry probe |
+| `smoke9.mjs` | Far-orbit pan |
+| `smoke10.mjs` | 6x long tasks |
+| `smoke11.mjs` | Device pixel ratio |
+| `smoke12.mjs` | Moves the clock and conditions in place for #552-style freeze checks |
+| `smoke13.mjs` | Very-far terrain triangle probe |
+| `verify-production.py` | Production verifier with retries |
+| `plan*.json` | Camera plans |
+| `ref-r7-*`, `ref-r9-*`, `ref-r10-8729e1cc/` | Baselines |
+
+- **Environment:** set `SMOKE_DIR` and `SMOKE_BASE`.
+- **Browser:** every script launches its own Chrome with `--remote-debugging-port=0` and reads its `DevToolsActivePort`.
+- **Camera read-back:** City does not update `cam` in the URL, so read it from the share panel's `.a2-share-url`.
+
+### Gotchas
+
+- **Sandbox:** local HTTP, Chrome and Taildrop need the sandbox disabled on this host, and `lsof -t` inside the sandbox returns nothing. Find your server PIDs with `ps -eo pid,command | grep "[h]ttp.server <port>"` and kill those PIDs only.
+- **Long commands:** foreground tool calls are capped at 10 minutes. Run long capture chains in the background and poll them.
+- **Shared host load:** under a load average around 50, Vitest can time out. Rerun once. A failure that passes alone is a timing failure; say so explicitly.
+- **Workers:** the bundle for a Worker-changing release comes from `cd worker && npx wrangler deploy --dry-run --outdir <pkg>/worker/bundle`. Otherwise copy the previous package's `worker/`.
+- **`pnpm data`:** for #512 it was `.venv/bin/python pipeline/scripts/terrain_transport.py`. Don't use `-I`, because the script imports from its own folder. It runs offline from `data/raw` and does not refresh Overture or GTFS, which would break the November 20 Crescent cameras. Diff all 52 public data files afterwards.
+- **`web/public/data`** in this worktree currently holds the release 8+ regenerated `vignette.json`. It is the correct current state.
+- **Untracked `pipeline/scripts/__pycache__/`** appears on this old-base branch. Ignore it and never commit it.
+
+---
+
 Codex GPT-6.2 session `orca_session_id:75355e85-c0af-4497-b5d4-86533a9e9ed8` hands this worktree to Claude Opus. The earlier Codex session is `orca_session_id:d460b6b8-d706-4545-8a60-370d9ba9369c`.
 
 ## State at handoff
