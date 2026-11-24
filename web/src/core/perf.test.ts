@@ -64,7 +64,7 @@ describe('perf.captureDraws', () => {
     let drawn = 0;
     const camera = new THREE.PerspectiveCamera();
     const renderer = {
-      renderBufferDirect(_c: unknown, _s: unknown, g: THREE.BufferGeometry) { drawn += Math.min(g.drawRange.count, g.attributes.position.count) / 3; },
+      renderBufferDirect(_c: unknown, _s: unknown, g: THREE.BufferGeometry, ..._rest: unknown[]) { drawn += Math.min(g.drawRange.count, g.attributes.position.count) / 3; },
       frame() { scene.traverseVisible(o => { const m = o as THREE.Mesh; if (m.isMesh) renderer.renderBufferDirect(camera, scene, m.geometry, m.material, m, null); }); },
     };
     const raf = globalThis.requestAnimationFrame;

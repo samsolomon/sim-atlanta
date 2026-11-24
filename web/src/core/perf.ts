@@ -601,8 +601,10 @@ export const perf = {
    * shadow depth, or post: a full-screen quad outside the scene) and its owner. Answers "what draws
    * these triangles" where the category sums (all registered geometry) can't.
    */
-  captureDraws(): Promise<unknown> {
+  captureDraws(o: { shadow?: boolean } = {}): Promise<unknown> {
     if (!ctx) return Promise.resolve(null);
+    // { shadow: true } forces a shadow-map redraw in the captured frame, to measure the shadow pass.
+    const forceShadow = !!o.shadow;
     const { renderer, scene } = ctx;
     const roots = ctx.roots();
     const original = renderer.renderBufferDirect;
@@ -644,7 +646,7 @@ export const perf = {
       // page runs no frames, so a timeout restores the renderer and resolves empty-handed.
       let done = false;
       const fallback = setTimeout(() => { if (done) return; done = true; renderer.renderBufferDirect = original; resolve(null); }, 1000);
-      requestAnimationFrame(() => { recs.clear(); requestAnimationFrame(() => {
+      requestAnimationFrame(() => { recs.clear(); if (forceShadow) renderer.shadowMap.needsUpdate = true; requestAnimationFrame(() => {
         if (done) return;
         done = true;
         clearTimeout(fallback);
