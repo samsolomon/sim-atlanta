@@ -1,0 +1,54 @@
+{
+  "neighborhoods": {
+    "Ansley Park": "1128,-4347,-162,48,640",
+    "Ardmore": "-460,-5564,166,48,640",
+    "Atlantic Station": "-401,-4330,161,48,640",
+    "Brookwood": "-320,-5236,167,48,640",
+    "Brookwood Hills": "127,-5452,176,48,640",
+    "Capitol Gateway": "616,873,-5,48,640",
+    "Castleberry Hill": "-737,257,25,48,640",
+    "Collier Hills": "-973,-5673,159,48,640",
+    "Downtown": "150,-300,-25,54,900",
+    "English Avenue": "-936,-1876,80,48,640",
+    "Georgia Tech": "-432,-2582,121,48,640",
+    "Grant Park": "1580,876,-22,48,640",
+    "Home Park": "-422,-3547,151,48,640",
+    "Loring Heights": "-702,-4889,159,48,640",
+    "Marietta Street Artery": "-794,-2021,86,48,640",
+    "Mechanicsville": "-358,1021,13,48,640",
+    "Midtown": "565,-3965,-101,55,421",
+    "Oakland": "1253,665,-18,48,640",
+    "Old Fourth Ward": "1341,-1228,-48,48,640",
+    "Piedmont Heights": "1642,-5539,-160,48,640",
+    "Sherwood Forest": "911,-5151,-170,48,640",
+    "Summerhill": "160,1055,4,48,640",
+    "Sweet Auburn": "1486,121,-26,48,640"
+  },
+  "views": [
+    {
+      "id": "five-points",
+      "name": "Five Points from above, trains crossing",
+      "cam": "-60,60,30,30,700"
+    },
+    {
+      "id": "gulch",
+      "name": "The Gulch rail yards, looking north",
+      "cam": "-330,150,10,62,900"
+    },
+    {
+      "id": "capitol",
+      "name": "State Capitol dome",
+      "cam": "333,545,-30,55,330"
+    },
+    {
+      "id": "centennial",
+      "name": "Centennial Olympic Park toward the skyline",
+      "cam": "-157,-712,70,70,900"
+    },
+    {
+      "id": "connector-dusk",
+      "name": "Downtown Connector at dusk",
+      "cam": "1170,-250,-15,68,800"
+    }
+  ]
+}
