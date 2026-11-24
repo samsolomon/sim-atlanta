@@ -103,7 +103,7 @@ const dogwoodPalette = keyedCalendar([
   { m: 3, d: 28, leaves: 0.55, a: '#a8bc72', b: '#b8c480', bloom: 0.5, label: 'bracts opening' },
   { m: 4, d: 6, leaves: 0.85, a: '#9ab868', b: '#aac27a', bloom: 1, label: 'white bracts' },
   { m: 4, d: 18, leaves: 0.9, a: '#7aa45a', b: '#8cb066', bloom: 0.3, label: 'last bracts, leafing out' },
-  { m: 5, d: 1, leaves: 1, a: '#5a9159', b: '#699d61', bloom: 0, label: 'summer green' },
+  { m: 5, d: 1, leaves: 1, a: '#649d63', b: '#73a96b', bloom: 0, label: 'summer green' },
   { m: 9, d: 25, leaves: 1, a: '#60885c', b: '#8a6a48', label: 'green, first colour' },
   { m: 10, d: 25, leaves: 1, a: '#9a2e34', b: '#6e2a3c', label: 'red to maroon' },
   { m: 11, d: 20, leaves: 0.45, a: '#8a2a30', b: '#642838', carpet: 0.6, label: 'red-maroon, dropping' },
@@ -111,9 +111,9 @@ const dogwoodPalette = keyedCalendar([
 ]);
 
 const DOGWOOD_OPTIONS: LookOption[] = [
-  { id: 'A', label: 'Layered branch-mass cards', technique: 'cards', ink: 2, flat: 0.9, cardHeight: 0.34, units: { high: 13, low: 8 }, blooms: { high: 2, low: 4 }, cover: 1.2,
+  { id: 'A', label: 'Layered branch-mass cards', technique: 'cards', ink: 2, flat: 0.9, cardHeight: 0.34, units: { high: 13, low: 8 }, cover: 1.2,
     note: 'The ginkgo C4 technique on the dogwood’s horizontal layers: flat masses on near-level limbs, white bracts on bare twigs in early April, red-maroon in the fall; warm silhouette ink.' },
-  { id: 'B', label: 'Cored layers', technique: 'cored', ink: 2, flat: 0.9, cardHeight: 0.34, units: { high: 4, low: 2 }, blooms: { high: 0, low: 0 }, cover: 0.9,
+  { id: 'B', label: 'Cored layers', technique: 'cored', ink: 2, flat: 0.9, cardHeight: 0.34, units: { high: 2, low: 1 }, cover: 0.9,
     note: 'The same layers with a dark faceted core under the cards: fuller and more solid.' },
 
 ];
@@ -137,12 +137,12 @@ export const floweringDogwood = broadleafSpecies({
     mature: { heightM: [6, 9.3], spreadM: [4.6, 11.1], calliperM: [0.3, 0.5] },
     specimen: { heightM: [8, 12.9], spreadM: [9, 13.7], calliperM: [0.45, 0.65] },
   },
-  clumps: { high: 7, low: 5 },
+  clumps: { high: 6, low: 4 },
   offsetDays: 6,
   habit: dogwoodHabit,
   palette: dogwoodPalette,
 });
 export const floweringDogwoodLook: Look = {
-  species: floweringDogwood, habit: dogwoodHabit, leaf: 'oval', palette: dogwoodPalette, options: DOGWOOD_OPTIONS,
-  bloomColour: '#edf4ff', bloomSizeM: 0.35, bloomOffset: 0.12, bloomWash: 1, bloomLift: 1, bloomFill: 0.65,
+  species: floweringDogwood, habit: dogwoodHabit, leaf: 'oval', palette: dogwoodPalette, options: DOGWOOD_OPTIONS, preferred: 'A', lowLift: 0.015,
+  bloomColour: '#edf4ff', bloomWash: 1, bloomLift: 1, bloomFill: 0.65,
 };

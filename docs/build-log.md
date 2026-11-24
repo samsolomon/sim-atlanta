@@ -2683,7 +2683,7 @@ The Woodruff's "missing" service side was a research gap, not a modelling one. S
 
 ### 2026-11-23 — Dogwood round 2, review draft
 
-The dogwood's floating crown came from two different scales: bloom chips sat more than a cluster radius outside the foliage, and the near leaf tips stayed upright when the crown cards were flattened. The new draft removes those tips, pulls the chips inward, and spends the saved geometry on horizontal twigs above a 1.25 m fork. The mature illustrative tree is 6 m tall and 9 m wide. It costs 193 triangles at high detail and 149 at low, including the carpet. Summer eye-level luminance is 0.248. The surprising part was that flattening cluster centres alone never made flat tiers: the crossed cards also needed their vertical extent reduced. [Seasonal review sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). The warm daylight grade and winter twig density remain visual review items.
+The dogwood's floating crown came from two different scales: bloom chips sat more than a cluster radius outside the foliage, and the near leaf tips stayed upright when the crown cards were flattened. The early draft removed those tips, pulled the chips inward, and spent saved geometry on horizontal twigs above a 1.25 m fork; the final pass below removes separate chips entirely. The mature illustrative tree is 6 m tall and 9 m wide. It costs 193 triangles at high detail and 149 at low, including the carpet. Summer eye-level luminance is 0.248. The surprising part was that flattening cluster centres alone never made flat tiers: the crossed cards also needed their vertical extent reduced. [Seasonal review sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). The warm daylight grade and winter twig density remain visual review items.
 
 Sam kept the layered habit and fall colour, but asked for a fuller dome and fewer main limbs. The next pass uses three jointed scaffold limbs above a 45 cm mature trunk, larger overlapping leaf masses, and paired twig forks. It still costs 193 / 149 triangles. White bracts needed daylight-only diffuse fill as well as white paint: their measured saturation fell to 0.018, while the fill switches off at night. The summer crown is 0.236 luminance / 0.842 saturation. The matching camera and Atlanta reference remain on the sheet.
 
@@ -2858,3 +2858,7 @@ Web rebuild only; no `pnpm data`, new requests or worker change.
 
 [Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
 [Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
+
+### 2026-11-23 — Dogwood A approved, wood tucked inside bloom
+
+Sam approved the fuller layered dome and white bloom, with two last changes: no dark sticks above the bracts and finer winter branches. Shorter upper scaffolds now stay inside the crown. Three tapered twigs replace each blunt fork; a pointed three-sided twig costs three triangles, fewer than a two-sided strip with a blunt end. That geometry saving, plus dropping separate bloom chips in favour of the existing white crown wash, keeps the finished model at 195 high / 146 low triangles. [Bloom and winter before/after](log/ui/tree-species/options-dogwood-final-tidy.jpg).

@@ -84,8 +84,6 @@ export interface Look {
   /** Several bloom colours (crape myrtle): each tree takes one by its seed. */
   bloomColours?: string[];
   bloomSizeM?: number;
-  /** Distance from cluster centre in cluster radii. */
-  bloomOffset?: number;
   /** While in flower, up to this share of the leaf clusters turn wholly to the bloom colour
    *  (a crape myrtle's crown covered in trusses), at no triangle cost. */
   bloomWash?: number;
@@ -217,7 +215,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   const masses = crownMasses(look.habit, size, q, d, look.species.id.length);
   const clusters = lookClusters(look, opt, size, q, opt.units[q], seed);
   const b = new FoliageBuilder();
-  if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM, look.bloomOffset);
+  if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {

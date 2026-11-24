@@ -219,10 +219,11 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
     const scaffolds: { elbow: V3; tip: V3 }[] = [];
     if (h.forkM !== undefined && h.tiers) {
       const n = q === 'high' ? 3 : 2;
+      const scaffoldTop = Math.min(0.6, (top.c[1] - top.r * 0.5) / e.H);
       for (let j = 0; j < n; j++) {
         const angle = j * Math.PI * 2 / n + 0.4;
-        const elbow: V3 = [Math.cos(angle) * 0.13, leaderY + (0.62 - leaderY) * 0.5, Math.sin(angle) * 0.13];
-        const tip: V3 = [Math.cos(angle + 0.3) * 0.3, 0.8, Math.sin(angle + 0.3) * 0.3];
+        const elbow: V3 = [Math.cos(angle) * 0.13, leaderY + (scaffoldTop - leaderY) * 0.48, Math.sin(angle) * 0.13];
+        const tip: V3 = [Math.cos(angle + 0.3) * 0.3, scaffoldTop, Math.sin(angle + 0.3) * 0.3];
         segs.push({ a: [0, leaderY, 0], b: elbow, r0: tr * 0.48, r1: tr * 0.32, sides: 3, color: habit.bark });
         segs.push({ a: elbow, b: tip, r0: tr * 0.32, r1: tr * 0.12, sides: 3, color: habit.bark });
         scaffolds.push({ elbow, tip });
@@ -239,17 +240,22 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
         const y0 = Math.min(leaderY * 0.97, Math.max(h.crownBase * 0.85, (main.c[1] - Math.tan(h.limbAngle) * out) / e.H));
         const tip = unit(main.c);
         if (h.forkM !== undefined) {
+          tip[1] = Math.max(leaderY + 0.03, tip[1] - 0.08);
           const scaffold = scaffolds.reduce((best, v) =>
             Math.hypot(v.tip[0] - tip[0], v.tip[2] - tip[2]) < Math.hypot(best.tip[0] - tip[0], best.tip[2] - tip[2]) ? v : best);
           const y = Math.max(leaderY, tip[1] - 0.025);
           const from: V3 = y < scaffold.elbow[1]
             ? lerp3([0, leaderY, 0], scaffold.elbow, (y - leaderY) / (scaffold.elbow[1] - leaderY))
             : lerp3(scaffold.elbow, scaffold.tip, Math.min(1, (y - scaffold.elbow[1]) / (scaffold.tip[1] - scaffold.elbow[1])));
-          const end: V3 = [tip[0] * 1.5, tip[1], tip[2] * 1.5];
+          const end: V3 = [tip[0] * 1.15, tip[1], tip[2] * 1.15];
           segs.push({ a: from, b: end, r0: tr * 0.18, r1: tr * 0.06, sides: 3, color: habit.bark });
-          const twig = lerp3(from, end, 0.55);
-          for (const turn of [-0.9, 0.9]) {
-            segs.push({ a: twig, b: [tip[0] - tip[2] * turn, twig[1] + 0.01, tip[2] + tip[0] * turn], r0: tr * 0.22, r1: tr * 0.16, sides: 2, color: habit.bark });
+          // Tapered three-sided tips cost three triangles, versus four for a flat
+          // two-sided cylinder. Spend that saving on three staggered fine forks.
+          for (let j = 0; j < 3; j++) {
+            const twig = lerp3(from, end, 0.3 + j * 0.2);
+            const turn = (j % 2 ? -1 : 1) * (i % 2 ? -1 : 1);
+            const dx = end[0] - from[0], dz = end[2] - from[2];
+            segs.push({ a: twig, b: [twig[0] + dx * 0.24 - dz * turn * 0.28, twig[1] + (j === 1 ? -0.025 : 0.035), twig[2] + dz * 0.24 + dx * turn * 0.28], r0: tr * 0.26, r1: 0, sides: 3, color: habit.bark });
           }
         } else segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
         continue;
