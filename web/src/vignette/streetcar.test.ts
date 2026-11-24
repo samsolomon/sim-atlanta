@@ -18,6 +18,32 @@ describe('Siemens S70 (Atlanta Streetcar)', () => {
     g.dispose();
   });
 
+  it('keeps the body stripes and their window film outside every door frame', () => {
+    const geometry = s70Geometry();
+    const pos = geometry.getAttribute('position');
+    const layers = new Set<string>();
+    const tolerance = 1e-5;
+    for (let i = 0; i < pos.count; i += 3) {
+      const vertices = [i, i + 1, i + 2];
+      // Each of the three body colours has its own decal plane. All film shares a fourth.
+      const offsets = [0.047, 0.0473, 0.0476, 0.049];
+      const layer = offsets.findIndex(offset => vertices.every(v =>
+        Math.abs(Math.abs(pos.getX(v)) - S70_WIDTH / 2 - offset) < tolerance));
+      if (layer < 0) continue;
+      layers.add([Math.sign(pos.getX(i)), Math.sign(pos.getZ(i)), layer].join('/'));
+      const z = vertices.map(v => Math.abs(pos.getZ(v)));
+      const y = vertices.map(v => pos.getY(v));
+      for (const door of [3.8, 6.45]) {
+        const clearsFrame = Math.max(...z) <= door - 0.65 + tolerance
+          || Math.min(...z) >= door + 0.65 - tolerance
+          || Math.max(...y) <= 0.34 + tolerance || Math.min(...y) >= 2.86 - tolerance;
+        expect(clearsFrame, `decal triangle ${i / 3}, door ${door}`).toBe(true);
+      }
+    }
+    expect(layers.size).toBe(2 * 2 * 4); // both sides and cab ends retain all four planes
+    geometry.dispose();
+  });
+
   it('splits into three sections that keep every triangle and sit between their pivots', () => {
     const whole = s70Geometry();
     const total = whole.getAttribute('position').count;

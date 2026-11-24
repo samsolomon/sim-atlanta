@@ -142,28 +142,41 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
   const rect = (builder: Builder, z0: number, z1: number, y0: number, y1: number, color: string, eps: number) =>
     skin(builder, [[z0, y0], [z1, y0], [z1, y1], [z0, y1]], color, eps);
 
-  /**
-   * A sweep: a band whose centre follows a cubic Bézier through `p` ([d, y], d from the car centre
-   * toward this cab) and whose width runs from w0 to w1. Sampled finely so it reads as one smooth curve.
-   */
-  /** Clip a polygon in (d, y) to lo <= y <= hi (Sutherland–Hodgman against two horizontal lines). */
-  const clipY = (poly: [number, number][], lo: number, hi: number) => {
-    const cut = (pts: [number, number][], keep: (y: number) => boolean, at: number) => {
-      const out: [number, number][] = [];
-      for (let i = 0; i < pts.length; i++) {
-        const a = pts[i],
-          c = pts[(i + 1) % pts.length];
-        const ka = keep(a[1]),
-          kc = keep(c[1]);
-        if (ka) out.push(a);
-        if (ka !== kc) {
-          const t = (at - a[1]) / (c[1] - a[1]);
-          out.push([a[0] + (c[0] - a[0]) * t, at]);
-        }
+  const D = 6.45; // first double door from the cab
+  const doors = [3.8, D];
+  const doorW = 1.3, frameBottom = BASE + 0.2, frameTop = 2.86;
+  type Point = [number, number]; // distance toward the cab, height
+  const cut = (poly: Point[], axis: 0 | 1, at: number, keepAbove: boolean) => {
+    const out: Point[] = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      if (keepAbove ? a[axis] >= at : a[axis] <= at) out.push(a);
+      if ((a[axis] < at && b[axis] > at) || (a[axis] > at && b[axis] < at)) {
+        const t = (at - a[axis]) / (b[axis] - a[axis]);
+        const other = axis === 0 ? 1 : 0;
+        const intersection: Point = [...a];
+        intersection[axis] = at;
+        intersection[other] += t * (b[other] - a[other]);
+        out.push(intersection);
       }
-      return out;
-    };
-    return cut(cut(poly, (y) => y >= lo, lo), (y) => y <= hi, hi);
+    }
+    return out;
+  };
+  const clipY = (poly: Point[], lo: number, hi: number) => cut(cut(poly, 1, lo, true), 1, hi, false);
+  // Subtract each frame before mirroring the band onto the two sides and cab ends.
+  const outsideDoors = (quad: Point[]) => {
+    let pieces = [quad];
+    for (const d of doors) {
+      const lo = d - doorW / 2, hi = d + doorW / 2;
+      pieces = pieces.flatMap(poly => {
+        if (poly.every(([z]) => z <= lo) || poly.every(([z]) => z >= hi)
+          || poly.every(([, y]) => y <= frameBottom) || poly.every(([, y]) => y >= frameTop)) return [poly];
+        const middle = cut(cut(poly, 0, lo, true), 0, hi, false);
+        return [cut(poly, 0, lo, false), cut(poly, 0, hi, true),
+          cut(middle, 1, frameBottom, false), cut(middle, 1, frameTop, true)].filter(p => p.length >= 3);
+      });
+    }
+    return pieces;
   };
   const sweep = (sign: number, p: [number, number][], w0: number, w1: number, color: string, eps: number, wMid = (w0 + w1) / 2, shift = 0, yMax = ROOF - 0.04) => {
     const n = 24;
@@ -198,11 +211,13 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
       const [a0, a1] = edge[i],
         [b0, b1] = edge[i + 1];
       const quad: [number, number][] = [a0, b0, b1, a1];
-      const body = clipY(quad, BASE + 0.14, yMax);
-      if (body.length >= 3) skin(b, body.map(([d, y]) => [sign * d, y] as [number, number]), color, eps);
-      // Where the band crosses the window band it is film on glass: a tinted copy sits over the glazing.
-      const glass = clipY(quad, WIN_LO, Math.min(WIN_HI, yMax));
-      if (glass.length >= 3) skin(b, glass.map(([d, y]) => [sign * d, y] as [number, number]), tint, 0.049);
+      for (const piece of outsideDoors(quad)) {
+        const body = clipY(piece, BASE + 0.14, yMax);
+        if (body.length >= 3) skin(b, body.map(([d, y]) => [sign * d, y] as [number, number]), color, eps);
+        // Where the band crosses the window band it is film on glass: a tinted copy sits over the glazing.
+        const glass = clipY(piece, WIN_LO, Math.min(WIN_HI, yMax));
+        if (glass.length >= 3) skin(b, glass.map(([d, y]) => [sign * d, y] as [number, number]), tint, 0.049);
+      }
     }
   };
   /**
@@ -214,7 +229,6 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
     let offset = 0;
     bands.forEach(([color, w], k) => {
       const shift = side * (offset + w / 2);
-      // Above the door leaves and their glass (0.04-0.046), so the stripes run across the doors as the vinyl does.
       sweep(sign, p, w, w, color, 0.047 + k * 0.0003, w, shift, yMax);
       offset += w;
     });
@@ -225,7 +239,6 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
   // front by the nose to the roof line behind the first double door and crossing the window band
   // (tinted over the glass). Mirrored at the other end; the centre section is plain. Positions are
   // estimates.
-  const D = 6.45; // first double door from the cab
   for (const sign of [-1, 1]) {
     const lowFront: [number, number] = [flat - 0.15, 0.2],
       upperRear: [number, number] = [D - 1.3, ROOF + 0.2];
@@ -241,8 +254,6 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
   const winLo = WIN_LO,
     winHi = WIN_HI,
     pillar = 0.07;
-  const doors = [3.8, D];
-  const doorW = 1.3;
   for (const sign of [-1, 1]) {
     const a = centre / 2 + joint + 0.12,
       c = flat - 0.05;
@@ -267,7 +278,7 @@ export function s70Geometry({ leadingA = true, leadingB = false } = {}) {
     rect(windows, sign * (c - 0.84), sign * (c - 0.06), winLo + 0.05, winHi, C.glass, 0.04);
     for (const d of doors) {
       const zc = sign * d;
-      rect(b, zc - doorW / 2, zc + doorW / 2, BASE + 0.2, 2.86, C.frame, 0.036);
+      rect(b, zc - doorW / 2, zc + doorW / 2, frameBottom, frameTop, C.frame, 0.036);
       for (const leaf of [-1, 1]) {
         const l0 = zc + (leaf < 0 ? -doorW / 2 + 0.04 : 0.015),
           l1 = zc + (leaf < 0 ? -0.015 : doorW / 2 - 0.04);
