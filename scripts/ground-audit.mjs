@@ -111,17 +111,17 @@ try {
   for (const q of tiers) {
     await cdp.send('Page.navigate', { url: `${base}/?view=city&q=${q}&t=2026-11-20T14:00:00-05:00` });
     const start = Date.now();
-    // Require all 12 City areas so a partial board cannot pass the audit.
-    const expectedAreas = 12;
+    // Use the same board extent as City, including future rows.
     for (;;) {
       await sleep(2000);
       const state = await evaluate(cdp, `({
         auditReady: typeof window.__groundAudit === 'function',
-        loaded: window.__cityDev?.areas()?.size ?? 0
-      })`);
-      if (state.auditReady && state.loaded >= expectedAreas) break;
+        loaded: window.__cityDev?.areas()?.size ?? 0,
+        expected: window.__cityDev?.areaCount() ?? 0
+      })`).catch(() => ({ auditReady: false, loaded: 0, expected: 0 }));
+      if (state.auditReady && state.expected > 0 && state.loaded === state.expected) break;
       if (Date.now() - start > 600_000)
-        throw Error(`${q}: ${state.loaded}/${expectedAreas} areas loaded, audit ready: ${state.auditReady}`);
+        throw Error(`${q}: ${state.loaded}/${state.expected} areas loaded, audit ready: ${state.auditReady}`);
     }
     const t0 = Date.now();
     report[q] = await evaluate(cdp, `window.__groundAudit({ step: ${step} })`);
