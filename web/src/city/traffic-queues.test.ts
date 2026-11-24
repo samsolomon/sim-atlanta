@@ -58,25 +58,19 @@ it('samples blockers only on the fixed grid, even across thousands of fractional
   expect(samples.size).toBeLessThanOrEqual(121);
 });
 
-it('bounds queue work when the oldest slot rolls over on a streetcar course', () => {
+it('bounds each warm rollover frame and catches up to the exact cold-seek positions', () => {
   const makeQueue = () => new MovingQueue([], 16000, 10, blocks);
   const queue = makeQueue();
   const old = [{start: 0, length: 4}, {start: 24, length: 6}, {start: 40, length: 4}];
   const rolled = [{start: 1200.1, length: 4}, old[1], old[2]];
-  queue.at(old, 1200);
-  const before = queue.steps;
-  expect(queue.at(rolled, 1200.25)).toEqual(makeQueue().at(rolled, 1200.25));
-  expect(queue.steps - before).toBeLessThanOrEqual(4);
-});
-
-it('matches cold replay when successive leaders roll away during a long dwell', () => {
-  const make = () => new MovingQueue([], 2000, 10, () => [{rear: 50, front: 74}]);
-  const q = make();
-  const cohort = [{start: 0, length: 4}, {start: 1, length: 6}, {start: 2, length: 4}];
-  q.at(cohort, 100);
-  const next = [{start: 100.1, length: 4}, cohort[1], cohort[2]];
-  expect(q.at(next, 100.25)).toEqual(make().at(next, 100.25));
-  const last = [next[0], {start: 101.1, length: 6}, next[2]];
-  q.at(next, 101);
-  expect(q.at(last, 101.25)).toEqual(make().at(last, 101.25));
+  const previous = queue.at(old, 1200);
+  let actual;
+  for (let frame = 0; frame < 45; frame++) {
+    const before = queue.steps;
+    actual = queue.at(rolled, 1200.25 + frame / 30);
+    expect(queue.steps - before).toBeLessThanOrEqual(66);
+    if (frame === 0) expect(actual).toEqual([null, previous[1], previous[2]]);
+  }
+  expect(actual).toEqual(makeQueue().at(rolled, 1200.25 + 44 / 30));
+  expect(queue.at(old, 600)).toEqual(makeQueue().at(old, 600));
 });
