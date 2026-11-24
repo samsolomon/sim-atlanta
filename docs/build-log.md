@@ -3389,3 +3389,14 @@ City drew the whole 1105 West Peachtree block as one 129 m box: the Google offic
 ### 2026-11-24 · Amli Arts Center in its white frames
 
 Amli Arts Center was a generic block filling an L-shaped lot at 15th and Spring. The lidar splits the lot cleanly: a 29-storey tower along 15th Street with its roof at 89.9 m, and a 19.7 m precast garage running up Spring Street with the pool deck on top. The returns climb to 96.5 m over the roof, and the aerial photograph explains why. The thick white frames around the dark glass rise past the roof into an open crown. On the phone tier the tower costs 416 triangles and two draws. [Before/after, day and night](log/ui/amli-arts-center/README.md)
+### 2026-11-24 — Square on 5th's fins and curve
+
+Square on 5th, Georgia Tech's 25-storey student tower on Spring Street, was a
+generic box at its mapped 98 m. The 2019 lidar puts the roof at 88 m, 10% lower.
+The tower now has brick end bays of punched windows. On the straight north face,
+four concrete fins run past the roof to carry an open roof frame. The curved south
+face is teal glass with white slab edges. The body is 671 triangles. I found no
+night photograph, so the lit share of rooms is an estimate.
+[South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
+[north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
+
