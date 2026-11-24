@@ -369,3 +369,13 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 - **Freight stack merged up to main `27b5e506`** by merge commits, as before. #424 now drops the freight late-compile allowlist entry; the allowlist on the stack is empty.
 - **PR #565** `samsolomon/downtown-freight-lift` (base `samsolomon/coal-hopper`): lifts the downtown autorack and intermodal exclusions. It adds `freight-clearance.ts` (curve swing ≤ 0.35 m; overhead clearance ≥ 0.5 m under the tallest car) with tests. `CONSIST_VERSION` 7. Held for Sam with the stack. test:perf: low 82/82, high 94/94, no late compiles.
 - **Open:** after phone-perf's #551 lands, merge it into the stack, switch `freightClipPlanes` padding to brookwood's `neverClip()`, and run `program-sweep --q low` (expect 81/82 + 0). Optional (b) for Sam: widen Brookwood's ballast from 3.6 to 4.2 m.
+
+### Update — 2026-11-24, midday (Opus session bceb5cfc)
+
+- **Passenger curve swing.** The MARTA owner built both fixes; I probed, shot frames and reviewed.
+  - #625 (streetcar 18 m fillets): streetcar worst 5.07 → 0.94 m. Approved and queued.
+  - `samsolomon/cq400-bogies`: CQ400 cells over 0.35 m 34 → 2, both a recorder artefact at the east-cut mouth.
+  - Evidence is on the docs-only branch `samsolomon/passenger-swing-evidence` (`docs/passenger-curve-swing.md`).
+  - The probe (registry patch and recorder) is in my session scratchpad, not in the repo. Its method is in that doc.
+- **PR #639** `samsolomon/well-colours` (base #565): a seeded colour and length per container. It adds `freightMaterial()` (one patched freight program) and the Lab entry `freightIntermodal`. `CONSIST_VERSION` 8. Held for Sam with the stack.
+- **Still open:** merge #551 into the stack when it lands (switch `freightClipPlanes` padding to brookwood's `neverClip()`), and the optional Brookwood 4.2 m ballast (b).
