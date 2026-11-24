@@ -25,21 +25,21 @@ The site postdates the April 2019 lidar (median roof return 0.2 m), so heights c
 | Part | Mapped | Model | Basis |
 |---|---|---|---|
 | `1427404721` office tower | 128.9 m (reported) | Roof 113.1 m, glazed screen to 120.7, frame to 125 | 410 ft frame, 39 ft above the roof, 25 ft screen (Uzun+Case). Urbanize also says 410 ft; Uzun+Case gives 420 ft once |
-| `1427404722` hotel, north strip on West Peachtree | 49.5 m (inferred) | 49.5 m | 16 storeys at about 3.1 m. The Epicurean's address is on West Peachtree, north of the tower |
-| `1427404726` condominium, east block on 12th | 52.8 m (inferred) | 64 m, **estimated** | 20 storeys at 3.1 m plus a podium. Its address is 40 West 12th Street |
+| `1427404722` hotel, north strip on West Peachtree | 49.5 m (inferred) | 49.5 m | 14 room floors at 3.1 m over a 5.6 m lobby (16 storeys counting the lobby levels). The Epicurean's address is on West Peachtree, north of the tower |
+| `1427404726` condominium, east block on 12th | 52.8 m (inferred) | 66 m, **estimated** | 20 storeys at about 3.1 m over a 7.2 m lobby, from grade. Its address is 40 West 12th Street |
 | `1464967900` podium and deck | 16.5 m (inferred) | 19.8 m | Matched to the adjoining 19.8 m parts. The eight podium levels include below-grade decks; **estimate** |
 | Others (drop-off canopy and low strips) | 3.3 to 19.8 m | Mapped, capped at the deck | — |
 
 ## Exoskeleton geometry
 
-The mapped south wall has a 2 m recess between x = 390.1 and 396.1. It lines up with the aerial's narrow middle bay. Frame columns therefore stand on x = 367.45, 390.1, 396.1 and 409.8, leaving X-braced bays of 22.5 m and 13.8 m on either side of an unbraced 6 m bay, which matches the aerial's proportions (1.9:1 measured, 1.6:1 mapped). The same frame repeats on the north elevation, where the mapped wall has the matching recess. Seven belt modules run from the 7.2 m lobby head to the roof, and one more runs to the frame top. Members stand 1.4 m off the glass (the outriggers). Columns are 1.3 m wide, belts 1 m and braces 0.8 m.
+The mapped south wall has a 2 m recess between x = 390.1 and 396.1. It lines up with the aerial's narrow middle bay. Frame columns therefore stand on x = 367.45, 390.1, 396.1 and 409.8, leaving X-braced bays of 22.5 m and 13.8 m on either side of an unbraced 6 m bay, which matches the aerial's proportions (1.9:1 measured, 1.6:1 mapped). The same frame repeats on the north elevation, where the mapped wall has the matching recess. There it starts on the podium roof (19.8 m) in six modules, because the deck fills the face's east half. Seven belt modules run from the 7.2 m lobby head to the roof, and one more runs to the frame top. Members stand 1.4 m off the glass (the outriggers). Columns are 1.3 m wide, belts 1 m and braces 0.8 m.
 
 The podium's secondary exoskeleton is left out: its location along the podium is not established.
 
 ## Lighting
 
-- **Exoskeleton:** the only ordinary-night evidence, the August 2026 SKYDB photo, shows the frame and the crown's top edge lit solid cobalt blue. The model makes that the night state, in its own lit material. The LEDs are programmable, and event colours (Pride, Fourth of July, Falcons) need separate evidence, so they are not modelled. The LEDs are programmable multicolour, and that variation is out of scope. The blue is a separate lit material (same program as the window lamps), set only in `setNight` at 0.7 intensity, which keeps it under clipping.
-- **Offices:** about 8% of panes are lit at 23:30. The photo shows a scatter of lit floors.
+- **Exoskeleton:** the only ordinary-night evidence, the August 2026 SKYDB photo, shows the frame and the crown's top edge lit solid cobalt blue. The model makes that the night state, in its own lit material. The LEDs are programmable, and event colours (Pride, Fourth of July, Falcons) need separate evidence, so they are not modelled. The blue is a separate lit material (same program as the window lamps), set only in `setNight` at 0.7 intensity, which keeps it under clipping.
+- **Offices:** about 7% of panes are lit at 23:30. The photo shows a scatter of lit floors.
 - **Hotel and condominium:** about 30% of rooms are lit, the residential and hotel share.
 - All of it is `illustrative` ambient scenery and is not labelled on screen.
 
@@ -51,5 +51,6 @@ Clock 2026-11-20. Prefix each camera with `/?view=city&cam=`.
 |---|---|---|
 | Start cam, day / night / low tier | `424,-3475,32,60,375` | 11:30 / 23:30 / 11:30 `&q=low` |
 | South elevation, day / night | `395,-3450,350,68,650` | 11:30 / 23:30 |
+| North elevation, day / night | `420,-3460,165,40,650` | 11:30 / 23:30 |
 | Three-quarter with crown | `395,-3450,335,74,950` | 11:30 |
 | Frame base at West Peachtree and 12th (close) | `380,-3425,20,62,130` with `&dev&mindist=20` | 11:30 |

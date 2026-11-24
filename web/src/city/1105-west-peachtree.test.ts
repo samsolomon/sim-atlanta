@@ -30,7 +30,7 @@ it('sets the office roof, hotel and condominium heights', () => {
     new Raycaster(new Vector3(x, 250, z), new Vector3(0, -1, 0)).intersectObject(result.group, true)[0].point.y + 300;
   expect(top(405, -3440)).toBeCloseTo(292 + 113.1, 1); // office roof inside the screen crown
   expect(top(400, -3517)).toBeCloseTo(292 + 49.5, 1); // Epicurean hotel
-  expect(top(466, -3460)).toBeCloseTo(292 + 64, 1); // condominium
+  expect(top(466, -3460)).toBeCloseTo(292 + 66, 1); // condominium
   expect(top(440, -3460)).toBeCloseTo(292 + 19.8 + 0.3, 1); // lawn on the podium deck
 });
 

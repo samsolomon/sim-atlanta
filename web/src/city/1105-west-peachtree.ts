@@ -22,7 +22,7 @@ const deckId = 'osm:way:1464967900';
 // come from the published figures. The frame is 410 ft (125 m) and stands 39 ft above the
 // roof, around a 25 ft glazed screen wall.
 const frameTop = 125, roof = 113.1, screenTop = 120.7, lobbyTop = 7.2;
-const condoTop = 64, hotelTop = 49.5, deckTop = 19.8;
+const condoTop = 66, hotelTop = 49.5, deckTop = 19.8;
 const officePitch = 3.4, roomPitch = 3.1;
 
 // Flat vertex colours: a painted library surface compiles its own program, and the low tier
@@ -66,11 +66,11 @@ function edges(ring: P2[], min: number, draw: (a: P2, b: P2, length: number, ind
 }
 
 /**
- * Rows of windows: dark bands between solid spandrels, and a stable share of lit panes grouped in
- * `bay`-metre runs. `lit` is the share lit at 23:30.
+ * Rows of windows on faces of 7 m or more: dark bands between solid spandrels, and a stable share
+ * of lit panes grouped in `bay`-metre runs (two or three rooms). `lit` is the share lit at 23:30.
  */
 function rooms(s: Shell, plan: P2[], lo: number, hi: number, pitch: number, glassColor: string, lit: number, bay: number, seed: number) {
-  edges(plan, 4, (a, b, length, edge) => {
+  edges(plan, 7, (a, b, length, edge) => {
     const bays = Math.max(1, Math.round(length / bay));
     for (let f = 0, y = lo; y + pitch <= hi + 0.01; f++, y += pitch) {
       panel(s.body, a, b, 0.01, 0.99, y + 0.9, y + pitch - 0.25, 0.04, glassColor);
@@ -98,11 +98,12 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
     const plan = local(part.rings[0]);
     if (part.id === towerId) { tower = plan; continue; }
     if (part.id === condoId) {
-      // White slab with full-width balconies on both long faces.
+      // White slab with balconies along both long faces (OSM splits the 12th Street face in three).
       s.prism(plan, s.base, floor + condoTop, condoWall, '#b9bab4');
-      rooms(s, plan, floor + deckTop, floor + condoTop - 1.5, roomPitch, condoGlass, 0.3, 6, 11);
-      edges(plan, 30, (a, b) => {
-        for (let y = floor + deckTop + roomPitch; y < floor + condoTop - 2; y += roomPitch) {
+      rooms(s, plan, floor + lobbyTop, floor + condoTop - 1.5, roomPitch, condoGlass, 0.3, 10, 11);
+      edges(plan, 20, (a, b) => {
+        if (Math.abs(b[1] - a[1]) < Math.abs(b[0] - a[0])) return;
+        for (let y = floor + lobbyTop + roomPitch; y < floor + condoTop - 2; y += roomPitch) {
           const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz);
           const p = (t: number, out: number) => [a[0] + t * dx + out * dz / l, y, a[1] + t * dz - out * dx / l];
           s.body.quad(p(0.08, 0), p(0.08, 1.8), p(0.92, 1.8), p(0.92, 0), '#dcdbd5');
@@ -113,14 +114,15 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
     if (part.id === hotelId) {
       // Punched precast hotel slab; rooms are noticeably lit late in the evening.
       s.prism(plan, s.base, floor + hotelTop, hotelWall, '#a9a596');
-      rooms(s, plan, floor + deckTop, floor + hotelTop - 1.2, roomPitch, hotelWindow, 0.32, 5, 23);
+      rooms(s, plan, floor + 5.6, floor + hotelTop - 1.2, roomPitch, hotelWindow, 0.32, 9, 23);
       edges(plan, 6, (a, b) => panel(s.body, a, b, 0.01, 0.99, floor + 0.4, floor + 5, 0.05, storefront));
       continue;
     }
     if (part.id === deckId) {
-      // The eight-level garage under the landscaped deck.
+      // The eight-level garage under the landscaped deck. Openings only on its long street faces;
+      // the short runs mostly abut the towers.
       s.prism(plan, s.base, floor + deckTop, deck, '#a7aaa0');
-      edges(plan, 8, (a, b) => {
+      edges(plan, 20, (a, b) => {
         for (let y = floor + 4.5; y < floor + deckTop - 2; y += 3.1) panel(s.body, a, b, 0.02, 0.98, y, y + 1.6, 0.05, '#5d625f');
       });
       s.prism(local([[425, -3440], [450, -3440], [450, -3498], [425, -3498]]), floor + deckTop, floor + deckTop + 0.3, lawn, lawn);
@@ -137,10 +139,10 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
     panel(s.body, a, b, 0, 1, floor + 0.3, floor + lobbyTop - 0.4, 0.05, storefront);
     const bays = Math.max(1, Math.round(length / 4.5));
     for (let f = 0, y = floor + lobbyTop; y < floor + roof - 0.5; f++, y += officePitch) {
-      if (length >= 8) panel(s.body, a, b, 0, 1, y, y + 0.35, 0.05, band);
+      if (length >= 5.5) panel(s.body, a, b, 0, 1, y, y + 0.35, 0.05, band);
       for (let i = 0; i < bays; i++) {
-        // Offices at 23:30: about one pane in twelve, from the 2026 night photograph.
-        if (hash(f, i, edge * 29 + 5) >= 0.08) continue;
+        // Offices at 23:30: about one pane in fourteen, from the 2026 night photograph.
+        if (hash(f, i, edge * 29 + 5) >= 0.07) continue;
         panel(s.lights, a, b, i / bays + 0.05 / bays, (i + 1) / bays - 0.05 / bays, y + 0.4, y + officePitch - 0.1, 0.1, glassLit);
       }
     }
@@ -150,15 +152,20 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
   // The exoskeleton stands 1.4 m off the south and north glass. Columns sit on the recessed
   // middle bay's edges, so the two X-braced bays are 22.5 m and 13.8 m wide.
   const columns = [367.45, 390.1, 396.1, 409.8].map(x => x - origin[0]);
-  const belts = [lobbyTop, ...Array.from({ length: 7 }, (_, i) => lobbyTop + (i + 1) * (roof - lobbyTop) / 7), frameTop].map(y => floor + y);
-  const frames: { z: number; out: number }[] = [{ z: -3424.6 - origin[1], out: 1 }, { z: -3478.8 - origin[1], out: -1 }];
-  for (const { z, out } of frames) {
+  const modules = (from: number, count: number) =>
+    [from, ...Array.from({ length: count }, (_, i) => from + (i + 1) * (roof - from) / count), frameTop].map(y => floor + y);
+  // The north frame starts on the podium roof, which runs along that face's east half.
+  const frames = [
+    { z: -3424.6 - origin[1], out: 1, belts: modules(lobbyTop, 7) },
+    { z: -3478.8 - origin[1], out: -1, belts: modules(deckTop, 6) },
+  ];
+  for (const { z, out, belts } of frames) {
     const zf = z + out * 1.4;
     const bar = (x0: number, y0: number, x1: number, y1: number, w: number) => {
       const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy), nx = -dy / l * w / 2, ny = dx / l * w / 2;
       led.quad([x0 + nx, y0 + ny, zf], [x1 + nx, y1 + ny, zf], [x1 - nx, y1 - ny, zf], [x0 - nx, y0 - ny, zf], steel);
     };
-    for (const x of columns) bar(x, floor + 0.3, x, floor + frameTop, 1.3);
+    for (const x of columns) bar(x, belts[0] - (out > 0 ? lobbyTop - 0.3 : 0), x, floor + frameTop, 1.3);
     for (const y of belts) bar(columns[0] - 0.65, y, columns[3] + 0.65, y, 1);
     for (const [l, r] of [[columns[0], columns[1]], [columns[2], columns[3]]]) {
       for (let m = 0; m < belts.length - 1; m++) {
@@ -175,7 +182,7 @@ export function create1105WestPeachtree(buildings: VBuilding[], site: VBuilding,
     led.geometry(),
     new MeshLambertMaterial({ vertexColors: true, side: DoubleSide, emissive: '#2f5cff', emissiveIntensity: 0 }),
   );
-  ledMesh.castShadow = true;
+  ledMesh.castShadow = ledMesh.receiveShadow = true;
   built.group.add(ledMesh);
   return {
     ...built,
