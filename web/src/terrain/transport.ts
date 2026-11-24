@@ -578,7 +578,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
         shader.uniforms.northAveNight = bridgeNight;
         shader.vertexShader = 'uniform float northAveCeiling; varying float northAveBounce;\n' +
           shader.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-            northAveBounce = 1.0 - smoothstep(northAveCeiling - .6, northAveCeiling, position.y);`);
+            northAveBounce = (1.0 - smoothstep(northAveCeiling - .6, northAveCeiling, position.y)) * (normal.y < .4 || position.y < northAveCeiling - 3.4 ? 1.0 : 0.0);`);
         shader.fragmentShader = 'uniform float northAveNight; varying float northAveBounce;\n' +
           shader.fragmentShader.replace('#include <opaque_fragment>', `outgoingLight += diffuseColor.rgb * vec3(.24,.23,.21) * northAveBounce * (1.0 - northAveNight);
             #include <opaque_fragment>`);

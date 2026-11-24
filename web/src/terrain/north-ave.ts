@@ -1,4 +1,4 @@
-/** North Avenue option C. Survey and truth tiers: docs/north-ave-underpass.md. */
+/** North Avenue crossing. Survey and truth tiers: docs/north-ave-underpass.md. */
 import { Builder } from '../vignette/geom';
 import type { GroundGrid } from './grid';
 import type { OpenSlot } from './openings';
@@ -19,6 +19,14 @@ export function northAvePoint(s: number, t: number): [number,number] {
   return [NORTH_AVE.origin[0]+s*U[0]+t*V[0], NORTH_AVE.origin[1]+s*U[1]+t*V[1]];
 }
 export const northAveFloor = (s:number) => 296.6 + Math.max(0,s-20)*.01;
+/** Thin grass lip above the retained soffit, with the crossfall of the intact banks. */
+export function stripTop(grid:GroundGrid,a:number,b:number,s:number,t:number){
+  const lip=northAveFloor(s)+4.735;
+  const bank=(side:number)=>grid.sample(...northAvePoint(s,side))??lip;
+  const f=(t+11.3)/22.6;
+  const crown=Math.max(lip+.065,bank(-23)*(1-f)+bank(23)*f);
+  return lip+(crown-lip)*Math.min(1,Math.max(0,Math.min(s-a,b-s)/1.4));
+}
 export const northAveRail = (t:number) => 303.8-.007*t;
 export function hasNorthAve(city: Pick<TerrainCity,'bounds'>) {
   const b=city.bounds; return b.minX<=-920 && b.maxX>=-740 && b.minZ<=-1950 && b.maxZ>=-1800;
@@ -92,9 +100,19 @@ export function drawNorthAve(city:TerrainCity, grid:GroundGrid, out:Builder) {
     }
   }
   for(const [i,[a,b]] of NORTH_AVE.groups.entries()){
-    const top=(s:number,t:number)=>i===0?302.32:i===1?northAveRail(t)-.65:[0,0,304.24,304.03,304.52][i];
+    const top=(s:number,t:number)=>i===0?302.32:northAveFloor(s)+4.72;
     const underside=(s:number)=>northAveFloor(s)+.04+(i===0?4.69:4.5);
-    slab(a,b,-11.3,11.3,top,underside,i===0?'#525354':i===1?'#726b5c':'#a9a396','#d5d1c3');
+    slab(a,b,-11.3,11.3,(s,t)=>top(s,t)-(i===0?.025:0),underside,i===0?'#b9b4a4':'#b5bd97','#d5d1c3');
+    if(i>1){
+      // The inactive strips carry soil. Take their crossfall from intact ground
+      // on both banks, leaving a narrow grass lip above the preserved soffit.
+      let prev:number[][]=[];
+      for(const t of [-11.3,0,11.3]){
+        const row=[a,a+1.4,b-1.4,b].map(s=>p(s,t,stripTop(grid,a,b,s,t)));
+        for(let j=1;j<row.length && prev.length;j++)quad(prev[j-1],row[j-1],row[j],prev[j],'#b5bd97');
+        prev=row;
+      }
+    }
     if(i===1){
       // Take a cross-section through the actual mapped tracks at each bank. Carry
       // the bed between tracks at their formation heights, below the textured treads.
@@ -141,16 +159,13 @@ export function drawNorthAve(city:TerrainCity, grid:GroundGrid, out:Builder) {
           // Extend only the ballast shoulder onto the bank. Its taper bridges the
           // DEM dip without extending the deck or its earth margins into the yard.
           if ((outside || Math.abs(previousT)>11.3) && (j===1 || j===row.length-1)) continue;
-          const color=j===1||j===row.length-1?'#b2b589':j===2||j===row.length-2?'#877d6a':'#7e7363';
+          const color=j===1||j===row.length-1?'#b5bd97':j===2||j===row.length-2?'#877d6a':'#7e7363';
           quad(previous[j-1],p(row[j-1][0],t,row[j-1][1]),
             p(row[j][0],t,row[j][1]),previous[j],color);
         }
         previousT=t;
         previous=row.map(([s,h])=>p(s,t,h));
       }
-    }
-    if(i===0){
-      for(const t of [-9,-3,3,9])slab(9.45,9.55,t-1.5,t+1.5,()=>302.33,()=>302.32,'#d4cba7');
     }
     // Two road bays: columns occupy only the reserved median, with wall abutments outside shoulders.
     for(const s of [a+.6,b-.6]) for(const t of [0,-10.7,10.7]) {
@@ -159,9 +174,10 @@ export function drawNorthAve(city:TerrainCity, grid:GroundGrid, out:Builder) {
     }
     // Balustrade on Marietta; pipe-like narrow bars on the rail/disused decks.
     for(const s of [a+.18,b-.18]){
-      const h=top(s,0),thin=i===0?.16:.06;
-      slab(s-thin,s+thin,-11.3,11.3,()=>h+1.05,()=>h+.91,'#a59e90');
-      for(let t=-11;t<=11;t+=i===0?.8:2.5)slab(s-thin,s+thin,t-thin,t+thin,()=>h+.95,()=>h,'#a59e90');
+      const thin=i===0?.07:.035, height=i===0?.64:i===1?.45:.12;
+      const h=(q:number,t:number)=>top(q,t)+height;
+      slab(s-thin,s+thin,-11.3,11.3,h,(q,t)=>h(q,t)-.065,'#a4a393');
+      if(i<2)for(let t=-10;t<=10;t+=3.3)slab(s-thin,s+thin,t-thin,t+thin,h,top,'#a4a393');
     }
   }
 }

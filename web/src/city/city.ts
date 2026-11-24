@@ -1109,6 +1109,27 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
   const ink = new ShaderPass(inkShader());
+  // The five upper surfaces continue the street, rail formation and bank.
+  // Fade their screen-space ink only when seen from above the trench.
+  const inkWorld = new THREE.Matrix4();
+  ink.uniforms.coverUnproject = { value: inkWorld };
+  ink.uniforms.coverSceneZero = { value: grid?.manifest.vertical.sceneZeroNavd88M ?? 323.8 };
+  ink.material.fragmentShader = ink.material.fragmentShader.replace('varying vec2 vUv;', `
+    uniform mat4 coverUnproject;
+    uniform float coverSceneZero;
+    varying vec2 vUv;
+    float coverInk(float depth) {
+      vec4 p = coverUnproject * vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+      vec3 world = p.xyz / p.w;
+      vec2 delta = world.xz - vec2(-761.16,-1885.765);
+      float s = dot(delta,vec2(-.8730086,.4877048));
+      float t = dot(delta,vec2(-.4877048,-.8730086)) - max(0.0,s-80.0)*.05 - max(0.0,s-128.0)*.115;
+      if(abs(t)>14.0 || s< -1.0 || s>154.0) return 1.0;
+      bool top = s<20.0 || (s>23.0 && s<87.0) || (s>99.0 && s<108.0)
+        || (s>114.0 && s<131.0) || s>139.0;
+      float floorM = 296.6 + max(0.0,s-20.0)*.01;
+      return top ? mix(1.0,.08,smoothstep(4.55,4.9,world.y+coverSceneZero-floorM)) : 1.0;
+    }`).replace('vec3 ink = uInk;', 'line *= coverInk(texture2D(tDepth,vUv).x); vec3 ink = uInk;');
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
   composer.addPass(new FoliageMaskPass(scene, camera, ink));
@@ -1554,6 +1575,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         camera.updateProjectionMatrix();
       }
     }
+    inkWorld.multiplyMatrices(camera.matrixWorld,camera.projectionMatrixInverse);
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;

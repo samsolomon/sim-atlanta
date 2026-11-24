@@ -187,7 +187,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
           connectorBoard: { city, roadHeight: id === 'midtown-south' ? (x, z, road) =>
-            northAveRoadHeight(x, z, road, grid.manifest.vertical.sceneZeroNavd88M) ?? roadHeight(x, z, road) : roadHeight },
+            (road.name === 'Marietta Street Northwest' ? area.mariettaHeight(x,z) : northAveRoadHeight(x, z, road, grid.manifest.vertical.sceneZeroNavd88M)) ?? roadHeight(x, z, road) : roadHeight },
           dispose() {
             for (const t of transports) t.dispose();
             piers?.mesh.geometry.dispose();

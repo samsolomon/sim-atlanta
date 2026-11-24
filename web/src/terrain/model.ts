@@ -1,4 +1,4 @@
-import { northAveSlots } from './north-ave';
+import { hasNorthAve, northAvePoint, northAveSlots, northAveLocal, NORTH_AVE, northAveFloor, stripTop } from './north-ave';
 import { residential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
@@ -32,8 +32,9 @@ import { underpassLights } from './underpass-lights';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
+import { triangleHeight } from './tread-height';
 import { groundMap } from './ground-map';
-import type { DrapeGround } from './drape';
+import { drapeTriangle, type DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
 import { rolloutPlantings, rolloutRow, rolloutSpecies } from '../trees/rollout-city';
@@ -184,6 +185,62 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const mesh = new GroundSurface(grid, options.quality, [...(options.openings ?? []), ...northAveSlots(city, grid.manifest.vertical.sceneZeroNavd88M)], options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
+  let mariettaPavement: THREE.BufferAttribute | undefined;
+  let mariettaVertices = 0;
+  if (hasNorthAve(city)) {
+    // Carry the very same painted Marietta pavement across the opening. The
+    // short approaches meet the drawn bank at their outer ends.
+    const road = new Builder(), uv: number[] = [];
+    let previous: number[][] = [];
+    for (const t of [-22,-19,-16,-13,-11.3,11.3,13,16,19,22]) {
+      const row = [0,4,9,14,19].map(s => {
+        const [x,z] = northAvePoint(s,t);
+        const deck = 302.32-grid.manifest.vertical.sceneZeroNavd88M;
+        const bank = bare(x,z) ?? deck;
+        const blend = Math.max(0,(Math.abs(t)-11.3)/10.7);
+        return [x, Math.abs(t)<=11.3 ? deck : Math.max(bank+.025,deck+(bank+.025-deck)*blend), z];
+      });
+      for(let j=1;j<row.length && previous.length;j++){
+        const faces=[[previous[j-1],row[j-1],row[j]],[previous[j-1],row[j],previous[j]]];
+        for(const [a,b,c] of faces){
+          if(t===11.3) road.tri(a,b,c,'#ffffff');
+          else drapeTriangle(mesh,a,b,c,.025,(u,v,w)=>road.tri(u.slice(0,3),v.slice(0,3),w.slice(0,3),'#ffffff'));
+        }
+      }
+      previous=row;
+    }
+    mariettaVertices=road.pos.length/3;
+    // Continue each grass shoulder down to the uncut bank. The filling above
+    // the soffit has a landward slope, so it terminates in ground at both ends.
+    for(const [i,[a,b]] of NORTH_AVE.groups.entries()){
+      if(i===0)continue;
+      const bands=i===1?[[a,a+3],[b-6,b]]:[[a,a+1.4],[a+1.4,b-1.4],[b-1.4,b]];
+      for(const side of [-1,1])for(const [left,right] of bands){
+        const bankVertex=(s:number,outer:boolean)=>{
+          const t=side*(outer?19:11.3);
+          const [x,z]=northAvePoint(s,t);
+          const lip=i===1?northAveFloor(s)+4.74:stripTop(grid,a,b,s,side*11.3);
+          const y=outer?(bare(x,z)??lip-grid.manifest.vertical.sceneZeroNavd88M)+.025:lip-grid.manifest.vertical.sceneZeroNavd88M;
+          return [x,y,z];
+        };
+        const l=bankVertex(left,false),r=bankVertex(right,false),lo=bankVertex(left,true),ro=bankVertex(right,true);
+        for(const face of [[l,lo,ro],[l,ro,r]]){
+          if(side<0)face.reverse();
+          drapeTriangle(mesh,face[0],face[1],face[2],.025,(u,v,w)=>road.tri(u.slice(0,3),v.slice(0,3),w.slice(0,3),'#ffffff'));
+        }
+      }
+    }
+    const bounds=city.bounds;
+    for(let i=0;i<road.pos.length;i+=3)
+      uv.push((road.pos[i]-bounds.minX)/(bounds.maxX-bounds.minX),(bounds.maxZ-road.pos[i+2])/(bounds.maxZ-bounds.minZ));
+    const geometry=road.geometry();
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    mariettaPavement=geometry.getAttribute('position') as THREE.BufferAttribute;
+    const pavement=new THREE.Mesh(geometry,board.material);
+    pavement.name='Marietta Street pavement';
+    pavement.receiveShadow=true;
+    board.add(pavement);
+  }
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
@@ -315,6 +372,16 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     /** Drawn terrain triangles only, without bridge approaches. */
     terrainAt: bare,
+    mariettaHeight(x: number,z: number) {
+      if (!mariettaPavement) return null;
+      const [s,t]=northAveLocal(x,z);
+      if(s<0||s>19||Math.abs(t)>22)return null;
+      for(let i=0;i<mariettaVertices;i+=3){
+        const h=triangleHeight(mariettaPavement,i,x,z);
+        if(h!==null)return h;
+      }
+      return null;
+    },
     /** Lower the drawn terrain under hard surfaces placed after the board was built,
      * such as graded rail cuttings (terrain/cutting.ts). Layers already placed keep their heights. */
     carve(yields: readonly GroundYield[]) { if (yields.length) { mesh.carve(yields); carved.push(...yields); } },
