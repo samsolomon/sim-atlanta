@@ -3,6 +3,7 @@ import type { TerrainQuality } from '../terrain/surface';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litFacade, seedOf } from './skin-kit';
 
 export const twelfth77Id = 'osm:way:536895716';
 const origin: P2 = [611, -3382];
@@ -36,14 +37,14 @@ const strip: P2[] = [
 const local = (ring: P2[]): P2[] => ring.map(([x, z]) => [x - origin[0], z - origin[1]]);
 
 /** Edges with the outward side to the right of a → b in plan (x east, z south). */
-function edges(ring: P2[], draw: (a: P2, b: P2, length: number) => void) {
+function edges(ring: P2[], draw: (a: P2, b: P2, length: number, i: number) => void) {
   let area = 0;
   ring.forEach(([x, z], i) => { const [u, v] = ring[(i + 1) % ring.length]; area += x * v - u * z; });
   const r = area > 0 ? ring : [...ring].reverse();
   r.forEach((a, i) => {
     const b = r[(i + 1) % r.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length > 0.5) draw(a, b, length);
+    if (length > 0.5) draw(a, b, length, i);
   });
 }
 
@@ -52,6 +53,8 @@ export function create77Twelfth(buildings: VBuilding[], grid: GroundGrid, qualit
     [[0, -6], [-35, 20], [35, 30]]);
   if (!found) return null;
   const shell = found;
+  // Lit panes come from the shared hash; each facade call site owns a face-id block of 50.
+  const seed = seedOf(twelfth77Id);
   const high = quality === 'high';
   const glass = ['#7d9db2', '#7797ad', '#83a2b6'];
   const slab = '#d3d6d3', cream = '#d8cdb5', tan = '#c4ae8f', brick = '#8c5640', deck = '#c3b9a6';
@@ -62,12 +65,12 @@ export function create77Twelfth(buildings: VBuilding[], grid: GroundGrid, qualit
   shell.prism(t, shell.base, parapet, slab, '#9c9f9e');
 
   // The Crescent frontage: arched shop windows under a tan cornice on the high tier.
-  if (high) edges(s, (a, b, length) => {
-    if (length > 6) shell.facade(a, b, shell.base + 0.6, stripTop - 1.2, 2, 4.2, 0.62, 0.62, ['#3d4a4f'], 0.45);
+  if (high) edges(s, (a, b, length, i) => {
+    if (length > 6) litFacade(shell, seed, 0 + i, a, b, shell.base + 0.6, stripTop - 1.2, 2, 4.2, 0.62, 0.62, ['#3d4a4f'], 0.45);
   });
   // Garage levels between the shop floor and the pool deck.
-  if (high) edges(p, (a, b, length) => {
-    if (length > 6) shell.facade(a, b, stripTop + 0.4, deckTop - 0.9, 3, 4.6, 0.74, 0.5, ['#4c4b48', '#55534f'], 0.04);
+  if (high) edges(p, (a, b, length, i) => {
+    if (length > 6) litFacade(shell, seed, 50 + i, a, b, stripTop + 0.4, deckTop - 0.9, 3, 4.6, 0.74, 0.5, ['#4c4b48', '#55534f'], 0.04);
   });
 
   // Pool deck: pavers, the pool and the bocce lawn on the garage roof.
@@ -98,23 +101,23 @@ export function create77Twelfth(buildings: VBuilding[], grid: GroundGrid, qualit
 
   const floors = (lo: number) => Math.round((roof - lo) / 3.33);
   const occupancy = 0.38;
-  edges(t, (a, b, length) => {
+  edges(t, (a, b, length, i) => {
     if (length < 3) return; // the end nubs' 2 m returns stay plain wall
     const long = length > 60, nub = length < 12;
     const lo = long && a[1] < -10 ? lobbyTop + 0.2 : deckTop + 0.3;
     if (long) {
       // Floor-to-ceiling glass: slab edges read as thin light bands between floors.
-      shell.facade(a, b, lo, roof - 0.2, floors(lo), high ? 3.1 : 12.4, 0.97, 0.84, glass, occupancy);
-      if (high && a[1] < -10) shell.facade(a, b, shell.base + 0.6, lobbyTop - 0.7, 1, high ? 3.6 : 18.6, 0.9, 0.9, ['#3e555f'], 0.6);
+      litFacade(shell, seed, 100 + i, a, b, lo, roof - 0.2, floors(lo), high ? 3.1 : 12.4, 0.97, 0.84, glass, occupancy);
+      if (high && a[1] < -10) litFacade(shell, seed, 150 + i, a, b, shell.base + 0.6, lobbyTop - 0.7, 1, high ? 3.6 : 18.6, 0.9, 0.9, ['#3e555f'], 0.6);
     } else if (nub) {
-      shell.facade(a, b, lo, roof - 0.2, floors(lo), high ? 2.5 : 10, 0.95, 0.84, glass, occupancy);
+      litFacade(shell, seed, 200 + i, a, b, lo, roof - 0.2, floors(lo), high ? 2.5 : 10, 0.95, 0.84, glass, occupancy);
     } else {
       // Cream precast end walls with punched room windows.
       shell.body.quad([a[0] + (b[1] - a[1]) * 0.05 / length, lo - 0.2, a[1] - (b[0] - a[0]) * 0.05 / length],
         [a[0] + (b[1] - a[1]) * 0.05 / length, roof, a[1] - (b[0] - a[0]) * 0.05 / length],
         [b[0] + (b[1] - a[1]) * 0.05 / length, roof, b[1] - (b[0] - a[0]) * 0.05 / length],
         [b[0] + (b[1] - a[1]) * 0.05 / length, lo - 0.2, b[1] - (b[0] - a[0]) * 0.05 / length], cream);
-      if (high) shell.facade(a, b, lo, roof - 0.2, floors(lo), 2.6, 0.5, 0.62, glass, occupancy);
+      if (high) litFacade(shell, seed, 250 + i, a, b, lo, roof - 0.2, floors(lo), 2.6, 0.5, 0.62, glass, occupancy);
     }
     if (high) balconies(a, b, length, lo, long);
     crown(a, b, length);

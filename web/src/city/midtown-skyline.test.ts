@@ -308,3 +308,88 @@ it('draws the Campanile as its present-day stripped frame at the lidar roof, unl
   expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
   expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
+
+it('stacks 1072 West Peachtree as podium, office block and glass tower, with a dark crown', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:1464967906');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('1072 West Peachtree');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (u: number, v: number) => {
+    const a = Math.atan2(.0153, 1), x = 308.3 + u * Math.cos(a) - v * Math.sin(a), z = -3351.2 + u * Math.sin(a) + v * Math.cos(a);
+    return new Raycaster(new Vector3(x, 400, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0]?.point.y ?? 0;
+  };
+  expect(heightAt(12, -18)).toBeCloseTo(228, 0); // the crown's raised middle, at the reported 749 ft
+  expect(heightAt(12, -32)).toBeCloseTo(223.4, 0); // parapet shoulder
+  expect(heightAt(-4, 10)).toBeCloseTo(72, 0); // office block, floors 11–18
+  expect(heightAt(-20, 30)).toBeCloseTo(36, 0); // parking podium and Commons
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  // A landmark-class skin stays inside the 2,400-triangle body budget at low tier.
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  // Nothing above the residential roof lights at night (the crown was unlit in August 2026).
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(219);
+});
+
+it('replaces Square on 5th at its lidar roof, with fins carrying the roof frame', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:536884432');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Square on 5th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(219.5, -2681.5)).toBeCloseTo(89.5, 0); // roof frame, the lidar maximum
+  expect(heightAt(245, -2681.5)).toBeGreaterThan(87.5); // east penthouse above the 88 m roof
+  expect(heightAt(195, -2681.5)).toBeCloseTo(88, 0); // the lidar 95th-percentile roof
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(86);
+});
+
+it('gives Two Midtown Plaza its lidar roofs, a lit lobby drum and dark offices above', () => {
+  const brookwood = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/brookwood-south/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = brookwood.buildings.find((b: VBuilding) => b.id === 'osm:way:269636880');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Two Midtown Plaza');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(405, -4195)).toBeCloseTo(78, 0); // the straight slab, lidar 95th percentile
+  expect(heightAt(375, -4190)).toBeCloseTo(73, 0); // the half-round end
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(78);
+});
+
+it('crowns Mayfair Tower with four lit-lantern cones at the lidar heights', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536728181');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Mayfair Tower Condominiums');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(1005.9 - 12, -3588.6)).toBeCloseTo(92, 0); // main roof, near the lidar median
+  const cone = heightAt(988.1 + 5.7, -3606.6 + 5.7);
+  expect(cone).toBeGreaterThan(100); // lantern finial, at the 102 m lidar maximum
+  expect(cone).toBeLessThan(102.5);
+  const meshes = model.group.children as Mesh[];
+  expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+});
+
+it('replaces Alexan on 8th at its lidar roof', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:789975430');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Alexan on 8th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(372, -2800)).toBeCloseTo(74.5, 0); // the slab, lidar 95th percentile
+  expect(heightAt(350, -2830)).toBeCloseTo(74.5, 0); // the south-west leg is full height too
+  const meshes = model.group.children as Mesh[];
+  expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = meshes[1].geometry.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(71);
+});

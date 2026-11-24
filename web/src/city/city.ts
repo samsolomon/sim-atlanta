@@ -36,6 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -66,8 +67,11 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
+import { createMuseumTower } from './museum-tower';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
+import { createHardRock } from './hard-rock';
+import { createTheLandmark } from './the-landmark';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -101,6 +105,8 @@ import { createAltitudeApartments } from './altitude-apartments';
 import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
+import { createMedicalArts } from './medical-arts';
+import { createJwMarriott } from './jw-marriott-downtown';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -122,12 +128,16 @@ import { createCongressCenter } from './congress-center';
 import { mapGestures } from './map-gestures';
 import { createWhiteModel } from './white-model';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
+/** View depth (m) past which ink is fully faded (keep in step with vignette/ink.ts), plus a margin. */
+const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { batchLandmarkBodies } from '../materials/landmark-batch';
+import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
+import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
@@ -312,6 +322,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: (ReturnType<typeof createDowntownTerrain> & { connectorBoard: ConnectorBoard }) | undefined;
+  let downtownBatches: ReturnType<typeof batchLandmarks> | undefined;
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   const areaFailures = new Map<string, string>();
@@ -371,8 +382,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
+  let museumTower: ReturnType<typeof createMuseumTower> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
+  let hardRock: ReturnType<typeof createHardRock> = null;
+  let theLandmark: ReturnType<typeof createTheLandmark> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -406,6 +420,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let hilton: ReturnType<typeof createHiltonAtlanta> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let marquisOne: ReturnType<typeof createMarquisOne> = null;
+  let medicalArts: ReturnType<typeof createMedicalArts> = null;
+  let jwMarriott: ReturnType<typeof createJwMarriott> = null;
   let marquisTwo: ReturnType<typeof createMarquisTwo> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -454,7 +470,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         marquisOne = createMarquisOne(afterMarriott, ground);
         const afterOne = marquisOne?.buildings ?? afterMarriott;
         marquisTwo = createMarquisTwo(afterOne, ground);
-        const hotelSite = marquisTwo?.buildings ?? afterOne;
+        const afterTwo = marquisTwo?.buildings ?? afterOne;
+        medicalArts = createMedicalArts(afterTwo, ground);
+        const afterMedicalArts = medicalArts?.buildings ?? afterTwo;
+        jwMarriott = createJwMarriott(afterMedicalArts, ground);
+        const hotelSite = jwMarriott?.buildings ?? afterMedicalArts;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -470,8 +490,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
         healey = createHealey(towerSite, groundAt);
         const afterHealey = healey?.buildings ?? towerSite;
-        parkPlaceTower = createParkPlaceTower(afterHealey, ground);
-        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHealey;
+        hardRock = createHardRock(afterHealey, ground);
+        const afterHardRock = hardRock?.buildings ?? afterHealey;
+        theLandmark = createTheLandmark(afterHardRock, ground);
+        const afterLandmark = theLandmark?.buildings ?? afterHardRock;
+        parkPlaceTower = createParkPlaceTower(afterLandmark, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterLandmark;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
@@ -518,8 +542,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         footballHall = createFootballHall(afterTwoPeachtree, ground);
         const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
-        oneParkTower = createOneParkTower(afterFootballHall, ground);
-        const afterOnePark = oneParkTower?.buildings ?? afterFootballHall;
+        museumTower = createMuseumTower(afterFootballHall, ground);
+        const afterMuseumTower = museumTower?.buildings ?? afterFootballHall;
+        oneParkTower = createOneParkTower(afterMuseumTower, ground);
+        const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
         const afterPower = georgiaPower?.buildings ?? afterOnePark;
         georgiaPacific = createGeorgiaPacific(afterPower, groundAt);
@@ -567,6 +593,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (marquis) world.group.add(marquis.group);
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
+        if (medicalArts) world.group.add(medicalArts.group);
+        if (jwMarriott) world.group.add(jwMarriott.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -578,8 +606,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
+        if (museumTower) world.group.add(museumTower.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
+        if (hardRock) world.group.add(hardRock.group);
+        if (theLandmark) world.group.add(theLandmark.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -622,7 +653,29 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
         const landmarks = world.group.children.slice(landmarksFrom);
         for (const c of landmarks) c.userData.perf = 'buildings';
-        world.group.add(batchLandmarkBodies(landmarks));
+        if (landmarkBatchOff) world.group.add(batchLandmarkBodies(landmarks));
+        else {
+          // Each landmark with its night switch, which the batcher probes. A new landmark goes here
+          // too, next to its setNight call; one missing from this list is drawn unbatched.
+          const listed = ([
+            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
+            fiftyFiveParkPlace,
+            fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
+            hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
+            georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
+            omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
+            centennial, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
+            samNunn, candler, equitable, grady,
+          ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
+          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
+          world.group.add(batches.group);
+          if (import.meta.env.DEV) {
+            const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
+            if (unlisted.length) console.warn('Landmarks missing from the batch list, drawn unbatched:', unlisted.join(', '));
+            console.info('City landmark batches (downtown)', JSON.stringify(batches.stats));
+          }
+        }
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
@@ -758,7 +811,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         roadHeight: cityRoadHeight(vd, terrain.groundAt, transport?.deckAt) }
     : undefined;
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
+  /** Set when an area mounts: ground and joins may change, so cached car heights refresh next frame. */
+  let trafficHeightsStale = false;
   function extendConnectorTraffic() {
+    trafficHeightsStale = true;
     if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
     if (east) clippingPlanes[1].constant = east.bounds.maxX;
@@ -799,6 +855,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (x>=r.minX && x<=r.maxX && z>=r.minZ && z<=r.maxZ) return height(x,z);
       return null;
     }, trafficOptions.roadHeight) : undefined;
+  const trafficView = new THREE.Frustum(), trafficViewMatrix = new THREE.Matrix4();
   const arterials = trafficOptions && corridors?.length
     ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
     : undefined;
@@ -877,7 +934,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (perimeter) edgePlanes(square!.mountedBounds(rects)).forEach((plane, i) => perimeter[i].copy(plane));
     return square!.mosaicPlinth(rects, terrain!.bottomY);
   }
+  // Set once the prewarm scheduler exists (below); an area mounting before then is covered by its first run.
+  let requestPrewarm = () => {};
+  let prewarmer: Prewarmer | undefined;
+  let colourShown = !options.whiteModel;
+  let prewarmDone = false;
+  let prewarmBatch = 2;
+  let bloomWarmFrames = 0;
+  // setNight gating (environment()); `?perf&night=every` applies it every frame, for A/B runs.
+  const nightEveryFrame = perfEnabled && query.get('night') === 'every';
+  let nightDirty = true;
+  let nightApplied = NaN;
+  let nightGeometries = -1;
+  let nightFrames = 0;
   function addArea(area: NonNullable<typeof east>) {
+    requestPrewarm();
+    nightDirty = true;
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
@@ -952,7 +1024,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       changed: () => {
         // Brookwood's station model draws with its rows.
         if (brookwood) brookwood.group.visible = ['brookwood-station', 'brookwood-south'].some(id => mosaic?.patches.get(id as 'brookwood-south')?.group.visible);
-        renderer.shadowMap.needsUpdate = true;
+        // Like a LOD swap (#534): on low, mark the shadow map dirty and redraw within the shared
+        // 250 ms gap, not on every swap. (Called only from the frame loop and mounts, after
+        // shadowLodDirty is declared below.)
+        if (low && !perfOverrides.shadowGapOld) shadowLodDirty = true; else renderer.shadowMap.needsUpdate = true;
       },
       // Scenery only: vehicles, people and weather are never detail-culled.
       detailRoots: () => [world.group, terrain?.group, east?.group, north?.group, transport?.group,
@@ -1175,7 +1250,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const ink = new ShaderPass(inkShader());
   // Named species' leaves (inkFoliageMesh) draw into a mask the ink pass reads; with none on the
   // board the pass does nothing and the ink is unchanged.
-  composer.addPass(new FoliageMaskPass(scene, camera, ink));
+  const foliageMask = new FoliageMaskPass(scene, camera, ink);
+  composer.addPass(foliageMask);
   composer.addPass(ink);
   const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
@@ -1195,14 +1271,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
   }
+  // `?perf&bloom=device` keeps the old device-px bloom, for A/B runs.
+  const bloomCss = !(perfEnabled && query.get('bloom') === 'device');
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0, 0.55, 0.82);
   composer.addPass(bloom);
   const hts = new ShaderPass(tiltShiftShader([1, 0]));
   const vts = new ShaderPass(tiltShiftShader([0, 1]));
   composer.addPass(hts);
   composer.addPass(vts);
-  composer.addPass(new OutputPass());
-  const grade = new ShaderPass(gradeShader());
+  // Grade does OutputPass's tone mapping and sRGB output itself (one fewer full-resolution pass).
+  // `?perf&output=pass` keeps the separate pass, for A/B runs.
+  const outputPass = perfEnabled && query.get('output') === 'pass';
+  if (outputPass) composer.addPass(new OutputPass());
+  const grade = new ShaderPass(gradeShader({ output: !outputPass }));
   composer.addPass(grade);
   const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
@@ -1220,7 +1301,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     composer.setSize(w, h);
     // Render soft contact shading at CSS resolution. Ink and façades keep the display resolution.
     gtao?.setSize(w, h);
-    bloom.resolution.set(w / 2, h / 2);
+    // The composer sizes every pass in device px; bloom works in CSS px, so its glow is the same
+    // size at every pixel ratio (and a 2x display doesn't pay for a full-resolution bloom chain).
+    if (bloomCss) bloom.setSize(w, h);
     const pr = renderer.getPixelRatio();
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
@@ -1231,9 +1314,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       p.enabled = tilt > 0.01 && !perfOverrides.nopass.has('tilt');
     }
   }
+  const inkWanted = !perfOverrides.nopass.has('ink');
   if (perfOverrides.nopass.size) {
     for (const p of composer.passes) if (p instanceof FoliageMaskPass && perfOverrides.nopass.has('ink')) p.enabled = false;
-    ink.enabled = !perfOverrides.nopass.has('ink');
+    ink.enabled = inkWanted;
     grade.enabled = !perfOverrides.nopass.has('grade');
     if (gtao) gtao.enabled = !perfOverrides.nopass.has('gtao');
   }
@@ -1286,6 +1370,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  // Sliced area builds (?slice=1) take a smaller share of each frame while the camera is dragged.
+  controls.addEventListener('start', () => { sliceInput.dragging = true; });
+  controls.addEventListener('end', () => { sliceInput.dragging = false; });
   // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
@@ -1369,6 +1456,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  let shadowLodDirty = false;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
 
@@ -1381,20 +1469,33 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
-    const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
+    // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
+    updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    // Low: a swap marks the map dirty and redraws within the same 250 ms gap as a camera move, so
+    // a fly-over that swaps tiles every few frames redraws ~4 times a second, not every swap (route:north
+    // logged 206-216 redraws in 10 s, each about a million triangles). High redraws on each swap.
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
+      if (low && !perfOverrides.shadowGapOld) shadowLodDirty = true; else renderer.shadowMap.needsUpdate = true;
+      // A late swap changes what draws: ?perf=run must not sample before it settles.
+      if (perfEnabled) perf.phase('lod:swap');
+    }
+    // Low re-centres on a step that grows with the orbit (0.15 x, at least 80 m): from far away the
+    // same 80 m step came round many times a second while panning, for shadows a few pixels wide.
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? Math.max(SHADOW_STEP_M, 0.15 * camera.position.distanceTo(t)) : SHADOW_STEP_M;
+    const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
     // Hysteresis: re-centre only once the target is 0.6 of a step from the current centre on an
     // axis (a fresh centre is at most half a step away), so a target resting on a cell boundary
     // cannot flip the shadow box back and forth.
-    const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
+    const off = (v: number, c: number) => Math.abs(v - c) > step * 0.6;
     const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+    if ((moved || turned || shadowLodDirty) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
       renderer.shadowMap.needsUpdate = true;
+      shadowLodDirty = false;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
       shadowElev = el;
@@ -1418,73 +1519,93 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     bg.copy(pal.bgNight).lerp(pal.bgDay, day).lerp(pal.bgDusk, gold * 0.7);
     tableMat.color.copy(pal.tableNight).lerp(pal.tableDay, day);
     const night = atm.dark;
-    world.setNight(night);
-    platforms?.setNight(night);
-    floyd?.setNight(night);
-    eastRail?.setNight(night);
-    hyatt?.setNight(night);
-    marquis?.setNight(night);
-    marquisOne?.setNight(night);
-    marquisTwo?.setNight(night);
-    hilton?.setNight(night);
-    altitude?.setNight(night);
-    twelve?.setNight(night);
-    truist?.setNight(night);
-    westin?.setNight(night);
-    peachtreeCenter?.setNight(night);
-    peachtree?.setNight(night);
-    library?.setNight(night);
-    flatiron?.setNight(night);
-    healey?.setNight(night);
-    footballHall?.setNight(night);
-    oneParkTower?.setNight(night);
-    parkPlaceTower?.setNight(night);
-    fiftyFiveParkPlace?.setNight(night);
-    fultonBank?.setNight(night);
-    davisons?.setNight(night);
-    ritzCarlton?.setNight(night);
-    southernBell?.setNight(night);
-    rhodesHaverty?.setNight(night);
-    empireBuilding?.setNight(night);
-    commerceBuilding?.setNight(night);
-    hundredEdgewood?.setNight(night);
-    metropolitan?.setNight(night);
-    mariettaBackdrop?.setNight(night);
-    one12Courtland?.setNight(night);
-    citizensTrust?.setNight(night);
-    fultonGovernmentCenter?.setNight(night);
-    georgiaAquarium?.setNight(night);
-    worldOfCocaCola?.setNight(night);
-    williams250?.setNight(night);
-    fultonCourthouse?.setNight(night);
-    peachtreeOffices?.setNight(night);
-    williamOliver?.setNight(night);
-    omniAtlanta?.setNight(night);
-    fivePointsPlaza?.setNight(night);
-    twoPeachtree?.setNight(night);
-    georgiaPower?.setNight(night);
-    georgiaPacific?.setNight(night);
-    russell?.setNight(night);
-    centennial?.setNight(night);
-    capitol?.setNight(night);
-    arena?.setNight(night);
-    atlantaCityHall?.setNight(night);
-    americasMart?.setNight(night);
-    hurtBuilding?.setNight(night);
-    theCenter?.setNight(night);
-    samNunn?.setNight(night);
-    candler?.setNight(night);
-    equitable?.setNight(night);
-    grady?.setNight(night);
-    terrain?.setNight(night);
-    east?.setNight(night);
-    north?.setNight(night);
-    stopsDowntown?.setNight(night);
-    northStops?.setNight(night);
-    if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
-    stream?.setNight(night);
+    // ~60 landmarks and every area take setNight; night only moves with the clock, so apply it when
+    // it moves, when something mounts (addArea, or any new geometry), and once a second regardless.
+    const geometries = renderer.info.memory.geometries;
+    const applyNight = nightEveryFrame || nightDirty || !(Math.abs(night - nightApplied) <= 0.001)
+      || geometries !== nightGeometries || ++nightFrames >= 60;
+    if (applyNight) {
+      nightDirty = false;
+      nightApplied = night;
+      nightGeometries = geometries;
+      nightFrames = 0;
+      world.setNight(night);
+      platforms?.setNight(night);
+      floyd?.setNight(night);
+      eastRail?.setNight(night);
+      hyatt?.setNight(night);
+      marquis?.setNight(night);
+      marquisOne?.setNight(night);
+      marquisTwo?.setNight(night);
+      medicalArts?.setNight(night);
+      jwMarriott?.setNight(night);
+      hilton?.setNight(night);
+      altitude?.setNight(night);
+      twelve?.setNight(night);
+      truist?.setNight(night);
+      westin?.setNight(night);
+      peachtreeCenter?.setNight(night);
+      peachtree?.setNight(night);
+      library?.setNight(night);
+      flatiron?.setNight(night);
+      healey?.setNight(night);
+      footballHall?.setNight(night);
+      museumTower?.setNight(night);
+      oneParkTower?.setNight(night);
+      parkPlaceTower?.setNight(night);
+      hardRock?.setNight(night);
+      theLandmark?.setNight(night);
+      fiftyFiveParkPlace?.setNight(night);
+      fultonBank?.setNight(night);
+      davisons?.setNight(night);
+      ritzCarlton?.setNight(night);
+      southernBell?.setNight(night);
+      rhodesHaverty?.setNight(night);
+      empireBuilding?.setNight(night);
+      commerceBuilding?.setNight(night);
+      hundredEdgewood?.setNight(night);
+      metropolitan?.setNight(night);
+      mariettaBackdrop?.setNight(night);
+      one12Courtland?.setNight(night);
+      citizensTrust?.setNight(night);
+      fultonGovernmentCenter?.setNight(night);
+      georgiaAquarium?.setNight(night);
+      worldOfCocaCola?.setNight(night);
+      williams250?.setNight(night);
+      fultonCourthouse?.setNight(night);
+      peachtreeOffices?.setNight(night);
+      williamOliver?.setNight(night);
+      omniAtlanta?.setNight(night);
+      fivePointsPlaza?.setNight(night);
+      twoPeachtree?.setNight(night);
+      georgiaPower?.setNight(night);
+      georgiaPacific?.setNight(night);
+      russell?.setNight(night);
+      centennial?.setNight(night);
+      capitol?.setNight(night);
+      arena?.setNight(night);
+      atlantaCityHall?.setNight(night);
+      americasMart?.setNight(night);
+      hurtBuilding?.setNight(night);
+      theCenter?.setNight(night);
+      samNunn?.setNight(night);
+      candler?.setNight(night);
+      equitable?.setNight(night);
+      grady?.setNight(night);
+      terrain?.setNight(night);
+      east?.setNight(night);
+      north?.setNight(night);
+      stopsDowntown?.setNight(night);
+      northStops?.setNight(night);
+      if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
+      stream?.setNight(night);
+    }
+    downtownBatches?.sync(); // after every downtown landmark's setNight
     bloom.strength = 0.55 * night;
-    bloom.enabled = !low && night > 0.02 && !perfOverrides.nopass.has('bloom');
+    // A one-frame warm-up runs bloom at strength 0 by day (it adds nothing), so its blur shaders compile
+    // then and not on the first dusk frame.
+    bloom.enabled = !low && (night > 0.02 || bloomWarmFrames > 0) && !perfOverrides.nopass.has('bloom');
+    if (bloomWarmFrames > 0) bloomWarmFrames--;
 
     const ease = 1 - Math.exp(-dt * 2);
     wx.cloud += (atm.cloud - wx.cloud) * ease;
@@ -1634,9 +1755,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     treeDetail();
     stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far, renderer.domElement.height);
     figures?.update(sceneTime, camera, container.clientHeight);
-    traffic?.update(sceneTime, atm.dark);
-    arterials?.update(sceneTime, atm.dark);
-    midtownArterials?.update(sceneTime, atm.dark);
+    // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
+    if (trafficHeightsStale) {
+      trafficHeightsStale = false;
+      for (const layer of [traffic, arterials, midtownArterials]) layer?.refreshHeights();
+    }
+    camera.updateMatrixWorld();
+    trafficView.setFromProjectionMatrix(trafficViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    traffic?.update(sceneTime, atm.dark, trafficView);
+    arterials?.update(sceneTime, atm.dark, trafficView);
+    midtownArterials?.update(sceneTime, atm.dark, trafficView);
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
@@ -1651,6 +1779,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
     }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    // Ink fades out completely by 4.2 km of view depth (vignette/ink.ts). View depth is linear in
+    // position, so its minimum over the boards' box is at a corner: when even that is beyond the
+    // fade, the pass (and its foliage mask) would only copy the frame, so skip them.
+    if (inkWanted) {
+      camera.updateMatrixWorld();
+      const m = camera.matrixWorldInverse.elements;
+      let near = Infinity;
+      for (const r of [b, mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        for (const x of [r.minX, r.maxX]) for (const y of [-200, 600]) for (const z of [r.minZ, r.maxZ])
+          near = Math.min(near, -(m[2] * x + m[6] * y + m[10] * z + m[14]));
+      }
+      ink.enabled = foliageMask.enabled = near < INK_FADE_END_M;
+    }
     if (gtao && !gtaoOld) {
       // The scene pass draws into the composer's current read buffer, which alternates between
       // its two targets, so point AO at whichever depth texture it fills this frame.
@@ -1683,6 +1825,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    // A few never-drawn objects per frame in one scratch render, after the frame's own work.
+    if (prewarmer?.pending) {
+      // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
+      // program) and halves after a slow one (a real compile), so a phone that compiles slowly
+      // never stacks several compiles into one frame.
+      const t = performance.now();
+      if (prewarmer.step(prewarmBatch)) {
+        const ms = performance.now() - t;
+        perf.prewarmStep(ms);
+        prewarmBatch = ms > 20 ? Math.max(1, prewarmBatch >> 1) : ms < 8 ? Math.min(low ? 6 : 12, prewarmBatch * 2) : prewarmBatch;
+      }
+      if (!prewarmer.pending && !prewarmDone) { prewarmDone = true; bloomWarmFrames = 1; perf.phase('city:prewarmed'); }
+    }
     if (perfOverrides.hide.size && frames % 30 === 0) perf.applyHide();
     frames++;
     if (ts - fpsT > 1000) {
@@ -1721,6 +1876,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setCamera: (x: number, z: number, dist = 700, bearing = 0, tilt = 55) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     areas: () => mosaic ? [...mosaic.areas.keys()] : [],
   } });
+  // Compile what City may show later (weather, dusk and night lights, culled areas) a little at a
+  // time once colour shows, so a clock or weather change never stalls on a first-use shader compile.
+  // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
+  if (!perfOverrides.prewarmOff) {
+    prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    perf.setPrewarmPending(() => prewarmer?.pending ?? 0);
+    const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
+    requestPrewarm = () => setTimeout(rescan, 500);
+    // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
+    const rescanTimer = setInterval(rescan, 10000);
+    options.signal?.addEventListener('abort', () => clearInterval(rescanTimer), { once: true });
+    void (whiteModel?.revealed ?? Promise.resolve()).then(() => { colourShown = true; rescan(); });
+  }
   let firstFrame = false;
   // Low tier: generic tree limbs are a few pixels beyond ~800 m of orbit, so drop them there
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
@@ -1867,6 +2035,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setAtmosphere(a, now) {
       atm = a;
       const day = local(now).doy;
+      sliceInput.dayOfYear = day;
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
       north?.setSeason(day);
@@ -1888,6 +2057,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       glideTo = new THREE.Vector3(p.x, targetY(p.x, p.z), p.z);
     },
     dispose() {
+      prewarmer?.dispose();
+      perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();

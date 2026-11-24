@@ -3269,6 +3269,10 @@ The first skin is 1100 Peachtree. It is a notched 47 m square on the diagonal gr
 
 Each face of 999 Peachtree has the same design: a full-height blue curtain wall between two pale stone wings that step back at the 54.6 m shoulder. On the first pass, the curtain wall was invisible, because its glass sat 0.35 m behind the tower's own wall. Bringing the glass out to the wall plane and moving the stone wings 0.6 m in front of it fixed the depth without carving the mapped footprint. Faces inside a taller adjoining part are now skipped, and the tower uses only the two existing landmark materials. No full-night photograph was available, so the crown gets no lighting. [Day, night and entrance views](log/ui/999-peachtree/README.md)
 
+### 2026-11-23 · ViewPoint on a 600-triangle budget
+
+ViewPoint is the first skin built to the new per-building ceiling: 600 low-tier triangles for a 36-floor balcony tower. Every pane and railing is out of reach at that budget, so the library surfaces do the fine work. Curtain glass gives the blue wall its mullions and floor lines. A silver variant with a band at every floor turns twelve plain boxes into slatted balcony stacks. Precast panels cover the garage. The geometry is only what reads at the orbit: pilasters, stacks, a stepped Peachtree end and the crown screen. The lidar corrected the map again. The tower roof is at 119.9 m, not the mapped 150 m, and the garage is 36–38 m, not 50 m. Eight 8 m bins trace the crown's 10.3 m sweep toward Peachtree. At night a lit pane spans the pilaster in front of it, so one quad shows as two windows. That halved the cost of a noticeably lit residential tower. [Three-quarter view](log/ui/viewpoint/day.jpg) · [Night](log/ui/viewpoint/night.jpg)
+
 ### 2026-11-23 · 77 12th Street drops ten metres
 
 The OSM outline for 77 12th Street tagged the whole 91 × 59 m lot as a 90 m apartment tower, so City drew a solid block twice the size of the real slab. Its three mapped parts and the 2019 lidar tell a different story. The glass slab along 12th Street stands 78.4 m to the roof and 80.8 m to the white parapet. Behind it, a 19.7 m garage carries the pool deck, and a 9.5 m frontage runs along Crescent Avenue. A lidar profile down the slab's length came out flat, which settled a misreading of the photographs: the "lower east wing" is just perspective across a notch in the plan. On the phone tier the skin costs 530 triangles and two draws, with no new shader program. [Before/after, day and night](log/ui/77-twelfth/README.md)
@@ -3360,3 +3364,239 @@ has to come from fewer, bigger batches (the buildings agent's per-cell landmark 
 skipping things. Streaming earns its keep once the board outgrows the fog, and that needs sliced builds
 first. [Blink test, November](log/streaming/blink-nov20.jpg) ·
 [July, January and close views](log/streaming/blink-seasons-close.jpg)
+### 2026-11-24 · 712 West Peachtree, 250 triangles
+
+The 2021 office tower postdates the lidar, so for once the mapped heights stand: an 88 m shaft, a 60 m core and a 25 m deck. The skin is nearly all material. Library curtain glass in deep blue gives it a 1.5 m mullion and a 3.83 m floor line. Two paler floors sit under the roof, a thin dark reveal runs 4 m in from each corner, and the deck has an open band per level. At 23:30 it is a dark office among lit apartment towers. The first skin was 250 triangles of flat navy; review sent it back as a recolour, and the second carries spandrels, fins, a cap and a penthouse in about 600. One trap: a scene z axis that points south put the deck's open bands against the tower wall on the first try. [Day](log/ui/712-west-peachtree/day.jpg) · [Night](log/ui/712-west-peachtree/night.jpg)
+
+### 2026-11-23 · Nomia, a tower newer than the lidar
+
+Nomia opened in late 2023, so the 2019 point cloud shows a construction site and the mapped parts guess 111.6 m. The skin uses the reported 33 storeys: a 70 × 20 m slab, rotated 29° off the board axis, in a near-black green frame with full-height glass. It adds stacked end balconies, a lighter amenity floor and a pale penthouse. The first attempt returned nothing, because one of the shell's footprint probes sat 3 m outside the slab's rotated frame. The fixes were moving that probe and a north-facing review camera that put the whole face in shadow. Treated as residential, it keeps about 30% of its units lit at 23:30. [Day, night and close views](log/ui/nomia/README.md)
+
+### 2026-11-23 — Atlanta's newest tallest tower
+
+The unnamed 60-floor outline at West Peachtree and 12th is 1072 West Peachtree,
+which topped out in November 2025. The 2019 lidar still shows an empty lot, so
+the developer's floor-stack diagram supplies the heights.
+- A 36 m base holds nine parking levels and the glazed Commons.
+- A 72 m precast office block covers floors 11 to 18.
+- The blue-grey glass tower stops at a 219 m roof, a parapet steps up to 223.4 m,
+  and the middle of the broad faces reaches the reported 749 ft (228 m).
+
+A full-height balcony slot is recessed into each face. The slots are offset like a
+pinwheel, matching the published floor plan. At night the residences light one unit
+at a time, and the podium and office roof edges glow. The crown stays dark, as it
+was in August 2026. Its announced lighting hasn't appeared yet. The body is 1,950
+triangles. [Before and after](log/ui/1072-west-peachtree/compare-day.jpg) ·
+[night](log/ui/1072-west-peachtree/compare-night.jpg) ·
+[crown](log/ui/1072-west-peachtree/crown-day-night.jpg) ·
+[sources](1072-west-peachtree.md)
+
+### 2026-11-23 · Ascent Midtown finds its L
+
+Ascent Midtown had been one generic 82 m block over its whole 103 × 43 m lot. The 2019 lidar shows something else: an L-shaped tower whose roof is at 88.5 m, standing along the north edge and down West Peachtree, over a 20 m podium with a pool deck. Ascent shares that podium with the Hilton Canopy, which is already mapped as its own building. Pairing floors into one pane row on the phone tier kept the skin to 275 triangles and two draws there. [Before/after, day and night](log/ui/ascent-midtown/README.md)
+
+## 2026-11-23: Metropolis, and the lamp that ignored the shade
+
+Metropolis's two 21-storey condominium towers now stand on Peachtree as glass shafts with silver slab edges and stacked corner balconies. Between them, a garage podium carries a pool deck. At 23:30 about a third of the apartment runs are lit, as residential towers should be. The lesson was in the daylight. Lit windows live in a separate lamp mesh, and that mesh didn't receive shadows, so on the shaded west face every future-lit window showed at noon as a pale pane. Turning on shadow receiving for the lamps fixed it with no new shader program. A colour blended in sRGB had also drifted from the linear blend of the wall behind it. Both towers together cost 2,094 triangles and two draws.
+[Before and after](log/ui/metropolis/compare.jpg) · [day and night](log/ui/metropolis/daynight.jpg) · [podium close](log/ui/metropolis/close.jpg)
+
+**2026-11-23 — The hospital deck that crosses a seam.** Emory University Hospital Midtown's staff deck is one OSM way, but City's rows cut it at z = −1700, so two areas each load a fragment with the same id. Each row now builds its own physical half: the deck south of the seam and the low wing in one, the rest and the glass stair tower in the other. Both halves share one NAVD88 base, and the fins sit on a 2 m world grid, so the halves meet without a step whichever row mounts first. That matters because the block falls 8 m from West Peachtree to Spring. The white pleated screen became alternating fins 0.75 m proud of the deck edge, and the dusk photograph justified lighting every level as one even plane behind it. The skin is 754 triangles across both rows. [Day, night, seam close-ups at both tiers](log/ui/euhm-staff-deck/README.md)
+
+### 2026-11-23 · The Proscenium's blue crown
+
+The Proscenium's mapped outline has no parts, so its character had to come from the photographs. A pale granite grid with square windows runs up to a crown of five floors of continuous blue ribbon glass, and a narrow glazed slot climbs the middle of each long face to meet it. The faceted Peachtree bay keeps its ribbons for the full height and rises 6 m above the roof to the 104.9 m reported by CTBUH. It's built in one landmark shell with vertex colours only, so the batcher can merge it. [Day, night and Peachtree bay](log/ui/proscenium/README.md)
+
+### 2026-11-23 · 1010 Midtown's ribbons
+
+1010 Midtown is defined by the white balcony ribbon on every floor of its curve toward Peachtree. Drawing one band per floor and per curve facet put the skin at about 3,000 triangles. Merging each slab edge and its rail into a single band, and simplifying the mapped curve to 0.3 m, brought it to about 2,320. On a convex curve, the bands 1.9 m proud of neighbouring facets leave slits where the facets meet, so each band runs 0.6 m past its corners. The flat glass faces carry a white frame grid in front of the night panes. Like the Atlantic, the outline crosses a board seam, and each row draws its own parts. [Before and after](log/ui/1010-midtown/day-before-after.jpg) · [ribbons up close](log/ui/1010-midtown/ribbons-day.jpg)
+
+## 2026-11-24: NCR's sliced tower
+
+The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
+[Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
+
+**2026-11-24 — 100 Colony Square, registered by its own roof.** The map gave the tower's low northeast part returns at 94.5 m, which reads like a tower standing on a podium. Plotting only the returns more than 88 m above ground answered it: they form a clean 45° square about 1.5 m wider than the mapped shaft, so the "tall" returns in the low part are the tower's own edge. The model draws that square, the 89.3 m main roof and the 96.3 m core from the histogram, and leaves the low parts at their mapped 8.7 m. The punched grid is 16 piers and 21 spandrels a face over a recessed glass box: 456 body triangles for about 1,300 windows. [Captures and evidence](log/ui/100-colony-square/README.md)
+
+### 2026-11-24 · 1105 West Peachtree's blue exoskeleton
+
+City drew the whole 1105 West Peachtree block as one 129 m box: the Google office tower, the Epicurean hotel, a condominium and the parking podium. The skin keeps the mapped parts. The 31-storey tower gets green glass and a 125 m silver steel exoskeleton on its south and north faces. The frame stands 1.4 m off the glass, with two X-braced bays either side of the narrow recess the OSM outline already traced, and eight belt modules. The hotel and condominium stand on the lawn-topped deck. Lidar could not help, because the April 2019 survey shows an empty lot, so the heights come from the published 410 ft frame and floor counts. The first test found a missing podium. The deck part is the one polygon in the block with holes, and the shared helper pattern of skipping multi-ring parts had silently dropped it. A SKYDB photo from an ordinary August 2026 weeknight shows the frame lit solid cobalt. That became the night state, in a second lit material that shares the lamp program, while the programmable event colours stay unmodelled. The block costs about 2,380 triangles and three meshes. [Before and after, day and night](log/ui/1105-west-peachtree/compare-south.jpg)
+
+### 2026-11-24 · Amli Arts Center in its white frames
+
+Amli Arts Center was a generic block filling an L-shaped lot at 15th and Spring. The lidar splits the lot cleanly: a 29-storey tower along 15th Street with its roof at 89.9 m, and a 19.7 m precast garage running up Spring Street with the pool deck on top. The returns climb to 96.5 m over the roof, and the aerial photograph explains why. The thick white frames around the dark glass rise past the roof into an open crown. On the phone tier the tower costs 416 triangles and two draws. [Before/after, day and night](log/ui/amli-arts-center/README.md)
+### 2026-11-24 · Lit windows ride the wall's draw by day
+
+On the A16, hiding buildings alone took the default view from 26 to 41 fps, and an inventory of every building draw found why: 333 draws for 992k triangles, with 138 of them lit-window and lamp meshes averaging 450 triangles each. Merging them is awkward because every landmark lights its windows in its own colour and strength, so a plain merge per 500 m cell left 65 meshes alone. The fix was to notice that by day all those lamps look exactly like their walls. The batcher now probes each landmark's own night switch at night 1, 0.5 and 0, bakes constant material colours into the vertex colours, and lays each cell's meshes into one buffer sorted by look. By day the whole cell draws as one range; at night the same buffer is drawn as one range per distinct look, so nothing is stored twice. Far house tiles got the same treatment in 3×3 blocks. At the default view, low-tier calls fell from 558 to 414 and high from 605 to 462, with the same triangles, programs and heap. The surprise was the heap: the first version cost 49 MB, because the `sync()` closure kept the batcher's bookkeeping map alive, and that map held every original geometry. [Default view, high, before and after](log/perf-buildings/01-default-day-high.jpg) · [Four Seasons and 1100 Peachtree at night](log/perf-buildings/03-four-seasons-1100-night.jpg)
+
+### 2026-11-24 · Hanover Midtown and a podium with holes
+
+The first render of Hanover Midtown was the generic box, because the mapped podium part carried four rings: an outer ring plus courtyard holes under the tower. The skin's guard expected exactly one. Using the outer ring fixed it. The L-shaped tower is blue-green glass with white fins about every 8.5 m. The amenity deck on the 25 m podium has a pool, lawn and cabanas, which at the review orbit say "apartment tower" more clearly than any facade detail. Night follows the property's pool-deck photograph, with a third of the units lit. [Day, night and pool deck](log/ui/hanover-midtown/README.md)
+
+### 2026-11-24 · Loews and the hotel next door
+
+Loews Atlanta's parts carry a mapped 79.9 m, which is no roof at all. The lidar puts the tower at 405 m NAVD88 over a 295 m street, and the Peachtree half at 411.5 m, about 117 m, which matches the site's mapped 118.3 m. The west wing stops at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
+
+### 2026-11-24 · Sora at Spring Quarter, part by part
+
+Sora's five mapped parts happen to line up with its five materials. The main shaft and north block are blue-green glass in a white frame, the dark blade climbs from the base, and the west wing is white with punched windows. The podium is cream. Faces buried in a taller neighbouring part are skipped, and two balcony stacks run up the shaft's east corners. The historic chapel next door stays its own building, so at the review orbit the old gables and the new tower read as two things. [Day, night and podium views](log/ui/sora/README.md)
+
+### 2026-11-24 — Square on 5th's fins and curve
+
+Square on 5th, Georgia Tech's 25-storey student tower on Spring Street, was a
+generic box at its mapped 98 m. The 2019 lidar puts the roof at 88 m, 10% lower.
+The tower now has brick end bays of punched windows. On the straight north face,
+four concrete fins run past the roof to carry an open roof frame. The curved south
+face is teal glass with white slab edges. The body is 671 triangles. I found no
+night photograph, so the lit share of rooms is an estimate.
+[South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
+[north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
+
+### 2026-11-24 · Twelve Midtown gets its spires
+
+Twelve Midtown at Atlantic Station had been a plain 85 m block that also covered its low service wing. The lidar finds the slab along 17th Street with its roof at 87 m. Its maximum, 96.5 m, comes from the two pointed spires over each end, which every SKYDB photograph shows. The skin draws the slab in pale precast and teal glass, adds balcony rows on the high tier and the spires on both tiers, and drops the wing to its measured 8.5 m. On the phone tier it costs 542 triangles and two draws. [Before/after, day and night](log/ui/twelve-midtown/README.md)
+
+
+**2026-11-24 — 400 Colony Square, read from a height map.** For the second tower I sampled the lidar on a 2 m grid in the street frame and printed the median height of each cell. The roof became readable: an 83.3 m rectangle, 38 by 55.5 m, with an 86–89 m parapet that the lidar catches best on two edges (drawn all round), with a two-step core at 89.9 and 91.2 m in the middle. The "podium" heights that worried the survey were the parapet and the tower's own edge. Both Colony Square towers now come from one module that takes a frame, a plan, floors and a list of cores. 400 adds 685 triangles. [Captures and evidence](log/ui/400-colony-square/README.md)
+
+## 2026-11-24: 1355 Peachtree gets its crown
+
+1355 Peachtree is now a red-brick tower. It steps back three times under cream cornices, rises to a pitched, pedimented crown, and stands over a limestone base and brick podium wings. The surprise was the podium. The mapped heights treated it as one 32 m block, but the lidar shows corner pavilions standing up to 41 m. Measuring each of the ten parts on its own lifted half of them by 3 to 8 m. The pitched crown also shows up in the lidar as a spread: a median of 74.8 m and a maximum of 77.1 m, which sets the eaves and the ridge.
+[Before and after](log/ui/1355-peachtree/compare.jpg) · [day and night](log/ui/1355-peachtree/daynight.jpg) · [close](log/ui/1355-peachtree/close.jpg)
+
+### 2026-11-24 — Two Midtown Plaza's ribbon glass
+
+Two Midtown Plaza (1986) now wraps its half-round west end in blue reflective
+ribbon glass, with a maroon band at every floor and a dark red granite shaft
+where the curve meets the straight slab. The base is red granite. The mapped
+parts carry separate lidar roofs: 78 m on the slab and 73 m on the round end,
+the step visible in the 2009 dusk photograph. Listings disagree between 17 and
+20 storeys. The photographs show 15 glass bands over two granite storeys, so the
+model follows them. At night the lobby drum glows and the offices stay mostly
+dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
+[night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
+
+
+### 2026-11-24 — Taking the corners off the freight line
+
+The downtown freight track was drawn straight from Overture's polyline, so it turned at hard corners wherever the source had a vertex. Measured over 12 m chords, it bent as tightly as 65 m. A 28.6 m autorack spanning one of those corners swung 1.3 m off the rails, which is why autoracks and double stacks were kept off downtown. The pipeline now gives every free vertex on the freight route a 150 m circular fillet. Run ends, switches, junctions, bridge ends and board edges stay exactly where they were. The largest move from the source line is 16 cm, the ground audit's ballast count changed by one sample, and the seam with the King Memorial board stays closed. The first try left a doubled point on the board edge, where an end fillet started exactly on the pinned vertex. The seam test counted seven edge points instead of six and caught it. [Radius along the route, before and after](log/freight/curvature/radius-chart.png)
+
+### 2026-11-24 — Cars that cost nothing when you can't see them
+
+The phone spent about 6 ms of every 33 ms frame updating City, and road traffic was most of it. Every car was posed every frame, wherever the camera was looking. Each pose meant three exact height lookups against the drawn terrain and decks, plus a signal-queue solve that allocated a string key for every car at every light. At 6× CPU throttle on the Studio, traffic alone took 7.7–9 ms.
+
+Each lane now keeps a cached 2 m height profile, and cars outside the camera frustum are skipped. Matrices and colours upload only when they change. Holding the same seed and clock, the Midtown arterial view fell from 9.0 ms to 1.3 ms, and the whole-board view fell from 7.7 to 5.4 ms. The real A16 measured City's update step falling from 6.5 to 3.8 ms on an earlier commit.
+
+The surprise came in review. The profile passed a pose-equivalence test on a sloped plane, yet on the real board it was off by up to 8 m. One road owner can switch between deck and ground inside a 2 m step. Each step now checks itself against the drawn road at its eighths before it is allowed to interpolate. After that, every lane on the 12-area board is within 5 mm of exact sampling. [Same frame, legacy and new](log/perf/traffic-frame-cost-midtown.jpg)
+### 2026-11-24 · Atlantic House
+
+The map gave Atlantic House 125 m. The lidar puts its stone crown about 110 m above its low corner, with end bays 10 m lower. That matches CTBUH's 109 m to within the site's 7 m of slope. It is the first skin built entirely to the overnight rules. It uses vertex colour only, so it batches with zero added draws. Its teal-grey glass sits under the rendered saturation cap (S 29, V 54 sunlit), and lit units come from the shared `litHash` rather than a random stream. The look comes from geometry: cream pilasters, balcony stacks, a slab edge per floor and the crown's stone piers. [Day](log/ui/atlantic-house/day.jpg) · [Night](log/ui/atlantic-house/night.jpg)
+
+### 2026-11-24 · The Medical Arts Building, from its nomination
+
+No good public photographs of the 1927 Medical Arts Building turned up, but the 2016 National Register nomination describes every elevation in turn. That was enough to model it. The two-storey limestone base and orange terracotta band run on Peachtree and the north side. A pilastered capital and a cornice turn both corners and stop. On the north side, a tile panel sits between heightened bays. The south wall is plain red brick with a blank strip where the elevator core sits. The nomination's "60 feet of frontage, 140 feet deep" matched the Overture outline. The lidar put the elevator penthouse and stair head at 357 m and 362 m NAVD88, exactly where the nomination says the two-storey penthouse stands. The building has been boarded since at least 2016, so it is the first skin with no lamp mesh at all. It costs about 470 triangles and goes straight into the downtown landmark batch. [Before and after](log/ui/medical-arts/compare-ne.jpg)
+
+
+### 2026-11-24 · Modera Parkside, height by report
+
+Modera Parkside went up on a lot the 2019 lidar recorded as empty, so the only height available is a reported one: 32 storeys and a rooftop club. City builds that as a white parking podium filling the block, with a blue-grey glass slab over its south end, about 104 m to the roof. The marketing renderings add rainbow stripes up the park side, but no photograph confirmed them, so they're left out and noted in the review README. [Day, night and podium views](log/ui/modera-parkside/README.md)
+
+
+
+### 2026-11-24 · The Standard, measured from the point cloud
+
+The Standard's map entry had one inferred 68.4 m part covering everything, so the 2019 lidar was sampled on an 8 m grid instead of as one number. The grid shows a 63 m north bar, a 61 m east bar with a 64 m core, a 44 m step to the west, a 31 m mid-rise over the garage and a courtyard notch. Each became a mass. The precast skin has the amber "cutouts" from the architect's photos, the mid-rise's roof carries the pool and green roofs, and at 23:30 the student rooms are lit more than a typical apartment tower's. [Day, night and amenity deck](log/ui/the-standard/README.md)
+
+
+### 2026-11-24 · University House is sixteen metres shorter
+
+University House on Spring Street was mapped at 80 m and drawn as a block over the whole lot. The 2019 lidar puts its roof at 63.8 m, or 19 floors at 3.3 m, which matches the floor count reported when it opened. The returns also trace an L around an 8 m garage deck. From a single Midtown Alliance photograph, the skin carries over the grey, charcoal and yellow panel blocks that make the tower easy to pick out near Georgia Tech. This build also showed that on-and-off camera triangle counts carry ±400 of noise and count a mesh several times, so the skin reports its mesh size, 350 triangles on the phone tier, alongside them. [Before/after, day and night](log/ui/university-house/README.md)
+
+
+### 2026-11-24 · MAA Midtown is 84 m, not 98
+
+The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th Street at 386.5 m NAVD88, about 84 m over the street. The block behind it toward Peachtree Walk stops about 5 m lower, and the rooftop pavilion tops out at 389.7 m. The skin follows the lidar, so the tower now stands 14 m shorter than the box it replaces. In City, z grows to the south, and I placed the glass corner and pavilion at the wrong end twice before checking which way 11th Street runs. A 2024 Commons photo gave the rest: a brick slab with seven white-framed balcony stacks, a blue glass corner with a white fin, and a banded garage. [Before and after](log/ui/maa-midtown/day-before-after.jpg) · [night](log/ui/maa-midtown/night-before-after.jpg)
+
+
+**2026-11-24 — Winship's floating roofs were a canopy.** OSM lifted two parts of the Winship Cancer Institute to 17.4 m with nothing under them, which looked like a data error. The architects' photographs explain it: they are the timber drop-off canopy, and the leftover "podium" part the pipeline generated between them is exactly its round oculus. The model keeps all three as mapped. The two parts become a 1.8 m slab, and the residual part stays a hole you can see the podium through. The 2019 lidar caught only the excavation, so the tower's 89 m comes from SOM's 292 ft. The podium part also arrived with two holes, the tower and hall footprints, and that is why the first build fell back to a box. [Captures and parts table](log/ui/winship/README.md)
+
+### 2026-11-24 · 271 Seventeenth's Streamline bands
+
+TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)
+
+## 2026-11-24: Regions Plaza, and a false alarm about windows
+
+Regions Plaza is now pink granite. It has notched corners at 84 m, an arched top storey with pinnacles, and a hip roof that the lidar puts at 104 m. At night that roof is floodlit as one even glow, as in the Commons night photo. The near-black windows at noon looked like a geometry bug. I briefly suspected litFacade's winding and warned the lead, then retracted it. The real cause was the tall neighbour's shadow falling across the face. A sunlit strip of the same face measures S 12–16%, V 43–46%. The lesson: measure the pixels where the sun actually falls before blaming the mesh.
+[Before and after](log/ui/regions-plaza/compare.jpg) · [day and night](log/ui/regions-plaza/daynight.jpg) · [close](log/ui/regions-plaza/close.jpg)
+
+### 2026-11-24 · One Georgia Center's marble grid
+
+The 113 m tower at 600 West Peachtree had no name in the data. A reverse lookup and the OSM tags (built 1968) identified it as One Georgia Center, the Life of Georgia headquarters, clad in white Georgia marble. Its face is a deep eggcrate: close vertical fins and projecting floor slabs over pale glass. In City it is drawn as full-height marble strips and slabs standing 0.9 m off a glass box, with a colonnade base and a solid ribbed band at the top. The grid shades its own panes. The first glass colour passed the palette table, but the rendered-pixel check measured sunlit glass at V 37, under the floor, so the base went up to V 76 and the panes landed at V 42. A 2020 Commons night photo shows the marble uplit cool white. The first version lit the whole frame flat from pavement to crown, which read as a daytime texture pasted into the night, so the floodlight is now three height bands that fall to a third at the crown. The building is landmark tier: about 1,600 low-tier triangles and five meshes. [Before and after](log/ui/one-georgia-center/compare-west.jpg)
+
+### 2026-11-24 · SkyHouse South in white and teal
+
+SkyHouse South on 6th Street was a generic 90 m block. The 2019 lidar puts its roof at 75.6 m, with a set-back sky deck to 79.5 m. The property photograph supplied the rest: a white precast frame around teal-green glass, balcony stacks at the corners and centre, and a blue glass band under the deck. It is the first skin built under the provisional glass rules. Its photo-matched teal at V 66 rendered too dark in sun, so the base went up to V 75 to land sunlit windows at V 40–42. On the phone tier it costs about 190 triangles and one draw. [Before/after, day and night](log/ui/skyhouse-south/README.md)
+
+### 2026-11-24 · Norfolk Southern from roof slabs to towers
+
+OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13, floating over thin end masses, and the 2019 lidar predates the site. The sources didn't agree on storey counts: HOK says 17- and 10-storey towers over a five-storey podium, the structural engineer says 12 and 5 over 11, and CoStar says 22. City takes HOK's 22 and 15 floors and keeps OSM's massing by shifting its levels up two, which gives 86 m and 58 m, both inferred. Each tower is two knife-edged glass halves either side of a slot 2 m lower, as in the photos. [Before and after](log/ui/norfolk-southern/day-before-after.jpg) · [night](log/ui/norfolk-southern/night-before-after.jpg)
+
+
+**2026-11-24 — The Hard Rock building was a third of its height.** Overture gave the corner block at Peachtree and International 69.3 m, which made it a plain grey tower among the Peachtree Center towers. The 2019 lidar measures the roof at 22–26 m. Street View shows a pale stone six-storey block, with paired windows between flat piers and maroon awnings over the restaurant. The model draws that and leaves off the neon guitar and the rooftop sign, which are logos. It is a downtown landmark, so it also joins the batcher's `listed` array. [Captures and references](log/ui/hard-rock-building/README.md)
+### 2026-11-24 · Building an area without stopping the frame
+
+Growing City toward I-285 means loading areas while the camera moves. A Midtown row is one
+synchronous build: about 1.6 s on a phone-class CPU (the Studio throttled 6×), and a pan stops
+dead while it runs. The first profile found a free win. Street-lamp placement scanned every
+landmark site for every lamp candidate, which was 38% of the row. Indexing it (#478) made every
+Midtown row build about 30% faster with identical lamps.
+
+The rest is slicing. Each build is now a generator that yields between units of work: stages,
+landmarks, every 8 houses, every 6 buildings, every 64 to 128 trees, every 64 crowns of the tree
+plan, every 16 streets of lamps. One driver runs it straight through (boot, tests). Another runs
+4 ms of it per frame (8 ms on high, half that while you drag). The hard part was proving that
+"where it yields" never changes the result. Nearly every random draw here is seeded per
+building, per tree or per position, never from a shared stream, which is what makes it possible.
+A Brookwood row with its 4,000 crowns, the tree plan and a November season fingerprints
+identically before and after, and identically when sliced at every step. Two real bugs turned up
+on the way: a seam that failed validation leaked both of its new areas, and deferred trees could
+have sampled the ground after a rail cut had lowered it.
+
+The gate metric surprised me. At 6× CPU, City's own frames are already 60 to 140 ms long tasks,
+so "no long task" can't measure the build. The driver now reports the longest run of build work
+inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
+batching, which the buildings agent is turning into a generator. A row now mounts over about 200
+frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
+### 2026-11-24 · Nine15 Midtown from Street View
+
+Nine15 Midtown on 8th Street was mapped at 94 m, but the lidar puts its flat roof at 71.3 m. With no property photograph of the tower itself, this skin uses the rule for dated Street View: three captures from December and March 2025 agree on white and grey panels, tall glass, dark balcony stacks at the corners and a dark base. The Midtown Alliance rendering only confirms the massing. It is the first skin to cost no draws on the phone tier, because landmark batching folds it into its 500 m cell. [Before/after, day and night](log/ui/nine15-midtown/README.md)
+## 2026-11-24: The Registry, measured twice
+
+The Registry on the Park is mapped at 98 m and listed at 321 ft, but the 2019 lidar put its roof near 77 m. It was finished in 2017, so the lidar should see it. Two checks settled it. Insets of 2, 6 and 10 m inside the tower part all give a 356.9 m NAVD roof, so the footprint was not catching a podium. The ground falls toward the park, but even from the lowest return the top is 86.5 m. The model now uses absolute NAVD heights and leaves the 321 ft unverified. The other lesson was light: at 11:30 a taller neighbour shades this face, so the glass had to be checked at 14:00 to find any sun on it.
+[Before and after](log/ui/registry-on-the-park/compare.jpg) · [day and night](log/ui/registry-on-the-park/daynight.jpg) · [close](log/ui/registry-on-the-park/close.jpg)
+
+**2026-11-24 — The Landmark loses 18 m.** Overture extruded the 1963 slab on Piedmont to 86.2 m. The 2019 lidar puts its roof at 62.5 m, with the penthouse at 68 m. The mapped outline's notches turned out to be useful. Each long face breaks into a brick middle flanked by short returns, and painting the returns and ends in pale concrete reproduces the photographed pattern of concrete fins either side of a brick field, with no extra geometry. [Captures and references](log/ui/the-landmark/README.md)
+
+### 2026-11-24 · The unnamed glass slab on Ivan Allen
+
+One of the largest footprints City still drew as a box was unnamed in the data. A reverse lookup put it at 45 Ivan Allen Jr Boulevard: the W Atlanta – Downtown, reflagged as a JW Marriott in 2026, a 25-storey hotel with condominiums above. The 2019 lidar resolved its mapped parts: a 102 m slab with a roof deck sunk to 98 m inside a glass parapet, a 106 m south block, balcony stacks on the east face up to 89 m, and a podium at 18 to 22 m. The first glass colour passed the sunlit check but sent both long faces deep navy, because the slab runs north–south and both are in shade most of the day. A paler, less saturated base brought the shaded faces' saturation within a point of a generic tower's (S 38 against 37), though they stay darker (V 35 against 44). The building costs about 1,740 low-tier triangles and adds no draws, since it merges into the downtown landmark batch. [Before and after](log/ui/jw-marriott-downtown/compare.jpg)
+
+## 2026-11-24: Park Central, split by tier
+
+Park Central's buff slab on 12th Street is now one of the park-edge buildings people actually see. The lidar trimmed it from a mapped 71 m to a 54.6 m hip ridge. The interesting part was the budget. Punched windows with frames came to 6,500 triangles, and the low tier caps a landmark at 2,400. On the phone tier, each window column is now one glass strip crossed by a stucco band per floor, and only lit windows get their own quads. That gives 1,724 triangles and reads almost the same at the orbit. The high tier keeps punched windows, framed on the lowest storeys only.
+[Before and after](log/ui/park-central/compare.jpg) · [day, night and low tier](log/ui/park-central/daynight.jpg) · [close](log/ui/park-central/close.jpg)
+
+
+
+### 2026-11-24 — Transport far form
+
+On the phone tier, transport was 519,000 of the 2.43 million triangles in the default view: roads, decks, rails, lamps and the streetcar. That view puts the camera about 24 km from the board, where a phone pixel covers roughly 10 m. Rails, ties, lane lines, parapet tops and lamp posts are all smaller than a pixel there, and the phone still drew every one.
+
+Each transport mesh now orders its triangles so the parts that still read at that distance come first: road surfaces, deck sides, ballast and track slabs. Past 700 m from the camera on low, or 1,600 m on high, it draws only that prefix. The order is a permutation of whole triangles. Close up, every mesh draws exactly what it drew before, with no new memory or shader programs. Height lookups follow the permutation, and a test compares them on a dense sample with and without it. Lamp heads stay at night, so the lights still read.
+
+On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
+
+[Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
+
+### 2026-11-24 — The shadow map was redrawing five times a second on a fly-over
+
+On the A16, `route:north` showed 206 shadow-map redraws in 10 s, each about a million triangles. The camera policy allows one redraw per 250 ms. The extra redraws came from level-of-detail swaps: every house tile, ground board or transport far-form swap set `needsUpdate` on its own, and a fly-over swaps something every few frames. On the phone tier a swap now just marks the map dirty, and the next redraw waits for the same 250 ms gap. The re-centre step also grows with the orbit, to max(80 m, 0.15 × orbit). Over a 20 s route, redraws fell from 209 to 94 on north and from 201 to 91 on the loop, and the worst frame on north fell from 167 to 33 ms. Frames at rest match the old path within film grain. [Fly-over strip](log/perf/shadow-gap/route-north-strip.png)

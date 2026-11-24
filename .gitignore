@@ -13,3 +13,4 @@ web/public/data/scene/
 web/.impeccable/hook.cache.json
 web/public/art/
 pipeline/scripts/art/__pycache__/
+pipeline/scripts/__pycache__/

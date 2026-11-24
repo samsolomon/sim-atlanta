@@ -35,16 +35,27 @@ for (let i = 0; i < 120 && !up && !exited; i++) { try { up = (await fetch(`http:
 if (!up || exited) { server.kill(); rmSync(tmp, { recursive: true, force: true }); console.error(`vite preview did not answer on :${port}`); process.exit(1); }
 
 let failed = false;
+let retries = 0;
 try {
   for (const [tier, b] of Object.entries(budget).filter(([k]) => !k.startsWith('_'))) {
     const json = join(tmp, `${tier}.json`);
     // An entry may name its tier and clock (high-night is the high tier at 22:00).
     const url = `http://127.0.0.1:${port}/?view=city&q=${b.tier ?? tier}&t=2026-11-20T${b.time ?? '14:00:00'}-05:00&perf=run`;
-    const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : []), url],
-      { env: { ...process.env, PERF_JSON: json }, stdio: 'inherit' });
-    if (r.status !== 0) { failed = true; continue; }
-    const s = JSON.parse(readFileSync(json, 'utf8'))[0]?.summary;
-    if (!s) { console.error(`${tier}: no result`); failed = true; continue; }
+    // One retry on a run that failed or was invalid (another agent's load can stall a headless GPU),
+    // with the reason printed either way; a second failure fails the check.
+    let s = null;
+    for (let attempt = 1; attempt <= 2 && !s; attempt++) {
+      const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), ...(b.viewport === 'desktop' ? ['--desktop'] : []), url],
+        { env: { ...process.env, PERF_JSON: json }, stdio: 'inherit' });
+      let res = null;
+      try { res = JSON.parse(readFileSync(json, 'utf8'))[0]; } catch { /* no result file */ }
+      const why = r.status !== 0 ? `perf-run exited ${r.status ?? r.signal}${res?.error ? ': ' + res.error : ''}` : !res?.summary ? 'no result' : null;
+      // Only an invalid run retries (perf-run failed: nonce mismatch, nothing drawn, timeout, not
+      // settled; or no result). A valid run over a ceiling is judged below and fails at once.
+      if (why) { console.error(`${tier}: retry: ${why}${attempt === 2 ? ' (second failure: giving up)' : ''}`); if (attempt === 1) retries++; }
+      else s = res.summary;
+    }
+    if (!s) { failed = true; continue; }
     // A partial board comes in under every ceiling, so it must fail rather than pass quietly.
     if (s.areas < 12) { console.error(`${tier}: only ${s.areas} of 12 areas mounted; check the staged data`); failed = true; continue; }
     console.log(`\n${tier.toUpperCase()}            measured     ceiling      target`);
@@ -58,8 +69,23 @@ try {
       console.log(`  ${k.padEnd(14)} ${String(v).padStart(10)} ${String(ceil ?? '-').padStart(11)} ${String(tgt ?? '').padStart(11)}  ${over ? 'OVER CEILING' : typeof tgt === 'number' && v > tgt ? `${Math.round((v / tgt - 1) * 100)}% over target` : 'at target'}`);
     }
   }
+  // Late compiles: a quick clock and weather sweep per tier after ready (scripts/program-sweep.mjs).
+  const allow = budget._lateCompiles?.allow ?? [];
+  for (const tier of ['low', 'high']) {
+    const json = join(tmp, `sweep-${tier}.json`);
+    const r = spawnSync('node', [join(root, 'scripts/program-sweep.mjs'), '--url', `http://127.0.0.1:${port}`, '--q', tier, '--quick', '--json', json], { stdio: ['ignore', 'ignore', 'inherit'] });
+    if (r.status !== 0) { console.error(`${tier} sweep: failed to run (program-sweep exited ${r.status ?? r.signal}; its error is above)`); failed = true; continue; }
+    const sweep = JSON.parse(readFileSync(json, 'utf8'));
+    const late = sweep.rows.flatMap(row => row.newPrograms.map(p => ({ step: row.label, text: `${p.owners.map(o => `${o.path} ${o.type}`).join('; ')} ${p.key}`, owners: p.owners })));
+    const unexplained = late.filter(p => !allow.some(a => p.text.includes(a.match)));
+    console.log(`\n${tier.toUpperCase()} SWEEP     ${sweep.atReady} programs at ready, ${sweep.max} max; ${late.length} compiled after ready (${late.length - unexplained.length} known), worst step frame ${sweep.worstStepFrameMs} ms`);
+    for (const p of unexplained) console.log(`  LATE COMPILE at ${p.step}: ${p.owners.map(o => o.path || o.type).join('; ') || 'no owner found'}`);
+    if (unexplained.length) failed = true;
+  }
 } finally {
   server.kill();
   rmSync(tmp, { recursive: true, force: true });
 }
+console.log(`\ntest:perf ${failed ? 'FAILED' : 'passed'}; ${retries} retr${retries === 1 ? 'y' : 'ies'}.`);
+if (failed) console.error('test:perf FAILED: see the reasons above (OVER CEILING, LATE COMPILE, or a run that failed twice).');
 process.exit(failed ? 1 : 0);

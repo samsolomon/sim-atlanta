@@ -96,5 +96,40 @@
     "x": 577.4,
     "z": -3601.9,
     "heightM": 190
+  },
+  "westPeachtree1072": {
+    "id": "osm:way:1464967906",
+    "name": "1072 West Peachtree",
+    "x": 308.3,
+    "z": -3351.2,
+    "heightM": 228
+  },
+  "squareOn5th": {
+    "id": "osm:way:536884432",
+    "name": "Square on 5th",
+    "x": 219.5,
+    "z": -2681.5,
+    "heightM": 89.5
+  },
+  "twoMidtownPlaza": {
+    "id": "osm:way:269636880",
+    "name": "Two Midtown Plaza",
+    "x": 395,
+    "z": -4194,
+    "heightM": 79
+  },
+  "mayfair": {
+    "id": "osm:way:536728181",
+    "name": "Mayfair Tower Condominiums",
+    "x": 1005.9,
+    "z": -3588.6,
+    "heightM": 102.2
+  },
+  "alexan8th": {
+    "id": "osm:way:789975430",
+    "name": "Alexan on 8th",
+    "x": 361.5,
+    "z": -2800,
+    "heightM": 74.5
   }
 }

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { InstancedMesh } from 'three';
+import { BufferGeometry, InstancedMesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { midtownBaseNavd88M, SquareMosaic } from '../city/square-mosaic';
 import { GroundGrid } from '../terrain/grid';
@@ -89,7 +89,11 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
     }
     const originalWalls = walls();
     for (const error of [/checksum/, /1400,640/]) {
+      // A seam that fails validation after the patches are built must dispose them all.
+      const disposed = vi.spyOn(BufferGeometry.prototype, 'dispose');
       await expect(addSection('south', mounted, quality, signal)).rejects.toThrow(error);
+      if (fault === 'seam') expect(disposed.mock.calls.length).toBeGreaterThan(20);
+      disposed.mockRestore();
       expect([...mounted.keys()]).toEqual(['downtown', 'king', 'auburn']);
       expect(walls()).toEqual(originalWalls);
       fault = 'seam';
