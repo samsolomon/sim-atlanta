@@ -3668,3 +3668,13 @@ because a static batch costs nothing and an animated wheel wouldn't.
 ### 2026-11-24 · Windsor Over Peachtree in buff brick
 
 The 1964 Peachtree North Apartments at North Avenue had been a generic glass slab. The lidar puts the roof at 57 m above grade. Two photographs gave the look: buff brick, balcony runs between brick piers, and brick end walls. The first version ran the balconies the full length of each face, and from the review orbit they hid every pier, so the building read as a grey striped box. Breaking the runs at the piers brought the brick back. [Before/after, day and night](log/ui/windsor-over-peachtree/README.md)
+
+### 2026-11-24 — More brick on ordinary blocks
+
+Giving each generic facade a base and a cap originally cost 15.6 MB on low. Keeping a flush
+street frontage and drawing the window rhythm on a straight shaft brought the overhead to
+about 6 MB. At the high-tier Peachtree Center camera, a red-brick shop sits beside an open
+concrete deck. The glass check found a different issue in the banded offices. One sunlit
+ribbon reached just V 34.9 under the final colour grade. The same pane sample now bottoms out
+at V 49.8. The [four-view sheet](log/ui/generic-buildings/final-sheet.jpg) follows the city
+from late morning through the first lit windows.

@@ -59,7 +59,8 @@ load. World's legacy stream is untouched, so rooftop clutter does not move.
   still applies. `aBase` (the storey origin) is now set per vertex.
 - **Draws:** unchanged. Everything stays in the one generic building mesh.
 - **Geometry:** each outer edge of a v2 building is 1 quad (legacy), 3 quads (base, shaft and
-  cap), 4 with an inset base and soffit, or 6 with a cornice. Measured numbers are in the PR.
+  cap), 4 with an inset base and soffit, or 6 with a cornice. Low uses a straight shaft and
+  an optional flush base, at most two quads per edge.
 - **Glass:** near-neutral bases inside docs/glass-palette.md (the punched glass is V 45–49 at
   S ≤ 10). Measured rendered values are in the PR.
 
@@ -68,3 +69,17 @@ load. World's legacy stream is untouched, so rooftop clutter does not move.
 - `web/src/vignette/generic-v2.ts`: the flag, archetype table, assignment and ring offset.
 - `web/src/vignette/generic-v2-glsl.ts`: the facade patterns.
 - `web/src/vignette/world.ts`: `appendGenericWalls`, and the shader branch.
+
+## November 24 comparison
+
+The [updated sheet](log/ui/generic-buildings/final-sheet.jpg) shows the four original high-tier
+cameras at 11:30, 17:25 and 17:50 on November 20. For ordinary 12–30 m buildings the brick
+weight rose from 35% to 50%. Two commercial palette entries now use red and terracotta.
+
+The rendered glass check used the high tier at 11:30 with clear illustrative weather. An
+auxiliary shader marked visible pane interiors on sun-facing walls. We sampled the corresponding
+pixels in the normal graded screenshot, inside sunlit rectangles and two pixels clear of mask
+edges. The banded office at `cam=403,-1314,335,72,410` measured maximum S 9.9 and minimum V
+49.8 across 18,010 pixels. Two green-glass facades at `cam=159,-1234,335,72,160` and
+`cam=305,-1166,335,72,180` measured maximum S 13.6 and minimum V 56.1 across 70,056 pixels.
+These are samples of the rendered facades at those views.

@@ -67,6 +67,38 @@ const DECK = ['#d2cdc2', '#c7c1b5', '#d9d4c9', '#bdb8ad'];
 const SHOP = ['#d9cdb5', '#b86a4b', '#9a4c39', '#b9a68c', '#a9583f', '#cfc6b4', '#9c5d48'];
 const GLASS_FRAME = ['#9ea4a7', '#b0b3b2', '#8c9396', '#a8a59c'];
 
+type Rgb = readonly [number, number, number];
+
+// Linear RGB, shared by the pane shader and the far-board wall approximation.
+export const BANDED_PANES: readonly Rgb[] = [[0.32, 0.39, 0.37], [0.40, 0.35, 0.31], [0.35, 0.42, 0.49], [0.31, 0.325, 0.35]];
+export const TOWER_PANES: readonly Rgb[] = [[0.36, 0.43, 0.50], [0.28, 0.36, 0.47], [0.30, 0.40, 0.39], [0.33, 0.38, 0.42]];
+
+/** Far-board colour in linear RGB. The shaft uses the shader's faded coverage and
+ * the tower glass at its mid-height tint. Plain caps and legacy walls pass through. */
+export function v2StyleTone(style: number, wallRgb: Rgb): Rgb {
+  const variant = (style - V2_STYLE0) % 4;
+  const arch = Math.floor((style - V2_STYLE0) / 4);
+  let glass: Rgb = [0.17, 0.19, 0.21];
+  let coverage: number;
+  switch (arch) {
+    case Arch.Precast: coverage = variant < 2 ? 0.44 : 0.25; break;
+    case Arch.Banded: glass = BANDED_PANES[variant]; coverage = (variant % 2 ? 0.58 : 0.50) * 0.95; break;
+    case Arch.Brick: coverage = (variant % 2 ? 0.36 : 0.58) * 0.54; break;
+    case Arch.Limestone: coverage = 0.27 * (variant < 2 ? 0.67 : 1); break;
+    case Arch.Residential: glass = [0.19, 0.21, 0.23]; coverage = 0.5; break;
+    case Arch.Deck: glass = [0.045, 0.048, 0.052]; coverage = 0.5; break;
+    case Arch.Shop: coverage = [0, 0.18, 0, 0.2][variant]; break;
+    case Arch.Glass: glass = TOWER_PANES[variant]; coverage = 0.85; break;
+    default:
+      if (style === BaseStyle.Lobby) { glass = [0.13, 0.145, 0.16]; coverage = 0.75; }
+      else if (style === BaseStyle.Arcade) { glass = [0.08, 0.085, 0.09]; coverage = 0.85; }
+      else if (style === BaseStyle.Shopfront) { glass = [0.14, 0.15, 0.16]; coverage = 0.6; }
+      else return wallRgb;
+  }
+  const channel = (i: number) => wallRgb[i] + (glass[i] - wallRgb[i]) * coverage;
+  return [channel(0), channel(1), channel(2)];
+}
+
 /** Tall buildings whose class says housing, a hotel or a dorm. */
 const HOMES = new Set(['apartments', 'residential', 'hotel', 'dormitory']);
 const SHOPS = new Set(['retail', 'commercial', 'supermarket', 'kiosk']);
@@ -126,7 +158,7 @@ export function archetypeFor(id: string, cls: string | null | undefined, h: numb
   if (c === 'university' || c === 'hospital' || c === 'public' || c === 'government' || c === 'civic' || c === 'library')
     return weighted(r, [[Arch.Precast, 0.45], [Arch.Brick, 0.3], [Arch.Limestone, 0.25]]);
   // Long, low, ragged footprints read as decks or warehouses, not offices.
-  if (h < 22 && area > 3500 && compact > 0.55 && !c && r() < 0.2) return Arch.Deck;
+  if (h < 22 && area > 3500 && compact < 0.55 && !c && r() < 0.2) return Arch.Deck;
   if (h < 30) return weighted(r, [[Arch.Brick, 0.5], [Arch.Limestone, 0.15], [Arch.Precast, 0.2], [Arch.Banded, 0.15]]);
   if (h < 60) return weighted(r, [[Arch.Precast, 0.26], [Arch.Banded, 0.25], [Arch.Limestone, 0.14], [Arch.Brick, 0.25], [Arch.Residential, midtown ? 0.25 : 0.05], [Arch.Glass, 0.05]]);
   if (h < 110) return weighted(r, [[Arch.Precast, 0.3], [Arch.Banded, 0.35], [Arch.Limestone, 0.1], [Arch.Residential, midtown ? 0.25 : 0.05], [Arch.Glass, midtown ? 0.25 : 0.12]]);

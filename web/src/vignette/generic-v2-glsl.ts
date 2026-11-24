@@ -7,6 +7,13 @@
  * Every pattern fades to its own mean once a bay or storey is under about two pixels, so walls
  * hold their tone at the 1.6 km Midtown view instead of shimmering or popping on zoom.
  */
+import { BANDED_PANES, TOWER_PANES } from './generic-v2';
+
+function variantGlass(panes: readonly (readonly number[])[]) {
+  const colors = panes.map(rgb => `vec3(${rgb.join(', ')})`);
+  return `vr < 0.5 ? ${colors[0]} : vr < 1.5 ? ${colors[1]} : vr < 2.5 ? ${colors[2]} : ${colors[3]}`;
+}
+
 export const GENERIC_V2_GLSL = /* glsl */ `
             float sid = st - 20.0;
             float arch = floor(sid / 4.0 + 0.001);
@@ -37,7 +44,7 @@ export const GENERIC_V2_GLSL = /* glsl */ `
               // Banded curtain wall, 1980s–90s: glass ribbons between spandrel bands, slim mullions.
               storey = vr < 1.5 ? 3.9 : 4.1;
               bay = 1.5;
-              g2 = vr < 0.5 ? vec3(0.20, 0.26, 0.24) : vr < 1.5 ? vec3(0.25, 0.22, 0.19) : vr < 2.5 ? vec3(0.22, 0.27, 0.33) : vec3(0.19, 0.20, 0.215);
+              g2 = ${variantGlass(BANDED_PANES)};
               vec2 f = fract(vec2(u / bay, y / storey));
               float lo = mod(vr, 2.0) < 0.5 ? 0.46 : 0.38;
               float band = step(lo, f.y) * step(f.y, 0.96);
@@ -107,7 +114,7 @@ export const GENERIC_V2_GLSL = /* glsl */ `
             } else if (arch < 7.5) {
               // Glass tower: mullion grid and spandrel line in one of the palette's glass families.
               bay = 1.5; storey = 3.9;
-              g2 = vr < 0.5 ? vec3(0.36, 0.43, 0.50) : vr < 1.5 ? vec3(0.28, 0.36, 0.47) : vr < 2.5 ? vec3(0.30, 0.40, 0.39) : vec3(0.33, 0.38, 0.42);
+              g2 = ${variantGlass(TOWER_PANES)};
               g2 *= 0.92 + 0.16 * clamp(y / 120.0, 0.0, 1.0);
               vec2 f = fract(vec2(u / bay, y / storey));
               w2 = step(0.06, f.x) * step(0.1, f.y);
