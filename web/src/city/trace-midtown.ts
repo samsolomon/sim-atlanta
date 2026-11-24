@@ -68,16 +68,17 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
     const lo = covered(a, b, length);
     if (roof - lo < 1) return;
     const street = lo <= datum + 0.01;
-    if (street) litFacade(shell, seed, face++, a, b, datum + 0.4, ground - 0.4, 1, high ? 3.4 : 10, 0.84, 0.84, storefront, 0.35);
+    if (street && (high || length > 4)) litFacade(shell, seed, face++, a, b, datum + 0.4, ground - 0.4, 1, high ? 3.4 : 10, 0.84, 0.84, storefront, 0.35);
     const from = street ? ground : lo + 0.3;
     const floors = Math.max(1, Math.round((roof - 0.9 - from) / pitch));
-    litFacade(shell, seed, face++, a, b, from, roof - 0.9, floors, high ? 2.8 : 5.6, high ? 0.55 : 0.66, 0.6, windows, 0.32);
+    // Low tier groups floors in pairs and leaves short jogs plain; high keeps every window.
+    if (high || length > 4) litFacade(shell, seed, face++, a, b, from, roof - 0.9, high ? floors : Math.ceil(floors / 2), high ? 2.8 : 5.6, high ? 0.55 : 0.66, high ? 0.6 : 0.72, windows, 0.32);
     const out = (t: number, y: number, d: number): [number, number, number] =>
       [a[0] + t * (b[0] - a[0]) + d * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - d * (b[0] - a[0]) / length];
     // White cornice band at the roof line.
     shell.body.quad(out(0, roof - 0.9, 0.12), out(0, roof, 0.12), out(1, roof, 0.12), out(1, roof - 0.9, 0.12), trim);
     // Stacked balcony rails across the middle of long faces, one strip per floor.
-    if (length > 16) {
+    if (length > 16 && (high || length > 30)) {
       const l = 0.25, r = 0.75;
       for (let f = 1; f < floors; f++) {
         const y = from + f * pitch;
