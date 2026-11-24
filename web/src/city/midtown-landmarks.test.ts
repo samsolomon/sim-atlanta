@@ -96,6 +96,7 @@ it('mounts both models in terrain, suppresses their generic roofs and forwards n
   );
   const area = createDowntownTerrain(grid, { bounds, buildings: sites, roads: [], rail: [] }, [], {
     quality: 'low',
+    batchLandmarks: false,
   });
   try {
     area.setNight(1);

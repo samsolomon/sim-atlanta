@@ -298,6 +298,13 @@ const updateAtmosphere = () => {
   applyTheme();
   if (view3d.hidden) paintMapAtmosphere?.(atm);
 };
+// ?perf only: move the clock and the scene's weather from a script, the same way the time slider and
+// the weather menu do, so a harness can find shaders that first compile after ready.
+if (perf.enabled) Object.assign(window, { __scene: (o: { offsetMin?: number; conditions?: AtmosphereOverride }) => {
+  if (o.offsetMin !== undefined) clock.offsetMin = o.offsetMin;
+  if (o.conditions) sceneConditions = o.conditions;
+  updateAtmosphere();
+} });
 let atmRealTime = true; // the clock state the atmosphere was last computed for
 let atmAt = 0; // the simulated time it was computed for
 // Fog: a real blur toward the edges (like the diorama's tilt-shift) with a cloudy haze in it;

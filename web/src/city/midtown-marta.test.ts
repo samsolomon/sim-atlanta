@@ -15,7 +15,7 @@ it.each(['low', 'high'] as const)('mounts both Arts Center roofs above the plaza
   const ctx = new Proxy({}, { get: () => () => {} });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   const city = seventeenthAccess(auburnTransport(JSON.parse(read('context.json').toString())));
-  const terrain = createDowntownTerrain(grid, city, [], { quality });
+  const terrain = createDowntownTerrain(grid, city, [], { quality, batchLandmarks: false });
   try {
     terrain.group.updateMatrixWorld(true);
     for (const [name, x, z] of [

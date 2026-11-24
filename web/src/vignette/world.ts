@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
+import { groundLiftedParts } from './parts';
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
 import { SIDING_GLSL } from '../materials/siding';
@@ -845,7 +846,7 @@ export class World {
       const whole = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
       // Mapped building:parts replace the whole footprint, each with its own roof and base.
       const masses = bd.parts?.length
-        ? bd.parts.map((part) => ({ rings: part.rings, h: part.h, minH: part.minH ?? 0 }))
+        ? groundLiftedParts(bd.parts).map((part) => ({ rings: part.rings, h: part.h, minH: part.minH ?? 0 }))
         : [{ rings: bd.rings, h: whole, minH: 0 }];
       const h = Math.max(...masses.map((mass) => mass.h));
       const r = rng(hashStr(bd.id));
