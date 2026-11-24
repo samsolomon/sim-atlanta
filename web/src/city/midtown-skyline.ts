@@ -16,6 +16,7 @@ import { symphonyTower } from './midtown-skyline-symphony';
 import { fourSeasons } from './midtown-skyline-fourseasons';
 import { mayfairTower } from './midtown-skyline-mayfair';
 import { alexanOn8th } from './midtown-skyline-alexan';
+import { mByRadius } from './midtown-skyline-mradius';
 import { squareOn5th } from './midtown-skyline-square5th';
 import { twoMidtownPlaza } from './midtown-skyline-twomidtown';
 import { westPeachtree1072 } from './midtown-skyline-1072';
@@ -119,6 +120,7 @@ const landmarks = [
   { site: sites.twoMidtownPlaza, axis: [1,0], probes: [[0,0],[-15,-12],[10,-12],[-2,20]], build: twoMidtownPlaza },
   { site: sites.mayfair, axis: [1,0], probes: [[0,0],[-14,-14],[14,14],[14,-14]], build: mayfairTower },
   { site: sites.alexan8th, axis: [1,0], probes: [[10,0],[10,-35],[10,35],[-15,-30]], build: alexanOn8th },
+  { site: sites.mByRadius, axis: [1,0], probes: [[0,0],[-25,0],[25,0],[-29,0]], build: mByRadius },
   { site: sites.fourSeasons, axis: [1,0], probes: [[0,0],[-20,-13],[20,13],[0,40]], build: fourSeasons },
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },

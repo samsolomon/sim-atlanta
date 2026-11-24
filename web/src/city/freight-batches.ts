@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { neverClip } from './brookwood';
 import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
 import { MAX_UNITS } from './freight-consist';
 
@@ -14,11 +15,9 @@ const TEMPLATE = (() => {
   g.setAttribute('stockLight', new THREE.Float32BufferAttribute(new Float32Array(n), 1));
   return g;
 })();
-/** A plane that never clips: everything in the scene lies on its kept side. */
-const NEVER = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
 export function freightClipPlanes(planes: THREE.Plane[]) {
   if (planes.length > FREIGHT_CLIP_PLANES) throw new Error(`freight takes at most ${FREIGHT_CLIP_PLANES} clip planes`);
-  return [...planes, ...Array.from({ length: FREIGHT_CLIP_PLANES - planes.length }, () => NEVER)];
+  return [...planes, ...neverClip(FREIGHT_CLIP_PLANES - planes.length)];
 }
 
 /**

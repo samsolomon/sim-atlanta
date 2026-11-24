@@ -39,10 +39,10 @@ function start() {
 }
 
 export function prebuildSurface(grid: GroundGrid, quality: TerrainQuality, openings: readonly OpenSlot[] | undefined,
-  join: TerrainJoins | undefined, farErrorM?: number): Promise<BuiltSurface> {
+  join: TerrainJoins | undefined, farErrorM?: number, farLower = false): Promise<BuiltSurface> {
   const spec = surfaceSpec(grid);
   const { heights, minY } = nodeHeights(spec, (r, c) => grid.node(r, c));
-  const input = { spec, heights, minY, quality, openings: openings ? [...openings] : [], join, farErrorM };
+  const input = { spec, heights, minY, quality, openings: openings ? [...openings] : [], join, farErrorM, farLower };
   if (typeof Worker === 'undefined') return Promise.resolve(buildSurfaceArrays(input));
   const id = ++seq;
   // The heights are transferred, so keep a copy for the inline fallback.
