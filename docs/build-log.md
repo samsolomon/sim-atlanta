@@ -4265,3 +4265,7 @@ The Commons at Imperial Hotel, the 1910 Imperial on Peachtree, was a generic 36.
 - the tan-and-red banded east end from the 2014 renovation.
 
 The first render put all six stacks on one face and squeezed them into a white wall. City's z grows to the south, so I had the north side backwards: the face with the 3.5 m step is Ralph McGill's, which is exactly where the photo shows the western block stepping forward with its own two stacks. A shared coplanar check landed the same day: no layer closer than 3 cm to its wall, because at 400–600 m layers 1–1.5 cm off a wall z-fight into black teeth. Sweeping my open skins with a point-to-plane version turned up thousands of pairs on five of them, down to 2 mm, all now at 0. The first version of the check compared plane offsets directly, which made 2 m look like 2 cm about a kilometre from origin. [Before and after](log/ui/imperial-hotel/day-before-after.jpg) · [four sides](log/ui/imperial-hotel/imperial-hotel-four-sides.jpg)
+
+### 2026-11-24 · Muse's on Peachtree
+
+The old George Muse clothing store, now lofts, stands at Peachtree and Walton. City drew it as a generic 41.4 m box. The lidar roof is 36.4 m. In Street View it is cream limestone with paired windows and a projecting cornice, and that is how it is drawn now. The engraved name over the door stays off, like every other piece of lettering. [Before/after](log/ui/george-muse/README.md)

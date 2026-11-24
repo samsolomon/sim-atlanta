@@ -151,6 +151,7 @@ import { createRenaissanceLofts } from './renaissance-lofts';
 import { createBarclayHotel } from './barclay-hotel';
 import { createAllenPlaza55 } from './allen-plaza-55';
 import { createOneParkPlace, createTenParkPlace } from './park-place';
+import { createGeorgeMuse } from './george-muse';
 import { createTheCenter } from './the-center';
 import { createSamNunn } from './sam-nunn';
 import { createImperialHotel } from './imperial-hotel';
@@ -558,6 +559,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let tenParkPlace: ReturnType<typeof createTenParkPlace> = null;
   let oneParkPlace: ReturnType<typeof createOneParkPlace> = null;
   let imperialHotel: ReturnType<typeof createImperialHotel> = null;
+  let georgeMuse: ReturnType<typeof createGeorgeMuse> = null;
   let candler: ReturnType<typeof createCandler> = null;
   let equitable: ReturnType<typeof createEquitable> = null;
   let olympia: ReturnType<typeof createOlympia> = null;
@@ -749,10 +751,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         oneParkPlace = createOneParkPlace(afterTenParkPlace, ground, low ? 'low' : 'high');
         const afterOneParkPlace = oneParkPlace?.buildings ?? afterTenParkPlace;
         imperialHotel = createImperialHotel(afterOneParkPlace, ground);
+        const afterImperialHotel = imperialHotel?.buildings ?? afterOneParkPlace;
+        georgeMuse = createGeorgeMuse(afterImperialHotel, ground, low ? 'low' : 'high');
         // The Landmark deck draws its own lot, aisles included.
         drawn = landmarkDeck ? { ...vd, roads: vd.roads.filter(r => !landmarkDeck!.ownDrive(r)),
           terrainTransport: vd.terrainTransport && { ...vd.terrainTransport, roads: vd.terrainTransport.roads.filter(r => !landmarkDeck!.ownDrive(r)) } } : vd;
-        const city = { ...drawn, buildings: imperialHotel?.buildings ?? afterOneParkPlace,
+        const city = { ...drawn, buildings: georgeMuse?.buildings ?? afterImperialHotel,
           ground: congressCenter ? [...(vd.ground ?? []), congressCenter.apron] : vd.ground };
         terrain = createDowntownTerrain(ground, city, trees.trees, { quality, yields: landmarkDeck?.yields, bottomY: midtown && square ? square.midtownBaseNavd88M - ground.manifest.vertical.sceneZeroNavd88M : undefined, separateBuilding: square?.summitDowntown, join: mosaic ? mosaic.joins('downtown') : previewNorth ? [eastJoin, northWestJoin] : previewEast ? eastJoin : undefined, openings: [...terrainOpenings(marta), ...(cut ? cutOpenings(ground) : []), ...(mosaic ? capitolTunnelSlots() : [])], deferFarBoxes: true });
         mosaic?.areas.set('downtown', terrain);
@@ -837,6 +841,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (tenParkPlace) world.group.add(tenParkPlace.group);
         if (oneParkPlace) world.group.add(oneParkPlace.group);
         if (imperialHotel) world.group.add(imperialHotel.group);
+        if (georgeMuse) world.group.add(georgeMuse.group);
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (olympia) world.group.add(olympia.group);
@@ -861,7 +866,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             georgiaAquarium, peachtreeInternationalDeck, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, fairliePoplar, georgiaPower, peachtreeTowers, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
-            samNunn, imperialHotel, candler, equitable, grady, tenParkPlace, oneParkPlace, allenPlaza55, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
+            samNunn, imperialHotel, candler, equitable, grady, georgeMuse, tenParkPlace, oneParkPlace, allenPlaza55, barclayHotel, renaissanceLofts, aymDeck, theMitchell, olympia,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
           const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
@@ -2081,6 +2086,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       tenParkPlace?.setNight(night);
       oneParkPlace?.setNight(night);
       imperialHotel?.setNight(night);
+      georgeMuse?.setNight(night);
       candler?.setNight(night);
       equitable?.setNight(night);
       olympia?.setNight(night);
