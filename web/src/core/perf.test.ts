@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { perf, targetBytes, textureBytes } from './perf';
 
 describe('perf', () => {
@@ -70,6 +70,11 @@ describe('perf.captureDraws', () => {
     const raf = globalThis.requestAnimationFrame;
     globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => { setTimeout(() => { cb(0); drawn = 0; renderer.frame(); }, 0); return 0; }) as typeof requestAnimationFrame;
     const ctx = { renderer: renderer as unknown as THREE.WebGLRenderer, scene, roots: () => roots, post: () => [], quality: 'low' };
+    vi.stubGlobal('location', { href: 'http://test/', search: '' });
+    vi.stubGlobal('screen', { width: 1, height: 1 });
+    vi.stubGlobal('innerWidth', 1);
+    vi.stubGlobal('innerHeight', 1);
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
     perf.attach(ctx);
     try {
       const c = await perf.captureDraws() as { total: { tri: number }; byCategory: Record<string, { tri: number }>; top: { cat: string; path: string; tri: number }[] };
@@ -84,6 +89,40 @@ describe('perf.captureDraws', () => {
     } finally {
       perf.detach(ctx);
       globalThis.requestAnimationFrame = raf;
+    }
+  });
+});
+
+describe('perf overlay', () => {
+  it('makes no synchronous GL queries after the first renderer read', () => {
+    // getParameter, getExtension, getError and readPixels are synchronous round trips to the GPU
+    // process; the overlay repaints every 0.5 s, so any of them there stalls a frame (#506).
+    const calls: string[] = [];
+    const gl = new Proxy({}, {
+      get: (_t, k) => typeof k === 'string' && /^(getParameter|getExtension|getError|readPixels|getSupportedExtensions)$/.test(k)
+        ? (...a: unknown[]) => { calls.push(k); return k === 'getExtension' ? { UNMASKED_RENDERER_WEBGL: 1 } : (a.length ? 'gpu' : null); }
+        : 0,
+    });
+    const renderer = {
+      getContext: () => gl, getPixelRatio: () => 1, domElement: { width: 1, height: 1 },
+      info: { render: { calls: 0, triangles: 0, points: 0, lines: 0 }, programs: [] },
+      shadowMap: { enabled: false, autoUpdate: false },
+    } as unknown as THREE.WebGLRenderer;
+    const ctx = { renderer, scene: new THREE.Scene(), roots: () => new Map(), post: () => [], quality: 'high' };
+    vi.stubGlobal('location', { href: 'http://test/', search: '' });
+    vi.stubGlobal('screen', { width: 1, height: 1 });
+    vi.stubGlobal('innerWidth', 1);
+    vi.stubGlobal('innerHeight', 1);
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    perf.attach(ctx);
+    try {
+      perf.report(false);
+      const first = calls.length;
+      for (let i = 0; i < 5; i++) perf.report(false);
+      expect(calls.length).toBe(first);
+    } finally {
+      perf.detach(ctx);
+      vi.unstubAllGlobals();
     }
   });
 });

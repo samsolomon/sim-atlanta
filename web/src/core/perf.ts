@@ -451,6 +451,8 @@ function report(withInventory = true) {
 let overlay: HTMLPreElement | null = null;
 let inv: ReturnType<typeof inventory> = null;
 let invAt = 0;
+/** True while ?perf=run samples frames. */
+let sampling = false;
 function startOverlay() {
   if (overlay || typeof document === 'undefined') return;
   overlay = document.createElement('pre');
@@ -468,7 +470,8 @@ function paintOverlay() {
   if (lastResult) return;
   if (!ctx) { overlay.textContent = 'perf: City closed'; return; }
   const now = performance.now();
-  if (ctx && now - invAt > 15000) { inv = inventory(); invAt = now; }
+  // The scene inventory walks everything (a long frame), so never inside a ?perf=run sample.
+  if (ctx && !sampling && now - invAt > 15000) { inv = inventory(); invAt = now; }
   const a = frames(1000), b = frames(10000);
   const r = rendererInfo();
   const h = heap();
@@ -521,7 +524,9 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     };
     requestAnimationFrame(turn);
   }
+  sampling = true;
   await sleep(sampleMs);
+  sampling = false;
   turning = false;
   const full = report(true);
   const f = frames(sampleMs);
