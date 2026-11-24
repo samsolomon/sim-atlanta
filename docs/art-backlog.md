@@ -95,3 +95,9 @@ in the #418 weld and parapet work. Heights are the end's top above the ground wa
 | tt198 | footway | (21, -136) | footway | 0.5 m | small step, likely fine |
 | tt12 | footway | (-648, -1106) | footway | 0.3 m | small step, likely fine |
 | tt147 | service | (-248, -181) | service | 0.3 m | small step, likely fine |
+
+The freight clearance review adds two service approaches to #418. At the Circle Connection,
+tt146 begins 8.12 m above the ground service way at (−236.46, −167.00). Carry the plaza
+landing through that approach. At Mitchell, tt139 meets the tt87 viaduct flush at
+(−280.27, −353.41), but the final approach reaches 29.3%. Resolve the landing profile
+while preserving the rail clearance and shared tread. [Aerials and run measurements](log/footpath-rail/bridge-review.md)

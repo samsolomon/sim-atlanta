@@ -100,3 +100,8 @@ after the coordinator reviews the sheet (not merge-on-green), and sidewalks stay
   "main" build from origin/main files on an older tree fails to load midtown-upper.
 - Downtown deck data is staged (`web/public/data/scene/downtown/vignette.json`, gitignored). Tests that need it
   `skipIf` it is missing.
+
+**Bridge verification update:** The two service conflicts were checked against aerials and
+the decks raised over freight. Both tiers have zero sampled cells below 7 m at 9fdc7b86.
+See the [bridge evidence sheet](../log/footpath-rail/bridge-review.md) for the revised
+profiles, open landings and traffic measurements. The earlier counts above are historical.

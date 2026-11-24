@@ -3705,3 +3705,14 @@ Deciding what a raised sidewalk does where OSM says it meets a ground footway on
 three tries. The pin rule, the sidewalk weld and the stair rule each fixed one set of frames and
 broke another. The 32 joints still waiting for a landing are listed in the art backlog.
 [G before and after](log/footpath-rail/G-before.jpg) · [Russell Plaza](log/footpath-rail/A-after-wip2.jpg)
+
+### 2026-11-24 · Two service decks over the Gulch freight line
+
+The aerial at the Mitchell ramp shows the pavement directly above the mapped track for
+part of its length. At the Circle Connection the track crosses the paved plaza diagonally.
+The first pass cleared both tracks but gave the short plaza access deck a drop of more than
+8 m at its end. Carrying the deck through the landing brings its sampled maximum grade to
+8.3%, down from 207.5% on the merge base. The unresolved step is now where the mapped
+service way joins the plaza. Across downtown, the least sampled clearance under overhead
+structures is 7.24 m at both tiers. Every one of the 166 previously low cells clears 7 m.
+[Bridge evidence and dated aerial comparisons](log/footpath-rail/bridge-review.md)
