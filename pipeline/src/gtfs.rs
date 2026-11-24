@@ -130,6 +130,7 @@ pub struct TimetableOut {
 }
 
 pub struct FeedResult {
+    pub trip_ids: Vec<String>,
     pub routes: Vec<RouteOut>,
     pub stops: Vec<StopOut>,
     pub paths: Vec<PathOut>,
@@ -274,7 +275,7 @@ pub fn load(path: &std::path::Path, spec: &FeedSpec) -> Result<FeedResult> {
     let mut dist_cache: HashMap<String, Vec<f64>> = HashMap::new();
     let mut service_ids: Vec<String> = Vec::new();
     let mut service_idx: HashMap<String, usize> = HashMap::new();
-    let mut trips_out: Vec<(usize, usize, u32, String)> = Vec::new();
+    let mut trips_out = Vec::new();
 
     let mut trip_ids: Vec<&String> = st.keys().collect();
     trip_ids.sort();
@@ -331,9 +332,10 @@ pub fn load(path: &std::path::Path, spec: &FeedSpec) -> Result<FeedResult> {
             service_ids.push(t.service.clone());
             service_ids.len() - 1
         });
-        trips_out.push((pi, si, start, t.short.clone()));
+        trips_out.push(((pi, si, start, t.short.clone()), tid.clone()));
     }
-    trips_out.sort_by_key(|t| (t.0, t.2));
+    trips_out.sort_by_key(|(t, _)| (t.0, t.2));
+    let (trips_out, trip_ids) = trips_out.into_iter().unzip();
 
     // Services
     let mut svc: HashMap<String, ServiceOut> = service_ids
@@ -384,6 +386,7 @@ pub fn load(path: &std::path::Path, spec: &FeedSpec) -> Result<FeedResult> {
     routes_out.sort_by(|a, b| a.id.cmp(&b.id));
 
     Ok(FeedResult {
+        trip_ids,
         routes: routes_out,
         stops: stops.into_values().collect(),
         paths,

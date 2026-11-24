@@ -99,6 +99,9 @@ export class VehicleFollow {
   frame(fix: Fix | null, bounds: Bounds | ((p: Point) => boolean), now: number, reducedMotion: boolean, current?: Point): Point | undefined {
     const v = this.followed;
     if (!v) return;
+    if (v.kind === 'bus' && v.id.startsWith('marta:bus-trip:') && fix?.id === v.id) {
+      v.tier = this.tier = fix.tier;
+    }
     // A live train keeps its id while the feed re-snaps it to a sibling path variant.
     if (fix && fix.id === v.id && fix.tier === v.tier && v.tier === 'live' && fix.pathId !== v.pathId) v.pathId = fix.pathId;
     // A trip that changes path or tier is a different claim. End rather than relabel it.

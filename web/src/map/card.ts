@@ -92,11 +92,11 @@ function seeModel(id: string) {
   return `<a class="a2-allstops" data-see-model="${esc(id)}" href="?view=models&amp;model=${encodeURIComponent(id)}">See the model <span aria-hidden="true">›</span></a>`;
 }
 
-export function busCard(bus: LiveBus, now: number, model?: string) {
+export function busCard(bus: LiveBus, now: number, model?: string, offset?: number) {
   const name = bus.routeId?.value.slice('marta:route:'.length);
   return `<h2><span class="dot" style="background:${MODE_COLOR.bus}"></span>MARTA bus ${esc(bus.id.slice('marta:bus:'.length))}</h2>
     <p class="sub">${name ? 'Route ' + esc(name) : 'Route unavailable'}</p>
-    <dl><dt class="position-report">Position</dt><dd class="position-report">${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd>
+    <dl><dt class="position-report">Position</dt><dd class="position-report">${offset !== undefined && bus.at !== null ? 'GPS ' + Math.max(0, Math.round((now - bus.at)/1000)) + ' s ago · drawn about ' + Math.round(offset) + ' m from the last fix' : bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd>
       ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>${model ? seeModel('xn40') : ''}`;
 }
 
@@ -148,12 +148,12 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
     ${model ? seeModel(model) : ''}`;
 }
 
-export function timetableBusCard(trip: { headsign: string; start: number; serviceDate:number }) {
+export function timetableBusCard(trip: { headsign: string; start: number; serviceDate:number; fallback?: boolean }) {
   const service = String(trip.serviceDate);
   const date = new Date(Date.UTC(+service.slice(0,4), +service.slice(4,6)-1, +service.slice(6)+Math.floor(trip.start/86400))).toISOString().slice(0,10);
   const hour = Math.floor(trip.start / 3600) % 24, minute = String(Math.floor(trip.start / 60) % 60).padStart(2, '0');
   return `<h2>MARTA bus 49</h2><p class="sub">${esc(trip.headsign)}</p><dl>
-      <dt>Position</dt><dd>Simulated on route ${chip('inferred')}</dd>
+      <dt>Position</dt><dd>Simulated on route ${chip('inferred')}${trip.fallback ? '<br>No live GPS for this trip. Shown at its timetable position.' : ''}</dd>
       <dt>Trip start</dt><dd>${date} at ${hour}:${minute} Atlanta time ${chip('scheduled')}</dd>
       <dt>Stop dwell</dt><dd>15 seconds ${chip('illustrative')}</dd>
       <dt>City model</dt><dd>New Flyer Xcelsior XN40 ${chip('illustrative')}</dd></dl>`;

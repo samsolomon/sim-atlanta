@@ -1,9 +1,10 @@
-import type { BusTimetableFile, Path } from '../model/types';
+import type { BusTimetableFile, LiveBus, Path } from '../model/types';
 import { serviceDays, serviceRuns } from '../sched/time';
 import { Line, type P2 } from '../vignette/geom';
 import { BUS_LENGTH } from '../vignette/xcelsior';
 import { makeProjector } from '../core/scene-data';
 import { busDistance, busTimeline } from './bus-timeline';
+import { GpsBus, GPS_MAX_AGE_MS } from './gps-bus';
 import type { CityBuses } from './buses';
 import { clusterSignals, courseSignals, type CourseSignal } from './traffic-signals';
 import type { TrafficCourse, RoadTrafficOptions } from './road-traffic';
@@ -93,6 +94,19 @@ function directedPath(
   return {
     at,
     needsRoad,
+    projectFix(x: number, z: number, bearing?: number) {
+      let best: {s: number; score: number} | undefined;
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, az] = pts[i - 1], dx = pts[i][0] - ax, dz = pts[i][1] - az;
+        const f = Math.max(0, Math.min(1, ((x - ax)*dx + (z - az)*dz) / (dx*dx + dz*dz || 1)));
+        const lateral = Math.hypot(x - ax - f*dx, z - az - f*dz);
+        if (lateral > 65) continue;
+        const alignment = bearing === undefined ? 1 : Math.cos(bearing * Math.PI / 180 - Math.atan2(dx, dz));
+        const score = lateral + 30 * (1 - alignment);
+        if (!best || score < best.score) best = {s: shape.cum[i-1] + f * (shape.cum[i] - shape.cum[i-1]), score};
+      }
+      return best;
+    },
     lights,
     get anchors() {
       return anchors;
@@ -110,8 +124,9 @@ export function createTimetableBuses(
   signals: P2[],
   courses: readonly TrafficCourse[],
 ) {
+  const project = makeProjector(origin);
   const paths = new Map(
-    data.paths.map((shape) => [shape.id, directedPath(shape, makeProjector(origin), streets, signals, courses)]),
+    data.paths.map((shape) => [shape.id, directedPath(shape, project, streets, signals, courses)]),
   );
   const table = data.timetable;
   let queueAt:
@@ -123,12 +138,14 @@ export function createTimetableBuses(
       id: string;
       path: ReturnType<typeof directedPath>;
       points: ReturnType<typeof busTimeline>;
+      rawId?: string;
+      stops: number[];
       serviceDate: number;
       headsign: string;
       start: number;
     }[]
   >();
-  function posesAt(ms: number, activeService?: (date: number) => void) {
+  function activeAt(ms: number, activeService?: (date: number) => void) {
     const seconds = (ms - TRAFFIC_EPOCH_MS) / 1000;
     const active = [];
     for (const day of serviceDays(new Date(ms), table.timezone)) {
@@ -154,6 +171,8 @@ export function createTimetableBuses(
           if (points.at(-1)!.departure < hour * 3600) continue;
           trips.push({
             id: `marta:bus-trip:49-${day.ymd}-${i}`,
+            rawId: data.tripIds?.[i],
+            stops: pattern.dist,
             serviceDate: day.ymd,
             headsign: pattern.headsign,
             start,
@@ -167,20 +186,103 @@ export function createTimetableBuses(
         if (s === null) continue;
         activeService?.(trip.serviceDate);
         const point = trip.path.at(s);
-        if (point)
-          active.push({
-            id: trip.id,
-            point,
-            headsign: trip.headsign,
-            start: trip.start,
-            serviceDate: trip.serviceDate,
-          });
+        active.push({trip, s, point});
       }
     }
     return active;
   }
 
-  type Pose = ReturnType<typeof posesAt>[number];
+  type Active = ReturnType<typeof activeAt>[number];
+  type PathModel = ReturnType<typeof directedPath>;
+  type Point = NonNullable<Active['point']>;
+  interface Pose {
+    id: string; point: Point; headsign: string; start: number; serviceDate: number;
+    fix?: LiveBus; offset?: number; fallback?: boolean; fade?: number;
+  }
+  function scheduled({trip, point}: Active): Pose[] {
+    return point ? [{id: trip.id, point, headsign: trip.headsign, start: trip.start, serviceDate: trip.serviceDate}] : [];
+  }
+  function posesAt(ms: number, activeService?: (date: number) => void) {
+    return activeAt(ms, activeService).flatMap(scheduled);
+  }
+
+  const observations = new Map<string, {
+    at: number; x: number; z: number;
+    snaps: Map<PathModel, {s: number; score: number}>;
+    trip?: string; driver?: GpsBus; path?: PathModel;
+  }>();
+  function presentAt(ms: number, observationMs: number, fixes: readonly LiveBus[], activeService?: (day: number) => void) {
+    const active = activeAt(ms, activeService);
+    const poses: Pose[] = [];
+    const raw: LiveBus[] = [];
+    const claimed = new Set<string>();
+    const fresh = fixes.filter(f => f.at !== null && observationMs >= f.at && observationMs - f.at <= GPS_MAX_AGE_MS);
+    const ids = new Set(fresh.map(f => f.id));
+    for (const id of observations.keys()) if (!ids.has(id)) observations.delete(id);
+    // Reserve descriptor matches before older workers' position-only reports.
+    for (const fix of [...fresh].sort((a,b) => Number(!!b.tripId) - Number(!!a.tripId) || b.at! - a.at! || a.id.localeCompare(b.id))) {
+      const is49 = fix.routeId?.value === 'marta:route:49';
+      if (!is49 && fix.routeId) { raw.push(fix); continue; }
+      let obs = observations.get(fix.id);
+      if (!obs || obs.at !== fix.at) {
+        const [x,z] = project(fix.position.value.lon, fix.position.value.lat);
+        const snaps = new Map<PathModel, {s:number; score:number}>();
+        for (const path of paths.values()) {
+          const snap = path.projectFix(x,z,fix.bearing?.value);
+          if (snap) snaps.set(path,snap);
+        }
+        obs = {...obs, at:fix.at!, x,z,snaps};
+        observations.set(fix.id, obs);
+      }
+      let match = active.find(a => a.trip.rawId && a.trip.rawId === fix.tripId &&
+        (!fix.startDate || Number(fix.startDate) === a.trip.serviceDate));
+      if (match && claimed.has(match.trip.id)) continue;
+      if (!match && is49 && !fix.tripId) {
+        let best = Infinity;
+        for (const a of active) {
+          const snap = obs.snaps.get(a.trip.path);
+          if (!snap || claimed.has(a.trip.id) || Math.abs(snap.s - a.s) > 500) continue;
+          const score = Math.abs(snap.s - a.s) + 4*snap.score - (obs.trip === a.trip.id ? 150 : 0);
+          if (score < best) { best = score; match = a; }
+        }
+      }
+      if (match) claimed.add(match.trip.id);
+      const path = match?.trip.path ?? (is49 ? [...obs.snaps].sort((a,b) => a[1].score-b[1].score)[0]?.[0] : undefined);
+      const snap = path && obs.snaps.get(path);
+      let drawn: Point | null = null;
+      if (path && snap) {
+        if (!obs.driver || obs.path !== path || obs.trip !== match?.trip.id) {
+          const stops = match?.trip.stops ?? table.patterns.find(p => paths.get(p.pathId) === path)?.dist ?? [];
+          obs.driver = new GpsBus(snap.s,fix.at!,fix.speed?.value,ms,stops,path.lights,BUS_LENGTH);
+        }
+        obs.path = path;
+        obs.trip = match?.trip.id;
+        const drive = obs.driver.update(snap.s, fix.at!, fix.speed?.value, observationMs, ms,
+          (l,t) => queueAt?.(l.key,l.axis,l.dx,l.dz,t));
+        drawn = path.at(drive.s);
+        if (drawn) poses.push({id: match?.trip.id ?? fix.id, point:drawn, fix,
+          headsign:match?.trip.headsign ?? '', start:match?.trip.start ?? 0, serviceDate:match?.trip.serviceDate ?? 0,
+          offset:Math.hypot(drawn.x-obs.x,drawn.z-obs.z), fade:drive.fade});
+      }
+      if (!drawn) raw.push(fix);
+      if (!match) {
+        // A report without a usable trip descriptor must not create a second
+        // bus at the same stop. Suppress only its closest eligible neighbour.
+        let nearest: Active | undefined, best = 150;
+        for (const a of active) {
+          if (!a.point || claimed.has(a.trip.id)) continue;
+          const d = Math.min(Math.hypot(a.point.x-obs.x,a.point.z-obs.z),
+            drawn ? Math.hypot(a.point.x-drawn.x,a.point.z-drawn.z) : Infinity);
+          if (d < best) { best=d; nearest=a; }
+        }
+        if (nearest) claimed.add(nearest.trip.id);
+      }
+    }
+    for (const a of active) if (!claimed.has(a.trip.id)) {
+      for (const pose of scheduled(a)) poses.push({...pose, fallback:true});
+    }
+    return {poses,raw};
+  }
   const samples = new Map<number, Pose[]>();
   type Footprint = { x: number; z: number; y: number; a: number };
   const liveHistory = new Map<number, Footprint[]>();
@@ -240,7 +342,8 @@ export function createTimetableBuses(
       first: Math.min(...table.services.flatMap((s) => [s.start, ...s.added]).filter(Boolean)),
       last: Math.max(...table.services.flatMap((s) => [s.end, ...s.added])),
     },
-    posesAt,
+    posesAt, presentAt,
+    resetPresent() { observations.clear(); liveHistory.clear(); },
     blocksFor,
     observe,
     setQueue(fn: typeof queueAt) {

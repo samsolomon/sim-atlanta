@@ -194,6 +194,8 @@ export interface TrainState {
 /** MARTA VehiclePositions. Sourced fields share the vehicle observation time.
  * An empty asOf and null at mean the vehicle omitted its timestamp. */
 export interface LiveBus {
+  tripId?: string; // raw GTFS TripDescriptor, scoped to MARTA
+  startDate?: string; // GTFS service date, YYYYMMDD
   id: Id;
   at: number | null;
   position: Sourced<{ lon: number; lat: number }>;
@@ -204,6 +206,8 @@ export interface LiveBus {
 
 /** Compact wire representation; fields inherit the vehicle's observation time. */
 export interface BusFix {
+  tripId?: string; // raw GTFS TripDescriptor, scoped to MARTA
+  startDate?: string; // GTFS service date, YYYYMMDD
   id: Id;
   at: number | null;
   lon: number;
@@ -223,6 +227,7 @@ export type BusRoutes = Record<Id, string>; // raw GTFS route_id → stable publ
 
 /** Separate Route 49 GTFS edition. Rail schedules never ingest these trips. */
 export interface BusTimetableFile extends RoutesFile {
+  tripIds?: string[]; // raw GTFS trip_id by compact timetable index
   source: { url: string; retrieved: string; sha256: string };
   timetable: Timetable;
 }

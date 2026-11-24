@@ -118,7 +118,10 @@ followAction.addEventListener('click', () => {
   } else if (selectedBus) {
     const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
     if (bus) follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
-    else if (!clock.isRealTime() && diorama.timetableBus(selectedBus)) follow.start({ kind:'bus', id:selectedBus, tier:'inferred' });
+    else {
+      const trip = diorama.timetableBus(selectedBus);
+      if (trip) follow.start({ kind:'bus', id:trip.id, tier:trip.fix ? 'live' : 'inferred' });
+    }
   } else if (selectedFreight) {
     follow.start({ kind: 'freight', id: selectedFreight, tier: 'illustrative' });
   }
@@ -151,12 +154,13 @@ function focusSelection() {
   const t = selectedTrain ? source.find(selectedTrain) : null;
   const b = !t && selectedBus ? buses.current().find((x) => x.id === selectedBus) : null;
   const at = t ? { lon: t.lon, lat: t.lat } : b ? b.position.value : null;
-  if (!at) return;
+  const point = selectedBus && !view3d.hidden && diorama?.timetableBus(selectedBus)?.point;
+  if (!at && !point) return;
   const phone = innerWidth <= 600;
   const r = document.querySelector('.a2-panel')?.getBoundingClientRect();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (diorama) {
-    const [x, z] = lonLatToScene(CITY_ORIGIN, at.lon, at.lat);
+    const [x, z] = point ? [point.x, point.z] : lonLatToScene(CITY_ORIGIN, at!.lon, at!.lat);
     const c = diorama.camera();
     const br = (c.bearing * Math.PI) / 180;
     // Shift the view centre so the vehicle lands half the panel away from it: right of it on
@@ -166,7 +170,7 @@ function focusSelection() {
     const off = (((phone ? r?.height ?? 0 : r?.width ?? 0) + 16) / 2) * c.metresPerPixel * (phone ? tiltStretch : 1);
     const [dx, dz] = phone ? [-Math.sin(br) * off, Math.cos(br) * off] : [Math.cos(br) * off, Math.sin(br) * off];
     diorama.glide(x + dx, z + dz);
-  } else if (map) {
+  } else if (map && at) {
     // Offset the centre by projection rather than MapLibre's padding, which would persist as
     // camera state and skew the map's centre (and share links) after the panel closes.
     const half = ((r?.[phone ? 'height' : 'width'] ?? 0) + 16) / 2;
@@ -211,9 +215,11 @@ function renderTrainCard() {
 }
 
 function renderBusCard() {
-  const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
-  const trip = selectedBus && !clock.isRealTime() && !view3d.hidden && diorama?.timetableBus(selectedBus);
-  if (trip) {
+  const bus = clock.isRealTime() && (view3d.hidden || !buses.unavailable) && buses.current().find(b => b.id === selectedBus);
+  const trip = selectedBus && !view3d.hidden && diorama?.timetableBus(selectedBus);
+  if (trip && trip.fix) {
+    showCard(busCard(trip.fix, buses.observationNow(), 'New Flyer Xcelsior XN40', trip.offset), !!follow);
+  } else if (trip) {
     showCard(timetableBusCard(trip), !!follow);
   } else if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
   else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
@@ -222,12 +228,13 @@ function renderBusCard() {
 
 // A review link names a route, not a trip id, which changes with each timetable refresh.
 function followFromLink() {
-  if (followBus && follow && diorama && !clock.isRealTime() && diorama.timetableBus(followBus)) {
-    selectedBus = followBus;
+  if (followBus && follow && diorama && diorama.timetableBus(followBus)) {
+    const trip = diorama.timetableBus(followBus)!;
+    selectedBus = trip.id;
     followBus = null;
     selectedTrain = null;
     selectedFreight = null;
-    follow.start({kind:'bus', id:selectedBus, tier:'inferred'});
+    follow.start({kind:'bus', id:selectedBus, tier:trip.fix ? 'live' : 'inferred'});
     renderBusCard();
     return;
   }
@@ -533,7 +540,8 @@ async function openCity() {
       stopDistances: (pathId, stopId) => schedule.stopDistances(pathId, stopId),
       clockMs: () => clock.now().getTime(),
       // The Map's bus poll keeps running under City; City only reads the shared fixes.
-      buses: () => (clock.isRealTime() ? buses.current() : null),
+      buses: () => (clock.isRealTime() ? (buses.unavailable ? [] : buses.current()) : null),
+      observationNow: () => buses.observationNow(),
       follow,
       selectVehicle: hit => {
         follow?.stop();
@@ -940,7 +948,7 @@ const shellOptions: ShellOptions = {
     cityFreight: diorama?.hasFreight ?? false,
     cityTraffic: diorama?.hasTraffic ?? false,
     busCalendar: diorama?.busCalendar,
-    cityBusDay: diorama && !clock.isRealTime() ? (diorama.activeBusServiceDate ?? Number(atlantaDate(clock.now().getTime()).replaceAll('-',''))) : undefined,
+    cityBusDay: diorama ? (diorama.activeBusServiceDate ?? Number(atlantaDate(clock.now().getTime()).replaceAll('-',''))) : undefined,
     buses: buses.unavailable ? null : buses.current().length,
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),

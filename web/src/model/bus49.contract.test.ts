@@ -12,6 +12,8 @@ it('preserves every Route 49 trip, stop call and calendar in its separate editio
   const { trips, patterns, services } = data.timetable;
   const stops = new Set(data.stops.map((s) => s.id));
   expect(trips).toHaveLength(658);
+  expect(new Set(data.tripIds).size).toBe(trips.length);
+  expect(data.tripIds?.[295]).toBe('11708661');
   expect(trips.reduce((n, [p]) => n + patterns[p].stops.length, 0)).toBe(27632);
   expect(services.map((s) => s.id).sort()).toEqual(['24', '28', '3', '39', '4', '5']);
   for (const p of patterns) {

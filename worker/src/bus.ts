@@ -6,6 +6,8 @@ export const BUS_URL = 'https://gtfs-rt.itsmarta.com/TMGTFSRealTimeWebService/ve
 interface Fix {
   id?: string;
   route?: string;
+  tripId?: string;
+  startDate?: string;
   at?: number;
   lat?: number;
   lon?: number;
@@ -16,6 +18,8 @@ interface Fix {
 // Field numbers from gtfs-realtime.proto. Pbf skips unconsumed optional fields.
 function vehicle(tag: number, fix: Fix, reader: Pbf) {
   if (tag === 1) reader.readMessage((field, f, r) => {
+    if (field === 1) f.tripId = r.readString();
+    if (field === 3) f.startDate = r.readString();
     if (field === 5) f.route = r.readString();
   }, fix);
   if (tag === 2) reader.readMessage((field, f, r) => {
@@ -44,6 +48,7 @@ export function normalizeBuses(bytes: ArrayBuffer, routes: BusRoutes, fetched: n
     const name = fix.route && Object.hasOwn(routes, fix.route) ? routes[fix.route] : undefined;
     buses.set(id, {
       id: `marta:bus:${id}`, at, lon: Number(lon.toFixed(5)), lat: Number(lat.toFixed(5)),
+      tripId: fix.tripId, startDate: fix.startDate,
       routeId: name ? `marta:route:${name}` : undefined,
       bearing: fix.bearing != null && fix.bearing >= 0 && fix.bearing < 360 ? Math.round(fix.bearing) % 360 : undefined,
       speed: fix.speed != null && Number.isFinite(fix.speed) && fix.speed >= 0 ? Math.round(fix.speed) : undefined,

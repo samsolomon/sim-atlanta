@@ -461,13 +461,14 @@ export function busMaterial(night: { value: number }) {
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = night;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = aKind;');
+      .replace('#include <common>', '#include <common>\nattribute float aKind;\nvarying float vKind;\n#ifdef USE_INSTANCING\nattribute float busFade;\n#endif\nvarying float vBusFade;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = aKind;\n#ifdef USE_INSTANCING\nvBusFade = busFade;\n#else\nvBusFade = 0.0;\n#endif');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vKind;')
+      .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vKind;\nvarying float vBusFade;')
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
+        if (vBusFade > 0.0 && fract(dot(floor(gl_FragCoord.xy), vec2(0.754877666, 0.569840296))) < vBusFade) discard;
         if (vKind > 1.5 && vKind < 2.5) diffuseColor.rgb = vec3(0.9, 0.08, 0.06);`,
       )
       .replace(

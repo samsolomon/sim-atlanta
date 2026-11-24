@@ -7,7 +7,7 @@ function encodedFix(at?: number) {
   feed.writeMessage(2, (_, entity) => {
     entity.writeStringField(1, 'entity-id');
     entity.writeMessage(4, (_, vehicle) => {
-      vehicle.writeMessage(1, (_, trip) => trip.writeStringField(5, '29130'), null);
+      vehicle.writeMessage(1, (_, trip) => { trip.writeStringField(1, '11708661'); trip.writeStringField(3, '20261123'); trip.writeStringField(5, '29130'); }, null);
       vehicle.writeMessage(8, (_, descriptor) => descriptor.writeStringField(1, '2303'), null);
       vehicle.writeMessage(2, (_, position) => {
         position.writeFloatField(1, 33.75);
@@ -26,7 +26,7 @@ it('decodes the vehicle ID, observed position, matched static route and explicit
   expect(bus).toEqual({
     id: 'marta:bus:2303', at: 1700000000000,
     lat: 33.75, lon: -84.375,
-    bearing: 0, speed: 0,
+    bearing: 0, speed: 0, tripId: '11708661', startDate: '20261123',
     routeId: 'marta:route:1',
   });
 });

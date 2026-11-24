@@ -64,6 +64,7 @@ export class CityBuses {
   readonly positions: { id: string; x: number; y: number; z: number; a: number }[] = [];
   /** Snaps performed (one per new reported fix), for tests. */
   snaps = 0;
+  private readonly fade = new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1).setUsage(THREE.DynamicDrawUsage);
   private shown = new Map<string, Shown>();
   /** Fixes that didn't snap (off the board, away from bus streets): id → report time. */
   private rejected = new Map<string, number>();
@@ -91,6 +92,7 @@ export class CityBuses {
     this.areas.push(opts.bounds);
     this.indexRuns(opts.runs);
     this.mesh = new THREE.InstancedMesh(opts.geometry ?? busGeometry(), opts.material ?? busMaterial(this.night), MAX);
+    this.mesh.geometry.setAttribute('busFade', this.fade);
     this.mesh.count = 0;
     this.mesh.castShadow = this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
@@ -224,23 +226,27 @@ export class CityBuses {
       this.obj.position.set(p.x, y, p.z);
       this.obj.rotation.set(0, p.a, 0);
       this.obj.updateMatrix();
+      this.fade.setX(i, 0);
       this.mesh.setMatrixAt(i++, this.obj.matrix);
     }
+    this.fade.needsUpdate = true;
     this.mesh.count = i;
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  timetable(poses: readonly { id: string; point: BusLanePoint }[]) {
-    this.update(null);
-    for (const { id, point } of poses) {
+  timetable(poses: readonly { id: string; point: BusLanePoint; fade?: number }[], raw: LiveBus[] | null = null) {
+    this.update(raw);
+    for (const { id, point, fade } of poses) {
       const y = this.surface(point.x, point.z, point.run);
       if (y === null || this.mesh.count >= MAX) continue;
       this.positions.push({ id, x: point.x, y, z: point.z, a: point.a });
       this.obj.position.set(point.x, y, point.z);
       this.obj.rotation.set(0, point.a, 0);
       this.obj.updateMatrix();
+      this.fade.setX(this.mesh.count, fade ?? 0);
       this.mesh.setMatrixAt(this.mesh.count++, this.obj.matrix);
     }
+    this.fade.needsUpdate = true;
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 

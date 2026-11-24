@@ -523,7 +523,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     for (const target of scene()) for (const ev of ['pointerdown', 'wheel']) target?.addEventListener(ev, dismiss, { once: true, passive: true, capture: true });
   }
 
-  const panelHost = createDetailPanel({ busCalendar: () => view === 'city' && !o.live().realTime ? busTimetableStatus(o.live()) : null, allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
+  const panelHost = createDetailPanel({ busCalendar: () => view === 'city' ? busTimetableStatus(o.live()) : null, allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
   document.body.append(subject, notice, bar, menu, cam, share, radioPanel, resultsPanel, areaPop, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 
@@ -651,7 +651,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     // Weather is live data: show it only when the clock is the real present.
     const wxNow = s.realTime && !preview ? weather : null;
     const loadingNote = o.loading?.() ?? null;
-    const conf = confidence(s, !!wxNow, preview, !!loadingNote);
+    const conf = confidence(s, !!wxNow, preview, !!loadingNote, view === 'city');
     const night = sunPosition(now).elevation < -2;
     let svg: string;
     if (wxNow) {
@@ -679,14 +679,14 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     timeText.textContent = timeFmt.format(now);
     tierDot.className = `a2-dot a2-dot-${conf.tier}`;
-    tierText.textContent = confidenceWords(conf).join(' · ');
+    tierText.textContent = confidenceWords(conf, view === 'city').join(' · ');
     tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
     tierDate.textContent = dateFmt.format(now);
     tierDate.hidden = !conf.shifted;
     nowBtn.hidden = !conf.shifted;
     open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
-    const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
+    const feedNote = s.realTime && s.rail === 'down' ? 'Rail feed unavailable · trains follow the timetable' : null;
     showNotice(loadingNote ?? areaNote ?? feedNote);
     if (!panel.hidden) renderPanel(s);
     // The camera can move under an open share panel: keep the shown link the one Copy sends.

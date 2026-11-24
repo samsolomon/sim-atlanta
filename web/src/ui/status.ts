@@ -37,19 +37,19 @@ export interface Confidence {
   shifted: boolean;
 }
 
-export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeather: boolean, preview = false, loading = false): Confidence {
+export function confidence(s: Pick<LiveState, 'realTime' | 'rail'>, observedWeather: boolean, preview = false, loading = false, city = false): Confidence {
   return {
     // While City builds the scene isn't on screen yet: no word, a grey dot, never Live.
-    tier: loading ? 'loading' : s.realTime && s.rail === 'live' ? 'live' : 'timetable',
+    tier: loading ? 'loading' : s.realTime && (city || s.rail === 'live') ? 'live' : 'timetable',
     skyObserved: s.realTime && observedWeather && !preview,
     shifted: !s.realTime,
   };
 }
 
 /** The Final subject card names rail and weather confidence separately. */
-export function confidenceWords(c: Confidence): string[] {
+export function confidenceWords(c: Confidence, city = false): string[] {
   if (c.tier === 'loading') return [];
-  const rail = c.tier === 'live' ? 'Live trains' : 'Timetable';
+  const rail = c.tier === 'live' ? (city ? 'Live' : 'Live trains') : 'Timetable';
   return [rail, c.skyObserved ? 'weather reported' : 'illustrative sky'];
 }
 

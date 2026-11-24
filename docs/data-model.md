@@ -207,7 +207,7 @@ look-alikes (MARTA-ish silver car, generic freight locomotive), no operator logo
 (`marta:bus:<vehicle_id>`) and `at` (vehicle observation time in epoch milliseconds,
 or null). The wire format carries `lon` and `lat` rounded to five decimal places,
 optional `bearing` in whole degrees clockwise from north, and optional `speed`
-in whole metres per second. Each attribute inherits the feed source and the
+in whole metres per second. Optional `tripId` and `startDate` carry the raw MARTA GTFS trip descriptor. Each attribute inherits the feed source and the
 vehicle timestamp. The client expands those into individual live-tier values.
 
 The Worker uses `data/ga/bus-routes.json` to translate the feed's raw GTFS
@@ -215,7 +215,7 @@ route ID into `marta:route:<public short name>` (for example, `marta:route:1`).
 It omits the assignment when the static edition has no matching bus route. The 2D
 map draws teal GPS dots for fixes up to three minutes old, at the real clock only.
 The endpoint retains older and undated fixes so other consumers can apply their
-own freshness rules.
+own freshness rules. At the present clock City steers a Route 49 bus along its direction of travel toward a fresh observation. Its card gives the age and distance from the observation. An active trip without a matched GPS fix uses its inferred timetable position, including when the feed is unavailable.
 
 ### Station platforms and boarding edges
 

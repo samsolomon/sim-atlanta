@@ -127,7 +127,7 @@ fn build_bus49(path: &Path) -> Result<()> {
     std::fs::create_dir_all(&out)?;
     write_json(&out, "bus-49.json", &json!({
         "source": {"url": MARTA_GTFS, "retrieved": "2026-11-23", "sha256": HASH},
-        "routes": bus.routes, "paths": bus.paths, "stops": bus.stops, "timetable": bus.timetable
+        "tripIds": bus.trip_ids, "routes": bus.routes, "paths": bus.paths, "stops": bus.stops, "timetable": bus.timetable
     }))
 }
 

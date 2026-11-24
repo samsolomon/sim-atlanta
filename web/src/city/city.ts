@@ -163,7 +163,7 @@ export interface CityView {
   /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
   busCalendar?: {first:number;last:number};
   activeBusServiceDate?: number;
-  timetableBus(id: string): { headsign:string; start:number; serviceDate:number } | undefined;
+  timetableBus(id: string): ReturnType<ReturnType<typeof createTimetableBuses>['posesAt']>[number] | undefined;
   buses: Pick<CityBuses, 'occupies' | 'summary'>;
   /** Where City draws this train right now, for its card: a car out on the North Line open
    * cut (inferred track) or a Crescent berthed on the Brookwood model (inferred berth).
@@ -208,6 +208,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   clockMs: () => number;
   /** Current live bus fixes from the shared feed, or null off the real present (City shows none). */
   buses?: () => LiveBus[] | null;
+  observationNow?: () => number;
   beforeFrame?: (timestamp: number) => void;
   follow?: VehicleFollow;
   selectVehicle?: (vehicle: VehicleSelection | null) => void;
@@ -803,6 +804,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       return null;
     }, trafficOptions.roadHeight) : undefined;
   let activeBusServiceDate: number | undefined;
+  const drawnTrip = (id: string) => scheduledPoses.find(p => p.id === id || p.fix?.id === id);
   let timetableMode = false;
   const movingBlocks = (course:TrafficCourse) => {
     const tram = streetcarBlocks?.(course);
@@ -1507,10 +1509,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       return { id: v.id, tier: 'illustrative', x: cars[0].x, z: cars[0].z, cars, hidden: null };
     }
     if (v.kind === 'bus') {
+      const trip = drawnTrip(v.id);
+      const shown = buses.positions.find(p => p.id === (trip?.id ?? v.id));
+      if (trip && shown) return {id:v.id, tier:trip.fix ? 'live' : 'inferred', x:shown.x, z:shown.z, cars:[shown], hidden:null};
       const bus = options.buses?.()?.find(b => b.id === v.id);
-      const shown = buses.positions.find(p => p.id === v.id);
-      if (!bus) return shown && scheduledPoses.some(p => p.id === v.id)
-        ? { id:v.id, tier:'inferred', x:shown.x, z:shown.z, cars:[shown], hidden:null } : null;
+      if (!bus) return null;
       const [x, z] = shown ? [shown.x, shown.z] : project(bus.position.value.lon, bus.position.value.lat);
       return { id: bus.id, tier: bus.position.tier, x, z, cars: shown && busDrawn(x, z) ? [{ x, z }] : [], hidden: null };
     }
@@ -1553,13 +1556,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     } else controls.update();
     buses.night.value = atm.dark;
     const liveFixes = options.buses?.() ?? null;
+    const ms = options.clockMs();
+    if (liveFixes === null && !timetableMode) timetable?.resetPresent();
     timetableMode = liveFixes === null && !!options.buses;
     activeBusServiceDate = undefined;
-    scheduledPoses = timetableMode && timetable ? timetable.posesAt(options.clockMs(), day => { activeBusServiceDate = day; }) : [];
-    if (scheduledPoses.length) buses.timetable(scheduledPoses);
-    else {
-      buses.update(liveFixes);
-      if (liveFixes) timetable?.observe(options.clockMs(), buses.positions);
+    const activeService = (day: number) => { activeBusServiceDate = day; };
+    if (timetable && liveFixes !== null) {
+      const mixed = timetable.presentAt(ms, options.observationNow?.() ?? ms, liveFixes, activeService);
+      scheduledPoses = mixed.poses;
+      buses.timetable(scheduledPoses, mixed.raw);
+      timetable.observe(ms, buses.positions);
+    } else {
+      scheduledPoses = timetableMode && timetable ? timetable.posesAt(ms, activeService) : [];
+      buses.timetable(scheduledPoses, liveFixes);
     }
     const states = options.trains();
     trains.update(states, atm.dark);
@@ -1752,7 +1761,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     buses,
     busCalendar: timetable?.calendar,
     get activeBusServiceDate() { return activeBusServiceDate; },
-    timetableBus: id => scheduledPoses.find(p => p.id === id),
+    timetableBus: drawnTrip,
     get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length || midtownArterials?.group.children.length); },
     bounds: b,
     quality,

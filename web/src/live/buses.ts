@@ -28,7 +28,7 @@ export class LiveBuses {
         const asOf = fix.at === null ? '' : new Date(fix.at).toISOString();
         const sourced = <T>(value: T): Sourced<T> => ({ value, tier: 'live', source: feed.source, asOf });
         return {
-          id: fix.id, at: fix.at, position: sourced({ lon: fix.lon, lat: fix.lat }),
+          id: fix.id, at: fix.at, tripId: fix.tripId, startDate: fix.startDate, position: sourced({ lon: fix.lon, lat: fix.lat }),
           routeId: fix.routeId === undefined ? undefined : sourced(fix.routeId),
           bearing: fix.bearing === undefined ? undefined : sourced(fix.bearing),
           speed: fix.speed === undefined ? undefined : sourced(fix.speed),

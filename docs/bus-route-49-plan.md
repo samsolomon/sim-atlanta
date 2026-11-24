@@ -36,11 +36,12 @@ shape's direction, station access and road ownership before drawing it.
    where GTFS gives none, #340 signals where modeled, and carried queue delay.
    Bus identity persists in traffic; no collision-driven disappearance or jumps
    to recover schedule. Use explicit reference points for bumper/stop clearance.
-4. Make cars queue behind same-lane buses using #346 moving blocks. Live bus
-   observations remain authoritative, with age and live tier on the card; no
-   simulated red-light delay may move a live observation. Missing/stale fixes do
-   not silently become scheduled trips. First slice shows timetable-derived buses
-   only in Timetable mode because the live payload lacks trip linkage.
+4. At the present, match fresh GPS observations to active trips by the GTFS
+   trip descriptor and service date. Use directed route proximity for older
+   feeds without descriptors. Hide a nearby timetable twin of an unmatched bus.
+   Draw uncovered trips from the timetable. Follow the same trip as its source
+   changes. A matched bus follows stops, signals and queues while steering
+   toward the age-adjusted GPS target. Fade large corrections.
 5. Extend selection/follow and card states: inferred scene position, scheduled
    timetable, illustrative dwell/model. Keep live position separate. Unknown
    routes and expired schedules must remain explicit, without invented service.
@@ -72,3 +73,17 @@ run `pnpm data:bus49 /path/to/google_transit.zip`. The exporter verifies the
 digest before reading the feed. Compare the resulting
 `web/public/data/ga/bus-49.json` with `pipeline/prototypes/bus-49/timetable.json`.
 A new edition needs updated provenance, a regenerated snapshot and contract checks.
+
+Architect review, 2026-11-23 revision. Keep raw trip IDs beside the compact
+timetable, in its existing order. The existing worker response can carry the
+optional descriptor with the same polling and cache settings. Use the feed's
+observation clock for freshness and the service clock for the scheduled trip.
+
+Product design review, 2026-11-23 revision. The selected City card distinguishes
+the GPS observation from the drawn position and names the fallback on a missing
+fix. The scene word describes the real-time City clock. Shifted clocks use only
+the timetable. The Map continues to display reported GPS fixes.
+
+Release checklist: on or before **2026-11-27** (14 days before the last service
+date, **2026-12-11**), check for the next MARTA GTFS edition, regenerate the
+snapshot, verify service exceptions and update these dates before release.

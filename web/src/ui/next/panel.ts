@@ -29,7 +29,7 @@ function keyNode(): HTMLElement {
     ${swatch('--city-rail', 'City rail', 'MARTA trains and the streetcar')}
     ${swatch('--intercity', 'Intercity', 'Amtrak’s Crescent')}
     ${swatch('--freight', 'Freight', 'Freight railroads, simulated')}
-    ${swatch('--bus', 'Bus', 'GPS at the present time. City also simulates Route 49 from its timetable.')}
+    ${swatch('--bus', 'Bus', 'City steers Route 49 buses toward fresh GPS. Trips without a matched observation follow the timetable.')}
     <p class="a2-k-note" data-bus-calendar hidden></p>
     <div class="a2-sep a2-k-sep"></div>
     <p class="a2-h">Confidence</p>
@@ -53,12 +53,12 @@ function aboutNode(): HTMLElement {
   const credit = (k: string, v: string) => `<dt>${k}</dt><dd>${v}</dd>`;
   n.innerHTML = `${head('About Sim Atlanta')}
     <div class="a2-about-body">
-      <p class="a2-lede">A miniature city you can watch: MARTA trains and buses where they really are, traffic as it usually runs at this hour, and the sky Atlanta has right now.</p>
+      <p class="a2-lede">A miniature city you can watch: MARTA trains and buses from reports and timetables, with traffic typical of this hour.</p>
       <p class="a2-h">What you’re looking at</p>
       <p>The City view is a hand-built model of downtown, drawn like a tabletop diorama. The Map view zooms out to the region’s rail: subway, streetcar, Amtrak and the freight lines that cross the state. Both show the same moment, Atlanta time.</p>
       <p class="a2-quiet">Nothing here is for planning a trip. It’s a window, not a timetable.</p>
       <p class="a2-h">How true is it?</p>
-      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. City infers Route 49 bus positions from scheduled trips, stops and simulated signals. The corner says Live only when the clock shows the real present and MARTA’s feed is up; otherwise it says Timetable.</p>
+      <p>Select a train, bus or freight train and every fact on its card carries a label for how much we know: live, scheduled, reported, inferred or illustrative. City infers Route 49 bus positions from scheduled trips, stops and simulated signals. At the present clock City says Live. Select a bus to see its GPS age and drawing offset, or its timetable fallback.</p>
       <p>Scenery carries no label. The sky away from the present, trees and their species, building heights, landscaping, walkers and road traffic are illustrative or inferred: drawn to look right, not measured. Freight train movements are simulated.</p>
       <p class="a2-h">Credits</p>
       <dl class="a2-credits">
