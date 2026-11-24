@@ -97,6 +97,13 @@ export class CityTrains {
     private cut?: ReturnType<typeof prepareEastCut>) {
     this.tracks = new CityTracks(alignments);
     this.project = makeProjector(manifest.origin);
+    // A hidden template so City's boot prewarm compiles the CQ400 program before any train enters
+    // after ready. cq400Material pads every clip set to one plane count, so one program serves all;
+    // colour and role are uniforms.
+    const template = new THREE.Mesh(cq400Geometry({ cab: false, u0: 0, u1: 1 }, '#888888'), cq400Material('#888888', { value: 0 }, this.night, this.clip));
+    template.name = 'cq400 prewarm template';
+    template.visible = false;
+    this.group.add(template);
   }
 
   /** Replace the drawn track and the area trains may appear in, e.g. when an adjacent board joins. */
