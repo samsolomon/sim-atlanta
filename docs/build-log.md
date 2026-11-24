@@ -3226,3 +3226,7 @@ to the existing shell batch, with no new draw or material.
 [café grove close-up](log/ui/high-visitors/tables.jpg) ·
 [day and night](log/ui/high-visitors/day-night.jpg) ·
 [furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).
+
+### 2026-11-23 — American holly keeps its winter green
+
+A fruiting female holly now has spiny-margined A cards and small red clusters from autumn into winter. The first red dots floated beyond the foliage. Anchoring them to the leaf cards put them among the leaves, where only the exposed fruit shows. The new leaf and fruit atlas adds 1.33 MiB. The mature tree uses 192 / 134 triangles and two draws. Summer Front luminance is 0.231 / 0.251 against the generic canopy’s 0.248. The first silhouette is narrower than the open-grown reference and the berries are best read up close. [Seasonal sheet and fruit close-up](log/ui/tree-species/options-american-holly.jpg). Lab study. Web rebuild only.

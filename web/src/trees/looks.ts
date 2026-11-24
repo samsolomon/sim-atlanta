@@ -223,11 +223,13 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   const b = new FoliageBuilder();
   if (look.branchBloom) branchBlooms(b, look.species.form(size, q, d).segs, d, seed, look.branchBloom === 'twigs');
   if (look.branchBloom === 'crown') crownBlossoms(b, clusters, seed + 8);
-  if (opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
+  const fruit = look.leaf === 'holly' && opt.blooms
+    ? { count: opt.blooms[q], size: look.bloomSizeM ?? 0.5 } : undefined;
+  if (!fruit && opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
   else if (opt.technique === 'stars') needleStars(b, clusters, seed);
   else {
-    unitCards(b, clusters, seed, 1.25, opt.cardHeight, look.cardLeafM);
+    unitCards(b, clusters, seed, 1.25, opt.cardHeight, look.cardLeafM, fruit);
   }
   let g = b.geometry();
   if (opt.technique !== 'lobes' && opt.technique !== 'stars') crownNormals(g, outwardOf(e));
