@@ -45,3 +45,7 @@ Use `/?view=city&cam=<camera>&t=2026-11-20T11:30:00-05:00` (or `T23:30:00-05:00`
 ## Budget
 
 The tower uses 1,908 triangles (1,038 in the body and 870 in lit panes and crown), and the podium about 145, for about 2,050 against the 2,400 landmark ceiling. The podium's empty lamp mesh is hidden, because three.js still issues a call for it. The skin costs three low-tier draws and no new shader program.
+
+## Tidy-up (2026-11-24)
+
+The detachment check in #562 flagged one loose cluster: an upper-tier pier at about 398 m on the south face, drawn 0.3 m off the wall with no returns. Neighbouring lit panes happened to bridge the other piers. The tier piers now sit 0.12 m off the wall, so the check finds no loose parts in either clip. [Four sides at 500 m](four-sides.jpg), labelled by face shown: `__setView(bearing, 42, 500, -547, -4110, 1)` with bearings 0, 90, 180 and 270.

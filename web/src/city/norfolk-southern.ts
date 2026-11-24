@@ -1,3 +1,4 @@
+import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -10,9 +11,10 @@ import { litHash, seedOf } from './skin-kit';
  * and 13 over thin end masses; the 2019 lidar predates the building. HOK gives 17- and 10-storey
  * towers over a 5-storey podium (22 and 15 floors). Heights are therefore INFERRED: OSM's level
  * counts are shifted up two levels to HOK's totals, with 3.6 m podium levels (OSM's 18 m podium)
- * and 4.0 m office floors. Each tower is two knife-edged glass halves either side of a slightly
- * lower slot, with lower end shoulders, as OSM's parts describe; each is a straight prism from grade
- * (any lean or overhang at the base is not modelled). The glass hub reaches the street lobby, as the
+ * and 4.0 m office floors. Each tower is two knife-edged glass halves either side of a dark slot,
+ * with lower end shoulders, as OSM's parts describe. Each half rises straight from grade (any lean
+ * at the base is not modelled) to a sail roof that rakes `sailRise` (6 m, estimated from the 2022
+ * photographs) up toward its tower's slot; the slot and shoulders are a dark reveal. The glass hub reaches the street lobby, as the
  * photographs show, though OSM maps only its roof (docs/log/ui/norfolk-southern/README.md).
  * Flat vertex colours, no library surfaces: library curtain glass is a hooked material that costs its
  * own low-tier draw and program.
@@ -31,19 +33,23 @@ export const roles: Record<string, 'tall' | 'slot' | 'shoulder' | 'hub' | 'pavil
 };
 
 const podiumTop = 18,
-  officeFloor = 4.0;
+  officeFloor = 4.0,
+  /** How far each half's roof rakes up toward its tower's slot (estimated from the photos). */
+  sailRise = 6;
 /** OSM height (3.6 m per level) → HOK floor count (two more levels) → metres over grade. */
 export function inferred(osmH: number) {
   const level = osmH / 3.6 + 2;
   return podiumTop + (level - 5) * officeFloor;
 }
 
-// Glass picked from the provisional base-value table (base V ≥ 62 → S ≤ 30, V 50–60 → S ≤ 22).
-const glass = '#90a4b5', // S 20%, V 71%: the reflective blue curtain wall
-  band = '#7d848b', // S 10%, V 55%: floor-line spandrels
-  slotGlass = '#73777b', // S 6%, V 48%: the dark recess between the halves
-  podiumGlass = '#83909a', // S 15%, V 60%
-  hubGlass = '#8e9ba4',
+// The two identifiers from the 2022 photos: halves of a deeper, more saturated blue than the generic
+// glass around them, split by a near-black full-height slot; and sail roofs that rake up to the slot.
+// Bases follow the provisional base-value table (base V >= 62 -> S <= 30); the rendered check decides.
+const glass = '#7a93ad', // S 29%, V 68%: the halves
+  band = '#5f6f7e', // S 24%, V 49%: floor lines and mullions
+  slotGlass = '#7b8087', // S 9%, V 53%: the deep slot (renders V ~20 in its own shade)
+  podiumGlass = '#6f7d8a', // S 20%, V 54%
+  hubGlass = '#4f5964', // S 21%, V 39%: the dark-tinted glass hub, lit within
   canopy = '#d5d2cb',
   roof = '#8d8f90';
 
@@ -87,6 +93,35 @@ export function createNorfolkSouthern(buildings: VBuilding[], site: VBuilding, g
     return Math.max(datum, ...masses.filter(m => m !== self && m.role !== 'canopy' && pointInRing(p[0], p[2], m.plan)).map(m => m.top));
   };
 
+  const centroid = (plan: P2[]): P2 => plan.reduce(([a, b], [u, v]) => [a + u / plan.length, b + v / plan.length], [0, 0]);
+  const slots = masses.filter(m => m.role === 'slot');
+  // Without its slots (an OSM re-map) the sails have nothing to rise toward: use the generic box.
+  if (!slots.length) return null;
+  /** Raked roof heights for a tall half: rising linearly toward the nearest slot. */
+  const sail = (m: Mass) => {
+    const c = centroid(m.plan);
+    const slot = slots.reduce((a, b) => {
+      const da = Math.hypot(...(centroid(a.plan).map((x, i) => x - c[i]) as [number, number]));
+      const db = Math.hypot(...(centroid(b.plan).map((x, i) => x - c[i]) as [number, number]));
+      return db < da ? b : a;
+    });
+    // Rake along the normal of the half's face nearest the slot, so the whole slot-side edge is the
+    // level peak (the photographs' knife edge), not just one corner.
+    const sc = centroid(slot.plan);
+    let best = { d: Infinity, dir: [0, 0] as P2 };
+    m.plan.forEach(([u, v], i) => {
+      const [u2, v2] = m.plan[(i + 1) % m.plan.length], len = Math.hypot(u2 - u, v2 - v);
+      if (len < 2) return;
+      const d = Math.hypot((u + u2) / 2 - sc[0], (v + v2) / 2 - sc[1]);
+      if (d < best.d) best = { d, dir: [(v2 - v) / len, -(u2 - u) / len] };
+    });
+    const toward = (sc[0] - c[0]) * best.dir[0] + (sc[1] - c[1]) * best.dir[1];
+    const dir: P2 = toward < 0 ? [-best.dir[0], -best.dir[1]] : best.dir;
+    const proj = m.plan.map(([u, v]) => (u - c[0]) * dir[0] + (v - c[1]) * dir[1]);
+    const lo = Math.min(...proj), hi = Math.max(...proj);
+    return proj.map(p => m.top + sailRise * (p - lo) / (hi - lo || 1));
+  };
+
   let face = 0;
   for (const m of masses) {
     if (m.role === 'canopy') {
@@ -98,8 +133,25 @@ export function createNorfolkSouthern(buildings: VBuilding[], site: VBuilding, g
       continue;
     }
     const tower = m.role === 'tall' || m.role === 'slot' || m.role === 'shoulder';
-    const wall = m.role === 'slot' ? slotGlass : tower ? glass : m.role === 'podium' ? podiumGlass : hubGlass;
-    s.prism(m.plan, s.base, m.top, wall, roof);
+    // The slot and the recessed end shoulders are the dark reveals that frame the bright halves.
+    const wall = m.role === 'slot' || m.role === 'shoulder' ? slotGlass : tower ? glass : m.role === 'podium' ? podiumGlass : hubGlass;
+    if (m.role === 'tall') {
+      // The sail: walls straight up to the raked edge (no hidden flat roof), a raked roof, and a dark
+      // edge band 0.08 m proud of the wall.
+      const tops = sail(m);
+      m.plan.forEach(([u, v], i) => {
+        const j = (i + 1) % m.plan.length, [u2, v2] = m.plan[j];
+        const len = Math.hypot(u2 - u, v2 - v) || 1, nu = (v2 - v) / len * 0.08, nv = -(u2 - u) / len * 0.08;
+        s.body.quad([u, s.base, v], [u, tops[i], v], [u2, tops[j], v2], [u2, s.base, v2], wall);
+        s.body.quad([u + nu, tops[i] - 0.7, v + nv], [u + nu, tops[i] + 0.02, v + nv], [u2 + nu, tops[j] + 0.02, v2 + nv], [u2 + nu, tops[j] - 0.7, v2 + nv], band);
+      });
+      for (const [a, b, c] of ShapeUtils.triangulateShape(m.plan.map(([u, v]) => new Vector2(u, v)), [])) {
+        const p = (k: number) => [m.plan[k][0], tops[k], m.plan[k][1]];
+        s.body.tri(p(a), p(c), p(b), roof);
+      }
+    } else {
+      s.prism(m.plan, s.base, m.top, wall, roof);
+    }
     for (const f of faces(m.plan)) {
       face++;
       const from = coveredTo(f, m);
@@ -124,7 +176,8 @@ export function createNorfolkSouthern(buildings: VBuilding[], site: VBuilding, g
           const t = k / mullions, w = 0.12 / f.length;
           panel(f, t - w, t + w, Math.max(from, datum + podiumTop), m.top - 0.6, 0.05, band);
         }
-        panel(f, -0.002, 1.002, m.top - 0.6, m.top, 0.08, band);
+        // The flat cornice belongs to the shoulders and slots; a tall half's top is the raked band.
+        if (m.role !== 'tall') panel(f, -0.002, 1.002, m.top - 0.6, m.top, 0.08, band);
       } else if (m.role === 'podium') {
         // Five podium levels of darker glass with floor lines; the street level is the lobby.
         const mid = at(f, 0.5, 0, 0), grade = gradeAt(mid[0], mid[2]);

@@ -304,9 +304,16 @@ it('draws the Campanile as its present-day stripped frame at the lidar roof, unl
   expect(box.max.y).toBeCloseTo(95.4 + 4, 0);
   const top = new Raycaster(new Vector3(833, 300, -3571), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
   expect(top).toBeCloseTo(95.4, 0);
-  // A stalled construction site: no photographed lighting, so nothing glows.
+  // A stalled construction site: no photographed lighting, so nothing glows (and no lamps mesh is
+  // built at all: an empty one would still cost a draw).
   model.setNight(1);
-  expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
+  const glowing: string[] = [];
+  model.group.traverse(o => {
+    const m = (o as Mesh).material as MeshLambertMaterial | undefined;
+    if ((o as Mesh).isMesh && m?.emissiveIntensity && m.emissive?.getHex()) glowing.push(o.name || o.type);
+  });
+  expect(glowing).toEqual([]);
+  expect(model.group.children.filter(c => (c as Mesh).isMesh && !(c as Mesh).geometry.getAttribute('position')?.count)).toEqual([]);
   expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
 

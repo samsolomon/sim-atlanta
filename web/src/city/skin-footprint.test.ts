@@ -96,22 +96,18 @@ const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:886044296': 9, // Winship at Emory Midtown, midtown-south, worst 1.7 m off
   'osm:way:39450314': 9, // One Atlantic Center, midtown-upper, worst 0.67 m off
   'osm:way:208355680': 8, // Ponce de Leon Apartments, midtown-south, worst 0.34 m off
-  'osm:way:28961767': 7, // Woodruff Arts Center, midtown-upper, worst 0.33 m off
+  'osm:way:28961767': 7, // Woodruff Arts Center, midtown-upper, worst 0.33 m off: under 0.5 m (fins and loggia trim), tidy later
   'osm:way:269747513': 7, // clara-meer, midtown-upper, worst 5.85 m off
   'osm:way:42725820': 6, // Academy of Medicine, midtown-central, worst 0.46 m off
-  'osm:way:789975430': 4, // Alexan on 8th, midtown-central, worst 0.55 m off
-  'osm:way:42792936': 4, // Crum and Forster Building, midtown-south, worst 0.42 m off
+  'osm:way:42792936': 4, // Crum and Forster Building, midtown-south, worst 0.42 m off: under 0.5 m (facade trim), tidy later
   'osm:way:234939895': 3, // North Avenue station, midtown-south, worst >4 m off
-  'osm:way:28961738': 3, // High Museum of Art, midtown-upper, worst 1.39 m off
-  'osm:way:38977297': 2, // The Varsity, midtown-south, worst 7.9 m off
+  'osm:way:28961738': 3, // High Museum of Art, midtown-upper, worst 1.39 m off: legitimate, the entry ramp's foot lands on the Peachtree lawn
+  'osm:way:38977297': 2, // The Varsity, midtown-south, worst 7.9 m off: legitimate, the blade sign stands free on its pylon
   'osm:way:269636921': 2, // Promenade Central, midtown-upper, worst 0.88 m off
-  'osm:way:269542078': 1, // The Atlantic, brookwood-south, worst 0.3 m off
   'osm:way:28979077': 1, // Federal Reserve Bank of Atlanta, midtown-central, worst 0.6 m off
-  'osm:way:269843688': 1, // Electric Saturation, midtown-central, worst 0.31 m off
-  'osm:way:536884432': 1, // Square on 5th, midtown-central, worst 0.55 m off
-  'osm:way:245699027': 1, // Bobby Dodd Stadium, midtown-south, worst 3.91 m off
+  'osm:way:269843688': 1, // Electric Saturation, midtown-central, worst 0.31 m off: legitimate, the artwork stands 0.31 m clear of the vent
+  'osm:way:245699027': 1, // Bobby Dodd Stadium, midtown-south, worst 3.91 m off: legitimate, the playing field sits on the ground inside the bowl
   'osm:way:269843407': 1, // The Campanile, midtown-upper, worst 0.92 m off
-  'osm:way:1001565075': 1, // 1105 West Peachtree, midtown-upper, worst 1.23 m off
 };
 
 it('keeps every Midtown and square-board landmark inside its footprint plus its declared projection, with nothing hanging loose', () => {
