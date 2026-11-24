@@ -3428,3 +3428,35 @@ On Low, the panels now drop the blur and use a denser tint, and long-text sheets
 ### 2026-11-24 — The trees that never culled
 
 On the A16, hiding every tree bought six frames a second. The first culprit was invisible. Every pine and every bare crown kept its unused leaf clumps as zero-scaled instances. That still cost the GPU work, and it dragged each canopy mesh's bounding sphere toward the scene origin, 2.3 km from one Brookwood row's trees, so those meshes were never culled. Dropping those slots cut 88k triangles from the phone's default view at no visible cost. Two more changes followed, both on the low tier only. Past 800 m, each area now draws its trees as two instanced meshes: two faceted clumps and a trunk per broadleaf, coloured exactly like the near trees. Close in, trees are batched in 400 m cells, so only the cells on screen draw. Pines keep their pointed tiers as two stacked cones. At the default view, trees fall from 47 draws and 575k triangles to 35 and 252k. At Sam's Ansley view, they fall from 534k triangles to 87k. [Sheets](log/ui/tree-species/far-form/far-a900-closeup.jpg).
+
+### 2026-11-24 · Streaming, three tries in one night
+
+The goal was a City that loads only what the camera needs, so the board can grow toward I-285
+without costing phones. It took three versions to find what passes.
+
+**1. Load on approach.** Areas were built as the camera came near, swapped for a cheap LOD at middle
+distance, and freed far away. GPU memory came back cleanly over five cycles out and back. Then the
+pan routes came in. The worst frame on the phone tier was 533 ms, against today's 50. One area's build
+is a single synchronous main-thread job, so wherever it lands, it stalls.
+
+**2. Load at boot, swap what draws.** Every area loads as today, and the mid ring hides each one behind a
+Worker-built LOD: coarse ground, footprint boxes and forest clumps. On a real Galaxy A16 the default
+view went from 23.3 to 30.7 fps, at 562 against 290 draw calls. The phone is bound by draws, not
+triangles. But the default camera looked different: green instead of November orange, dark where
+Midtown's windows sparkle at night, and flatter colours. Tonight's rule is that speed-ups must not
+change what Sam sees.
+
+**3. Draw only what can be seen.** No LOD. An area whose nearest point is past the fog's full-strength
+distance renders as pure fog colour, so it's hidden. A mesh whose bounding sphere projects under about
+a pixel moves off the render layer. Lights, glows, crowns, signs and emissive or instanced meshes are
+kept by rule. The blink test is today against stream at three cameras, 14:00 and 22:00, in November,
+July and January. At most 0.09% of pixels differ by more than 24/255, and those are moving vehicles.
+The saving is honest but small where the whole board is in view: 558 to 533 draws at the default camera.
+It's larger close in, where fog does the work. At Midtown street level, draws went from 78 to 53 and
+triangles from 1.29M to 0.67M.
+
+The lesson: on today's board, almost every draw at the default camera is visible. The default-view win
+has to come from fewer, bigger batches (the buildings agent's per-cell landmark batches), not from
+skipping things. Streaming earns its keep once the board outgrows the fog, and that needs sliced builds
+first. [Blink test, November](log/streaming/blink-nov20.jpg) ·
+[July, January and close views](log/streaming/blink-seasons-close.jpg)
