@@ -103,6 +103,7 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
       }
       // Offices at 23:30: a few whole floors still lit, by day in the glass's own tone.
       for (const level of lit) {
+        // The last litHash argument is a slot, not a bay: 0 decides lit, 1 the run's position, 2 its width.
         if (litHash(seed, i, level, 0) >= 0.5) continue;
         const y = lo + (level + 0.18) * storey, y1 = y + storey * 0.64;
         const s = i === ci ? at(C, Cb, y1) : p, e = (i + 1) % n === ci ? at(C, Ca, y1) : q;
