@@ -49,28 +49,38 @@ export function createSeventeenthTower(buildings: VBuilding[], site: VBuilding, 
   const west = plan(westWing.rings[0]);
   const shaft = plan(office.rings[0]);
   const spine = plan(lightwell.rings[0]);
-  shell.prism(perimeter, shell.base, podium, '#ac9380', '#817e76');
+  shell.prism(perimeter, shell.base, podium, '#d8cfbf', '#817e76');
   faces(perimeter, false, (a, b) => {
     // The lightwell carries its own glazing through the stone base.
     if ([a, b].every(([x, z]) => spine.some(([sx, sz]) => x === sx && z === sz))) return;
-    shell.facade(a, b, floor + 0.5, podium - 0.3, 4, 3.5, 0.68, 0.73, glass, 0.13);
+    shell.facade(a, b, floor + 0.5, podium - 0.3, 4, 3.5, 0.5, 0.62, glass, 0.13);
   });
   const shoulder = floor + office.h;
   const crownBase = shoulder - 4;
-  shell.prism(west, podium, floor + westWing.h, '#a29484', '#81847e');
-  faces(west, true, (a, b) => shell.facade(a, b, podium, floor + westWing.h - 0.7, 17, 3.4, 0.72, 0.8, glass, 0.08));
+  // Pale stone piers about 1.7 m apart frame narrow office windows on the west wing.
+  shell.prism(west, podium, floor + westWing.h, '#cfc6b7', '#81847e');
+  faces(west, true, (a, b) => shell.facade(a, b, podium, floor + westWing.h - 0.7, 17, 1.7, 0.5, 0.8, glass, 0.08));
   shell.prism(shaft, podium, shoulder, '#414d58', '#757e84');
   faces(shaft, true, (a, b) => shell.facade(a, b, podium, shoulder - 0.8, 19, 2.8, 0.965, 0.8, glass, 0.09));
 
-  // The glazed central return reaches to the street, then changes to a backlit crown.
+  // The glazed central return reaches to the street, then changes to a backlit crown:
+  // one even glass panel per face, divided only by thin mullions that stay dark at night.
   shell.prism(spine, podium, crownBase, '#4b5a61', '#647074');
   const crownTop = floor + lightwell.h;
-  shell.prism(spine, crownBase, crownTop, '#596269', '#8b969a');
-  faces(spine, true, (a, b) => {
-    shell.facade(a, b, floor + 0.5, crownBase, 22, 2.9, 0.95, 0.92, ['#597178', '#627c80'], 0.075);
-    shell.facade(a, b, crownBase, shoulder, 4, 2.9, 0.96, 0.88, ['#afbab2', '#bac2b6'], 1);
-  });
-  faces(spine, false, (a, b) =>
-    shell.facade(a, b, shoulder, crownTop - 0.24, 8, 2.9, 0.96, 0.88, ['#afbab2', '#bac2b6'], 1));
+  shell.prism(spine, crownBase, crownTop, '#c3ccc8', '#9aa3a4');
+  faces(spine, true, (a, b) =>
+    shell.facade(a, b, floor + 0.5, crownBase, 22, 2.9, 0.95, 0.92, ['#597178', '#627c80'], 0.075));
+  const crown = (a: P2, b: P2, length: number, lo: number, hi: number) => {
+    const at = (t: number, y: number, depth: number): [number, number, number] =>
+      [a[0] + t * (b[0] - a[0]) + depth * (b[1] - a[1]) / length, y, a[1] + t * (b[1] - a[1]) - depth * (b[0] - a[0]) / length];
+    shell.lights.quad(at(0, lo, 0.06), at(0, hi, 0.06), at(1, hi, 0.06), at(1, lo, 0.06), '#d8e3e1');
+    const count = Math.max(1, Math.round(length / 2.9));
+    for (let i = 1; i < count; i++) {
+      const l = i / count - 0.07 / length, r = i / count + 0.07 / length;
+      shell.body.quad(at(l, lo, 0.1), at(l, hi, 0.1), at(r, hi, 0.1), at(r, lo, 0.1), '#7f8b8e');
+    }
+  };
+  faces(spine, true, (a, b, length) => crown(a, b, length, crownBase, shoulder));
+  faces(spine, false, (a, b, length) => crown(a, b, length, shoulder, crownTop - 0.24));
   return shell.finish('#fff0cb', 0.72);
 }
