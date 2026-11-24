@@ -221,3 +221,20 @@ it('reports the yard budget per row and tier', () => {
   expect(totals.low).toBeLessThan(70000);
   expect(totals.low).toBeLessThan(totals.high);
 });
+
+it('adds terraced yards only for detached Ansley houses on the high tier', () => {
+  const b=house('terrace-fixture',rect(12,10,1200,-4000));
+  const c={...city([b]),bounds:{minX:1000,maxX:1400,minZ:-4200,maxZ:-3800},
+    roads:[{cls:'residential',name:'Test St',bridge:false,tunnel:false,pts:[[1100,-4020],[1300,-4020]]}]} as TerrainCity;
+  const ground=(_x:number,z:number)=>(z+4020)*.15;
+  for(const quality of ['high','low'] as const){
+    const yard=residential(c,undefined,ground,undefined,quality).yards()!;
+    expect(yard.terraceSites.length).toBe(quality==='high'?1:0);
+    expect(yard.yields.length).toBe(quality==='high'?3:0);
+    yard.dispose();
+  }
+  for(const cls of ['terrace','semidetached_house']){
+    const yard=residential({...c,buildings:[{...b,cls}]},undefined,ground).yards();
+    expect(yard?.terraceSites.length??0).toBe(0);yard?.dispose();
+  }
+});

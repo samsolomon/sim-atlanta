@@ -4,6 +4,8 @@ import { inAnsley, roadWidth, type TerrainCity } from '../terrain/transport-data
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import { flowerBed, hedge, landscapeMesh } from '../landscape/primitives';
 import { GroundCover } from '../landscape/ground-cover';
+import type { GroundYield } from '../terrain/surface';
+import { yardTerrace } from './yard-terrace';
 import type { BuildingFinish, VBuilding } from '../vignette/world';
 
 /**
@@ -540,8 +542,10 @@ const WALK = '#cbc6ba', DRIVE = '#b2ada3';
  * near the street. The low tier keeps walks and driveways. All `illustrative`.
  */
 function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z: number) => number | null,
-  street: (x: number, z: number) => number, quality: 'high' | 'low') {
+  street: (x: number, z: number) => number, quality: 'high' | 'low', city: TerrainCity, treeTrunks: readonly (readonly number[])[]) {
   const b = new Builder(), cover = new GroundCover(), high = quality === 'high';
+  const yields: GroundYield[] = [], terraceSites: { id:string; at:P2; triangles:number }[] = [];
+  const classes = new Map(all.map(b=>[b.id,b.cls]));
   // Footprint index, so drives and walks never cross another building.
   const cells = new Map<string, P2[][]>();
   for (const o of all) {
@@ -593,11 +597,17 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     // Walks start past the 2.4 m porch and its steps, or past the stoop.
     const porchDepth = p.porch ? 2.4 + .9 : 1.3 + .3 * 3;
     // A front walk from every entry (two on apartments) to the street.
-    let walk = 0;
+    const mainDoor=at(p.doorS,porchDepth);
+    const walk=reach(mainDoor[0],mainDoor[1],n[0],n[1]);
+    const cls=classes.get(p.id);
+    const terrace=high && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
+      ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkEnd:porchDepth+walk,
+        newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
+    if(terrace){yields.push(...terrace.yields);terraceSites.push({id:p.id,at:terrace.at,triangles:terrace.triangles});}
     for (const ds of p.doors) {
       const door = at(ds, porchDepth), w = reach(door[0], door[1], n[0], n[1]);
-      if (w > 1 && !stripBlocked(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2)) strip(door, [door[0] + n[0] * w, door[1] + n[1] * w], 1.2, WALK);
-      if (ds === p.doorS) walk = w;
+      const end=terrace && ds===p.doorS ? at(ds,terrace.walkStop) : at(ds,porchDepth+w);
+      if (w > 1 && !stripBlocked(door,end,1.2)) strip(door,end,1.2,WALK);
     }
     // Driveway on the side away from the door, along the side wall and out to the street.
     const side = p.doorS <= 0 ? 1 : -1, dx = side * (len / 2 + 1.8);
@@ -629,7 +639,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       if (o1 - o0 > 1) flowerBed(b, [at(s, o0), at(s + 1.4, o0), at(s + 1.4, o1), at(s, o1)], ground, { doy: 300, quality, density: .7, seed: p.id + 'bed' });
     }
     // A clipped hedge near the street on some lots, broken at the walk.
-    if (walk > 4 && r() < .25) {
+    if (walk > 4 && r() < .25 && !terrace) {
       // Broken at every walk.
       const o = porchDepth + walk - .8, cuts = [...p.doors].sort((x, y) => x - y);
       let s0 = -len / 2;
@@ -637,7 +647,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       if (len / 2 - s0 > 1) hedge(b, [at(s0, o), at(len / 2, o)], ground, { height: .9, width: .6, quality, seed: p.id + 'hz' });
     }
   }
-  return { b, cover };
+  return { b, cover, yields, terraceSites };
 }
 
 /**
@@ -647,7 +657,7 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
  */
 export function residential(city: TerrainCity, existing?: (b: VBuilding) => BuildingFinish | undefined,
   ground?: (x: number, z: number) => number | null, footing?: (b: VBuilding) => number | null, quality: 'high' | 'low' = 'high',
-  force?: Record<string, HouseForce>, footprints?: VBuilding[]) {
+  force?: Record<string, HouseForce>, footprints?: VBuilding[], treeTrunks: readonly (readonly number[])[] = []) {
   const street = roadIndex(city);
   const plans = new Map<string, Plan>();
   const buildings = city.buildings.map(b => {
@@ -766,14 +776,14 @@ export function residential(city: TerrainCity, existing?: (b: VBuilding) => Buil
     yards() {
       if (!ground || !plans.size) return null;
       // Every footprint blocks yards, including landmark sites already removed from `city`.
-      const { b, cover } = yards(plans, footprints ?? city.buildings, ground, street, quality);
+      const { b, cover, yields, terraceSites } = yards(plans, footprints ?? city.buildings, ground, street, quality, city, treeTrunks);
       const group = new THREE.Group();
       group.name = 'yards';
       group.userData.perf = 'landscape';
       const land = landscapeMesh(b), covers = cover.triangles ? cover.mesh({ quality }) : null;
       group.add(land.mesh);
       if (covers) group.add(covers.mesh);
-      return { group, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
+      return { group, yields, terraceSites, triangles: land.triangles + cover.triangles, dispose() { land.dispose(); covers?.dispose(); } };
     },
   };
 }
