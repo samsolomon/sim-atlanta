@@ -48,8 +48,8 @@ function kit() {
 }
 
 export function sedanFinish(near=true){
-  const {faces,panel,skin,box,wheel}=kit(), end=2.4425;
-  const axles=[-end+1.085,end-.975], r=.33, arch=.383;
+  const {faces,panel,skin,box,wheel}=kit(), bumper=2.4425, end=bumper-.023;
+  const axles=[-bumper+1.085,bumper-.975], r=.33, arch=.383;
   // Cut the arch into the metal skirt. Each arch has an inset, open, dark lining.
   const zs=[-end,-2.30,-1.96,-.70,.52,1.05,1.97,2.23,end];
   const archSegments=near?10:4;
@@ -84,7 +84,7 @@ export function sedanFinish(near=true){
     }
   }
   // Recessed lower intake, bumper shoulders, lamp pockets and boot-lid break.
-  for(const [z,y,w,h,c] of [[end+.002,.492,1.24,.225,dark],[-end-.003,.588,1.11,.18,shadow],[-end-.009,.588,.50,.105,'#c3c2b9']])box(0,y,z,w,h,.015,c);
+  for(const [z,y,w,h,c] of [[end+.002,.492,1.24,.225,dark],[-bumper+.013,.588,1.11,.18,shadow],[-bumper+.0075,.588,.50,.105,'#c3c2b9']])box(0,y,z,w,h,.015,c);
   for(const s of [-1,1]){
     const tip=(x,y,z)=>[s*x,y,z];
     panel([tip(.32,.764,end+.015),tip(.77,.787,end+.015),tip(.81,.696,end+.015),tip(.44,.675,end+.015)],lens);
@@ -100,13 +100,13 @@ export function sedanFinish(near=true){
     box(s*.998,1.015,.74,.156,.095,.18,bodyPaint);
     box(s*.995,1.019,.645,.12,.066,.012,steel);
   }
-  if(near)for(const y of [.434,.476,.518])box(0,y,end+.014,1.06,.013,.018,alloy);
+  if(near)for(const y of [.434,.476,.518])box(0,y,bumper-.009,1.06,.013,.018,alloy);
   return faces;
 }
 
 export function tractorFinish(near=true){
-  const {faces,skin,panel,box,round,wheel}=kit(), nose=4.12, steer=nose-.7874;
-  const tandem=steer-7.112, cabBack=nose-3.325, tail=tandem-1.51;
+  const {faces,skin,panel,box,round,wheel}=kit(), bumper=4.12, nose=bumper-.07, steer=bumper-.7874;
+  const tandem=steer-7.112, cabBack=bumper-3.325, tail=tandem-1.51;
   function shell(stations,color){skin(stations.map(([z,w,low,top])=>[[-w*.5,low,z],[w*.5,low,z],[w*.5,top-.09,z],[w*.44,top,z],[-w*.44,top,z],[-w*.5,top-.09,z]]),color);}
   for(const s of [-1,1])box(s*.43,.78,(nose+tail)/2,.13,.27,nose-tail,dark);
   shell([[1.96,1.43,1.06,2.15],[2.27,1.40,1.04,2.18],[nose-.15,1.30,1.06,2.11],[nose-.10,1.24,1.06,2.085]],bodyPaint);
