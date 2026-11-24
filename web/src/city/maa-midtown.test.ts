@@ -44,7 +44,7 @@ it('puts the glass corner on the 11th Street face, not the Peachtree Walk end', 
     const colour = ((hit.object as Mesh).geometry as BufferGeometry).getAttribute('color');
     return new Color(colour.getX(hit.face!.a), colour.getY(hit.face!.a), colour.getZ(hit.face!.a)).getHexString();
   };
-  const corner = new Color('#7fa3bd').getHexString();
+  const corner = new Color('#b0b8bd').getHexString();
   // From 11th Street, looking south at mid-floor height between the white bands.
   expect(colourAt(new Vector3(455, 361.5 - 300, -3300), new Vector3(0, 0, 1))).toBe(corner);
   // From Peachtree Walk, looking north at the other end.

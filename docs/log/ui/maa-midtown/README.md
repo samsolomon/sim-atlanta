@@ -49,4 +49,12 @@ No full-night exterior photograph was found, so this is an evidence gap. Searche
 
 ## Budget
 
-About 1,350 triangles: about 810 in the body and about 540 in lit panes. The facade skips the seam between the blocks and the face behind the glass corner. Glass bases are within the provisional glass rules: slab glass `#86a3ad` (S 23%, V 68%), corner `#7fa3bd` (S 33%, V 74%) and pavilion `#8fb0b8` (S 22%, V 72%).
+About 1,350 triangles: about 810 in the body and about 540 in lit panes. The facade skips the seam between the blocks and the face behind the glass corner. Glass bases are within the provisional glass rules, and so is the rendered glass. In City's shade, the bluish ambient light pushes cool, dark bases to rendered saturations of 54–81%. So the glass is near-neutral, and the balcony recess is slightly warm:
+
+| Surface | Base hex | Base S/V | Rendered S/V, 11:30 (median) |
+|---|---|---|---|
+| Slab glass | `#adb5b9` | 6% / 73% | shaded west 26–27% / 33–34%; east 32% / 40% |
+| Corner glass | `#b0b8bd` | 7% / 74% | shaded north 26% / 36% (no sunlit patch at 11:30) |
+| Pavilion glass | `#aab6ba` | 9% / 73% | |
+| Balcony recess | `#a29a92` | 10% / 64% | neutral grey-brown in shade |
+| Generic glass in the same frames | | | shaded 27–34% / 44–46%; sunlit 28% / 44% |

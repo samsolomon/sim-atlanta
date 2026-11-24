@@ -22,12 +22,14 @@ const blockZ = -3207;
 
 const brick = '#9b6b58',
   brickShade = '#8a5e4d',
-  glass = '#86a3ad',
+  glass = '#adb5b9',
   white = '#e9e6df',
-  recess = '#8a9394',
+  recess = '#a29a92',
   garage = '#c7bba6',
   band = '#e1dccf',
-  roof = '#8f8a80';
+  roof = '#8f8a80',
+  /** Corner glass: low saturation, because the shaded north face renders far bluer than its base. */
+  cornerGlass = '#b0b8bd';
 
 const northRoof = 386.5,
   southRoof = 381.5,
@@ -155,14 +157,14 @@ export function createMaaMidtown(buildings: VBuilding[], site: VBuilding, grid: 
     const aNorth = f.a[1] < f.b[1];
     const t0 = northFace || aNorth ? 0 : 1 - 7 / f.length;
     const t1 = northFace || !aNorth ? 1 : 7 / f.length;
-    panel(f, t0, t1, slabBase, northRoof + 1, 0.15, '#7fa3bd');
+    panel(f, t0, t1, slabBase, northRoof + 1, 0.15, cornerGlass);
     for (let y = slabBase + 3 * floor; y < northRoof; y += 3 * floor) panel(f, t0, t1, y - 0.2, y + 0.2, 0.2, white);
     // Rooms behind the glass corner, lit in front of it.
     const bays = Math.max(1, Math.round((t1 - t0) * f.length / 3.4));
     for (let j = 0; j * floor < northRoof - slabBase - 2; j++) for (let k = 0; k < bays; k++) {
       if (litHash(seed, 90 + (westFace ? 1 : 0), j, k) > 0.3) continue;
       const y = slabBase + j * floor + 0.4, w = (t1 - t0) / bays;
-      panel(f, t0 + (k + 0.12) * w, t0 + (k + 0.88) * w, y, y + 2.2, 0.17, '#7fa3bd', true);
+      panel(f, t0 + (k + 0.12) * w, t0 + (k + 0.88) * w, y, y + 2.2, 0.17, cornerGlass, true);
     }
     if (westFace) {
       // The fin stands on the West Peachtree sidewalk and rises past the roof.
@@ -174,9 +176,9 @@ export function createMaaMidtown(buildings: VBuilding[], site: VBuilding, grid: 
   // Rooftop amenity pavilion: glass room under a brick parapet on the north slab (lidar 389.7 m
   // around x 452-460, z -3218 to -3238).
   const pavilion: P2[] = [[-5, -26], [3, -26], [3, -6], [-5, -6]];
-  s.prism(pavilion, northRoof, pavilionTop - 0.8, '#8fb0b8', roof);
+  s.prism(pavilion, northRoof, pavilionTop - 0.8, '#aab6ba', roof);
   s.prism(pavilion, pavilionTop - 0.8, pavilionTop, brick, roof);
-  for (const f of faces(pavilion)) panel(f, 0.05, 0.95, northRoof + 0.3, pavilionTop - 1.1, 0.03, '#8fb0b8', true);
+  for (const f of faces(pavilion)) panel(f, 0.05, 0.95, northRoof + 0.3, pavilionTop - 1.1, 0.03, '#aab6ba', true);
 
   return s.finish('#ffdcae', 0.62);
 }
