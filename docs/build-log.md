@@ -2913,3 +2913,11 @@ removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
 
 ![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
 Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
+### 2026-11-23 — A quieter Rhodes Hall tower
+
+Sam wanted the floodlit tower a little less bright. Its stone wash is now 25% lower,
+while the porch lighting and dark windows stay as they were. It is a one-coefficient
+calibration, with no geometry or texture cost. Matched 21:00 frames use the same
+`301,-4675,340,60,160` camera at both tiers.
+[High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
+[Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
