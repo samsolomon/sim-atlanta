@@ -99,7 +99,8 @@ try {
 
   // Composite the four frames in the same browser, on a blank page.
   await send('Page.navigate', { url: 'about:blank' }); await sleep(500);
-  const side = { 0: 'S', 45: 'SW', 90: 'W', 135: 'NW', 145: 'NW', 180: 'N', 215: 'NE', 225: 'NE', 270: 'E', 315: 'SE' };
+  // Face shown for a view heading (bearing): 0 looks north at the south face, 90 at the west face.
+  const face = { 0: 'South', 45: 'South-west', 90: 'West', 135: 'North-west', 145: 'North-west', 180: 'North', 215: 'North-east', 225: 'North-east', 270: 'East', 315: 'South-east' };
   const sheet = await evaluate(`(async () => {
     const frames = ${JSON.stringify(frames.map(f => ({ ...f, data: undefined })))};
     const data = ${JSON.stringify(frames.map(f => f.data))};
@@ -108,13 +109,14 @@ try {
     const g = cv.getContext('2d'); g.fillStyle = '#181818'; g.fillRect(0, 0, cv.width, cv.height);
     g.fillStyle = '#f0f0f0'; g.font = '22px Helvetica'; g.textBaseline = 'top';
     g.fillText(${JSON.stringify(`${name}: four sides, ${at}, low tier, ${dist} m (cam target ${x.toFixed(0)},${z.toFixed(0)}); magenta box = the skin`)}, pad, 7);
-    const side = ${JSON.stringify(side)};
+    const face = ${JSON.stringify(face)};
     for (let k = 0; k < frames.length; k++) {
       const img = new Image(); img.src = 'data:image/jpeg;base64,' + data[k]; await img.decode();
       const x = pad + (k % 2) * (w + pad), y = head + pad + Math.floor(k / 2) * (h + cap + pad);
       const f = frames[k];
       g.font = '18px Helvetica'; g.fillStyle = '#e6e6e6';
-      g.fillText('from ' + (side[f.b] ?? f.b) + ' (bearing ' + f.b + ', looking ' + (side[(f.b + 180) % 360] ?? '') + ', tilt ' + f.t + '°)', x, y + 6);
+      // The cam bearing is the view heading: bearing 0 looks north and shows the SOUTH face.
+      g.fillText((face[f.b] ?? ('bearing ' + f.b)) + ' face (bearing ' + f.b + ', tilt ' + f.t + '°)', x, y + 6);
       g.drawImage(img, x, y + cap, w, h);
       const [l, t, r, bt] = f.box; g.strokeStyle = '#ff00ff'; g.lineWidth = 3;
       g.strokeRect(x + Math.max(2, l * w), y + cap + Math.max(2, t * h), Math.min(w - 4, (r - l) * w), Math.min(h - 4, (bt - t) * h));
