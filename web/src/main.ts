@@ -122,7 +122,8 @@ function updateFollowPanel() {
   const action = pendingFollow ? 'Opening City…' : followLabel('city', follow.active, true)!;
   if (followAction.textContent !== action) followAction.textContent = action;
   // aria-disabled, not disabled: a keyboard user's focus stays on the button while City opens.
-  followAction.toggleAttribute('aria-disabled', !!pendingFollow);
+  if (pendingFollow) followAction.setAttribute('aria-disabled', 'true');
+  else followAction.removeAttribute('aria-disabled');
   recenter.hidden = !(reduced && follow.active);
 }
 followAction.addEventListener('click', () => {
