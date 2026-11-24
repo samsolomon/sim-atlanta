@@ -15,6 +15,7 @@ let desktop = false;
 let extra = null;
 let netMbps = 0;
 let cpu = 1;
+let viewport = null;
 const urls = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
@@ -22,6 +23,8 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--eval') extra = args[++i];
   else if (args[i] === '--net') netMbps = Number(args[++i]) || 0;
   else if (args[i] === '--cpu') cpu = Number(args[++i]) || 1;
+  // --viewport 384x692@1: the A16's portrait canvas as measured on the device (CSS px at DPR 1).
+  else if (args[i] === '--viewport') { const m = /^(\d+)x(\d+)@([\d.]+)$/.exec(args[++i]); if (m) viewport = { width: +m[1], height: +m[2], deviceScaleFactor: +m[3] }; }
   else urls.push(args[i]);
 }
 if (!urls.length) { console.error('usage: perf-run.mjs [--out dir] [--desktop] URL...'); process.exit(2); }
@@ -64,7 +67,7 @@ if (cpu > 1) await send('Emulation.setCPUThrottlingRate', { rate: cpu });
 // Galaxy A16: 1080x2340 at DPR 2.625 = 411x891 CSS px.
 if (desktop) await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
 else {
-  await send('Emulation.setDeviceMetricsOverride', { width: 411, height: 891, deviceScaleFactor: 2.625, mobile: true });
+  await send('Emulation.setDeviceMetricsOverride', { ...(viewport ?? { width: 411, height: 891, deviceScaleFactor: 2.625 }), mobile: true });
   await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 }
 
