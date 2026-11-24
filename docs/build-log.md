@@ -3380,3 +3380,6 @@ The Proscenium's mapped outline has no parts, so its character had to come from 
 The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
 [Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
 
+### 2026-11-24 · Sora at Spring Quarter, part by part
+
+Sora's five mapped parts happen to line up with its five materials. The main shaft and north block are blue-green glass in a white frame, the dark blade climbs from the base, and the west wing is white with punched windows. The podium is cream. Faces buried in a taller neighbouring part are skipped, and two balcony stacks run up the shaft's east corners. The historic chapel next door stays its own building, so at the review orbit the old gables and the new tower read as two things. [Day, night and podium views](log/ui/sora/README.md)
