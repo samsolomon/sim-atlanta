@@ -11,6 +11,7 @@ import {
 import { midtownThroughLane, trafficLaneFraction } from '../terrain/midtown-connector-lanes';
 import type { ConnectorDirection } from '../terrain/connector-lanes';
 import type { TerrainCity } from '../terrain/transport-data';
+import { runSync, type Build } from '../core/slice';
 
 type Box = TerrainCity['bounds'];
 export interface TrafficLane {
@@ -80,10 +81,18 @@ export function clipped(points: P2[], boxes: Box[]) {
 }
 
 export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity[] = []): TrafficLane[] {
+  return runSync(connectorTrafficRouteSteps(city, neighbors));
+}
+
+/** connectorTrafficRoutes in steps (`core/slice` Build): yields between groups of ribbons while
+ * clipping and between groups of chains, so an area mount can spread the work over frames. */
+export function* connectorTrafficRouteSteps(city: TerrainCity, neighbors: TerrainCity[] = []): Build<TrafficLane[]> {
   const boxes = [city, ...neighbors].map((c) => c.bounds);
   const pieces: Piece[] = [],
     starts = new Map<string, Piece>();
+  let ribbonCount = 0;
   for (const ribbon of ribbons) {
+    if (++ribbonCount % 8 === 0) yield 'connector:clip';
     // The static OSM way supplies one unambiguous surface classification per
     // owner. A mixed Overture centreline can cover both a tunnel and an open cut.
     const owner: VRoad = {
@@ -125,6 +134,7 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
     }
   }
 
+  yield 'connector:link';
   const result: TrafficLane[] = [];
   function finish(chain: Piece[], share: number) {
     const points = [chain[0].pts[0]],
@@ -160,7 +170,12 @@ export function connectorTrafficRoutes(city: TerrainCity, neighbors: TerrainCity
     }
     for (const p of next) travel([...chain, p], share / next.length);
   }
-  for (const p of pieces) if (!p.incoming) travel([p], 1 / Math.max(6, p.ribbon.lanes));
+  let chained = 0;
+  for (const p of pieces) {
+    if (p.incoming) continue;
+    travel([p], 1 / Math.max(6, p.ribbon.lanes));
+    if (++chained % 16 === 0) yield 'connector:chain';
+  }
   for (const dir of ['northbound', 'southbound'] as const) {
     const crossing = result.filter((r) => r.crossing && r.direction === dir);
     const total = crossing.reduce((sum, r) => sum + r.share, 0);

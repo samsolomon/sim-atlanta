@@ -46,7 +46,7 @@ import { terrainAlignment, terrainOpenings } from './terrain-rail';
 import { boardPoint, eastBounds, eastJoin, nearEast, nearNorth, northBounds, northSouthJoin, northWestJoin } from './board-footprint';
 import { prepareEastCut } from './east-cut';
 import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
-import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
+import { ConnectorTraffic, connectorTrafficSteps, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
 import { ArterialTraffic } from './arterial-traffic';
@@ -137,7 +137,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { sliceInput } from '../core/slice';
+import { runSync, sliceInput, type Build } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
@@ -819,6 +819,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   /** Set when an area mounts: ground and joins may change, so cached car heights refresh next frame. */
   let trafficHeightsStale = false;
   function extendConnectorTraffic() {
+    runSync(connectorTrafficBuild());
+  }
+  /**
+   * Rebuild the Connector layer for the boards mounted now, in steps (core/slice): the new
+   * layer is built off to the side and swapped in on the final step, so the old one keeps
+   * drawing and a half-built layer never shows. Abandoning it (return()) frees nothing, since
+   * nothing is allocated for the GPU before that step.
+   */
+  function* connectorTrafficBuild(): Build<void> {
     trafficHeightsStale = true;
     if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
@@ -831,7 +840,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         clippingPlanes[3].constant = Math.max(clippingPlanes[3].constant, r.maxZ);
       }
     }
-    const joined = new ConnectorTraffic({ ...trafficOptions, neighbors, clippingPlanes });
+    const joined = yield* connectorTrafficSteps({ ...trafficOptions, neighbors, clippingPlanes });
     traffic?.dispose();
     traffic = joined;
     scene.add(joined.group);
@@ -842,13 +851,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   async function extendMidtownArterials(added: Iterable<string>) {
     if (!trafficOptions || !mosaic || ![...added].some(id => Object.hasOwn(midtownRowBounds, id))) return;
     const build = ++midtownBuild;
-    const { MidtownArterialTraffic } = await import('./midtown-arterial-traffic');
+    const { midtownArterialSteps } = await import('./midtown-arterial-traffic');
     if (build !== midtownBuild || eastController.signal.aborted) return;
+    runSync(midtownArterialBuild(midtownArterialSteps));
+  }
+  /** Rebuild the Midtown arterial layer for the rows mounted now, in steps, swapping it in on the
+   * final step (see connectorTrafficBuild). `steps` is the lazily imported module's builder. */
+  function* midtownArterialBuild(steps: typeof import('./midtown-arterial-traffic').midtownArterialSteps): Build<void> {
+    if (!trafficOptions || !mosaic) return;
     const boards = [...mosaic.patches].filter(([id]) => Object.hasOwn(midtownRowBounds, id))
       .map(([row, a]) => ({ row, ...a.connectorBoard }));
     const { city: _city, roadHeight: _height, ...shared } = trafficOptions;
     // Share the four-plane shader variants with downtown. The perimeter moves as rows mount.
-    const next = new MidtownArterialTraffic({ ...shared, clippingPlanes: perimeter }, boards);
+    const next = yield* steps({ ...shared, clippingPlanes: perimeter }, boards);
     midtownArterials?.dispose();
     midtownArterials = next;
     scene.add(next.group);

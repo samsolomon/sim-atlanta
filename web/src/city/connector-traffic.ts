@@ -1,4 +1,5 @@
-import { connectorTrafficRoutes } from './connector-traffic-routes';
+import { connectorTrafficRoutes, connectorTrafficRouteSteps, type TrafficLane } from './connector-traffic-routes';
+import type { Build } from '../core/slice';
 import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 
 export const CONNECTOR_TRAFFIC_CAP = { low: 48, high: 120 } as const;
@@ -8,9 +9,10 @@ export type ConnectorBoard = Pick<RoadTrafficOptions, 'city' | 'roadHeight'>;
 export type ConnectorTrafficOptions = RoadTrafficOptions & { neighbors?: ConnectorBoard[] };
 
 export class ConnectorTraffic extends RoadTraffic {
-  constructor(opts: ConnectorTrafficOptions) {
+  /** `lanes`: routes already computed (connectorTrafficSteps); otherwise computed here. */
+  constructor(opts: ConnectorTrafficOptions, lanes?: TrafficLane[]) {
     const neighbors = opts.neighbors ?? [];
-    const courses = connectorTrafficRoutes(opts.city, neighbors.map(board => board.city)).map(lane => ({ ...lane,
+    const courses = (lanes ?? connectorTrafficRoutes(opts.city, neighbors.map(board => board.city))).map(lane => ({ ...lane,
       speedMps: 18, dailyFlow: CONNECTOR_AADT * .5 * lane.share, truckShare: .07 }));
     const boards = [opts, ...neighbors];
     const bounds = { ...opts.city.bounds };
@@ -34,4 +36,12 @@ export class ConnectorTraffic extends RoadTraffic {
     super({ ...opts, city: { ...opts.city, bounds }, roadHeight }, courses,
       CONNECTOR_TRAFFIC_CAP[opts.quality], 80375, 'Illustrative Connector traffic');
   }
+}
+
+/** A ConnectorTraffic layer built in steps: routes over several yields, then the layer in the
+ * final step. Nothing is allocated for the GPU until that step, so abandoning it frees nothing. */
+export function* connectorTrafficSteps(opts: ConnectorTrafficOptions): Build<ConnectorTraffic> {
+  const lanes = yield* connectorTrafficRouteSteps(opts.city, (opts.neighbors ?? []).map(board => board.city));
+  yield 'connector:routes';
+  return new ConnectorTraffic(opts, lanes);
 }

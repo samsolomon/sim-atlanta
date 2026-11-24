@@ -13,10 +13,13 @@ export function arterialTurns(courses: TrafficCourse[], corridors: readonly Arte
   const incoming: Arm[] = [], outgoing: Arm[] = [];
   for (const course of courses) {
     if (course.closed) continue;
+    // First and last segment of each source road on this course, indexed once per course.
+    const span = new Map<TrafficCourse['roads'][number], [number, number]>();
+    course.roads.forEach((r, i) => { const e = span.get(r); if (e) e[1] = i; else span.set(r, [i, i]); });
     for (const corridor of corridors) for (const run of corridor.runs) {
-      const indices = course.roads.flatMap((r, i) => r === run.road ? [i] : []);
-      if (!indices.length) continue;
-      const first = indices[0], last = indices.at(-1)! + 1;
+      const e = span.get(run.road);
+      if (!e) continue;
+      const first = e[0], last = e[1] + 1;
       const a = run.road.pts[0], b = run.road.pts.at(-1)!;
       const start = course.line.pts[first];
       const forward = Math.hypot(start[0]-a[0], start[1]-a[1]) < Math.hypot(start[0]-b[0], start[1]-b[1]);

@@ -6,6 +6,7 @@ import { RoadTraffic, type RoadTrafficOptions } from './road-traffic';
 import bake from './fixtures/midtown-arterials.json';
 import signalPoints from './fixtures/midtown-signals.json';
 import { arterialTurns } from './arterial-turns';
+import { runSync, type Build } from '../core/slice';
 
 /** A mounted Midtown row: its drawn roads and the sampler that seats a car on them. */
 export interface MidtownTrafficBoard {
@@ -51,11 +52,37 @@ export function midtownArterialCorridors(boards: readonly MidtownTrafficBoard[])
  * shaped by the hourly profile, exactly as downtown's ArterialTraffic; trips follow one
  * corridor or a signalised turn and fade at unresolved endpoints. Buses are never drawn here. */
 export class MidtownArterialTraffic extends RoadTraffic {
-  constructor(opts: Omit<RoadTrafficOptions, 'city' | 'roadHeight'>, boards: readonly MidtownTrafficBoard[]) {
-    const { corridors, heights, bounds } = midtownArterialCorridors(boards);
+  /** `prepared`: corridors and courses already computed (midtownArterialSteps). */
+  constructor(opts: Omit<RoadTrafficOptions, 'city' | 'roadHeight'>, boards: readonly MidtownTrafficBoard[],
+    prepared: MidtownPrepared = runSync(prepareMidtown(boards))) {
+    const { heights, bounds, courses } = prepared;
     const city = { ...(boards[0]?.city ?? {}), bounds: bounds ?? { minX: 0, maxX: 0, minZ: 0, maxZ: 0 } } as TerrainCity;
     super({ ...opts, city, roadHeight: (x, z, road) => heights.get(road)?.(x, z, road) ?? null },
-      bounds ? arterialTurns(arterialTrafficRoutes(corridors, bounds), corridors, signalPoints as [number, number][]) : [], ARTERIAL_TRAFFIC_CAP[opts.quality], 31607,
-      'Illustrative Midtown arterial traffic');
+      courses, ARTERIAL_TRAFFIC_CAP[opts.quality], 31607, 'Illustrative Midtown arterial traffic');
   }
+}
+
+interface MidtownPrepared {
+  heights: Map<VRoad, MidtownTrafficBoard['roadHeight']>;
+  bounds: Bounds | null;
+  courses: ReturnType<typeof arterialTurns>;
+}
+
+/** Corridors, routes and turns for the mounted rows, one phase per step. */
+function* prepareMidtown(boards: readonly MidtownTrafficBoard[]): Build<MidtownPrepared> {
+  const { corridors, heights, bounds } = midtownArterialCorridors(boards);
+  yield 'midtown:corridors';
+  if (!bounds) return { heights, bounds, courses: [] };
+  const routes = arterialTrafficRoutes(corridors, bounds);
+  yield 'midtown:routes';
+  const courses = arterialTurns(routes, corridors, signalPoints as [number, number][]);
+  yield 'midtown:turns';
+  return { heights, bounds, courses };
+}
+
+/** A MidtownArterialTraffic layer built in steps, the layer itself in the final step. Nothing is
+ * allocated for the GPU until that step, so abandoning it frees nothing. */
+export function* midtownArterialSteps(opts: Omit<RoadTrafficOptions, 'city' | 'roadHeight'>, boards: readonly MidtownTrafficBoard[]): Build<MidtownArterialTraffic> {
+  const prepared = yield* prepareMidtown(boards);
+  return new MidtownArterialTraffic(opts, boards, prepared);
 }
