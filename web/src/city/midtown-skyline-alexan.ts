@@ -1,7 +1,6 @@
 import type { P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
-import { along, faces, outwardSign, wound } from './skin-kit';
-import { cellHash, cellSeed } from './skin-lit';
+import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
@@ -26,7 +25,7 @@ export const alexanId = 'osm:way:789975430';
 export function alexanOn8th(shell: Shell) {
   const { body, lights } = shell;
   const ring = wound(shell.ring, 1);
-  const out = outwardSign(ring), pitch = (ROOF - 3.5 - BASE) / FLOORS, seed = cellSeed(alexanId);
+  const out = outwardSign(ring), pitch = (ROOF - 3.5 - BASE) / FLOORS, seed = seedOf(alexanId);
   shell.prism(ring, shell.base, ROOF, PANEL, '#a9a69f');
   const east = Math.max(...ring.map(([x]) => x));
   faces(ring, (a, b, len, face) => {
@@ -35,7 +34,7 @@ export function alexanOn8th(shell: Shell) {
     // Street storefront and lobby glass.
     body.quad(p(.3, .4, .06), p(.3, BASE - .6, .06), p(len - .3, BASE - .6, .06), p(len - .3, .4, .06), STORE);
     for (let i = 0, n = Math.max(1, Math.round(len / 5)); i < n; i++)
-      if (cellHash(seed, face, 0, i) < .4)
+      if (litHash(seed, face, 0, i) < .4)
         lights.quad(p((i + .1) * len / n, .6, .1), p((i + .1) * len / n, BASE - .9, .1), p((i + .9) * len / n, BASE - .9, .1), p((i + .9) * len / n, .6, .1), STORE);
     // The glass slot, centred on the West Peachtree face.
     const slot = westPeachtree ? [len / 2 - 2.2, len / 2 + 2.2] : null;
@@ -46,7 +45,7 @@ export function alexanOn8th(shell: Shell) {
       if (slot && r > slot[0] - .5 && l < slot[1] + .5) continue;
       body.quad(p(l, BASE, .06), p(l, ROOF - 4, .06), p(r, ROOF - 4, .06), p(r, BASE, .06), WINDOW);
       for (let j = 0; j < FLOORS; j++)
-        if (cellHash(seed, face, j + 1, i + 1) < .35) {
+        if (litHash(seed, face, j + 1, i + 1) < .35) {
           const y = BASE + j * pitch;
           lights.quad(p(l, y + .6, .1), p(l, y + pitch - .5, .1), p(r, y + pitch - .5, .1), p(r, y + .6, .1), WINDOW);
         }
@@ -72,7 +71,7 @@ export function alexanOn8th(shell: Shell) {
         const y = BASE + j * pitch;
         body.quad(p(s0, y - .3, 1.7), p(s0, y, 1.7), p(s1, y, 1.7), p(s1, y - .3, 1.7), SLAB);
         body.quad(p(s0, y, 1.75), p(s0, y + 1, 1.75), p(s1, y + 1, 1.75), p(s1, y, 1.75), RAIL);
-        if (cellHash(seed, face + 40, j, s0 > 1 ? 1 : 0) < .35)
+        if (litHash(seed, face + 40, j, s0 > 1 ? 1 : 0) < .35)
           lights.quad(p(s0 + .3, y + .3, .1), p(s0 + .3, y + pitch - .5, .1), p(s1 - .3, y + pitch - .5, .1), p(s1 - .3, y + .3, .1), WINDOW);
       }
     }

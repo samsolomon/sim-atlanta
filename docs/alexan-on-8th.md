@@ -23,7 +23,7 @@ The bay widths, balcony positions and slot width are estimated from the photogra
 
 ## Night
 
-City lights 35% of apartments and 40% of storefronts, chosen per window by a cell hash of (face, floor, bay). The stand-in `skin-lit.ts` will switch to skin-kit's `litHash` when #470 lands. With no night photograph, City adds no crown or deck lighting.
+City lights 35% of apartments and 40% of storefronts, chosen per window by skin-kit's `litHash(seedOf(id), face, floor, bay)`. With no night photograph, City adds no crown or deck lighting.
 
 ## Captures
 
