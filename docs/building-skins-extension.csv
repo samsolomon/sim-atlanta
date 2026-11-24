@@ -1,0 +1,108 @@
+direction,rank,name,overture_id,height_m,height_basis,tile,city_x_m,city_z_m,pick,reference
+north,1,Salesforce Tower,37815827-87e3-4361-b7a7-397a2724ad38,130.0,mapped; lidar agrees,"tile:5,-6",3183,-10307,Y,https://en.wikipedia.org/wiki/Salesforce_Tower_(Atlanta)
+north,2,"Atlanta Financial Center, East Tower",f1fa50c0-8d3d-4212-b7aa-cbaa597f654a,82.5,mapped; lidar agrees,"tile:4,-6",2286,-10297,Y,https://en.wikipedia.org/wiki/Atlanta_Financial_Center
+north,3,Building 1,243260b5-57bd-4c96-ab84-01007085d12d,77.4,lidar 2019 p95 (max 106),"tile:0,-1",-276,-5980,N,https://www.skyscrapercenter.com/building/marcus-tower-at-piedmont-atlanta-hospital/38311
+north,4,Paramount at Buckhead,93ea588b-ca7a-449e-8d49-bf5b120146fb,144.0,mapped; lidar agrees,"tile:4,-7",2231,-10761,Y,https://commons.wikimedia.org/wiki/File:The_Paramount_at_Buckhead.jpg
+north,5,Terminus 10 Place,b48dc0ce-6ba9-4361-b953-56585a0cbc6e,103.8,lidar 2019 p95 (max 109),"tile:3,-6",1848,-10136,Y,https://en.wikipedia.org/wiki/Terminus_(office_complex)
+north,6,InterContinental Buckhead Atlanta,84fbc1e8-8032-4f8c-a152-99ee8540f3d5,81.5,mapped; lidar agrees,"tile:4,-6",2201,-10157,Y,https://www.forbestravelguide.com/hotels/atlanta-georgia/intercontinental-buckhead
+north,7,Buckhead Grand,0d2d2729-60c4-4d87-9d01-57c7614e24e4,134.9,mapped; lidar agrees,"tile:3,-7",1893,-10524,Y,https://en.wikipedia.org/wiki/Buckhead_Grand
+north,8,Three Alliance Center,c6794f10-b3e5-4538-a99a-69d442a252ec,122.0,mapped; lidar agrees,"tile:4,-7",2243,-10898,Y,https://commons.wikimedia.org/wiki/File:AThreeAllianceCentrBH2510-0389.jpg
+north,9,Park Place on Peachtree,924052b3-3e09-47c8-9b32-df1c1eb0031e,128.0,mapped; lidar agrees,"tile:1,-4",318,-8162,Y,https://en.wikipedia.org/wiki/Park_Place_(Atlanta)
+north,10,Terminus 100,7120570c-36b1-4801-81be-eca81afb351a,147.8,lidar 2019 p95 (max 148),"tile:3,-6",1887,-10049,Y,https://www.architectmagazine.com/awards/al-design-awards/2009-al-design-awards-terminus-100-atlanta_o/
+north,11,The Grandview,4f704dd5-0033-4444-923d-5b010e7874b7,98.5,lidar 2019 p95 (max 103),"tile:5,-7",3194,-10564,Y,https://www.skyscrapercenter.com/building/the-grandview/20647
+north,12,Two Alliance Center,57fb2d5a-634b-42ee-8a74-bceff62a63c9,117.6,mapped; lidar agrees,"tile:4,-7",2313,-10787,Y,https://commons.wikimedia.org/wiki/File:ATwoAllianceCentrBH2510-0390.jpg
+north,13,Tower Place 100,81794195-1be7-47b0-923b-f14a7bd90e66,122.0,mapped; lidar agrees,"tile:3,-6",1911,-10379,Y,https://commons.wikimedia.org/wiki/File:Tower_Place_100.jpg
+north,14,SkyHouse Buckhead,bbd9eac5-f036-423c-96dd-9e607cd3d50b,86.6,lidar 2019 p95 (max 87),"tile:4,-7",2234,-10643,Y,https://commons.wikimedia.org/wiki/File:ASkyhouseBH2510-0385.jpg
+north,15,One Alliance Center,010e6a28-d569-4764-a4a3-015fb8d983c9,94.3,lidar 2019 p95 (max 94),"tile:4,-7",2334,-10898,Y,https://commons.wikimedia.org/wiki/File:AOneAllianceCentrBH2510-0380.jpg
+north,16,"Atlanta Financial Center, South Tower",2cd79e0a-4809-4aa4-874d-28def0d3e21c,51.0,mapped; lidar agrees,"tile:4,-6",2224,-10262,F,https://en.wikipedia.org/wiki/Atlanta_Financial_Center
+north,17,"Atlanta Financial Center, North Tower",84861c9b-e4ab-452b-b3c3-851ab7308bfe,51.0,mapped; lidar agrees,"tile:4,-6",2294,-10372,F,https://en.wikipedia.org/wiki/Atlanta_Financial_Center
+north,18,Park Avenue Condominiums,3eedf5b5-2480-44a7-a6ce-de08421095ec,151.5,lidar 2019 p95 (max 152),"tile:4,-7",2755,-11254,Y,https://en.wikipedia.org/wiki/Park_Avenue_Condominiums
+north,19,Resurgens Plaza,bd4d183d-2dd7-4943-a84e-a2341aeba29f,94.0,lidar 2019 p95 (max 99),"tile:5,-6",3306,-10293,Y,https://www.skydb.net/building/466514932/resurgens-plaza-atlanta
+north,20,parking,522d096e-ad25-4284-83b7-062e20dc03ab,108.6,mapped; lidar agrees,"tile:4,-7",2223,-10844,N,
+north,add,3344 Peachtree,e8b37734-a246-41c0-ae59-50d78d18e8b4,188.7,lidar 2019 p95 (max 194),"tile:3,-6",2126,-10325,Y,https://en.wikipedia.org/wiki/3344_Peachtree
+north,add,Waldorf Astoria Buckhead,b4b8e9b5-48d1-4254-b729-a0f0982578f3,178.0,lidar 2019 p95 (max 179),"tile:4,-7",2311,-10617,Y,https://en.wikipedia.org/wiki/Waldorf_Astoria_Atlanta_Buckhead
+north,add,3630 Peachtree,e686c84b-e479-43b0-a58e-56742e01dafd,130.5,lidar 2019 p95 (max 133),"tile:5,-7",3068,-11159,Y,https://en.wikipedia.org/wiki/List_of_tallest_buildings_in_Atlanta
+north,add,Terminus 200,ae93895c-5197-42c9-91a8-ed743a85fb65,111.8,lidar 2019 p95 (max 115),"tile:3,-6",1816,-10220,Y,https://en.wikipedia.org/wiki/Terminus_(office_complex)
+north,add,Realm,9bf737a5-7ecd-41c7-a36a-8bf2aeaef33a,102.7,lidar 2019 p95 (max 114),"tile:3,-6",2060,-10212,Y,https://en.wikipedia.org/wiki/List_of_tallest_buildings_in_Atlanta
+north,add,Monarch Tower,212ad381-9abb-476d-91b5-02b659806651,110.6,lidar 2019 p95 (max 116),"tile:4,-7",2513,-10863,Y,https://en.wikipedia.org/wiki/List_of_tallest_buildings_in_Atlanta
+north,add,Lenox Square,cc35c42c-cfe4-490a-b652-87183881c45e,22.0,lidar 2019 p95 (max 27),"tile:4,-6",2690,-10283,Y,https://en.wikipedia.org/wiki/Lenox_Square
+north,add,Phipps Plaza,cb113932-2536-438e-b32b-00f411df44ad,20.7,lidar 2019 p95 (max 26),"tile:4,-7",2732,-10963,Y,https://en.wikipedia.org/wiki/Phipps_Plaza
+south,1,ATL West Parking Deck,1c7bf3ec-7cd8-48b8-b763-0aaf7619869e,23.8,mapped; lidar agrees,"tile:-7,22",-6255,12386,N,
+south,2,Coca-Cola Atlanta Syrup Plant,7e84ea18-def3-4538-be0f-55c49af80a92,36.9,lidar 2019 p95 (max 38),"tile:1,20",-161,10672,N,
+south,3,Terminal North Daily,baca0d5c-29e5-496b-9759-ae41a0d1c9f5,10.7,mapped; lidar agrees,"tile:-5,22",-4948,12282,N,
+south,4,Atlanta Tower,e081ae2a-b271-4219-8a8d-046cd360d85f,121.0,mapped; no lidar,"tile:-3,22",-2785,12448,Y,https://www.atl.com/about-atl/atl-factsheet/
+south,5,Concourse T,0127d531-7849-4b41-9cec-4e2035792b07,24.2,mapped; lidar agrees,"tile:-5,22",-4713,12533,F,https://www.georgiaencyclopedia.org/articles/business-economy/hartsfield-jackson-atlanta-international-airport/
+south,6,Terminal North Hourly,a024b1f6-b143-4bdb-aab7-10727736de14,13.2,estimated; lidar agrees,"tile:-5,22",-4873,12359,N,
+south,7,Packaging Corporation of America,afac8456-c946-4b12-bb96-4660205360ca,9.3,mapped; lidar agrees,"tile:-3,15",-2783,6350,N,
+south,8,Center Parc Stadium,82e143ab-4f8a-4e95-92db-291d0cbf9008,44.0,mapped; lidar agrees,"tile:1,9",201,2050,Y,https://en.wikipedia.org/wiki/Center_Parc_Stadium
+south,9,Domestic Terminal,74006670-39db-4773-8454-dc2507f80bbd,17.7,lidar 2019 p95 (max 21),"tile:-5,22",-4910,12549,Y,https://hok.com/projects/view/hartsfield-jackson-atlanta-international-airport-domestic-passenger-terminal-improvements
+south,10,South Hourly,10998295-9440-40bd-9c16-c5eff9e6ae74,11.7,mapped; lidar agrees,"tile:-5,23",-4902,12734,N,
+south,11,Terminal South Daily,4b61bbd2-b462-4ae6-9fc7-0c516ea94137,11.3,mapped; lidar agrees,"tile:-5,23",-4903,12858,N,
+south,12,International Terminal Park-Ride,604e0771-209e-4d2c-825d-71a3ac8465aa,16.6,mapped; lidar agrees,"tile:-1,22",-1239,12378,N,
+south,13,South Yard Shops,8951937d-87b5-42d4-b396-a36538780735,15.9,mapped; lidar agrees,"tile:-7,23",-6045,12736,N,
+south,14,Concourse E,1b064149-a5ac-48ac-915e-9ff5bcbbed45,15.1,lidar 2019 p95 (max 16),"tile:-3,22",-3129,12571,F,https://www.georgiaencyclopedia.org/articles/business-economy/hartsfield-jackson-atlanta-international-airport/
+south,15,North Terminal,dd28005d-efc9-41ba-891a-d0738d2efbee,19.7,lidar 2019 p95 (max 22),"tile:-5,22",-4908,12491,F,
+south,16,Americold Logistics,8db596c2-05bf-43c3-95b8-6bde10691bdb,8.2,lidar 2019 p95 (max 17),"tile:-3,14",-3237,6183,N,
+south,17,Transportation Mall,a8fda82b-9dc7-4601-8d76-b05c33b55d79,25.4,lidar 2019 p95 (max 26),"tile:-4,22",-3998,12549,N,
+south,18,South Terminal,55080606-ac44-4971-9f0d-4efe259b19bf,24.5,mapped; lidar agrees,"tile:-5,22",-4908,12607,F,
+south,19,The Clorox Company - Atlanta Main,729294b8-36ed-4213-85ad-17fdccd5bb04,8.1,mapped; no lidar,"tile:1,24",36,13915,N,
+south,20,Porsche Cars North America,bc70f636-2b88-4d5a-9a8d-aac2933cc866,24.4,lidar 2019 p95 (max 25),"tile:0,21",-668,11294,Y,https://hok.com/projects/view/porsche-cars-north-america-experience-center-and-headquarters
+south,add,Delta Air Lines HQ,f7834407-ac44-4cc2-9f77-1e5a08bf226f,29.7,mapped; lidar agrees,"tile:-3,20",-3005,10838,Y,https://www.delta.com/content/www/en_US/support/corporate.html
+south,add,Delta Flight Museum,a987187f-3813-4a8f-89d1-264e998c2bb9,21.8,mapped; lidar agrees,"tile:-3,20",-2845,10841,Y,https://www.deltamuseum.org/about-us
+south,add,Georgia International Convention Center,94f8f85c-dfbe-4467-87b6-c66773516dc1,16.3,lidar 2019 p95 (max 17),"tile:-7,22",-6099,12015,Y,https://collegeparkga.com/departments/georgia_international_convention_center/arena___gateway_center
+south,add,Tyler Perry Studios,6fe8b934-81f9-4932-a22f-826112c87c74,18.9,mapped; lidar agrees,"tile:-4,13",-3885,5411,Y,https://www.ajc.com/news/things-know-about-tyler-perry-studios-atlanta/p0Keh9FxmTRqoJTF8KkNoO
+south,add,Lakewood Amphitheatre,d29fc2f2-c8ef-46bf-a997-53c0a3193d47,19.0,lidar 2019 p95 (max 19),"tile:0,14",-408,5522,Y,https://exploregeorgia.org/atlanta/arts-culture/music/lakewood-amphitheatre
+south,add,The Wren's Nest,92a3828e-8421-407d-897b-5807188c9dc2,21.1,lidar 2019 p95 (max 24),"tile:-3,9",-2829,1796,Y,https://en.wikipedia.org/wiki/Joel_Chandler_Harris_House
+east,1,Ponce City Market,0547496c-db51-4513-a9c7-c9e21822bed7,44.2,lidar 2019 p95 (max 84),"tile:4,4",2404,-2069,Y,https://en.wikipedia.org/wiki/Ponce_City_Market
+east,2,619 Ponce,32472f84-2613-4c52-8ffe-a9b83c033a37,2.8,lidar 2019 p95 (max 7),"tile:4,4",2257,-2101,F,https://www.jamestownlp.com/news/619-ponce-georgia-grown-sustainable-mass-timber-building-debuts-at-ponce-city-market
+east,3,Kroger,e743aaf7-f350-4c49-96f8-a11a26c6af23,51.5,"mapped; post-2019, lidar shows site","tile:4,4",2615,-1966,F,https://en.wikipedia.org/wiki/725_Ponce
+east,4,Courthouse Parking,8a212a75-63f4-40e4-aadf-578f972900fd,12.9,lidar 2019 p95 (max 23),"tile:12,4",8632,-2240,N,
+east,5,Station R,7444db93-2f5f-472c-b073-f648c5f382df,22.6,lidar 2019 p95 (max 24),"tile:6,6",3868,-389,N,
+east,6,Lowe's,6b9eeb96-d2bf-4db3-b7aa-defcb4562098,8.7,lidar 2019 p95 (max 12),"tile:6,6",4211,-621,N,
+east,7,725 Ponce,00d3b27a-3a77-4837-b69e-4380b7f88fa0,60.4,lidar 2019 p95 (max 63),"tile:4,4",2575,-1990,Y,https://coopercarry.com/?p=5158
+east,8,The Home Depot,684b1d00-af43-484f-88dc-7af43e145b0d,10.0,mapped; lidar agrees,"tile:4,3",2341,-2583,N,
+east,9,Studioplex,c9485844-dd1e-42c2-a3b8-ce6e64f4a374,8.8,mapped; lidar agrees,"tile:4,6",2343,-233,F,
+east,10,Ford Factory Lofts,1519a7b5-4c98-4b6e-9f88-68b60dcbadab,23.4,lidar 2019 p95 (max 32),"tile:4,4",2542,-2110,F,https://en.wikipedia.org/wiki/Ford_Factory_Lofts
+east,11,Best Buy,93cfc1f4-c585-4b36-8648-be0cf6efcc7b,8.4,lidar 2019 p95 (max 12),"tile:6,6",3968,-609,N,
+east,12,Atlanta Medical Center Parking Deck B,2a4c08ed-9192-434a-880e-a99c8d6811eb,23.5,lidar 2019 p95 (max 30),"tile:3,5",1913,-947,N,
+east,13,Carter Presidential Library,a244d0b6-98d9-460d-9f47-d0ba788b8278,19.6,mapped; lidar agrees,"tile:5,5",3207,-1452,Y,https://en.wikipedia.org/wiki/Jimmy_Carter_Library_and_Museum
+east,14,755 North,d0517c99-d2fd-453a-8e61-2a390ecb63e6,25.4,mapped; lidar agrees,"tile:4,4",2663,-1843,N,
+east,15,Stove Works,673bad69-02a7-4784-abbb-63dae09b76af,7.9,lidar 2019 p95 (max 12),"tile:4,6",2483,-284,F,
+east,16,Edge on the Beltline,d304f4dc-599d-4534-962f-445371b5eb47,25.4,mapped; lidar agrees,"tile:4,7",2382,19,N,
+east,17,Decatur High School,ec598834-a64b-4585-8c1b-7d6490a68bbe,16.4,lidar 2019 p95 (max 24),"tile:12,4",8721,-1927,N,
+east,18,AMC,b62f4447-8726-4b9c-b5f6-21412d8b5d7c,17.3,mapped; lidar agrees,"tile:5,8",3255,896,N,
+east,19,Chase,7d703331-989a-4fe3-a59d-2cc9735846a3,6.9,lidar 2019 p95 (max 8),"tile:6,6",3953,-369,N,
+east,20,Target,6ca50682-7ded-4d34-81ff-2d335909b4f1,8.0,lidar 2019 p95 (max 10),"tile:6,6",4211,-318,N,
+east,add,Hotel Clermont,ecad93fa-875e-4a99-a8cd-b8a03d30849f,20.0,mapped; lidar agrees,"tile:4,4",2801,-2171,Y,https://gardenandgun.com/step-inside-hotel-clermont
+east,add,Krog Street Market,b2f1aac7-ab92-4758-8f43-970eaa262b0b,9.8,lidar 2019 p95 (max 18),"tile:4,6",2551,-329,Y,https://en.wikipedia.org/wiki/Krog_Street_Market
+east,add,Plaza Theatre,82bbb5fc-3424-4d8f-888c-0de43e510b52,6.0,lidar 2019 p95 (max 8),"tile:5,4",3568,-2157,Y,https://en.wikipedia.org/wiki/Plaza_Theatre_(Atlanta)
+east,add,Old DeKalb County Courthouse,28140c48-7eea-433a-800a-84bf85ebbc83,42.7,lidar 2019 p95 (max 45),"tile:12,4",8734,-2237,Y,https://dekalbhistory.org/exhibits-dekalb-history-center-museum/historic-courthouse-history/
+east,add,Fernbank Museum,313725b8-ba66-4b7c-b569-5b2bad93e22b,17.1,lidar 2019 p95 (max 23),"tile:8,4",5911,-2222,Y,https://en.wikipedia.org/wiki/Fernbank_Museum_of_Natural_History
+east,add,Agnes Scott Hall,2c114c73-0db1-42ea-ad66-62028e47f23b,23.0,lidar 2019 p95 (max 32),"tile:12,4",8986,-1702,Y,https://en.wikipedia.org/wiki/Agnes_Scott_College
+west,1,765 Echo,ef8af58d-8976-4a57-bcc5-5cc79cf7be9f,21.9,lidar 2019 p95 (max 25),"tile:-1,4",-1661,-2308,F,https://rebusinessonline.com/lincoln-property-co-tops-out-300000-sf-office-building-at-echo-street-west-in-atlanta/
+west,2,Public Storage,c5d8bb6c-7316-4c99-b35e-652034644750,17.9,mapped; lidar agrees,"tile:-1,4",-1548,-2201,N,
+west,3,North Avenue Research Area (NARA),0a293ecc-c6d9-4d24-ba69-40a39d3b0233,11.1,lidar 2019 p95 (max 11),"tile:-1,4",-1342,-1985,N,
+west,4,Storehouse Lofts,13e4c2e0-7ce5-45ab-b1c5-95420e4861d6,13.1,lidar 2019 p95 (max 17),"tile:-1,8",-1066,967,F,
+west,5,West Lumber Lofts,4a887280-1b5b-472e-8c91-14bb47fc223a,9.0,mapped; lidar agrees,"tile:-1,8",-1015,920,F,
+west,6,Technology Enterprise Park,affad39c-f26a-4133-a563-a1c4b78f6c30,27.8,lidar 2019 p95 (max 31),"tile:-1,4",-1003,-1760,N,
+west,7,Morehouse Parking Deck,aae00468-f147-4cc4-be0c-2c314773367c,12.2,mapped; lidar agrees,"tile:-2,8",-2057,880,N,
+west,8,Campus Recreation Center,a7378a6a-0cc3-4cf3-b2ab-cd1fb8e526ec,34.1,lidar 2019 p95 (max 37),"tile:-1,4",-1140,-2408,Y,https://en.wikipedia.org/wiki/Georgia_Tech_Campus_Recreation_Center
+west,9,310 Studios,b484c619-fbc9-433d-8bfc-4206e09cb495,10.5,lidar 2019 p95 (max 13),"tile:-1,8",-1010,896,N,
+west,10,Campus Recreation Parking Deck,aa354e7e-3850-4396-a8bf-7cb50ca9c887,8.1,lidar 2019 p95 (max 24),"tile:-1,4",-1139,-2474,N,
+west,11,Wellness Center at Read Hall,1ac1e5ff-98e6-4a23-a55e-b063ef1cb244,14.8,mapped; lidar agrees,"tile:-1,8",-1682,1099,N,
+west,12,Albro-Falconer-Manley Science Center,bad4be64-6182-48d5-8169-cc38dde062c3,18.1,lidar 2019 p95 (max 21),"tile:-1,8",-1608,1031,F,https://www.spelman.edu/academics/stem-at-spelman/
+west,13,Amélie's French Bakery,8bf983cc-b009-4019-8a59-169021869853,5.5,lidar 2019 p95 (max 6),"tile:-1,4",-1418,-2366,N,
+west,14,Tech Way Building,2c9d741e-5428-4a94-b36f-961a19fabad3,6.9,mapped; lidar agrees,"tile:-1,4",-1025,-1896,N,
+west,15,Paloma West Midtown (Building 1),d7cb1f6e-350a-45b1-8715-c2bf17d97202,24.4,lidar 2019 p95 (max 29),"tile:-1,4",-1388,-2264,N,
+west,16,The Beverly Daniel Tatum Suites,4d1ad4f6-9175-41d1-8253-0425e23033d1,25.1,lidar 2019 p95 (max 27),"tile:-2,8",-1939,1099,N,
+west,17,commercial,c0dc114c-86cb-4716-b4bc-f960bae02791,10.5,lidar 2019 p95 (max 14),"tile:-1,4",-1432,-2198,N,
+west,18,745 Echo,2955f00d-69b2-4687-9cda-5bd9c7a02d33,17.4,lidar 2019 p95 (max 19),"tile:-1,4",-1708,-2284,N,
+west,19,Structural Engineering and Materials Research Lab,8358c862-2d77-41a6-a254-c25eeab9aab2,15.5,lidar 2019 p95 (max 16),"tile:-1,4",-1158,-1895,N,
+west,20,Zinn Aerospace Combustion Laboratory,afd6636a-5aa9-45ef-b5db-3ea82f4d86c1,10.9,lidar 2019 p95 (max 15),"tile:-1,4",-1015,-1831,N,
+west,add,"Harkness Hall, Clark Atlanta",e2eaeae2-46f6-4a7d-9ada-50f592c84573,22.6,lidar 2019 p95 (max 29),"tile:-2,7",-1989,571,Y,https://artsandculture.google.com/asset/harkness-hall/WAHdwiqye3XgGA
+west,add,"Fountain Hall, Morris Brown",a3a9cdd9-f394-4db0-a494-2a1e90d6daf6,23.1,lidar 2019 p95 (max 29),"tile:-1,7",-1580,-57,Y,https://en.wikipedia.org/wiki/Fountain_Hall
+west,add,"Sisters Chapel, Spelman",2eda403e-c55d-4f90-a969-0b338f12d299,17.1,lidar 2019 p95 (max 17),"tile:-1,8",-1705,1037,Y,https://www.spelman.edu/news/2026/07/rough-draft-atlanta-showcases-spelmans-architectural-legacy-and-campus-transformation.html
+west,add,"Rockefeller Hall, Spelman",f35bd08f-346e-4618-9d94-adb670b9b513,18.2,lidar 2019 p95 (max 21),"tile:-1,8",-1766,953,Y,https://www.spelman.edu/news/2026/07/rough-draft-atlanta-showcases-spelmans-architectural-legacy-and-campus-transformation.html
+west,add,"Mary Schmidt Campbell Center, Spelman",3eaf3f4f-3a3e-4762-8f51-6145deffe720,1.1,lidar 2019 p95 (max 3),"tile:-2,8",-2037,1019,Y,https://studiogang.com/project/spelman
+west,add,"Graves Hall, Morehouse",0e0f18d4-ca70-4e74-9952-51695ccdd17b,19.3,lidar 2019 p95 (max 28),"tile:-2,7",-2239,571,Y,https://morehouse.edu/life/locations/housing/graves-house
+west,add,"Robert W. Woodruff Library, AUC",c562a24a-8812-4958-8d84-feaa70ee5882,18.4,lidar 2019 p95 (max 22),"tile:-2,7",-2032,262,Y,"https://en.wikipedia.org/wiki/Robert_W._Woodruff_Library,_Atlanta_University_Center"
