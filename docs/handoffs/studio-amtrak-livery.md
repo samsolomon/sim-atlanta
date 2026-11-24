@@ -286,3 +286,43 @@ Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. R
 **Next in plan order:** open mill gondola, centerbeam, autorack, open coal hopper; DPU after those. The downtown double-stack clearance check is still open.
 
 **Environment:** no dev server is running; vite on :5647 stopped at its 2 h limit. One Orca tab, `004ae663`, is parked on about:blank.
+
+### Update — 2026-11-24 morning (Opus session bceb5cfc)
+
+**Freight plan complete.** All eight cars are built. Everything is held for Sam unless marked otherwise.
+
+| PR | Contents | Branch |
+| --- | --- | --- |
+| #424 | Consists, 53 ft well, clip padding, freight boot template; closes `Illustrative freight` | `intermodal-well` |
+| #436 | Tank | `tank-car` |
+| #443 | Gondola | `mill-gondola` |
+| #456 | Centerbeam | `centerbeam` |
+| #492 | Autorack, Brookwood only | `autorack` |
+| #496 | Coal hopper | `coal-hopper` |
+| #404 | Xpress coach, MCI D4500, pass 2 | `xpress-coach` |
+| #467 | Crescent and CQ400 boot templates; CQ400 padded to 5 clip planes; closes `stockNight` and `cq400` | `prewarm-stock`, held for the coordinator |
+
+**Merge order.** The freight PRs are a stack: #424 → #436 → #443 → #456 → #492 → #496.
+- Retarget each to `main` as its base merges.
+- Keep the stack rebased on `main`.
+- #424 and #467 both set program ceilings in `perf-budget.json`, so whichever merges second must rebase and re-measure.
+
+**Perf baseline** (#424 on `main` `cd33324b`):
+
+| Tier | Programs | Calls |
+| --- | --- | --- |
+| Low | 85/87 (main 84 to 85) | 415/460 |
+| High | 98/100 (main 101) | — |
+| High-night | 97/99 | — |
+
+- The extra low program is the instanced freight Lambert. Nothing else can share it, and it saves about 30 draws.
+- If you hit `__scene hook missing` in `program-sweep`, rerun until #480 lands.
+
+**`CONSIST_VERSION` is 6.**
+- `DOWNTOWN_PROFILE` excludes autoracks.
+- Downtown intermodal weight is 0.
+- The reason is the 41–70 m kinks in the downtown cut, at (−372, −605) and (−8, −54). That follow-up is recorded in #492.
+
+**Next:**
+- Road-vehicle variety: City uses 3 of the 8 types in `vignette/vehicles.ts`. Alternatively, do the downtown curvature follow-up first; I asked the coordinator which.
+- Distributed power (DPU) remains deferred.
