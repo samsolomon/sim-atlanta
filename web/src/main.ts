@@ -1150,7 +1150,13 @@ const shellOptions: ShellOptions = {
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
   searchModels: () => labView?.openBrowser(),
-  async goToPlace(lon, lat) { await mapArrival; if (!view3d.hidden || inModels()) return; map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
+  async goToPlace(lon, lat) {
+    const flatten = mapExitActive;
+    await mapArrival;
+    if (!view3d.hidden || inModels()) return;
+    // A search flight replaces the flattening animation started by the City exit.
+    map?.flyTo({ center: [lon, lat], zoom: 15, ...(flatten && { pitch: 0 }), duration: reducedMotion() ? 0 : 500 });
+  },
   search: {
     stations() {
       // MARTA rail and streetcar stops, and Amtrak's within the metro (its feed runs to New York).
@@ -1178,15 +1184,14 @@ const shellOptions: ShellOptions = {
         hideCard(); // a carried vehicle would start a follow and take the camera off the View
         const cam = parseCityCamera(hit.view.cam)!;
         if (diorama) diorama.lookAt(cam.x, cam.z, cam);
-        else {
-          keepPose = cam;
-          shell.setView('city');
-        }
+        else keepPose = cam;
+        // During the fade, Map already owns the shell. Re-select City to cancel its disposal.
+        shell.setView('city');
         return;
       }
       const [x, z] = lonLatToScene(CITY_ORIGIN, hit.lon, hit.lat);
       // In City: move City's camera, keeping its angle. A place City can't show opens on the Map.
-      if (!view3d.hidden && !inModels()) {
+      if (!mapExitActive && !view3d.hidden && !inModels()) {
         pendingFollow = null; // a Follow in 3D still waiting would take the camera back
         updateFollowPanel();
         if (diorama?.onBoard(x, z, true)) {
