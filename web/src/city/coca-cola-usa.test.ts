@@ -26,6 +26,7 @@ it('builds the tower at the lidar roof, parapet and penthouse (NAVD88)', () => {
     new Raycaster(new Vector3(x, 200, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y + 323.8;
   expect(navd(-592, -1860)).toBeCloseTo(383.2, 1); // roof cap at the parapet line (the 1.1 m deck recess is not modelled)
   expect(navd(-577, -1820)).toBeCloseTo(388.8, 1); // penthouse
+  expect(navd(-598.5, -1830)).toBeCloseTo(307.6, 1); // west strip is a low wing, not tower
   const split = { ...site, rings: [site.rings[0], site.rings[0]] };
   expect(createCocaColaUsa([split], split, grid)).toBeNull();
 });

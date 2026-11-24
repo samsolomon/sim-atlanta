@@ -34,7 +34,15 @@ export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid:
     const [x2, z2] = s.ring[(i + 1) % s.ring.length];
     return t + x * z2 - x2 * z;
   }, 0);
-  const plan = area > 0 ? s.ring : [...s.ring].reverse();
+  const full = area > 0 ? s.ring : [...s.ring].reverse();
+  // The lidar reads ~307 m along the outline's west 4 m (x < −596): a low strip,
+  // not tower. The tower plan clamps there; the strip stays a granite wing.
+  const westEdge = -596 + 582.5;
+  const plan: P2[] = full.map(([u, v]): P2 => [Math.max(u, westEdge), v])
+    .filter((p, i, a) => { const q = a[(i + 1) % a.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 0.05; });
+  s.prism(full, s.base, 307.6, granite, roofDeck);
+  /** NAVD88 grade at a local point (the shell's frame is unrotated). */
+  const gradeAt = (u: number, v: number) => grid.sample(u - 582.5, v - 1816.9) ?? s.base + 0.35;
 
   // Granite base from the low west grade up to the plaza, then the glass shaft.
   s.prism(plan, s.base, firstFloor, granite, roofDeck);
@@ -64,13 +72,16 @@ export function createCocaColaUsa(buildings: VBuilding[], site: VBuilding, grid:
     // Offices at 23:30: a sparse, well-mixed set of panes.
     if (len > 3) litFacade(s, seed, face, a, b, firstFloor, frieze, floors, len / bays, 0.86, 0.78, [glass], 0.06);
     // Below the plaza the granite plinth faces the low west grade: storey bands
-    // and recessed openings, so it reads as occupied podium, not a blank wall.
-    for (let y = plaza - 3.9; y > s.base + 2; y -= 3.9) {
+    // and recessed openings above this face's own grade, so it reads as occupied
+    // podium, not a blank wall.
+    const walk = gradeAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    for (let y = plaza - 3.9; y > walk + 2; y -= 3.9) {
       quad(0, 1, y - 0.3, y + 0.3, 0.06, graniteShade);
       quad(0.04, 0.96, y + 0.9, y + 2.9, 0.03, storefront);
     }
-    // Lit lobby glazing at plaza level.
-    quad(0.03, 0.97, plaza + 0.4, firstFloor - 0.8, 0.05, storefront, true);
+    // Lit lobby glazing at plaza level, or this face's grade where that is higher.
+    const lobbyLo = Math.max(plaza, walk) + 0.4;
+    if (firstFloor - 0.8 - lobbyLo > 1.5) quad(0.03, 0.97, lobbyLo, firstFloor - 0.8, 0.05, storefront, true);
   });
   return s.finish('#f5d8a8', 0.5);
 }

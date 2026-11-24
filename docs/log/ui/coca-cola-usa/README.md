@@ -8,15 +8,15 @@ These come from the 22 April 2019 3DEP returns, sampled on a 4 × 6 m grid acros
 
 - The roof deck is a flat 382.1 m NAVD88, inside a parapet ring at 383.2 m.
 - A long penthouse at 388.8 m covers x −584 to −570 and z −1849 to −1794.
-- The west edge and the notch return 297–316 m. That is the low ground and the plaza the tower stands on.
+- The outline's west 4 m (x < −596) returns about 307 m, so it is a low wing, not tower. The shaft clamps there and the strip stays a granite wing to 307.6 m. The notches agree with the outline.
 
 Enclos's 216 ft (66 m) is measured from the plaza at about 316 m: 316 + 66 = 382. The lidar's 85 m "roof height" is measured from the low west grade at 297 m. The two agree.
 
 The model therefore uses absolute heights:
 - a granite plinth from grade to the plaza;
 - the lobby to 322.5 m;
-- 15 glass floors at about 3.9 m;
-- a 4.2 m granite frieze to the 383.2 m parapet;
+- 14 glass floors at about 3.96 m;
+- a 5.3 m granite frieze to the 383.2 m parapet;
 - the 388.8 m penthouse.
 
 The 1.1 m deck recess inside the parapet is not modelled.
@@ -49,6 +49,7 @@ There is no full-night exterior photograph, so that gap is recorded here. The ni
 | Same | `-520,-1840,250,50,620` | 11:30 PM EST | [Night](night.jpg) |
 | East face, looking west | `-582,-1817,280,62,330` | 11:30 AM EST | [East](east.jpg) |
 | Same | `-582,-1817,280,62,330` | 11:30 PM EST | [East at night](east-night.jpg) |
+| West face and the low wing, looking east | `-582,-1817,80,62,330` | 11:30 AM EST | [West](west.jpg) |
 | Frieze and penthouse (close) | `-582,-1817,300,45,180` | 11:30 AM EST | [Crown](crown.jpg) |
 
 The bearing is the camera's heading. Use `/?view=city&cam=<camera>&t=2026-11-20T<clock>`. The close view adds `&dev&mindist=20`.
