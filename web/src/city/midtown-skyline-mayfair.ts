@@ -77,8 +77,5 @@ export function mayfairTower(shell: Shell) {
   }
   shell.prism([[-7, -7], [7, -7], [7, 7], [-7, 7]], ROOF, ROOF + 3.6, '#3a3f42', '#4a4f52');
 
-  const model = shell.finish('#ffe1b4', .7);
-  // Lamps share the body's shadow flags, so the batcher merges them by day.
-  for (const mesh of model.group.children) mesh.castShadow = mesh.receiveShadow = true;
-  return model;
+  return shell.finish('#ffe1b4', .7);
 }

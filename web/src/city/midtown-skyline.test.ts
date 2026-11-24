@@ -375,6 +375,5 @@ it('crowns Mayfair Tower with four lit-lantern cones at the lidar heights', () =
   expect(cone).toBeGreaterThan(100); // lantern finial, at the 102 m lidar maximum
   expect(cone).toBeLessThan(102.5);
   const meshes = model.group.children as Mesh[];
-  for (const m of meshes) expect([m.castShadow, m.receiveShadow]).toEqual([true, true]);
   expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
