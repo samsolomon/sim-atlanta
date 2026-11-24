@@ -85,9 +85,11 @@ test('builds queued tiles nearest first, a few ms a frame, and drops a build who
   const frames: (() => void)[] = [];
   const step = async () => { frames.shift()?.(); for (let i = 0; i < 20; i++) await Promise.resolve(); };
   houseNearForTests.setNextFrame(() => new Promise<void>(r => frames.push(r)));
-  // Every clock read is a millisecond later: a 3 ms budget is two steps a frame.
-  let t = 0;
-  houseNearForTests.setClock(() => t++);
+  // Every clock read is a millisecond later: a 3 ms budget is two steps a frame. `inFrame`
+  // counts the milliseconds of build work since the last frame began.
+  let t = 0, inFrame = 0, worstFrame = 0;
+  houseNearForTests.setClock(() => { inFrame++; worstFrame = Math.max(worstFrame, inFrame); return t++; });
+  houseNearForTests.setNextFrame(() => new Promise<void>(r => frames.push(() => { inFrame = 0; r(); })));
   const lod = make();
   const camera = new THREE.PerspectiveCamera();
   // Both tiles in range, the second (12 houses at x 1700) nearer than the first (ends at x 635).
@@ -101,6 +103,8 @@ test('builds queued tiles nearest first, a few ms a frame, and drops a build who
     lod.tiles.forEach((t, i) => { if (t.nearWorld && !order.includes(i)) order.push(i); });
   }
   expect(order).toEqual([1, 0]);
+  // One build's slice per frame, never the end of one tile's build plus the start of the next.
+  expect(worstFrame).toBeLessThanOrEqual(10);
   // Spread over frames, not one task.
   expect(houseNearStats.frames - before.frames).toBeGreaterThan(2);
   lod.dispose();

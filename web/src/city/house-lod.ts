@@ -101,6 +101,8 @@ function startQueue() {
         for (const t of queued) if (!next || t.distance < next.distance) next = t;
         queued.delete(next!);
         await next!.buildNear();
+        // Each build owns its frames: the next one starts on a fresh frame, not in this one's slice.
+        if (queued.size) await nextFrame();
       }
     } finally { running = null; }
   })();
