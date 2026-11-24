@@ -82,5 +82,19 @@
     "x": 745.5,
     "z": -3430.5,
     "heightM": 133.3
+  },
+  "campanile": {
+    "id": "osm:way:269843407",
+    "name": "The Campanile",
+    "x": 833,
+    "z": -3571,
+    "heightM": 95.4
+  },
+  "fourSeasons": {
+    "id": "osm:way:269843469",
+    "name": "Four Seasons Hotel",
+    "x": 577.4,
+    "z": -3601.9,
+    "heightM": 190
   }
 }

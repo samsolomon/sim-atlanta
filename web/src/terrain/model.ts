@@ -6,12 +6,17 @@ import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
+import { create25Pine, pine25Id } from '../city/25-pine';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
+import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
+import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
+import { create10Tenth, tenTenthId } from '../city/10-10th';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
+import { PlacementIndex } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
 import { GroundGrid } from './grid';
@@ -43,7 +48,7 @@ import { groundMap } from './ground-map';
 import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
-import { rolloutPlantings, rolloutRow, rolloutSpecies } from '../trees/rollout-city';
+import { rolloutPlantings, rolloutRow, rolloutSpecies, treeMode } from '../trees/rollout-city';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -236,9 +241,13 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === gazeboId ? createClaraMeer : null;
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
+      : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
+      : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
+      : site.id === tenTenthId ? create10Tenth(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
@@ -276,18 +285,38 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const named = treeSitesIn(city.bounds);
   const namedReplace = named.length ? replacedBy(named) : null;
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
+  const drawTrees = treeMode(typeof location === 'undefined' ? '' : location.search);
   const rollout = options.rollout ? rolloutRow({
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
     allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
+    // `?trees=all-species`: convert only crowns the generic World would draw (its bounds and
+    // building test), and leave named sites to trees/sites.ts.
+    generic: drawTrees === 'generic',
+    preview: drawTrees === 'all-species' ? (blocks => ({
+      drawn: (x, z) => x > city.bounds.minX + 1 && x < city.bounds.maxX - 1 && z > city.bounds.minZ + 1 && z < city.bounds.maxZ - 1
+        && !blocks.at(x, z).some(ring => pointInRing(x, z, ring)),
+      managed: namedReplace ?? undefined,
+    }))(new PlacementIndex<P2[]>().addAll(sceneryCity.buildings.map(bd => bd.rings[0]))) : undefined,
   }) : null;
   if (rollout) streetTrees = rollout.crowns;
   const replace: World['replacedTree'] = rollout
     ? (x, z, cr) => !!namedReplace?.(x, z, cr) || rollout.replaced(x, z)
     : namedReplace;
-  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, groundAt, options,
-    replace, bd => homes.isHouse(bd.id), rollout?.crownSize ?? null);
+  // Trees landmarks plant at their own height (1180 Peachtree's terrace crape myrtles).
+  const spots = landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
+    .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ);
+  // Generic (the default): they join the row's generic crowns, appended so no colour seed moves,
+  // as 4.5 m broadleaves (the species planting's size) standing on the roof, not the ground.
+  const genericSpots = drawTrees === 'generic' ? new Map(spots.map(p => [crownKey(p.x, p.z), p])) : null;
+  if (genericSpots?.size) streetTrees = [...streetTrees, ...spots.map(p => [p.x, p.z, 4.5, 2] as Tree)];
+  const sceneryGround = genericSpots?.size ? (x: number, z: number) => genericSpots.get(crownKey(x, z))?.y ?? groundAt(x, z) : groundAt;
+  const crownSize: World['crownSize'] = genericSpots?.size
+    ? (x, z) => genericSpots.has(crownKey(x, z)) ? { h: 4.5, r: 2, broadleaf: true } : rollout?.crownSize(x, z)
+    : rollout?.crownSize ?? null;
+  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
+    replace, bd => homes.isHouse(bd.id), crownSize);
   // Houses by distance: a bare far version for wide views, the full house when the camera comes close.
   const houses = houseLod({
     houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
@@ -311,8 +340,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
     city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
   // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
-  const planted = rolloutPlantings(landmarks.flatMap(l => (l as { plantings?: { x: number; z: number; y: number }[] }).plantings ?? [])
-    .filter(({ x, z }) => x >= city.bounds.minX && x < city.bounds.maxX && z >= city.bounds.minZ && z < city.bounds.maxZ), options.quality);
+  const planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);

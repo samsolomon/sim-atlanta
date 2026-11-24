@@ -127,7 +127,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
-import { perf, perfOverrides, type PerfCategory } from '../core/perf';
+import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
@@ -1154,8 +1154,20 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // board the pass does nothing and the ink is unchanged.
   composer.addPass(new FoliageMaskPass(scene, camera, ink));
   composer.addPass(ink);
+  const gtaoOld = perfEnabled && new URLSearchParams(location.search).get('gtao') === 'old';
   const gtao = low ? null : new GTAOPass(scene, camera, 1, 1);
   if (gtao) {
+    // Read the scene pass's own depth instead of re-rendering the whole scene with a normal
+    // override (which doubled draw calls and triangles). The scene is flat-shaded, so normals
+    // rebuilt from depth match face normals. The depth texture is set per frame, below.
+    // `?perf&gtao=old` keeps the previous normal-override pass, for A/B runs from one build.
+    if (!gtaoOld) {
+      gtao.setGBuffer(sceneTarget.depthTexture);
+      // AO only on the boards (aoClip, per frame, since joined boards arrive later). Normals
+      // rebuilt from depth band on the far, grazing paper table (hyperbolic depth has no
+      // precision left there), and the table needs no contact shading.
+      gtao.setSceneClipBox(new THREE.Box3());
+    }
     gtao.updateGtaoMaterial({ radius: 6, distanceExponent: 1.5, thickness: 4, scale: 1.2 });
     gtao.blendIntensity = 0.9;
     composer.addPass(gtao);
@@ -1600,6 +1612,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
     }
     ink.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    if (gtao && !gtaoOld) {
+      // The scene pass draws into the composer's current read buffer, which alternates between
+      // its two targets, so point AO at whichever depth texture it fills this frame.
+      gtao.depthTexture = composer.readBuffer.depthTexture!;
+      gtao.gtaoMaterial.uniforms.tDepth.value = gtao.depthTexture;
+      gtao.pdMaterial.uniforms.tDepth.value = gtao.depthTexture;
+      const lo = gtao.gtaoMaterial.uniforms.sceneBoxMin.value as THREE.Vector3;
+      const hi = gtao.gtaoMaterial.uniforms.sceneBoxMax.value as THREE.Vector3;
+      lo.set(b.minX, -500, b.minZ);
+      hi.set(b.maxX, 3000, b.maxZ);
+      for (const r of [mosaic?.bounds, east?.bounds, north?.bounds]) {
+        if (!r) continue;
+        lo.x = Math.min(lo.x, r.minX); lo.z = Math.min(lo.z, r.minZ);
+        hi.x = Math.max(hi.x, r.maxX); hi.z = Math.max(hi.z, r.maxZ);
+      }
+    }
     ink.uniforms.uNear.value = camera.near;
     ink.uniforms.uFar.value = camera.far;
     ink.uniforms.uStrength.value = 0.9;
