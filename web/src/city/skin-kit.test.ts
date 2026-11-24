@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { litHash, seedOf } from './skin-kit';
+import { Builder } from '../vignette/geom';
+import { litFacade, litHash, seedOf } from './skin-kit';
 
 const faces = 4, floors = 27, bays = 13;
 
@@ -68,4 +69,17 @@ it('is stable and varies by building, face, floor and bay', () => {
   expect(litHash(s, 0, 3, 4)).toBe(litHash(s, 0, 3, 4));
   const values = new Set([litHash(s, 0, 3, 4), litHash(s, 1, 3, 4), litHash(s, 0, 4, 4), litHash(s, 0, 3, 5), litHash(seedOf('osm:way:2'), 0, 3, 4)]);
   expect(values.size).toBe(5);
+});
+
+it('litFacade lays the facade grid and lights panes by the shared hash', () => {
+  const body = new Builder(), lights = new Builder();
+  const seed = seedOf('osm:way:885332250');
+  litFacade({ body, lights }, seed, 2, [0, 0], [30, 0], 10, 46, 10, 3, 0.8, 0.7, ['#445566', '#556677'], 0.2);
+  // 10 panes along 30 m at 3 m, 10 rows, two triangles each.
+  expect((body.pos.length + lights.pos.length) / 9).toBe(200);
+  let lit = 0;
+  for (let j = 0; j < 10; j++) for (let i = 0; i < 10; i++) if (litHash(seed, 2, j, i) < 0.2) lit++;
+  expect(lights.pos.length / 18).toBe(lit);
+  expect(lit).toBeGreaterThan(5);
+  expect(lit).toBeLessThan(40);
 });

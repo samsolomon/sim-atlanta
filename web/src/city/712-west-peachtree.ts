@@ -76,7 +76,9 @@ export function create712WestPeachtree(buildings: VBuilding[], site: VBuilding, 
     if (len >= 16) {
       for (const t of [4 / len, 1 - 4 / len]) strip(t - 0.45 / len, t + 0.45 / len, lo + FLOOR, roof - 0.9, reveal, 0.16);
     }
-    // Offices are mostly dark by 23:30: about 6% of the fin bays stay lit (skin-kit litHash).
+    // Offices are mostly dark by 23:30: about 6% of the fin bays stay lit. This calls litHash
+    // directly rather than litFacade: litFacade draws a body quad per pane (about 4,000 triangles
+    // here), while the 3 m fin bays already are the pane grid and only lit bays become lamps.
     for (let floor = 0, y = lo + FLOOR + 0.5; y + 3 < top; floor++, y += FLOOR) {
       for (let bay = 0; bay < fins; bay++) {
         if (litHash(seed, face, floor, bay) >= 0.06) continue;
