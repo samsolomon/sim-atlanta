@@ -564,6 +564,8 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-camera { top: var(--a2-top); bottom: auto; }
 .a2-three-d[aria-pressed=true] { background: var(--a2-ink); color: var(--a2-on-ink); }
 .a2-tilt { writing-mode: vertical-lr; width: 44px; height: 48px; margin: 6px 0; accent-color: var(--a2-ink); }
+/* The app focus ring, not the browser's default blue (the slider is an input, so the .a2-g button rule misses it). */
+.a2-tilt:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: -2px; border-radius: 10px; }
 .a2-dot-timetable { background: #8a8478; }
 .a2-credit { right: var(--a2-right); }
 .a2-in-models :is(.a2-three-d,.a2-tilt), body:has(.a2-panel:not([hidden])) .a2-camera { display: none; }
@@ -738,3 +740,11 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
 @media(max-width:600px) {
   body:not(.in3d):has(.a2-panel:not([hidden])) .a2-credit { visibility: visible; top: calc(var(--a2-subject-bottom) + 4px); left: var(--a2-left); bottom: auto; right: auto; }
 }
+/* Search fields: the clear glyph in ink, not WebKit's default blue. */
+.a2-g input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none; appearance: none; width: 14px; height: 14px; margin-left: 6px; cursor: pointer;
+  background: var(--a2-ink2);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.a2-g input[type='search']::-webkit-search-cancel-button:hover { background: var(--a2-ink); }
