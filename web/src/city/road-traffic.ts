@@ -48,6 +48,15 @@ function corners(line: Line, steps: number) {
   return out;
 }
 
+/** Each car model's geometry, built once: City rebuilds traffic layers on every area mount, and
+ * each layer clones these (it adds its own per-instance fade attribute). */
+const baseGeometries = new Map<string, THREE.BufferGeometry>();
+function baseGeometry(kind: Parameters<typeof vehicleGeometry>[0]) {
+  let g = baseGeometries.get(kind);
+  if (!g) baseGeometries.set(kind, g = vehicleGeometry(kind));
+  return g;
+}
+
 /** `line.at` without allocating: writes x, z into `out`. */
 function pointAt(line: Line, s: number, out: { x: number; z: number }) {
   const vertex = line.vertexAt(s), pts = line.pts;
@@ -260,7 +269,7 @@ export class RoadTraffic {
     for (const kind of models) {
       const count = this.slots.filter(s => s.kind === kind).length;
       if (!count) continue;
-      const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), this.material, count);
+      const mesh = new THREE.InstancedMesh(baseGeometry(kind).clone(), this.material, count);
       if (fade) mesh.geometry.setAttribute('tripOpacity', new THREE.InstancedBufferAttribute(new Float32Array(count), 1)
         .setUsage(THREE.DynamicDrawUsage));
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -318,10 +327,10 @@ export class RoadTraffic {
       const slots = byCourse.get(course);
       if (!slots) return [];
       const queue = this.movingQueues.get(course);
-      const bounds = new THREE.Box3();
-      for (const [x, z] of course.line.pts) bounds.expandByPoint(new THREE.Vector3(x, 0, z));
-      bounds.min.set(bounds.min.x - CULL_MARGIN, CULL_Y[0], bounds.min.z - CULL_MARGIN);
-      bounds.max.set(bounds.max.x + CULL_MARGIN, CULL_Y[1], bounds.max.z + CULL_MARGIN);
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const [x, z] of course.line.pts) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z; }
+      const bounds = new THREE.Box3(new THREE.Vector3(minX - CULL_MARGIN, CULL_Y[0], minZ - CULL_MARGIN),
+        new THREE.Vector3(maxX + CULL_MARGIN, CULL_Y[1], maxZ + CULL_MARGIN));
       const n = Math.ceil(course.line.length / HEIGHT_STEP) + 2;
       return [{
         course, slots, queue, bounds,

@@ -57,19 +57,24 @@ export function clusterSignals(points: readonly P2[], radius = 25): SignalCluste
  * east–west 1); `withSignals` settles it per intersection. */
 export function courseSignals(line: Line, clusters: readonly SignalCluster[], reach = 20): (CourseSignal & { dx: number; dz: number })[] {
   const out: (CourseSignal & { dx: number; dz: number })[] = [];
+  // A cluster farther than `reach` from the course's bounding box can't be within reach of any
+  // segment: skip it before the per-segment search (the result is unchanged).
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const [x, z] of line.pts) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (z < minZ) minZ = z; if (z > maxZ) maxZ = z; }
   for (const c of clusters) {
-    let best = { d: Infinity, s: 0, dx: 0, dz: 0 };
+    if (c.x < minX - reach || c.x > maxX + reach || c.z < minZ - reach || c.z > maxZ + reach) continue;
+    let bestD = Infinity, bestS = 0, bestDx = 0, bestDz = 0;
     for (let i = 1; i < line.pts.length; i++) {
       const [ax, az] = line.pts[i - 1], [bx, bz] = line.pts[i];
       const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1;
       const t = Math.max(0, Math.min(1, ((c.x - ax) * dx + (c.z - az) * dz) / l2));
       const d = Math.hypot(ax + t * dx - c.x, az + t * dz - c.z);
-      if (d < best.d) best = { d, s: line.cum[i - 1] + t * Math.sqrt(l2), dx, dz };
+      if (d < bestD) { bestD = d; bestS = line.cum[i - 1] + t * Math.sqrt(l2); bestDx = dx; bestDz = dz; }
     }
-    const s = best.s - 8;
-    if (best.d > reach || s < 2 || s > line.length - 4) continue;
-    const n = Math.hypot(best.dx, best.dz) || 1;
-    out.push({ s, key: c.key, axis: Math.abs(best.dz) >= Math.abs(best.dx) ? 0 : 1, dx: best.dx / n, dz: best.dz / n });
+    const s = bestS - 8;
+    if (bestD > reach || s < 2 || s > line.length - 4) continue;
+    const n = Math.hypot(bestDx, bestDz) || 1;
+    out.push({ s, key: c.key, axis: Math.abs(bestDz) >= Math.abs(bestDx) ? 0 : 1, dx: bestDx / n, dz: bestDz / n });
   }
   // Twin lights within 30 m (a slip lane, a split intersection) act as one stop for this course.
   const kept: (CourseSignal & { dx: number; dz: number })[] = [];

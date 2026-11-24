@@ -39,30 +39,32 @@ function inside(p: P2, b: Box) {
 }
 
 /** Cut each lane, including its outside offsets, at the union of mounted boards.
- * Splitting at *all* boundaries also handles a lane leaving and re-entering an L. */
-function clipped(points: P2[], boxes: Box[]) {
+ * Splitting at *all* boundaries also handles a lane leaving and re-entering an L.
+ * Runs on every area mount, so the loop allocates only the output points. */
+const cutBuffer = new Float64Array(2 + 4 * 64);
+export function clipped(points: P2[], boxes: Box[]) {
   const pieces: P2[][] = [];
   let part: P2[] | undefined;
+  const cuts = boxes.length * 4 + 2 <= cutBuffer.length ? cutBuffer : new Float64Array(boxes.length * 4 + 2);
   for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1],
-      b = points[i],
-      cuts = [0, 1];
-    for (const box of boxes)
-      for (const [axis, min, max] of [
-        [0, box.minX, box.maxX],
-        [1, box.minZ, box.maxZ],
-      ]) {
-        for (const edge of [min, max]) {
-          const t = (edge - a[axis]) / (b[axis] - a[axis]);
-          if (t > 0 && t < 1) cuts.push(t);
-        }
-      }
-    cuts.sort((x, y) => x - y);
-    for (let j = 1; j < cuts.length; j++) {
-      const t = cuts[j - 1],
-        u = cuts[j];
+    const a = points[i - 1], b = points[i];
+    const ax = a[0], az = a[1], dx = b[0] - ax, dz = b[1] - az;
+    let n = 0;
+    cuts[n++] = 0; cuts[n++] = 1;
+    for (const box of boxes) {
+      let t = (box.minX - ax) / dx; if (t > 0 && t < 1) cuts[n++] = t;
+      t = (box.maxX - ax) / dx; if (t > 0 && t < 1) cuts[n++] = t;
+      t = (box.minZ - az) / dz; if (t > 0 && t < 1) cuts[n++] = t;
+      t = (box.maxZ - az) / dz; if (t > 0 && t < 1) cuts[n++] = t;
+    }
+    const sorted = cuts.subarray(0, n).sort();
+    for (let j = 1; j < n; j++) {
+      const t = sorted[j - 1], u = sorted[j];
       if (u - t < 1e-9) continue;
-      if (!boxes.some((box) => inside(mix(a, b, (t + u) / 2), box))) {
+      const m = (t + u) / 2, mx = ax + dx * m, mz = az + dz * m;
+      let within = false;
+      for (const box of boxes) if (mx >= box.minX && mx <= box.maxX && mz >= box.minZ && mz <= box.maxZ) { within = true; break; }
+      if (!within) {
         part = undefined;
         continue;
       }
