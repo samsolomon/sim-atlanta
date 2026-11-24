@@ -17,7 +17,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // 78.4 m crown; the mapped 90.1 m is 15% high. Pier spacing and the arch's
 // span and rise are estimated from listing photographs (see docs/m-by-radius.md).
 
-const GLASS = '#93aeb0', PIER = '#c9ccce', RAIL = '#dfe6e7', SHOP = '#41505a', AWNING = '#2f5f99';
+const GLASS = '#93aeb0', PIER = '#c9ccce', MULLION = '#dfe2e3', RAIL = '#dfe6e7', SHOP = '#41505a', AWNING = '#2f5f99';
 const ARCH = '#d4d6d4', TEAL = '#4f8f8c', FLOORS = 23;
 export const mByRadiusId = 'osm:way:536899754';
 
@@ -42,7 +42,8 @@ export function mByRadius(shell: Shell) {
     // Silver piers past the roof line, and a slab edge with a glass rail at each floor.
     for (let i = 0; i <= units; i++) {
       const t = Math.min(len - .25, Math.max(.25, i * w));
-      body.quad(p(t - .25, BASE, .12), p(t - .25, ROOF + 1.2, .12), p(t + .25, ROOF + 1.2, .12), p(t + .25, BASE, .12), PIER);
+      // The listing aerial shows these aluminium piers as the facade's strongest lines: 0.7 m wide, light silver.
+      body.quad(p(t - .35, BASE, .12), p(t - .35, ROOF + 1.2, .12), p(t + .35, ROOF + 1.2, .12), p(t + .35, BASE, .12), MULLION);
     }
     for (let j = 0; j < FLOORS; j++) {
       const y = BASE + j * pitch;

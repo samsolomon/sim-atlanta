@@ -33,6 +33,12 @@ Median rendered colour of glass pixels, by hue, from [the north-west view](log/u
 
 As first opened, each glass balcony rail was a plate 0.55 m off the slab edge, with nothing joining it back. #562's detachment check found 253 detached parts, the worst 0.43 m off. Each rail now stands on a balcony floor that runs back to the wall, and the check finds none. At City distances the gap is under a pixel; the [before, after and amplified difference](log/ui/m-by-radius/balcony-fix.jpg) shows where the geometry changed.
 
+## Recognition audit (2026-11-24)
+
+The audit flagged The M as borderline at 450 m: faint piers, and the arch not showing.
+- **From the south, where the arch is:** 1072 West Peachtree (228 m) stands directly south and hides The M, arch included, at 400–600 m from bearings 330°, 0° and 30° ([0°](log/ui/m-by-radius/south-occluded-0.jpg), [330°](log/ui/m-by-radius/south-occluded-330.jpg), [30°](log/ui/m-by-radius/south-occluded-30.jpg), `cam=302,-3440,<bearing>,55,500` at 15:30). Taller generic boxes also close in on the north and west. From most sides it is a hemmed-in building, not a plain one.
+- **Clearest exposure:** the north-west. There the [listing aerial](https://assets.aptamigo.com/GA/Atlanta/Apartment/the-m-by-radius/ext00.jpeg) shows the light aluminium piers as the facade's strongest lines, so the piers are now 0.7 m wide (from 0.5 m) and light silver, `#dfe2e3` (from `#c9ccce`). The triangle count is unchanged. The arch's curved edge is visible from that side. [Before and after at 450 m](log/ui/m-by-radius/piers-audit.jpg)
+
 ## Night
 
 Apartments light at 34%, chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`. With no night photograph, City adds no crown lighting.
