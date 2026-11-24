@@ -210,7 +210,7 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // to the mapped street width where its profile weight reaches bare earth.
     function taper(s: number) {
       const weights = run.deckWeight;
-      if (!weights || !run.crossSection) return 1;
+      if (!weights || !run.crossSection || run.crossSection.fixedWidth) return 1;
       const vertex = line.vertexAt(s), index = Math.min(Math.floor(vertex), weights.length - 2);
       const weight = weights[index] + (weights[index+1]-weights[index])*(vertex-index);
       return (mapped + weight * (width - mapped)) / width;

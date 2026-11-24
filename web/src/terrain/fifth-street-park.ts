@@ -316,6 +316,11 @@ export function fifthStreetPark(bounds: { minX: number; maxX: number; minZ: numb
   const group = new Group();
   group.name = 'Fifth Street park deck';
   const shell = new Mesh(body.geometry(), new StaticLandmarkMaterial());
+  // The profiled roadway and walkways bias their depth toward the camera. Match
+  // that bias so their asphalt cannot obscure the surveyed-height curb bands.
+  shell.material.polygonOffset = true;
+  shell.material.polygonOffsetFactor = -1;
+  shell.material.polygonOffsetUnits = -2;
   if (painter.painted && surfaceDefaults.enabled) {
     shell.geometry.setAttribute('aSurface', painter.attribute());
     applySurfaces(shell.material);

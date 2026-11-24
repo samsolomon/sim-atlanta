@@ -25,6 +25,7 @@ describe('the Fifth Street park deck', () => {
     const runs = midtownConnectorDecks(city).terrainTransport!.roads;
     const road = runs.find(r => r.name === 'Fifth Street Northwest')!;
     expect(road.crossSection?.width).toBeCloseTo(14.6, 1);
+    expect(runs.every(r => r.crossSection?.fixedWidth)).toBe(true);
     const walks = runs.filter(r => r.cls === 'footway');
     expect(walks.map(w => w.crossSection?.width)).toEqual([7.3, 7.3]);
     // Each walk's centreline sits 10.95 m off the road's, so curb meets curb.

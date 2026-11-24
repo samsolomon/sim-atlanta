@@ -16,7 +16,7 @@ const landbridgeByRoad = new Map(landbridges.map(p => [endKey(p.start, p.end), p
 /** Fifth Street's park deck (Georgia Tech, 2007; ASPIRE Winter 2008): a 48 ft (14.6 m) roadway
  * between two 24 ft sidewalks. The landscaped decks beyond them are fifth-street-park.ts, which
  * paints the lanes (so the run carries one undivided lane here). */
-const LAND_BRIDGE = { road: { width: 2 * FIFTH_PARK.roadHalf, lanes: 1, opposing: 0 },
+const LAND_BRIDGE = { road: { width: 2 * FIFTH_PARK.roadHalf, lanes: 1, opposing: 0, fixedWidth: true },
   plazaOffset: (FIFTH_PARK.roadHalf + FIFTH_PARK.walkOuter) / 2, plazaWidth: FIFTH_PARK.walkOuter - FIFTH_PARK.roadHalf, blendM: FIFTH_PARK.blendM };
 
 /** A polyline offset sideways (+ is left of travel). */
@@ -56,6 +56,7 @@ export function midtownConnectorDecks(city: TerrainCity): TerrainCity {
     if (road.tunnel || road.pts.length < 2) continue;
     const land = landbridgeByRoad.get(endKey(road.pts[0], road.pts.at(-1)!));
     if (land) {
+      // Road and sidewalk share a curb all the way to each abutment. Only height blends.
       // The deck meets the street at grade: blend the profile into bare earth over its last metres.
       const pts = land.pts as P2[];
       let total = 0;
@@ -66,7 +67,7 @@ export function midtownConnectorDecks(city: TerrainCity): TerrainCity {
       for (const side of [1, -1]) {
         const plaza = offset(pts, side * LAND_BRIDGE.plazaOffset);
         roads.unshift({ cls: 'footway', name: null, kind: 'bridge', sourceAxis: plaza, pts: plaza,
-          deckNavd88M: land.heights, deckWeight: weights, crossSection: { width: LAND_BRIDGE.plazaWidth, lanes: 1, opposing: 0 } });
+          deckNavd88M: land.heights, deckWeight: weights, crossSection: { width: LAND_BRIDGE.plazaWidth, lanes: 1, opposing: 0, fixedWidth: true } });
       }
     }
     for (const part of approachesByRoad.get(endKey(road.pts[0], road.pts.at(-1)!)) ?? []) {

@@ -13,7 +13,7 @@ export interface TransportRun {
   deckWeight?: number[];
   /** Original directed centerline before resampling a measured deck or its approach. */
   sourceAxis?: P2[];
-  crossSection?: { width: number; lanes: number; opposing: number };
+  crossSection?: { width: number; lanes: number; opposing: number; fixedWidth?: boolean };
   /** Drawn by a landmark model. Kept for placement clearance and road crossings. */
   replaced?: boolean;
   /** Distances at these endpoints on the illustrative westbound freight route. */
