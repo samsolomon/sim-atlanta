@@ -54,3 +54,5 @@ Taller neighbours hide Vireo from most angles, including the spec starting cam, 
 ## Budget
 
 About 1,430 triangles: about 610 in the body and about 820 in lit panes and rails.
+
+Four sides at 400 m, tilt 30°, 11:30 AM: [contact sheet](four-sides.jpg), each view `__setView(bearing, 30, 400, 984, -3469, 1)` at bearings 180, 270, 0 and 90. From the east, a taller neighbour hides Vireo at 400 m, so the east end has its own view: [east end](east-end.jpg), `__setView(270, 25, 200, 990, -3472, 1)` with `&dev&mindist=20`. No side shows floating, missing or z-fighting parts.
