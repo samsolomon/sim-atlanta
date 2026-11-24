@@ -123,3 +123,33 @@ it('samples the actual triangles of a banked bridge tread and only its own road'
   expect(t.deckAt(806, 448, { ...bridge, kind: 'ground' })).toBeNull();
   t.dispose();
 });
+
+it('audits exposed deck tops without counting upward-wound buried slab undersides', async () => {
+  const { groundAudit, cityLayer, CITY_COLORS } = await import('./ground-audit');
+  const run = { cls: 'footway', kind: 'bridge' as const, pts: [[800, 450], [820, 450]] as [number, number][],
+    deckNavd88M: [zero, zero] };
+  const transport = createSurfaceTransport({ ...city, terrainTransport: { version: 1, roads: [run], rail: [] } }, grid, () => 0);
+  try {
+    const mesh = transport.group.getObjectByName('Decks and embedded rails') as THREE.Mesh;
+    const buried = mesh.userData.groundAuditBuriedFaces as Set<number>;
+    expect(buried.size).toBeGreaterThan(0);
+    // Reproduce a folded corner's winding while keeping its underside below the top.
+    const positions = mesh.geometry.getAttribute('position');
+    for (const i of buried) {
+      const a = new THREE.Vector3().fromBufferAttribute(positions, i + 1);
+      const b = new THREE.Vector3().fromBufferAttribute(positions, i + 2);
+      positions.setXYZ(i + 1, b.x, b.y, b.z);
+      positions.setXYZ(i + 2, a.x, a.y, a.z);
+    }
+    const audit = (height: number) => groundAudit(transport.group,
+      [{ id: 'deck', bounds: city.bounds, terrainAt: () => height, terrain: [] }],
+      { layer: cityLayer, colors: CITY_COLORS, step: .5 });
+    expect(audit(0).penetrating).toBe(0);
+    delete mesh.userData.groundAuditBuriedFaces;
+    expect(audit(0).penetrating).toBeGreaterThan(0);
+    mesh.userData.groundAuditBuriedFaces = buried;
+    const covered = audit(.2);
+    expect(covered.penetrating).toBeGreaterThan(0);
+    expect(covered.layers.find(l => l.layer === 'streets:sidewalk')?.worst?.depth).toBeCloseTo(.08, 3);
+  } finally { transport.dispose(); }
+});
