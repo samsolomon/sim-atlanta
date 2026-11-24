@@ -128,6 +128,17 @@ const TOWERS: Record<string, Tower> = {
   [colony100Id]: {
     id: colony100Id, name: '100 Colony Square', origin: [822.15, -3673.5], probes: [[0, 0], [-15, -15], [15, 15]],
     half: [19.7, 19.7], lobby: 8.7, floors: 21, pitch: 3.62, roof: 89.3,
+    // Shared Colony Square palette, with 100's own rhythm from the 2025 Commons photograph
+    // (AColonySq1002511-0966): a crisp white square shaft, about 18 small square windows per face
+    // in a dominant white grid (no floor bands), narrow blank corners and a tall blank crown.
+    style: {
+      glass: '#6b655e', pier: '#efebe2', crown: '#f8f6f0', lobby: '#3f4448', band: '#b9b3a7',
+      cornerColor: '#f8f6f0',
+      // At 600 m a 2.2 m bay blurs, so the windows are sized to give the field a mid-dark tone
+      // that the bright blank corners and crown frame: the coarse read that sets it apart.
+      bay: 2.2, spandrel: 1.8, pierWidth: 0.95, pierDepth: 0.25, majorEvery: 0, bandEvery: 0,
+      cornerSolid: 2.4, mechFloor: -1,
+    },
     cores: [{ at: [0, 0], size: [16, 11.6], top: 96.3 }], seed: 7,
   },
   [colony400Id]: {
