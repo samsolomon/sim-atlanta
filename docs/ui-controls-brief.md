@@ -159,7 +159,10 @@ Not yet: Street view, layers and tours (see Follow-ups).
     wide-screen case (browser and Details open) still needs tuning in the build, because
     the first pass framed the train too small.
 - **"Compare with a photo"** is a modelling tool, so it goes behind `?dev`.
-- **Phones:** Details is a button above the dock (P6).
+- **Phones:** Details is a button above the dock (P6): right 8 px, its bottom 12 px above
+  the dock's top, 44 px tall, radius 12, 14 px / 600 label. Like every control that floats
+  over the scene, it uses the dock's glass recipe (fill, blur, ring, shadow), never a flat
+  chip.
 - **Returning to Map:** City is disposed on the way into Models today
   (`web/src/main.ts`), so coming back replays the white-model arrival (1–5 s). Pausing
   City instead is worth measuring on the Galaxy A16; until then, accept the rebuild.
