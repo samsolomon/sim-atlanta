@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, pointInRing, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -221,7 +222,7 @@ export function createGeorgiaPacific(buildings: VBuilding[], groundAt: (x: numbe
   group.position.y = datum;
   const granite = new THREE.Mesh(
     stone.geometry(),
-    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    new StaticLandmarkMaterial(),
   );
   granite.castShadow = granite.receiveShadow = true;
   group.add(granite);

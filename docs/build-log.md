@@ -3177,3 +3177,9 @@ The street panorama put the porch posts and the five lower windows in the same f
 ### 2026-11-24 — Radio in the dock
 
 The first radio player followed boards F07 and G13. Sam wanted more of the city to stay visible. The revised player fits the track and two 44 px touch targets in one 64 px row. On the 390 px phone, the card is 374 px wide and sits 12 px above the dock. Silent placeholder tracks read “No audio yet”. [Desktop before](log/ui/final-radio/desktop.jpg) · [After](log/ui/final-radio/desktop-compact.jpg) · [Phone before](log/ui/final-radio/phone.jpg) · [After](log/ui/final-radio/phone-compact.jpg).
+
+### 2026-11-23 — Freight enters the board without a draw for every car
+
+At 14:00 the high-tier board took 1,229 draws. Holding the same camera and advancing the clock 65 seconds pushed it to 1,277, past the 1,250 ceiling. The illustrative freight cars now draw together by shape and clipping material. Each car keeps its own selectable position. Downtown also batches the plain bodies of neighbouring landmarks in 500 m cells. Together those changes brought the same two frames to 1,171 and 1,201 draws with identical submitted triangle counts. A close night view gained 0.75% in submitted triangles as neighbouring shells began sharing a culling bound.
+
+Most of the shader headroom came from the first colour frame. City had precompiled the entire scene for the canvas while the white model was on screen, then drawn through the composer with different render-target and clipping settings. Warming the actual colour frame behind the still brought the later sample from 153 resident programs to 105. The high program ceiling drops to 140. [Downtown at night, camera 400,-650,15,60,1150](log/perf/landmark-batches-night.jpg)

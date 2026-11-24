@@ -59,7 +59,7 @@ describe('Brookwood corridor trains', () => {
     }
     expect(checked).toBeGreaterThan(100);
     expect(shown).toBeGreaterThan(1000);
-    for (const car of freight.group.children) {
+    for (const car of freight.poses.children) {
       expect(car.userData.line).toBe(NORCROSS_LINE);
       expect(car.userData.trainId).toBe('illustrative:freight:norcross');
     }

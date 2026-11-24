@@ -1,6 +1,7 @@
+import { FreightBatches } from './freight-batches';
 import * as THREE from 'three';
 import type { FreightTreadPoint } from '../terrain/transport';
-import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, type FreightUnit } from '../vignette/freight-stock';
 
 // A replayable model railway passage. Its phase, speed and consist are illustrative.
 const ENTRY_MS = Date.parse('2026-11-20T19:12:02Z');
@@ -45,9 +46,10 @@ function cutPlane(end: FreightTreadPoint, inside: FreightTreadPoint) {
 }
 
 export class CityFreight {
-  readonly group = new THREE.Group();
+  private batches: FreightBatches;
+  get group() { return this.batches.group; }
+  get poses() { return this.batches.poses; }
   private sections: ReturnType<typeof this.makeSection>[];
-  private shapes = new Map<FreightUnit, THREE.BufferGeometry>();
   private materials: THREE.Material[] = [];
   private nose = new THREE.Vector3();
   private tail = new THREE.Vector3();
@@ -55,8 +57,8 @@ export class CityFreight {
   private periodM: number;
   visibleCars = 0;
 
-  constructor(treads: FreightTreadPoint[][], private edges: THREE.Plane[]) {
-    this.group.name = 'Illustrative freight';
+  constructor(treads: FreightTreadPoint[][], private edges: THREE.Plane[], instanced = true) {
+    this.batches = new FreightBatches(CONSIST, instanced);
     this.sections = visibleSections(treads).map(points => this.makeSection(points));
     const end = this.sections[this.sections.length - 1]?.end ?? 0;
     const trainLength = CONSIST.reduce((sum, kind) => sum + FREIGHT_LENGTH[kind] + GAP, 0);
@@ -71,13 +73,14 @@ export class CityFreight {
     const materials = [[], [startCut], [endCut], [startCut, endCut]].map(cuts =>
       new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [...this.edges, ...cuts] }));
     this.materials.push(...materials);
-    return { points, start: points[0].s, end: points[last].s, cars: new Map<number, THREE.Mesh>(), materials };
+    return { points, start: points[0].s, end: points[last].s, cars: new Map<number, THREE.Object3D & { material: THREE.Material }>(), materials };
   }
 
   update(clockMs: number) {
     const travelled = (clockMs - ENTRY_MS) * SPEED_MPS / 1000;
     const head = THREE.MathUtils.euclideanModulo(travelled, this.periodM);
     this.visibleCars = 0;
+    this.batches.begin();
     for (const section of this.sections) {
       let front = head;
       for (const [i, kind] of CONSIST.entries()) {
@@ -90,17 +93,10 @@ export class CityFreight {
         if (reachesStart && beforeEnd) {
           const cut = Number(rear < section.start) + 2 * Number(front > section.end);
           if (!car) {
-            let shape = this.shapes.get(kind);
-            if (!shape) {
-              shape = freightGeometry(kind);
-              this.shapes.set(kind, shape);
-            }
-            car = new THREE.Mesh(shape, section.materials[cut]);
+            car = this.batches.createCar(kind, section.materials[cut]);
             car.userData.trainId = 'illustrative:freight:downtown';
             car.userData.lengthM = length;
-            car.receiveShadow = true;
             section.cars.set(i, car);
-            this.group.add(car);
           }
           car.visible = true;
           car.material = section.materials[cut];
@@ -110,6 +106,7 @@ export class CityFreight {
           car.position.addVectors(this.nose, this.tail).multiplyScalar(.5);
           car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.nose, this.tail, car.up));
           if (i === 1) car.rotateY(Math.PI);
+          this.batches.append(kind, car);
           this.visibleCars++;
         } else if (car) {
           car.visible = false;
@@ -117,12 +114,11 @@ export class CityFreight {
         front = rear - GAP;
       }
     }
+    this.batches.finish();
   }
 
   dispose() {
-    this.group.removeFromParent();
-    for (const shape of this.shapes.values()) shape.dispose();
+    this.batches.dispose();
     for (const mat of this.materials) mat.dispose();
-    this.group.clear();
   }
 }

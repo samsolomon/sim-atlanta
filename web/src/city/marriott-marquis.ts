@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import { DoubleSide, Group, Mesh, MeshLambertMaterial, ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { Builder, hashStr, pointInRing, type P2 } from '../vignette/geom';
@@ -182,7 +183,7 @@ export function createMarriottMarquis(buildings: VBuilding[], grid: GroundGrid) 
   const group = new Group();
   group.name = 'Atlanta Marriott Marquis';
   group.position.y = -grid.manifest.vertical.sceneZeroNavd88M;
-  const hotelMesh = new Mesh(solid.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  const hotelMesh = new Mesh(solid.geometry(), new StaticLandmarkMaterial());
   hotelMesh.castShadow = hotelMesh.receiveShadow = true;
   const occupied = new MeshLambertMaterial({
     vertexColors: true,

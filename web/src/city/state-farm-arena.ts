@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -277,7 +278,7 @@ export function createStateFarmArena(
   }
   const mesh = new THREE.Mesh(
     b.geometry(),
-    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    new StaticLandmarkMaterial(),
   );
   mesh.castShadow = mesh.receiveShadow = true;
   const group = new THREE.Group();

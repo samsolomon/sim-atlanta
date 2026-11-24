@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 /**
  * The Georgia State Capitol (1889), replacing its generic 29 m extrusion. Sources and every
  * dimension's status are in docs/capitol.md.
@@ -242,7 +243,7 @@ export function createCapitol(buildings: VBuilding[], groundAt: GroundAt) {
   group.rotation.y = -ANGLE;
   group.position.set(CENTRE[0], 0, CENTRE[1]);
   const stoneGeometry = b.geometry(), goldGeometry = g.geometry();
-  const stoneMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const stoneMaterial = new StaticLandmarkMaterial();
   // A broad, warm, view-dependent highlight from the scene's own lights; no environment map.
   const goldMaterial = new THREE.MeshPhongMaterial({
     vertexColors: true, side: THREE.DoubleSide, emissive: new THREE.Color(0, 0, 0),

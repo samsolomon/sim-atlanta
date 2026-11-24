@@ -1,6 +1,7 @@
+import { FreightBatches } from './freight-batches';
 import * as THREE from 'three';
 import { Line, type P2 } from '../vignette/geom';
-import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, type FreightUnit } from '../vignette/freight-stock';
 
 /** An illustrative Norfolk Southern passage on Main 2 of the Norcross District.
  * Timing, direction, speed and consist are all invented. The Crescent keeps Main 1. */
@@ -24,22 +25,16 @@ export function freightPass(clockMs: number, lineLength: number): FreightPass | 
   return { slot, dir, head: dir === 1 ? travelled : lineLength - travelled };
 }
 
-export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[]) {
+export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], instanced = true) {
   const line = new Line(pts);
-  const group = new THREE.Group();
-  group.name = 'Illustrative freight';
+  const batches = new FreightBatches(CONSIST, instanced);
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: planes, clipShadows: true });
-  const shapes = new Map<FreightUnit, THREE.BufferGeometry>();
   const cars = CONSIST.map((kind, i) => {
-    let shape = shapes.get(kind);
-    if (!shape) shapes.set(kind, (shape = freightGeometry(kind)));
-    const car = new THREE.Mesh(shape, material);
+    const car = batches.createCar(kind, material);
     car.userData.trainId = 'illustrative:freight:norcross';
     car.userData.lengthM = FREIGHT_LENGTH[kind];
     car.userData.line = NORCROSS_LINE;
-    car.receiveShadow = true;
     car.visible = false;
-    group.add(car);
     return { car, kind, flip: i === 1 };
   });
   const nose = new THREE.Vector3(), tail = new THREE.Vector3(), m = new THREE.Matrix4();
@@ -57,6 +52,7 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
     const pass = crescentOnCorridor ? null : freightPass(clockMs, line.length);
     visibleCars = 0;
     let front = pass?.head ?? 0;
+    batches.begin();
     for (const { car, kind, flip } of cars) {
       const length = FREIGHT_LENGTH[kind];
       const center = front - (pass?.dir ?? 1) * length / 2;
@@ -71,17 +67,18 @@ export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number
       car.position.addVectors(nose, tail).multiplyScalar(0.5);
       car.quaternion.setFromRotationMatrix(m.lookAt(nose, tail, car.up));
       if (flip) car.rotateY(Math.PI);
+      batches.append(kind, car);
       visibleCars++;
     }
+    batches.finish();
     return visibleCars;
   }
   return {
-    group,
+    group: batches.group, poses: batches.poses,
     update,
     get visibleCars() { return visibleCars; },
     dispose() {
-      group.removeFromParent();
-      for (const shape of shapes.values()) shape.dispose();
+      batches.dispose();
       material.dispose();
     },
   };

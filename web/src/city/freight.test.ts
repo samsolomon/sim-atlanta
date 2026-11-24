@@ -8,7 +8,7 @@ it('follows both trucks across joined treads and clips a car at a mapped cover g
   const start = Date.parse('2026-11-20T19:12:02Z');
   const move = (head: number) => freight.update(start + head / 4.5 * 1000);
   move(42);
-  const lead = freight.group.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>;
+  const lead = freight.poses.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>;
   expect(lead.userData.trainId).toBe('illustrative:freight:downtown');
   expect(lead.position.x).toBeCloseTo(42 - 22.3 / 2);
   expect(lead.position.y).toBeCloseTo(lead.position.x * .02);
@@ -34,5 +34,39 @@ it('does not expose an 11 m sliver just because the lab adds a shorter switcher'
     freight.update(start + 10 / 4.5 * 1000);
     expect(freight.visibleCars).toBe(length === 11 ? 0 : 1);
     freight.dispose();
+  }
+});
+
+it('batches only cars sharing a shape and clip planes, preserving their pick and follow poses', () => {
+  const point = (s: number) => ({ s, position: new THREE.Vector3(s, s * .02, 0) });
+  const tracks = [[point(0), point(150)], [point(180), point(350)]];
+  const high = new CityFreight(tracks, [], true);
+  const low = new CityFreight(tracks, [], false);
+  const matrix = new THREE.Matrix4();
+  const start = Date.parse('2026-11-20T19:12:02Z');
+  try {
+    for (const head of [140, 190, 280, 700, 140]) {
+      for (const train of [high, low]) train.update(start + head / 4.5 * 1000);
+      const batches = high.group.children.filter((mesh): mesh is THREE.InstancedMesh =>
+        mesh instanceof THREE.InstancedMesh && mesh.visible);
+      const count = batches.reduce((sum, mesh) => sum + mesh.count, 0);
+      expect(count).toBe(low.visibleCars);
+      if (head === 140) expect(batches.length).toBeLessThan(count);
+      expect(high.visibleCars).toBe(count);
+      const drawn = batches.flatMap(batch => Array.from({ length: batch.count }, (_, i) => {
+        batch.getMatrixAt(i, matrix);
+        return { material: batch.material, matrix: matrix.clone() };
+      }));
+      const visible = high.poses.children.filter(car => car.visible);
+      for (const [index, car] of low.poses.children.filter(car => car.visible).entries()) {
+        car.updateMatrix();
+        expect(visible[index].matrix.elements).toEqual(car.matrix.elements);
+        expect(drawn.some(instance => instance.material === (visible[index] as THREE.Mesh).material &&
+          instance.matrix.elements.every((v, j) => Math.abs(v - car.matrix.elements[j]) < .0001))).toBe(true);
+      }
+    }
+  } finally {
+    high.dispose();
+    low.dispose();
   }
 });

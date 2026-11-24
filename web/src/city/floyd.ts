@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, rng } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -136,7 +137,7 @@ export function createFloyd(buildings: VBuilding[], passage: readonly FloydSampl
   b.box(52.9, 1.5, 0.18, 57.65, deckY - 1.45, DEPTH + 0.1, glass);
   b.box(52.9, 0.45, 0.65, 57.65, deckY + 0.05, DEPTH, trim);
   const geometry = b.geometry();
-  const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const material = new StaticLandmarkMaterial();
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'Floyd towers and station passage';
   mesh.castShadow = mesh.receiveShadow = true;

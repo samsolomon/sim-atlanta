@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import {
   AdditiveBlending,
   CanvasTexture,
@@ -215,7 +216,7 @@ export function createHiltonAtlanta(buildings: VBuilding[], grid: GroundGrid) {
   }
   group.name = 'Hilton Atlanta';
   group.position.y = -grid.manifest.vertical.sceneZeroNavd88M;
-  const mass = new Mesh(shell.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  const mass = new Mesh(shell.geometry(), new StaticLandmarkMaterial());
   mass.castShadow = mass.receiveShadow = true;
   group.add(mass);
   const night = tower

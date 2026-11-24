@@ -122,6 +122,7 @@ import { createWhiteModel } from './white-model';
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
+import { batchLandmarkBodies } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { perf, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
@@ -262,7 +263,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // surface and generic structures if the chunk or the model is unavailable.
     railModule ??= import('./brookwood').then(mod => {
       if (eastController.signal.aborted) return;
-      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M);
+      preparedBrookwood = mod.createBrookwood(spec.vertical.sceneZeroNavd88M, !low);
       return mod;
     }).catch(error => {
       console.warn('Brookwood station unavailable', error);
@@ -595,7 +596,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (candler) world.group.add(candler.group);
         if (equitable) world.group.add(equitable.group);
         if (grady) world.group.add(grady.group);
-        for (const c of world.group.children.slice(landmarksFrom)) c.userData.perf = 'buildings';
+        const landmarks = world.group.children.slice(landmarksFrom);
+        for (const c of landmarks) c.userData.perf = 'buildings';
+        if (!low) world.group.add(batchLandmarkBodies(landmarks));
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
@@ -707,7 +710,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Added after the scenery snapshot, so a streetcar never occludes its own pick.
   scene.add(streetcar.group);
   scene.add(trains.group);
-  const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges) : undefined;
+  const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges, !low) : undefined;
   if (freight) scene.add(freight.group);
   // Live buses on the drawn streets: terrain-painted ground and exact bridge treads, or the
   // flat board's ribbons when there is no measured ground.
@@ -1271,7 +1274,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
-      camera, trains.group, buses.positions, edges, scenery, freight?.group, brookwood?.cars, brookwood?.freight, streetcar.group));
+      camera, trains.group, buses.positions, edges, scenery, freight?.poses, brookwood?.cars, brookwood?.freightPoses, streetcar.group));
   });
 
   // ---- sun, sky, weather --------------------------------------------------------------
@@ -1462,7 +1465,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         hidden: trainHidden(trainRail, t.routeId, t.pathId, t.s.value, x, z) };
     }
     if (v.kind === 'freight') {
-      const cars = [...(freight?.group.children ?? []), ...(brookwood?.freight.children ?? [])]
+      const cars = [...(freight?.poses.children ?? []), ...(brookwood?.freightPoses.children ?? [])]
         .filter(c => c.userData.trainId === v.id).flatMap(c => drawnCar(c) ?? []);
       if (!cars.length) return null;
       return { id: v.id, tier: 'illustrative', x: cars[0].x, z: cars[0].z, cars, hidden: null };
@@ -1602,7 +1605,6 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     inkBoost: () => { ink.uniforms.uStrength.value = WHITE_INK; },
     skipPasses: [gtao],
-    lowMemory: low,
     mode: options.whiteModel,
   }) : undefined;
   if (whiteModel) controls.addEventListener('start', () => whiteModel.cancel());

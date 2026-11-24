@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -173,7 +174,7 @@ export function createGrady(buildings: VBuilding[], grid: GroundGrid) {
     b.box(3, 1.3, 4.5, u, 381.65, v, '#93958f');
   for (const u of [-18, -4, 14]) b.box(3.8, 1.1, 3.2, u, 348.05, 71, '#adaea6');
 
-  const masonry = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({vertexColors: true, side: THREE.DoubleSide}));
+  const masonry = new THREE.Mesh(b.geometry(), new StaticLandmarkMaterial());
   masonry.castShadow = masonry.receiveShadow = true;
   const lamp = new THREE.MeshBasicMaterial({vertexColors: true, side: THREE.DoubleSide, transparent: true, depthWrite: false});
   const rooms = new THREE.Mesh(lit.geometry(), lamp);

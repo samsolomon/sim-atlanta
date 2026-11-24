@@ -1,3 +1,4 @@
+import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 import {
   CanvasTexture,
   DoubleSide,
@@ -137,7 +138,7 @@ export function createEquitable(buildings: VBuilding[], grid: GroundGrid) {
   ]) {
     body.box(w, h, d, x, roof + h / 2, z, '#8d9291');
   }
-  const steel = new Mesh(body.geometry(), new MeshLambertMaterial({ vertexColors: true, side: DoubleSide }));
+  const steel = new Mesh(body.geometry(), new StaticLandmarkMaterial());
   steel.castShadow = steel.receiveShadow = true;
   const occupied = new MeshLambertMaterial({
     vertexColors: true,
