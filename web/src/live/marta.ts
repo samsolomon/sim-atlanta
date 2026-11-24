@@ -4,7 +4,7 @@
  */
 import type { TrainState } from '../model/types';
 import { nearestOnPath, pointAt, type Schedule } from '../sched/engine';
-import { appendFix, playback, type Knot } from './motion';
+import { appendReservedFix, RESERVE_DELAY_MS, playback, type Knot } from './motion';
 import { freshness, serverDate } from './freshness';
 
 interface LiveTrain {
@@ -119,7 +119,7 @@ export class LiveMarta {
       const prior = prev?.history.at(-1);
       const history = prev && prior && prev.expires > now && snap.pathId && snap.pathId === prev.pathId
         && Math.abs(snap.s - prior.s) < 3000 ? prev.history : [];
-      appendFix(history, snap.s, now);
+      appendReservedFix(history, snap.s, now);
       this.tracked.set(t.id, { raw: t, routeId, pathId: snap.pathId, history,
         expires: now + STALE_MS - Math.max(0, reference - (t.at ?? feed.fetched)) });
     }
@@ -149,7 +149,7 @@ export class LiveMarta {
       const route = this.schedule.routes.get(t.routeId);
       const vt = route && this.schedule.vehicleTypes.get(route.vehicleType);
       const g = t.pathId ? this.schedule.path(t.pathId) : undefined;
-      const s = playback(t.history, now);
+      const s = playback(t.history, now, RESERVE_DELAY_MS);
       const pt = g ? pointAt(g, s) : { lon: t.raw.lon, lat: t.raw.lat, heading: 0 };
       out.push({
         id: t.raw.id,
