@@ -857,7 +857,7 @@ export class World {
     const m4 = new THREE.Matrix4();
     let n = 0;
     for (const bd of this.data.buildings) {
-      if (++n % 2 === 0) yield 'buildings';
+      if (n++) yield 'buildings';
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
       const footing = foundationY ? foundationY(bd) : 0;
