@@ -36,6 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -68,6 +69,7 @@ import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
+import { createHardRock } from './hard-rock';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -130,6 +132,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
+import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
@@ -371,6 +374,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let footballHall: ReturnType<typeof createFootballHall> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
+  let hardRock: ReturnType<typeof createHardRock> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -471,8 +475,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const towerSite = flatiron?.buildings ?? library?.buildings ?? librarySite;
         healey = createHealey(towerSite, groundAt);
         const afterHealey = healey?.buildings ?? towerSite;
-        parkPlaceTower = createParkPlaceTower(afterHealey, ground);
-        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHealey;
+        hardRock = createHardRock(afterHealey, ground);
+        const afterHardRock = hardRock?.buildings ?? afterHealey;
+        parkPlaceTower = createParkPlaceTower(afterHardRock, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHardRock;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
@@ -582,6 +588,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (footballHall) world.group.add(footballHall.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
+        if (hardRock) world.group.add(hardRock.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -630,7 +637,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
             floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
+            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, hardRock, fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -1320,6 +1327,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
+  // Sliced area builds (?slice=1) take a smaller share of each frame while the camera is dragged.
+  controls.addEventListener('start', () => { sliceInput.dragging = true; });
+  controls.addEventListener('end', () => { sliceInput.dragging = false; });
   // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
@@ -1415,7 +1425,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
+    // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
+    updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) renderer.shadowMap.needsUpdate = true;
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
@@ -1484,6 +1496,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       footballHall?.setNight(night);
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
+      hardRock?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
       davisons?.setNight(night);
@@ -1954,6 +1967,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setAtmosphere(a, now) {
       atm = a;
       const day = local(now).doy;
+      sliceInput.dayOfYear = day;
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
       north?.setSeason(day);

@@ -1,6 +1,6 @@
-import { rng, type P2 } from '../vignette/geom';
+import type { P2 } from '../vignette/geom';
 import type { localLandmarkShell } from './landmark-shell';
-import { along, faces, outwardSign } from './skin-kit';
+import { along, faces, litHash, outwardSign, seedOf } from './skin-kit';
 
 type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 
@@ -23,7 +23,8 @@ const SHOP = '#3d4b52', CANOPY = '#8b9196';
 
 export function squareOn5th(shell: Shell) {
   const { body, lights } = shell;
-  const random = rng(848);
+  const seed = seedOf('osm:way:536884432');
+  let wall = 0;
   const ring = shell.ring;
   const out = outwardSign(ring);
   const pitch = (ROOF - BASE) / FLOORS;
@@ -37,12 +38,12 @@ export function squareOn5th(shell: Shell) {
 
   /** Punched windows in a brick wall: one strip per column, a brick spandrel per floor, lamps for lit rooms. */
   function punched(a: P2, b: P2, len: number, t0: number, t1: number, bay: number, occupancy: number) {
-    const p = at(a, b, len), count = Math.max(1, Math.round((t1 - t0) / bay)), w = (t1 - t0) / count;
+    const p = at(a, b, len), count = Math.max(1, Math.round((t1 - t0) / bay)), w = (t1 - t0) / count, face = wall++;
     for (let i = 0; i < count; i++) {
       const l = t0 + (i + .2) * w, r = t0 + (i + .8) * w;
       body.quad(p(l, BASE + .6, .07), p(l, ROOF - .6, .07), p(r, ROOF - .6, .07), p(r, BASE + .6, .07), PUNCHED);
       for (let j = 0; j < FLOORS; j++)
-        if (random() < occupancy)
+        if (litHash(seed, face, j + 1, i) < occupancy)
           lights.quad(p(l, BASE + j * pitch + .7, .11), p(l, BASE + (j + 1) * pitch - .7, .11),
             p(r, BASE + (j + 1) * pitch - .7, .11), p(r, BASE + j * pitch + .7, .11), PUNCHED);
     }
@@ -53,7 +54,7 @@ export function squareOn5th(shell: Shell) {
   }
   /** A teal curtain wall with a white slab edge each floor (the balconies) and lamps for lit units. */
   function curtain(a: P2, b: P2, len: number, t0: number, t1: number, occupancy: number) {
-    const p = at(a, b, len);
+    const p = at(a, b, len), face = wall++;
     body.quad(p(t0, BASE, .07), p(t0, ROOF, .07), p(t1, ROOF, .07), p(t1, BASE, .07), GLASS);
     for (let j = 1; j <= FLOORS; j++) {
       const y = BASE + j * pitch;
@@ -62,7 +63,7 @@ export function squareOn5th(shell: Shell) {
     const units = Math.max(1, Math.round((t1 - t0) / 4)), w = (t1 - t0) / units;
     for (let j = 0; j < FLOORS; j++)
       for (let i = 0; i < units; i++)
-        if (random() < occupancy) {
+        if (litHash(seed, face, j + 1, i) < occupancy) {
           const l = t0 + (i + .08) * w, r = t0 + (i + .92) * w, y = BASE + j * pitch;
           lights.quad(p(l, y + .35, .11), p(l, y + pitch - .45, .11), p(r, y + pitch - .45, .11), p(r, y + .35, .11), GLASS);
         }
@@ -76,7 +77,7 @@ export function squareOn5th(shell: Shell) {
     // Two-storey base: shopfronts and office glazing in brick.
     body.quad(p(.4, .3, .07), p(.4, BASE - 1, .07), p(len - .4, BASE - 1, .07), p(len - .4, .3, .07), SHOP);
     for (let t = 1; t < len - 1; t += 3.5)
-      if (random() < .3) lights.quad(p(t, .6, .11), p(t, BASE - 1.4, .11), p(Math.min(t + 2.8, len - .5), BASE - 1.4, .11), p(Math.min(t + 2.8, len - .5), .6, .11), SHOP);
+      if (litHash(seed, 100 + wall, 0, Math.round(t)) < .3) lights.quad(p(t, .6, .11), p(t, BASE - 1.4, .11), p(Math.min(t + 2.8, len - .5), BASE - 1.4, .11), p(Math.min(t + 2.8, len - .5), .6, .11), SHOP);
     if (mid[1] < -11) {
       // North: brick end bays of punched windows around the balconied glass centre.
       punched(a, b, len, 0, 12, 3, occupied);
