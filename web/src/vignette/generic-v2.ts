@@ -27,11 +27,9 @@ export const ARCH_NAMES = ['precast', 'banded', 'brick', 'limestone', 'residenti
 
 /** City chooses v2 for an unspecified mode. Other World consumers opt in explicitly. */
 const requested = new URLSearchParams(globalThis.location?.search ?? '').get('generic');
-let override: boolean | undefined;
-export function genericV2(cityDefault = false) {
-  return override ?? (requested === 'v2' || (requested !== 'legacy' && cityDefault));
+export function genericV2(cityDefault = false, mode = requested) {
+  return mode === 'v2' || (mode !== 'legacy' && cityDefault);
 }
-export function setGenericV2(value: boolean | undefined) { override = value; }
 
 /** What one generic building looks like under v2. Colours are sRGB hex (vertex colours). */
 export interface GenericLook {
