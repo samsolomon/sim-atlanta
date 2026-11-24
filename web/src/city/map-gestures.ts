@@ -5,7 +5,7 @@
  *   touch: one finger pans, pinch zooms, two fingers dragged up or down tilt, twisting two
  *          fingers rotates, double-tap zooms in
  * OrbitControls does the panning, pinching and tilting; this adds the twist and the double
- * click/tap. Every gesture reports through `onGesture` (City's manualCamera), which ends Follow.
+ * click/tap. A trackpad orbit and a two-finger twist keep the current Follow target.
  */
 import { MOUSE, TOUCH } from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -23,7 +23,7 @@ export function mapGestures(
   el: HTMLElement,
   /** Turn the view by degrees, as City's rotate() does (positive turns the bearing down). */
   rotate: (degrees: number) => void,
-  onGesture: () => void,
+  onZoom: () => void,
   o: { legacy?: boolean } = {},
 ) {
   // Ctrl/⌘/Shift + left rotates (OrbitControls' own PAN modifier path). Middle rotates too: three
@@ -61,7 +61,6 @@ export function mapGestures(
     if (!trackpad || e.ctrlKey || !e.isTrusted) return;
     e.stopImmediatePropagation();
     e.preventDefault();
-    onGesture();
     const orbit = controls as unknown as { _rotateUp(value: number): void };
     orbit._rotateUp(e.deltaY * 0.004);
     rotate(e.deltaX * 0.15);
@@ -74,7 +73,7 @@ export function mapGestures(
   // OrbitControls ends its own touch state in a pointerup listener that runs after ours, and it
   // ignores the wheel until then.
   const zoomAt = (x: number, y: number) => {
-    onGesture();
+    onZoom();
     setTimeout(() => el.dispatchEvent(new WheelEvent('wheel', { deltaY: DOUBLE_ZOOM_DELTA, clientX: x, clientY: y, bubbles: true, cancelable: true })));
   };
   let lastTouch = -Infinity;
@@ -87,6 +86,13 @@ export function mapGestures(
     const [a, b] = [...touches.values()];
     return Math.atan2(b.y - a.y, b.x - a.x);
   };
+  // A two-finger tilt can report its pointers on different frames, briefly
+  // spreading them like a pinch. Classify zoom by net span at the first lift.
+  let pinchStart: number | null = null;
+  const span = () => {
+    const [a, b] = [...touches.values()];
+    return Math.hypot(b.x - a.x, b.y - a.y);
+  };
   // ---- double tap: two quick single-finger taps close together ----
   let down: { id: number; x: number; y: number; t: number } | null = null;
   let lastTap: { x: number; y: number; t: number } | null = null;
@@ -97,6 +103,7 @@ export function mapGestures(
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (touches.size > 1) lastTap = null; // a pinch between two taps is not a double tap
     twist = touches.size === 2 ? angle() : null;
+    pinchStart = touches.size === 2 ? span() : null;
     down = touches.size === 1 ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp } : null;
   });
   on('pointermove', (e) => {
@@ -112,7 +119,14 @@ export function mapGestures(
     if (Math.abs(d) > 1e-4 && Math.abs(d) < 0.5) rotate((d * 180) / Math.PI);
   });
   const lift = (e: PointerEvent) => {
-    if (!touches.delete(e.pointerId)) return;
+    if (!touches.has(e.pointerId)) return;
+    if (e.type === 'pointerup' && pinchStart !== null) {
+      // Include the lifted finger's final coordinate, even on a quick pinch.
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (Math.abs(span() - pinchStart) > 6) onZoom();
+    }
+    touches.delete(e.pointerId);
+    pinchStart = touches.size === 2 ? span() : null;
     twist = touches.size === 2 ? angle() : null;
     if (e.type !== 'pointerup' || !down || down.id !== e.pointerId) return (down = null), undefined;
     const quick = e.timeStamp - down.t < TAP_MS && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10;

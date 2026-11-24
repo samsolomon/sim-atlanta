@@ -18,7 +18,7 @@
   --a2-track: rgba(60, 45, 30, 0.12);
   --a2-chip: rgba(255, 255, 255, 0.95);
   --a2-chip-sh: 0 1px 3px rgba(40, 30, 20, 0.16), 0 0 0 0.5px rgba(60, 45, 30, 0.12);
-  /* Text on a solid --a2-ink fill (selected 3D chip, tilt readout). */
+  /* Text on a solid --a2-ink fill (tilt readout). */
   --a2-on-ink: #fff;
   --a2-north: #c2255c;
   --a2-timetable: var(--sched);
@@ -64,6 +64,17 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .a2-g { --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
 }
+/* Low-tier City (html.glass-flat, set in main.ts): no backdrop-filter over the canvas, so the browser
+   presents it directly; the denser long-panel tint carries legibility instead of the blur. */
+:root.glass-flat .a2-g { -webkit-backdrop-filter: none; backdrop-filter: none; --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
+/* Without the blur, the scene shows through behind running text, so long-text sheets and panels go
+   denser still; the dock, place card and small controls keep the long-panel tint above. */
+:root.glass-flat { --a2-flat-a: rgba(252, 250, 245, 0.95); --a2-flat-b: rgba(243, 239, 230, 0.92); }
+:root.glass-flat[data-theme='dark'] { --a2-flat-a: rgba(38, 44, 56, 0.92); --a2-flat-b: rgba(20, 24, 32, 0.90); }
+:root.glass-flat :is(.a2-long, .a2-results, .a2-subject.a2-open) { --a2-ga: var(--a2-flat-a); --a2-gb: var(--a2-flat-b); }
+/* High-tier City draws each panel's blurred backing in its final pass (html.glass-canvas, set by
+   web/src/ui/glass.ts once the renderer draws them); the DOM keeps tint, edge, highlight and shadow. */
+:root.glass-canvas .a2-g { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .a2-g :is(button, a) { font: inherit; color: inherit; }
 .a2-g :is(button, a):focus-visible, .a2-credit a:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
 .a2-ic { display: inline-grid; width: 20px; height: 20px; }
@@ -196,7 +207,9 @@ body:has(.a2-subject.a2-open) .a2-notice, body:has(.a2-timepanel:not([hidden])) 
   right: var(--a2-right); bottom: var(--a2-bottom); width: 44px;
   display: flex; flex-direction: column; padding: 2px 0;
 }
-.a2-needle { width: 30px; height: 30px; }
+.a2-needle { position: relative; display: block; width: 30px; height: 30px; }
+.a2-needle svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.a2-needle-turn { will-change: transform; }
 .a2-north { fill: var(--a2-north); }
 .a2-camera.a2-no-compass .a2-compass-sep { display: none; }
 
@@ -408,6 +421,7 @@ body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
 .a2-menu-rows { padding: 0 0 6px; }
 .a2-mi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px;
   background: transparent; font-size: 15px !important; font-weight: 500 !important; text-align: left; cursor: pointer; }
+a.a2-mi { text-decoration: none; }
 .a2-mi:hover { background: var(--a2-sep); }
 .a2-mi > svg { width: 19px; height: 19px; flex: none; }
 .a2-mi > span:not(.a2-chev) { flex: 1; }
@@ -458,12 +472,13 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 .a2-step svg { width: 18px; height: 18px; }
 .a2-model-card #blurb { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--a2-ink2); }
 .a2-model-pos { margin: 6px 0 0 !important; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
-.a2-details-btn { display: none; margin-top: 10px; width: 100%; height: 40px; }
+.a2-details-btn { display: block; margin-top: 10px; width: 100%; height: 40px; }
 
 .a2-model-details { right: var(--a2-right); top: var(--a2-top); width: min(312px, calc(100vw - var(--a2-left) - var(--a2-right)));
   max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h)); overflow-y: auto; padding: 14px 16px 16px; font-size: 13px; }
 .a2-model-details .a2-panel-head { margin-bottom: 8px; }
-.a2-model-details .a2-details-close { display: none; }
+.a2-model-details:not(.a2-open) { display: none; }
+.a2-model-details .a2-details-close { display: grid; }
 .a2-lab .a2-model-details .settings { padding: 0; gap: 14px; }
 .a2-lab .a2-model-details legend { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
 .a2-lab .a2-model-details .settings button, .a2-lab .a2-model-details .file-button {
@@ -498,7 +513,7 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
   .a2-model-details.a2-open { display: block; left: var(--a2-left); right: var(--a2-right); top: auto; bottom: var(--a2-bottom); width: auto; z-index: 8;
     max-height: 70dvh; border-radius: 24px; }
   .a2-model-details .a2-details-close { display: grid; }
-  body:has(.a2-model-details.a2-open) :is(.a2-appbar, .a2-camera), body:has(.a2-browser:not([hidden])) :is(.a2-appbar, .a2-camera) { display: none; }
+  body:has(.a2-model-details.a2-open) .a2-appbar, body:has(.a2-browser:not([hidden])) .a2-appbar { display: none; }
   .a2-browser { right: var(--a2-right); bottom: var(--a2-bottom); width: auto; border-radius: 24px; z-index: 8; }
 }
 .a2-reset svg { width: 20px; height: 20px; }
@@ -562,17 +577,22 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-appbar :is(.a2-ib,.a2-vs), .a2-camera .a2-ib { min-width: 44px; min-height: 44px; }
 .a2-eyebrow { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--a2-ink2); }
 .a2-camera { top: var(--a2-top); bottom: auto; }
-.a2-three-d[aria-pressed=true] { background: var(--a2-ink); color: var(--a2-on-ink); }
+.a2-camera .a2-three-d[aria-pressed=true] {
+  position: relative; isolation: isolate; background: transparent; color: var(--a2-ink); font-weight: 600;
+}
+.a2-camera .a2-three-d[aria-pressed=true]::before {
+  content: ''; position: absolute; inset: 3px; z-index: -1; pointer-events: none;
+  border-radius: 13px 13px 9px 9px; background: var(--a2-chip); box-shadow: var(--a2-chip-sh);
+}
 .a2-tilt { writing-mode: vertical-lr; width: 44px; height: 48px; margin: 6px 0; accent-color: var(--a2-ink); }
 /* The app focus ring, not the browser's default blue (the slider is an input, so the .a2-g button rule misses it). */
 .a2-tilt:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: -2px; border-radius: 10px; }
 .a2-dot-timetable { background: #8a8478; }
 .a2-credit { right: var(--a2-right); }
-.a2-in-models :is(.a2-three-d,.a2-tilt), body:has(.a2-panel:not([hidden])) .a2-camera { display: none; }
+.a2-in-models :is(.a2-three-d,.a2-tilt) { display: none; }
 @media (min-width: 601px) {
   .a2-menu { left: max(8px, calc(50% - 278px)); }
   .a2-share-panel { right: max(8px, calc(50% - 278px)); bottom: 68px; }
-  .a2-in-models .a2-camera { right: calc(var(--a2-right) + 300px); }
 }
 @media (max-width: 600px) {
   .a2-appbar { left: var(--a2-left); right: var(--a2-right); transform: none; justify-content: space-evenly; bottom: max(34px, env(safe-area-inset-bottom)); }
@@ -617,7 +637,6 @@ body.city-over-map #city-loading { background: transparent !important; }
 @media (min-width: 601px) {
   .a2-browser { top: calc(var(--model-card-bottom, 140px) + 4px); width: 320px; }
   .a2-model-card { width: 320px; }
-  .a2-in-models .a2-camera { right: calc(var(--a2-right) + 320px); }
 }
 @media (max-width: 600px) {
   .a2-details-btn { position: fixed; z-index: 5; right: var(--a2-right); bottom: 94px; width: auto; padding: 0 16px; background: var(--a2-ga); color: var(--a2-ink); }
@@ -637,28 +656,46 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-camera > :is(.a2-compass,.a2-reset) { width: 44px; height: 44px; background: linear-gradient(160deg,var(--a2-ga),var(--a2-gb)); }
 .a2-camera .a2-needle { display: block; width: 32px; height: 32px; }
 :root[data-theme=dark] .a2-dock-field,:root[data-theme=dark] .a2-dock-field kbd { background: rgba(255,255,255,.10); }
-@media(min-width:601px) { .a2-appbar { padding-inline: 8px; gap: 6px; } }
+@media(min-width:601px) {
+  .a2-appbar { padding-inline: 8px 4px; gap: 6px; }
+  .a2-appbar :is(.a2-dock-next, .a2-share) { margin-inline-start: -6px; }
+}
 .a2-player {
-  width: 300px; padding: 10px 12px; overflow: hidden;
-  left: min(calc(50% + 164px), calc(100% - 158px));
+  width: 340px; padding: 10px 12px; overflow: hidden;
+  left: min(calc(50% + 164px), calc(100% - 178px));
 }
 .a2-player:not([hidden]) { display: flex; align-items: center; }
 .a2-track-info {
   flex: 1; min-width: 0; display: grid; align-items: center;
   grid-template-columns: 40px minmax(0,1fr); gap: 2px 8px;
 }
-.a2-track-info::before {
-  content: ''; width: 40px; height: 40px; grid-row: span 2; border-radius: 8px;
+.a2-art {
+  width: 40px; height: 40px; grid-row: span 2; border-radius: 8px; overflow: hidden;
   background: linear-gradient(135deg,#9fb8d6,#e7c9a0);
 }
-.a2-track-info strong,.a2-track-info span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.a2-track-info strong { align-self: end; font-size: 14px; font-weight: 600; }
-.a2-track-info span { align-self: start; font-size: 12px; color: var(--a2-ink2); }
+.a2-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Give the station controls their own row so title taps never switch stations. */
+.a2-station { display: flex; align-items: center; min-width: 0; align-self: end; font-size: 12px; color: var(--a2-ink2); }
+.a2-station button { position: relative; min-height: 0; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.a2-station button:disabled { cursor: default; opacity: .5; }
+.a2-st-name { min-width: 0; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a2-st-step { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
+.a2-st-step svg { width: 12px; height: 12px; }
+.a2-station button:hover:not(:disabled) { color: var(--a2-ink); }
+.a2-track-info strong { min-width: 0; align-self: start; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .a2-player .a2-ib { position: relative; flex: 0 0 44px; width: 44px; height: 44px; }
 .a2-player .a2-ib svg { position: relative; width: 18px; height: 18px; }
-.a2-player .a2-ib:first-of-type::before {
-  content: ''; position: absolute; inset: 2px; background: var(--a2-sep); border-radius: 50%;
+/* Play/pause: one 40 px rounded square (radius 10, like the art tile and the dock's square
+   buttons) in every state. Rest, hover, pressed and keyboard focus all draw on that one shape;
+   the 44 px button around it is only the hit area. */
+.a2-player .a2-play::before {
+  content: ''; position: absolute; inset: 2px; background: var(--a2-sep); border-radius: 10px;
 }
+.a2-player .a2-play:hover { background: transparent; }
+.a2-player .a2-play:hover::before { background: color-mix(in srgb, var(--a2-ink) 18%, transparent); }
+.a2-player .a2-play:active::before { background: color-mix(in srgb, var(--a2-ink) 26%, transparent); }
+.a2-player .a2-play:focus-visible { outline: none; }
+.a2-player .a2-play:focus-visible::before { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
 .a2-player progress {
   appearance: none; position: absolute; inset: auto 0 0; width: 100%; height: 2px;
   border: 0; background: var(--a2-sep); --progress-ink: color-mix(in srgb,var(--a2-ink) 55%,transparent);
@@ -748,3 +785,86 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .a2-g input[type='search']::-webkit-search-cancel-button:hover { background: var(--a2-ink); }
+/* Radio loading: an arc spins in the play button until the first file arrives; under reduced motion it stays still. */
+.a2-player .a2-busy svg { animation: a2-spin 0.9s linear infinite; }
+@keyframes a2-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .a2-player .a2-busy svg { animation: none; } }
+
+.a2-dock-cover { display: block; width: 32px; height: 32px; object-fit: cover; border-radius: 6px; }
+.a2-player-meta { min-width: 0; flex: 1; display: grid; justify-items: start; gap: 2px; }
+.a2-player-meta strong,.a2-player-artist { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a2-player-meta strong { font-size: 1rem; }
+.a2-player-artist { color: var(--a2-ink2); font-size: .8125rem; }
+.a2-appbar .a2-dock-next svg { width: 20px; height: 20px; }
+.a2-player:not([hidden]) { display: grid; gap: 8px; }
+.a2-player-transport { display: flex; align-items: center; }
+.a2-player-cover { flex: none; width: 64px; height: 64px; margin-right: 10px; border-radius: 8px; object-fit: cover; }
+.a2-radio-presets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px; border-top: 1px solid var(--a2-sep); padding-top: 7px; }
+.a2-radio-presets button { display: flex; align-items: center; justify-content: space-between; gap: 3px; min-height: 40px; padding: 0 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.a2-radio-presets small { color: var(--a2-ink2); font-variant-numeric: tabular-nums; }
+.a2-radio-presets button:hover { background: var(--a2-sep); }
+.a2-radio-presets button[aria-pressed=true] { background: var(--a2-chip); border-color: var(--a2-sep); font-weight: 700; box-shadow: var(--a2-chip-sh); }
+@media (max-width: 440px) {
+  .a2-appbar { gap: 0; padding-inline: 2px; }
+  .a2-appbar .a2-vsep { display: none; }
+  .a2-appbar .a2-vs { padding-inline: 6px; }
+}
+@media (max-width: 350px) {
+  .a2-appbar .a2-dock-next { display: none; }
+  .a2-player-cover { width: 56px; height: 56px; }
+}
+@media (max-width: 600px) {
+  .a2-player-meta { grid-template-columns: minmax(0, 1fr); }
+  .a2-player-meta strong,.a2-player-artist { white-space: normal; overflow-wrap: anywhere; }
+  .a2-radio-presets button { min-height: 44px; flex-wrap: wrap; }
+}
+
+/* ---- camera group beside the detail panel (brief: "stays visible while a detail panel is open",
+   Sam 2026-11-24). shell.ts measures the panel and sets the variables. ---- */
+@media (min-width: 601px) {
+  .a2-model-card .a2-details-btn { position: static; }
+  /* Desktop: the panel slides in and the group rides its left edge, 12 px from it, on the same
+     300 ms ease, then returns to the screen edge when the panel closes. Where the group would meet
+     the subject card (narrow windows), it drops below the card instead. */
+  .a2-camera {
+    right: calc(var(--a2-right) + var(--a2-cam-shift, 0px)); top: var(--a2-cam-top, var(--a2-top));
+    transition: right .3s cubic-bezier(.2, .7, .2, 1), top .3s cubic-bezier(.2, .7, .2, 1);
+  }
+  .a2-area-pop { right: calc(var(--a2-right) + var(--a2-cam-shift, 0px) + 52px); top: var(--a2-cam-top, var(--a2-top)); }
+  .a2-panel:not([hidden]) { animation: a2-panel-in .3s cubic-bezier(.2, .7, .2, 1); }
+  .a2-camera.a2-cam-compact .a2-camera-piece:has(.a2-zoom) { display: none; }
+  .a2-camera.a2-cam-over { z-index: 6; }
+  /* No room under the card: the group stays at the top and the card's tier line wraps short of it. */
+  body:has(.a2-cam-over) :is(.a2-subject:not(.a2-open), .a2-model-card) { max-width: calc(100vw - var(--a2-left) - var(--a2-right) - var(--a2-cam-shift, 0px) - 44px - 12px); }
+}
+@keyframes a2-panel-in { from { transform: translateX(calc(100% + 16px)); } }
+@media (max-width: 600px) {
+  /* Phones: compass and 3D stay top-right under any card or sheet; each sheet's top stops 12 px
+     below them and its content scrolls inside. The fallback is the group's usual bottom + 12 px. */
+  :root[data-ui='next'] body { --a2-sheet-cap: calc(100dvh - var(--a2-sheet-top, calc(var(--a2-top) + 108px)) - var(--a2-bottom)); }
+  .a2-panel, .a2-panel.a2-full { max-height: min(70dvh, var(--a2-sheet-cap)); }
+  .a2-panel.a2-full { height: var(--a2-sheet-cap); }
+  .a2-panel.a2-selection:not(.a2-expanded) { max-height: min(46dvh, 300px, calc(var(--a2-sheet-cap) - 90px)); }
+  .a2-panel.a2-selection.a2-expanded { max-height: var(--a2-sheet-cap); }
+  .a2-timepanel.a2-g { max-height: var(--a2-sheet-cap); }
+  .a2-model-details.a2-open { max-height: min(70dvh, var(--a2-sheet-cap)); }
+  .a2-menu { max-height: calc(100dvh - var(--a2-sheet-top, calc(var(--a2-top) + 108px)) - var(--a2-app-bottom) - var(--a2-app-h) - 8px); }
+  .a2-browser { top: var(--a2-sheet-top, calc(var(--a2-top) + 108px)); }
+  .a2-results { top: var(--a2-sheet-top, calc(var(--a2-top) + 108px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .a2-camera, .a2-area-pop { transition: none !important; }
+  .a2-panel:not([hidden]) { animation: none !important; }
+}
+
+/* ---- search groups (brief c2008ecd): small headings, a 3D tag on Views, "Map only" in City ---- */
+.a2-results .a2-results-h { margin: 10px 12px 2px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.a2-results .a2-results-h:first-child { margin-top: 2px; }
+.a2-hit > span:first-child { flex: 1; min-width: 0; text-align: left; }
+.a2-mi > span.a2-tag { flex: none; margin-left: auto; }
+a.a2-mi { text-decoration: none; color: inherit; }
+.a2-tag { flex: none; padding: 1px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--a2-ink2); box-shadow: inset 0 0 0 1px var(--a2-sep); }
+.a2-tag-map { font-weight: 600; }
+.a2-results .a2-empty { margin: 8px 12px; }
+.a2-results { max-height: calc(100dvh - var(--a2-top) - 76px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 600px) { .a2-results { max-height: none; } }

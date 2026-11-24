@@ -5,13 +5,26 @@
  */
 import * as THREE from 'three';
 
+/** The grade's colour work without the grain, as GLSL: `vec3 gradeColor(vec3 c, vec2 uv, out float l)`
+ * returns the graded colour for display-space `c` at screen `uv` and its pre-grade luma `l`. City's
+ * in-canvas glass (city/glass.ts) grades its blurred backings with the same function. */
+export const GRADE_GLSL = /* glsl */ `
+  vec3 gradeColor(vec3 c, vec2 uv, out float l) {
+    l = dot(c, vec3(0.299, 0.587, 0.114));
+    vec3 g = (c - 0.5) * 1.12 + 0.5;                       // contrast
+    g = mix(vec3(l), g, 1.14);                              // saturation
+    g += mix(vec3(-0.035, -0.01, 0.05), vec3(0.03, 0.012, -0.03), smoothstep(0.15, 0.85, l)); // cool shade, warm light
+    float vig = 1.0 - smoothstep(0.35, 1.15, length(uv - 0.5) * 1.4); // edges must be ordered in GLSL
+    return g * mix(0.86, 1.0, vig);
+  }`;
+
 /**
  * `output: true` also does OutputPass's work first (the renderer's tone mapping, then the output
  * colour space), so a chain that ends in grade can drop that full-screen pass. It relies on grade
  * drawing to the canvas, where three.js gives a tone-mapped ShaderMaterial `toneMapping()` and
  * `linearToOutputTexel()` from the renderer's settings.
  */
-export function gradeShader(o: { output?: boolean } = {}) {
+export function gradeShader(o: { output?: boolean; after?: { uniforms: Record<string, THREE.IUniform>; pars: string; main: string } } = {}) {
   return {
     name: 'Grade',
     uniforms: {
@@ -20,6 +33,7 @@ export function gradeShader(o: { output?: boolean } = {}) {
       uAmount: { value: 1 },
       uGrain: { value: 0.045 },
       uRes: { value: new THREE.Vector2(1024, 1024) },
+      ...o.after?.uniforms,
     },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
@@ -30,6 +44,8 @@ export function gradeShader(o: { output?: boolean } = {}) {
       uniform vec2 uRes;
       varying vec2 vUv;
       float hash(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+      ${GRADE_GLSL}
+      ${o.after?.pars ?? ''}
       void main() {
         vec4 src = texture2D(tDiffuse, vUv);
         ${o.output ? `#ifdef TONE_MAPPING
@@ -38,17 +54,14 @@ export function gradeShader(o: { output?: boolean } = {}) {
         src = linearToOutputTexel(src);` : ''}
         vec3 c = src.rgb;
         if (uAmount > 0.001) {
-          float l = dot(c, vec3(0.299, 0.587, 0.114));
-          vec3 g = (c - 0.5) * 1.12 + 0.5;                       // contrast
-          g = mix(vec3(l), g, 1.14);                              // saturation
-          g += mix(vec3(-0.035, -0.01, 0.05), vec3(0.03, 0.012, -0.03), smoothstep(0.15, 0.85, l)); // cool shade, warm light
-          float vig = 1.0 - smoothstep(0.35, 1.15, length(vUv - 0.5) * 1.4); // edges must be ordered in GLSL
-          g *= mix(0.86, 1.0, vig);
+          float l;
+          vec3 g = gradeColor(c, vUv, l);
           float n = hash(floor(vUv * uRes) + fract(uTime) * 917.0) - 0.5;
           g += n * uGrain * (1.0 - 0.5 * l);                     // grain, stronger in shadows
           c = mix(c, g, uAmount);
         }
         gl_FragColor = vec4(clamp(c, 0.0, 1.0), src.a);
+        ${o.after?.main ?? ''}
       }`,
   };
 }

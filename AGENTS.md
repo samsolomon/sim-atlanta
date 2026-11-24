@@ -127,6 +127,21 @@ uses the timetable.
 - Before a PR: run `pnpm test`, check visual changes in a browser, then run `pnpm review`.
   If the PR changes what City draws or loads, also run `pnpm test:perf`, and lower a ceiling when a cut reaches its target.
 
+### Coordinating Studio work
+
+- At kickoff, name one integration owner for each group of related changes. Contributors
+  can build and review pieces in parallel. The owner brings them together on a feature
+  branch, validates the combined result, and takes it through one PR to main when practical.
+- The Studio coordinator keeps the current and next owner of the performance window in
+  the release handoff. Claim the window before timing a browser run. While it is held,
+  schedule other benchmarks and heavy builds or renders for later. Lightweight work can
+  continue. Return the window with the tested commit and result, including a failed run.
+- Keep one current handoff per active worktree. Use its Orca worktree comment, or point
+  the comment at its existing handoff. Record the responsible owner, commit, next action,
+  and link to test results or screenshots. Update it when ownership or status changes.
+  After merge, preserve the evidence and check for unmerged work, local changes, and
+  shared services before retiring the worktree.
+
 ## Review
 
 `pnpm review` has the *other* model review this branch's diff against `origin/main`. Claude's

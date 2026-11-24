@@ -33,6 +33,185 @@ The existing 50-foot-class boxcar now comes in three paints, all with the same s
 
 Colours were set by eye against the photos in rendered Lab frames, with inputs brighter than the photos because the grade crushes dark blues. Downtown, the CSX-like train now runs three blue cars and two oxide. Brookwood's NS-like train runs three hoppers, three faded cars and two oxide. Each car is 800 triangles, unchanged; the faded paint adds 12 for its patches. [Lab and City, day and night](log/freight/boxcar-variants/comparison.jpg)
 
+### Built: 53-foot double-stack well car
+
+The envelope follows Greenbrier's [53′ Husky-Stack](https://www.gbrx.com/railcars/53-all-purpose-double-stack-car/): 76 ft 8.75 in (23.39 m) over couplers, with a 53 ft well. The plan's 21.3 m estimate was short. The model has:
+- truck centres at 19.2 m (estimated);
+- a well floor 0.36 m above the rail (estimated);
+- deep side girders, with end platforms over the trucks.
+
+Containers are 53-foot domestic high cubes, 16.15 × 2.59 × 2.90 m. The double stack tops out at 6.16 m, within Plate H's 20 ft 2 in. The Model Lab keeps three baked loads for its single-car views. Since version 8, City deals each container its own colour and length (see **Well loads (version 8)**):
+- `wellA`: white over red-brown;
+- `wellB`: blue over grey;
+- `wellC`: a single faded mustard box.
+
+There is no lettering. Triangles: 1,652 high and 524 low (1,160 and 512 single-stack). Lab entries: `freightWellA`, `freightWellB` and `freightWellC`.
+
+### Built: general-service tank car (DOT-117 family)
+
+The envelope follows Greenbrier's 30,600-gallon ethanol tank car drawing: 59 ft 10 in over pulling faces (18.24 m) and 46 ft 7.5 in truck centres (14.21 m). [Greenbrier tank cars](https://gbrx.com/?p=1125)
+
+**Estimated from photographs:**
+- the 3.05 m tank diameter;
+- the 2.45 m centreline height;
+- the head shields and stub sills;
+- the end platforms and ladders;
+- the protective housing over the top fittings.
+
+**Model:**
+- Black, with one faint rust streak and no placards or lettering.
+- The DOT-117 choice is illustrative, and so is any "ethanol" reading of a tank unit train.
+- The paint inputs sit well above true black (`#45484d`), because the City grade crushes near-black into a silhouette.
+- At night the unlit black cars are nearly invisible from orbit.
+- Triangles: 1,392 high and 636 low. The Lab entry is `freightTank`.
+
+**Use in trains.** Tanks join the manifest car list, and unit trains now choose grain hoppers or tanks. `CONSIST_VERSION` is 2, so every slot is re-dealt.
+
+### Built: open mill gondola
+
+The envelope follows Greenbrier's [52 ft 2,791 cu ft mill gondola](https://gbrx.com/wp-content/uploads/2024/08/52-2791-cu.-ft.-Mill-Gondola.pdf):
+- 57 ft 9.5 in (17.61 m) over couplers;
+- 52 ft 6 in × 9 ft 8 in × 5 ft 6 in inside;
+- 9 ft 1.8 in (2.79 m) extreme height, to Plate C.
+
+**Estimated from photographs:**
+- the 12.9 m truck centres;
+- the side-post spacing;
+- the end ribs;
+- the scrap heap.
+
+**Loads.** There are two baked loads:
+- `gondolaEmpty`;
+- `gondolaScrap`, a seeded heap of rust-and-grey slabs that stays below the top chord.
+
+**Model:**
+- Weathered oxide, with no lettering.
+- Triangles: empty 872 high and 656 low; scrap 1,232 high and 776 low.
+- Lab entries: `freightGondolaScrap` and `freightGondolaEmpty`.
+
+**Use in trains.** Both loads join the manifest car list. `CONSIST_VERSION` is now 3.
+
+### Built: 73-foot centerbeam
+
+The envelope follows Greenbrier's [73 ft riserless-deck centerbeam](https://www.gbrx.com/?p=955):
+
+| Dimension | Value |
+| --- | --- |
+| Over couplers | 80 ft 7 in (24.56 m) |
+| Inside | 73 ft × 9 ft 10 in |
+| Inside height | 11 ft 7.4 in |
+| Extreme height | 15 ft 5.75 in (4.72 m) |
+
+Greenbrier doesn't list truck centres, so the model uses 60 ft (18.29 m) from CN's centerbeam sheet, which is a different builder's car. The truss spacing and lumber bundles are estimated.
+
+There are two baked loads:
+- `centerbeamEmpty` shows the open truss and the full-height end bulkheads.
+- `centerbeamLumber` carries wrapped bundles against both faces of the beam, stepping in toward the top, with exposed board ends. There is no wrap printing.
+
+Triangles:
+
+| Load | High | Low |
+| --- | ---: | ---: |
+| Lumber | 1,772 | 548 |
+| Empty | 812 | 524 |
+
+Low tier draws each side's load as one wrapped block. Both loads join the manifest list. `CONSIST_VERSION` is now 4.
+
+### Built: enclosed autorack
+
+The envelope follows Greenbrier's [Multi-Max](https://www.gbrx.com/?p=920): 93 ft 10 in (28.60 m) over couplers, 89 ft 9.5 in inside, 10 ft 8.4 in extreme width and 19 ft (5.79 m) to Plate J. Greenbrier doesn't list truck centres. The model uses the 64 ft (19.51 m) given for its Auto-Max deck conversion, which is a different car.
+
+**Model details:**
+- *Estimated:* the screen bands, rib count, roof arch and end doors.
+- *Colour:* grey screened sides on a brown flat, with no lettering.
+- *Triangles:* 1,094 high and 446 low.
+- *Lab:* the entry is `freightAutorack`.
+- *Recipes:* autoracks join the manifest list and are a unit-train option (an automotive train). `CONSIST_VERSION` is 5.
+
+**Curve clearance.** City stands each car's two trucks on the drawn centreline and lays the body on the chord between them, so on a curve the ends swing out and the middle swings in. The rule, in `web/src/city/freight-clearance.ts`, measures that swing directly. For every car kind a line can draw, no body corner or side midpoint may sit more than 0.35 m further from the centreline than it does on straight track. `freight-clearance.test.ts` holds both lines to it, so it also decides new car kinds and any edit to the drawn track. It was measured on November 24, 2026, by stepping every kind along each drawn chain 0.5 m at a time:
+
+| Line | Autorack | Well | Locomotive | Boxcar |
+| --- | ---: | ---: | ---: | ---: |
+| Downtown, pre-#512 line (worst at −558, −1015) | 0.44 m | 0.43 m | | 0.27 m |
+| Downtown, smoothed (worst at −579, −1092) | 0.31 m | 0.30 m | 0.25 m | 0.19 m |
+| Brookwood Main 2 | 0.25 m | 0.23 m | 0.19 m | 0.16 m |
+
+An earlier estimate of 1.33 m at a 41 m radius overstated the swing. The source polyline turns at short, shallow vertices, not along 41 m arcs, so even the old line stayed under 0.45 m. The downtown autorack exclusion is lifted. For information: downtown draws 4.2 m of ballast, and the worst body edge, the autorack's, stays 0.17 m inside it. Brookwood draws a narrower 3.6 m bed, where 3.0–3.34 m car bodies leave only about 0.1 m each side even on straight track. Real ballast tops are about 3.4–3.7 m wide, and car sides overhang the shoulder.
+
+**Overhead clearance.** Downtown intermodal was held back because double-stack clearance through the cut was unverified. A raycast from every drawn freight tread point, 2 m apart, finds the lowest deck soffit 6.87 m above the railhead in City (6.82 m in the Node test), at the overpasses near (−44, −81) and (−182, −186). The tallest downtown car is a loaded double-stack at 6.16 m; the autorack is 5.79 m. The test requires at least 0.5 m between the tallest car a line can draw and the lowest soffit.
+
+### Built: open aluminum coal hopper
+
+**Model:**
+- *Type:* an open-top aluminum hopper with longitudinal bottom discharge, the kind that runs in Southeastern coal unit trains.
+- *Envelope:* 53 ft 1 in × 10 ft 8 in × 13 ft 4 in exterior (16.18 × 3.25 × 4.06 m). It comes from a [railcar-registry entry for a 4,323 cu ft car](https://cahancock.rrpicturearchives.net/rspicture.aspx?id=445247). That is the capacity of Trinity's aluminum RDL, but the figure is a lead, not a builder's sheet, because Trinity's RDL spec sheet wasn't found.
+- *Estimated:* the 12.4 m truck centres, the stepped side sheets that follow the sloped ends, the twin chutes and gates, and the heaped load.
+- *Loads:* two, baked in. `coalLoaded` has a low ridge of coal up to 0.38 m above the rim, with lumps at high detail. `coalEmpty` shows the floor between the end slopes.
+- *Triangles:* loaded 882 high / 642 low; empty 792 / 648. Plan ceilings are 2,000 / 850.
+- *Lab entries:* `freightCoalLoaded`, `freightCoalEmpty`.
+
+**Use in City.** Coal is a unit-train commodity only, loaded or empty and chosen per passage. It runs on both lines, because a 16.2 m car clears the downtown curves. `CONSIST_VERSION` is 6. This completes the eight-car plan; distributed power (DPU) is still deferred.
+
+**Well loads (version 8).** Sam saw from the Lab sheet that the containers were "a lot of times the same colour". Version 7 drew each train from two of three baked loads, so a 20-car train alternated two looks. Now each well's `ConsistUnit` carries its own load, dealt by the seeded planner:
+- Each container gets its own colour from a ten-colour generic palette with no marks (`CONTAINER_PALETTE` in `vignette/intermodal.ts`).
+  - 53 ft domestic boxes are mostly white (42 %), then silver-grey, mustard, red and orange.
+  - 40 ft international boxes are maroon, blue, green, grey and teal.
+  - The inputs are lighter than paint, because City's grade darkens deep colours.
+- Version 9 deals 53 ft bottoms 80 % of the time. A 40 ft bottom can only carry a 40. A 53 ft bottom draws a 53 ft top three times out of four when double-stacked. A 40 ft box rides centred on a 53 ft box, so the step shows at both ends.
+- About one well in eight runs empty, and one in eight carries a single container.
+- Adjacent cars never repeat the same bottom and top colour pair.
+
+City draws every well from one shape, with both boxes modelled 53 ft long. Each box's vertices carry `aSlot` and `aShade`, and each instance carries `aLoad`. `freightMaterial()` patches the one shared freight program with `customProgramCacheKey` `freight-containers-1`. That program takes each box's colour from the palette, shortens it to 40 ft, or collapses it when the slot is empty. Downtown, Brookwood and the boot templates all use that factory, so the patch replaces the freight program rather than adding one. An intermodal train is now one instanced draw instead of two, on both tiers. The Lab's single-car views and the vignette don't use the patch and keep the baked colours. Bumping `CONSIST_VERSION` to 8 re-deals every slot. The Lab's **Intermodal train · 20 wells** entry lays out a passage exactly as City draws it ([before](log/freight/wells/before-front.jpg) · [after](log/freight/wells/after-front.jpg) · [Brookwood from 400 m](log/freight/wells/brookwood-400m-high.jpg)).
+
+**Downtown lift (version 7).** After the downtown centreline was smoothed (#512) and both clearance checks passed, `DOWNTOWN_PROFILE` dropped its autorack exclusion and gained an intermodal weight of 15 %. Manifest is now 55 % and unit 30 %. Bumping `CONSIST_VERSION` to 7 re-deals every slot on both lines.
+
+### Built: City consists
+
+Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.
+- **Hashing.** FNV-1a and mulberry32, with Fisher–Yates for type choice. There is no `Math.random` or frame state.
+- **Downtown.** Uses fixed 15-minute slots from the epoch, alternating direction. The longest possible train is checked against the mapped span.
+- **Brookwood.** Keeps its 20-minute alternating slots and still yields to the Crescent.
+- **Recipes:**
+  - Downtown (CSX-like): manifest 55 %, intermodal 15 %, unit 30 %. Intermodal and autoracks run here since `CONSIST_VERSION` 7, once the curve and overhead clearance checks passed (see **Curve clearance**).
+  - Brookwood (NS-like): manifest 45 %, intermodal 35 %, unit 20 %.
+- **Manifest blocks.** Six to 24 cars in blocks of 3–8, using up to three types from the three boxcar paints and the covered hopper.
+- **Intermodal.** Eight to 30 wells, each with its own seeded load (see **Well loads (version 8)**).
+- **Unit trains.** Twelve to 30 covered hoppers.
+- **Power.** One unit below 180 m of trailing cars, two up to 399 m, three from 400 m. The lead always faces forward; trailing units may run long hood forward. One road type is used per lash-up:
+  - CSX-like: CM44AC or ES44AH, with a GP38-2 on short CSX manifests.
+  - NS-like: AC44-type, ES44AC or SD70ACe.
+  - About one multi-unit passage in twelve has a foreign trailing unit.
+- **Deferred.** Distributed power is optional in this plan and not built yet.
+- **Draw cap.** Each passage draws at most two power kinds and three car kinds (manifest), two (intermodal) or one (unit). That makes the cost a fixed number of instanced draws per train, the same on both tiers.
+
+**Measured (Studio, dev build, low tier, `?q=low`):**
+
+| Train | Draws |
+| --- | --- |
+| 15-car downtown manifest | 3 |
+| 22-car downtown unit train | 2 |
+| 31-unit Brookwood intermodal | 3 |
+| 16-unit Brookwood intermodal | 3 |
+
+- `update()` averaged 0.006–0.007 ms per train in a Node microbenchmark on the Studio. That is not a phone figure.
+- **Programs.** The same production build and URLs were measured with and without low-tier instancing:
+  - `t=2026-11-23T14:02-05:00&speed=60`: 88 → 90.
+  - `22:02` swept: 91 → 93.
+  - The swept night baseline already exceeds the 90 ceiling that the stock 14:00 perf clock reports.
+- **Clip-plane padding.** three.js compiles one program per clipping-plane count. So every freight material is padded to 6 planes (`FREIGHT_CLIP_PLANES`) with planes that never clip, and all instanced freight shares one program. The same production builds, measured on the low tier before and after padding:
+
+  | URL | Programs before | Programs after |
+  | --- | ---: | ---: |
+  | Stock `2026-11-20T14:00` | 82 | 80 |
+  | Day `2026-11-23T14:44` | 81 | 80 |
+  | Night `22:22:30` | 86 | 84 |
+  | Day sweep `14:02&speed=60` | 84 | 82 |
+  | Night sweep `22:02&speed=60` | 87 | 85 |
+
+  Draws were unchanged. Mouth and board-edge cuts still clip ([downtown mouth](log/freight/consists/clip-mouth.jpg), [Brookwood west edge](log/freight/consists/clip-edge.jpg)).
+- **Not changed yet.** Road traffic's instanced, clipped Lambert cars (`road-traffic.ts`) carry the 4 board-edge planes. Padded to the same 6, they would share the freight program. Buses and streetcars set clip planes too, but they are not instanced Lambert in the same way; check their program keys before padding.
+- **Card.** It reads the passage record: railroad, consist summary and lead unit. It is no longer derived from the line name, which closes #291's plausible finding. It stays Illustrative.
+
 ## Passage selection and power
 
 Derive the passage index from a fixed UTC epoch and fixed line-specific slot length. Use floor division for dates before the epoch. Hash the stable line ID, signed slot and recipe version. Draw direction, recipe, length, locomotive selection, trailing orientation, blocks and paint from that seed. Never advance shared random state from animation frames. Give downtown a slot long enough for the longest approved train to leave the board. Keep Brookwood’s 20-minute slots and yield to the scheduled Crescent. Compute tail clearance from the chosen cars’ lengths and coupler gaps. Seeking a given instant from either direction, reloading and changing quality must select the same train.
@@ -45,7 +224,7 @@ Scale the proposed power count by trailing length: one unit below 180 m, two at 
 
 ## Rendering, selection and acceptance
 
-Use the existing FreightBatches key of geometry plus clipping material. Reuse existing material instances and shader programs. In the current renderers high tier uses instancing and low tier uses individual meshes. Today low tier draws individual meshes with the shared freight material, because instancing Brookwood on low compiled a 91st program (covered hopper WIP). Every new car reuses that one material. Per-car meshes cannot meet the low draw targets below for 12–30-car recipes (low already uses 567 of 600 calls), so low-tier instancing needs one of the program slots that #391 frees before the City consists PR. Measure the actual renderer program count, especially across tunnel mouths. Any additional program at the stated 90/90 ceiling blocks that integration.
+Use the existing FreightBatches key of geometry plus clipping material. Reuse existing material instances and shader programs. In the current renderers high tier uses instancing and low tier uses individual meshes. Both tiers now draw each train as one instanced batch per car kind and clip material (see *Built: City consists*). Instancing the clipped Lambert on low costs two programs, measured below; every car reuses the one freight material. Measure the actual renderer program count, especially across tunnel mouths. Any additional program at the stated 90/90 ceiling blocks that integration.
 
 For one unobstructed visible train, target low/high colour draws of 2–3 / 2–5 for a unit or intermodal train and 3–5 / 3–8 for a manifest. Budget one draw per distinct visible geometry/load and power variant per clipping group. Shared paint across a block can be baked into a bounded geometry variant; count each active variant. Do not enable per-instance colour if it creates a shader permutation. A downtown train spanning openings can draw several clipping groups; report actual peak calls and occupied groups separately. Reuse instance capacity across passages without creating a new pool each slot. Preserve pickable car poses and stable train IDs.
 

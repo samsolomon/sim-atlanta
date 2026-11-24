@@ -5,7 +5,7 @@ import type { TrainState } from '../model/types';
 import { Line } from '../vignette/geom';
 import { ServiceTrack } from './east-cut';
 import { CityTrains } from './trains';
-import { CityFreight } from './freight';
+import { CityFreight, DOWNTOWN_ENTRY_MS } from './freight';
 import { createSurfaceTransport } from '../terrain/transport';
 import { GroundGrid } from '../terrain/grid';
 import { existsSync, readFileSync } from 'node:fs';
@@ -62,7 +62,7 @@ it.skipIf(!staged)('keeps freight suppressed on the old unsupported tread if rou
   expect(Math.abs(run.at(-1)!.s - run[0].s)).toBeCloseTo(106.23);
   expect(run.every(p=>Math.abs(p.position.y-cut.treadY)<1e-6)).toBe(true);
   const loop = new CityFreight(transport.freightTreads,[]);
-  loop.update(Date.parse('2026-11-20T14:15:31-05:00'));
+  loop.update(DOWNTOWN_ENTRY_MS + 50 / 4.5 * 1000); // slot 0, lead 50 m into the run
   expect(loop.visibleCars).toBeGreaterThan(0);
   delete spec.rail.paths['marta:path:155177'];
   const missing = prepareEastCut(routes,spec,grid,city.terrainTransport.rail);

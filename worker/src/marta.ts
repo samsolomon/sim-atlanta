@@ -43,6 +43,8 @@ export interface LiveFeed {
   trains: LiveTrain[];
 }
 
+const easternOffsetFormatter = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' });
+
 /** Parse MARTA's Eastern-time "M/D/YYYY h:mm:ss AM" into epoch ms, DST-aware. */
 export function parseEastern(s: string): number | null {
   const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$/.exec(s.trim());
@@ -52,7 +54,7 @@ export function parseEastern(s: string): number | null {
   const wall = Date.UTC(Number(m[3]), Number(m[1]) - 1, Number(m[2]), h, Number(m[5]), Number(m[6]));
   // Find the New York offset at (approximately) that instant.
   const offsetMin = (at: number) => {
-    const name = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' })
+    const name = easternOffsetFormatter
       .formatToParts(new Date(at))
       .find((p) => p.type === 'timeZoneName')!.value; // "GMT-5"
     const o = /GMT([+-]\d+)(?::(\d+))?/.exec(name);
