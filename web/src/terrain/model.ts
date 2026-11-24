@@ -1,6 +1,6 @@
 import { crownKey } from '../trees/rollout';
 import { boardLines, daylightSlots, underpassMesh, type Underpass } from './underpass';
-import { residential } from '../city/residential';
+import { buildResidential } from '../city/residential';
 import { createClaraMeer, gazeboId } from '../city/clara-meer';
 import { createCuratedLandscape, curatedIds } from '../city/curated-landscape';
 import { midtownFoundations } from '../city/midtown-foundations';
@@ -8,6 +8,7 @@ import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventee
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
 import { createSkyhouseSouth, skyhouseSouthId } from '../city/skyhouse-south';
+import { createNine15Midtown, nine15MidtownId } from '../city/nine15-midtown';
 import { createTwelveMidtown, twelveMidtownId } from '../city/twelve-midtown';
 import { createUniversityHouse, universityHouseId } from '../city/university-house';
 import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
@@ -21,6 +22,7 @@ import { createTheStandard, theStandardId } from '../city/the-standard';
 import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
+import { createAtlanticHouse, atlanticHouseId } from '../city/atlantic-house';
 import { createProscenium, prosceniumId } from '../city/proscenium';
 import { createHanoverMidtown, hanoverMidtownId } from '../city/hanover-midtown';
 import { createSora, soraId } from '../city/sora';
@@ -38,12 +40,15 @@ import { createNcrHq, ncrId } from '../city/ncr-hq';
 import { create1105WestPeachtree, westPeachtree1105Id } from '../city/1105-west-peachtree';
 import { createLoews, loewsId } from '../city/loews-atlanta';
 import { create1355Peachtree, peachtree1355Id } from '../city/peachtree-1355';
+import { createRegistry, registryId } from '../city/registry-on-the-park';
+import { createParkCentral, parkCentralId } from '../city/park-central';
 import { createMaaMidtown, maaMidtownId } from '../city/maa-midtown';
 import { create271Seventeenth, seventeenth271Id } from '../city/271-seventeenth';
 import { createRegionsPlaza, regionsPlazaId } from '../city/regions-plaza';
 import { createNorfolkSouthern, norfolkSouthernId } from '../city/norfolk-southern';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
@@ -66,7 +71,7 @@ import { batchLandmarks, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
-import { houseLod } from '../city/house-lod';
+import { buildHouseLod } from '../city/house-lod';
 import { piedmontPark } from '../city/piedmont-park';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
@@ -78,7 +83,7 @@ import { groundMap } from './ground-map';
 import type { DrapeGround } from './drape';
 import { createTrees } from '../trees/render';
 import { replacedBy, treeSitesIn } from '../trees/sites';
-import { rolloutPlantings, rolloutRow, rolloutSpecies, treeMode } from '../trees/rollout-city';
+import { buildRolloutRow, rolloutPlantings, rolloutSpecies, treeMode } from '../trees/rollout-city';
 
 type Tree = [number, number, number, number];
 type Contours = { value: number };
@@ -104,6 +109,14 @@ export interface DowntownTerrainOptions {
   rollout?: { row: string; lowCount: number; allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
   /** The ground surface, already built off the main thread (terrain/surface-worker.ts). */
   surface?: BuiltSurface;
+  /** Leave City-wide tree registration to the caller's commitTrees() (sliced section builds). */
+  deferTrees?: boolean;
+  /**
+   * Dress the trees for this day of the year while building (default: summer, 180). A sliced
+   * mount passes today's, so City's setSeason at mount is a no-op instead of a full pass in one
+   * frame. The result is the same: setSeason depends only on the day.
+   */
+  dayOfYear?: number;
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -192,8 +205,13 @@ function houseLodForce() {
   return v === 'near' || v === 'far' ? v : undefined;
 }
 
-function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {},
+function makeScenery(...args: Parameters<typeof buildScenery>) {
+  return runSync(buildScenery(...args));
+}
+
+/** makeScenery as a build: buildings yield every few, then trees (core/slice.ts). */
+function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
+  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
   class TerrainScenery extends World {
@@ -205,15 +223,16 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
   const tagNew = (from: number, perf: string) => world.group.children.slice(from).forEach(o => { o.userData.perf ??= perf; });
   let before = world.group.children.length;
   // Houses stay in the data (lamps and trees keep clear of them) but are drawn by house-lod.ts.
-  world.buildBuildings(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
+  yield* world.buildingSteps(bd => bd.id === separateBuilding || drawnElsewhere?.(bd) ? null : foundation(bd.rings, sceneY, step / 2), quality === 'low' ? 3 : 8, finishFor);
   tagNew(before, 'buildings');
+  yield 'buildings done';
   world.realTrees = trees.filter(([x, z]) => sceneY(x, z) !== null);
   world.replacedTree = replacedTree;
   world.crownSize = crownSize;
   before = world.group.children.length;
-  world.buildTrees(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
+  yield* world.treeSteps(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
   tagNew(before, 'trees');
-  world.setSeason(180);
+  yield* world.seasonSteps(dayOfYear ?? 180);
   return world;
 }
 
@@ -224,6 +243,30 @@ function makeScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: 
  * skyline (~4.5 km) views are well beyond it, street views well inside.
  */
 export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
+/**
+ * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
+ * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
+ * error at City's tilt is under a pixel there; only the default (~21 km) and wider orbits reach
+ * it. 115k -> 19k ground triangles across the 12 boards. `?perf&veryfar=0` keeps the far level.
+ */
+export const VERY_FAR_M = 12000, VERY_FAR_BUILD_M = 10000, VERY_FAR_ERROR_M = 8;
+const veryFarOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('veryfar') === '0';
+})();
+/** One very-far build per idle slice across all boards: several hundred ms on a phone if done at once. */
+const veryFarQueue: (() => void)[] = [];
+let veryFarPumping = false;
+function pumpVeryFar() {
+  if (veryFarPumping) return;
+  veryFarPumping = true;
+  const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 16));
+  const step = () => {
+    veryFarQueue.shift()?.();
+    if (veryFarQueue.length) idle(step); else veryFarPumping = false;
+  };
+  idle(step);
+}
 let groundLodChanged = false;
 /** True once after any board swapped its ground; City then redraws its manual shadow map. */
 export function takeGroundLodChange() { const c = groundLodChanged; groundLodChanged = false; return c; }
@@ -237,18 +280,30 @@ export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainO
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
+  return runSync(buildDowntownTerrain(grid, city, trees, options));
+}
+
+/**
+ * createDowntownTerrain as a generator that yields between stages and landmarks, so a
+ * background mount can spread it over frames (core/slice.ts). Nothing it builds is attached
+ * to the scene or registered City-wide before it returns.
+ */
+export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   checkBounds(grid, city);
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const openings = terrainOpenings(grid, options);
   const mesh = new GroundSurface(grid, options.quality, openings, options.join, options.surface);
+  yield 'ground surface';
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
+  yield 'board';
   const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero, boardLines(options.underpass, paintCity.roads));
   if (trench) board.add(trench.mesh);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
+  yield 'board';
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
@@ -283,6 +338,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === skyhouseSouthId ? createSkyhouseSouth(sceneryCity.buildings, grid, options.quality)
+      : site.id === nine15MidtownId ? createNine15Midtown(sceneryCity.buildings, grid, options.quality)
       : site.id === twelveMidtownId ? createTwelveMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === universityHouseId ? createUniversityHouse(sceneryCity.buildings, grid, options.quality)
       : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
@@ -297,6 +353,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
       : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
+      : site.id === atlanticHouseId ? createAtlanticHouse(sceneryCity.buildings, site, grid)
       : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
       : site.id === hanoverMidtownId ? createHanoverMidtown(sceneryCity.buildings, site, grid)
       : site.id === soraId ? createSora(sceneryCity.buildings, site, grid)
@@ -314,6 +371,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === westPeachtree1105Id ? create1105WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === loewsId ? createLoews(sceneryCity.buildings, site, grid)
       : site.id === peachtree1355Id ? create1355Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === registryId ? createRegistry(sceneryCity.buildings, site, grid)
+      : site.id === parkCentralId ? createParkCentral(sceneryCity.buildings, site, grid, options.quality)
       : site.id === maaMidtownId ? createMaaMidtown(sceneryCity.buildings, site, grid)
       : site.id === seventeenth271Id ? create271Seventeenth(sceneryCity.buildings, site, grid)
       : site.id === regionsPlazaId ? createRegionsPlaza(sceneryCity.buildings, site, grid)
@@ -323,6 +382,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     if (landmark) {
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };
       landmarks.push(landmark);
+      yield 'landmark ' + site.id;
     }
   }
   // Hard surfaces the drawn terrain yields to (stair runs cut into a slope).
@@ -330,6 +390,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const winn = winnPark(city, groundAt, options.quality);
   const yields = [...landmarks.flatMap(l => (l as { yields?: GroundYield[] }).yields ?? []), ...(winn?.yields ?? [])];
   if (yields.length) mesh.carve(yields);
+  yield 'carve';
   // Low tier: a far mesh (2 m error, cells up to 160 m) drawn instead of the board's own
   // triangles once the camera is over 2.5 km away. Render-only: placement, the audit and
   // every seam keep the near triangles; the rim is shared node for node. It is built from
@@ -337,26 +398,34 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   // built eagerly (2.9 MB across the rectangle) so a swap never stalls a frame.
   const nearGeometry = mesh.geometry;
   const farGeometry = options.quality === 'low' && GroundSurface.farLow ? mesh.farGeometry(FAR_GROUND_ERROR_M) : null;
+  // Low tier, very far (VERY_FAR_M and out): the same far quadtree at VERY_FAR_ERROR_M, settled
+  // below the DEM so nothing drawn on the ground is buried. Built lazily, one board per idle
+  // slice, once the camera first passes VERY_FAR_BUILD_M; until then the far level stays.
+  let veryFarGeometry: THREE.BufferGeometry | null = null;
+  let veryFarQueued = false;
   const bb = grid.manifest.bounds;
-  let far = false;
+  let far = false, veryFar = false, disposed = false;
+  yield 'far ground';
   const vents = midtownVents(city.bounds, groundAt);
   if (vents) landmarks.push(vents);
   // Houses: eave-height walls and pitched-roof finishes, fitted to the rendered ground.
   // Runs after the landmarks have claimed their sites.
   const originalFinish = options.finishFor;
-  const homes = residential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
+  const homes = yield* buildResidential(sceneryCity, b => b.id === pradoCraftsmanId ? pradoCraftsman(groundAt) : originalFinish?.(b), groundAt, b => foundation(b.rings, groundAt, grid.manifest.stepM / 2), options.quality, undefined, city.buildings, trees);
   sceneryCity = homes.city;
   options = { ...options, finishFor: homes.finishFor };
+  yield 'residential';
   // Yard terraces have hard shelves and treads. Carve before scenery/tree placement.
-  const yardLayer = homes.yards();
+  const yardLayer = yield* homes.buildYards();
   if (yardLayer?.yields.length) mesh.carve(yardLayer.yields);
+  yield 'yards carve';
   let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
   const namedReplace = named.length ? replacedBy(named) : null;
   // The tree rollout: some canopy crowns become a picked species; Ansley crowns are sized and paired.
   const drawTrees = treeMode(typeof location === 'undefined' ? '' : location.search);
-  const rollout = options.rollout ? rolloutRow({
+  const rollout = options.rollout ? yield* buildRolloutRow({
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
@@ -371,6 +440,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     }))(new PlacementIndex<P2[]>().addAll(sceneryCity.buildings.map(bd => bd.rings[0]))) : undefined,
   }) : null;
   if (rollout) streetTrees = rollout.crowns;
+  yield 'rollout plan';
   const replace: World['replacedTree'] = rollout
     ? (x, z, cr) => !!namedReplace?.(x, z, cr) || rollout.replaced(x, z)
     : namedReplace;
@@ -385,38 +455,42 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const crownSize: World['crownSize'] = genericSpots?.size
     ? (x, z) => genericSpots.has(crownKey(x, z)) ? { h: 4.5, r: 2, broadleaf: true } : rollout?.crownSize(x, z)
     : rollout?.crownSize ?? null;
-  const scenery = makeScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
+  const scenery = yield* buildScenery(sceneryCity, streetTrees, options.quality, grid.manifest.stepM, sceneryGround, options,
     replace, bd => homes.isHouse(bd.id), crownSize);
+  yield 'scenery';
   // Houses by distance: a bare far version for wide views, the full house when the camera comes close.
-  const houses = houseLod({
+  const houses = yield* buildHouseLod({
     houses: sceneryCity.buildings.filter(bd => homes.isHouse(bd.id) && bd.id !== options.separateBuilding), bounds: city.bounds, ground: groundAt,
     foundation: bd => foundation(bd.rings, groundAt, grid.manifest.stepM / 2), near: homes.finishFor, far: homes.farFinishFor,
     roofUnits: options.quality === 'low' ? 3 : 8, force: houseLodForce(),
   });
   scenery.group.add(houses.group);
+  yield 'houses';
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
+  yield 'landmarks attached';
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
   const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
   if (batches) {
     scenery.group.add(batches.group);
     if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
   }
+  yield 'landmark batches';
   // Yards by rule around every house (walks, drives, foundation planting).
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
   const oval = activeOval(city.bounds, groundAt, options.quality);
   if (oval) { oval.group.userData.perf = 'landscape'; scenery.group.add(oval.group); }
+  yield 'active oval';
   // Piedmont Park furniture at mapped points, entrance map kiosks (high tier) and the 10th Street gate.
   const park = piedmontPark(city, groundAt, options.quality);
   if (park) { park.group.userData.perf = 'landscape'; scenery.group.add(park.group); }
   if (winn) { winn.group.userData.perf = 'landscape'; scenery.group.add(winn.group); }
+  yield 'parks and batches';
   const species = createTrees(named, options.quality, groundAt);
   if (species) { species.group.userData.perf = 'trees'; scenery.group.add(species.group); }
-  // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
-  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
-    city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
-  // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
-  const planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
+  // The rolled-out trees' ground heights, read here, where they always were: later carves
+  // (lamps, decks) must not move them when registration is deferred (commitTrees).
+  const rolloutY = rollout ? new Map(rollout.plan.species.map(sp => [`${sp.x},${sp.z}`, groundAt(sp.x, sp.z)])) : null;
   if (options.lights) {
     // Landmark sites left the generic footprints the lamps avoid. Keep lamps out of them too.
     const sites = city.buildings.filter(site => !sceneryCity.buildings.includes(site)).flatMap(site => site.rings);
@@ -428,8 +502,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       return Math.abs(t)<=options.underpass.halfWidth+2 && options.underpass.spans.some(
         span => span.finish==='disused-ballast' && s>=span.start && s<=span.end);
     };
-    scenery.buildLights(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
+    yield* scenery.lightSteps(board, groundAt, (x, z) => inConnectorLanes(x, z) || onSite(x, z) || reclaimedBed(x,z),
       { ...options.lights, lowDetail: options.quality === 'low' });
+    yield 'lights';
   }
   let fragment: World | undefined;
   if (candidate) {
@@ -444,11 +519,28 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       scenery.group.add(fragment.group);
     }
   }
+  // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
+  // Registered by commitTrees, after every yield: a sliced section commits all its patches'
+  // trees together when the section mounts. (Deterministic per tree: order does not change them.)
+  let rolled: ReturnType<typeof rolloutSpecies> = null;
+  let planted: ReturnType<typeof rolloutPlantings> = null;
+  let committed = false;
+  const commitTrees = () => {
+    if (committed) return;
+    committed = true;
+    rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, (x, z) => rolloutY?.get(`${x},${z}`) ?? null, undefined,
+      city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
+    // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
+    planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
+  };
+  if (!options.deferTrees) commitTrees();
   const carved: GroundYield[] = [];
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
+    /** Register this area's City-wide trees (no-op unless built with deferTrees). */
+    commitTrees,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     /** Drawn terrain triangles only, without bridge approaches. */
     terrainAt: bare,
@@ -468,7 +560,18 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       const dx = Math.max(bb.minX - p.x, 0, p.x - bb.maxX), dz = Math.max(bb.minZ - p.z, 0, p.z - bb.maxZ);
       const d = Math.hypot(dx, dz, Math.max(0, p.y - mesh.minY));
       const next = far ? d > 0.9 * FAR_GROUND_M : d > FAR_GROUND_M;
-      if (next !== far) { far = next; board.geometry = far ? farGeometry : nearGeometry; groundLodChanged = true; }
+      if (!veryFarOff && !veryFarQueued && d > VERY_FAR_BUILD_M) {
+        veryFarQueued = true;
+        veryFarQueue.push(() => { if (!disposed) veryFarGeometry = mesh.farGeometry(VERY_FAR_ERROR_M, 160, true); });
+        pumpVeryFar();
+      }
+      const nextVery = veryFarGeometry !== null && (veryFar ? d > 0.9 * VERY_FAR_M : d > VERY_FAR_M);
+      if (next !== far || nextVery !== veryFar) {
+        far = next;
+        veryFar = nextVery;
+        board.geometry = veryFar ? veryFarGeometry! : far ? farGeometry : nearGeometry;
+        groundLodChanged = true;
+      }
     },
     openJoin(index = 0) { const wall = board.getObjectByName(index === 0 ? 'joining edge' : 'joining edge ' + index); if (wall) wall.visible = false; },
     /** Generic-tree level of detail (see World.setDetail). */
@@ -489,8 +592,9 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       board.traverse(obj => {
         if (obj instanceof THREE.Mesh) { obj.geometry.dispose(); obj.material.dispose(); }
       });
-      // The traverse disposed whichever ground is attached; release the other one.
-      (board.geometry === nearGeometry ? farGeometry : nearGeometry)?.dispose();
+      // The traverse disposed whichever ground is attached; release the others.
+      disposed = true;
+      for (const g of [nearGeometry, farGeometry, veryFarGeometry]) if (g && g !== board.geometry) g.dispose();
       fragment?.group.removeFromParent();
       fragment?.dispose();
       species?.dispose();

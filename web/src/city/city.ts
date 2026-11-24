@@ -36,6 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -66,9 +67,11 @@ import { createFloyd } from './floyd';
 import { createGeorgiaPower } from './georgia-power';
 import { createGeorgiaPacific } from './georgia-pacific';
 import { createFootballHall } from './football-hall';
+import { createMuseumTower } from './museum-tower';
 import { createOneParkTower } from './one-park-tower';
 import { createParkPlaceTower } from './park-place-tower';
 import { createHardRock } from './hard-rock';
+import { createTheLandmark } from './the-landmark';
 import { createFiftyFiveParkPlace } from './55-park-place';
 import { createFultonBank } from './55-marietta';
 import { createDavisons } from './davisons';
@@ -103,6 +106,7 @@ import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
 import { createMedicalArts } from './medical-arts';
+import { createJwMarriott } from './jw-marriott-downtown';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -131,6 +135,7 @@ import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
+import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
@@ -370,9 +375,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let georgiaPower: ReturnType<typeof createGeorgiaPower> = null;
   let georgiaPacific: ReturnType<typeof createGeorgiaPacific> = null;
   let footballHall: ReturnType<typeof createFootballHall> = null;
+  let museumTower: ReturnType<typeof createMuseumTower> = null;
   let oneParkTower: ReturnType<typeof createOneParkTower> = null;
   let parkPlaceTower: ReturnType<typeof createParkPlaceTower> = null;
   let hardRock: ReturnType<typeof createHardRock> = null;
+  let theLandmark: ReturnType<typeof createTheLandmark> = null;
   let fiftyFiveParkPlace: ReturnType<typeof createFiftyFiveParkPlace> = null;
   let fultonBank: ReturnType<typeof createFultonBank> = null;
   let davisons: ReturnType<typeof createDavisons> = null;
@@ -407,6 +414,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let marquisOne: ReturnType<typeof createMarquisOne> = null;
   let medicalArts: ReturnType<typeof createMedicalArts> = null;
+  let jwMarriott: ReturnType<typeof createJwMarriott> = null;
   let marquisTwo: ReturnType<typeof createMarquisTwo> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -457,7 +465,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         marquisTwo = createMarquisTwo(afterOne, ground);
         const afterTwo = marquisTwo?.buildings ?? afterOne;
         medicalArts = createMedicalArts(afterTwo, ground);
-        const hotelSite = medicalArts?.buildings ?? afterTwo;
+        const afterMedicalArts = medicalArts?.buildings ?? afterTwo;
+        jwMarriott = createJwMarriott(afterMedicalArts, ground);
+        const hotelSite = jwMarriott?.buildings ?? afterMedicalArts;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -475,8 +485,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterHealey = healey?.buildings ?? towerSite;
         hardRock = createHardRock(afterHealey, ground);
         const afterHardRock = hardRock?.buildings ?? afterHealey;
-        parkPlaceTower = createParkPlaceTower(afterHardRock, ground);
-        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterHardRock;
+        theLandmark = createTheLandmark(afterHardRock, ground);
+        const afterLandmark = theLandmark?.buildings ?? afterHardRock;
+        parkPlaceTower = createParkPlaceTower(afterLandmark, ground);
+        const afterParkPlaceTower = parkPlaceTower?.buildings ?? afterLandmark;
         fiftyFiveParkPlace = createFiftyFiveParkPlace(afterParkPlaceTower, ground);
         const afterFiftyFiveParkPlace = fiftyFiveParkPlace?.buildings ?? afterParkPlaceTower;
         fultonBank = createFultonBank(afterFiftyFiveParkPlace, ground);
@@ -523,8 +535,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterTwoPeachtree = twoPeachtree?.buildings ?? afterFivePointsPlaza;
         footballHall = createFootballHall(afterTwoPeachtree, ground);
         const afterFootballHall = footballHall?.buildings ?? afterTwoPeachtree;
-        oneParkTower = createOneParkTower(afterFootballHall, ground);
-        const afterOnePark = oneParkTower?.buildings ?? afterFootballHall;
+        museumTower = createMuseumTower(afterFootballHall, ground);
+        const afterMuseumTower = museumTower?.buildings ?? afterFootballHall;
+        oneParkTower = createOneParkTower(afterMuseumTower, ground);
+        const afterOnePark = oneParkTower?.buildings ?? afterMuseumTower;
         georgiaPower = createGeorgiaPower(afterOnePark, ground);
         const afterPower = georgiaPower?.buildings ?? afterOnePark;
         georgiaPacific = createGeorgiaPacific(afterPower, groundAt);
@@ -573,6 +587,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
         if (medicalArts) world.group.add(medicalArts.group);
+        if (jwMarriott) world.group.add(jwMarriott.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -584,9 +599,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (flatiron) world.group.add(flatiron.group);
         if (healey) world.group.add(healey.group);
         if (footballHall) world.group.add(footballHall.group);
+        if (museumTower) world.group.add(museumTower.group);
         if (oneParkTower) world.group.add(oneParkTower.group);
         if (parkPlaceTower) world.group.add(parkPlaceTower.group);
         if (hardRock) world.group.add(hardRock.group);
+        if (theLandmark) world.group.add(theLandmark.group);
         if (fiftyFiveParkPlace) world.group.add(fiftyFiveParkPlace.group);
         if (fultonBank) world.group.add(fultonBank.group);
         if (davisons) world.group.add(davisons.group);
@@ -634,8 +651,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
-            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
-            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, hardRock, fiftyFiveParkPlace,
+            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, jwMarriott, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
+            fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
@@ -832,9 +850,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }, trafficOptions.roadHeight) : undefined;
   const trafficView = new THREE.Frustum(), trafficViewMatrix = new THREE.Matrix4();
   // Traffic samples road heights ahead of its cars in idle time: at most 1 ms a slice, never
-  // while the camera is being dragged or the tab is hidden (the default board builds
-  // synchronously, so no area build shares this time).
-  let trafficDragging = false, trafficIdleStopped = false;
+  // while the camera is being dragged, a sliced area build is running (?slice=1) or the tab is
+  // hidden.
+  let trafficIdleStopped = false;
   // A busy main thread (a phone at 30 fps) may never go idle, so a slice is also forced every
   // 250 ms: 1 ms per 250 ms, a fraction of what the frame loop would spend sampling instead.
   const idle = (fn: (budget: number) => void) => typeof requestIdleCallback === 'function'
@@ -842,7 +860,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     : setTimeout(() => fn(1), 50);
   const fillTrafficHeights = (budget: number) => {
     if (trafficIdleStopped) return;
-    if (budget > 0 && !trafficDragging && !document.hidden) {
+    if (budget > 0 && !sliceInput.dragging && sliceInput.building === 0 && !document.hidden) {
       const deadline = performance.now() + budget;
       for (const layer of [traffic, arterials, midtownArterials]) if (layer && !layer.fillIdle(deadline)) break;
     }
@@ -1343,8 +1361,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   renderer.domElement.addEventListener('dblclick', onDbl);
   const manualCamera = () => { mosaic?.cancelTarget(); pendingNorthTarget = undefined; pendingEastTarget = undefined; if (options.follow?.active) options.follow.stop(); };
   controls.addEventListener('start', manualCamera);
-  controls.addEventListener('start', () => { trafficDragging = true; });
-  controls.addEventListener('end', () => { trafficDragging = false; });
+  // Sliced area builds (?slice=1) take a smaller share of each frame while the camera is dragged.
+  controls.addEventListener('start', () => { sliceInput.dragging = true; });
+  controls.addEventListener('end', () => { sliceInput.dragging = false; });
   // Every gesture, OrbitControls' own and the twist and double-tap below, goes through manualCamera.
   /** Turn the view about its target; the frame loop's controls.update() applies it. */
   const rotateBy = (degrees: number) => {
@@ -1428,6 +1447,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  let shadowLodDirty = false;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
 
@@ -1440,20 +1460,33 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
-    const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
+    // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
+    updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    // Low: a swap marks the map dirty and redraws within the same 250 ms gap as a camera move, so
+    // a fly-over that swaps tiles every few frames redraws ~4 times a second, not every swap (route:north
+    // logged 206-216 redraws in 10 s, each about a million triangles). High redraws on each swap.
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) {
+      if (low && !perfOverrides.shadowGapOld) shadowLodDirty = true; else renderer.shadowMap.needsUpdate = true;
+      // A late swap changes what draws: ?perf=run must not sample before it settles.
+      if (perfEnabled) perf.phase('lod:swap');
+    }
+    // Low re-centres on a step that grows with the orbit (0.15 x, at least 80 m): from far away the
+    // same 80 m step came round many times a second while panning, for shadows a few pixels wide.
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? Math.max(SHADOW_STEP_M, 0.15 * camera.position.distanceTo(t)) : SHADOW_STEP_M;
+    const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
     // Hysteresis: re-centre only once the target is 0.6 of a step from the current centre on an
     // axis (a fresh centre is at most half a step away), so a target resting on a cell boundary
     // cannot flip the shadow box back and forth.
-    const off = (v: number, c: number) => Math.abs(v - c) > SHADOW_STEP_M * 0.6;
+    const off = (v: number, c: number) => Math.abs(v - c) > step * 0.6;
     const moved = SHADOW_STEP_M ? off(t.x, shadowTarget.x) || off(t.z, shadowTarget.z) : t.distanceToSquared(shadowTarget) > 1;
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+    if ((moved || turned || shadowLodDirty) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
       renderer.shadowMap.needsUpdate = true;
+      shadowLodDirty = false;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
       shadowElev = el;
@@ -1496,6 +1529,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       marquisOne?.setNight(night);
       marquisTwo?.setNight(night);
       medicalArts?.setNight(night);
+      jwMarriott?.setNight(night);
       hilton?.setNight(night);
       altitude?.setNight(night);
       twelve?.setNight(night);
@@ -1507,9 +1541,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       flatiron?.setNight(night);
       healey?.setNight(night);
       footballHall?.setNight(night);
+      museumTower?.setNight(night);
       oneParkTower?.setNight(night);
       parkPlaceTower?.setNight(night);
       hardRock?.setNight(night);
+      theLandmark?.setNight(night);
       fiftyFiveParkPlace?.setNight(night);
       fultonBank?.setNight(night);
       davisons?.setNight(night);
@@ -1827,6 +1863,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.
   if (!perfOverrides.prewarmOff) {
     prewarmer = createPrewarmer(renderer, scene, camera, sceneTarget.texture.type);
+    perf.setPrewarmPending(() => prewarmer?.pending ?? 0);
     const rescan = () => { if (colourShown && !options.signal?.aborted) prewarmer?.scan(); };
     requestPrewarm = () => setTimeout(rescan, 500);
     // Freight, vehicles and night-lit stock can join later; a scan only walks the scene.
@@ -1980,6 +2017,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setAtmosphere(a, now) {
       atm = a;
       const day = local(now).doy;
+      sliceInput.dayOfYear = day;
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
       north?.setSeason(day);
@@ -2003,6 +2041,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     dispose() {
       trafficIdleStopped = true;
       prewarmer?.dispose();
+      perf.setPrewarmPending(null);
       perf.detach(perfContext);
       whiteModel?.dispose();
       stopGestures?.();

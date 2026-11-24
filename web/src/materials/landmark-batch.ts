@@ -1,5 +1,5 @@
 import {
-  Box3, type BufferAttribute, BufferGeometry, type Color, DoubleSide, Float32BufferAttribute, Group, type InterleavedBufferAttribute,
+  Box3, BufferAttribute, BufferGeometry, type Color, DoubleSide, Float32BufferAttribute, Group, type InterleavedBufferAttribute,
   Material, Matrix4, Mesh, MeshLambertMaterial, type Object3D, Sphere, Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -93,18 +93,22 @@ function normalized(mesh: Mesh, bake: Color | null, matrix: Matrix4) {
     const a = src.getAttribute(n) as BufferAttribute | undefined;
     if (a) g.setAttribute(n, new Float32BufferAttribute(toFloat(a), a.itemSize));
   }
+  // Colours as normalised bytes: a quarter of float storage, same program; landmark colours
+  // never exceed 1.
   const vc = src.getAttribute('color') as BufferAttribute | undefined;
+  const byte = (v: number) => compactColoursOff ? v : Math.round(Math.min(1, Math.max(0, v)) * 255);
+  const array = (n: number) => compactColoursOff ? new Float32Array(n) : new Uint8Array(n);
   if (mat.vertexColors && vc) {
-    const out = new Float32Array(vc.count * vc.itemSize), div = vc.normalized ? normScale(vc.array) : 1;
+    const out = array(vc.count * vc.itemSize), div = vc.normalized ? normScale(vc.array) : 1;
     for (let i = 0; i < vc.count; i++) for (let c = 0; c < vc.itemSize; c++) {
       const v = vc.array[i * vc.itemSize + c] / div;
-      out[i * vc.itemSize + c] = bake && c < 3 ? v * [bake.r, bake.g, bake.b][c] : v;
+      out[i * vc.itemSize + c] = byte(bake && c < 3 ? v * [bake.r, bake.g, bake.b][c] : v);
     }
-    g.setAttribute('color', new Float32BufferAttribute(out, vc.itemSize));
+    g.setAttribute('color', new BufferAttribute(out, vc.itemSize, !compactColoursOff));
   } else if (bake) {
-    const n = g.getAttribute('position').count, out = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { out[i * 3] = bake.r; out[i * 3 + 1] = bake.g; out[i * 3 + 2] = bake.b; }
-    g.setAttribute('color', new Float32BufferAttribute(out, 3));
+    const n = g.getAttribute('position').count, out = array(n * 3);
+    for (let i = 0; i < n; i++) { out[i * 3] = byte(bake.r); out[i * 3 + 1] = byte(bake.g); out[i * 3 + 2] = byte(bake.b); }
+    g.setAttribute('color', new BufferAttribute(out, 3, !compactColoursOff));
   }
   if (src !== mesh.geometry) src.dispose();
   g.applyMatrix4(matrix);
@@ -407,4 +411,11 @@ export const landmarkBatchOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('batch') === 'off';
+})();
+
+/** `?perf&colours=float` keeps landmark batch colours as floats, for A/B runs from one build. */
+const compactColoursOff = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  return perf !== null && perf !== '0' && perf !== 'off' && p.get('colours') === 'float';
 })();
