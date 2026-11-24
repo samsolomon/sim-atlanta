@@ -195,6 +195,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         // The tree rollout on canopy-map rows: planned from the row's full crown list.
         rollout: context.treeLowCount !== undefined ? { row: id, lowCount: context.treeLowCount, allCrowns: context.trees, inAnsley } : undefined,
         surface: surfaces?.[patchIndex],
+        // Trees join the City-wide batch only when the whole section mounts.
+        deferTrees: true,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
@@ -249,10 +251,14 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget }) : runSync(buildPatches());
-  if (signal.aborted) {
-    for (const area of built.values()) area.dispose();
+  try {
     signal.throwIfAborted();
+    connect(mounted, built);
+  } catch (error) {
+    // Aborted, or a seam failed validation: nothing of this section survives.
+    for (const area of built.values()) area.dispose();
+    throw error;
   }
-  connect(mounted, built);
+  for (const area of built.values()) area.commitTrees();
   return built;
 }

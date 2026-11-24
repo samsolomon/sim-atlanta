@@ -105,6 +105,8 @@ export interface DowntownTerrainOptions {
   rollout?: { row: string; lowCount: number; allCrowns: Tree[]; inAnsley?: (x: number, z: number) => boolean };
   /** The ground surface, already built off the main thread (terrain/surface-worker.ts). */
   surface?: BuiltSurface;
+  /** Leave City-wide tree registration to the caller's commitTrees() (sliced section builds). */
+  deferTrees?: boolean;
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -461,17 +463,27 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     }
   }
   // Drawn by the City-wide rollout batch (trees/rollout-city.ts), not in this row's scenery.
-  // Registered last, after every yield, so a sliced build never shows its trees early.
-  // (Deterministic per tree: no shared random state, so the order does not change them.)
-  const rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
-    city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
-  // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
-  const planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
+  // Registered by commitTrees, after every yield: a sliced section commits all its patches'
+  // trees together when the section mounts. (Deterministic per tree: order does not change them.)
+  let rolled: ReturnType<typeof rolloutSpecies> = null;
+  let planted: ReturnType<typeof rolloutPlantings> = null;
+  let committed = false;
+  const commitTrees = () => {
+    if (committed) return;
+    committed = true;
+    rolled = rollout ? rolloutSpecies(rollout.plan, options.quality, groundAt, undefined,
+      city.ground?.some(g => g.name === 'Winn Park') ? [WINN.floor] : []) : null;
+    // Trees landmarks plant (1180 Peachtree's terrace crape myrtles), drawn by the same batch.
+    planted = genericSpots ? null : rolloutPlantings(spots, options.quality);
+  };
+  if (!options.deferTrees) commitTrees();
   const carved: GroundYield[] = [];
   const group = new THREE.Group();
   group.add(board, scenery.group);
   return {
     group, board, grid, buildingFragment: fragment?.group, scenery: scenery.group, bounds: grid.manifest.bounds,
+    /** Register this area's City-wide trees (no-op unless built with deferTrees). */
+    commitTrees,
     bottomY: options.bottomY ?? mesh.minY - grid.manifest.stepM, groundAt,
     /** Drawn terrain triangles only, without bridge approaches. */
     terrainAt: bare,
