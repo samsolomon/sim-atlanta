@@ -974,6 +974,48 @@ Sheets: [Ansley, Sam's view](log/ui/tree-species/generic-default/generic-ansley.
 [Ansley overhead](log/ui/tree-species/generic-default/generic-overhead.jpg),
 [10th Street](log/ui/tree-species/generic-default/generic-street.jpg).
 
+### Low-tier tree cost (2026-11-24)
+
+On the real A16 at the low tier, hiding every tree raised the frame rate from 25.9 to 32.0 fps. The
+trees cost 61 draws and 576k of the board's 2.37M triangles. On the M5 Air at high, hiding them changed
+nothing, so this pass is low tier only. High tier, the vignette and the Model Lab's generic tree are
+unchanged.
+
+1. **Compaction (every tier).** A pine's unused canopy slots and a bare crown's dropped clumps
+   were zero-scaled instances. They were submitted every frame, and they dragged each canopy
+   mesh's bounding sphere toward the scene origin, so it never culled. A Brookwood row's sphere
+   sat 2.3 km from its trees. World now submits only the showing clumps and gives every tree mesh
+   fixed bounds built from its trees.
+2. **Far form (low).** Past the far-tree orbit (city.ts `FAR_TREES_M`, 800 m out and 680 m back),
+   each area draws its trees as one instanced mesh on the existing leaf material, so there is no new
+   program. Each tree gets two faceted octahedron clumps (pine tiers for a pine) and a trunk: 24
+   triangles. The colours match `World.setSeason`'s. A bare crown keeps only its trunk, as today's
+   far view does. The core (`trees/far-canopy.ts`) is pure and safe to run in a Worker, and the
+   streaming mid ring will share it.
+3. **Cells (low).** Near trees are batched in 400 m cells, so a close view draws only the cells in
+   sight. The geometry and materials are shared, so this adds draws but no programs. The cell size
+   was measured at 250, 400 and 600 m.
+
+Trees only, at low (`perf=run`, Nov 20 14:00, each view minus `&hide=trees`):
+
+| View | main | compaction | + far form and cells |
+|---|---:|---:|---:|
+| Default open view | 47 calls / 575k | 48 / 487k | 23 / 249k |
+| Ansley `cam=1194,-4352,20,50,420` | 24 / 534k | 24 / 495k | 32 / 87k |
+| Ansley `cam=1194,-4352,20,50,900` | – | 19 / 265k | 11 / 155k |
+
+The board totals at the default view go from 580 / 2,327,132 to 555 / 2,089,000. Programs are
+unchanged at every clock (79, 82 and 83), and so is `motion=pan` (80, 83). Geometry rises
+1.8 MB, for the far instance buffers. The remaining `frustumCulled = false` tree meshes are the High
+Museum ginkgo's two (trees/render.ts) and, under `?trees=species`, the rollout looks that
+`fitBounds` re-enables. The Studio pins 60 fps, so the frame-rate effect needs an A16 run.
+
+`&perf=run&farform=0&treecell=0` draws the trees as before, for comparisons. Sheets:
+[default](log/ui/tree-species/far-form/far-default.jpg),
+[Ansley 900 m](log/ui/tree-species/far-form/far-a900.jpg) and
+[close-up](log/ui/tree-species/far-form/far-a900-closeup.jpg), and
+[Ansley 420 m, near form in cells](log/ui/tree-species/far-form/far-a420.jpg).
+
 ### White oak
 
 `web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.
