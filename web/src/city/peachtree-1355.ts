@@ -27,7 +27,7 @@ const crownEave = 72.6, crownRidge = 77.1; // lidar p50 74.8, max 77.1: a pitche
 const limestoneTop = 13.2; // the pale classical base: three storeys
 const storey = 3.6;
 
-const brick = '#8c4636', cream = '#e3dac6', glass = '#4e5d66', frame = '#ece8de';
+const brick = '#8c4636', cream = '#e3dac6', glass = '#4e5d66', frame = '#ece8de', shaftWindow = '#7b858a';
 
 export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const rings = parts.map(([id]) => site.parts?.find(p => p.id === id)?.rings[0]?.map(([x, z]): P2 => [x - origin[0], z - origin[1]]));
@@ -78,12 +78,16 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
           const p = along(a, b, length, u - w / 2, 0.06 * out), q = along(a, b, length, u + w / 2, 0.06 * out);
           const pf = along(a, b, length, u - w / 2 - 0.28, 0.04 * out), qf = along(a, b, length, u + w / 2 + 0.28, 0.04 * out);
           const y1 = y + (tall ? 3.4 : 2.1);
-          shell.paint(FLAT, () => body.quad([pf[0], y - 0.15, pf[1]], [pf[0], y1 + 0.2, pf[1]], [qf[0], y1 + 0.2, qf[1]], [qf[0], y - 0.15, qf[1]], frame));
+          // White frames read only from street views; on the shaft the window is one quad in a
+          // frame-and-glass mean tone, which halves its triangles.
+          const framed = y < floor + 36;
+          if (framed) shell.paint(FLAT, () => body.quad([pf[0], y - 0.15, pf[1]], [pf[0], y1 + 0.2, pf[1]], [qf[0], y1 + 0.2, qf[1]], [qf[0], y - 0.15, qf[1]], frame));
           // Offices at 23:30: about one window in twelve still lit, in small clusters.
           const lit = random() < 0.085;
           const target = lit ? lights : body;
-          (lit ? (f: () => void) => f() : (f: () => void) => shell.paint(FLAT, f))(() =>
-            target.quad([p[0], y, p[1]], [p[0], y1, p[1]], [q[0], y1, q[1]], [q[0], y, q[1]], glass));
+          (lit ? (f: () => void) => f() : (f: () => void) => shell.paint(FLAT, f))(() => void (
+            framed ? target.quad([p[0], y, p[1]], [p[0], y1, p[1]], [q[0], y1, q[1]], [q[0], y, q[1]], glass)
+              : target.quad([pf[0], y - 0.1, pf[1]], [pf[0], y1 + 0.15, pf[1]], [qf[0], y1 + 0.15, qf[1]], [qf[0], y - 0.1, qf[1]], shaftWindow)));
         }
       }
     });
