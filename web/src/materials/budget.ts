@@ -46,7 +46,7 @@ export const TEXTURE_SOURCES: Record<string, TextureSource> = {
   'city/figure-looks.ts': { bytes: 1_536, bucket: 'other', note: 'street figure palette' },
   'terrain/ground-map.ts': { bytes: 420_000_000, bucket: 'other', note: 'terrain ground maps, up to 5735x1639 and 4096x4096 (routed to the terrain owner)' },
   'terrain/transport.ts': { bytes: 43_692, bucket: 'other', note: 'freight track 128x16' },
-  'trees/foliage-kit.ts': { bytes: 8 * 1_398_100, bucket: 'other', note: '8 leaf shapes x 512x512 RGBA8 plus mipmaps; white oak activates lobed. Corrected prior pixel count to bytes.' },
+  'trees/foliage-kit.ts': { bytes: 9 * 1_398_100, bucket: 'other', note: '9 leaf shapes x 512x512 RGBA8 plus mipmaps; eastern redbud adds cordate.' },
   'trees/ginkgo-variants.ts': { bytes: 0, bucket: 'other', note: 'leaf atlas (lab and opt-in variants)' },
   'vignette/ink.ts': { bytes: 4, bucket: 'other', note: '1x1 empty mask' },
   'vignette/traffic.ts': { bytes: 0, bucket: 'other', note: 'headlight beam, East Portal only' },

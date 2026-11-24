@@ -14,7 +14,7 @@ import { Builder, rng } from '../vignette/geom';
 import type { Unit } from './broadleaf';
 import type { V3 } from './species';
 
-export type LeafShape = 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval' | 'needles';
+export type LeafShape = 'cordate' | 'narrow' | 'spatulate' | 'lobed' | 'palmate' | 'star' | 'tulip' | 'oval' | 'needles';
 /** Vertex shade for a spray from its depth (0 core, 1 rim) and how far it points up. */
 export type SprayShade = (depth: number, up: number) => THREE.Color;
 
@@ -128,6 +128,11 @@ function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
     case 'spatulate':
       g.moveTo(0, 0); g.lineTo(-s * 0.12, s * 0.45); g.quadraticCurveTo(-s * 0.36, s * 0.95, 0, s);
       g.quadraticCurveTo(s * 0.36, s * 0.95, s * 0.12, s * 0.45); g.closePath(); break;
+    case 'cordate':
+      g.moveTo(0, s * 0.16);
+      g.bezierCurveTo(-s * 0.55, -s * 0.2, -s * 0.6, s * 0.48, 0, s);
+      g.bezierCurveTo(s * 0.6, s * 0.48, s * 0.55, -s * 0.2, 0, s * 0.16);
+      g.closePath(); break;
     case 'oval': g.ellipse(0, s * 0.5, s * 0.3, s * 0.5, 0, 0, Math.PI * 2); break;
     case 'lobed':
       for (let k = 0; k < 4; k++) { const y = s * (0.25 + k * 0.2); g.ellipse(0, y, s * (0.32 - k * 0.04), s * 0.13, 0, 0, Math.PI * 2); }
@@ -150,7 +155,7 @@ function leafPath(g: CanvasRenderingContext2D, shape: LeafShape, s: number) {
 }
 /** Leaf sizes in atlas pixels (a 128 px cell spans a card about 2–3 m across). */
 const LEAF_PX: Record<LeafShape, [number, number]> = {
-  needles: [9, 12],
+  cordate: [13, 17], needles: [9, 12],
   narrow: [9, 13], spatulate: [11, 15], oval: [12, 17], lobed: [13, 17], palmate: [12, 16], star: [13, 17], tulip: [13, 17],
 };
 /**
@@ -501,7 +506,7 @@ export function foliageDepth(src: THREE.MeshLambertMaterial) {
 
 /** Leaf length and width in metres for near leaf tips, by leaf shape. */
 const TIP_LEAF: Record<LeafShape, [number, number]> = {
-  needles: [0.5, 0.05],
+  cordate: [0.4, 0.34], needles: [0.5, 0.05],
   narrow: [0.42, 0.09], spatulate: [0.36, 0.16], oval: [0.4, 0.2], lobed: [0.42, 0.24], palmate: [0.38, 0.3], star: [0.38, 0.3], tulip: [0.4, 0.3],
 };
 /**

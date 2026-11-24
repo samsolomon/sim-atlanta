@@ -2913,3 +2913,7 @@ removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
 
 ![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
 Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
+
+### 2026-11-23 — Redbud starts with the leaves
+
+After Sam picked white oak A, the next tree is eastern redbud: one explicit Winn Park Street View observation, 4.6% of the recorded Trees Atlanta plantings and 6.1% in street strips and wells. The first lab pass adds heart-shaped A-style cards, four illustrative sizes, a low vase and yellow fall colour. It costs 185 high-tier triangles, with one new 1.33 MiB atlas. The reference revealed the hard part immediately: flowers trace bare wood, while our existing bloom wash makes large pink leaves. That remains conspicuous on the [first-pass comparison](log/ui/tree-species/options-eastern-redbud.jpg), so this is a draft study, not a City-ready pick. Web rebuild needed when eventually released; no data or deployment change.

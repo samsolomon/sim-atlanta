@@ -901,3 +901,25 @@ The [research handoff](handoffs/studio-tree-lab-white-oak.md) records the Georgi
 All counts include the seven-triangle leaf carpet. A uses the established silhouette ink; C gives a faceted comparison. The cored trial was dropped because its summer luminance exceeded the generic canopy target by about 10%. The eighth leaf-atlas shape adds 1,398,100 bytes (512×512 RGBA8 with mipmaps) when used; the budget entry also corrects the previous seven-atlas estimate, which counted pixels instead of bytes. No new texture source or material-library texture is introduced, and no City geometry or placement changes in this step.
 
 White-oak standard Front summer crownStats (July 1): A high 0.255 luminance / 0.772 saturation, A low 0.258 / 0.779; C high 0.236 / 0.813 and low 0.236 / 0.803. The generic target is 0.248 / 0.806. All are within about 5% on the measured fields. The eye-level A camera is (0,1.6,27.625) toward (0,12.144,0), FOV 58; standard Front is (0,11.385,63.66) toward (0,11.385,0), FOV 30.
+
+### Next lab species: evidence ranking
+
+After the white oak A pick (2026-11-23), the next additions are ranked by combined local observation and inventory evidence, not a claimed Street View frequency survey:
+
+1. **Eastern redbud.** The Westminster/Winn March 2025 pass identifies one pink redbud. Trees Atlanta's in-board alive plantings are 4.6% redbud, rising to 6.1% in street strips and wells; GT is 2.6%. It adds a missing small yard and understory accent.
+2. **Callery/Bradford pear.** C11 records 9.0% of crown-squared share and 4.5% of stems. The Peachtree Circle white-flowering ornamental is unidentified, so it is not counted as pear evidence.
+3. **Chinese/lacebark elm.** C11 is 5.7% crown-squared share / 6.7% stems, TA 3.5%, and Midtown Alliance specifies it. Its incremental benefit is lower because the existing elm mapping already represents it.
+
+River birch follows (C11 2.6% crown share; GT 1.0%). Holly and Leyland cypress lack comparable quantified support in the recorded passes. C11 stops south of Midtown and Ansley; TA describes plantings, not standing mature stock. The five recorded Ansley views cannot establish neighbourhood frequencies.
+
+### Eastern redbud
+
+`web/src/trees/redbud.ts`, *Cercis canadensis*. **First-pass lab candidate, not an approved pick or City rollout.** A-style cards retain the common silhouette ink, with a dedicated heart-shaped leaf atlas and an irregular, low-branching vase. [First-pass sheet](log/ui/tree-species/options-eastern-redbud.jpg).
+
+[UF/IFAS ST145](https://ask.ifas.ufl.edu/publication/st145) describes a rounded vase that broadens with age, low branching, brown/grey bark, pink flowers before leaves and variable yellow autumn colour. It gives a usual height of 20–30 ft, spread 15–25 ft and occasional 35-ft specimens. [NC State](https://plants.ces.ncsu.edu/plants/cercis-canadensis/) gives the wider 20–35-ft spread and illustrates the heart-shaped foliage and flowers. The daylight bloom reference on the sheet is Dcrjsr's photograph from NC State, CC BY 3.0; it shows flowers tracing bare limbs rather than a solid pink canopy. No nighttime reference is claimed.
+
+Nominal size classes are illustrative, not inventory medians: sapling 2 × 1.5 m, young 4 × 4.5 m, mature 7 × 8 m, specimen 10 × 10.5 m. Callipers 0.05 / 0.12 / 0.30 / 0.50 m are estimated. The large spread is supported by NC State; the specimen is not a named Atlanta champion. The March flowering, April leaf-out, October yellow and November leaf drop calendar is inferred for Atlanta from the early-spring descriptions and the recorded March Winn observation, with ±7-day variation.
+
+**First-pass limitation needing visual review:** the existing bloom wash colours a partial crown of cards pink. The spring card share represents flowers, not early green leaves. It does not yet trace clusters of small flowers along bare wood; the broad pink hearts are visibly coarser than the reference. This candidate should not be promoted to City until that spring treatment is reviewed. Seed pods and bark fissures are omitted. The new cordate atlas adds 1,398,100 bytes (1.33 MiB), declared in the texture budget; no new shader, placement or City loading change.
+
+First-pass measured costs are 185 / 85 triangles including carpet, with no extra near-tip pool. July 1 Front luminance / saturation: high 0.236 / 0.808, low 0.260 / 0.773 after a −0.015 low-tier lightness adjustment. Front camera (0,3.15,23.4) toward (0,3.15,0), FOV 30; eye (0,1.6,10) toward (0,3.36,0), FOV 58. The lab option-count test now permits one to three options, matching the request for a single A-style treatment.
