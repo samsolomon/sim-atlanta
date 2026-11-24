@@ -21,6 +21,9 @@ it('replaces each of the three Coda footprints independently, keeping the west a
     if (site.id !== 'osm:way:714119667') continue;
     const shell = model.group.children[0] as Mesh;
     model.group.updateMatrixWorld(true);
+    // Cross the glazed gallery from west to east at eye height, including its separate glass mesh.
+    const throughGallery = new Raycaster(new Vector3(278, 301.8, -2402), new Vector3(1, 0, 0), 0, 16);
+    expect(throughGallery.intersectObject(model.group, true)).toHaveLength(0);
     const fromArcade = new Vector3(273, 302, -2382);
     const passage = new Raycaster(fromArcade, new Vector3(0, 0, 1), 0, 12);
     expect(passage.intersectObject(shell)).toHaveLength(0);

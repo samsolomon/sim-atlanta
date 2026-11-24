@@ -36,7 +36,7 @@ The revised glazing uses a silver mullion field and lighter blue-grey panes. Abo
 the main office floors the two wings step back separately; the west wing carries
 the projecting cap. The setback widths and elevations are photo estimates.
 The west gallery now reaches from the rear of Crum & Forster to the tower podium.
-Its narrow glazed roof and columns leave the rest of the passage open. Lobby
+Its narrow glazed roof sits above side glazing from 2.5 to 8.9 m, with open pedestrian clearance beneath the panels. Lobby
 panels, hanging globes and white strips follow the designer's
 [passage view](https://luxetveritasdesign.com/wp-content/uploads/2023/08/CODA_Exterior4-1024x768.webp)
 and [piazza view](https://luxetveritasdesign.com/wp-content/uploads/2023/08/CODA_Exterior5-1024x736.webp).
