@@ -129,7 +129,7 @@ Tests sample the drawn carriageways and soffits, require open sky at each
 surveyed gap, and check the mapped tracks at metre intervals over the crossing
 and both banks against a 1.5% grade limit. The previous North Avenue ballast
 exception has been removed from the ground-contact regression test. The low
-board and structure cost is 2,590 additional triangles and one draw. This is a
+board and structure cost is 2,542 additional triangles and one draw. This is a
 web rebuild. The survey does not change the staged City data.
 
 [Matched overview and under-deck photographs and cameras](build-log.md#2026-11-23--use-the-terrain-itself-as-the-roof-over-north-avenue)

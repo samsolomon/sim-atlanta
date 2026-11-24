@@ -3108,7 +3108,7 @@ strips also continue across on their own ground triangles.
 Below them, two carriageways, sidewalks and a median run through the whole
 213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
 4.5 m railway clearance and the night lighting are inferred. On low, the
-structure and changed board mesh add 2,590 triangles and one draw with the
+structure and changed board mesh add 2,542 triangles and one draw with the
 existing ground texture. The two height queries at Marietta put a driver on
 the appropriate street even where both streets share the same map coordinates.
 
@@ -3117,4 +3117,4 @@ the appropriate street even where both streets share the same map coordinates.
 | Overview, `cam=-783,-1860,235,55,350` | [14:00](log/north-ave/shared-overview-day.jpg) | [23:00](log/north-ave/shared-overview-night.jpg) |
 | Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
 
-Both views use 20 November 2026, Eastern time, at low quality.
+Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).

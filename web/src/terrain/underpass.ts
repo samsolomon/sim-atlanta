@@ -205,14 +205,23 @@ export function drawUnderpass(
     if (cover.medianPier) {
       for (const s of [start + 0.65, end - 0.65])
         for (const t of [0, 1 - w, w - 1]) {
-          out.box(
-            0.6,
-            ceiling(s) - floor(s, 0),
-            0.6,
-            ...sitePier(site, s, t, (floor(s, t) + ceiling(s)) / 2),
-            PAL.concrete,
-          );
-          out.box(1.15, 0.45, 1.15, ...sitePier(site, s, t, ceiling(s) - 0.225), PAL.concrete);
+          // A haunch widens into the slab. Only its exposed faces are
+          // modelled; overlapping box tops would sit inside the soffit.
+          const ring = (radius: number, y: number) =>
+            [
+              [-1, -1],
+              [-1, 1],
+              [1, 1],
+              [1, -1],
+            ].map(([ds, dt]) => p(s + radius * ds, t + radius * dt, y));
+          const base = ring(0.3, floor(s, t)),
+            shoulder = ring(0.3, ceiling(s) - 0.45),
+            cap = ring(0.575, ceiling(s));
+          for (let i = 0; i < 4; i++) {
+            const j = (i + 1) % 4;
+            out.quad(base[i], base[j], shoulder[j], shoulder[i], PAL.concrete);
+            out.quad(shoulder[i], shoulder[j], cap[j], cap[i], PAL.concrete);
+          }
         }
     }
   }
@@ -299,9 +308,4 @@ export function underpassMesh(
       material.color.setScalar(1 - 0.3 * factor);
     },
   };
-}
-
-function sitePier(site: Underpass, s: number, t: number, y: number): [number, number, number] {
-  const [x, z] = site.point(s, t);
-  return [x, y, z];
 }
