@@ -3463,3 +3463,8 @@ The Standard's map entry had one inferred 68.4 m part covering everything, so th
 ### 2026-11-24 · University House is sixteen metres shorter
 
 University House on Spring Street was mapped at 80 m and drawn as a block over the whole lot. The 2019 lidar puts its roof at 63.8 m, or 19 floors at 3.3 m, which matches the floor count reported when it opened. The returns also trace an L around an 8 m garage deck. From a single Midtown Alliance photograph, the skin carries over the grey, charcoal and yellow panel blocks that make the tower easy to pick out near Georgia Tech. This build also showed that on-and-off camera triangle counts carry ±400 of noise and count a mesh several times, so the skin reports its mesh size, 350 triangles on the phone tier, alongside them. [Before/after, day and night](log/ui/university-house/README.md)
+
+
+### 2026-11-24 · MAA Midtown is 84 m, not 98
+
+The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th Street at 386.5 m NAVD88, about 84 m over the street. The block behind it toward Peachtree Walk stops about 5 m lower, and the rooftop pavilion tops out at 389.7 m. The skin follows the lidar, so the tower now stands 14 m shorter than the box it replaces. In City, z grows to the south, and I placed the glass corner and pavilion at the wrong end twice before checking which way 11th Street runs. A 2024 Commons photo gave the rest: a brick slab with seven white-framed balcony stacks, a blue glass corner with a white fin, and a banded garage. [Before and after](log/ui/maa-midtown/day-before-after.jpg) · [night](log/ui/maa-midtown/night-before-after.jpg)
