@@ -131,7 +131,9 @@ export function fourSeasons(shell: Shell) {
   // The 14th Street arch: a recessed granite surround, glazed bay and round head,
   // lit from the atrium at night; the arched hotel entrance and navy canopy below.
   const north = -16.07;
-  body.quad([-7.6, 17, north], [-7.6, s1 - 2, north], [7.6, s1 - 2, north], [7.6, 17, north], RUSTIC);
+  // The surround sits between the wall (v −16) and the atrium glass (v −16.07).
+  const surround = -16.035;
+  body.quad([-7.6, 17, surround], [-7.6, s1 - 2, surround], [7.6, s1 - 2, surround], [7.6, 17, surround], RUSTIC);
   glaze([-6, north + .07], [6, north + .07], 18, 56, 2, .92, .55, ARCH_GLASS, '#8d97a3');
   const fan = (cy: number, r: number, z: number, color: string, into = body) => {
     for (let k = 0; k < 8; k++) {
