@@ -35,13 +35,31 @@ it('fills the towers from grade to their inferred roofs within the landmark budg
   const ray = (x: number, z: number, y = 400) =>
     new Raycaster(new Vector3(x, y - 300, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0]?.point.y;
   const grade = 295;
-  expect(ray(310, -2080)! + 300 - grade).toBeCloseTo(86, 0); // tall tower, north half
-  expect(ray(372, -2160)! + 300 - grade).toBeCloseTo(58, 0); // short tower, east half
+  // Tall tower, north half: the sail rakes from the inferred 86 m up to 92 m at the slot.
+  const tall = ray(310, -2080)! + 300 - grade;
+  expect(tall).toBeGreaterThan(86 - 0.5);
+  expect(tall).toBeLessThan(92 + 0.5);
+  expect(ray(305, -2096)! + 300 - grade).toBeGreaterThan(ray(300, -2072)! + 300 - grade); // rising toward the slot
+  const short = ray(372, -2160)! + 300 - grade; // short tower, east half (sail 58 -> 64 m)
+  expect(short).toBeGreaterThan(58 - 0.5);
+  expect(short).toBeLessThan(64 + 0.5);
+  // Both towers' halves rise toward their slots and peak at about inferred height + 6 m.
+  const shortEdge = ray(368, -2160)! + 300 - grade, shortFar = ray(376, -2160)! + 300 - grade;
+  expect(shortEdge).toBeGreaterThan(shortFar + 2);
+  // The short tower's peak, along the slot edge, reaches inferred height + 6 m.
+  const peak = Math.max(...[340, 344, 348, 352, 356, 360, 364, 368].flatMap(x => [-2195, -2185, -2175, -2165].map(z => (ray(x, z) ?? -300) + 300 - grade)));
+  expect(peak).toBeCloseTo(64, 0);
   expect(ray(365, -2185)! + 300 - grade).toBeCloseTo(56, 0); // its slot
   expect(ray(290, -2125)! + 300 - grade).toBeCloseTo(18, 0); // podium
   // No floating slab: a ray from inside the tall tower at mid-height hits its walls, not open air.
   const side = new Raycaster(new Vector3(200, 40 - 300 + grade, -2088), new Vector3(1, 0, 0)).intersectObject(model.group)[0];
   expect(side.point.x).toBeLessThan(280);
+});
+
+it('falls back to the generic renderer when the slots are missing', () => {
+  const site = buildings.find(b => b.id === norfolkSouthernId)!;
+  const noSlots = { ...site, parts: site.parts!.filter(p => p.id !== 'osm:way:1344630134' && p.id !== 'osm:way:1344630131') };
+  expect(createNorfolkSouthern(buildings, noSlots, grid)).toBeNull();
 });
 
 it('knows every tall mapped part, and falls back to the generic renderer if one is re-mapped', () => {

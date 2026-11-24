@@ -16,6 +16,7 @@ let extra = null;
 let netMbps = 0;
 let cpu = 1;
 let viewport = null;
+const png = args.includes('--png');
 // --silent: sample with ?perf=silent (no overlay on screen) instead of ?perf=run.
 const silentRun = args.includes('--silent');
 const urls = [];
@@ -27,6 +28,7 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--cpu') cpu = Number(args[++i]) || 1;
   // --viewport 384x692@1: the A16's portrait canvas as measured on the device (CSS px at DPR 1).
   else if (args[i] === '--viewport') { const m = /^(\d+)x(\d+)@([\d.]+)$/.exec(args[++i]); if (m) viewport = { width: +m[1], height: +m[2], deviceScaleFactor: +m[3] }; }
+  else if (args[i] === '--png') { /* read above */ }
   else if (args[i] === '--silent') { /* read above */ }
   else urls.push(args[i]);
 }
@@ -110,8 +112,9 @@ for (const [n, requested] of urls.entries()) {
     if (done && extra && !result.error) result.eval = await evaluate(extra);
     results.push(result);
     if (out) {
-      const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 70 });
-      writeFileSync(join(out, `cam${n + 1}.jpg`), Buffer.from(shot.data, 'base64'));
+      // --png: lossless, for matched-frame diffs (JPEG noise would swamp small differences).
+      const shot = await send('Page.captureScreenshot', png ? { format: 'png' } : { format: 'jpeg', quality: 70 });
+      writeFileSync(join(out, `cam${n + 1}.${png ? 'png' : 'jpg'}`), Buffer.from(shot.data, 'base64'));
     }
     const r = result;
     // An impossible reading is an invalid run, never a pass: a page that isn't ours, or a frame that

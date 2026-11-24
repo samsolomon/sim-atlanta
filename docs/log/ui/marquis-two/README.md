@@ -32,3 +32,19 @@ Use `/?view=city&cam=<camera>&t=<ISO timestamp>`, with November 20, 2026 and cle
 ## Night pattern (2026-11-24)
 
 Both towers now pick lit panes with skin-kit `litHash(seedOf(id), face, floor, bay)` at the old density, 1 in 83 panes. The earlier linear modulus `(floor·29 + bay·17 + edge·41) % 83` lit panes on a fixed diagonal lattice. Glass colours and geometry are unchanged. [Before and after, 2.2× crops at 11:30 PM](lithash-compare.jpg): Marquis One from `557,-862,-14,52,490` and Marquis Two from `553,-890,215,52,480`, each then `__setView(…, 2.2)` with `&dev`.
+
+## Pier rework (2026-11-24)
+
+The lead's audit failed Marquis One as a beige grid beside a generic beige-grid tower. Marquis Two was borderline: a dark grid with no vertical rhythm. The district nomination and the photographs agree on what identifies both towers: light precast piers running the full shaft height, slender dark windows recessed between them, and the centre bay rising to a slotted crown over an open double-height base.
+
+The façade is now pier-dominant:
+
+- The horizontal spandrel band at every floor is gone.
+- Piers fill 0.88 m of each 1.55 m bay, in light precast `#d9d3c6`.
+- The windows are dark glass `#66706f` and the recess is `#555e5e`.
+- The crown slots use the recess colour.
+- Marquis Two's double-width north-wall panes in Vs are kept.
+
+Rendered at 11:30 from `557,-862,-14,52,490`, Marquis One's south face has piers at V 93 and slots at V 31. The coordinator's targets were piers V 70 or more and slots V 30–40. No new materials were added, and the change removes geometry: one band quad per floor per run.
+
+[One, day](piers-cmp-one-day.jpg) · [Two, day](piers-cmp-two-day.jpg) · [One, night](piers-cmp-one-night.jpg) · [Peachtree Center Avenue pair](piers-cmp-pca.jpg) · [One, four sides](piers-four-sides-one.jpg) · [Two, four sides](piers-four-sides-two.jpg)

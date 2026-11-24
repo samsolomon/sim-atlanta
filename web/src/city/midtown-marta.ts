@@ -203,7 +203,8 @@ function midtownEntrance(buildings: VBuilding[], site: VBuilding, ground: Ground
               z + 1.53,
               ['#628d69', '#c87971', '#47998b'][k % 3],
             );
-          lights.box(1, 0.2, 1, x + 3.2, soffit - 0.94, z, '#fff1d7');
+          // Recessed into the coffer, against the slab's underside, not hanging in the air.
+          lights.box(1, 0.2, 1, x + 3.2, soffit - 0.075, z, '#fff1d7');
         }
       // Backlit entrance headers sit below the coffer edge, visible from each plaza.
       for (const z of [-3046.7, -3005.6]) {
@@ -222,7 +223,8 @@ function midtownEntrance(buildings: VBuilding[], site: VBuilding, ground: Ground
           const base = ground(x, z);
           if (base === null) continue;
           body.box(4, 0.28, 1.3, x, base + 0.25, z, '#7d9669');
-          body.box(2.8, 0.3, 0.58, x, base + 0.47, z + 1.5, '#936d52');
+          // A solid timber bench on the paving; it used to hover 0.32 m up with no legs.
+          body.box(2.8, 0.62, 0.58, x, base + 0.31, z + 1.5, '#936d52');
         }
     }
   }

@@ -3516,6 +3516,10 @@ The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th 
 
 TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)
 
+### 2026-11-24 · Two Peachtree Pointe across a board seam
+
+Two Peachtree Pointe sits on the seam between two Brookwood boards, so each board builds its half from absolute lidar heights and skips the shared wall. Three surfaces carry the photographs: blue ribbon glass on the curved south bay, a cream precast grid of punched windows on the block, and a crown that climbs 5.5 m toward the west. The lidar matches the published heights to within half a metre: the block roof is 66 m and the crown tops out at 77.8 m. [Day](log/ui/two-peachtree-pointe/day.jpg) · [Curve and crown](log/ui/two-peachtree-pointe/curve.jpg)
+
 ## 2026-11-24: Regions Plaza, and a false alarm about windows
 
 Regions Plaza is now pink granite. It has notched corners at 84 m, an arched top storey with pinnacles, and a hip roof that the lidar puts at 104 m. At night that roof is floodlit as one even glow, as in the Commons night photo. The near-black windows at noon looked like a geometry bug. I briefly suspected litFacade's winding and warned the lead, then retracted it. The real cause was the tall neighbour's shadow falling across the face. A sunlit strip of the same face measures S 12–16%, V 43–46%. The lesson: measure the pixels where the sun actually falls before blaming the mesh.
@@ -3609,3 +3613,103 @@ The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. 
 ### 2026-11-24 — Four shader programs from a number in a key
 
 The phone tier was at 86 of 86 shader programs, with nightly skins and features landing on top. A sweep that pairs every compiled program with its owner and three.js cache key showed four of them differed from shared programs in one field only: `numClippingPlanes`. Brookwood clips to its north and west board edges, two planes, while most of City clips to four, so its corridor materials, its freight and their shadow-depth variant each had a program of their own. Padding Brookwood's plane list with two planes that never clip (10,000 km below the board) merges them into the shared programs. The phone tier drops from 85 at ready and 86 at the sweep's peak to 81 and 82, and the last late shadow-depth compile disappears. High drops by five. The frames don't change. [Brookwood by day](log/perf/clip-pad/brookwood-1400.png) · [at night](log/perf/clip-pad/brookwood-2200.png)
+
+**2026-11-24 — The garage that was a lightbox.** At night the Emory Midtown staff deck glowed evenly across every face, brighter than any building near it, because each face was a single lamp plane. The lamps' glow is one emissive colour for the whole batch, so dimming the vertex colour would have done nothing, and a per-skin intensity would have cost a draw. The fix lights less area instead: a 1 m ceiling-fixture strip under each level, with the rest of the deck face dark. It now reads as a lit garage. [Before and after](log/ui/euhm-staff-deck/night-before-after.jpg)
+### 2026-11-24 · Making the JW Marriott recognisable
+
+The first JW Marriott skin passed every numeric check and still failed the audit, because from 480 m it could have been any pale glass slab. The rework started from the question of what makes it *this* building in a street photo: crisp white balcony slabs at every floor, wrapping the corners, and a bluer glass than the towers around it. The bands are now bright white, deeper and proud of the glass, and the stepped top gets white caps. The glass moved from S 9 to a rendered S 34 at hue 213, against a generic neighbour at S 20 and hue 199, so the slab now differs from it in hue as well as saturation. That is still under the S 36 cap. It cost two cap rings of geometry and no new material. [Before and after](log/ui/jw-marriott-downtown/rework-compare.jpg)
+### 2026-11-24 · Norfolk Southern, second pass: sails and a slot
+
+The audit failed the first Norfolk Southern skin, because from the money shot it was another pair of blue boxes. The 2022 photographs show two identifiers. Each tower is split by a near-black slot, and its two glass halves rake up toward that slot like sails. The rework raises each half's roof 6 m toward its slot, makes the slot dark, and deepens the halves' blue past the generic glass nearby. There is no new material. The slot's base had to be lighter than it looks, because in its own shade a V 25 base rendered at V 5, nearly black. A V 53 base renders at the targeted V 20. [Before and after from the south-west](log/ui/norfolk-southern/rework-before-after.jpg)
+### 2026-11-24 · Marquis piers: rhythm over geometry
+
+Marquis One failed its audit: at 490 m it was a beige grid beside a generic beige grid. The fix removed geometry rather than adding it. I dropped the spandrel band at every floor, widened the light precast piers to just over half of each bay, and darkened the recessed windows. The rendered south face now splits into piers at V 93 and slots at V 31. Both towers read as vertical pinstripes, which nothing else in the Peachtree Center frame does. [Before and after](log/ui/marquis-two/piers-cmp-one-day.jpg)
+
+### 2026-11-24 · Crest on Peachtree's mural
+
+From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+### 2026-11-24 — Downtown's Museum Tower and Midtown's SkyHouse
+
+Museum Tower at Centennial Hill is the first of my skins mounted downtown, so it
+goes in the batcher's listed array.
+- Its red-brown brick shaft has glass corner bays and a cream crown band whose
+  piers carry amber uplights. The source is one 2012 photograph, marked reported.
+- The lidar puts its planted roof deck at 84 m and the penthouse at 94 m.
+
+The M by Radius opened in 2013 as SkyHouse Midtown.
+- It is mapped at 90 m, but the 2019 lidar reads 77 m at the roof edge.
+- It keeps the series' arched crown screen with a teal edge, over pale glass and
+  silver piers.
+
+Neither skin adds a draw on the low tier, and each adds about 0.2 MB of geometry.
+[Museum Tower](museum-tower.md) · [The M by Radius](m-by-radius.md)
+
+
+
+### 2026-11-24 · Vireo's balconies at night
+
+Vireo, the white apartment tower by Piedmont Park, is mapped at 105 m. The 2019 lidar has its roof at about 82 m, with an amenity floor on top reaching 89 m. Its long faces are deep balconies stacked on every floor, and from City's usual high orbit those 1.9 m slabs hide every lit room behind them, so the first night render was darker than the generic box it replaced. A lit room's light also shows through its glass balcony rail, and lighting the rail makes the tower read as lived-in from above. [Before and after](log/ui/vireo/day-before-after.jpg) · [night](log/ui/vireo/night-before-after.jpg)
+
+
+
+**2026-11-24 — The Coca-Cola USA Building's two heights.** The mapped height was 78 m and Enclos lists 216 ft (66 m), while the lidar said 85 m. All three were measuring from a different ground. The tower stands on a plaza about 19 m above the low west grade, and its roof deck is a flat 382.1 m NAVD88. The model takes absolute heights from the lidar, so the plaza, the parapet at 383.2 m and the penthouse at 388.8 m all land where the point cloud has them. The facade is slate glass in a red-brown granite grid under a plain frieze. In the City campus view it now sits behind One Coca-Cola Plaza's cream eggcrate as the Enclos aerial shows. [Captures and references](log/ui/coca-cola-usa/README.md)
+
+## 2026-11-24: Luxe, lean
+
+Luxe's white tower and its rounded blue glass corner now stand on 12th Street, at 67 m from a 6 m lidar grid. With the high tier's geometry down to about 2 MB of headroom, this skin was built to a budget: 1,278 triangles, with one glass strip per window run and a ten-facet drum. It reads the same at the orbit as a punched-window version would. A tooling lesson came with it. My screenshot script picked a random DevTools port, attached to another agent's headless perf page, and drove it for a few frames. Scripts now launch with port 0 and read their own DevToolsActivePort.
+[Before and after](log/ui/luxe/compare.jpg) · [day and night](log/ui/luxe/daynight.jpg) · [close](log/ui/luxe/close.jpg)
+
+### 2026-11-24 · The Crowne Plaza was 17 m shorter
+
+The second of the two unnamed masses near the North Avenue and Connector sightline is a 1972 slab at 590 West Peachtree. OSM tags it 4 levels and 98 m. A hotel listing names it the Crowne Plaza Atlanta Midtown, and the 2019 lidar puts its roof at 81 m, so City had been drawing it 17 m too tall next to One Georgia Center. Street View shows a white slab with blank ends and a white grid of piers and floor slabs on its long faces. That grid comes to about 620 triangles, roughly routine-skin size. The first window glass sent the shaded faces navy (S 91), so the base went paler, landing sunlit glass at S 8 and V 47. [Before and after](log/ui/crowne-plaza-midtown/compare.jpg)
+## 2026-11-24: Hanover House, concrete and bronze
+
+Colony Square's Brutalist slab is now concrete, with bronze glass bays scattered among blank panels across its long faces, a slot up each end wall, and raked aprons at its base. The irregular panel pattern comes from the same shared hash that lights windows, on a different slot, so it is stable and has no lattice. The lidar roof is 53.1 m, against a mapped 62 m. It costs under 1,200 triangles.
+[Before and after](log/ui/hanover-house/compare.jpg) · [day and night](log/ui/hanover-house/daynight.jpg) · [close](log/ui/hanover-house/close.jpg)
+
+### 2026-11-24 · Azure on the Park comes apart
+
+Azure on the Park by Piedmont Park was a 98 m block over its whole lot. The lidar separates a 79 m tower on 11th Street, a lower step at its east end, and a 17 m podium that runs to the rounded glass corner on Piedmont. Contractor photographs and two March 2025 Street View frames gave the blue glass, cantilevered balconies and dark-brick lower floors. Two budgets shaped it. The first blue shaded to S 45, the most saturated thing in frame, so the glass went grey-blue and the shadow now supplies the blue. High-tier geometry is within 3 MB of its ceiling, so the bays and balcony stacks were thinned until the skin cost a few hundred kilobytes. [Before/after, day and night](log/ui/azure-on-the-park/README.md)
+### 2026-11-24 · Colony House, a raw concrete slab, 14 m shorter
+
+Colony House, a 1972 condominium tower beside Colony Square, was mapped at 62 m and tagged `retail`. The 2019 lidar puts its slab roof at 47.7 m above grade, with stair and lift cores about 3 m higher. In the skin, the long faces of the bent, diagonal slab are a grid of recessed balconies, while the ends stay blank, stepped, board-formed concrete, as they look from 15th Street. The first balcony recess colour went navy-black in shade (S 100, V 13), so it became a neutral grey. A four-side contact sheet, the new standing rule after a skin shipped with balconies floating off one wall, showed nothing loose. The skin costs about 730 triangles, once the faces hidden inside the lift core are skipped. [Before and after](log/ui/colony-house/compare.jpg) · [Four sides](log/ui/colony-house/four-sides.jpg)
+## 2026-11-24: Marriott Suites, unbranded
+
+The all-suite hotel on 14th Street is now its rose-beige precast tower, with punched windows and a balcony stack. The lidar trims it from a mapped 68 m to 56 m. The hotel's own photograph shows a brand-red entrance canopy and a name sign. Neither is drawn, so the street front stays generic. At night about 40% of rooms are lit, which reads as a hotel next to the darker offices around it.
+[Before and after](log/ui/marriott-suites/compare.jpg) · [day and night](log/ui/marriott-suites/daynight.jpg) · [close](log/ui/marriott-suites/close.jpg)
+### 2026-11-24 — SkyView turns up
+
+The Ferris wheel by Centennial Olympic Park was a 2 m-thin box 61 m tall. The
+2019 lidar was more useful than expected. Slicing the returns along the wheel's
+mapped plane gives a top height per slice, and those heights trace the top of the
+rim's circle: an axle about 29 m up, with the rim near 54 m. City now draws a
+white wheel with 21 spokes, 42 gondolas hung outside the rim, and two A-frames,
+facing the park broadside. That is 1,354 triangles in the downtown batch. At night
+the rim and spokes glow the blue-violet of most night photos. It doesn't turn,
+because a static batch costs nothing and an animated wheel wouldn't.
+[Before and after](log/ui/skyview-atlanta/compare-day.jpg) · [night](log/ui/skyview-atlanta/compare-night.jpg) · [notes](skyview-atlanta.md)
+
+### 2026-11-24 · Windsor Over Peachtree in buff brick
+
+The 1964 Peachtree North Apartments at North Avenue had been a generic glass slab. The lidar puts the roof at 57 m above grade. Two photographs gave the look: buff brick, balcony runs between brick piers, and brick end walls. The first version ran the balconies the full length of each face, and from the review orbit they hid every pier, so the building read as a grey striped box. Breaking the runs at the piers brought the brick back. [Before/after, day and night](log/ui/windsor-over-peachtree/README.md)
+
+**2026-11-24 — Midtown's floating lamps.** The new detachment check found two real floaters on the Midtown station plaza. Four coffer lamps hung in mid-air between the ribs, and the bench seats hovered 0.32 m over the paving with no legs. Recessing the lamps and grounding the benches took the plaza from 11 loose clusters to 6. The other six, and North Avenue's three, are legitimate: a free-standing canopy, entrance headers on posts, draped paving, and Tower Square's doors on their own building. [Bench before and after](log/ui/midtown-marta/plaza-bench-before-after.jpg)
+
+### 2026-11-24 — The Fifth Street bridge was a tunnel
+
+Sam spotted the Downtown Connector stopping dead at Georgia Tech, with a street running across where the freeway should be. OpenStreetMap maps the Fifth Street bridge, a 2007 park deck, as a 70 m tunnel for the eight-lane and seven-lane freeway ways beneath it. City doesn't draw tunnels, so the lanes vanished there and Fifth Street was painted straight through the freeway valley at grade. The bare-earth model already had the freeway's grade under the deck, 284.5 m. The 2018 lidar had more than 10,000 bridge-deck returns over the span: the deck's top runs 291.9–292.8 m and spans 51 m north to south, matching the published 17 ft of clearance. Those two freeway ways now draw and drive as ground. Fifth Street gets a measured deck with plazas either side, and cars on both roads follow. A board-wide check turned up one other set of short freeway tunnels, at Capitol Gateway. The lidar there is solid ground over the freeway, a real covered cut, so it stays a tunnel. [Before and after](log/ui/fifth-street-bridge/before-after.jpg)
+**2026-11-24 — The streetcar learns to turn.** GTFS draws each downtown street corner as one vertex, so the S70 folded into an L and its tail swung 5 m off the track, grazing Ten Park Place. Filleting the shape at 18 m in one shared function brought the worst swing to 0.94 m without touching the data. The surprise was the kerb: an articulated car cuts every corner, raw or curved, and our square street paint can't hold it. The mapped tram rails settled the argument. At Edgewood and Park Place the raw corner sat 14 m off the real track, and the arc sits 1.3 m from it. [Before and after](log/ui/streetcar-fillets/edgewood-park-place-oblique.jpg)
+### 2026-11-24 — Shadows that nobody can see still cost a scene
+
+A draw capture of one shadow redraw on the phone tier, at the default view, counted 1.39 million triangles. That's more than half the main pass, and low redraws the map on every 80 m pan step. At the default view the shadow box covers about 90 pixels of the board, so the redraws pay for a 1 km island of shadow. The far-orbit rule fades shadow strength out where a 12 m building's shadow drops under two drawing-buffer pixels, then stops redrawing. On the Galaxy A16's 692-pixel canvas at 14:00 that happens at 17.1 km. At dusk the sun is low, shadows are long, and the rule never triggers. On a default-view pan at 6x CPU, frame rate goes from 26.4 to 31.3 fps, with no redraws instead of 36.
+
+Two surprises. First, the light sits over the last shadow centre, which starts at Infinity, so a session that opened already far put the sun at Infinity. Every clipped material then got NaN planes, and three.js threw on every uniform upload. Second, a layer on the shadow camera can't empty the shadow pass, because three tests casters against the main camera's layers. So the saving comes from skipped redraws. The look isn't neutral at 14:00, since downtown towers lose their small shadow patch, so this one is Sam's call. [Default view](log/perf/far-shadow/default-side-by-side.png) · [Zoom across the threshold](log/perf/far-shadow/zoom-strip-1400.png)
+### 2026-11-24 · Shaded glass stops going black
+
+Light glass on a north face, or in a neighbour's shadow, used to drop to a near-black navy (V 20-27 on the 17th Street towers). It read as a hole in the building, not as glass. Sam compared two prototypes behind dev flags. A floor for glass alone won over a global lift of the grade's shadow tint, which shifted grass and roofs as well. A strength strip settled the amount. At 0.6× of the glass's own colour, the shaded faces came within 10% of the sunlit ones and the towers took on a sheen, because the sun-versus-shade step is what makes a box read as solid. At 0.45×, shaded faces sit at 60-77% of their sunlit value. The surprise was cost. A hook on the landmark material would have pulled every landmark out of the static batches. So the floor is patched into the Lambert shader source once and gated inside the shader: the fragment must have a glass-coloured vertex colour and a near-vertical normal, and the sun must be up. That gives 0 new programs on either tier. The normal test is needed because road decks share glass's blue-grey (17% of their vertices) but lie flat. [Before and after](log/ui/glass-floor/compare-17th.jpg) · [strength strip](log/ui/glass-floor/strength-strip.jpg)
+
+### 2026-11-24 · The glass was the frame rate
+
+On the M5 Air, City ran at 44 fps with its UI and 59 without, and the 3D scene wasn't the difference. Chrome traces showed why. With any CSS `backdrop-filter` over the WebGL canvas, the display compositor ran two full-screen render passes every frame and blurred the canvas behind each panel. Without one, it ran none and handed the canvas straight to macOS as a CALayer overlay. The dock, place card and camera buttons cover 7.5% of the desktop screen, but the cost scales with the whole screen. On a Galaxy A16 the blur put 26.9 ms per frame on Android's compositor GPU thread. Without it, 3.9 ms.
+
+On Low, the panels now drop the blur and use a denser tint, and long-text sheets go denser still so roofs don't show behind running text. The A16 went from 25.8 to about 31.5 fps (p95 89 to 56–67 ms), within 2 fps of no UI at all. The rest of the gap appears only while the camera turns. The compass needle rotated by rewriting an SVG attribute every frame, which repainted and re-rastered it. It now turns on its own compositor layer, with 0 paints per frame where there were 0.5. High keeps the frosted look, which City's final pass will draw itself ("in-canvas glass"). A second surprise was the Android trace: the canvas is never promoted to an overlay on that phone, even with no DOM at all, so no layout change could ever have bought that back. [390 px before and after](log/ui/low-flat-glass/phone-dock-card.jpg)

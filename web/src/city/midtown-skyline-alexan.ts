@@ -88,6 +88,8 @@ export function alexanOn8th(shell: Shell) {
     // The white top band and dark canopy edge.
     body.quad(p(0, ROOF - 4, .08), p(0, ROOF - .5, .08), p(len, ROOF - .5, .08), p(len, ROOF - 4, .08), STRIP);
     body.quad(p(-.2, ROOF - .5, .6), p(-.2, ROOF, .6), p(len + .2, ROOF, .6), p(len + .2, ROOF - .5, .6), SLAB);
+    // The canopy's top runs back to the wall, so its edge never floats.
+    body.quad(p(-.2, ROOF, .02), p(-.2, ROOF, .6), p(len + .2, ROOF, .6), p(len + .2, ROOF, .02), SLAB);
   });
   return shell.finish('#ffdfb0', .7);
 }

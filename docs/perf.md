@@ -89,7 +89,7 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 
 | Low (phone), main 63d7e332 | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 2.36M (4.77M on the morning of 2026-11-23) | 2.6M | 2.0M |
+| Triangles | 1.87M with the landmark day LOD (2.17M before; 4.77M on the morning of 2026-11-23) | 2.06M | 2.0M |
 | Draw calls | 395 with lit panes in the body batch (414 after landmark batching and house blocks; 541 before) | 435 | 500 |
 | Programs | 85 | 90 | 80 |
 | Texture MB | 118 | 125 | 100 |
@@ -103,7 +103,7 @@ Low triangle headroom on 2026-11-23: 2.6M − 2.36M = 240k. About 30 building sk
 
 | High (desktop), main 2447d8c0 (after #421) | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 6.79M (13.90M before #421) | 7.5M | 6.5M |
+| Triangles | 6.22M with the landmark day LOD (6.54M before; 13.90M before #421) | 6.85M | 6.5M |
 | Draw calls | 432 with lit panes in the body batch (462 after landmark batching; 597; 1,199 before #421) | 475 | 550 |
 | Programs | 89 | 140 | 140 |
 | Texture MB | 808 | 890 | 500 |
@@ -117,6 +117,24 @@ The draw ceiling leaves room for about ten building skins at +1 to +4 draws each
 640 calls, 6.82M triangles and 99 programs measured, against a 720-call ceiling; 569 calls after landmark batching
 and house blocks, against a 630-call ceiling.
 
+### Long tasks while moving (`low-north`, `low-zoomout`)
+
+These two entries run the low tier on the A16 canvas (384x692 at DPR 1) with 6x CPU throttle while the camera flies a route
+(`?perf=run&motion=route:<name>`, out and back over a 20 s sample). They fail if any main-thread task
+(PerformanceObserver `longtask`) exceeds the ceiling. Every run reports `longestTaskMs` and `longTasksOver100`.
+
+- `route:north`: Five Points to Brookwood at a 700 m orbit. Areas and rings change under the camera.
+- `route:zoomout`: a 3 km to 25 km orbit over Midtown. It crosses the 10 km build distance early, which triggers far-level builds and swaps.
+
+Ceilings: `route:north` 650 ms and `route:zoomout` 500 ms, both ratcheting toward 300 ms as swap and build steps are sliced. The target is 150 ms.
+`summary.longTasks` lists each task over 100 ms in the sample as `[start, ms]` in page time, for attribution against a CPU profile.
+Calibration on the Studio (2026-11-24, load average ~30):
+
+- `route:north`: 920–945 ms with #538's whole-board very-far ground built in one idle task; 268–589 ms over 7 runs after #586 made it opt-in.
+- `route:zoomout` to 25 km: 72–190 ms.
+- At 1x, nothing exceeded 50 ms.
+
+
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 
 Fresh Chrome with cooldowns, low tier, all 12 areas loaded. Ten-second FPS on the pre-rollout baseline (d1411a9e), candidate (fb699bbb), and candidate with the far mask forced on:
@@ -127,3 +145,34 @@ Fresh Chrome with cooldowns, low tier, all 12 areas loaded. Ten-second FPS on th
 | Pan | 27.0, 25.2 | 24.6, 25.7, 25.6 | 23.0, 22.3, 22.3 |
 
 The coordinator accepted the 3–5% gap to baseline and Sam accepted the far-crown appearance.
+
+## Houses on the low tier: shadows and byte attributes (2026-11-24)
+
+Measured on main at low, Nov 20 14:00, with 3,430 houses at about 41 triangles each in the far form. Every mesh under `houses` was frustum-tested after a forced shadow redraw.
+
+| View | Main pass | Shadow pass per redraw |
+|---|---|---|
+| Default, houses 18–22 km away | 141k triangles, 22 draws | 100k triangles, 8 draws |
+| Ansley 900 m | 157k, 7 draws | 231k, 12 draws |
+| Ansley 420 m | 172k, 6 draws | 218k, 15 draws |
+
+- **Shadows.** Past a 9 km orbit (back at about 7.6 km), houses stop casting. An 8 m house shadow is under 2 px on the A16 there; at 2.5 km it is still about 7 px, so the trees' 2.5 km threshold would show. At the default view this takes the shadow pass from 100k triangles and 8 draws to 0. Nearer views are unchanged.
+- **Byte attributes.** Far house blocks store colour as normalized `Uint8`, normals as normalized `Int8`, and the facade style id as `Int8`. That cuts 16 bytes per vertex: geometry 186.2 → 177.7 MB, CPU buffers 251.5 → 243.0 MB. The shader programs stay the same, and the low sweep peaks at 86.
+- `&perf=1&housefar=0` keeps the old path (float attributes, shadows always on).
+- [Matched frames](log/ui/house-far/shadows-bytes.jpg).
+
+### Houses' far-far form past 12 km (PR B)
+
+Past the very-far ground orbit (12 km out, 10.8 km back, measured to the board box exactly as the ground measures it; low tier only), each area's far house blocks and tiles give way to one merged mesh. That mesh draws each house as a single box of 10 triangles: four walls in the wall colour and a top in the roof colour. It reuses the far blocks' own material and attribute layout (byte colours and normals, plain facade style), so no shader program is added. It casts no shadow; houses already stop casting at 9 km. The box is built in `buildHouseLod`, yielding every 200 houses.
+
+I tried flat roof paint in the ground map first. In 4× crops of the default view it read flatter than the old houses: it lost the dark specks that ink outlines and side shading give each house. The boxes keep both.
+
+| View (low tier, Nov 20 13:00) | Calls / triangles, old → box |
+|---|---|
+| Default (about 20 km) | 373 / 2,084,463 → 361 / 1,977,313 |
+| Ansley 14 km | 253 / 1,751,501 → 245 / 1,649,785 |
+| Ansley 12 km (boundary) | 205 / 1,538,347 → 203 / 1,487,340 |
+| Ansley 10 km | 176 / 1,456,817 → 175 / 1,456,397 |
+| Pan at 13 km, 3 targets | 367 / 279 / 333 → 359 / 270 / 325 calls, about −101k triangles each |
+
+Old path: `&perf=1&housefar=0`. Sheets: [default view at 4×, morning / midday / low sun](log/ui/house-far/far-far-default-4x.jpg), [10 / 12 / 14 km boundary and pan strip](log/ui/house-far/far-far-boundary.jpg).
