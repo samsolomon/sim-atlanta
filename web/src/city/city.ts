@@ -28,6 +28,7 @@ import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
+import { setOccupancyHour } from '../vignette/world';
 import type { TrafficData } from '../vignette/traffic';
 import { tiltShiftShader } from '../vignette/tiltshift';
 import { Rain } from '../vignette/weather';
@@ -1820,7 +1821,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     },
     setAtmosphere(a, now) {
       atm = a;
-      const day = local(now).doy;
+      const lt = local(now), day = lt.doy;
+      // PROTOTYPE: ?occ=proposed drives generic lit windows from shared hourly curves by use.
+      setOccupancyHour(lt.hour, new URLSearchParams(location.search).get('occ') === 'proposed');
       (terrain ?? world).setSeason(day);
       east?.setSeason(day);
       north?.setSeason(day);

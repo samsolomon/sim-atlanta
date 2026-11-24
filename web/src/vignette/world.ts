@@ -832,10 +832,14 @@ export class World {
     const shopLights = new Builder();
     const style: number[] = [];
     const base: number[] = [];
+    const use: number[] = [];
     const clutter: THREE.Matrix4[] = [];
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
+    let prevUse = -1;
     for (const bd of this.data.buildings) {
+      while (use.length < style.length) use.push(prevUse);
+      prevUse = buildingUse(bd);
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
       const footing = foundationY ? foundationY(bd) : 0;
@@ -937,6 +941,7 @@ export class World {
       }
       }
     }
+    while (use.length < style.length) use.push(prevUse);
     // Painted shop glass shares the building draw. Only this glass receives the
     // subdued interior light when the City's existing night uniform comes up.
     for (let i = 0; i < shopLights.pos.length; i += 3) {
@@ -944,12 +949,14 @@ export class World {
       b.col.push(shopLights.col[i], shopLights.col[i+1], shopLights.col[i+2]);
       style.push(-2);
       base.push(0);
+      use.push(-1);
     }
     const g = b.geometry();
     g.setAttribute('aStyle', new THREE.Float32BufferAttribute(style, 1));
     g.setAttribute('aBase', new THREE.Float32BufferAttribute(base, 1));
+    g.setAttribute('aUse', new THREE.Float32BufferAttribute(use, 1));
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
-    patchFacades(mat, this.night);
+    patchFacades(mat, this.night, OCC);
     const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.userData.building = true; // City's white-model-on-map stage draws only buildings
@@ -1464,14 +1471,45 @@ function instanced(geo: THREE.BufferGeometry, color: string, mats: THREE.Matrix4
  * Facades: punched windows on brick, ribbon windows on stone, curtain wall on towers,
  * storefront glass at street level. Computed per fragment from world position.
  */
-function patchFacades(mat: THREE.Material, night: { value: number }) {
+/** PROTOTYPE (?occ=proposed): lit-window fractions shared by every City area's generic buildings.
+ * occ = [office, residential, hotel, parking]; shop = street-level storefronts; other = unclassified. */
+export const OCC = {
+  occ: { value: new THREE.Vector4(0.34, 0.34, 0.34, 0.34) }, occShop: { value: 0.75 }, occOther: { value: 0.34 }, occOn: { value: 0 },
+};
+/** Hourly lit fractions, local time, index = hour 0..23. PROTOTYPE values; sources in docs/night-occupancy.md. */
+export const OCC_CURVES: Record<'office' | 'residential' | 'hotel' | 'parking' | 'shop', number[]> = {
+  // Visible lit-window fractions, hour 0..23 local, weekday. PROTOTYPE; derivation in docs/night-occupancy.md.
+  office:      [.16,.15,.14,.13,.13,.15,.25,.45,.65,.75,.75,.75,.75,.75,.75,.75,.7,.6,.45,.35,.28,.24,.2,.17],
+  residential: [.1,.08,.06,.06,.08,.12,.25,.3,.2,.12,.12,.12,.12,.12,.12,.12,.15,.3,.48,.56,.6,.48,.3,.18],
+  hotel:       [.08,.06,.05,.05,.05,.08,.2,.3,.2,.12,.12,.12,.12,.12,.12,.12,.2,.3,.38,.48,.56,.48,.38,.2],
+  parking:     Array(24).fill(.45),
+  shop:        [.18,.18,.18,.18,.18,.18,.2,.35,.6,.85,.85,.85,.85,.85,.85,.85,.85,.85,.85,.85,.6,.4,.3,.22],
+};
+export function setOccupancyHour(hour: number, on: boolean) {
+  const at = (c: number[]) => { const h = ((hour % 24) + 24) % 24, i = Math.floor(h), f = h - i; return c[i] * (1 - f) + c[(i + 1) % 24] * f; };
+  const o = at(OCC_CURVES.office), r = at(OCC_CURVES.residential);
+  OCC.occ.value.set(o, r, at(OCC_CURVES.hotel), at(OCC_CURVES.parking));
+  OCC.occShop.value = at(OCC_CURVES.shop); OCC.occOther.value = (o + r) / 2; OCC.occOn.value = on ? 1 : 0;
+}
+
+/** PROTOTYPE: occupancy class from the mapped building class. 0 office/commercial, 1 residential,
+ * 2 hotel, 3 parking, 4 unknown (tall unclassified towers blend office and residential). */
+const RESIDENTIAL = new Set(['apartments', 'residential', 'house', 'detached', 'semidetached_house', 'terrace', 'dormitory', 'bungalow']);
+const OFFICE = new Set(['office', 'commercial', 'retail', 'civic', 'government', 'public', 'university', 'college', 'school', 'hospital', 'industrial', 'warehouse', 'church', 'transportation']);
+function buildingUse(bd: VBuilding) {
+  const c = bd.cls ?? '';
+  return RESIDENTIAL.has(c) ? 1 : c === 'hotel' ? 2 : c === 'parking' ? 3 : OFFICE.has(c) ? 0 : 4;
+}
+
+function patchFacades(mat: THREE.Material, night: { value: number }, occ?: typeof OCC) {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uNight = night;
+    if (occ) Object.assign(sh.uniforms, { uOcc: occ.occ, uOccShop: occ.occShop, uOccOther: occ.occOther, uOccOn: occ.occOn });
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aStyle;\nattribute float aBase;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nvarying vec3 vWN;')
-      .replace('#include <project_vertex>', '#include <project_vertex>\nvStyle = aStyle; vBase = aBase;\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);');
+      .replace('#include <common>', '#include <common>\nattribute float aStyle;\nattribute float aBase;\nattribute float aUse;\nvarying float vUse;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nvarying vec3 vWN;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvStyle = aStyle; vBase = aBase; vUse = aUse;\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uNight;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nvarying vec3 vWN;\nfloat hh(vec2 p){vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z);}')
+      .replace('#include <common>', '#include <common>\nuniform float uNight;\nuniform vec4 uOcc;\nuniform float uOccShop;\nuniform float uOccOther;\nuniform float uOccOn;\nvarying float vUse;\nvarying float vStyle;\nvarying float vBase;\nvarying vec3 vWPos;\nvarying vec3 vWN;\nfloat hh(vec2 p){vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z);}')
       .replace(
         '#include <color_fragment>',
         /* glsl */ `#include <color_fragment>
@@ -1541,6 +1579,12 @@ ${SIDING_GLSL}
           float cellH = st > 2.5 ? hh(floor(vec2(u / 3.6, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
           // Homes: about a third of rooms lit on every storey; offices as before, shopfronts mostly lit.
           litWin = win * (st > 2.5 ? step(0.66, cellH) : y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
+          if (uOccOn > 0.5) {
+            // PROTOTYPE: one shared occupancy curve per use and hour (see docs/night-occupancy.md).
+            float useK = floor(vUse + 0.5);
+            float frac = st > 2.5 ? uOcc.y : useK < 0.5 ? uOcc.x : useK < 1.5 ? uOcc.y : useK < 2.5 ? uOcc.z : useK < 3.5 ? uOcc.w : uOccOther;
+            litWin = win * step(1.0 - (y < 4.2 && st <= 2.5 ? uOccShop : frac), cellH);
+          }
           litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
           // Houses keep their masonry foundation band instead of the generic plinth line.
