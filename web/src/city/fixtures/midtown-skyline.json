@@ -89,5 +89,12 @@
     "x": 833,
     "z": -3571,
     "heightM": 95.4
+  },
+  "fourSeasons": {
+    "id": "osm:way:269843469",
+    "name": "Four Seasons Hotel",
+    "x": 577.4,
+    "z": -3601.9,
+    "heightM": 186
   }
 }
