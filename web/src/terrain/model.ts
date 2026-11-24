@@ -7,14 +7,22 @@ import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
+import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
+import { createNomia, nomiaId } from '../city/nomia';
+import { createViewPoint, viewpointId } from '../city/viewpoint';
+import { createProscenium, prosceniumId } from '../city/proscenium';
 import { create77Twelfth, twelfth77Id } from '../city/77-twelfth';
 import { createEmmiMidtown, emmiMidtownId } from '../city/emmi-midtown';
 import { createMidtownUnion, midtownUnionId } from '../city/midtown-union';
 import { create10Tenth, tenTenthId } from '../city/10-10th';
 import { atlanticId, createAtlantic } from '../city/the-atlantic';
+import { create1010Midtown, midtown1010Id } from '../city/1010-midtown';
 import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
+import { createMetropolis, metropolisId } from '../city/metropolis';
+import { createEuhmStaffDeck, euhmDeckId } from '../city/euhm-staff-deck';
+import { createNcrHq, ncrId } from '../city/ncr-hq';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
@@ -244,14 +252,22 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
+      : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
+      : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
+      : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
       : site.id === twelfth77Id ? create77Twelfth(sceneryCity.buildings, grid, options.quality)
       : site.id === emmiMidtownId ? createEmmiMidtown(sceneryCity.buildings, site, grid)
       : site.id === midtownUnionId ? createMidtownUnion(sceneryCity.buildings, site, grid)
       : site.id === tenTenthId ? create10Tenth(sceneryCity.buildings, site, grid)
       : site.id === atlanticId ? createAtlantic(sceneryCity.buildings, site, grid)
+      : site.id === midtown1010Id ? create1010Midtown(sceneryCity.buildings, site, grid)
       : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
+      : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
+      : site.id === euhmDeckId ? createEuhmStaffDeck(sceneryCity.buildings, site, grid)
+      : site.id === ncrId ? createNcrHq(sceneryCity.buildings, site, grid)
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
