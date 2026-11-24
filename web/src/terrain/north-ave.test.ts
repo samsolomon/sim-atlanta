@@ -6,7 +6,7 @@ import { GroundGrid } from './grid';
 import { northAvenue as site } from './north-ave';
 import { GroundSurface } from './surface';
 import { triangleHeight } from './tread-height';
-import { daylightSlots, drawUnderpass, underpassGround } from './underpass';
+import { daylightSlots, drawUnderpass, MOUTH_LEVEL_M, underpassFloor, underpassGround } from './underpass';
 
 const get = (file: string) =>
   readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/' + file, import.meta.url));
@@ -91,3 +91,52 @@ it.each(['low', 'high'] as const)(
     before.geometry.dispose();
   },
 );
+
+it.each(['low', 'high'] as const)('meets the board road level and flush at both mouths on %s', (quality) => {
+  const board = new GroundSurface(grid, quality, daylightSlots(site, zero)),
+    ground = board.sampleScene.bind(board);
+  const floor = new Builder();
+  drawUnderpass(site, new Builder(), floor, ground, zero);
+  const street = floor.geometry(),
+    pos = street.getAttribute('position') as import('three').BufferAttribute;
+  const drawn = (s: number, t: number) => {
+    const xy = site.point(s, t);
+    for (let i = 0; i < pos.count; i += 3) {
+      const h = triangleHeight(pos, i, ...xy);
+      if (h !== null) return h;
+    }
+    return null;
+  };
+  const w = site.halfWidth,
+    worst = { step: 0, cross: 0, floor: 0 };
+  for (const [mouth, out] of [[site.start, -1], [site.end, 1]] as const) {
+    for (let t = -w + 0.05; t <= w - 0.05; t += 0.25) {
+      // The joint: board just outside against the drawn pavement just inside.
+      const outside = ground(...site.point(mouth + out * 0.02, t)),
+        inside = drawn(mouth - out * 0.02, t);
+      expect(outside, String([mouth, t])).not.toBeNull();
+      expect(inside, String([mouth, t])).not.toBeNull();
+      worst.step = Math.max(worst.step, Math.abs(outside! - inside!));
+      // Vehicles ride underpassFloor, so it must be the drawn lane surface.
+      if (Math.abs(t) < w - 2.2 && Math.abs(t) > 0.8)
+        for (const ds of [0.5, 3, 9, 15])
+          worst.floor = Math.max(
+            worst.floor,
+            Math.abs(drawn(mouth - out * ds, t)! - underpassFloor(site, mouth - out * ds, t, ground, zero)),
+          );
+    }
+    // The board road beyond the mouth is level across the carriageway.
+    for (let d = 0.5; d <= MOUTH_LEVEL_M; d += 1.5) {
+      const centre = ground(...site.point(mouth + out * d, 0))!;
+      for (const t of [2 - w, -w / 2, w / 2, w - 2])
+        worst.cross = Math.max(worst.cross, Math.abs(ground(...site.point(mouth + out * d, t))! - centre));
+    }
+  }
+  console.info(quality, 'mouth joints', JSON.stringify(worst));
+  // 1 m strips against the board's 5 m faces: a few cm where a face kinks under a strip.
+  expect(worst.step).toBeLessThan(0.05);
+  expect(worst.floor).toBeLessThan(0.16);
+  expect(worst.cross).toBeLessThan(0.15);
+  street.dispose();
+  board.geometry.dispose();
+});

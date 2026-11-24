@@ -93,28 +93,73 @@ export function upperGrade(site: Underpass, s: number, t: number, dem: number) {
   return dem + across * along * (height - dem);
 }
 
+/** Each mouth meets a level board road. Beyond a mouth the DEM bank can climb onto
+ * the painted lanes (1.4 m within 7 m of the west centreline), which the open ramp would
+ * otherwise copy into a warped fan. The board stays fully level for MOUTH_LEVEL_M and
+ * eases back into the DEM by MOUTH_APPROACH_M; across, it eases out over 8 m beyond the walls. */
+export const MOUTH_LEVEL_M = 10,
+  MOUTH_APPROACH_M = 30,
+  /** The open ramp descends from the board's joint to the surveyed floor over this length. */
+  MOUTH_RAMP_M = 20;
+
 /** Regrade only the grid nodes in the corridor before either tier selects its triangles. */
 export function underpassGround(site: Underpass, manifest: GroundManifest, bytes: ArrayBuffer) {
-  const data = new DataView(bytes);
+  const data = new DataView(bytes),
+    source = new DataView(bytes.slice(0));
   const { bounds, stepM, rows, cols, scaleM, offsetM } = manifest;
   const reach = site.halfWidth + 55;
-  const corners = [site.start, ...site.breaks, site.end].flatMap((s) => [
+  const corners = [site.start - MOUTH_APPROACH_M, site.start, ...site.breaks, site.end, site.end + MOUTH_APPROACH_M].flatMap((s) => [
     site.point(s, -reach),
     site.point(s, reach),
   ]);
   const xs = corners.map((p) => p[0]),
     zs = corners.map((p) => p[1]);
-  const c0 = Math.max(0, Math.floor((Math.min(...xs) - bounds.minX) / stepM));
-  const c1 = Math.min(cols - 1, Math.ceil((Math.max(...xs) - bounds.minX) / stepM));
-  const r0 = Math.max(0, Math.floor((Math.min(...zs) - bounds.minZ) / stepM));
-  const r1 = Math.min(rows - 1, Math.ceil((Math.max(...zs) - bounds.minZ) / stepM));
+  const c0 = Math.max(1, Math.floor((Math.min(...xs) - bounds.minX) / stepM));
+  const c1 = Math.min(cols - 2, Math.ceil((Math.max(...xs) - bounds.minX) / stepM));
+  const r0 = Math.max(1, Math.floor((Math.min(...zs) - bounds.minZ) / stepM));
+  const r1 = Math.min(rows - 2, Math.ceil((Math.max(...zs) - bounds.minZ) / stepM));
+  // Centreline DEM, bilinear on the unmodified grid.
+  const centre = (s: number) => {
+    const [x, z] = site.point(s, 0);
+    const u = (x - bounds.minX) / stepM,
+      v = (z - bounds.minZ) / stepM;
+    const i = Math.floor(u),
+      j = Math.floor(v);
+    let h = 0;
+    for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const raw = source.getInt16(2 * ((j + dz) * cols + i + dx), true);
+      if (raw === manifest.noData) return null;
+      h += (dx ? u - i : 1 - u + i) * (dz ? v - j : 1 - v + j) * (raw * scaleM + offsetM);
+    }
+    return h;
+  };
+  const w = site.halfWidth;
   for (let row = r0; row <= r1; row++)
     for (let col = c0; col <= c1; col++) {
       const [s, t] = site.local(bounds.minX + col * stepM, bounds.minZ + row * stepM);
       const index = 2 * (row * cols + col),
         raw = data.getInt16(index, true);
-      if (raw === manifest.noData || s < site.start || s > site.end) continue;
-      const h = upperGrade(site, s, t, raw * scaleM + offsetM);
+      if (raw === manifest.noData) continue;
+      const dem = raw * scaleM + offsetM;
+      const mouth = s < (site.start + site.end) / 2 ? site.start : site.end;
+      // Metres outside the mouth: positive on the board, negative inside the cut.
+      const out = mouth === site.start ? site.start - s : s - site.end;
+      let h: number;
+      if (out >= 0) {
+        if (out > MOUTH_APPROACH_M) continue;
+        const level = centre(s);
+        if (level === null) continue;
+        const weight =
+          (1 - smoothGrade(out - MOUTH_LEVEL_M, MOUTH_APPROACH_M - MOUTH_LEVEL_M)) *
+          (1 - smoothGrade(Math.abs(t) - w - 1, 8));
+        h = dem + weight * (level - dem);
+      } else {
+        h = upperGrade(site, s, t, dem);
+        // Lane nodes just inside the cut are removed with the daylight slot, but the
+        // board faces that straddle the mouth keep their plane. Hold them level too.
+        const level = centre(mouth);
+        if (out > -stepM * 2 && Math.abs(t) <= w + stepM && level !== null) h = level;
+      }
       data.setInt16(index, Math.round((h - offsetM) / scaleM), true);
     }
   return bytes;
@@ -122,9 +167,9 @@ export function underpassGround(site: Underpass, manifest: GroundManifest, bytes
 
 export function underpassFloor(site: Underpass, s: number, t: number, ground: Ground, zero: number) {
   const end = s < (site.start + site.end) / 2 ? site.start : site.end;
-  if (Math.abs(s - end) >= 10) return site.floor(s) - zero;
-  const weight = smoothGrade(Math.abs(s - end), 10);
-  // Match the existing terrain across the entire approach cross-section.
+  if (Math.abs(s - end) >= MOUTH_RAMP_M) return site.floor(s) - zero;
+  const weight = smoothGrade(Math.abs(s - end), MOUTH_RAMP_M);
+  // Match the board across the entire approach cross-section.
   const outer = ground(...site.point(end + (end === site.start ? -0.01 : 0.01), t)) ?? site.floor(s) - zero;
   return outer + weight * (site.floor(s) - zero - outer);
 }
@@ -161,13 +206,14 @@ export function drawUnderpass(
         [w - 2, w, true],
       ] as const) {
         const surface = walk ? kerb : road;
-        pavement.quad(
-          surface(a, r),
-          surface(b, r),
-          surface(b, l),
-          surface(a, l),
-          walk ? PAL.sidewalk : PAL.asphalt,
-        );
+        // Near a mouth, follow the board's joint at 1 m across, not just at the strip edges.
+        const near = Math.min(b - site.start, site.end - a) <= MOUTH_RAMP_M;
+        const pieces = near ? Math.ceil(r - l) : 1;
+        for (let k = 0; k < pieces; k++) {
+          const u = l + ((r - l) * k) / pieces,
+            v = l + ((r - l) * (k + 1)) / pieces;
+          pavement.quad(surface(a, v), surface(b, v), surface(b, u), surface(a, u), walk ? PAL.sidewalk : PAL.asphalt);
+        }
         if (walk)
           for (const t of [l, r])
             if (Math.abs(t) < w) pavement.quad(road(a, t), road(b, t), kerb(b, t), kerb(a, t), PAL.sidewalk);
