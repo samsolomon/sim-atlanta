@@ -74,3 +74,15 @@ it('bounds each warm rollover frame and catches up to the exact cold-seek positi
   expect(actual).toEqual(makeQueue().at(rolled, 1200.25 + 44 / 30));
   expect(queue.at(old, 600)).toEqual(makeQueue().at(old, 600));
 });
+
+it('resolves a seek immediately during rollover catch-up', () => {
+  const makeQueue = () => new MovingQueue([], 16000, 10, blocks);
+  const q = makeQueue();
+  const before = [{start: 0, length: 4}, {start: 24, length: 6}];
+  const after = [{start: 1201, length: 4}, before[1]];
+  q.at(before, 1200);
+  const steps = q.steps;
+  q.at(after, 1201);
+  expect(q.steps - steps).toBeLessThanOrEqual(66);
+  expect(q.at(after, 600)).toEqual(makeQueue().at(after, 600));
+});

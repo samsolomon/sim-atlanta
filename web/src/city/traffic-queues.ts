@@ -32,7 +32,9 @@ export class MovingQueue {
       return [];
     }
     const delta = now - this.lastClock;
-    const continuous = delta >= 0 && delta <= STEP;
+    // Reserve at least half the budget to close the backlog at accelerated clocks.
+    // A backward or larger forward jump resolves immediately as a seek.
+    const continuous = delta >= 0 && delta <= STEP * REPLAY_STEPS_PER_FRAME / 2;
     this.lastClock = now;
     const key = trips.map(t => `${t.start}:${t.length}`).join('|');
     const target = Math.floor(now / STEP);
