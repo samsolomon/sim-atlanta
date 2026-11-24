@@ -12,7 +12,7 @@
   "low": {
     "viewport": "phone",
     "ceiling": {
-      "triangles": 2600000,
+      "triangles": 2060000,
       "calls": 435,
       "programs": 86,
       "textureMB": 125,
@@ -34,7 +34,7 @@
   "high": {
     "viewport": "desktop",
     "ceiling": {
-      "triangles": 7500000,
+      "triangles": 6850000,
       "calls": 475,
       "programs": 100,
       "textureMB": 890,

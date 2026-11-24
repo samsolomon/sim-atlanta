@@ -136,7 +136,7 @@ const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
+import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
@@ -669,12 +669,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
-          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
+          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
           if (import.meta.env.DEV) {
             const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
             if (unlisted.length) console.warn('Landmarks missing from the batch list, drawn unbatched:', unlisted.join(', '));
             console.info('City landmark batches (downtown)', JSON.stringify(batches.stats));
+            void batches.farReady.then(() => console.info('City landmark far versions (downtown)', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
           }
         }
       });
@@ -1494,6 +1495,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  // Low, far orbits: shadows fade out where a typical building's shadow is under 2 pixels, and the
+  // map stops redrawing there, so every pan re-centre is free (a redraw at the default view submits
+  // ~1.4M triangles, more than half a second scene).
+  // The threshold is screen-space: a TYPICAL_H building's shadow (h / tan(sun elevation)) against
+  // the pixel size at the orbit distance, so long dusk shadows stay further out. Strength fades
+  // across 0.85-1x the threshold with the orbit, so a zoom never pops; redraws stop at zero
+  // strength. Shadow programs stay compiled: toggling shadowMap.enabled or castShadow would change
+  // every lit material's program key. ?perf&farshadow=<m> fixes the threshold (0: never).
+  const TYPICAL_H = 12, SHADOW_PX = 2;
+  let shadowsFar = false;
+  let shadowDebug: object = {};
+  if (perfEnabled) Object.assign(window, { __shadowFar: () => shadowDebug });
+  const farShadowAt = (elevDeg: number) => {
+    if (!low) return Infinity;
+    if (perfOverrides.farShadowM !== null) return perfOverrides.farShadowM;
+    const shadowLen = TYPICAL_H / Math.tan(Math.max(elevDeg, 2) * (Math.PI / 180));
+    const pxPerM = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    // shadowLen / (orbit / pxPerM) < SHADOW_PX  =>  orbit > shadowLen * pxPerM / SHADOW_PX
+    return (shadowLen * pxPerM) / SHADOW_PX;
+  };
   let shadowLodDirty = false;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
@@ -1505,6 +1526,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const elDir = Math.max(el, 4) * (Math.PI / 180);
     const az = atm.sunAz * (Math.PI / 180);
     const t = controls.target;
+    const orbit = camera.position.distanceTo(t);
+    const farAt = farShadowAt(el);
+    // Full strength inside 0.85x, none beyond 1x; casters off once beyond (strength is 0 there).
+    sun.shadow.intensity = Number.isFinite(farAt) ? THREE.MathUtils.clamp((farAt - orbit) / (0.15 * farAt), 0, 1) : 1;
+    if (perfEnabled) shadowDebug = { orbit: Math.round(orbit), farAt: Math.round(farAt), intensity: sun.shadow.intensity, far: shadowsFar, elev: Math.round(el * 10) / 10 };
+    const nextFar = shadowsFar ? orbit > 0.97 * farAt : orbit > farAt;
+    if (nextFar !== shadowsFar) {
+      shadowsFar = nextFar;
+      // Going far the map just stops redrawing (strength is 0 there). Coming back it is stale, so
+      // redraw once. (three's shadow pass tests casters against the main camera's layers, so a
+      // layer on the shadow camera cannot empty it; the saving is the skipped redraws.)
+      if (!nextFar) renderer.shadowMap.needsUpdate = true;
+    }
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
     // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
@@ -1534,8 +1568,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned || shadowLodDirty) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
-      renderer.shadowMap.needsUpdate = true;
+    // Far from the board the centre still follows the target (the light sits over it; a session
+    // that opens far would otherwise keep the initial Infinity), but nothing redraws.
+    if ((moved || turned || shadowLodDirty) && (shadowsFar || far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+      if (!shadowsFar) renderer.shadowMap.needsUpdate = true;
       shadowLodDirty = false;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
@@ -2006,6 +2042,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       camera.updateProjectionMatrix();
     };
     (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
+    // Dev-only: which landmark meshes draw on their own, and why (materials/landmark-batch.ts).
+    (window as unknown as Record<string, unknown>).__landmarkBatchReport = landmarkBatchReport;
     // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
     (window as unknown as Record<string, unknown>).__groundAudit = async (o?: object) => {
       const { groundAudit, cityLayer, CITY_COLORS } = await import('../terrain/ground-audit');
