@@ -3527,3 +3527,7 @@ so "no long task" can't measure the build. The driver now reports the longest ru
 inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
 batching, which the buildings agent is turning into a generator. A row now mounts over about 200
 frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
+
+### 2026-11-24 · Ten Peachtree Place
+
+The overnight queue ended at a 1991 red granite tower. Its lidar profile is the most legible of the night. The flat roof sits at 374.4 m, the castellated parapet at 376.1 m and the penthouse at 378.0 m, which matches the mapped 96 m from the low south corner. Granite, green corner slots, window rows, a setback ledge and a crown of merlons are all vertex colour. Night uses `litHash` over 3 m window bays. The first try lit whole floors and read as stripes. [Day](log/ui/ten-peachtree-place/day.jpg) · [Crown](log/ui/ten-peachtree-place/close.jpg)
