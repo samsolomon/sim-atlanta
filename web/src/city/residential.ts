@@ -532,6 +532,17 @@ function houseDetail(p: Plan, b: Builder, outer: P2[], eave: number, base: numbe
   }
 }
 
+// Two rectangular walks overlap when neither rectangle has an edge separating them.
+function frontWalksOverlap(a: P2[], b: P2[]) {
+  for (const ring of [a,b]) for (let i=0; i<2; i++) {
+    const p=ring[i], q=ring[i+1], nx=q[1]-p[1], nz=p[0]-q[0];
+    const project=([x,z]: P2)=>x*nx+z*nz;
+    const aa=a.map(project), bb=b.map(project);
+    if (Math.max(...aa)<=Math.min(...bb) || Math.max(...bb)<=Math.min(...aa)) return false;
+  }
+  return true;
+}
+
 const WALK = '#cbc6ba', DRIVE = '#b2ada3';
 
 /**
@@ -609,6 +620,31 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     }
     return max;
   };
+  // Only qualifying terraces query neighbouring walks. Cache drawn approaches across nearby lots.
+  const frontWalks = new Map<Plan, P2[][]>();
+  const sharedApproach = (owner: Plan, approach: P2[]) => {
+    for (const other of plans.values()) {
+      if (other === owner || !other.front || other.concave) continue;
+      const { m, e, n } = frontFrame(other);
+      if (Math.hypot(m[0]-approach[0][0], m[1]-approach[0][1]) > 70 + Math.abs(other.doorS)) continue;
+      let rings = frontWalks.get(other);
+      if (!rings) {
+        rings = [];
+        const start = other.porch ? 3.3 : 2.2;
+        for (const ds of other.doors) {
+          const a: P2 = [m[0]+ds*e[0]+start*n[0], m[1]+ds*e[1]+start*n[1]];
+          const length = reach(...a, ...n);
+          const c: P2 = [a[0]+length*n[0], a[1]+length*n[1]];
+          if (length <= 1 || stripBlocked(a,c,1.2)) continue;
+          const edge = (p: P2, side: number): P2 => [p[0]+side*.6*e[0],p[1]+side*.6*e[1]];
+          rings.push([edge(a,1),edge(c,1),edge(c,-1),edge(a,-1)]);
+        }
+        frontWalks.set(other,rings);
+      }
+      if (rings.some(ring => frontWalksOverlap(approach,ring))) return true;
+    }
+    return false;
+  };
   for (const p of plans.values()) {
     if (!p.front || p.concave) continue;
     const { len, e, n, m } = frontFrame(p);
@@ -620,11 +656,9 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
     const mainDoor=at(p.doorS,porchDepth);
     const walk=reach(mainDoor[0],mainDoor[1],n[0],n[1]);
     const cls=classes.get(p.id);
-    // The neighbouring front walk crosses this inferred shelf and its upper tread.
-    const sharedWalk = p.id === 'osm:way:269540532';
-    const terrace=high && !sharedWalk && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
+    const terrace=high && inAnsley(...p.centre) && p.style!=='apartment' && cls!=='terrace' && cls!=='semidetached_house'
       ? yardTerrace(b,{at,ground,street,clear:(a,c,w)=>!stripBlocked(a,c,w),width:len,door:p.doorS,walkStart:porchDepth,walkEnd:porchDepth+walk,
-        newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
+        sharedApproach:ring=>sharedApproach(p,ring),newer:p.frame===STEEL,piers:rng(hashStr(p.id+':terrace'))()<.4,bounds:city.bounds,trees:treeTrunks}) : null;
     if(terrace){yields.push(...terrace.yields);terraceSites.push({id:p.id,at:terrace.at,triangles:terrace.triangles});}
     for (const ds of p.doors) {
       const door = at(ds, porchDepth), w = reach(door[0], door[1], n[0], n[1]);

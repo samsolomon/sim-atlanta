@@ -6,7 +6,7 @@ import type { TerrainCity } from '../terrain/transport-data';
 export function yardTerrace(b: Builder, o: {
   at(s:number,d:number):P2; ground(x:number,z:number):number|null;
   clear(a:P2,c:P2,width:number):boolean; street(x:number,z:number):number;
-  walkStart?:number; width:number; door:number; walkEnd:number; newer:boolean; piers:boolean;
+  sharedApproach?(ring:P2[]):boolean; walkStart?:number; width:number; door:number; walkEnd:number; newer:boolean; piers:boolean;
   bounds:TerrainCity['bounds']; trees:readonly (readonly number[])[];
 }) {
   const half=Math.min(o.width*.45,6),gap=.85,front=o.walkEnd-.2,back=front-2.2;
@@ -39,6 +39,7 @@ export function yardTerrace(b: Builder, o: {
       for(let k=0;k<=n;k++)if(o.street(a[0]+(c[0]-a[0])*k/n,a[1]+(c[1]-a[1])*k/n)<1.5)return null;
     }
   }
+  if (o.walkStart !== undefined && o.sharedApproach?.(ring(o.door-.6,o.door+.6,o.walkEnd,o.walkStart))) return null;
   const stone=o.newer?'#c5bcaa':'#999b91',cap=o.newer?'#d3cbbb':'#b7b9ab';
   const start=b.pos.length;
   const at=(s:number,d:number,y:number)=>{const p=o.at(s,d);return[p[0],y,p[1]];};
