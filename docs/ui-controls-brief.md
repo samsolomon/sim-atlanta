@@ -506,6 +506,35 @@ out, then the map flattens.
   once in full as a static asset and played from a blob URL, never through the worker. The
   radio adds no per-visitor server cost.
 
+## Sharing: icon and link previews (Sam, 2026-11-24)
+
+- **Icon:** Sam's solomon.io "S" mark, using the same files as solomon.io: `favicon.svg`
+  (switches colour with `prefers-color-scheme`), `favicon-light.svg`, `favicon-dark.svg`,
+  `favicon-32x32.png`, `favicon-32x32-dark.png`, `apple-touch-icon.png`. Copy them into
+  `web/public/` with the same `<link>` tags as solomon.io.
+- **Default preview** (any link without a view): a 1200×630 City render of downtown in
+  daylight, with no interface in it. A glass card sits 44 px from the bottom-left (day glass
+  values, radius 32 at 1200 px) holding the S mark and **"Sim Atlanta"** (52 px / 700).
+  The image has no tagline, no time and no Live / Timetable word, because apps keep the
+  image for days. "atlanta.solomon.io" is 24 px / 600 white text with a soft shadow,
+  bottom-right. `og:title` "Sim Atlanta"; `og:description` stays the page's meta
+  description; `twitter:card` `summary_large_image`.
+- **Shared view preview:** the place leads, in the same order as the subject card. A small
+  eyebrow with the S mark and "SIM ATLANTA" (20 px / 700, tracked), then the neighbourhood
+  name (52 px / 700), with no tagline. `og:title` "Midtown · Sim Atlanta". The image is a
+  pre-rendered picture of that neighbourhood. One per City neighbourhood is made at build
+  time (daylight, no interface) and served as a static asset, so sharing costs nothing per
+  visitor. A view on the Map outside City names the place in the title but uses the
+  default image. A staged search View uses its own image and name.
+- **How:** the share link already carries the camera. The Worker reads `cam=` (or the Map
+  hash) and looks the point up in the static neighbourhood file, then rewrites the
+  `og:`/`twitter:` tags in `index.html` with HTMLRewriter, cached at the edge like the
+  page. It never renders anything per request. Links to one exact angle or train show
+  that neighbourhood's picture, not the exact frame; per-share snapshots would need
+  storage and are out of scope.
+- **Share button:** copies the link (camera, time if shifted, and the selection); phones
+  use the native share sheet with the same title.
+
 ## Follow-ups (not in this build)
 
 - **Street view:** the tilt slider continues past 70° to a second notch, and the camera
