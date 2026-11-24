@@ -89,7 +89,7 @@ The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and t
 
 | Low (phone), main 63d7e332 | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 2.36M (4.77M on the morning of 2026-11-23) | 2.6M | 2.0M |
+| Triangles | 1.87M with the landmark day LOD (2.17M before; 4.77M on the morning of 2026-11-23) | 2.06M | 2.0M |
 | Draw calls | 395 with lit panes in the body batch (414 after landmark batching and house blocks; 541 before) | 435 | 500 |
 | Programs | 85 | 90 | 80 |
 | Texture MB | 118 | 125 | 100 |
@@ -103,7 +103,7 @@ Low triangle headroom on 2026-11-23: 2.6M − 2.36M = 240k. About 30 building sk
 
 | High (desktop), main 2447d8c0 (after #421) | Measured | Ceiling | Target |
 | --- | --- | --- | --- |
-| Triangles | 6.79M (13.90M before #421) | 7.5M | 6.5M |
+| Triangles | 6.22M with the landmark day LOD (6.54M before; 13.90M before #421) | 6.85M | 6.5M |
 | Draw calls | 432 with lit panes in the body batch (462 after landmark batching; 597; 1,199 before #421) | 475 | 550 |
 | Programs | 89 | 140 | 140 |
 | Texture MB | 808 | 890 | 500 |
@@ -116,6 +116,24 @@ The draw ceiling leaves room for about ten building skins at +1 to +4 draws each
 `high-night` repeats the high check at 22:00, where lit windows and lamps add draws and programs:
 640 calls, 6.82M triangles and 99 programs measured, against a 720-call ceiling; 569 calls after landmark batching
 and house blocks, against a 630-call ceiling.
+
+### Long tasks while moving (`low-north`, `low-zoomout`)
+
+These two entries run the low tier on the A16 canvas (384x692 at DPR 1) with 6x CPU throttle while the camera flies a route
+(`?perf=run&motion=route:<name>`, out and back over a 20 s sample). They fail if any main-thread task
+(PerformanceObserver `longtask`) exceeds the ceiling. Every run reports `longestTaskMs` and `longTasksOver100`.
+
+- `route:north`: Five Points to Brookwood at a 700 m orbit. Areas and rings change under the camera.
+- `route:zoomout`: a 3 km to 25 km orbit over Midtown. It crosses the 10 km build distance early, which triggers far-level builds and swaps.
+
+Ceilings: `route:north` 650 ms and `route:zoomout` 500 ms, both ratcheting toward 300 ms as swap and build steps are sliced. The target is 150 ms.
+`summary.longTasks` lists each task over 100 ms in the sample as `[start, ms]` in page time, for attribution against a CPU profile.
+Calibration on the Studio (2026-11-24, load average ~30):
+
+- `route:north`: 920–945 ms with #538's whole-board very-far ground built in one idle task; 268–589 ms over 7 runs after #586 made it opt-in.
+- `route:zoomout` to 25 km: 72–190 ms.
+- At 1x, nothing exceeded 50 ms.
+
 
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 

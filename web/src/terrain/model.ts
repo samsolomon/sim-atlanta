@@ -78,7 +78,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
-import { batchLandmarks, landmarkBatchOff } from '../materials/landmark-batch';
+import { batchLandmarks, LANDMARK_LOD, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
@@ -332,6 +332,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const zero = grid.manifest.vertical.sceneZeroNavd88M;
   const openings = terrainOpenings(grid, options);
   const mesh = new GroundSurface(grid, options.quality, openings, options.join, options.surface);
+  // The area's closures keep `options`; don't let them keep the prebuilt surface's arrays too.
+  if (options.surface) options = { ...options, surface: undefined };
   yield 'ground surface';
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
@@ -539,10 +541,11 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
   yield 'landmarks attached';
   // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
-  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches', lod: LANDMARK_LOD[options.quality === 'low' ? 'low' : 'high'] }) : null;
   if (batches) {
     scenery.group.add(batches.group);
     if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
+    if (import.meta.env.DEV) void batches.farReady.then(() => console.info('City landmark far versions', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
   }
   yield 'landmark batches';
   // Yards by rule around every house (walks, drives, foundation planting).
@@ -654,6 +657,8 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean; houseShadows?: boolean }) { houses.setDetail(d); scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
+    /** Streaming rings choose a landmark cell's level ('x,z' in 500 m cells); null restores the distance rule. */
+    setLandmarkDetail(cell: string, level: 'full' | 'lod' | null) { batches?.setCellDetail(cell, level); },
     setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       trench?.setWet(factor);
