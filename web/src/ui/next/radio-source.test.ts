@@ -24,7 +24,11 @@ class FakeMediaSource extends EventTarget {
   ended: (string | undefined)[] = [];
   constructor() { super(); FakeMediaSource.last = this; }
   addSourceBuffer() { return this.sb as unknown as SourceBuffer; }
-  endOfStream(e?: string) { this.ended.push(e); this.readyState = 'ended'; }
+  endOfStream(e?: string) {
+    if (this.sb.updating) throw new DOMException('an append is in flight', 'InvalidStateError');
+    this.ended.push(e);
+    this.readyState = 'ended';
+  }
   open() { this.readyState = 'open'; this.dispatchEvent(new Event('sourceopen')); }
 }
 
@@ -84,6 +88,22 @@ describe('radio source', () => {
     await streamSource('/a.mp3', ac.signal, deps({ fetch: streamingFetch([[1], [2], [3]], { failAt: 1 }) }));
     const ms = FakeMediaSource.last;
     ms.open();
+    await settle();
+    expect(ms.sb.appended).toEqual([[1]]);
+    expect(ms.ended).toEqual(['network']);
+  });
+
+  it('stream path: a network failure during an append ends the stream once the append finishes', async () => {
+    await streamSource('/a.mp3', new AbortController().signal, deps({ fetch: streamingFetch([[1], [2], [3]], { failAt: 1 }) }));
+    const ms = FakeMediaSource.last;
+    // A slow append: the fetch fails while it is still in flight.
+    ms.sb.appendBuffer = function (b: Uint8Array) {
+      this.appended.push([...b]);
+      this.updating = true;
+      setTimeout(() => { this.updating = false; this.dispatchEvent(new Event('updateend')); }, 10);
+    };
+    ms.open();
+    await settle();
     await settle();
     expect(ms.sb.appended).toEqual([[1]]);
     expect(ms.ended).toEqual(['network']);

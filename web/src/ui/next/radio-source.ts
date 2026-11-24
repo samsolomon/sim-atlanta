@@ -41,14 +41,28 @@ export function streamSource(url: string, signal: AbortSignal, d: SourceDeps): P
   let sb: SourceBuffer | null = null;
   let done = false;
   let failed = false;
+  let ended = false;
+  /** End the stream with a network error, so the element reports it instead of stalling. Not
+   * while an append is in flight (endOfStream would throw); its updateend comes back here. */
+  const endFailed = () => {
+    if (ended || ms.readyState !== 'open' || sb?.updating) return;
+    ended = true;
+    try {
+      ms.endOfStream('network');
+    } catch {
+      /* detached */
+    }
+  };
   const pump = () => {
-    if (!sb || sb.updating || failed || ms.readyState !== 'open') return;
+    if (!sb || sb.updating || ms.readyState !== 'open') return;
+    if (failed) return endFailed();
     const next = queue.shift();
     if (next) {
       try {
         sb.appendBuffer(next);
       } catch {
         failed = true;
+        endFailed();
       }
     } else if (done) {
       try {
@@ -63,11 +77,7 @@ export function streamSource(url: string, signal: AbortSignal, d: SourceDeps): P
     if (failed) {
       // The fetch failed before any element attached (a prefetch): end at once, so the element
       // reports an error instead of waiting for data that will never come.
-      try {
-        ms.endOfStream('network');
-      } catch {
-        /* detached */
-      }
+      endFailed();
       return;
     }
     sb = ms.addSourceBuffer('audio/mpeg');
@@ -91,13 +101,7 @@ export function streamSource(url: string, signal: AbortSignal, d: SourceDeps): P
       // Aborted (the deck moved on) or the network failed: end what we have, so the element
       // reaches 'ended' or 'error' instead of waiting for ever.
       failed = true;
-      if (ms.readyState === 'open') {
-        try {
-          ms.endOfStream('network');
-        } catch {
-          /* detached */
-        }
-      }
+      endFailed();
     }
   })();
   return Promise.resolve(d.createObjectURL(ms));

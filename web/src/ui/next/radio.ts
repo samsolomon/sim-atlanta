@@ -284,13 +284,19 @@ export function createRadio(o: RadioOptions): Radio {
   const primary = () => decks.find((d) => d.role === 'primary' || d.role === 'incoming') ?? null;
   const other = (d: Deck) => decks[decks[0] === d ? 1 : 0];
 
+  /** Failures in a row; reset whenever a track sounds. Two in a row (say, offline) stop the radio
+   * rather than racing through the station. */
+  let strikes = 0;
   function play(d: Deck) {
     const t = d.track;
     void d.ready.then((ok) => {
       if (!playing || d.track !== t || d.role === 'idle' || d.role === 'preloaded') return;
       if (!ok) {
-        // The file didn't load: skip to the next track rather than sit silent.
-        if (d.role === 'primary' || d.role === 'incoming') crossfade(0);
+        // The file didn't load: skip to the next track rather than sit silent, but count it, so
+        // a dead network stops the radio instead of fetching its way through the station.
+        if (d.role !== 'primary' && d.role !== 'incoming') return;
+        if (++strikes >= 2) return failed(d);
+        crossfade(0);
         return;
       }
       return d.el.play().catch((e: unknown) => {
@@ -325,9 +331,6 @@ export function createRadio(o: RadioOptions): Radio {
     }
   }
 
-  /** Failures in a row; reset whenever a track sounds. Two in a row (say, offline) stop the radio
-   * rather than racing through the station. */
-  let strikes = 0;
   /** A media error after the file was assigned (a stream cut off mid-track, a bad file). */
   function onError(d: Deck) {
     if (!sounding(d) || !playing) return;

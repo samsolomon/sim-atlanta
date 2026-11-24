@@ -58,13 +58,14 @@ let els: FakeElement[];
 const audio: RadioAudio = {
   context: () => (ctx = new FakeContext()) as unknown as AudioContext,
   element: () => { const e = new FakeElement(); els.push(e); return e as unknown as HTMLAudioElement; },
-  source: (url) => { fetched.push(url); live.add(url); return hold ? hold.then(() => url) : Promise.resolve(url); },
+  source: (url) => { fetched.push(url); if (offline) return Promise.reject(new TypeError('Failed to fetch')); live.add(url); return hold ? hold.then(() => url) : Promise.resolve(url); },
   release: (src) => { released.push(src); live.delete(src); },
 };
 let fetched: string[] = [];
 let released: string[] = [];
 const live = new Set<string>();
 let hold: Promise<void> | null = null;
+let offline = false;
 /** Let the decks' fetched sources settle. */
 const flush = async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); };
 function make(hour = 14, storage: Map<string, string> = new Map()) {
@@ -89,6 +90,7 @@ beforeEach(() => {
   released = [];
   live.clear();
   hold = null;
+  offline = false;
   vi.useFakeTimers();
 });
 afterEach(() => vi.useRealTimers());
@@ -360,5 +362,15 @@ describe('radio engine', () => {
     b.emit('error'); // the next one fails too, before it ever sounded: the network is down
     await flush();
     expect(r.playing).toBe(false);
+  });
+
+  it('stops after two files in a row fail to fetch, instead of fetching through the station', async () => {
+    offline = true;
+    const r = make();
+    await r.ready;
+    r.toggle();
+    for (let i = 0; i < 10; i++) await flush();
+    expect(r.playing).toBe(false);
+    expect(fetched.length).toBeLessThanOrEqual(3);
   });
 });
