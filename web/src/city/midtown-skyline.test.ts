@@ -137,8 +137,8 @@ it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit
     const p = veil.geometry.getAttribute('position');
     let low = { y: Infinity, z: 0 }, high = { y: -Infinity, z: 0 };
     for (let i = 0; i < p.count; i++) {
-      if (p.getY(i) < low.y) low = { y: p.getY(i), z: p.getZ(i) };
-      if (p.getY(i) > high.y) high = { y: p.getY(i), z: p.getZ(i) };
+      if (p.getY(i) < low.y) low = { y: p.getY(i), z: p.getZ(i) + veil.position.z };
+      if (p.getY(i) > high.y) high = { y: p.getY(i), z: p.getZ(i) + veil.position.z };
     }
     expect(Math.abs(high.z)).toBeLessThan(Math.abs(low.z) - 5);
   }
@@ -155,7 +155,7 @@ it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit
   // material's emissive may saturate a channel, or it clips to a white slab.
   for (const name of ['1180 veil 0', '1180 veil 1', '1180 crown lattice', '1180 veil frames']) {
     const m = (model.group.getObjectByName(name) as Mesh).material as MeshLambertMaterial;
-    expect(Math.max(m.emissive.r, m.emissive.g, m.emissive.b) * m.emissiveIntensity, name).toBeLessThan(.7);
+    expect(Math.max(m.emissive.r, m.emissive.g, m.emissive.b) * m.emissiveIntensity, name).toBeLessThan(name.startsWith('1180 veil ') && !name.endsWith('frames') ? .61 : .7);
   }
   const lattice = model.group.getObjectByName('1180 crown lattice') as Mesh;
   expect((lattice.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);

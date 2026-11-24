@@ -224,6 +224,8 @@ export function symphonyTower(shell: Shell) {
     transparent: true, depthWrite: false });
   const edgeLine = new THREE.Mesh(line.geometry(), lineMaterial);
   edgeLine.name = '1180 edge light';
+  // Composite the light after the depth-writing glass, retaining normal occlusion.
+  edgeLine.renderOrder = 1;
   edgeLine.visible = false;
   model.group.add(edgeLine);
   const geometry = skin.geometry();
@@ -246,7 +248,18 @@ export function symphonyTower(shell: Shell) {
   };
   veilMaterial.customProgramCacheKey = () => '1180-veil-wash-v1';
   // One mesh per veil, so three.js sorts the near one over the far one.
-  const veil = veilSides.map((b, i) => { const m = new THREE.Mesh(b.geometry(), veilMaterial); m.name = `1180 veil ${i}`; return m; });
+  const veil = veilSides.map((b, i) => {
+    const geometry = b.geometry();
+    geometry.computeBoundingBox();
+    const centre = geometry.boundingBox!.getCenter(new THREE.Vector3());
+    // Transparent sorting uses object origins. Separate those origins across the crown;
+    // keep local y intact for the emission gradient.
+    geometry.translate(-centre.x, 0, -centre.z);
+    const m = new THREE.Mesh(geometry, veilMaterial);
+    m.position.set(centre.x, 0, centre.z);
+    m.name = `1180 veil ${i}`;
+    return m;
+  });
   const lattice = new THREE.Mesh(frame.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide,
     emissive: '#d8e6e1', emissiveIntensity: 0 }));
   lattice.name = '1180 veil frames';

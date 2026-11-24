@@ -1,6 +1,6 @@
 # Handoff: studio-midtown-skyline (Claude → Codex), 2026-11-24
 
-## Current state
+## Original Claude handoff state (historical)
 - **Branch:** `samsolomon/studio-1180-night-2` (pushed, parked as WIP, **no PR yet**). It holds:
   - a no-behaviour-change refactor that moves the 1180 crown's night strengths into `CROWN_NIGHT` in `web/src/city/midtown-skyline-symphony.ts`
   - the step sheet `docs/log/ui/midtown-skyline/napkin-night-steps.jpg`
@@ -91,3 +91,6 @@
 - Source now provisionally implements step B in napkin-night-smooth-steps.jpg: #d5dfdc, intensity .82, depthWrite true, opacity .88 daytime to 1 night, procedural height emission multiplier .72–1. A=#b4c3bf, C=#e7eeeb. Await Sam's pick; no PR/merge.
 - Controlled old-colour/.88-opacity test with only depthWrite enabled removed the large mottling. Ink uses background depth when the veil does not write depth.
 - pnpm test, focused 15 skyline tests, and pnpm test:perf pass. pnpm review now works (Claude); round 1 found stale docs (superseded here and in build log) and plausible near/far daytime sorting / oblique edge-light occlusion. Check those cameras before merge, retune ceiling to chosen colour, then final review (round 2).
+
+## Sam selected B — finishing for merge
+Sam selected B via coordinator msg_6a895c5d57ac. The source is now the selected production change: #d5dfdc, strength .82, depth writing, opacity .88 by day and 1 at night, emission gradient .72–1. Veil peak linear emission is ~.605; its regression ceiling is now .61. Separate mesh origins give the transparent veils distance sorting, and the edge light composites after the veil with depth testing retained. Final verification and PR details follow in the merge notice.
