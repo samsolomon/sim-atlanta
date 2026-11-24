@@ -8,7 +8,7 @@
       "programs": 90,
       "textureMB": 125,
       "geometryMB": 190,
-      "heapAfterGcMB": 470
+      "heapAfterGcMB": 460
     },
     "target": {
       "triangles": 2000000,

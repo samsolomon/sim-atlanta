@@ -87,25 +87,28 @@ A Studio dry run at the A16 viewport (fps there is meaningless, but counts and m
 `scripts/perf-budget.mjs` builds `web/`, serves it, runs both tiers in headless Chrome, and fails if any ceiling is exceeded.
 The JS heap is read after a forced GC (`HeapProfiler.collectGarbage`). Fps and the A16's ready time come only from the device runs.
 
-| Low (phone), main bc32b09 | Measured | Target |
-| --- | --- | --- |
-| Triangles | 2.33M (4.77M on the morning of 2026-11-23) | 2.0M |
-| Draw calls | 529 | 500 |
-| Programs | 75 | 80 |
-| Texture MB | 109 | 100 |
-| Geometry MB | 170 | 200 |
-| JS heap after GC | 424 MB | 400 MB |
-| A16 fps (default view, still / panning) | 24.8 / 25.1 (12.8 on the morning of 2026-11-23) | 30 |
-| A16 ready | ~20 s | 8 s |
+| Low (phone), main 63d7e332 | Measured | Ceiling | Target |
+| --- | --- | --- | --- |
+| Triangles | 2.36M (4.77M on the morning of 2026-11-23) | 2.6M | 2.0M |
+| Draw calls | 541 | 600 | 500 |
+| Programs | 85 | 90 | 80 |
+| Texture MB | 118 | 125 | 100 |
+| Geometry MB | 174 | 190 | 200 |
+| JS heap after GC | 394 MB | 460 MB | 400 MB |
+| A16 fps (default view, still / panning), production bc32b09 | 24.8 / 25.1 (12.8 on the morning of 2026-11-23) | | 30 |
+| A16 ready, production bc32b09 | 10.6 s, all areas by ~22 s (#359 later cut ~1.85 s from data to ready) | | 8 s |
 
-| High (desktop) | Measured | Target |
-| --- | --- | --- |
-| Triangles | 13.2M | 12M |
-| Draw calls | 1,128 | 1,000 |
-| Programs | 138 | 140 |
-| Texture MB | 808 | 500 |
-| Geometry MB | 270 | 350 |
-| JS heap after GC | 514 MB | 600 MB |
+Low triangle headroom on 2026-11-23: 2.6M − 2.36M = 240k. About 30 building skins due that night add up to
+2,400 low triangles each, so at most ~72k, which leaves ~168k. Geometry headroom is 16 MB.
+
+| High (desktop), main 63d7e332 | Measured | Ceiling | Target |
+| --- | --- | --- | --- |
+| Triangles | 13.90M | 14.6M | 12M |
+| Draw calls | 1,199 | 1,250 | 1,000 |
+| Programs | 100 | 140 | 140 |
+| Texture MB | 817 | 890 | 500 |
+| Geometry MB | 281 | 300 | 250 |
+| JS heap after GC | 501 MB | 570 MB | 500 MB |
 
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 
