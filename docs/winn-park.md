@@ -26,3 +26,15 @@ The existing ground-map hook and landscape primitives fit this work. A full high
 ## Product design review — 2026-11-23
 
 Keep the quiet ground palette and a legible narrow path. Preserve the open eastern lawn and all tree ownership. No new UI, ambient truth labels or invented night lights. The low-tier pond is a painted impression; the high-tier close view supplies the level water and stone rim. Day/night captures must make that tier difference reviewable.
+
+## Verification and integration
+
+The high-tier park detail is 1,263 triangles. Low returns no park geometry. Full `pnpm test` passed: 20 Rust tests, 11 Python tests plus pipeline validation, 935 web tests with one existing skip, and five worker tests. Build and both performance tiers passed. The final default-view budget run measured low 2,356,763 triangles / 168.4 MB geometry and high 13,732,815 / 274 MB geometry.
+
+Ground-contact checked commit `9acc077d` on the served terrain: 4,149 upward-face samples at 0.5 m had zero penetrations; an additional water-inclusive run checked 4,036 water points at 0.25 m with zero penetrations. Granite and alternate rim faces were clear. The intentionally buried terrace underside is 12 cm below the carved terrain; it is not an exposed contact fault. The board-wide audit still reports unrelated intersections and is not a claim of a globally clean board.
+
+The close render revealed pre-existing flat tree leaf-carpet discs crossing the new water and channel. Tree-lab and tree-species owners approved a local exclusion in `rolloutSpecies`: whole discs intersecting the already-painted Winn floor are omitted. Tree positions, species, crowns, limbs and transforms are unchanged; default carpet behaviour elsewhere remains. This removes duplicate cover without extra low-tier triangles. The regression test checks both tiers, including a disc whose centre lies outside the exclusion but whose edge overlaps.
+
+Publishing requires a web rebuild and coordinator deployment, with no new data, texture allocation or per-visitor server work.
+
+Review (Claude): no findings. [Matched views and camera strings](log/ui/winn-park/README.md).

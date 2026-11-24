@@ -1,0 +1,62 @@
+{
+  "ravine-high-day-before": {
+    "url": "http://localhost:5418/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7662399,
+    "calls": 212,
+    "areas": 12
+  },
+  "pond-high-night-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=862%2C-4070%2C110%2C70%2C45&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7062718,
+    "calls": 219,
+    "areas": 12
+  },
+  "ravine-high-night-before": {
+    "url": "http://localhost:5418/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7582780,
+    "calls": 225,
+    "areas": 12
+  },
+  "pond-high-day-after": {
+    "url": "http://localhost:5417/?view=city&dev=&mindist=20&cam=862%2C-4070%2C110%2C70%2C45&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7142361,
+    "calls": 206,
+    "areas": 12
+  },
+  "ravine-low-night-before": {
+    "url": "http://localhost:5418/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1655292,
+    "calls": 91,
+    "areas": 12
+  },
+  "ravine-low-day-after": {
+    "url": "http://localhost:5417/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1675386,
+    "calls": 91,
+    "areas": 12
+  },
+  "ravine-low-day-before": {
+    "url": "http://localhost:5418/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T14%3A00%3A00-05%3A00&q=low",
+    "triangles": 1676192,
+    "calls": 91,
+    "areas": 12
+  },
+  "ravine-high-night-after": {
+    "url": "http://localhost:5417/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T23%3A00%3A00-05%3A00&q=high",
+    "triangles": 7588150,
+    "calls": 227,
+    "areas": 12
+  },
+  "ravine-high-day-after": {
+    "url": "http://localhost:5417/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T14%3A00%3A00-05%3A00&q=high",
+    "triangles": 7665121,
+    "calls": 214,
+    "areas": 12
+  },
+  "ravine-low-night-after": {
+    "url": "http://localhost:5417/?view=city&cam=855%2C-4068%2C30%2C58%2C150&t=2026-11-20T23%3A00%3A00-05%3A00&q=low",
+    "triangles": 1655674,
+    "calls": 91,
+    "areas": 12
+  }
+}
