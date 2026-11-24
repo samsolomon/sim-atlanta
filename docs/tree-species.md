@@ -987,9 +987,10 @@ unchanged.
    sat 2.3 km from its trees. World now submits only the showing clumps and gives every tree mesh
    fixed bounds built from its trees.
 2. **Far form (low).** Past the far-tree orbit (city.ts `FAR_TREES_M`, 800 m out and 680 m back),
-   each area draws its trees as one instanced mesh on the existing leaf material, so there is no new
-   program. Each tree gets two faceted octahedron clumps (pine tiers for a pine) and a trunk: 24
-   triangles. The colours match `World.setSeason`'s. A bare crown keeps only its trunk, as today's
+   each area draws its trees as two instanced meshes on the existing leaf material, so there is no
+   new program. A broadleaf gets two faceted octahedron clumps and a trunk (24 triangles). A pine
+   gets two stacked five-sided cones, because its pointed tiers are the one silhouette that reads
+   from far away. The colours match `World.setSeason`'s. A bare crown keeps only its trunk, as today's
    far view does. The core (`trees/far-canopy.ts`) is pure and safe to run in a Worker, and the
    streaming mid ring will share it.
 3. **Cells (low).** Near trees are batched in 400 m cells, so a close view draws only the cells in
@@ -1000,11 +1001,11 @@ Trees only, at low (`perf=run`, Nov 20 14:00, each view minus `&hide=trees`):
 
 | View | main | compaction | + far form and cells |
 |---|---:|---:|---:|
-| Default open view | 47 calls / 575k | 48 / 487k | 23 / 249k |
+| Default open view | 47 calls / 575k | 48 / 487k | 35 / 252k |
 | Ansley `cam=1194,-4352,20,50,420` | 24 / 534k | 24 / 495k | 32 / 87k |
-| Ansley `cam=1194,-4352,20,50,900` | – | 19 / 265k | 11 / 155k |
+| Ansley `cam=1194,-4352,20,50,900` | – | 19 / 265k | 15 / 158k |
 
-The board totals at the default view go from 580 / 2,327,132 to 555 / 2,089,000. Programs are
+The board totals at the default view go from 579 / 2,325,720 to 567 / 2,092,072. Programs are
 unchanged at every clock (79, 82 and 83), and so is `motion=pan` (80, 83). Geometry rises
 1.8 MB, for the far instance buffers. The remaining `frustumCulled = false` tree meshes are the High
 Museum ginkgo's two (trees/render.ts) and, under `?trees=species`, the rollout looks that
