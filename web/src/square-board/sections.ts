@@ -178,6 +178,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
     joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined))) : undefined;
   signal.throwIfAborted();
+  const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();
   // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {
@@ -202,6 +203,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         surface: surfaces?.[patchIndex],
         // Trees join the City-wide batch only when the whole section mounts.
         deferTrees: true,
+        // Sliced: dress the trees for today now, not in one pass when the section mounts.
+        dayOfYear: budget ? sliceInput.dayOfYear : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
@@ -252,7 +255,6 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     throw error;
   }
   }
-  const budget = sliceBudget(quality);
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
   const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());

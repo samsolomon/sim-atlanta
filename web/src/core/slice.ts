@@ -38,8 +38,11 @@ export interface SliceStats {
 
 export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, maxSliceAt: '', maxStepMs: 0, maxStepAt: '', totalMs: 0 });
 
-/** Set by City while the user drags the camera: background builds then take a smaller share. */
-export const sliceInput = { dragging: false };
+/**
+ * Set by City: `dragging` while the user drags the camera (background builds then take a
+ * smaller share), and today's `dayOfYear`, so a sliced build dresses its trees for today.
+ */
+export const sliceInput = { dragging: false, dayOfYear: 180 };
 
 export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise<T> {
   const now = o.now ?? (() => performance.now());

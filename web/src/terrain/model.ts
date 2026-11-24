@@ -107,6 +107,12 @@ export interface DowntownTerrainOptions {
   surface?: BuiltSurface;
   /** Leave City-wide tree registration to the caller's commitTrees() (sliced section builds). */
   deferTrees?: boolean;
+  /**
+   * Dress the trees for this day of the year while building (default: summer, 180). A sliced
+   * mount passes today's, so City's setSeason at mount is a no-op instead of a full pass in one
+   * frame. The result is the same: setSeason depends only on the day.
+   */
+  dayOfYear?: number;
 }
 
 function checkBounds(grid: GroundGrid, city: VData) {
@@ -201,7 +207,7 @@ function makeScenery(...args: Parameters<typeof buildScenery>) {
 
 /** makeScenery as a build: buildings yield every few, then trees (core/slice.ts). */
 function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step: number,
-  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps }: Partial<DowntownTerrainOptions> = {},
+  sceneY: (x: number, z: number) => number | null, { finishFor, separateBuilding, simpleLeafClumps, dayOfYear }: Partial<DowntownTerrainOptions> = {},
   replacedTree: World['replacedTree'] = null, drawnElsewhere?: (bd: VBuilding) => boolean, crownSize: World['crownSize'] = null) {
   const options = { terrain: 'flat' as const, clumps: quality === 'low' ? 3 : 8, lightMapMax: quality === 'low' ? 1024 : 2048 };
   class TerrainScenery extends World {
@@ -222,7 +228,7 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
   before = world.group.children.length;
   yield* world.treeSteps(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
   tagNew(before, 'trees');
-  yield* world.seasonSteps(180);
+  yield* world.seasonSteps(dayOfYear ?? 180);
   return world;
 }
 
