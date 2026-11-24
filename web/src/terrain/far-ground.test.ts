@@ -282,3 +282,34 @@ it('abandons a queued very-far build once its board is disposed', async () => {
     spy.mockRestore();
   } finally { vi.unstubAllGlobals(); }
 });
+
+it('swaps a mounted low board to its settled far level at its next level change', async () => {
+  const { vi } = await import('vitest');
+  const { PerspectiveCamera } = await import('three');
+  const { createDowntownTerrain, FAR_GROUND_M, farSettleForTests } = await import('./model');
+  const { bounds } = await import('../square-board/sections');
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  vi.stubGlobal('requestAnimationFrame', (cb: () => void) => setTimeout(cb, 0));
+  farSettleForTests.enable();
+  try {
+    const b = bounds['south-band'], path = 'square-board/south-band';
+    const area = createDowntownTerrain(grid(path), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const camera = new PerspectiveCamera();
+    camera.position.set(b.maxX + FAR_GROUND_M + 10, 0, b.minZ); area.update(0, camera);
+    const plain = area.board.geometry;
+    const near = new GroundSurface(grid(path), 'low');
+    // Before the background settle the board draws the plain level, which stands above the DEM.
+    expect(aboveDem(plain, near, 165).interior).toBeGreaterThan(0.5);
+    await farSettleForTests.done();
+    // Held while the board draws its far level: no swap on screen by itself.
+    expect(area.board.geometry).toBe(plain);
+    camera.position.set(b.maxX + 100, 0, b.minZ); area.update(0, camera);
+    camera.position.set(b.maxX + FAR_GROUND_M + 10, 0, b.minZ); area.update(0, camera);
+    const settled = area.board.geometry;
+    expect(settled).not.toBe(plain);
+    expect(settled.index!.count).toBe(plain.index!.count);
+    expect(aboveDem(settled, near, 165).interior).toBeLessThan(0.05);
+    area.dispose(); near.geometry.dispose();
+  } finally { farSettleForTests.enable(false); vi.unstubAllGlobals(); }
+});

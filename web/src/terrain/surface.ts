@@ -119,6 +119,11 @@ export class GroundSurface {
     return geometry;
   }
 
+  /** True when a Worker already built this far level (so taking it costs no main-thread time). */
+  hasPrebuiltFar(errorM: number, lower = false) {
+    return !!this.prebuiltFar && this.prebuiltFar.errorM === errorM && !!this.prebuiltFar.lower === lower;
+  }
+
   farGeometry(errorM: number, maxCellM = 160, lower = false) {
     const far = this.prebuiltFar;
     this.prebuiltFar = undefined;
