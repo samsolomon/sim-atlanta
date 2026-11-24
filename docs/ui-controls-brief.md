@@ -416,7 +416,7 @@ out, then the map flattens.
 - **Compact player** (Sam, 2026-11-24; tighter than boards F07/G13): one row, about 64 px
   tall, 300 px wide on desktop. 40×40 art (radius 8) · title 14 px / 600, one line, with a
   12 px secondary-ink subtitle ("Track 2 of 10") · a 40 px round play/pause on the
-  separator tint and a 36 px next icon (44×44 hit areas). Progress is a 2 px line along the
+  separator tint and a next button. Both glyphs are 18 px with 44×44 hit areas. Progress is a 2 px line along the
   panel's bottom edge, not draggable. No "Radio" header, no ✕ (the dock button toggles;
   Esc or a tap outside closes), no previous button and no volume row (system volume).
 - **Phones:** the same row as a floating glass card 12 px above the dock, not a sheet.
