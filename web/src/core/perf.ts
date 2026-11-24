@@ -634,8 +634,14 @@ export const perf = {
       return original.call(this, camera, sc, geometry, material, object, group);
     };
     return new Promise(resolve => {
-      // Wait for a frame to start, record the whole next one, then put the renderer back.
+      // Wait for a frame to start, record the whole next one, then put the renderer back. A hidden
+      // page runs no frames, so a timeout restores the renderer and resolves empty-handed.
+      let done = false;
+      const fallback = setTimeout(() => { if (done) return; done = true; renderer.renderBufferDirect = original; resolve(null); }, 1000);
       requestAnimationFrame(() => { recs.clear(); requestAnimationFrame(() => {
+        if (done) return;
+        done = true;
+        clearTimeout(fallback);
         renderer.renderBufferDirect = original;
         const all = [...recs.values()];
         const sum = (rs: Rec[]) => ({ tri: rs.reduce((a, r) => a + r.tri, 0), calls: rs.reduce((a, r) => a + r.calls, 0) });
