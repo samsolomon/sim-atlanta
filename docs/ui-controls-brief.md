@@ -37,8 +37,11 @@ from the screen edges. On phones, the top elements also sit below the status bar
 - The dock is identical in every view. Everything it opens rises from it as one popover
   on desktop, or a bottom sheet on phones. Only one is open at a time; Esc, a tap outside
   or the same button closes it.
-- The camera group **steps aside while the right panel is open** (gestures and N still
-  work). The compass is otherwise always visible, in Map and City alike.
+- The camera group **stays visible while a detail panel is open**, in Map and City alike
+  (Sam, 2026-11-24, reversing the earlier "steps aside": Sam wanted to find a bus in 2D
+  and flip to 3D to follow it). On desktop the panel slides in and the camera group rides
+  its left edge, 12 px from it, moving with the same 300 ms ease; it returns to the screen
+  edge when the panel closes. Nothing covers the compass, zoom or 3D.
 - Desktop search is a field in the dock ("Search Atlanta", "Search models" in Models)
   with a ⌘K / Ctrl K hint. Phones show a search icon that opens a sheet.
 
@@ -95,7 +98,15 @@ Not yet: Street view, layers and tours (see Follow-ups).
 - **Two things want the panel:** the newer one replaces the older one. A back row (for
   example "‹ Northbound to North Springs") returns to the previous content.
 - **Camera on selection:** selecting something moves the camera so the subject sits in
-  the middle of the visible area beside the panel.
+  the middle of the visible area beside the panel (left of the camera group).
+- **Follow in 3D** (Sam, 2026-11-24): on a vehicle (train, bus, freight, car) in 2D the
+  primary button reads "Follow in 3D". It switches to City with the camera following that
+  vehicle; in City it reads "Follow". The selection survives the view switch both ways:
+  the 3D toggle with a vehicle selected opens City following it, and the toggle back to
+  2D keeps the card and centres the map on the vehicle. A selected building stays
+  selected and centred. A drag or zoom gesture stops following, as it does now. The card,
+  its truth-tier chips and the scene-wide Live / Timetable word are identical in both
+  views; following never upgrades a tier (a reported bus position stays "reported").
 - **Key:** two sections, each line short enough for one line.
   - **Colour means the kind of service:** city rail, intercity, freight, bus.
   - **Confidence:** Live (real-time feed, moments ago), Scheduled (from a published
@@ -259,15 +270,19 @@ From the impeccable critique of the Final section (26/40):
   (Final 09). Narrower screens fold the browser into the card (Final 10).
 - **Share:** the link preview on its own row, then **Copy link** and **Share…** side by
   side, both separator-tint buttons.
-- **Models exception:** the camera group (reset, zoom) stays beside Models Details,
-  because Details is the lab's main tool rather than a passing selection.
+- **Models:** the camera group (reset, zoom) sits beside Models Details, the same rule as
+  the Map's detail panel.
 
 ## Phones: the selection card
 
 - A selected train or building opens as a **compact card above the dock** (P2): service
-  line, headsign, next stop with its truth tier, Follow and "More ⌃". The dock stays.
+  line, headsign, next stop with its truth tier, Follow (Follow in 3D from 2D) and
+  "More ⌃". The dock stays.
 - Swiping up expands it to full detail (P3), which covers the dock; swiping down returns to
   the compact card. ✕ closes it.
+- The compass and 3D stay visible top-right while any selection card or sheet is open
+  (Sam, 2026-11-24). The expanded sheet's top stops 12 px below the camera group, so it
+  never covers them; its content scrolls inside.
 
 ## Credits (OSMF attribution guidelines)
 
@@ -512,8 +527,8 @@ out, then the map flattens.
    studios.
 10. **Final layout** (supersedes the shell placement from step 1): the centred dock
     (menu · Map | Models · search field · radio · share) replacing the bottom-left dock;
-    the top-right camera group (compass, zoom, 3D + tilt) that steps aside for the right
-    panel; Models as its own page with the left browser, right Details, model framing and
+    the top-right camera group (compass, zoom, 3D + tilt) that rides the detail
+    panel's left edge (never hidden; Follow in 3D keeps the selection across views); Models as its own page with the left browser, right Details, model framing and
     "See the model ›"; the phone compact selection card; trackpad two-finger tilt; the
     off-area state; and the new hints. This reworks merged step-1 code and its tests. The
     slider crossing into Map comes after option B's switch, since it drives that
@@ -614,7 +629,7 @@ DOM's semi-transparent fill supplies the tint. Rects come from the panels'
 | Surface | Desktop size | Phone | When |
 |---|---|---|---|
 | Place card | ~262×120 | ~322×100 | always |
-| Camera group: compass, zoom, 3D + tilt | 44² + 44×88 + 44×110 | compass + 3D, 2 × 44² | always (steps aside for the right panel) |
+| Camera group: compass, zoom, 3D + tilt | 44² + 44×88 + 44×110 | compass + 3D, 2 × 44² | always (rides the detail panel's left edge) |
 | Dock | ~556×52 | full width × 52 | always |
 | **Always-on total** | **≈ 71k px, 7.5% of the screen** | **≈ 55k px, 17%** | |
 | First-visit hint | ~600×40 | full width × ~56 | first visit only |
