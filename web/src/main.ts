@@ -20,6 +20,7 @@ import { LiveBuses } from './live/buses';
 import { LiveMarta } from './live/marta';
 import { clock } from './core/clock';
 import { TrainSource } from './core/trains';
+import { railStatus } from './ui/status';
 import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
 
@@ -943,7 +944,7 @@ const shellOptions: ShellOptions = {
   },
   live: () => ({
     realTime: clock.isRealTime(),
-    rail: source.liveActive ? 'live' : live.error ? 'down' : 'connecting',
+    rail: railStatus(source.liveActive, live.error),
     trains: live.count,
     cityFreight: diorama?.hasFreight ?? false,
     cityTraffic: diorama?.hasTraffic ?? false,

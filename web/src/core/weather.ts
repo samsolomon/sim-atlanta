@@ -3,6 +3,7 @@
  * status card on the 2D map can use it without pulling in the 3D bundle.
  */
 import { ATL } from '../vignette/time';
+import { freshness, serverDate } from '../live/freshness';
 
 export type WeatherKind = 'clear' | 'cloudy' | 'overcast' | 'rain' | 'storm' | 'fog';
 
@@ -14,6 +15,21 @@ export interface Weather {
   label: string;
   tempF?: number;
   live: boolean;
+  /** When the observation was valid (ms), for live weather. */
+  observedAt?: number;
+}
+
+/**
+ * How old an observation may be and still read "weather reported". Open-Meteo's current
+ * conditions are 15-minute model intervals, and the edge caches them for up to 10 minutes, so a
+ * normal reading is at most about 25 minutes old; an hour allows for a late model run.
+ */
+export const WEATHER_MAX_AGE_MS = 60 * 60_000;
+
+/** A live observation that is still current enough to show as reported. */
+export function weatherFresh(w: Weather | null, now = Date.now()): Weather | null {
+  if (!w || !w.live || w.observedAt === undefined) return null;
+  return freshness(w.observedAt, null, now, WEATHER_MAX_AGE_MS) === 'fresh' ? w : null;
 }
 
 export const PRESETS: Record<WeatherKind, Weather> = {
@@ -43,14 +59,22 @@ export function fromWmo(code: number, cloudPct: number, precipMm: number, visM: 
   return { ...base, kind: 'clear', rain: 0, fog: visFog * 0.6, label: 'clear' };
 }
 
-type Current = { weather_code: number; cloud_cover: number; precipitation: number; visibility?: number; temperature_2m?: number };
-const parse = (c: Current) => fromWmo(c.weather_code, c.cloud_cover, c.precipitation, c.visibility, c.temperature_2m);
+/** `time` is Unix seconds (requested with timeformat=unixtime). */
+type Current = { time?: number; weather_code: number; cloud_cover: number; precipitation: number; visibility?: number; temperature_2m?: number };
+const parse = (c: Current) => ({
+  ...fromWmo(c.weather_code, c.cloud_cover, c.precipitation, c.visibility, c.temperature_2m),
+  observedAt: c.time! * 1000,
+});
 
-async function getCurrent(url: string | URL, ms: number): Promise<Current | null> {
+/** Current conditions, or null when unavailable, undated, stale or from the future. */
+export async function getCurrent(url: string | URL, ms: number, now = Date.now): Promise<Current | null> {
   try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(ms) });
+    // Never from the browser cache: an old cached reading must not pass as the present.
+    const r = await fetch(url, { signal: AbortSignal.timeout(ms), cache: 'no-store' });
     if (!r.ok) return null;
-    return ((await r.json()) as { current?: Current }).current ?? null;
+    const current = ((await r.json()) as { current?: Current }).current ?? null;
+    if (!current || typeof current.time !== 'number') return null;
+    return freshness(current.time * 1000, serverDate(r), now(), WEATHER_MAX_AGE_MS) === 'fresh' ? current : null;
   } catch {
     return null;
   }
@@ -70,6 +94,7 @@ export async function fetchLive(): Promise<Weather | null> {
     current: 'weather_code,cloud_cover,precipitation,visibility,temperature_2m',
     temperature_unit: 'fahrenheit',
     timezone: 'America/New_York',
+    timeformat: 'unixtime',
   }).toString();
   const direct = await getCurrent(u, 8000);
   return direct ? parse(direct) : null;
