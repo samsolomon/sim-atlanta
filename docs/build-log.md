@@ -3581,3 +3581,7 @@ The Codex review caught that my first test recorded only each board's single wor
 The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. It's built one board per idle slice once the camera passes 10 km. At the default view the low tier draws 94,710 fewer triangles, with the same draw count and 0.6 MB more geometry.
 
 [The default view, before and after](log/very-far-ground/strip-orbit-21k.jpg) · [Why settle: 2 m, settled 8 m, plain 8 m at 12 km](log/very-far-ground/crop-12k-2m-settled-raw.png)
+
+### 2026-11-24 · Windsor Over Peachtree in buff brick
+
+The 1964 Peachtree North Apartments at North Avenue had been a generic glass slab. The lidar puts the roof at 57 m above grade. Two photographs gave the look: buff brick, balcony runs between brick piers, and brick end walls. The first version ran the balconies the full length of each face, and from the review orbit they hid every pier, so the building read as a grey striped box. Breaking the runs at the piers brought the brick back. [Before/after, day and night](log/ui/windsor-over-peachtree/README.md)
