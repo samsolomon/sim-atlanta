@@ -42,6 +42,8 @@ type Contours = { value: number };
 export interface DowntownTerrainOptions {
   quality: TerrainQuality;
   simpleLeafClumps?: boolean;
+  /** Optional continuous road axes for the painted terrain surface. */
+  boardRoads?: TerrainCity['roads'];
   boardDetails?: (builder: Builder, ground: (x:number,z:number)=>number|null, material: THREE.MeshLambertMaterial) => void;
   join?: TerrainJoins;
   bottomY?: number;
@@ -185,7 +187,8 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
-  const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails);
+  const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
+  const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];

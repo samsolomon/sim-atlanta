@@ -1,41 +1,88 @@
 // Grant Street SE under the eight CSX tracks. Local geometry and NAVD88
 // evidence are documented in docs/king-freight-crossings.md.
 import type { MeshLambertMaterial } from 'three';
-import type { Builder, P2 } from '../vignette/geom';
-import { PAL } from '../vignette/world';
-import type { GroundYield } from '../terrain/surface';
+import type { Builder } from '../vignette/geom';
+import { PAL, type VRoad } from '../vignette/world';
+import { GroundGrid } from '../terrain/grid';
 
 type Ground = (x: number, z: number) => number | null;
-const zero = 323.8;
+const deckNavd = 313.66;
 const centre = (z: number) => 1381.41 + ((z - 488.14) * 0.73) / 39.29;
-export const grantRoadY = (z: number) => 307.66 + (z - 488.14) * 0.0046 - zero;
-const top = 313.66 - zero;
+const roadNavd = (z: number) => 307.66 + (z - 488.14) * 0.0046;
+const edge = (x: number, south: boolean) => (south ? 527.5 : 486.5) - (x - 1382) * (south ? 0.37 : 0.34);
+const smooth = (distance: number, width: number) => {
+  const t = Math.max(0, Math.min(1, distance / width));
+  return t * t * (3 - 2 * t);
+};
+
+// Keep the street on the actual drawn triangles. Interpolate the two portal
+// returns across the occluded pavement, feathering the approach and verges
+// back into the DEM before either terrain tier chooses its triangulation.
+export class GrantStreetGround extends GroundGrid {
+  override node(row: number, col: number) {
+    const y = super.node(row, col);
+    const { bounds, stepM } = this.manifest;
+    const z = bounds.minZ + row * stepM;
+    if (y === null || z <= 465 || z >= 550) return y;
+    const x = bounds.minX + col * stepM;
+    const weight = smooth(22 - Math.abs(x - centre(z)), 10) * smooth(z - 465, 20) * smooth(550 - z, 20);
+    const pavement = y + weight * (roadNavd(z) - y);
+    // Approach fill rises outside the walls and rolls down into the original
+    // terrain over the shoulder. The street and its painted sidewalks stay flat.
+    const offset = Math.abs(x - centre(z));
+    const bank =
+      smooth(offset - 12, 10) *
+      smooth(x - 1338, 15) *
+      smooth(1442 - x, 16) *
+      smooth(z - edge(x, false) + 8, 12) *
+      smooth(edge(x, true) + 8 - z, 12);
+    return pavement + bank * Math.max(0, deckNavd - 0.35 - pavement);
+  }
+}
+
+/** Paint the two street approaches and the mapped bore in one stroke per
+ * material. Adjacent butt caps leave a transverse hairline at low texel density. */
+export function grantBoardRoads(roads: VRoad[]) {
+  const grant = roads.filter((r) => r.name === 'Grant Street Southeast');
+  const tunnel = grant.find((r) => r.tunnel);
+  if (!tunnel) return roads;
+  const pts = [...tunnel.pts];
+  const joined = new Set([tunnel]);
+  for (const road of grant) {
+    if (road === tunnel) continue;
+    for (const run of [road.pts, [...road.pts].reverse()]) {
+      if (run.at(-1)![0] === pts[0][0] && run.at(-1)![1] === pts[0][1]) {
+        pts.unshift(...run.slice(0, -1));
+        joined.add(road);
+        break;
+      }
+      if (run[0][0] === pts.at(-1)![0] && run[0][1] === pts.at(-1)![1]) {
+        pts.push(...run.slice(1));
+        joined.add(road);
+        break;
+      }
+    }
+  }
+  return [...roads.filter((r) => !joined.has(r)), { ...tunnel, tunnel: false, pts }];
+}
 
 // The bare-earth DEM follows the road instead of the yard for about 70 m.
 // Restore the missing formation, easing back into the measured banks.
-export function grantFormation(x: number, ground: number) {
+export function grantFormation(x: number, ground: number, zero: number) {
   const weight = Math.max(0, Math.min(1, (x - 1338) / 15, (1442 - x) / 16));
-  return ground + weight * Math.max(0, top - ground);
+  return ground + weight * Math.max(0, deckNavd - zero - ground);
 }
 
-export const grantCut: GroundYield = {
-  ring: [
-    [-6.8, 478],
-    [6.8, 478],
-    [6.8, 537],
-    [-6.8, 537],
-  ].map(([d, z]) => [centre(z) + d, z] as P2),
-  floor: (_x, z) => grantRoadY(z) - 0.08,
-};
-
-export function drawGrantStreet(b: Builder, ground: Ground) {
+export function drawGrantStreet(b: Builder, ground: Ground, zero: number) {
+  const top = deckNavd - zero;
+  const roadY = (z: number) => roadNavd(z) - zero;
   // Portals follow the skew of the railway. Eight parallel ballast ribbons
   // remain part of the existing freight batch, including over the opening.
-  const edge = (x: number, south: boolean) => (south ? 527.5 : 486.5) - (x - 1382) * (south ? 0.37 : 0.34);
+
   const row = (x: number, south: boolean) => {
     const z = edge(x, south),
       y = ground(x, z)!;
-    return [x, Math.min(top, grantFormation(x, y)) - 0.05, z];
+    return [x, Math.min(top, grantFormation(x, y, zero)) - 0.05, z];
   };
   const west = 1375.1,
     east = 1388.9;
@@ -66,7 +113,7 @@ export function drawGrantStreet(b: Builder, ground: Ground) {
   for (const x of [west, east]) {
     const a = row(x, false),
       d = row(x, true);
-    b.quad(a, d, [x, grantRoadY(d[2]) - 0.2, d[2]], [x, grantRoadY(a[2]) - 0.2, a[2]], PAL.concrete);
+    b.quad(a, d, [x, roadY(d[2]) - 0.2, d[2]], [x, roadY(a[2]) - 0.2, a[2]], PAL.concrete);
   }
   // Shallow steel crossbeams beneath the ballasted slab. The painted
   // abutments have a repeating ochre diamond in the Grant St panorama.
@@ -83,7 +130,7 @@ export function drawGrantStreet(b: Builder, ground: Ground) {
     b.quad(backA, backC, beam(east, 0.22, 1.5), beam(west, 0.22, 1.5), PAL.girder);
   }
   for (const x of [west + 0.025, east - 0.025]) {
-    const pt = (y: number, z: number) => [x, grantRoadY(z) + y, z];
+    const pt = (y: number, z: number) => [x, roadY(z) + y, z];
     for (let z = edge(x, false) + 1.5; z < edge(x, true) - 1.5; z += 2.6) {
       for (const sign of [-1, 1]) {
         const p = pt(2.3, z + sign * 1.25),
@@ -94,30 +141,14 @@ export function drawGrantStreet(b: Builder, ground: Ground) {
       }
     }
   }
-  // The mapped road carries on through both portals. Match the existing
-  // street's crossfall at the ends of the short approach transitions.
-  const at = (d: number, z: number, lift: number) => {
-    const x = centre(z) + d,
-      blend = Math.max(0, Math.min(1, (z - 478) / 8, (537 - z) / 8));
-    const y = ground(x, z)!;
-    return [x, y + (grantRoadY(z) - y) * blend + lift, z];
-  };
-  for (let z = 478; z < 537; z++) {
-    for (const [left, right, lift, colour] of [
-      [-6.65, -4.5, 0.19, PAL.sidewalk],
-      [-4.5, 4.5, 0.065, PAL.asphalt],
-      [4.5, 6.65, 0.19, PAL.sidewalk],
-      [-0.19, -0.06, 0.08, PAL.lineYellow],
-      [0.06, 0.19, 0.08, PAL.lineYellow],
-    ] as const)
-      b.quad(at(left, z, lift), at(left, z + 1, lift), at(right, z + 1, lift), at(right, z, lift), colour);
-  }
 }
 
 // Warm wall lights are visible in the daytime panorama. The falloff and
 // after-dark intensity are illustrative. Shade the existing batch in place.
-export function grantLighting(material: MeshLambertMaterial, night: { value: number }) {
-  material.onBeforeCompile = (shader) => {
+export function grantLighting(material: MeshLambertMaterial, night: { value: number }, zero: number) {
+  const previous = material.onBeforeCompile.bind(material);
+  material.onBeforeCompile = (shader, renderer) => {
+    previous(shader, renderer);
     shader.uniforms.grantNight = night;
     shader.vertexShader =
       'varying vec3 grantPosition;\n' +
@@ -133,10 +164,10 @@ export function grantLighting(material: MeshLambertMaterial, night: { value: num
       vec3 p = grantPosition;
       float side = abs(p.x - 1382.0);
       float along = mod(p.z - 491.0 + 4.5, 9.0) - 4.5;
-      float pane = length(vec3((side - 6.86)*2., (p.y + 13.2)*2., along));
+      float pane = length(vec3((side - 6.86)*2., (p.y - ${(310.6 - zero).toFixed(3)})*2., along));
       float lamp = 1.0 - smoothstep(.18,.38,pane);
-      float spill = exp(-.14*abs(along) - .24*abs(side-6.86) - .28*abs(p.y+13.2));
-      float inside = step(side,7.0)*step(p.y,-11.65)*smoothstep(486.,490.,p.z)*(1.-smoothstep(525.,529.,p.z));
+      float spill = exp(-.14*abs(along) - .24*abs(side-6.86) - .28*abs(p.y - ${(310.6 - zero).toFixed(3)}));
+      float inside = step(side,7.0)*step(p.y,${(312.15 - zero).toFixed(3)})*smoothstep(486.,490.,p.z)*(1.-smoothstep(525.,529.,p.z));
       outgoingLight += inside*grantNight*vec3(1.,.72,.42)*(lamp + spill*.55*diffuseColor.rgb);
       #include <opaque_fragment>`,
       );
