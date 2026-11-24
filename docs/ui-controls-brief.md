@@ -417,8 +417,9 @@ out, then the map flattens.
 - **Compact player** (Sam, 2026-11-24; tighter than boards F07/G13): one row, about 64 px
   tall, 340 px wide on desktop (was 300; widened 2026-11-24 so most "Artist · Title" lines
   fit). 40×40 art (radius 8) · title 14 px / 600, one line, with a
-  12 px secondary-ink subtitle ("Track 2 of 10") · a 40 px round play/pause on the
-  separator tint and an 18 px next icon matching the pause glyph (#387, approved by Sam),
+  12 px secondary-ink subtitle ("Track 2 of 10") · a 40 px rounded-square play/pause (radius 10, matching the
+  art tile and the dock's square buttons; Sam, 2026-11-24) on the separator tint, its hover,
+  pressed and focus states the same shape, never a circle inside a square, and an 18 px next icon matching the pause glyph (#387, approved by Sam),
   both with 44×44 hit areas. Progress is a 2 px line along the
   panel's bottom edge, not draggable. No "Radio" header, no ✕ (the dock button toggles;
   Esc or a tap outside closes), no previous button and no volume row (system volume).
