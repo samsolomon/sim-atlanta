@@ -4,14 +4,6 @@
     "_doc": "test:perf also sweeps the clock (dusk, night, late night, dawn) and weather on low and high after City is ready, and fails if any shader program compiles then: each late compile is a frame that stalls (100+ ms on the Studio). core/prewarm.ts compiles everything City has built but not drawn. These are the known exceptions, each matched against the late program's owners and cache key, with who is fixing it. Remove an entry when its fix lands.",
     "allow": [
       {
-        "match": "stockNight",
-        "why": "Crescent stock is built when the train enters the board, with its own clip planes; vehicles agent"
-      },
-      {
-        "match": "cq400",
-        "why": "CQ400 buses are built when they enter, with per-route clip planes; vehicles agent"
-      },
-      {
         "match": "depth,",
         "why": "shadow-depth variants compile on their first shadow pass; prewarm does not draw shadows yet"
       }
@@ -21,8 +13,8 @@
     "viewport": "phone",
     "ceiling": {
       "triangles": 2600000,
-      "calls": 460,
-      "programs": 87,
+      "calls": 435,
+      "programs": 86,
       "textureMB": 125,
       "geometryMB": 190,
       "heapAfterGcMB": 460
@@ -43,7 +35,7 @@
     "viewport": "desktop",
     "ceiling": {
       "triangles": 7500000,
-      "calls": 510,
+      "calls": 475,
       "programs": 100,
       "textureMB": 890,
       "geometryMB": 300,
@@ -66,7 +58,7 @@
     "ceiling": {
       "triangles": 7500000,
       "calls": 630,
-      "programs": 99
+      "programs": 100
     },
     "target": {
       "calls": 600

@@ -3,6 +3,7 @@ import type { TerrainQuality } from '../terrain/surface';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litFacade, seedOf } from './skin-kit';
 
 export const twelveMidtownId = 'osm:way:247997228';
 const origin: P2 = [-600, -4190];
@@ -29,14 +30,14 @@ const wing: P2[] = [
 const local = (ring: P2[]): P2[] => ring.map(([x, z]) => [x - origin[0], z - origin[1]]);
 
 /** Edges with the outward side to the right of a → b in plan (x east, z south). */
-function edges(ring: P2[], draw: (a: P2, b: P2, length: number) => void) {
+function edges(ring: P2[], draw: (a: P2, b: P2, length: number, i: number) => void) {
   let area = 0;
   ring.forEach(([x, z], i) => { const [u, v] = ring[(i + 1) % ring.length]; area += x * v - u * z; });
   const r = area > 0 ? ring : [...ring].reverse();
   r.forEach((a, i) => {
     const b = r[(i + 1) % r.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length > 3) draw(a, b, length);
+    if (length > 3) draw(a, b, length, i);
   });
 }
 
@@ -45,6 +46,8 @@ export function createTwelveMidtown(buildings: VBuilding[], grid: GroundGrid, qu
     [[0, 0], [-35, 0], [35, 0]]);
   if (!found) return null;
   const shell = found;
+  // Lit panes come from the shared hash; each facade call site owns a face-id block of 50.
+  const seed = seedOf(twelveMidtownId);
   const high = quality === 'high';
   const stone = '#e2d8c2', trim = '#eee7d8';
   const glass = ['#7fa9a5', '#88b0ac', '#76a29e'];
@@ -58,14 +61,14 @@ export function createTwelveMidtown(buildings: VBuilding[], grid: GroundGrid, qu
 
   const floors = Math.round((roof - lobbyTop) / 3.24);
   const pitch = (roof - 0.3 - lobbyTop) / floors;
-  edges(t, (a, b, length) => {
+  edges(t, (a, b, length, i) => {
     const ux = (b[0] - a[0]) / length, uz = (b[1] - a[1]) / length;
     const nx = uz, nz = -ux;
     const broad = Math.abs(ux) > 0.85 && length > 20;
-    if (high) shell.facade(a, b, lobbyTop + 0.2, roof - 0.3, floors, broad ? 3 : 2.6, broad ? 0.45 : 0.45, 0.8, glass, 0.45);
+    if (high) litFacade(shell, seed, 0 + i, a, b, lobbyTop + 0.2, roof - 0.3, floors, broad ? 3 : 2.6, broad ? 0.45 : 0.45, 0.8, glass, 0.45);
     // The low tier draws one pane row per three floors.
-    else if (length > 8) shell.facade(a, b, lobbyTop + 0.2, roof - 0.3, Math.round(floors / 3), broad ? 20 : 14, 0.62, 0.8, glass, 0.45);
-    if (high || broad) shell.facade(a, b, shell.base + 0.6, lobbyTop - 0.5, 1, high ? 4 : 20, 0.88, 0.85, ['#3a4b52'], 0.6);
+    else if (length > 8) litFacade(shell, seed, 50 + i, a, b, lobbyTop + 0.2, roof - 0.3, Math.round(floors / 3), broad ? 20 : 14, 0.62, 0.8, glass, 0.45);
+    if (high || broad) litFacade(shell, seed, 100 + i, a, b, shell.base + 0.6, lobbyTop - 0.5, 1, high ? 4 : 20, 0.88, 0.85, ['#3a4b52'], 0.6);
     if (!high) return;
     // Balcony slabs with white rails, in stacks across the broad faces and down the middle of the ends.
     const stacks = broad ? [...Array(Math.round(length / 6)).keys()].map(i => (i + 0.5) * length / Math.round(length / 6))

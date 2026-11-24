@@ -16,6 +16,8 @@ let extra = null;
 let netMbps = 0;
 let cpu = 1;
 let viewport = null;
+// --silent: sample with ?perf=silent (no overlay on screen) instead of ?perf=run.
+const silentRun = args.includes('--silent');
 const urls = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--out') out = args[++i];
@@ -25,6 +27,7 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--cpu') cpu = Number(args[++i]) || 1;
   // --viewport 384x692@1: the A16's portrait canvas as measured on the device (CSS px at DPR 1).
   else if (args[i] === '--viewport') { const m = /^(\d+)x(\d+)@([\d.]+)$/.exec(args[++i]); if (m) viewport = { width: +m[1], height: +m[2], deviceScaleFactor: +m[3] }; }
+  else if (args[i] === '--silent') { /* read above */ }
   else urls.push(args[i]);
 }
 if (!urls.length) { console.error('usage: perf-run.mjs [--out dir] [--desktop] URL...'); process.exit(2); }
@@ -78,7 +81,10 @@ else {
 }
 
 const results = [];
-for (const [n, url] of urls.entries()) {
+for (const [n, requested] of urls.entries()) {
+  // A per-run nonce in the URL, checked in the result: a reading can only come from this run's page.
+  const nonce = Math.random().toString(36).slice(2, 10);
+  const url = (silentRun ? requested.replace('perf=run', 'perf=silent') : requested) + (requested.includes('?') ? '&' : '?') + 'perfnonce=' + nonce;
   // A fresh browser per URL, so one run's heap and shader cache never leak into the next.
   const { send, evaluate, logs, close } = await session();
   try {
@@ -108,7 +114,12 @@ for (const [n, url] of urls.entries()) {
       writeFileSync(join(out, `cam${n + 1}.jpg`), Buffer.from(shot.data, 'base64'));
     }
     const r = result;
-    if (r.error) console.log(`#${n + 1} TIMEOUT ${url}\n  ${logs.slice(-5).join('\n  ')}`);
+    // An impossible reading is an invalid run, never a pass: a page that isn't ours, or a frame that
+    // drew nothing (a scene that didn't render, or a GPU that dropped the context under load).
+    if (!r.error && !String(r.url ?? '').includes('perfnonce=' + nonce)) r.error = `invalid: result came from another page (${r.url})`;
+    else if (!r.error && r.summary && !(r.summary.calls > 0 && r.summary.triangles > 0 && r.summary.programs > 0)) r.error = `invalid: calls ${r.summary.calls}, triangles ${r.summary.triangles}, programs ${r.summary.programs}`;
+    else if (!r.error && r.summary?.settled === false) r.error = 'invalid: not settled (load phases still landing when sampling began)';
+    if (r.error) console.log(`#${n + 1} ${r.error.startsWith('invalid') ? r.error.toUpperCase() : 'TIMEOUT'} ${url}\n  ${logs.slice(-5).join('\n  ')}`);
     else console.log(`#${n + 1} ${r.fps10s.fps} fps p50 ${r.fps10s.p50} p95 ${r.fps10s.p95} | cpu upd ${r.fps10s.updateP50} rnd ${r.fps10s.renderP50} | calls ${r.renderer.calls} tris ${r.renderer.triangles} progs ${r.renderer.programs} | heap ${r.heap?.usedMB} (gc ${r.summary.heapAfterGcMB}) MB | tex ${r.memory.total.textureMB} geo ${r.memory.total.geometryMB} cpu ${r.memory.total.cpuMB} MB | ready ${(r.phases.find(p => p.name === 'ready')?.ms / 1000).toFixed(1)} s | areas ${r.areas.length}`);
   } finally {
     await close();
@@ -116,3 +127,6 @@ for (const [n, url] of urls.entries()) {
 }
 if (out) writeFileSync(join(out, 'results.json'), JSON.stringify(results, null, 1));
 if (process.env.PERF_JSON) writeFileSync(process.env.PERF_JSON, JSON.stringify(results));
+// Non-zero exit when any run failed, with the reason already printed above.
+const failedRuns = results.filter(r => r.error);
+if (failedRuns.length) { console.error(`perf-run: ${failedRuns.length} of ${results.length} run(s) failed: ${failedRuns.map(r => r.error).join('; ')}`); process.exitCode = 3; }

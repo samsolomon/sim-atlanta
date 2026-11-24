@@ -3,6 +3,7 @@ import type { TerrainQuality } from '../terrain/surface';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litFacade, seedOf } from './skin-kit';
 
 export const ascentMidtownId = 'osm:way:884939412';
 const origin: P2 = [290, -4322];
@@ -28,14 +29,14 @@ const podium: P2[] = [
 const local = (ring: P2[]): P2[] => ring.map(([x, z]) => [x - origin[0], z - origin[1]]);
 
 /** Edges with the outward side to the right of a → b in plan (x east, z south). */
-function edges(ring: P2[], draw: (a: P2, b: P2, length: number) => void) {
+function edges(ring: P2[], draw: (a: P2, b: P2, length: number, i: number) => void) {
   let area = 0;
   ring.forEach(([x, z], i) => { const [u, v] = ring[(i + 1) % ring.length]; area += x * v - u * z; });
   const r = area > 0 ? ring : [...ring].reverse();
   r.forEach((a, i) => {
     const b = r[(i + 1) % r.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length > 3) draw(a, b, length);
+    if (length > 3) draw(a, b, length, i);
   });
 }
 
@@ -44,6 +45,8 @@ export function createAscentMidtown(buildings: VBuilding[], grid: GroundGrid, qu
     [[20, -10], [-30, 10], [40, 5]]);
   if (!found) return null;
   const shell = found;
+  // Lit panes come from the shared hash; each facade call site owns a face-id block of 50.
+  const seed = seedOf(ascentMidtownId);
   const high = quality === 'high';
   const panel = '#c8cbcd', charcoal = '#3f4145', brick = '#4b4c50';
   const glass = ['#7f97a8', '#7a92a3', '#86a0b1'];
@@ -64,21 +67,21 @@ export function createAscentMidtown(buildings: VBuilding[], grid: GroundGrid, qu
   if (high) flat(240, -4328, 250, -4304, podiumTop + 0.05, '#6f8f5a');
 
   // Podium: dark brick with shopfronts on the street, garage levels above on the high tier.
-  edges(p, (a, b, length) => {
+  edges(p, (a, b, length, i) => {
     if (length < 8) return;
-    if (high) shell.facade(a, b, lobbyTop + 1, podiumTop - 1, 4, 4.4, 0.7, 0.45, ['#2f3134', '#36383b'], 0.06);
-    shell.facade(a, b, shell.base + 0.6, lobbyTop - 0.3, 1, high ? 4 : 12, 0.85, 0.85, ['#3a4650'], 0.55);
+    if (high) litFacade(shell, seed, 0 + i, a, b, lobbyTop + 1, podiumTop - 1, 4, 4.4, 0.7, 0.45, ['#2f3134', '#36383b'], 0.06);
+    litFacade(shell, seed, 50 + i, a, b, shell.base + 0.6, lobbyTop - 0.3, 1, high ? 4 : 12, 0.85, 0.85, ['#3a4650'], 0.55);
   });
 
   const floors = (lo: number) => Math.round((roof - lo) / 3.3);
-  edges(t, (a, b, length) => {
+  edges(t, (a, b, length, i) => {
     // The north slab and the West Peachtree face run to the sidewalk; the others start on the podium.
     const street = Math.abs(b[1] - a[1]) < 1 ? a[1] < -15 : a[0] > 45;
     const lo = street ? lobbyTop + 0.3 : podiumTop + 0.5;
-    if (street) shell.facade(a, b, shell.base + 0.6, lobbyTop - 0.4, 1, high ? 3.6 : 12, 0.9, 0.85, ['#3d4f5b'], 0.6);
+    if (street) litFacade(shell, seed, 100 + i, a, b, shell.base + 0.6, lobbyTop - 0.4, 1, high ? 3.6 : 12, 0.9, 0.85, ['#3d4f5b'], 0.6);
     // The low tier pairs floors into one pane row and leaves the short jogs plain.
-    if (high) shell.facade(a, b, lo, roof - 0.3, floors(lo), 2.9, 0.62, 0.86, glass, 0.4);
-    else if (length > 8) shell.facade(a, b, lo, roof - 0.3, Math.round(floors(lo) / 2), 16, 0.8, 0.9, glass, 0.4);
+    if (high) litFacade(shell, seed, 150 + i, a, b, lo, roof - 0.3, floors(lo), 2.9, 0.62, 0.86, glass, 0.4);
+    else if (length > 8) litFacade(shell, seed, 200 + i, a, b, lo, roof - 0.3, Math.round(floors(lo) / 2), 16, 0.8, 0.9, glass, 0.4);
     if (high && length > 18) balconies(a, b, length, lo);
   });
 

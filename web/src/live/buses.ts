@@ -19,7 +19,7 @@ export class LiveBuses {
     this.nextPoll = performance.now() + POLL_MS;
     this.pending = true;
     try {
-      const response = await fetch('/api/marta/bus');
+      const response = await fetch('/api/marta/bus', { cache: 'no-store' });
       if (!response.ok) throw new Error('MARTA bus feed unavailable');
       const feed: BusFeed = await response.json();
       const served = Date.parse(response.headers.get('Date') ?? '');

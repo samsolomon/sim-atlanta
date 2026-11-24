@@ -73,6 +73,9 @@ describe('batchLandmarks', () => {
     const b = batchLandmarks([a, c], container);
     const body = meshes(b.group).find(m => m.castShadow)!;
     expect((body.material as MeshLambertMaterial).color.getHex()).toBe(0xffffff);
+    // Stored as normalised bytes.
+    expect(body.geometry.attributes.color.array).toBeInstanceOf(Uint8Array);
+    expect(body.geometry.attributes.color.normalized).toBe(true);
     const col = body.geometry.attributes.color;
     const reds = new Set(Array.from({ length: col.count }, (_, i) => col.getY(i).toFixed(2)));
     expect([...reds].sort()).toEqual(['0.00', '0.50']);

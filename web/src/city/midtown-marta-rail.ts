@@ -228,6 +228,7 @@ export function createNorthLine(
   const darkness = { value: 0 };
   const planes = new Map<Line, THREE.Plane[]>();
   let portalParts!: ReturnType<typeof portal>;
+  let prewarm!: THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
   {
     const frame = portalFrame(lines),
       base = Math.min(...lines.map((l) => height(l, 0.05)));
@@ -239,6 +240,12 @@ export function createNorthLine(
       new THREE.Plane(new THREE.Vector3(0, 0, 1), 5700),
     ];
     for (const line of lines) planes.set(line, clip);
+    // A hidden template so City's boot prewarm compiles this clip set's CQ400 program before a
+    // North Line train first emerges after ready.
+    prewarm = new THREE.Mesh(cq400Geometry({ cab: false, u0: 0, u1: 1 }, '#888888'), cq400Material('#888888', { value: 0 }, darkness, clip));
+    prewarm.name = 'cq400 prewarm template';
+    prewarm.visible = false;
+    area.group.add(prewarm);
   }
   const colors = new Map(rf.routes.map((r) => [r.id, r.color]));
   const pools = new Map<
@@ -323,6 +330,9 @@ export function createNorthLine(
         (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
       });
     }
+    prewarm.removeFromParent();
+    prewarm.geometry.dispose();
+    prewarm.material.dispose();
     for (const pool of pools.values()) {
       for (const car of pool.meshes) car.removeFromParent();
       pool.geometry.dispose();
