@@ -3596,3 +3596,7 @@ The audit failed the first Norfolk Southern skin, because from the money shot it
 ### 2026-11-24 · Marquis piers: rhythm over geometry
 
 Marquis One failed its audit: at 490 m it was a beige grid beside a generic beige grid. The fix removed geometry rather than adding it. I dropped the spandrel band at every floor, widened the light precast piers to just over half of each bay, and darkened the recessed windows. The rendered south face now splits into piers at V 93 and slots at V 31. Both towers read as vertical pinstripes, which nothing else in the Peachtree Center frame does. [Before and after](log/ui/marquis-two/piers-cmp-one-day.jpg)
+
+### 2026-11-24 · Crest on Peachtree's mural
+
+From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
