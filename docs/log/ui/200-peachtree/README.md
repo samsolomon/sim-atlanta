@@ -14,3 +14,5 @@ Architect review, November 23. Keep the Westin segment on its own ring. The lowe
 | Roof and Ellis return | `319,-557,310,35,345` | [11:30](roof-day.jpg) | [23:30](roof-night.jpg) |
 
 November 20, 2026, clear and paused, low tier. Use `&dev&mindist=20` for the frontage. The roof comparison rose from 1,786,851 triangles and 140 draws to 1,787,971 triangles and 142 draws. The model uses the existing downtown bake. Web rebuild only.
+
+The normal City camera follows the Peachtree block to the Westin behind the store. Camera `301,-568,312,49,420`. [Day context](context-day.jpg) · [Night context](context-night.jpg)
