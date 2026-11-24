@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { Builder } from './geom';
 import { finishStockGeometry } from './crescent-stock';
+import { EMD_DIMENSIONS, emdLocomotive } from './emd-loco';
 import { GE_LENGTH, GE_TRUCKS, geLocomotive } from './freight-loco';
 
 /** 'locomotive' is the CSX-like CM44AC; 'locomotiveNs' the same GE body in an NS-like scheme. */
-export type FreightUnit = 'locomotive' | 'locomotiveNs' | 'boxcar';
+export type FreightUnit = 'locomotive' | 'locomotiveNs' | 'es44acNs' | 'es44ah' | 'sd70ace' | 'gp382' | 'boxcar';
 /** Dimensions in metres: locomotive from AC4400CW data (docs/freight-stock.md); boxcar illustrative. */
-export const FREIGHT_LENGTH = { locomotive: GE_LENGTH, locomotiveNs: GE_LENGTH, boxcar: 16.8 } as const;
-export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_TRUCKS, boxcar: 12 } as const;
+export const FREIGHT_LENGTH = { locomotive: GE_LENGTH, locomotiveNs: GE_LENGTH, es44acNs: GE_LENGTH, es44ah: GE_LENGTH, sd70ace: EMD_DIMENSIONS.sd70ace.length, gp382: EMD_DIMENSIONS.gp382.length, boxcar: 16.8 } as const;
+export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_TRUCKS, es44acNs: GE_TRUCKS, es44ah: GE_TRUCKS, sd70ace: EMD_DIMENSIONS.sd70ace.trucks, gp382: EMD_DIMENSIONS.gp382.trucks, boxcar: 12 } as const;
 
 /**
  * Local +z faces the cab. The origin is midway between the trucks at rail height. Locomotives carry
@@ -16,9 +17,10 @@ export const FREIGHT_TRUCK_SPACING = { locomotive: GE_TRUCKS, locomotiveNs: GE_T
  */
 export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear = false } = {}) {
   const b = new Builder();
-  if (unit === 'locomotive' || unit === 'locomotiveNs') {
+  if (unit !== 'boxcar') {
     const lamps = new Builder();
-    geLocomotive(b, lamps, unit === 'locomotive' ? 'csx' : 'ns', leadFront, leadRear);
+    if (unit === 'sd70ace' || unit === 'gp382') emdLocomotive(b, lamps, unit, leadFront, leadRear);
+    else geLocomotive(b, lamps, unit === 'locomotive' || unit === 'es44ah' ? 'csx' : 'ns', leadFront, leadRear, unit === 'es44acNs' || unit === 'es44ah' ? 'es44' : 'cm44ac');
     return finishStockGeometry(b, new Builder(), lamps);
   }
   const length = FREIGHT_LENGTH[unit];

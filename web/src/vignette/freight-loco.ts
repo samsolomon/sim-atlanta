@@ -36,8 +36,11 @@ const DARK = '#6a655e',
  * Body, running gear and lamps. `lamps` receives the lit parts: head and ditch lights and number
  * boards at the end that leads, the rear headlight when the unit runs long hood forward.
  */
-export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, leadFront: boolean, leadRear: boolean) {
-  const P = PAINT[livery];
+export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, leadFront: boolean, leadRear: boolean, family: 'cm44ac' | 'es44' = 'cm44ac') {
+  const evolution = family === 'es44';
+  const P = evolution && livery === 'ns'
+    ? { ...PAINT.ns, body: '#4d4e50', bodyShade: '#3f4143', nose: '#4d4e50', rearPanel: '#4d4e50', sill: '#e6e2d6', endRail: '#d7b354', sideRail: '#4d4e50', cabFace: '#e6e2d6' }
+    : evolution ? { ...PAINT.csx, body: '#343f50', bodyShade: '#293442', sideRail: '#343f50', cabFace: '#343f50' } : PAINT[livery];
   const half = GE_LENGTH / 2;
   const front = half - 0.35; // pilot face
   const rear = -half + 0.35;
@@ -167,13 +170,27 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
   b.box(0.55, 0.3, 0.8, 0, 4.48, -1.6, '#2a2a2a'); // exhaust stack
   // Radiator: wings flare to full width above side intake grilles.
   const rz0 = -10.4,
-    rz1 = -7.0;
+    rz1 = evolution ? -5.6 : -7.0;
   b.box(hoodW, 2.75, rz1 - rz0, 0, 2.93, (rz0 + rz1) / 2, P.body);
-  b.box(3.1, 0.95, rz1 - rz0, 0, GE_RADIATOR_TOP - 0.47, (rz0 + rz1) / 2, P.body);
+  if (evolution) {
+    // The wing faces lean outward all the way to the roof, rather than a box
+    // hiding their angle. Closed end faces keep the silhouette clear from behind.
+    const profile = [[-1.03,3.5],[1.03,3.5],[1.55,GE_RADIATOR_TOP],[-1.55,GE_RADIATOR_TOP]];
+    for (let i=0;i<4;i++) {
+      const a=profile[i], c=profile[(i+1)%4];
+      b.quad([...a,rz0],[...c,rz0],[...c,rz1],[...a,rz1],P.body);
+    }
+    b.quad([...profile[3],rz0],[...profile[2],rz0],[...profile[1],rz0],[...profile[0],rz0],P.bodyShade);
+    b.quad([...profile[0],rz1],[...profile[1],rz1],[...profile[2],rz1],[...profile[3],rz1],P.bodyShade);
+  } else b.box(3.1, 0.95, rz1 - rz0, 0, GE_RADIATOR_TOP - 0.47, (rz0 + rz1) / 2, P.body);
   b.box(3.0, 0.06, rz1 - rz0 - 0.2, 0, GE_RADIATOR_TOP + 0.01, (rz0 + rz1) / 2, GRILLE); // radiator fans grille
-  for (const zc of [-9.6, -8.6, -7.6]) b.box(2.5, 0.05, 0.9, 0, GE_RADIATOR_TOP + 0.04, zc, '#1d2125');
+  for (const zc of (evolution ? [-9.5, -7.9, -6.3] : [-9.6, -8.6, -7.6])) b.box(2.5, 0.05, 0.9, 0, GE_RADIATOR_TOP + 0.04, zc, '#1d2125');
   for (const s of [-1, 1]) {
-    b.box(0.03, 0.85, rz1 - rz0 - 0.4, s * 1.565, GE_RADIATOR_TOP - 0.5, (rz0 + rz1) / 2, GRILLE); // wing intakes
+    if (evolution) {
+      const points = [[s*1.12,3.68,rz0+.2],[s*1.51,4.6,rz0+.2],[s*1.51,4.6,rz1-.2],[s*1.12,3.68,rz1-.2]];
+      if (s<0) points.reverse();
+      b.quad(points[0],points[1],points[2],points[3],GRILLE);
+    } else b.box(0.03, 0.85, rz1 - rz0 - 0.4, s * 1.565, GE_RADIATOR_TOP - 0.5, (rz0 + rz1) / 2, GRILLE); // wing intakes
     // Hood side detail: louvred panels behind the cab and door seams along the engine hood.
     for (let i = 0; i < 3; i++) b.box(0.03, 0.62, 0.48, s * (hoodW / 2 + 0.01), 3.55, cabRearZ - 0.55 - i * 0.62, GRILLE);
     for (let z = -7.6; z < 2.8; z += 1.15) b.box(0.02, 2.5, 0.03, s * (hoodW / 2 + 0.01), 2.9, z, P.bodyShade);
@@ -181,6 +198,20 @@ export function geLocomotive(b: Builder, lamps: Builder, livery: LocoLivery, lea
     // Side handrail on stanchions along the walkway.
     b.box(0.04, 0.04, 14.2, s * 1.47, 2.58, -3.1, P.sideRail);
     for (let z = -10.0; z <= 3.9; z += 1.55) b.box(0.04, 1.0, 0.04, s * 1.47, 2.08, z, P.sideRail);
+  }
+  if (evolution) {
+    // GEVO radiator has a longer cooling section, sloping wing undersides and a
+    // recessed pair of intake panels ahead of it (3122/8176 reference photos).
+    for (const side of [-1, 1]) {
+      b.box(.035, .78, 1.45, side * 1.05, 3.62, -4.6, GRILLE);
+      b.box(.035, .78, 1.1, side * 1.05, 3.62, -3.15, GRILLE);
+    }
+    // Narrow exhaust enclosure and five-bell horn on the roof.
+    b.box(.8, .16, 1.1, 0, 4.46, -.7, P.bodyShade);
+    for (let i = 0; i < 5; i++) {
+      const horn = new THREE.ConeGeometry(.09, .34, 6).rotateX(-Math.PI / 2).translate((i - 2) * .16, 4.63, 1.4 + (i % 2) * .15);
+      b.addGeometry(horn, '#686c69'); horn.dispose();
+    }
   }
   // Rear end: flat panel under the radiator with the rear headlight and number boards.
   b.box(2.1, 2.55, 0.04, 0, 2.85, rz0 - 0.02, P.rearPanel);
