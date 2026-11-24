@@ -2,6 +2,7 @@ import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
+import { litHash, seedOf } from './skin-kit';
 
 /**
  * Loews Atlanta Hotel, 1065 Peachtree Street (2010), part of the 12th & Midtown development.
@@ -20,12 +21,17 @@ const wingPart = 'osm:way:1434982550';
 const axis: P2 = [0.854, 0.52];
 const origin: P2 = [770, -3272];
 
-const glass = '#9db4c4',
+// Pale blue-grey glass sampled from LoewsMidtown.jpg (median of the shaft: hue 208, S 17%, V 72-80%).
+// The photo's glass is close to the generic glass; what makes Loews recognisable is the dark
+// residence band and the sawtooth west bays below, not the glass colour.
+const glass = '#a0b3c3',
   frame = '#dfe3e3',
   stone = '#cbbfa8',
   storefront = '#3e4a50',
   slab = '#e3e1db',
-  roof = '#9a968c';
+  roof = '#9a968c',
+  /** The residences' recessed wall behind their balconies: body, so shade does the darkening. */
+  recess = '#3c4347';
 
 const towerRoof = 405,
   upperRoof = 411.5,
@@ -67,12 +73,6 @@ function tidy(ring: P2[], min = 0.8): P2[] {
   });
 }
 
-/** Stable per-window hash in [0, 1). */
-function hash(a: number, b: number, c: number) {
-  const h = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
-  return h - Math.floor(h);
-}
-
 export function createLoews(buildings: VBuilding[], site: VBuilding, grid: GroundGrid) {
   const wing = site.parts?.find(part => part.id === wingPart);
   // The tower is the largest tall part; the import's name for it ('podium') is not stable.
@@ -80,6 +80,7 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
     .reduce<NonNullable<VBuilding['parts']>[number] | undefined>((a, b) =>
       !a || Math.abs(area(b.rings[0])) > Math.abs(area(a.rings[0])) ? b : a, undefined);
   if (!tower || wing?.rings.length !== 1) return null;
+  const seed = seedOf(site.id);
   const s = landmarkShell(buildings, grid, site.id, 'Loews Atlanta Hotel', origin, axis, [[0, 0], [-15, 0], [20, 0]]);
   if (!s) return null;
   const angle = Math.atan2(axis[1], axis[0]), c = Math.cos(angle), sn = Math.sin(angle);
@@ -108,23 +109,29 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
     const p = at(f, 0.5, y, 0.8);
     return !covers.some(m => m.top > y && pointInRing(p[0], p[2], m.plan));
   };
-  /** Pale gridded curtain wall: a mullion per room bay, a transom every second floor, lit rooms. */
-  const curtain = (plan: P2[], lo: number, hi: number, seed: number) => {
+  /** Pale gridded curtain wall: a mullion per room bay, a transom every second floor, lit rooms.
+   * Layers stand well apart (lit 5, mullions 10, transoms 19, cap 24 cm): closer ones z-fight at
+   * 400-600 m, and transoms at 11-15 cm meet the next mass's wall, 15 cm proud of some faces. */
+  /** Faces whose curtain is replaced (the sawtooth face) or capped (below the residence band). */
+  const key = (f: Face) => `${f.a[0].toFixed(2)},${f.a[1].toFixed(2)},${f.b[0].toFixed(2)},${f.b[1].toFixed(2)}`;
+  const capAt = new Map<string, number>();
+  const curtain = (plan: P2[], lo: number, hi0: number, faceSeed: number) => {
     faces(tidy(plan)).forEach((f, edge) => {
-      if (f.length < 2 || !exposed(f, hi - 1)) return;
+      const hi = Math.min(hi0, capAt.get(key(f)) ?? Infinity);
+      if (f.length < 2 || hi - lo < 2 || !exposed(f, hi - 1)) return;
       const bays = Math.max(1, Math.round(f.length / 3.2));
       const floors = Math.floor((hi - 1 - lo) / floor);
       for (let k = 0; k <= bays; k++) panel(f, k / bays - 0.12 / f.length, k / bays + 0.12 / f.length, lo, hi - 0.6, 0.1, frame);
-      for (let j = 2; j < floors; j += 2) panel(f, 0, 1, lo + j * floor - 0.18, lo + j * floor + 0.18, 0.1, frame);
+      for (let j = 2; j < floors; j += 2) panel(f, 0, 1, lo + j * floor - 0.18, lo + j * floor + 0.18, 0.19, frame);
       // A hotel is noticeably lit at night (illustrative occupancy), one pane per room bay.
       const units = bays;
       for (let j = 0; j < floors; j++) for (let k = 0; k < units; k++) {
-        if (hash(seed + edge, j, k) > 0.32) continue;
+        if (litHash(seed, faceSeed + edge, j, k) > 0.32) continue;
         const y = lo + j * floor + 0.5;
         if (!exposed(f, y + 1)) continue;
-        panel(f, (k + 0.1) / units, (k + 0.9) / units, y, y + 2.3, 0.07, glass, true);
+        panel(f, (k + 0.1) / units, (k + 0.9) / units, y, y + 2.3, 0.05, glass, true);
       }
-      panel(f, -0.005, 1.005, hi - 0.6, hi, 0.12, frame);
+      panel(f, -0.005, 1.005, hi - 0.6, hi, 0.24, frame);
     });
   };
 
@@ -140,7 +147,8 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
   covers.push({ plan: towerPlan, top: towerRoof }, { plan: wingPlan, top: wingRoof }, ...lowParts);
   s.prism(towerPlan, s.base, glassBase, stone, roof);
   s.prism(wingPlan, s.base, glassBase, stone, roof);
-  for (const plan of [towerPlan, wingPlan]) for (const f of faces(tidy(plan))) {
+  // Storefronts sit on the stone walls' own (exact) faces, so they keep their 6 cm.
+  for (const plan of [towerPlan, wingPlan]) for (const f of faces(plan)) {
     if (f.length < 5 || !exposed(f, glassBase - 4)) continue;
     const mid = at(f, 0.5, 0, 0), y = gradeAt(mid[0], mid[2]);
     if (y + 5 < glassBase) panel(f, 0.05, 0.95, y + 0.3, Math.min(y + 5.5, glassBase - 1), 0.06, storefront, true);
@@ -149,23 +157,64 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
   // The tower steps: its Peachtree (north-west) half rises to 411.5 m, the rest stops at 405 m.
   const split = (p: P2) => 2 - p[0];
   const upper = clip(towerPlan, split), lower = clip(towerPlan, p => -split(p));
-  s.prism(lower, glassBase, towerRoof, glass, roof);
-  s.prism(upper, glassBase, upperRoof, glass, roof);
+  // The glass walls stand on the same tidied plans as their curtain: the mapped ring wanders a few
+  // centimetres between the kept vertices, which put the curtain's layers within 1 cm of the wall.
+  s.prism(tidy(lower), glassBase, towerRoof, glass, roof);
+  s.prism(tidy(upper), glassBase, upperRoof, glass, roof);
+  /** How squarely a face looks toward a world direction (x east, z south). */
+  const toward = (f: Face, [wx, wz]: P2) => (f.n[0] * c - f.n[1] * sn) * wx + (f.n[0] * sn + f.n[1] * c) * wz;
+  const upperFaces = faces(tidy(upper));
+  // LoewsMidtown.jpg looks up from 11th and Peachtree: the residences' dark band crosses the wide
+  // south-west face, and the sawtooth bays run up the narrow west face above the café. Each is the
+  // face pointing most squarely that way, with a sanity bound so a re-map can't pick a stray edge.
+  const pick = (list: Face[], dir: P2) => {
+    const best = list.length ? list.reduce((a, b) => (toward(b, dir) > toward(a, dir) ? b : a)) : null;
+    return best && toward(best, dir) > 0.7 ? best : null;
+  };
+  const peachtree = pick(upperFaces.filter(f => f.length > 12), [-0.707, 0.707]);
+  const corner = pick(upperFaces.filter(f => f.length > 4 && f.length < 16), [-1, 0]);
+  // From the street the residences read as a dark band over the pale shaft (LoewsMidtown.jpg): the
+  // wall behind the balconies is recessed and shaded, with the white slab edges across it.
+  const bandTop = upperRoof - 1, bandLo = upperRoof - 4 - 11 * floor - 0.5;
+  if (peachtree) capAt.set(key(peachtree), bandLo);
+  if (corner) capAt.set(key(corner), glassBase); // the wedges replace this face's curtain
   curtain(lower, glassBase, towerRoof, 0);
   curtain(upper, glassBase, upperRoof, 40);
-  s.prism(wingPlan, glassBase, wingRoof, glass, roof);
+  s.prism(tidy(wingPlan), glassBase, wingRoof, glass, roof);
   curtain(wingPlan, glassBase, wingRoof, 80);
 
-  // Hotel residences on the top floors carry a stack of balcony slabs on the face most squarely
-  // toward Peachtree (world west). Each slab is a horizontal plate with a front edge.
   const west: P2 = [-c, sn];
   const facing = (f: Face) => f.n[0] * west[0] + f.n[1] * west[1];
-  const candidates = faces(tidy(upper)).filter(f => f.length > 6);
-  const peachtree = candidates.length ? candidates.reduce((a, b) => (facing(b) > facing(a) ? b : a)) : null;
-  if (peachtree) for (let j = 0; j < 12; j++) {
-    const y = upperRoof - 4 - j * floor;
-    s.body.quad(at(peachtree, 0.15, y, 0), at(peachtree, 0.15, y, 1.6), at(peachtree, 0.85, y, 1.6), at(peachtree, 0.85, y, 0), slab);
-    panel(peachtree, 0.15, 0.85, y - 0.35, y, 1.6, slab);
+  if (peachtree) {
+    panel(peachtree, 0.08, 0.92, bandLo, bandTop, 0.14, recess);
+    for (let j = 0; j < 12; j++) {
+      const y = upperRoof - 4 - j * floor;
+      s.body.quad(at(peachtree, 0.08, y, 0), at(peachtree, 0.08, y, 1.6), at(peachtree, 0.92, y, 1.6), at(peachtree, 0.92, y, 0), slab);
+      panel(peachtree, 0.08, 0.92, y - 0.35, y, 1.6, slab);
+      // Lit residences show in front of the dark recess at night.
+      for (let k = 0; k < 4; k++) {
+        if (litHash(seed, 99, j, k) > 0.35) continue;
+        panel(peachtree, 0.08 + (k + 0.1) * 0.21, 0.08 + (k + 0.9) * 0.21, y + 0.35, y + floor - 0.7, 0.18, glass, true);
+      }
+    }
+
+  }
+  // The sawtooth: the narrow west face is a column of angled bay windows, each two-floor block a
+  // closed glass wedge on the wall, alternating its depth so the edge reads serrated.
+  if (corner) {
+    const pt = (t: number, d: number): P2 => { const q = at(corner, t, 0, d); return [q[0], q[2]]; };
+    for (let j = 0, y = glassBase; y + 2 * floor <= upperRoof - 1; j++, y += 2 * floor) {
+      const out = j % 2 ? 1.6 : 0.9;
+      if (!exposed(corner, y + floor)) continue;
+      const wedge = [pt(0, 0), pt(1, 0), pt(0.15, out)];
+      const ccw = (wedge[1][0] - wedge[0][0]) * (wedge[2][1] - wedge[0][1]) - (wedge[1][1] - wedge[0][1]) * (wedge[2][0] - wedge[0][0]) > 0;
+      const plan = ccw ? wedge : wedge.reverse();
+      s.prism(plan, y, y + 2 * floor, glass, frame);
+      // Closed underneath, so an overhanging wedge never shows its inside from the street.
+      s.body.tri([plan[0][0], y, plan[0][1]], [plan[1][0], y, plan[1][1]], [plan[2][0], y, plan[2][1]], frame);
+      // A lit room behind each bay at night.
+      if (litHash(seed, 98, j, 0) < 0.35) panel(corner, 0.2, 0.7, y + 0.5, y + 2 * floor - 0.6, out * 0.45, glass, true);
+    }
   }
 
   // Low arrival and retail pieces keep their mapped 8 m.
