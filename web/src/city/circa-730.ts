@@ -61,8 +61,8 @@ export function createCirca730(buildings: VBuilding[], site: VBuilding, grid: Gr
     });
   // White precast spandrels between continuous ribbons of pale grey-green glass, as in the
   // owner's photographs; the narrow ends are solid white with a single glazed slot.
-  const white = '#ebeae5', roofColor = '#8f908c';
-  const ribbon = ['#7d8f92', '#839598'];
+  const white = '#f3f2ee', roofColor = '#c4c2ba';
+  const ribbon = ['#4f6670', '#566d77'];
   const storefront = ['#6a7b84', '#6e818a'];
   const floors = 10, pitch = (roof - 1 - lobby) / floors;
 
@@ -77,7 +77,7 @@ export function createCirca730(buildings: VBuilding[], site: VBuilding, grid: Gr
     const rows = Math.max(1, Math.round((roof - 1 - from) / pitch));
     if (length > 20) {
       // Long faces: one continuous ribbon per floor (office night: mostly dark).
-      litFacade(shell, seed, face++, a, b, from, roof - 1, rows, high ? 3 : 8, 0.985, 0.5, ribbon, 0.1);
+      litFacade(shell, seed, face++, a, b, from, roof - 1, rows, high ? 3 : 8, 0.985, 0.55, ribbon, 0.1);
     } else if (high || length > 6) {
       // End walls: a single central slot of glass.
       const t0 = 0.42, t1 = 0.58;
