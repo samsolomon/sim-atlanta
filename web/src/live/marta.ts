@@ -4,6 +4,7 @@
  */
 import type { TrainState } from '../model/types';
 import { nearestOnPath, pointAt, type Schedule } from '../sched/engine';
+import { appendFix, playback, type Knot } from './motion';
 import { freshness, serverDate } from './freshness';
 
 interface LiveTrain {
@@ -28,14 +29,13 @@ interface Tracked {
   raw: LiveTrain;
   routeId: string;
   pathId: string | null;
-  from: number; // s at start of glide
-  to: number; // s of latest fix
-  glideStart: number; // performance.now()
+  history: Knot[];
+  expires: number;
 }
 
 /** 30 s keeps one open tab at ~2,900 Worker requests/day on the free tier (100k/day). */
 const POLL_MS = 30_000;
-const GLIDE_MS = 8_000;
+
 /** A fix further than this from every candidate path is drawn where reported, unsnapped. */
 const MAX_SNAP_M = 250;
 /** Live data older than this is treated as unavailable (fall back to the timetable). */
@@ -44,6 +44,7 @@ export const STALE_MS = 3 * 60_000;
 export class LiveMarta {
   private tracked = new Map<string, Tracked>();
   private lastFetch = -Infinity;
+  private lastSnapshot = -Infinity;
   private lastOk = 0;
   firstPollComplete = false;
   error: string | null = null;
@@ -65,7 +66,7 @@ export class LiveMarta {
 
   /** True when we have recent live positions to show instead of the timetable. */
   get available() {
-    return this.tracked.size > 0 && Date.now() - this.lastOk < STALE_MS;
+    return [...this.tracked.values()].some(t => performance.now() < t.expires) && Date.now() - this.lastOk < STALE_MS;
   }
 
   get count() {
@@ -74,47 +75,53 @@ export class LiveMarta {
 
   async poll() {
     if (performance.now() - this.lastFetch < 5_000) return;
-    this.lastFetch = performance.now();
+    const request = performance.now();
+    this.lastFetch = request;
     try {
       // Never from the browser cache: a cached 200 would replay an old snapshot as live.
       const r = await fetch(this.url, { cache: 'no-store' });
       const body = await r.json();
+      if (request !== this.lastFetch) return;
       if (!r.ok) throw new Error(body?.error ?? `HTTP ${r.status}`);
       const feed = body as Feed;
       // The feed itself must be current. A stale or future snapshot drops every tracked train,
       // so the scene falls back to the timetable rather than freezing old positions as live.
       const fresh = freshness(feed.fetched, serverDate(r), Date.now(), STALE_MS);
+      if (feed.fetched < this.lastSnapshot && fresh === 'fresh') return;
       if (fresh !== 'fresh') {
         this.tracked.clear();
         this.error = fresh;
       } else {
-        this.ingest(feed);
+        this.lastSnapshot = feed.fetched;
+        this.ingest(feed, Math.max(Date.now(), serverDate(r) ?? feed.fetched));
         this.lastOk = Date.now();
         this.error = null;
       }
     } catch (e) {
+      if (request !== this.lastFetch) return;
       this.error = e instanceof Error ? e.message : String(e);
     }
     this.firstPollComplete = true;
     this.onUpdate();
   }
 
-  private ingest(feed: Feed) {
+  private ingest(feed: Feed, reference: number) {
     const now = performance.now();
     const seen = new Set<string>();
     for (const t of feed.trains) {
       // Expire by when MARTA observed the train, not when we fetched it.
-      if (t.at != null && feed.fetched - t.at > STALE_MS) continue;
+      if (t.at != null && (t.at > reference || reference - t.at >= STALE_MS)) continue;
       seen.add(t.id);
       const routeId = `marta:route:${t.line}`;
       const prev = this.tracked.get(t.id);
+      if (prev?.raw.at != null && t.at != null && t.at <= prev.raw.at) continue;
       const snap = this.snap(routeId, t, prev?.pathId ?? null);
-      if (prev && snap.pathId && snap.pathId === prev.pathId && Math.abs(snap.s - prev.to) < 3000) {
-        // Glide from wherever the train is drawn now to the new fix.
-        this.tracked.set(t.id, { raw: t, routeId, pathId: snap.pathId, from: this.currentS(prev, now), to: snap.s, glideStart: now });
-      } else {
-        this.tracked.set(t.id, { raw: t, routeId, pathId: snap.pathId, from: snap.s, to: snap.s, glideStart: now });
-      }
+      const prior = prev?.history.at(-1);
+      const history = prev && prior && prev.expires > now && snap.pathId && snap.pathId === prev.pathId
+        && Math.abs(snap.s - prior.s) < 3000 ? prev.history : [];
+      appendFix(history, snap.s, now);
+      this.tracked.set(t.id, { raw: t, routeId, pathId: snap.pathId, history,
+        expires: now + STALE_MS - Math.max(0, reference - (t.at ?? feed.fetched)) });
     }
     for (const id of this.tracked.keys()) if (!seen.has(id)) this.tracked.delete(id);
   }
@@ -134,26 +141,22 @@ export class LiveMarta {
     return best.off <= MAX_SNAP_M ? best : { pathId: null, s: 0 };
   }
 
-  private currentS(t: Tracked, now: number) {
-    const f = Math.min(1, Math.max(0, (now - t.glideStart) / GLIDE_MS));
-    return t.from + (t.to - t.from) * f;
-  }
-
   trains(): TrainState[] {
     const now = performance.now();
     const out: TrainState[] = [];
     for (const t of this.tracked.values()) {
+      if (now >= t.expires) continue;
       const route = this.schedule.routes.get(t.routeId);
       const vt = route && this.schedule.vehicleTypes.get(route.vehicleType);
       const g = t.pathId ? this.schedule.path(t.pathId) : undefined;
-      const s = this.currentS(t, now);
+      const s = playback(t.history, now);
       const pt = g ? pointAt(g, s) : { lon: t.raw.lon, lat: t.raw.lat, heading: 0 };
       out.push({
         id: t.raw.id,
         routeId: t.routeId,
         // Empty when the fix couldn't be snapped to track: 2D draws it as reported, 3D omits it.
         pathId: t.pathId ?? '',
-        s: { value: s, tier: 'live', source: 'marta-rail-rt', asOf: t.raw.at != null ? new Date(t.raw.at).toISOString() : '' },
+        s: { value: s, tier: g ? 'inferred' : t.raw.at == null ? 'reported' : 'live', source: 'marta-rail-rt', asOf: t.raw.at != null ? new Date(t.raw.at).toISOString() : '' },
         heading: pt.heading,
         lon: pt.lon,
         lat: pt.lat,

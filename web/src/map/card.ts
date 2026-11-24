@@ -130,7 +130,7 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
   const line = route?.mode === 'heavy_rail' ? `${route.operator ?? 'MARTA'} ${titleCase(route.shortName)} Line` : route?.longName ?? 'Train';
   const service = route ? SERVICE[route.mode] ?? 'Rail' : 'Rail';
   const swatch = route ? MODE_COLOR[route.mode] : '#495057';
-  const live = t.s.tier === 'live';
+  const live = (t.s.tier === 'live' || t.s.source === 'marta-rail-rt');
   const report = [route?.operator, t.observedAt == null ? 'report time unknown' : `reported ${ago(t.observedAt)}`].filter(Boolean).join(' · ');
   const name = t.nextStopName ?? next?.name;
   const eta = t.nextInSec != null ? ` · ${t.nextInSec < 60 ? 'arriving' : `${Math.round(t.nextInSec / 60)} min`}` : '';
@@ -143,7 +143,7 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
     <p class="a2-kicker"><span class="a2-svc" style="background:${esc(swatch)}"></span>${esc(service)} · ${esc(line)}${route ? `<span class="dot" style="background:${esc(routeColor(route))}"></span>` : ''}</p>
     <h2>${esc(destination(t.headsign))}</h2>
     <dl class="a2-facts">
-      ${name ? row(live && t.nextInSec != null ? 'Next arrival' : 'Next stop', `<strong>${esc(place(name))}${eta}</strong> ${chip(t.s.tier, TIER_WORD[t.s.tier])}`) : ''}
+      ${name ? row(live && t.nextInSec != null ? 'Next arrival' : 'Next stop', `<strong>${esc(place(name))}${eta}</strong> ${chip(live ? 'reported' : t.s.tier, live ? 'Reported' : TIER_WORD[t.s.tier])}`) : ''}
       ${units ? row(route?.mode === 'heavy_rail' ? 'Cars' : 'Consist', `${esc(units)} ${chip('illustrative')}`) : ''}
       ${drawnRows(city, drawn, row)}
       ${live
