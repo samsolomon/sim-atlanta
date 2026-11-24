@@ -55,10 +55,15 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
   const glass = ['#86a0c0', '#8ca5c3', '#819bbb'];
   const t = local(tower), s = local(step), p = local(podium);
 
+  const podFloors = 4, towerLo = y(podiumTop) + 0.3;
   shell.prism(p, shell.base, y(podiumTop), precast, '#9c9a93');
-  shell.prism(t, shell.base, y(roof), slab, '#9fa2a4');
+  // Dark brick below the podium line (Street View on 11th Street) is the wall itself, not a layer
+  // over it, so the lower-floor panes sit a clean 7 cm off it.
+  shell.prism(t, shell.base, towerLo, brick, brick);
+  shell.prism(t, towerLo, y(roof), slab, '#9fa2a4');
   shell.prism(t, y(roof), y(parapet), slab, '#9fa2a4');
-  shell.prism(s, shell.base, y(stepTop), slab, '#9fa2a4');
+  shell.prism(s, shell.base, towerLo, brick, brick);
+  shell.prism(s, towerLo, y(stepTop), slab, '#9fa2a4');
 
   // Rooftop pool on the 23rd floor terrace, cantilevered toward the park.
   if (high) {
@@ -66,14 +71,11 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     shell.body.quad([a, y(parapet) + 0.05, b], [a, y(parapet) + 0.05, d], [c, y(parapet) + 0.05, d], [c, y(parapet) + 0.05, b], '#5fb3cf');
   }
 
-  const podFloors = 4, towerLo = y(podiumTop) + 0.3;
   const floors = Math.round((y(roof) - towerLo) / 3.1);
   const pitch = (y(roof) - 0.3 - towerLo) / floors;
   const tower3 = (ring: P2[], top: number, block: number) => edges(ring, (a, b, length, i) => {
     const ux = (b[0] - a[0]) / length, uz = (b[1] - a[1]) / length, nx = uz, nz = -ux;
     const at = (u: number, yy: number, out: number) => [a[0] + ux * u + nx * out, yy, a[1] + uz * u + nz * out];
-    // Dark brick below the podium line, as in Street View on 11th Street.
-    shell.body.quad(at(0, shell.base, 0.06), at(0, towerLo, 0.06), at(length, towerLo, 0.06), at(length, shell.base, 0.06), brick);
     const rows = Math.round((top - towerLo) / 3.1);
     if (high) {
       litFacade(shell, seed, block + i, a, b, towerLo, top - 0.3, rows, 3.2, 0.92, 0.78, glass, 0.45);
