@@ -781,7 +781,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         roadHeight: cityRoadHeight(vd, terrain.groundAt, transport?.deckAt) }
     : undefined;
   let traffic = trafficOptions && new ConnectorTraffic(trafficOptions);
+  /** Set when an area mounts: ground and joins may change, so cached car heights refresh next frame. */
+  let trafficHeightsStale = false;
   function extendConnectorTraffic() {
+    trafficHeightsStale = true;
     if (!trafficOptions) return;
     const clippingPlanes = edges.map(p => p.clone());
     if (east) clippingPlanes[1].constant = east.bounds.maxX;
@@ -822,6 +825,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (x>=r.minX && x<=r.maxX && z>=r.minZ && z<=r.maxZ) return height(x,z);
       return null;
     }, trafficOptions.roadHeight) : undefined;
+  const trafficView = new THREE.Frustum(), trafficViewMatrix = new THREE.Matrix4();
   const arterials = trafficOptions && corridors?.length
     ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
     : undefined;
@@ -1668,9 +1672,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     treeDetail();
     stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far, renderer.domElement.height);
     figures?.update(sceneTime, camera, container.clientHeight);
-    traffic?.update(sceneTime, atm.dark);
-    arterials?.update(sceneTime, atm.dark);
-    midtownArterials?.update(sceneTime, atm.dark);
+    // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
+    if (trafficHeightsStale) {
+      trafficHeightsStale = false;
+      for (const layer of [traffic, arterials, midtownArterials]) layer?.refreshHeights();
+    }
+    camera.updateMatrixWorld();
+    trafficView.setFromProjectionMatrix(trafficViewMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    traffic?.update(sceneTime, atm.dark, trafficView);
+    arterials?.update(sceneTime, atm.dark, trafficView);
+    midtownArterials?.update(sceneTime, atm.dark, trafficView);
     const speciesDt = Math.min(0.1, Math.max(0, (ts - speciesTs) / 1000));
     speciesTs = ts;
     for (const a of [terrain, east, north, ...(mosaic ? mosaic.patches.values() : [])]) (a as { update?: (dt: number, c: THREE.Camera) => void } | undefined)?.update?.(speciesDt, camera);
