@@ -304,9 +304,16 @@ it('draws the Campanile as its present-day stripped frame at the lidar roof, unl
   expect(box.max.y).toBeCloseTo(95.4 + 4, 0);
   const top = new Raycaster(new Vector3(833, 300, -3571), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
   expect(top).toBeCloseTo(95.4, 0);
-  // A stalled construction site: no photographed lighting, so nothing glows.
+  // A stalled construction site: no photographed lighting, so nothing glows (and no lamps mesh is
+  // built at all: an empty one would still cost a draw).
   model.setNight(1);
-  expect(((model.group.children[1] as Mesh).material as MeshLambertMaterial).emissiveIntensity).toBe(0);
+  const glowing: string[] = [];
+  model.group.traverse(o => {
+    const m = (o as Mesh).material as MeshLambertMaterial | undefined;
+    if ((o as Mesh).isMesh && m?.emissiveIntensity && m.emissive?.getHex()) glowing.push(o.name || o.type);
+  });
+  expect(glowing).toEqual([]);
+  expect(model.group.children.filter(c => (c as Mesh).isMesh && !(c as Mesh).geometry.getAttribute('position')?.count)).toEqual([]);
   expect((model.group.children[0] as Mesh).geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
 });
 
@@ -393,6 +400,27 @@ it('replaces Alexan on 8th at its lidar roof', () => {
   expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
   const y = meshes[1].geometry.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(71);
+});
+
+it('puts The M by Radius at its lidar roof with the arched crown on the south face', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:536899754');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('The M by Radius');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(285, -3415)).toBeCloseTo(76.5, 0); // roof edge, lidar
+  // The arch's crest stands on the south wall (south is +z), up to the lidar crown: a ray from the
+  // south hits it at 78 m but passes clear over it at 78.8 m.
+  const fromSouth = (y: number) => new Raycaster(new Vector3(302.4, y, -3300), new Vector3(0, 0, -1)).intersectObject(model.group)[0]?.point.z;
+  expect(fromSouth(78)).toBeCloseTo(-3420 + 12.1, 0);
+  expect(fromSouth(78.8)).toBeUndefined();
+  expect(heightAt(-28.4 + 302.4, -3420)).toBeCloseTo(8, 0); // one-storey west wing
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  // No lit pane stands above the 76.5 m roof.
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(76.5);
 });
 
 it('keeps every part of Alexan on 8th on its footprint, within the 1.75 m balcony depth', () => {

@@ -866,7 +866,10 @@ export function* buildResidential(city: TerrainCity, existing?: (b: VBuilding) =
     /** Whether a building is one of the planned houses. */
     isHouse: (id: string) => plans.has(id),
     /** Read-only view of a house's plan (style, roof shape, ridge direction), for tests and the lab. */
-    planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys }; },
+    planOf(id: string) { const p = plans.get(id); return p && { style: p.style, shape: p.shape, ridge: p.u, storeys: p.storeys, roof: p.roof }; },
+    /** A house as one box (its plan's oriented rectangle, eave, half the roof rise, wall and roof
+     *  colours), for the far-far form (city/house-lod.ts). */
+    boxOf(id: string) { const p = plans.get(id); return p ? { centre: p.centre, u: p.u, long: p.long, half: p.half, height: p.eave + p.rise / 2, wall: p.wall, roof: p.roof } : null; },
     /** Yard landscaping for every planned house: one primitives draw and one ground-cover draw. */
     yards() { return runSync(buildYards()); },
     /** yards() as a build that yields once per house, for sliced area builds. */

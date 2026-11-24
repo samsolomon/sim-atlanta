@@ -31,6 +31,9 @@ export interface PerfContext {
   rotate?(degrees: number): void;
   /** Pan by a screen offset in CSS px (for ?perf=run&motion=pan). */
   pan?(dxPx: number, dyPx: number): void;
+  /** Frame a camera target (metres) at a distance, bearing clockwise from north and tilt from
+   * vertical, in degrees (for ?perf=run&motion=route:<name>). */
+  view?(x: number, z: number, dist: number, bearing: number, tilt: number): void;
   /** Areas mounted so far (mosaic keys), for the report. */
   areas?(): string[];
   quality: string;
@@ -62,7 +65,7 @@ const TRAIL_KEY = 'perf-trail';
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false, shadowGapOld: false, farShadowM: null };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -71,6 +74,8 @@ export const perfOverrides = (() => {
     nopass: new Set((params.get('nopass') ?? '').split(',').filter(Boolean)),
     postOff: params.get('post') === 'off',
     prewarmOff: params.get('prewarm') === '0',
+    /** &farshadow=3500: low's shadow casters stop past this orbit distance in metres (0: never). */
+    farShadowM: params.has('farshadow') ? (Number(params.get('farshadow')) || Infinity) : null,
     /** &shadowgap=old: low's shadow map redraws on every LOD swap and on fixed 80 m steps (before 2026-11-24). */
     shadowGapOld: params.get('shadowgap') === 'old',
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
@@ -499,6 +504,34 @@ function paintOverlay() {
 }
 
 // ---- ?perf=run ---------------------------------------------------------------------------
+/** Main-thread long tasks (over 50 ms, the browser's PerformanceObserver 'longtask'), recorded under
+ * ?perf: a frame that blocks is what a visitor feels as a stall while moving. */
+const longTasks: { start: number; ms: number }[] = [];
+if (perfEnabled && typeof PerformanceObserver !== 'undefined') {
+  try {
+    new PerformanceObserver(list => { for (const e of list.getEntries()) longTasks.push({ start: Math.round(e.startTime), ms: Math.round(e.duration) }); })
+      .observe({ type: 'longtask', buffered: true });
+  } catch { /* longtask unsupported */ }
+}
+/** Camera routes for ?perf=run&motion=route:<name>, flown out and back over a 20 s sample. `north`
+ * runs Five Points to Brookwood at 700 m (areas and rings change under it); `zoomout` eases from a
+ * 3 km to a 25 km orbit over Midtown, crossing the 10 km build distance early (far-level builds and swaps). */
+const ROUTES: Record<string, { dist: number; bearing: number; tilt: number; path: [number, number][]; dists?: [number, number] }> = {
+  north: { dist: 700, bearing: 0, tilt: 50, path: [[400, -650], [400, -5300]] },
+  zoomout: { dist: 3000, bearing: 0, tilt: 35, path: [[400, -2300], [400, -2300]], dists: [3000, 25000] },
+};
+function routeAt(path: [number, number][], u: number): [number, number] {
+  const seg = path.slice(1).map((p, i) => Math.hypot(p[0] - path[i][0], p[1] - path[i][1]));
+  let d = u * seg.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < seg.length; i++) {
+    if (d <= seg[i] || i === seg.length - 1) {
+      const f = seg[i] ? Math.min(1, d / seg[i]) : 0;
+      return [path[i][0] + (path[i + 1][0] - path[i][0]) * f, path[i][1] + (path[i + 1][1] - path[i][1]) * f];
+    }
+    d -= seg[i];
+  }
+  return path[path.length - 1];
+}
 /** City registers its shader prewarm's queue here, so a run settles only once it is empty. */
 let prewarmPending: (() => number) | null = null;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -518,8 +551,11 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     await sleep(250);
   }
   const shadowBefore = shadowUpdates;
+  const sampleStart = performance.now();
   const motion = params.get('motion');
-  let turning = motion === 'orbit' || motion === 'pan';
+  const route = motion?.startsWith('route:') ? ROUTES[motion.slice(6)] : undefined;
+  if (route) sampleMs = 20000;
+  let turning = motion === 'orbit' || motion === 'pan' || !!route;
   if (turning) {
     const t0 = performance.now();
     let last = t0;
@@ -527,7 +563,14 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     const turn = (now: number) => {
       if (!turning) return;
       if (motion === 'orbit') ctx?.rotate?.(((now - last) / 1000) * 12);
-      else {
+      else if (route) {
+        // Out and back: u runs 0 -> 1 -> 0 over the sample; a dolly eases its distance geometrically.
+        const k = Math.min(1, (now - t0) / sampleMs);
+        const u = k < 0.5 ? k * 2 : 2 - k * 2;
+        const [x, z] = routeAt(route.path, u);
+        const dist = route.dists ? route.dists[0] * Math.pow(route.dists[1] / route.dists[0], u) : route.dist;
+        ctx?.view?.(x, z, dist, route.bearing, route.tilt);
+      } else {
         const next = 150 * Math.sin(((now - t0) / 4000) * 2 * Math.PI);
         ctx?.pan?.(next - x, 0);
         x = next;
@@ -558,6 +601,10 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     lastAreaMs: [...phases].reverse().find(p => p.name.startsWith('area:'))?.ms ?? null, areas: full.areas.length,
     motion: params.get('motion') ?? 'static',
     settled,
+    // Longest main-thread task during the sample, and how many passed 100 ms.
+    longestTaskMs: Math.max(0, ...longTasks.filter(l => l.start >= sampleStart).map(l => l.ms)),
+    longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,
+    longTasks: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).map(l => [l.start, l.ms]),
   };
   const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;
@@ -698,7 +745,10 @@ export const perf = {
         const all = [...recs.values()];
         const sum = (rs: Rec[]) => ({ tri: rs.reduce((a, r) => a + r.tri, 0), calls: rs.reduce((a, r) => a + r.calls, 0) });
         const by = (k: 'pass' | 'cat') => Object.fromEntries([...new Set(all.map(r => r[k]))].map(v => [v, sum(all.filter(r => r[k] === v))]));
-        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80) });
+        // Meshes City hid because they have no vertices (city/empty-draws.ts): their owners should check why.
+        const hiddenEmpty: string[] = [];
+        scene.traverse(o => { if (o.userData.emptyHidden) hiddenEmpty.push(owner(o).path); });
+        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80), hiddenEmpty });
       }); });
     });
   },
