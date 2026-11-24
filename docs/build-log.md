@@ -3336,3 +3336,7 @@ The mapped outline for 1075 Peachtree breaks the site into seven parts. The tall
 ### 2026-11-24 — Black tank cars, and a black that isn't
 
 The freight kit's fourth car is a general-service tank in the DOT-117 family, sized from Greenbrier's 30,600-gallon ethanol car: 18.24 m over pulling faces and 14.21 m between trucks. It costs 1,392 triangles on desktop and 636 on phones. Painted true black, it rendered as a cut-out silhouette, because the City grade crushes near-black just as it does dark navy. A `#45484d` input brings back the curve of the shell and the head shields. At night nothing brings it back: an unlit black tank train on the Norcross line is almost invisible from orbit, which is also how it looks at the lineside. Unit trains now draw grain or tanks. Bumping `CONSIST_VERSION` re-deals every slot, so a seeded train never changes silently. [Lab and City, day and night](log/freight/tank-car/comparison.jpg)
+
+### 2026-11-24 — A gondola full of scrap
+
+The fifth car is an open mill gondola from Greenbrier's 52-foot design: 17.61 m over couplers, with a 1.68 m-deep tub. It runs empty or with a scrap load. The first load was a few flat boxes lying on the floor, invisible from any City camera. The second was a seeded heap of tilted slabs, crested along the centreline. Rotated slabs poked through the side sheets by 20 cm until their size and spread were capped so every rotation stays inside. Empty costs 872 triangles on desktop and 656 on phones; scrap costs 1,232 and 776. [Lab and City](log/freight/gondola/comparison.jpg)

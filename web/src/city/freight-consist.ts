@@ -5,8 +5,8 @@ import { FREIGHT_LENGTH, type FreightUnit } from '../vignette/freight-stock';
  * pure function of the line, the signed passage slot and CONSIST_VERSION: seeking, reloading and
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
-/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars. */
-export const CONSIST_VERSION = 2;
+/** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas. */
+export const CONSIST_VERSION = 3;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
@@ -33,7 +33,7 @@ const ROAD_POWER: Record<FreightRailroad, FreightUnit[]> = {
   csx: ['locomotive', 'es44ah'],
   ns: ['locomotiveNs', 'es44acNs', 'sd70ace'],
 };
-const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper', 'tank'];
+const MANIFEST_CARS: FreightUnit[] = ['boxcar', 'boxcarFaded', 'boxcarBlue', 'grainHopper', 'tank', 'gondolaScrap', 'gondolaEmpty'];
 /** Unit-train commodities: grain hoppers, or tanks for an illustrative ethanol movement. */
 const UNIT_CARS: FreightUnit[] = ['grainHopper', 'tank'];
 const WELL_LOADS: FreightUnit[] = ['wellA', 'wellB', 'wellC'];
