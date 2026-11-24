@@ -28,6 +28,10 @@ Median rendered colour of window pixels, by hue:
 - **East face, in shade at 11:30:** S 43%, V 37%. This reading is advisory.
 - **Generic glass tower east of Alexan, in the same frame:** one face reads S 28%, V 46%; the other S 15%, V 55%.
 
+## Balcony fix (2026-11-24)
+
+As merged in #493, each balcony slab was a vertical plate 1.7 m off the wall with nothing joining it back. Seen end-on, from skins-7's Renaissance camera `354,-2719,260,58,300`, each stack read as a string of dark beads beside the wall. Each balcony is now a horizontal slab from the wall out to 1.7 m, with its front edge and a rail. Stacks sit only at the slab's outside corners, because at the L's inside corner they would push into the other wing. A test holds every vertex within 1.75 m of the footprint, with none in the inside corner. [Reported view and four sides](log/ui/alexan-on-8th/balcony-fix.jpg)
+
 ## Night
 
 City lights 35% of apartments and 40% of storefronts, chosen per window by skin-kit's `litHash(seedOf(id), face, floor, bay)`. With no night photograph, City adds no crown or deck lighting.
