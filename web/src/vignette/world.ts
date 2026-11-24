@@ -792,7 +792,9 @@ export class World {
     mesh.castShadow = mesh.receiveShadow = true;
     // Far form (terrain/far-form.ts): ballast and viaduct stay; rails and ties are sub-pixel.
     registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [PAL.rail])).keep);
+    mesh.name = 'MARTA track and viaduct';
     const tieMesh = instanced(new THREE.BoxGeometry(2.6, 0.18, 0.3), PAL.tieConcrete, ties);
+    tieMesh.name = 'MARTA ties';
     registerFar(tieMesh, 0);
     this.group.add(mesh);
     this.group.add(tieMesh);
@@ -828,7 +830,9 @@ export class World {
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     mesh.castShadow = mesh.receiveShadow = true;
     registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [PAL.railRust])).keep);
+    mesh.name = 'Freight track and girders';
     const tieMesh = instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties);
+    tieMesh.name = 'Freight ties';
     registerFar(tieMesh, 0);
     this.group.add(mesh, tieMesh);
   }
@@ -1286,6 +1290,8 @@ export class World {
     });
     post.castShadow = true;
     // Far form: posts go; heads stay only while they glow (the same night factor as setNight).
+    post.name = 'Street lamp posts';
+    this.lampHeads.name = 'Street lamp heads';
     registerFar(post, 0);
     registerFar(this.lampHeads, 0, { glowAtNight: true });
     this.group.add(post, this.lampHeads);

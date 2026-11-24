@@ -222,6 +222,8 @@ export function buildStreetcarTrack(lines: Line[], bounds: Bounds, height: Heigh
   // Far form (terrain/far-form.ts): the slab stays; rails, grooves, poles and wire are sub-pixel.
   registerFar(track, orderForFar(track.geometry, colourDrop(track.geometry, [RAIL, GROOVE, POLE])).keep);
   registerFar(wires, 0);
+  track.name = 'Streetcar slab and rails';
+  wires.name = 'Streetcar wire';
   group.add(track, wires);
   return {
     group,
