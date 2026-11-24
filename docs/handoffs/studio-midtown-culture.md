@@ -1,4 +1,82 @@
-# Studio Midtown Culture handoff to Claude Opus
+# Studio Midtown Culture handoff to Codex (gpt-6.2), 2026-11-24
+
+**Outgoing agent:** Claude Opus session `ba45f7e8-2a67-4069-ae27-fc13f736da26` (read its history with `orca agent read`).
+**Worktree:** `studio-midtown-culture`. **Handoff branch:** `samsolomon/ajc-building` (WIP, see below).
+**Reporting:** the coordinator is the MacBook Air terminal `term_09e1b3da-5f48-4755-abf8-92a571a1f474` (thread `msg_e75e8058ae70`). The skyline lead is `orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`; their latest thread is `msg_d8b116b847c6`. Reply to the *other* agent's incoming message id, never your own.
+
+## Open PRs I own
+
+| PR | Branch @ head | Status |
+|---|---|---|
+| [#636](https://github.com/samsolomon/sim-atlanta/pull/636) Modera Parkside audit (rainbow slot, crown visor, core box) | `modera-parkside-audit` @ `4057dff6` | Approved by the lead and the coordinator. Rides train **8c**. Don't push. |
+| [#629](https://github.com/samsolomon/sim-atlanta/pull/629) The M by Radius piers | `m-by-radius-piers` @ `64d4a754` | In the train queue (8c). |
+| [#609](https://github.com/samsolomon/sim-atlanta/pull/609) Courtland Grand | `courtland-grand` @ `77b44a4a` | Approved. In **8d** at this head (the 3 cm coplanar fix was pushed with the lead's OK). |
+| [#624](https://github.com/samsolomon/sim-atlanta/pull/624) One Midtown Plaza | `one-midtown-plaza` @ `c166010c` | Approved. In **8d**, taken together with #652. |
+| [#652](https://github.com/samsolomon/sim-atlanta/pull/652) One/Two Midtown matched glass `#8c9bab` | `midtown-plaza-glass` @ `dedb02ef` | Approved by the coordinator. Stacked on #624; the lead takes both together in 8d, so no retarget is needed. |
+| [#650](https://github.com/samsolomon/sim-atlanta/pull/650) Peachtree Towers (downtown) | `peachtree-towers` @ `173ef4ea` | Approved by the coordinator for **8d**. |
+
+The held branch `glass-palette-midtown-culture` (d20f8720) is superseded for Two Midtown by #652. Merges are the lead's or coordinator's job. Never merge without their relayed OK. After any merge, quote `gh pr view N --json state,mergeCommit`.
+
+## Sam's decisions that affect this area
+
+The coordinator relayed these on 2026-11-24. Where I only know the name, I've left the name alone; check the coordinator thread for details.
+- **Flat glass.** Glass rule: sunlit rendered S ≤ 36 (teal 40) and V ≥ 40. Pick glass against the sunlit reading. Cite a photo for every colour change ("plain is a pass").
+- **Shade floor 0.45** (#631, merged). Shaded glass keeps a floor in the shader, so no shade readings are needed.
+- **Landmark LOD** (#524, merged). Far cells bake facade detail into walls by day: 3.5 km on low, 7 km on high.
+- **Far-board, far shadows, tree far form, streaming flag** (`?stream=1` must not change the look), **1075 glass B**, and **expansion paused**: decided by Sam. Ask the coordinator for specifics before touching those systems.
+- **Generic buildings are the priority.** Downtown generics first, in Sam's frame (Peachtree Center, Fairlie-Poplar and Five Points), largest on screen first.
+- **Standing rules:**
+  - No new material variants (low tier is at its shader-program limit).
+  - Every layer at least 3 cm off its wall; use 4–8 cm. skins-6 is adding a lint for this.
+  - Each skin needs a four-side sheet (`node scripts/four-side-sheet.mjs ... --base http://localhost:<port>`; it must be `localhost`).
+  - Each skin needs the footprint and detachment checks. For downtown skins, run them in the skin's own test against the copied Overture rings.
+  - Each skin needs a `test:perf` with/without pair on both tiers.
+  - Run `pnpm build` before every merge.
+
+## Current work: AJC printing plant (WIP, not pushed as a PR)
+
+The lead assigned three downtown generics in order:
+1. **Atlanta Journal-Constitution** (`08b3e01b`): in progress.
+2. **GSU College of Law** (`74913971-daed-4420-aa5e-62bd863bb4cd`, 23.1 m, at 405,−316).
+3. **University Lofts** (`09f589d5-89a9-4398-ab7d-0ded40ab9eab`, 44.5 m, at 726,−27).
+
+**The AJC building.** `08b3e01b` is the roof parking deck. Its neighbour `df3490e1` (no mapped height) is the same complex, the former printing plant. The 1972 office tower at 72 Marietta is a *separate* building about 100 m to the south-east, so don't use its facade. The lead approved claiming both ids in one module, and `web/src/city/ajc-plant.ts` does that.
+
+**Done on this branch:**
+- **Heights (2019 lidar).** The deck is at 36.5 m above the 314 m Gulch-side grade (Marietta Street is at 321 m), with an edge wall to 39 m and stair towers. The plant roof is at 37.2 m, with mechanical boxes from the lidar grid. A raised block reaches 45 m along the east end of the north-east wall; most of that 45 m area lies outside the outline, in the neighbour.
+- **Walls.** Pale precast panels (from the 2023 Street View still in Bisnow), with dark drain channels about every 6.5 m over a buff tile base 4 m above each wall's lower grade. No windows, and nothing lit at night (no photo).
+- **Mount.** In `city.ts` after Museum Tower, in `listed` and in `setNight`.
+- **Test.** `ajc-plant.test.ts` covers the heights, the triangle budget, the footprint against **both** rings and the detachment check. It passes.
+
+**Open problem, fix before a PR.** The deck's shaded north-west wall (Overture edge (−146.33,−282.48)→(−129.5,−263.03)) shows a regular grid of dark dashes. It persists at 15:30. Painting the wall red proved the dashes are on this skin's own wall. Removing the stall stripes didn't change them. Likely causes are shadow acne on a large plain face, or a coplanar or back-facing quad. Check:
+- the deck's 0.4 m edge-wall prism (`s.prism` per edge inside `block`) and whether its wall faces coincide with anything;
+- whether the shared-wall skip misfires on that face;
+- `pnpm audit:ground`.
+
+Close-up camera: `cam=-104,-300,60,70,200` at 11:30 (the scratchpad `capr.sh` uses `q=high`). Before frames (generic boxes) are in my scratchpad and must be retaken.
+
+**Still to do:**
+- Day/night before/after composites at `cam=-77,-241,135,58,330` and `cam=-122,-288,315,58,330`.
+- The four-side sheet: ground 314, top 45.
+- A README in `docs/log/ui/ajc-plant/`.
+- The perf pair, build, test, `pnpm review -- --reviewer codex`, then the PR and a report.
+
+## Gotchas
+
+- **Coordinates:** City +x is east and −z is north. Four-side-sheet bearing 0 looks north at the south face. Neighbours often hide a face, so use the diagonals (315, 225).
+- **Colour grade:** the grade roughly doubles a base colour's saturation. Measure rendered S and V on the sunlit face with a pixel sampler before reporting.
+- **Lamp quads:** take the glass or window colour, never a warm lamp colour. Lamps show by day.
+- **Lidar:**
+  - Run `/tmp/sky-lidar-h.py <id>` with the venv at `../studio-midtown-skyline/.venv/bin/python`.
+  - For a roof grid, use scratchpad `lidar_grid.py x0 z0 x1 z1 ground step`.
+  - Afterwards, remove `pipeline/scripts/__pycache__`.
+- **Shared host:** never pkill by pattern. Kill only PIDs you recorded, and close your own headless Chrome.
+- **Perf noise:** expect ±1 draw call run to run, so always run two with/without pairs.
+
+---
+
+## Archived: previous handoff to Claude Opus
+
 
 **Current worktree:** `studio-midtown-culture`, branch `samsolomon/high-piazza-people`.
 **Only active PR:** [#389 — High Museum visitors](https://github.com/samsolomon/sim-atlanta/pull/389), OPEN and held for Sam’s OK. Owner: Claude Opus session `ba45f7e8-2a67-4069-ae27-fc13f736da26`. Coordinator thread for this revision: `msg_fd1939706770`.
