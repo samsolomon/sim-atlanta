@@ -24,7 +24,7 @@ import { southConnectorTransport } from './south-connector-decks';
 import { eastBounds, northBounds } from '../city/board-footprint';
 import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { buildDowntownTerrain, createDowntownTerrain, FAR_GROUND_ERROR_M, terrainOpenings } from '../terrain/model';
-import { runBudgeted, runSync, type Build } from '../core/slice';
+import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build, type SliceStats } from '../core/slice';
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
@@ -37,13 +37,18 @@ import { prebuildSurface } from '../terrain/surface-prebuild';
  */
 /**
  * ?slice=1 spreads each section's build over frames: 4 ms of work per frame on low, 8 ms on
- * high (the sliced-build gate: no long task while an area mounts). Off by default.
+ * high, half that while the camera is dragged (the sliced-build gate: no long task while an
+ * area mounts). Off by default.
  */
 function sliceBudget(quality: TerrainQuality): (() => number) | null {
   if (typeof location === 'undefined' || new URLSearchParams(location.search).get('slice') !== '1') return null;
   const ms = quality === 'low' ? 4 : 8;
-  return () => ms;
+  // Half the share while the user drags, so a moving camera stays smooth.
+  return () => sliceInput.dragging ? ms / 2 : ms;
 }
+/** Sliced-build stats across every section this page loaded (?slice=1), for the perf harness. */
+export const sliceStats = emptySliceStats();
+if (typeof window !== 'undefined') (window as unknown as { __sliceStats?: SliceStats }).__sliceStats = sliceStats;
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
@@ -173,6 +178,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     terrainOpenings(grid, { underpass: id === 'midtown-south' ? northAvenue : undefined, openings: id === 'brookwood-station' ? northLinePortalSlots(grid) : undefined }),
     joins(id), quality === 'low' && GroundSurface.farLow ? FAR_GROUND_ERROR_M : undefined))) : undefined;
   signal.throwIfAborted();
+  const budget = sliceBudget(quality);
   const added = new Map<Board, TrafficArea>();
   // One build, two drivers: synchronous by default, a few ms per frame under ?slice=1.
   function* buildPatches(): Build<Map<Board, TrafficArea>> {
@@ -197,6 +203,8 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         surface: surfaces?.[patchIndex],
         // Trees join the City-wide batch only when the whole section mounts.
         deferTrees: true,
+        // Sliced: dress the trees for today now, not in one pass when the section mounts.
+        dayOfYear: budget ? sliceInput.dayOfYear : undefined,
       });
       const transports: ReturnType<typeof createSurfaceTransport>[] = [];
       try {
@@ -208,7 +216,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         transports.push(decks);
         area.carve(decks.cutting);
         area.group.add(decks.group);
-        yield;
+        yield 'decks';
         if (stationRoad && separate.length) {
           const stationDeck = createSurfaceTransport({ ...city, roads: [stationRoad], terrainTransport: { version: 1, roads: separate, rail: [] } }, grid, area.groundAt);
           transports.push(stationDeck);
@@ -220,7 +228,7 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
         const piers = id in rowBounds ? midtownConnectorPiers(city, area.groundAt, deckHeight) : undefined;
         if (piers) area.group.add(piers.mesh);
         const roadHeight = cityRoadHeight(city, area.groundAt, deckHeight);
-        yield;
+        yield 'piers and road heights';
         added.set(id, {
           ...area,
           setNight(factor: number) { area.setNight(factor); decks.setNight?.(factor); },
@@ -247,10 +255,9 @@ export async function addSection(direction: Section, mounted: Map<Board, Area>, 
     throw error;
   }
   }
-  const budget = sliceBudget(quality);
   // A sliced build that is abandoned still runs to completion in the background and is then
   // disposed: nothing half-built is registered or left behind (the area is not in the scene).
-  const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget }) : runSync(buildPatches());
+  const built = budget ? await runBudgeted(buildPatches(), { budgetMs: budget, stats: sliceStats }) : runSync(buildPatches());
   try {
     signal.throwIfAborted();
     connect(mounted, built);

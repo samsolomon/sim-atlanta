@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { runEveryStep, runSync } from '../core/slice';
@@ -33,7 +33,14 @@ function fingerprint(root: THREE.Object3D) {
     bytes(g.getAttribute('position').array as Float32Array);
     if (g.index) bytes(g.index.array as Uint32Array);
     const im = o as THREE.InstancedMesh;
-    if (im.isInstancedMesh) { mix(im.count); bytes(im.instanceMatrix.array as Float32Array); }
+    // Only drawn instances: slots past count may keep stale values that never draw.
+    if (im.isInstancedMesh) {
+      mix(im.count);
+      bytes((im.instanceMatrix.array as Float32Array).subarray(0, 16 * im.count));
+      // A zero-scale instance draws nothing; its stale colour is not part of the picture.
+      const mat = im.instanceMatrix.array as Float32Array, col = im.instanceColor?.array as Float32Array | undefined;
+      if (col) for (let i = 0; i < im.count; i++) if (mat[16 * i] || mat[16 * i + 5] || mat[16 * i + 10]) bytes(col.subarray(3 * i, 3 * i + 3));
+    }
   });
   return { hash: h.toString(16), draws };
 }
@@ -57,4 +64,43 @@ it.each(['low', 'high'] as const)('a Midtown row built with a yield after every 
   expect(steps).toBeGreaterThan(8);
   expect(a.draws).toBeGreaterThan(20);
   expect(b).toEqual(a);
-});
+}, 60_000);
+
+// The staged rows (pnpm data) carry the canopy crowns the prototype fixture lacks, so generic
+// trees, their seasons and the tree rollout are covered too.
+const staged = new URL('../../public/data/scene/square-board/brookwood-south/', import.meta.url);
+const hasStaged = existsSync(new URL('context.json', staged));
+it.skipIf(!hasStaged).each(['low', 'high'] as const)('a staged Brookwood row with its crowns builds the same sliced as synchronously on %s', async quality => {
+  const ctx = new Proxy({}, { get: () => () => { } });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const g = () => new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', staged), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', staged))).buffer);
+  const c = JSON.parse(readFileSync(new URL('context.json', staged), 'utf8'));
+  const options = () => ({ quality, bottomY: -48, join: joins('brookwood-south'), lights: midtownLights,
+    rollout: { row: 'brookwood-south', lowCount: c.treeLowCount, allCrowns: c.trees } });
+  const sync = runSync(buildDowntownTerrain(g(), c, neighborhoodTrees(c, quality), options()));
+  const a = fingerprint(sync.group);
+  sync.dispose();
+  const sliced = await runEveryStep(buildDowntownTerrain(g(), c, neighborhoodTrees(c, quality), options()), () => { Math.random(); });
+  const b = fingerprint(sliced.group);
+  sliced.dispose();
+  expect(c.trees.length).toBeGreaterThan(100);
+  expect(b).toEqual(a);
+// Two full builds of a staged row: ~1-2 s alone, several times that in a parallel full suite.
+}, 60_000);
+
+it.skipIf(!hasStaged)('building with today\'s day of year equals building for summer then setting the season', () => {
+  const ctx = new Proxy({}, { get: () => () => { } });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  const g = () => new GroundGrid(JSON.parse(readFileSync(new URL('ground.json', staged), 'utf8')), Uint8Array.from(readFileSync(new URL('ground.i16', staged))).buffer);
+  const c = JSON.parse(readFileSync(new URL('context.json', staged), 'utf8'));
+  for (const doy of [324, 15, 200]) {
+    const options = { quality: 'high' as const, bottomY: -48, join: joins('brookwood-south'), lights: midtownLights };
+    const summer = runSync(buildDowntownTerrain(g(), c, neighborhoodTrees(c, 'high'), options));
+    summer.setSeason(doy);
+    const today = runSync(buildDowntownTerrain(g(), c, neighborhoodTrees(c, 'high'), { ...options, dayOfYear: doy }));
+    today.setSeason(doy);
+    expect(fingerprint(today.group)).toEqual(fingerprint(summer.group));
+    summer.dispose(); today.dispose();
+  }
+// Six full builds of a staged row.
+}, 120_000);

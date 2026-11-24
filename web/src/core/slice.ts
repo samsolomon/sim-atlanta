@@ -5,7 +5,8 @@
  * whole build. The result is the same either way: a yield only hands control back, it never
  * reorders work.
  */
-export type Build<T> = Generator<void, T, void>;
+/** A build yields a stage label (or nothing) between units; drivers ignore it, profiles read it. */
+export type Build<T> = Generator<string | void, T, void>;
 
 export function runSync<T>(build: Build<T>): T {
   for (;;) {
@@ -20,20 +21,57 @@ export interface BudgetOptions {
   /** Resolves on the next frame (requestAnimationFrame by default). */
   nextFrame?: () => Promise<unknown>;
   now?: () => number;
+  /** Filled in as the build runs: the gate metric is the longest slice of build work in one frame. */
+  stats?: SliceStats;
 }
+
+export interface SliceStats {
+  frames: number;
+  /** Longest run of build work inside one frame, ms, and the label of the step that ended it. */
+  maxSliceMs: number;
+  maxSliceAt: string;
+  /** Longest single step (between two yields), ms, and its label. */
+  maxStepMs: number;
+  maxStepAt: string;
+  totalMs: number;
+}
+
+export const emptySliceStats = (): SliceStats => ({ frames: 0, maxSliceMs: 0, maxSliceAt: '', maxStepMs: 0, maxStepAt: '', totalMs: 0 });
+
+/**
+ * Set by City: `dragging` while the user drags the camera (background builds then take a
+ * smaller share), and today's `dayOfYear`, so a sliced build dresses its trees for today.
+ * `building` counts sliced builds in progress (runBudgeted), for other background work to
+ * defer to.
+ */
+export const sliceInput = { dragging: false, dayOfYear: 180, building: 0 };
 
 export async function runBudgeted<T>(build: Build<T>, o: BudgetOptions): Promise<T> {
   const now = o.now ?? (() => performance.now());
   const nextFrame = o.nextFrame ?? (() => new Promise(r => requestAnimationFrame(r)));
-  let deadline = now() + o.budgetMs();
+  const st = o.stats;
+  sliceInput.building++;
+  try {
+  let start = now(), deadline = start + o.budgetMs();
   for (;;) {
+    const t = now();
     const r = build.next();
-    if (r.done) return r.value;
-    if (now() >= deadline) {
+    const after = now();
+    if (st) {
+      const label = (r.done ? 'end' : r.value) || '';
+      if (after - t > st.maxStepMs) { st.maxStepMs = after - t; st.maxStepAt = label; }
+      if (after - start > st.maxSliceMs) { st.maxSliceMs = after - start; st.maxSliceAt = label; }
+      st.totalMs += after - t;
+    }
+    if (r.done) { if (st) st.frames++; return r.value; }
+    if (after >= deadline) {
+      if (st) st.frames++;
       await nextFrame();
-      deadline = now() + o.budgetMs();
+      start = now();
+      deadline = start + o.budgetMs();
     }
   }
+  } finally { sliceInput.building--; }
 }
 
 /** Yield after every unit (tests: proves a build is independent of where it yields). */
