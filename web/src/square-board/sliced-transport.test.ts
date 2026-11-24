@@ -76,3 +76,21 @@ it.each([false, ...(hasStaged ? [true] : [])])('the Connector band builds byte-i
   expect(sliced.keeps).toEqual(sync.keeps);
   expect(sliced.prints).toEqual(sync.prints);
 }, 120_000);
+
+it('a transport build closed at its last yield has assembled and registered nothing', async () => {
+  const ctx = new Proxy({}, { get: () => () => { } });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  useStaged = false;
+  const { buildSurfaceTransport } = await import('../terrain/transport');
+  const { northConnectorTransport } = await import('./connector-ground');
+  const g = new GroundGrid(JSON.parse(file('north-band', 'ground.json').toString()), Uint8Array.from(file('north-band', 'ground.i16')).buffer);
+  const city = northConnectorTransport(JSON.parse(file('north-band', 'context.json').toString()));
+  keeps.length = 0;
+  const gen = buildSurfaceTransport(city, g, (x, z) => g.sample(x, z));
+  let label: string | void = undefined;
+  for (;;) { const r = gen.next(); if (r.done) throw Error('no transport meshes yield'); label = r.value; if (label === 'transport meshes') break; }
+  // The mount is abandoned here: the generator is closed. Mesh assembly (far ordering,
+  // registerFar, the freight texture) is one step after this yield, so nothing was made yet.
+  gen.return(undefined as never);
+  expect(keeps).toEqual([]);
+});

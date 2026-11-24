@@ -558,13 +558,15 @@ export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     yield 'transport bridge ' + road.cls;
   }
   for (const r of data.rail) if (!r.replaced) { draw(r, r.cls === 'tram' ? 'tram' : 'freight'); yield 'transport rail'; }
+  // Mesh assembly (far ordering, registerFar) runs as one step from here: a build closed between
+  // assemblies would otherwise leave a registered far form and this texture behind.
+  yield 'transport meshes';
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
   const bridgeNight = { value: 0 };
   let farKeep = 0;
   for (const [builder, name] of [[structures, 'Decks and embedded rails'], [seventeenth, '17th Street Bridge'], [freight, 'Freight track']] as const) {
     if (!builder.pos.length) continue;
-    yield 'transport mesh';
     const geometry = builder.geometry();
     const isFreight = builder === freight;
     if (builder === structures) {
