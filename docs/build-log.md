@@ -3293,6 +3293,13 @@ Midtown Union's 26-storey office tower at Spring and 17th was a generic striped 
 [Before and after](log/ui/midtown-union/compare.jpg) · [day and night](log/ui/midtown-union/daynight.jpg) · [garage close](log/ui/midtown-union/close.jpg)
 ### 2026-11-23 — The Four Seasons' pyramid
 
+
+### 2026-11-24 · The glass was the frame rate
+
+On the M5 Air, City ran at 44 fps with its UI and 59 without, and the 3D scene wasn't the difference. Chrome traces showed why. With any CSS `backdrop-filter` over the WebGL canvas, the display compositor ran two full-screen render passes every frame and blurred the canvas behind each panel. Without one, it ran none and handed the canvas straight to macOS as a CALayer overlay. The dock, place card and camera buttons cover 7.5% of the desktop screen, but the cost scales with the whole screen. On a Galaxy A16 the blur put 26.9 ms per frame on Android's compositor GPU thread. Without it, 3.9 ms.
+
+On Low, the panels now drop the blur and use a denser tint, and long-text sheets go denser still so roofs don't show behind running text. The A16 went from 25.8 to about 31.5 fps (p95 89 to 56–67 ms), within 2 fps of no UI at all. The rest of the gap appears only while the camera turns. The compass needle rotated by rewriting an SVG attribute every frame, which repainted and re-rastered it. It now turns on its own compositor layer, with 0 paints per frame where there were 0.5. High keeps the frosted look, which City's final pass will draw itself ("in-canvas glass"). A second surprise was the Android trace: the canvas is never promoted to an overlay on that phone, even with no DOM at all, so no layout change could ever have bought that back. [390 px before and after](log/ui/low-flat-glass/phone-dock-card.jpg)
+
 The 186 m Four Seasons Hotel was a plain extruded box. It now steps back like the
 photographs: a rose-granite hotel base to the 19th floor, office and residential
 shafts with notched corners, crown tiers, a gold-latticed attic and a grey-green
@@ -3399,6 +3406,9 @@ The Proscenium's mapped outline has no parts, so its character had to come from 
 
 The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
 [Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
+
+
+**2026-11-24 — The glass moves into the canvas.** The frosted panels over City were CSS `backdrop-filter: blur(22px) saturate(1.35)`, and that alone cost about 15 fps on a cool M5 Air: with any backdrop filter over the canvas, Chrome composites the canvas through an extra full-screen pass every frame instead of handing it straight to the display. On High the renderer now draws the backings itself. A no-swap pass just before the colour grade copies grade's input to quarter resolution and blurs it there (a 4-tap box downsample, then a 16-tap separable Gaussian at sigma 22 CSS px). After the composer, one draw lays up to 24 rounded-rect quads onto the canvas, each graded with the same GLSL as the scene and then saturated as CSS would. The DOM panels keep their tint, rim and shadow and drop the filter. It adds 4 draws, 3 shader programs (High only) and 5 MB of render targets. Low draws flat glass and builds none of it. The surprise was how little had to match: the grade's vignette and contrast are smooth enough that blurring before grading looks the same as blurring after, and the only thing that had to go was the film grain, which a real blur would have averaged away. [Dock and hint, night](log/in-canvas-glass/glass-dock-22.jpg) · [Subject card](log/in-canvas-glass/glass-subject-14.jpg) · [Controls at night](log/in-canvas-glass/glass-controls-22.jpg)
 
 **2026-11-24 — 100 Colony Square, registered by its own roof.** The map gave the tower's low northeast part returns at 94.5 m, which reads like a tower standing on a podium. Plotting only the returns more than 88 m above ground answered it: they form a clean 45° square about 1.5 m wider than the mapped shaft, so the "tall" returns in the low part are the tower's own edge. The model draws that square, the 89.3 m main roof and the 96.3 m core from the histogram, and leaves the low parts at their mapped 8.7 m. The punched grid is 16 piers and 21 spandrels a face over a recessed glass box: 456 body triangles for about 1,300 windows. [Captures and evidence](log/ui/100-colony-square/README.md)
 
@@ -3809,6 +3819,12 @@ A separate corner test swept the vertices of the 8.2 m box truck every five cent
 ### 2026-11-24 · Brake lights on the streetcar alignment
 
 On Edgewood Avenue a simulated car could wait through a red light with its brake lamps dark. This street uses the queue solver that can also hold cars behind a scheduled streetcar. It supplied the position but never supplied the lamp state. In a matched 72-frame City replay the car now lights both lamps at red and releases them on green. Its position and heading match the earlier build throughout. [Red signal](log/ui/traffic-motion/edgewood-red.jpg) · [Green signal](log/ui/traffic-motion/edgewood-release.jpg)
+
+### 2026-11-24 — Letting sunset last past the direct light
+
+At 17:00 in the southwest view, the setting sun caught the Midtown towers. By 17:33 the first golden-hour study had already fallen back to the same deep blue as the original scene. Sam selected the right-hand treatment in the [synchronized sunset loop](https://share.onorca.dev/a/hLdwfw5Ebqww). It lets direct honey light fade from the façades first, then keeps an amber horizon and cooler skylight on the shaded streets. At 17:47 the tower bases are still legible. At 18:15 the three versions have the same central mean RGB to one decimal place.
+
+The loop uses 91 one-minute frames per version, from 16:45 to 18:15 EST on November 20, with clear weather, High quality, fixed exposure and camera `565,-3965,62,72,2100`. [Five matched moments from the selected study](log/city-sky/sunset-transition.jpg)
 
 ### 2026-11-24 — NCR’s lower podium garden
 
