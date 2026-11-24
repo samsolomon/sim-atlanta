@@ -16,6 +16,7 @@ import { colony100Id, colony400Id, createColony100, createColony400 } from '../c
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
 import { createModeraParkside, moderaParksideId } from '../city/modera-parkside';
 import { createTheStandard, theStandardId } from '../city/the-standard';
+import { create712WestPeachtree, westPeachtree712Id } from '../city/712-west-peachtree';
 import { createNomia, nomiaId } from '../city/nomia';
 import { createViewPoint, viewpointId } from '../city/viewpoint';
 import { createProscenium, prosceniumId } from '../city/proscenium';
@@ -276,6 +277,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
       : site.id === moderaParksideId ? createModeraParkside(sceneryCity.buildings, site, grid)
       : site.id === theStandardId ? createTheStandard(sceneryCity.buildings, site, grid)
+      : site.id === westPeachtree712Id ? create712WestPeachtree(sceneryCity.buildings, site, grid)
       : site.id === nomiaId ? createNomia(sceneryCity.buildings, site, grid)
       : site.id === viewpointId ? createViewPoint(sceneryCity.buildings, site, grid)
       : site.id === prosceniumId ? createProscenium(sceneryCity.buildings, site, grid)
