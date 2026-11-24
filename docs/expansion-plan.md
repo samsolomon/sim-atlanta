@@ -62,7 +62,7 @@ Three versions ran tonight. The build log has the full story.
 1. **Load and free areas as the camera approaches.** Memory came back cleanly. But a full build is one
    synchronous job, and the worst pan frame went from 50 ms to 533 ms on low (733 ms on high). That fails
    the bar, and it's why gate 4 exists.
-2. **Load at boot, and draw a LOD in the mid ring** (commit `3ad5b731`). On the A16, the default view went
+2. **Load at boot, and draw a LOD in the mid ring** (commit `ce1aed44`). On the A16, the default view went
    from 23.3 to 30.7 fps, at 562 against 290 draws. Every pan route got faster with lower worst frames
    (north 367 → 222 ms, wide 178 → 156, dolly 300 → 178). On the M5 Air at high, it went from 34.0 to
    47.5 fps. But it changed the look: greener, darker at night, flatter colours. The rule is that a
