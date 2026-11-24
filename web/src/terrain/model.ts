@@ -7,6 +7,7 @@ import { midtownFoundations } from '../city/midtown-foundations';
 import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventeenth';
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
+import { createWindsorOverPeachtree, windsorOverPeachtreeId } from '../city/windsor-over-peachtree';
 import { createSkyhouseSouth, skyhouseSouthId } from '../city/skyhouse-south';
 import { createNine15Midtown, nine15MidtownId } from '../city/nine15-midtown';
 import { azureOnTheParkId, createAzureOnThePark } from '../city/azure-on-the-park';
@@ -351,6 +352,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     const landmark = site.id === seventeenthTowerId ? createSeventeenthTower(sceneryCity.buildings, site, grid)
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
+      : site.id === windsorOverPeachtreeId ? createWindsorOverPeachtree(sceneryCity.buildings, grid, options.quality)
       : site.id === skyhouseSouthId ? createSkyhouseSouth(sceneryCity.buildings, grid, options.quality)
       : site.id === nine15MidtownId ? createNine15Midtown(sceneryCity.buildings, grid, options.quality)
       : site.id === azureOnTheParkId ? createAzureOnThePark(sceneryCity.buildings, grid, options.quality)
