@@ -9,7 +9,7 @@ The downtown rail maintainer owns integration of the freight portals, Five Point
    - The new geometry passed `git diff --check`. New screenshots, ground-contact results, coordinator sign-off, merge slot, final build, full tests, perf and cross-review are pending.
 2. **Five Points cut faces.** Draft `0d30281c0f0f4d3bf44e4ce16dd979697ed16553` on `samsolomon/five-points-cut-faces`. After #663 lands, rebase and check the joints between the three track strips at (171,118) and (248,192). Day/night MARTA and freight passage frames, tests and review are pending.
 3. **CQ400 seating.** Branch `samsolomon/cq400-bogies` at `a7a95322` follows the cut faces. The earlier probe measured worst swing falling from 0.64 m to 0.46 m. Rebase and verify the frames before opening the PR. [Earlier four-site comparison](https://github.com/samsolomon/sim-atlanta/blob/772bb993/docs/log/passenger-swing/bogies/cq400-before-after.jpg?raw=true)
-4. **#427 landuse paving** remains held for Sam’s choice of paving scope. Preserve the branch.
+4. **#427 landuse paving** remains held for Sam. Air recommends paving commercial parcels and limiting hardscape at Robinson to a bounded area, preserving campus open spaces. Sam is assessing that scope. Preserve the branch.
 
 ## Separate LiveMarta motion study
 
