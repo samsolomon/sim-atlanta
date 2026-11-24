@@ -26,6 +26,8 @@ import { drawnCar, FOLLOW_CAMERA, needsHandoff, trainHidden, type Fix, type Foll
 import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
+import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
+import { hideEmptyMeshes } from './empty-draws';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -113,6 +115,7 @@ import { createWestin } from './westin';
 import { createCoreyTower } from './corey';
 import { createRussellBuilding } from './russell-building';
 import { createCentennialTower } from './centennial-tower';
+import { createSkyView } from './skyview-atlanta';
 import { createStadium } from './stadium';
 import { createCapitol } from './capitol';
 import { createAtlantaCityHall } from './atlanta-city-hall';
@@ -133,14 +136,16 @@ const INK_FADE_END_M = 4300;
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
+import { batchLandmarkBodies, batchLandmarks, LANDMARK_LOD, landmarkBatchOff, landmarkBatchReport, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { sliceInput } from '../core/slice';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
+import { shadowStepM } from './shadow-step';
 import { createPrewarmer, type Prewarmer } from '../core/prewarm';
 import { deviceFacts, deviceTier } from '../core/device-tier';
 import { rolloutBatch } from '../trees/rollout-city';
 import { takePrefetched } from '../core/prefetch';
+import { glassFloorStrength, installGlassFloor } from '../vignette/glass-floor';
 
 export type Quality = 'low' | 'high';
 
@@ -221,6 +226,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
 }): Promise<CityView> {
   const DATA = `${BASE}/data`;
   const low = quality === 'low';
+  // Shaded glass keeps a floor (vignette/glass-floor.ts): a Lambert source patch, so no new programs.
+  installGlassFloor(glassFloorStrength(location.search, import.meta.env.DEV));
   // Library materials follow the quality tier; ?surfaces=off draws every landmark flat (A/B).
   surfaceDefaults.tier = quality;
   surfaceDefaults.enabled = new URLSearchParams(globalThis.location?.search ?? '').get('surfaces') !== 'off';
@@ -432,6 +439,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let grady: ReturnType<typeof createGrady> = null;
   let russell: ReturnType<typeof createRussellBuilding> = null;
   let centennial: ReturnType<typeof createCentennialTower> = null;
+  let skyView: ReturnType<typeof createSkyView> = null;
   let capitol: ReturnType<typeof createCapitol> = null;
   let platforms: ReturnType<typeof createGeorgiaState> | undefined;
   try {
@@ -552,7 +560,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         russell = createRussellBuilding(afterStadium, ground);
         const afterRussell = russell?.buildings ?? afterStadium;
         centennial = createCentennialTower(afterRussell, ground);
-        const afterCentennial = centennial?.buildings ?? afterRussell;
+        const afterCentennialTower = centennial?.buildings ?? afterRussell;
+        skyView = createSkyView(afterCentennialTower, ground);
+        const afterCentennial = skyView?.buildings ?? afterCentennialTower;
         capitol = createCapitol(afterCentennial, (x, z) => {
           const h = ground.sample(x, z);
           return h === null ? null : h - ground.manifest.vertical.sceneZeroNavd88M;
@@ -635,6 +645,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (stadium) world.group.add(stadium.group);
         if (russell) world.group.add(russell.group);
         if (centennial) world.group.add(centennial.group);
+        if (skyView) world.group.add(skyView.group);
         if (capitol) world.group.add(capitol.group);
         if (congressCenter) world.group.add(congressCenter.group);
         if (arena) world.group.add(arena.group);
@@ -660,15 +671,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
-            centennial, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
+            centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
             samNunn, candler, equitable, grady,
           ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
-          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
+          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches', lod: low ? LANDMARK_LOD.low : LANDMARK_LOD.high });
           world.group.add(batches.group);
           if (import.meta.env.DEV) {
             const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
             if (unlisted.length) console.warn('Landmarks missing from the batch list, drawn unbatched:', unlisted.join(', '));
             console.info('City landmark batches (downtown)', JSON.stringify(batches.stats));
+            void batches.farReady.then(() => console.info('City landmark far versions (downtown)', JSON.stringify({ ms: batches.stats.lodMs, maxStepMs: batches.stats.lodMaxStepMs, dropped: batches.stats.lodDropped })));
           }
         }
       });
@@ -740,6 +752,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   perf.phase('city:renderer');
 
   const scene = new THREE.Scene();
+  // `?perf&freeze=off` keeps three.js recomposing every static matrix each frame, for A/B runs.
+  const freezeOn = !(perfEnabled && new URLSearchParams(location.search).get('freeze') === 'off');
+  if (freezeOn) freezeSelf(scene);
+  let staticFrozen = !freezeOn;
+  // `?perf&empty=draw` keeps drawing meshes with no vertices (city/empty-draws.ts), for A/B runs.
+  const keepEmpty = perfEnabled && new URLSearchParams(location.search).get('empty') === 'draw';
+  let emptyHidden = false;
   const bg = new THREE.Color('#e7e2d8');
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
@@ -950,7 +969,15 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
+    if (!keepEmpty) hideEmptyMeshes(area.group);
     scenery.push(area.group);
+    // The area is in place: its board and scenery never move again (city/freeze.ts). Its transport
+    // subgroup keeps updating (freight runs in it).
+    if (freezeOn) {
+      freezeSelf(area.group);
+      freezeStatic(area.board);
+      freezeStatic(area.scenery);
+    }
     area.setSeason(local(new Date(options.clockMs())).doy);
     if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
@@ -1345,6 +1372,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
+    view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
@@ -1472,6 +1500,26 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const lightX = new THREE.Vector3(), lightY = new THREE.Vector3(), lightZ = new THREE.Vector3();
   const shadowCentre = new THREE.Vector3();
   let shadowDrawnAt = -Infinity;
+  // Low, far orbits: shadows fade out where a typical building's shadow is under 2 pixels, and the
+  // map stops redrawing there, so every pan re-centre is free (a redraw at the default view submits
+  // ~1.4M triangles, more than half a second scene).
+  // The threshold is screen-space: a TYPICAL_H building's shadow (h / tan(sun elevation)) against
+  // the pixel size at the orbit distance, so long dusk shadows stay further out. Strength fades
+  // across 0.85-1x the threshold with the orbit, so a zoom never pops; redraws stop at zero
+  // strength. Shadow programs stay compiled: toggling shadowMap.enabled or castShadow would change
+  // every lit material's program key. ?perf&farshadow=<m> fixes the threshold (0: never).
+  const TYPICAL_H = 12, SHADOW_PX = 2;
+  let shadowsFar = false;
+  let shadowDebug: object = {};
+  if (perfEnabled) Object.assign(window, { __shadowFar: () => shadowDebug });
+  const farShadowAt = (elevDeg: number) => {
+    if (!low) return Infinity;
+    if (perfOverrides.farShadowM !== null) return perfOverrides.farShadowM;
+    const shadowLen = TYPICAL_H / Math.tan(Math.max(elevDeg, 2) * (Math.PI / 180));
+    const pxPerM = renderer.domElement.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    // shadowLen / (orbit / pxPerM) < SHADOW_PX  =>  orbit > shadowLen * pxPerM / SHADOW_PX
+    return (shadowLen * pxPerM) / SHADOW_PX;
+  };
   let shadowLodDirty = false;
   let shadowElev = Infinity;
   let shadowAz = Infinity;
@@ -1483,6 +1531,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const elDir = Math.max(el, 4) * (Math.PI / 180);
     const az = atm.sunAz * (Math.PI / 180);
     const t = controls.target;
+    const orbit = camera.position.distanceTo(t);
+    const farAt = farShadowAt(el);
+    // Full strength inside 0.85x, none beyond 1x; casters off once beyond (strength is 0 there).
+    sun.shadow.intensity = Number.isFinite(farAt) ? THREE.MathUtils.clamp((farAt - orbit) / (0.15 * farAt), 0, 1) : 1;
+    if (perfEnabled) shadowDebug = { orbit: Math.round(orbit), farAt: Math.round(farAt), intensity: sun.shadow.intensity, far: shadowsFar, elev: Math.round(el * 10) / 10 };
+    const nextFar = shadowsFar ? orbit > 0.97 * farAt : orbit > farAt;
+    if (nextFar !== shadowsFar) {
+      shadowsFar = nextFar;
+      // Going far the map just stops redrawing (strength is 0 there). Coming back it is stale, so
+      // redraw once. (three's shadow pass tests casters against the main camera's layers, so a
+      // layer on the shadow camera cannot empty it; the saving is the skipped redraws.)
+      if (!nextFar) renderer.shadowMap.needsUpdate = true;
+    }
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
     // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
@@ -1497,7 +1558,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     // Low re-centres on a step that grows with the orbit (0.15 x, at least 80 m): from far away the
     // same 80 m step came round many times a second while panning, for shadows a few pixels wide.
-    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? Math.max(SHADOW_STEP_M, 0.15 * camera.position.distanceTo(t)) : SHADOW_STEP_M;
+    // Capped at a quarter of the shadow box (260 m on low): an uncapped 0.15 x orbit is ~3.2 km at
+    // the default view, three times the box, and with the 0.6 hysteresis the target could pan ~1.9 km
+    // away from its shadows before the box followed. Far orbits are the far-shadow rule's to handle.
+    const step = low && SHADOW_STEP_M && !perfOverrides.shadowGapOld ? shadowStepM(camera.position.distanceTo(t), SHADOW_STEP_M, 2 * SH) : SHADOW_STEP_M;
     const snap = (v: number) => step ? Math.round(v / step) * step : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
@@ -1509,8 +1573,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if ((moved || turned || shadowLodDirty) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
-      renderer.shadowMap.needsUpdate = true;
+    // Far from the board the centre still follows the target (the light sits over it; a session
+    // that opens far would otherwise keep the initial Infinity), but nothing redraws.
+    if ((moved || turned || shadowLodDirty) && (shadowsFar || far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+      if (!shadowsFar) renderer.shadowMap.needsUpdate = true;
       shadowLodDirty = false;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
@@ -1598,6 +1664,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       georgiaPacific?.setNight(night);
       russell?.setNight(night);
       centennial?.setNight(night);
+      skyView?.setNight(night);
       capitol?.setNight(night);
       arena?.setNight(night);
       atlantaCityHall?.setNight(night);
@@ -1696,7 +1763,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    if (!emptyHidden) {
+      // Downtown is all built by the first frame; areas are checked as they mount (addArea).
+      emptyHidden = true;
+      if (!keepEmpty) hideEmptyMeshes(scene);
+    }
     followPixelRatio();
+    if (!staticFrozen) {
+      // Downtown's world, board and scenery are all built by the first frame.
+      staticFrozen = true;
+      freezeStatic(world.group);
+      freezeSelf(terrain?.group);
+      freezeStatic(terrain?.board);
+      freezeStatic(terrain?.scenery);
+      freezeStatic(rolloutBatch.group);
+    }
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
@@ -1840,6 +1921,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
     if (!firstFrame) { firstFrame = true; perf.phase('city:first-frame'); }
+    if (import.meta.env.DEV && freezeOn && frames % 120 === 0) {
+      const moved = checkFrozen(scene);
+      if (moved.length) console.error(`Frozen objects moved without refreeze() (city/freeze.ts): ${moved.length}`, moved.slice(0, 10));
+    }
     // A few never-drawn objects per frame in one scratch render, after the frame's own work.
     if (prewarmer?.pending) {
       // The batch adapts: it doubles while steps stay quick (most first draws reuse a compiled
@@ -1902,15 +1987,21 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // (World.setDetail, owned by the tree framework), with hysteresis so a zoom does not flicker.
   const FAR_TREES_M = perfOverrides.farTreesM ?? (low ? 800 : 0);
   let farTrees = false;
+  // Low tier: houses cast no shadow beyond this orbit (city/house-lod.ts setDetail).
+  const HOUSE_SHADOWS_M = low ? 9000 : 0;
+  let houseNoShadow = false;
   // Areas (and the downtown World) that already carry the current detail; a newly mounted or
   // swapped area is caught here without allocating every frame.
   let detailed = new WeakSet<object>();
   function treeDetail() {
     const d = camera.position.distanceTo(controls.target);
     const far = FAR_TREES_M > 0 && (farTrees ? d > FAR_TREES_M * 0.85 : d > FAR_TREES_M);
-    if (far !== farTrees) { farTrees = far; detailed = new WeakSet(); }
+    // Past HOUSE_SHADOWS_M houses stop casting: an 8 m house shadow is under 2 px there on the A16, and a
+    // 2.4 km far block goes whole into the shadow pass (100k triangles at the default view).
+    const noHouseShadows = HOUSE_SHADOWS_M > 0 && (houseNoShadow ? d > HOUSE_SHADOWS_M * 0.84 : d > HOUSE_SHADOWS_M);
+    if (far !== farTrees || noHouseShadows !== houseNoShadow) { farTrees = far; houseNoShadow = noHouseShadows; detailed = new WeakSet(); }
     // Limb shadows stay on until a moving-camera A16 run shows they cost something.
-    const detail = { farTrees: far };
+    const detail = { farTrees: far, houseShadows: !noHouseShadows };
     let applied = false;
     const apply = (a: { setDetail(d: { farTrees?: boolean }): void } | undefined) => {
       if (!a || detailed.has(a)) return;
@@ -1956,6 +2047,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       camera.updateProjectionMatrix();
     };
     (window as unknown as Record<string, unknown>).__cityDev = { scene, camera, renderer, areas: () => mosaic?.areas, areaCount: () => mosaic?.areaCount };
+    // Dev-only: which landmark meshes draw on their own, and why (materials/landmark-batch.ts).
+    (window as unknown as Record<string, unknown>).__landmarkBatchReport = landmarkBatchReport;
     // Dev-only ground-contact audit (see terrain/ground-audit.ts): window.__groundAudit().
     (window as unknown as Record<string, unknown>).__groundAudit = async (o?: object) => {
       const { groundAudit, cityLayer, CITY_COLORS } = await import('../terrain/ground-audit');
