@@ -3122,6 +3122,12 @@ the appropriate street even where both streets share the same map coordinates.
 
 Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
 
+On the warehouse bank two mapped sidewalks kept going across the grass above
+their own tunnel. Following their direction through the cut placed that paint
+on the lower level. At the nearby fixed-grade building, all 472 perimeter
+samples matched the original ground at both tiers. The production board passed
+`pnpm test:perf` at both qualities. [Bank close-ups at low and high](log/north-ave/shared-banks.jpg).
+
 ### 2026-11-23 — A frame spent twenty minutes in traffic
 
 At 14:00:44.6 in the downtown simulation, one car slot started its next trip.

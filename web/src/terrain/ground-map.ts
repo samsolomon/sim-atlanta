@@ -134,20 +134,46 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality, underpass?
     ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
+  // A separately mapped sidewalk can continue above an OSM tunnel endpoint.
+  // Follow the lower-road direction through the surveyed spans; a transverse
+  // upper-street sidewalk still belongs on the board.
+  const lowerSpans = underpass && [underpass.spans[0].start, underpass.spans.at(-1)!.end];
+  const underpassWays = new Set<PaintRoad>();
+  let hideRing: P2[] = [];
+  if (underpass && lowerSpans) {
+    const [start,end] = lowerSpans;
+    const stations = [start,...underpass.breaks.filter(s => s>start && s<end),end];
+    const half = underpass.halfWidth + 8;
+    hideRing = [...stations.map(s => underpass.point(s,-half)),...stations.reverse().map(s => underpass.point(s,half))];
+    for (const road of roads) {
+      if (road.name === underpass.roadName) { underpassWays.add(road); continue; }
+      if (road.sub !== 'sidewalk') continue;
+      const points = road.pts.map(([x,z]) => underpass.local(x,z));
+      const follows = points.some(([s,t],i) => {
+        if (!i) return false;
+        const [u,v] = points[i-1], ds=s-u;
+        if (Math.abs(ds) < Math.max(4,3*Math.abs(t-v))) return false;
+        const left=Math.max(start,Math.min(s,u)),right=Math.min(end,Math.max(s,u));
+        if (right<=left) return false;
+        const offset=v+(t-v)*((left+right)/2-u)/ds;
+        return Math.abs(offset) < underpass.halfWidth + 2;
+      });
+      if (follows) underpassWays.add(road);
+    }
+  }
   function stroke(r: PaintRoad, width: number, color: string | CanvasPattern) {
-    const hidden = underpass && r.name===underpass.roadName;
-    if(hidden){
+    const hidden = underpassWays.has(r);
+    if (hidden) {
       ctx.save();
       ctx.beginPath();
       ctx.rect(b.minX,b.minZ,b.maxX-b.minX,b.maxZ-b.minZ);
-      const s0=underpass.spans[0].start,s1=underpass.spans.at(-1)!.end;
-      const stations=[s0,...underpass.breaks.filter(s=>s>s0 && s<s1),s1];
-      const ring=[...stations.map(s=>underpass.point(s,-underpass.halfWidth-8)),...stations.reverse().map(s=>underpass.point(s,underpass.halfWidth+8))];
-      trace(ctx,ring);ctx.closePath();ctx.clip('evenodd');
+      trace(ctx,hideRing);
+      ctx.closePath();
+      ctx.clip('evenodd');
     }
     ctx.beginPath(); trace(ctx, r.pts);
     ctx.lineWidth = width; ctx.strokeStyle = color; ctx.stroke();
-    if(hidden)ctx.restore();
+    if (hidden) ctx.restore();
   }
   // Sidewalks go down first so a casing can't cut across the next intersection.
   for (const r of roads) if (streets.has(r.cls)) stroke(r, roadWidth(r) + 5, PAL.sidewalk);
