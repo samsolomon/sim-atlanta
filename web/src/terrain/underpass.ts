@@ -4,6 +4,7 @@ import type { GroundManifest } from './grid';
 import { Builder, type P2 } from '../vignette/geom';
 import { PAL } from '../vignette/world';
 import type { OpenSlot } from './openings';
+import { STREET_LINE } from './ground-map';
 
 type Ground = (x: number, z: number) => number | null;
 export interface CoverSpan {
@@ -174,6 +175,32 @@ export function underpassFloor(site: Underpass, s: number, t: number, ground: Gr
   return outer + weight * (site.floor(s) - zero - outer);
 }
 
+/** Where the board paints this road's lines across each mouth: one yellow line per
+ * carriageway (ground-map.ts), as [start −t, start +t, end −t, end +t]. */
+export function boardLines(site: Underpass, roads: readonly { name?: string | null; pts: readonly P2[]; tunnel?: boolean }[]) {
+  const fallback = (site.halfWidth - 2 + 0.65) / 2;
+  const out = [-fallback, fallback, -fallback, fallback];
+  for (const [k, mouth] of [site.start, site.end].entries()) {
+    const found: number[] = [];
+    for (const road of roads) {
+      if (road.name !== site.roadName || road.tunnel) continue;
+      const local = road.pts.map(([x, z]) => site.local(x, z));
+      for (let i = 1; i < local.length; i++) {
+        const [s0, t0] = local[i - 1],
+          [s1, t1] = local[i];
+        if ((s0 - mouth) * (s1 - mouth) > 0 || s0 === s1) continue;
+        const t = t0 + ((t1 - t0) * (mouth - s0)) / (s1 - s0);
+        if (Math.abs(t) < site.halfWidth) found.push(t);
+      }
+    }
+    const below = found.filter((t) => t < 0),
+      above = found.filter((t) => t > 0);
+    if (below.length) out[2 * k] = Math.max(...below);
+    if (above.length) out[2 * k + 1] = Math.min(...above);
+  }
+  return out as [number, number, number, number];
+}
+
 export function drawUnderpass(
   site: Underpass,
   out: Builder,
@@ -189,34 +216,53 @@ export function drawUnderpass(
     return [x, h, z];
   };
   const road = (s: number, t: number) => p(s, t, floor(s, t));
+  // An apron tucked 3 cm under the board closes the hairline where the two meshes meet.
+  for (const [mouth, out] of [[site.start, -1], [site.end, 1]] as const) {
+    const pieces = Math.ceil(2 * w);
+    for (let k = 0; k < pieces; k++) {
+      const u = -w + (2 * w * k) / pieces,
+        v = -w + (2 * w * (k + 1)) / pieces;
+      const tuck = (t: number) => p(mouth + out * 0.4, t, edgeHeight(mouth + out * 0.4, t) - 0.03);
+      pavement.quad(road(mouth, u), road(mouth, v), tuck(v), tuck(u), PAL.asphalt);
+    }
+  }
   for (const { start, end, cover } of intervals(site)) {
     const n = Math.ceil((end - start) / 2);
     const ceiling = (s: number) => site.floor(s) - zero + (cover?.clearance ?? site.clearance);
     for (let i = 0; i < n; i++) {
       const a = start + ((end - start) * i) / n,
         b = start + ((end - start) * (i + 1)) / n;
-      // Meet painted sidewalks flush at both ends and raise the kerb inside.
-      const kerb = (s: number, t: number) =>
-        p(s, t, floor(s, t) + 0.14 * smoothGrade(Math.min(s - site.start, site.end - s), 12));
-      for (const [l, r, walk] of [
-        [-w, 2 - w, true],
-        [2 - w, -0.65, false],
-        [-0.65, 0.65, true],
-        [0.65, w - 2, false],
-        [w - 2, w, true],
-      ] as const) {
-        const surface = walk ? kerb : road;
+      // Kerbs and the median nose grow out of the level board road over 12 m, so
+      // the mouth meets it as one asphalt surface; the kerb rises with them.
+      const grow = (s: number) => smoothGrade(Math.min(s - site.start, site.end - s), 12);
+      const kerb = (s: number, t: number) => p(s, t, floor(s, t) + 0.14 * grow(s));
+      const edges = (s: number) => {
+        const walk = w - 2 * grow(s),
+          median = 0.65 * grow(s);
+        return [-w, -walk, -median, median, walk, w];
+      };
+      const ea = edges(a),
+        eb = edges(b);
+      for (let j = 0; j < 5; j++) {
+        const walk = j % 2 === 0,
+          surface = walk ? kerb : road;
         // Near a mouth, follow the board's joint at 1 m across, not just at the strip edges.
         const near = Math.min(b - site.start, site.end - a) <= MOUTH_RAMP_M;
-        const pieces = near ? Math.ceil(r - l) : 1;
-        for (let k = 0; k < pieces; k++) {
-          const u = l + ((r - l) * k) / pieces,
-            v = l + ((r - l) * (k + 1)) / pieces;
-          pavement.quad(surface(a, v), surface(b, v), surface(b, u), surface(a, u), walk ? PAL.sidewalk : PAL.asphalt);
-        }
+        // A fixed count per strip, so neighbouring rows share every vertex (no T-junctions).
+        const pieces = near ? (j === 1 || j === 3 ? Math.ceil(w - 2) : 2) : 1;
+        const at = (e: number[], k: number) => e[j] + ((e[j + 1] - e[j]) * k) / pieces;
+        for (let k = 0; k < pieces; k++)
+          pavement.quad(
+            surface(a, at(ea, k + 1)),
+            surface(b, at(eb, k + 1)),
+            surface(b, at(eb, k)),
+            surface(a, at(ea, k)),
+            walk ? PAL.sidewalk : PAL.asphalt,
+          );
         if (walk)
-          for (const t of [l, r])
-            if (Math.abs(t) < w) pavement.quad(road(a, t), road(b, t), kerb(b, t), kerb(a, t), PAL.sidewalk);
+          for (const e of [j, j + 1])
+            if (Math.abs(ea[e]) < w || Math.abs(eb[e]) < w)
+              pavement.quad(road(a, ea[e]), road(b, eb[e]), kerb(b, eb[e]), kerb(a, ea[e]), PAL.sidewalk);
       }
       for (const side of [-1, 1]) {
         const t = side * w;
@@ -327,6 +373,7 @@ export function underpassMesh(
   map: THREE.Texture | null,
   ground: Ground,
   zero: number,
+  lines: [number, number, number, number] = boardLines(site, []),
 ) {
   const walls = new Builder(),
     pavement = new Builder();
@@ -351,6 +398,8 @@ export function underpassMesh(
   material.onBeforeCompile = (shader) => {
     shader.uniforms.trenchNight = night;
     shader.uniforms.trenchWidth = { value: site.halfWidth };
+    shader.uniforms.trenchLines = { value: new THREE.Vector4(...lines) };
+    shader.uniforms.trenchLineColor = { value: new THREE.Color(STREET_LINE) };
     shader.uniforms.trenchEnds = {
       value: new THREE.Vector4(site.start, site.spans[0].start, site.spans.at(-1)!.end, site.end),
     };
@@ -358,17 +407,19 @@ export function underpassMesh(
       'attribute vec4 trenchCoord; varying vec4 trench;\n' +
       shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n trench=trenchCoord;');
     shader.fragmentShader =
-      'uniform float trenchNight, trenchWidth; uniform vec4 trenchEnds; varying vec4 trench;\n' +
+      'uniform float trenchNight, trenchWidth; uniform vec4 trenchEnds, trenchLines; uniform vec3 trenchLineColor; varying vec4 trench;\n' +
       shader.fragmentShader
         .replace(
           '#include <color_fragment>',
           `
         // Outside the ramps keep the exact board paint, including its markings.
         float ramp=smoothstep(trenchEnds.x,trenchEnds.x+15.,trench.x)*(1.-smoothstep(trenchEnds.w-15.,trenchEnds.w,trench.x));
-        float laneD=abs(abs(trench.y)-(trenchWidth-2.+.65)*.5);
+        // The board's own line, one per carriageway, carried from mouth to mouth.
+        vec2 line=mix(trenchLines.xy,trenchLines.zw,clamp((trench.x-trenchEnds.x)/(trenchEnds.w-trenchEnds.x),0.,1.));
+        float laneD=min(abs(trench.y-line.x),abs(trench.y-line.y));
         float aa=clamp(fwidth(trench.y),.01,.4);
-        float stripe=(1.-smoothstep(.075-aa,.075+aa,laneD))*step(mod(trench.x+200.,10.),3.)*trench.w;
-        vec3 local=diffuse*mix(vColor.rgb,vec3(.76,.73,.61),stripe);
+        float stripe=(1.-smoothstep(.2-aa,.2+aa,laneD))*trench.w;
+        vec3 local=diffuse*mix(vColor.rgb,trenchLineColor,stripe);
         diffuseColor.rgb=mix(diffuseColor.rgb,local,mix(1.,ramp,trench.w));`,
         )
         .replace(

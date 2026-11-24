@@ -6,7 +6,7 @@ import { GroundGrid } from './grid';
 import { northAvenue as site } from './north-ave';
 import { GroundSurface } from './surface';
 import { triangleHeight } from './tread-height';
-import { daylightSlots, drawUnderpass, MOUTH_LEVEL_M, underpassFloor, underpassGround } from './underpass';
+import { boardLines, daylightSlots, drawUnderpass, MOUTH_LEVEL_M, underpassFloor, underpassGround } from './underpass';
 
 const get = (file: string) =>
   readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/' + file, import.meta.url));
@@ -139,4 +139,11 @@ it.each(['low', 'high'] as const)('meets the board road level and flush at both 
   expect(worst.cross).toBeLessThan(0.15);
   street.dispose();
   board.geometry.dispose();
+});
+
+it('carries the board line of each carriageway into the cut at both mouths', () => {
+  const { roads } = JSON.parse(get('context.json').toString());
+  const lines = boardLines(site, roads);
+  // OSM maps two carriageways; the board paints one line down each.
+  [-5.6, 4.53, -3.96, 6.68].forEach((t, i) => expect(Math.abs(lines[i] - t), String(lines)).toBeLessThan(0.05));
 });
