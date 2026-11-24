@@ -147,7 +147,8 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
   covers.push({ plan: towerPlan, top: towerRoof }, { plan: wingPlan, top: wingRoof }, ...lowParts);
   s.prism(towerPlan, s.base, glassBase, stone, roof);
   s.prism(wingPlan, s.base, glassBase, stone, roof);
-  for (const plan of [towerPlan, wingPlan]) for (const f of faces(tidy(plan))) {
+  // Storefronts sit on the stone walls' own (exact) faces, so they keep their 6 cm.
+  for (const plan of [towerPlan, wingPlan]) for (const f of faces(plan)) {
     if (f.length < 5 || !exposed(f, glassBase - 4)) continue;
     const mid = at(f, 0.5, 0, 0), y = gradeAt(mid[0], mid[2]);
     if (y + 5 < glassBase) panel(f, 0.05, 0.95, y + 0.3, Math.min(y + 5.5, glassBase - 1), 0.06, storefront, true);
@@ -156,8 +157,10 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
   // The tower steps: its Peachtree (north-west) half rises to 411.5 m, the rest stops at 405 m.
   const split = (p: P2) => 2 - p[0];
   const upper = clip(towerPlan, split), lower = clip(towerPlan, p => -split(p));
-  s.prism(lower, glassBase, towerRoof, glass, roof);
-  s.prism(upper, glassBase, upperRoof, glass, roof);
+  // The glass walls stand on the same tidied plans as their curtain: the mapped ring wanders a few
+  // centimetres between the kept vertices, which put the curtain's layers within 1 cm of the wall.
+  s.prism(tidy(lower), glassBase, towerRoof, glass, roof);
+  s.prism(tidy(upper), glassBase, upperRoof, glass, roof);
   /** How squarely a face looks toward a world direction (x east, z south). */
   const toward = (f: Face, [wx, wz]: P2) => (f.n[0] * c - f.n[1] * sn) * wx + (f.n[0] * sn + f.n[1] * c) * wz;
   const upperFaces = faces(tidy(upper));
@@ -177,7 +180,7 @@ export function createLoews(buildings: VBuilding[], site: VBuilding, grid: Groun
   if (corner) capAt.set(key(corner), glassBase); // the wedges replace this face's curtain
   curtain(lower, glassBase, towerRoof, 0);
   curtain(upper, glassBase, upperRoof, 40);
-  s.prism(wingPlan, glassBase, wingRoof, glass, roof);
+  s.prism(tidy(wingPlan), glassBase, wingRoof, glass, roof);
   curtain(wingPlan, glassBase, wingRoof, 80);
 
   const west: P2 = [-c, sn];
