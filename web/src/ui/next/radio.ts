@@ -308,6 +308,8 @@ export function createRadio(o: RadioOptions): Radio {
     });
   }
 
+  if (import.meta.env.DEV) Object.assign(globalThis, { __radioDecks: () => decks.map((d) => ({ el: d.el, role: d.role, track: d.track?.id, gain: d.gain.gain.value })) });
+
   function resume() {
     clearTimeout(pauseTimer);
     void ctx!.resume();
