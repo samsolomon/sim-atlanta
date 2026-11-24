@@ -2,24 +2,26 @@
 
 ## Active work and merge hold
 
-Merged today (quote `gh pr view` from history if asked):
-- #500 71b26f41 (transport far form), #509 a1305a32 (North Line far form), #514 3eca63b9 (far prefix in shadow pass).
-- #538 52de7bf9 (very-far ground, settled 8 m beyond 12 km).
-- #566 2742657d (R8 release blocker: freight-deck undersides kept in the shadow prefix).
+Merged: #500, #509, #514 (transport far form), #538 (very-far ground), #566 (R8 freight-deck shadow), #586 (very-far opt-in, R8 hotfix).
 
-Open and held:
-- **#418** (bridge approaches and landing decks) and **#476** (north-band seam links, stacked on #418): with Sam.
-- **#571** `samsolomon/settle-far-ground`: settle the 2 m far level. Held for the coordinator's judgement (reply to `msg_65d362faf04c`).
+Queued with the skyline lead (47b1a596), coordinator-approved:
+- **#608** `samsolomon/very-far-sliced`: very-far ground built on the budgeted rAF queue (3 ms/frame), on by default. A16: default view 24 -> ~28 fps. After merge, ask phone-perf (48e90760) for the #593 long-task number.
+- **#615** `samsolomon/settle-far-ground-2` (stacked on #608): the 2 m far level settled on the same queue. Retarget to main after #608.
+- Before each merge: rebase, then run build, test:release and test:perf, then quote gh pr view.
+
+With Sam: #418 and #476. Reviewed and approved for the streaming agent: #576.
 
 ## Next steps
-1. **Road-surface cracks** (branch `samsolomon/road-cracks`). The traffic owner (cfb2a7c9) listed 72 sites in `docs/log/perf/traffic-height-cracks.md` on `claude/traffic-frame-cost-2`: cityRoadHeight returns null, or a dip over 15 cm under both rims, along traffic lanes at 0.13 m steps on low.
-   - Biggest: (-170,-4150) 13 m, the 17th Street west approach. Then (-780,-40) 1.35 m, (1095,240) 0.81 m, (110,-1255) 0.51 m.
-   - Most others are single "no surface" samples on the Connector at x 1080-1240 (east boards).
-   - When fixes land, ask the traffic owner to re-run its sampler.
-2. Review the streaming agent's sliced createSurfaceTransport when asked: mesh order and far prefixes must stay byte-identical.
-3. Known gaps in `docs/art-backlog.md`: the Whitehall and RDA climbs, Peachtree at Brookwood.
+1. **Road cracks** (`samsolomon/road-cracks`, WIP 849a9a60):
+   - A query-only apron under deck ends (bridge-approaches.ts) fixes 17th St west (13 m).
+   - Mitred joints between consecutive road decks (transport.ts) close the 10th St wedge; visually better (docs/log/road-cracks).
+   - The traffic owner (cfb2a7c9) is re-running its 72-site sampler on the branch.
+   - Open: cityRoadHeight ownership past a road's own deck end at a joint (city/road-height.ts; asked who owns it).
+   - Then: tests, frames, PR.
+2. Known gaps in `docs/art-backlog.md`.
 
 ## Traps
+- Idle work must be sliced (coordinator rule): use core/slice.ts runBudgeted on rAF, never requestIdleCallback for whole-board work, and report the longest slice at 6x.
 - The far prefix is also the shadow pass (#514): anything dropped from it must not be the only caster for its spot (freight decks, #566). The far-form test pins every deck sample.
 - Capture scripts must launch their own Chrome via `scripts/chrome-cdp.mjs` launchChrome (port 0); never attach by port, never pkill by pattern.
 - Pixel-diff City frames only with `?perf&nopass=grade` (animated grain), and on high also `gtao`; otherwise identical runs differ.
