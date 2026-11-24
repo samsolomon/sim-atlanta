@@ -3098,3 +3098,18 @@ The first lacebark elm pairs small, fine leaf cards with long arched boughs and 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
 
 On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data to ready with staging, versus 9.20 and 9.11 seconds on production. The candidate used a proxy, so the comparison excludes the initial download. Sam approved the staged fill. [Night pan](log/phone/load-reveal-night.jpg) · [Brookwood at night](log/phone/load-reveal-brookwood-night.jpg)
+
+### 2026-11-23 — A frame spent twenty minutes in traffic
+
+At 14:00:44.6 in the downtown simulation, one car slot started its next trip.
+Its lane then replayed 2,352 half-second steps in one draw. With 64 synthetic
+timetable buses on the board, that frame took 56.6 ms in desktop Chrome. The
+streetcar queue on main reproduced the same behavior with no buses at all.
+
+A lane now processes up to 64 historical steps per draw during catch-up.
+Surviving cars hold position briefly. In three repeats with the 64 timetable
+buses, the worst queue frame fell to 6.2 ms and p95 was 0.9 ms. With the
+published timetable the worst was 0.5 ms. A regression checks the bound on
+every frame and compares the final positions with a fresh seek.
+
+[The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)

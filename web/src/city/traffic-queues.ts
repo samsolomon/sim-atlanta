@@ -5,6 +5,9 @@ export type MovingBlocks = (seconds: number) => readonly MovingBlock[];
 export interface QueueTrip { start: number; length: number }
 export const MOVING_QUEUE_WAIT_S = 180;
 const STEP = .5;
+// A warm cohort rebuild may span many simulated minutes. Keep each draw's
+// replay work bounded, including when another slot changes during catch-up.
+const REPLAY_STEPS_PER_FRAME = 64;
 const GAP = 2;
 
 /** A deterministic replay cache, not a frame-delta simulation. Fractional samples
@@ -13,25 +16,54 @@ export class MovingQueue {
   private key = '';
   private tick = 0;
   private positions: (number | null)[] = [];
+  private lastClock = -Infinity;
+  private cohort: readonly QueueTrip[] = [];
+  private shown: (number | null)[] = [];
+  private rebuilding = false;
   steps = 0;
 
   constructor(private readonly signals: readonly CourseSignal[], private readonly length: number,
     private readonly speed: number, private readonly blocks: MovingBlocks) {}
 
   at(trips: readonly QueueTrip[], now: number): (number | null)[] {
-    if (!trips.length) return [];
+    if (!trips.length) {
+      this.lastClock = -Infinity;
+      this.shown = [];
+      return [];
+    }
+    const delta = now - this.lastClock;
+    // Reserve at least half the budget to close the backlog at accelerated clocks.
+    // A backward or larger forward jump resolves immediately as a seek.
+    const continuous = delta >= 0 && delta <= STEP * REPLAY_STEPS_PER_FRAME / 2;
+    this.lastClock = now;
     const key = trips.map(t => `${t.start}:${t.length}`).join('|');
     const target = Math.floor(now / STEP);
     if (key !== this.key || target < this.tick) {
+      this.rebuilding = continuous && this.key !== key;
+      if (this.rebuilding) {
+        // Keep the last drawn pose of each surviving trip during catch-up.
+        // A recycled slot must never inherit its predecessor's position.
+        const previous = this.cohort.slice();
+        this.shown = trips.map(trip => {
+          const i = previous.findIndex(p => p?.start === trip.start && p.length === trip.length);
+          if (i < 0) return null;
+          delete previous[i];
+          return this.shown[i];
+        });
+      }
+      this.cohort = trips;
       this.key = key;
       this.tick = Math.floor(Math.min(...trips.map(t => t.start)) / STEP);
       this.positions = trips.map(() => null);
     }
     const order = trips.map((_,i)=>i).sort((a,b)=>trips[a].start-trips[b].start || a-b);
-    while (this.tick < target) {
+    const stop = this.rebuilding && continuous ? Math.min(target, this.tick + REPLAY_STEPS_PER_FRAME) : target;
+    while (this.tick < stop) {
       this.positions = this.advance(trips, order, this.positions, this.tick*STEP, (this.tick+1)*STEP);
       this.tick++;
     }
+    if (this.tick < target) return this.shown;
+    this.rebuilding = false;
     const from = this.tick*STEP;
     let positions = this.positions;
     if (now > from) {
@@ -46,7 +78,8 @@ export class MovingQueue {
         return Math.min(before+(next[i]!-before)*f,signalLimit[i] ?? Infinity);
       });
     }
-    return positions.map(p => p !== null && p <= this.length ? p : null);
+    this.shown = positions.map(p => p !== null && p <= this.length ? p : null);
+    return this.shown;
   }
 
   private advance(trips: readonly QueueTrip[], order: number[], previous: readonly (number|null)[], from: number, to: number, blocks = this.blocks(to)) {
