@@ -4075,3 +4075,7 @@ Around Vireo and the park edge, City drew six or seven near-identical pale boxes
 ### 2026-11-24 · Ansley Above the Park, an older slab in the pale cluster
 
 Ansley Above the Park is the only mid-century building among the glass towers at the park edge. It is a white slab whose blue-glass elevator strip rises past its roof, above a semicircular porte-cochère with a blue fascia. The lidar puts it at 43 m, not the estimated 52.8 m. A first cut came in at 2,444 triangles with a quad per punched window. A window band per floor behind a white pier per bay looks the same at City distance and brought it to about 2,100. [Before and after](log/ui/ansley-above-the-park/day-before-after.jpg) · [four sides](log/ui/ansley-above-the-park/four-sides.jpg)
+
+### 2026-11-24 · Trace Midtown, the third block on the corridor
+
+Trace is an E-shaped, 11-storey residential block wrapped around two courtyard decks. Its mapped outline was the hardest yet: a single 110-edge ring that threads in and out of both courtyards. The lidar settled the heights at about 39.5 m for the block and 11.5 m for the decks. To stay under the per-skin budget, the low tier groups the windows two floors at a time and leaves the short jogs plain, so the whole skin adds under a thousand triangles at low. It's the first skin checked with the shared four-side sheet. [Views and four-side sheet](log/ui/trace-midtown/README.md)
