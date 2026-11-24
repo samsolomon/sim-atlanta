@@ -1,5 +1,6 @@
 import { Mesh, Raycaster, Vector3, type BufferGeometry } from 'three';
 import { expect, it } from 'vitest';
+import { genericV2 } from './generic-v2';
 import { World, type VBuilding } from './world';
 
 // A 40 x 40 m parent reported at 200 m whose mapped parts are a 150 m tower,
@@ -14,10 +15,10 @@ const parent: VBuilding = {
   ],
 };
 
-function shell(buildings: VBuilding[]) {
+function shell(buildings: VBuilding[], quality: 'low' | 'high' = 'high', cityFacades = false) {
   const bounds = { minX: -20, maxX: 60, minZ: -20, maxZ: 60 };
-  const w = new World({ bounds, buildings, roads: [], rail: [] }, null, { terrain: 'flat', clumps: 1, lightMapMax: 256 });
-  w.buildBuildings(() => 0);
+  const w = new World({ bounds, buildings, roads: [], rail: [] }, null, { cityFacades, terrain: 'flat', clumps: 1, lightMapMax: 256 });
+  w.buildBuildings(() => 0, 8, undefined, quality);
   return w.group.children[0] as Mesh<BufferGeometry>;
 }
 const hit = (mesh: Mesh, x: number, z: number, from = 500, dir = -1) =>
@@ -36,4 +37,25 @@ it('draws mapped building parts in place of the parent box', () => {
 it('keeps a building without parts as one box at its own height', () => {
   const { parts: _, ...plain } = parent;
   expect(hit(shell([plain]), 30, 35)).toBeCloseTo(200);
+});
+
+it('simplifies a low-tier v2 tower while preserving its facade style and storey origins', () => {
+  const high = shell([parent], 'high', true).geometry;
+  const low = shell([parent], 'low', true).geometry;
+  expect(low.attributes.position.count).toBeLessThan(high.attributes.position.count);
+  for (const { attributes } of [low, high]) {
+    expect(attributes.aBase.count).toBe(attributes.position.count);
+    expect(attributes.aStyle.count).toBe(attributes.position.count);
+  }
+  const shaftStyles = (geometry: BufferGeometry) =>
+    new Set(Array.from(geometry.attributes.aStyle.array).filter(style => style >= 20 && style < 52));
+  expect(shaftStyles(high).size).toBe(1);
+  expect(shaftStyles(low)).toEqual(shaftStyles(high));
+});
+
+it('uses v2 by default in City and honours the explicit legacy rollback', () => {
+  expect(genericV2(true, null)).toBe(true);
+  expect(genericV2(true, 'legacy')).toBe(false);
+  expect(genericV2(false, null)).toBe(false);
+  expect(genericV2(false, 'v2')).toBe(true);
 });
