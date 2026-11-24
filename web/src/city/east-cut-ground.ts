@@ -61,6 +61,28 @@ export function cutFloor(grid: GroundGrid) {
     mesh.quad(vertex(a,l,y),vertex(b,l1,y),vertex(b,r1,y),vertex(a,r,y),'#655f57');
     const wall = (u: number, v: number) => mesh.quad(vertex(a,u,y),vertex(b,v,y),
       vertex(b,v,rim(b,v)),vertex(a,u,rim(a,u)),'#94897a');
+    // Each mapped strip stops at its own mouth. The track tangent fixes the
+    // plane on which a passing car clips, including the skew at the east end.
+    const path = model.tracks[names[i]];
+    const endFace = (west: boolean, s: number, left: number, right: number) => {
+      const tip = west ? path[0] : path[path.length-1];
+      const next = west ? path[1] : path[path.length-2];
+      const slope = (next[1]-tip[1])/(next[0]-tip[0]);
+      const plane = (u: number) => s - slope*(u-tip[1]);
+      const street = (u: number) => rim(plane(u),u);
+      const lintel = (u: number) => Math.max(y, Math.min(y + (names[i] === 'CSX' ? 6.4 : 4.5), street(u)-.45));
+      const at = (u: number, h: number) => vertex(plane(u),u,h);
+      // A dark recess behind the clipping plane leaves the last visible slice
+      // of the car in front of it. The lintel reaches the street at each side.
+      const back = (u: number, h: number) => vertex(plane(u)+(west ? -.12 : .12),u,h);
+      mesh.quad(back(left,y), back(right,y), back(right,lintel(right)), back(left,lintel(left)), '#191b1d');
+      mesh.quad(at(left,lintel(left)), at(right,lintel(right)), at(right,street(right)), at(left,street(left)), '#94897a');
+      for (const u of [left,right]) {
+        mesh.quad(at(u,y), back(u,y), back(u,lintel(u)), at(u,lintel(u)), '#655f57');
+      }
+    };
+    if (a === path[0][0]) endFace(true, a, l, r);
+    if (b === path[path.length-1][0]) endFace(false, b, l1, r1);
     if (!i) wall(l,l1);
     if (i === names.length-1) wall(r,r1);
   });
