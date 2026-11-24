@@ -141,3 +141,56 @@ test('stops far houses casting shadows past a long orbit, and starts again', () 
   expect(casters()).toBe(all);
   lod.dispose();
 });
+
+test('draws every house past the very-far orbit as one outward-facing box, in one mesh', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const houses = homes.city.buildings.filter(b => homes.isHouse(b.id));
+  const lod = houseLod({ houses, bounds: city.bounds, ground: () => 0, foundation: () => 0, near: homes.finishFor, far: homes.farFinishFor,
+    roofUnits: 3, box: b => homes.boxOf(b.id) });
+  const farFar = lod.group.getObjectByName('houses (far-far)') as THREE.Mesh;
+  expect(farFar).toBeDefined();
+  expect(farFar.visible).toBe(false);
+  // Ten triangles a house.
+  expect(farFar.geometry.getAttribute('position').count / 3).toBe(houses.length * 10);
+  // Every face's normal points away from its own house's centre (walls) or up (tops).
+  const p = farFar.geometry.getAttribute('position'), n = farFar.geometry.getAttribute('normal');
+  for (let f = 0; f < p.count / 3; f++) {
+    // Normalized attribute: getX/getY/getZ already return −1…1.
+    const i = f * 3, ny = n.getY(i);
+    if (ny > .9) continue;
+    const cx = (p.getX(i) + p.getX(i + 1) + p.getX(i + 2)) / 3, cz = (p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2)) / 3;
+    // The face's own house: the nearest box centre.
+    const [hx, hz] = houses.map(h => homes.boxOf(h.id)!.centre).reduce((a, q) => Math.hypot(q[0] - cx, q[1] - cz) < Math.hypot(a[0] - cx, a[1] - cz) ? q : a);
+    expect(n.getX(i) * (cx - hx) + n.getZ(i) * (cz - hz)).toBeGreaterThan(0);
+  }
+  lod.setDetail({ farHouses: true });
+  expect(farFar.visible).toBe(true);
+  expect(lod.group.children.filter(c => c !== farFar).every(c => !c.visible)).toBe(true);
+  lod.setDetail({ farHouses: false });
+  expect(farFar.visible).toBe(false);
+  lod.dispose();
+});
+
+test('raises a far-far box to a hillside house fitted floor', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const houses = homes.city.buildings.filter(b => homes.isHouse(b.id)).map((b, i) => i === 0 ? { ...b, floorY: 4 } : b);
+  const lod = houseLod({ houses, bounds: city.bounds, ground: () => 0, foundation: () => 0, near: homes.finishFor, far: homes.farFinishFor,
+    roofUnits: 3, box: b => homes.boxOf(b.id) });
+  const g = (lod.group.getObjectByName('houses (far-far)') as THREE.Mesh).geometry.getAttribute('position');
+  // The first house's ten triangles: its walls still start at the foundation (0) and its top
+  // sits on the fitted floor plus the box height.
+  const ys = Array.from({ length: 30 }, (_, i) => g.getY(i));
+  expect(Math.min(...ys)).toBe(0);
+  expect(Math.max(...ys)).toBeCloseTo(4 + homes.boxOf(houses[0].id)!.height);
+  lod.dispose();
+});
+
+test('keeps a forced house version at every distance (no far-far form)', () => {
+  const homes = residential(city, undefined, () => 0, () => 0, 'low');
+  const lod = houseLod({ houses: homes.city.buildings.filter(b => homes.isHouse(b.id)), bounds: city.bounds, ground: () => 0, foundation: () => 0,
+    near: homes.finishFor, far: homes.farFinishFor, roofUnits: 3, box: b => homes.boxOf(b.id), force: 'far' });
+  expect(lod.group.getObjectByName('houses (far-far)')).toBeUndefined();
+  lod.setDetail({ farHouses: true });
+  expect(lod.group.children.every(c => c.visible)).toBe(true);
+  lod.dispose();
+});
