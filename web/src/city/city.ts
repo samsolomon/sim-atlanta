@@ -101,6 +101,7 @@ import { createAltitudeApartments } from './altitude-apartments';
 import { createHiltonAtlanta } from './hilton-atlanta';
 import { createMarriottMarquis } from './marriott-marquis';
 import { createMarquisOne, createMarquisTwo } from './marquis-offices';
+import { createMedicalArts } from './medical-arts';
 import { createTwelveCentennial } from './twelve-centennial';
 import { createTruistPlaza } from './truist-plaza';
 import { createWestin } from './westin';
@@ -403,6 +404,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let hilton: ReturnType<typeof createHiltonAtlanta> = null;
   let marquis: ReturnType<typeof createMarriottMarquis> = null;
   let marquisOne: ReturnType<typeof createMarquisOne> = null;
+  let medicalArts: ReturnType<typeof createMedicalArts> = null;
   let marquisTwo: ReturnType<typeof createMarquisTwo> = null;
   let twelve: ReturnType<typeof createTwelveCentennial> = null;
   let truist: ReturnType<typeof createTruistPlaza> = null;
@@ -451,7 +453,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         marquisOne = createMarquisOne(afterMarriott, ground);
         const afterOne = marquisOne?.buildings ?? afterMarriott;
         marquisTwo = createMarquisTwo(afterOne, ground);
-        const hotelSite = marquisTwo?.buildings ?? afterOne;
+        const afterTwo = marquisTwo?.buildings ?? afterOne;
+        medicalArts = createMedicalArts(afterTwo, ground);
+        const hotelSite = medicalArts?.buildings ?? afterTwo;
         hilton = createHiltonAtlanta(hotelSite, ground);
         const afterHilton = hilton?.buildings ?? hotelSite;
         altitude = createAltitudeApartments(afterHilton, ground);
@@ -564,6 +568,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (marquis) world.group.add(marquis.group);
         if (marquisOne) world.group.add(marquisOne.group);
         if (marquisTwo) world.group.add(marquisTwo.group);
+        if (medicalArts) world.group.add(medicalArts.group);
         if (hilton) world.group.add(hilton.group);
         if (altitude) world.group.add(altitude.group);
         if (twelve) world.group.add(twelve.group);
@@ -624,7 +629,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
           // Each landmark with its night switch, which the batcher probes. A new landmark goes here
           // too, next to its setNight call; one missing from this list is drawn unbatched.
           const listed = ([
-            floyd, hyatt, marquis, marquisOne, marquisTwo, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            floyd, hyatt, marquis, marquisOne, marquisTwo, medicalArts, hilton, altitude, twelve, truist, westin, peachtreeCenter,
             peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
             hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
@@ -1225,8 +1230,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const vts = new ShaderPass(tiltShiftShader([0, 1]));
   composer.addPass(hts);
   composer.addPass(vts);
-  composer.addPass(new OutputPass());
-  const grade = new ShaderPass(gradeShader());
+  // Grade does OutputPass's tone mapping and sRGB output itself (one fewer full-resolution pass).
+  // `?perf&output=pass` keeps the separate pass, for A/B runs.
+  const outputPass = perfEnabled && query.get('output') === 'pass';
+  if (outputPass) composer.addPass(new OutputPass());
+  const grade = new ShaderPass(gradeShader({ output: !outputPass }));
   composer.addPass(grade);
   const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
@@ -1462,6 +1470,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       marquis?.setNight(night);
       marquisOne?.setNight(night);
       marquisTwo?.setNight(night);
+      medicalArts?.setNight(night);
       hilton?.setNight(night);
       altitude?.setNight(night);
       twelve?.setNight(night);
