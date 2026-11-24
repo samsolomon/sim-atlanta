@@ -342,13 +342,16 @@ export class RoadTraffic {
 
   /** Road height at `s` on a lane, from its cached profile; null where no road is drawn. */
   private heightAt(lane: LaneState, s: number, x: number, z: number): number | null {
-    const i = Math.floor(s / HEIGHT_STEP), length = lane.course.line.length;
+    let i = Math.floor(s / HEIGHT_STEP);
+    const length = lane.course.line.length;
     // Within a tyre's width of either end, never interpolate: a bridged crack there could carry
     // a car past the end of a deck.
     if (s < CRACK_WIDTH_M || s > length - CRACK_WIDTH_M) return this.exactHeight(lane, s, x, z);
-    // The last step is shorter: its upper sample sits at the lane's end, not a full step on.
+    // A point on a step boundary belongs to the step before, whose refined end knot may bridge
+    // a crack there. The last step is shorter: its upper sample sits at the lane's end.
+    if (s <= i * HEIGHT_STEP && i > 0) i--;
     const s0 = i * HEIGHT_STEP, span = Math.min(s0 + HEIGHT_STEP, length) - s0;
-    if (!(span > 0) || s <= s0) {
+    if (!(span > 0)) {
       const a = this.profile(lane, i);
       return a === NO_ROAD ? this.exactHeight(lane, s, x, z) : a;
     }
