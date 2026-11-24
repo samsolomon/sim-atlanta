@@ -97,6 +97,8 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
 
   // Podium: tan precast with punched windows, the curved corner in blue glass.
   edges(p, (a, b, length, i) => {
+    // The west edge is buried in the tower step; its panes would never show.
+    if (a[0] < -13 && b[0] < -13) return;
     const corner = a[0] > 60 && a[1] < -8;
     const lo = shell.base + 0.6, hi = y(podiumTop) - 0.6;
     if (corner) litFacade(shell, seed, 60 + i, a, b, lo, hi, high ? podFloors : 1, 3, 0.96, 0.9, glass, 0.4);

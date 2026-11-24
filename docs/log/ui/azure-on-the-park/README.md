@@ -44,3 +44,4 @@ No night photograph was found. Lit rooms come from the shared `litHash(seedOf(id
 ![Before and after, 23:30](az-night.jpg)
 ![Low tier at the starting camera, day and night](az-low.jpg)
 ![Close view, day and night](az-close.jpg)
+![Four-side check from N, E, S and W at 400 m](az-four.jpg)
