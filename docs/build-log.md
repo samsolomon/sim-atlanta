@@ -3205,3 +3205,24 @@ The first car in the freight kit is a three-bay covered grain hopper, sized from
 ### 2026-11-23 — Five shader programs back on the phone board
 
 Low held 90 programs after all twelve areas loaded. The same streetcar shelters and arterial vehicles had compiled with four clipping planes downtown and zero on adjoining boards. Using the moving outer perimeter lets both use the same programs and keeps the interior seam open. City also releases the white reveal material once the still owns its pixels. With the 200 and 230 Peachtree buildings included, Low measured 85 programs and 538 draws. The plain downtown landmark bodies now share the same 500 m batches on both tiers. [Sweet Auburn streetcar and shelter, camera 1536,-182,190,48,180](log/perf/low-streetcar-shelter.jpg).
+
+### 2026-11-23 — Lunch at the High
+
+Sifly Piazza already had six café tables and eighteen red chairs. At 13:00 on
+Friday, six visitors sit facing their tables while eight walkers cross the
+paving, climb the entry ramp and follow the lawn path. The ramp needed its own
+height calculation because the deck rises away from the ground beneath it.
+At 23:00 the tables and paths are quiet.
+
+Sam couldn't find the tables at his usual 260 m orbit. They sat in the Woodruff
+shadow, tucked against a wall. A leaf-on aerial showed where the real café sits:
+in a gridded tree grove in the open square, beside four pale squares that turned
+out to be open umbrellas. The tables now stand there, twelve in three rows of four,
+with warm pale tops and cream umbrellas. No November photograph shows the
+umbrellas, so they started furled. At 260 m the furled ones read only as a dark
+smudge, so Sam picked them open. Ten visitors sit at lunch. The grove adds about 1,100 triangles
+to the existing shell batch, with no new draw or material.
+[Before and after](log/ui/high-visitors/compare-lunch.jpg) ·
+[café grove close-up](log/ui/high-visitors/tables.jpg) ·
+[day and night](log/ui/high-visitors/day-night.jpg) ·
+[furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).
