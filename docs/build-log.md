@@ -3098,7 +3098,7 @@ On the Galaxy A16, two runs per build measured 7.30 and 7.35 seconds from data t
 
 ### 2026-11-23 — Use the terrain itself as the roof over North Avenue
 
-From above, the eight-track crossing used to have a notch on each side of the
+From above, the active rail cover used to have a notch on each side of the
 railway. The separate roof and the bank were trying to describe the same piece
 of ground. We restored the upper formation to the terrain grid and cut out just
 the intervals where the lidar sees daylight. The tracks follow that surface
@@ -3108,7 +3108,7 @@ strips also continue across on their own ground triangles.
 Below them, two carriageways, sidewalks and a median run through the whole
 213 m cut. Marietta's 4.69 m clearance comes from its bridge inventory. The
 4.5 m railway clearance and the night lighting are inferred. On low, the
-structure and changed board mesh add 2,590 triangles and two draws with the
+structure and changed board mesh add 2,590 triangles and one draw with the
 existing ground texture. The two height queries at Marietta put a driver on
 the appropriate street even where both streets share the same map coordinates.
 

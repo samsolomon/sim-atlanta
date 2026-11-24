@@ -231,100 +231,72 @@ export function underpassMesh(
   const walls = new Builder(),
     pavement = new Builder();
   drawUnderpass(site, walls, pavement, ground, zero);
-  const uv: number[] = [];
-  for (let i = 0; i < pavement.pos.length; i += 3)
-    uv.push(
-      (pavement.pos[i] - bounds.minX) / (bounds.maxX - bounds.minX),
-      (bounds.maxZ - pavement.pos[i + 2]) / (bounds.maxZ - bounds.minZ),
-    );
+  // Share one draw, one programme and the board texture between the two levels.
+  const pavementVertices = pavement.pos.length / 3;
+  pavement.pos = pavement.pos.concat(walls.pos);
+  pavement.col = pavement.col.concat(walls.col);
   const geometry = pavement.geometry();
+  const uv: number[] = [],
+    coordinates: number[] = [];
+  for (let i = 0; i < pavement.pos.length; i += 3) {
+    const [x, y, z] = [pavement.pos[i], pavement.pos[i + 1], pavement.pos[i + 2]];
+    const [s, t] = site.local(x, z);
+    coordinates.push(s, t, y + zero - site.floor(s), Number(i / 3 < pavementVertices));
+    uv.push((x - bounds.minX) / (bounds.maxX - bounds.minX), (bounds.maxZ - z) / (bounds.maxZ - bounds.minZ));
+  }
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  geometry.setAttribute('roadTint', geometry.getAttribute('color'));
+  geometry.setAttribute('trenchCoord', new THREE.Float32BufferAttribute(coordinates, 4));
   const night = { value: 0 };
-  const roadMaterial = new THREE.MeshLambertMaterial({ map, side: THREE.DoubleSide });
-  const concrete = new THREE.MeshLambertMaterial({
-    vertexColors: true,
-    side: THREE.DoubleSide,
-    emissive: 0x342f26,
-  });
-  // Fixtures seen on the west approach. Placement and warm spill at night
-  // are inferred. Interpolate road station, cross offset and height on both
-  // receiving meshes, so the pools continue from wall to sidewalk to asphalt.
-  function light(geometry: THREE.BufferGeometry, material: THREE.MeshLambertMaterial) {
-    const positions = geometry.getAttribute('position'),
-      coords: number[] = [];
-    for (let i = 0; i < positions.count; i++) {
-      const [s, t] = site.local(positions.getX(i), positions.getZ(i));
-      coords.push(s, t, positions.getY(i) + zero - site.floor(s));
-    }
-    geometry.setAttribute('trenchCoord', new THREE.Float32BufferAttribute(coords, 3));
-    material.customProgramCacheKey = () =>
-      JSON.stringify([
-        site.start,
-        site.end,
-        w,
-        site.spans[0].start,
-        site.spans.at(-1)!.end,
-        material === roadMaterial,
-      ]);
-    material.onBeforeCompile = (shader) => {
-      shader.uniforms.trenchNight = night;
-      shader.vertexShader =
-        'attribute vec3 trenchCoord; varying vec3 trench;\n' +
-        shader.vertexShader.replace(
-          '#include <begin_vertex>',
-          '#include <begin_vertex>\n trench=trenchCoord;',
-        );
-      shader.fragmentShader =
-        'uniform float trenchNight; varying vec3 trench;\n' +
-        shader.fragmentShader.replace(
+  const material = new THREE.MeshLambertMaterial({ map, side: THREE.DoubleSide, vertexColors: true });
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.trenchNight = night;
+    shader.uniforms.trenchWidth = { value: site.halfWidth };
+    shader.uniforms.trenchEnds = {
+      value: new THREE.Vector4(site.start, site.spans[0].start, site.spans.at(-1)!.end, site.end),
+    };
+    shader.vertexShader =
+      'attribute vec4 trenchCoord; varying vec4 trench;\n' +
+      shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n trench=trenchCoord;');
+    shader.fragmentShader =
+      'uniform float trenchNight, trenchWidth; uniform vec4 trenchEnds; varying vec4 trench;\n' +
+      shader.fragmentShader
+        .replace(
+          '#include <color_fragment>',
+          `
+        // Outside the ramps keep the exact board paint, including its markings.
+        float ramp=smoothstep(trenchEnds.x,trenchEnds.x+15.,trench.x)*(1.-smoothstep(trenchEnds.w-15.,trenchEnds.w,trench.x));
+        float laneD=abs(abs(trench.y)-(trenchWidth-2.+.65)*.5);
+        float aa=clamp(fwidth(trench.y),.01,.4);
+        float stripe=(1.-smoothstep(.075-aa,.075+aa,laneD))*step(mod(trench.x+200.,10.),3.)*trench.w;
+        vec3 local=diffuse*mix(vColor.rgb,vec3(.76,.73,.61),stripe);
+        diffuseColor.rgb=mix(diffuseColor.rgb,local,mix(1.,ramp,trench.w));`,
+        )
+        .replace(
           '#include <opaque_fragment>',
           `
+        // Warm wall fixtures follow the west approach photograph. Lamp pitch,
+        // spill and night intensity are inferred.
         float d=abs(mod(trench.x+4.,12.)-6.);
-        float wall=abs(abs(trench.y)-${w.toFixed(3)});
-        float h=abs(trench.z-3.0);
-        float inside=smoothstep(${site.spans[0].start.toFixed(3)}-2.,${site.spans[0].start.toFixed(3)},trench.x)*(1.-smoothstep(${site.spans.at(-1)!.end.toFixed(3)},${site.spans.at(-1)!.end.toFixed(3)}+2.,trench.x));
+        float wall=abs(abs(trench.y)-trenchWidth);
+        float h=abs(trench.z-3.);
+        float inside=smoothstep(trenchEnds.y-2.,trenchEnds.y,trench.x)*(1.-smoothstep(trenchEnds.z,trenchEnds.z+2.,trench.x));
         float lens=(1.-smoothstep(.25,.4,d))*(1.-smoothstep(.08,.15,h))*(1.-smoothstep(.03,.15,wall));
         float spill=exp(-.12*d-.16*wall-.23*h);
+        outgoingLight+=(1.-trench.w)*vec3(.034,.028,.019);
         outgoingLight+=inside*(diffuseColor.rgb*(vec3(.16,.15,.13)+trenchNight*vec3(.8,.55,.29)*spill)+vec3(1.,.77,.45)*lens*(.28+trenchNight));
         #include <opaque_fragment>`,
         );
-      if (material === roadMaterial) {
-        shader.vertexShader =
-          'attribute vec3 roadTint; varying vec3 pavementTint;\n' +
-          shader.vertexShader.replace('trench=trenchCoord;', 'trench=trenchCoord; pavementTint=roadTint;');
-        shader.fragmentShader =
-          'varying vec3 pavementTint;\n' +
-          shader.fragmentShader.replace(
-            '#include <map_fragment>',
-            `#include <map_fragment>
-          float ramp=smoothstep(${site.start.toFixed(3)},${(site.start + 15).toFixed(3)},trench.x)*(1.-smoothstep(${(site.end - 15).toFixed(3)},${site.end.toFixed(3)},trench.x));
-          float laneD=abs(abs(trench.y)-${((w - 2 + 0.65) / 2).toFixed(3)});
-          float aa=clamp(fwidth(trench.y),.01,.4);
-          float stripe=(1.-smoothstep(.075-aa,.075+aa,laneD))*step(mod(trench.x+200.,10.),3.);
-          diffuseColor.rgb=mix(diffuseColor.rgb,diffuse*mix(pavementTint,vec3(.76,.73,.61),stripe),ramp);`,
-          );
-      }
-    };
-  }
-  const w = site.halfWidth;
-  light(geometry, roadMaterial);
-  const wallGeometry = walls.geometry();
-  light(wallGeometry, concrete);
-  const group = new THREE.Group();
-  const street = new THREE.Mesh(geometry, roadMaterial),
-    structure = new THREE.Mesh(wallGeometry, concrete);
-  street.name = 'Underpass lower street';
-  structure.name = 'Underpass retaining walls and soffits';
-  street.receiveShadow = true;
-  group.add(street, structure);
+  };
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = 'Cut-and-cover underpass';
+  mesh.receiveShadow = true;
   return {
-    group,
+    mesh,
     setNight(factor: number) {
       night.value = factor;
     },
     setWet(factor: number) {
-      roadMaterial.color.setScalar(1 - 0.3 * factor);
+      material.color.setScalar(1 - 0.3 * factor);
     },
   };
 }

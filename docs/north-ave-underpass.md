@@ -1,4 +1,4 @@
-# North Avenue NW underpass — survey and proposed representation
+# North Avenue NW underpass — survey and model
 
 Survey dated 2026-11-23. City implements option C. The evidence supports **five visible
 cover groups**, not a proven inventory of five independent bridges: Marietta
@@ -96,28 +96,6 @@ cannot supply slab thickness or minimum soffit clearance.
 The script uses the existing EPT reader/cache and requires numpy, laspy/lazrs,
 pyproj and matplotlib; it does not stage City data.
 
-## Simplest honest model for Sam
-
-Build the reported two-span Marietta concrete slab structure; one continuous
-active-rail cover envelope without invented daylight gaps or an asserted internal
-bridge count; and three disconnected, **disused** western deck strips with the
-observed gaps. Keep their structural subdivisions schematic. Return the rail to
-a continuous grade over the cover and draw North Avenue at its lower level in a
-shared OpenSlot trench. Supports stay outside lanes, shoulders and ramps.
-
-The original 86.3/89.6 m OSM tunnel ways (218105244/218105246, layer -1) cover only
-part of this sequence. The disused strips extend beyond the mapped tunnel: the
-whole sequence reaches roughly 153 m west along the reference axis. Do not stop
-all modelling at the OSM tunnel endpoint. The existing `GRADED_CUTS` exception
-covers x -840…-760, z -1935…-1820; retain it unless tests prove full replacement.
-
-Rail soffit clearance remains **inferred**, with the proposed minimum 4.5 m;
-Marietta clearance can use its reported 4.69 m. Neither goes on screen. Rail grade
-must stay at or below 1.5%. Low-tier cap remains +5,000 triangles and +2 draws,
-shared materials, no new textures; these are targets, not measured costs. Record
-before/after `__perf.report` and pass `pnpm test:perf`. Capture matched day/night
-before/after including target `(-783,-1860)`. Web rebuild only is intended.
-
 ## One useful walking photograph
 
 From the **public sidewalk in the daylight opening immediately west of the active
@@ -129,34 +107,29 @@ joints and pier lines, not the three western strips now visible in lidar. No nee
 to enter rail property or stand in the roadway. This is a requested sightline,
 not a surveyed camera position.
 
-## Implementation plan — option C approved 2026-11-23
+## City geometry
 
-Sam approved the five-group representation through the coordinator. Implement a
-single shared survey module for the trench floor, deck footprints, road heights,
-and rail crossing grade. Terrain must be carved before scenery is sampled;
-transport must use the same floor/deck heights and keep vehicle height queries
-consistent with its drawn treads. Batch structure geometry into the existing
-transport builder. Clip ordinary street rendering only inside the replacement
-footprint, preserving both approach continuations. Keep disused strips trackless.
+North Avenue follows an inferred lower profile from the road returns. Its
+carriageways, raised sidewalks and median meet the mapped pavement at each end
+of a 213 m cut. Traffic samples that lower profile on North Avenue and the upper
+board triangles on Marietta. The shader blends road paint from the board's
+existing texture into the two-lane cross section as the kerbs rise. Wetness
+and the diffuse shading apply along the approaches and through the bore.
 
-Architect review: a decorative deck alone would leave terrain-following freight
-and missing tunnel road beneath it. Use the shared module in terrain and transport,
-with integration tests on the actual Midtown rail fixture and staged ground grid.
-The existing ground-contact exception stays until the complete board audit passes.
+The five surveyed top elevations guide the board grid before either quality
+tier chooses its triangles. Each cover is part of that upper board. Marietta
+keeps its mapped pavement, the running tracks follow the restored formation,
+and the western strips retain the surrounding ground paint. The four gaps
+between them are actual holes, with retaining walls cut to the bank height.
+The Marietta median and shoulder supports, portal faces and soffits share a
+draw with the lower pavement. Warm wall lights are based on the west approach
+photo. Their spacing, falloff and after-dark operation are inferred.
 
-Product design review: no clearance or disused-status labels enter ambient scenery.
-Keep the observed gaps, Marietta balustrade, rail-cover parapets, and under-deck
-sidewalk/median separation readable at the close camera. Match day/night cameras
-and retain the same materials at both quality tiers. Internal railway joints remain
-absent until new evidence supports them.
+Tests sample the drawn carriageways and soffits, require open sky at each
+surveyed gap, and check the mapped tracks at metre intervals over the crossing
+and both banks against a 1.5% grade limit. The previous North Avenue ballast
+exception has been removed from the ground-contact regression test. The low
+board and structure cost is 2,590 additional triangles and one draw. This is a
+web rebuild. The survey does not change the staged City data.
 
-## Shared cut-and-cover replacement
-
-Architect review, 2026-11-23. Keep the upper surface in the board triangulation.
-Open only the daylight intervals. Sample the lower carriageways separately for
-traffic, since a vertical ray from the sky hits Marietta or the railway there.
-
-Product design review, 2026-11-23. Continue the mapped Marietta paint and existing
-rail treads across the unbroken board. Use the approach pavement and sidewalk
-colours through the trench and diffuse fill under the soffit. Compare both
-lighting conditions from the survey cameras.
+[Matched overview and under-deck photographs and cameras](build-log.md#2026-11-23--use-the-terrain-itself-as-the-roof-over-north-avenue)

@@ -195,7 +195,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const paintCity = options.boardRoads ? { ...city, roads: options.boardRoads } : city;
   const board = makeBoard(mesh, paintCity, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails, options.underpass);
   const trench = options.underpass && underpassMesh(options.underpass, city.bounds, board.material.map, bare, zero);
-  if (trench) board.add(trench.group);
+  if (trench) board.add(trench.mesh);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
