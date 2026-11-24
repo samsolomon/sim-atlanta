@@ -1443,8 +1443,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (nextFar !== shadowsFar) {
       shadowsFar = nextFar;
       if (nextFar) sun.shadow.camera.layers.set(NO_CASTERS); else sun.shadow.camera.layers.set(0);
+      // Redraw on the switch: once to clear the map going far, once to fill it coming back.
+      // (shadowTarget keeps its last centre: the light sits over it, so Infinity there would
+      // put NaN in the shadow camera and in every clipped material's planes.)
       renderer.shadowMap.needsUpdate = true;
-      shadowTarget.set(Infinity, 0, Infinity);
     }
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
@@ -1460,8 +1462,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const far = !low && Math.max(Math.abs(t.x - shadowTarget.x), Math.abs(t.z - shadowTarget.z)) > SH / 2;
     const turned = Math.abs(el - shadowElev) > 0.1 || Math.abs(atm.sunAz - shadowAz) > 0.1;
     // The gap applies to sun moves too, so a sped-up clock cannot redraw every frame.
-    if (!shadowsFar && (moved || turned) && (far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
-      renderer.shadowMap.needsUpdate = true;
+    // Far from the board the centre still follows the target (the light sits over it; a session
+    // that opens far would otherwise keep the initial Infinity), but nothing redraws.
+    if ((moved || turned) && (shadowsFar || far || now - shadowDrawnAt >= SHADOW_GAP_MS)) {
+      if (!shadowsFar) renderer.shadowMap.needsUpdate = true;
       shadowDrawnAt = now;
       shadowTarget.set(sx, t.y, sz);
       shadowElev = el;
