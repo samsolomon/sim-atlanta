@@ -32,7 +32,7 @@ for (const trace of ['cruise', 'dwell', 'delayed']) {
       return { upstream: arrival - obs[i], added: t - arrival, effective: t - obs[i] };
     });
     // Interior cruise cycle, true dwell, or delayed arrival. Exclude terminal hold.
-    const start = 60, end = trace === 'dwell' ? 210 : arrivals[3];
+    const start = 60, end = trace === 'dwell' ? arrivals[5] + delay : arrivals[3];
     const pauses = [];
     for (let t = start; t < end; t += step) {
       if (at(t) !== at(t + step)) continue;
