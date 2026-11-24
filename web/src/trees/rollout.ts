@@ -217,7 +217,9 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
       plan.species.push({ species: pick, x, z, heightM: h, spreadM: r * 2, size: h >= SPECIMEN_AT[pick] ? 'specimen' : 'mature', seed });
       continue;
     }
-    if (!pick && places && roundTwo?.eligible.has(key)) {
+    // Leave Ansley's enlarged hardwoods and their matching facing partners intact.
+    const enlarge = ansley && hash01(seed, 22) < 0.4;
+    if (!pick && !enlarge && places && roundTwo?.eligible.has(key)) {
       const contextIndex = ctx === 'street' ? 0 : ctx === 'yard' ? 1 : 2;
       for (const species of Object.keys(SECOND_MIX) as SecondSpecies[]) {
         u -= SECOND_MIX[species][contextIndex];
@@ -232,7 +234,7 @@ export function planRollout({ crowns, roads, ground = [], buildings = [], bounds
     }
     if (!ansley) continue;
     // Ansley skew: about 40% of the remaining broadleaf crowns at specimen size (25–35 m).
-    if (hash01(seed, 22) < 0.4) {
+    if (enlarge) {
       const big = { h: Math.max(h, 25 + 10 * hash01(seed, 23)), r: Math.max(r, 9 + 4 * hash01(seed, 24)) };
       plan.enlarged.set(key, big);
     }

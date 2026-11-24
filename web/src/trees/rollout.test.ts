@@ -39,7 +39,9 @@ describe('tree rollout plan', () => {
     const first = new Set(['crape-myrtle', 'japanese-maple', 'sweetgum', 'loblolly-pine']);
     for (const row of ROWS) {
       const low = plan(row, 'low', true).p.species.filter(s => !first.has(s.species));
-      const high = plan(row, 'high', true).p.species.filter(s => !first.has(s.species));
+      const highPlan = plan(row, 'high', true).p;
+      const high = highPlan.species.filter(s => !first.has(s.species));
+      for (const tree of high) expect(highPlan.enlarged.has(crownKey(tree.x, tree.z))).toBe(false);
       expect(low).toEqual(high);
       for (const s of low) counts.set(s.species, (counts.get(s.species) ?? 0) + 1);
       if (row === 'brookwood-south') {
