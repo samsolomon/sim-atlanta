@@ -472,12 +472,13 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
 .a2-step svg { width: 18px; height: 18px; }
 .a2-model-card #blurb { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--a2-ink2); }
 .a2-model-pos { margin: 6px 0 0 !important; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
-.a2-details-btn { display: none; margin-top: 10px; width: 100%; height: 40px; }
+.a2-details-btn { display: block; margin-top: 10px; width: 100%; height: 40px; }
 
 .a2-model-details { right: var(--a2-right); top: var(--a2-top); width: min(312px, calc(100vw - var(--a2-left) - var(--a2-right)));
   max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h)); overflow-y: auto; padding: 14px 16px 16px; font-size: 13px; }
 .a2-model-details .a2-panel-head { margin-bottom: 8px; }
-.a2-model-details .a2-details-close { display: none; }
+.a2-model-details:not(.a2-open) { display: none; }
+.a2-model-details .a2-details-close { display: grid; }
 .a2-lab .a2-model-details .settings { padding: 0; gap: 14px; }
 .a2-lab .a2-model-details legend { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
 .a2-lab .a2-model-details .settings button, .a2-lab .a2-model-details .file-button {
@@ -512,7 +513,7 @@ body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
   .a2-model-details.a2-open { display: block; left: var(--a2-left); right: var(--a2-right); top: auto; bottom: var(--a2-bottom); width: auto; z-index: 8;
     max-height: 70dvh; border-radius: 24px; }
   .a2-model-details .a2-details-close { display: grid; }
-  body:has(.a2-model-details.a2-open) :is(.a2-appbar, .a2-camera), body:has(.a2-browser:not([hidden])) :is(.a2-appbar, .a2-camera) { display: none; }
+  body:has(.a2-model-details.a2-open) .a2-appbar, body:has(.a2-browser:not([hidden])) .a2-appbar { display: none; }
   .a2-browser { right: var(--a2-right); bottom: var(--a2-bottom); width: auto; border-radius: 24px; z-index: 8; }
 }
 .a2-reset svg { width: 20px; height: 20px; }
@@ -588,11 +589,10 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-tilt:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: -2px; border-radius: 10px; }
 .a2-dot-timetable { background: #8a8478; }
 .a2-credit { right: var(--a2-right); }
-.a2-in-models :is(.a2-three-d,.a2-tilt), body:has(.a2-panel:not([hidden])) .a2-camera { display: none; }
+.a2-in-models :is(.a2-three-d,.a2-tilt) { display: none; }
 @media (min-width: 601px) {
   .a2-menu { left: max(8px, calc(50% - 278px)); }
   .a2-share-panel { right: max(8px, calc(50% - 278px)); bottom: 68px; }
-  .a2-in-models .a2-camera { right: calc(var(--a2-right) + 300px); }
 }
 @media (max-width: 600px) {
   .a2-appbar { left: var(--a2-left); right: var(--a2-right); transform: none; justify-content: space-evenly; bottom: max(34px, env(safe-area-inset-bottom)); }
@@ -637,7 +637,6 @@ body.city-over-map #city-loading { background: transparent !important; }
 @media (min-width: 601px) {
   .a2-browser { top: calc(var(--model-card-bottom, 140px) + 4px); width: 320px; }
   .a2-model-card { width: 320px; }
-  .a2-in-models .a2-camera { right: calc(var(--a2-right) + 320px); }
 }
 @media (max-width: 600px) {
   .a2-details-btn { position: fixed; z-index: 5; right: var(--a2-right); bottom: 94px; width: auto; padding: 0 16px; background: var(--a2-ga); color: var(--a2-ink); }
@@ -818,4 +817,42 @@ body:has(.a2-player:not([hidden])) :is(.a2-hint,.a2-details-btn) { visibility: h
   .a2-player-meta { grid-template-columns: minmax(0, 1fr); }
   .a2-player-meta strong,.a2-player-artist { white-space: normal; overflow-wrap: anywhere; }
   .a2-radio-presets button { min-height: 44px; flex-wrap: wrap; }
+}
+
+/* ---- camera group beside the detail panel (brief: "stays visible while a detail panel is open",
+   Sam 2026-11-24). shell.ts measures the panel and sets the variables. ---- */
+@media (min-width: 601px) {
+  .a2-model-card .a2-details-btn { position: static; }
+  /* Desktop: the panel slides in and the group rides its left edge, 12 px from it, on the same
+     300 ms ease, then returns to the screen edge when the panel closes. Where the group would meet
+     the subject card (narrow windows), it drops below the card instead. */
+  .a2-camera {
+    right: calc(var(--a2-right) + var(--a2-cam-shift, 0px)); top: var(--a2-cam-top, var(--a2-top));
+    transition: right .3s cubic-bezier(.2, .7, .2, 1), top .3s cubic-bezier(.2, .7, .2, 1);
+  }
+  .a2-area-pop { right: calc(var(--a2-right) + var(--a2-cam-shift, 0px) + 52px); top: var(--a2-cam-top, var(--a2-top)); }
+  .a2-panel:not([hidden]) { animation: a2-panel-in .3s cubic-bezier(.2, .7, .2, 1); }
+  .a2-camera.a2-cam-compact .a2-camera-piece:has(.a2-zoom) { display: none; }
+  .a2-camera.a2-cam-over { z-index: 6; }
+  /* No room under the card: the group stays at the top and the card's tier line wraps short of it. */
+  body:has(.a2-cam-over) :is(.a2-subject:not(.a2-open), .a2-model-card) { max-width: calc(100vw - var(--a2-left) - var(--a2-right) - var(--a2-cam-shift, 0px) - 44px - 12px); }
+}
+@keyframes a2-panel-in { from { transform: translateX(calc(100% + 16px)); } }
+@media (max-width: 600px) {
+  /* Phones: compass and 3D stay top-right under any card or sheet; each sheet's top stops 12 px
+     below them and its content scrolls inside. The fallback is the group's usual bottom + 12 px. */
+  :root[data-ui='next'] body { --a2-sheet-cap: calc(100dvh - var(--a2-sheet-top, calc(var(--a2-top) + 108px)) - var(--a2-bottom)); }
+  .a2-panel, .a2-panel.a2-full { max-height: min(70dvh, var(--a2-sheet-cap)); }
+  .a2-panel.a2-full { height: var(--a2-sheet-cap); }
+  .a2-panel.a2-selection:not(.a2-expanded) { max-height: min(46dvh, 300px, calc(var(--a2-sheet-cap) - 90px)); }
+  .a2-panel.a2-selection.a2-expanded { max-height: var(--a2-sheet-cap); }
+  .a2-timepanel.a2-g { max-height: var(--a2-sheet-cap); }
+  .a2-model-details.a2-open { max-height: min(70dvh, var(--a2-sheet-cap)); }
+  .a2-menu { max-height: calc(100dvh - var(--a2-sheet-top, calc(var(--a2-top) + 108px)) - var(--a2-app-bottom) - var(--a2-app-h) - 8px); }
+  .a2-browser { top: var(--a2-sheet-top, calc(var(--a2-top) + 108px)); }
+  .a2-results { top: var(--a2-sheet-top, calc(var(--a2-top) + 108px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .a2-camera, .a2-area-pop { transition: none !important; }
+  .a2-panel:not([hidden]) { animation: none !important; }
 }

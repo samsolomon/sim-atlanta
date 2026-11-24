@@ -587,8 +587,64 @@ export function createShellNext(o: ShellOptions): ShellApi {
   }
 
   const panelHost = createDetailPanel({ allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
-  document.body.append(subject, notice, bar, menu, cam, share, radioPanel, resultsPanel, areaPop, credit, panelHost.host, ...(hint ? [hint] : []));
+  // The panel follows the camera group in the DOM, so Tab reaches the group, then the panel beside it.
+  document.body.append(subject, notice, bar, menu, cam, panelHost.host, share, radioPanel, resultsPanel, areaPop, credit, ...(hint ? [hint] : []));
   subjectBottom();
+
+  // ---- camera group beside the detail panel (Sam, 2026-11-24) ---------------------------------
+  // Desktop: the group rides the panel's left edge, 12 px from it (--a2-cam-shift; CSS slides it
+  // with the panel), and drops below the subject card where the two would meet (--a2-cam-top).
+  // Phones: the group stays top-right, and every sheet stops 12 px below it (--a2-sheet-top).
+  // On <body>, which the in-canvas glass watches for style changes: with reduced motion there is no
+  // transition event to tell it the group moved.
+  const rootStyle = document.body.style;
+  const setVar = (name: string, value: string | null) => {
+    if (rootStyle.getPropertyValue(name) === (value ?? '')) return;
+    if (value === null) rootStyle.removeProperty(name);
+    else rootStyle.setProperty(name, value);
+  };
+  let overKey = '';
+  const placeCamera = () => {
+    if (phone.matches) {
+      setVar('--a2-cam-shift', null);
+      setVar('--a2-cam-top', null);
+      const bottom = cam.offsetTop + cam.offsetHeight;
+      setVar('--a2-sheet-top', cam.offsetHeight ? `${bottom + 12}px` : null);
+      return;
+    }
+    setVar('--a2-sheet-top', null);
+    // offsetWidth/offsetLeft ignore the panel's slide-in transform; 0 while hidden (or hidden in Models).
+    const modelPanel = document.querySelector<HTMLElement>('.a2-model-details.a2-open');
+    const panel = modelPanel && modelPanel.offsetWidth > panelHost.host.offsetWidth ? modelPanel : panelHost.host;
+    const w = panel.offsetWidth;
+    setVar('--a2-cam-shift', w ? `${w + 12}px` : null);
+    // The open Time & weather card grows over everything for a moment; place against the closed card.
+    if (subject.classList.contains('a2-open')) return;
+    // In the last-resort case below the subject card narrows to clear the group; that narrowing
+    // must not undo the decision that caused it.
+    const modelCard = document.querySelector<HTMLElement>('.a2-model-card');
+    const key = `${innerWidth}x${innerHeight}:${w}:${modelCard?.querySelector('.a2-browser:not([hidden])') != null}`;
+    if (cam.classList.contains('a2-cam-over') && key === overKey) return;
+    const camLeft = (w ? panel.offsetLeft : innerWidth - 8) - (w ? 12 : 0) - cam.offsetWidth;
+    const left = [subject, notice, ...(modelCard ? [modelCard] : [])].filter((n) => !n.hidden && n.offsetWidth);
+    const meets = w && left.some((n) => n.offsetLeft + n.offsetWidth + 12 > camLeft);
+    const below = Math.max(...left.map((n) => n.offsetTop + n.offsetHeight)) + 12;
+    // Short windows: below the card, the group must clear the dock. Without the zoom buttons
+    // (pinch, wheel and +/− keys still zoom) it is 96 px shorter; if even that won't fit, it stays
+    // at the top over the card's right end rather than under the dock.
+    const room = bar.offsetTop - 8 - below;
+    const full = cam.offsetHeight + (cam.classList.contains('a2-cam-compact') ? 96 : 0); // zoom piece 88 + gap 8
+    const compact = !!meets && room < full;
+    cam.classList.toggle('a2-cam-compact', compact);
+    cam.classList.toggle('a2-cam-over', compact && room < full - 96);
+    overKey = key;
+    setVar('--a2-cam-top', meets && !cam.classList.contains('a2-cam-over') ? `${below}px` : null);
+  };
+  const camObserver = new ResizeObserver(placeCamera);
+  for (const n of [panelHost.host, subject, notice, cam]) camObserver.observe(n);
+  document.addEventListener('lab-layout', placeCamera);
+  addEventListener('resize', placeCamera, { passive: true });
+  placeCamera();
 
   // ---- pop-overs ---------------------------------------------------------------------------
   const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open], [share, shareBtn], [radioPanel, radioBtn], [resultsPanel, searchBtn], [areaPop, threeD]];
