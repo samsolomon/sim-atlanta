@@ -207,7 +207,8 @@ export class HouseTile extends THREE.LOD {
   async buildNear() {
     if (this.nearWorld || this.disposed) { this.pending = false; return; }
     const world = await runBudgeted(whileAlive(buildWorld(this.houses, this.o, this.o.near), () => !this.disposed && this.distance < PREBUILD_M * 1.1), {
-      budgetMs: () => (sliceInput.dragging ? 1 : NEAR_BUDGET_MS), stats: houseNearStats, nextFrame, now,
+      // Inside the switch the far version is standing in for a near one: build twice as fast.
+      budgetMs: () => (sliceInput.dragging ? 1 : this.distance < SWITCH_M * .9 ? 2 * NEAR_BUDGET_MS : NEAR_BUDGET_MS), stats: houseNearStats, nextFrame, now,
     });
     this.pending = false;
     if (!world) return;
