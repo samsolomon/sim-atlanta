@@ -80,7 +80,7 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid) {
 
     if (exposed < 1.6) {
       // Level with the street: the lot's edge is a black picket fence (rails and posts).
-      quad(0, 1, s.base, lot, 0.02, concreteShade);
+      quad(0, 1, s.base, lot, 0.05, concreteShade);
       for (const [y0, y1] of [[lot + 0.12, lot + 0.2], [fence - 0.1, fence]]) {
         quad(0, 1, y0, y1, 0.05, picket);
         quad(1, 0, y0, y1, 0.03, picket);
@@ -88,7 +88,7 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid) {
       const posts = Math.max(1, Math.round(len / 3));
       for (let k = 0; k <= posts; k++) {
         const u = k / posts, w = 0.05 / len;
-        quad(Math.max(0, u - w), Math.min(1, u + w), lot, fence, 0.06, picket);
+        quad(Math.max(0, u - w), Math.min(1, u + w), lot, fence, 0.1, picket);
       }
       return;
     }
@@ -103,13 +103,15 @@ export function createLandmarkDeck(buildings: VBuilding[], grid: GroundGrid) {
     }
     quad(0, 1, s.base, openLo, 0.04, concrete);
     // Bays: dark garage behind a mesh screen, a lit strip under the slab, and piers.
-    quad(0, 1, openLo, openHi, 0.0, interior);
-    quad(0, 1, openHi - 0.45, openHi, 0.01, interior, true);
-    quad(0, 1, openLo, openHi - 0.45, 0.015, mesh);
+    // Each layer stands 4 cm or more clear of the prism wall (at 0) and its neighbours, or they
+    // z-fight from a 400-500 m orbit.
+    quad(0, 1, openLo, openHi, 0.04, interior);
+    quad(0, 1, openHi - 0.45, openHi, 0.08, interior, true);
+    quad(0, 1, openLo, openHi - 0.45, 0.08, mesh);
     const bays = Math.max(1, Math.round(len / 6));
     for (let k = 0; k <= bays; k++) {
       const u = k / bays, w = 0.22 / len;
-      quad(Math.max(0, u - w), Math.min(1, u + w), openLo, openHi, 0.05, concreteShade);
+      quad(Math.max(0, u - w), Math.min(1, u + w), openLo, openHi, 0.12, concreteShade);
     }
   });
 
