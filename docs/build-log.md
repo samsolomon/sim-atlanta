@@ -3071,3 +3071,26 @@ Compare the [earlier overview](https://github.com/samsolomon/sim-atlanta/blob/03
 and [earlier under-deck view](https://github.com/samsolomon/sim-atlanta/blob/030d123f/docs/log/north-ave-under-deck.jpg)
 with the [revised overview](log/north-ave-after-day.jpg) and [revised under-deck view](log/north-ave-under-deck.jpg).
 The matched low-tier frame adds 4,279 triangles and one draw over main.
+
+### 2026-11-23 — Carry the street and railway across North Avenue
+
+Marietta now uses the same pavement texture, markings and map coordinates on the
+crossing as on the adjacent street. The track ballast continues above the shared
+rail soffit. The three western strips take their crossfall from the banks and
+carry grass over a thin edge. Silhouette ink fades at the cover tops when the
+camera is above them. The lower carriageways retain their walls, supports and shade.
+
+The matched daylight camera on main at `614cf140` measured 1,596,625 triangles
+and 83 draws. Option A measured 1,600,065 and 85, an addition of 3,440 triangles
+and two draws. The pavement and bank transitions share the board's ground material.
+
+| Camera | Previous finish | Option A |
+|---|---|---|
+| Overview, 14:00 | [Before](log/north-ave/option-a-before-day.jpg) | [After](log/north-ave-after-day.jpg) |
+| Overview, 23:00 | [Before](log/north-ave/option-a-before-night.jpg) | [After](log/north-ave-after-night.jpg) |
+| Under deck, 14:00 | [Before](log/north-ave/option-a-before-under-day.jpg) | [After](log/north-ave-under-deck.jpg) |
+| Under deck, 23:00 | [Before](log/north-ave/option-a-before-under-night.jpg) | [After](log/north-ave-under-deck-night.jpg) |
+
+Overview camera `-783,-1860,235,55,350`. Under-deck eye `-762.5,-25.5,-1881.5`,
+target `-797,-25,-1860`, zoom 0.75, near plane 0.05 m. Times are Eastern on
+November 20, 2026.

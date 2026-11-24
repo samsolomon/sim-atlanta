@@ -5,9 +5,10 @@
 The original survey and model decisions are in [North Avenue](../north-ave-underpass.md).
 The [build log](../build-log.md#2026-11-23--north-avenue-reappears-beneath-the-railway)
 links the matched daytime and nighttime overviews and the under-deck view.
-Against main at 7319005e, the low-tier daylight camera measured 1,595,963 triangles
-before and 1,600,242 after, with 83 and 84 draws respectively. Sam is reviewing the revised
-ballast and underpass lighting on draft PR #361. Hold the merge for his decision. Both tier budgets passed.
+Option A supersedes the prior finish. The branch is rebased on the heap fix at
+`614cf140`. At the matched daylight camera it adds 3,440 triangles and two
+draws. [Four paired screenshots](../build-log.md#2026-11-23--carry-the-street-and-railway-across-north-avenue)
+are ready for Sam on draft PR #361. Hold the merge for his decision. Both tier budgets passed.
 
 The rail grade test uses the actual crossing tracks. Both tiers check the rendered
 soffit and support clearance, road-specific vehicle heights and local structure
