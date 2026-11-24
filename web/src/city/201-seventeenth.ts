@@ -74,9 +74,11 @@ export function create201Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
     if (length < 4) return;
     const floors = Math.round((hi - lo) / 3.9), pitch = (hi - lo) / floors;
-    for (let f = 1; f <= floors; f++) panel(false, a, b, 0, 1, lo + f * pitch - 0.55, lo + f * pitch, 0.08, spandrel);
+    // Layers stand at least 4 cm apart so none z-fights at City range: lit panes 0.04,
+    // mullions 0.09, spandrels 0.14.
+    for (let f = 1; f <= floors; f++) panel(false, a, b, 0, 1, lo + f * pitch - 0.55, lo + f * pitch, 0.14, spandrel);
     const ribs = Math.max(1, Math.round(length / 4.5));
-    for (let i = 1; i < ribs; i++) panel(false, a, b, i / ribs - 0.12 / length, i / ribs + 0.12 / length, lo, hi, 0.06, mullion);
+    for (let i = 1; i < ribs; i++) panel(false, a, b, i / ribs - 0.12 / length, i / ribs + 0.12 / length, lo, hi, 0.09, mullion);
     // Offices at 23:30: about one bay in twenty, two ribs wide.
     const bays = Math.max(1, Math.round(ribs / 2));
     for (let f = 0; f < floors; f++)
