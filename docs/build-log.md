@@ -3475,3 +3475,14 @@ The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th 
 ### 2026-11-24 · 271 Seventeenth's Streamline bands
 
 TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)
+
+
+### 2026-11-24 — Transport far form
+
+On the phone tier, transport was 519,000 of the 2.43 million triangles in the default view: roads, decks, rails, lamps and the streetcar. That view puts the camera about 24 km from the board, where a phone pixel covers roughly 10 m. Rails, ties, lane lines, parapet tops and lamp posts are all smaller than a pixel there, and the phone still drew every one.
+
+Each transport mesh now orders its triangles so the parts that still read at that distance come first: road surfaces, deck sides, ballast and track slabs. Past 700 m from the camera on low, or 1,600 m on high, it draws only that prefix. The order is a permutation of whole triangles. Close up, every mesh draws exactly what it drew before, with no new memory or shader programs. Height lookups follow the permutation, and a test compares them on a dense sample with and without it. Lamp heads stay at night, so the lights still read.
+
+On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
+
+[Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
