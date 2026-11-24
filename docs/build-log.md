@@ -3503,3 +3503,27 @@ OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13,
 
 
 **2026-11-24 — The Hard Rock building was a third of its height.** Overture gave the corner block at Peachtree and International 69.3 m, which made it a plain grey tower among the Peachtree Center towers. The 2019 lidar measures the roof at 22–26 m. Street View shows a pale stone six-storey block, with paired windows between flat piers and maroon awnings over the restaurant. The model draws that and leaves off the neon guitar and the rooftop sign, which are logos. It is a downtown landmark, so it also joins the batcher's `listed` array. [Captures and references](log/ui/hard-rock-building/README.md)
+### 2026-11-24 · Building an area without stopping the frame
+
+Growing City toward I-285 means loading areas while the camera moves. A Midtown row is one
+synchronous build: about 1.6 s on a phone-class CPU (the Studio throttled 6×), and a pan stops
+dead while it runs. The first profile found a free win. Street-lamp placement scanned every
+landmark site for every lamp candidate, which was 38% of the row. Indexing it (#478) made every
+Midtown row build about 30% faster with identical lamps.
+
+The rest is slicing. Each build is now a generator that yields between units of work: stages,
+landmarks, every 8 houses, every 6 buildings, every 64 to 128 trees, every 64 crowns of the tree
+plan, every 16 streets of lamps. One driver runs it straight through (boot, tests). Another runs
+4 ms of it per frame (8 ms on high, half that while you drag). The hard part was proving that
+"where it yields" never changes the result. Nearly every random draw here is seeded per
+building, per tree or per position, never from a shared stream, which is what makes it possible.
+A Brookwood row with its 4,000 crowns, the tree plan and a November season fingerprints
+identically before and after, and identically when sliced at every step. Two real bugs turned up
+on the way: a seam that failed validation leaked both of its new areas, and deferred trees could
+have sampled the ground after a rail cut had lowered it.
+
+The gate metric surprised me. At 6× CPU, City's own frames are already 60 to 140 ms long tasks,
+so "no long task" can't measure the build. The driver now reports the longest run of build work
+inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
+batching, which the buildings agent is turning into a generator. A row now mounts over about 200
+frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
