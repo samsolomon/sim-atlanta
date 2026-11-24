@@ -48,6 +48,13 @@ describe('Brookwood and North Line tiers on cards', () => {
     expect(trainCard(trip('marta:route:RED'), route, undefined, undefined, true)).not.toContain('inferred track');
   });
   it('labels the Norcross freight illustrative', () => {
-    expect(cityFreightCard('NS Norcross District')).toMatch(/NS Norcross District[\s\S]*Simulated on the mapped track <span class="chip illustrative">/);
+    expect(cityFreightCard({ line: 'NS Norcross District' })).toMatch(/NS Norcross District[\s\S]*Simulated on the mapped track <span class="chip illustrative">/);
+  });
+  it('describes the passage from its record, never from the line name', () => {
+    const card = cityFreightCard({ line: 'NS Norcross District', railroad: 'ns', consist: 'Intermodal · 14 cars · 2 locomotives', lead: 'sd70ace' });
+    expect(card).toMatch(/Intermodal · 14 cars · 2 locomotives\. EMD SD70ACe lead in an NS-like scheme\. Modelled for this passage <span class="chip illustrative">/);
+    expect(card).toContain('sd70ace');
+    // A CSX line whose name mentions Norfolk still takes its scheme from the record.
+    expect(cityFreightCard({ line: 'Norfolk Street spur', railroad: 'csx', lead: 'gp382' })).toContain('CSX-like scheme');
   });
 });

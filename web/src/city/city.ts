@@ -727,7 +727,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // Added after the scenery snapshot, so a streetcar never occludes its own pick.
   scene.add(streetcar.group);
   scene.add(trains.group);
-  const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges, !low) : undefined;
+  const freight = transport?.freightTreads.length ? new CityFreight(transport.freightTreads, edges, low) : undefined;
   if (freight) scene.add(freight.group);
   // Live buses on the drawn streets: terrain-painted ground and exact bridge treads, or the
   // flat board's ribbons when there is no measured ground.

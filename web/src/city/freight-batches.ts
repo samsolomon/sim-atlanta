@@ -1,25 +1,36 @@
 import * as THREE from 'three';
 import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
+import { MAX_UNITS } from './freight-consist';
 
-/** Cars with the same shape and clipping planes submit one draw as they round the track. */
+/**
+ * A train draws one instanced batch per car kind and clipping material, whatever its length, on both
+ * tiers. Poses are plain Object3Ds (for picking and follow); their kind can change between passages.
+ * Low tier uses the reduced car shapes. An instanced, clipped Lambert is its own shader program
+ * per clipping-plane count; see docs/freight-consists.md for the measured cost.
+ */
 export class FreightBatches {
   readonly group = new THREE.Group();
   readonly poses = new THREE.Group();
   private shapes = new Map<FreightUnit, THREE.BufferGeometry>();
   private batches = new Map<THREE.Material, Map<FreightUnit, THREE.InstancedMesh>>();
 
-  constructor(private consist: readonly FreightUnit[], private instanced: boolean, private low = false) {
+  constructor(private low = false) {
     this.group.name = 'Illustrative freight';
     this.group.add(this.poses);
   }
 
-  createCar(kind: FreightUnit, material: THREE.Material) {
-    if (!this.shapes.has(kind)) this.shapes.set(kind, freightGeometry(kind, { low: this.low }));
-    const car = this.instanced ? Object.assign(new THREE.Object3D(), { material })
-      : new THREE.Mesh(this.shapes.get(kind)!, material);
-    car.receiveShadow = true;
-    this.poses.add(car);
-    return car;
+  /** A pose for one position in the train; it draws as whatever kind `append` is given. */
+  createPose(material: THREE.Material) {
+    const pose = Object.assign(new THREE.Object3D(), { material });
+    pose.visible = false;
+    this.poses.add(pose);
+    return pose;
+  }
+
+  private shape(kind: FreightUnit) {
+    let shape = this.shapes.get(kind);
+    if (!shape) this.shapes.set(kind, (shape = freightGeometry(kind, { low: this.low })));
+    return shape;
   }
 
   begin() {
@@ -27,13 +38,12 @@ export class FreightBatches {
   }
 
   append(kind: FreightUnit, pose: THREE.Object3D & { material: THREE.Material }) {
-    if (!this.instanced) return;
     const material = pose.material;
     if (!this.batches.has(material)) this.batches.set(material, new Map());
     const kinds = this.batches.get(material)!;
     let mesh = kinds.get(kind);
     if (!mesh) {
-      mesh = new THREE.InstancedMesh(this.shapes.get(kind)!, material, this.consist.filter(k => k === kind).length);
+      mesh = new THREE.InstancedMesh(this.shape(kind), material, MAX_UNITS);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       mesh.receiveShadow = true;
       mesh.count = 0;
@@ -45,13 +55,16 @@ export class FreightBatches {
   }
 
   finish() {
+    let draws = 0;
     for (const kinds of this.batches.values()) for (const mesh of kinds.values()) {
       mesh.visible = mesh.count > 0;
       if (mesh.visible) {
+        draws++;
         mesh.instanceMatrix.needsUpdate = true;
         mesh.computeBoundingSphere();
       }
     }
+    return draws;
   }
 
   dispose() {

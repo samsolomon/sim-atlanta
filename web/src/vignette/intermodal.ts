@@ -7,7 +7,7 @@ import type { Builder } from './geom';
  * docs/freight-consists.md. Containers are 53-foot domestic high cubes (16.15 × 2.59 × 2.90 m).
  * Plain colours only: no lettering, logos or reporting marks.
  */
-export const WELL_LENGTH = 23.38;
+export const WELL_LENGTH = 23.387; // 76 ft 8.75 in
 export const WELL_TRUCKS = 19.2;
 const WELL_HALF = 8.15; // half the inside well length
 const FLOOR = 0.36; // container floor above the rail

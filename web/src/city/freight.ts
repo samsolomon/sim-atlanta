@@ -1,13 +1,21 @@
 import { FreightBatches } from './freight-batches';
 import * as THREE from 'three';
 import type { FreightTreadPoint } from '../terrain/transport';
-import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING, type FreightUnit } from '../vignette/freight-stock';
+import { FREIGHT_LENGTH, FREIGHT_TRUCK_SPACING } from '../vignette/freight-stock';
+import { COUPLER_GAP, MAX_UNITS, maxTrainLength, passageSummary, planPassage, type LineProfile, type Passage } from './freight-consist';
 
 // A replayable model railway passage. Its phase, speed and consist are illustrative.
 const ENTRY_MS = Date.parse('2026-11-20T19:12:02Z');
 const SPEED_MPS = 4.5;
-const CONSIST: FreightUnit[] = ['locomotive', 'locomotive', 'boxcarBlue', 'boxcarBlue', 'boxcarBlue', 'boxcar', 'boxcar'];
-const GAP = .30;
+/** CSX-like power downtown. No intermodal: double-stack clearance through the downtown cut is unverified. */
+export const DOWNTOWN_PROFILE: LineProfile = { railroad: 'csx', recipes: { manifest: 0.65, intermodal: 0, unit: 0.35 } };
+export const DOWNTOWN_LINE = 'Atlanta Terminal Subdivision';
+const LINE_ID = 'csx:downtown';
+/** One passage per slot, alternating direction. Fixed from the epoch so every tier and reload
+ * agrees on the slot; long enough for the longest train to cross the mapped track (asserted). */
+export const DOWNTOWN_SLOT_MS = 15 * 60 * 1000;
+export const DOWNTOWN_ENTRY_MS = ENTRY_MS;
+const MIN_SECTION_M = 12;
 
 function visibleSections(runs: FreightTreadPoint[][]) {
   const oriented = runs.filter(run => run.length >= 2).map(run =>
@@ -22,9 +30,9 @@ function visibleSections(runs: FreightTreadPoint[][]) {
       sections.push([...run]);
     }
   }
-  // A sliver left by a terrain opening cannot establish even one vehicle’s two truck positions.
-  const minSupport = Math.min(...CONSIST.map(kind => FREIGHT_TRUCK_SPACING[kind]));
-  return sections.filter(section => section[section.length - 1].s - section[0].s >= minSupport);
+  // A sliver left by a terrain opening cannot establish a road car's two truck positions. Fixed at the
+  // boxcar's 12 m truck spacing so a shorter switcher in the consist doesn't expose new slivers.
+  return sections.filter(section => section[section.length - 1].s - section[0].s >= MIN_SECTION_M);
 }
 
 /** Sample the drawn tread between trucks. Just outside an opening, extrapolate so the
@@ -54,15 +62,20 @@ export class CityFreight {
   private nose = new THREE.Vector3();
   private tail = new THREE.Vector3();
   private orientation = new THREE.Matrix4();
-  private periodM: number;
+  private passages = new Map<number, Passage>();
+  /** Total mapped length (start of the first section to the end of the last). */
+  readonly spanM: number;
+  private firstS: number;
   visibleCars = 0;
+  draws = 0;
 
-  constructor(treads: FreightTreadPoint[][], private edges: THREE.Plane[], instanced = true) {
-    this.batches = new FreightBatches(CONSIST, instanced);
+  constructor(treads: FreightTreadPoint[][], private edges: THREE.Plane[], low = false) {
+    this.batches = new FreightBatches(low);
     this.sections = visibleSections(treads).map(points => this.makeSection(points));
-    const end = this.sections[this.sections.length - 1]?.end ?? 0;
-    const trainLength = CONSIST.reduce((sum, kind) => sum + FREIGHT_LENGTH[kind] + GAP, 0);
-    this.periodM = end + trainLength + SPEED_MPS * 60; // leave the board empty between circuits
+    this.firstS = this.sections[0]?.start ?? 0;
+    this.spanM = (this.sections[this.sections.length - 1]?.end ?? 0) - this.firstS;
+    const needed = (this.spanM + maxTrainLength(DOWNTOWN_PROFILE)) / SPEED_MPS * 1000;
+    if (needed > DOWNTOWN_SLOT_MS) console.warn(`Downtown freight slot is too short: ${Math.round(needed / 1000)} s needed`);
   }
 
   private makeSection(points: FreightTreadPoint[]) {
@@ -73,48 +86,65 @@ export class CityFreight {
     const materials = [[], [startCut], [endCut], [startCut, endCut]].map(cuts =>
       new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: [...this.edges, ...cuts] }));
     this.materials.push(...materials);
-    return { points, start: points[0].s, end: points[last].s, cars: new Map<number, THREE.Object3D & { material: THREE.Material }>(), materials };
+    const poses = Array.from({ length: MAX_UNITS }, () => {
+      const pose = this.batches.createPose(materials[0]);
+      pose.userData.trainId = 'illustrative:freight:downtown';
+      pose.userData.line = DOWNTOWN_LINE;
+      pose.userData.railroad = 'csx';
+      return pose;
+    });
+    return { points, start: points[0].s, end: points[last].s, poses, materials };
+  }
+
+  passage(slot: number) {
+    let p = this.passages.get(slot);
+    if (!p) {
+      if (this.passages.size > 64) this.passages.clear();
+      this.passages.set(slot, (p = planPassage(DOWNTOWN_PROFILE, slot, LINE_ID)));
+    }
+    return p;
   }
 
   update(clockMs: number) {
-    const travelled = (clockMs - ENTRY_MS) * SPEED_MPS / 1000;
-    const head = THREE.MathUtils.euclideanModulo(travelled, this.periodM);
+    const since = clockMs - ENTRY_MS;
+    const slot = Math.floor(since / DOWNTOWN_SLOT_MS);
+    const passage = this.passage(slot);
+    const travelled = (since - slot * DOWNTOWN_SLOT_MS) * SPEED_MPS / 1000;
+    // Even slots run up the chainage, odd slots down it. `head` is the lead's front coupler.
+    const dir = slot % 2 ? -1 : 1;
+    const head = dir === 1 ? this.firstS + travelled : this.firstS + this.spanM - travelled;
+    const summary = passageSummary(passage);
     this.visibleCars = 0;
     this.batches.begin();
     for (const section of this.sections) {
       let front = head;
-      for (const [i, kind] of CONSIST.entries()) {
-        const length = FREIGHT_LENGTH[kind];
-        const rear = front - length;
-        const center = (front + rear) / 2;
-        const reachesStart = front > section.start;
-        const beforeEnd = rear < section.end;
-        let car = section.cars.get(i);
-        if (reachesStart && beforeEnd) {
-          const cut = Number(rear < section.start) + 2 * Number(front > section.end);
-          if (!car) {
-            car = this.batches.createCar(kind, section.materials[cut]);
-            car.userData.trainId = 'illustrative:freight:downtown';
-            car.userData.lengthM = length;
-            section.cars.set(i, car);
-          }
-          car.visible = true;
-          car.material = section.materials[cut];
-          const truck = FREIGHT_TRUCK_SPACING[kind] / 2;
-          sample(section.points, center + truck, this.nose);
-          sample(section.points, center - truck, this.tail);
-          car.position.addVectors(this.nose, this.tail).multiplyScalar(.5);
-          car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.nose, this.tail, car.up));
-          if (i === 1) car.rotateY(Math.PI);
-          this.batches.append(kind, car);
-          this.visibleCars++;
-        } else if (car) {
-          car.visible = false;
-        }
-        front = rear - GAP;
-      }
+      section.poses.forEach((car, i) => {
+        const unit = passage.units[i];
+        if (!unit) { car.visible = false; return; }
+        const length = FREIGHT_LENGTH[unit.kind];
+        const center = front - dir * length / 2;
+        front -= dir * (length + COUPLER_GAP);
+        const lo = center - length / 2, hi = center + length / 2;
+        if (hi <= section.start || lo >= section.end) { car.visible = false; return; }
+        const cut = Number(lo < section.start) + 2 * Number(hi > section.end);
+        car.visible = true;
+        car.material = section.materials[cut];
+        car.userData.lengthM = length;
+        car.userData.kind = unit.kind;
+        car.userData.consist = summary;
+        car.userData.lead = passage.units[0].kind;
+        // The nose truck leads in the direction of travel; flipped units run the other way round.
+        const truck = dir * FREIGHT_TRUCK_SPACING[unit.kind] / 2;
+        sample(section.points, center + truck, this.nose);
+        sample(section.points, center - truck, this.tail);
+        car.position.addVectors(this.nose, this.tail).multiplyScalar(.5);
+        car.quaternion.setFromRotationMatrix(this.orientation.lookAt(this.nose, this.tail, car.up));
+        if (unit.flip) car.rotateY(Math.PI);
+        this.batches.append(unit.kind, car);
+        this.visibleCars++;
+      });
     }
-    this.batches.finish();
+    this.draws = this.batches.finish();
   }
 
   dispose() {
