@@ -578,6 +578,18 @@ function yards(plans: Map<string, Plan>, all: VBuilding[], ground: (x: number, z
       const ys = [y(p0[0] + nx, p0[1] + nz, .04), y(p1[0] + nx, p1[1] + nz, .04), y(p1[0] - nx, p1[1] - nz, .04), y(p0[0] - nx, p0[1] - nz, .04)];
       if (endHeight !== undefined && k === n - 1) ys[1] = ys[2] = endHeight;
       if (ys.some(v => v === null)) continue;
+      if (endHeight !== undefined) {
+        // Either walk triangle stays above the line between the lower edges of its cross-sections.
+        // Include a narrow margin around the edge to cover rounded mesh coordinates.
+        const margin = .025, half = w / 2 + margin;
+        const corner = (p: number[], side: number, along: number): P2 =>
+          [p[0] - uz * half * side + ux * along, p[1] + ux * half * side + uz * along];
+        const start = Math.min(ys[0]!, ys[3]!), finish = Math.min(ys[1]!, ys[2]!);
+        yields.push({
+          ring: [corner(p0,1,-margin), corner(p1,1,margin), corner(p1,-1,margin), corner(p0,-1,-margin)],
+          floor: (x,z) => start - .04 + (finish-start)*((x-p0[0])*ux+(z-p0[1])*uz)/(len/n),
+        });
+      }
       b.quad([p0[0] + nx, ys[0]!, p0[1] + nz], [p1[0] + nx, ys[1]!, p1[1] + nz], [p1[0] - nx, ys[2]!, p1[1] - nz], [p0[0] - nx, ys[3]!, p0[1] - nz], color);
     }
   };

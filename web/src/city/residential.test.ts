@@ -230,7 +230,8 @@ it('adds terraced yards only for detached Ansley houses on the high tier', () =>
   for(const quality of ['high','low'] as const){
     const yard=residential(c,undefined,ground,undefined,quality).yards()!;
     expect(yard.terraceSites.length).toBe(quality==='high'?1:0);
-    expect(yard.yields.length).toBe(quality==='high'?3:0);
+    if (quality === 'high') expect(yard.yields.length).toBeGreaterThan(3);
+    else expect(yard.yields).toHaveLength(0);
     if (quality === 'high') {
       const corners = yard.yields[2].ring.slice(2);
       const midX = (corners[0][0] + corners[1][0]) / 2;
