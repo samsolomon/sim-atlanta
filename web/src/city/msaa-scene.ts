@@ -13,7 +13,7 @@ import { Pass } from 'three/examples/jsm/postprocessing/Pass.js';
  */
 export class MsaaScenePass extends Pass {
   readonly target: THREE.WebGLRenderTarget;
-  constructor(private readonly scene: THREE.Scene, private readonly camera: THREE.Camera, samples = 4) {
+  constructor(private readonly scene: THREE.Scene, private readonly camera: THREE.Camera, samples = 2) {
     super();
     this.needsSwap = false;
     this.target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples });

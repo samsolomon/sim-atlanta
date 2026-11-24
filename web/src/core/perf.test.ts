@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { perf, targetBytes, textureBytes } from './perf';
+import { canvasBytes, perf, targetBytes, textureBytes } from './perf';
 
 describe('perf', () => {
   it('measures fps and frame-time percentiles from rAF stamps', () => {
@@ -38,6 +38,16 @@ describe('perf', () => {
     expect(textureBytes(t).gpu).toBe(256 * 128 * 4);
     const rt = new THREE.WebGLRenderTarget(100, 50, { type: THREE.HalfFloatType });
     expect(targetBytes(rt)).toBe(100 * 50 * 8 + 100 * 50 * 4);
+    // Multisampled: the sample buffers plus the single-sample textures they resolve into.
+    const ms = new THREE.WebGLRenderTarget(100, 50, { type: THREE.HalfFloatType, samples: 2 });
+    expect(targetBytes(ms)).toBe(3 * (100 * 50 * 8 + 100 * 50 * 4));
+  });
+
+  it('counts the canvas buffers, and their multisampled copies only with antialias', () => {
+    const gl = (antialias: boolean) => ({ drawingBufferWidth: 200, drawingBufferHeight: 100,
+      getContextAttributes: () => ({ antialias, depth: true, stencil: false }) as WebGLContextAttributes });
+    expect(canvasBytes(gl(false))).toBe(200 * 100 * 8);
+    expect(canvasBytes(gl(true))).toBe(200 * 100 * 8 * 5);
   });
 });
 

@@ -1250,9 +1250,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
 
   // ---- post: ink, ambient occlusion, bloom, tilt-shift, grade ------------------------------
   // High draws the scene multisampled (city/msaa-scene.ts): sub-pixel floor lines otherwise alias
-  // into bands that crawl while the camera moves. `?perf&msaa=0` keeps the unsampled scene for A/B.
+  // into bands that crawl while the camera moves. Two samples: on the M5 Air at pixel ratio 2, 2x
+  // cost about 4 ms a frame and held 60 (p95 13.3 ms); 4x cost about 6 ms and dropped frames (p95
+  // up to 20.8 ms). `?perf&msaa=0` keeps the unsampled scene for A/B, `?perf&msaa=4` the smoother one.
   const msaaParam = perfEnabled ? new URLSearchParams(location.search).get('msaa') : null;
-  const msaaSamples = low ? 0 : msaaParam === null ? 4 : Math.max(0, Math.min(8, Number(msaaParam) || 0));
+  const msaaSamples = low ? 0 : msaaParam === null ? 2 : Math.max(0, Math.min(8, Number(msaaParam) || 0));
   const msaaPass = msaaSamples ? new MsaaScenePass(scene, camera, msaaSamples) : null;
   const sceneTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
   // With the multisampled pass, post reads that pass's resolved depth, so the composer's two

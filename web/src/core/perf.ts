@@ -238,7 +238,18 @@ export function targetBytes(rt: THREE.RenderTarget) {
   let b = 0;
   for (const t of rt.textures ?? [rt.texture]) b += rt.width * rt.height * texelBytes(t.format as number, t.type as number) * Math.max(1, rt.depth ?? 1);
   if (rt.depthBuffer || rt.depthTexture) b += rt.width * rt.height * 4;
-  return b * Math.max(1, rt.samples || 1);
+  // A multisampled target keeps its samples in renderbuffers and resolves into single-sample
+  // textures of its own, so it holds both.
+  return rt.samples > 1 ? b * (rt.samples + 1) : b;
+}
+/** WebGL's default framebuffer: the canvas's colour and depth-stencil buffers, plus, when the
+ * context was made with `antialias`, the multisampled buffers it resolves from every frame
+ * (Chrome allocates 4 samples). three's inventory never sees it, but it is real GPU memory. */
+export function canvasBytes(gl: Pick<WebGL2RenderingContext, 'drawingBufferWidth' | 'drawingBufferHeight' | 'getContextAttributes'>, samples = 4) {
+  const px = gl.drawingBufferWidth * gl.drawingBufferHeight;
+  const a = gl.getContextAttributes();
+  const perSample = 4 + (a?.depth || a?.stencil ? 4 : 0);
+  return px * perSample + (a?.antialias ? px * perSample * samples : 0);
 }
 function texturesOf(material: THREE.Material, out: Set<THREE.Texture>) {
   for (const v of Object.values(material)) if (v && (v as THREE.Texture).isTexture) out.add(v as THREE.Texture);
@@ -339,6 +350,8 @@ function inventory() {
   };
   for (const x of ctx.post()) scan(x);
   for (const rt of targets) { post.textures++; post.textureBytes += targetBytes(rt); }
+  post.textures++;
+  post.textureBytes += canvasBytes(renderer.getContext());
   cats.post = post;
   const total = blank();
   for (const b of Object.values(cats)) for (const k of Object.keys(total) as (keyof Bucket)[]) total[k] += b[k];
