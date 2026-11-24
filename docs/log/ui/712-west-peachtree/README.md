@@ -8,7 +8,7 @@ The tower postdates the 2018 USGS lidar this repo samples, so City keeps the map
 
 ## Estimates
 
-- **Reveals (estimated):** one 0.9 m dark strip 4 m in from each corner on all four faces, rising from the deck roof to the parapet.
+- **Reveals (estimated):** one 0.9 m dark strip 4 m in from each end of every mapped shaft edge 16 m or longer, rising from the deck roof to the parapet. They follow the stepped south wall.
 - **Top band:** the top 7.7 m (two floors) in paler blue glass.
 - **Garage:** one dark open band per 3.2 m deck on the north, east and west faces. The north face abuts its neighbour in City.
 - **Lobby:** a glazed band on West Peachtree, lit after dark.
