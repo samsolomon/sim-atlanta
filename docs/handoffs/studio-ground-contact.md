@@ -76,7 +76,7 @@ after the coordinator reviews the sheet (not merge-on-green), and sidewalks stay
   (`pipeline/prototypes/midtown-connector/landbridge-floors.json`, 209 midtown-central nodes) in
   `surface-build.ts` nodeHeights. `samsolomon/far-slice-pool` rewrites farSurfaceSteps in the same file, so
   rebase carefully; it is a different function. Their successor re-runs the crack sampler on request.
-- #663 review (2026-11-24): fix required. The portal lid must drape on the drawn triangles
+- #663 review (2026-11-24): accepted at 294455e1 (0/1694 high, 0/1691 low at 2 cm; opt-in partial-void drape). Was: the portal lid must drape on the drawn triangles
   (max(drawn, grid) + 0.12 at the rim and past the slot end); accept at 0 audit samples on both tiers.
 - Studio Midtown's #663 (rail-gaps) adds freight tunnel portals and OpenSlots downtown. Review it when asked,
   including `audit:ground` and far-form registration.
