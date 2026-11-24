@@ -39,4 +39,5 @@ Apartments light at 34%, chosen by skin-kit `litHash(seedOf(id), face, floor, ba
 |---|---|---|
 | From the north-west, before and after, 11:30 | `cam=230,-3460,300,55,450` | [compare-day.jpg](log/ui/m-by-radius/compare-day.jpg) |
 | From the south, with the arched crown | `cam=302,-3491,0,55,450` | [compare-south.jpg](log/ui/m-by-radius/compare-south.jpg) |
+| Afternoon, 15:30, with the west face sunlit | `cam=230,-3460,300,55,450` | [afternoon.jpg](log/ui/m-by-radius/afternoon.jpg) |
 | Night, 23:30 | `cam=230,-3460,300,55,450` | [compare-night.jpg](log/ui/m-by-radius/compare-night.jpg) |
