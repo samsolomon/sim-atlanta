@@ -373,9 +373,13 @@ export function unitCards(b: FoliageBuilder, units: Unit[], seed: number, scale 
  * order) ignore the leaves: they show in the instance's bloom colour `aBloom.rgb` while its
  * bloom share `aBloom.a` is at least their order.
  */
-export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, bloomFill = 0, specks = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; bloomFill?: number; specks?: number }) {
+export function twoToneFoliage({ bloomWash = 0, bloomLift = 0, bloomFill = 0, specks = 0, sheen = 0, ...opts }: THREE.MeshLambertMaterialParameters & { bloomWash?: number; bloomLift?: number; bloomFill?: number; specks?: number; sheen?: number }) {
   const m = new THREE.MeshLambertMaterial({ vertexColors: true, ...opts });
   const textured = !!opts.map;
+  // Faceted gloss (magnolia, holly): a per-material uniform, so glossy and matte faceted crowns
+  // share one shader program (low tier has no program to spare).
+  const uSheen = { value: textured ? 0 : sheen };
+  m.userData.sheen = uSheen;
   // Which leaves exist: shared with the ink's foliage mask (userData.maskShader), so the mask
   // traces only the leaves actually drawn.
   const visibility = (sh: { vertexShader: string; fragmentShader: string }) => {
@@ -407,6 +411,26 @@ if (vChip < 0.5 && (vLeaves < 0.02 || diffuseColor.a < 1.0 - 0.44 * vLeaves - 0.
   };
   m.onBeforeCompile = (sh) => {
     visibility(sh);
+    if (!textured) {
+      // Broad facet sheen: a whole facet turned toward the sun's mirror angle brightens toward a
+      // cool white, so waxy evergreens glint in clean planes at City distance instead of
+      // speckling. Sun side only, and gone at night. Zero for matte species.
+      sh.uniforms.uSheen = uSheen;
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nuniform float uSheen;')
+        .replace('#include <tonemapping_fragment>', `#if NUM_DIR_LIGHTS > 0
+  if (uSheen > 0.0) {
+    vec3 sN = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
+    vec3 sV = normalize(vViewPosition);
+    if (dot(sN, sV) < 0.0) sN = -sN;
+    vec3 sL = directionalLights[0].direction;
+    float glint = smoothstep(0.78, 0.97, dot(sN, normalize(sL + sV))) * step(0.0, dot(sN, sL));
+    float sDay = smoothstep(0.35, 1.2, dot(directionalLights[0].color, vec3(0.3333)));
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.86, 0.93, 0.95), glint * uSheen * sDay);
+  }
+#endif
+#include <tonemapping_fragment>`);
+    }
     if (textured) {
       // The atlas sets only which leaves exist (alpha) and a light per-leaf variation; the
       // season tint sets the colour, so mipmapped edge texels can't darken the crown.

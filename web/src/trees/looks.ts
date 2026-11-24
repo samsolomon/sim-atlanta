@@ -45,6 +45,8 @@ export interface LookOption {
   squash?: number;
   /** Cluster size as a fraction of its branch mass: higher closes each mass. */
   cover?: number;
+  /** Lobes only: broad facet gloss toward the sun, 0–1 (waxy evergreens); no extra program. */
+  sheen?: number;
   /** Lobes only: sides around each mass, 3 (6 triangles, finer) or 4 (8 triangles, rounder). */
   facets?: 3 | 4;
   /** Foliage ink (vignette/ink.ts): 1–3 outline only the crown's silhouette; none outlines every facet. */
@@ -223,7 +225,7 @@ export function lookFoliage(look: Look, opt: LookOption, size: SizeClass, q: Tre
   const b = new FoliageBuilder();
   if (look.branchBloom) branchBlooms(b, look.species.form(size, q, d).segs, d, seed, look.branchBloom === 'twigs');
   if (look.branchBloom === 'crown') crownBlossoms(b, clusters, seed + 8);
-  const fruit = look.leaf === 'holly' && opt.blooms
+  const fruit = look.leaf === 'holly' && opt.blooms && opt.technique !== 'lobes'
     ? { count: opt.blooms[q], size: look.bloomSizeM ?? 0.5 } : undefined;
   if (!fruit && opt.blooms && (look.bloomColour || look.bloomColours)) blooms(b, clusters, opt.blooms[q], seed + 9, look.bloomSizeM);
   if (opt.technique === 'lobes') lobes(b, clusters, seed, opt.facets, opt.squash);
@@ -289,7 +291,7 @@ export function createLook(placements: TreePlacement[], look: Look, optionId: st
   const textured = opt.technique === 'cards' || opt.technique === 'cored';
   // Needle stars are open single triangles: both faces must draw.
   const leafMat = !textured
-    ? twoToneFoliage({ flatShading: true, bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
+    ? twoToneFoliage({ flatShading: true, sheen: opt.sheen, bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, side: opt.technique === 'stars' ? THREE.DoubleSide : THREE.FrontSide })
     : twoToneFoliage({ bloomWash: look.bloomWash, bloomLift: look.bloomLift, bloomFill: look.bloomFill, specks: (opt.specks ?? 0) * (quality === 'low' ? 0.6 : 1), map: leafAtlas(look.leaf), alphaTest: 0.5, side: THREE.DoubleSide });
   const tipMat = twoToneFoliage({ side: THREE.DoubleSide });
   const depthMat = foliageDepth(leafMat);

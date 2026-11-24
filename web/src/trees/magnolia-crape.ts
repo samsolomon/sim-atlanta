@@ -58,6 +58,10 @@ const MAGNOLIA_OPTIONS: LookOption[] = [
   // At least as many clusters as masses, so no limb ends in bare air.
   { id: 'C', label: 'Faceted clusters', technique: 'lobes', facets: 3, units: { high: 13, low: 9 }, blooms: { high: 12, low: 6 }, cover: 0.95,
     note: 'The same masses as faceted clusters with every facet inked: the house style, for comparison.' },
+  // Option A of the City art direction (Sam, 24 Nov): species identity in the faceted clump
+  // language. Gloss is a broad facet sheen, never speckle.
+  { id: 'F', label: 'Faceted gloss', technique: 'lobes', facets: 3, units: { high: 15, low: 10 }, blooms: { high: 12, low: 6 }, cover: 1.0, sheen: 0.55,
+    note: 'Faceted clusters on the dark cone, every facet inked; whole facets facing the sun glint cool white, like sun off wax, so the gloss reads from 150–400 m without speckle.' },
 ];
 
 export const southernMagnolia = broadleafSpecies({
