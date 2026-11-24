@@ -88,11 +88,12 @@ export function createAzureOnThePark(buildings: VBuilding[], grid: GroundGrid, q
     for (const c of [w, length - w]) for (let j = 1; j < floors; j++) {
       const yy = towerLo + j * pitch;
       const q = (u: number, out: number, h: number) => at(c + u, h, out);
-      // A bright slab nosing keeps the stacks legible on the shaded faces, on both tiers.
+      // A bright slab nosing keeps the stacks legible on the shaded faces, on both tiers. Its top
+      // runs back to the wall, so the slab hangs from the tower rather than floating off it.
       shell.body.quad(q(-w, d + 0.02, yy - 0.05), q(-w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(w, d + 0.02, yy - 0.05), '#f2f3f2');
+      shell.body.quad(q(-w, 0, yy + 0.25), q(w, 0, yy + 0.25), q(w, d + 0.02, yy + 0.25), q(-w, d + 0.02, yy + 0.25), high ? '#e4e5e4' : '#f2f3f2');
       if (!high) continue;
-      shell.body.quad(q(-w, 0.02, yy + 0.2), q(w, 0.02, yy + 0.2), q(w, d, yy + 0.2), q(-w, d, yy + 0.2), '#e4e5e4');
-      shell.body.quad(q(-w, 0.02, yy), q(-w, d, yy), q(w, d, yy), q(w, 0.02, yy), '#c2c4c4');
+      shell.body.quad(q(-w, 0, yy - 0.05), q(-w, d + 0.02, yy - 0.05), q(w, d + 0.02, yy - 0.05), q(w, 0, yy - 0.05), '#c2c4c4');
       shell.body.quad(q(-w, d, yy + 0.25), q(-w, d, yy + 1.1), q(w, d, yy + 1.1), q(w, d, yy + 0.25), '#3a3f44');
     }
   });
