@@ -31,3 +31,27 @@ it('draws the five cover groups in one shared batch within the structural triang
  const builder=new Builder();drawNorthAve(city,grid,builder);
  expect(NORTH_AVE.groups).toHaveLength(5);expect(builder.pos.length/9).toBeLessThan(4000);expect(builder.pos.length/9).toBeGreaterThan(200);
 });
+
+it('keeps both carriageways clear beneath each rendered soffit and pier cap', () => {
+  const mesh = new Builder();
+  drawNorthAve(city, grid, mesh);
+  const zero = grid.manifest.vertical.sceneZeroNavd88M;
+  for (const [index, [start, end]] of NORTH_AVE.groups.entries()) {
+    const clearance = index === 0 ? 4.69 : 4.5;
+    let soffitFaces = 0;
+    for (let i = 0; i < mesh.pos.length; i += 9) {
+      const vertices = [i, i + 3, i + 6].map(j => {
+        const [s, t] = northAveLocal(mesh.pos[j], mesh.pos[j + 2]);
+        return { s, t, height: mesh.pos[j + 1] + zero - northAveFloor(s) - .04 };
+      });
+      if (vertices.every(v => v.s < start - .001) || vertices.every(v => v.s > end + .001)) continue;
+      for (const [left, right] of [[-9, -.55], [.55, 9]]) {
+        if (vertices.every(v => v.t <= left + .001) || vertices.every(v => v.t >= right - .001)) continue;
+        if (vertices.every(v => v.height < .15)) continue;
+        expect(Math.min(...vertices.map(v => v.height))).toBeGreaterThanOrEqual(clearance - .001);
+        if (vertices.every(v => Math.abs(v.height - clearance) < .001)) soffitFaces++;
+      }
+    }
+    expect(soffitFaces).toBeGreaterThan(0);
+  }
+});

@@ -76,9 +76,12 @@ export function drawNorthAve(city:TerrainCity, grid:GroundGrid, out:Builder) {
     }
   }
   for(const [i,[a,b]] of NORTH_AVE.groups.entries()){
-    const top=(s:number,t:number)=>i===0?302.32:i===1?northAveRail(t):[0,0,304.24,304.03,304.52][i];
-    const underside=(s:number)=>northAveFloor(s)+(i===0?4.69:4.5);
-    slab(a,b,-11.3,11.3,top,underside,'#a9a396');
+    const top=(s:number,t:number)=>i===0?302.32:i===1?northAveRail(t)-.45:[0,0,304.24,304.03,304.52][i];
+    const underside=(s:number)=>northAveFloor(s)+.04+(i===0?4.69:4.5);
+    slab(a,b,-11.3,11.3,top,underside,i===0?'#525354':'#a9a396');
+    if(i===0){
+      for(const t of [-9,-3,3,9])slab(9.45,9.55,t-1.5,t+1.5,()=>302.33,()=>302.32,'#d4cba7');
+    }
     // Two road bays: columns occupy only the reserved median, with wall abutments outside shoulders.
     for(const s of [a+.6,b-.6]) for(const t of [0,-10.85,10.85]) {
       slab(s-.35,s+.35,t-.35,t+.35,underside,q=>northAveFloor(q)+.18,'#918c80');
