@@ -95,7 +95,7 @@ if (barkDetail > 0.) {
 }
 
 export const riverBirchLook: Look = {
-  species: riverBirch, habit, leaf: 'oval', palette, barkMaterial, cardLeafM: 0.18, lowLift: -0.013,
+  species: riverBirch, preferred: 'A', habit, leaf: 'oval', palette, barkMaterial, cardLeafM: 0.18, lowLift: -0.013,
   options: [{ id: 'A', label: 'Paper-bark clump', technique: 'cards', ink: 2,
     units: { high: 24, low: 16 }, cover: 0.81,
     note: 'Three slender stems with salmon and cream bark, fine green sprays and soft yellow autumn foliage.' }],

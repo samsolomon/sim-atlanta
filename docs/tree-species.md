@@ -946,7 +946,7 @@ A uses the existing oval atlas and fine-scale leaf cards. Bark colour is procedu
 
 ### River birch
 
-`web/src/trees/river-birch.ts`, *Betula nigra*. The A study depicts a three-stem clump with an open crown, fine green sprays, salmon-and-cream bark, and soft yellow autumn foliage. The existing oval atlas approximates the pointed leaves at Lab scale. Catkins, individual serrations and the physical relief of curling bark are outside this first study. [Seasonal and distance sheet](log/ui/tree-species/options-river-birch.jpg).
+`web/src/trees/river-birch.ts`, *Betula nigra*. Sam approved A as the Model Lab default. It depicts a three-stem clump with an open crown, fine green sprays, salmon-and-cream bark, and soft yellow autumn foliage. The existing oval atlas approximates the pointed leaves at Lab scale. Catkins, individual serrations and the physical relief of curling bark are outside this first study. [Seasonal and distance sheet](log/ui/tree-species/options-river-birch.jpg).
 
 [NC State Plant Toolbox](https://plants.ces.ncsu.edu/plants/betula-nigra/) documents the multi-trunk habit, papery salmon-to-rust bark, spring catkins and modest yellow autumn colour. [Virginia Tech Dendrology](https://dendro.cnre.vt.edu/dendrology/carddetail.cfm?ID=13) describes bark that peels horizontally and becomes coarser with age. The sheet shows Jim Robbins’s spring form photo (CC BY-NC-ND 4.0, entire frame) and Kathleen Moore’s bark photo (CC BY 2.0, cropped), both from the NC State Plant Toolbox. The night frame is the Lab’s lighting treatment.
 
