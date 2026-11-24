@@ -3416,3 +3416,15 @@ night photograph, so the lit share of rooms is an estimate.
 [South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
 [north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
 
+### 2026-11-24 — Two Midtown Plaza's ribbon glass
+
+Two Midtown Plaza (1986) now wraps its half-round west end in blue reflective
+ribbon glass, with a maroon band at every floor and a dark red granite shaft
+where the curve meets the straight slab. The base is red granite. The mapped
+parts carry separate lidar roofs: 78 m on the slab and 73 m on the round end,
+the step visible in the 2009 dusk photograph. Listings disagree between 17 and
+20 storeys. The photographs show 15 glass bands over two granite storeys, so the
+model follows them. At night the lobby drum glows and the offices stay mostly
+dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
+[night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
+

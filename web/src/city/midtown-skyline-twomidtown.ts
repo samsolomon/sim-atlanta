@@ -19,7 +19,7 @@ type Shell = NonNullable<ReturnType<typeof localLandmarkShell>>;
 // published 20 storeys is likely high (see docs/two-midtown-plaza.md).
 
 const BASE = 9, BANDS = 15;
-const GRANITE = '#8a4844', PINK = '#a8706a', GLASS = '#5d82ad', BAND = '#6b3a3c', LOBBY = '#e8dcc4';
+const GRANITE = '#8a4844', PINK = '#a8706a', GLASS = '#5d82ad', BAND = '#6b3a3c', LOBBY = '#9fb2bf';
 
 export function twoMidtownPlaza(shell: Shell) {
   const { body, lights } = shell;
