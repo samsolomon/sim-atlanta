@@ -33,4 +33,18 @@ it('replaces the Loews site within the landmark budget and steps the tower as th
   expect(roof(756, -3282)).toBeCloseTo(411.5, 0); // north-west block on the Peachtree side
   expect(roof(784, -3266)).toBeCloseTo(405, 0); // east block
   expect(roof(740, -3266)).toBeCloseTo(369, 0); // west wing
+  // The identifiers from LoewsMidtown.jpg are actually built: the dark recess band on the
+  // south-west face, and the sawtooth wedges standing proud of the narrow west face.
+  const colours = new Set<string>();
+  for (const child of model.group.children) {
+    const c = ((child as Mesh).geometry as BufferGeometry).getAttribute('color');
+    for (let i = 0; i < c.count; i += 3) colours.add([c.getX(i), c.getY(i), c.getZ(i)].map(v => v.toFixed(3)).join());
+  }
+  const hex = (h: string) => { const v = parseInt(h.slice(1), 16); return [v >> 16, (v >> 8) & 255, v & 255].map(n => Math.pow(n / 255, 2.2)); };
+  expect([...colours].some(k => k.split(',').every((v, i) => Math.abs(+v - hex('#3c4347')[i]) < 0.01))).toBe(true);
+  const side = (x: number, z: number, y: number) =>
+    new Raycaster(new Vector3(x - 30, y - 300, z), new Vector3(1, 0, 0)).intersectObject(model.group)[0]?.point.x;
+  // A ray from the west at mid-height meets a wedge before the wall it stands on.
+  const wedgeHit = Math.min(...[-3283, -3282, -3281, -3280].map(z => side(745, z, 330) ?? Infinity));
+  expect(wedgeHit).toBeLessThan(742.5); // the wall line is at x ~ 743 here
 });
