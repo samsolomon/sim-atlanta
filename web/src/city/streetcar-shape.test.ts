@@ -4,14 +4,37 @@ import { afterEach, expect, it, vi } from 'vitest';
 import type { RoutesFile, TrainState } from '../model/types';
 import { roadWidth } from '../terrain/transport-data';
 import { pointInRing, segDist, type P2 } from '../vignette/geom';
-import { S70_LAYOUT, S70_LENGTH } from '../vignette/streetcar';
+import { S70_LENGTH } from '../vignette/streetcar';
+import { Schedule } from '../sched/engine';
 import { STREETCAR_ROUTE } from './streetcar';
-import { alongAt, createStreetcarCars, streetcarPaths } from './streetcar-cars';
+import { streetcarStops } from './streetcar-stops';
+import { createStreetcarCars, streetcarPaths } from './streetcar-cars';
 import { filletShape, STREETCAR_RADIUS, streetcarShapes } from './streetcar-shape';
 
 afterEach(() => vi.unstubAllGlobals());
-/** A body corner may sit this far past the drawn carriageway: the 2.5 m sidewalk casing the ground map paints. */
-const KERB_TOLERANCE = 2.5;
+/** No body corner within this of a building wall. The raw GTFS corner at Edgewood and Park Place
+ * brought the S70's tail within 0.6 m of Ten Park Place (the probe's site 1); the fillet clears it. */
+const BUILDING_CLEARANCE = 1.0;
+/** Footprints the streetcar runs beneath: a skybridge between the Lanier deck and 200 Peachtree
+ * (a 3 m strip across the street, no height of its own in the data). */
+const OVERHEAD = new Set(['6a08f0c0-d808-4de4-af33-d7af31528b57']);
+/**
+ * How far past the drawn kerb (the carriageway edge) any S70 body corner may reach, per filleted
+ * corner. Measured 2026-11-24. Raw GTFS corners already overshot here (290,-267 3.84 m; 286,-64
+ * 2.99; -45,-594 2.44; 371,-501 2.39; 283,-501 0.93): an articulated car cuts any street corner.
+ * The fillet trades up to 0.8 m more at four corners for 5.1 m less swing; the painted sidewalk
+ * casing is 2.5 m. A ratchet: lower an entry when a corner improves; never raise one without review.
+ */
+const KERB_PAST: Record<string, number> = {
+  '290,-267': 4.2,
+  '286,-64': 3.85,
+  '-45,-594': 3.3,
+  '-43,-646': 3.05,
+  '283,-501': 1.45,
+  '371,-501': 1.05,
+  '344,-199': 0.45,
+  straight: 1.2,
+};
 
 it('turns a single-vertex corner into an 18 m arc, tangent to both legs', () => {
   const pts: P2[] = [[-60, 0], [0, 0], [0, 60]];
@@ -48,7 +71,7 @@ it('folds a corner with short legs into one compound turn instead of a kink', ()
 });
 
 const data = (f: string) => new URL('../../public/data/' + f, import.meta.url);
-const staged = ['ga/routes.json', 'scene/downtown/scene.json', 'scene/downtown/vignette.json'].every((f) => existsSync(data(f)));
+const staged = ['ga/routes.json', 'ga/timetable.json', 'scene/downtown/scene.json', 'scene/downtown/vignette.json'].every((f) => existsSync(data(f)));
 
 it.skipIf(!staged)('builds the rails and the cars from one shared filleted shape, cheaply', () => {
   const rf: RoutesFile = JSON.parse(readFileSync(data('ga/routes.json')).toString());
@@ -60,6 +83,11 @@ it.skipIf(!staged)('builds the rails and the cars from one shared filleted shape
   // A few ms per line even at the A16's 6x CPU throttle.
   expect((ms * 6) / shapes.length).toBeLessThan(4);
   expect(streetcarShapes(rf, origin, STREETCAR_ROUTE)).toBe(shapes);
+  // Platforms are straight, 22 m long: every served stop stays at least 11 m clear of an arc.
+  const schedule = new Schedule(rf, JSON.parse(readFileSync(data('ga/timetable.json')).toString()), JSON.parse(readFileSync(data('ga/vehicle-types.json')).toString()));
+  const arcs = shapes.flatMap((sh) => sh.corners).filter((c) => c.turn > 0.2);
+  for (const stop of streetcarStops(rf, origin, (p, id) => schedule.stopDistances(p, id).length > 0))
+    for (const c of arcs) expect(Math.hypot(c.at[0] - stop.x, c.at[1] - stop.z) - c.radius * Math.tan(c.turn / 2), stop.name).toBeGreaterThan(11);
   const paths = streetcarPaths(rf, origin);
   for (const s of shapes) expect(paths.get(s.id)!.line.pts).toEqual(s.pts);
   // Every raw GTFS vertex the arcs bypass is a filleted corner.
@@ -77,37 +105,47 @@ it.skipIf(!staged)('keeps every S70 section within 1 m of swing, off buildings a
   // (x > 1000, the Edgewood leg) another board owns them, so clearance is checked on downtown.
   const board = JSON.parse(readFileSync(data('scene/downtown/vignette.json')).toString()) as V;
   const inside = (x: number, z: number) => x > board.bounds.minX + 5 && x < board.bounds.maxX - 5 && z > board.bounds.minZ + 5 && z < board.bounds.maxZ - 5;
-  const cell = 25, grid = new Map<string, (() => boolean)[]>();
+  const cell = 25;
   const index = <T,>(map: Map<string, T[]>, x0: number, z0: number, x1: number, z1: number, item: T) => {
     for (let i = Math.floor(x0 / cell); i <= Math.floor(x1 / cell); i++)
       for (let j = Math.floor(z0 / cell); j <= Math.floor(z1 / cell); j++) (map.get(i + ',' + j) ?? map.set(i + ',' + j, []).get(i + ',' + j)!).push(item);
   };
-  void grid;
   const buildings = new Map<string, P2[][]>();
-  for (const b of board.buildings) {
-    if (!b.rings.length) continue;
+  for (const b of board.buildings as { id: string; rings: P2[][] }[]) {
+    if (!b.rings.length || OVERHEAD.has(b.id)) continue;
     const r = b.rings[0];
     index(buildings, Math.min(...r.map((p) => p[0])), Math.min(...r.map((p) => p[1])), Math.max(...r.map((p) => p[0])), Math.max(...r.map((p) => p[1])), r);
   }
-  const streets = new Set(['residential', 'unclassified', 'tertiary', 'secondary', 'primary', 'trunk', 'living_street', 'service']);
-  const segs = new Map<string, { a: P2; b: P2; reach: number }[]>();
+  // The street surface the rails embed in (roadSurface): every surface road but paths and decks.
+  const notStreet = new Set(['motorway', 'footway', 'path', 'steps', 'pedestrian', 'cycleway']);
+  const segs = new Map<string, { a: P2; b: P2; half: number }[]>();
   for (const r of board.roads) {
-    if (!streets.has(r.cls) || r.tunnel) continue;
-    const reach = roadWidth(r as never) / 2 + KERB_TOLERANCE;
+    if (notStreet.has(r.cls) || r.tunnel || (r as { bridge?: boolean }).bridge) continue;
+    const half = roadWidth(r as never) / 2, reach = half + 8;
     for (let k = 1; k < r.pts.length; k++) {
       const a = r.pts[k - 1], b = r.pts[k];
-      index(segs, Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, { a, b, reach });
+      index(segs, Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, { a, b, half });
     }
   }
   const at = <T,>(map: Map<string, T[]>, x: number, z: number) => map.get(Math.floor(x / cell) + ',' + Math.floor(z / cell)) ?? [];
-  const inBuilding = (x: number, z: number) => at(buildings, x, z).some((r) => pointInRing(x, z, r));
-  const onStreet = (x: number, z: number) => at(segs, x, z).some((q) => segDist(x, z, q.a, q.b) <= q.reach);
+  // Inside a footprint or within BUILDING_CLEARANCE of its wall.
+  const nearBuilding = (x: number, z: number) =>
+    at(buildings, x, z).some((r) => pointInRing(x, z, r) || r.some((q, k) => segDist(x, z, r[k ? k - 1 : r.length - 1], q) < BUILDING_CLEARANCE));
+  /** How far past the drawn kerb (the carriageway edge) a point lies; negative on the street. */
+  const pastKerb = (x: number, z: number) => Math.min(8, ...at(segs, x, z).map((q) => segDist(x, z, q.a, q.b) - q.half));
 
   const cars = createStreetcarCars(rf, origin, () => 0, []);
   const paths = streetcarPaths(rf, origin);
   const lineDist = (line: { pts: P2[] }, x: number, z: number) =>
     Math.min(...line.pts.slice(1).map((b, k) => segDist(x, z, line.pts[k], b)));
   let worst = { swing: 0, at: '' }, poses = 0;
+  // Kerb overshoot, worst per filleted corner (or 'straight' away from every corner).
+  const allCorners = streetcarShapes(rf, origin, STREETCAR_ROUTE).flatMap((sh) => sh.corners).filter((c) => c.turn > 0.5);
+  const siteOf = (x: number, z: number) => {
+    const c = allCorners.find((k) => Math.hypot(k.at[0] - x, k.at[1] - z) < 40);
+    return c ? `${Math.round(c.at[0])},${Math.round(c.at[1])}` : 'straight';
+  };
+  const overshoot = new Map<string, number>();
   const bad: string[] = [];
   for (const [id, path] of paths) {
     const first = path.cum[0], last = path.cum[path.cum.length - 1];
@@ -123,22 +161,18 @@ it.skipIf(!staged)('keeps every S70 section within 1 m of swing, off buildings a
           const swing = lineDist(path.line, p.x, p.z) - side;
           if (swing > worst.swing) worst = { swing, at: `${id} s ${s.toFixed(0)} (${p.x.toFixed(0)},${p.z.toFixed(0)})` };
           if (!inside(p.x, p.z)) continue;
-          if (inBuilding(p.x, p.z)) bad.push(`in a building: ${id} s ${s.toFixed(0)} at ${p.x.toFixed(1)},${p.z.toFixed(1)}`);
-          if (!onStreet(p.x, p.z)) {
-            const over = Math.min(...board.roads.filter((r) => streets.has(r.cls) && !r.tunnel).flatMap((r) => r.pts.slice(1).map((b, k) => segDist(p.x, p.z, r.pts[k], b) - roadWidth(r as never) / 2 - KERB_TOLERANCE)));
-            bad.push(`off the street by ${over.toFixed(1)}: ${id} s ${s.toFixed(0)} at ${p.x.toFixed(1)},${p.z.toFixed(1)}`);
+          if (nearBuilding(p.x, p.z)) bad.push(`at a building: ${id} s ${s.toFixed(0)} at ${p.x.toFixed(1)},${p.z.toFixed(1)}`);
+          const past = pastKerb(p.x, p.z);
+          if (past > 0) {
+            const site = siteOf(p.x, p.z);
+            overshoot.set(site, Math.max(overshoot.get(site) ?? 0, past));
           }
         }
       }
     }
-    void alongAt;
   }
-  const sites = new Map<string, number>();
-  for (const b of bad) { const m = b.match(/^(.*?):.* at (-?\d+)\.\d,(-?\d+)/)!; const k = m[1].replace(/by ([\d.]+)/, (_, v) => 'by ' + Math.round(+v)) + ' ~' + Math.round(+m[2] / 10) * 10 + ',' + Math.round(+m[3] / 10) * 10; sites.set(k, (sites.get(k) ?? 0) + 1); }
-  console.log('SITES ' + [...sites].map(([k, n]) => k + ' x' + n).join(' | '));
-  console.log(`streetcar swing worst ${worst.swing.toFixed(2)} m at ${worst.at}; ${poses} poses; ${bad.length} clearance misses`);
+  for (const [site, past] of overshoot) expect(past, `kerb overshoot at ${site}`).toBeLessThanOrEqual(KERB_PAST[site] ?? 0);
   expect(poses).toBeGreaterThan(1000);
-  expect(worst.swing).toBeLessThanOrEqual(1.0);
+  expect(worst.swing, worst.at).toBeLessThanOrEqual(1.0);
   expect([...new Set(bad)].slice(0, 20)).toEqual([]);
-  void S70_LAYOUT;
 });

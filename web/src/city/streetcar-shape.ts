@@ -203,6 +203,61 @@ export function streetcarShapes(rf: Pick<RoutesFile, 'paths'>, origin: Origin, r
       for (let i = 0; i + 1 < p.coords.length; i += 2) raw.push(lonLatToScene(origin, p.coords[i], p.coords[i + 1]));
       return { id: p.id, ...filletShape(raw, p.cum) };
     });
+  for (const shape of shapes) for (const end of ['start', 'end'] as const) joinEnd(shape, end, shapes);
   byOrigin.set(key, shapes);
   return shapes;
+}
+
+const nearestOn = (pts: readonly P2[], x: number, z: number) => {
+  let best = { d: Infinity, k: 0 };
+  for (let k = 1; k < pts.length; k++) {
+    const [ax, az] = pts[k - 1],
+      [bx, bz] = pts[k];
+    const dx = bx - ax,
+      dz = bz - az,
+      t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const d = Math.hypot(x - ax - t * dx, z - az - t * dz);
+    if (d < best.d) best = { d, k };
+  }
+  return best;
+};
+
+/**
+ * A path that ends at a corner another path turns through (the loop's seam at Centennial Olympic
+ * Park) can't fillet its own last vertex. Its end instead follows the other path's arc, from where
+ * the two meet to the arc's closest approach to the raw corner, so its last cars stay on the rails.
+ */
+function joinEnd(shape: StreetcarShape, end: 'start' | 'end', shapes: readonly StreetcarShape[]) {
+  const pts = end === 'end' ? shape.pts : [...shape.pts].reverse();
+  const cum = end === 'end' ? shape.cum : [...shape.cum].reverse();
+  const tip = pts[pts.length - 1];
+  for (const other of shapes) {
+    if (other === shape || !other.corners.some((c) => Math.hypot(c.at[0] - tip[0], c.at[1] - tip[1]) < 1)) continue;
+    if (nearestOn(other.pts, tip[0], tip[1]).d < 0.3) continue;
+    // Walk back to where this path rejoins the other's drawn line.
+    let k = pts.length - 1;
+    while (k > 0 && nearestOn(other.pts, pts[k][0], pts[k][1]).d > 0.3) k--;
+    if (k === 0 || Math.hypot(pts[k][0] - tip[0], pts[k][1] - tip[1]) > 40) continue;
+    const from = nearestOn(other.pts, pts[k][0], pts[k][1]).k,
+      to = nearestOn(other.pts, tip[0], tip[1]).k;
+    const step = from <= to ? 1 : -1;
+    // From this path's own point where they meet, along the other's line to the closest approach.
+    const tail: P2[] = [pts[k]];
+    for (let j = from; j !== to + step; j += step) {
+      const q = other.pts[j], last = tail[tail.length - 1];
+      if (Math.hypot(q[0] - last[0], q[1] - last[1]) > 0.01) tail.push(q);
+    }
+    if (tail.length < 2) continue;
+    const kept = pts.slice(0, k + 1).concat(tail.slice(1));
+    // Spread the dropped stretch's GTFS distance over the spliced tail by length.
+    const lens = [0];
+    for (let j = 1; j < tail.length; j++) lens.push(lens[j - 1] + Math.hypot(tail[j][0] - tail[j - 1][0], tail[j][1] - tail[j - 1][1]));
+    const c0 = cum[k],
+      c1 = cum[cum.length - 1],
+      total = lens[lens.length - 1] || 1;
+    const keptCum = cum.slice(0, k + 1).concat(lens.slice(1).map((l) => c0 + ((c1 - c0) * l) / total));
+    shape.pts = end === 'end' ? kept : kept.reverse();
+    shape.cum = end === 'end' ? keptCum : keptCum.reverse();
+    return;
+  }
 }
