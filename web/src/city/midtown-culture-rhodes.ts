@@ -135,7 +135,7 @@ export function createRhodesHall(
     // Stone only: dark panes and red roofing do not become emissive.
     if (colour.getY(i) <= 0.25 || Math.abs(colour.getX(i) - colour.getY(i)) >= 0.15) continue;
     if (i >= towerStart && i < towerEnd) {
-      wash[i] = 0.35 * Math.max(0, (20 - y) / 19.5);
+      wash[i] = 0.5 * Math.max(0, (20 - y) / 19.5);
     } else {
       wash[i] = x > -8 && x < 1 && z > 3 ? (i < porchStart ? 0.75 : 1) * Math.max(0.25, 1 - y / 30) : z > 8 ? 0.6 : 0;
     }

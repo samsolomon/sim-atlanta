@@ -42,7 +42,7 @@ it('claims the archived Rhodes footprint, keeps the tower in bounds and carves t
   }
   expect(porchEdgeVertices).toBeGreaterThan(0);
   expect(crownVertices).toBeGreaterThan(0);
-  expect(basePeak).toBeCloseTo(0.35, 5);
+  expect(basePeak).toBeCloseTo(0.5, 5);
   // The roof ridge sits behind the tower: floodlighting must not light that roof.
   for (let i = 0; i < positions.count; i++)
     if (positions.getZ(i) < 0 && positions.getY(i) >= 15) expect(wash.getX(i)).toBe(0);

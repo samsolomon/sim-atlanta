@@ -91,3 +91,7 @@ The exact strength and cutoff height are artistic estimates. Tower vertex ranges
 keep both studies clear of the porch, rounded bay and plinth.
 
 [Matched high- and low-tier choice sheet](log/ui/rhodes-uplight/choice.jpg)
+
+Sam selected the 50% reduction. The comparison with the previous 25% reduction
+uses the same 21:00 camera at [high](log/ui/rhodes-uplight/compare-high-night.jpg)
+and [low](log/ui/rhodes-uplight/compare-low-night.jpg) quality.
