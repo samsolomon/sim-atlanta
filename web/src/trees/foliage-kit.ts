@@ -176,9 +176,10 @@ export function leafAtlas(shape: LeafShape): THREE.Texture | null {
   for (let cell = 0; cell < 4; cell++) {
     const ox = (cell % 2) * CELL, oy = Math.floor(cell / 2) * CELL;
     if (cell === SOLID) {
+      const branchFans = shape === 'cordate' || shape === 'oval';
       g.fillStyle = `rgba(196,196,196,${CORE_ALPHA})`;
-      g.fillRect(ox + 2, oy + 2, CELL - 4, (shape === 'cordate' ? CELL * 0.54 : CELL) - 4);
-      if (shape === 'cordate') paintBranchFans(g, ox, oy);
+      g.fillRect(ox + 2, oy + 2, CELL - 4, (branchFans ? CELL * 0.54 : CELL) - 4);
+      if (branchFans) paintBranchFans(g, ox, oy);
       continue;
     }
     // Cells 0–2 paint the same spray with coarse, medium and fine leaves (LEAF_SCALE).

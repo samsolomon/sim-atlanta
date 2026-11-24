@@ -84,7 +84,7 @@ export interface Look {
   /** Several bloom colours (crape myrtle): each tree takes one by its seed. */
   bloomColours?: string[];
   bloomSizeM?: number;
-  /** Twig fans and flowers follow the wood using paired tiles in the cordate atlas. */
+  /** Twig fans and flowers follow the wood using paired tiles in the cordate or oval atlas. */
   branchBloom?: boolean;
   /** While in flower, up to this share of the leaf clusters turn wholly to the bloom colour
    *  (a crape myrtle's crown covered in trusses), at no triangle cost. */

@@ -2984,3 +2984,7 @@ At the same lab camera, the lit windshield had made the XN40 cab as bright as th
 ### 2026-11-23 — XE60 roof fairings
 
 The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — Callery pear starts with a white March bloom
+
+The first Model Lab study follows the oval Bradford form. Four sizes share an upright grey skeleton, white flowers on fine twig cards, glossy green A cards and late burgundy fall foliage. The first test with detached flower chips left white flecks hanging above bare wood. Reusing the paired redbud twig cards put every cluster back on a branch, using space in the existing oval atlas. At 193 / 138 triangles the mature tree still fits both budgets. [Seasonal and distance sheet](log/ui/tree-species/options-callery-pear.jpg). Lab study only. Web rebuild required for release.
