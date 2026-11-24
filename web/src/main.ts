@@ -637,6 +637,9 @@ async function openCity() {
   const carried = selection();
   if (follow && carries(carried, 'city', clock.isRealTime()) && (carried?.kind === 'train' || carried?.kind === 'bus') && selectedInCityArea()) {
     follow.stop();
+    // The vehicle chosen on the Map supersedes even a link target that has yet to arrive.
+    followRoute = null;
+    followBus = null;
     pendingFollow = { kind: carried.kind, id: carried.id };
     updateFollowPanel();
   } else hideCard();
