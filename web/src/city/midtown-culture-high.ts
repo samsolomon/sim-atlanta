@@ -1,3 +1,4 @@
+import { runSync } from '../core/slice';
 import { pointInRing, type Builder, type P2 } from '../vignette/geom';
 
 /** Meier's porcelain-enamel panels: an estimated 1.5 m square module. */
@@ -250,6 +251,11 @@ export interface PiazzaSpec {
  * café seating. `ground` gives local heights already lifted clear of terrain.
  */
 export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number, v: number) => number | null) {
+  runSync(siflyPiazzaSteps(body, spec, ground));
+}
+
+/** siflyPiazza as a build (core/slice.ts): the paving, the curb and stair, then the seating. */
+export function* siflyPiazzaSteps(body: Builder, spec: PiazzaSpec, ground: (u: number, v: number) => number | null) {
   const joint = '#a8a398',
     tones = ['#dad7cf', '#d4d1c8', '#dedbd4'],
     curb = '#ecebe5';
@@ -290,6 +296,7 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
           for (let b = v; b < v + dv - 0.01; b += 0.5)
             if (paved(a + 0.25, b + 0.25)) lay(a, b, a + 0.5, b + 0.5, 0, tone);
     }
+  yield 'Sifly paving';
   // A low white curb round the mapped lawn.
   for (let i = 0; i < spec.lawn.length; i++) {
     const a = spec.lawn[i],
@@ -343,6 +350,7 @@ export function siflyPiazza(body: Builder, spec: PiazzaSpec, ground: (u: number,
     for (const s of [-w - 0.12, w + 0.12])
       body.quad(q(0, s, yTop - 0.1), q(0, s, yTop + 0.45), q(len, s, yFoot + 0.45), q(len, s, yFoot - 0.1), curb);
   }
+  yield 'Sifly curb and stair';
   // Café grove seating: round tables with four red-cushioned wire chairs each,
   // in the loose grid the photographs show. Warm pale tops stand out from the paving.
   spec.tables.forEach(([u, v], t) => {

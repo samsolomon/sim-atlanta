@@ -1,9 +1,10 @@
+import { runSync } from '../core/slice';
 import { Group } from 'three';
 import { localLandmarkShell } from './landmark-shell';
 import { flowerBed, hedge, landscapeMesh, stairRun } from '../landscape/primitives';
 import { GroundCover } from '../landscape/ground-cover';
 import { loadingDock, mechanicalScreen, precastWall } from './midtown-culture-woodruff';
-import { enamelBox, enamelGrid, entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
+import { enamelBox, enamelGrid, entryRamp, siflyPiazzaSteps, type RampSpec } from './midtown-culture-high';
 import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import sites from './fixtures/arts-campus.json';
@@ -326,7 +327,12 @@ function memorial(s: Shell) {
   s.body.box(8, 0.7, 32, 61, 6.7, 77, coping);
 }
 
-export function createArtsCampusLandmark(
+export function createArtsCampusLandmark(...args: Parameters<typeof buildArtsCampusLandmark>) {
+  return runSync(buildArtsCampusLandmark(...args));
+}
+
+/** createArtsCampusLandmark as a build that yields between its parts (core/slice.ts). */
+export function* buildArtsCampusLandmark(
   buildings: VBuilding[],
   site: VBuilding,
   base: number | null,
@@ -366,9 +372,10 @@ export function createArtsCampusLandmark(
       // A small lift keeps the ramp clear of the rendered terrain triangles.
       return y === null ? null : y - grade + 0.1;
     });
+    yield 'High Museum';
     // Sifly Piazza on the same rendered terrain as both entrances.
     const pz = sites.museum.piazza;
-    siflyPiazza(
+    yield* siflyPiazzaSteps(
       shell.body,
       {
         plan: pz.plan as P2[],
@@ -385,9 +392,11 @@ export function createArtsCampusLandmark(
         return y === null ? null : y - grade + 0.1;
       },
     );
+    yield 'Sifly Piazza';
     const finished = shell.finish('#ffdab0', 0.68);
+    yield 'High Museum shell';
     // The Peachtree lawn is world-framed, so it sits beside the rotated shell.
-    const lawn = peachtreeLawn(groundAt);
+    const lawn = yield* peachtreeLawn(groundAt);
     const group = new Group();
     group.name = finished.group.name;
     group.add(finished.group, lawn.mesh, lawn.turf);
@@ -403,7 +412,8 @@ export function createArtsCampusLandmark(
  * parapet and the granite steps up to the piazza walk. Coordinates are world
  * Five Points metres. Grass and grade come from the 3DEP terrain itself.
  */
-function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
+/** The Peachtree lawn, a part per step: every primitive seeds by name, so yields reorder nothing. */
+function* peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   const b = new Builder();
   const l = sites.museum.lawn;
   const [tx, tz] = l.ginkgo;
@@ -414,15 +424,19 @@ function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
   }
   // The mound bed carries no flowers, so its colours do not depend on the season.
   flowerBed(b, mound, groundAt, { doy: 172, mound: 0.5, flowers: 0, seed: 'high-ginkgo' });
+  yield 'lawn mound';
   hedge(b, l.shrubs as P2[], groundAt, { clipped: false, height: 1.0, width: 1.3, seed: 'high-ramp-shrubs' });
+  yield 'lawn shrubs';
   const [from, to] = l.steps as [P2, P2];
   const steps = stairRun(b, from, to, l.stepsWidth, groundAt);
+  yield 'lawn steps';
   // Manicured lawn (faint mow stripes, as a formal landmark lawn) over the OSM-mapped Peachtree lawn (its round notch is the Rodin pad),
   // cut round the ginkgo mound and the Peachtree steps. Under the ramp the
   // turf is hidden by the deck and its walls, so the ramp needs no hole.
   const turf = new GroundCover();
   // The carved stair footprint is stone, not lawn, at either tier.
-  turf.patch(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][], cut: steps ? [steps.ring] : [] });
+  yield* turf.patchSteps(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][], cut: steps ? [steps.ring] : [] });
+  yield 'lawn turf';
   const lawn = landscapeMesh(b),
     cover = turf.mesh();
   return {

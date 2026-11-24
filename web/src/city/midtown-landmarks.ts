@@ -1,3 +1,4 @@
+import { runSync } from '../core/slice';
 import { CylinderGeometry, DoubleSide, Mesh, MeshLambertMaterial, Vector3 } from 'three';
 import { Builder, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -18,7 +19,8 @@ function rod(batch: Builder, a: Point, b: Point, radius: number, color: string) 
   batch.addGeometry(mesh, color);
 }
 
-function tower(shell: Shell) {
+/** Bank of America Plaza, as a build that yields through its lattice spire (core/slice.ts). */
+function* tower(shell: Shell) {
   const { body, lights, prism } = shell;
   const rose = '#b58070',
     pier = '#c58d79',
@@ -119,6 +121,7 @@ function tower(shell: Shell) {
       rod(steel, [foot[0] * 0.97, 238.94, foot[1] * 0.97], [x * 0.98, 242.4, z * 0.98], 0.36, rose);
     }
   }
+  yield 'BofA spire base';
   const profile = [
     [242.4, 0.98],
     [251, 0.83],
@@ -153,6 +156,7 @@ function tower(shell: Shell) {
         rod(steel, point(0, s, y), point(1, s, y), 0.27, '#ceaaa0');
       }
     }
+    yield 'BofA spire tier';
   }
   // Square-to-diamond transitions form the shoulders and folded highlights of the obelisk.
   const stations = [
@@ -387,7 +391,12 @@ function theatre(shell: Shell) {
   return shell.finish('#ffde9b', 1.15);
 }
 
-export function createMidtownLandmark(
+export function createMidtownLandmark(...args: Parameters<typeof buildMidtownLandmark>) {
+  return runSync(buildMidtownLandmark(...args));
+}
+
+/** createMidtownLandmark as a build (core/slice.ts): Bank of America Plaza yields through its spire. */
+export function* buildMidtownLandmark(
   buildings: VBuilding[],
   site: VBuilding,
   base: number | null,
@@ -423,5 +432,5 @@ export function createMidtownLandmark(
     base - elevation - 0.35,
     elevation,
   );
-  return shell && (isBank ? tower(shell) : theatre(shell));
+  return shell && (isBank ? yield* tower(shell) : theatre(shell));
 }
