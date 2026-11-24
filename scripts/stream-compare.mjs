@@ -2,7 +2,7 @@
 /**
  * Today's City against ?stream=1, on low (phone) and high (desktop), at the default camera and two
  * camera routes. Prints a markdown table and writes results.json, frame strips and a leak check.
- *   node scripts/stream-compare.mjs [--dist web/dist] [--out dir] [--only low|high] [--strip 8] [--no-leak] [--modes today,stream]
+ *   node scripts/stream-compare.mjs [--dist web/dist] [--out dir] [--only low|high] [--strip 8] [--no-leak] [--modes today,stream] [--motions static,route:north,route:loop]
  *   [--extra '&mid=3000'] (appended to every ?stream=1 URL)
  * Counts and memory are deterministic enough on the loaded Studio; fps and p95 are not, so read them
  * as a smoke check and take device numbers from the A16 protocol in docs/perf.md.
@@ -42,7 +42,7 @@ if (!up) { server.kill(); console.error('preview did not start'); process.exit(1
 
 const T = '2026-11-20T14:00:00-05:00';
 const tiers = [['low', false], ['high', true]].filter(([q]) => !only || q === only);
-const motions = ['static', 'route:north', 'route:loop'];
+const motions = opt('--motions', 'static,route:north,route:loop').split(',');
 const runs = [];
 try {
   for (const [q, desktop] of tiers) for (const motion of motions) for (const mode of modes) {
