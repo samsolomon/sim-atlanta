@@ -972,6 +972,11 @@ export class World {
   // ---- trees --------------------------------------------------------------------------
 
   buildTrees(leafGeometry: THREE.BufferGeometry = new THREE.DodecahedronGeometry(1, 0)) {
+    runSync(this.treeSteps(leafGeometry));
+  }
+
+  /** buildTrees as a build that yields every 128 trees (core/slice.ts); one seeded stream, in order. */
+  *treeSteps(leafGeometry: THREE.BufferGeometry = new THREE.DodecahedronGeometry(1, 0)) {
     const r = rng(20261120);
     const drivable = this.data.roads.filter((x) => DRIVABLE.has(x.cls) || x.cls === 'pedestrian' || x.cls === 'footway');
     const rails = this.data.rail.map((x) => x.pts);
@@ -992,7 +997,9 @@ export class World {
     };
     if (this.realTrees) {
       // Trees where Atlanta's trees really are, sized from the canopy height map.
+      let placed = 0;
       for (const [x, z, h, cr] of this.realTrees) {
+        if (++placed % 128 === 0) yield 'tree placement';
         if (!this.inBounds(x, z, 1)) continue;
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const c = r();
@@ -1065,7 +1072,8 @@ export class World {
     }
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
-    this.trees.forEach((t, i) => {
+    for (const [i, t] of this.trees.entries()) {
+      if (i % 128 === 127) yield 'tree trunks';
       const trunkH = t.th ?? 2 + t.s * 0.6;
       m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
       this.trunks!.setMatrixAt(i, m);
@@ -1073,7 +1081,7 @@ export class World {
       m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
       this.branches!.setMatrixAt(i, m);
       this.branchMatrices[i] = m.clone();
-    });
+    }
   }
 
   private canopy?: THREE.InstancedMesh;
@@ -1107,6 +1115,11 @@ export class World {
    * on their own few-week schedule.
    */
   setSeason(doy: number) {
+    runSync(this.seasonSteps(doy));
+  }
+
+  /** setSeason as a build that yields every 64 trees (core/slice.ts). Each tree seeds its own stream. */
+  *seasonSteps(doy: number) {
     if (doy === this.seasonDoy || !this.canopy || !this.pines) return;
     this.seasonDoy = doy;
     const canopy = this.canopy;
@@ -1130,7 +1143,8 @@ export class World {
     // pines and magnolias, they sit hidden: draw only the thinning trees' (compacted instances).
     const branches = this.branches;
     let kb = 0;
-    this.trees.forEach((t, ti) => {
+    for (const [ti, t] of this.trees.entries()) {
+      if (ti % 64 === 63) yield 'tree season';
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
       const r = rng(Math.floor(t.c * 1e9) + 7);
@@ -1147,7 +1161,7 @@ export class World {
           kp++;
         }
         for (let i = 0; i < clumps; i++) canopy.setMatrixAt(k++, zero);
-        return;
+        continue;
       }
       let canopyLeft = 1;
       if (kind === 'magnolia') c.set('#2f5c3a');
@@ -1191,7 +1205,7 @@ export class World {
         canopy.setColorAt(k, tint);
         k++;
       }
-    });
+    }
     pines.count = kp;
     if (branches) {
       branches.count = kb;

@@ -220,9 +220,9 @@ function* buildScenery(city: VData, trees: Tree[], quality: TerrainQuality, step
   world.replacedTree = replacedTree;
   world.crownSize = crownSize;
   before = world.group.children.length;
-  world.buildTrees(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
+  yield* world.treeSteps(simpleLeafClumps ? new THREE.OctahedronGeometry(1) : undefined);
   tagNew(before, 'trees');
-  world.setSeason(180);
+  yield* world.seasonSteps(180);
   return world;
 }
 
