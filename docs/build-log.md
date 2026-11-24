@@ -3448,3 +3448,9 @@ No good public photographs of the 1927 Medical Arts Building turned up, but the 
 ### 2026-11-24 · Modera Parkside, height by report
 
 Modera Parkside went up on a lot the 2019 lidar recorded as empty, so the only height available is a reported one: 32 storeys and a rooftop club. City builds that as a white parking podium filling the block, with a blue-grey glass slab over its south end, about 104 m to the roof. The marketing renderings add rainbow stripes up the park side, but no photograph confirmed them, so they're left out and noted in the review README. [Day, night and podium views](log/ui/modera-parkside/README.md)
+
+
+
+### 2026-11-24 · The Standard, measured from the point cloud
+
+The Standard's map entry had one inferred 68.4 m part covering everything, so the 2019 lidar was sampled on an 8 m grid instead of as one number. The grid shows a 63 m north bar, a 61 m east bar with a 64 m core, a 44 m step to the west, a 31 m mid-rise over the garage and a courtyard notch. Each became a mass. The precast skin has the amber "cutouts" from the architect's photos, the mid-rise's roof carries the pool and green roofs, and at 23:30 the student rooms are lit more than a typical apartment tower's. [Day, night and amenity deck](log/ui/the-standard/README.md)
