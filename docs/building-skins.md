@@ -2,52 +2,57 @@
 
 ## Ranked survey
 
-The [full ranking of 6,177 candidate footprints](building-skins-ranking.csv) includes the priority score, projected footprint area and measured corridor distances. The survey is a snapshot taken before the downtown worker’s three PRs. Rank 13 has since landed in [PR 377](https://github.com/samsolomon/sim-atlanta/pull/377).
+The [full ranking of 6,177 candidate footprints](building-skins-ranking.csv) gives each footprint's priority score, height and its basis, lidar roof percentiles, whether City still draws it as a generic box, footprint area and corridor distances. The evidence pass on 2026-11-23 changed the table in four ways:
 
-The table orders candidate footprints by mapped or estimated height (40 points), footprint area (16), proximity to Peachtree and the Connector (10 each), proximity to Five Points (10), presence of a mapped name (7), and office, hotel, university or parking classification (5). Proximity approximates visibility. Actual sightlines, recognition, key corners and overlapping landmark footprints still need inspection before dispatch. Dimensions are the minimum rotated rectangle of the largest available tile fragment. Heights marked estimated use 3.3 m per mapped floor, with a two-floor fallback. Mapped heights also need verification, especially at Campanile and Colony Square.
+- **Already modelled.** A temporary probe loaded all 12 City areas at low tier and logged every footprint the generic builder still draws: 6,171 of them. Thirty-seven candidates are no longer drawn because a landmark replaces them. These include 230 Peachtree (PR 377), 200 Peachtree (PR 381) and Twelve Downtown, which `twelve-centennial.ts` already models. They keep their rows in the CSV with no rank. As a check, none of the 11 Midtown skyline fixture ids is still drawn.
+- **Lidar heights.** The top 52 rows were measured against the 3DEP point cloud from 22 April 2019. Ground is the median class-2 return in a ring 3 to 20 m outside the footprint, and roof is the 95th percentile of returns inside it, so a crown can rise higher. A mapped height within 10% of that roof or the maximum stands as "lidar agrees". Otherwise the lidar value replaces it. The Campanile measures 96 m, not the mapped 200. 171 Seventeenth measures 106 m, which matches its mapped 89, 98 and 106 m parts. Robinson measures 64 m, not the estimated 46.
+- **Post-2019 sites.** Where the 2019 lidar shows an empty lot or a site under construction (median return under 15 m), the mapped or reported height stays and is labelled post-2019. Rank 2 is 1072 West Peachtree: the unnamed 60-floor outline sits at the southwest corner of West Peachtree and 12th, where the tower is reported at 60 storeys and 749 ft (228 m) and topped out in November 2025.
+- **New rows.** Amli Arts Center, Twelve Midtown, 271 Seventeenth and the Medical Arts Building entered the top 40. 10 10th moved to rank 41 but stays assigned to skins-2.
 
-| Rank | Mapped name or class | OSM ID or Overture UUID | Height, m | Plan, m | City x, z |
+Weights are unchanged: height 40 points, footprint area 16, proximity to Peachtree and to the Connector 10 each, proximity to Five Points 10, a mapped name 7, and office, hotel, university or parking class 5. Proximity still stands in for visibility. The default City camera is a whole-board overview from about 20 km, where a 100 m tower covers a few pixels, so it cannot tell buildings apart. Contact sheets of every row's starting camera at 11:30 and 23:30, low tier, confirm that each target falls on its footprint: [day](log/ui/building-skins/top40-start-cams-low-day.jpg) · [night](log/ui/building-skins/top40-start-cams-low-night.jpg). At three times the height, tall shafts fill the frame, so pull back to four or five times the height for roof and crown shots. Plan dimensions are the minimum rotated rectangle of the largest tile fragment. An estimated height uses 3.3 m per mapped floor.
+
+| Rank | Building | OSM ID or Overture UUID | Height, m | Plan, m | City x, z |
 |---:|---|---|---:|---:|---:|
-| 1 | The Campanile | osm:way:269843407 | 200 (mapped) | 66 × 45 | 833, -3571 |
-| 2 | Four Seasons Hotel | osm:way:269843469 | 186 (mapped) | 70 × 53 | 580, -3585 |
-| 3 | 1100 Peachtree | osm:way:39450210 | 130 (mapped) | 99 × 92 | 734, -3452 |
-| 4 | office | osm:way:1464967906 | 198 (estimated) | 75 × 55 | 308, -3351 |
-| 5 | 1075 Peachtree | osm:way:234935278 | 157 (mapped) | 90 × 73 | 814, -3330 |
-| 6 | 1105 West Peachtree | osm:way:1001565075 | 125 (mapped) | 116 × 107 | 424, -3475 |
-| 7 | ViewPoint | osm:way:536670474 | 150 (mapped) | 87 × 64 | 710, -2668 |
-| 8 | The Atlantic | osm:way:269542078 | 176 (mapped) | 94 × 43 | -561, -4078 |
-| 9 | 1010 Midtown | osm:way:1427534504 | 124 (mapped) | 110 × 76 | 708, -3341 |
-| 10 | Loews Atlanta Hotel | osm:way:234935283 | 118 (mapped) | 64 × 39 | 764, -3269 |
-| 11 | Marquis Two Tower | 2b0270ee-9f6a-44c9-bf0d-e6fb20e6c47c | 115 (mapped) | 57 × 31 | 553, -902 |
-| 12 | Marquis One Tower | d36a5d7e-165d-4008-a4be-6d32c4c55f0b | 115 (mapped) | 57 × 32 | 552, -810 |
-| 13 | 230 Peachtree Building | ef617421-bb1d-405b-848c-712d0267ff56 | 115 (mapped) | 57 × 32 | 324, -697 |
-| 14 | 999 Peachtree | osm:way:886036475 | 120 (mapped) | 67 × 41 | 728, -3026 |
-| 15 | 903 Peachtree | osm:way:1284487937 | 108 (mapped) | 90 × 44 | 732, -2823 |
-| 16 | Midtown Union Office Building | osm:way:1297223465 | 86 (estimated) | 111 × 44 | 285, -4163 |
-| 17 | Atlantic House | osm:way:505414294 | 125 (mapped) | 80 × 63 | 387, -3583 |
-| 18 | 712 West Peachtree | osm:way:996610147 | 88 (mapped) | 60 × 49 | 357, -2258 |
-| 19 | Two Peachtree Pointe | osm:way:269391972 | 77 (mapped) | 66 × 60 | 320, -4929 |
-| 20 | Metropolis Condominium | osm:way:234733557 | 76 (mapped) | 125 × 65 | 731, -2916 |
-| 21 | NCR Global Headquarters | osm:way:26795281 | 63 (estimated) | 143 × 113 | 181, -2793 |
-| 22 | Southern Company Gas | osm:way:164876035 | 96 (mapped) | 59 × 54 | 416, -3017 |
-| 23 | 10 10th | osm:way:235006974 | 85 (mapped) | 101 × 45 | 414, -3104 |
-| 24 | Nomia | osm:way:1300593936 | 102 (estimated) | 72 × 25 | 441, -4246 |
-| 25 | 171 Seventeenth | osm:way:269542125 | 89 (mapped) | 71 × 36 | -203, -4185 |
-| 26 | 1355 Peachtree | osm:way:885332250 | 66 (estimated) | 86 × 56 | 599, -4210 |
-| 27 | The Proscenium | osm:way:269843396 | 98 (mapped) | 73 × 37 | 729, -3606 |
-| 28 | 400 Colony Square | osm:way:536737549 | 94 (mapped) | 60 × 47 | 794, -3754 |
-| 29 | Hanover Midtown | osm:way:505421514 | 102 (estimated) | 75 × 62 | 308, -3796 |
-| 30 | 100 Colony Square | osm:way:536737548 | 96 (mapped) | 53 × 50 | 819, -3670 |
-| 31 | Sora at Spring Quarter | osm:way:1300604915 | 96 (estimated) | 66 × 58 | 175, -3115 |
-| 32 | 77 12th Street | osm:way:536895716 | 90 (mapped) | 91 × 59 | 608, -3369 |
-| 33 | Emmi Midown | osm:way:269542143 | 102 (estimated) | 45 × 39 | 259, -4355 |
-| 34 | Twelve Downtown, Autograph Collection | b3827be6-be37-4ae8-8605-e99d8b07ec53 | 60 (mapped) | 60 × 38 | 336, -1287 |
-| 35 | One Coca-Cola Plaza | osm:way:536717630 | 123 (mapped) | 48 × 48 | -465, -1887 |
-| 36 | 200 Peachtree St. | 3b44d236-c74c-40cc-bf2b-7a42547418fe | 44 (mapped) | 93 × 80 | 312, -555 |
-| 37 | 25 Pine Street NE Parking Garage | osm:way:270470130 | 33 (estimated) | 64 × 54 | 424, -1460 |
-| 38 | J. Mack Robinson College of Business | 06942e29-e032-4d6b-a30f-7e1f4bc9f2a4 | 46 (estimated) | 63 × 24 | 151, -130 |
-| 39 | Ascent Midtown | osm:way:884939412 | 82 (estimated) | 103 × 43 | 292, -4319 |
-| 40 | Emory University Hospital Midtown Staff Parking | osm:way:1021839184 | 50 (estimated) | 103 × 42 | 310, -1681 |
+| 1 | Four Seasons Hotel | osm:way:269843469 | 186 (mapped, lidar agrees) | 70 × 53 | 580, -3585 |
+| 2 | 1072 West Peachtree | osm:way:1464967906 | 228 (reported, post-2019) | 75 × 55 | 308, -3351 |
+| 3 | 1100 Peachtree | osm:way:39450210 | 130 (mapped, lidar agrees) | 99 × 92 | 734, -3452 |
+| 4 | 1075 Peachtree | osm:way:234935278 | 157 (mapped, lidar agrees) | 90 × 73 | 814, -3330 |
+| 5 | 1105 West Peachtree | osm:way:1001565075 | 125 (mapped, post-2019) | 116 × 107 | 424, -3475 |
+| 6 | The Atlantic | osm:way:269542078 | 176 (mapped, lidar agrees) | 94 × 43 | -561, -4078 |
+| 7 | 1010 Midtown | osm:way:1427534504 | 124 (mapped, lidar agrees) | 110 × 76 | 708, -3341 |
+| 8 | ViewPoint | osm:way:536670474 | 127 (lidar 2019) | 87 × 64 | 710, -2668 |
+| 9 | Loews Atlanta Hotel | osm:way:234935283 | 118 (mapped, lidar agrees) | 64 × 39 | 764, -3269 |
+| 10 | Marquis Two Tower | 2b0270ee-9f6a-44c9-bf0d-e6fb20e6c47c | 115 (mapped, lidar agrees) | 57 × 31 | 553, -902 |
+| 11 | Marquis One Tower | d36a5d7e-165d-4008-a4be-6d32c4c55f0b | 115 (mapped, lidar agrees) | 57 × 32 | 552, -810 |
+| 12 | NCR Global Headquarters | osm:way:26795281 | 89 (lidar 2019) | 143 × 113 | 181, -2793 |
+| 13 | 999 Peachtree | osm:way:886036475 | 120 (mapped, lidar agrees) | 67 × 41 | 728, -3026 |
+| 14 | The Campanile | osm:way:269843407 | 96 (lidar 2019) | 66 × 45 | 833, -3571 |
+| 15 | 903 Peachtree | osm:way:1284487937 | 108 (mapped, post-2019) | 90 × 44 | 732, -2823 |
+| 16 | 171 Seventeenth | osm:way:269542125 | 106 (lidar 2019) | 71 × 36 | -203, -4185 |
+| 17 | Midtown Union Office Building | osm:way:1297223465 | 86 (estimated, post-2019) | 111 × 44 | 285, -4163 |
+| 18 | 1355 Peachtree | osm:way:885332250 | 75 (lidar 2019) | 86 × 56 | 599, -4210 |
+| 19 | 712 West Peachtree | osm:way:996610147 | 88 (mapped, post-2019) | 60 × 49 | 357, -2258 |
+| 20 | J. Mack Robinson College of Business | 06942e29-e032-4d6b-a30f-7e1f4bc9f2a4 | 64 (lidar 2019) | 63 × 24 | 151, -130 |
+| 21 | Two Peachtree Pointe | osm:way:269391972 | 77 (mapped, lidar agrees) | 66 × 60 | 320, -4929 |
+| 22 | Metropolis Condominium | osm:way:234733557 | 76 (mapped, lidar agrees) | 125 × 65 | 731, -2916 |
+| 23 | Southern Company Gas | osm:way:164876035 | 96 (mapped, lidar agrees) | 59 × 54 | 416, -3017 |
+| 24 | Nomia | osm:way:1300593936 | 102 (estimated, post-2019) | 72 × 25 | 441, -4246 |
+| 25 | The Proscenium | osm:way:269843396 | 98 (mapped, lidar agrees) | 73 × 37 | 729, -3606 |
+| 26 | Amli Arts Center Apartments | osm:way:885667868 | 96 (lidar 2019) | 114 × 79 | 266, -3890 |
+| 27 | 400 Colony Square | osm:way:536737549 | 94 (mapped, lidar agrees) | 60 × 47 | 794, -3754 |
+| 28 | Hanover Midtown | osm:way:505421514 | 102 (estimated, post-2019) | 75 × 62 | 308, -3796 |
+| 29 | 100 Colony Square | osm:way:536737548 | 96 (mapped, lidar agrees) | 53 × 50 | 819, -3670 |
+| 30 | Sora at Spring Quarter | osm:way:1300604915 | 96 (estimated, post-2019) | 66 × 58 | 175, -3115 |
+| 31 | 77 12th Street | osm:way:536895716 | 90 (mapped, lidar agrees) | 91 × 59 | 608, -3369 |
+| 32 | Atlantic House | osm:way:505414294 | 108 (lidar 2019) | 80 × 63 | 387, -3583 |
+| 33 | Emmi Midown | osm:way:269542143 | 102 (estimated, post-2019) | 45 × 39 | 259, -4355 |
+| 34 | One Coca-Cola Plaza | osm:way:536717630 | 123 (mapped, lidar agrees) | 48 × 48 | -465, -1887 |
+| 35 | 25 Pine Street NE Parking Garage | osm:way:270470130 | 33 (estimated, lidar agrees) | 64 × 54 | 424, -1460 |
+| 36 | Ascent Midtown | osm:way:884939412 | 82 (estimated, lidar agrees) | 103 × 43 | 292, -4319 |
+| 37 | Emory University Hospital Midtown Staff Parking | osm:way:1021839184 | 50 (estimated, post-2019) | 103 × 42 | 310, -1681 |
+| 38 | Twelve Midtown, Autograph Collection | osm:way:247997228 | 85 (mapped, lidar agrees) | 93 × 86 | -605, -4208 |
+| 39 | 271 Seventeenth Street | osm:way:269542282 | 113 (mapped, lidar agrees) | 72 × 37 | -376, -4188 |
+| 40 | Medical Arts Building | 51e690cd-e135-46db-9935-e4588b6b2e1f | 57 (mapped, lidar agrees) | 43 × 18 | 520, -1234 |
 
 ## Shared modeling specification
 
@@ -77,7 +82,7 @@ Use each table row's City x and z with a clear, paused clock at 11:30 and 23:30 
 
 ## Landmark research assignments
 
-**Campanile — lead.** The building was photographed during façade removal. Establish the reference date before specifying cladding or the roof. Its reported 21 stories also warrant a lidar check against the tile's 200 m. Frame the exposed frame from Peachtree and the southeast corner. [Dated site photographs](https://atlanta.urbanize.city/post/dewberry-midtown-site-neighbor-concerns-city-plots-crackdown-crane) · [Earlier exterior](https://homepages.bluffton.edu/~sullivanm/atlanta/tvs/tvs.html)
+**Campanile — lead.** The building was photographed during façade removal. Establish the reference date before specifying cladding or the roof. The April 2019 lidar puts the roof at 96 m above grade (maximum 99 m), which fits about 21 storeys; the mapped 200 m is wrong. Frame the exposed frame from Peachtree and the southeast corner. [Dated site photographs](https://atlanta.urbanize.city/post/dewberry-midtown-site-neighbor-concerns-city-plots-crackdown-crane) · [Earlier exterior](https://homepages.bluffton.edu/~sullivanm/atlanta/tvs/tvs.html)
 
 **1100 Peachtree — landmark.** The broad face has reflective window ribbons separated by gray stone and steps back beneath the illuminated crown. Use stone bands and curtain glass, then resolve the crown separately. Compare the profile against the property's dusk cover and check the entrance from street height. [Property photography](https://www.1100peachtree.com/uploads/1/5/4/0/154046563/7867550_new_photography_-_brochure_-_custom_-_pm.pdf) · [Dusk exterior](https://res.cloudinary.com/jll-global-cmg/image/upload/v1740000208/Prod/DealX/Doc/95ec8e8c-952d-4aa6-a473-4527c8ecd2ef/_JLL__1100_Peachtree_Offering_Summary.pdf)
 
@@ -91,7 +96,7 @@ Use each table row's City x and z with a clear, paused clock at 11:30 and 23:30 
 
 ### Assigned downtown landmarks
 
-Downtown rail worker `7abc46f1` owns the following three buildings, one PR each. The table above gives their Overture IDs, preliminary dimensions and target coordinates.
+The downtown worker owned these three buildings, one PR each. 230 Peachtree merged in PR 377 and 200 Peachtree in PR 381. Robinson is PR 384, held for review. Worker `7abc46f1` has handed off to a successor. The table above gives their Overture IDs, preliminary dimensions and target coordinates.
 
 | Order | Building | Research and acceptance view |
 |---:|---|---|
@@ -101,47 +106,49 @@ Downtown rail worker `7abc46f1` owns the following three buildings, one PR each.
 
 ## Worker queue by survey rank
 
+Owners as of 2026-11-23: skins-1 has ViewPoint, Atlantic House, 712 West Peachtree, Two Peachtree Pointe and Southern Company Gas. skins-2 has 10 10th (rank 41, outside this table), Nomia, The Proscenium, Hanover Midtown and Sora. skins-3 has 77 12th Street, 25 Pine Street garage and Ascent Midtown. Its fourth assignment was old rank 34, Twelve Downtown, which City already models in `twelve-centennial.ts`, so skip it. The lead builds the Lead rows in the stated order. "Old rank" is the number in the e60c9b43 version of this doc, which the first assignments used.
+
 Sol can take any unassigned routine row. Dimensions and source IDs are in the survey above. Start each matched day/night pair at the supplied City camera, then move to the specified facade at street height. Each source links to a project gallery, photograph, survey, or existing research. A missing full-night photograph is an evidence gap. Capture the night City render and document the gap before introducing decorative lighting.
 
-| Rank and building | Owner | Facade family and modeling brief | Starting camera | Reference |
-|---|---|---|---|---|
-| 1. The Campanile | Lead / Astra | **Construction.** Exposed frame during recladding. Establish date and lidar height. | `833,-3571,32,60,600` | [Reference](https://atlanta.urbanize.city/post/dewberry-midtown-site-neighbor-concerns-city-plots-crackdown-crane) |
-| 2. Four Seasons Hotel | Lead / Astra | **Hotel.** Hotel slab with a stepped pyramidal cap. Resolve the upper setbacks. | `580,-3585,32,60,558` | [Reference](https://www.fourseasons.com/atlanta/photos-and-videos/) |
-| 3. 1100 Peachtree | Lead / Astra | **Ribbon office.** Reflective window ribbons under an illuminated stepped crown. | `734,-3452,32,60,390` | [Reference](https://www.1100peachtree.com/uploads/1/5/4/0/154046563/7867550_new_photography_-_brochure_-_custom_-_pm.pdf) |
-| 4. office | Lead / Astra | **Mixed-use.** Confirm the unnamed outline against 1072 West Peachtree. Split the podium from the tall residential shaft. | `308,-3351,32,60,594` | [Reference](https://atlanta.urbanize.city/post/rockefeller-1072-west-peachtree-atl-tallest-building-30-years-fresh-images-details) · [Night exterior](https://www.skydb.net/file/500986372/1072-west-peachtree-atlanta/) |
-| 5. 1075 Peachtree | Lead / Astra | **Curtain wall.** Trace the curved glazed frontage and determine which upper edges carry permanent lighting. | `814,-3330,32,60,471` | [Reference](https://www.1075peachtree.com/wp-content/uploads/2022/10/1075-Peachtree_Brochure-1.pdf) |
-| 6. 1105 West Peachtree | Lead / Astra | **Braced glass.** Model the large diagonal exterior frame on the glazed office shaft. | `424,-3475,32,60,375` | [Reference](https://1105westpeachtree.com/) · [Night exterior](https://www.skydb.net/file/268758408/1105-west-peachtree-atlanta/) |
-| 7. ViewPoint | Sol | **Residential.** Align the residential bay grid above the 865 entrance canopy. | `710,-2668,32,60,450` | [Reference](https://cororealtyadvisors.propertycapsule.com/property/output/document/view/id%3A11763/) |
-| 8. The Atlantic | Lead / Astra | **Residential.** Preserve the stepped crown and vertical balcony runs in the Atlantic Station silhouette. | `-561,-4078,32,60,528` | [Reference](https://henryinc.com/portfolio/the-atlantic/) |
-| 9. 1010 Midtown | Lead / Astra | **Residential.** Follow the curved balcony ribbons around the Peachtree bend. | `708,-3341,32,60,372` | [Reference](https://commons.wikimedia.org/wiki/File%3AVertical_panorama_of_1010_Midtown_in_midtown_Atlanta.jpg) |
-| 10. Loews Atlanta Hotel | Lead / Astra | **Hotel.** Match hotel room bays over the arrival canopy and resolve the shared development boundary. | `764,-3269,32,60,354` | [Reference](https://www.loewshotels.com/atlanta-hotel/photos-videos) |
-| 11. Marquis Two Tower | Sol | **Precast.** Precast piers frame narrow windows. Widen the panes on the north wall. | `553,-902,32,60,345` | [Reference](https://gadnr.org/sites/default/files/hpd/pdf/Peachtree%20Center%20HD%20Final%204-24-17.pdf) |
-| 12. Marquis One Tower | Sol | **Precast.** Repeat the recessed precast window bays, checking the entrance separately from Marquis Two. | `552,-810,32,60,345` | [Reference](https://gadnr.org/sites/default/files/hpd/pdf/Peachtree%20Center%20HD%20Final%204-24-17.pdf) |
-| 13. 230 Peachtree Building | Downtown worker | **Precast.** Assigned downtown. See the public plaza entrance research in the PR. | `324,-697,32,60,345` | [Reference](https://github.com/samsolomon/sim-atlanta/pull/377) |
-| 14. 999 Peachtree | Sol | **Punched stone.** Light stone piers frame dark reflective windows. Check corner depth at street level. | `728,-3026,32,60,360` | [Reference](https://listingsprod.blob.core.windows.net/ourlistings-usa/029c3a00-fd72-436f-91a8-cb5d39ad3af0/e1d2df09-f24c-44d2-9da5-7b8e1e474e7b) |
-| 15. 903 Peachtree | Sol | **Residential.** Break the parking base into contrasting panel fields and metal bands below the residential floors. | `732,-2823,32,60,324` | [Reference](https://henryinc.com/portfolio/decorative_facades_at_903_peachtree/) |
-| 16. Midtown Union Office Building | Lead / Astra | **Curtain wall.** Isolate the office wing above the mixed-use base and trace its glazed end. | `285,-4163,32,60,258` | [Reference](https://www.midtownatl.com/view/midtown-union-office-building) |
-| 17. Atlantic House | Sol | **Residential.** Stack balcony edges above the entrance podium and keep the broad side legible. | `387,-3583,32,60,375` | [Reference](https://estateexposure.com/atlantic-house-atlanta-real-estate-photography) |
-| 18. 712 West Peachtree | Sol | **Curtain wall.** Use the street corner to measure the glazed office grid and podium transition. | `357,-2258,32,60,264` | [Reference](https://www.skydb.net/file/750011963/712-west-peachtree-atlanta/) |
-| 19. Two Peachtree Pointe | Sol | **Curtain wall.** Carry the curved glass frontage around its return. Compare with the adjoining first phase. | `320,-4929,32,60,231` | [Reference](https://www.skydb.net/file/724752301/two-peachtree-pointe-atlanta/) |
-| 20. Metropolis Condominium | Lead / Astra | **Residential.** Separate the two residential masses over the retail base and repeat the balcony slabs. | `731,-2916,32,60,228` | [Reference](https://www.midtownatl.com/view/metropolis) |
-| 21. NCR Global Headquarters | Lead / Astra | **Curtain wall.** Resolve the glazed office masses and their connection over the campus base. | `181,-2793,32,60,189` | [Reference](https://www.dudapaine.com/featured-projects/workplace/ncr-headquarters/) |
-| 22. Southern Company Gas | Sol | **Punched stone.** Measure the stone entrance surround independently from the shaft window grid. | `416,-3017,32,60,288` | [Reference](https://commons.wikimedia.org/wiki/File%3ATen_Peachtree_Place_entrance.jpg) |
-| 23. 10 10th | Sol | **Ribbon office.** Trace the office slab and its entry recess from the 10th Street frontage. | `414,-3104,32,60,255` | [Reference](https://metzlerna.com/en/metzlerna/portfolio/case-studies/10-10th) |
-| 24. Nomia | Sol | **Residential.** Green-clad rectangular shaft. Match the narrow end and vertical panel rhythm. | `441,-4246,32,60,306` | [Reference](https://www.r2l-architects.com/work/nomia) |
-| 25. 171 Seventeenth | Sol | **Curtain wall.** Repeat the floor-to-ceiling glass grid. Measure the rooftop enclosure independently. | `-203,-4185,32,60,267` | [Reference](https://www.smallwood-us.com/work/case-study/171-17th-street) · [Night exterior](https://www.skydb.net/file/162451671/171-17th-street-atlanta/) |
-| 26. 1355 Peachtree | Lead / Astra | **Brick and stone.** Red-brown upper wall with repeated punched windows above a pale classical base. | `599,-4210,32,60,198` | [Reference](https://s3.us-east-2.amazonaws.com/media.buildingsondemand.com/sites/9/2024/03/1355-Peachtree-Brochure_v3-UPDATED-MARCH-2024.pdf) |
-| 27. The Proscenium | Sol | **Ribbon office.** Use the recessed 1170 entrance and broad office window fields to set bay spacing. | `729,-3606,32,60,294` | [Reference](https://www.prosceniumatl.com/wp-content/uploads/2025/05/PROSCENIUM.pdf) |
-| 28. 400 Colony Square | Lead / Astra | **Precast.** Resolve the tower over its lower podium using the lidar transects. | `794,-3754,32,60,282` | [Reference](https://github.com/samsolomon/sim-atlanta/blob/fee824c6/docs/research/colony-square.md) |
-| 29. Hanover Midtown | Sol | **Residential.** Stack residential window bays and balconies over the arrival frontage. | `308,-3796,32,60,306` | [Reference](https://www.livehanovermidtown.com/atlanta/hanover-midtown/photos/) |
-| 30. 100 Colony Square | Lead / Astra | **Precast.** Check the low mapped parts against the tower returns before replacing the outline. | `819,-3670,32,60,288` | [Reference](https://github.com/samsolomon/sim-atlanta/blob/fee824c6/docs/research/colony-square.md) |
-| 31. Sora at Spring Quarter | Sol | **Residential.** Distinguish the glazed residential slab from the neighboring historic chapel. | `175,-3115,32,60,288` | [Reference](https://www.guardianglass.com/ap/en/projects/project-details/sora-at-spring-quarter) |
-| 32. 77 12th Street | Sol | **Residential.** Carry the balcony and glazing rhythm around the retail frontage. | `608,-3369,32,60,270` | [Reference](https://rjtrdesign.com/77-12th-street/) |
-| 33. Emmi Midown | Lead / Astra | **Residential.** Use separate glazing modules for the stepped residential elevations. | `259,-4355,32,60,306` | [Reference](https://glasssystems.biz/projects/emmi-midtown/) |
-| 34. Twelve Downtown, Autograph Collection | Sol | **Hotel.** Separate the hotel entrance and upper balcony grid from the podium. | `336,-1287,32,60,185` | [Reference](https://www.marriott.com/en-us/hotels/atlpk-twelve-downtown-autograph-collection/photos/) |
-| 35. One Coca-Cola Plaza | Lead / Astra | **Office.** Check the roof silhouette and window rhythm from the Connector approach. | `-465,-1887,32,60,369` | [Reference](https://www.skydb.net/building/204849954/one-coca-cola-plaza/) |
-| 36. 200 Peachtree St. | Downtown worker | **Historic masonry.** Assigned downtown. Preserve the Westin podium boundary. | `312,-555,32,60,185` | [Reference](https://github.com/samsolomon/sim-atlanta/pull/381) |
-| 37. 25 Pine Street NE Parking Garage | Sol | **Open garage.** Repeat concrete deck openings, tracing the Pine Street vehicle portal separately. | `424,-1460,32,60,185` | [Reference](https://www.skydb.net/building/222518734/pine-street-parking-deck/) |
-| 38. J. Mack Robinson College of Business | Downtown worker | **Historic masonry.** Assigned downtown. Preserve the distinct Commerce roof across Broad. | `151,-130,32,60,185` | [Reference](https://github.com/samsolomon/sim-atlanta/pull/384) |
-| 39. Ascent Midtown | Sol | **Residential.** Keep balcony stacks and the roof terrace legible from the narrow end. | `292,-4319,32,60,246` | [Reference](https://r2l-architects.squarespace.com/work/ascent-midtown) |
-| 40. Emory University Hospital Midtown Staff Parking | Lead / Astra | **Open garage.** Trace the staff deck footprint before selecting a garage elevation. Verify identity against adjacent visitor parking. | `310,-1681,32,60,185` | [Reference](https://www.gareygomez.com/hrd-euhm-parking-deck) |
+| Rank (old rank) and building | Owner | Facade family and modeling brief | Starting camera | Night evidence | Reference |
+|---|---|---|---|---|---|
+| 1 (was 2). Four Seasons Hotel | Lead (Opus), order 2 | **Hotel.** Hotel slab with a stepped pyramidal cap. Resolve the upper setbacks. | `580,-3585,32,60,558` | Gap: no verified full-night exterior | [Reference](https://www.fourseasons.com/atlanta/photos-and-videos/) |
+| 2 (was 4). 1072 West Peachtree | Lead / Astra | **Mixed-use.** Confirm the unnamed outline against 1072 West Peachtree. Split the podium from the tall residential shaft. | `308,-3351,32,60,685` | Building-specific night photo linked | [Reference](https://atlanta.urbanize.city/post/rockefeller-1072-west-peachtree-atl-tallest-building-30-years-fresh-images-details) · [Night exterior](https://www.skydb.net/file/500986372/1072-west-peachtree-atlanta/) |
+| 3. 1100 Peachtree | Lead (Opus), order 1 | **Ribbon office.** Reflective window ribbons under an illuminated stepped crown. | `734,-3452,32,60,390` | Gap: no verified full-night exterior | [Reference](https://www.1100peachtree.com/uploads/1/5/4/0/154046563/7867550_new_photography_-_brochure_-_custom_-_pm.pdf) |
+| 4 (was 5). 1075 Peachtree | Lead (Opus), order 3 | **Curtain wall.** Trace the curved glazed frontage and determine which upper edges carry permanent lighting. | `814,-3330,32,60,470` | Gap: no verified full-night exterior | [Reference](https://www.1075peachtree.com/wp-content/uploads/2022/10/1075-Peachtree_Brochure-1.pdf) |
+| 5 (was 6). 1105 West Peachtree | Lead (Opus), order 4 | **Braced glass.** Model the large diagonal exterior frame on the glazed office shaft. | `424,-3475,32,60,375` | Building-specific night photo linked | [Reference](https://1105westpeachtree.com/) · [Night exterior](https://www.skydb.net/file/268758408/1105-west-peachtree-atlanta/) |
+| 6 (was 8). The Atlantic | Lead (Opus), order 5 | **Residential.** Preserve the stepped crown and vertical balcony runs in the Atlantic Station silhouette. | `-561,-4078,32,60,528` | Gap: no verified full-night exterior | [Reference](https://henryinc.com/portfolio/the-atlantic/) |
+| 7 (was 9). 1010 Midtown | Lead (Opus), order 6 | **Residential.** Follow the curved balcony ribbons around the Peachtree bend. | `708,-3341,32,60,372` | Gap: no verified full-night exterior | [Reference](https://commons.wikimedia.org/wiki/File%3AVertical_panorama_of_1010_Midtown_in_midtown_Atlanta.jpg) |
+| 8 (was 7). ViewPoint | skins-1 (914b0cfd) | **Residential.** Align the residential bay grid above the 865 entrance canopy. | `710,-2668,32,60,380` | Gap: no verified full-night exterior | [Reference](https://cororealtyadvisors.propertycapsule.com/property/output/document/view/id%3A11763/) |
+| 9 (was 10). Loews Atlanta Hotel | Lead (Opus), order 7 | **Hotel.** Match hotel room bays over the arrival canopy and resolve the shared development boundary. | `764,-3269,32,60,355` | Gap: no verified full-night exterior | [Reference](https://www.loewshotels.com/atlanta-hotel/photos-videos) |
+| 10 (was 11). Marquis Two Tower | Sol (after One) | **Precast.** Precast piers frame narrow windows. Widen the panes on the north wall. | `553,-902,32,60,346` | Gap: no verified full-night exterior | [Reference](https://gadnr.org/sites/default/files/hpd/pdf/Peachtree%20Center%20HD%20Final%204-24-17.pdf) |
+| 11 (was 12). Marquis One Tower | Sol (PR 393, held) | **Precast.** Repeat the recessed precast window bays, checking the entrance separately from Marquis Two. | `552,-810,32,60,346` | Gap: no verified full-night exterior | [Reference](https://gadnr.org/sites/default/files/hpd/pdf/Peachtree%20Center%20HD%20Final%204-24-17.pdf) |
+| 12 (was 21). NCR Global Headquarters | Lead / Astra | **Curtain wall.** Resolve the glazed office masses and their connection over the campus base. | `181,-2793,32,60,268` | Gap: no verified full-night exterior | [Reference](https://www.dudapaine.com/featured-projects/workplace/ncr-headquarters/) |
+| 13 (was 14). 999 Peachtree | Sol (draft branch `samsolomon/999-peachtree`) | **Punched stone.** Light stone piers frame dark reflective windows. Check corner depth at street level. | `728,-3026,32,60,361` | Gap: no verified full-night exterior | [Reference](https://listingsprod.blob.core.windows.net/ourlistings-usa/029c3a00-fd72-436f-91a8-cb5d39ad3af0/e1d2df09-f24c-44d2-9da5-7b8e1e474e7b) |
+| 14 (was 1). The Campanile | Lead (Opus), after its reference date | **Construction.** Exposed frame during recladding. Establish date and lidar height. | `833,-3571,32,60,289` | Gap: no verified full-night exterior | [Reference](https://atlanta.urbanize.city/post/dewberry-midtown-site-neighbor-concerns-city-plots-crackdown-crane) |
+| 15. 903 Peachtree | Sol (PR 392, held) | **Residential.** Break the parking base into contrasting panel fields and metal bands below the residential floors. | `732,-2823,32,60,324` | Gap: no verified full-night exterior | [Reference](https://henryinc.com/portfolio/decorative_facades_at_903_peachtree/) |
+| 16 (was 25). 171 Seventeenth | Sol (PR 388, held) | **Curtain wall.** Repeat the floor-to-ceiling glass grid. Measure the rooftop enclosure independently. | `-203,-4185,32,60,318` | Building-specific night photo linked | [Reference](https://www.smallwood-us.com/work/case-study/171-17th-street) · [Night exterior](https://www.skydb.net/file/162451671/171-17th-street-atlanta/) |
+| 17 (was 16). Midtown Union Office Building | Lead / Astra | **Curtain wall.** Isolate the office wing above the mixed-use base and trace its glazed end. | `285,-4163,32,60,257` | Gap: no verified full-night exterior | [Reference](https://www.midtownatl.com/view/midtown-union-office-building) |
+| 18 (was 26). 1355 Peachtree | Lead / Astra | **Brick and stone.** Red-brown upper wall with repeated punched windows above a pale classical base. | `599,-4210,32,60,226` | Gap: no verified full-night exterior | [Reference](https://s3.us-east-2.amazonaws.com/media.buildingsondemand.com/sites/9/2024/03/1355-Peachtree-Brochure_v3-UPDATED-MARCH-2024.pdf) |
+| 19 (was 18). 712 West Peachtree | skins-1 (914b0cfd) | **Curtain wall.** Use the street corner to measure the glazed office grid and podium transition. | `357,-2258,32,60,264` | Gap: no verified full-night exterior | [Reference](https://www.skydb.net/file/750011963/712-west-peachtree-atlanta/) |
+| 20 (was 38). J. Mack Robinson College of Business | Downtown worker (PR 384, held) | **Historic masonry.** Assigned downtown. Preserve the distinct Commerce roof across Broad. | `151,-130,32,60,192` | Gap: no verified full-night exterior | [Reference](https://github.com/samsolomon/sim-atlanta/pull/384) |
+| 21 (was 19). Two Peachtree Pointe | skins-1 (914b0cfd) | **Curtain wall.** Carry the curved glass frontage around its return. Compare with the adjoining first phase. | `320,-4929,32,60,231` | Gap: no verified full-night exterior | [Reference](https://www.skydb.net/file/724752301/two-peachtree-pointe-atlanta/) |
+| 22 (was 20). Metropolis Condominium | Lead / Astra | **Residential.** Separate the two residential masses over the retail base and repeat the balcony slabs. | `731,-2916,32,60,227` | Gap: no verified full-night exterior | [Reference](https://www.midtownatl.com/view/metropolis) |
+| 23 (was 22). Southern Company Gas | skins-1 (914b0cfd) | **Punched stone.** Measure the stone entrance surround independently from the shaft window grid. | `416,-3017,32,60,288` | Gap: no verified full-night exterior | [Reference](https://commons.wikimedia.org/wiki/File%3ATen_Peachtree_Place_entrance.jpg) |
+| 24. Nomia | skins-2 (4695b411) | **Residential.** Green-clad rectangular shaft. Match the narrow end and vertical panel rhythm. | `441,-4246,32,60,307` | Gap: no verified full-night exterior | [Reference](https://www.r2l-architects.com/work/nomia) |
+| 25 (was 27). The Proscenium | skins-2 (4695b411) | **Ribbon office.** Use the recessed 1170 entrance and broad office window fields to set bay spacing. | `729,-3606,32,60,294` | Gap: no verified full-night exterior | [Reference](https://www.prosceniumatl.com/wp-content/uploads/2025/05/PROSCENIUM.pdf) |
+| 26 (new). Amli Arts Center Apartments | Sol | **Residential.** 1240 West Peachtree tower by Cooper Carry, across from Arts Center station. Photo check owed before choosing the module. | `266,-3890,32,60,288` | Gap: no verified full-night exterior | [Architect’s project](https://jedunn.com/projects/amli-arts-center-residential-tower/) · [AIA Atlanta award](https://aiaatl.org/design-award/amli-arts-center/) |
+| 27 (was 28). 400 Colony Square | Lead / Astra | **Precast.** Resolve the tower over its lower podium using the lidar transects. | `794,-3754,32,60,282` | Gap: no verified full-night exterior | [Reference](https://github.com/samsolomon/sim-atlanta/blob/fee824c6/docs/research/colony-square.md) |
+| 28 (was 29). Hanover Midtown | skins-2 (4695b411) | **Residential.** Stack residential window bays and balconies over the arrival frontage. | `308,-3796,32,60,307` | Gap: no verified full-night exterior | [Reference](https://www.livehanovermidtown.com/atlanta/hanover-midtown/photos/) |
+| 29 (was 30). 100 Colony Square | Lead / Astra | **Precast.** Check the low mapped parts against the tower returns before replacing the outline. | `819,-3670,32,60,288` | Gap: no verified full-night exterior | [Reference](https://github.com/samsolomon/sim-atlanta/blob/fee824c6/docs/research/colony-square.md) |
+| 30 (was 31). Sora at Spring Quarter | skins-2 (4695b411) | **Residential.** Distinguish the glazed residential slab from the neighboring historic chapel. | `175,-3115,32,60,287` | Gap: no verified full-night exterior | [Reference](https://www.guardianglass.com/ap/en/projects/project-details/sora-at-spring-quarter) |
+| 31 (was 32). 77 12th Street | skins-3 (f7bfd025) | **Residential.** Carry the balcony and glazing rhythm around the retail frontage. | `608,-3369,32,60,270` | Gap: no verified full-night exterior | [Reference](https://rjtrdesign.com/77-12th-street/) |
+| 32 (was 17). Atlantic House | skins-1 (914b0cfd) | **Residential.** Stack balcony edges above the entrance podium and keep the broad side legible. | `387,-3583,32,60,324` | Gap: no verified full-night exterior | [Reference](https://estateexposure.com/atlantic-house-atlanta-real-estate-photography) |
+| 33. Emmi Midown | Lead / Astra | **Residential.** Use separate glazing modules for the stepped residential elevations. | `259,-4355,32,60,307` | Gap: no verified full-night exterior | [Reference](https://glasssystems.biz/projects/emmi-midtown/) |
+| 34 (was 35). One Coca-Cola Plaza | Lead / Astra | **Office.** Check the roof silhouette and window rhythm from the Connector approach. | `-465,-1887,32,60,368` | Gap: no verified full-night exterior | [Reference](https://www.skydb.net/building/204849954/one-coca-cola-plaza/) |
+| 35 (was 37). 25 Pine Street NE Parking Garage | skins-3 (f7bfd025) | **Open garage.** Repeat concrete deck openings, tracing the Pine Street vehicle portal separately. | `424,-1460,32,60,150` | Gap: no verified full-night exterior | [Reference](https://www.skydb.net/building/222518734/pine-street-parking-deck/) |
+| 36 (was 39). Ascent Midtown | skins-3 (f7bfd025) | **Residential.** Keep balcony stacks and the roof terrace legible from the narrow end. | `292,-4319,32,60,248` | Gap: no verified full-night exterior | [Reference](https://r2l-architects.squarespace.com/work/ascent-midtown) |
+| 37 (was 40). Emory University Hospital Midtown Staff Parking | Lead / Astra | **Open garage.** Trace the staff deck footprint before selecting a garage elevation. Verify identity against adjacent visitor parking. | `310,-1681,32,60,150` | Gap: no verified full-night exterior | [Reference](https://www.gareygomez.com/hrd-euhm-parking-deck) |
+| 38 (new). Twelve Midtown, Autograph Collection | Sol | **Hotel.** Concrete hotel and apartment tower at 361 17th Street with floor-to-ceiling windows and a rooftop pool deck. Photo check owed. | `-605,-4208,32,60,255` | Gap: no verified full-night exterior | [Hotel photographs](https://www.marriott.com/en-us/hotels/atlas-twelve-midtown-autograph-collection/photos/) |
+| 39 (new). 271 Seventeenth Street | Sol | **Curtain wall.** 25 storeys: seven parking levels, a lobby level, then 20 office floors. Leave out the roof tenant logo and the 18 ft street numbers. Photo check owed. | `-376,-4188,32,60,339` | Gap: no verified full-night exterior | [Architect’s project](https://www.tvsdesign.com/projects/project-detail/271-17th-street/) · [Exterior lighting and renovation](https://atlanta.urbanize.city/post/atlantic-station-photos-inside-seven-story-bespoke-renovation) |
+| 40 (new). Medical Arts Building | Lead / Astra | **Historic masonry.** Twelve-storey 1927 Beaux-Arts office by G. Lloyd Preacher: tan brick shaft, limestone two-storey storefront base on Peachtree and the north side. Use the Georgian Terrace ornament template. | `520,-1234,32,60,172` | Gap: no verified full-night exterior | [National Register nomination](https://npgallery.nps.gov/AssetDetail/NRIS/16000816) · [Photograph and listing](https://roughdraftatlanta.com/2016/12/30/medical-arts-building-listed-national-register-historic-places/) |
