@@ -2,7 +2,6 @@ import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
 import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
-import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
 import { along, faces, litHash, outwardSign, ramp, seedOf, wound } from './skin-kit';
 
@@ -103,7 +102,8 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
       }
       // Offices at 23:30: a few whole floors still lit, by day in the glass's own tone.
       for (const level of lit) {
-        // The last litHash argument is a slot, not a bay: 0 decides lit, 1 the run's position, 2 its width.
+        // The last litHash argument is a slot, not a bay: 0 decides lit, 1 the run's position, 2 its
+        // width, 16 and up each pane within the run.
         if (litHash(seed, i, level, 0) >= 0.5) continue;
         const y = lo + (level + 0.18) * storey, y1 = y + storey * 0.64;
         const s = i === ci ? at(C, Cb, y1) : p, e = (i + 1) % n === ci ? at(C, Ca, y1) : q;
@@ -111,21 +111,27 @@ export function createNcrHq(buildings: VBuilding[], site: VBuilding, grid: Groun
         // A lit bay run covering 30–55% of the face, placed by the kit's lit-pane hash.
         const h = litHash(seed, i, level, 1), w = 0.3 + 0.25 * litHash(seed, i, level, 2);
         const u0 = 0.06 + (0.88 - w) * h;
-        const s1 = along(s, e, l, l * u0, 0.09 * out), e1 = along(s, e, l, l * (u0 + w), 0.09 * out);
-        quad(lights, [[s1[0], y, s1[1]], [s1[0], y1, s1[1]], [e1[0], y1, e1[1]], [e1[0], y, e1[1]]], glassAt);
+        // Within the run, broken lit and dark panes about 2.2 m wide (slots 16 and up), not one bar.
+        const panes = Math.max(1, Math.round(l * w / 2.2)), pw = l * w / panes;
+        for (let k = 0; k < panes; k++) {
+          if (litHash(seed, i, level, 16 + k) >= 0.6) continue;
+          const s1 = along(s, e, l, l * u0 + k * pw + 0.08, 0.09 * out), e1 = along(s, e, l, l * u0 + (k + 1) * pw - 0.08, 0.09 * out);
+          quad(lights, [[s1[0], y, s1[1]], [s1[0], y1, s1[1]], [e1[0], y1, e1[1]], [e1[0], y, e1[1]]], glassAt);
+        }
       }
     });
     // The sloping facet.
     tri(body, [[C[0], lo, C[1]], [Ca[0], hi, Ca[1]], [Cb[0], hi, Cb[1]]], [facetAt(lo), facetAt(hi), facetAt(hi)]);
-    roof(roofRing, hi, '#6c777e');
+    // Pale membrane roofs, so the roof doesn't read as the glass wrapped over the top.
+    roof(roofRing, hi, '#b3b7b6');
     // Glass plant screen, set in 3 m.
     const screenRing = inset(roofRing, 3);
     faces(screenRing, (a, b) => quad(body, [[a[0], hi, a[1]], [a[0], floor + screen, a[1]], [b[0], floor + screen, b[1]], [b[0], hi, b[1]]], glassAt));
-    roof(screenRing, floor + screen, '#59646b');
+    roof(screenRing, floor + screen, '#9ea4a6');
   }
 
   // Garage base: pale louvre bands over a glazed street storey, with the sky garden on top.
-  shell.prism(baseR, footing, floor + heights.base, '#c9ccca', '#77905c', { wall: surfaces.precast({ width: 3, height: 3.2 }) });
+  shell.prism(baseR, footing, floor + heights.base, '#c9ccca', '#77905c');
   faces(baseR, (a, b, length) => {
     const m = along(a, b, length, length / 2, 1.5 * out);
     if (length < 4 || pointInRing(m[0], m[1], towerR) || pointInRing(m[0], m[1], annexR)) return;
