@@ -131,6 +131,37 @@ export function sedanFinish(near=true){
     if(!Number.isFinite(furthest))throw Error('Fascia outside shell');
     return dir*(furthest+.018);
   }
+  // Cut the lens from the actual rear-facing bumper facets. Connecting just the
+  // four projected corner points cuts through a convex shoulder between stations.
+  function rearLens(side) {
+    const outline=[[.23,.886],[.58,.90],[.765,.91],[.856,.904],[.891,.913],
+      [.891,.928],[.856,.952],[.765,.973],[.58,.976],[.23,.936]];
+    function clip(points, distance) {
+      const clipped=[];
+      for(let i=0;i<points.length;i++){
+        const a=points[i],b=points[(i+1)%points.length],da=distance(a),db=distance(b);
+        if(da>=0)clipped.push(a);
+        if((da<0)!==(db<0))clipped.push(a.map((v,j)=>v+(b[j]-v)*da/(da-db)));
+      }
+      return clipped;
+    }
+    for(const {points} of hull){
+      if(points.some(p=>p[2]>-1.5))continue;
+      for(let i=1;i+1<points.length;i++){
+        const [a,b,c]=[points[0],points[i],points[i+1]];
+        if((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])>=-1e-9)continue;
+        for(let j=0;j<4;j++){
+          let polygon=[a,b,c];
+          const quad=[outline[j],outline[j+1],outline[8-j],outline[9-j]];
+          for(let k=0;k<4&&polygon.length;k++){
+            const [x,y]=quad[k],[u,v]=quad[(k+1)%4];
+            polygon=clip(polygon,p=>(u-x)*(p[1]-y)-(v-y)*(side*p[0]-x));
+          }
+          if(polygon.length>=3)panel(polygon.map(([x,y,z])=>[x*1.003,y+.001,z-.004]),red);
+        }
+      }
+    }
+  }
   for(const side of [-1,1]){
     // Each row gives a lateral station and the lower/upper edges in elevation.
     const band=(rows,dir,color,offset=0)=>{
@@ -141,8 +172,7 @@ export function sedanFinish(near=true){
       }
     };
     band([[.27,.65,.674],[.42,.66,.72],[.56,.677,.735],[.66,.70,.754],[.755,.732,.777],[.812,.764,.802]],1,lens);
-    // The last two stations follow the shoulder onto the quarter panel.
-    band([[.23,.886,.936],[.58,.90,.976],[.765,.91,.973],[.856,.904,.952],[.891,.913,.928]],-1,red);
+    rearLens(side);
     band([[0,.31,.614],[.27,.313,.625],[.45,.32,.611],[.57,.337,.552],[.64,.35,.404]],1,dark);
     band([[0,.69,.801],[.21,.693,.805],[.30,.717,.815]],-1,'#84949a');
     if(near)band([[0,.844,.858],[.29,.845,.859],[.52,.868,.881],[.60,.882,.891]],-1,'#687980');
