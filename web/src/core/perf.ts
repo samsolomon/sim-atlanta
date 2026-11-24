@@ -51,12 +51,15 @@ const TRAIL_KEY = 'perf-trail';
  *                 bounds per category). `trees` means every instanced mesh in area scenery.
  *   &fartrees=800 orbit distance (m) beyond which tree limbs drop (0 = never)
  *   &shadowstep=80 grid step (m) the shadow camera moves in (0 = follow the target)
+ *   &traffic=legacy  road traffic's pre-2026-11-24 update path (every car posed and height-sampled
+ *                 every frame), for A/B update-ms runs on a device; &traffic=nocull keeps the new
+ *                 path but poses off-screen cars too (to compare drawn cars with legacy)
  *   &motion=orbit ?perf=run turns the camera 12°/s through the sample
  *   &motion=pan   ?perf=run pans back and forth (±150 CSS px, 4 s period), which moves the orbit
  *                 target as a dragging visitor does. In metres that scales with orbit distance, so
  *                 shadow redraws on low depend on the camera (summary.shadowUpdatesInSample). */
 export const perfOverrides = (() => {
-  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false };
+  if (!perfEnabled) return { pixelRatio: null, shadow: null, nopass: new Set<string>(), postOff: false, hide: new Set<string>(), farTreesM: null, shadowStepM: null, prewarmOff: false, trafficLegacy: false, trafficNoCull: false };
   const pr = Number(params.get('pr'));
   const sh = params.get('shadow');
   return {
@@ -68,12 +71,17 @@ export const perfOverrides = (() => {
     hide: new Set((params.get('hide') ?? '').split(',').filter(Boolean)),
     farTreesM: params.has('fartrees') ? Number(params.get('fartrees')) || 0 : null,
     shadowStepM: params.has('shadowstep') ? Math.max(0, Number(params.get('shadowstep')) || 0) : null,
+    trafficLegacy: params.get('traffic') === 'legacy',
+    trafficNoCull: params.get('traffic') === 'nocull',
   };
 })();
 
 const N = 2048; // ~34 s at 60 fps
 const stamps = new Float64Array(N);
 const updateMs = new Float32Array(N);
+/** CPU ms the road-traffic layers spent in update() during each frame (all instances summed). */
+const trafficMs = new Float32Array(N);
+let trafficNow = 0;
 const renderMs = new Float32Array(N);
 const tris = new Float32Array(N);
 let head = 0;
@@ -139,6 +147,8 @@ function phase(name: string) {
  * triangles it drew (all passes, shadow redraws included). */
 function frame(ts: number, update: number, render: number, triangles = 0) {
   stamps[head] = ts;
+  trafficMs[head] = trafficNow;
+  trafficNow = 0;
   updateMs[head] = update;
   renderMs[head] = render;
   tris[head] = triangles;
@@ -167,18 +177,21 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 
 function frames(windowMs: number) {
   const idx = recent(windowMs);
-  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0 };
+  if (idx.length < 2) return { fps: 0, frames: idx.length, p50: 0, p95: 0, max: 0, updateP50: 0, renderP50: 0, renderP95: 0, trianglesP50: 0, trianglesMax: 0, trafficMean: 0, trafficP50: 0, trafficP95: 0 };
   const span = stamps[idx[0]] - stamps[idx[idx.length - 1]];
   const dts: number[] = [];
   for (let k = 0; k < idx.length - 1; k++) dts.push(stamps[idx[k]] - stamps[idx[k + 1]]);
   const up = idx.map(i => updateMs[i]);
   const rn = idx.map(i => renderMs[i]);
   const tr = idx.map(i => tris[i]);
+  const tf = idx.map(i => trafficMs[i]);
   return {
     fps: r1(((idx.length - 1) * 1000) / Math.max(1, span)), frames: idx.length,
     p50: r1(pct(dts, 0.5)), p95: r1(pct(dts, 0.95)), max: r1(Math.max(...dts)),
     updateP50: r1(pct(up, 0.5)), renderP50: r1(pct(rn, 0.5)), renderP95: r1(pct(rn, 0.95)),
     trianglesP50: pct(tr, 0.5), trianglesMax: Math.max(...tr),
+    trafficMean: Math.round(tf.reduce((a, b) => a + b, 0) / tf.length * 1000) / 1000,
+    trafficP50: Math.round(pct(tf, 0.5) * 1000) / 1000, trafficP95: Math.round(pct(tf, 0.95) * 1000) / 1000,
   };
 }
 
@@ -508,6 +521,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
   // A flat summary first, so a truncated or field-picked copy still carries the essentials.
   const summary = {
     quality: full.quality, fps: f.fps, p50: f.p50, p95: f.p95, max: f.max, updateP50: f.updateP50, renderP50: f.renderP50,
+    trafficMean: f.trafficMean, trafficP50: f.trafficP50, trafficP95: f.trafficP95,
     // Median over the sample: one frame's count depends on whether it redrew the shadow map.
     calls: full.renderer?.calls ?? null, triangles: f.trianglesP50 || (full.renderer?.triangles ?? null), trianglesMax: f.trianglesMax,
     lastFrameTriangles: full.renderer?.triangles ?? null, programs: full.renderer?.programs ?? null,
@@ -595,6 +609,8 @@ export const perf = {
   enabled: perfEnabled, phase, frame, attach, detach, report, inventory, run, top, applyHide, watchSlow, hash,
   fps: frames,
   shadowUpdate() { shadowUpdates++; },
+  /** Add CPU ms spent in road-traffic update() to the current frame. */
+  traffic(ms: number) { trafficNow += ms; },
   /**
    * Record one rendered frame's actual draws: every renderBufferDirect call with its real triangle
    * count (drawRange, material group and instance count, as three.js computes it), its pass (main,

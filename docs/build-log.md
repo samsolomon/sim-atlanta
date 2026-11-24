@@ -3444,6 +3444,14 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 — Cars that cost nothing when you can't see them
+
+The phone spent about 6 ms of every 33 ms frame updating City, and road traffic was most of it. Every car was posed every frame, wherever the camera was looking. Each pose meant three exact height lookups against the drawn terrain and decks, plus a signal-queue solve that allocated a string key for every car at every light. At 6× CPU throttle on the Studio, traffic alone took 7.7–9 ms.
+
+Each lane now keeps a cached 2 m height profile, and cars outside the camera frustum are skipped. Matrices and colours upload only when they change. Holding the same seed and clock, the Midtown arterial view fell from 9.0 ms to 1.3 ms, and the whole-board view fell from 7.7 to 5.4 ms. The real A16 measured City's update step falling from 6.5 to 3.8 ms on an earlier commit.
+
+The surprise came in review. The profile passed a pose-equivalence test on a sloped plane, yet on the real board it was off by up to 8 m. One road owner can switch between deck and ground inside a 2 m step. Each step now checks itself against the drawn road at its eighths before it is allowed to interpolate. After that, every lane on the 12-area board is within 5 mm of exact sampling. [Same frame, legacy and new](log/perf/traffic-frame-cost-midtown.jpg)
 ### 2026-11-24 · The Medical Arts Building, from its nomination
 
 No good public photographs of the 1927 Medical Arts Building turned up, but the 2016 National Register nomination describes every elevation in turn. That was enough to model it. The two-storey limestone base and orange terracotta band run on Peachtree and the north side. A pilastered capital and a cornice turn both corners and stop. On the north side, a tile panel sits between heightened bays. The south wall is plain red brick with a blank strip where the elevator core sits. The nomination's "60 feet of frontage, 140 feet deep" matched the Overture outline. The lidar put the elevator penthouse and stair head at 357 m and 362 m NAVD88, exactly where the nomination says the two-storey penthouse stands. The building has been boarded since at least 2016, so it is the first skin with no lamp mesh at all. It costs about 470 triangles and goes straight into the downtown landmark batch. [Before and after](log/ui/medical-arts/compare-ne.jpg)
