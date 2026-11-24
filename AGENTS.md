@@ -85,8 +85,8 @@ uses the timetable.
 - **Honesty about data.** Every value carries a truth tier in the data: `live`,
   `scheduled`, `reported`, `inferred` or `illustrative`, per attribute, not per train.
   Show it where people would read something as fact. That means a selected train, bus,
-  freight or traffic card, plus one scene-wide word (`Live` or `Timetable`). Don't label
-  ambient scenery on screen: weather, trees, building heights, landscaping or area notes.
+  freight or traffic card, plus one scene-wide word (`Live` or `Timetable`). The Final subject card also names weather confidence (Sam, 2026-11-24). Don't label
+  ambient scenery on screen: trees, building heights, landscaping or area notes.
   Those tiers live in Key and About. Freight is still `illustrative` on its card. Never
   present a schedule or a guess as live, and never show a guessed weather condition as
   real (decided by Sam on 2026-11-23; see `docs/data-model.md`).

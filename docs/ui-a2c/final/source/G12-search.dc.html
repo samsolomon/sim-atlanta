@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Final · P12 · Search (full screen while typing)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.root{position:relative;width:390px;height:844px;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ink:#2a2722;--ink2:#5f5a50;--ga:rgba(252,250,245,.80);--gb:rgba(243,239,230,.68);--hair:rgba(60,45,30,.18);--rim:rgba(255,255,255,.9);--sh:0 10px 28px rgba(40,30,20,.18),0 1px 3px rgba(40,30,20,.10);--sep:rgba(60,45,30,.12);--accent:#1f5fd1;color:var(--ink);background:#f3efe6}
+.g{position:absolute;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim)}
+.gs{position:relative;box-sizing:border-box;background:linear-gradient(160deg,var(--ga),var(--gb));-webkit-backdrop-filter:blur(22px) saturate(1.35);backdrop-filter:blur(22px) saturate(1.35);border-radius:14px;box-shadow:0 0 0 .5px var(--hair),var(--sh),inset 0 1px 0 var(--rim);width:44px;display:flex;flex-direction:column;align-items:center}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--ink);padding:0;border-radius:10px;flex:none}
+.ib svg{width:20px;height:20px}
+.sep{height:1px;background:var(--sep);margin:0 8px;align-self:stretch}
+.vsep{width:1px;align-self:stretch;margin:10px 4px;background:var(--sep)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.vs{height:36px;border:0;border-radius:9px;padding:0 12px;font:600 14px system-ui;background:transparent;color:var(--ink);display:inline-flex;align-items:center}
+.vs.on{background:rgba(255,255,255,.95);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+.d3{width:36px;height:30px;margin:4px 0 2px;border-radius:8px;display:grid;place-items:center;font:700 13px system-ui;letter-spacing:.02em;color:var(--ink)}
+.d3.on{background:var(--ink);color:#fbf9f4}
+.track{position:relative;width:4px;border-radius:2px;background:var(--sep);margin:8px 0 12px}
+.fill{position:absolute;left:0;right:0;top:0;border-radius:2px;background:var(--ink);opacity:.55}
+.thumb{position:absolute;left:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(40,30,20,.35),0 0 0 .5px rgba(60,45,30,.25)}
+.tip{position:absolute;right:30px;top:50%;transform:translateY(-50%);white-space:nowrap;font:600 12px system-ui;padding:4px 8px;border-radius:7px;background:var(--ink);color:#fbf9f4}
+.tick{position:absolute;left:-5px;right:-5px;height:2px;border-radius:1px;background:var(--ink2)}
+.cap{font:600 10px system-ui;color:var(--ink2);letter-spacing:.04em;text-transform:uppercase}
+svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.later{outline:1.5px dashed rgba(42,39,34,.45);outline-offset:2px}
+.spinc{animation:kSpinC 12s ease-in-out infinite;transform-origin:50% 50%}
+@keyframes kSpinC{0%,100%{transform:rotate(-21deg)}45%{transform:rotate(38deg)}70%{transform:rotate(-60deg)}}
+.wake{animation:kWake 8s ease-in-out infinite}
+@keyframes kWake{0%,12%{opacity:0}18%,70%{opacity:1}80%,100%{opacity:0}}
+.cursor{animation:kCur 8s ease-in-out infinite}
+@keyframes kCur{0%{transform:translate(0,0);opacity:0}8%{opacity:1}16%{transform:translate(-60px,-40px)}70%{transform:translate(-60px,-40px);opacity:1}78%,100%{opacity:0;transform:translate(-60px,-40px)}}
+@media (prefers-reduced-motion:reduce){.spinc,.wake,.cursor{animation:none}}
+.cb{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;color:var(--ink)}
+.cb svg{width:19px;height:19px}
+.chip3{height:34px;padding:0 12px;border-radius:9px;display:inline-flex;align-items:center;font:700 13px system-ui;background:var(--ink);color:#fbf9f4}
+.cb.act{background:var(--sep)}
+.chip3.off{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px rgba(42,39,34,.35)}
+.pop{position:absolute;box-sizing:border-box}
+.h{margin:14px 0 6px;font-size:12px;font-weight:600;color:var(--ink2)}
+.seg{display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sep)}
+.seg span{flex:1;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:5px;font:600 13px system-ui}
+.seg span.on{background:rgba(255,255,255,.95);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+.mi{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;font:500 15px system-ui;position:relative}
+.mi svg{width:19px;height:19px;flex:none}.mi small{display:block;font-size:12px;color:var(--ink2);font-weight:400;margin-top:1px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;padding:11px 0;border-top:1px solid var(--sep);white-space:nowrap}
+.tier{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--sep);color:var(--ink2);white-space:nowrap}
+.btn{flex:1;height:40px;border-radius:10px;padding:0 14px;font:600 14px system-ui;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--sep);color:var(--ink)}
+.btn.primary{background:#2a2722;color:#fbf9f4}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:14px}
+.opt small{display:block;font-size:12px;color:var(--ink2);margin-top:2px}
+.rd{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(42,39,34,.45);flex:none;margin-top:1px;box-sizing:border-box}
+.rd.on{box-shadow:inset 0 0 0 5px #2a2722}
+.sr{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;font-size:14px}
+.sr small{display:block;font-size:12px;color:var(--ink2)}.sr svg{width:18px;height:18px;flex:none;color:var(--ink2)}
+.tag{font:700 9px system-ui;letter-spacing:.06em;text-transform:uppercase;color:#fbf9f4;background:#8a7f6c;border-radius:4px;padding:2px 5px}
+.kbd{font:600 11px system-ui;color:var(--ink2);padding:2px 6px;border-radius:5px;box-shadow:inset 0 0 0 1px var(--sep);background:rgba(255,255,255,.6)}
+.chip{height:30px;padding:0 11px;border-radius:15px;display:inline-flex;align-items:center;gap:5px;font:600 13px system-ui;background:var(--sep)}
+.chip.on{background:#2a2722;color:#fbf9f4}
+.chip small{font-weight:500;opacity:.7}
+.ml{display:flex;align-items:center;gap:12px;padding:8px 6px;border-top:1px solid var(--sep);font-size:14px}
+.ml small{display:block;font-size:12px;color:var(--ink2)}
+.th{width:44px;height:34px;border-radius:7px;flex:none;display:grid;place-items:center}
+.lnk{display:inline-flex;align-items:center;gap:4px;font:600 13px system-ui;color:var(--ink2)}
+.cb{width:44px;height:44px}
+.chip.on{background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 1px 3px rgba(40,30,20,.16),0 0 0 .5px rgba(60,45,30,.12)}
+.chip.on small{opacity:.6}
+</style>
+</helmet>
+<div class="root">
+<img src="/_blob/79735a4af92dc0ab41b97c9971075f37" alt="Downtown Atlanta diorama by day" style="position:absolute;inset:0;width:390px;height:844px;object-fit:cover"><section class="g" style="left:0;right:0;top:0;bottom:0;border-radius:0;padding:54px 12px 0"><div style="display:flex;gap:8px;align-items:center"><div style="flex:1;display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:11px;background:rgba(255,255,255,.9);box-shadow:inset 0 0 0 1.5px var(--ink)"><span style="width:19px;height:19px;display:inline-grid"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg></span><span style="font-size:15px">Peachtree Cent<span style="border-left:1.5px solid var(--ink);margin-left:1px"></span></span></div><span style="font:600 15px system-ui">Cancel</span></div><div style="margin-top:6px"><div class="sr" style="background:var(--sep)"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="15" rx="3"></rect><path d="M9 21l1.5-3M15 21l-1.5-3M6 11h12"></path></svg><span>Peachtree Center station<small>MARTA · Red and Gold lines</small></span></div><div class="sr"><svg viewBox="0 0 24 24"><path d="M4 20V8l8-4 8 4v12"></path><path d="M9 20v-6h6v6"></path></svg><span>Peachtree Center<small>Building · 225 Peachtree St NE</small></span></div><div class="sr"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"></path><circle cx="12" cy="11" r="2"></circle></svg><span>Peachtree Center Ave NE<small>Street · Downtown</small></span></div><div class="sr"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10z"></path><circle cx="12" cy="11" r="2"></circle></svg><span>Peachtree Center, Peachtree Corners<small>Outside 3D · opens on the Map</small></span></div></div><div style="position:absolute;left:0;right:0;bottom:0;height:290px;background:rgba(200,196,188,.85);display:grid;place-items:center;font:600 13px system-ui;color:var(--ink2)">Keyboard</div></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

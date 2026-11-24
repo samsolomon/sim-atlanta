@@ -1,7 +1,6 @@
 # UI controls and chrome: design brief
 
-Status: approved direction **A2c**, confirmed by Sam on 2026-11-23. **Built and the only
-interface** (steps 1–9 merged; the pre-A2c shell and `?ui=classic` were removed the release after).
+Status: approved direction **A2c**, confirmed by Sam on 2026-11-23.
 Design canvas: https://claude.ai/artifact/CCsbqwgHy8fTJ2ujri2iSx (private to Sam).
 Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds are history.
 
@@ -20,23 +19,39 @@ Build the boards under "Round 4", "One app" and "Round 5". The earlier rounds ar
 
 ## One layout, four places
 
+**Boards: the canvas section "FINAL — the layout to build"** (desktop 01–13, phone
+P1–P16), copied into this branch as `docs/ui-a2c/final/F01…F13.jpg` (desktop) and
+`G01…G16.jpg` (phone), with their markup in `docs/ui-a2c/final/source/`. Every section above it on the canvas is history. Where this brief and an older
+board disagree, the Final section wins.
+
 Every view (Map, City and Models) uses the same four places. All glass sits **8 px**
 from the screen edges. On phones, the top elements also sit below the status bar.
 
-| Place | Contents |
-|---|---|
-| **Top-left: subject card** | **Map and City:** the neighbourhood under the camera centre, then time and weather, then a confidence line, for example "● Live · Friday, Nov 20" or "Timetable · illustrative sky · Now". **Models:** the model name with ⌄ to browse, ‹ › to step through its category, a one-line description and a position ("Vehicles · 1 of 3"). |
-| **Bottom-left: app bar** | Menu · view switch (**Map · City · Models**) · radio. It looks the same in every view. |
-| **Right: detail panel** | One slot. It holds the selected train or building, the Key, About & credits, or a model's Details. It is only as tall as its content and grows to full height only for long content such as About, which scrolls inside. |
-| **Bottom-right: camera column** | Compass, zoom in and out, share. It never moves. In Models it holds reset view, zoom and share. On Map the compass appears only once the map is rotated. |
+| Place | Job | Map tab | Models tab |
+|---|---|---|---|
+| **Top-left: subject card** | What you're looking at | The neighbourhood under the camera centre, then time and weather, then a confidence line that names what each tier covers: "● Live trains · weather reported" at the present, or "● Timetable · illustrative sky · Fri, Nov 20" (neutral dot) on a shifted clock. Tap: Time & weather. | The model name with ⌄, ‹ › to step through its category, a one-line description and a position ("Vehicles · 1 of 14"). ⌄ grows the card down into the browser. |
+| **Top-right: camera group** | The camera | Round compass · zoom + and − · **3D** with a short tilt slider. Phones: compass and 3D only. | Reset view · zoom. |
+| **Right: detail panel** | Detail | The selected train or building, the Key, or About & credits. | The model's Details. |
+| **Bottom centre: the dock** | The app | Menu · **[Map \| Models]** · Search · radio · share. | Same dock; search looks for models. |
+
+- The dock is identical in every view. Everything it opens rises from it as one popover
+  on desktop, or a bottom sheet on phones. Only one is open at a time; Esc, a tap outside
+  or the same button closes it.
+- The camera group **steps aside while the right panel is open** (gestures and N still
+  work). The compass is otherwise always visible, in Map and City alike.
+- Desktop search is a field in the dock ("Search Atlanta", "Search models" in Models)
+  with a ⌘K / Ctrl K hint. Phones show a search icon that opens a sheet.
 
 There is no "Sim Atlanta" name on screen. The name appears in the tab title, the link
 preview and About.
 
-Removed for now: Street view and search. Both are follow-ups.
+Not yet: Street view, layers and tours (see Follow-ups).
 
 ## Subject card and time
 
+- **"Atlanta" eyebrow** above the neighbourhood (12 px / 600, secondary ink), so a
+  visitor from a link knows the city at a glance (critique, 2026-11-24). At metro zoom,
+  drop the eyebrow and show "Metro Atlanta" as the name.
 - The neighbourhood comes from `data/ga/neighborhoods.json` at the camera centre and
   updates when the camera settles. Past neighbourhood zoom it reads "Metro Atlanta".
   - **Fix:** today it says "Downtown" even at metro zoom.
@@ -72,8 +87,10 @@ Removed for now: Street view and search. Both are follow-ups.
   - line accent and service colour
   - destination
   - Follow and Share
-  - next stop, with a truth tier on each attribute
+  - **Next arrival** "Peachtree Center in 2 min" (Live: one prediction from the feed)
+  - **Position** "Leaving Five Points" (Inferred: placed between feed updates)
   - car count, marked illustrative
+  - a "See the model ›" row when a model exists
   - an "All stops ›" row
 - **Two things want the panel:** the newer one replaces the older one. A back row (for
   example "‹ Northbound to North Springs") returns to the previous content.
@@ -89,7 +106,7 @@ Removed for now: Street view and search. Both are follow-ups.
 
 ## Menu
 
-- Opens upward from the app bar. On phones it is a bottom sheet.
+- Opens upward from the dock's menu button. On phones it is a bottom sheet.
 - Contents:
   - Key ›
   - About & credits ›
@@ -100,22 +117,45 @@ Removed for now: Street view and search. Both are follow-ups.
   - map data credit in small print
 - The menu has no title block.
 
-## Models view (the Model lab moves in)
+## Models tab (the Model lab as its own page)
 
-- The Model lab becomes the third view, no longer a separate page.
-- **Details panel:** camera (Front, Side, Rear, Top), line colour, platform, and display
-  switches (Night, Ink outlines).
-- **"Compare with a photo"** is a modelling tool, so it goes behind a dev-only flag such
-  as `?dev`.
-- **Browser at scale:** tapping the model name opens a tall panel on the left, or a
-  full-height sheet on phones. It contains:
-  - search
-  - category chips with counts
-  - a Recent row, shown only once the catalogue is large
-  - a grouped list in which each row has a thumbnail coloured by service, a name and one
-    line
-- **Phones:** Details is a button on the model card, so the app bar stays identical in
-  every view.
+- **Map · Models** in the dock switches between the two places. Models is a real page
+  with its own URL (`?view=models&model=<id>`), so the browser's Back button works.
+  There is no back control: tap Map to return.
+- **"See the model ›"** is the last row of a selected train's or building's detail panel
+  when a model exists. It switches to Models with that model loaded.
+- **Details panel** (right): camera (Front, Side, Rear, Top), display (Day, Night, Ink),
+  line colour and platform where they apply.
+- **Browser:** ⌄ on the model card grows the card down the left side into the browser
+  (Final 10). It has search, category chips with counts, a Recent row once the catalogue
+  is large, and a list whose rows have a thumbnail coloured by service, a name and one
+  line; the current model is marked "Showing". On phones it is a full-height sheet (P7).
+- **Framing is computed, not fixed** (Sam, 2026-11-24). Today each view is a fixed camera
+  position and vertical field of view (`TRAIN_VIEWS` etc. in `web/src/models/main.ts`), so
+  a portrait phone keeps the height and loses the width: the ¾ front view shows the middle
+  of the car and cuts off the cab (`docs/ui-a2c/final/framing-phone-before-after.jpg`,
+  left). Instead:
+  - **Clear area:** the canvas minus whatever covers it (card, left browser, right
+    Details, dock, phone sheet). Centre the projection in it with
+    `camera.setViewOffset`, so the model sits between the panels rather than behind one.
+  - **Each view is a direction plus a focus region.** The camera distance is solved so
+    the focus region's bounding box fits the clear area on both axes with about 12% margin
+    (the prototype stepped the distance out until all eight corners projected inside).
+  - **Focus region:** when the clear area is landscape, the whole model (both cars), as
+    now. When it is portrait, the **leading car's front 35%**, the cab end; the rest of
+    the train may run off the trailing edge (right of that image). Buildings and trees
+    use the whole model and fit height.
+  - **Default view on phones:** ¾ front.
+  - **When to refit:** on load, on a view button, on resize, and when a panel opens or
+    closes (ease about 300 ms). Not after the visitor moves the camera; Reset view refits.
+  - Prototyped against main's lab at 390×760 with the card and dock insets; the
+    wide-screen case (browser and Details open) still needs tuning in the build, because
+    the first pass framed the train too small.
+- **"Compare with a photo"** is a modelling tool, so it goes behind `?dev`.
+- **Phones:** Details is a button above the dock (P6).
+- **Returning to Map:** City is disposed on the way into Models today
+  (`web/src/main.ts`), so coming back replays the white-model arrival (1–5 s). Pausing
+  City instead is worth measuring on the Galaxy A16; until then, accept the rebuild.
 
 ## Selected states
 
@@ -137,6 +177,15 @@ Removed for now: Street view and search. Both are follow-ups.
   - twisting two fingers rotates
   - dragging two fingers up or down tilts
   - double-tap zooms in
+- **Trackpad (desktop):**
+  - click-drag pans
+  - two-finger scroll up or down tilts; sideways turns
+  - pinch zooms
+  - twist turns, in Safari only (its gesture events; other browsers don't receive it)
+  - A mouse wheel still zooms. Tell the two apart per gesture: trackpads send small,
+    fractional, often sideways deltas; wheels send fixed notches (or `deltaMode` lines).
+    A wrong guess only means a smooth-scrolling mouse tilts; + and − still zoom.
+  - Two-finger tilt stops at City's top (20°). It never switches between Map and City.
 - **Keys:** arrows or WASD pan, Q/E rotate, +/− zoom, N faces north.
 - **Implementation:**
   - In `web/src/city/city.ts`, remap the `OrbitControls` mouse buttons and touches and
@@ -145,8 +194,71 @@ Removed for now: Street view and search. Both are follow-ups.
   - Re-check the tap-versus-drag threshold in `city/pick.ts`, and Follow.
   - Phones drop the zoom buttons, because pinch covers them.
   - The City studios edit `city.ts`, so coordinate through the Control agent.
-- The first-visit hint uses wording that matches the view and the input, so the
+- The first-visit hint uses wording that matches the view and the input (trackpad:
+  "Two-finger scroll to tilt and turn · pinch to zoom · drag to move"; touch: "Two
+  fingers: drag up or down to tilt, twist to turn, pinch to zoom"), so the
   "Drag to look around · WASD to move" hint no longer appears on Map.
+- **First-visit hint** (Final 01, P1): one glass line above the dock that leads with the
+  reason to interact, covering trains and buildings alike. Desktop: "**Click anything** to
+  inspect · **drag** to move · **two-finger scroll** to tilt" (mouse: "right-drag to tilt").
+  Phone: "**Tap anything** to inspect. Pinch to zoom, two fingers to tilt." It has a
+  "Got it" and also goes
+  after the first gesture; it never returns once dismissed (per-viewer storage).
+
+## 3D and tilt (in the camera group)
+
+- **3D button.** On = City, a dark chip with light "3D" (an on/off button, not a segment,
+  so the no-dark-fill segment rule doesn't apply; at night it inverts). Off = the flat map.
+  Turning it on plays the Map → City switch below; off plays City → Map. The site opens
+  with 3D on (#297).
+- **Tilt slider** under the button, 48 px, one range across both: top = flat map (0°), a
+  notch at 20° = City's highest angle, bottom = 70°. City opens at 55°. Dragging past the
+  notch switches views; the first time, City builds at its own pace. While dragging, the
+  angle shows beside the thumb.
+- **Compass:** round, its own piece; the N and red needle point north and turn with the
+  camera. Tap faces north.
+- **Phones:** compass and 3D only. Two-finger drag tilts.
+- **Outside City's area** (Final 13): 3D and the slider dim. Hover or tap shows "3D covers
+  downtown and Midtown." with **Take me there**, which flies to City and plays the switch.
+- **URLs:** `?view=city` and `?view=map` keep working; 3D on/off is the same state.
+
+## Critique fixes (2026-11-24)
+
+From the impeccable critique of the Final section (26/40):
+
+- **Truth:** the subject card names its tiers separately ("Live trains · weather
+  reported"); a shifted clock reads "Timetable · illustrative sky" with a **neutral grey
+  dot** (`#8a8478`), never blue, because blue means city rail. Night boards are a shifted
+  clock, never "Live". Weather is "reported" when observed. The train panel splits Next
+  arrival (Live) from Position (Inferred).
+- **One search field:** results rise from the dock field, which shows the query and a
+  focus ring; popovers never repeat the field. In Models, the browser keeps its own search
+  field (Sam, 2026-11-24); the dock's "Search models" opens the browser and focuses that
+  field, so only one field is ever active. Phones open a full-screen
+  search with Cancel (P12).
+- **Targets:** every control has a 44×44 hit area, padded invisibly where the visual is
+  smaller (sheet ✕, chips, segments, the tilt thumb). Dock buttons are 44 px.
+- **Outside City's area:** tapping or focusing the dimmed 3D opens a small popover,
+  "3D covers downtown and Midtown." with a **Take me there** button (keyboard and touch
+  reachable), not a hover tooltip. Dimmed 3D uses an outlined chip in secondary ink, not
+  40% opacity. The card reads "Metro Atlanta" there.
+- **Radio** shows no "Music later" tag to visitors.
+- **Phone boards added:** Time & weather sheet (P9), dragging state (P10), Share (P11),
+  Search (P12), Radio (P13), Models Details (P14), arriving (P15), off-area (P16).
+- **Models on wide screens (≥1280 px):** the browser (left) and Details (right) are both
+  open by default when you enter Models; the model is framed in the space between them
+  (Final 09). Narrower screens fold the browser into the card (Final 10).
+- **Share:** the link preview on its own row, then **Copy link** and **Share…** side by
+  side, both separator-tint buttons.
+- **Models exception:** the camera group (reset, zoom) stays beside Models Details,
+  because Details is the lab's main tool rather than a passing selection.
+
+## Phones: the selection card
+
+- A selected train or building opens as a **compact card above the dock** (P2): service
+  line, headsign, next stop with its truth tier, Follow and "More ⌃". The dock stays.
+- Swiping up expands it to full detail (P3), which covers the dock; swiping down returns to
+  the compact card. ✕ closes it.
 
 ## Credits (OSMF attribution guidelines)
 
@@ -155,9 +267,10 @@ Both views show the same line in the same place: 12 px on desktop and 11 px on p
 glass behind it.
 
 - **Placement:**
-  - **Desktop:** right-aligned, just left of the camera column, with its baseline level
-    with the bottom of the app bar and camera column.
-  - **Phone:** centred under the app bar, in the home-indicator strip.
+  - **Desktop:** bottom-right corner, `right: 8px; bottom: 9px` (the camera group now sits
+    top-right, so the corner is free). It must not run under the centred dock; at narrow
+    desktop widths it wraps above the corner rather than overlapping.
+  - **Phone:** right-aligned just above the dock.
 - **"OpenStreetMap"** links to openstreetmap.org/copyright. **"OpenMapTiles"** links to
   openmaptiles.org.
 - **Map view (2D, OpenFreeMap tiles): the credit is permanent.** It never fades. This is
@@ -202,7 +315,7 @@ References:
 
 ### Sequence on first open
 
-1. **Under half a second:** the frame (place card, app bar, camera column) appears over the
+1. **Under half a second:** the frame (place card, dock, camera group) appears over the
    paper background. The notice under the place card reads "Building the city…". The place
    card's tier line shows the date with a grey dot, and does not say Live yet.
 2. **As soon as building footprints and heights have loaded:** draw the white model and
@@ -234,11 +347,11 @@ References:
   phone data. Measure on the Galaxy A16 before changing it. The white-model treatment works
   either way.
 
-### Map to City (Sam chose option B, 2026-11-23)
+### Map to City (Sam chose option B, 2026-11-23; triggered by the 3D button or slider)
 
 Reference: canvas board 9 (`docs/ui-a2c/source/L9-map-b.dc.html`), built from real captures.
 
-1. **Tap City: the map tilts first.** MapLibre eases from its current pitch to City's tilt
+1. **Turn on 3D: the map tilts first.** MapLibre eases from its current pitch to City's tilt
    over about 1 s, keeping centre and bearing, while City's data downloads. Nothing heavy
    runs yet, so the tilt stays smooth.
 2. **White buildings stand on the map.** City draws only buildings (ground, roads, decks and
@@ -291,10 +404,21 @@ out, then the map flattens.
 
 ## Radio
 
-- An icon in the app bar, off until tapped, because browsers block autoplay. While it
-  plays, the track title shows next to it.
+- A button in the dock, off until tapped, because browsers block autoplay. Tapping opens
+  a small player above the dock (Final 07): track, progress, previous / play-pause / next,
+  volume, tagged "Music later" until the tracks exist.
 - Build it against a stub playlist. The music comes later: about 10 calm, SimCity-style
   tracks, around 30 minutes in total.
+
+## Follow-ups (not in this build)
+
+- **Street view:** the tilt slider continues past 70° to a second notch, and the camera
+  drops to street level (drag to look, arrows to walk, ✕ to exit). Build from the
+  ground-level camera in `underpassDrive` (`web/src/city/city.ts`).
+- **Search content:** the field ships in the dock; results (stations, buildings, streets,
+  and addresses outside City that open on the Map) come with the search work.
+- **Layers** (freight, buses, roadwork from 511GA, game days), each with its truth label,
+  and **Tours** (staged shots) in the menu.
 
 ## Rules that do not change
 
@@ -308,7 +432,7 @@ out, then the map flattens.
   - honour reduced motion: camera jumps are instant
   - measure text contrast on glass over busy scenes after the build
 
-## Build order (built behind `?ui=next`; now the default)
+## Build order (behind `?ui=next` until it replaces the current interface)
 
 1. **Shell:** the four places, glass tokens, 8 px insets, app bar, camera column, the
    corrected hint, and the credit line. Map and City.
@@ -325,6 +449,14 @@ out, then the map flattens.
 9. **Loading and arrival:** the white model, colour fade-in, areas arriving as white model,
    and the registered Map to City switch (see the section above). Sequence it with the City
    studios.
+10. **Final layout** (supersedes the shell placement from step 1): the centred dock
+    (menu · Map | Models · search field · radio · share) replacing the bottom-left dock;
+    the top-right camera group (compass, zoom, 3D + tilt) that steps aside for the right
+    panel; Models as its own page with the left browser, right Details, model framing and
+    "See the model ›"; the phone compact selection card; trackpad two-finger tilt; the
+    off-area state; and the new hints. This reworks merged step-1 code and its tests. The
+    slider crossing into Map comes after option B's switch, since it drives that
+    transition.
 
 ## Not yet verified
 
@@ -346,7 +478,7 @@ The canvas is private, so the approved boards are copied into this branch:
 |---|---|
 | `A2c-desktop` | City, live, train selected: subject card, content-height detail panel, app bar, camera column |
 | `A2c-night` | Night glass, clock shifted, radio playing ("Peachtree Drift") |
-| `A2c-menu` · `A2c-phone-menu` | Menu on desktop (opens up from the app bar) and phone (sheet) |
+| `A2c-menu` · `A2c-phone-menu` | Menu on desktop (opens up from the dock) and phone (sheet) |
 | `A2c-key` · `R5-phone-key` | Key in the detail panel and as a phone sheet |
 | `A2c-about` | About & credits: full-height panel that scrolls, stopping above the camera column |
 | `A2c-models` · `R5-phone-models` | Models view: model card, Details panel, Details button on phones |
@@ -372,7 +504,7 @@ The canvas is private, so the approved boards are copied into this branch:
 - **Radius:** cards and panels 16 px; phone sheets 24 px with a 40×5 px grabber; buttons
   9–10 px.
 - **Inset:** 8 px from every edge. On phones the top items sit at `safe-area-top + 8`
-  (54 px on the 390×844 board). The app bar sits 34 px from the bottom, above the
+  (54 px on the 390×844 board). The dock sits 34 px from the bottom, above the
   home indicator.
 
 ### Type and sizes
@@ -392,12 +524,30 @@ System UI sans throughout.
   - model browser 380 px
   - menu 320 px
   - Time & weather card 372 px
-- **Heights:** app bar and camera buttons 44×44 (phone app bar 52 px tall); app bar
-  48 px on desktop.
+- **Heights:** camera buttons 44×44; the dock is 52 px tall on desktop and phones.
 - **Selected segment:**
   - day: background `rgba(255,255,255,.95)`, shadow `0 1px 3px rgba(40,30,20,.16), 0 0 0 .5px rgba(60,45,30,.12)`, track `rgba(60,45,30,.12)`
   - night: `rgba(255,255,255,.20)` on a `rgba(0,0,0,.22)` track
   - never a dark fill
+- **Dock (desktop):** centred, `bottom: 8px`, 52 px tall, about 556 px wide; 40×40 icon
+  buttons, 1 px separators. Map | Models is the standard segmented control. Search field 210×38 px, radius 10 px, **light fill** `rgba(255,255,255,.75)` (night
+  `.10`) with an inset 1 px separator ring, never the grey separator tint, which reads as
+  disabled; 17 px glyph and 14 px placeholder in secondary ink; focused: ink text and a
+  1.5 px ink ring. ⌘K hint 11 px / 600. First-visit hint **"Got it"** is plain 13 px / 600
+  secondary-ink text (no fill), with a padded 44 px hit area. Phone dock icons, search
+  included, are 19 px glyphs at 1.8 stroke in 44 px hit areas. The pressed button gets
+  the separator tint. Popovers sit 68 px from the bottom, aligned to their button (menu to
+  the dock's left edge, share to its right edge, others centred). **Phone dock:** full
+  width, 52 px, `bottom: 34px`, search as an icon.
+- **Camera group (desktop):** top-right, 44 px wide pieces, 8 px apart, radius 14 px
+  (compass fully round). 3D button 36×30 px, 13 px / 700; on = `#2a2722` fill with
+  `#fbf9f4` text (at night `#eef0f3` with `#1b1f27`); off = ink text, no fill. Tilt track
+  4×48 px in the separator colour, filled above the thumb in ink at 55%; thumb 16 px white
+  with `0 1px 4px rgba(40,30,20,.35)`; notch 2 px in secondary ink. Angle label 12 px / 600
+  on ink beside the thumb. Off-area: button and track at 40% opacity; tooltip 13 px on
+  ink, to the left.
+- **Phone selection card:** `bottom: 94px` (above the dock), radius 20 px, 36×5 px
+  grabber, headsign 18 px / 700, buttons 40 px.
 - **Truth-tier label:** 11 px / 600, 1 px separator-colour border, fully rounded, secondary
   ink. Fixed width (76 px) in the Key so the descriptions line up.
 - **Colour lines in the Key:** 28×5 px. Service colours come from `web/src/ui/tokens.css`.
@@ -406,11 +556,12 @@ System UI sans throughout.
   - halo `text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea`
   - no glass behind it
   - **permanent on Map; fades on City** (first pan or zoom, or 5 s); none on Models
-  - desktop: `right: 60px; bottom: 9px`, so it sits just left of the 44 px camera column at the 8 px inset
-  - phone: centred, `bottom: 11px`, below the app bar
+  - desktop: `right: 8px; bottom: 9px`
+  - phone: right-aligned, just above the dock
   - night City: use the night secondary ink with a dark halo, `text-shadow: 0 0 2px #0b1020, 0 0 6px #0b1020`
   - the boards show the line on load; on Map it stays exactly as drawn
-- **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Every other button
+- **Follow** is the one dark primary button (`#2a2722` on `#fbf9f4`). Copy link, Play and
+  the selected chip are not dark: they use the separator tint or the raised white chip. Every other button
   uses the separator-tint background.
 
 ### Share sheet (not redrawn in A2c, behaviour unchanged)
@@ -420,8 +571,8 @@ System UI sans throughout.
   - **Live:** "Opens at whatever time it is for the viewer."
   - **Freeze this moment:** "Fri, Nov 20 · 9:30 PM, paused. Trains from the timetable."
 - A monospace preview of the link, then "Copy link" and "Share…" (the system share sheet).
-- Desktop opens it from the share button in the camera column as a small panel; phones
-  use a sheet.
+- Desktop opens it from the dock's share button as a popover (Final 08); phones use a
+  sheet.
 
 ### Copy to reuse verbatim
 

@@ -22,6 +22,12 @@ export interface ShellOptions {
   bearing?(): number;
   /** Turn the camera to face north (A2c compass and N). */
   north?(): void;
+  searchModels?(): void;
+  goToPlace?(lon: number, lat: number): void;
+  outsideCity?(): boolean;
+  centerCity?(): void;
+  getTilt?(): number;
+  setTilt?(degrees: number): void;
   /** Back to the real present at 1× (A2c "Now"). */
   onNow?(): void;
   /** The shell moved the shared clock (A2c Time & weather): refresh what depends on it. */
