@@ -2699,8 +2699,10 @@ replacements; it now mounts and updates the species batch too.
 Phone-perf accepted the bounded winter-limb exception. Sam approved the Ansley
 canopy and 1180 garden, and the coordinator authorized merge after the A16 check.
 The A16 averaged 22.0 fps at default and 22.7 while panning, versus production's
-24.9 and 26.0. That roughly 12% reduction also includes intervening main changes,
-so it cannot be attributed solely to trees. Full run values are recorded in PR #336.
+24.9 and 26.0. The roughly 12% reduction needs attribution: the tested b4993131 did not include
+several main changes initially cited in the comparison. The coordinator approved
+merge while phone-perf prepares a frozen d1411a9e/b4993131 comparison; release
+packaging waits for that result. Full run values are recorded in PR #336.
 
 [1180 before/after](log/ui/tree-species/rollout/1180-day-sheet.jpg) ·
 [The Prado before/after](log/ui/tree-species/rollout/prado-day-sheet.jpg) ·
