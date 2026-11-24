@@ -209,7 +209,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   async function asset(name: string) {
     const url = `${DATA}/scene/downtown/${name}`;
     // A City landing started these at boot (core/prefetch.ts); otherwise fetch now.
-    const r = (await takePrefetched(url)) ?? await fetch(url, { signal: options.signal });
+    const r = (await takePrefetched(url, options.signal)) ?? await fetch(url, { signal: options.signal });
     options.signal?.throwIfAborted();
     if (!r.ok) throw new Error(`City ${name} (${r.status})`);
     return r;

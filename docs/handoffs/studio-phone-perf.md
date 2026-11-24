@@ -1,3 +1,132 @@
+# Codex → gpt-6.2 handoff (2026-11-23 evening)
+
+This section supersedes the older Claude handoff below. Session:
+`orca_session_id:dd052a89-7838-444f-a6d9-f1dfde9fcc25`. Sam requested a clean model
+handoff; take no new work after READY FOR 6.2.
+
+## Current state and first next steps
+
+1. **Finish the tree mask claw-back A16 gate first.** Tree-species owns draft
+   [#348](https://github.com/samsolomon/sim-atlanta/pull/348), branch
+   `samsolomon/tree-low-clawback`. Frozen rendering SHA is
+   `fb699bbb1fd9d4db74931cb4c182375f61aca3a1`. Current head `7ce1bf34` adds only docs.
+   Verified with `gh pr view`: OPEN, mergeCommit=null at handoff. Sam accepted the
+   far visual tradeoff; a single-clump far-crown follow-up is recorded in its docs.
+   Coordinator is STILL RUNNING pan comparisons on :4619 candidate/control and
+   :4616 pre-rollout baseline. Await results; do not stop or rebuild these servers.
+   Target: default and pan within about 3% of pre-rollout A16 baseline. No final
+   performance sign-off or merge permission yet. Tree owner/successor merges;
+   only coordinator deploys. After any merge, verify `state,mergeCommit` with
+   `gh pr view` before sending MERGED. Build-log conflicts retain both entries and
+   require tests rerun (coordinator instruction).
+2. When coordinator confirms testing done, stop the two retained servers below.
+3. Resume **our original load-time task**, branch `samsolomon/studio-phone-load`
+   stacked on OPEN #326 `samsolomon/studio-phone-budgets`. No load PR yet.
+   Existing load optimizations are unchanged from predecessor. This handoff commit
+   adds the review fix: prefetched fetches get AbortControllers, and taking a
+   prefetched response binds City cancellation through body consumption. Two
+   regression tests cover pending-fetch cancellation and the body-phase signal.
+   This is pushed WIP, not merge-ready: reveal browser check and round-two review
+   still required. Do not conflate #348 source with this worktree's old load branch.
+4. Review round 1 was `pnpm review -- --reviewer claude` on combined #326/load diff
+   versus main. No blocking findings. Confirmed minor cancellation issue fixed as
+   above. Plausible visual risk: deferring far areas until reveal can show a mostly
+   empty board/pop-in at default/full-board view and while panning during reveal.
+   Check daytime/night at 6x CPU, normal and far linked cameras; screenshot. Review
+   file in shared git dir:
+   `train-review/a5ebdc1a6484ed211d5f00e30c5a03a3ff28cae2-2026-11-23T23-44-23-228Z.md`.
+   Run round two after visual triage, then open load PR (base budgets branch or
+   main after #326 merge). Retarget children BEFORE deleting a stacked base.
+5. Send frozen load branch URLs for A16 timing against production ready10.6s.
+   Then resume profiling/remaining30fps work listed in original handoff below.
+
+## Validation of this worktree
+
+Full `pnpm test` rerun before handoff:20 Rust,916 web passed/1 skipped,5 worker;
+Python pipeline SKIPPED (no .venv). Log `/tmp/phone-handoff-tests.log`.
+Typecheck and the2 new prefetch tests passed. Earlier combined branch perf run
+passed both ceilings: low529calls/2.326M triangles/424MB heap; high1130/13.270M/
+525MB. That perf run PRECEDES cancellation fix; no new drawing changes in fix.
+Logs `/tmp/studio-phone-perf.log`, `/tmp/studio-phone-review.log`.
+No browser tabs owned/open. Headless test browsers close after each completed run.
+
+## Tree investigation and promises
+
+Tree owner (now also handing off):
+`orca_session_id:752c9656-15cc-4501-99e1-e59257d6fdcb`, worktree studio-tree-species.
+Successor should read its handoff. We own frozen builds/A16 evidence, they own source.
+
+- #336 rollout count sign-off posted at
+  https://github.com/samsolomon/sim-atlanta/pull/336#issuecomment-7117594835 .
+  Bounds/leaf litter/far detail met agreed counts; winter exception accepted:
+  13,974 limb triangles, no shadows, preserves bare silhouette. Verified `gh pr view336`: state MERGED,
+  mergeCommit `831662eff79d5ea8eb2e0926e7c3735107a7fadf`.
+- Frozen baseline d1411a9e vs rollout b4993131 A16 isolated tree cost:
+  default26.0→23.8fps (-8%); pan24.5→21.9 (-11%), only+9calls/+47k triangles.
+  b4993131 does NOT include later #340/#339/#291; initial attribution to those
+  changes was corrected. Most extra triangles were duplicate mask draws.
+- Probe546ab349 A16 default: valid control18.5 (second bad-count run rejected);
+  mask-off23.6/23.3; shadow-off19.6/18.9; foliage-off25.0/24.3. This establishes
+  mask as main cost, but control n=1 and pan probe failures mean final paired
+  acceptance is still needed. Carpet probe has no effect at default (already off).
+- #348 suppresses low species mask beyond600m CAMERA-TO-ORBIT-TARGET distance,
+  restores below500m, preserves state in between. High unchanged. Near420m Prado
+  and350m1180 retain mask (all-low suppression visibly darkened crown interiors).
+  Candidate default/pan at384x692 orbit21,084.375m, suppress962/962 registered
+  instances (100%); near0/962 suppressed. These are NOT visible crown counts.
+  Coordinator initially assumed400–450m default; we disproved using Share camera:
+  default `400,-2300,15,35,21084`; pan endpoint `114,-2292,15,35,21084`.
+- Candidate browser1000→420→550→700→350m: mask off/on/on/off/on; area mount,
+  dispose/reopen and empty mask uniform tests pass. Author full tests20/939/5,
+  build/perf pass; Claude no code/lifecycle findings, far visual risk approved by Sam.
+- “Details” pan failure was only tail of coordinator's Node/CDP error, NOT app UI.
+  Full original log unavailable. Local frozen control/mask-off pan succeeded at
+ 384x692/all12/36 shadow updates. Treat as unresolved harness-side; no speculative
+  scene fix. Coordinator retains full logs/screenshots on any final-run failure.
+
+## Coordination route
+
+Direct `orca orchestration send --on air` rejects pairing token. Reply routing works:
+`orca orchestration reply --id msg_9bec7846695b --from <your-session-id> --body ...`
+(or coordinator threads msg_18ca0923740d, msg_f612f96c3c3b).
+Coordinator terminal `term_05a952fa-de06-4064-8655-3e98e1caf1e0` on Air.
+CLI `/Applications/Orca.app/Contents/Resources/bin/orca`.
+Coordinator explicitly authorized leaving4616/4619 live during model handoff.
+
+## Retained frozen servers — do not alter until coordinator confirms done
+
+Base URL query for both:
+`/?view=city&q=low&t=2026-11-20T14:00:00-05:00&perf=run`
+Append `&motion=pan`;4619 control additionally `&treeprobe=mask-on`.
+Host `http://100.78.214.26:<port>`; `build-info.json` identifies each build.
+All53 data files SHA256-identical across builds. Vite production previews, NO HMR.
+
+| Port | Build | Terminal |
+|---|---|---|
+|4616|pre-rollout d1411a9e|term_66e9297e-f840-4d4a-9e36-a11792f2dd59|
+|4619|#348 fb699bbb|term_d147791c-a9fc-4ee8-b2a4-8fdd0fede476|
+
+Frozen roots (outside repo, archives not git checkouts):
+-4616: `/var/folders/g_/cg074qld6k5_ld1tq_hfn4l00000gn/T/phone-tree-ab-48b5pe3t/without/web`
+-4619: `/var/folders/g_/cg074qld6k5_ld1tq_hfn4l00000gn/T/phone-tree-final-0v5_v5tz/web`
+
+Restart only if needed: from root above,
+`./node_modules/.bin/vite preview --outDir dist --host 0.0.0.0 --port 4616 --strictPort`
+(use port4619 for final).
+Stop via `orca terminal close --terminal <handle> --tab`, then verify no listener.
+Stopped4617 old rollout and4618 probes at coordinator's authorization.
+
+Evidence directories: `/tmp/phone-tree-final-smoke`, `/tmp/phone-tree-default-camera`,
+`/tmp/phone-tree-pan-repro`, `/tmp/phone-tree-probe-results`, `/tmp/phone-tree-ab-results`.
+Each has results.json and screenshots. Exact-A16 scratch runner:
+`/tmp/phone-tree-perf-a16.mjs` (384x692/DPR2.81); repo runner still411x891.
+Final smoke normal536calls/~2.337M versus mask-on540/~2.382M, all12,
+geometry/texture memory unchanged. Studio fps does NOT establish A16 performance.
+
+---
+
+## Original Claude handoff (historical, next steps superseded above)
+
 # Handoff: phone performance (studio-phone-perf)
 
 Written 2026-11-23 by the Claude session `orca_session_id:3126b1a7-8882-498c-a5ff-7b65d626cf91`.
