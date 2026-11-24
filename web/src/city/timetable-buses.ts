@@ -138,56 +138,60 @@ export function createTimetableBuses(
   let queueAt:
     | ((key: string, axis: 0 | 1, dx: number, dz: number, time: number) => { tail: number; count: number })
     | undefined;
-  const hourCache = new Map<
-    string,
-    {
-      id: string;
-      path: ReturnType<typeof directedPath>;
-      points: ReturnType<typeof busTimeline>;
-      rawId?: string;
-      stops: number[];
-      serviceDate: number;
-      headsign: string;
-      start: number;
-    }[]
-  >();
+  interface Trip {
+    id: string;
+    path: ReturnType<typeof directedPath>;
+    points: ReturnType<typeof busTimeline>;
+    rawId?: string;
+    stops: number[];
+    serviceDate: number;
+    headsign: string;
+    start: number;
+  }
+  /** Trip plans that intersect one service day's hour. `next` is the next timetable index
+   * to plan, so an hour can be built a few trips at a time before it is needed. */
+  const hourCache = new Map<string, {trips: Trip[]; next: number}>();
+  function hourTrips(day: ReturnType<typeof serviceDays>[number], midnight: number, hour: number, budget = Infinity) {
+    const key = `${midnight}/${hour}`;
+    let entry = hourCache.get(key);
+    if (!entry) {
+      if (hourCache.size >= 8) hourCache.delete(hourCache.keys().next().value!);
+      entry = {trips: [], next: 0};
+      hourCache.set(key, entry);
+    }
+    for (let planned = 0; entry.next < table.trips.length && planned < budget; entry.next++) {
+      const i = entry.next, [pi, si, start] = table.trips[i];
+      if (midnight + start >= (hour + 1) * 3600 || !serviceRuns(table.services[si], day)) continue;
+      const pattern = table.patterns[pi],
+        path = paths.get(pattern.pathId);
+      if (!path) continue;
+      planned++;
+      const points = busTimeline(pattern, midnight + start, path.lights, BUS_LENGTH, (signal, time) => {
+        const light = path.lights.find((l) => l.key === signal.key);
+        return light && queueAt?.(light.key, light.axis, light.dx, light.dz, time);
+      });
+      if (points.at(-1)!.departure < hour * 3600) continue;
+      entry.trips.push({
+        id: `marta:bus-trip:49-${day.ymd}-${i}`,
+        rawId: data.tripIds?.[i],
+        stops: pattern.dist,
+        serviceDate: day.ymd,
+        headsign: pattern.headsign,
+        start,
+        path,
+        points,
+      });
+    }
+    return entry;
+  }
   function activeAt(ms: number, activeService?: (date: number) => void) {
     const seconds = (ms - TRAFFIC_EPOCH_MS) / 1000;
     const active = [];
     for (const day of serviceDays(new Date(ms), table.timezone)) {
-      const midnight = Math.round(seconds - day.secs);
       // Car replay queries past instants. Keep only the plans that intersect each
       // sampled hour, including trips carried over from the previous service day.
-      const hour = Math.floor(seconds / 3600);
-      const key = `${midnight}/${hour}`;
-      let trips = hourCache.get(key);
-      if (!trips) {
-        trips = [];
-        if (hourCache.size >= 8) hourCache.delete(hourCache.keys().next().value!);
-        hourCache.set(key, trips);
-        for (const [i, [pi, si, start]] of table.trips.entries()) {
-          if (midnight + start >= (hour + 1) * 3600 || !serviceRuns(table.services[si], day)) continue;
-          const pattern = table.patterns[pi],
-            path = paths.get(pattern.pathId);
-          if (!path) continue;
-          const points = busTimeline(pattern, midnight + start, path.lights, BUS_LENGTH, (signal, time) => {
-            const light = path.lights.find((l) => l.key === signal.key);
-            return light && queueAt?.(light.key, light.axis, light.dx, light.dz, time);
-          });
-          if (points.at(-1)!.departure < hour * 3600) continue;
-          trips.push({
-            id: `marta:bus-trip:49-${day.ymd}-${i}`,
-            rawId: data.tripIds?.[i],
-            stops: pattern.dist,
-            serviceDate: day.ymd,
-            headsign: pattern.headsign,
-            start,
-            path,
-            points,
-          });
-        }
-      }
-      for (const trip of trips) {
+      const midnight = Math.round(seconds - day.secs);
+      for (const trip of hourTrips(day, midnight, Math.floor(seconds / 3600)).trips) {
         const s = busDistance(trip.points, seconds);
         if (s === null) continue;
         activeService?.(trip.serviceDate);
@@ -196,6 +200,15 @@ export function createTimetableBuses(
       }
     }
     return active;
+  }
+  /** At the present clock nothing samples the coming hour ahead of time, so plan it a few
+   * trips per frame over its last two minutes instead of all at once on the hour. */
+  function warmNextHour(ms: number) {
+    const seconds = (ms - TRAFFIC_EPOCH_MS) / 1000;
+    if (seconds % 3600 < 3480) return;
+    const ahead = ms + 120_000, later = (ahead - TRAFFIC_EPOCH_MS) / 1000;
+    for (const day of serviceDays(new Date(ahead), table.timezone))
+      hourTrips(day, Math.round(later - day.secs), Math.floor(later / 3600), 2);
   }
 
   type Active = ReturnType<typeof activeAt>[number];
@@ -275,6 +288,7 @@ export function createTimetableBuses(
    * Other routes, and unknown routes that match no trip, keep the plain street snap.
    */
   function presentAt(ms: number, observationMs: number, fixes: readonly LiveBus[], activeService?: (day: number) => void) {
+    warmNextHour(ms);
     const active = activeAt(ms, activeService);
     const poses: Pose[] = [];
     const raw: LiveBus[] = [];
