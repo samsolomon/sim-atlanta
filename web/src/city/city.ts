@@ -74,6 +74,7 @@ import { createDavisons } from './davisons';
 import { createRitzCarlton } from './ritz-carlton-atlanta';
 import { createSouthernBell } from './southern-bell';
 import { createRhodesHaverty } from './rhodes-haverty';
+import { createEmpireBuilding } from './empire-building';
 import { createCommerceBuilding } from './commerce-building';
 import { createHundredEdgewood } from './100-edgewood';
 import { createMetropolitan } from './metropolitan';
@@ -371,6 +372,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let ritzCarlton: ReturnType<typeof createRitzCarlton> = null;
   let southernBell: ReturnType<typeof createSouthernBell> = null;
   let rhodesHaverty: ReturnType<typeof createRhodesHaverty> = null;
+  let empireBuilding: ReturnType<typeof createEmpireBuilding> = null;
   let commerceBuilding: ReturnType<typeof createCommerceBuilding> = null;
   let hundredEdgewood: ReturnType<typeof createHundredEdgewood> = null;
   let metropolitan: ReturnType<typeof createMetropolitan> = null;
@@ -471,8 +473,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterSouthernBell = southernBell?.buildings ?? afterRitzCarlton;
         rhodesHaverty = createRhodesHaverty(afterSouthernBell, ground);
         const afterRhodesHaverty = rhodesHaverty?.buildings ?? afterSouthernBell;
-        commerceBuilding = createCommerceBuilding(afterRhodesHaverty, ground);
-        const afterCommerceBuilding = commerceBuilding?.buildings ?? afterRhodesHaverty;
+        empireBuilding = createEmpireBuilding(afterRhodesHaverty, ground);
+        commerceBuilding = createCommerceBuilding(empireBuilding?.buildings ?? afterRhodesHaverty, ground);
+        const afterCommerceBuilding = commerceBuilding?.buildings ?? empireBuilding?.buildings ?? afterRhodesHaverty;
         hundredEdgewood = createHundredEdgewood(afterCommerceBuilding, ground);
         const afterHundredEdgewood = hundredEdgewood?.buildings ?? afterCommerceBuilding;
         metropolitan = createMetropolitan(afterHundredEdgewood, ground);
@@ -572,6 +575,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (ritzCarlton) world.group.add(ritzCarlton.group);
         if (southernBell) world.group.add(southernBell.group);
         if (rhodesHaverty) world.group.add(rhodesHaverty.group);
+        if (empireBuilding) world.group.add(empireBuilding.group);
         if (commerceBuilding) world.group.add(commerceBuilding.group);
         if (hundredEdgewood) world.group.add(hundredEdgewood.group);
         if (metropolitan) world.group.add(metropolitan.group);
@@ -1380,6 +1384,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ritzCarlton?.setNight(night);
     southernBell?.setNight(night);
     rhodesHaverty?.setNight(night);
+    empireBuilding?.setNight(night);
     commerceBuilding?.setNight(night);
     hundredEdgewood?.setNight(night);
     metropolitan?.setNight(night);
