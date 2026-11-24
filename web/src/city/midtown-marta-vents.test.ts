@@ -23,7 +23,7 @@ it.each(['low', 'high'] as const)('replaces the generic box at Electric Saturati
   const ctx = new Proxy({}, { get: () => () => {} });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
   const city = seventeenthAccess(auburnTransport(JSON.parse(read('context.json').toString())));
-  const terrain = createDowntownTerrain(grid, city, [], { quality });
+  const terrain = createDowntownTerrain(grid, city, [], { quality, batchLandmarks: false });
   try {
     terrain.group.updateMatrixWorld(true);
     const model = terrain.scenery.getObjectByName('Electric Saturation');

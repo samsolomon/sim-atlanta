@@ -103,5 +103,12 @@
     "x": 308.3,
     "z": -3351.2,
     "heightM": 228
+  },
+  "squareOn5th": {
+    "id": "osm:way:536884432",
+    "name": "Square on 5th",
+    "x": 219.5,
+    "z": -2681.5,
+    "heightM": 89.5
   }
 }
