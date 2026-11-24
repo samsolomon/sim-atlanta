@@ -8,9 +8,9 @@ import { COUPLER_GAP, MAX_UNITS, maxTrainLength, passageSummary, planPassage, ty
 const ENTRY_MS = Date.parse('2026-11-20T19:12:02Z');
 const SPEED_MPS = 4.5;
 /** CSX-like power downtown. Autoracks and double-stack wells run since the drawn centreline was
- * smoothed to a 150 m minimum radius (#512): every kind's worst body corner stays inside the 4.2 m
- * ballast with BALLAST_MARGIN_M to spare (freight-clearance.test.ts). Intermodal is a minority
- * recipe here, as CSX's Hulsey terminal sits just east of the board (docs/freight-consists.md). */
+ * smoothed to a 150 m minimum radius (#512): every kind swings at most MAX_CURVE_SWING_M on its
+ * curves and clears every deck by MIN_OVERHEAD_CLEARANCE_M (freight-clearance.test.ts). Intermodal
+ * stays a minority recipe on this through line (docs/freight-consists.md). */
 export const DOWNTOWN_PROFILE: LineProfile = { railroad: 'csx', recipes: { manifest: 0.55, intermodal: 0.15, unit: 0.3 } };
 export const DOWNTOWN_LINE = 'Atlanta Terminal Subdivision';
 const LINE_ID = 'csx:downtown';

@@ -107,5 +107,6 @@ describe('freight curve swing (freight-clearance.ts)', () => {
     // The line passes under at least the three overpasses the probe found.
     expect(covered).toBeGreaterThan(10);
     expect(lowest.clear - tallest, JSON.stringify({ ...lowest, tallest })).toBeGreaterThanOrEqual(MIN_OVERHEAD_CLEARANCE_M);
-  });
+    // About 3 s alone (1,300 rays through the deck mesh); allow for a loaded full-suite run.
+  }, 30_000);
 });

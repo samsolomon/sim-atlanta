@@ -128,7 +128,17 @@ The envelope follows Greenbrier's [Multi-Max](https://www.gbrx.com/?p=920): 93 f
 - *Lab:* the entry is `freightAutorack`.
 - *Recipes:* autoracks join the manifest list and are a unit-train option (an automotive train). `CONSIST_VERSION` is 5.
 
-**Curve clearance.** The drawn downtown track has kinks of about 41–70 m radius at (−372, −605) and (−8, −54). Over a 30 s sped-up run, 1,567 adjacent car pairs gave a 5th-percentile radius of 268 m. At 41 m, the ends of a 28.6 m car on 19.5 m truck centres swing about 1.33 m outside the rail centreline and its middle 1.16 m inside, against 0.42 m for the boxcar. Brookwood's tightest is about 296 m, where the overhang is about 0.18 m. Autoracks therefore run only at Brookwood: `DOWNTOWN_PROFILE.exclude` keeps them off the downtown line until the cut's drawn curvature is smoothed or verified.
+**Curve clearance.** City stands each car's two trucks on the drawn centreline and lays the body on the chord between them, so on a curve the ends swing out and the middle swings in. The rule, in `web/src/city/freight-clearance.ts`, measures that swing directly. For every car kind a line can draw, no body corner or side midpoint may sit more than 0.35 m further from the centreline than it does on straight track. `freight-clearance.test.ts` holds both lines to it, so it also decides new car kinds and any edit to the drawn track. It was measured on November 24, 2026, by stepping every kind along each drawn chain 0.5 m at a time:
+
+| Line | Autorack | Well | Locomotive | Boxcar |
+| --- | ---: | ---: | ---: | ---: |
+| Downtown, pre-#512 line (worst at −558, −1015) | 0.44 m | 0.43 m | | 0.27 m |
+| Downtown, smoothed (worst at −579, −1092) | 0.31 m | 0.30 m | 0.25 m | 0.19 m |
+| Brookwood Main 2 | 0.25 m | 0.23 m | 0.19 m | 0.16 m |
+
+An earlier estimate of 1.33 m at a 41 m radius overstated the swing. The source polyline turns at short, shallow vertices, not along 41 m arcs, so even the old line stayed under 0.45 m. The downtown autorack exclusion is lifted. For information: downtown draws 4.2 m of ballast, and the worst body edge, the autorack's, stays 0.17 m inside it. Brookwood draws a narrower 3.6 m bed, where 3.0–3.34 m car bodies leave only about 0.1 m each side even on straight track. Real ballast tops are about 3.4–3.7 m wide, and car sides overhang the shoulder.
+
+**Overhead clearance.** Downtown intermodal was held back because double-stack clearance through the cut was unverified. A raycast from every drawn freight tread point, 2 m apart, finds the lowest deck soffit 6.87 m above the railhead in City (6.82 m in the Node test), at the overpasses near (−44, −81) and (−182, −186). The tallest downtown car is a loaded double-stack at 6.16 m; the autorack is 5.79 m. The test requires at least 0.5 m between the tallest car a line can draw and the lowest soffit.
 
 ### Built: open aluminum coal hopper
 
@@ -142,6 +152,8 @@ The envelope follows Greenbrier's [Multi-Max](https://www.gbrx.com/?p=920): 93 f
 
 **Use in City.** Coal is a unit-train commodity only, loaded or empty and chosen per passage. It runs on both lines, because a 16.2 m car clears the downtown curves. `CONSIST_VERSION` is 6. This completes the eight-car plan; distributed power (DPU) is still deferred.
 
+**Downtown lift (version 7).** After the downtown centreline was smoothed (#512) and both clearance checks passed, `DOWNTOWN_PROFILE` dropped its autorack exclusion and gained an intermodal weight of 15 %. Manifest is now 55 % and unit 30 %. Bumping `CONSIST_VERSION` to 7 re-deals every slot on both lines.
+
 ### Built: City consists
 
 Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.
@@ -149,7 +161,7 @@ Each passage is a pure function of the line, the signed slot and `CONSIST_VERSIO
 - **Downtown.** Uses fixed 15-minute slots from the epoch, alternating direction. The longest possible train is checked against the mapped span.
 - **Brookwood.** Keeps its 20-minute alternating slots and still yields to the Crescent.
 - **Recipes:**
-  - Downtown (CSX-like): manifest 65 %, unit 35 %. There is no intermodal downtown, because double-stack clearance through the cut is unverified.
+  - Downtown (CSX-like): manifest 55 %, intermodal 15 %, unit 30 %. Intermodal and autoracks run here since `CONSIST_VERSION` 7, once the curve and overhead clearance checks passed (see **Curve clearance**).
   - Brookwood (NS-like): manifest 45 %, intermodal 35 %, unit 20 %.
 - **Manifest blocks.** Six to 24 cars in blocks of 3–8, using up to three types from the three boxcar paints and the covered hopper.
 - **Intermodal.** Eight to 30 wells, using two of the three loads.
