@@ -23,6 +23,7 @@ import { TrainSource } from './core/trains';
 import { railStatus } from './ui/status';
 import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
+import { setGlassMode } from './ui/glass';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -479,6 +480,15 @@ let diorama: CityView | null = null;
 let parkedCity: CityView | null = null;
 let lastAtm: Atmosphere | null = null;
 const view3d = document.getElementById('view3d')!;
+/** The tier City is loading or showing, known as soon as openCity picks it. */
+let cityQuality: 'low' | 'high' | null = null;
+/** Low-tier City drops CSS backdrop-filter so the canvas is presented directly ("flat" glass). */
+function applyGlassMode() {
+  const cityShown = !view3d.hidden && document.body.classList.contains('in3d');
+  setGlassMode(cityShown && (diorama?.quality ?? cityQuality) === 'low' ? 'flat' : 'css');
+}
+new MutationObserver(applyGlassMode).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+new MutationObserver(applyGlassMode).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
 const cityLoading = document.getElementById('city-loading')!;
 const cityProgress = document.getElementById('city-progress')!;
@@ -498,6 +508,8 @@ async function openCity() {
       if (keepPose) city.lookAt(keepPose.x, keepPose.z, keepPose);
       keepPose = null;
       if (lastAtm) city.setAtmosphere(lastAtm, clock.now());
+      cityQuality = city.quality;
+      applyGlassMode();
       watchAutoGraphics(city.quality, cityLoad);
       setViewParam('city');
       await applyGraphics();
@@ -531,7 +543,9 @@ async function openCity() {
   }
   try {
     const { createCity, pickQuality } = await import('./city/city');
-    watchAutoGraphics(chosenQuality() ?? pickQuality(), load);
+    cityQuality = chosenQuality() ?? pickQuality();
+    applyGlassMode();
+    watchAutoGraphics(cityQuality, load);
     const d = await createCity(document.getElementById('view3d-canvas')!, rf, chosenQuality(), {
       signal: abort.signal,
       beforeFrame: shell.advanceMovement,
