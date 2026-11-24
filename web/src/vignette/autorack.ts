@@ -30,9 +30,10 @@ export function autorackBody(b: Builder, low: boolean) {
   // Arched roof: a shallow prism along the car.
   const arch = new THREE.BufferGeometry();
   const L = IN_L / 2, e = EAVE, t = TOP, x = W / 2 + 0.03;
+  // Wound so both roof faces point up and outward (FrontSide materials).
   const p = [
-    [-x, e, -L], [0, t, -L], [0, t, L], [-x, e, -L], [0, t, L], [-x, e, L],
-    [x, e, -L], [x, e, L], [0, t, L], [x, e, -L], [0, t, L], [0, t, -L],
+    [-x, e, -L], [0, t, L], [0, t, -L], [-x, e, -L], [-x, e, L], [0, t, L],
+    [x, e, -L], [0, t, L], [x, e, L], [x, e, -L], [0, t, -L], [0, t, L],
   ].flat();
   arch.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
   arch.computeVertexNormals();
@@ -43,7 +44,8 @@ export function autorackBody(b: Builder, low: boolean) {
     const z = end * (L + 0.03);
     b.box(W, h, 0.06, 0, DECK + h / 2, z, door);
     const gable = new THREE.BufferGeometry();
-    gable.setAttribute('position', new THREE.Float32BufferAttribute([-x, e, z, x, e, z, 0, t, z], 3));
+    // Wound to face outward at each end.
+    gable.setAttribute('position', new THREE.Float32BufferAttribute(end > 0 ? [-x, e, z, x, e, z, 0, t, z] : [x, e, z, -x, e, z, 0, t, z], 3));
     gable.computeVertexNormals();
     b.addGeometry(gable, door);
     gable.dispose();
