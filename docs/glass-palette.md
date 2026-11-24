@@ -75,7 +75,7 @@ Five named glass families, plus bronze for when a photo shows it. Ranges are HSV
 **Check rendered pixels, not only the constant.** The colour grade, sky fill and shadow tint shift glass away from its base constant: MAA Midtown's corner (`#7fa3bd`, S 33) renders deeper blue than that in its sheet. Apply both rules to the base constant **and** to rendered pixels:
 1. In the 11:30 high-tier shot, sample the median HSV of one sunlit and one shaded patch of glass. Avoid mullions and lit panes.
 2. Sample a generic glass tower in the same frame as a reference.
-3. The sunlit and shaded medians must stay inside the family's range as measured on the generic reference. In practice, rendered S ≤ 36 (teal 40), and rendered V in sun ≥ 40.
+3. **Binding:** the sunlit median must have rendered S ≤ 36 (teal 40) and rendered V ≥ 40. **Recorded, not capped:** the shaded median. The shadow tint pushes any dark glass far over S 36 in shade, and even generic towers read about S 37 there. 271 Seventeenth's test showed this: bases at S28/V58, S15/V58 and S13/V62 rendered S96, S67 and S55 in shade, while sunlit the last two read S10 and S7. Only the grade alternative below fixes shaded saturation.
 4. Put the numbers in the PR body.
 
 **What base values land in range.** The grade and shadow tint raise rendered saturation more as glass gets darker. I sampled the median HSV of glass pixels in the centre of every 11:30 tile in the contact sheet. Some centres fall on shadow, slots or a neighbour, so these numbers are indicative, not exact.
