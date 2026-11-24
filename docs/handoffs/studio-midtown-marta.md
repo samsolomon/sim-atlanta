@@ -11,6 +11,12 @@ The downtown rail maintainer owns integration of the freight portals, Five Point
 3. **CQ400 seating.** Branch `samsolomon/cq400-bogies` at `a7a95322` follows the cut faces. The earlier probe measured worst swing falling from 0.64 m to 0.46 m. Rebase and verify the frames before opening the PR. [Earlier four-site comparison](https://github.com/samsolomon/sim-atlanta/blob/772bb993/docs/log/passenger-swing/bogies/cq400-before-after.jpg?raw=true)
 4. **#427 landuse paving** remains held for Sam’s choice of paving scope. Preserve the branch.
 
+## Separate LiveMarta motion study
+
+Downtown rail owns integration on `samsolomon/live-marta-motion`, prototype `97ab955833210bb4f6fdb6f6f1a0b404937744d6`. A lightweight replay of six reports 30 s apart and 300 m apart showed the original 8 s glide implies 37.5 m/s followed by 22 s stationary. Buffered playback passed the middle cruising fixes at 10 m/s. With positions 0, 300, 600, 600, 600, 900 m, the final second into 600 m covered 0.66 m, the dwell stayed at 600 m and the first second of departure covered 0.98 m.
+
+The prototype budgets 60 s from receipt to the corresponding displayed fix. Source delay adds to that budget; stale observations expire and playback holds at the final supported position. Report time is the latest source observation; buffered positions are inferred. Map and City share TrainSource in code. Next, exercise delayed, duplicate and out-of-order feeds through the public poll path, measure the lag tradeoff and verify shifted-clock fallback. Full tests, rendered Map/City parity, matched before/after clips and acceptance are pending the dedicated check window. Keep this branch separate from release work.
+
 ## Sam's decisions and coordinator rulings that touch this area
 
 Today's decisions as the coordinator relayed them in the handoff call; ask the coordinator for details, since they're not all written up on main yet:
