@@ -3440,3 +3440,7 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 · University House is sixteen metres shorter
+
+University House on Spring Street was mapped at 80 m and drawn as a block over the whole lot. The 2019 lidar puts its roof at 63.8 m, or 19 floors at 3.3 m, which matches the floor count reported when it opened. The returns also trace an L around an 8 m garage deck. From a single Midtown Alliance photograph, the skin carries over the grey, charcoal and yellow panel blocks that make the tower easy to pick out near Georgia Tech. This build also showed that on-and-off camera triangle counts carry ±400 of noise and count a mesh several times, so the skin reports its mesh size, 350 triangles on the phone tier, alongside them. [Before/after, day and night](log/ui/university-house/README.md)
