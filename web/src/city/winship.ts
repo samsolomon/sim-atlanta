@@ -17,13 +17,14 @@ const glass = '#a7bcc2',
   glassDeep = '#7f979f',
   fin = '#e4e8e6',
   wood = '#ad8f70',
+  woodTop = '#c4bfb6',
   woodShade = '#8f7358',
   podiumGlass = '#5d6c73',
   brick = '#5b4b42',
   roofDeck = '#a19f99',
   screen = '#c9cdcc';
 
-/** A stable, well-mixed 0–1 value per window. TODO: switch to the skin-kit litHash once it lands. */
+/** A stable, well-mixed 0–1 value per window. TODO: switch to skin-kit's litHash once #470 lands. */
 function lit(seed: number, face: number, floor: number, bay: number) {
   let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(face + 1, 0xc2b2ae35);
   h = Math.imul(h ^ Math.imul(floor + 1, 0x27d4eb2d), 0x165667b1) ^ Math.imul(bay + 7, 0x9e3779b1);
@@ -89,7 +90,6 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
   // narrow ends. Lit panes follow an inpatient tower: many rooms lit late.
   const tower = local(towerPart.rings[0]);
   s.prism(tower, podiumTop, lobby + floors * pitch, glass, roofDeck);
-  s.prism(tower, roof, roof + 0.01, glass, roofDeck);
   eachFace(tower, (a, b, len, at, face) => {
     const narrow = len < 30;
     const n = Math.max(1, Math.round(len / (narrow ? 3 : 1.5)));
@@ -97,9 +97,11 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
       const w = (k === 0 || k === n ? 0.3 : 0.08) / len;
       quad(s, at, Math.max(0, k / n - w), Math.min(1, k / n + w), podiumTop, roof, narrow ? 0.12 : 0.35, fin);
     }
-    for (let f = 0; f <= floors; f += 2) quad(s, at, 0, 1, lobby + f * pitch - 0.25, lobby + f * pitch + 0.25, 0.1, glassDeep);
+    // Detail starts above the podium roof (the podium fills the tower's footprint below it).
+    const first = Math.floor((podiumTop - lobby) / pitch);
+    for (let f = first + 1; f < floors; f++) if (f % 2 === 0) quad(s, at, 0, 1, lobby + f * pitch - 0.25, lobby + f * pitch + 0.25, 0.1, glassDeep);
     if (narrow) {
-      for (let f = 1; f < floors; f++) {
+      for (let f = first + 1; f < floors; f++) {
         const y = lobby + f * pitch;
         // Sunshade: a shelf projecting from the face.
         s.body.quad(at(0.06, y, 0.1), at(0.94, y, 0.1), at(0.94, y, 1.2), at(0.06, y, 1.2), wood);
@@ -108,11 +110,11 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
       // Timber louvres up the corners.
       for (const [l, r] of [[0, 0.12], [0.88, 1]]) quad(s, at, l, r, podiumTop, roof, 0.2, wood);
     }
-    for (let f = Math.ceil((podiumTop - lobby) / pitch); f < floors; f++) {
+    for (let f = first; f < floors; f++) {
       for (let k = 0; k < n; k++) {
         if (lit(886, face, f, k) >= 0.32) continue;
-        const y = lobby + f * pitch;
-        quad(s, at, k / n + 0.1 / len, (k + 1) / n - 0.1 / len, y + 0.3, y + pitch - 0.3, 0.05, glass, true);
+        const y = Math.max(lobby + f * pitch + 0.3, podiumTop + 0.2);
+        quad(s, at, k / n + 0.1 / len, (k + 1) / n - 0.1 / len, y, lobby + (f + 1) * pitch - 0.3, 0.05, glass, true);
       }
     }
   });
@@ -121,13 +123,13 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
   const [tx1, tz1] = [Math.max(...tower.map(p => p[0])) - 2, Math.max(...tower.map(p => p[1])) - 4];
   s.prism([[tx0, tz0], [tx1, tz0], [tx1, tz1], [tx0, tz1]], roof, screenTop, screen, roofDeck);
 
-  // The timber hall under the canopy and the glazed strip on its north side.
+  // The timber-clad hall rising out of the podium beside the canopy, and the
+  // brick-based strip on the canopy's north side.
   const hall = local(hallPart.rings[0]);
-  s.prism(hall, s.base, g0 + 25.2, wood, roofDeck);
+  s.prism(hall, podiumTop, g0 + 25.2, wood, roofDeck);
   eachFace(hall, (a, b, len, at) => {
     const n = Math.round(len / 0.9);
-    for (let k = 1; k < n; k++) quad(s, at, k / n - 0.12 / len, k / n + 0.12 / len, g0 + 4.5, g0 + 25.2, 0.06, woodShade);
-    quad(s, at, 0.05, 0.95, g0 + 0.3, g0 + 4.4, 0.04, podiumGlass, true);
+    for (let k = 1; k < n; k++) quad(s, at, k / n - 0.12 / len, k / n + 0.12 / len, podiumTop, g0 + 25.2, 0.06, woodShade);
   });
   const strip = local(stripPart.rings[0]);
   s.prism(strip, s.base, g0 + 25.2, glassDeep, roofDeck);
@@ -135,16 +137,23 @@ export function createWinship(buildings: VBuilding[], site: VBuilding, grid: Gro
     quad(s, at, 0, 1, g0 + 0.3, g0 + 5, 0.04, brick);
   });
 
-  // Canopy: a deep timber slab around the oculus, with a lit soffit at night.
+  // Canopy: a timber slab around the oculus, with a white fascia, carried on
+  // slender columns along its free west edge. Downlights dot the soffit.
   for (const p of canopyParts) {
     const plan = local(p!.rings[0]);
-    s.prism(plan, canopyLo, canopyHi, fin, roofDeck);
+    s.prism(plan, canopyLo, canopyHi, fin, woodTop);
     for (const [i, j, k] of ShapeUtils.triangulateShape(plan.map(([x, z]) => new Vector2(x, z)), [])) {
-      const v = (n: number, y = canopyLo) => [plan[n][0], y, plan[n][1]];
+      const v = (n: number) => [plan[n][0], canopyLo, plan[n][1]];
       s.body.tri(v(i), v(j), v(k), wood);
-      // Soffit glow sits just under the timber, the same colour by day.
-      s.lights.tri(v(i, canopyLo - 0.05), v(j, canopyLo - 0.05), v(k, canopyLo - 0.05), wood);
     }
+  }
+  for (const z of [-30, -20, -10, 0, 12]) {
+    s.body.box(0.6, canopyLo - s.base, 0.6, 477.4 - origin[0] + 1.2, (canopyLo + s.base) / 2, z, fin);
+  }
+  for (let x = -50; x <= -20; x += 7) for (let z = -32; z <= 14; z += 7) {
+    const [wx, wz] = [x + origin[0], z + origin[1]];
+    if (Math.hypot(wx - 496.2, wz + 1803.5) < 14) continue; // the oculus
+    s.lights.quad([x - 0.5, canopyLo - 0.05, z - 0.5], [x + 0.5, canopyLo - 0.05, z - 0.5], [x + 0.5, canopyLo - 0.05, z + 0.5], [x - 0.5, canopyLo - 0.05, z + 0.5], wood);
   }
   return s.finish('#f6e2c0', 0.55);
 }

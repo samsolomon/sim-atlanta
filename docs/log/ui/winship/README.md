@@ -8,8 +8,8 @@ Winship Cancer Institute at Emory Midtown (SOM with May Architecture, opened 202
 |---|---|---|
 | `1338346574` | Tower, reported 80 m | Pale glass slab: roof 84 m (estimated), mechanical screen to 89 m (SOM's 292 ft) |
 | `1456370827` | 18 m, with two holes | The podium. Its holes are the tower and hall footprints, so the outer ring is drawn at 18 m. |
-| `1338346571`, `1456370826` | 25.2 m | Timber-clad hall and a glazed strip on the canopy's east and south sides |
-| `1338346572`, `1456370825` | 18 m on a 17.4 m `min_height` | The drop-off **canopy**: a 1.8 m slab from 17.4 to 19.2 m, open underneath. This is why OSM lifted them. |
+| `1338346571`, `1456370826` | 25.2 m | Timber-clad hall rising out of the podium beside the canopy (`…571`), and a brick-based strip along the canopy's north side (`…826`) |
+| `1338346572`, `1456370825` | 18 m on a 17.4 m `min_height` | The drop-off **canopy**: a 1.8 m timber slab with a white fascia from 17.4 to 19.2 m, open underneath on slender columns (column positions estimated). This is why OSM lifted them. |
 | residual `podium` | 18 m | The canopy's **oculus**, a round opening about 24 m across, left open to the sky |
 
 ## References
@@ -17,7 +17,7 @@ Winship Cancer Institute at Emory Midtown (SOM with May Architecture, opened 202
 The photographs are Dave Burk (© SOM) and David Kresses (© May Architecture), via [The Architect's Newspaper](https://www.archpaper.com/?p=338792) and the [SOM project page](https://www.som.com/projects/winship-at-emory-midtown/) (height, storeys, completion).
 
 - **Street view up Peachtree:** the narrow end of the slab, with timber sunshade shelves at every floor and timber louvres on its corners. The long faces are pale glass with dense vertical fins. The low podium carries a screen of white vertical fins.
-- **Drop-off view:** the timber canopy with its oculus, the timber-clad hall under it, and the brick wall at the entry. The wordmarks are left off.
+- **Drop-off view:** the timber canopy with its oculus, the timber-clad hall beside it, the brick wall at the entry and the slender columns along its free edge. The wordmarks are left off.
 - **Close view of the narrow end:** two-storey glass bays (the two-storey care communities) with cantilevered sunshades.
 
 ## Estimates
@@ -30,7 +30,7 @@ The photographs are Dave Burk (© SOM) and David Kresses (© May Architecture), 
 
 ## Lighting
 
-There is no full-night exterior. This is an inpatient and research building, so the night view lights about a third of the panes, through a stable mixed hash (`lit-hash`). That is more than an office tower and less than housing. The podium storefront and hall glazing are lit, and a thin glow sits under the canopy soffit. The crown stays unlit.
+There is no full-night exterior. This is an inpatient and research building, so the night view lights about a third of the panes, through a stable mixed hash (to move to skin-kit's `litHash` once #470 lands). That is more than an office tower and less than housing. The podium storefront is lit, and downlights dot the canopy soffit (an estimate: the photographs are daytime only). The crown stays unlit.
 
 ## Captures
 
