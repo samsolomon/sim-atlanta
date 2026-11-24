@@ -2921,3 +2921,7 @@ calibration, with no geometry or texture cost. Matched 21:00 frames use the same
 `301,-4675,340,60,160` camera at both tiers.
 [High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
 [Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
+
+### 2026-11-23 — Two purple buses for the A-Line
+
+The purple bus photographed at the Phase One launch has two axles and a CNG roof pod. The 60-foot electric bought for the line has three axles and a folding joint. The Model Lab now puts the two silhouettes side by side in the vehicle list. Turning the electric trailer through 35° keeps both ends of the silver bellows attached. Its low-detail model uses 1,190 triangles across three meshes. [See the photographs and matched day/night studies](marta-rapid-buses.md#review-views).

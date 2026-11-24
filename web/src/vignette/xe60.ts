@@ -12,7 +12,7 @@ export const XE60_LAYOUT = {
   maxAngle: 35 * Math.PI / 180,
 } as const;
 export type BusDetail = 'low' | 'high';
-const C = { purple: '#7d5bb1', lavender: '#a08cbd', grey: '#bac1cd', glass: '#26333d', black: '#181e25', blue: '#29abe0', yellow: '#f4c346', orange: '#f28a39' };
+const C = { purple: '#7162b7', lavender: '#b6adc8', grey: '#bac1cd', glass: '#26333d', black: '#181e25', blue: '#29abe0', yellow: '#f4c346', orange: '#f28a39' };
 class Kit extends Builder {
   kinds: number[] = [];
   mark(kind: number) { while (this.kinds.length < this.pos.length / 3) this.kinds.push(kind); }
@@ -44,7 +44,14 @@ function shell(k: Kit, z0: number, z1: number, axles: readonly number[], detail:
     const span=z1-z0;
     for(const [a,b,color] of [[0,.32,C.orange],[.32,.58,C.yellow],[.58,1,C.blue]] as const)
       k.panel(s,z0+span*a,z0+span*b,1.2,1.31,color,0,1.315);
-    k.quad([s*1.31,.32,z0+.3],[s*1.31,.32,z0+span*.48],[s*1.31,1.19,z0+span*.38],[s*1.31,1.19,z0+.3],C.lavender);k.mark(0);
+    // Keep the lower paint on solid skirt panels between the wheel openings.
+    const edges = [z0 + .16, ...[...axles].sort((a,b) => a-b).flatMap(z => [z-.64,z+.64]), z1-.18];
+    for (let i=0; i<edges.length; i+=2) {
+      const left=edges[i], right=edges[i+1];
+      if (right-left < .7) continue;
+      k.quad([s*1.31,.32,left],[s*1.31,.32,right],[s*1.31,1.19,right-.42],[s*1.31,1.19,left],C.lavender);
+      k.mark(0);
+    }
     if(detail==='high') for(let z=z0+.4;z<z1-.4;z+=1.4) {
       k.panel(s,z,z+.018,.34,1.15,'#70618b',0,1.32);
       k.panel(s,z,z+.1,1.02,1.06,C.grey,0,1.325);
@@ -77,8 +84,8 @@ export function xe60Geometry(detail:BusDetail='high') {
   roof(f,-6.9,.6,detail);roof(r,-7.7,-1.1,detail);
   // Broad front glass, upper destination strip and swept silver headlight cheeks.
   f.box(2.36,1.43,.03,0,2.03,2.085,C.glass);f.mark(3);
-  f.box(2.25,.25,.035,0,2.83,1.94,C.black);f.mark(0);
-  f.box(1.8,.11,.04,0,2.83,1.965,'#ffb950');f.mark(7);
+  f.box(2.25,.25,.035,0,2.83,2.087,C.black);f.mark(0);
+  f.box(1.8,.11,.04,0,2.83,2.11,'#ffb950');f.mark(7);
   f.box(.035,1.42,.04,0,2.03,2.105,C.black);f.mark(0);
   for(const s of [-1,1]) {
     f.box(.4,.24,.04,s*.92,.86,2.09,C.grey);f.mark(0);
@@ -113,7 +120,13 @@ export function xe60Pose(angle:number) {
 /** For instanced motion, supply an InstancedBufferAttribute named aArticulation on each mesh.
  * Front/rear geometries have zero bend weight; their instance matrices own their rigid poses. */
 export function xe60Material(night:{value:number},angle:{value:number},instanced=false) {
-  const m=busMaterial(night),base=m.onBeforeCompile;
+  return bendMaterial(busMaterial(night), angle, instanced);
+}
+export function xe60DepthMaterial(angle: {value: number}, instanced = false) {
+  return bendMaterial(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, side: THREE.DoubleSide }), angle, instanced);
+}
+function bendMaterial<T extends THREE.Material>(m: T, angle: {value: number}, instanced: boolean) {
+  const base=m.onBeforeCompile;
   m.onBeforeCompile=(sh,renderer)=>{
     base.call(m,sh,renderer);sh.uniforms.uArticulation=angle;
     sh.vertexShader=sh.vertexShader.replace('#include <common>',`#include <common>\nattribute float aBendWeight;\nuniform float uArticulation;\n${instanced?'attribute float aArticulation;':''}\nmat3 bendRotation(float a) { float c=cos(a),s=sin(a); return mat3(c,0.,-s,0.,1.,0.,s,0.,c); }`)

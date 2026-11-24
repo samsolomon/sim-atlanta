@@ -1,8 +1,6 @@
-# MARTA Rapid buses — research / WIP, 2026-11-23
+# MARTA Rapid buses — Model Lab, 2026-11-23
 
-Not released. New XE60 geometry module exists but is not wired into the lab or City.
-Sam requested **both** an articulated XE60 lab study and a cheap purple Rapid livery
-variant of the existing XN40. One lab PR, day/night views beside references.
+The lab includes the articulated electric XE60 and the purple A-Line livery of the rigid XN40.
 
 ## Identification and service caveat
 
@@ -55,7 +53,7 @@ charging rails, 305/70R22.5 tyres; axle spacings 229 in (5.8166 m) front-to-midd
 and 293 in (7.4422 m) middle-to-rear. Step height 356 mm. Manufacturer dimensions
 are family specifications, not an as-built MARTA drawing.
 
-`vignette/xe60.ts` WIP exports `XE60_LAYOUT`, `xe60Geometry(detail)`,
+`vignette/xe60.ts` exports `XE60_LAYOUT`, `xe60Geometry(detail)`,
 `xe60Pose(angle)` and `xe60Material(night,angle,instanced)`.
 Front local origin is front axle at ground; hitch estimated at z=-8 m. Rear and
 bellows origins are hitch at ground. Front body ends z=-7.4/+2.07; rear body spans
@@ -66,14 +64,24 @@ Both body geometries use zero `aBendWeight`; rear rigid pose rotates at the hitc
 Bellows rest mesh spans +.6/-.6 m; shader blends each ring between fixed and
 rotated positions. For future instancing, `aArticulation` is a per-instance scalar
 attribute on each geometry, with instance matrices controlling rigid sections.
-A uniform is used for the lab. **Remaining:** browser-check bend shader and supply
-matching depth/shadow deformation; do not claim visual verification yet.
+A uniform is used for the lab. The bellows use the same bend in the directional shadow pass.
 
-Phone target proposed by connector: <=1,500 low-tier triangles total, <=3 shared
-instanced batches (front/rear/bellows), not 3 draw calls per bus. The initial four
-focused geometry tests pass, including <=1,500. Exact counts/memory and browser
-performance remain to measure. No actual instanced traffic integration yet.
+## Review views
 
-Proposed keys: `xe60`, future `marta:vt:xe60`; `xn40Rapid` is a livery/art key on
-existing physical type `marta:vt:xn40`. Await connector confirmation; avoid making
-livery a second vehicle type. Preserve current default XN40 geometry and paint.
+| Published daytime reference | Matched lab day and night |
+| --- | --- |
+| ![XE60 9001, courtesy MARTA](https://atlanta.urbanize.city/sites/default/files/styles/1140w/public/2026-01/MARTA%20Rapid.jpg?itok=SuZLUiZm) | ![XE60 straight](log/rapid-buses/xe60-straight.jpg) |
+| [XE60 alternate curb-side photograph, CBS](https://www.cbsnews.com/atlanta/news/marta-hosting-open-houses-to-educate-riders-on-upcoming-nextgen-bus-network/) | ![XE60 at +35 degrees](log/rapid-buses/xe60-bent.jpg) ![XE60 at −35 degrees](log/rapid-buses/xe60-opposite.jpg) |
+| ![XN40 7108, MARTA](https://itsmarta.com/uploadedImages/Get_to_Know_MARTA/System_Information/A-Line/rapid-a-line-bus.jpg) | ![XN40 Rapid](log/rapid-buses/xn40-rapid.jpg) |
+
+All captures use camera position `[-16,5.8,12]`, target `[0,1.6,0]`, vertical FOV 38°, high detail.
+
+| Geometry | Triangles | Attribute bytes | Meshes per preview |
+| --- | ---: | ---: | ---: |
+| XE60 low | 1,190 | 157,080 | 3 |
+| XE60 high | 2,510 | 331,320 | 3 |
+| XN40 Rapid | 6,060 | 727,200 | 1 |
+
+Counts exclude shadow passes. The low XE60 fits the proposed 1,500-triangle phone budget. Future instanced draws can share one batch per section. Phone frame rate is unmeasured.
+
+Connector confirmed `xe60` / `marta:vt:xe60` and `xn40Rapid` as a livery on `marta:vt:xn40`. The lab makes no live vehicle assignments.
