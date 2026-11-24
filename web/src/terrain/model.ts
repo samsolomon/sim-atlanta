@@ -247,13 +247,17 @@ export const FAR_GROUND_M = 2500, FAR_GROUND_ERROR_M = 2;
  * Low-tier very-far ground: 8 m error, settled below the DEM (surface-build.ts settleBelow),
  * drawn beyond 12 km. On the A16 (1780/d px per metre, 22° lens, 692 px canvas) 8 m of vertical
  * error at City's tilt is under a pixel there; only the default (~21 km) and wider orbits reach
- * it. 115k -> 19k ground triangles across the 12 boards. `?perf&veryfar=0` keeps the far level.
+ * it. 115k -> 19k ground triangles across the 12 boards. Opt-in for now: `?veryfar=1`.
  */
 export const VERY_FAR_M = 12000, VERY_FAR_BUILD_M = 10000, VERY_FAR_ERROR_M = 8;
-const veryFarOff = (() => {
-  const p = new URLSearchParams(globalThis.location?.search ?? '');
-  return p.has('perf') && p.get('perf') !== '0' && p.get('perf') !== 'off' && p.get('veryfar') === '0';
-})();
+/**
+ * Opt-in (`?veryfar=1`) until the build is incremental: one board's settled 8 m level is a single
+ * 145 ms task on the Studio (600+ ms on the A16), so in an idle gap mid-flight it stalled a frame,
+ * and at the static default view the phone is never idle, so it never built. Off: nothing queued.
+ */
+let veryFarOff = new URLSearchParams(globalThis.location?.search ?? '').get('veryfar') !== '1';
+/** Tests: turn the very-far level on or off. */
+export function setVeryFarForTests(on: boolean) { veryFarOff = !on; }
 /** One very-far build per idle slice across all boards: several hundred ms on a phone if done at once. */
 const veryFarQueue: (() => void)[] = [];
 let veryFarPumping = false;
