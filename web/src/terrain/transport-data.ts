@@ -40,7 +40,7 @@ export function dividedIvanAllen(road: RoadDimensions) {
 export const inAnsley = (x: number, z: number) => x > 800 && x < 1750 && z > -4750 && z < -3700;
 
 // Peachtree Circle runs just west of the house-style box (x 770–835), so the street table reaches further west.
-const inAnsleyStreets = (x: number, z: number) => x > 740 && x < 1750 && z > -4750 && z < -3700;
+export const inAnsleyStreets = (x: number, z: number) => x > 740 && x < 1750 && z > -4750 && z < -3700;
 
 /**
  * Ansley Park's wide streets (Sam, 2026-11-23). OSM carries no width here, so these are inferred
