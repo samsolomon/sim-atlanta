@@ -2,7 +2,7 @@
 /**
  * Today's City against ?stream=1, on low (phone) and high (desktop), at the default camera and two
  * camera routes. Prints a markdown table and writes results.json, frame strips and a leak check.
- *   node scripts/stream-compare.mjs [--dist web/dist] [--out dir] [--only low|high] [--strip 8] [--no-leak] [--modes today,stream] [--motions static,route:north,route:loop]
+ *   node scripts/stream-compare.mjs [--dist web/dist] [--out dir] [--only low|high] [--strip 8] [--no-leak] [--modes today,stream] [--motions static,route:north,route:loop] [--repeat N] [--times 14:00,22:00]
  *   [--extra '&mid=3000'] (appended to every ?stream=1 URL)
  * Counts and memory are deterministic enough on the loaded Studio; fps and p95 are not, so read them
  * as a smoke check and take device numbers from the A16 protocol in docs/perf.md.
@@ -41,24 +41,29 @@ for (let i = 0; i < 120 && !up; i++) { try { up = (await fetch(`http://127.0.0.1
 if (!up) { server.kill(); console.error('preview did not start'); process.exit(1); }
 
 const T = '2026-11-20T14:00:00-05:00';
+const repeat = Number(opt('--repeat', 1));
+// --times 14:00,22:00 runs each camera at each clock time (the night pop check).
+const times = opt('--times', '14:00').split(',');
 const tiers = [['low', false], ['high', true]].filter(([q]) => !only || q === only);
 const motions = opt('--motions', 'static,route:north,route:loop').split(',');
 const runs = [];
 try {
-  for (const [q, desktop] of tiers) for (const motion of motions) for (const mode of modes) {
-    const url = `http://127.0.0.1:${port}/?view=city&q=${q}&t=${T}&perf=run${motion === 'static' ? '' : `&motion=${motion}`}${mode === 'stream' ? `&stream=1${extra}` : ''}`;
-    const dir = join(out, `${q}-${motion.replace(':', '-')}-${mode}`);
+  // Repeats interleave modes (today, stream, today, ...) so machine load drifts evenly across them.
+  for (let rep = 1; rep <= repeat; rep++) for (const hm of times) for (const [q, desktop] of tiers) for (const motion of motions) for (const mode of modes) {
+    const t = T.replace('14:00', hm);
+    const url = `http://127.0.0.1:${port}/?view=city&q=${q}&t=${t}&perf=run${motion === 'static' ? '' : `&motion=${motion}`}${mode === 'stream' ? `&stream=1${extra}` : ''}`;
+    const dir = join(out, `${q}-${motion.replace(':', '-')}-${mode}-${hm.replace(':', '')}-r${rep}`);
     const json = join(dir, 'r.json');
     mkdirSync(dir, { recursive: true });
     const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), '--out', dir, ...(desktop ? ['--desktop'] : []), ...(motion !== 'static' && strip ? ['--strip', String(strip)] : []), url],
       { env: { ...process.env, PERF_JSON: json }, encoding: 'utf8', timeout: 400000 });
-    process.stdout.write(`${q} ${motion} ${mode}: ${(r.stdout || r.stderr).trim().split('\n').pop()}\n`);
+    process.stdout.write(`r${rep} ${hm} ${q} ${motion} ${mode}: ${(r.stdout || r.stderr).trim().split('\n').pop()}\n`);
     const result = existsSync(json) ? JSON.parse(readFileSync(json, 'utf8'))[0] : { error: 'no result' };
-    runs.push({ q, motion, mode, url, dir, result });
+    runs.push({ q, motion, mode, hm, rep, url, dir, result });
     if (motion !== 'static' && strip && existsSync(join(dir, 'strip1-01.jpg'))) {
       const frames = Array.from({ length: strip }, (_, i) => `${join(dir, `strip1-${String(i + 1).padStart(2, '0')}.jpg`)}=t+${((i * (20 / strip))).toFixed(1)}s`)
         .filter(f => existsSync(f.split('=')[0]));
-      spawnSync('node', [join(root, 'scripts/frame-strip.mjs'), '--out', join(out, `strip-${q}-${motion.replace(':', '-')}-${mode}.png`), '--cols', String(strip), '--width', desktop ? '300' : '160',
+      spawnSync('node', [join(root, 'scripts/frame-strip.mjs'), '--out', join(out, `strip-${q}-${motion.replace(':', '-')}-${mode}-${hm.replace(':', '')}-r${rep}.png`), '--cols', String(strip), '--width', desktop ? '300' : '160',
         '--title', `${mode === 'stream' ? '?stream=1' : 'today'} · ${q} · ${motion}`, ...frames], { stdio: 'ignore' });
     }
   }
@@ -76,12 +81,12 @@ function table(rs) {
   const sec = ms => (ms == null ? '—' : (ms / 1000).toFixed(1));
   const rows = rs.map(r => {
     const m = s(r), f = r.result?.fetched ?? {}, loader = r.result?.stream?.loader;
-    if (r.result?.error) return `| ${r.q} | ${r.motion} | ${r.mode} | ${r.result.error} ||||||||||||`;
+    if (r.result?.error) return `| ${r.q} | ${r.motion} | ${r.mode} | ${r.result.error} |||||||||||||`;
     const complete = r.mode === 'stream' ? m.settledMs : (m.lastAreaMs ?? m.readyMs);
-    return `| ${r.q} | ${r.motion} | ${r.mode} | ${sec(m.firstFrameMs)} | ${sec(m.readyMs)} | ${sec(complete)} | ${m.peakHeapMB} | ${m.heapAfterGcMB} | ${m.calls} | ${m.programs} | ${((m.triangles ?? 0) / 1e6).toFixed(2)}M | ${m.geometryMB} | ${m.fps} | ${m.p95} | ${m.max} | ${f.dataFiles} / ${f.dataMB} MB | ${m.areas}${r.mode === 'stream' ? ` · rings ${m.ringTransitions} (thrash ${m.ringThrash})${loader ? ` · loader max ${Math.round(loader.maxFrameMs)} ms, ${loader.overBudgetFrames} over` : ''}` : ''} |`;
+    return `| ${r.q} | ${r.motion}${r.hm && r.hm !== '14:00' ? ' ' + r.hm : ''}${r.rep > 1 ? ' #' + r.rep : ''} | ${r.mode} | ${sec(m.firstFrameMs)} | ${sec(m.readyMs)} | ${sec(complete)} | ${m.peakHeapMB} | ${m.heapAfterGcMB} | ${m.calls} | ${m.programs} | ${((m.triangles ?? 0) / 1e6).toFixed(2)}M | ${m.geometryMB} | ${m.fps} | ${m.p95} | ${m.max} | ${m.over33 ?? '—'} / ${m.over50 ?? '—'} | ${f.dataFiles} / ${f.dataMB} MB | ${m.areas}${r.mode === 'stream' ? ` · rings ${m.ringTransitions} (thrash ${m.ringThrash})${loader ? ` · loader max ${Math.round(loader.maxFrameMs)} ms, ${loader.overBudgetFrames} over` : ''}` : ''} |`;
   });
-  return ['| Tier | Camera | Mode | First paint s | Ready s | Complete s | Peak heap MB | Heap after GC MB | Draws | Programs | Triangles | Geometry MB | fps | p95 ms | Worst frame ms | Data files / bytes | Full areas · stream |',
-    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |', ...rows].join('\n');
+  return ['| Tier | Camera | Mode | First paint s | Ready s | Complete s | Peak heap MB | Heap after GC MB | Draws | Programs | Triangles | Geometry MB | fps | p95 ms | Worst frame ms | Frames >33 / >50 ms | Data files / bytes | Full areas · stream |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |', ...rows].join('\n');
 }
 
 /**
