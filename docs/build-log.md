@@ -3649,3 +3649,8 @@ Azure on the Park by Piedmont Park was a 98 m block over its whole lot. The lida
 ### 2026-11-24 · Colony House, a raw concrete slab, 14 m shorter
 
 Colony House, a 1972 condominium tower beside Colony Square, was mapped at 62 m and tagged `retail`. The 2019 lidar puts its slab roof at 47.7 m above grade, with stair and lift cores about 3 m higher. In the skin, the long faces of the bent, diagonal slab are a grid of recessed balconies, while the ends stay blank, stepped, board-formed concrete, as they look from 15th Street. The first balcony recess colour went navy-black in shade (S 100, V 13), so it became a neutral grey. A four-side contact sheet, the new standing rule after a skin shipped with balconies floating off one wall, showed nothing loose. The skin costs about 730 triangles, once the faces hidden inside the lift core are skipped. [Before and after](log/ui/colony-house/compare.jpg) · [Four sides](log/ui/colony-house/four-sides.jpg)
+## 2026-11-24: Marriott Suites, unbranded
+
+The all-suite hotel on 14th Street is now its rose-beige precast tower, with punched windows and a balcony stack. The lidar trims it from a mapped 68 m to 56 m. The hotel's own photograph shows a brand-red entrance canopy and a name sign. Neither is drawn, so the street front stays generic. At night about 40% of rooms are lit, which reads as a hotel next to the darker offices around it.
+[Before and after](log/ui/marriott-suites/compare.jpg) · [day and night](log/ui/marriott-suites/daynight.jpg) · [close](log/ui/marriott-suites/close.jpg)
+
