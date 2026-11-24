@@ -25,6 +25,7 @@ Archives, unpacked app and Worker, SHA files, per-release notes, camera tables a
 
 | Release | Compared against | Archive SHA-256 | Verification |
 | --- | --- | --- | --- |
+| `8729e1cc` | `af33991c` | `f958bbb9cc16114b610d18fe0a33dd508927f7083c8c18ef87f50ec3421ad3ae` | Train 8b plus the houses stack, #608 very-far ground on by default, #615, #567/#580 and #603. Web rebuild only. Very-far proven on Low with `smoke13.mjs`: terrain goes from 160k to 65k triangles. SkyView wheel checked. Live as `631ca0f8`. |
 | `af33991c` | `6c863340` | `b9019c8bf23475f8f3c56ef3e221df5db852df207fb17d399a7bd25536a5e553` | Train 8a plus #552, #588 and #562. Web rebuild only; data and Worker byte-identical. Live as `05828352`. #552 check with `smoke12.mjs` and `planMotion.json`: the clock advances in place through `__scene` and frames are compared with the previous release at each step. The only daytime difference was #590's intended Marquis piers. Ships the new `verify-production.py` with retries. |
 | `6c863340` | `4e33e335` | `ed050ac607a6e76678080e2e416ba8a9fb5244d359dfecf774b496b3de44bd08` | Release 8, after three re-cuts. **`pnpm data`**: `vignette.json` regenerated for #512 (13 `freightS` runs). Worker unchanged. Held for the #514 viaduct banding (fixed by #566), the #534 shadow lag at far orbits (#570), and #538's very-far idle task (made opt-in by #586). Live as `67f69d4c`. |
 | `4e33e335` | `a2199af7` | `7dc2b5ab0021ea45338067026ef4fe35e4e0b2221e490516be3ed5ff0136983a` | P0 #517 plus train 6, #506, #472, #467, #495 and #489. **The Worker changed**: the bundle was rebuilt with `wrangler deploy --dry-run --outdir worker/bundle`. Strict tests passed on the second run, after a #472 traffic test hit the 5 s timeout under load; the rerun had 1,209 web and 9 Worker tests. Worker P0 under `wrangler dev` with a canary key: every `/api` response, including cache hits, errors and 404s, returns `no-store` with a current `Date`, and the key never leaked. Client P0 used `smoke7.mjs` with CDP `Fetch` stubs: stale data shows Timetable, and old weather shows illustrative sky. Taildropped after (1)–(4); skins and sweep followed. Live as `1cc055ed`. |
@@ -76,7 +77,8 @@ When the fix merges, the coordinator will re-cut release 8 from the then-current
 
 ## Current state
 
-Release 9 (`af33991c`) is live as `05828352`. The next release follows train 8b, with #608, #615, #616, the houses stack and perf-desktop's two PRs; the coordinator sends the go with the commit. Use `~/Developer/sim-atlanta-release-tools/verify-production.py`. Baselines for the next release are release 9's frames in `~/Developer/sim-atlanta-release-tools/ref-r9-af33991c/`: the deck, near, default and kink frames (`planFix.json`), `c3/` for the far-orbit check, and `longtasks.txt`.
+Release 10 (`8729e1cc`) is live as `631ca0f8`. The next release comes once #593, #420, #524, #520, #435, #631 and #625 land; the coordinator sends the go with the commit. Baselines are in `~/Developer/sim-atlanta-release-tools/ref-r10-8729e1cc/` (`planFix.json` frames, `c3/` and `longtasks.txt`). #435 brings back `route:north` and `route:loop` for the long-task check.
+
 
 ## Next steps, in order
 
