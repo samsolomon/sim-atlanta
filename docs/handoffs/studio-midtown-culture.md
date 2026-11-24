@@ -1,6 +1,10 @@
 # Handoff: studio-midtown-culture → Codex 6.2, 2026-11-23
 
-## Current state
+## Successor update
+
+Rhodes follow-up #360 landed at `ccae1bc1081c11333834c13ff0a1afa42801405f` with Sam’s −50% selection. Coda implementation, source notes and matched captures are on this branch in [docs/coda.md](../coda.md). The plant stack is recorded separately in the art backlog. The handoff below records the state before the successor took over.
+
+## Previous state
 
 Stopping at coordinator's request to migrate models. Current branch:
 `samsolomon/tech-square-coda`, based on main `53c29a114eb58791f3dde3cf77571c9fd88b2db6`.

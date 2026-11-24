@@ -24,8 +24,10 @@ it('replaces each of the three Coda footprints independently, keeping the west a
     const fromArcade = new Vector3(273, 302, -2382);
     const passage = new Raycaster(fromArcade, new Vector3(0, 0, 1), 0, 12);
     expect(passage.intersectObject(shell)).toHaveLength(0);
-    const ceiling = new Raycaster(fromArcade, new Vector3(0, 1, 0)).intersectObject(shell)[0];
-    expect(ceiling.point.y).toBeCloseTo(319.2, 3);
+    for (const origin of [fromArcade, new Vector3(353, 302, -2385)]) {
+      const ceiling = new Raycaster(origin, new Vector3(0, 1, 0)).intersectObject(shell)[0];
+      expect(ceiling.point.y).toBeCloseTo(319.2, 3);
+    }
     expect(new Box3().setFromObject(shell, true).max.y).toBeCloseTo(418.9, 3);
   }
 });

@@ -1,3 +1,4 @@
+import { ShapeUtils, Vector2 } from 'three';
 import { surfaces } from '../materials';
 import { type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -54,11 +55,17 @@ function office(s: Shell, height: number) {
     s.lights.box(20, 0.12, 0.18, x + 7, 19.17, 12, '#e9eff2');
   }
   glazed(s.ring, 19.2, height - 16);
-  // The shell helper caps only the roof. Close the visible underside of the west wing.
-  s.body.quad([-53.8, 19.2, 10.4], [17, 19.2, 10.4], [17, 19.2, 31.6], [-53.8, 19.2, 31.4], '#c7caca');
+  // A pedestrian can look up anywhere beneath the L-shaped overhang.
+  const soffit = (i: number) => [s.ring[i][0], 19.2, s.ring[i][1]];
+  for (const [a, b, c] of ShapeUtils.triangulateShape(
+    s.ring.map(([x, z]) => new Vector2(x, z)),
+    [],
+  ))
+    s.body.tri(soffit(a), soffit(b), soffit(c), '#c7caca');
   windows(s, s.ring, 20, height - 16, 15, 3.2, 0.055);
   const cap = rect(-54, 10.4, 106, 19.8);
   glazed(cap, height - 12, height);
+  s.body.quad(...(cap.map(([x, z]) => [x, height - 12, z]) as [number[], number[], number[], number[]]), '#9ca6a8');
   windows(s, cap, height - 11.8, height, 2, 3.2, 0.04);
   glazed(rect(-43, 12, 93, 16), height - 16, height - 12);
   for (const y of [6, 18.8]) s.body.box(72.4, 0.45, 16.4, -11, y, 21, '#c6cccb');
