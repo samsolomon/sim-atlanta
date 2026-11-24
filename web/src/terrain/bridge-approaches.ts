@@ -195,12 +195,16 @@ export function bridgeApproaches(
         },
       });
       const start = line.at(0);
-      const bank = [-half, half].map(
+      // Columns across, so the toe follows the board like the portal approaches.
+      const pieces = Math.max(1, Math.ceil((2 * half) / JOINT_COLUMN_M));
+      const offsets = Array.from({ length: pieces + 1 }, (_, i) => -half + (2 * half * i) / pieces);
+      const bank = offsets.map(
         (off) => sample(bankPositions, start.x + off * start.nx, start.z + off * start.nz) ?? h,
       );
+      const toes = offsets.map((off) => bare(end.x + off * end.nx, end.z + off * end.nz) ?? toe);
       const row = (s: number) => {
         const v = line.at(s);
-        return [-half, half].map((off, side) => {
+        return offsets.map((off, side) => {
           const x = v.x + off * v.nx,
             z = v.z + off * v.nz;
           const ground = bare(x, z) ?? toe;
@@ -209,7 +213,7 @@ export function bridgeApproaches(
             Math.max(
               ground,
               sample(bankPositions, x, z) ?? ground,
-              bank[side] + (toe - bank[side]) * (s / length) ** 2 * (3 - (2 * s) / length),
+              bank[side] + (toes[side] - bank[side]) * (s / length) ** 2 * (3 - (2 * s) / length),
             ),
             z,
           ];
@@ -218,9 +222,11 @@ export function bridgeApproaches(
       let prior = row(0);
       for (let s = 0; s < length; s += 2) {
         const next = row(Math.min(length, s + 2));
-        tri(prior[0], prior[1], next[1]);
-        tri(prior[0], next[1], next[0]);
-        for (const edge of [0, 1]) {
+        for (let i = 0; i < pieces; i++) {
+          tri(prior[i], prior[i + 1], next[i + 1]);
+          tri(prior[i], next[i + 1], next[i]);
+        }
+        for (const edge of [0, pieces]) {
           const a = prior[edge],
             b = next[edge];
           walls.quad(

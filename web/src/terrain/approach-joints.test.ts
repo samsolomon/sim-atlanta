@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { BufferAttribute } from 'three';
-import { it } from 'vitest';
+import { expect, it } from 'vitest';
 import { brookwoodGrid } from '../city/brookwood';
 import { seventeenthAccess, seventeenthPortals } from '../city/seventeenth-street';
 import { auburnTransport } from '../city/sweet-auburn-transport';
@@ -79,9 +79,6 @@ export function measure(id: string, quality: 'low' | 'high') {
         if (y !== null && g !== null) pen = Math.max(pen, g - y);
       }
     }
-    if (process.env.JOINT && j.name.includes(process.env.JOINT)) {
-      for (const u of [0.1, 0.3, 0.5, 0.7, 0.9]) console.log('u', u, [-6, -4, -2, -0.05, 0.05, 2, 4, 6, 8, 12].map(d => d + ':' + (d < 0 ? 'b' + bare(...j.point(u, d))?.toFixed(2) : 'a' + drawn(...j.point(u, d))?.toFixed(2) + '/b' + bare(...j.point(u, d))?.toFixed(2))).join(' '), 'len', j.length);
-    }
     const [tx, tz] = j.point(0.5, -4), [ix, iz] = j.point(0.5, 4);
     const bearing = Math.round((-Math.atan2(tx - ix, tz - iz) * 180) / Math.PI);
     const cam = [Math.round(tx), Math.round(tz), bearing, 60, 160];
@@ -94,7 +91,7 @@ export function measure(id: string, quality: 'low' | 'high') {
   for (const r of runs) for (const p of [r.pts[0], r.pts.at(-1)!]) nodes.set(p.join(','), (nodes.get(p.join(',')) ?? 0) + 1);
   const b = city.bounds;
   for (const run of runs) {
-    if (run.kind !== 'bridge' || run.pts.length < 2) continue;
+    if (run.kind !== 'bridge' || run.pts.length < 2 || run.deckNavd88M || ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls)) continue;
     const line = new Line(run.pts);
     for (const end of [0, 1]) {
       const p = end ? run.pts.at(-1)! : run.pts[0];
@@ -109,7 +106,8 @@ export function measure(id: string, quality: 'low' | 'high') {
         const outside = approach.groundAt(x + out * at.dx * 0.1, z + out * at.dz * 0.1);
         if (inside === null || outside === null) continue;
         n++;
-        step = Math.max(step, Math.abs(inside - outside));
+        // A deck keeps its 12 cm tread over the board: measure what is left beyond it.
+        step = Math.max(step, Math.abs(inside - outside - 0.12));
       }
       const centre = approach.groundAt(at.x, at.z);
       for (const off of [-half, half]) { const g = approach.groundAt(at.x + off * at.nx, at.z + off * at.nz); if (g !== null && centre !== null) cross = Math.max(cross, Math.abs(g - centre)); }
@@ -122,10 +120,35 @@ export function measure(id: string, quality: 'low' | 'high') {
   return { rows, tris };
 }
 
-it('probes approach joints', () => {
-  for (const q of ['high'] as const) for (const id of BOARDS) {
-    const { rows, tris } = measure(id, q);
-    console.log(q, id, 'joints', rows.length, 'tris', tris);
-    for (const r of rows) if (!/footway|pedestrian|service|steps|cycleway|path/.test(r.name)) console.log('  ', id, r.name, 'step', r.step.toFixed(2), 'pen', r.pen.toFixed(2), 'fold', r.fold.toFixed(2), 'cam', r.cam.join(','));
-  }
-}, 300000);
+// Landings this change fixes: plain road decks that end on the board. Others still
+// meet a DEM hump at their toe and need the board regraded (listed in the PR).
+const LANDINGS = ['Ralph David Abernathy Freeway -558,965', 'Ralph David Abernathy Freeway -624,980',
+  'Ralph David Abernathy Freeway -627,1000', 'Ralph David Abernathy Freeway -561,984', 'Whitehall Street Southwest -551,800',
+  'Andrew Young International Boulevard Northeast 1155,-705', 'Montgomery Ferry Drive Northeast 1559,-5222',
+  'Montgomery Ferry Drive Northeast 1624,-5255'];
+
+for (const quality of ['low', 'high'] as const)
+  it('meets the board flush where each approach and landing deck ends on ' + quality, () => {
+    const worst = { step: 0, pen: 0, landing: 0 };
+    const seen = new Set<string>();
+    for (const id of BOARDS) {
+      const { rows } = measure(id, quality);
+      for (const r of rows) {
+        if (r.name.startsWith('deck') || r.name.startsWith('link')) {
+          worst.step = Math.max(worst.step, r.step);
+          worst.pen = Math.max(worst.pen, r.pen);
+        } else if (LANDINGS.some((n) => r.name.endsWith(n))) {
+          seen.add(r.name);
+          if (process.env.SHOW) console.log(r.name, r.step.toFixed(3));
+          worst.landing = Math.max(worst.landing, r.step);
+        }
+      }
+    }
+    console.info(quality, 'approach and landing joints', JSON.stringify(worst));
+    expect(seen.size).toBe(LANDINGS.length);
+    // Steps at the toe of each approach, and terrain showing through it.
+    expect(worst.step).toBeLessThan(0.15);
+    expect(worst.pen).toBeLessThan(0.5);
+    // A landing deck sits its 12 cm tread over the board across its whole width.
+    expect(worst.landing).toBeLessThan(0.15);
+  }, 300000);

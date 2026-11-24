@@ -18,7 +18,7 @@ import { drawStreetBridges } from './street-bridges';
 import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
 type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
-/** Road tread over its support; a landing deck settles from this to 2 cm at the board. */
+/** Road tread over its support, and the widest band of a deck that lands on the board. */
 const DECK_LIFT = .12, LANDING_BAND_M = 1.5;
 
 export interface FreightTreadPoint {
@@ -232,11 +232,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       return stripePoint(row,.5-off/travelWidth);
     }
     // A road deck that lands on the board, not on another deck or the board's edge,
-    // follows the board across its width and settles to 2 cm over the last seam.
-    const lands = [bridge && !profile && use === 'road' && !startCut && firstSupport === null,
-      bridge && !profile && use === 'road' && !endCut && lastSupport === null];
-    const landing = (s: number) => (DECK_LIFT - .02) * Math.max(
-      lands[0] ? Math.max(0, 1 - s / seam) : 0, lands[1] ? Math.max(0, 1 - (line.length - s) / seam) : 0);
+    // follows the board across its width over the last seam (keeping its 12 cm tread).
+    // Surveyed profiles keep their own ends: they often meet other structures.
+    const landsOn = bridge && use === 'road' && !profile;
+    const lands = [landsOn && !startCut && firstSupport === null, landsOn && !endCut && lastSupport === null];
     const inferred = new Map<number, number>();
     if (bridge && !profile) {
       // Sample the full tread width. Smooth the minimum upward along the span
@@ -359,7 +358,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
           if (textured) y = freightGrade(x, z, y);
-          section.push([x, y + lift - landing(s), z]);
+          section.push([x, y + lift, z]);
         }
         if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; ballast = null; continue; }
         if (range && range.every(Number.isFinite)) {
