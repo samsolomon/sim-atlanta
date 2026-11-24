@@ -409,8 +409,11 @@ it('puts The M by Radius at its lidar roof with the arched crown on the south fa
   expect(fromSouth(78)).toBeCloseTo(-3420 + 12.1, 0);
   expect(fromSouth(78.8)).toBeUndefined();
   expect(heightAt(-28.4 + 302.4, -3420)).toBeCloseTo(8, 0); // one-storey west wing
-  const [body] = (model.group.children as Mesh[]).map(m => m.geometry);
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
   expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  // No lit pane stands above the 76.5 m roof.
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(76.5);
 });
 
 it('keeps every part of Alexan on 8th on its footprint, within the 1.75 m balcony depth', () => {

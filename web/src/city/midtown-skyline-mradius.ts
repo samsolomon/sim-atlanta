@@ -26,7 +26,7 @@ export function mByRadius(shell: Shell) {
   const seed = seedOf(mByRadiusId);
   const local = (ring: number[][]) => wound(ring as P2[], 1);
   const tower = local(plan.tower), low = local(plan.low);
-  const ROOF = plan.roof, CROWN = plan.crown, BASE = 5.5, pitch = (ROOF - 1.5 - BASE) / (FLOORS - 1);
+  const ROOF = plan.roof, CROWN = plan.crown, BASE = 5.5, pitch = (ROOF - 1.5 - BASE) / FLOORS;
   shell.prism(low, shell.base, plan.low_h, '#b8b3a8', '#9e9a92');
   shell.prism(tower, shell.base, ROOF, GLASS, '#a5a29b');
   const out = outwardSign(tower);
