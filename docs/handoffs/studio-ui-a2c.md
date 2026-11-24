@@ -1,5 +1,7 @@
 # Studio UI handoff to Claude Opus
 
+**Status (2026-11-23, Claude Opus):** Sam approved #387 through the coordinator, and it merges with this note. The PR body embeds day, night and close-view screenshots per Sam’s standing rule (`docs/log/ui/radio-glyph/day-night.jpg`, `phone-day-night.jpg`, `close-before-after.jpg`). No Studio UI work is open. Seen while capturing, not fixed: at night the City “3D” chip renders as a blank white square, on main as well as this branch.
+
 The only outstanding decision is Sam’s visual approval of [draft PR #387](https://github.com/samsolomon/sim-atlanta/pull/387). The branch is `samsolomon/ui-radio-next-glyph`. Its implementation commit is `65e55413a534fdbd4dd755e3702d187c1b90af17`. GitHub reported OPEN, draft, and a null mergeCommit at handoff. This document is the only change after that reviewed commit. All work is pushed.
 
 ## Sam’s request
