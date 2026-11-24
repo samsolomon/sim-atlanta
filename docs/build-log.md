@@ -3538,3 +3538,9 @@ Each transport mesh now orders its triangles so the parts that still read at tha
 On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high lost 279,000. With grain and ambient occlusion off, near frames on both tiers are pixel-identical, even though 28 of the 34 registered meshes had already switched at the 421 m Midtown camera. At the 700 m ring, 0.3% of pixels change, by at most 12 of 255.
 
 [Near, off and on](log/transport-far/near-midtown-421-low.jpg) · [Default view, changed pixels](log/transport-far/far-default-low.jpg) · [The 700 m ring](log/transport-far/far-gulch-700-low.jpg)
+
+## 2026-11-24: Hanover House, concrete and bronze
+
+Colony Square's Brutalist slab is now concrete, with bronze glass bays scattered among blank panels across its long faces, a slot up each end wall, and raked aprons at its base. The irregular panel pattern comes from the same shared hash that lights windows, on a different slot, so it is stable and has no lattice. The lidar roof is 53.1 m, against a mapped 62 m. It costs under 1,200 triangles.
+[Before and after](log/ui/hanover-house/compare.jpg) · [day and night](log/ui/hanover-house/daynight.jpg) · [close](log/ui/hanover-house/close.jpg)
+
