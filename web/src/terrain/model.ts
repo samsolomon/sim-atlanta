@@ -8,6 +8,7 @@ import { createSeventeenthTower, seventeenthTowerId } from '../city/171-seventee
 import { create903Peachtree, peachtree903Id } from '../city/903-peachtree';
 import { create25Pine, pine25Id } from '../city/25-pine';
 import { createAscentMidtown, ascentMidtownId } from '../city/ascent-midtown';
+import { amliArtsCenterId, createAmliArtsCenter } from '../city/amli-arts-center';
 import { createOneCocaColaPlaza, oneCocaColaId } from '../city/one-coca-cola-plaza';
 import { colony100Id, createColony100 } from '../city/colony-square';
 import { create999Peachtree, peachtree999Id } from '../city/999-peachtree';
@@ -255,6 +256,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree903Id ? create903Peachtree(sceneryCity.buildings, site, grid)
       : site.id === pine25Id ? create25Pine(sceneryCity.buildings, grid, options.quality)
       : site.id === ascentMidtownId ? createAscentMidtown(sceneryCity.buildings, grid, options.quality)
+      : site.id === amliArtsCenterId ? createAmliArtsCenter(sceneryCity.buildings, grid, options.quality)
       : site.id === oneCocaColaId ? createOneCocaColaPlaza(sceneryCity.buildings, site, grid)
       : site.id === colony100Id ? createColony100(sceneryCity.buildings, grid)
       : site.id === peachtree999Id ? create999Peachtree(sceneryCity.buildings, site, grid)
