@@ -52,3 +52,46 @@ The three baseline frames use high tier and a paused Atlanta clock of 14:12:45 o
   Verify the stack's coordinates against the City board before modelling it.
   [Georgia Tech Facilities' plant history](https://facilities.gatech.edu/index.php/2016-04/hidden-georgia-tech-holland-plant).
 - When the board grows east past x = 1905, build the CSX rail-over at Boulevard SE (FRA 717928R), including its separated pedestrian passage. [Crossing evidence, lidar and Street View](king-freight-crossings.md).
+
+## Deck landings left by the Gulch deck levels (2026-11-24)
+
+The deck-level fix (`terrain/deck-levels.ts`, Sam's footpath over the freight line) holds the
+Gulch-west decks at street level over the tracks. A road's sidewalk stays welded to its deck to
+the end, so where the mapped ground footway it joins lies on the Gulch floor, the sidewalk now
+ends a step above it. Mapped steps get a drawn flight; the rest need a landing (stair or ramp)
+in the #418 weld and parapet work. Heights are the end's top above the ground way it joins.
+
+| Run (staged downtown index) | Class | End (x, z) | Joins | Step | What it needs |
+|---|---|---|---|---|---|
+| tt1 | footway | (-658, 447) | footway | 8.5 m | landing needed (stair or ramp) |
+| tt76 | footway | (-475, 94) | footway | 8.1 m | landing needed (stair or ramp) |
+| tt164 | service | (-321, -139) | unknown | 7.2 m | data conflict: deck meets an unmapped-class ground way |
+| tt82 | footway | (-539, -242) | footway | 7.1 m | landing needed (stair or ramp) |
+| tt160 | footway | (-295, 56) | footway | 6.9 m | landing needed (stair or ramp) |
+| tt52 | footway | (-670, 434) | footway | 6.7 m | landing needed (stair or ramp) |
+| tt132 | service | (-357, -193) | unknown | 6.2 m | data conflict: deck meets an unmapped-class ground way |
+| tt30 | footway | (-655, -216) | footway | 6.1 m | landing needed (stair or ramp) |
+| tt76 | footway | (-422, -26) | footway | 6.0 m | landing needed (stair or ramp) |
+| tt83 | footway | (-353, -297) | steps | 6.0 m | stair drawn |
+| tt127 | footway | (-353, -297) | steps | 6.0 m | stair drawn |
+| tt143 | footway | (-353, -297) | steps | 6.0 m | stair drawn |
+| tt34 | footway | (-783, -44) | footway | 5.8 m | landing needed (stair or ramp) |
+| tt117 | footway | (-150, -290) | footway | 5.7 m | landing needed (stair or ramp) |
+| tt175 | pedestrian | (-228, -129) | steps | 5.7 m | stair drawn |
+| tt119 | footway | (-159, -302) | footway | 5.6 m | landing needed (stair or ramp) |
+| tt51 | footway | (-651, 28) | footway | 5.1 m | landing needed (stair or ramp) |
+| tt1 | footway | (-547, 392) | footway | 4.7 m | landing needed (stair or ramp) |
+| tt196 | footway | (-77, -41) | footway | 4.7 m | landing needed (stair or ramp) |
+| tt9 | footway | (-574, -1144) | footway | 4.5 m | landing needed (stair or ramp) |
+| tt126 | footway | (-322, -339) | steps | 4.0 m | stair drawn |
+| tt133 | footway | (-322, -339) | steps | 4.0 m | stair drawn |
+| tt52 | footway | (-513, 359) | footway | 3.3 m | landing needed (stair or ramp) |
+| tt78 | footway | (-311, 45) | footway | 2.0 m | landing needed (stair or ramp) |
+| tt131 | footway | (-329, -264) | pedestrian | 2.0 m | landing needed (stair or ramp) |
+| tt153 | footway | (-188, 97) | footway | 1.5 m | landing needed (stair or ramp) |
+| tt9 | footway | (-649, -1129) | footway | 1.0 m | landing needed (stair or ramp) |
+| tt196 | footway | (12, -149) | footway | 0.8 m | small step, likely fine |
+| tt157 | footway | (-194, 107) | footway | 0.5 m | small step, likely fine |
+| tt198 | footway | (21, -136) | footway | 0.5 m | small step, likely fine |
+| tt12 | footway | (-648, -1106) | footway | 0.3 m | small step, likely fine |
+| tt147 | service | (-248, -181) | service | 0.3 m | small step, likely fine |

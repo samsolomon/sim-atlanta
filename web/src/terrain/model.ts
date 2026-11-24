@@ -60,7 +60,7 @@ import { createVireo, vireoId } from '../city/vireo';
 import { seventeenthPortals } from '../city/seventeenth-street';
 import * as THREE from 'three';
 import { emptySliceStats, runBudgeted, runSync, sliceInput, type Build } from '../core/slice';
-import { Builder, pointInRing, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex, insideAny } from '../vignette/spatial';
 import { World, clipRing, type BuildingFinish, type VBuilding, type VData } from '../vignette/world';
 import { inConnectorLanes } from './connector-paint';
@@ -317,6 +317,10 @@ export function terrainOpenings(grid: GroundGrid, options: Pick<DowntownTerrainO
 
 /** City entry point. groundAt returns scene y on a drawn triangle, or null in a slot,
  * void or outside the board. Absolute DEM readings remain available via grid.sample. */
+/** A canopy crown whose trunk stands this close to a surface track's centreline is dropped:
+ * the ballast's half width (2.1 m) and a train's swept half width beyond it. */
+const TREE_TRACK_CLEAR_M = 4;
+
 export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees: Tree[], options: DowntownTerrainOptions) {
   return runSync(buildDowntownTerrain(grid, city, trees, options));
 }
@@ -489,7 +493,12 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   const yardLayer = yield* homes.buildYards();
   if (yardLayer?.yields.length) yield* mesh.carveSteps(yardLayer.yields);
   yield 'yards carve';
-  let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z));
+  // No crown on a track bed: a trunk within the ballast and a train's swept width is dropped.
+  const tracks = new PlacementIndex<[P2, P2]>();
+  for (const rail of city.terrainTransport?.rail ?? []) if (rail.kind === 'ground' && rail.cls !== 'tram')
+    for (let i = 1; i < rail.pts.length; i++) tracks.add([rail.pts[i - 1], rail.pts[i]], [rail.pts[i - 1], rail.pts[i]], TREE_TRACK_CLEAR_M);
+  const onTrack = (x: number, z: number) => tracks.at(x, z).some(([a, b]) => segDist(x, z, a, b) < TREE_TRACK_CLEAR_M);
+  let streetTrees = trees.filter(([x,z]) => !onJunction(city,x,z) && !onTrack(x, z));
   // Named species trees (trees/sites.ts) replace the generic crown the canopy map traced there.
   const named = treeSitesIn(city.bounds);
   const namedReplace = named.length ? replacedBy(named) : null;
@@ -499,7 +508,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     roads: city.roads, ground: city.ground, buildings: city.buildings, bounds: city.bounds,
     roundTwo: { id: options.rollout.row, eligible: new Set(options.rollout.allCrowns.slice(0, options.rollout.lowCount)
       .filter(([x, z, , r]) => !namedReplace?.(x, z, r)).map(([x, z]) => crownKey(x, z))) },
-    allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
+    allCrowns: options.rollout.allCrowns.filter(([x, z]) => !onJunction(city, x, z) && !onTrack(x, z)), tierCrowns: streetTrees, inAnsley: options.rollout.inAnsley,
     // `?trees=all-species`: convert only crowns the generic World would draw (its bounds and
     // building test), and leave named sites to trees/sites.ts.
     generic: drawTrees === 'generic',
