@@ -641,11 +641,14 @@ export class RoadTraffic {
   }
 
   /** A far lane between its ticks: its cars where they were last posed, still occupying their
-   * footprints so nearer cars keep clear of them. */
+   * footprints so nearer cars keep clear of them. A bus, streetcar or car that has moved into a
+   * held footprint since the tick hides that car, as it would a freshly posed one. */
   private replay(lane: LaneState) {
     let dirty = false;
     for (let i = 0; i < lane.heldCount; i++) {
       const h = lane.held[i];
+      if (this.opts.busOccupies?.(h.x, h.y, h.z, LENGTH[h.kind], Math.atan2(h.ux, h.uz))) continue;
+      if (this.blocked(h.x, h.y, h.z, h.ux, h.uz, h.half)) continue;
       const place = this.visible[this.visibleCars] ??= { x: h.x, y: h.y, z: h.z, half: h.half, ux: h.ux, uz: h.uz };
       place.x = h.x; place.y = h.y; place.z = h.z; place.half = h.half; place.ux = h.ux; place.uz = h.uz; place.lane = lane.course;
       this.visibleCars++;

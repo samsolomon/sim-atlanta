@@ -128,6 +128,26 @@ describe.skipIf(!staged)('road traffic’s frame path matches the legacy path', 
     }
   });
 
+  it('hides a held far car when a bus moves into its footprint within the tick', async () => {
+    const { RoadTraffic } = await import('./road-traffic');
+    const { Line } = await import('../vignette/geom');
+    const pts: [number, number][] = [[0, 0], [0, 300]];
+    const road = { cls: 'primary', name: '', bridge: false, tunnel: false, pts } as never;
+    let bus = false;
+    const layer = new RoadTraffic({ city: { bounds: { minX: -1e5, maxX: 1e5, minZ: -1e5, maxZ: 1e5 } } as never, quality: 'low',
+      hourly: { weekday: Array(24).fill(1), weekend: Array(24).fill(1) }, roadHeight: () => 0, busOccupies: () => bus },
+      [{ line: new Line(pts), roads: [road], speedMps: 12, dailyFlow: 1e9, truckShare: 0 }], 16, 1, 'held');
+    const step = (ms: number) => (layer as unknown as { step(ms: number, d: number, v?: THREE.Frustum, eye?: THREE.Vector3): void }).step(ms, 0, undefined, new THREE.Vector3(0, 5000, 150));
+    const stagger = (layer as unknown as { lanes: { stagger: number }[] }).lanes[0].stagger;
+    let start = Math.ceil(Date.parse('2026-11-20T17:00:00-05:00') / 1000) * 1000;
+    while (Math.floor((start - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger) !== Math.floor((start + 10 - Date.UTC(2026, 0, 1)) / 1000 * 15 + stagger)) start += 7;
+    step(start);
+    expect(layer.visibleCars).toBeGreaterThan(0);
+    bus = true; // a bus now covers every footprint, within the same 15 Hz tick
+    step(start + 5);
+    expect(layer.visibleCars).toBe(0);
+  });
+
   it('culls only cars outside the view, posing the rest exactly as without culling', () => {
     const layer = layers.connector!;
     const camera = new THREE.PerspectiveCamera(40, 411 / 891, 1, 6000);
