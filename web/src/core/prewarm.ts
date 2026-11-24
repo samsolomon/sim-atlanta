@@ -26,8 +26,8 @@ export interface Prewarmer {
   readonly pending: number;
   /** Scan the scene for never-drawn objects (after an area mounts or freight arrives). */
   scan(): void;
-  /** Draw up to `maxObjects` of them, stopping early past `budgetMs`. Returns how many it drew. */
-  step(budgetMs: number, maxObjects?: number): number;
+  /** Draw up to `maxObjects` of them in one scratch render. Returns how many it drew. */
+  step(maxObjects?: number): number;
   dispose(): void;
 }
 
@@ -37,18 +37,31 @@ export function createPrewarmer(renderer: THREE.WebGLRenderer, scene: THREE.Scen
   const cam = camera.clone();
   let queue: Drawable[] = [];
   const compiled = (m: THREE.Material) => !!props.get(m).currentProgram;
+  // One attempt per object. A draw can leave a material uncompiled (three.js skips material.visible
+  // false, and some objects never render on this layer); without this, every 10 s rescan would queue
+  // such an object again, and each attempt costs a whole-scene traversal.
+  const tried = new WeakSet<THREE.Object3D>();
+  // Only materials a draw can compile: a hidden material never renders, so it can't stall a frame
+  // until it becomes visible (and then it is one object, on one frame).
+  // A material that two draws didn't compile won't on a third (thousands of objects can share it).
+  const attempts = new WeakMap<THREE.Material, number>();
+  const wanted = (m: THREE.Material) => m.visible && !compiled(m) && (attempts.get(m) ?? 0) < 2;
   const materials = (o: Drawable) => (Array.isArray(o.material) ? o.material : [o.material]).filter(Boolean) as THREE.Material[];
 
-  /** Draw one object alone on the scratch layer into the 4x4 target, then put everything back. */
-  function draw(o: Drawable) {
+  /** Draw a batch of objects alone on the scratch layer into the 4x4 target, then put everything
+   * back. One render per batch: each render walks the whole scene, and most first draws reuse a
+   * program another material already compiled, so a batch costs little more than one object. */
+  function draw(batch: Drawable[]) {
     const restore: (() => void)[] = [];
     // Lights must be on the scratch layer too, or the programs compile for an unlit scene.
     scene.traverse(l => { if ((l as THREE.Light).isLight && !l.layers.isEnabled(LAYER)) { l.layers.enable(LAYER); restore.push(() => l.layers.disable(LAYER)); } });
-    for (let p: THREE.Object3D | null = o; p; p = p.parent) {
-      if (!p.visible) { const q = p; q.visible = true; restore.push(() => { q.visible = false; }); }
+    for (const o of batch) {
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) {
+        if (!p.visible) { const q = p; q.visible = true; restore.push(() => { q.visible = false; }); }
+      }
+      if (o.frustumCulled) { o.frustumCulled = false; restore.push(() => { o.frustumCulled = true; }); }
+      if (!o.layers.isEnabled(LAYER)) { o.layers.enable(LAYER); restore.push(() => o.layers.disable(LAYER)); }
     }
-    if (o.frustumCulled) { o.frustumCulled = false; restore.push(() => { o.frustumCulled = true; }); }
-    if (!o.layers.isEnabled(LAYER)) { o.layers.enable(LAYER); restore.push(() => o.layers.disable(LAYER)); }
     cam.copy(camera as THREE.PerspectiveCamera);
     cam.layers.set(LAYER);
     const prevTarget = renderer.getRenderTarget();
@@ -76,24 +89,24 @@ export function createPrewarmer(renderer: THREE.WebGLRenderer, scene: THREE.Scen
         const d = o as Drawable;
         if (!((d as THREE.Mesh).isMesh || (d as THREE.Points).isPoints || (d as THREE.Line).isLine)) return;
         // One object per uncompiled material is enough to compile it.
-        const fresh = materials(d).filter(m => !compiled(m) && !seen.has(m));
+        if (tried.has(d)) return;
+        const fresh = materials(d).filter(m => wanted(m) && !seen.has(m));
         if (!fresh.length) return;
         for (const m of fresh) seen.add(m);
         queue.push(d);
       });
     },
-    step(budgetMs, maxObjects = 4) {
-      const t0 = performance.now();
-      let drawn = 0;
-      // One object per render, so a step stops as soon as its budget is spent. A single compile can
-      // still overrun it; that's one program, not the whole backlog.
-      while (queue.length && drawn < maxObjects && (drawn === 0 || performance.now() - t0 < budgetMs)) {
+    step(maxObjects = 4) {
+      const batch: Drawable[] = [];
+      while (queue.length && batch.length < maxObjects) {
         const o = queue.shift()!;
-        if (!o.parent || materials(o).every(compiled)) continue;
-        draw(o);
-        drawn++;
+        if (!o.parent || !materials(o).some(wanted)) continue;
+        tried.add(o);
+        for (const m of materials(o)) if (wanted(m)) attempts.set(m, (attempts.get(m) ?? 0) + 1);
+        batch.push(o);
       }
-      return drawn;
+      if (batch.length) draw(batch);
+      return batch.length;
     },
     dispose() { target.dispose(); queue = []; },
   };
