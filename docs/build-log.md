@@ -3404,3 +3404,15 @@ Loews Atlanta's mapped height of 79.9 m looked low for a 2010 tower, but the lid
 ### 2026-11-24 · Sora at Spring Quarter, part by part
 
 Sora's five mapped parts happen to line up with its five materials. The main shaft and north block are blue-green glass in a white frame, the dark blade climbs from the base, and the west wing is white with punched windows. The podium is cream. Faces buried in a taller neighbouring part are skipped, and two balcony stacks run up the shaft's east corners. The historic chapel next door stays its own building, so at the review orbit the old gables and the new tower read as two things. [Day, night and podium views](log/ui/sora/README.md)
+
+### 2026-11-24 — Square on 5th's fins and curve
+
+Square on 5th, Georgia Tech's 25-storey student tower on Spring Street, was a
+generic box at its mapped 98 m. The 2019 lidar puts the roof at 88 m, 10% lower.
+The tower now has brick end bays of punched windows. On the straight north face,
+four concrete fins run past the roof to carry an open roof frame. The curved south
+face is teal glass with white slab edges. The body is 671 triangles. I found no
+night photograph, so the lit share of rooms is an estimate.
+[South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
+[north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
+
