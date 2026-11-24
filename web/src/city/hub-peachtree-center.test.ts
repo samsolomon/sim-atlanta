@@ -1,4 +1,4 @@
-import { Color, Mesh, Raycaster, Vector3 } from 'three';
+import { BufferGeometry, Color, Mesh, MeshLambertMaterial, Raycaster, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import type { VBuilding } from '../vignette/world';
 import { GroundGrid } from '../terrain/grid';
@@ -45,7 +45,7 @@ it('lights the plaza atrium at night and stays inside the landmark budget', () =
   const result = createHubPeachtreeCenter([site], grid)!;
   expect(result.group.children).toHaveLength(2);
   expect(triangles(result.group)).toBeLessThan(600); // 514 at the first build
-  const lamps = result.group.children[1] as Mesh;
+  const lamps = result.group.children[1] as Mesh<BufferGeometry, MeshLambertMaterial>;
   result.setNight(1);
-  expect((lamps.material as { emissiveIntensity: number }).emissiveIntensity).toBeCloseTo(0.6);
+  expect(lamps.material.emissiveIntensity).toBeCloseTo(0.6);
 });
