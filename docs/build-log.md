@@ -3359,3 +3359,9 @@ triangles. [Before and after](log/ui/1072-west-peachtree/compare-day.jpg) ·
 ### 2026-11-23 · Ascent Midtown finds its L
 
 Ascent Midtown had been one generic 82 m block over its whole 103 × 43 m lot. The 2019 lidar shows something else: an L-shaped tower whose roof is at 88.5 m, standing along the north edge and down West Peachtree, over a 20 m podium with a pool deck. Ascent shares that podium with the Hilton Canopy, which is already mapped as its own building. Pairing floors into one pane row on the phone tier kept the skin to 275 triangles and two draws there. [Before/after, day and night](log/ui/ascent-midtown/README.md)
+
+## 2026-11-23: Metropolis, and the lamp that ignored the shade
+
+Metropolis's two 21-storey condominium towers now stand on Peachtree as glass shafts with silver slab edges and stacked corner balconies. Between them, a garage podium carries a pool deck. At 23:30 about a third of the apartment runs are lit, as residential towers should be. The lesson was in the daylight. Lit windows live in a separate lamp mesh, and that mesh didn't receive shadows, so on the shaded west face every future-lit window showed at noon as a pale pane. Turning on shadow receiving for the lamps fixed it with no new shader program. A colour blended in sRGB had also drifted from the linear blend of the wall behind it. Both towers together cost 2,094 triangles and two draws.
+[Before and after](log/ui/metropolis/compare.jpg) · [day and night](log/ui/metropolis/daynight.jpg) · [podium close](log/ui/metropolis/close.jpg)
+
