@@ -737,7 +737,8 @@ const STRIP_VIEWS: Record<string, ViewPreset> = {
   '¾ front': { pos: [-55, 22, 150], target: [0, 2.5, 175], fov: 42 },
   'Side': { pos: [-230, 150, 0], target: [0, 2, 0], fov: 50 },
   'Rear': { pos: [-150, 60, -118], target: [0, 2, -118], fov: 40 },
-  'Top': { pos: [0.01, 420, 0], target: [0, 0, 0], fov: 60 },
+  // Every preset keeps the whole 473 m train inside the Lab's 400 m far plane.
+  'Top': { pos: [0.01, 260, 0], target: [0, 0, 0], fov: 60 },
 };
 const TRAIN_VIEWS: Record<string, ViewPreset> = {
   'Front': { pos: [0, 2.3, 48], target: [0, 2.0, 22], fov: 18 },
