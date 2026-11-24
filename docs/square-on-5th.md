@@ -1,6 +1,6 @@
 # Square on 5th
 
-`osm:way:536884432`, 848 Spring Street NW. This is 25-storey student housing near Georgia Tech, designed by The Preston Partnership and built by JE Dunn. It topped out in January 2015 and opened that fall. City code: `web/src/city/midtown-skyline-square5th.ts`, registered in the Midtown skyline registry.
+`osm:way:536884432`, 848 Spring Street NW. This is 25-storey student housing near Georgia Tech, designed by The Preston Partnership and built by JE Dunn. It topped out in January 2015 and opened that fall. City code: `web/src/city/midtown-skyline-square5th.ts`, registered in the Midtown skyline registry. Shipping it requires a web rebuild and redeploy; the data is unchanged.
 
 ## Sources
 
