@@ -27,6 +27,7 @@ import { alignment } from '../vignette/alignment';
 import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
 import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
+import { hideEmptyMeshes } from './empty-draws';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -744,6 +745,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const freezeOn = !(perfEnabled && new URLSearchParams(location.search).get('freeze') === 'off');
   if (freezeOn) freezeSelf(scene);
   let staticFrozen = !freezeOn;
+  // `?perf&empty=draw` keeps drawing meshes with no vertices (city/empty-draws.ts), for A/B runs.
+  const keepEmpty = perfEnabled && new URLSearchParams(location.search).get('empty') === 'draw';
+  let emptyHidden = false;
   const bg = new THREE.Color('#e7e2d8');
   scene.background = bg;
   scene.fog = new THREE.Fog('#e7e2d8', 5000, 12000);
@@ -954,6 +958,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // A crown rooted inside the mosaic can overhang its outer edge. Interior joins stay open.
     if (perimeter) clipScenery(area.scenery, perimeter);
     scene.add(area.group);
+    if (!keepEmpty) hideEmptyMeshes(area.group);
     scenery.push(area.group);
     // The area is in place: its board and scenery never move again (city/freeze.ts). Its transport
     // subgroup keeps updating (freight runs in it).
@@ -1710,6 +1715,11 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    if (!emptyHidden) {
+      // Downtown is all built by the first frame; areas are checked as they mount (addArea).
+      emptyHidden = true;
+      if (!keepEmpty) hideEmptyMeshes(scene);
+    }
     followPixelRatio();
     if (!staticFrozen) {
       // Downtown's world, board and scenery are all built by the first frame.

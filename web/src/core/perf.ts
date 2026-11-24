@@ -698,7 +698,10 @@ export const perf = {
         const all = [...recs.values()];
         const sum = (rs: Rec[]) => ({ tri: rs.reduce((a, r) => a + r.tri, 0), calls: rs.reduce((a, r) => a + r.calls, 0) });
         const by = (k: 'pass' | 'cat') => Object.fromEntries([...new Set(all.map(r => r[k]))].map(v => [v, sum(all.filter(r => r[k] === v))]));
-        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80) });
+        // Meshes City hid because they have no vertices (city/empty-draws.ts): their owners should check why.
+        const hiddenEmpty: string[] = [];
+        scene.traverse(o => { if (o.userData.emptyHidden) hiddenEmpty.push(owner(o).path); });
+        resolve({ total: sum(all), byPass: by('pass'), byCategory: by('cat'), top: all.sort((a, b) => b.tri - a.tri).slice(0, 80), hiddenEmpty });
       }); });
     });
   },
