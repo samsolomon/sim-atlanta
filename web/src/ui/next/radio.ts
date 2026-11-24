@@ -24,6 +24,8 @@ export const PLAYLIST: Track[] = [
 export interface Radio {
   readonly playing: boolean;
   readonly track: Track;
+  readonly index: number;
+  readonly elapsedS: number;
   toggle(): void;
   next(): void;
   onChange(fn: () => void): void;
@@ -48,6 +50,8 @@ export function createRadio(list: Track[] = PLAYLIST): Radio {
     }
   };
   const advance = () => {
+    clearTimeout(timer);
+    audio.pause();
     i = (i + 1) % list.length;
     elapsed = 0;
     if (playing) start();
@@ -93,11 +97,11 @@ export function createRadio(list: Track[] = PLAYLIST): Radio {
       if (playing) start();
       else stop();
     },
-    next() {
-      clearTimeout(timer);
-      audio.pause();
-      advance();
+    get index() { return i; },
+    get elapsedS() {
+      return list[i].src ? audio.currentTime : Math.min(list[i].durationS, elapsed + (playing ? (performance.now() - startedAt) / 1000 : 0));
     },
+    next: advance,
     onChange(fn) {
       listeners.push(fn);
     },

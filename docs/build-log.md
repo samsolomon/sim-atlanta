@@ -3165,3 +3165,7 @@ published timetable the worst was 0.5 ms. A regression checks the bound on
 every frame and compares the final positions with a fresh seek.
 
 [The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)
+
+### 2026-11-24 — Radio in the dock
+
+The first radio player followed boards F07 and G13. Sam wanted more of the city to stay visible. The revised player fits the track and two 44 px touch targets in one 64 px row. On the 390 px phone, the card is 374 px wide and sits 12 px above the dock. Silent placeholder tracks read “No audio yet”. [Desktop before](log/ui/final-radio/desktop.jpg) · [After](log/ui/final-radio/desktop-compact.jpg) · [Phone before](log/ui/final-radio/phone.jpg) · [After](log/ui/final-radio/phone-compact.jpg).
