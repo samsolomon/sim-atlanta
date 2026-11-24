@@ -32,6 +32,10 @@ The frame uses City axes, with the origin at City (767, −565).
 - **Arrival canopy:** a flat dark box on one column, with a downlit soffit (2025 photo). It starts inside the curved wall and projects 2.5 m over the drive.
 - **Budget:** 1,695 body triangles. A test holds every vertex within 2.5 m of the footprint.
 
+## Rendered glass (11:30, high tier)
+
+Median rendered colour of the north tower's glass-band pixels on its sunlit south face, from the south view (`cam=767,-565,0,55,420`): S 22%, V 59%. This meets the cap of S ≤ 36% and V ≥ 40%.
+
 ## Night
 
 City lights 30% of rooms, chosen by skin-kit `litHash(seedOf(id), face, floor, bay)`, plus the courtyard roof and the canopy soffit. The 2025 dusk photograph shows the canopy downlights. I found no full-night exterior photograph; the courtyard glow comes from the 2014 night photograph of the pool.
