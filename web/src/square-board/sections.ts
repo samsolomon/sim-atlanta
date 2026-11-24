@@ -27,7 +27,13 @@ import { createDowntownTerrain, FAR_GROUND_ERROR_M, terrainOpenings } from '../t
 import { GroundSurface } from '../terrain/surface';
 import { prebuildSurface } from '../terrain/surface-prebuild';
 
-/** ?worker=1 builds ground surfaces in a Worker (the sliced-build work; off by default). */
+/**
+ * ?worker=1 builds ground surfaces in a Worker (the sliced-build work; off by default).
+ * Do not turn this on by default yet: with it, heap after GC reads ~12 MB higher on low
+ * (443 vs 431 MB, geometry and CPU memory identical; PR #486) and the phone has ~5 MB of
+ * headroom. Suspects: transferred buffers kept alive by the client's pending map or the
+ * Worker's own copy of the DEM.
+ */
 function surfaceWorker() { return typeof location !== 'undefined' && new URLSearchParams(location.search).get('worker') === '1'; }
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
