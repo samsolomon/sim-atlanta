@@ -178,6 +178,8 @@ function block(tiles: HouseTile[]) {
   mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
   mesh.castShadow = ms[0].castShadow;
   mesh.receiveShadow = ms[0].receiveShadow;
+  // The white arrival model whitens tagged buildings; a block is too wide to pass its size test.
+  mesh.userData.building = ms[0].userData.building;
   return new HouseBlock(tiles, mesh);
 }
 

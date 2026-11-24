@@ -90,6 +90,7 @@ test('draws a block of far tiles as one mesh, and each tile on its own once one 
   takeHouseLodChange();
   b.update(camera);
   expect(drawn()).toEqual([b.merged]);
+  expect(b.merged.userData.building).toBe(true);
   // The tiles' far meshes are ranges of the block's buffer.
   const ranges = lod.tiles.map(t => (t.farWorld.group.children[0] as THREE.Mesh).geometry);
   expect(ranges.every(g => g.attributes.position === b.merged.geometry.attributes.position)).toBe(true);
