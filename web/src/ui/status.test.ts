@@ -28,8 +28,8 @@ describe('confidence line', () => {
 
 describe('first-visit hint', () => {
   it('matches the view and the input', () => {
-    expect(hintText('map', false)).toBe('Click anything to inspect · drag to move · two-finger scroll to tilt');
-    expect(hintText('map', true)).toBe('Tap anything to inspect. Pinch to zoom, two fingers to tilt.');
+    expect(hintText('map', false)).toBe('Click anything to inspect · drag to move · scroll to zoom');
+    expect(hintText('map', true)).toBe('Tap anything to inspect. Pinch to zoom.');
     expect(hintText('city', false)).not.toMatch(/WASD/);
     expect(hintText('map', false)).not.toMatch(/look around/);
   });
