@@ -122,12 +122,12 @@ export const floweringDogwood = broadleafSpecies({
   id: 'flowering-dogwood',
   name: 'Flowering dogwood',
   carpet: true,
-  bloomColour: '#ffffff',
+  bloomColour: '#edf4ff',
   // Ranges: NC State and UF ST185; GT's 339 measured dogwoods; Trees Atlanta champions (458
   // Ponce de Leon Ave, 9.1 × 13.7 m; Peachtree Christian courtyard, 12.9 × 12.2 m).
   sizes: {
-    sapling: { heightM: 3, spreadM: 2.6, calliperM: 0.07 },
-    young: { heightM: 6, spreadM: 5.5, calliperM: 0.2 },
+    sapling: { heightM: 2.5, spreadM: 3, calliperM: 0.07 },
+    young: { heightM: 5, spreadM: 6.5, calliperM: 0.2 },
     mature: { heightM: 6, spreadM: 9, calliperM: 0.35 },
     specimen: { heightM: 9.1, spreadM: 13.7, calliperM: 0.6 },
   },
@@ -144,5 +144,5 @@ export const floweringDogwood = broadleafSpecies({
 });
 export const floweringDogwoodLook: Look = {
   species: floweringDogwood, habit: dogwoodHabit, leaf: 'oval', palette: dogwoodPalette, options: DOGWOOD_OPTIONS,
-  bloomColour: '#ffffff', bloomSizeM: 0.35, bloomOffset: 0.12, bloomWash: 1, bloomLift: 1,
+  bloomColour: '#edf4ff', bloomSizeM: 0.35, bloomOffset: 0.12, bloomWash: 1, bloomLift: 1,
 };

@@ -215,7 +215,7 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
     // and is not lifted back to the limbs' top (it would show through the narrowed tip).
     const leaderTop = Math.min(h.trunkTop, (top.c[1] - top.r * (0.35 + (h.cone ?? 0))) / e.H);
     const leaderY = h.forkM !== undefined ? Math.min(h.forkM / e.H, 0.4) : h.cone ? Math.max(h.crownBase, leaderTop) : Math.max(h.limbFrom[1], leaderTop);
-    segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * 0.12, sides: q === 'high' ? 5 : 4, color: habit.barkDark });
+    segs.push({ a: [0, 0, 0], b: [top.c[0] / e.R * 0.4, leaderY, top.c[2] / e.R * 0.4], r0: tr, r1: tr * (h.forkM !== undefined ? 0.55 : 0.12), sides: q === 'high' ? 5 : 4, color: habit.barkDark });
     const count = h.tiers ? masses.length - 1 : limbs;
     for (let i = 0; i < count; i++) {
       const f = count === 1 ? 0.5 : i / (count - 1);
@@ -233,7 +233,7 @@ export function broadleafForm(habit: Habit, size: SizeClass, q: TreeQuality, d: 
           segs.push({ a: elbow, b: [tip[0] * 1.5, tip[1], tip[2] * 1.5], r0: tr * 0.14, r1: tr * 0.015, sides: 3, color: habit.bark });
           const twig = lerp3(elbow, tip, 0.55);
           const turn = i % 2 ? 0.9 : -0.9;
-          segs.push({ a: twig, b: [tip[0] - tip[2] * turn, twig[1] + 0.01, tip[2] + tip[0] * turn], r0: tr * 0.055, r1: tr * 0.008, sides: 3, color: habit.bark });
+          segs.push({ a: twig, b: [tip[0] - tip[2] * turn, twig[1] + 0.01, tip[2] + tip[0] * turn], r0: tr * 0.1, r1: tr * 0.03, sides: 3, color: habit.bark });
         } else segs.push({ a: [0, y0, 0], b: unit(lerp3([0, y0 * e.H, 0], main.c, 0.92)), r0: tr * 0.3, r1: tr * 0.08, sides: 3, color: habit.bark });
         continue;
       }
