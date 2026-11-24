@@ -12,7 +12,11 @@ export function createH5Courtland(buildings: VBuilding[], grid: GroundGrid) {
     [727, -1250], [1, 0], [[0, 0]]);
   if (!shell) return null;
   const ring = wound(shell.ring, 1);
-  const roof = 319.9, baseTop = 305.3, rim = '#7c8080', casing = '#dad8cf';
+  const roof = 319.9, rim = '#7c8080', casing = '#dad8cf';
+  // The sidewalk rises along Courtland. The cladding head tracks the actual
+  // entry grade so the photographed portal fits entirely below the first glazing.
+  const entryGrade = grid.sample(706.165, -1251.845) ?? shell.base;
+  const baseTop = entryGrade + 4.2;
   shell.prism(ring, shell.base, baseTop, '#38393a', rim);
   shell.prism(ring, baseTop, roof, '#a4a5a4', '#979694');
   faces(ring, (a, b, length, edge) => {
@@ -21,8 +25,7 @@ export function createH5Courtland(buildings: VBuilding[], grid: GroundGrid) {
     // On Courtland the pale portal stands forward of the dark, patterned plinth.
     if (a[0] > -19 || b[0] > -19 || length < 30) return;
     const door = length * 0.5;
-    const entry = along(a, b, length, door);
-    const threshold = grid.sample(727 + entry[0], -1250 + entry[1]) ?? shell.base;
+    const threshold = entryGrade;
     const jamb = (lo: number, hi: number, foot: number, top: number, color: string, depth: number) => {
       const plan = [along(a,b,length,lo,-0.12), along(a,b,length,hi,-0.12),
         along(a,b,length,hi,depth), along(a,b,length,lo,depth)];
