@@ -29,4 +29,26 @@ describe('hideEmptyMeshes', () => {
     expect(hideEmptyMeshes(root)).toBe(0);
     expect(dynamic.visible && inst.visible && indexed.visible).toBe(true);
   });
+  it('shows a hidden mesh again when it is filled later: geometry swapped or attributes replaced', () => {
+    const root = new THREE.Group();
+    const swapped = mesh([]);
+    const refilled = mesh([]);
+    const reindexed = mesh([]);
+    root.add(swapped, refilled, reindexed);
+    expect(hideEmptyMeshes(root)).toBe(3);
+    // A far form whose geometry arrives later.
+    swapped.geometry = mesh([0, 0, 0, 1, 0, 0, 0, 1, 0]).geometry;
+    expect(swapped.visible).toBe(true);
+    expect(swapped.userData.emptyHidden).toBe(false);
+    // A geometry filled in place (season or clock rebuild).
+    refilled.geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+    expect(refilled.visible).toBe(true);
+    // Still empty after an index with no entries: stays hidden, then shows once indexed.
+    reindexed.geometry.setIndex([]);
+    expect(reindexed.visible).toBe(false);
+    reindexed.geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3));
+    expect(reindexed.visible).toBe(false);
+    reindexed.geometry.setIndex([0, 1, 2]);
+    expect(reindexed.visible).toBe(true);
+  });
 });
