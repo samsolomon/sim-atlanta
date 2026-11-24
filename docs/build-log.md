@@ -3527,3 +3527,9 @@ so "no long task" can't measure the build. The driver now reports the longest ru
 inside one frame. It fell from about 1,650 ms to 80 to 100 ms, and the last big step is landmark
 batching, which the buildings agent is turning into a generator. A row now mounts over about 200
 frames, 10 to 14 s on the throttled Studio. It's behind `?slice=1` until the A16 says it holds.
+
+## 2026-11-24: Luxe, lean
+
+Luxe's white tower and its rounded blue glass corner now stand on 12th Street, at 67 m from a 6 m lidar grid. With the high tier's geometry down to about 2 MB of headroom, this skin was built to a budget: 1,278 triangles, with one glass strip per window run and a ten-facet drum. It reads the same at the orbit as a punched-window version would. A tooling lesson came with it. My screenshot script picked a random DevTools port, attached to another agent's headless perf page, and drove it for a few frames. Scripts now launch with port 0 and read their own DevToolsActivePort.
+[Before and after](log/ui/luxe/compare.jpg) · [day and night](log/ui/luxe/daynight.jpg) · [close](log/ui/luxe/close.jpg)
+
