@@ -1,9 +1,9 @@
 import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
-import { pointInRing, rng, type P2 } from '../vignette/geom';
+import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { landmarkShell } from './landmark-shell';
-import { along, faces, outwardSign, wound } from './skin-kit';
+import { along, faces, litHash, outwardSign, seedOf, wound } from './skin-kit';
 
 export const peachtree1355Id = 'osm:way:885332250';
 const origin: P2 = [599, -4210];
@@ -41,7 +41,6 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
   const floor = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const footing = Math.min(floor, shell.base) - 0.65;
   const { body, lights } = shell;
-  const random = rng(1355);
   const roof = (ring: P2[], y: number, color: string) => {
     for (const [a, b, c] of ShapeUtils.triangulateShape(ring.map(([x, z]) => new Vector2(x, z)), []))
       body.tri([ring[a][0], y, ring[a][1]], [ring[c][0], y, ring[c][1]], [ring[b][0], y, ring[b][1]], color);
@@ -52,7 +51,8 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
     return !P.some(p => p.ring !== ring && floor + p.roof > y && pointInRing(m[0], m[1], p.ring));
   };
 
-  for (const { ring, roof: h, crown, podium } of P) {
+  for (const [part, { ring, roof: h, crown, podium }] of P.entries()) {
+    const seed = seedOf(parts[part][0]);
     const top = floor + (crown ? crownEave : h);
     // Limestone base, brick above, and a cream cornice band at every setback.
     shell.prism(ring, footing, Math.min(top, floor + limestoneTop), cream, '#8f8a80');
@@ -69,10 +69,10 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
     }, 2);
 
     // Punched windows: paired multi-pane openings with pale frames, one storey apart.
-    faces(ring, (a, b, length) => {
+    faces(ring, (a, b, length, face) => {
       if (length < 6) return;
       const bays = Math.max(1, Math.round(length / 3.2));
-      for (let y = floor + 4.6; y + 2.3 < top - 1.6; y += storey) {
+      for (let y = floor + 4.6, level = 0; y + 2.3 < top - 1.6; y += storey, level++) {
         // The base storey has tall arched-looking openings; above, regular sash windows.
         const tall = y < floor + 5;
         for (let k = 0; k < bays; k++) {
@@ -86,7 +86,7 @@ export function create1355Peachtree(buildings: VBuilding[], site: VBuilding, gri
           const framed = podium;
           if (framed) body.quad([pf[0], y - 0.15, pf[1]], [pf[0], y1 + 0.2, pf[1]], [qf[0], y1 + 0.2, qf[1]], [qf[0], y - 0.15, qf[1]], frame);
           // Offices at 23:30: about one window in twelve still lit, scattered.
-          const target = random() < 0.085 ? lights : body;
+          const target = litHash(seed, face, level, k) < 0.085 ? lights : body;
           if (framed) target.quad([p[0], y, p[1]], [p[0], y1, p[1]], [q[0], y1, q[1]], [q[0], y, q[1]], glass);
           else target.quad([pf[0], y - 0.1, pf[1]], [pf[0], y1 + 0.15, pf[1]], [qf[0], y1 + 0.15, qf[1]], [qf[0], y - 0.1, qf[1]], shaftWindow);
         }

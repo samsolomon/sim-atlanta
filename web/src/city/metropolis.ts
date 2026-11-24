@@ -1,10 +1,10 @@
 import { ShapeUtils, Vector2 } from 'three';
 import type { GroundGrid } from '../terrain/grid';
-import { pointInRing, rng, type P2 } from '../vignette/geom';
+import { pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import { surfaces } from '../materials';
 import { landmarkShell } from './landmark-shell';
-import { along, faces, outwardSign, ramp, shadedQuad, wound } from './skin-kit';
+import { along, faces, litHash, outwardSign, ramp, seedOf, shadedQuad, wound } from './skin-kit';
 
 export const metropolisId = 'osm:way:234733557';
 const origin: P2 = [731, -2916];
@@ -39,7 +39,6 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   for (const p of Object.values(P)) p.ring = wound(p.ring, 1);
   const out = outwardSign(P.podium.ring);
   const { body, lights } = shell;
-  const random = rng(943);
   /** True when just outside the face is open air at this height (not another part). */
   const open = (ring: P2[], a: P2, b: P2, length: number, y: number) => {
     const m = along(a, b, length, length / 2, 1.2 * out);
@@ -141,13 +140,14 @@ export function createMetropolis(buildings: VBuilding[], site: VBuilding, grid: 
   // Night: residential floors noticeably lit, in whole two-bay runs with a stable pattern.
   for (const tower of towers) for (const key of tower) {
     const { ring, h } = P[key];
-    faces(ring, (a, b, length) => {
+    const seed = seedOf(parts[key]);
+    faces(ring, (a, b, length, face) => {
       if (length < 5) return;
       const runs = Math.max(1, Math.round(length / 6.5));
-      for (let y = floor + 9.3 + 0.55; y < floor + h - 3; y += storey) {
+      for (let y = floor + 9.3 + 0.55, level = 0; y < floor + h - 3; y += storey, level++) {
         if (!open(ring, a, b, length, y + 1)) continue;
         for (let r = 0; r < runs; r++) {
-          if (random() > 0.3) continue;
+          if (litHash(seed, face, level, r) >= 0.3) continue;
           const u0 = (r + 0.08) * length / runs, u1 = (r + 0.92) * length / runs;
           const p = along(a, b, length, u0, 0.08 * out), q = along(a, b, length, u1, 0.08 * out);
           // By day the run keeps the glass tone at its height.
