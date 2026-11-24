@@ -24,10 +24,16 @@ it('claims the archived Rhodes footprint, keeps the tower in bounds and carves t
   const shell = model.group.children[0] as Mesh;
   const wash = shell.geometry.getAttribute('aRhodesWash');
   const positions = shell.geometry.getAttribute('position');
-  let towerPeak = 0;
+  let basePeak = 0;
+  let crownVertices = 0;
   let porchEdgeVertices = 0;
   for (let i = 0; i < positions.count; i++) {
-    if (positions.getX(i) < -1) towerPeak = Math.max(towerPeak, wash.getX(i));
+    if (Math.abs(positions.getX(i) + 7.7) < 0.001 && Math.abs(positions.getY(i) - 0.5) < 0.001)
+      basePeak = Math.max(basePeak, wash.getX(i));
+    if (positions.getY(i) >= 20) {
+      expect(wash.getX(i)).toBe(0);
+      crownVertices++;
+    }
     // The western porch beam overlaps the spatial tower mask; retain its old wash.
     if (Math.abs(positions.getX(i) + 0.3) < 0.001 && Math.abs(positions.getY(i) - 5.475) < 0.001) {
       expect(wash.getX(i)).toBeCloseTo(1 - 5.475 / 30, 5);
@@ -35,8 +41,8 @@ it('claims the archived Rhodes footprint, keeps the tower in bounds and carves t
     }
   }
   expect(porchEdgeVertices).toBeGreaterThan(0);
-  // Fixture plinth extends 1 m below grade; original tower peak was 31/30.
-  expect(towerPeak).toBeCloseTo(0.775, 5);
+  expect(crownVertices).toBeGreaterThan(0);
+  expect(basePeak).toBeCloseTo(0.5, 5);
   // The roof ridge sits behind the tower: floodlighting must not light that roof.
   for (let i = 0; i < positions.count; i++)
     if (positions.getZ(i) < 0 && positions.getY(i) >= 15) expect(wash.getX(i)).toBe(0);
