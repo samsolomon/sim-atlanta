@@ -3272,3 +3272,55 @@ Each face of 999 Peachtree has the same design: a full-height blue curtain wall 
 ### 2026-11-23 · ViewPoint on a 600-triangle budget
 
 ViewPoint is the first skin built to the new per-building ceiling: 600 low-tier triangles for a 36-floor balcony tower. Every pane and railing is out of reach at that budget, so the library surfaces do the fine work. Curtain glass gives the blue wall its mullions and floor lines. A silver variant with a band at every floor turns twelve plain boxes into slatted balcony stacks. Precast panels cover the garage. The geometry is only what reads at the orbit: pilasters, stacks, a stepped Peachtree end and the crown screen. The lidar corrected the map again. The tower roof is at 119.9 m, not the mapped 150 m, and the garage is 36–38 m, not 50 m. Eight 8 m bins trace the crown's 10.3 m sweep toward Peachtree. At night a lit pane spans the pilaster in front of it, so one quad shows as two windows. That halved the cost of a noticeably lit residential tower. [Three-quarter view](log/ui/viewpoint/day.jpg) · [Night](log/ui/viewpoint/night.jpg)
+
+### 2026-11-23 · 77 12th Street drops ten metres
+
+The OSM outline for 77 12th Street tagged the whole 91 × 59 m lot as a 90 m apartment tower, so City drew a solid block twice the size of the real slab. Its three mapped parts and the 2019 lidar tell a different story. The glass slab along 12th Street stands 78.4 m to the roof and 80.8 m to the white parapet. Behind it, a 19.7 m garage carries the pool deck, and a 9.5 m frontage runs along Crescent Avenue. A lidar profile down the slab's length came out flat, which settled a misreading of the photographs: the "lower east wing" is just perspective across a notch in the plan. On the phone tier the skin costs 530 triangles and two draws, with no new shader program. [Before/after, day and night](log/ui/77-twelfth/README.md)
+
+### 2026-11-24 · The Campanile, drawn as it stands
+
+The table listed the Campanile at 200 m. The 2019 lidar says 95.4 m. The bigger question was which Campanile to draw. Dewberry stripped the 1987 BellSouth tower's stone and glass before the 2020 lockdowns, and AJC photos from 19 May 2026 still show a bare frame behind construction fencing, posted as unsafe. City now draws that frame, with 21 open slabs, exposed columns, orange guard rails and the hoist mast, and leaves it dark at night, because nothing shows a lit site. It is the first building on the board modelled to a stated reference date rather than to its finished design. If work restarts, the README says what to change. The frame costs 1,904 triangles, fewer than the glass box it replaces needed to look wrong. [Sources, dimensions and captures](log/ui/campanile/README.md)
+
+**2026-11-23 — Emmi Midtown.** The 2019 lidar shows a 5 m lot where this 31-floor tower now stands, so its height is the survey's 102.3 m estimate. The L footprint splits cleanly. The Spring Street wing takes a 3.0 m mullion module in pale glass, and the 18th Street wing a 2.4 m module in darker glass. That matches the two tones in the distant photograph. The dark panels the architects arranged to echo the building's name became stylised two- and three-floor runs on alternate modules. The first pass put a run in every module, and at 650 m it read as camouflage. At night about a quarter of the units glow, more than the office towers around it. The skin is 796 body and 390 lamp triangles. [Day, night, wide and lobby captures](log/ui/emmi-midtown/README.md)
+
+## 2026-11-23: Midtown Union stands on its columns
+
+Midtown Union's 26-storey office tower at Spring and 17th was a generic striped box. It is now a reflective glass shaft on raking V-shaped columns, with the optical-art garage running along 17th Street under a planted deck. The surprise was the compass. City's z axis points south, so 17th Street lies *north* of the footprint, not south, and that flips which face carries the garage art. Read the photos against the street signs first. The second surprise was grade: the street falls toward West Peachtree, which buried the first storefront band, so each garage face now samples its own ground. The skin is 1,360 triangles and 2 draw calls (lamps included), with no new shader program: low tier 543/600 calls, 85/90 programs.
+[Before and after](log/ui/midtown-union/compare.jpg) · [day and night](log/ui/midtown-union/daynight.jpg) · [garage close](log/ui/midtown-union/close.jpg)
+### 2026-11-23 — The Four Seasons' pyramid
+
+The 186 m Four Seasons Hotel was a plain extruded box. It now steps back like the
+photographs: a rose-granite hotel base to the 19th floor, office and residential
+shafts with notched corners, crown tiers, a gold-latticed attic and a grey-green
+standing-seam pyramid. It rises 14 m to 190 m, under the 193 m lidar maximum, because a
+10 m cap got lost against the tower behind it. A 12-storey glazed arch rises over the 14th Street
+porte-cochère. The first draft gave every window on every floor its own quad,
+5,679 triangles. One glass strip per bay column, with a stone spandrel at each
+floor, gives the same grid in 1,587 triangles, inside the 2,400 allowed for a
+landmark. Only the windows lit at night get their own quads, in the lamp mesh.
+After 23:00 the hotel floors are the busiest, and the crown floors never light,
+so the top doesn't speckle. The attic and corner piers are floodlit, as in the
+only full-night photograph I found. [Before and after](log/ui/four-seasons/compare-day.jpg) ·
+[night](log/ui/four-seasons/compare-night.jpg) · [crown, day and night](log/ui/four-seasons/day-night.jpg) ·
+[sources and estimates](four-seasons.md)
+
+
+### 2026-11-23 — Every tree a species, for one look
+
+Sam looked at Ansley Park from 150 m and worried that the few converted species trees read as dithered fuzz beside the faceted generic crowns. Before rolling out more species, we wanted to see the whole city converted. `?trees=all-species` keeps every ordinary placement, then gives each remaining canopy crown one of the ten wired species, drawn from its street, yard or park mix and checked against its size. Across the nine canopy rows, species trees rise from 2,513 to 16,715 at high detail and from 1,254 to 7,053 at low. Only 255 crowns fit no species.
+
+The surprise was the cost. Species trees are instanced per look, so draw calls barely moved: low went from 541 to 538, and high from 1,197 to 1,202. Low stayed at 85 shader programs. Triangles carry the bill: Sam's Ansley view goes from 1.25 M to 1.76 M at low and from 5.96 M to 10.36 M at high. The look is the real finding. Up close and from overhead, the converted canopy loses the bold faceted masses and becomes small, speckled crowns. In November and January, every crown also gets a leaf-litter disc. From the far skyline, the converted bands thin out to wisps. [Ansley sheet](log/ui/tree-species/all-species/all-species-ansley.jpg).
+
+### 2026-11-24 — Back to the low-poly canopy
+
+The all-species sheets settled it. At City's orbit, detailed species trees read as speckle beside the faceted clumps, so Sam chose the generic low-poly tree everywhere for now. The species work stays behind `?trees=species`. Each of the 2,513 planned species trees goes back to being a generic crown on the same trunk, at the same size. Ansley's enlarged crowns, its paired street trees and its island planting all stay. 1180 Peachtree's eight terrace crapes now stand on the roof as generic crowns. The High Museum ginkgo stays a faceted species clump. The surprise was how much the species looks cost in draws alone. At Sam's Ansley view, high detail drops from 241 to 159 calls and low from 100 to 69. Low shader programs fall from 85 to 79, under their 80 target for the first time. [Before and after](log/ui/tree-species/generic-default/generic-ansley.jpg).
+
+### 2026-11-23 · An open deck on Pine Street
+
+The garage at 25 Pine Street NE was a brick block with a green roof, an odd thing to see beside the Connector. It is actually a ten-tier concrete deck, and the 2019 lidar puts its roof at 32.4 m. A 2 m raster of the returns found all three stair towers, including the 38.5 m West Peachtree tower that the OSM outline records only as a 3 m bump. Pine Street gets the deep cantilevered spandrels from the corner photograph. The other faces are an open frame with dark decks that glow dimly at night. Because the deck is mostly holes, it is cheap: 204 triangles and two draws on the phone tier. [Before/after, day and night](log/ui/25-pine/README.md)
+
+**2026-11-23 — Half the desktop draw calls came from ambient occlusion.** On the high tier, three.js's `GTAOPass` with no G-buffer re-renders every mesh a second time with a normal-override material, just to get normals and depth for contact shading. That second pass was half the frame: 1,215 draw calls and 13.9 million triangles at the default camera became 631 and 7.1 million once AO read the scene pass's own depth texture and rebuilt normals from it, which suits a flat-shaded scene. Render CPU per frame fell from 4.9 to 2.8 ms on the Studio. The surprise was that the expensive pass was also the ugly one: the blotches on the Coca-Cola USA roof, and smudges on flat roofs and lawns all over Midtown, came from its override normals and vanished with it. Depth-rebuilt normals had one failure of their own. On the paper table far behind the board, hyperbolic depth has no precision left, and the rebuilt normals banded in stripes; a 32-bit float depth buffer did not help, so AO is now clipped to the board's box. [Coca-Cola roof before and after](log/perf-gtao/cocacola-roof-day.jpg) · [Midtown 10th Street, 1:1](log/perf-gtao/midtown-10th-day-crop.jpg) · [Marquis while orbiting](log/perf-gtao/marquis-orbit-strip.jpg)
+
+### 2026-11-23 · 10 10th, taller than its map
+
+The mapped parts said 10 10th was about 46 m tall. The 2019 lidar measures 64.6 m to the main roof, which is 14 storeys at roughly 4.5 m each above a 10.8 m podium. The skin follows the lidar: a brick shaft with punched windows, a silver ribbon bay wrapping the southeast corner over the MARTA plaza, two silver top floors and a penthouse, all in the existing landmark materials. The survey camera looks between two taller neighbours, so the review views come from the plaza side. [Day, night and corner views](log/ui/10-10th/README.md)
