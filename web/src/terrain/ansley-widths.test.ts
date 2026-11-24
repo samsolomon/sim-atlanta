@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { expect, test } from 'vitest';
 import upper from '../../../pipeline/prototypes/square-board/midtown-upper/context.json';
 import brookwood from '../../../pipeline/prototypes/square-board/brookwood-south/context.json';
-import { segDist, type P2 } from '../vignette/geom';
+import { pradoYieldSigns } from './ansley-street-edge';
+import { Builder, segDist, type P2 } from '../vignette/geom';
 import { ANSLEY_WIDTHS, roadWidth } from './transport-data';
 
 type Context = { roads: { cls: string; name: string | null; pts: P2[] }[]; buildings: { id: string; rings: P2[][] }[] };
@@ -43,4 +44,19 @@ test('the widened carriageways clear every building footprint and every mapped t
     }
   }
   expect(streets).toBeGreaterThan(10);
+});
+
+
+test('places each Prado yield post outside the residential carriageways', () => {
+  const builder = new Builder();
+  const posts: P2[] = [];
+  pradoYieldSigns(builder, brookwood.bounds, (x,z) => { posts.push([x,z]); return 0; });
+  expect(posts).toHaveLength(4);
+  const roads = boards['brookwood-south'].roads.filter(r => r.cls === 'residential');
+  for (const [x,z] of posts) {
+    const clearances = roads.flatMap(road => road.pts.slice(1).map((end,i) =>
+      segDist(x,z,road.pts[i],end) - roadWidth(road)/2));
+    expect(Math.min(...clearances)).toBeGreaterThan(.8);
+    expect(Math.min(...clearances)).toBeLessThan(1.5);
+  }
 });
