@@ -2876,3 +2876,7 @@ caught clockwise source rings hiding the facade details inside the walls. Normal
 the rings fixed that without moving their geometry. The low tier stays within budget at
 546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
 [Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
+
+### 2026-11-23 — White oak joins the Model lab
+
+White oak's four illustrative size classes run from a 4.7 × 2.4 m sapling to a 30 × 35.7 m specimen based on the Atlanta champion measurements. Two options compare rounded-lobed leaf cards against faceted clusters, with pale spreading limbs, April leaf-out, wine/russet autumn colour and a small brown early-winter residue. A costs 193 / 81 triangles; C costs 191 / 111. A's summer luminance is 0.255 high and 0.258 low against the generic 0.248. The cored trial was dropped after measuring too bright. A texture-accounting surprise: the existing atlas budget counted pixels, not RGBA bytes. Activating the eighth leaf shape adds one 1.33 MiB atlas; the declared total now correctly includes four bytes per pixel and mipmaps. [Options, references and calendar](log/ui/tree-species/options-white-oak.jpg). Sam's option choice and the City rollout remain separate.
