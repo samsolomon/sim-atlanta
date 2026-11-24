@@ -329,3 +329,20 @@ it('stacks 1072 West Peachtree as podium, office block and glass tower, with a d
   const y = lamps.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(219);
 });
+
+it('replaces Square on 5th at its lidar roof, with fins carrying the roof frame', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:536884432');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  expect(model.group.name).toBe('Square on 5th');
+  model.group.updateMatrixWorld(true);
+  const heightAt = (x: number, z: number) => new Raycaster(new Vector3(x, 300, z), new Vector3(0, -1, 0))
+    .intersectObject(model.group)[0]?.point.y ?? 0;
+  expect(heightAt(219.5, -2681.5)).toBeCloseTo(89.5, 0); // roof frame, the lidar maximum
+  expect(heightAt(245, -2681.5)).toBeGreaterThan(87.5); // east penthouse above the 88 m roof
+  expect(heightAt(195, -2681.5)).toBeCloseTo(88, 0); // the lidar 95th-percentile roof
+  const [body, lamps] = (model.group.children as Mesh[]).map(m => m.geometry);
+  expect(body.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
+  const y = lamps.getAttribute('position');
+  for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(86);
+});

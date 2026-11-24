@@ -3384,3 +3384,39 @@ The Proscenium's mapped outline has no parts, so its character had to come from 
 The NCR headquarters by the Connector was two generic boxes at floor-count heights of 68 and 43 m. The 2019 lidar measures the roofs at 85.6 and 54.3 m, with plant screens rising to about 95 and 59 m, so the old skyline was short by a quarter. The tower's signature is a sloping glass facet. It is cheap to build as a chamfered corner rather than a leaning wall: one sloped triangle plus two trapezoids that stay in their own face planes. Every floor joint and lit bay then sits on a true plane. The garage base's roof is the sky garden.
 [Before and after](log/ui/ncr-hq/compare.jpg) · [day and night](log/ui/ncr-hq/daynight.jpg) · [close views](log/ui/ncr-hq/close.jpg)
 
+**2026-11-24 — 100 Colony Square, registered by its own roof.** The map gave the tower's low northeast part returns at 94.5 m, which reads like a tower standing on a podium. Plotting only the returns more than 88 m above ground answered it: they form a clean 45° square about 1.5 m wider than the mapped shaft, so the "tall" returns in the low part are the tower's own edge. The model draws that square, the 89.3 m main roof and the 96.3 m core from the histogram, and leaves the low parts at their mapped 8.7 m. The punched grid is 16 piers and 21 spandrels a face over a recessed glass box: 456 body triangles for about 1,300 windows. [Captures and evidence](log/ui/100-colony-square/README.md)
+
+### 2026-11-24 · 1105 West Peachtree's blue exoskeleton
+
+City drew the whole 1105 West Peachtree block as one 129 m box: the Google office tower, the Epicurean hotel, a condominium and the parking podium. The skin keeps the mapped parts. The 31-storey tower gets green glass and a 125 m silver steel exoskeleton on its south and north faces. The frame stands 1.4 m off the glass, with two X-braced bays either side of the narrow recess the OSM outline already traced, and eight belt modules. The hotel and condominium stand on the lawn-topped deck. Lidar could not help, because the April 2019 survey shows an empty lot, so the heights come from the published 410 ft frame and floor counts. The first test found a missing podium. The deck part is the one polygon in the block with holes, and the shared helper pattern of skipping multi-ring parts had silently dropped it. A SKYDB photo from an ordinary August 2026 weeknight shows the frame lit solid cobalt. That became the night state, in a second lit material that shares the lamp program, while the programmable event colours stay unmodelled. The block costs about 2,380 triangles and three meshes. [Before and after, day and night](log/ui/1105-west-peachtree/compare-south.jpg)
+
+### 2026-11-24 · Amli Arts Center in its white frames
+
+Amli Arts Center was a generic block filling an L-shaped lot at 15th and Spring. The lidar splits the lot cleanly: a 29-storey tower along 15th Street with its roof at 89.9 m, and a 19.7 m precast garage running up Spring Street with the pool deck on top. The returns climb to 96.5 m over the roof, and the aerial photograph explains why. The thick white frames around the dark glass rise past the roof into an open crown. On the phone tier the tower costs 416 triangles and two draws. [Before/after, day and night](log/ui/amli-arts-center/README.md)
+### 2026-11-24 · Lit windows ride the wall's draw by day
+
+On the A16, hiding buildings alone took the default view from 26 to 41 fps, and an inventory of every building draw found why: 333 draws for 992k triangles, with 138 of them lit-window and lamp meshes averaging 450 triangles each. Merging them is awkward because every landmark lights its windows in its own colour and strength, so a plain merge per 500 m cell left 65 meshes alone. The fix was to notice that by day all those lamps look exactly like their walls. The batcher now probes each landmark's own night switch at night 1, 0.5 and 0, bakes constant material colours into the vertex colours, and lays each cell's meshes into one buffer sorted by look. By day the whole cell draws as one range; at night the same buffer is drawn as one range per distinct look, so nothing is stored twice. Far house tiles got the same treatment in 3×3 blocks. At the default view, low-tier calls fell from 558 to 414 and high from 605 to 462, with the same triangles, programs and heap. The surprise was the heap: the first version cost 49 MB, because the `sync()` closure kept the batcher's bookkeeping map alive, and that map held every original geometry. [Default view, high, before and after](log/perf-buildings/01-default-day-high.jpg) · [Four Seasons and 1100 Peachtree at night](log/perf-buildings/03-four-seasons-1100-night.jpg)
+
+### 2026-11-24 · Hanover Midtown and a podium with holes
+
+The first render of Hanover Midtown was the generic box, because the mapped podium part carried four rings: an outer ring plus courtyard holes under the tower. The skin's guard expected exactly one. Using the outer ring fixed it. The L-shaped tower is blue-green glass with white fins about every 8.5 m. The amenity deck on the 25 m podium has a pool, lawn and cabanas, which at the review orbit say "apartment tower" more clearly than any facade detail. Night follows the property's pool-deck photograph, with a third of the units lit. [Day, night and pool deck](log/ui/hanover-midtown/README.md)
+
+### 2026-11-24 · Loews and the hotel next door
+
+Loews Atlanta's mapped height of 79.9 m looked low for a 2010 tower, but the lidar agrees. The roof is at 405 m NAVD88 over a 295 m street, with the Peachtree half rising to 411.5 m and the west wing stopping at 369 m. A tall tan block pressed against the hotel's east side looked like a bug until hiding the hotel showed it standing alone: it is 1075 Peachtree's garage, modelled the day before. Room panes on faces buried against the wing or the retail pieces would never be seen, so they are skipped. That saved enough triangles to light about a third of the rooms. [Before and after](log/ui/loews-atlanta/day-before-after.jpg) · [night](log/ui/loews-atlanta/night-before-after.jpg)
+
+### 2026-11-24 · Sora at Spring Quarter, part by part
+
+Sora's five mapped parts happen to line up with its five materials. The main shaft and north block are blue-green glass in a white frame, the dark blade climbs from the base, and the west wing is white with punched windows. The podium is cream. Faces buried in a taller neighbouring part are skipped, and two balcony stacks run up the shaft's east corners. The historic chapel next door stays its own building, so at the review orbit the old gables and the new tower read as two things. [Day, night and podium views](log/ui/sora/README.md)
+
+### 2026-11-24 — Square on 5th's fins and curve
+
+Square on 5th, Georgia Tech's 25-storey student tower on Spring Street, was a
+generic box at its mapped 98 m. The 2019 lidar puts the roof at 88 m, 10% lower.
+The tower now has brick end bays of punched windows. On the straight north face,
+four concrete fins run past the roof to carry an open roof frame. The curved south
+face is teal glass with white slab edges. The body is 671 triangles. I found no
+night photograph, so the lit share of rooms is an estimate.
+[South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
+[north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
+

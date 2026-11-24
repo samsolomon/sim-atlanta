@@ -125,7 +125,7 @@ import { createWhiteModel } from './white-model';
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
 import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
 import { Snow } from './snow';
-import { batchLandmarkBodies } from '../materials/landmark-batch';
+import { batchLandmarkBodies, batchLandmarks, landmarkBatchOff, type LandmarkEntry } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
 import { perf, perfEnabled, perfOverrides, type PerfCategory } from '../core/perf';
 import { deviceFacts, deviceTier } from '../core/device-tier';
@@ -306,6 +306,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const worldOptions = { terrain: 'flat' as const, clumps: low ? 4 : 8, lightMapMax: low ? 1024 : 2048 };
   let terrain: ReturnType<typeof createDowntownTerrain> | undefined;
   let east: (ReturnType<typeof createDowntownTerrain> & { connectorBoard: ConnectorBoard }) | undefined;
+  let downtownBatches: ReturnType<typeof batchLandmarks> | undefined;
   let eastRail: { dispose(): void; setNight(dark: number): void } | undefined;
   let eastRailFailed = false;
   const areaFailures = new Map<string, string>();
@@ -615,7 +616,28 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (grady) world.group.add(grady.group);
         const landmarks = world.group.children.slice(landmarksFrom);
         for (const c of landmarks) c.userData.perf = 'buildings';
-        world.group.add(batchLandmarkBodies(landmarks));
+        if (landmarkBatchOff) world.group.add(batchLandmarkBodies(landmarks));
+        else {
+          // Each landmark with its night switch, which the batcher probes. A new landmark goes here
+          // too, next to its setNight call; one missing from this list is drawn unbatched.
+          const listed = ([
+            floyd, hyatt, marquis, marquisOne, marquisTwo, hilton, altitude, twelve, truist, westin, peachtreeCenter,
+            peachtree, library, flatiron, healey, footballHall, oneParkTower, parkPlaceTower, fiftyFiveParkPlace,
+            fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
+            hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
+            georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
+            omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
+            centennial, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
+            samNunn, candler, equitable, grady,
+          ] as (LandmarkEntry | null | undefined)[]).filter((l): l is LandmarkEntry => !!l);
+          const batches = downtownBatches = batchLandmarks(listed, world.group, { name: 'Downtown landmark batches' });
+          world.group.add(batches.group);
+          if (import.meta.env.DEV) {
+            const unlisted = landmarks.filter(g => !listed.some(l => l.group === g)).map(g => g.name || '(unnamed)');
+            if (unlisted.length) console.warn('Landmarks missing from the batch list, drawn unbatched:', unlisted.join(', '));
+            console.info('City landmark batches (downtown)', JSON.stringify(batches.stats));
+          }
+        }
       });
       await build('sidewalks and trails', () => { travellers = cityTravellers(vd, terrain!.groundAt, low); });
       await build('streets and freight', () => { transport = createSurfaceTransport(withoutTram(americasMart?.surfaceData(vd) ?? vd), ground, terrain!.groundAt, cut); terrain!.carve(transport.cutting); });
@@ -1452,6 +1474,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     candler?.setNight(night);
     equitable?.setNight(night);
     grady?.setNight(night);
+    downtownBatches?.sync(); // after every downtown landmark's setNight
     terrain?.setNight(night);
     east?.setNight(night);
     north?.setNight(night);
