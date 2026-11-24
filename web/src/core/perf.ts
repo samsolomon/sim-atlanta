@@ -714,7 +714,7 @@ export const perf = {
     const { renderer, scene } = ctx;
     const roots = ctx.roots();
     const original = renderer.renderBufferDirect;
-    type Rec = { path: string; cat: string; pass: string; material: string; tri: number; calls: number; area?: string; program?: number; inst?: number; geoms?: Set<THREE.BufferGeometry>; relookups?: number; why?: string };
+    type Rec = { path: string; cat: string; pass: string; material: string; tri: number; calls: number; area?: string; program?: number; look?: string; inst?: number; geoms?: Set<THREE.BufferGeometry>; relookups?: number; why?: string };
     const recs = new Map<string, Rec>();
     let camAt: number[] | null = null;
     const owner = (o: THREE.Object3D) => {
@@ -745,9 +745,12 @@ export const perf = {
       if (detail && pass === 'main') camAt = [camera.position.x, camera.position.y, camera.position.z].map(Math.round);
       const area = detail ? areaOf(object, g) : undefined;
       const program = detail ? (renderer.properties.get(material) as { currentProgram?: { id: number } }).currentProgram?.id : undefined;
-      const key = `${pass}|${o.cat}|${o.path}|${(material as THREE.Material).type}${detail ? `|${area}|${program}` : ''}`;
+      // Detail: the material's uniform look too (what a single shared material would have to match).
+      const mm = material as THREE.Material & { color?: THREE.Color; emissive?: THREE.Color; emissiveIntensity?: number; map?: THREE.Texture | null };
+      const look = detail ? `${mm.color?.getHexString() ?? ''}/${mm.emissive?.getHexString() ?? ''}x${mm.emissiveIntensity ?? ''}/${mm.opacity}/${mm.map?.uuid ?? ''}/${mm.side}` : '';
+      const key = `${pass}|${o.cat}|${o.path}|${(material as THREE.Material).type}${detail ? `|${area}|${program}|${look}` : ''}`;
       const r = recs.get(key) ?? { path: o.path, cat: o.cat, pass, material: (material as THREE.Material).type, tri: 0, calls: 0,
-        ...(detail ? { area, program, inst: 0, geoms: new Set<THREE.BufferGeometry>() } : {}) };
+        ...(detail ? { area, program, look, inst: 0, geoms: new Set<THREE.BufferGeometry>() } : {}) };
       r.tri += tri; r.calls++;
       if (detail) {
         r.geoms!.add(g); if (inst > 1) r.inst! += inst;

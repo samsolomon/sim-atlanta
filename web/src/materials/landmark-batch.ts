@@ -450,7 +450,7 @@ export function* buildLandmarkBatches(entries: readonly LandmarkEntry[], contain
   o: LandmarkBatchOptions = {}): Generator<string | void, LandmarkBatches, void> {
   const lod = landmarkLodOff ? null : o.lod ?? null;
   const t0 = performance.now();
-  const cellM = o.cellM ?? CELL_M;
+  const cellM = o.cellM ?? cellOverride ?? CELL_M;
   const stats: BatchStats = { candidates: 0, merged: 0, draws: 0, dayDraws: 0, nightDraws: 0, skipped: {}, ms: 0, lodDropped: 0, lodDoubled: 0, lodMs: 0, lodMaxStepMs: 0 };
   const skip = (why: string, mesh?: Mesh, root?: Object3D) => {
     stats.skipped[why] = (stats.skipped[why] ?? 0) + 1;
@@ -704,4 +704,12 @@ const compactColoursOff = (() => {
   const p = new URLSearchParams(globalThis.location?.search ?? '');
   const perf = p.get('perf');
   return perf !== null && perf !== '0' && perf !== 'off' && p.get('colours') === 'float';
+})();
+
+/** `?perf&landmarkcell=<m>` sets the batch cell size, for A/B runs from one build (cells only cull). */
+const cellOverride = (() => {
+  const p = new URLSearchParams(globalThis.location?.search ?? '');
+  const perf = p.get('perf');
+  const m = Number(p.get('landmarkcell'));
+  return perf !== null && perf !== '0' && perf !== 'off' && m > 0 ? m : null;
 })();
