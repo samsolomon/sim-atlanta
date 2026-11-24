@@ -171,3 +171,36 @@ Previous freight captures/scripts in `/tmp/freight-pr2/`. `.venv` has Pillow and
 pipeline dependencies. Rust PATH still needs stable-aarch64-apple-darwin/bin.
 Complete generated data is present and ignored; don't regenerate to fix old dates.
 No dev server running. Research tabs are closed at handoff. Do not edit main.
+
+## CURRENT — Codex to Claude Opus, 2026-11-23 evening
+
+Resume in this worktree on `samsolomon/covered-grain-hopper`. Read the current freight plan in [freight-consists.md](../freight-consists.md). The rolling-stock workstream owns the freight car library, City consist selection and Model Lab freight. The separate Route 49 bus simulation belongs to connector session `ba90dfab-f23c-404e-bc66-ec95b0d8b30a`. Only the coordinator deploys.
+
+### Sam’s decisions and original words
+
+Sam on freight, relayed in `msg_577fa8b0e743`: “some [locomotives] have a car attached to them and others are on their own. I'd kind of expect all the locomotives to be on their own... whatever is at the front of the train should probably always be forwards... options where there's one, two, or maybe three locomotives depending on the size, we could have those rotating. And I'd like us to plan models for a handful of different rail cars, and maybe we can kind of mix and match some of them. I'm open to ideas.”
+
+Coordinator in `msg_606fd5555f40`: “Sam approves the freight direction as briefed: lead facing forward, 1-3 units by length, railroad-consistent power, a shared car kit, recipes for unit, intermodal and manifest trains, seeded per passage. Write docs/freight-consists.md, then start building in your proposed order without waiting for another plan sign-off. Use one PR per car type or small group, each with Model Lab and City captures by day and night, and test:perf for both tiers. Each still holds for Sam's look before merging.”
+
+Sam on Part A, via `msg_c2d2091ed0e6`: “The separate train model and boxcar look good.” Approval applies to #390 only. **Every car PR still needs Sam’s OK relayed by the coordinator.**
+
+Earlier bus decisions are complete: #358 added the XE60 / Rapid XN40; #364 and #369 revised the roof. Sam on #369: “bus looks better, I am good with it.” The approved side-by-side is in docs/log/rapid-buses/roof-profiles.jpg; both use the XN40 dome profile. XE60 return to revenue service remains unverified.
+
+### Work and verification
+
+- Part A #390 on `samsolomon/standalone-freight-lab` separates all six locomotive entries and the existing boxcar. Includes the eight-car plan. Before/after in docs/log/freight/standalone/. All freight Lab cameras after: position [-19,6.8,18], target [0,2,0], vertical FOV 38°. Original CM44AC camera [-32,12,36], target [0,2,1], FOV 41°. Claude cross-review had no findings.
+- First car WIP on `samsolomon/covered-grain-hopper`, commits acb67004 and 0af27f8f, pushed. **No hopper PR open.** Brookwood Main 2 now shows three covered hoppers behind the two NS-like locomotives, then five existing boxcars. Standalone Lab entry `freightGrainHopper`. Updated the existing illustrative NS card. Same wheel/truck/coupler construction as the boxcar, narrow through sill. The hopper has a curved shell, three tapered gravity bays, trough hatch, roof walks and end ladders.
+- Reference for final notes: Greenbrier 5400, October 2019, https://www.gbrx.com/wp-content/uploads/2021/06/5400cf-Covered-Hopper-Railcar.pdf . Length 58′8″, width 10′8″, height 15′6″. Model length 17.8816 m, half-width 1.625 m, crown about 4.725 m. Truck centres 13.4 m estimated. Doraville and Inman photo references in plan. Document these in final car PR.
+- Measured **660 low / 1,000 high triangles per hopper**. Full suite passed on WIP (1,076 web plus one skip, worker/Rust/pipeline pass), and pnpm build passed. Browser captures in docs/log/freight/grain-hopper/. Lab high, same camera as Part A. City high: `/?view=city&q=high&cam=-180,-4975,115,58,125&dev&mindist=20&t=2026-11-23T14:03:00-05:00&speed=0`; night 22:03:00 ET. Both show three cars clear of the station, which occluded the previous camera.
+- **Blocking perf result for hopper**: full-board perf completed on both tiers, high passed (105 programs, 1,191 calls); low failed only programs (91 vs ceiling 90, 562 calls). Log /tmp/hopper-perf. Current WIP always instances Brookwood on low, introducing a candidate new combination of instancing and clipping planes. Check a baseline with the same staged data. Do not raise the ceiling or declare this ready.
+
+### Next steps in order
+
+1. Sync the hopper branch with origin/main after #390. Resolve build-log append conflicts retaining both sides. Preserve other agents’ changes.
+2. Finish the first car. Identify the additional low-tier shader with renderer program signatures. Reuse a compiled instanced Lambert/clipping combination, preserving Brookwood board edges, shadows, picking, and Crescent priority. Existing low tier previously used separate non-instanced cars for this reason. Render a matching selection when explicitly testing count; the stock perf clock may be outside the passage. Check the car and glancing light in Lab high/low; verify shadow and wheel contact, photo proportions, 3 bays, and the local +z axis. Add regression coverage for the new geometry envelope, triangle ceiling, light attribute and consist selection. Clean up WIP naming/formatting, including detail argument and branching. Add dated source and build-log entry.
+3. Recheck pnpm test/build, browser and pnpm test:perf on the final code. Rust PATH: export PATH="$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH". Use cross-model review (Claude author -> Codex). Open one car PR; send comparison/camera/measurements to coordinator and **hold merge** until Sam approves. No hopper review has run yet.
+4. Continue the approved plan in its documented build order: existing boxcar variants, intermodal well, tank, gondola, centerbeam, autorack, open coal hopper. Seeded passage recipes, 1–3 correctly oriented power units, occasional foreign trailing unit and optional long-train DPU. Keep card illustrative, IDs stable and clipping/selection correct. One PR per car or small group, day/night Lab and City shots, both perf tiers, await Sam’s eye on every merge. No extra plan sign-off required.
+
+Current Air coordinator terminal is term_09e1b3da-5f48-4755-abf8-92a571a1f474. Reply to an incoming coordinator message from **your** session; direct send from Studio has a pairing-token failure. Check replies. Quote actual `gh pr view <n> --json state,mergeCommit` before every MERGED notice. Do not deploy. All my browser tabs closed and my dev server stopped. Temp capture helpers /tmp/hopper-shots.py and /tmp/solo-capture.py refer to closed page IDs; create fresh tabs and update them.
+
+#390 final verification: `gh pr view 390 --json state,mergeCommit` returned `{"mergeCommit":{"oid":"13630a38d817a98c0bb89d7a3c180050aa94a362"},"state":"MERGED"}`. Fresh full tests and build passed after syncing main. Coordinator notified. No Part A merge work remains.
