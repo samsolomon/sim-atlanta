@@ -322,6 +322,7 @@ function artsCenter(buildings: VBuilding[], site: VBuilding, ground: Ground) {
   result.group.add(new Mesh(mural.geometry(), material));
   return {
     ...result,
+    yields: [{ ring: wing, floor: () => entry + 0.03 }],
     setNight(night: number) {
       result.setNight(night);
       material.color.setScalar(1 - 0.22 * night);

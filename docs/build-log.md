@@ -2709,3 +2709,21 @@ stop was 11.95 m beyond the through stop. Turns now stop no later than their thr
 course, and one ambiguous twin-controller junction is excluded. All 20 remaining
 Midtown courses have a shared controller, ordered stops and no second stop within
 30 m. [Spring/10th before and after](log/ui/arterial-turns/compare-spring-10th.jpg).
+### 2026-11-23 — Arts Center entrance slab clears the plaza
+
+The east wing floor now gives terrain a yield boundary at entry + 0.03 m,
+5 cm below its 0.08 m slab top. The earlier audit found 491 intruding samples,
+up to 25 cm above the floor; this uses the shared carve mechanism without
+raising the station. A separate surprise during verification: the Ansley tree
+rollout failure was stale generated Midtown data. Restaging the Midtown rows
+made all 10 rollout tests pass.
+
+Matched daylight camera: `445,-3930,250,50,150`, at `2026-11-20T14:00:00-05:00`.
+Web rebuild only; no pipeline change.
+
+![Arts Center entrance before and after](log/2026-11-23-arts-center-slab.jpg)
+
+Edge verification at the same camera with lens zoom 2.5: [day](log/2026-11-23-arts-center-edge-day.png)
+and [night](log/2026-11-23-arts-center-edge-night.png). The targeted audit at 0.25 m
+spacing finds zero penetrations among 11,342 samples on the two slab-top triangles.
+Station-wide hits include other paving and must not be mistaken for this slab.
