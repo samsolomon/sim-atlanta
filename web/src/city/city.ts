@@ -87,6 +87,7 @@ import { createMetropolitan } from './metropolitan';
 import { createMariettaBackdrop } from './marietta-backdrop';
 import { createOne12Courtland } from './one12-courtland';
 import { createCitizensTrust } from './citizens-trust';
+import { createUrbanLifeBuilding } from './urban-life-building';
 import { createFultonGovernmentCenter } from './fulton-government-center';
 import { createGeorgiaAquarium } from './georgia-aquarium';
 import { createWorldOfCocaCola } from './world-of-coca-cola';
@@ -400,6 +401,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let mariettaBackdrop: ReturnType<typeof createMariettaBackdrop> = null;
   let one12Courtland: ReturnType<typeof createOne12Courtland> = null;
   let citizensTrust: ReturnType<typeof createCitizensTrust> = null;
+  let urbanLife: ReturnType<typeof createUrbanLifeBuilding> = null;
   let fultonGovernmentCenter: ReturnType<typeof createFultonGovernmentCenter> = null;
   let georgiaAquarium: ReturnType<typeof createGeorgiaAquarium> = null;
   let worldOfCocaCola: ReturnType<typeof createWorldOfCocaCola> = null;
@@ -521,8 +523,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         const afterOne12Courtland = one12Courtland?.buildings ?? afterMariettaBackdrop;
         citizensTrust = createCitizensTrust(afterOne12Courtland, ground);
         const afterCitizensTrust = citizensTrust?.buildings ?? afterOne12Courtland;
-        fultonGovernmentCenter = createFultonGovernmentCenter(afterCitizensTrust, ground);
-        const afterFultonGovernmentCenter = fultonGovernmentCenter?.buildings ?? afterCitizensTrust;
+        urbanLife = createUrbanLifeBuilding(afterCitizensTrust, ground);
+        const afterUrbanLife = urbanLife?.buildings ?? afterCitizensTrust;
+        fultonGovernmentCenter = createFultonGovernmentCenter(afterUrbanLife, ground);
+        const afterFultonGovernmentCenter = fultonGovernmentCenter?.buildings ?? afterUrbanLife;
         georgiaAquarium = createGeorgiaAquarium(afterFultonGovernmentCenter, ground);
         const afterGeorgiaAquarium = georgiaAquarium?.buildings ?? afterFultonGovernmentCenter;
         worldOfCocaCola = createWorldOfCocaCola(afterGeorgiaAquarium, ground);
@@ -627,6 +631,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (mariettaBackdrop) world.group.add(mariettaBackdrop.group);
         if (one12Courtland) world.group.add(one12Courtland.group);
         if (citizensTrust) world.group.add(citizensTrust.group);
+        if (urbanLife) world.group.add(urbanLife.group);
         if (fultonGovernmentCenter) world.group.add(fultonGovernmentCenter.group);
         if (georgiaAquarium) world.group.add(georgiaAquarium.group);
         if (worldOfCocaCola) world.group.add(worldOfCocaCola.group);
@@ -666,7 +671,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
             peachtree, library, flatiron, healey, footballHall, museumTower, oneParkTower, parkPlaceTower, hardRock, theLandmark,
             fiftyFiveParkPlace,
             fultonBank, davisons, ritzCarlton, southernBell, rhodesHaverty, empireBuilding, commerceBuilding,
-            hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, fultonGovernmentCenter,
+            hundredEdgewood, metropolitan, mariettaBackdrop, one12Courtland, citizensTrust, urbanLife, fultonGovernmentCenter,
             georgiaAquarium, worldOfCocaCola, williams250, fultonCourthouse, peachtreeOffices, williamOliver,
             omniAtlanta, fivePointsPlaza, twoPeachtree, georgiaPower, georgiaPacific, stack, stadium, russell,
             centennial, skyView, capitol, congressCenter, arena, atlantaCityHall, americasMart, hurtBuilding, theCenter,
@@ -1648,6 +1653,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       mariettaBackdrop?.setNight(night);
       one12Courtland?.setNight(night);
       citizensTrust?.setNight(night);
+      urbanLife?.setNight(night);
       fultonGovernmentCenter?.setNight(night);
       georgiaAquarium?.setNight(night);
       worldOfCocaCola?.setNight(night);
