@@ -7,11 +7,15 @@ const U = [-.8730086035, .4877048064], V = [-U[1], U[0]];
 export const NORTH_AVE = { origin: [-761.16, -1885.765], halfWidth: 11.3,
   groups: [[0,19], [24,86], [100,107], [115,130], [140,153]],
   roadStart: -12, roadEnd: 168, railClearance: 4.5, mariettaClearance: 4.69 } as const;
+// The mapped divided road bends north of the straight lidar transect at its west end.
+const centerOffset = (s: number) => Math.max(0, s - 80) * .05 + Math.max(0, s - 128) * .115;
 export function northAveLocal(x: number, z: number) {
   const dx=x-NORTH_AVE.origin[0], dz=z-NORTH_AVE.origin[1];
-  return [dx*U[0]+dz*U[1], dx*V[0]+dz*V[1]];
+  const s = dx*U[0]+dz*U[1];
+  return [s, dx*V[0]+dz*V[1]-centerOffset(s)];
 }
 export function northAvePoint(s: number, t: number): [number,number] {
+  t += centerOffset(s);
   return [NORTH_AVE.origin[0]+s*U[0]+t*V[0], NORTH_AVE.origin[1]+s*U[1]+t*V[1]];
 }
 export const northAveFloor = (s:number) => 296.6 + Math.max(0,s-20)*.01;
@@ -21,9 +25,9 @@ export function hasNorthAve(city: Pick<TerrainCity,'bounds'>) {
 }
 export function northAveSlots(city: Pick<TerrainCity,'bounds'>, zero: number): OpenSlot[] {
   if(!hasNorthAve(city)) return [];
-  return [[-12,20],[20,168]].map(([a,b])=>{
+  return [[-12,20],[20,80],[80,128],[128,168]].map(([a,b])=>{
     const p=northAvePoint(a,0),q=northAvePoint(b,0);
-    return {start:[p[0],northAveFloor(a)-zero,p[1]],end:[q[0],northAveFloor(b)-zero,q[1]],halfWidthM:NORTH_AVE.halfWidth};
+    return {start:[p[0],northAveFloor(a)-zero,p[1]],end:[q[0],northAveFloor(b)-zero,q[1]],crossAxis: V as [number,number],halfWidthM:NORTH_AVE.halfWidth};
   });
 }
 /** Linear grade between DEM anchors outside the trench, evaluated across each track. */

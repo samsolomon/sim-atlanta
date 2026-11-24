@@ -3044,3 +3044,17 @@ counted confidently. The proposal keeps one active cover envelope and the three
 separate disused strips, rather than drawing imaginary daylight gaps. No scene
 geometry changed. [Survey, inventory, uncertainty and photo request](north-ave-underpass.md)
 · [Public-domain lidar plan and section](log/north-ave/lidar-survey.png).
+### 2026-11-23 — North Avenue reappears beneath the railway
+
+Five cover groups now follow the survey along North Avenue. Lowering the road alone
+left a dip in the freight tracks. Carrying the tracks between approach elevations
+removed the dip, and lowering the active slab beneath the ballast kept all tracks
+visible. At the same low-tier daylight camera the change took City from 1,596,751
+to 1,600,830 triangles and held at 83 draws. The western carriageways bend away
+from the straight lidar transect, so the trench bends with them.
+
+The [day before](log/north-ave-before-day.jpg), [day after](log/north-ave-after-day.jpg),
+[night before](log/north-ave-before-night.jpg) and [night after](log/north-ave-after-night.jpg)
+use City camera `-783,-1860,235,55,350` at 14:00 and 23:00 Eastern on November 20.
+The [under-deck view](log/north-ave-under-deck.jpg) uses scene eye
+`-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75 and near plane 0.05 m.
