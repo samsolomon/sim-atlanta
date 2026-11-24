@@ -3440,3 +3440,7 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 · Modera Parkside, height by report
+
+Modera Parkside went up on a lot the 2019 lidar recorded as empty, so the only height available is a reported one: 32 storeys and a rooftop club. City builds that as a white parking podium filling the block, with a blue-grey glass slab over its south end, about 104 m to the roof. The marketing renderings add rainbow stripes up the park side, but no photograph confirmed them, so they're left out and noted in the review README. [Day, night and podium views](log/ui/modera-parkside/README.md)
