@@ -1,51 +1,15 @@
 # Studio Midtown MARTA handoff (Claude Opus → Codex)
 
-## Current handoff after the portal audit, 2026-11-24
+## Current handoff · 2026-11-24
 
-**#663 remains open on `samsolomon/rail-gaps`.** The latest geometry is `b8ffce92bc22a08ec891ebe28e03336f41893ea4`. Ground contact accepted it. The staged regression failed against the old mesh at `d3434fa0` on both tiers (37.09 cm). The full-board 0.5 m lattice at a 2 cm tolerance had zero portal penetrations out of 646 samples on each tier. The change preserves the existing shared drape implementation.
+The downtown rail maintainer owns integration of the freight portals, Five Points cut faces and CQ400 seating. Ground-contact owns the separate Capitol road/ramp investigation. The rail branches do not edit the Capitol ramp or its deck grade.
 
-- **A has visual sign-off. B needs another pass.** The plaza is now the original terrain over the tube, with the face recessed 7 m. The daytime image still reads as a tall dark wedge pointing toward the building. Make just a square headwall visible, flush with the bank. Look at the vertical side return along the approach: replacing it with graded earth may address the silhouette. Check with the same camera (`10,-45,180,40,90`), then reshoot day, night and illustrative freight and send the coordinator full-SHA image links. The current images are `docs/log/ui/rail-portals/b-recessed.jpg` and `night-freight.jpg`. The old daylight composite predates B's revision. Recheck the ground audit after the edit. No slot requested.
-- **Studio release pause.** Wait for the skyline lead's release-11 all-clear before builds, tests, captures or dev servers. Then use the shared parent-directory wrapper `../.perf-run 663 pnpm test:perf` for #663 and the relevant ticket for each subsequent perf run. The unmodified takeover head passed the full suite. New full-suite attempts hit timeouts under shared load; the last attempt was stopped for the release pause. The targeted portal suite passed. Final build, full tests, locked perf, and cross-review still need to run on the proposed merge head.
-- **Five Points PR 2** has a pushed, unverified draft at `samsolomon/five-points-cut-faces` (`0d30281c`), based on the earlier portal head. It spans each mapped track strip on its tangent plane. Inspect the steps between adjacent strips, close side gaps, verify the full street-width face and street-level top, and verify scheduled MARTA and illustrative freight at both ends by day and night. Rebase onto landed #663 before opening. No PR yet.
-- **CQ400** remains at `a7a95322` on `samsolomon/cq400-bogies`, without a PR. **#427** remains held. Follow the existing workflow below for both.
-
-The following section records the previous handoff. Its portal geometry, missing-image list, and queue contacts predate this update. Use the live orchestration thread for current routing.
-
-
-Outgoing session: `orca_session_id:54bca5c0-00b8-4d4d-94c4-c1c7f8cdd9f8` (Claude Opus, worktree `studio-midtown-marta`). Read it with `orca agent read`. The coordinator is `term_09e1b3da-5f48-4755-abf8-92a571a1f474` on Sam's MacBook Air; reply to its newest message with `orca orchestration reply --id <msg> --from <your session id>`. The skyline lead `studio-midtown-skyline-1c` (`orca_session_id:47b1a596-9151-4aee-9df7-2767a8c93529`) sequences merges: ask it for a slot, rebase at your turn, rerun the checks, merge, then report the `gh pr view <n> --json state,mergeCommit` output to both. Ground-contact (`orca_session_id:a761d59f-dbff-4e39-95d4-51790b17cb47`) owns `web/src/terrain`. The vehicles agent (`orca_session_id:bceb5cfc-138b-456e-a77d-4537701e21ef`) runs the passenger-swing probe and reviews.
-
-This worktree owns downtown and MARTA: the stations, the east cut (`east-cut*.ts`, unowned since #29, now ours), the streetcar shape and the freight tunnel portals.
-
-## Open work, in order
-
-1. **[#663](https://github.com/samsolomon/sim-atlanta/pull/663) freight tunnel portals (1/2): open, approved in principle as a fix (merges without Sam once clean).** Branch `samsolomon/rail-gaps`. Sam saw track "ending in grass": Overture tunnels hidden by `terrain_transport.py`. The PR adds portals at the two hillside mouths, A north (−368,−592) and B north (10,−41); freight runs 8 m into the tube before clipping; and `DOWNTOWN_RAIL_ENDS` declares every loose rail end (a test fails on an undeclared or stale one). Before merging:
-   - Get the coordinator's sign-off on the frames.
-   - Ask ground-contact to review the 16 `audit:ground` samples (worst 37 cm on B's lid).
-   - Ask the skyline lead for a slot.
-   - Not yet done: a night frame and a freight-entering frame at B north. A night frame at A north is also missing: the one taken was accidentally shot at 11:36.
-2. **PR 2: Five Points east-cut end faces (not started).** The coordinator asked for full-width end faces at the cut's existing mouth planes, (171,118) and (248,192), in `east-cut-ground.ts`:
-   - Matched to the three-track bed (`bed(grid)`), top flush with the street, a dark mouth where MARTA (`ServiceTrack` clip planes) and freight already clip.
-   - Check a MARTA train and a freight train passing through, by day and night.
-   - Then change those two `DOWNTOWN_RAIL_ENDS` entries from `cut-end` to a covered kind.
-   - Which gap is Sam's is unconfirmed. The coordinator's reconstruction (camera looking north) fits B+C better than A, so this PR probably fixes Sam's actual frame. The coordinator has asked Sam for a share link.
-3. **CQ400 two-bogie PR (branch `samsolomon/cq400-bogies`, pushed, no PR yet).** The coordinator ordered it after the rail gaps. Every CQ400 is seated with its bogie centres (`CAR_BOGIES` = −7.75 / +7.0 in `vignette/cq400.ts`) on the track: City tracks, the east cut and the Midtown North Line. Probe results from the vehicles agent:
-   - Worst swing 0.64 → 0.46 m; cells over 0.35 m went from 34 to 2, both a recorder artefact at the east-cut mouth.
-   - Frames: [four sites before and after](https://github.com/samsolomon/sim-atlanta/blob/772bb993/docs/log/passenger-swing/bogies/cq400-before-after.jpg?raw=true).
-   - Checks passed on `a7a95322`: build, web 261 files, `test:perf`.
-   - To ship: rebase, rerun the checks, open the PR with those frames, get the coordinator's approval and ask for a slot.
-4. **[#427](https://github.com/samsolomon/sim-atlanta/pull/427) landuse paving: held for Sam** (step 1 only, or both steps). The step 2 lawn check found no real lawns; the coordinator recommends both. If Sam picks both, set `PAVE_CAMPUS_LANDUSE = true`, update its test and reshoot the door and campus views. The branch is far behind main and needs a rebase.
-
-Merged today:
-
-| PR | Merge commit | What |
-|---|---|---|
-| #384 | `4981bd3c` | Robinson College / Empire Building |
-| #397 | `bae6e381` | Marriott Marquis piers |
-| #405 | `43ab33a2` | Robinson pediments |
-| #452 | `f3cae641` | Flaky east-rail test |
-| #517 | `4e33e335` | P0: stale MARTA and weather shown as live |
-| #597 | `6ccca8a2` | Midtown coffer lamps, benches, detachment ratchet |
-| #625 | `750228e6` | Streetcar corner fillets |
+1. **#663 freight portals.** Geometry commit `bdb26b1d7cfd2f4ac556e164aaeecdf221737262` on `samsolomon/rail-gaps` grades B’s approach from the ballast shoulders to the original bank. A has visual sign-off. Next, inspect B at `cam=10,-45,180,40,90` by day, at night and with illustrative freight, and repeat the full-board ground audit at both tiers. The capture and audit job is queued under ticket 663. Only #670 has the current timing window.
+   - Earlier geometry at `b8ffce92bc22a08ec891ebe28e03336f41893ea4` passed ground-contact review with zero penetrations over 2 cm in 646 samples per tier. The [earlier daylight comparison](../log/ui/rail-portals/b-recessed.jpg) and [night and freight frames](../log/ui/rail-portals/night-freight.jpg) predate the graded approach.
+   - The new geometry passed `git diff --check`. New screenshots, ground-contact results, coordinator sign-off, merge slot, final build, full tests, perf and cross-review are pending.
+2. **Five Points cut faces.** Draft `0d30281c0f0f4d3bf44e4ce16dd979697ed16553` on `samsolomon/five-points-cut-faces`. After #663 lands, rebase and check the joints between the three track strips at (171,118) and (248,192). Day/night MARTA and freight passage frames, tests and review are pending.
+3. **CQ400 seating.** Branch `samsolomon/cq400-bogies` at `a7a95322` follows the cut faces. The earlier probe measured worst swing falling from 0.64 m to 0.46 m. Rebase and verify the frames before opening the PR. [Earlier four-site comparison](https://github.com/samsolomon/sim-atlanta/blob/772bb993/docs/log/passenger-swing/bogies/cq400-before-after.jpg?raw=true)
+4. **#427 landuse paving** remains held for Sam’s choice of paving scope. Preserve the branch.
 
 ## Sam's decisions and coordinator rulings that touch this area
 
@@ -81,5 +45,3 @@ Coordinator rulings in force:
 - To freeze a freight train in frame: `await import('/src/core/clock.ts')`, then `clock.rebase(); clock.speed = 0`, then reload with `?t=<that ISO>&speed=0`.
 - zsh doesn't word-split `$var` inside loops; pass separate arguments to shell functions.
 - The raw Overture rail is only in other worktrees (`../studio-amtrak-livery/data/raw/overture_downtown_rail.geojson`). Run `pnpm data` to get your own.
-
-No dev server or browser tab is left open from this session.
