@@ -15,7 +15,7 @@ import { leafState } from './time';
 import { PlacementIndex } from './spatial';
 import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 import { SIDING_GLSL } from '../materials/siding';
-import { ARCH_NAMES, archetypeFor, genericV2, lookFor, offsetRing, v2Samples, type GenericLook } from './generic-v2';
+import { V2_STYLE0, ARCH_NAMES, archetypeFor, genericV2, lookFor, offsetRing, v2Samples, type GenericLook } from './generic-v2';
 import { GENERIC_V2_GLSL } from './generic-v2-glsl';
 
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
@@ -866,6 +866,8 @@ export class World {
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
     const v2 = genericV2(this.opts.cityFacades);
+    const query = new URLSearchParams(globalThis.location?.search);
+    const farTone = withFarBoxes && v2 && !(query.has('perf') && query.get('fartone') === 'off');
     let n = 0;
     // One far-board box per building (city/far-board.ts), from the vertices it just added. Walls
     // with procedural windows read darker from afar than their vertex colour.
@@ -875,8 +877,8 @@ export class World {
       const end = b.pos.length / 3;
       if (withFarBoxes && end - bdStart >= 3) {
         let windows = 0;
-        for (let i = bdStart; i < end; i++) if ((style[i] ?? -1) >= 0) windows++;
-        const box = boxFromVertices(b.pos, b.col, bdStart, end, 1 - 0.3 * windows / (end - bdStart), farRing);
+        for (let i = bdStart; i < end; i++) if (style[i] >= 0 && (!farTone || style[i] < V2_STYLE0)) windows++;
+        const box = boxFromVertices(b.pos, b.col, bdStart, end, 1 - 0.3 * windows / (end - bdStart), farRing, farTone ? style : undefined);
         if (box) this.farBoxes.push(box);
       }
       bdStart = end;

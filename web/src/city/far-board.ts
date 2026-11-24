@@ -1,4 +1,5 @@
 import { BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial, type Object3D, ShapeUtils, Vector2, Vector3 } from 'three';
+import { V2_STYLE0, v2StyleTone } from '../vignette/generic-v2';
 import { StaticLandmarkMaterial } from '../materials/landmark-batch';
 
 /**
@@ -88,7 +89,7 @@ export function orientedRect(xs: ArrayLike<number>, zs: ArrayLike<number>) {
 }
 
 /** A far box from a Builder vertex range (positions and colours as flat number arrays). */
-export function boxFromVertices(pos: ArrayLike<number>, col: ArrayLike<number>, start: number, end: number, tint = 1, ring?: number[]): FarBox | null {
+export function boxFromVertices(pos: ArrayLike<number>, col: ArrayLike<number>, start: number, end: number, tint = 1, ring?: number[], styles?: readonly number[]): FarBox | null {
   const n = end - start;
   if (n < 3) return null;
   const xs = new Float64Array(n), zs = new Float64Array(n);
@@ -110,7 +111,15 @@ export function boxFromVertices(pos: ArrayLike<number>, col: ArrayLike<number>, 
     const area = Math.hypot(cx, cy, cz) / 2;
     if (!area) continue;
     const acc = Math.abs(cy) / (2 * area) > 0.7 ? roof : wall;
-    for (let k = 0; k < 3; k++) acc[k] += area * (col[o + k] + col[o + 3 + k] + col[o + 6 + k]) / 3;
+    const style = styles?.[t];
+    if (acc === wall && style !== undefined && style >= V2_STYLE0) {
+      // Each facade triangle has one style. Its linear glass mix commutes with the vertex mean.
+      const mean = (k: number) => (col[o + k] + col[o + 3 + k] + col[o + 6 + k]) / 3;
+      const tone = v2StyleTone(style, [mean(0), mean(1), mean(2)]);
+      for (let k = 0; k < 3; k++) wall[k] += area * tone[k];
+    } else {
+      for (let k = 0; k < 3; k++) acc[k] += area * (col[o + k] + col[o + 3 + k] + col[o + 6 + k]) / 3;
+    }
     acc[3] += area;
   }
   const mean = (a: number[], k: number) => a[3] ? a[k] / a[3] : 0.6;
