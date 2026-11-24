@@ -18,7 +18,7 @@ import { GroundSurface } from './surface';
 import { triangleHeight } from './tread-height';
 import type { TerrainCity } from './transport-data';
 import { underpassGround } from './underpass';
-import { createSurfaceTransport } from './transport';
+import { createSurfaceTransport, landingPortals } from './transport';
 import { Line } from '../vignette/geom';
 import { roadWidth } from './transport-data';
 
@@ -47,7 +47,7 @@ export const BOARDS = ['downtown', 'north-band', 'south-band', 'north-corner', '
 export function measure(id: string, quality: 'low' | 'high') {
   const { grid, city } = board(id), zero = grid.manifest.vertical.sceneZeroNavd88M;
   const surface = new GroundSurface(grid, quality), bare = surface.sampleScene.bind(surface);
-  const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)], zero, bare, city.bounds, city.roads);
+  const approach = bridgeApproaches([...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)], zero, bare, city.bounds, city.roads);
   const pos = approach.geometry.getAttribute('position') as BufferAttribute;
   const cells = new Map<string, number[]>();
   const key = (x: number, z: number) => Math.floor(x / 8) + ',' + Math.floor(z / 8);
@@ -69,7 +69,8 @@ export function measure(id: string, quality: 'low' | 'high') {
     let step = 0, pen = 0, fold = 0;
     for (let k = 1; k < n; k++) {
       const u = k / n;
-      const inside = drawn(...j.point(u, 0.05)), outside = bare(...j.point(u, -0.05));
+      // Beyond the toe: the board, or another approach that the toe lands on.
+      const inside = drawn(...j.point(u, 0.05)), outside = approach.groundAt(...j.point(u, -0.05));
       if (inside === null || outside === null) continue;
       step = Math.max(step, Math.abs(inside - outside));
       const a = drawn(...j.point(u, 2)), b = bare(...j.point(u, -2));
@@ -109,9 +110,16 @@ export function measure(id: string, quality: 'low' | 'high') {
         // A deck keeps its 12 cm tread over the board: measure what is left beyond it.
         step = Math.max(step, Math.abs(inside - outside - 0.12));
       }
+      // Grade along the deck's last 15 m: a deck that plunges to its landing shows as a dark band.
+      let grade = 0;
+      for (let d = 0.5; d + 1 <= Math.min(15, line.length); d += 1) {
+        const a = line.at(end ? line.length - d : d), b2 = line.at(end ? line.length - d - 1 : d + 1);
+        const ya = transport.deckAt(a.x, a.z, run), yb = transport.deckAt(b2.x, b2.z, run);
+        if (ya !== null && yb !== null) grade = Math.max(grade, Math.abs(ya - yb));
+      }
       const centre = approach.groundAt(at.x, at.z);
       for (const off of [-half, half]) { const g = approach.groundAt(at.x + off * at.nx, at.z + off * at.nz); if (g !== null && centre !== null) cross = Math.max(cross, Math.abs(g - centre)); }
-      if (n) rows.push({ id, name: 'run ' + (run.name ?? run.cls) + ' ' + p.map(Math.round).join(','), step, pen: 0, fold: cross, cam: [Math.round(at.x + out * at.dx * 6), Math.round(at.z + out * at.dz * 6), Math.round((-Math.atan2(out * at.dx, out * at.dz) * 180) / Math.PI), 60, 160] });
+      if (n) rows.push({ id, name: 'run ' + (run.name ?? run.cls) + ' ' + p.map(Math.round).join(','), step, pen: grade, fold: cross, cam: [Math.round(at.x + out * at.dx * 6), Math.round(at.z + out * at.dz * 6), Math.round((-Math.atan2(out * at.dx, out * at.dz) * 180) / Math.PI), 60, 160] });
     }
   }
   transport.dispose();
@@ -125,11 +133,15 @@ export function measure(id: string, quality: 'low' | 'high') {
 const LANDINGS = ['Ralph David Abernathy Freeway -558,965', 'Ralph David Abernathy Freeway -624,980',
   'Ralph David Abernathy Freeway -627,1000', 'Ralph David Abernathy Freeway -561,984', 'Whitehall Street Southwest -551,800',
   'Andrew Young International Boulevard Northeast 1155,-705', 'Montgomery Ferry Drive Northeast 1559,-5222',
-  'Montgomery Ferry Drive Northeast 1624,-5255'];
+  'Montgomery Ferry Drive Northeast 1624,-5255', 'Ellis Street Northeast 1205,-597', 'secondary 1200,-613'];
+// Still climbing from their landing at 30–40%: the inferred deck height rises at its
+// 15% minimum or steeper from the board. Open; see the PR.
+const STEEP = ['Ralph David Abernathy Freeway -558,965', 'Ralph David Abernathy Freeway -624,980',
+  'Ralph David Abernathy Freeway -627,1000', 'Ralph David Abernathy Freeway -561,984', 'Whitehall Street Southwest -551,800'];
 
 for (const quality of ['low', 'high'] as const)
   it('meets the board flush where each approach and landing deck ends on ' + quality, () => {
-    const worst = { step: 0, pen: 0, landing: 0 };
+    const worst = { step: 0, pen: 0, landing: 0, grade: 0 };
     const seen = new Set<string>();
     for (const id of BOARDS) {
       const { rows } = measure(id, quality);
@@ -139,8 +151,8 @@ for (const quality of ['low', 'high'] as const)
           worst.pen = Math.max(worst.pen, r.pen);
         } else if (LANDINGS.some((n) => r.name.endsWith(n))) {
           seen.add(r.name);
-          if (process.env.SHOW) console.log(r.name, r.step.toFixed(3));
           worst.landing = Math.max(worst.landing, r.step);
+          if (!STEEP.some((n) => r.name.endsWith(n))) worst.grade = Math.max(worst.grade, r.pen);
         }
       }
     }
@@ -151,4 +163,6 @@ for (const quality of ['low', 'high'] as const)
     expect(worst.pen).toBeLessThan(0.5);
     // A landing deck sits its 12 cm tread over the board across its whole width.
     expect(worst.landing).toBeLessThan(0.15);
+    // And arrives at no more than a steep street's grade.
+    expect(worst.grade).toBeLessThan(0.16);
   }, 300000);

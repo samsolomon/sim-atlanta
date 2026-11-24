@@ -5,6 +5,7 @@ import { bedFlags, cuttingYields, type BallastQuad } from './cutting';
 import { drapeTriangle, type DrapeGround } from './drape';
 import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
+import { keepColumns } from './bridge-approaches';
 import * as THREE from 'three';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
@@ -19,7 +20,9 @@ import { pathConcrete, pathWidth, westsidePaths } from './westside-path';
 
 type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
 /** Road tread over its support, and the widest band of a deck that lands on the board. */
-const DECK_LIFT = .12, LANDING_BAND_M = 1.5;
+const DECK_LIFT = .12, LANDING_BAND_M = 1.5, LANDING_BANK_M = 1, LANDING_TOLERANCE_M = .06;
+/** A deck that must arrive this far above the board gets a landing approach. */
+const LANDING_RISE_M = .5;
 
 export interface FreightTreadPoint {
   s: number;
@@ -247,6 +250,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     // Surveyed profiles keep their own ends: they often meet other structures.
     const landsOn = bridge && use === 'road' && !profile;
     const lands = [landsOn && !startCut && firstSupport === null, landsOn && !endCut && lastSupport === null];
+    // 1 at a landing end, 0 a seam away: the slab thins into the road over that seam.
+    const settle = (s: number) => Math.max(
+      lands[0] ? Math.max(0, 1 - s / seam) : 0, lands[1] ? Math.max(0, 1 - (line.length - s) / seam) : 0);
     const inferred = new Map<number, number>();
     if (bridge && !profile) {
       // Sample the full tread width. Smooth the minimum upward along the span
@@ -436,12 +442,15 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
               if (leftSide) parapet(a, d, b, c);
               if (rightSide) parapet(b, c, a, d);
             }
-            const down = ([x, y, z]: number[]) => [x, y - depth, z];
-            if (leftSide) structures.quad(a, d, down(d), down(a), PAL.concreteDark);
-            if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
+            // a, b sit at the previous station; c, d at this one.
+            const thick = [depth * (1 - settle(lastS)), depth * (1 - settle(s))];
+            const down = ([x, y, z]: number[], at = 0) => [x, y - thick[at], z];
+            const [da, db, dc, dd] = [down(a), down(b), down(c, 1), down(d, 1)];
+            if (leftSide) structures.quad(a, d, dd, da, PAL.concreteDark);
+            if (rightSide) structures.quad(b, db, dc, c, PAL.concreteDark);
             buriedFaces?.add(structures.pos.length / 3);
             buriedFaces?.add(structures.pos.length / 3 + 3);
-            structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
+            structures.quad(da, dd, dc, db, PAL.concreteDark);
           }
         }
         prev = section;
@@ -467,13 +476,29 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       const color = ribbon ? PAL.asphaltHwy : sidepath ? pathConcrete : walkway ? PAL.sidewalk : PAL.asphalt;
       // At a deck toe the two shoulders and the center follow different
       // triangles of bare earth. Carry that crossfall into the pavement mesh.
-      // A landing deck bands only its last seam; the rest of the span stays one strip.
-      // Seam stations are shared, so the bands meet the strip without T-junction gaps.
-      const landing = !run.deckWeight && lands.some(Boolean);
+      // A landing deck bands only its last seam, and only where the board under it bends
+      // more than JOINT_TOLERANCE_M across; the rest of the span stays one strip. Seam
+      // stations are shared, so the bands meet the strip without T-junction gaps. An end
+      // that straddles a bank keeps one band: following the fall would fold the tread.
       const nearLanding = (s: number) => (lands[0] && s < seam) || (lands[1] && s > line.length - seam);
-      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : landing ? Math.ceil(width / LANDING_BAND_M) : 1;
+      let cuts = [.5, -.5];
+      if (!run.deckWeight && lands.some(Boolean)) {
+        const fine = Math.max(1, Math.ceil(width / LANDING_BAND_M));
+        const candidates = Array.from({ length: fine + 1 }, (_, i) => .5 - i / fine);
+        // The row the deck lands on decides; the seam behind it blends from there.
+        const rows = (lands[0] ? [0] : []).concat(lands[1] ? [line.length] : []).map(st =>
+          candidates.map(f => groundAt(...lateral(st, f * width)) ?? NaN));
+        const ok = rows.length && rows.every(r => r.every(Number.isFinite));
+        // A bank is a fold across the row, not a steady crossfall.
+        const fall = ok ? Math.max(...rows.map(r => Math.max(...r.map((h, i) =>
+          Math.abs(h - (r[0] + (r.at(-1)! - r[0]) * i / (r.length - 1))))))) : Infinity;
+        if (ok && fall <= LANDING_BANK_M) cuts = keepColumns(candidates.map(f => f * width), rows, LANDING_TOLERANCE_M).map(i => candidates[i]);
+      }
+      const landing = cuts.length > 2;
+      const bands = run.deckWeight ? 2 * Math.ceil(width / 6) : cuts.length - 1;
       for (let i = 0; i < bands; i++) {
-        strip(width * (.5 - i/bands), width * (.5 - (i+1)/bands), DECK_LIFT, color,
+        const [l, r] = run.deckWeight ? [.5 - i/bands, .5 - (i+1)/bands] : [cuts[i], cuts[i + 1]];
+        strip(width * l, width * r, DECK_LIFT, color,
           walkway ? .4 : .95, false, false, i === 0, i+1 === bands, landing ? nearLanding : undefined);
       }
       if (landing) strip(width * .5, -width * .5, DECK_LIFT, color, walkway ? .4 : .95, false, false, true, true, s => !nearLanding(s));
@@ -610,4 +635,81 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     map.dispose();
     group.clear();
   } };
+}
+
+/**
+ * Landing approaches for unsurveyed road decks. Where a mapped route passes under a
+ * deck within its last seam, the deck must still clear it at the abutment. Instead
+ * of plunging to the board, the deck keeps that height and the board street rises to
+ * meet it on a bridge approach (bridge-approaches.ts), which traffic also follows.
+ * Heights are inferred from the crossing's bare earth plus the same clearances.
+ */
+export function landingPortals(city: TerrainCity, bare: (x: number, z: number) => number | null, zero: number) {
+  const data = city.terrainTransport;
+  if (!data) return [];
+  const { bounds } = city;
+  const ends = new Map<string, number>();
+  for (const r of data.roads) if (r.kind === 'bridge') for (const p of r.pts) ends.set(p.join(','), (ends.get(p.join(',')) ?? 0) + 1);
+  const routes: { a: P2; b: P2; radius: number; clearance: number }[] = [];
+  for (const road of city.roads) {
+    if (road.bridge || road.tunnel || road.pts.length < 2) continue;
+    const radius = roadWidth(road) / 2, clearance = ['path','footway','steps','pedestrian','cycleway'].includes(road.cls) ? 2.5 : 5;
+    for (let i = 1; i < road.pts.length; i++) routes.push({ a: road.pts[i - 1], b: road.pts[i], radius, clearance });
+  }
+  const portals: { edge: number[][]; direction: number[]; curbs: number[] }[] = [];
+  for (const run of data.roads) {
+    if (run.kind !== 'bridge' || run.deckNavd88M || run.deckWeight || run.pts.length < 2 || run.cls === 'motorway' ||
+      ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls)) continue;
+    const line = new Line(run.pts);
+    const width = run.crossSection?.width ?? roadWidth(run), seam = Math.min(width, line.length / 2);
+    for (const last of [false, true]) {
+      const p = last ? run.pts.at(-1)! : run.pts[0];
+      if (p[0] === bounds.minX || p[0] === bounds.maxX || p[1] === bounds.minZ || p[1] === bounds.maxZ) continue;
+      if ((ends.get(p.join(',')) ?? 0) > 1) continue;
+      const bank = bare(...p);
+      if (bank === null) continue;
+      let need = -Infinity;
+      for (const { a, b, radius, clearance } of routes) {
+        for (let i = 1; i < run.pts.length; i++) {
+          const hit = segmentHit(run.pts[i - 1], run.pts[i], a, b);
+          if (!hit) continue;
+          const at = line.cum[i - 1] + hit * (line.cum[i] - line.cum[i - 1]);
+          const fromEnd = last ? line.length - at : at;
+          if (fromEnd <= radius || fromEnd > seam + radius) continue;
+          const c = line.at(at), h = bare(c.x, c.z);
+          if (h !== null) need = Math.max(need, h + clearance + 1);
+        }
+      }
+      if (need - bank < LANDING_RISE_M) continue;
+      const at = line.at(last ? line.length : 0), out = last ? 1 : -1;
+      // Follow the street that continues the deck, as streetPortals does; a deck whose
+      // street turns away at the abutment keeps its own end.
+      const key = p.join(',');
+      let direction: number[] | null = null;
+      for (const road of city.roads) {
+        if (road.bridge || road.tunnel || road.pts.length < 2) continue;
+        const i = road.pts.findIndex(q => q.join(',') === key);
+        if (i !== 0 && i !== road.pts.length - 1) continue;
+        const next = i === 0 ? road.pts[1] : road.pts.at(-2)!;
+        const len = Math.hypot(next[0] - p[0], next[1] - p[1]);
+        if (!len) continue;
+        const d = [(next[0] - p[0]) / len, (next[1] - p[1]) / len];
+        if (d[0] * out * at.dx + d[1] * out * at.dz >= Math.cos(Math.PI / 6)) direction = d;
+      }
+      if (!direction) continue;
+      const half = width / 2;
+      const side = (k: number) => [at.x - k * out * half * at.nx, at.z - k * out * half * at.nz, need + zero];
+      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1] });
+    }
+  }
+  return portals;
+}
+
+/** Fraction along p→q where it crosses a→b, or null. */
+function segmentHit(p: P2, q: P2, a: P2, b: P2) {
+  const rx = q[0] - p[0], rz = q[1] - p[1], sx = b[0] - a[0], sz = b[1] - a[1];
+  const den = rx * sz - rz * sx;
+  if (Math.abs(den) < 1e-9) return null;
+  const t = ((a[0] - p[0]) * sz - (a[1] - p[1]) * sx) / den, u = ((a[0] - p[0]) * rz - (a[1] - p[1]) * rx) / den;
+  return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? t : null;
 }

@@ -55,6 +55,7 @@ import { piedmontPark } from '../city/piedmont-park';
 import { pradoCraftsman, pradoCraftsmanId } from '../city/prado-craftsman';
 import { WINN, winnPark } from '../city/winn-park';
 import { underpassLights } from './underpass-lights';
+import { landingPortals } from './transport';
 import { bridgeApproaches } from './bridge-approaches';
 import { streetPortals } from './street-bridges';
 import { junctionPortals, onJunction } from './junction-decks';
@@ -225,7 +226,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   if (trench) board.add(trench.mesh);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
-  const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
+  const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city), ...landingPortals(city, bare, zero)];
   const approaches = portals.length ? bridgeApproaches(portals, grid.manifest.vertical.sceneZeroNavd88M, bare, city.bounds, city.roads) : null;
   if (approaches) {
     const top = new THREE.Mesh(approaches.geometry, board.material);

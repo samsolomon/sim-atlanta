@@ -5,8 +5,31 @@ import { roadWidth, type TerrainCity } from './transport-data';
 import { triangleHeight } from './tread-height';
 
 type Ground = (x: number, z: number) => number | null;
-/** Widest column of an approach cross-section. */
-export const JOINT_COLUMN_M = 1.25;
+/** Finest column of an approach cross-section, and how far the drawn surface may
+ * stray from the board's own height before another column is kept. */
+export const JOINT_COLUMN_M = 1.25, JOINT_TOLERANCE_M = 0.12;
+
+/** Keep only the candidate columns needed to hold every row within tolerance of a
+ * straight line between kept columns (Douglas-Peucker across all rows at once). */
+export function keepColumns(xs: readonly number[], rows: readonly (readonly number[])[], tolerance = JOINT_TOLERANCE_M) {
+  const keep = new Set([0, xs.length - 1]);
+  const split = (i0: number, i1: number) => {
+    let worst = tolerance, at = -1;
+    for (let i = i0 + 1; i < i1; i++) {
+      const f = (xs[i] - xs[i0]) / (xs[i1] - xs[i0]);
+      for (const h of rows) {
+        const e = Math.abs(h[i] - (h[i0] + f * (h[i1] - h[i0])));
+        if (e > worst) { worst = e; at = i; }
+      }
+    }
+    if (at < 0) return;
+    keep.add(at);
+    split(i0, at);
+    split(at, i1);
+  };
+  split(0, xs.length - 1);
+  return [...keep].sort((a, b) => a - b);
+}
 export interface Portal {
   /** Left and right outside corners, as x, z, absolute NAVD88 metres. */
   edge: number[][];
@@ -123,8 +146,11 @@ export function bridgeApproaches(
     }
     for (let k = 0; k < bands.length - 1; k++) {
       const lift = k === 0 || k === 3 ? 0.27 : 0.12;
-      const pieces = Math.max(1, Math.ceil(((bands[k + 1] - bands[k]) * width) / JOINT_COLUMN_M));
-      const columns = Array.from({ length: pieces + 1 }, (_, i) => bands[k] + ((bands[k + 1] - bands[k]) * i) / pieces);
+      const fine = Math.max(1, Math.ceil(((bands[k + 1] - bands[k]) * width) / JOINT_COLUMN_M));
+      const candidates = Array.from({ length: fine + 1 }, (_, i) => bands[k] + ((bands[k + 1] - bands[k]) * i) / fine);
+      const rows = Array.from({ length: length / 4 + 1 }, (_, j) => candidates.map((f) => vertex(f, j * 4, lift)[1]));
+      const columns = keepColumns(candidates.map((f) => f * width), rows).map((i) => candidates[i]);
+      const pieces = columns.length - 1;
       for (let s = 0; s < length; s += 4)
         for (let i = 0; i < pieces; i++) {
           const p = vertex(columns[i], s, lift),
@@ -196,12 +222,12 @@ export function bridgeApproaches(
       });
       const start = line.at(0);
       // Columns across, so the toe follows the board like the portal approaches.
-      const pieces = Math.max(1, Math.ceil((2 * half) / JOINT_COLUMN_M));
-      const offsets = Array.from({ length: pieces + 1 }, (_, i) => -half + (2 * half * i) / pieces);
-      const bank = offsets.map(
+      const fine = Math.max(1, Math.ceil((2 * half) / JOINT_COLUMN_M));
+      let offsets = Array.from({ length: fine + 1 }, (_, i) => -half + (2 * half * i) / fine);
+      let bank = offsets.map(
         (off) => sample(bankPositions, start.x + off * start.nx, start.z + off * start.nz) ?? h,
       );
-      const toes = offsets.map((off) => bare(end.x + off * end.nx, end.z + off * end.nz) ?? toe);
+      let toes = offsets.map((off) => bare(end.x + off * end.nx, end.z + off * end.nz) ?? toe);
       const row = (s: number) => {
         const v = line.at(s);
         return offsets.map((off, side) => {
@@ -219,6 +245,13 @@ export function bridgeApproaches(
           ];
         });
       };
+      // The sampled rows use every candidate; keep only the columns they need.
+      const sampled = Array.from({ length: Math.ceil(length / 2) + 1 }, (_, j) => row(Math.min(length, j * 2)).map((p) => p[1]));
+      const kept = keepColumns(offsets, sampled);
+      offsets = kept.map((i) => offsets[i]);
+      bank = kept.map((i) => bank[i]);
+      toes = kept.map((i) => toes[i]);
+      const pieces = offsets.length - 1;
       let prior = row(0);
       for (let s = 0; s < length; s += 2) {
         const next = row(Math.min(length, s + 2));
