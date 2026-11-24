@@ -53,6 +53,7 @@ export const TEXTURE_SOURCES: Record<string, TextureSource> = {
   'vignette/world.ts': { bytes: 0, bucket: 'other', note: 'East Portal canvases' },
   // Screen-sized render targets: post-processing, not materials. Bytes scale with the viewport.
   'city/city.ts': { bytes: 0, bucket: 'other', note: 'HalfFloat scene target + depth texture, screen-sized' },
+  'core/prewarm.ts': { bytes: 128, bucket: 'other', note: '4x4 HalfFloat scratch target the shader prewarm draws never-drawn objects into' },
   'city/white-model.ts': { bytes: 0, bucket: 'other', note: 'one screen-sized target for the white-buildings-on-map still, disposed after one read (A2c Map to City)' },
   'vignette/main.ts': { bytes: 0, bucket: 'other', note: 'East Portal render target, screen-sized' },
   'models/main.ts': { bytes: 0, bucket: 'other', note: 'model lab render targets, screen-sized' },
