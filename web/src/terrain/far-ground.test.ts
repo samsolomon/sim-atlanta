@@ -118,6 +118,23 @@ it('swaps a low board to its far ground by distance, with hysteresis, and flags 
   } finally { vi.unstubAllGlobals(); }
 });
 
+/** The 2 m far level settled the same way: same triangles, nothing above the drawn heights inside. */
+async function checkSettled(errorM: number) {
+  let interior = 0, rim = 0;
+  for (const path of boards) {
+    const near = new GroundSurface(grid(path), 'low');
+    const plain = near.farGeometry(errorM), settled = near.farGeometry(errorM, 160, true);
+    expect(settled.index!.count, path).toBe(plain.index!.count);
+    expect(Math.abs(openLength(settled) - openLength(near.geometry)), path).toBeLessThan(1);
+    const r = aboveDem(settled, near, 160 + near.grid.manifest.stepM);
+    interior = Math.max(interior, r.interior); rim = Math.max(rim, r.rim);
+    plain.dispose(); settled.dispose(); near.geometry.dispose();
+  }
+  console.info('settled', errorM, { interior: +interior.toFixed(2), rim: +rim.toFixed(2) });
+  expect(interior).toBeLessThan(0.05);
+  expect(rim).toBeLessThanOrEqual(2 * errorM);
+}
+
 /** Largest height of the far mesh above the DEM at any node it covers, kept separately within
  * `band` of the board rim and away from it, so a rim residue can't mask an interior failure. */
 function aboveDem(g: BufferGeometry, near: GroundSurface, band: number) {
@@ -147,6 +164,7 @@ function aboveDem(g: BufferGeometry, near: GroundSurface, band: number) {
 
 it('settles the very-far ground below the DEM with exact rims, at a fifth of the far triangles', async () => {
   const { VERY_FAR_ERROR_M } = await import('./model');
+  await checkSettled(2);
   let far = 0, very = 0, rimWorst = 0, interiorWorst = 0, mb = 0;
   for (const path of boards) {
     const near = new GroundSurface(grid(path), 'low');
@@ -174,12 +192,15 @@ it('settles the very-far ground below the DEM with exact rims, at a fifth of the
   expect(rimWorst).toBeLessThanOrEqual(VERY_FAR_ERROR_M);
 }, 300_000);
 
-it('schedules no very-far build by default (opt-in until the build is incremental)', async () => {
+it('schedules no very-far build with the level switched off', async () => {
   const { vi } = await import('vitest');
   let idle = 0, timers = 0;
   vi.stubGlobal('requestIdleCallback', () => { idle++; return 1; });
   const realTimeout = globalThis.setTimeout;
   vi.stubGlobal('setTimeout', ((cb: () => void, ms?: number) => { timers++; return realTimeout(cb, ms); }) as typeof setTimeout);
+  const { setVeryFarForTests } = await import('./model');
+  setVeryFarForTests(false);
+  const steps = vi.spyOn(GroundSurface.prototype, 'farGeometrySteps');
   try {
     const { PerspectiveCamera } = await import('three');
     const { createDowntownTerrain, VERY_FAR_M } = await import('./model');
@@ -193,9 +214,102 @@ it('schedules no very-far build by default (opt-in until the build is incrementa
     camera.position.set(b.maxX + 2 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);
     const far = area.board.geometry;
     camera.position.set(b.maxX + 3 * VERY_FAR_M, 0, b.minZ); area.update(0, camera);
+    // The background queue runs on promises: flush it with the board still alive.
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    await new Promise(r => realTimeout(r, 0));
+    expect(steps).not.toHaveBeenCalled();
     expect(idle).toBe(0);
     expect(timers).toBe(before);
-    expect(area.board.geometry).toBe(far); // the 2 m far level, never the very-far one
+    expect(area.board.geometry).toBe(far);
     area.dispose();
+    steps.mockRestore();
+  } finally { setVeryFarForTests(true); vi.unstubAllGlobals(); }
+});
+
+it('builds the very-far level in short steps, with the same result as one build', async () => {
+  const { runBudgeted, emptySliceStats } = await import('../core/slice');
+  const { VERY_FAR_ERROR_M } = await import('./model');
+  const stats = emptySliceStats();
+  const steps: number[] = [];
+  const { bounds: boardBounds } = await import('../square-board/sections');
+  const b = boardBounds['midtown-south'];
+  // Many open slots, like downtown's rail openings: every clipped 5 m leaf meets some of them.
+  const slots = Array.from({ length: 40 }, (_, i) => {
+    const x = b.minX + 60 + (i % 10) * 260, z = b.minZ + 80 + Math.floor(i / 10) * 180;
+    return { start: [x, 200, z] as const, end: [x + 140, 198, z + 30] as const, halfWidthM: 6 };
+  });
+  for (const [path, openings] of [['downtown-ground', undefined], ['square-board/brookwood-south', undefined], ['square-board/midtown-south', slots]] as const) {
+    const near = new GroundSurface(grid(path), 'low', openings ? [...openings] : undefined);
+    const whole = near.farGeometry(VERY_FAR_ERROR_M, 160, true);
+    // Time every step by hand as well, for a percentile that one GC pause can't move.
+    const gen = near.farGeometrySteps(VERY_FAR_ERROR_M, 160, true);
+    const timed = (function* () { for (;;) { const t = performance.now(); const r = gen.next(); steps.push(performance.now() - t); if (r.done) return r.value; yield r.value; } })();
+    const sliced = await runBudgeted(timed, { budgetMs: () => 3, nextFrame: () => Promise.resolve(), stats });
+    expect(Array.from(sliced.getAttribute('position').array)).toEqual(Array.from(whole.getAttribute('position').array));
+    expect(Array.from(sliced.index!.array)).toEqual(Array.from(whole.index!.array));
+    whole.dispose(); sliced.dispose(); near.geometry.dispose();
+  }
+  steps.sort((x, y) => x - y);
+  const p99 = steps[Math.floor(steps.length * 0.99)];
+  console.info('very-far steps', { steps: steps.length, p99: +p99.toFixed(2), maxStepMs: +stats.maxStepMs.toFixed(2), at: stats.maxStepAt, totalMs: +stats.totalMs.toFixed(0) });
+  // About 1 ms per step here (a few ms on a phone at 6x), against the old ~145 ms whole-board
+  // task. The percentile ignores a stray GC pause on a shared machine.
+  expect(p99).toBeLessThan(2.5);
+  expect(steps.length).toBeGreaterThan(100);
+}, 120_000);
+
+it('abandons a queued very-far build once its board is disposed', async () => {
+  const { vi } = await import('vitest');
+  const frames: (() => void)[] = [];
+  vi.stubGlobal('requestAnimationFrame', (cb: () => void) => { frames.push(cb); return frames.length; });
+  try {
+    const { PerspectiveCamera } = await import('three');
+    const { createDowntownTerrain, VERY_FAR_BUILD_M, veryFarStats } = await import('./model');
+    const { bounds } = await import('../square-board/sections');
+    const ctx = new Proxy({}, { get: () => () => {} });
+    vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+    const spy = vi.spyOn(GroundSurface.prototype, 'farGeometrySteps');
+    const b = bounds['south-band'];
+    const area = createDowntownTerrain(grid('square-board/south-band'), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const camera = new PerspectiveCamera();
+    camera.position.set(b.maxX + VERY_FAR_BUILD_M + 10, 0, b.minZ); area.update(0, camera);
+    area.dispose();
+    const before = veryFarStats.totalMs;
+    for (let i = 0; i < 20 && frames.length; i++) { frames.shift()!(); await new Promise(r => setTimeout(r, 0)); }
+    await new Promise(r => setTimeout(r, 0));
+    // Either never started, or stopped at its first check: no slices of work after disposal.
+    expect(veryFarStats.totalMs - before).toBeLessThan(5);
+    spy.mockRestore();
   } finally { vi.unstubAllGlobals(); }
+});
+
+it('swaps a mounted low board to its settled far level at its next level change', async () => {
+  const { vi } = await import('vitest');
+  const { PerspectiveCamera } = await import('three');
+  const { createDowntownTerrain, FAR_GROUND_M, farSettleForTests } = await import('./model');
+  const { bounds } = await import('../square-board/sections');
+  const ctx = new Proxy({}, { get: () => () => {} });
+  vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
+  vi.stubGlobal('requestAnimationFrame', (cb: () => void) => setTimeout(cb, 0));
+  farSettleForTests.enable();
+  try {
+    const b = bounds['south-band'], path = 'square-board/south-band';
+    const area = createDowntownTerrain(grid(path), { bounds: b, buildings: [], roads: [], rail: [] }, [], { quality: 'low' });
+    const camera = new PerspectiveCamera();
+    camera.position.set(b.maxX + FAR_GROUND_M + 10, 0, b.minZ); area.update(0, camera);
+    const plain = area.board.geometry;
+    const near = new GroundSurface(grid(path), 'low');
+    // Before the background settle the board draws the plain level, which stands above the DEM.
+    expect(aboveDem(plain, near, 165).interior).toBeGreaterThan(0.5);
+    await farSettleForTests.done();
+    // Held while the board draws its far level: no swap on screen by itself.
+    expect(area.board.geometry).toBe(plain);
+    camera.position.set(b.maxX + 100, 0, b.minZ); area.update(0, camera);
+    camera.position.set(b.maxX + FAR_GROUND_M + 10, 0, b.minZ); area.update(0, camera);
+    const settled = area.board.geometry;
+    expect(settled).not.toBe(plain);
+    expect(settled.index!.count).toBe(plain.index!.count);
+    expect(aboveDem(settled, near, 165).interior).toBeLessThan(0.05);
+    area.dispose(); near.geometry.dispose();
+  } finally { farSettleForTests.enable(false); vi.unstubAllGlobals(); }
 });

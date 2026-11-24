@@ -1,93 +1,158 @@
 # Sim Atlanta
 
-A free, fast map of where trains are, or are likely to be, right now. It starts with
-Atlanta and Georgia. Every fact on the map says how we know it: **live**, **scheduled**,
-**reported** average, **inferred** or **illustrative**. See [docs/data-model.md](docs/data-model.md).
+A miniature Atlanta you can watch. Follow a MARTA train through downtown, watch traffic
+cross the Connector, or drift north to Midtown and the High Museum. The City view draws
+Atlanta as a low-poly tabletop diorama. Switch to Map to follow rail lines across the region.
 
-## What's here
+**[Explore Sim Atlanta](https://atlanta.solomon.io)** · Free, no ads, no tracking.
+This is an independent project with no affiliation with MARTA, Amtrak or the City of Atlanta.
 
-- `pipeline/`: Rust. Downloads the open data and writes compact static files to
-  `web/public/data/ga/`:
-  - MARTA and Amtrak GTFS schedules
-  - FRA crossing inventory
-  - BTS/FRA North American Rail Network lines
-- `web/`: TypeScript + Vite + MapLibre GL on OpenFreeMap tiles. Scheduled trains are
-  computed in the browser from the timetables, so they cost no server requests.
-- `worker/`: a Cloudflare Worker. It serves the site and `/api/marta/rail`, which fetches
-  MARTA's rail realtime API using a secret key, normalizes the response and caches it for
-  10 s. The browser snaps each train's GPS fix onto its line and glides it between fixes.
+![Midtown Atlanta in the City view, around the Woodruff Arts Center](docs/readme/city.jpg)
 
-## Run it
+Drag to orbit the city, or use WASD to move and Q/E to rotate. Select a train or bus
+to see where its position came from.
+
+## How true is it?
+
+MARTA provides recent positions for trains and buses. The Atlanta Streetcar and Amtrak
+Crescent follow published timetables. Freight movements are illustrative, road traffic
+follows typical hourly patterns, and Open-Meteo supplies Atlanta weather.
+
+Each label describes a particular detail. A freight line can have a **reported** daily
+train count even though the train you see on it has an **illustrative** position.
+
+| Label | What it means |
+|---|---|
+| **Live** | MARTA recently reported the position of this train or bus. |
+| **Scheduled** | The published timetable puts the train here at this time. |
+| **Reported** | A source published the figure or condition, such as daily freight volume or weather. |
+| **Inferred** | The app estimated a value, such as a position between two live fixes. |
+| **Illustrative** | The model supplies a visual detail, such as the individual cars on a road. |
+
+When you change the clock or speed up time, transit follows the timetable. See the
+[data model](docs/data-model.md) for the sources and rules behind each label.
+
+## Build your own simulation
+
+What would your commute look like if a MARTA train ran along the BeltLine? How would
+your walk to the station feel if the parking lot beside it became apartments with shops
+on the ground floor?
+
+Fork the repo and start with one change to a place you know. For the imagined MARTA
+route, sketch the track, choose a couple of stops, and give the train a sample timetable.
+For the development, model one block and bring the camera down to sidewalk level to see
+how the new frontage meets the station entrance. Label your additions as imagined so
+someone exploring your fork can tell what exists today.
+
+The local setup below gives you the Atlanta scene to work from. For the longer-term idea
+of building a board around a station or street corner in another city, see
+[Build a neighborhood from a fork](docs/future-features.md#build-a-neighborhood-from-a-fork).
+
+## Run locally
+
+From the repository root, install the dependencies and build the map and City data.
+You’ll need pnpm, Rust, Python 3 and Chrome. The web build uses headless Chrome to render
+share images. Set `CHROME` to the executable path if it’s outside the standard macOS location.
 
 ```sh
 pnpm install
-python3 -m venv .venv && .venv/bin/pip install duckdb rasterio pyproj scipy pillow   # once
-pnpm data           # fetch + build Map data, downtown rail profiles and City data; re-run to refresh
-pnpm data:city      # refresh the City board, traffic network, tree canopy and baked ground grid
-pnpm data:vignette  # East Portal diorama: refreshes the Overture roads/land-use/infrastructure/building
-                    # extracts, then crops them and adds FHWA traffic + Meta/WRI trees (re-run after pulling)
-pnpm secrets:local  # writes worker/.dev.vars (gitignored) from 1Password item sim-atlanta-marta-api
-pnpm build          # the worker serves web/dist
-pnpm dev:worker     # live API on :8787
-pnpm dev            # http://localhost:5173 (proxies /api to the worker)
-pnpm test           # Rust + web + worker tests
+python3 -m venv .venv
+.venv/bin/pip install duckdb rasterio pyproj scipy pillow
+pnpm data
+pnpm build
 ```
 
-These URL options are handy for reviewing:
-- `?t=2026-11-20T14:00:00-05:00` pins the clock to a moment.
-- `?speed=30` plays time faster.
-- `#zoom/lat/lon` sets the map view.
-- In local development, `/terrain-preview.html?at=cut` opens the downtown ground study. Run `pnpm data:city` first, or `pnpm data:terrain` if the downtown board and trees are already present. [Terrain measurements and camera stops](docs/downtown-ground.md)
-- `/` opens the 2.8 × 6.8 km City board from downtown through Midtown to Brookwood.
-  On older checkouts missing the five Midtown row directories, run `pnpm data:midtown` before building.
-  Use `?board=square` for the 2.8 km square around downtown and King Memorial.
-  Use `?board=downtown` for the downtown-only board. Use `?view=map` for Map or a saved Map camera
-  hash. City also accepts `?view=city` and `?view=3d`. Drag to orbit, use WASD to
-  move and Q/E to rotate, or tap a train or bus for its source. Phones open on the
-  low tier. Use `?q=high` or `?q=low` to override the device tier.
-- `/vignette.html` is the East Portal look study: a detailed low-poly diorama whose light,
-  season, weather and traffic follow Atlanta's clock. Options: `?at=<ISO time>`,
-  `?speed=600`, `?weather=rain|fog|storm|overcast|clear` (default live), `?clean`, `?scatter`.
+Run `pnpm dev:worker` in one terminal and `pnpm dev` in another. Open
+[localhost:5173](http://localhost:5173). Vite forwards API calls to the Worker on port 8787.
+Building after `pnpm data` makes the bus route index available to the local Worker.
 
-Live MARTA appears only when the clock shows the real present. A time-shifted or
-sped-up view always uses the timetable.
+### Enable live MARTA rail
 
-## Live MARTA buses
+Local rail uses the timetable until you configure a key. Buses use MARTA’s keyless feed.
+Request a free rail key from [MARTA’s developer portal](https://www.itsmarta.com/app-developer-resources.aspx)
+and add this line to `worker/.dev.vars` (gitignored).
 
-The 2D map polls the keyless `GET /api/marta/bus` endpoint at most once per
-30 seconds while visible at the real clock. An always-open map adds up to 2,880
-Worker requests per day. The Worker caches each bus snapshot for 30 seconds
-per edge location. For local route labels, run `pnpm build` after `pnpm data`
-before starting the dev Worker. For deployment, run `pnpm data` to generate the bus route
-index, then `pnpm --filter worker run deploy` to rebuild static assets and deploy the Worker together.
-See [the response contract](docs/data-model.md#live-buses).
+```dotenv
+MARTA_API_KEY=your-key
+```
 
-## Deploy (Cloudflare free tier)
+The Worker keeps the key on the server and caches rail responses for 10 seconds. For the
+maintainer’s 1Password setup, `pnpm secrets:local` writes the same file. The Map view
+requests bus positions at most once every 30 seconds while visible at the real clock.
+The Worker caches bus snapshots for 30 seconds per edge location.
 
-Live at **https://atlanta.solomon.io** (Worker `railwatch` in the "Solomon" Cloudflare account,
-custom domain set in `worker/wrangler.toml`). Run `pnpm data && pnpm data:vignette && pnpm build`
-before `pnpm run deploy`; the secret `MARTA_API_KEY` is already set on the Worker.
-`pnpm data` includes `data:city`: City requires `scene/downtown/vignette.json`,
-`trees.json` and the retained `scene.json` profiles. It also stages the six surrounding areas. In an existing checkout with Map
-data, run `pnpm data:city` once before building this milestone. Missing City data makes
-the app fall back to Map. Vite omits the three retired downtown `.bin` meshes.
+### Explore the views
 
-The optional East Portal art map uses a separate static bake. To include or retain
-`/artmap.html` in a deployment, copy the Studio's complete `web/public/art/`
-directory before building. A checkout without the bake ships only the map and
-vignette, and deploying it removes a previously published art map.
-[Art factory instructions](pipeline/scripts/art/README.md)
+| View | How to open it |
+|---|---|
+| City | `/` opens the 2.8 × 6.8 km board from downtown to Brookwood. Use `?board=square` for downtown through King Memorial or `?board=downtown` for downtown alone. |
+| Map | `/?view=map` opens the regional map. Add `#zoom/lat/lon` to set the camera. |
+| East Portal | Run `pnpm data:vignette`, then open `/vignette.html`. Try `?weather=rain` or `?speed=600`. |
+| Terrain preview | Open `/terrain-preview.html?at=cut` locally to inspect the downtown ground. See [terrain measurements and camera stops](docs/downtown-ground.md). |
+
+In City or Map, use `?t=2026-11-20T14:00:00-05:00` to pin the clock or `?speed=30` to
+speed it up. Phones open City on the low graphics tier. Use `?q=high` or `?q=low` to
+choose a tier yourself.
+
+### Find your way around the code
+
+- [pipeline/](pipeline/) downloads open data and builds the static files for Map and City.
+  Run `pnpm data:city` to refresh City alone or `pnpm data:midtown` to add missing
+  Midtown rows to an older checkout.
+- [web/](web/) contains the Three.js city and MapLibre map. The browser computes
+  scheduled train positions from the timetables.
+- [worker/](worker/) serves the built site and proxies live data. The browser uses the
+  Worker’s MARTA feeds to place vehicles and animate them between updates.
+
+Run `pnpm test` for the Rust, pipeline, web and Worker checks. See the
+[project guide](AGENTS.md) for visual checks and performance tests.
+
+## Where the data comes from
+
+| Source | Used for | Terms |
+|---|---|---|
+| [MARTA](https://www.itsmarta.com/app-developer-resources.aspx) GTFS and realtime rail and bus APIs | Timetables and live positions | MARTA developer terms; realtime rail needs a free key |
+| Amtrak GTFS | Amtrak Crescent timetable | Public feed |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) via [OpenFreeMap](https://openfreemap.org) / [OpenMapTiles](https://openmaptiles.org) | Basemap, streets, rail lines | ODbL |
+| [Overture Maps](https://overturemaps.org) | Building footprints and heights, roads, land use | CDLA Permissive 2.0 / ODbL |
+| FRA crossing inventory, BTS/FRA North American Rail Network | Rail lines and crossings | US public domain |
+| FHWA HPMS and TMAS | Usual road traffic by hour | US public domain |
+| [Open-Meteo](https://open-meteo.com) | Current weather | CC BY 4.0 |
+| City of Atlanta & Georgia Tech 2023 tree canopy study; Meta & WRI 1 m canopy height (CC BY 4.0) | Trees | As published |
+| City of Atlanta | Neighbourhood names | Open data |
+
+The full credits are in the app under Menu › About & credits.
+
+## Deploy to Cloudflare
+
+The public site runs on Cloudflare’s free tier. Its Worker is named `railwatch`, with the
+custom domain configured in [worker/wrangler.toml](worker/wrangler.toml). For your own
+deployment, set the Worker name, custom domain and `account_id` to your own Cloudflare values,
+then authenticate.
 
 ```sh
-npx wrangler login                       # once
-cd worker && npx wrangler secret put MARTA_API_KEY
-pnpm run deploy   # not `pnpm deploy`, which is a pnpm built-in
+(cd worker && pnpm exec wrangler login)
+(cd worker && pnpm exec wrangler secret put MARTA_API_KEY)  # optional live rail
 ```
 
-## Not yet
+To keep the optional East Portal art map at `/artmap.html`, copy the Studio’s complete
+`web/public/art/` bake before deploying. Deploying without it removes any previously
+published art map. See the [art factory instructions](pipeline/scripts/art/README.md).
 
-[Future features](docs/future-features.md) collects ideas for sharing City views, rendering distant traffic and building a neighborhood from a fork.
+From the repo root, stage the City and East Portal data, then build and deploy together.
 
-- City's phone performance gate, moving vehicles, real terrain, a ride-along camera,
-  and growing out to I-285 (see docs/city-plan.md and docs/art-backlog.md).
-- Freight positions. No free source exists; see docs/data-model.md.
+```sh
+pnpm data
+pnpm data:vignette
+pnpm run deploy
+```
+
+Use the full `pnpm run deploy` command because pnpm also has a built-in `deploy` command.
+The deploy script builds the site, including share images in `web/dist/previews/` and
+crawler-readable pages in `web/dist/s/`, then publishes the assets and Worker together.
+
+## Licence
+
+The [MIT licence](LICENSE) covers the code. The radio music and cover art in
+`web/public/music/` are excluded and reserved from reuse. Map and open data retain
+their own licences, listed in the app under **About & credits**.

@@ -7,6 +7,7 @@ import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
 import { colourDrop, orderForFar, registerFar } from './far-form';
 import * as THREE from 'three';
+import { runSync, type Build } from '../core/slice';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
 import { alongOn, matchRibbon, sectionAt, stripePoint } from './connector-corridor';
@@ -65,6 +66,16 @@ function freightTexture() {
 /** Attach beside the terrain group. All heights use the board's shared scene zero. */
 export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terrainGround: GroundAt,
   cut?: { freight: TransportRun; treadY: number }): SurfaceTransport {
+  return runSync(buildSurfaceTransport(city, grid, terrainGround, cut));
+}
+
+/**
+ * createSurfaceTransport as a build that yields between runs (core/slice.ts). Runs draw into the
+ * shared builders in the same order either way, so the geometry, vertex order and far prefix are
+ * identical (terrain/sliced-build.test.ts fingerprints them).
+ */
+export function* buildSurfaceTransport(city: TerrainCity, grid: GroundGrid, terrainGround: GroundAt,
+  cut?: { freight: TransportRun; treadY: number }): Build<SurfaceTransport> {
   const data = city.terrainTransport;
   if (data?.version !== 1) throw new Error('Missing scoped terrain transport. Run pnpm data:city.');
   const group = new THREE.Group();
@@ -146,7 +157,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     }
   }
   const surfaceJunctions = new Set<string>();
+  let indexed = 0;
   for (const road of city.roads) {
+    if (++indexed % 64 === 0) yield 'transport index';
     if (road.bridge || road.tunnel || road.pts.length < 2) continue;
     surfaceJunctions.add(road.pts[0].join(','));
     surfaceJunctions.add(road.pts.at(-1)!.join(','));
@@ -485,6 +498,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   // A raised concrete divider occupies only the narrow, surveyed ground median.
   // Trim the strip at the board edge and restart it after any terrain hole.
   for (const rows of connectorMedians(city)) {
+    yield 'transport medians';
     let previous: number[][] | undefined;
     for (const row of rows) {
       const [x,z]=stripePoint(row,.5);
@@ -509,6 +523,7 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const landWalks = new Map<TransportRun,P2[][]>();
   const junctionRuns = drawJunctionDecks(city, grid.manifest.vertical.sceneZeroNavd88M, structures, roadTreads, junctionWidths, landWalks);
   for (const run of junctionRuns) sharedDecks.add(run);
+  yield 'transport junctions';
   const sharedPositions = new THREE.Float32BufferAttribute(structures.pos,3);
   const junctionNodes = new Map<string,TransportRun[]>();
   for(const run of sharedDecks) if(run.cls==='secondary' || run.cls==='tertiary') {
@@ -521,7 +536,8 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const h = grid.sample(x,z);
     return h === null ? null : h-sceneZero;
   }, seventeenth, roadTreads, bridgeRuns);
-  for(const [owner,parts] of landWalks) for(const pts of parts) draw({...owner,pts,kind:"ground"},"road",owner);
+  yield 'transport 17th street';
+  for(const [owner,parts] of landWalks) for(const pts of parts) { draw({...owner,pts,kind:"ground"},"road",owner); yield 'transport walk'; }
   for (const road of data.roads) {
     if (sharedDecks.has(road) || bridgeRuns.has(road)) continue;
     if (road.kind !== 'bridge' || road.pts.length < 2) continue;
@@ -539,8 +555,12 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }
     }
     draw(from ? {...road,pts:road.pts.slice(from),deckNavd88M:road.deckNavd88M?.slice(from),deckWeight:road.deckWeight?.slice(from)} : road,'road',road);
+    yield 'transport bridge ' + road.cls;
   }
-  for (const r of data.rail) if (!r.replaced) draw(r, r.cls === 'tram' ? 'tram' : 'freight');
+  for (const r of data.rail) if (!r.replaced) { draw(r, r.cls === 'tram' ? 'tram' : 'freight'); yield 'transport rail'; }
+  // Mesh assembly (far ordering, registerFar) runs as one step from here: a build closed between
+  // assemblies would otherwise leave a registered far form and this texture behind.
+  yield 'transport meshes';
   const map = freightTexture();
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>[] = [];
   const bridgeNight = { value: 0 };

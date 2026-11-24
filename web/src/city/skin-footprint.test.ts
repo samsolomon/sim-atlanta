@@ -92,7 +92,10 @@ const KNOWN: Record<string, number> = {
 const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:1021839184': 84, // EUHM staff deck, midtown-south, worst 0.67 m off
   'osm:way:269542143': 29, // Emmi Midtown, brookwood-south, worst 0.52 m off
-  'osm:way:235006952': 11, // Midtown station east entrance, midtown-central, worst 0.32 m off
+  // Midtown station east entrance, midtown-central. Declared, not floating: the free-standing coffered
+  // canopy on its six piers, two entrance headers on posts and two draped plaza pavings all stand on the
+  // ground beside the stair house; the sixth is the end cross-rib, which crosses the long ribs (no vertex within 0.3 m).
+  'osm:way:235006952': 6,
   'osm:way:886044296': 9, // Winship at Emory Midtown, midtown-south, worst 1.7 m off
   'osm:way:39450314': 9, // One Atlantic Center, midtown-upper, worst 0.67 m off
   'osm:way:208355680': 8, // Ponce de Leon Apartments, midtown-south, worst 0.34 m off
@@ -100,7 +103,9 @@ const KNOWN_DETACHED: Record<string, number> = {
   'osm:way:269747513': 7, // clara-meer, midtown-upper, worst 5.85 m off
   'osm:way:42725820': 6, // Academy of Medicine, midtown-central, worst 0.46 m off
   'osm:way:42792936': 4, // Crum and Forster Building, midtown-south, worst 0.42 m off: under 0.5 m (facade trim), tidy later
-  'osm:way:234939895': 3, // North Avenue station, midtown-south, worst >4 m off
+  // North Avenue station, midtown-south. Declared: Tower Square's three station-entrance door sets, drawn
+  // 0.23 m proud of that separate building's walls, 140-200 m south of the station footprint.
+  'osm:way:234939895': 3,
   'osm:way:28961738': 3, // High Museum of Art, midtown-upper, worst 1.39 m off: legitimate, the entry ramp's foot lands on the Peachtree lawn
   'osm:way:38977297': 2, // The Varsity, midtown-south, worst 7.9 m off: legitimate, the blade sign stands free on its pylon
   'osm:way:269636921': 2, // Promenade Central, midtown-upper, worst 0.88 m off

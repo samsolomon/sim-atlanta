@@ -99,6 +99,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
         row.lastElementChild!.textContent = b.textContent;
         row.addEventListener('click', () => {
           b.click();
+          setDetails(true);
           if (innerWidth < 1280) { closeBrowser(); nameBtn.focus(); }
         });
         list.append(row);
@@ -151,6 +152,7 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     if (!cur) return;
     const same = buttons().filter((b) => groupOf(b) === groupOf(cur));
     same[(same.indexOf(cur) + d + same.length) % same.length]?.click();
+    setDetails(true);
   };
   prev.addEventListener('click', () => step(-1));
   next.addEventListener('click', () => step(1));
@@ -177,10 +179,10 @@ export function mountModelsView(root: HTMLElement, opts: { dev: boolean }) {
     detailsBtn.focus();
   });
 
-  root.append(card, details, detailsBtn);
+  root.append(card, details);
   const phone = matchMedia('(max-width: 600px)');
   const placeBrowser = () => {
-    (phone.matches ? root : card).append(browser);
+    (phone.matches ? root : card).append(detailsBtn, browser);
     browser.classList.toggle('a2-g', phone.matches);
     layout();
   };
