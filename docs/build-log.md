@@ -3569,3 +3569,15 @@ On low the default view lost 272,000 triangles (−11%) and 17 draw calls; high 
 ### 2026-11-24 — The shadow map was redrawing five times a second on a fly-over
 
 On the A16, `route:north` showed 206 shadow-map redraws in 10 s, each about a million triangles. The camera policy allows one redraw per 250 ms. The extra redraws came from level-of-detail swaps: every house tile, ground board or transport far-form swap set `needsUpdate` on its own, and a fly-over swaps something every few frames. On the phone tier a swap now just marks the map dirty, and the next redraw waits for the same 250 ms gap. The re-centre step also grows with the orbit, to max(80 m, 0.15 × orbit). Over a 20 s route, redraws fell from 209 to 94 on north and from 201 to 91 on the loop, and the worst frame on north fell from 167 to 33 ms. Frames at rest match the old path within film grain. [Fly-over strip](log/perf/shadow-gap/route-north-strip.png)
+
+### 2026-11-24 — Settling the very-far ground
+
+At the default view, a phone pixel covers about 12 m of ground. The low tier still drew its 2 m-error far ground there: 115,000 triangles across the 12 boards. An 8 m-error version of the same quadtree needs only 19,096. The first try failed a simple check: the simplifier allows error in both directions, so its broad triangles rose above the ground they replaced. That buried 49% of the sampled points along road centrelines by more than 12 cm and 27% of building corners by more than half a metre. At 12 km, the frame lost trees and low roofs. Constraining the error to one side cost 175,000 to 637,000 triangles.
+
+The fix keeps the 8 m mesh and settles it. A pass over the emitted triangles checks every elevation-grid point under each one, then lowers the interior corners by just enough to clear the worst point, scaled by that corner's share of the triangle, for up to four rounds. Rim nodes stay exact, so seams and side walls can't crack, and no vertex drops more than 16 m. A cap of 8 m couldn't clear a sharp cut corner downtown. Measured against the heights the near ground is drawn from, nothing in the interior stands above the ground. Within 165 m of a seam, a fixed rim can leave up to 4.0 m. Only 0.05% of road samples and 0.04% of building corners remain covered.
+
+The Codex review caught that my first test recorded only each board's single worst point, so a rim residue could hide an interior failure. Splitting the two showed an 8 m cap left 0.7 m inside downtown. The test also had to compare against the drawn heights, because the board infers Connector pavement under the decks.
+
+The level applies beyond 12 km, where 8 m of error is under a pixel on the A16. It's built one board per idle slice once the camera passes 10 km. At the default view the low tier draws 94,710 fewer triangles, with the same draw count and 0.6 MB more geometry.
+
+[The default view, before and after](log/very-far-ground/strip-orbit-21k.jpg) · [Why settle: 2 m, settled 8 m, plain 8 m at 12 km](log/very-far-ground/crop-12k-2m-settled-raw.png)
