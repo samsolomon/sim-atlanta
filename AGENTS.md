@@ -38,8 +38,10 @@ pnpm data:vignette   # East Portal diorama data
 pnpm secrets:local   # worker/.dev.vars from 1Password (needs `op` signed in)
 pnpm dev:worker      # live API on :8787
 pnpm dev             # http://localhost:5173, proxies /api to the worker
-pnpm test            # Rust + web + worker tests
+pnpm test            # Rust + pipeline + web + worker tests (pipeline skips without .venv)
+pnpm test:release    # same, but fails if the pipeline checks cannot run
 pnpm build           # web/dist, which the worker serves
+pnpm test:perf       # City budgets per tier, headless Chrome (needs Chrome + data; docs/perf.md)
 pnpm review          # cross-model review of this branch (see "Review")
 ```
 
@@ -53,6 +55,14 @@ reproducible:
 - `?t=2026-11-20T14:00:00-05:00` pins the clock, and `?speed=30` plays time faster.
 - `#zoom/lat/lon` sets the 2D map view, and `?view=3d` opens the downtown diorama.
 - `/?view=city&cam=565,-3965,-101,55,421` targets Five Points x and z (metres), bearing clockwise from north and tilt from vertical (degrees), and orbit distance (metres). City samples ground height and clamps the view to its board and orbit limits.
+- `&dev&mindist=20` (dev server only) lets City's orbit come in to 20 m (5 m minimum) instead
+  of 150 m, for close review shots of furniture, gates or a landmark's base, e.g.
+  `/?view=city&dev&mindist=20&cam=1739,-3112,0,60,25` (the 10th Street park gate). Fog holds at
+  its 150 m setting so nearby detail stays clear. Production builds ignore it.
+- `/?view=models&v=cq400` opens a model in the Models view (the Model lab inside the app;
+  `&dev` shows the photo overlay). `/models.html` still serves the lab on its own; new lab
+  controls go in `web/src/models/lab-markup.ts`.
+- `?ui=classic` shows the pre-A2c interface. It is an escape hatch for one release only.
 - `/vignette.html?at=<ISO>&weather=rain|fog|storm|overcast|clear&speed=600`, plus `?clean`
   and `?scatter`.
 
@@ -62,15 +72,25 @@ save the camera position with the screenshot. Each agent closes its research and
 tabs and stops its own dev servers after verification. Check with the other agents before
 stopping a worker they share.
 
+For ground contact (terrain showing through stairs, ballast, decks or covers), run
+`pnpm audit:ground --url http://localhost:<port>` against a dev server. It audits the full board at
+both tiers. In dev, `window.__setView(bearing, tilt, dist, x, z, zoom)` frames a close-up without a
+reload. Lay ground-following layers on the drawn triangles with `terrain/drape.ts`, and give hard
+surfaces a `GroundYield` for `GroundSurface.carve`, never a large constant lift.
+
 Live MARTA appears only when the clock is the real present. Any shifted or sped-up clock
 uses the timetable.
 
 ## Rules that matter
 
-- **Honesty about data.** Every fact users see carries a truth tier: `live`, `scheduled`,
-  `reported`, `inferred` or `illustrative`. Tiers apply per attribute, not per train.
-  Freight positions are simulated and must say `illustrative`. Never present a schedule or a
-  guess as live.
+- **Honesty about data.** Every value carries a truth tier in the data: `live`,
+  `scheduled`, `reported`, `inferred` or `illustrative`, per attribute, not per train.
+  Show it where people would read something as fact. That means a selected train, bus,
+  freight or traffic card, plus one scene-wide word (`Live` or `Timetable`). Don't label
+  ambient scenery on screen: weather, trees, building heights, landscaping or area notes.
+  Those tiers live in Key and About. Freight is still `illustrative` on its card. Never
+  present a schedule or a guess as live, and never show a guessed weather condition as
+  real (decided by Sam on 2026-11-23; see `docs/data-model.md`).
 - **Colour means the kind of service, not the agency.** City rail is blue, intercity is
   violet, and freight is rust. Agency line colours are accents only. Use generic look-alike
   liveries, never operator logos.
@@ -91,6 +111,12 @@ uses the timetable.
   with another angle, link the sources, and identify estimated dimensions. Record the lighting
   visible in the photos and which details you estimated. If reliable night imagery is unavailable,
   document the gap. Check both daylight and full-night City renders from a matched camera.
+- **Materials.** Landmarks pick materials from the library (`web/src/materials/`,
+  `shell.paint(surfaces.brick(), ...)` or `prism(..., { wall: surfaces.stucco() })`) first.
+  Add a new library material only when photos show something it can't cover. The library is
+  procedural (no texture bytes), keeps the vertex colour as the mean, and fades detail with
+  distance. A new texture anywhere in `web/src` must be declared in
+  `web/src/materials/budget.ts`, which a test holds to a fixed budget. See `docs/materials.md`.
 - **Build log.** After a meaningful step (a new data source, a visual milestone, a bug with a
   lesson), append a dated entry to `docs/build-log.md` with concrete numbers and what
   surprised you, and save a screenshot to `docs/log/`. Write it blog-ready.
@@ -100,6 +126,7 @@ uses the timetable.
 - Branch per task, and never commit to `main` directly. Orca runs each agent in its own
   worktree, so don't edit another worktree's files.
 - Before a PR: run `pnpm test`, check visual changes in a browser, then run `pnpm review`.
+  If the PR changes what City draws or loads, also run `pnpm test:perf`, and lower a ceiling when a cut reaches its target.
 
 ## Review
 

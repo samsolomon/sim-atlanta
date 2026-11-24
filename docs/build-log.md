@@ -2263,3 +2263,739 @@ At Brookwood station two area notes combine into one pill: "Scheduled Crescent �
 
 The 1911 hotel had the right massing and none of its manners. Its street photographs show a limestone base, a belt cornice, a string course under the top storey, and a deep crowning cornice on modillions that wraps the round corner bay. These are bands under a metre deep, but together they make the wing read as a 1911 building and the 1991 addition as a modern one. The old bands scaled the plan about its centroid, so walls facing into the notches got no cornice at all. The new ones offset each wall along its own normal with mitred corners. [Before and after](log/ui/midtown-skyline/terrace-ornament-compare-day.jpg)
 
+### 2026-11-23 — The back of the house
+
+Sam's review called out the Woodruff's blank stage house and fly tower. The only usable photograph shows the piazza side: precast fins at a steady bay, high slot windows and a plain fly tower above. City now carries that skin round the back, with two louvred screens on the roof. The surprise was how little coverage a performing-arts center's service side gets. I found no photo of the loading dock, and the theatre's technical-specifications PDF is gone. The dock and signage stay out until someone finds a reference. [Sources, gaps and City views](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
+
+### 2026-11-23 — Turning 3,349 office boxes into houses
+
+Ansley Park, Home Park and the Midtown side streets had been drawn as office parks: flat roofs, parapets and storefront glass on every footprint. City now treats every small house footprint in the rectangle the same way, with no hand placement: 3,349 footprints, from 77 in the north band to 794 in Brookwood south. OSM tags only 116 roof shapes and 115 wall materials. The rest come from the footprint itself. Long rectangles gable, squares turn pyramidal and irregular plans hip, with every eave edge rising to the nearest point on the ridge. Lowering the walls to the eave buried three hillside houses in the roof test, which is how I learned the pass has to run against the rendered ground, not the raw DEM. [Before and after views, per-row counts and tiers](log/ui/residential/README.md)
+
+### 2026-11-23 — One profile for the North Line
+
+A track built from road-style strips takes its height wherever the terrain grid happens to sample. Near Brookwood that meant the North Line dipped 4 m at the foot of each bridge, because 3DEP nodes fell on the abutment walls. The span over I-85 also undulated with every ramp beneath it. City now draws the line from one designed profile from the portal to the north edge, shared by both tracks. It rides the ground crest on the embankment and stays at least 6.9 m above the ground under each span. A 3.5% grade-limited envelope joins the two, and trains read their height from the same numbers. Getting a 1 m zigzag out of the second track took two attempts. The tracks' bridge ends are staggered, so projecting onto the kinked centreline made the height flip at every joint. Mapping each metre of the second track to the matching distance along the first removed it. Requires a web rebuild only. [Before and after over the Connector](log/ui/midtown-marta/guideway-connector-before-after.jpg) · [Notes](midtown-marta.md#north-line-guideway-and-spans)
+
+### 2026-11-23 — A hole at the front door
+
+From above, Sam spotted a dark void exactly where the High's ramp arrives. The notch between the atrium drum and the two entry volumes lies just outside the mapped footprint. City had dropped it to the bare-earth lawn, 6 m below the entry level. A deck at entry level now fills it. The lesson: a model can be right in every elevation photo and still have a hole that only a top-down view reveals. [Before and after](log/ui/culture-review/README.md)
+
+### 2026-11-23 — Moving Atlanta's champion ginkgo six metres
+
+The champion record placed the High Museum's ginkgo by Peachtree Street. Sam saw it there and knew it was wrong. Two Street View panoramas, from the Peachtree sidewalk in December 2025 and from a café terrace in September 2024, settled it. Each was calibrated on Rodin's *The Shade* and then sighted on the forked grey trunk. Their sight lines cross 5.7 m west-southwest of the record point, 6 m from where a little lawn path dead-ends. The surprise was the calibration: both panoramas read 7–11° short of the sculpture's true bearing, which at 22 m would have moved the tree another 4 m. Street View from November 2019 shows the same upright, forked tree. The position is now `inferred`, citing both panoramas. The ramp-clearance test still passes. The orange crown south of the tree stays, because the panoramas show a real oak beside the steps. Only the web needs a rebuild. [Before and after, top-down and from Peachtree](log/ui/tree-species/city-ginkgo-position.jpg) · [Lawn landscaping notes](arts-campus.md#the-ginkgo-lawn-on-peachtree-street-view)
+
+### 2026-11-23 — The towers that were only parts
+
+Upper Midtown was missing several high-rises. ICON Midtown stood two storeys tall over its Whole Foods. The Mayfair Renaissance was a one-storey garage, and 1280 West's twin 37-storey towers were a five-storey block. OpenStreetMap had all of them. It just recorded them as `building:part` ways inside a low parent outline, and the extractor skipped any way without a `building` tag. Teaching it to read parts redrew 254 outlines from their parts and added 11 standalone parts across nine boards. 56 buildings moved by more than 10 m. The first attempt also turned up two lessons about OSM. When a parent's level count describes only its podium, dividing its height by its levels gave Southern Company Gas a 1,008 m tower. And when a single entrance part decided the podium height, Lilli Midtown dropped from 86 m to 3 m. The fixes: scale the tallest part to the parent's reported height, and let only substantial parts cap the remainder. The roof-under-terrain test used to look at each footprint's highest roof, so a buried podium could hide beside its tower. It now checks every part. [Before and after](log/ui/part-towers/README.md)
+
+### 2026-11-23 — Tier notes that follow the trains
+
+The "Inferred MARTA track" note used to appear only when the camera's target sat within 60 m of the North Line guideway. A wider view could show a North Line train with no note at all. The North Line and Brookwood notes now also appear whenever any of their cars is inside the camera frustum, on the kept side of its clip planes, so a train still behind the portal doesn't count. One surprise: the wide Brookwood split camera I first proposed for the test doesn't frame the guideway at all through City's narrow 22° lens. [Before and after](log/ui/area-note/compare-north-line-note.jpg)
+
+### 2026-11-23 — Piers that find the gores
+
+A 235 m concrete box girder carries the North Line over six carriageways at Brookwood. The only two photographs of it show plain single-column piers standing in the gores. City now places piers by searching each span for footprints clear of every rendered lane and mapped road, preferring the longest reach under 45 m. With nothing but lane geometry to go on, it put three piers under Bridge A within a few metres of the gores the photographs suggest: 114, 156 and 206 m against roughly 119–129, 159–169 and 204–219 m. A fourth went at 270 m. Pipe railings, cast abutment walls and one small deck lamp complete the spans. Requires a web rebuild only. [From the photo's angle, before and after](log/ui/midtown-marta/spans-i85-before-after.jpg)
+
+### 2026-11-23 — A garden kit in one draw call
+
+The lawns around landmarks were flat green paint. City now has a small kit of landscape pieces: flower beds with curbs and seasonal colour, clipped hedges, shrub rows, retaining edges, seat walls, stair runs and stepped terraces. They share one vertex-coloured mesh, so a whole garden is a single draw. The demo garden on a 2.4 m bank costs 1,912 triangles at high and 1,184 at low. Two things came from the first consumers before anything shipped. The High Museum team needed stairs between surveyed landings (290.4 m to 296.4 m), not just between whatever ground lay at each end. The ginkgo's Street View survey showed a raised mulch mound. [The API, triangle counts and lab views](log/ui/landscape-primitives/README.md)
+
+### 2026-11-23 — Downtown's parts come from Overture
+
+Downtown's generic buildings come from Overture, not straight from OpenStreetMap, and Overture keeps building parts in a separate `building_part` table linked by `building_id`. The downtown box holds 581 parts under 123 parents, 71 of them on the staged board. The surprise was how many of the worst cases had already been fixed by hand. Georgia-Pacific was drawn 50 m tall against 212 m of mapped parts, and the Marriott Marquis 20 m against 169 m. But those, and the Hyatt, Omni, Sam Nunn, Georgia Power, Floyd and Grady, are all custom landmarks that replace their footprint. The generic buildings that change most are Peachtree Towers (31 m to 83 m) and The Mix (22 m to 86 m). Overture parts sometimes carry no height at all. Copying the parent's height into them would have stacked a second 212 m tower beside Georgia-Pacific's real one, so a data-less part inherits the parent's height only when no other part already reports it. [Downtown before and after](log/ui/part-towers/README.md#downtown-overture)
+
+### 2026-11-23 — Three agents, one lawn
+
+The High's Peachtree lawn shows how the studio now splits work. The tree agent placed the champion ginkgo from Street View and wrote up what grows round it. The parks agent shipped reusable primitives for beds, hedges and stairs. This change composes them: a mulch mound under the ginkgo, shrubs along the ramp and the granite Peachtree steps, in one 1-draw mesh. Ownership turned out to be the subtle part. The oak beside the steps is a generic canopy crown and the lamp belongs to the street-light layer, so drawing either again here would double it. [Before and after](log/ui/culture-review/README.md)
+
+### 2026-11-23 — The ginkgo goes where the path ends
+
+The second move was smaller than it should have been. I had triangulated the High Museum ginkgo from two Street View panoramas. Sam, who knows the lawn, saw it still crowding the ramp and pointed to where the little lawn path dead-ends. Re-measuring explained the gap. The Peachtree panorama, measured against Rodin's *The Shade* in the same frame, agrees with Sam to within about 2 m. The second panorama's "trunk" belongs to a glossy-leaved tree by the café, probably a magnolia. The trunk now stands 1.2 m past the path end, 14 m from the ramp centreline. The nearest leaves are 2.6 m outside the ramp in plan and at least 9.5 m up. The lesson: one panorama calibrated on a landmark is a check. Two panoramas that each might be sighting a different tree are not a triangulation. Web rebuild only. [Before, after and the Street View check](log/ui/tree-species/city-ginkgo-path-end.jpg)
+
+### 2026-11-23 — The Charger gets its real face
+
+Sam's review of the Crescent said the locomotive's front was missing its detail and its stripes looked wrong. Checking it against dated Crescent photos found three errors in the model itself. Its truck centres were 14.0 m; the Siemens data sheet gives 12.44. The cab door sat 4.4 m behind the nose instead of 2.5. The white side stripe ran from just behind the cab, about 5 m ahead of its real position. The new ALC-42 wears Phase VII, the scheme on about 93% of the fleet, including #359 leading train 20 at Gilbert, Virginia, in May 2025. It has a black windscreen band with two panes, a centre post and parked wipers, blank number boards, twin LED headlights, lamp "eyes" with ditch lights, and a red cab cap edged by a white arc that runs over the cab door to the roof. Sam's "#1405" turned out to be a frame from a promotional render, since no Amtrak unit carries that number. Phase VI still leads some Crescents (#305 in Atlanta, May 2025), so the lab keeps it as a variant. The Charger costs 1,610 triangles, and the nine-unit train rises from 8,232 to 8,622. It still uses one material. Only a web rebuild is needed. [Front: photo, before, after](log/crescent/charger/charger-front.jpg) · [Three-quarter](log/crescent/charger/charger-side.jpg) · [Elevation, both schemes](log/crescent/charger/charger-elevation.jpg) · [Night](log/crescent/charger/charger-night.jpg) · [Livery notes](crescent-stock.md#charger-liveries)
+### 2026-11-23 — A2c, step 1: four glass places
+
+Sam approved the A2c interface today, and step 1 is now behind `?ui=next`. It puts every control in one of four fixed places, each 8 px from the edges. The subject card sits top-left with the place, the time and a confidence line. The app bar sits bottom-left with Menu · Map · City · Models. The camera column sits bottom-right with the compass and zoom, and the detail panel sits on the right. "Sim Atlanta" no longer appears on screen. The confidence line follows one tested rule: it reads Live only at the real present with the MARTA feed up. A shifted clock reads "Timetable · illustrative sky · Now", and Now is a button that also strips `?t` from the URL so a reload stays live. The OpenStreetMap credit is now a 12 px line with a halo instead of a MapLibre box. It fades after 5 s on screen, and City's loading plate doesn't count toward that, or on the first pan. After that it lives in the menu. The hint now matches the view: on Map it says "Drag to move · scroll to zoom", not the City "WASD" line. The surprise came in the Orca browser. Any emulated viewport taller than the window, about 776 px, captured a duplicated strip at the bottom, so desktop checks ran at 1440×760. The old UI is unchanged without the flag. [City before and after](log/ui/a2c/step1-city-compare.jpg) · [Phone](log/ui/a2c/step1-phone-compare.jpg) · [Board vs build, Map](log/ui/a2c/step1-board-map.jpg) · [Board vs build, night](log/ui/a2c/step1-board-night.jpg)
+
+### 2026-11-23 — Houses that stop looking like offices
+
+Pitched roofs weren't enough: under them, every house still wore an office facade, a regular grid of small windows on flat paint. Street View of Ansley Park's Westminster Drive and Home Park's State Street set the brief. City's houses now have clapboard, brick, cedar-shingle and stucco walls with a masonry foundation band, paired double-hung windows in white trim, some with shutters, and a front door facing the street on a stoop or porch. Ansley defaults to two storeys and Home Park's small bungalows to one. Long footprints that read as barns get side gables, and the tall gables facing the street get dormers. All of it adds about 100 triangles a house, with no extra draws. [Before and after views, references and the budget](log/ui/residential-v2/README.md)
+
+### 2026-11-23 — Cars north of North Avenue
+
+Downtown's arterials had traffic and Midtown's had none. Midtown now reuses downtown's engine and its HPMS rules, so the two read alike: 204 Midtown road pieces matched to federal traffic counts. Two surprises came from HPMS naming. Peachtree's records are filed under "ALPHARETTA HIGHWAY;PEACHTREE STREET", and Spring Street's under "9SO", so a matcher that read only the first name lost almost half of each. The fix reads every listed name and trusts a route ID only when it names a single street. That rule correctly refuses SR 9's "Roswell Road", which spans three Midtown streets. [Before and after](log/ui/midtown-traffic/compare-peachtree-traffic.jpg)
+
+### 2026-11-23 — Four ways to draw a ginkgo
+
+The faceted clump that suits an oak makes a ginkgo look like balloons on sticks. Ginkgo foliage runs along the limbs in upswept sprays. The lab now lays the same sprays along one shared limb skeleton and dresses them four ways: faceted sleeves, three-triangle fan chips on spur shoots, alpha-cut leaf cards, and storybook flame facets. The surprise was the ink pass. With the outlines switched off, the leaf cards make the leafiest crown of the four. With them on, every cutout leaf gets its own black edge and the gold turns to soot. Sleeves and flames cost 185 triangles a tree and cards 145, all under the generic tree's 196. Fan chips cost 1,265 up close but swap to sleeves beyond 60 m, so 300 distant trees cost the same as sleeves. Sam picks before anything reaches City. Lab only, web rebuild. [Sapling](log/ui/tree-species/variants-sapling.jpg) · [Young](log/ui/tree-species/variants-young.jpg) · [Mature](log/ui/tree-species/variants-mature.jpg) · [Specimen](log/ui/tree-species/variants-specimen.jpg)
+### 2026-11-23 — A2c: the Map keeps its credit
+
+Sam overrode the brief on one point from step 1. On the 2D Map, the "© OpenStreetMap contributors · OpenMapTiles" line now stays put and never fades. City still fades it after the first move or 5 s, and switching back to Map brings it back at once. Both names now link to their sources. At night the line uses the night secondary ink with a dark halo, because the day halo turned into a pale smudge on the dark basemap. [Map, day and night](log/ui/a2c/credit-map-persistent.jpg)
+
+### 2026-11-23 — A tunnel you cannot see through
+
+Sam's note was blunt: you could see the hillside straight through the North Line portal. The 2026-11-23 hood was a roof on two walls with a dark panel 6.7 m back, and from above it read as a canopy. The fix is a headwall set into the slope, its height taken from the rendered ground behind the mouth, with wing walls down the cut. Earth now closes over the box, and the tube runs 60 m into the hill, fading to black over its first 18 m. Trains are now clipped 5 m inside the mouth, so they enter the dark before they disappear. Two crown lamps and a faint warm glow just inside mark it at night; with no photograph to go on, both are illustrative. The earth cap first z-fought with the terrain in zig-zag stripes. Drawing only the parts that stand 0.2 m clear of the ground cured it. Requires a web rebuild only. [Before and after](log/ui/midtown-marta/portal-mouth-before-after.jpg)
+### 2026-11-23 — A2c, step 3: Time & weather in the subject card
+
+Under `?ui=next`, tapping the time now grows the subject card into Time & weather; on a phone it opens as a bottom sheet. The panel has a date button and a slider marked −12 h · Now · +12 h, filled from Now to the chosen time. Speed offers Pause, 1× and 30×, and Weather offers Auto, Clear, Rain, Fog and Storm, followed by a quiet Back to now. A link can open at another speed, such as `?speed=600`, and that speed then shows as the selected segment. When you drag the slider on a phone, the sheet shrinks to just the time and the slider, pinned under your finger, so the city stays visible. A tap doesn't collapse it. The card also stopped saying "Midtown" over the whole 15 km board: once the view is more than 6 km across, it reads "Metro Atlanta". An illustrative sky now names its condition ("Clear") without a temperature. At the present, a failed weather fetch shows no condition at all, never a guessed "Clear" in the observed slot. Review caught the surprise: the first date picker added 24-hour days, so jumping across a DST change, or from 11:30 PM, landed on the wrong day. It now keeps the Atlanta wall-clock time. [Board vs build](log/ui/a2c/step3-board-time.jpg) · [Phone](log/ui/a2c/step3-phone-time.jpg) · [Metro Atlanta](log/ui/a2c/step3-metro.jpg)
+
+
+### 2026-11-23 — The napkin holder curves in
+
+1180 Peachtree's crown is the one Midtown shape people name, and we had it backwards. Our two glass fins flared outward. Seen end-on in the owner's aerial, the real veils lean about 7.8 m in toward each other over their 36.6 m, leaving the tips about 15 m apart over a 30 m-wide roof. The fix needed more segments than a flat billboard: 8 rows by 10 columns per veil is enough for the curve to read at both quality tiers. The first pass used 20 by 10 and drowned the crown in black ink, because every mullion drew its own outline. The tower body lost its random tile shades for one curtain-wall texture. The wing gained the roof garden Sam remembered: an oval lawn around a white pavilion, 68 m up. [Crown before and after](log/ui/midtown-skyline/napkin-crown-compare-day.jpg)
+
+### 2026-11-23 — Why the Crescent's cars aren't the same height
+
+Sam's second note was that the cars looked like different heights and should match. They shouldn't. Amfleet II stands 12 ft 8 in and Viewliner 14 ft, and a June 2026 photograph of train 20 at Elizabeth shows the same 0.41 m step where the coaches meet the diner. What does line up on the real train is everything below the roof. The lower window rows share 2.48–3.10 m, and the red sill lines run along the foot of the fluting at about 1.45 m. The model had both wrong. The Amfleet's red stripe ran *under* a navy band that sat too high, when Phase VI puts red/white/red pinstripes *above* a blue band that runs 0.4 m below the windows. The sill line sat 0.4 m too high on a side that tucked in too early. The Viewliners wore thin red and blue lines with silver between, a stand-in for Phase IIIB's three equal red, white and blue bands. Repaints made it a mix. Two of the three coaches on train 20 on 24 May 2025 were already Phase VII, so the formation now runs two Phase VII coaches and one Phase VI, and the lab gains a Phase VII coach. The nine-unit train rises from 8,622 to 8,914 triangles, with no new draws. Only a web rebuild is needed. [Roof step: photo and labelled lab](log/crescent/cars/roof-step.jpg) · [Full consist](log/crescent/cars/consist.jpg) · [Side elevation](log/crescent/cars/consist-side.jpg) · [Notes](crescent-stock.md#car-liveries-and-the-roof-step)
+
+
+### 2026-11-23 — Piers that miss the lanes
+
+Sam noticed that the Midtown bridges over the Connector floated: no deck from the survey had a single support. The North Line spans had just gained piers with a footprint test that avoids every rendered lane, road and railway, so the street and freeway decks now share it. At first it found no room at all on North Avenue or 10th Street. The culprit was the mapped freeway centreline, which the test widened to a generic 14 m road and so buried the 5 m median. The rendered lanes already describe the freeway exactly, so the centreline was dropped from the obstacle list, and both bridges now stand on a median pier. Requires a web rebuild only. [10th Street before and after](log/ui/midtown-piers/compare-10th-street.jpg)
+
+
+### 2026-11-23 — The hill was inside the tunnel
+
+The first portal fix added a headwall and a dark tube, and Sam still saw green in the mouth. He also preferred the old twin hoods. The green was never sky behind the hood. A 5 m terrain grid blends the hillside over the tunnel into the cut floor, so the ground mesh climbed about a metre inside the tube. No amount of interior geometry can hide terrain that sits in front of it. The fix cuts a 10 m opening in the terrain under the hood, down to just below the rail. The twin hoods return as a closed, double-sided tube that fades to black. The crown lamps stay. Requires a web rebuild only. [Before and after, cropped](log/ui/midtown-marta/portal-hoods-oblique-before-after.jpg)
+
+### 2026-11-23 — An Airo coach for a train that isn't coming to Atlanta (yet)
+
+Sam's photos of the new Airo trainset showed dark-blue cars with lighter blue panels between white diagonal swooshes. They prompted the whole Crescent review, but Airo doesn't run on the Crescent. Its routes are corridor services from the Northeast Regional to the Cascades. So the Airo coach got its own lab entry instead of a place in the train. The envelope comes from the Siemens data sheet: 25.9 m long and 4.44 m over the HVAC, slightly taller than a Viewliner. The scheme came from Amtrak's promotional renders, and the surprise was its logic. The midnight blue isn't the body colour; it marks the door zones at each end. Two white diagonals that lean the same way hand over to lighter blue panels above and below one continuous window strip, and at night that strip glows as a single ribbon. No free photograph of an east-coast Airo car exists yet, so the renders stay out of the repository and the Seattle Cascades delivery checks proportions. Lab only, so only a web rebuild is needed. [Lab views](log/crescent/airo/airo-lab.jpg) · [Proportions](log/crescent/airo/airo-proportions.jpg)
+
+
+### 2026-11-23 — Ink that leaves the gold alone
+
+The leaf cards Sam liked lost their colour to the ink pass. That pass outlines any depth jump, and every cut-out leaf is a depth jump against the sky behind it. The fix borrows a spare channel. Foliage now writes a small code into the colour buffer's alpha, which every opaque surface sets to 1, and the ink pass reads it. Between two foliage pixels it draws nothing. At a foliage edge it draws only if the outside stays clear 4 and 8 pixels further out, so a gap between leaves no longer counts as a silhouette. Warm ochre replaces near-black ink on the crown. Buildings take the old code path untouched. The guardrails held. In a 20-tree grove with the camera standing among the trunks, cards draw 3,000 triangles in 4 calls. The fan-tip hybrid draws 5,400 on its 8 nearest trees, and no fans at all on the low tier. Leaf overdraw fell from 3.0 layers per covered pixel for the clump ginkgo to 1.5 for cards. The first measurement had undercounted green crowns, which a self-review caught. City's ink skips the foliage test entirely until a marked species arrives. Lab only, web rebuild. [Compare sheet](log/ui/tree-species/variants-c-family.jpg)
+
+### 2026-11-23 — Pocket nature
+
+The first garden kit was honest about its cost but not much to look at: diamond flowers, brown mulch, conical shrubs and flat green. The flowers are now blade tufts with blooms on top, in drifts of two or three colours. Beds are dark, crumbly and mounded behind a spade-cut edge. Shrubs are rounded, leafy masses, and hedges have soft tops. A new set of ground covers (mown turf, meadow, worn earth, mulch, pine straw and leaf litter) shares one shader, so a garden is still two draws. The bug that surprised me: a 32 m turf patch's outline fill was one flat triangle across a 2.4 m bank, hiding a seat wall under a floating lawn. Every patch now drapes its own triangulation. [Before and after at the same lab camera, both tiers, and the High lawn](log/ui/garden-polish/README.md)
+
+### 2026-11-23 — Follow anything that moves, and say when it is underground
+
+Follow used to be a Blue Line prototype behind `?follow=1`, and it ended at the downtown edge even on the 2.8 × 6.8 km board. It is now on by default (`?follow=0` turns it off) for every MARTA rail line, the scheduled Crescent and live MARTA buses. It runs to the edge of whatever rows have mounted. The hard part was Red and Gold under Midtown: City draws no train there, and "no car drawn" is not evidence of a tunnel, since a train is equally undrawn when its row is still loading. The archived OSM extracts settled it. Twenty North Line ways tagged `tunnel=yes` run from z −1300 to the Brookwood portal at z −5140, and the follow card says "Underground · mapped tunnel" only within 20 m of them. Over the open north-band bridge it says "out of view" instead. Downtown Red and Gold also stay "out of view", because the baked downtown rail cover only covers Blue and Green and there is no downtown OSM extract yet.
+
+Two bugs only showed up in the browser. A stationary train lost the camera when a Midtown row finished loading and recentred on the remembered link point. Follow had compared against its own last focus instead of the real camera target. A review link also picked a downtown train, because the nearest Red train's row had not mounted yet. Links now choose within the full board and wait up to 20 s for that row. Live checks went through production's cached `/api` endpoints, not a local key, and covered a live Red train at North Avenue and bus 3733 downtown. Night live remains unchecked. After #226 moved the portal clip 5 m inside the mouth, a car now counts as drawn while any of its length is on the kept side of its clip planes. The card therefore switches at the exact moment the last car vanishes: southbound Gold 46740 at 13:14 flipped when its source position was 73 m inside the mouth, which is half a consist plus the 5 m vanish depth. [Review sheets](log/ui/follow/README.md)
+### 2026-11-23 — A2c, step 4: one detail panel, and tiers only where they count
+
+Under `?ui=next`, the right side of the screen is now a single detail panel. On a phone it becomes a bottom sheet, and the app bar steps aside. The panel holds the selected train, the Key, or About & credits, and it is only as tall as its content. About fills the height above the camera column and scrolls inside. The newer content replaces the older one, and a back row ("‹ To Doraville", or "‹ Key") returns to it. Escape steps back the same way. The panel adopts the page's existing card, so Follow keeps working without changes. Sam's new tier rule (#231) arrived midway through, so the step changed course. The corner now says only Live or Timetable, and "illustrative sky" is gone. Away from the present the sky is an icon, with no words. Brookwood and North Line tier notes stay off screen, while load failures still show. Every selected train, bus and freight train shows a chip on each fact instead: next stop Live, cars Illustrative, and a scheduled position marked "Timetable; delays not shown". The lesson came from a near-miss. A squash-and-reset onto a main that had moved quietly reverted another agent's overpass piers, and only the code review caught it. The branch is now rebuilt from a patch of the UI files alone. [Train card vs board](log/ui/a2c/step4-board-train.jpg) · [Key with back row](log/ui/a2c/step4-board-key.jpg) · [About](log/ui/a2c/step4-board-about.jpg) · [Phone sheet](log/ui/a2c/step4-phone.jpg)
+
+
+### 2026-11-23 — The Biltmore gets its letters back
+
+The 1924 Biltmore had been drawn as a 65 m blue glass box. It is now brick on a limestone base with the Georgian Terrace's cornice kit, which moved into a shared module so other historic buildings can use it. The two WSB masts on its roof, 95 m apart, spell BILTMORE down each side in red neon. The first night render showed a huge black rectangle over the building: the horizontal mast bars were widened along their own length, so their triangles had zero area and NaN normals, and the bloom pass smeared those NaNs into a square. A test now rejects NaN normals. [Before and after](log/ui/midtown-skyline/biltmore-front-compare-day.jpg)
+
+### 2026-11-23 — Tiers move from the scene to the cards
+
+Sam's new rule (#231) takes truth-tier words out of the scene. The ambient notes at Brookwood ("Scheduled Crescent · Inferred berth · …") and on the North Line ("Inferred MARTA track") are gone, and the cards carry their content. The Crescent card, in both the current and A2c UIs, gains a "Brookwood berth · inferred berth" row, and any car tapped on the North Line's open cut shows "inferred track". The freight card already said illustrative. Checking the old note's screenshot turned up a mislabel: the consist I had circled as a North Line train was the illustrative freight on Main 2. Tapping it in the browser settled the question, and the caption is corrected. Requires a web rebuild only. [Before and after](log/ui/area-note/compare-tiers-on-cards.jpg)
+
+### 2026-11-23 — 1180's garden and its lit crown
+
+Sam's third note on 1180 Peachtree moved from shape to life. The 68 m garden gained mounded beds, ornamental grasses, a louvred drum and a row of crape myrtles. The trees are stand-ins tagged for the tree lab's species model, which Sam hasn't approved yet. Inside the crown, a white lattice now sits behind the veil glass. At night the crown glows cool white-green and the lattice shows through, which also tamed the earlier blown-out white wedges. A thin light line climbs each veil's curved edge. [Night before and after](log/ui/midtown-skyline/garden2-sam-compare-night.jpg)
+
+
+
+### 2026-11-23 — Turning the ground down
+
+The new ground covers were a hit, but Sam found them "almost strenuous to look at". The fix was to measure them: the default lawn's luminance spread was 4 % of its value, and the earth and pine straw ran over 15 %. Now every cover is lighter, in the board ground's own colour family, and the everyday lawn varies by about 1.6 %. Mow stripes moved to a separate "manicured" turf, kept for the few lawns that really are striped. The lesson: ground texture should be felt, not seen. Buildings, trains and trees carry the picture. [Measurements and before/after views](log/ui/ground-calm/README.md)
+### 2026-11-23 — A2c, step 2: City moves like a map
+
+Under `?ui=next`, City's camera now behaves like Apple or Google Maps instead of a 3D viewer. Drag pans. Right-drag, or Ctrl-drag, turns and tilts. Scroll and double-click zoom toward the cursor, and in a test double-click took the scale from 167 to 77 mm per pixel. On touch, one finger pans, pinch zooms, two fingers dragged up or down tilt, and twisting two fingers turns the view. A 30° clockwise twist moved the bearing down by exactly 30°, so the map turns with the fingers. OrbitControls already handled most of this: changing its button map and switching on `zoomToCursor` covered the mouse, and its own Ctrl-plus-pan path supplies Ctrl-drag rotation. Only the twist and the double tap needed new code, about 80 lines. Every gesture still runs through City's `manualCamera()`, so any touch ends Follow (#238), as agreed with the Follow agent. The surprise was in testing. A background browser tab draws no frames, and OrbitControls applies input in its frame update, so synthetic drags appeared to do nothing until a screenshot forced a frame. Review then caught a real-device bug that the synthetic test missed: OrbitControls ends its touch state after our tap handler runs, so double-tap now zooms on the next tick. It needs only a web rebuild. [Before and after](log/ui/a2c/step2-gestures.jpg)
+
+
+### 2026-11-23 — A temple on West Peachtree
+
+The 1941 Academy of Medicine is small, a single tall storey on a raised base, so its generic brick extrusion hid it among the towers. It now reads from above the way it does from the sidewalk: a cream portico, green copper hips, and the lantern with its half-round windows. The mapped outline already traced the portico bump and the rounded rear, so the shared ornament kit and a few hip roofs were enough to bring it back. [Before and after](log/ui/midtown-skyline/academy-compare-day.jpg)
+
+### 2026-11-23 — A2c, step 5: share exactly what you see
+
+Under `?ui=next`, the camera column has a Share button. It opens "Share this view", a small panel beside the column on desktop and a sheet on phones. A **Live** link carries no time, so it opens at the viewer's present. **Freeze this moment** adds `t=…&speed=0` for the moment the panel opened. If the clock is already shifted, Freeze is preselected. City links reuse #166's `cam=x,z,bearing,tilt,distance` format, through a new formatter that round-trips its parser; Map links carry MapLibre's own hash. A link from a moved camera (200, −1500, bearing 25°, tilt 50°, 600 m, 9:30 PM) reopened on exactly those five numbers and the same paused minute. Two review catches were subtle. The frozen time was being re-read at the moment of copying, so at 30× the link drifted about 10 minutes from the time the panel showed. And while City was still loading, Share would have handed out a Map link. Weather choices are not in the link yet. It needs only a web rebuild. [Desktop, phone and column](log/ui/a2c/step5-share.jpg)
+
+### 2026-11-23 — The Woman's Club gets its turrets
+
+The Wimbish House is one of the last Gilded Age mansions on Peachtree, and City had it as a flat two-storey slab, because OSM records a single height for the house and the club's later ballroom wing. The building parts separated them. The 1898 house now rises to its slate hip roof with a turret, a drum bay, twin dormers and the arched loggia, and the wing stays plain behind it. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg)
+
+### 2026-11-23 — The Ponce was there all along
+
+The Ponce de Leon Apartments seemed to be missing from the map until a search for the old name turned up a building mapped as "Ponce Condominium", which keeps the 1913 name in `old_name`. Its curved front, colonnade and the two belvederes across Ponce from the Georgian Terrace now frame the Fox corner from both sides with period buildings. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg)
+
+### 2026-11-23 — A2c, step 6: the menu, and Graphics you can change mid-flight
+
+Under `?ui=next`, the menu now matches the approved board. It opens upward from the app bar with no title block, and on phones it is a sheet. It holds Key and About & credits, then Graphics (Auto, High, Low, with the caption "Low draws at standard resolution with simpler shadows, fewer leaves and less rain. Good for older phones"), then "Built by Sam Solomon ↗", X and Instagram, then the map-data credit in small print. The menu button turns into × while it's open. Graphics maps onto City's existing `low` path, which used to be reachable only through `?q=` or a phone check. Choosing Low disposes City and rebuilds it on the low tier at the exact camera: 565, −3965, −101°, 55°, 421 m before and after. The choice is remembered per viewer in browser storage, and a menu choice replaces a `?q=` from the link. The old "About this City view" popover row is gone, because About now explains what is illustrative. It needs only a web rebuild. [Board vs build, and phone](log/ui/a2c/step6-menu.jpg)
+
+
+### 2026-11-23 — Composing a house front
+
+Sam's verdict on the textured houses was "a dormitory": every wall carried the same evenly spaced windows. A shader can tile a wall, but it can't tell a front from a side. So windows became a few quads per wall, laid out by style. Colonials get a centred door between symmetric pairs, Craftsman houses an off-centre door under a porch beside a ribbon of lights, and Tudors a door beside a steep front gable. Side walls get one or two windows, rears fewer and smaller, and gable ends an attic light. Storeys finally read: eaves sit at 3.2, 6.2 and 9.2 m with a trim belt at each floor. The cost is about 90 triangles a house, still in the existing building draw. [Lab grid, swatch sheet and before/after views](log/ui/residential-v2c/README.md)
+
+### 2026-11-23 — Handing a timetable trip to the live train
+
+MARTA's live rail feed names vehicles (`marta:train:407`), not trips. So when live data replaced the timetable, a followed trip simply vanished, and Follow ended with "trip unavailable". It now hands off to the nearest train of the other tier on the same route, within 60° of its heading and 2.5 km of its last position. Red trains in one direction run about 10 km apart, so that radius absorbs a minute or two of timetable drift without reaching the next train. In a real-clock test with the feed held back 25 s, a southbound timetable trip handed to live #407, 450 m north of it, and skipped a northbound live train only slightly farther away. Because nothing in the feed proves it is the same train, the card says "matched to the nearest live train" with an Inferred chip. [Review sheet](log/ui/follow/live-handoff.jpg)
+
+### 2026-11-23 — Black soil that isn't a hole
+
+Formal beds want freshly composted, almost black soil, and almost black is exactly what reads as a missing triangle from across the board. The new `rich-black` soil keeps a calm crumble up close, uses a slightly lifted set on the low tier, and lifts only the darkest colours toward a dark grey-brown with distance. [Near, far and both tiers](log/ui/rich-black-soil/README.md)
+
+### 2026-11-23 — The streetcar's sweeps, and a car that bends
+
+The Atlanta Streetcar joins the lab as a Siemens S70, built from Siemens's Atlanta data sheet (24.11 m, 2.65 m wide, 3.84 m with the pantograph down) and dated photos from 2016 to 2020. The data-sheet drawing settled what the photos couldn't: three body sections, two long end sections and a short 4.3 m centre section under the pantograph, with all four doors a side in the end sections. The livery took three passes. The first two drew the violet, teal and lime as thin stripes, but in the 2020 broadside they are bold shapes anchored to the mid-section door. Teal drops through the door, a lime wedge tapers from the roof, and three bands fall to the cab's bottom corner. Another agent is bringing streetcars into City, so the car is also exported as three section geometries, each with two pivots on the track, so it can bend round Edgewood and Auburn corners instead of cutting across them. No free photograph from 2021–2026 or at night exists. The relaunch press photo in January 2026 shows the same livery, and night lighting is inferred. It's lab only, so only a web rebuild is needed. [Front three-quarter](log/streetcar/s70-front34.jpg) · [Side](log/streetcar/s70-side.jpg) · [Night](log/streetcar/s70-rear-night.jpg) · [Notes](atlanta-streetcar.md)
+
+
+### 2026-11-23 — Card tiers that follow the train
+
+Review found two ways #239's card rows could overstate a tier. Every tapped Crescent car claimed the inferred Brookwood berth, even out on a continuation, because the flag was attached to the whole Brookwood model. And both rows were captured once at tap time, so "inferred track" stayed on a North Line card after the train had gone back underground, and never appeared for a link follow. City now reports per train, on every card refresh, whether a car is drawn on the North Line open cut, and whether a Crescent consist is berthed within 3 m of its island berth. Requires a web rebuild only. [Crescent card on the stretch and at the island](log/ui/area-note/compare-crescent-berth-card.jpg)
+
+### 2026-11-23 — Two oaks, and why a tree needs branches before leaves
+
+The willow oak and water oak are Atlanta's two most common oaks, so they are the first species after the ginkgo to reach the model lab. Each comes in three renderings for Sam to choose from.
+
+My first pass filled each species' crown outline with evenly spaced leaf cards. It looked tidy, and every tree looked the same. Sam's ginkgo review put the reason plainly: you recognise a species by how its leaves hang from the branches, not by its colour or outline. The oaks now carry their foliage the way the branches do. Each scaffold limb ends in a rounded mass of small leaf clusters, lit on top and shaded beneath, with sky between the masses. The skeleton is built from those masses, so every limb ends inside one.
+
+**The leaves still fit the budget.** Every option costs 191–193 triangles at high detail and 81–105 at low, against the generic tree's 196/156. The leading option uses the ginkgo's chosen technique: leaf cards with warm, silhouette-only ink, plus leaf tips on the eight nearest trees.
+
+**Leaves fall one at a time.** Each painted leaf in the atlas stores its own drop order in its alpha. A card throws away the leaves above its tree's leaf share, so a crown thins evenly instead of losing whole clumps. That matters for the water oak, which is semi-evergreen this far south. USA-NPN puts its crown at about 37% in December, and the lab shows that thin, see-through crown on 20 December.
+
+**The numbers are real.** Sizes come from NC State, Clemson and UF, from 478 willow oaks and 446 water oaks measured on the Georgia Tech campus, and from Trees Atlanta's champions. One "champion" willow oak is listed at 41.9 m, far above every other record, and is probably an error.
+
+**Some evidence is missing.** Commons has no full-tree photograph of either oak taken in Georgia, so the sheets compare against Mississippi, Arlington and Virginia trees, and the Atlanta calendar is inferred from North Carolina and Alabama phenology. [Willow oak sheet](log/ui/tree-species/options-willow-oak.jpg) · [Water oak sheet](log/ui/tree-species/options-water-oak.jpg) · [All species, 20 Nov](log/ui/tree-species/lineup-oaks-fall.jpg)
+
+### 2026-11-23 — Checking what the Academy is made of
+
+Sam asked whether the Academy of Medicine was stucco, painted brick or stone, and the paperwork didn't say. The National Register nomination lists the metal roof, the cupola, the Tuscan columns and the caduceus, but never the walls. The answer came from zooming a 4592-pixel Wikimedia photograph to a wall in raking light: smooth stucco, no brick coursing anywhere. With that settled, the pass went into the parts people see. The teal roofs became aged copper with seams. The dark arches became sashes with surrounds, muntins and keystones. And the bare lawn became the formal 1941 garden that Georgia Tech's preservation plan says survives: boxwood, a brick walk and black-soil beds. [Close before and after](log/ui/midtown-skyline/academy2-close-compare-day.jpg)
+
+
+
+### 2026-11-23 — Beds that are mostly plants
+
+The flower beds looked like dark holes, and the fix wasn't the soil. Real beds are mostly foliage, with the soil showing at the edges. Beds now fill about 80 % with mounded mid-green planting, with bloom clusters in drifts on top. They borrow the tree work's silhouette-only ink, so outlines stop chopping the colour into confetti. On the low tier a bed is a single mounded mass with drift patches. [Before and after, both tiers](log/ui/bed-fill/README.md)
+
+### 2026-11-23 — Streetcar track that reaches King
+
+City's streetcar rails came from OSM tram ways in the downtown vignette, and they ended at the board edge. East of the Connector, Edgewood and Auburn had no track at all. The track now comes from the GTFS shapes the vehicles will run on: three paths merged into one network, laid as two grooved rails on a concrete slab. A contact wire 5.8 m up follows the curves, and curb-side poles with cantilever arms stand about every 32 m wherever the sidewalk is clear of roads, buildings and junctions. One surprise: the Connector is a viaduct over Auburn and Edgewood. The first height lookup took the nearest road and would have lifted the track onto the motorway deck right under it, so motorways no longer count. Requires a web rebuild only. [Edgewood before and after](log/ui/streetcar/track-edgewood-before-after.jpg) · [Notes](streetcar-city.md)
+### 2026-11-23 — A2c, step 7: the Model lab becomes the Models view
+
+Under `?ui=next`, Models is now the third segment of the view switch, not a separate page. The lab runs inside the app with the same four places: a model card top-left (name ⌄ to browse, ‹ › through its category, one line, "Vehicles · 1 of 16"), the lab's own controls re-homed in a right-hand Details panel, a browser with search and category chips (All 31, Vehicles 16, People 2, Trees 2, Landscape 9, Houses 2), and reset, zoom and share in the camera column. "Compare with a photo" appears only with `?dev`. It took a seam with the four agents who build lab entries. The lab's markup moved into one shared module, its CSS was scoped under `.lab` (it used to restyle every `body`, `h2` and `fieldset` on the page), and its frame loop now pauses while the view is hidden (#265). Nothing copies the catalogue: the browser reads the lab's own buttons, so the in-app count equals `/models.html`'s 31, and all 31 select with no console errors. City is disposed on the way into Models, so two 3D scenes never run at once. Review caught a framing bug: the lab measured its stage before the app's layout class arrived, so the Crescent opened at landscape scale on phones. It needs only a web rebuild. [Board vs build](log/ui/a2c/step7-board-models.jpg) · [Browser](log/ui/a2c/step7-board-browser.jpg) · [Phone](log/ui/a2c/step7-phone.jpg)
+
+### 2026-11-23 — The streetcar, second pass: a colour the grade kept eating
+
+Sam's review of the S70 called the first pass a bright royal blue with blocky stickers. The real car is a deep, violet-leaning indigo, with long sweeps that read as motion. The colour was the lesson. Our first indigo came out of the grade as pure saturated navy, #000068 with red and green crushed to zero, while the photograph's body sits near #2f3060. A sweep of input colours against a fixed sample on the lit nose found that #5a5694 in renders as #28217b out. The grade is steep enough in dark blues that the input has to be much lighter than the target. The sweeps are now cubic Béziers sampled into 24-segment strips that follow the rounded eave, so they flow from the roof by the mid-section door down to the cab's bottom corner. Glazing became one light band with thin pillars. The nose, eaves, skirt and roof fairings were rounded off. Lab only, so only a web rebuild is needed. [Matched side](log/streetcar/s70-pass2-side.jpg) · [Lab before and after](log/streetcar/s70-pass2-lab.jpg)
+
+### 2026-11-23 — The Fed turns white
+
+City had drawn the Federal Reserve Bank's block at Peachtree and 10th in the generic palette, which landed on red brick: a warehouse where a marble temple of money stands. It is now white ashlar marble, stepping back in tiers to a flat crown, with a two-storey loggia on Peachtree and the salvaged Corinthian columns of the old Fed standing free in the forecourt. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg)
+
+### 2026-11-23 — A2c, step 8: a radio with nothing on it yet
+
+The app bar under `?ui=next` now ends with a note icon, as on the approved night board. It stays off until tapped, because browsers block autoplay. While playing, it shows pause and the track title. The music doesn't exist yet: the plan is about 10 calm, original SimCity-style tracks, around 30 minutes in all. So the radio runs on a stub playlist of 10 titles totalling 31.7 minutes, and each entry without an audio file advances silently on its own length, keeping its place across a pause. Review's sharpest point was about honesty, not code. A silent player that showed a pause icon and "Peachtree Drift" was claiming music that wasn't there. The stub now reads "Peachtree Drift · no audio yet" and never tells the phone's Media Session it is playing. Adding a track later is one `src` field per entry, a static file with no server work. It needs only a web rebuild. [Board vs build](log/ui/a2c/step8-radio.jpg)
+
+### 2026-11-23 — The streetcar, third pass: daylight, and bands that run parallel
+
+Sam's sunlit shots of the streetcar showed a car much brighter than the overcast 2020 frame we had matched, a vivid blue-violet. The input that reaches it under the grade is #6660d8, which renders near #3329c0. The sweeps had drifted into scattered shapes. In the photos they are two disciplined fans of three parallel bands (lime, teal, violet) on each cab section, mirrored, with the centre section plain. The build lesson was clipping. The first fan squashed its violet band flat into the skirt, because each vertex was clamped into range independently. Clipping each strip segment against the skirt and the window sill as a polygon gives the clean cuts the real vinyl has, and the same clip draws a tinted copy wherever a band crosses the glass. Lab only, so only a web rebuild is needed. [Three-quarter](log/streetcar/s70-pass3-34-1003.jpg) · [Lab before and after](log/streetcar/s70-pass3-lab.jpg)
+
+### 2026-11-23 — Eaves
+
+Sam's note on the houses was "something feels funny", and the single biggest cause was the roof edge. The roofs stopped exactly at the walls, with no overhang and no shadow. Now eaves and rakes overhang by 0.3–0.6 m with a fascia and soffit, so every wall carries a shadow line, the strongest "house" cue there is. The same pass made roofs lighter and front-gabled Craftsman houses, gave windows real size and spacing with sky-toned glass, and added deep porches with columns and steps. Long footprints became period apartments rather than giant houses. [Before and after views, the lab and the budget](log/ui/residential-v2d/README.md)
+
+
+### 2026-11-23 — Trains under downtown, accounted for
+
+Following a Blue Line train under downtown used to end in a shrug: "Train out of view". The Midtown North Line had OSM tunnel ways, and downtown had nothing. Downtown now has all 60 of its mapped subway ways, classed as tunnel, building passage, bridge or open, and Follow reads the mapped cover of the train's own line. That last detail matters at Five Points, where the north–south and east–west tunnels cross on different levels. The surprise was the unnamed pieces: two platform tracks beside the West Line took its name from the same layer, but three connector tracks a metre above the South Line correctly stayed off it. Requires a web rebuild only. [Before and after](log/ui/follow-downtown/compare-blue-underground.jpg)
+
+### 2026-11-23 — Measuring the Fed instead of guessing
+
+My first Federal Reserve made the long slab the tallest part and stepped it toward a crown. Sam's photographs said the corner tower at Peachtree and 10th rises above everything else. Rather than trade one guess for another, I pulled 160,000 USGS lidar returns over the block. The corner tower's crown sits at 360.2 m NAVD88, 61.9 m above the site, and steps once at 357.2 m. The slab tops out at a 47.5 m cornice with a 53.7 m recessed top floor. Those numbers rebuilt the massing. Then came the entrance Sam asked for: a portico with the eagle column on a granite plaza, lawn terraces down the Peachtree front, and a crown floodlit white at night. [Aerial before and after](log/ui/midtown-skyline/fed2-aerial-compare-day.jpg)
+
+### 2026-11-23 — Pines, poplars, and getting the colour back
+
+Sam picked option A, leaf cards hung on branch masses, for the oaks and for broadleaves in general. He had one complaint: the cards "lose a lot of colour" next to today's low-poly canopy.
+
+**Measuring it.** A new lab call, `__lab.crownStats()`, renders a frame through ink and grade, masks the visible foliage, and averages its luminance and saturation. The willow oak's cards came out 29% darker than the generic tree (0.18 against 0.25) and nearly fully saturated (0.999 against 0.81).
+
+**Most of the darkness was lighting.** Each card was lit by its own flat normal. Three.js also flips the normal on a double-sided card's back face, so half of every card faced away from the sun. Now every card is lit by the crown's outward normal, 80% of the way, so the crown shades like one solid blob and keeps its ragged edge. Turning off self-shadowing on the cards cleared the blotchy interior. The atlas now sets only which leaves exist, and the season sets the colour.
+
+**The saturation was the palette.** Moving the summer greens toward the generic tree's bluer `#5f8f4e` family fixed it. Every broadleaf option A now lands within 4% of the low-poly tree's luminance at both detail levels.
+
+**Two new species.** The loblolly pine carries flat needle tufts at the ends of bare twigs, high on a long clear trunk, over pine straw all year. Its inner needles brown in early November. The tulip poplar is a column of trunk under a narrow oval crown of big square-tipped leaves, gold by mid-October and bare by mid-November. Atlanta's tallest tree on record is a 50.6 m tulip poplar at Bitsy Grant Tennis Center. [Loblolly sheet](log/ui/tree-species/options-loblolly-pine.jpg) · [Tulip poplar sheet](log/ui/tree-species/options-tulip-poplar.jpg) · [All species, 5 Nov](log/ui/tree-species/lineup-fall.jpg)
+
+### 2026-11-23 — Streetcars that bend
+
+The Atlanta Streetcar now runs in City on the published timetable: one three-section Siemens S70 per trip, on the track built from the same GTFS shapes. Placing a rigid 24 m car on a 20 m-radius corner would have cut across the sidewalk. Each car is instead placed the way the real one rides. The short centre section sits between its own axles, and each end section hangs from a joint on it and swings to its power truck. A test holds every joint closed and every truck within 5 cm of the rail through the tightest curve. One check came back empty: MARTA's bus feed, which the worker already caches, has no streetcar positions, so the cars are scheduled and say so on the card. Requires a web rebuild only. [Auburn before and after](log/ui/streetcar/cars-auburn-before-after.jpg)
+
+### 2026-11-23 — Yards without parcels
+
+We have no lot lines, so every yard comes from one fact: which wall of the house faces the nearest street. From there it's rules. A walk runs from each door toward the street, a driveway runs along the side away from the door, and shrubs sit on a pine-straw strip under the front windows. Some houses get a small bed or a clipped hedge near the sidewalk. Anything that would cross another building is dropped. The yards cost about 18 triangles a house on the low tier, and they stay quiet from above, which is the point. [Before and after views](log/ui/yards/README.md)
+
+### 2026-11-23 — Three stripes are enough
+
+The third streetcar pass tried to reproduce every flourish on the car as two fans of curved bands. Sam's verdict was that it read as more complicated than the car, and the brighter body colour was worse than the deep indigo before it. His markup of a side photo reduced the graphic to its gesture: three broad parallel stripes, lime, light cyan and violet, rising across each cab section from the low front to the roof line behind the first door. Straight stripes, each 0.7 m wide, now do exactly that, mirrored at the other end. The detail work moved to the edges. A flat polygon laid over the curved eave came out ragged, so the stripes now stop where the side meets the eave, which reads as the roof line from the side. They also run over the doors, as the vinyl does, and turn into tinted film where they cross the windows. Lab only; web rebuild. [Car 1003 compare](log/streetcar/s70-stripes-1003.jpg) · [Lab before and after](log/streetcar/s70-stripes-lab.jpg)
+
+### 2026-11-23 — The fall-colour pair
+
+**Red maple** is a rounded crown on ascending limbs, scarlet to orange by late October. It reddens a second time in late winter, when its flowers fill the bare crown. The lab draws that red haze with the leaf-thinning machinery the oaks use for leaf drop. In February a red maple's crown is about 16% "in leaf", and every visible leaf is a red flower.
+
+**Sweetgum** colours last and keeps its leaves into December. Its trick is that one tree shows purple, red, orange and yellow at once. Each tree carries two seasonal tones, yellow-orange and purple. Every leaf cluster mixes them in its own proportion, so the colours scatter through the crown with no extra triangles.
+
+Both options A came in within 5% of the generic canopy's brightness. Their summer greens were tuned with `__lab.crownStats()`, the same way as the first two pairs. [Red maple sheet](log/ui/tree-species/options-red-maple.jpg) · [Sweetgum sheet](log/ui/tree-species/options-sweetgum.jpg) · [All species, 15 Nov](log/ui/tree-species/lineup-15nov.jpg)
+
+### 2026-11-23 — Do buildings need textures? A material library, and an honest answer
+
+Sam kept asking whether buildings needed textures. To answer, we first measured what the scene already held. Walking every material in the City found 64 textures, about 464 MB of estimated GPU memory. About 420 MB of that turned out to be terrain ground maps, not buildings. Every landmark facade, sign and lettering together came to about 35 MB, and 15 MB of that was Brookwood station's painted masonry. The building materials now live in one shared library, `web/src/materials/`. It holds 13 surfaces: brick in four bonds and five colours, stucco, limestone, precast, pink and grey granite, curtain glass, aged copper, slate, terracotta, clapboard, shingle, concrete and asphalt roofing. All of them are shader patterns, so they cost 0 texture bytes. Each one keeps the landmark's own colour as its average and fades detail with distance.
+
+The surprise came from the proof sheets. The City camera never orbits closer than 150 m, through a 22° lens, so one pixel covers 6 to 15 cm, and a brick course is 7.5 cm. From the City's orbit, brick texture is mathematically invisible, and the first, calm pass looked identical to flat colour on all four test buildings. A gain study showed what does read: copper streaks and stucco mottle at 2.5× the first strength. At 4× they turned noisy. So copper and stucco were retuned, and brick stays plain in the City on purpose. The scene pass measured 0.5 to 0.95 ms at 1600×1000 on the Studio. The library changed it by less than the ±0.4 ms run-to-run noise, with 0 new texture bytes. A budget test now lists every file in `web/src` that makes a texture, and holds landmarks to 40 MiB. It caught its first undeclared texture, a new leaf atlas, before the branch even merged. Requires a web rebuild only. [Crops, FLAT vs LIBRARY](log/ui/materials/materials-proof-crops.jpg) · [Academy, both tiers, day and night](log/ui/materials/materials-proof-academy.jpg) · [Gain study](log/ui/materials/materials-gain-study.jpg) · [Notes](materials.md)
+### 2026-11-23 — A2c, step 9: City arrives as a white model
+
+Under `?ui=next`, opening City no longer shows the "Atlanta, in miniature" plate. The frame appears over paper with "Building the city…" and a grey dot that never says Live. The scene then arrives as a white study model of the exact camera: the real geometry, sun shadows and ink, all in paper white with no colour. Colour fades in over it. Only then do Live, the credit timer and the vehicles start. Three surprises, each measured. First, the brief's one-liner, `RenderPass.overrideMaterial`, didn't hold up. It reaches only the first pass, and against the other passes the frame sometimes came out cropped, so the white material is swapped onto each mesh for those few frames instead. Second, the board's clipping planes culled every mesh under the white material, leaving only ink lines on paper. Third, `compileAsync` sometimes never resolved, so colour now waits at most 2.5 s for it. Moving the render start before the build stages was measured and deferred: the whole build is 0.59 s on this desktop, and buildings come out of the 0.27 s terrain stage, so it waits for Galaxy A16 numbers. Needs only a web rebuild. [White model vs reference](log/ui/a2c/step9-white-model.jpg) · [Loading frame](log/ui/a2c/step9-frame.jpg)
+
+### 2026-11-23 — Material swatches in the model lab
+
+The material library now has its own page in the model lab: Materials > Library swatches. All 18 catalogue materials appear as small gabled blocks, drawn through the same shader City uses, with the high tier on the left and the low tier on the right. That's 2 draws and 0 texture bytes. Close-ups are where the difference shows: brick courses, clapboard laps and slate exist only on the high tier, and the low tier keeps the half-metre structure (ashlar, panels, mullions, copper streaks). A third view copies the City's 22° lens from about 200 m, and there every block fades towards its flat colour, which is the point of the library. One detail mattered: the first swatch roofs were pitched at exactly 45°, right on the shader's wall/roof cutoff, so they now sit at 36°. Requires a web rebuild only. [Swatches, day and night](log/ui/materials/materials-lab-swatches.jpg)
+
+### 2026-11-23 — Red lights
+
+The arterial cars now stop at the city's mapped traffic lights and queue behind each other. The hard part was keeping every car's position a pure function of the clock, so a scrubbed timeline still matches a fresh load. Each trip walks its signals in order, and cars that reach the same red form a queue. Three bugs surfaced along the way. A diagonal street paired with the wrong cross street, so axes are now chosen per intersection. A follower could tail-gate a car that had been released but not yet cleared the line. And the safe delay budget had halved the number of cars on the street, until the cap was applied to expected visible cars rather than to slots. Requires a web rebuild only. [Queue on 10th Street](log/ui/traffic-signals/compare-10th-queue.jpg)
+### 2026-11-23 — A2c: All stops, Share on the card, and a camera that makes room
+
+These are the three step-4 items from the approved board, under `?ui=next`. **All stops ›** on a train card opens the stops still ahead, with a back row to the train. For a timetable train each stop shows its scheduled minutes, labelled Scheduled, and the list counts down while it's open. A live MARTA train gets the stop names in timetable order with no times, because the feed predicts only the next stop. **Share** now sits on the card beside Follow, the one dark button. A **new selection moves the camera** so the vehicle lands in the middle of the open area beside the panel. In City a Gold Line train landed 187 px left of centre, against 188 px intended; on a phone the offset allows for the tilt. Review caught the bug a unit test had hidden: live trains name their next stop ("FIVE POINTS STATION") rather than giving its id, so every live train's All stops did nothing until the list matched stations by name. It needs only a web rebuild. [City, card and stops](log/ui/a2c/step4b-panel-extras.jpg)
+
+### 2026-11-23 — The Active Oval gets its fields back
+
+In City, Piedmont Park's Active Oval was four dark-green rectangles. OpenStreetMap tags two of them as softball and two as soccer, but a tag isn't evidence for any hardware. The aerials and ground photos settled it: skinned clay infields, round domed backstops beside the central tree circle, full-size goals, and red-bordered volleyball nets over blue tapes. A parks listing settled the question I most wanted to get right: the fields have no lights. So nothing here glows at night. Home plate comes from the mapped outline, where its two longest edges meet. Every field's foul lines came out square to within five degrees. All the flat detail (clay, sand and chalk) is painted into the ground texture the board already carries, so the low tier gets the infields for nothing. The standing hardware is 1,666 triangles in two draws on high only. Requires a web rebuild only. [Before and after](log/ui/active-oval/README.md)
+
+### 2026-11-23 — Twelve stops, one shelter
+
+Before modelling, we looked at every Atlanta Streetcar stop in Street View, expecting several designs. There is one: a single-slope glass canopy over a raised curb platform with a red tactile edge, a ticket machine, a bench and a backlit map panel. The stops differ in where they stand rather than how they are built. Centennial Olympic Park is a free-standing island, and Dobbs Plaza waits under the Connector beside a sepia mural of old Sweet Auburn. Placing the platforms by road centrelines put one on the wrong side of the track, so the side observed in Street View now decides. Requires a web rebuild only. [All 12 stops, day](log/ui/streetcar/stops-gallery-day.jpg) · [Night](log/ui/streetcar/stops-gallery-night.jpg)
+### 2026-11-23 — A2c becomes the interface
+
+Sam decided the A2c interface replaces the old one ("this is the new style moving forward"). After nine steps behind a flag, the flag flips: every visitor now gets the four glass places, the white-model arrival, the Models view and the rest by default. Old `?ui=next` links still work, and share links stop carrying them. `?ui=classic` brings back the previous shell for one release as an escape hatch. In the release after this one, delete it along with `web/src/ui/shell.ts`, its stylesheet and the classic-only markup in `index.html`. It needs only a web rebuild.
+### 2026-11-23 — Ground that stays under the stone
+
+Sam kept seeing the lawn poke through the High's granite steps, and terrain through ballast and decks closer in. A new audit (`pnpm audit:ground`, `web/src/terrain/ground-audit.ts`) drives headless Chrome over the full board and samples every upward, ground-hugging triangle on a 0.5 m lattice against the terrain triangles that are actually drawn at that tier. Its first finding changed the plan. Streets, sidewalks, crosswalks and parking on the terrain boards are painted into the ground texture, so they cannot show terrain through them. The real exposure was the geometric layers: freight ballast had 12,555 penetrating samples (worst 121 cm on the Gulch bank), the High's stair treads 188 (28 cm), and curated beds 36 (22 cm). The two tiers agreed within 1%, because every layer samples its own tier's ground, and so the fault lay between samples, not between tiers. There are two fixes, one per kind of surface. Ground-following layers now drape: `terrain/drape.ts` splits each surface triangle along every drawn terrain edge beneath it and raises each piece to at least terrain + lift, so no crease can hide between two samples. Ballast, the new lawn turf and curated beds go through it. Hard surfaces carve instead: `stairRun` returns its footprint, and `GroundSurface.carve` lowers the drawn terrain, never raises it, to a plane one riser under the nosings, with a skirt hidden inside cheek walls that now rise to grade. The surprise was a rebuild bug that took the whole Midtown-upper lawn with it: `computeVertexNormals` quietly reuses a normal buffer of the old length. After the fix, treads, turf and curated beds are at 0 on both tiers. Ballast fell from 12,555 samples to 5,831 (249 sites to 65). The rest sits in three graded cuts where the track runs below its bank on purpose (the Gulch at 98 cm, plus Midtown and the south band), so the drape stops at 25 cm, trains keep their grade, and those banks go to the rail owner for a carve. Street decks (32.7k samples) and bridge approaches (19.2k) follow surveyed profiles, so they went to their owner rather than being draped. The orbit near plane now scales with distance (20 m at 150 m, 1.6 km at 8 km), which cuts depth steps at the full-board view from about 0.4 m to a few millimetres. Web rebuild only; no `pnpm data`. [Steps](log/ground-contact/ground-contact-stairs.jpg) · [Ballast crease](log/ground-contact/ground-contact-crease.jpg) · [Gulch cut](log/ground-contact/ground-contact-ballast.jpg) · [Sidewalk](log/ground-contact/ground-contact-sidewalk.jpg) · [Crosswalk](log/ground-contact/ground-contact-crosswalk.jpg)
+
+### 2026-11-23 — Cars give way to the streetcar
+
+The streetcar shares Edgewood Avenue and Centennial Olympic Park Drive with the illustrative arterial cars, and the two layers never knew about each other, so a car would occasionally drive straight through an S70. Each frame the streetcar now publishes the footprints of the sections it drew, and the car layers (arterial, Connector, Midtown) skip any car whose centre or either bumper comes within the car's 1 m half width of one, as they already did for live buses. A car in the next lane, about 3.3 m away, stays drawn. The surprise was height: the first version ignored it, and the I-75/85 Connector crosses over Edgewood, so a freeway car would have vanished whenever a streetcar passed underneath. The check now ignores streetcars 2.5 m or more above or below the car. Over about 2.5 minutes of a 5× evening in a throttled background tab, 4 sampled frames skipped a car, all on Edgewood. A skip is still a car that vanishes; real queueing behind the streetcar is a later step. Requires a web rebuild only. [Edgewood, BEFORE vs AFTER](log/ui/streetcar-yield/edgewood-yield.jpg)
+
+### 2026-11-23 — Benches that face their paths
+
+OpenStreetMap has 57 pieces of furniture inside Piedmont Park's outline on our two park boards: 24 benches, 18 drinking fountains, 8 bins, 6 grills and a picnic site. Most were traced from imagery, so a bench point often lands on the path it sits beside. Each piece now stands 0.6 m clear of the nearest paving and turns to face it. A test checks that for every point, which is the only reason 57 boxes look placed rather than scattered. The more visible change is the 10th Street entrance at Charles Allen Drive. Street View shows the same rough-granite piers and stepped pyramid caps as 14th Street, so the gate module took a direction into the park and gained a third entrance instead of a copy. Furniture costs 3,284 triangles on the high tier and nothing on low. Requires a web rebuild only. [Before and after](log/ui/piedmont-details/README.md)
+
+### 2026-11-23 — Map to City without a cut
+
+Switching from Map to City used to swap one view for another behind a loading plate. Now it follows Sam's option B. The map tilts in MapLibre to City's angle over about a second while City downloads, with MapLibre's field of view set to City's 22° so the two cameras match. City's buildings arrive in paper white on a transparent background, standing on the tilted map's streets. Then the full coloured scene, ground included, cross-fades over the map in 1.4 s. Nothing zooms. A blend of the two frames shows the City streets and rail registered on the map's, around Five Points and the arena. Two details took the most time. A render target holds linear colour, bottom row first, so the white still needed an sRGB pass and a flip before it looked like paper. And without the board's ground, the buildings read grey until a temporary ambient lift (1.4) brought them to the reference. Going back reverses it: the map takes City's exact view, the colour fades off it, then the map flattens. A second open in the same session skips the white stage. The white model's fade over paper is now 1.2 s ease-in-out, because Sam found 300 ms abrupt. It needs only a web rebuild. [Reference, map, white on map, colour](log/ui/a2c/step9b-map-to-city.jpg)
+
+### 2026-11-23 — A2c on short screens
+
+The first production smoke test caught one thing. At 999×600, while following a train, the detail card cut off the bottom of "Stop following". The card was 18 px taller than its 390 px slot, and the follow status was squeezed into half a column beside Share. Now the card's facts scroll inside it, the status runs full width, and the Follow · Share row stays pinned at the bottom. A sweep at 600 and 700 px tall (Time & weather, menu, About, share) and a phone at 390×640 found nothing else clipped. It needs only a web rebuild. [Before and after](log/ui/a2c/short-viewport.jpg)
+### 2026-11-23 — Half the ground for phones
+
+A Galaxy A16 seemed to crash on newer builds. It turned out to be a stale-tab artefact, but chasing it produced a meter worth keeping. `pnpm measure:gpu` wraps WebGL2 uploads in headless Chrome and adds up live texture, renderbuffer and buffer bytes for any build, with no app hooks. At q=low on an A16-sized viewport, main held about 440 MB of estimated GPU memory, 179 MB of it textures. Terrain ground maps were the largest share, about 135 MB painted at 1 m texels. That is three times finer than a screen pixel at the phone's default full-board view, where one pixel covers about 4 m. The low tier now paints 1.4 m texels, with lot stripes and zebra bars kept at their old proportions, and the downtown night light map drops from 2048² to 1024² on low. Low textures fell from 179 MB to 113 MB, and the rectangle's ground maps from 101.7 MB to 50.8 MB, which a test now pins. A self-review caught the meter counting mipmaps twice (three allocates levels with texStorage2D and then calls generateMipmap), which had inflated the first figures by a third. Two cheaper-looking options didn't pan out. 565 and RGB formats have no sized sRGB path in three r180, and freeing each 2D canvas after upload didn't move peak memory. At a 600 m orbit the road edges soften slightly while centrelines stay legible, which is why the coordinator chose 1.4 m texels over 2 m (which would have saved 34 MB more). Web rebuild only. [600 m compare](log/phone/low-ground-maps-600.jpg)
+
+### 2026-11-23 — Houses you can't see in detail don't need it
+
+The phone target is 30 fps on a Galaxy A16, and the default wide view managed 13. The GPU is bound by triangles, and Midtown's houses were 637k of the 4.74M in that view. Each carried its eaves, porch, windows and chimney, which at that distance cover less than a pixel. Now every house also has a far version: the same walls, colours and roof planes, at 16 triangles instead of about 154. City swaps between them in 800 m tiles at 1 km from the camera. That is about where a half-metre eave shrinks to a pixel, so nobody sees the swap. The full house isn't built until a camera first comes near its tile, which matters as much as the triangles: the A16 runs out of memory before it runs out of fill. The default view drops 503k triangles on low and 1.64M on high, and side by side the before and after are indistinguishable. Requires a web rebuild only. [Before and after](log/ui/house-lod/README.md)
+
+### 2026-11-23 — Flowers, tiers, and trees that close at the top
+
+Sam's reviews came in species by species. The fixes went into the shared code, so every tree gained from them.
+
+**Crown tops.** The tulip poplar and sweetgum ended in a bare spike. Their top foliage mass sat off-axis at a random angle, so the leader ran up past it. Every crown now has a crowning tuft centred over the leader, and the leader ends inside it, tapered. Two more of Sam's notes went in at the same time. Cards seen exactly edge-on, which showed as horizontal streaks, now fade out by view angle. Leaves floating outside the silhouette are now pulled back inside the crown outline.
+
+**The loblolly, rebuilt as tiers.** Sam wanted "less dense, more layered": separate needle tufts at the ends of bare limbs, in loose horizontal layers with sky between. Option A now has four tiers spaced evenly in height, eleven tufts on their own visible limbs, and yellow-green sunlit tops over a deeper green. The two closest Commons references are both Georgia lawn pines: Augusta's Eisenhower Tree and the Waycross Moon Tree, grown from a seed that flew around the Moon on Apollo 14.
+
+**Bloom.** The southern magnolia and crape myrtle brought flowers. Small chips on the outer clusters open a few at a time from each species' calendar, and they ignore the leaves, so dogwood bracts will be able to open on bare twigs. A crape myrtle in July is more flower than leaf, and the chips alone barely registered. Mixing the bloom colour into the leaf tone turned the crown brown. What worked was switching the highest-toned leaf clusters wholly to the bloom colour. Each tree's crown then breaks into patches of crimson, pink, white or lavender, with one colour per tree by its seed, at no extra triangles.
+
+**A measuring mistake.** The edge-on fade made every card crown measure 20–30% brighter overnight. That was the measurement, not the trees. The fade ran only in the colour pass, so the crown mask still counted faded cards, and through them the bright background. I had darkened palettes to compensate before the code review caught the mismatch. The fix moves the fade into the shared visibility patch, so the colour pass, the ink mask and the measurement agree.
+
+**A pyramid that isn't a column.** The magnolia's first crown came out as a column. My tiers were spaced by the crown's egg shape, and its upper half is twice as tall as the lower, so the tiers bunched low. Spacing them evenly in height, and letting the masses shrink toward the top, gave the dense pyramid branched to the ground that UF describes. [Magnolia sheet](log/ui/tree-species/options-southern-magnolia.jpg) · [Crape myrtle sheet](log/ui/tree-species/options-crape-myrtle.jpg) · [Loblolly rework](log/ui/tree-species/options-loblolly-pine-tiers.jpg) · [Crown fixes, before and after](log/ui/tree-species/fix-sweetgum-before-after.jpg)
+
+### 2026-11-23 — Cutting the bank back from the freight track
+
+The ground audit from #282 left three places where the drawn terrain still stood over the freight ballast: the Gulch by 98 cm, the south band by 47 cm and midtown-south by 57 cm. The terrain is a 5 m grid and the ballast is 4.2 m wide, so a single bank node beside the track can tilt a whole terrain triangle over the bed. The drape lifts ballast by at most 25 cm, which isn't enough.
+
+The fix grades a cutting. Wherever terrain stands more than 3 cm over a ballast quad, the board is carved with triangles: a bed 5 cm under the ballast, plus side slopes rising at 1:1.5 for 3 m on each side. A skirt closes an edge only where nothing beyond it is carved, so a run of triangles carves one smooth cutting instead of a row of fins. Two things surprised me:
+- **Overlap opens slits.** Where tracks run side by side, one track's side slope reached over its neighbour's bed. A terrain face on one side of an edge was split where the face across it wasn't, and lowering opened a slit at that T-junction. Side slopes now give way to anything already carved, and each vertex takes the lowest floor of every yield containing it. A synthetic test sweeps height profiles across two tracks and fails on any step with no skirt.
+- **The Gulch was hidden by my own grade gate.** One ballast edge drops 1.1 m onto the foot of the deck wall while the other edge stays level, so the centre-line grade read 29%. The gate now uses the smoother edge.
+
+Results, high tier: penetrating ballast samples fell from 5,831 to 1,222, and every one left is at midtown-south (below). The Gulch and the south band went to zero. Low tier: 12,627 to 2,480. Quads that get a bed are drawn flat instead of draped, so they don't float over the carved ground. That decision needs the whole run, so ballast now draws after its run is complete. My first try at the deferral captured the loop's station variable, which stretched one texel of sleeper texture over every quad. A test now holds each ballast triangle to one station's span. The cost is about 22k terrain triangles at each tier (+1.4% on high, +2.0% on low), and the carve takes 92 ms on downtown, 39 ms on the south band and 30 ms on Brookwood.
+
+Midtown-south is not a cutting. There the ballast drops about 6 m over 6 m of track, where the DEM dips to a road that passes under the tracks. My first cut graded the level track either side of the pit and scarred the bank with pale slopes. Now no quad steeper than 20% is graded, and nothing within 10 m of a quad steeper than 50% is graded either. The site stays a named exception for whoever owns rail structures.
+
+![The Gulch before and after](log/ground-contact/cutting-gulch.jpg)
+### 2026-11-23 — Measuring City on a $150 phone
+
+The reference phone is a Galaxy A16 (Mali GPU, 411×891 CSS px). Low quality on its default view ran at 12.8 fps against a 30 fps target, and took 20 s to be ready. The first reports said main crashed the tab. That turned out to be the test method: a reused, already-crashed tab with 50 others open. With a fresh Chrome process per run, every build loads. To see where the time goes, City gained an instrument panel (`?perf`, `?perf=run`, docs/perf.md). It also has switches that turn off passes, shadows, pixel ratio or whole categories, so a single build can answer many questions on the phone.
+
+The answers surprised us. With a still camera, post-processing (ink, grade, tilt-shift) and the shadow map barely mattered: turning them off gained 0.2 to 1.6 fps, and a lower pixel ratio gained nothing. A Chrome trace confirmed it is GPU-bound. Swap and queue-submit waits took 3.8 s of every 5 s, while the main thread averaged 19 ms and GC took 151 ms in total. The "hitches" of 120–230 ms were the GPU queue draining, and the p50 of 22.2 ms is exactly two 90 Hz vsyncs. The bill was triangles: the default view draws the whole 12-area board. Hiding one category at a time showed the ground is worth the most (+7 fps), then trees (+4), then landmarks and transport (+3). The cheapest win was inside the trees. Every generic tree carried a bare-branch skeleton of 112 triangles, 0.94M in total. They were drawn under full leaf, inside evergreens, and from 2 km away, where a tree is three pixels across. Tree-species now packs them down to thinning broadleaves (#304, #306), and low drops them beyond 800 m of orbit. On the A16 that took the default view from 12.6 to 18.1 fps (p95 from 222 to 67 ms) and the skyline from 18.4 to 25.7 fps, with no visible change even just past the threshold. Houses by distance (#315) and leaner ground maps (#308) landed alongside, so the default low view now draws 3.33M triangles, down from 4.77M. The ground mesh is next. It needs only a web rebuild. [At the threshold](log/perf/far-trees-threshold.jpg) · [Skyline](log/perf/far-trees-skyline.jpg)
+
+### 2026-11-23 — Shadows that wait for the camera
+
+A still camera hid the next cost. City redrew its shadow map whenever the orbit target moved more than a metre, so dragging the board re-rendered every caster in a ±520 m box on almost every frame. That was 579 of 600 frames in a 10 s pan, each adding 1.8M triangles. On the A16, panning with shadows off ran 6.5 fps faster at the default view and 10.5 fps faster at the skyline. Now, on low, the shadow camera moves on an 80 m grid, at most four times a second, with a little hysteresis so it can't flip at a cell edge. The sun sits over the snapped point, so shadows never slide between redraws. A pan now redraws 38 times instead of 579. Panning the skyline went from 16.0 to 23.4 fps, and the default view from 12.5 to 14.8 fps, level with a still camera. A matched still frame is unchanged. It needs only a web rebuild. [Still camera, before and after](log/perf/shadow-step-static.jpg)
+
+### 2026-11-23 — Gloss for the magnolia, colour for the yards
+
+Sam liked the magnolia's shape but missed its gloss: the way a waxy leaf catches the sky. Three variants test three ways to get it, none adding a triangle. A specular sheen comes from each card's true face normal, so glints scatter card by card and move as the camera does. Baked silver glints sit on a tenth of the sunlit cards. A third variant adds rusty-bronze undersides in the shade. My first sheen had its half vector backwards, so it lit the cards facing away from the sun; the code review caught it. Fixed, all three variants still read at 300 m through ink and grade: the sheen as a pale silvery patch on the sun side, the baked glints as flecks.
+
+The red Japanese maple is Sam's addition from his walk through Ansley Park, where maples are the scarlet accents of every front yard and traffic island. Each tree draws one colourway by its seed: scarlet-crimson for most, Bloodgood burgundy, or orange-red. Twenty in a cluster look like a planted street rather than one tree copied. At 135 triangles it is the cheapest species so far. [Japanese maple sheet](log/ui/tree-species/options-japanese-maple.jpg) · [Magnolia gloss sheet](log/ui/tree-species/options-magnolia-gloss.jpg)
+
+### 2026-11-23 — Auto graphics that notices a slow device
+
+Graphics › Auto used to settle on a tier once, from the screen and pointer type, and never reconsider. Now, when Auto opens City at High, the phone-perf agent's `perf.watchSlow` waits for City to be ready and its areas to go quiet, then samples 10 s of frames. Under 20 fps, City rebuilds at Low at the exact camera (565, −3965, −101°, 55°, 421 m before and after), shows "Switched to lighter graphics" for a few seconds, and the menu reads **Auto (Low)** with High still on offer. The step-down lasts for the session only (sessionStorage), so a better moment can try High again. A manual Graphics choice cancels the watch. Testing it was awkward because a background browser tab draws next to nothing, so the sampler rightly discarded those samples. A dev-only `?slowfps=60` raised the bar instead. It needs only a web rebuild. [Menu after the step-down](log/ui/a2c/auto-low-menu.png)
+
+### 2026-11-23 — A vase and a festival
+
+The American elm and the flowering dogwood are pair 5. The elm is the old street vase: a short trunk forking into erect limbs that arch out like a fountain. The proposal is for City's street mixes to map Atlanta's actual street elms, lacebark elm and zelkova, to it once Sam picks an option; City draws none of it yet.
+
+The dogwood was the harder one. Its identity is a crown of white bracts on bare twigs in early April, the week of the Atlanta Dogwood Festival. On the lab's first pass the leaves were still mostly dropped on that date, so the flower chips sat in an empty crown and barely registered. A dogwood in bloom reads as a white crown, so during bloom the leaf clusters now stay present and turn white, with a little early green between, then go back to leaves as the bracts fall. Its lower branches grow in level layers, drawn as three horizontal tiers of flat masses. [Elm sheet](log/ui/tree-species/options-american-elm.jpg) · [Dogwood sheet](log/ui/tree-species/options-flowering-dogwood.jpg)
+
+### 2026-11-23 — Far ground for wide views
+
+The phone's slow views are the wide ones, and on the A16 hiding the terrain was worth 7 fps there. My first attempt coarsened the low-tier mesh itself. A 20 m merge at the old 0.2 m tolerance saved only 3%, because 3DEP ground is rarely that flat. Looser tolerances saved up to 64% but broke placement other owners rely on, such as ballast seating, deck clearance and roofs above the ground. Phone-perf suggested the better shape: leave the near mesh alone and draw a separate far mesh past 2.5 km. `GroundSurface.farGeometry` is a quadtree of 5–160 m cells, each accepted if every DEM node inside lies within 2 m. It keeps every rim node, so it meets a neighbour's near or far mesh without a crack, and it clips openings like the near mesh. Across the committed boards it is 115k triangles against 1.10M, for 2.9 MB. Drawn triangles fall from 3.76M to 2.76M at the default view and from 3.07M to 2.20M at the skyline, and the two look the same. Placement, the ground audit and every seam keep sampling the near triangles. Web rebuild only. [Default and skyline compare](log/phone/far-ground-far.jpg)
+
+### 2026-11-24 — When emissive means "white"
+
+Sam flagged 1180 Peachtree's crown glowing like a light box in production. Three.js adds emissive light on top of the lit colour, so a near-white emissive at intensity 1.8 is white no matter what the glass looks like, and bloom then spreads it past the silhouette. The architect's own night photograph shows a soft grey-green wash with the steel lattice just a little brighter. A grey-green emissive below 1.0 gets there, and a test now refuses any crown material that could saturate a channel. [Before and after](log/ui/midtown-skyline/napkin-night-aerial-compare-high.jpg)
+
+
+### 2026-11-23 — Ansley's streets are wide
+
+Sam walked Ansley Park and said the first thing a visitor notices: the streets are unusually wide. City had drawn every one at 7 m, because OpenStreetMap tags them all as plain residential streets with no width. On the satellite view, Peachtree Circle by Winn Park and the two Prados measure 12–13 m curb to curb with parking, and 15th and 17th Streets about 10 m. The side drives really are about 7 m. The widths are a small, inferred table, keyed by street name and limited to Ansley. A test confirms the wider carriageways clear every house wall and mapped tree trunk. It found none in the way, which says how much room these 1900s streets were given. The first attempt missed Peachtree Circle entirely, because it runs just west of the box I had drawn around Ansley for house styles. Requires a web rebuild only. [Before and after](log/ui/ansley-widths/winn-compare.jpg) · [Method](ansley-street-widths.md)
+
+### 2026-11-23 — Gloss is a speck, not a card
+
+Round 1 of the magnolia gloss lit whole leaf cards, and it read as frost: pale blue-grey blotches lifting the crown 30%. The fix came from scale. A card carries a dozen painted leaves, and real gloss is one leaf at a time catching the sun. So the shader now picks single painted leaves by a hash of the leaf's atlas value and a half-metre cell of tree space, then flashes only the picked leaves whose card faces the sun's half vector on the sun side of the crown. At one leaf in six the crown brightens 8% (0.201 to 0.218), not 30%. It costs no draws and no triangles, and night turns it off.
+
+The first try showed nothing at all. A debug pass that painted the pick, side and sun terms as RGB showed that the card normals sit 0.5 to 0.8 from the half vector; the round-1 exponent of 28 had only ever lit the rare card that was nearly a mirror. A broad lobe with a near-binary step made the points visible.
+
+The crown also became a cone: a new `cone` habit option straightens the envelope above its widest point, and the outline clamp and leader follow it. [Sheet](log/ui/tree-species/options-magnolia-gloss-2.jpg).
+
+### 2026-11-23 — The freight line that stopped at the board edge
+
+Sam drew a red line along an empty grass strip past King Memorial: "missing freight tracks." The data had them all along. The NARN arcs for CSX's Atlanta Terminal Subdivision cross the King board, and so do the OSM tracks. The board's context simply baked `rail: []`, and its loader never built surface transport, so downtown's six freight tracks ended in a clean cut at x = 1000.
+
+The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX mains and 7 Hulsey Yard tracks. Those runs meet downtown's six track ends at the edge to the centimetre, and the board draws them with the same ballast and graded cuttings as everywhere else. On the high tier the ground audit finds no ballast under terrain on the board. On the low tier, which has no drape, the worst is 5 cm. The new test is the part I care about most: with the generated data present, every CSX or NS arc inside the board must have drawn track within 12 m. So the next time a board silently drops a railroad, a test will say so, not Sam. Release: web rebuild only; no `pnpm data` change.
+
+![CSX past King Memorial, before and after](log/ui/freight/king-csx.jpg)
+
+### 2026-11-23 — The loading dock was next door
+
+The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
+
+### 2026-11-23 — Dogwood round 2, review draft
+
+The dogwood's floating crown came from two different scales: bloom chips sat more than a cluster radius outside the foliage, and the near leaf tips stayed upright when the crown cards were flattened. The early draft removed those tips, pulled the chips inward, and spent saved geometry on horizontal twigs above a 1.25 m fork; the final pass below removes separate chips entirely. The mature illustrative tree is 6 m tall and 9 m wide. It costs 193 triangles at high detail and 149 at low, including the carpet. Summer eye-level luminance is 0.248. The surprising part was that flattening cluster centres alone never made flat tiers: the crossed cards also needed their vertical extent reduced. [Seasonal review sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). The warm daylight grade and winter twig density remain visual review items.
+
+Sam kept the layered habit and fall colour, but asked for a fuller dome and fewer main limbs. The next pass uses three jointed scaffold limbs above a 45 cm mature trunk, larger overlapping leaf masses, and paired twig forks. It still costs 193 / 149 triangles. White bracts needed daylight-only diffuse fill as well as white paint: their measured saturation fell to 0.018, while the fill switches off at night. The summer crown is 0.236 luminance / 0.842 saturation. The matching camera and Atlanta reference remain on the sheet.
+
+## 2026-11-23 — Four tree species share a City-wide batch
+
+The first City rollout brings Sam's A choices for crape myrtle, loblolly pine,
+sweetgum and Japanese maple into the canopy. Ansley keeps its larger specimen
+crowns, facing street pairs and planted islands. The roof garden at 1180 Peachtree
+now uses the same crape model as the lab. Counting the actual planting loop turned
+up eight trees, correcting the handoff's seven.
+
+Batching matters more than the number of board rows: against current main, the low
+view adds nine calls and 44,752 triangles; the moving pan adds nine and 46,744.
+After bringing in main's far-ground reduction, the default total is 2.379M triangles,
+not the earlier 3.397M. Both performance tiers pass. Cross-review also found that
+the separate square-board preview removed generic crowns without mounting their
+replacements; it now mounts and updates the species batch too.
+
+Phone-perf accepted the bounded winter-limb exception. Sam approved the Ansley
+canopy and 1180 garden, and the coordinator authorized merge after the A16 check.
+The A16 averaged 22.0 fps at default and 22.7 while panning, versus production's
+24.9 and 26.0. The roughly 12% reduction needs attribution: the tested b4993131 did not include
+several main changes initially cited in the comparison. The coordinator approved
+merge while phone-perf prepares a frozen d1411a9e/b4993131 comparison; release
+packaging waits for that result. Full run values are recorded in PR #336.
+
+[1180 before/after](log/ui/tree-species/rollout/1180-day-sheet.jpg) ·
+[The Prado before/after](log/ui/tree-species/rollout/prado-day-sheet.jpg) ·
+[Winter far-detail comparison](log/ui/tree-species/rollout/winter-sheet.jpg).
+The winter species limbs cost 13,974 submitted triangles across three instanced
+meshes, with shadows disabled. They preserve the otherwise missing bare silhouettes.
+
+### 2026-11-23 — Arterial cars turn on their incoming green
+
+The illustrative arterial fleet can now turn between permitted directed roads at
+mapped signal junctions. Midtown supplies 20 eligible turn courses. A cubic curve
+joins the lanes, and each turn keeps the incoming signal phase rather than choosing
+one from the curve's tangent. Spring stays southbound and West Peachtree northbound.
+The turning courses reuse approach signal heads and the original route endpoints.
+
+Cross-review caught a useful mistake: slowing an entire turn course to 6 m/s made
+through cars catch it well before the junction, where overlap suppression hid one
+of them. Turns now keep their approach speed and exclude exits differing by more
+than 0.1 m/s. They take an illustrative 15% of incoming flow, divided among available
+turns, rather than scaling demand by the parent route's length. Separate queues can
+still overlap; the existing footprint guard hides conflicting cars. Protected left
+phases and shared queues remain future work.
+
+The frozen Spring/10th comparison uses `cam=222,-3075,0,45,110`, high tier,
+`t=2026-11-20T19:02:49.250Z&speed=0&dev&mindist=20`. The downtown check is Washington
+at Trinity: `cam=122,670,0,45,110`, high tier, `t=2026-11-20T19:01:51Z&speed=0`.
+Screenshots are in [arterial-turns](log/ui/arterial-turns/). A clock-seek regression
+also removed an hourly-demand cache that retained the first visited time within a
+minute. This needs a web rebuild only, with no new data or server work.
+
+The second review also found a signal-location edge case: at 17th Street the turn
+stop was 11.95 m beyond the through stop. Turns now stop no later than their through
+course, and one ambiguous twin-controller junction is excluded. All 20 remaining
+Midtown courses have a shared controller, ordered stops and no second stop within
+30 m. [Spring/10th before and after](log/ui/arterial-turns/compare-spring-10th.jpg).
+### 2026-11-23 — Arts Center entrance slab clears the plaza
+
+The east wing floor now gives terrain a yield boundary at entry + 0.03 m,
+5 cm below its 0.08 m slab top. The earlier audit found 491 intruding samples,
+up to 25 cm above the floor; this uses the shared carve mechanism without
+raising the station. A separate surprise during verification: the Ansley tree
+rollout failure was stale generated Midtown data. Restaging the Midtown rows
+made all 10 rollout tests pass.
+
+Matched daylight camera: `445,-3930,250,50,150`, at `2026-11-20T14:00:00-05:00`.
+Web rebuild only; no pipeline change.
+
+![Arts Center entrance before and after](log/2026-11-23-arts-center-slab.jpg)
+
+Edge verification at the same camera with lens zoom 2.5: [day](log/2026-11-23-arts-center-edge-day.png)
+and [night](log/2026-11-23-arts-center-edge-night.png). The targeted audit at 0.25 m
+spacing finds zero penetrations among 11,342 samples on the two slab-top triangles.
+Station-wide hits include other paving and must not be mistaken for this slab.
+### 2026-11-23 — A GE freight engine, properly
+
+The old freight locomotive was a long box with a yellow nose and an EMD-like cab, which no GE has. The detail pass rebuilds it as the AC4400CW family from published dimensions (22.3 m, 16.15 m truck centres) and dated photos of CSX 69, 7216 and 7232. It now has the CM44AC's raked cab front, roof number boards, stacked headlights and corner ditch lights, a louvred cabinet behind the cab, and the radiator wings overhanging the walkways. The surprise was colour again. The grade turned CSX's blue-grey into navy and the trucks into pure black. Sampling the photos (hood near #415155, running gear a weathered brown-grey) and feeding lighter inputs fixed both. The same body in an NS-like black with white nose stripes now leads the Brookwood passage, and the card names the scheme, still illustrative. 2,608 triangles per locomotive; draws unchanged. Web rebuild only. [Front three-quarter](log/freight/cm44ac-front34.jpg) · [Night](log/freight/cm44ac-night.jpg) · [Notes](freight-stock.md)
+
+### 2026-11-23 — Freight takeover verification
+
+The freight locomotive branch now passes the full test command with Python checks enabled: 20 Rust, 11 Python, 918 web and 5 worker tests. The missing routes contract fixture was an incomplete local data copy. Both City performance ceilings pass (533 low-tier draw calls, 1,136 high). A fresh Claude cross-review found no in-scope issues. The inherited Brookwood camera hid the engines behind the station; moving the frozen clock back 20 seconds exposed them. [Day and night captures with cameras](freight-stock.md#codex-takeover-verification--2026-11-23). Coordinator approval remains pending because the Air pairing token is rejected.
+
+### 2026-11-23 — 1180 crown colour trials
+
+Compared three pale-green emission colours at 92%, 97%, and 100% veil opacity, holding emission strength at 0.82. Six captures use the same Midtown aerial at 23:30 across both quality tiers. The paler panels brighten, but a mottled appearance remains even at full opacity: opacity alone does not recreate the smooth wash in the Kendall/Heaton night photograph. These are review trials, not a selected production change. [Comparison sheet](log/ui/midtown-skyline/napkin-night-colour-trials.jpg).
+
+### 2026-11-23 — The veil needed depth
+
+A controlled render changed only depthWrite to true while retaining the old colour and 88% opacity: the large mottled patches disappeared. The ink pass had been reading depth from objects behind the veil. The new night study writes veil depth, reaches 100% opacity at full night, and applies one procedural emissive wash rising from 72% at the base to 100% at the crest. No texture or geometry was added. Three silver-white colours at 0.82 strength are shown on both tiers in the [smooth-wash sheet](log/ui/midtown-skyline/napkin-night-smooth-steps.jpg); B (#d5dfdc) is provisional pending Sam's choice. The [matched daytime camera](log/ui/midtown-skyline/napkin-smooth-day-high.png) remains at 88% opacity.
+
+Full tests, the 15 skyline tests including the new depth/opacity guard, and performance budgets pass. Cross-review confirmed the depth explanation and flagged daytime near/far veil sorting and oblique edge-light occlusion as plausible risks to check before merge. The earlier colour-only sheet is superseded. This needs a web rebuild on eventual release; nothing is deployed.
+
+### 2026-11-23 — Sam chose the silver-white B wash
+
+Sam selected B: #d5dfdc at 0.82 emission, with the 0.72–1 crest gradient and full-night opacity of 1. Its peak linear emission is about 0.605, so the veil-specific regression ceiling is now 0.61 (the lattice keeps 0.7). Transparent sorting exposed another concrete issue: both veils had the same object origin. Their geometry now has separate x/z origins without changing its world position or height gradient. The edge light draws after the glass but still respects depth. No new geometry, texture, or server work is involved. Release needs only a web rebuild, by the coordinator.
+
+Final captures checked north/south daylight (`713,-3672,0,50,1150` and `713,-3672,180,50,1150`), the oblique night edge (`1268,-3672,90,72,950`), and matched aerial day/night on both tiers (`800,-3710,70,50,1021`). Both veil faces remain present; the light line is visible from the oblique night view. Orca's review tab stopped advancing animation frames, so final evidence uses the repository's headless Chrome/CDP capture setup. Full tests pass (931 web tests, one skipped), and performance ceilings pass on both tiers; high-tier ready time was 4.6 s against a nonblocking 3 s target. [Matched pair, high](log/ui/midtown-skyline/napkin-b-daynight-high.jpg) · [Matched pair, low](log/ui/midtown-skyline/napkin-b-daynight-low.jpg) · [Alternate angles](log/ui/midtown-skyline/napkin-b-angle-checks.jpg).
+
+Final Claude review requested the oblique camera in daylight on both tiers. The [additional captures](log/ui/midtown-skyline/napkin-b-oblique-day.jpg) show both curved faces and end lattices without a missing section at that camera. The visual risk is dismissed for the requested view; no universal claim about arbitrary transparent overlaps is implied. Two review rounds completed; stale documentation and shared-origin/light ordering were addressed, and no blocking findings remain.
+
+### 2026-11-23 — The tree cost was a second drawing of the leaves
+
+The A16 probes recovered about5fps by disabling the species foliage mask, much more
+than switching off crown shadows. The mask drew the alpha-tested cards again and
+activated extra full-screen ink samples. Removing it everywhere made the nearby
+crape crowns visibly darker inside, so low quality now keeps the mask in close views
+and unregisters it beyond600m, restoring it below500m. High quality stays unchanged.
+
+The distance is to the orbit target, not each tree. The whole-board phone view was
+21,084m away, a surprise after discussion had assumed roughly400m. All962 registered
+species instances lose their extra mask draw in that view; the approved420m Prado
+and350m terrace views keep it. Tests cover far/near transitions, new areas mounting
+while far, and removing/reopening rows without stale mask state. The final frozen
+phone default/pan comparison still gates release.
+
+[Why the near mask stays](log/ui/tree-species/mask-clawback/1180-day-sheet.jpg) ·
+[Measurement and validation notes](tree-mask-clawback.md).
+## 2026-11-23 — Freight joins Follow (initial checks)
+
+The downtown seven-car and Norcross ten-car illustrative consists now carry separate stable ids through picking and the existing Follow control. Their positions update before the camera lookup. Follow uses cars surviving their material clip planes and ends when none remain; it makes no tunnel claim. Both cards retain Illustrative labels.
+
+The easy-to-miss detail was update order: freight previously moved after the camera had already resolved its target. Initial browser checks picked and followed both consists. [Downtown capture](log/ui/follow/freight-downtown.jpg): 2026-11-20 14:12:35 ET, starting camera `900,545,0,35,300`; [Norcross capture](log/ui/follow/freight-norcross.jpg): 14:20:50 ET, starting camera `-790,-4385,0,35,300`. Follow then applies its standard bearing -148°, tilt 26°, distance 300 m.
+
+Validation: 20 Rust, 11 pipeline, 914 web tests (one skipped), five worker tests; production build and both performance tiers passed. Cross-model review found no blocking code issue. Initial captures are retained below; final replay checks and the review sheet are recorded in the completion entry. Web rebuild required; no data rebuild.
+
+## 2026-11-23 — Freight Follow replay checks complete
+
+Both illustrative consists passed day and full-night browser replays. The camera moved with the drawn cars through the downtown sections, then stopped when no cars remained drawn. Norcross followed to the mounted board edge and reported “train left the board” in both runs. Downtown ends with “freight no longer drawn”; it does not invent an underground location or a timetable trip. The selected card and active Follow position remain Illustrative.
+
+[Before Follow / after Follow / exit review sheet](log/ui/follow/freight-review.jpg). These compare interaction states, not two software versions. The browser advanced the pinned clock in 2-second steps, with camera and status samples saved in the four `*-check.json` files alongside the sheet. Cameras at the start of Follow:
+
+| Consist | Pinned time | Camera |
+| --- | --- | --- |
+| Downtown day | 2026-11-20T14:12:35-05:00 | `921,549,-148,26,300` |
+| Downtown night | 2026-11-20T22:12:35-05:00 | `-505,-900,-148,26,300` |
+| Norcross day | 2026-11-20T14:21:25-05:00 | `-654,-4519,-148,26,300` |
+| Norcross night | 2026-11-20T22:21:25-05:00 | `-654,-4519,-148,26,300` |
+
+Rebased validation: 20 Rust, 11 pipeline, 931 web tests (one skipped), five worker tests; build and type check passed. Perf Low: 2,382,511 triangles / 540 calls; High: 13,783,617 / 1,169, both below ceilings. Claude's second review found no code defect; its remaining visual finding is dismissed by these replays and screenshots. No live-feed night check is claimed: freight has no live feed. Web rebuild only; no data rebuild or worker change.
+
+### 2026-11-23 — Ansley gets more than a colour change
+
+Ansley's house mix now includes two-storey Foursquares with broad white-railed porches, alongside newer limestone and white-brick houses with dark slate roofs and black window frames. The forms follow Sam's neighbourhood observations without copying addresses. The surprising cost was small: across nine boards, the extra house detail is 7,580 triangles on high and 1,037 on low. Balusters and dormers belong to high; low keeps the porch rails. Cross-review caught a 12 × 8 m Foursquare whose dormer could poke through its shallow ridge. Keeping the established 2.7 m minimum rise fixed it, and a geometry test fails when that guard is removed. Painted shingles also needed a geographic guard so adding Ansley colours did not recolour Home Park. Requires a web rebuild, with deployment left to the coordinator. [Day comparison](log/ui/ansley-houses/sam-high-day-compare.jpg) · [Night comparison](log/ui/ansley-houses/sam-high-night-compare.jpg) · [Cameras and measurements](log/ui/ansley-houses/README.md)
+### 2026-11-23 — Rhodes Hall's open porch
+
+Rhodes Hall replaces one generic Brookwood South footprint with a granite tower,
+rounded bay, steep roof and three open porch arches. The tower reaches an estimated
+22.65 m, and a 3.5 m stair uses the shared terrain carve. The night reference was the
+surprise: most windows are dark while floodlights pick out the rough tower and porch.
+A stone-only shader wash reproduces that distinction without point lights or texture
+bytes. Low tier stays within its ceilings at 2.38 million triangles, 543 calls and
+432 MB post-GC heap. [Daylight](log/ui/rhodes-hall/high-day.png) ·
+[Full night](log/ui/rhodes-hall/high-night.png) · [Sources and estimates](rhodes-hall.md).
+### 2026-11-23 — A timetable test outlives its timetable
+
+A fresh Amtrak download broke both Brookwood corridor tests without changing a single path vertex. The new feed began its service calendars on November 22; the tests asked for November 20. Zero trains was the correct answer. A 15 KB recorded fixture now keeps the historical geometry, calendar and timetable together, so the edge-to-edge and freight-yield regressions also run without generated data. The same two checks pass on November 23 with the fresh feed. Regenerating production data will remove the old November 20 Crescent from demo links; it does not require a berth or consist fix. [Investigation and fixture provenance](brookwood-gtfs-regression.md).
+
+### 2026-11-23 — Magnolia A3 selected
+
+Sam picked the dense leaf specks on the dark cone, with a tidier lower edge and whiter gloss. Pulling only the leaf masses upward did not stop their cards and near tips from hanging downward, so both now share a lower-edge shaping step. The subtlety budget mattered most at low detail: fewer, larger cards pushed the first pass to +15% luminance. Reducing low-detail speck density brought A3 to +6.2% over A (0.222 versus 0.209); high detail is +7.9% (0.219 versus 0.203). Geometry remains 193 / 113 triangles. [Matched comparison sheet](log/ui/tree-species/options-magnolia-a3-pick.jpg).
+
+### 2026-11-23 — A car stays behind the streetcar
+
+The previous overlap guard made cars disappear when they met the S70. Three
+same-direction downtown arterial courses now replay their illustrative cars against
+the streetcar timetable. Cars wait behind its rear with a 2 m bumper gap, then
+follow when it moves. Each delayed car checks the traffic light again; it cannot
+borrow a green it missed while waiting. Adjacent lanes, crossing roads and bridges
+keep the occupancy guard. The streetcar's timetable motion is unchanged.
+
+The awkward part was time. A snapshot clamp can move a car backwards when a tram
+enters its lane, and an ordinary frame simulation cannot reproduce a clock seek.
+The queue uses half-second checkpoints and interpolates between them. A regression
+caught a 3 m backwards jump between fractional frames before that interpolation.
+Cross-review caught another trap: caching every frame's fractional timestamp
+would evict the replay history after about 40 s. Only grid samples are cached now,
+and the cache retains a complete course period, bounded at 7,200 samples. In a
+10,800-frame browser probe, updates took 0.3 ms at the median and 0.6 ms at the 99th
+percentile. The largest warm frame was 4.3 ms; the initial time jump took 45 ms.
+
+The Edgewood frame uses `cam=588,-65,0,50,100`, high tier,
+`t=2026-11-20T17:08:23Z&speed=0&dev&mindist=20`. It shows the car held behind the
+streetcar instead of absent. [Queue model and limits](streetcar-traffic-queues.md).
+Web rebuild only; no `pnpm data`, new requests or worker change.
+
+[Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
+[Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
+
+### 2026-11-23 — Dogwood A approved, wood tucked inside bloom
+
+Sam approved the fuller layered dome and white bloom, with two last changes: no dark sticks above the bracts and finer winter branches. Shorter upper scaffolds now stay inside the crown. Three tapered twigs replace each blunt fork; a pointed three-sided twig costs three triangles, fewer than a two-sided strip with a blunt end. That geometry saving, plus dropping separate bloom chips in favour of the existing white crown wash, keeps the finished model at 195 high / 146 low triangles. [Bloom and winter before/after](log/ui/tree-species/options-dogwood-final-tidy.jpg).
+
+### 2026-11-23 — A buried slab is not a blocked pavement
+
+The ground audit's 83 cm hit at 14th Street and 28 cm hit at the central Midtown footbridge were their buried undersides. Both tops already cleared the ground by 12 cm. Local winding can turn an underside upward, so winding alone cannot identify a walking surface. Transport now marks its slab-bottom triangle offsets for the development audit; production builds allocate no metadata and the geometry stays unchanged. Both-tier browser audits remove those two false alarms while retaining the real 8.8 cm intrusion at the south footbridge (370, −1870). A generated-deck regression reverses underside winding and also checks that 8 cm of ground above the exposed top still fails. The full suite passed 20 Rust, 950 web and 5 worker tests; Python checks skipped without `.venv`. [14th Street top](log/ground-audit/14th-street-top.jpg), daylight camera `125,-3641,30,55,45` with `dev&mindist=20`. The south footbridge remains a separate geometry issue; no surveyed deck height changed.
+
+### 2026-11-23 — Winn Park under the canopy
+
+The western ravine now reads as leaf litter and low planting instead of uninterrupted lawn. A narrow earth walk meets a stone terrace, a bench, a channel edge and a small pond. Ground paint carries the idea on both tiers; high adds just 1,263 triangles, while low adds none. The pond and terrace cut the terrain instead of floating above it. Ground-contact checked 4,149 exposed-face samples and 4,036 water samples without a penetration. The surprise was above the ground: the tree rollout's flat leaf carpets crossed the water like orange lids. Winn already paints its litter, so we agreed with the tree owners to omit only the overlapping discs and leave every tree intact. Requires a web rebuild. [Day comparison](log/ui/winn-park/ravine-high-day-compare.jpg) · [Night comparison](log/ui/winn-park/ravine-high-night-compare.jpg) · [References and checks](winn-park.md)
+
+### 2026-11-23 — SCAD's stepped academic block
+
+SCAD Atlanta's 1600 Peachtree building now follows 17 mapped building parts, from the
+northern parking decks to the 23.1 m inferred academic roof. Deep charcoal piers and
+recessed windows follow the newer exterior photos; an older night photograph supplies
+only the warm lobby lighting, because the building was still pale then. The first render
+caught clockwise source rings hiding the facade details inside the walls. Normalizing
+the rings fixed that without moving their geometry. The low tier stays within budget at
+546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
+[Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
+
+### 2026-11-23 — White oak joins the Model lab
+
+White oak's four illustrative size classes run from a 4.7 × 2.4 m sapling to a 30 × 35.7 m specimen based on the Atlanta champion measurements. Two options compare rounded-lobed leaf cards against faceted clusters, with pale spreading limbs, April leaf-out, wine/russet autumn colour and a small brown early-winter residue. A costs 193 / 81 triangles; C costs 191 / 111. A's summer luminance is 0.255 high and 0.258 low against the generic 0.248. The cored trial was dropped after measuring too bright. A texture-accounting surprise: the existing atlas budget counted pixels, not RGBA bytes. Activating the eighth leaf shape adds one 1.33 MiB atlas; the declared total now correctly includes four bytes per pixel and mipmaps. [Options, references and calendar](log/ui/tree-species/options-white-oak.jpg). Sam selected A because its lobed leaves match the other trees; A is now the lab default. Winter residue remains crown-wide, a documented limit of the shared renderer. City rollout remains separate.
+
+### 2026-11-23 — Freight gets three silhouettes
+
+The lab now has the Evolution-series GE road engine in NS-like and CSX-like paint, an NS-like SD70ACe, and a shorter CSX-like GP38-2. The SD has brow headlights, a broad clipped-corner nose and three radiator fans; the GP has a narrow short hood, four axles and two rear fans. The surprise was a published GP38-2 truck-spacing disagreement: a secondary sheet said 43 ft, while GATX says 34 ft between bolster centres. The model uses GATX. All four are merged vertex-coloured geometry, at 2,708–3,836 triangles each. The new NS inputs needed lifting through the grade so black panels still read; the approved CM44ACs stay unchanged. Lab-only selection for now; City consists are the next freight integration step after the car library. Web rebuild only. [Matched daylight](log/freight/variety/day.jpg) · [Night](log/freight/variety/night.jpg) · [Photo comparison](log/freight/variety/references.jpg) · [Sources and estimates](freight-variety.md).
+
+Cross-review found an unexpected coupling: City's terrain-opening cutoff used the shortest truck spacing in the whole library, so a lab-only switcher lowered it. Computing the cutoff from the actual City consist keeps the 12 m threshold. An 11 m test sliver catches the regression with that one-line fix reverted.
+
+### 2026-11-23 — Navy paint and distinct cooling silhouettes
+
+Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow nose and frame stripe, while the GP38-2 pairs a stronger blue cab with the grey YN2 hood. The GE radiator was still a box despite its underside detail: replacing its outer faces with angled wings makes the shape read from the matched lab camera. The SD instead has a flat-sided radiator and taller, squarer nose. The revised models use 2,684–3,828 triangles. [Day lineup](log/freight/variety/day.jpg) · [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — One CSX family in the freight lab
+
+The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — Where a front walk meets the Ansley steps
+
+A level tread can meet the middle of a walk and still miss its corners by 15.6 cm on a cross-slope. We seated both corners and cut the terrain beneath the approach. A neighbouring walk crossed the proposed stairs on one lot, so the shared-frontage check leaves that yard open. The high board now has 33 terraced yards, with 66 matching corners and 4.04 cm minimum sampled walk clearance. Low adds no terraces. [Day and night comparisons](log/ui/ansley-terraces/README.md).
+
+
+### 2026-11-23 — A final vertex is not another road segment
+
+At 21:00, a streetcar nose could project onto the exact end of a traffic course.
+The path returned its final vertex index, but the road-owner array has one entry
+per segment: the lookup ran one past its end and stopped City's render loop.
+Clamp to the final carrying segment, and return no surface for an absent owner.
+The exact 60 m endpoint regression and an arterial update sweep every five minutes
+through 24 hours both reproduce the old `undefined.bridge` exception with the fix
+removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
+118 calls; this was a path-boundary bug, not missing terrain or nighttime lighting.
+
+![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
+Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
+
+### 2026-11-23 — Redbud starts with the leaves
+
+After Sam picked white oak A, the next tree is eastern redbud: one explicit Winn Park Street View observation, 4.6% of the recorded Trees Atlanta plantings and 6.1% in street strips and wells. The first lab pass adds heart-shaped A-style cards, four illustrative sizes, a low vase and yellow fall colour. It costs 185 high-tier triangles, with one new 1.33 MiB atlas. The reference revealed the hard part immediately: flowers trace bare wood, while our existing bloom wash makes large pink leaves. That was conspicuous on the first-pass comparison. Web rebuild needed when eventually released; no data or deployment change.
+
+### 2026-11-23 — Redbud blooms along bare wood
+
+The early rendering painted big pink hearts across the crown. Now one tapered card follows each branch or twig, carrying a trail of magenta clusters in a spare part of the leaf atlas. The surprise was how much the extra lateral twigs mattered: even small flowers read as a crown once the bare wood spreads outward. Leaves start after the March bloom. The mature tree costs 193 / 91 triangles at high / low detail, including leaf litter, with summer luminance at 0.236 / 0.259 against the generic tree’s 0.248. Lab study awaiting review. Web rebuild only.
+
+### 2026-11-23 — Redbud gets a wider fork and a denser bloom
+
+At Sam’s review the March tree still read as bare from a distance. Four spreading boughs at high detail and three at low now carry paired cards with the same branch pattern in spring and winter. At eye level the crown mask covers about 64,200 pixels in March, up from about 3,100. At 300 m the big surprise is how little is left on screen: 156 masked pixels at high detail and 94 at low, with pink visible in each. April’s first leaves are reddish-purple and turn green before summer. The tree costs 193 / 138 triangles, with the same heart-shaped summer cards, yellow fall and four sizes. [Eye level, photo reference, 100 m, 300 m and seasons](log/ui/tree-species/options-eastern-redbud.jpg). Web rebuild only.
+### 2026-11-23 — A quieter Rhodes Hall tower
+
+Sam wanted the floodlit tower a little less bright. Its stone wash is now 25% lower,
+while the porch lighting and dark windows stay as they were. It is a one-coefficient
+calibration, with no geometry or texture cost. Matched 21:00 frames use the same
+`301,-4675,340,60,160` camera at both tiers.
+[High before/after](log/ui/rhodes-tower-dim/compare-high-night.jpg) ·
+[Low before/after](log/ui/rhodes-tower-dim/compare-low-night.jpg).
+
+### 2026-11-23 — Two purple buses for the A-Line
+
+The purple bus photographed at the Phase One launch has two axles and a CNG roof pod. The 60-foot electric bought for the line has three axles and a folding joint. The Model Lab now puts the two silhouettes side by side in the vehicle list. Turning the electric trailer through 35° keeps both ends of the silver bellows attached. Its low-detail model uses 1,190 triangles across three meshes. [See the photographs and matched day/night studies](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — The Midtown South footbridge
+
+A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
+
+### 2026-11-23 — The paths across The Prado
+
+At The Prado circle the mapped pedestrian ways run across several road legs and the verge in between. The ground painter now follows those ways but clips the white bars to the carriageways. Across two Ansley boards, 33 crossing ways join 83 mapped sidewalk ways. The phone gets the warm paver colour, while the high board carries hex joints and four small yield signs in its existing landscape mesh. [Circle, fork and crossing comparisons](log/ui/ansley-street-edge/README.md).
+
+
+### 2026-11-23 — Rhodes Hall at 21:00
+
+At a 160 m orbit, the earlier 25% reduction still made the tower read as one lit
+block. Two studies put the brightest stone at the 0.5 m base and fade the wash
+to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
+region in plan, so the falloff follows the tower's own masonry vertices.
+[Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
+
+### 2026-11-23 — Rapid bus glazing at night
+
+At the same lab camera, the lit windshield had made the XN40 cab as bright as the passenger compartment. The revised Rapid studies keep the windshield dark and show the amber destination sign above it. Both buses now use the XN40 purple and cooler passenger lighting, with the emission multiplier reduced from 0.6 to 0.4. On the XE60, individual panes sit inside a dark frame. [Compare the matched day and night views](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — XE60 roof fairings
+
+The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — Three footprints at Tech Square
+
+Coda's 118.9 m tower shares its block with a five-floor computing center and
+the retained Crum & Forster building. The archive supplies three separate
+footprints. Putting a solid base under the tower would close the 19.2 m arcade,
+so the west podium stops short and the soffit spans the opening. A ray from
+pedestrian height crosses the passage and a second ray hits the soffit overhead.
+[High daylight comparison](log/ui/coda/high-day.jpg) · [High night comparison](log/ui/coda/high-night.jpg).
+
+At the 840 m review camera, the first glass treatment hid the floor grid. The
+revision gives the two wings separate upper setbacks and silver mullions around
+blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
+building and eight suspended globes trace the approach to the lobby.
+[Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).

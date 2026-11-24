@@ -68,6 +68,12 @@ it('mounts each inferred vent in exactly one Midtown row', () => {
   const rows = Object.fromEntries(Object.entries(zs).map(([id, z]) => [id, { minX: -1000, maxX: 1800, ...z }]));
   const mounted = Object.entries(rows).filter(([, bounds]) => midtownVents(bounds, () => 0) !== null).map(([id]) => id);
   expect(mounted.sort()).toEqual(['midtown-south', 'midtown-upper']);
+  // The two island grates near Civic Center belong to the north band.
+  const north = midtownVents({ minX: -1000, maxX: 1800, minZ: -1700, maxZ: -1300 }, () => 0);
+  expect(north).not.toBeNull();
+  const nb = new Box3().setFromObject(north!.group);
+  expect(nb.max.y).toBeCloseTo(0.22, 5);
+  expect(nb.min.z).toBeLessThan(-1534);
   const fan = new Box3().setFromObject(midtownVents(rows['midtown-upper'], () => 10)!.group);
   // Fan house: footings below grade, parapet 5 m above it, fan hoods 0.9 m above that.
   expect(fan.min.y).toBeCloseTo(9.6, 5);

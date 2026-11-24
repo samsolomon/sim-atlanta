@@ -39,6 +39,197 @@ def parse_height(value):
         return None
 
 
+LEVEL_M = 3.3        # inferred storey height for a building part with levels only
+ROOF_SLAB_M = 0.6    # thickness of a building:part=roof canopy
+PART_FALLBACK_M = 8  # the existing illustrative height for a building with no data
+MIN_SHARE = 0.1      # a part at least this much inside an outline belongs to it
+
+
+def _levels(value):
+    try:
+        n = float(value)
+        return n if 0 <= n < 200 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _rings(polygon):
+    return [[[round(x, 2), round(z, 2)] for x, z in ring.coords[:-1]]
+            for ring in [polygon.exterior, *polygon.interiors]]
+
+
+def _polygons(shape, min_area=1.0):
+    geoms = shape.geoms if hasattr(shape, "geoms") else [shape]
+    return [g for g in geoms if g.geom_type == "Polygon" and g.area >= min_area]
+
+
+def part_height(tags, parent_tags, king=False, tallest=None, height_taken=False):
+    """(top, bottom, tier) in metres above the footprint for one building:part.
+
+    A height tag is reported. Levels alone are inferred: when the parent reports
+    a height that no part already reports (`height_taken`), its tallest part by
+    levels (`tallest`) is scaled to it, within 2.5-5 m per level; a parent with
+    levels only lends City's 3.6 m; anything else uses 3.3 m.
+    """
+    parent_h = None if king else parse_height(parent_tags.get("height"))
+    parent_levels = _levels(parent_tags.get("building:levels"))
+    most = max(tallest or 0, parent_levels or 0)
+    per_level = LEVEL_M
+    if parent_h and most and not height_taken and 2.5 <= parent_h / most <= 5:
+        per_level = parent_h / most
+    elif parent_levels and not parent_h:
+        per_level = 3.6  # the parent itself is drawn at 3.6 m per level
+    top = None if king else parse_height(tags.get("height"))
+    tier = "reported" if top else None
+    levels = _levels(tags.get("building:levels"))
+    if top is None and levels:
+        top, tier = levels * per_level, "inferred"
+    bottom = None if king else parse_height(tags.get("min_height"))
+    if bottom is None:
+        min_level = _levels(tags.get("building:min_level"))
+        bottom = min_level * per_level if min_level else 0.0
+    if tags.get("building:part") == "roof":
+        top = top or PART_FALLBACK_M
+        bottom = bottom or max(0.0, top - ROOF_SLAB_M)
+        tier = tier or "illustrative"
+    if top is None:
+        top, tier = PART_FALLBACK_M, "illustrative"
+    return top, min(bottom, top - 0.1), tier
+
+
+def resolve(masses):
+    """Trim each mass wherever an earlier mass spans its whole vertical range
+    (taller first; equal ranges by id), so every part keeps its own id and tier."""
+    from shapely.ops import unary_union
+
+    masses = sorted(masses, key=lambda m: (-m["top"], m["bottom"], m["id"]))
+    for i, m in enumerate(masses):
+        covers = [o["shape"] for o in masses[:i] if o["bottom"] <= m["bottom"] and o["top"] >= m["top"]]
+        if covers:
+            m["shape"] = m["shape"].difference(unary_union(covers))
+    return masses
+
+
+def masses_to_parts(b, piece, masses):
+    """Resolve one building's part masses into drawn parts plus its podium.
+
+    `b` carries the parent's `h` and `floors`; `piece` is its drawn outline;
+    each mass has id, top, bottom, tier, shape and canopy.
+    """
+    from shapely.ops import unary_union
+
+    masses = resolve(masses)
+    out = []
+    for m in masses:
+        for poly in _polygons(m["shape"]):
+            entry = dict(id=m["id"], rings=_rings(poly), h=round(m["top"], 1), tier=m["tier"])
+            if m["bottom"] > 0:
+                entry["minH"] = round(m["bottom"], 1)
+            out.append(entry)
+    if not out:
+        return None
+    # The parent footprint the parts leave uncovered. Raised parts (canopies,
+    # passages) count as covered, so the space beneath them stays open.
+    # The parent's own height. A height far beyond its levels (over 4.5 m per
+    # level) means the levels describe a podium under a taller part.
+    own, tier = PART_FALLBACK_M, "illustrative"
+    if b["h"] is not None and not (b["floors"] and b["h"] / b["floors"] > 4.5):
+        own, tier = b["h"], "reported"
+    elif b["floors"]:
+        own, tier = b["floors"] * 3.6, "inferred"
+    grounded = [m for m in masses if m["bottom"] == 0 and not m["shape"].is_empty]
+    covered = unary_union([m["shape"] for m in masses])
+    share = unary_union([m["shape"] for m in grounded]).area / piece.area if grounded else 0
+    podium_h = own
+    if share >= 0.25:
+        # Parts map the building: OSM gives the parent the whole building's
+        # height, so the remainder is a podium no taller than its tallest part,
+        # or its lowest substantial part where the parts map most of the plan.
+        if share >= 0.5:
+            major = [m for m in grounded if m["shape"].area >= 0.1 * covered.area]
+            cap = min(major or grounded, key=lambda m: m["top"])
+        else:
+            cap = max(grounded, key=lambda m: m["top"])
+        podium_h, tier = min(own, cap["top"]), "inferred"
+    # A raised part (other than a roof canopy) stands on a ground floor up to
+    # its underside, where nothing else is mapped beneath it.
+    solid = unary_union([m["shape"] for m in grounded]) if grounded else None
+    for m in masses:
+        if m["bottom"] > 0 and not m["canopy"]:
+            under = m["shape"].difference(solid) if solid is not None else m["shape"]
+            for poly in _polygons(under, 20):
+                out.append(dict(id="podium", rings=_rings(poly), h=round(m["bottom"], 1), tier="inferred"))
+    # Below a quarter of the plan the parts are details (an entrance, a canopy)
+    # and the parent outline keeps its own mapped height and tier.
+    rest = piece.difference(covered)
+    for poly in _polygons(rest, 20):
+        if not poly.buffer(-0.75).is_empty:
+            out.append(dict(id="podium", rings=_rings(poly), h=round(podium_h, 1), tier=tier))
+    return out
+
+
+def attach_parts(buildings, pieces_by_id, outlines, parts, clip, king=False):
+    """Give each drawn building its mapped building:part masses.
+
+    A part whose vertical range lies inside another part's is trimmed by it.
+    Parts inside an outline City does not draw (roofs, stations, railway
+    buildings, slivers) are left to whatever replaces that outline. Whatever
+    the parts leave of the parent is a podium: capped at the tallest part when
+    the parts map a quarter of the plan, at the lowest substantial part when
+    they map half of it, and left at the parent's height when they are only
+    details. Parts outside every outline become buildings.
+    """
+    from shapely.ops import unary_union
+
+    by_parent, orphans = {}, []
+    for ref, tags, shape in parts:
+        best, share = None, 0.0
+        for owner, outline in outlines:
+            if outline.intersects(shape):
+                overlap = outline.intersection(shape).area / shape.area
+                if overlap > share:
+                    best, share = owner, overlap
+        if share >= MIN_SHARE:
+            by_parent.setdefault(best, []).append((ref, tags, shape))
+        else:
+            orphans.append((ref, tags, shape))
+
+    for b in buildings:
+        piece, tags, ref = pieces_by_id[id(b)]
+        mine = by_parent.get(ref)
+        if not mine:
+            continue
+        masses = []
+        tallest = max(((_levels(t.get("building:levels")) or 0) for _, t, _ in mine
+                       if t.get("building:part") != "roof" and not parse_height(t.get("height"))), default=0)
+        parent_h = None if king else parse_height(tags.get("height"))
+        taken = bool(parent_h) and any((parse_height(t.get("height")) or 0) >= parent_h - .5 for _, t, _ in mine)
+        for ref, ptags, shape in mine:
+            top, bottom, tier = part_height(ptags, tags, king, tallest, taken)
+            masses.append(dict(id=ref, top=top, bottom=bottom, tier=tier, shape=shape.intersection(piece),
+                               canopy=ptags.get("building:part") == "roof"))
+        parts_out = masses_to_parts(b, piece, masses)
+        if parts_out:
+            b["parts"] = parts_out
+
+    # Parts outside every outline stand alone; overlapping ones resolve as one group.
+    lone = []
+    for ref, tags, shape in orphans:
+        top, bottom, tier = part_height(tags, {}, king)
+        lone.append(dict(id=ref, top=top, bottom=bottom, tier=tier, tags=tags, shape=shape.intersection(clip)))
+    for m in resolve(lone):
+        tags = m["tags"]
+        for i, poly in enumerate(_polygons(m["shape"], 20)):
+            kind = tags.get("building:part")
+            rings = _rings(poly)
+            part = dict(id=m["id"], rings=rings, h=round(m["top"], 1), tier=m["tier"])
+            if m["bottom"] > 0:
+                part["minH"] = round(m["bottom"], 1)
+            buildings.append(dict(id=m["id"] if i == 0 else f"{m['id']}/{i}", cls=kind if kind not in ("yes", None) else "yes",
+                                  floors=int(_levels(tags.get("building:levels")) or 0) or None, h=part["h"],
+                                  rings=rings, name=tags.get("name"), parts=[part]))
+
+
 def extract_context(raw, bounds, *, king=False, station_building=None, named_deck=None):
     from shapely.geometry import LineString, Polygon, box
     from shapely.ops import polygonize
@@ -48,9 +239,19 @@ def extract_context(raw, bounds, *, king=False, station_building=None, named_dec
     nodes = {e["id"]: project(e["lon"], e["lat"]) for e in elements if e["type"] == "node"}
     ways = {e["id"]: e for e in elements if e["type"] == "way"}
     roads, buildings, cover = [], [], []
+    pieces_by_id, outlines, parts = {}, [], []
 
     def add_area(ref, tags, outer, holes=()):
         building = tags.get("building")
+        if building and building != "no":
+            shape = Polygon(outer, holes).buffer(0)
+            if not shape.is_empty:
+                outlines.append((ref, shape))
+        elif not building and tags.get("building:part", "no") != "no":
+            shape = Polygon(outer, holes).buffer(0)
+            if shape.area >= 1:
+                parts.append((ref, tags, shape))
+            return
         if building in ("roof", "no") or (building == "train_station" and ref != station_building) or tags.get("railway"):
             return
         kind = "parking" if tags.get("amenity") == "parking" else tags.get("landuse") or tags.get("leisure")
@@ -71,9 +272,11 @@ def extract_context(raw, bounds, *, king=False, station_building=None, named_dec
                      for ring in [part.exterior, *part.interiors]]
             if building:
                 levels = tags.get("building:levels", "5" if pencil_factory else "")
-                buildings.append(dict(id=ref if i == 0 else f"{ref}/{i}", cls=building,
+                ident = ref if i == 0 else f"{ref}/{i}"
+                buildings.append(dict(id=ident, cls=building,
                                       floors=int(levels) if levels.isdigit() else None,
                                       h=parse_height(tags.get("height")) if not king else None, rings=rings, name=tags.get("name")))
+                pieces_by_id[id(buildings[-1])] = (part, tags, ref)
             else:
                 cover.append(dict(kind=kind, sub=None, name=tags.get("name"), rings=rings))
 
@@ -83,7 +286,8 @@ def extract_context(raw, bounds, *, king=False, station_building=None, named_dec
     members = set()
     for r in elements:
         t = r.get("tags", {})
-        if r["type"] != "relation" or t.get("type") != "multipolygon" or not t.get("building"):
+        if r["type"] != "relation" or t.get("type") != "multipolygon" or not (
+                t.get("building") or t.get("building:part", "no") != "no"):
             continue
         boundaries = {"outer": [], "inner": []}
         for m in r["members"]:
@@ -117,6 +321,7 @@ def extract_context(raw, bounds, *, king=False, station_building=None, named_dec
                                   tunnel=t.get("tunnel", "no") != "no" or t.get("indoor") == "yes", pts=pts))
                 if ident == named_deck:
                     roads[-1]["id"] = f"osm:way:{ident}"
+    attach_parts(buildings, pieces_by_id, outlines, parts, clip, king)
     return buildings, roads, cover
 
 

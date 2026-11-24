@@ -16,6 +16,7 @@ import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
 import { alignment } from '../vignette/alignment';
 import { World } from '../vignette/world';
+import { rolloutBatch } from '../trees/rollout-city';
 import { addSection, bounds, connect, gridAt, joins, response, type TrafficArea, type Board, type Direction } from './sections';
 
 const status = document.querySelector<HTMLElement>('[role="status"]')!;
@@ -44,6 +45,8 @@ async function main() {
   const canvas = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas')!, antialias: quality === 'high' });
   canvas.setPixelRatio(Math.min(devicePixelRatio, quality === 'high' ? 2 : 1));
   const scene = new THREE.Scene();
+  scene.add(rolloutBatch.group);
+  rolloutBatch.setSeason(180); // Match the coverage study's generic summer trees.
   scene.background = new THREE.Color('#e3dfd1');
   const camera = new THREE.PerspectiveCamera(40, 1, 1, 12000);
   const orbit = new OrbitControls(camera, canvas.domElement);
@@ -55,6 +58,8 @@ async function main() {
   const cleanups: (() => void)[] = [];
   let traffic: ConnectorTraffic | undefined;
   function draw() {
+    rolloutBatch.flush();
+    rolloutBatch.update(0, camera);
     traffic?.update(clock.now().getTime(), 0); // The coverage study uses daylight lighting.
     canvas.render(scene, camera);
   }
@@ -98,7 +103,7 @@ async function main() {
     const track = terrainAlignment(alignment(routes, manifest, bounds.downtown, pid), pid, manifest, grid);
     const downtown = createDowntownTerrain(grid, ctx, trees.trees, { quality, join: joins('downtown'), bottomY: -48, openings: terrainOpenings([track]) });
     let transport: ReturnType<typeof createSurfaceTransport>;
-    try { transport = createSurfaceTransport(ctx, grid, downtown.groundAt); }
+    try { transport = createSurfaceTransport(ctx, grid, downtown.groundAt); downtown.carve(transport.cutting); }
     catch (error) { downtown.dispose(); throw error; }
     areas.set('downtown', {
       ...downtown, connectorBoard: { city: ctx, roadHeight: cityRoadHeight(ctx, downtown.groundAt, transport.deckAt) },

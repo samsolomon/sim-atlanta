@@ -58,6 +58,32 @@ The OSM architectural height is 200 m. Pickard Chilton reports 120 feet (36.6 m)
 
 The four captures share (800, −3710), bearing 70°, tilt 50°, 0.80 m/px. [High daylight](log/ui/midtown-skyline/symphony-high-day.jpg) · [High night](log/ui/midtown-skyline/symphony-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/symphony-low-day.jpg) · [Low night](log/ui/midtown-skyline/symphony-low-night.jpg)
 
+### The "napkin holder", second pass (2026-11-23)
+
+Sam called it the napkin holder. Its two glass veils carry the broad faces 36.6 m above the roof, and end-on they curve in toward each other. The owner's aerial from the west gives the end-on section: the faces are about 30 m apart at the roof and the tips about 15 m apart, so each veil leans about 7.8 m inward. The 2006 street photograph from the west and the 2023 elevated view confirm the same curve, the white steel lattice trusses at the narrow ends, and one smooth blue-green curtain wall with silver mullions at every floor. The same aerial shows the roof garden on the curved 68 m west wing: an oval lawn inside a clipped hedge around a white round pavilion, with paving, two cypresses toward the tower and a glass rail. The OSM building parts from #201 supply the plan: tower, 68 m wing, 54–59 m shoulders, 9.8 m entrance nose and the 73 m pavilion. A night skyline shows the veils glowing pale. No photograph shows garden lighting, so the garden stays unlit. [Owner's architecture photographs](https://1180peachtree.com/architecture.php) · [2006 street view](https://commons.wikimedia.org/wiki/File:1_Symphony_Tower.jpg) · [2023 elevated view](https://commons.wikimedia.org/wiki/File:A1180PchtrMT2511-0726.jpg) · [Night skyline](https://www.kendall-heaton.com/projects/1180-peachtree/) · [Aerial](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-84.38518629579029,33.785843882368816,-84.38258932696779,33.78800225279914&bboxSR=4326&imageSR=4326&size=900,900&format=jpg&f=image)
+
+City draws the veils as curved glass in 8 rows by 10 columns, at 88% opacity so a little light shows through. The mullions follow the curve, and the transoms run along it. The veils and trusses glow cool white at night. The tower and wing share a single curtain-wall atlas (1.5 m bays, 4.1 m floors, warm-lit offices at night), replacing the random tile shades. **Estimated:** the inward lean and its curve profile (a 1.6 power), a 1.5 m crest along the top edge, the truss depth, the garden layout, the pavilion size, the cypress height and the glass colours.
+
+[Sam's angle, before and after](log/ui/midtown-skyline/napkin-sam-compare-day.jpg) · [Night](log/ui/midtown-skyline/napkin-sam-compare-night.jpg) · [Crown end-on, before and after](log/ui/midtown-skyline/napkin-crown-compare-day.jpg) · [Photo and model](log/ui/midtown-skyline/napkin-photo-vs-model.jpg) · [Low tier at Sam's angle](log/ui/midtown-skyline/napkin-sam-after-low-day.jpg) · [Low tier crown at night](log/ui/midtown-skyline/napkin-crown-after-low-night.jpg)
+
+### Garden, crown lattice and night, third pass (2026-11-23)
+
+Sam's reference photos were an aerial and an eye-level rooftop shot from a stock library, so they aren't cited here. The owner's aerial and the Wikimedia views linked above show the same features. On the 68 m wing roof garden, the pavilion is now a smooth white drum with a stepped top edge and a louvred service panel. Mounded beds of ornamental grasses and low shrubs (#214 primitives) flank the lawn. A row of seven small multi-stem crape myrtles runs along the curved west edge inside the rail. They are a tagged stand-in (`TODO(tree-lab)`) until the tree lab's crape myrtle is approved, shown in late-November fall colour because landmarks don't yet receive City's season. Behind the veil glazing, white steel lattice trusses (verticals, chords and alternating diagonals) frame the crown. At night the veils and lattice glow cool white-green from inside, so the truss pattern reads through, and a thin light line runs up each veil's curved west edge from the wing roof to the tip. The offices below stay warm. The ground-level plaza at the tower base already had its curved paths and trees, so it is unchanged.
+
+**Estimated:** the lattice spacing and depth, the light-line route, the bed and grass layout, and the crape myrtle spacing and height (4.5 m). **Gap:** I found no citable dusk photograph; the night colour follows Sam's description and the Kendall/Heaton night skyline.
+
+[Garden before and after](log/ui/midtown-skyline/garden2-close-compare-day.jpg) · [Night before and after](log/ui/midtown-skyline/garden2-sam-compare-night.jpg) · [Dusk and night](log/ui/midtown-skyline/garden2-dusk-night.jpg) · [Day at Sam's angle](log/ui/midtown-skyline/garden2-sam-compare-day.jpg) · [Low tier garden](log/ui/midtown-skyline/garden2-close-after-low-day.jpg)
+
+### Night crown, toned down (2026-11-24)
+
+Sam saw the crown in production as a blown-out white slab, brighter than anything around it, blooming past its edges. The cause: the veil glass had a near-white emissive at intensity 1.8, and the inner and end lattices sat at 1.6 and 1.4. Emissive adds on top of lighting, so the colour saturated to white before bloom spread it. Kendall/Heaton's night skyline shows the real crown as a soft, pale grey-green wash on the veil glass, with the white lattice at the open end a little brighter and a thin bright line up the edge; nothing clips. City now uses:
+- veils: grey-green `#9dbcb2` at 0.82
+- inner lattice: `#c9ddd4` at 0.78
+- end lattices: `#d8e6e1` at 0.75
+- edge line: 75%
+
+A test holds every crown material's emissive (colour × intensity) below 0.7 per channel. The warm office windows are unchanged. [Kendall/Heaton night skyline](https://www.kendall-heaton.com/projects/1180-peachtree/) · [Photo and model](log/ui/midtown-skyline/napkin-night-photo-vs-model.jpg) · [Aerial before and after, high tier](log/ui/midtown-skyline/napkin-night-aerial-compare-high.jpg) · [Low tier](log/ui/midtown-skyline/napkin-night-aerial-compare-low.jpg) · [Day and night](log/ui/midtown-skyline/napkin-night-aerial-daynight-high.jpg) · [Close](log/ui/midtown-skyline/napkin-night-close-compare-high.jpg)
+
 ## The Georgian Terrace
 
 The parent footprint reports 19 floors. Two archived building parts distinguish the ten-storey historic corner from the 19-storey rear addition. The part boundaries preserve the angled Ponce frontage, indented courtyard, rounded corner and atrium junction. The hotel's daylight corner photograph shows the brick bay windows and stone cornice below a taller glazed cylinder. Smallwood's side approach shows the projecting terraces and the physical joint between old masonry and new glazing. A visitor's evening photograph shows warm lamps grazing the bases of pale columns and shining behind arched openings. Seasonal decorations vary. [Historic and modern exteriors](https://www.thegeorgianterrace.com/gallery) · [Renovation architect's photographs](https://smallwood-us.com/projects/georgian-terrace/) · [Evening terrace photograph](https://myloveofoldhollywood.blogspot.com/2014/01/touring-atlanta-part-one-of-three.html)
@@ -103,3 +129,120 @@ A self-review found three geometry problems, all now fixed:
 The bank faces now sit on the measured outline: ±33.7 m on the long axis and ±26.3 m across. The violet-blue wash is hidden by day.
 
 Close camera from the northwest: target (470, −2110), bearing 330°, tilt 60°, 135 m. [High daylight](log/ui/midtown-skyline/tower-square-close-high-day.jpg) · [High night](log/ui/midtown-skyline/tower-square-close-high-night.jpg) · [Low daylight](log/ui/midtown-skyline/tower-square-close-low-day.jpg) · [Low night](log/ui/midtown-skyline/tower-square-close-low-night.jpg)
+
+## The Atlanta Biltmore
+
+Schultze & Weaver's 1924 Georgian Revival hotel at West Peachtree and 5th was a generic 65 m glass extrusion. Street photographs show red-brown brick over a two-storey limestone base, stone quoins, a stone string course near the top, and a crowning cornice on modillions. A two-storey columned portico stands on West Peachtree. The two lattice masts on the roof first carried WSB's long-wire antenna and now carry the vertical illuminated letters BILTMORE. The 1925 photographs give the span between them as 312 ft 6 in (95 m). The OSM building parts from #201 give the plan: a 65 m main block, 56 m and 47 m wings, and low annexes. [Wikimedia, 2009, CC BY 3.0](https://commons.wikimedia.org/wiki/File:Biltmore_Hotel.jpg) · [Wikimedia, 2019 front, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Front_of_Biltmore,_Atlanta.jpg) · [Wikimedia, 2019 with mast, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Biltmore_ATL.jpg) · [Scott Fybush on the WSB masts](https://fybush.com/site-20160318) · [City landmark record](https://www.atlantaga.gov/government/departments/city-planning/historic-preservation/property-district-information/biltmore-hotel-and-tower) · [Wikipedia](https://en.wikipedia.org/wiki/Atlanta_Biltmore_Hotel_and_Biltmore_Apartments)
+
+The ornament reuses the Georgian Terrace template, now shared as `classical-ornament.ts` (the Terrace's geometry hash is unchanged), and adds quoins. **Estimated:** the 46 m mast height and taper, the letter size, the portico's ten columns, the cornice dimensions and the brick tone. The photos found show the letters but not at night, so the red night glow is inferred from the description of illuminated letters; this is a documented gap.
+
+Cameras: front `/?view=city&cam=395,-2565,75,62,330` · context `/?view=city&cam=430,-2560,75,60,640` · masts `/?view=city&cam=470,-2560,75,52,430`. [Front before and after](log/ui/midtown-skyline/biltmore-front-compare-day.jpg) · [Context before and after](log/ui/midtown-skyline/biltmore-context-compare-day.jpg) · [Night](log/ui/midtown-skyline/biltmore-context-compare-night.jpg) · [Masts at night](log/ui/midtown-skyline/biltmore-masts-after-high-night.jpg) · [Low tier](log/ui/midtown-skyline/biltmore-front-after-low-day.jpg)
+
+## The Academy of Medicine
+
+The 1941 Academy of Medicine at 875 West Peachtree (Hentz, Adler & Shutze; now a Georgia Tech event venue) was drawn as a generic two-storey brick box. Three Wikimedia photographs from two angles show a cream stucco temple on a raised base. It has a six-column pedimented portico facing West Peachtree with ACADEMY OF MEDICINE across the frieze, verdigris copper hipped roofs over the wings, a square central lantern with arched thermal windows, and tall arched windows set in blind arches. The mapped outline (osm:way:42725820) already traces the portico, the stepped wings and the rounded rear. City draws them with the shared classical ornament: a base course, an eave band on brackets and a cornice. [Wikimedia, 2008, CC BY 3.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine.jpg) · [Wikimedia, 2011, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine_(Atlanta).JPG) · [Wikimedia, oblique, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine_875_West_Peachtree_Street_NE_Atlanta_Georgia.JPG) · [Wikimedia, frontal, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine,_Atlanta.jpg)
+
+**Estimated:** the 8.4 m eave, the 15.5 m lantern, the roof pitches, the column spacing and the window positions. The frieze lettering is a band of glyph blocks. **Gap:** no night photograph was found, so only an illustrative warm lamp behind the portico doors is lit.
+
+Camera `/?view=city&cam=452,-2721,60,45,150`. [Before and after](log/ui/midtown-skyline/academy-compare-day.jpg) · [Night](log/ui/midtown-skyline/academy-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/academy-after-low-day.jpg) · [Wider](log/ui/midtown-skyline/academy-wide-after-high-day.jpg)
+
+### Second pass: materials, openings and the 1941 garden (2026-11-23)
+
+**Wall material, re-verified.** The National Register nomination (1980) describes a five-bay Neo-Classical building with a standing-seam hipped metal roof, a central cupola with Roman windows, a pedimented portico of six Tuscan columns carrying a large caduceus, round arched windows and corner pilasters. It does not name the wall finish. The 2009 Wikimedia photograph at full resolution (4592 × 3056) settles it: smooth putty-cream **stucco** with a fine grain and no coursing, over a banded stucco base and a cast-stone water table. The walls keep stucco, now a warmer putty tone with a banded base and faint streaks under the eaves where water runs off the cornice. The shared procedural stucco and aged-copper surfaces from the materials library will replace these vertex tones when that library merges. [NRHP nomination, NPS](https://npgallery.nps.gov/GetAsset/43283731-e6d9-459e-8324-f8855aa67409) · [Wikimedia, 2009, full resolution](https://commons.wikimedia.org/wiki/File:Academy_of_Medicine_875_West_Peachtree_Street_NE_Atlanta_Georgia.JPG)
+
+**Copper.** The roofs are now a muted grey-green verdigris with darker standing seams, bundled every 2.2 m at City scale, in place of the saturated teal.
+
+**Openings.**
+- Each arched sash has a moulded surround and a keystone inside a recessed blind arch, with white muntins, a radiating fanlight and a stone sill, as the close photographs show.
+- The portico has Tuscan bases and capitals.
+- The tympanum carries the caduceus.
+- The central door has a moulded surround and a fanlight, flanked by arched sashes.
+
+**Grounds.** Georgia Tech's 2023 Campus Historic Preservation Plan lists the Academy of Medicine Garden (1941, Classical Revival) as recommended eligible. It records that the front lawn keeps many of its original plantings, that shrubs replaced the trees flanking the entrance, and that the south sunken garden is now hardscape. The nomination records a front yard with shrubbery and a paved brick walk. City now draws:
+- a brick walk from West Peachtree to the steps
+- clipped boxwood along the walk, the street edge and the foundation
+- two boxwood-edged formal beds of rich black soil flanking the steps (#263)
+
+[GT 2023 Campus Historic Preservation Plan](https://www.facilities.gatech.edu/sites/default/files/2024-07/2023%20GT%20Campus%20Historic%20Preservation%20Update_Final%20Report%20with%20Appendices.pdf)
+
+**Estimated:** the bed and hedge layout, the hedge heights, the seam spacing, the streak placement and the sash proportions. **Gap:** still no night photograph; the door fanlight lamp is illustrative.
+
+[Before and after](log/ui/midtown-skyline/academy2-compare-day.jpg) · [Close before and after](log/ui/midtown-skyline/academy2-close-compare-day.jpg) · [Close at night](log/ui/midtown-skyline/academy2-close-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/academy2-after-low-day.jpg) · close camera `/?view=city&cam=440,-2721,52,60,80`
+
+**Material library (#287), adopted.** The copper hips use `surfaces.agedCopper({ seam: 0 })`, which adds uneven, streaked verdigris around the existing tone; the geometric seams stay. The walls use `surfaces.stucco()`. The Biltmore's walls use `surfaces.brick()`, which is mostly below a pixel at the City orbit, as studio-materials noted. [Before and after](log/ui/midtown-skyline/materials-academy-compare-day.jpg) · [Biltmore](log/ui/midtown-skyline/materials-biltmore-compare-day.jpg)
+
+## The Wimbish House
+
+The 1898 Wimbish House at 1150 Peachtree (W. T. Downing), home of the Atlanta Woman's Club, was drawn as a generic two-storey box. Wikimedia photographs from the street and from the garden show buff stone under a steep slate hip roof. A round drum bay and a conical turret frame an arched loggia on the south front, two pinnacled dormers rise between them, and a tall chimney stands at the back. The OSM building parts give the plan: the house at the east end, the porch, and the club's later two-storey wing to the west. The mapped 7.2 m height fits the wing, not the three-storey house, so the house is raised to an inferred 11.5 m eave and an 18 m ridge. The turret cap is at 19.6 m and the chimney at 20.5 m. [Wikimedia, 2019, front, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House.jpg) · [Wikimedia, 2019, oblique, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Wimbish_House_3.jpg) · [Wikimedia, 2013, from Peachtree, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Atlanta_Women%27s_Club_2013_09_28_7845.JPG)
+
+**Estimated:** all heights, the roof pitch, the turret and drum radii, the dormers, the arch count and the stone tone. **Gap:** no night photograph was found, so only an illustrative lamp in the loggia is lit.
+
+Camera `/?view=city&cam=762,-3556,335,55,120`. [Before and after](log/ui/midtown-skyline/wimbish-compare-day.jpg) · [Night](log/ui/midtown-skyline/wimbish-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/wimbish-after-low-day.jpg)
+
+## The Ponce de Leon Apartments
+
+The 1913 Ponce de Leon Apartments (William L. Stoddart), now The Ponce condominiums, at the southeast corner of Peachtree and Ponce, are mapped as "Ponce Condominium" (osm:way:208355680, `old_name` Ponce de Leon Apartments, `start_date` 1913). They had been a generic 43–50 m block. Wikimedia photographs from the corner and the side show:
+- buff brick on a curved front that faces the intersection, over a two-storey white terra-cotta colonnade
+- a deep green bracketed cornice
+- stacked round iron balconies where the curve meets two square corner towers
+- an open arched belvedere on each tower, under a green tile hip roof
+
+The rear walls are plainer brick. The OSM building parts give the curved main block (43.2 m) and both towers (50.4 m). City draws the base, the cornice and its brackets with the shared classical ornament. The evening photograph shows warm lit windows and lanterns at the colonnade. [Wikimedia, 2017, corner, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Ponce_Condominiums_(formerly_Ponce_de_Leon_Apartments),_Atlanta.jpg) · [Wikimedia, evening, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Ponce_de_Leon_Apartments,_Atlanta,_Georgia.jpg) · [Wikimedia, 2013, side, CC BY-SA 3.0](https://commons.wikimedia.org/wiki/File:Ponce_de_Leon_Apartments_(side_view),_Midtown_Atlanta.JPG)
+
+**Estimated:** the 52.5 m belvedere roof peak, the arch proportions, the column pitch (2.6 m), the balcony radius and spacing, and the brick and green tones.
+
+Camera `/?view=city&cam=655,-2000,135,58,230`. [Before and after](log/ui/midtown-skyline/ponce-compare-day.jpg) · [Night](log/ui/midtown-skyline/ponce-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/ponce-dusk-after-day.jpg) · [Low tier](log/ui/midtown-skyline/ponce-after-low-day.jpg)
+
+## The Federal Reserve Bank of Atlanta
+
+The Federal Reserve Bank of Atlanta at 1000 Peachtree, at 10th Street (Kohn Pedersen Fox, 2001; osm:way:28979077), was drawn as generic red brick from its OSM building parts. Wikimedia photographs from three angles (2019–2023) show:
+- white Georgia marble in large ashlar blocks
+- a grid of deep punched windows between flat piers
+- a tower that steps back in tiers at its ends to a flat crown
+- a two-storey loggia on the Peachtree front
+- salvaged Corinthian columns standing free in the forecourt
+- an eagle on a column at the corner plaza, and flagpoles
+
+The OSM parts give the plan: the tower block, the low operations wing to the west and the service annexes. City keeps the wing and annexes plain marble at their mapped heights and rebuilds the tower in four tiers: 36, 40.5, 44.5 and 48 m. [Wikimedia, 2019, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_of_Atlanta_Headquarters.jpg) · [Wikimedia, 2023, loggia, CC0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_Building_(Atlanta),_Sept_2023_01.jpg) · [Wikimedia, 2023, forecourt, CC0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_Building_(Atlanta),_Sept_2023_02.jpg) · [Wikimedia, 2022, eagle column, CC BY-SA 2.0](https://commons.wikimedia.org/wiki/File:Federal_Reserve_Bank_of_Atlanta.jpg)
+
+**Estimated:** the tier heights and setbacks (the parts carry levels only, so they are inferred), the window grid, the loggia pier count, the column and eagle placement, and the marble tone. **Gap:** no night photograph was found, so the lit offices and loggia are illustrative.
+
+Camera `/?view=city&cam=640,-3150,250,55,320`. [Before and after](log/ui/midtown-skyline/fed-compare-day.jpg) · [Night](log/ui/midtown-skyline/fed-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/fed-after-low-day.jpg)
+
+
+### Second pass: lidar massing, entrance, gardens and night (2026-11-23)
+
+**Massing, measured.** The USGS 3DEP lidar point cloud (GA_Statewide_B2_2018; 159,669 returns within 100 m) puts the roofs, above the 298.3 m NAVD88 site grade, at:
+
+| Part | Height | NAVD88 (95th-percentile return) |
+| --- | --- | --- |
+| Corner tower top | 61.9 m | 360.2 m |
+| Its crown step | 58.9 m | 357.2 m |
+| Slab cornice | 47.5 m | about 345.8 m |
+| Slab's recessed top floor | 53.7 m | 352.0 m |
+| Low west wing and mid-block | 14.2 m | 312.5 m |
+
+The Peachtree sidewalk is at 294.3 m. All five heights are reported, from the lidar. The first pass had the corner wrong: the tower at Peachtree and 10th is the taller block, not the slab. The 2017 panorama confirms the rounded corner tower rising above the curved slab. The tower now steps in twice to a flat crown with tall paired attic windows, and the slab has a strong cornice and a recessed top floor of deep-set windows. [USGS point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json) · [Wikimedia panorama, CC BY-SA 4.0](https://commons.wikimedia.org/wiki/File:Horizontal_panorama_of_the_Federal_Reserve_Bank_Building_of_Atlanta.jpg) · [Esri World Imagery aerial (plan)](https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-84.38621376018638,33.78128432483475,-84.38383333467605,33.78326283106255&bboxSR=4326&imageSR=4326&size=800,800&format=jpg&f=image)
+
+**Facade.**
+- White marble ashlar with faint veining.
+- Punched windows in deep reveals with dark frames.
+- Vertical recessed panels group the tower's window columns.
+- A Peachtree loggia of freestanding columns with arched openings.
+- A pedimented entrance portico on the tower: four square piers, a plain frieze (the bank's name is left off on purpose) and a small pedimented door.
+
+**Courtyard and gardens.**
+- The eagle column on its square base stands on a granite-paved plaza in front of the portico, as the panorama shows.
+- Lawn terraces step down along the slab front, held by low marble walls, with clipped hedges and a seat wall (#214 primitives).
+- The salvaged columns stand on the lawn.
+- City's existing street trees line Peachtree and 10th.
+
+**Night.**
+- The stepped crown is floodlit white from below.
+- Vertical washes light the recessed panels.
+- The offices glow warm and scattered.
+- The eagle column and loggia piers are uplit.
+
+**Gap:** I found no citable night photograph, so the night scheme follows Sam's reference description. **Estimated:** the step insets, the attic window and panel layout, the loggia arch count, the plaza and terrace layout, and the light intensities.
+
+Cameras: aerial from the southwest `/?view=city&cam=600,-3150,45,52,420` · entrance `/?view=city&cam=650,-3130,290,62,140`. [Aerial before and after](log/ui/midtown-skyline/fed2-aerial-compare-day.jpg) · [Night](log/ui/midtown-skyline/fed2-aerial-compare-night.jpg) · [Dusk](log/ui/midtown-skyline/fed2-aerial-dusk-day.jpg) · [Entrance](log/ui/midtown-skyline/fed2-entrance-compare-day.jpg) · [Entrance at night](log/ui/midtown-skyline/fed2-entrance-compare-night.jpg) · [Low tier](log/ui/midtown-skyline/fed2-aerial-after-low-day.jpg)

@@ -41,6 +41,8 @@ export function genericTriangles(quality: TreeQuality) {
   const known = counted.get(quality);
   if (known) return known;
   const g = createGenericTrees([{ x: 0, z: 0, size: 'mature' }], quality);
+  // Count the worst case: bare-branch crowns draw only while a crown is thin (winter).
+  g.setSeason(15);
   let total = 0;
   let draws = 0;
   g.group.traverse(o => {

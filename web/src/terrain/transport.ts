@@ -1,6 +1,9 @@
 import { drawClaraMeerBridge } from '../city/clara-meer';
 import { drawKendedaWalk } from '../city/kendeda-walk';
 import { triangleHeight } from './tread-height';
+import { bedFlags, cuttingYields, type BallastQuad } from './cutting';
+import { drapeTriangle, type DrapeGround } from './drape';
+import type { GroundYield } from './surface';
 import { drawJunctionDecks } from './junction-decks';
 import * as THREE from 'three';
 import { Builder, Line, segDist, type P2 } from '../vignette/geom';
@@ -24,6 +27,9 @@ export interface SurfaceTransport {
   /** Scene y on the specified road deck, or null outside its visible tread. */
   deckAt(x: number, z: number, run: TransportRun): number | null;
   clearOfFreight(x: number, z: number): boolean;
+  /** Graded cuttings for ground ballast the terrain stands over. Carve the board with them
+   * (`area.carve`) once the transport is built: they only lower the terrain. */
+  cutting: GroundYield[];
   group: THREE.Group;
   setNight?(factor: number): void;
   structuralTier: 'illustrative';
@@ -68,8 +74,16 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
   const sceneZero = grid.manifest.vertical.sceneZeroNavd88M;
   const sidepaths = westsidePaths(city);
   const freightTreads: FreightTreadPoint[][] = [];
+  const footbridgeYields: GroundYield[] = [];
+  const ballastRuns: BallastQuad[][] = [];
+  // Carve never moves a board's edge cells, so cuttings are clipped to this inset.
+  const carvable = { minX: bounds.minX + grid.manifest.stepM + .01, maxX: bounds.maxX - grid.manifest.stepM - .01,
+    minZ: bounds.minZ + grid.manifest.stepM + .01, maxZ: bounds.maxZ - grid.manifest.stepM - .01 };
+  const inCarvable = (q: BallastQuad) => q.every(([x, , z]) => x >= carvable.minX && x <= carvable.maxX && z >= carvable.minZ && z <= carvable.maxZ);
   // Offsets into the single rendered structural mesh, grouped by source road.
   const roadTreads = new Map<TransportRun, number[]>();
+  // Audit-only intent: a folded corner can wind a slab underside upward.
+  const buriedFaces = import.meta.env.DEV ? new Set<number>() : undefined;
   const seventeenth = new Builder(), bridgeRuns = new Set<TransportRun>();
   let bridgePositions: THREE.BufferAttribute;
   let structurePositions: THREE.BufferAttribute;
@@ -159,6 +173,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
     const firstSupport=support(start),lastSupport=support(end);
     const elevation=(p:P2,height:number|null) => height===null ? grid.sample(...p) : height+grid.manifest.vertical.sceneZeroNavd88M;
     const startHeight = bridge && !startCut ? elevation(start,firstSupport) : null;
+    // The short Midtown South building-to-sidewalk span crosses a DEM crease.
+    const southFootbridge = bridge && use === 'road' && run.cls === 'footway' && !run.deckNavd88M &&
+      [start, end].some(([x, z]) => Math.hypot(x - 371.18, z + 1870.12) < .05) &&
+      [start, end].some(([x, z]) => Math.hypot(x - 360.93, z + 1870.15) < .05);
     const endHeight = bridge && !endCut ? elevation(end,lastSupport) : null;
     const profile = run.deckNavd88M;
     if (bridge && !profile && ((startCut && endCut) || (!startCut && startHeight === null) || (!endCut && endHeight === null))) return;
@@ -292,32 +310,20 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       }) : [];
       let prev: number[][] | null = null, lastS = 0;
       let tread: FreightTreadPoint[] | undefined;
+      let ballast: BallastQuad[] | null = null;
+      // Ground ballast quads draw once their run is complete: whether each one is draped
+      // or drawn flat over a cutting bed depends on its neighbours.
+      const pending = new Map<BallastQuad[], ((flat: boolean) => void)[]>();
       const range = textured ? run.freightS : undefined;
       function midpoint(s: number, a: number[], b: number[]) {
         const distance = range![0] + (range![1] - range![0]) * s / line.length;
         tread!.push({ s: distance, position: new THREE.Vector3(
           (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2) });
       }
-      // A MARTA bed on bare earth often rides a crest narrower than its 4.2 m tread
-      // (the North Line embankment near Brookwood). Level each section onto the
-      // highest rendered ground across its full width so the terrain cannot rise
-      // through the middle of the tread. The lift fades out over the last 6 m before
-      // an in-board end, so the tread still meets a bridge abutment or tunnel mouth.
-      const crest = textured && !bridge && !profile && run.cls === 'subway' ? (s: number) => {
-        let top = -Infinity;
-        for (let k = 0; k <= 6; k++) {
-          const [x, z] = lateral(s, width * (k / 6 - .5));
-          const h = groundAt(x, z);
-          if (h !== null) top = Math.max(top, h);
-        }
-        const fade = Math.min(1, (startCut ? Infinity : s) / 6, (endCut ? Infinity : line.length - s) / 6);
-        return { top, fade };
-      } : null;
       for (const s of stations) {
         if (prev && s === lastS) continue;
         const p = line.at(s);
         const section: number[][] = [];
-        const level = crest?.(s);
         for (const [i, offset] of offsets.entries()) {
           const [px,pz]=lateral(s,offset*taper(s));
           const x = THREE.MathUtils.clamp(px,bounds.minX,bounds.maxX);
@@ -344,10 +350,9 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           if (inferred.size && (s > 0 || startCut) && (s < line.length || endCut)) y = Math.max(y, inferred.get(s)!);
           if (textured) y = freightGrade(x, z, y);
-          if (level && level.top > y) y += level.fade * (level.top - y);
           section.push([x, y + lift, z]);
         }
-        if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; continue; }
+        if (section.length < 2 || (!bridge && groundAt(p.x, p.z) === null)) { prev = null; ballast = null; continue; }
         if (range && range.every(Number.isFinite)) {
           if (!prev) {
             tread = [];
@@ -358,13 +363,46 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
           }
           midpoint(s, section[0], section[1]);
         }
-        if (prev && (!dashed || (lastS+s)/2 % 12 < 3) && (!paint || paint((lastS+s)/2))) {
+        const drawQuad = prev && (!dashed || (lastS+s)/2 % 12 < 3) && (!paint || paint((lastS+s)/2));
+        // A skipped quad breaks the ballast run, so quads either side aren't neighbours.
+        if (!drawQuad) ballast = null;
+        if (prev && drawQuad) {
           const [a, b] = prev, [d, c] = section;
+          if (southFootbridge && depth > 0) {
+            const floorY = Math.min(a[1], b[1], c[1], d[1]) - .05;
+            footbridgeYields.push({ ring: [a, b, c, d].map(([x, , z]) => [x, z]), floor: () => floorY });
+          }
           // Upward-facing top, optionally with concrete or steel fascia on both sides.
           if (use === 'road' && depth > 0) roadTop.push(structures.pos.length / 3, structures.pos.length / 3 + 3);
-          (textured ? freight : structures).quad(a, b, c, d, color);
-          if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
-          if (textured && !bridge && (gradeAvailable || crest)) {
+          const drawn = (terrainGround as DrapeGround).triangles;
+          // Ground ballast, for graded cuttings. The East cut's freight sits in its own slot.
+          const graded = textured && !bridge && run !== cut?.freight;
+          // Ground ballast may draw after the loop, so it keeps this quad's own start station.
+          const s0 = lastS;
+          const draw = (flat: boolean) => { const lastS = s0; if (!flat && graded && drawn) {
+            // Ground ballast follows the drawn terrain between its 2 m stations, so a
+            // crease in the bank can't show through it (terrain/drape.ts). The raise is
+            // capped at 25 cm: a graded cut sits below its bank on purpose, and the
+            // freight treads (and trains) keep the station heights.
+            const corners = [[a, 0, lastS], [b, 1, lastS], [c, 1, s], [d, 0, s]] as const;
+            for (const [i, j, k] of [[0, 1, 2], [0, 2, 3]]) {
+              const tri = [corners[i], corners[j], corners[k]];
+              drapeTriangle(drawn, tri[0][0], tri[1][0], tri[2][0], lift, (...vs) => {
+                freight.tri(vs[0].slice(0, 3), vs[1].slice(0, 3), vs[2].slice(0, 3), color);
+                for (const v of vs) uv.push(v[3] * tri[0][1] + v[4] * tri[1][1] + v[5] * tri[2][1],
+                  (v[3] * tri[0][2] + v[4] * tri[1][2] + v[5] * tri[2][2]) / .8);
+              }, .25);
+            }
+          } else {
+            (textured ? freight : structures).quad(a, b, c, d, color);
+            if (textured) uv.push(0, lastS / .8, 1, lastS / .8, 1, s / .8, 0, lastS / .8, 1, s / .8, 0, s / .8);
+          } };
+          if (graded) {
+            if (!ballast) { ballastRuns.push(ballast = []); pending.set(ballast, []); }
+            ballast.push([a, b, c, d]);
+            pending.get(ballast)!.push(draw);
+          } else draw(false);
+          if (textured && !bridge && gradeAvailable) {
             // Close exposed ballast faces where the raised approach clears the bare earth.
             for (const [left, right] of [[a, d], [c, b]]) {
               const gy = groundAt(left[0], left[2]), hy = groundAt(right[0], right[2]);
@@ -381,11 +419,19 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             const down = ([x, y, z]: number[]) => [x, y - depth, z];
             if (leftSide) structures.quad(a, d, down(d), down(a), PAL.concreteDark);
             if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
+            buriedFaces?.add(structures.pos.length / 3);
+            buriedFaces?.add(structures.pos.length / 3 + 3);
             structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
           }
         }
         prev = section;
         lastS = s;
+      }
+      // A bedded quad stays flat over its carved bed, unless it reaches the board's edge
+      // cells, which carve never moves (there only the drape can help).
+      for (const [quads, draws] of pending) {
+        const flags = bedFlags(quads, (x, z) => terrainGround(x, z));
+        draws.forEach((draw, i) => draw(flags[i] && inCarvable(quads[i])));
       }
     }
 
@@ -516,13 +562,16 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
       };
     }
     const mesh = new THREE.Mesh(geometry, material);
+    if (builder === structures && buriedFaces) mesh.userData.groundAuditBuriedFaces = buriedFaces;
     mesh.name = name;
     mesh.castShadow = !isFreight; // The structural batch also contains the freight deck undersides.
     mesh.receiveShadow = true;
     group.add(mesh);
     meshes.push(mesh);
   }
-  return { group, freightTreads, deckAt, clearOfFreight, structuralTier: 'illustrative',
+  const cutting = cuttingYields(ballastRuns, (x, z) => terrainGround(x, z), carvable);
+  cutting.push(...footbridgeYields);
+  return { group, freightTreads, deckAt, clearOfFreight, cutting, structuralTier: 'illustrative',
     setNight: seventeenth.pos.length ? factor => { bridgeNight.value = factor; } : undefined, dispose() {
     group.removeFromParent();
     for (const mesh of meshes) { mesh.geometry.dispose(); mesh.material.dispose(); }

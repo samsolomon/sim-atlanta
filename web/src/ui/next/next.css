@@ -1,0 +1,567 @@
+/* A2c chrome (?ui=next). Values from docs/ui-controls-brief.md, "Appendix: exact values". */
+:root[data-ui='next'] {
+  --a2-inset: 8px;
+  --a2-top: max(var(--a2-inset), calc(env(safe-area-inset-top) + var(--a2-inset)));
+  --a2-left: max(var(--a2-inset), calc(env(safe-area-inset-left) + var(--a2-inset)));
+  --a2-right: max(var(--a2-inset), calc(env(safe-area-inset-right) + var(--a2-inset)));
+  --a2-bottom: max(var(--a2-inset), calc(env(safe-area-inset-bottom) + var(--a2-inset)));
+  --a2-ink: #2a2722;
+  --a2-ink2: #5f5a50;
+  --a2-sep: rgba(60, 45, 30, 0.12);
+  --a2-ga: rgba(252, 250, 245, 0.80);
+  --a2-gb: rgba(243, 239, 230, 0.68);
+  --a2-ga-long: rgba(252, 250, 245, 0.90);
+  --a2-gb-long: rgba(243, 239, 230, 0.82);
+  --a2-hair: rgba(60, 45, 30, 0.18);
+  --a2-rim: rgba(255, 255, 255, 0.9);
+  --a2-sh: 0 10px 28px rgba(40, 30, 20, 0.18), 0 1px 3px rgba(40, 30, 20, 0.10);
+  --a2-track: rgba(60, 45, 30, 0.12);
+  --a2-chip: rgba(255, 255, 255, 0.95);
+  --a2-chip-sh: 0 1px 3px rgba(40, 30, 20, 0.16), 0 0 0 0.5px rgba(60, 45, 30, 0.12);
+  --a2-north: #c2255c;
+  --a2-timetable: var(--sched);
+  --a2-live: var(--live);
+  --a2-focus: #1f5fd1;
+  --a2-app-h: 48px;
+  --a2-app-bottom: var(--a2-bottom);
+}
+:root[data-ui='next'][data-theme='dark'] {
+  --a2-ink: #eef0f3;
+  --a2-ink2: #b7bfcb;
+  --a2-sep: rgba(255, 255, 255, 0.12);
+  --a2-ga: rgba(38, 44, 56, 0.70);
+  --a2-gb: rgba(20, 24, 32, 0.62);
+  --a2-ga-long: rgba(38, 44, 56, 0.86);
+  --a2-gb-long: rgba(20, 24, 32, 0.80);
+  --a2-hair: rgba(255, 255, 255, 0.16);
+  --a2-rim: rgba(255, 255, 255, 0.22);
+  --a2-sh: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --a2-track: rgba(0, 0, 0, 0.22);
+  --a2-chip: rgba(255, 255, 255, 0.20);
+  --a2-chip-sh: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --a2-north: #f06595;
+  --a2-timetable: #6ea8fe;
+  --a2-live: #6fd58a;
+  --a2-focus: #8cb8f2;
+}
+
+/* ---- glass ---- */
+.a2-g {
+  position: fixed; box-sizing: border-box; z-index: 5; margin: 0; border: 0; border-radius: 16px;
+  color: var(--a2-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(160deg, var(--a2-ga), var(--a2-gb));
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+/* Panels that hold long text read over busy roofs: slightly denser glass. */
+.a2-long { --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .a2-g { --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
+}
+.a2-g :is(button, a) { font: inherit; color: inherit; }
+.a2-g :is(button, a):focus-visible, .a2-credit a:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+.a2-ic { display: inline-grid; width: 20px; height: 20px; }
+.a2-ic svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.a2-ib {
+  width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent;
+  padding: 0; border-radius: 10px; cursor: pointer; flex: none;
+}
+.a2-ib:hover { background: var(--a2-sep); }
+.a2-sep { height: 1px; background: var(--a2-sep); margin: 0 8px; }
+.a2-vsep { width: 1px; align-self: stretch; margin: 10px 4px; background: var(--a2-sep); flex: none; }
+
+/* The old chrome is hidden in style.css, so it never paints before this chunk loads. */
+/* One thing in the detail-panel place at a time. */
+body:has(#city-info:popover-open) .a2-panel { display: none !important; }
+
+/* ---- subject card (top-left) ---- */
+.a2-subject {
+  left: var(--a2-left); top: var(--a2-top); padding: 14px 18px 14px 20px;
+  max-width: min(420px, calc(100vw - var(--a2-left) - var(--a2-right)));
+}
+.a2-subject-open {
+  display: block; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; border-radius: 2px;
+  max-width: 100%;
+}
+.a2-place {
+  display: block; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.05;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.a2-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 8px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.a2-time { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; border-radius: 6px; padding: 0 2px; margin: 0 -2px; }
+.a2-subject-open:hover .a2-time { background: var(--a2-sep); }
+.a2-caret { display: inline-grid; width: 14px; height: 14px; opacity: 0.45; }
+.a2-caret svg { width: 100%; height: 100%; }
+.a2-wx { display: inline-flex; align-items: center; gap: 6px; }
+.a2-wx-icon { display: inline-grid; width: 19px; height: 19px; }
+.a2-wx-icon:empty { display: none; }
+.a2-wx-icon svg { width: 100%; height: 100%; fill: currentColor; }
+.a2-tier { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; margin-top: 7px; font-size: 12px; color: var(--a2-ink2); }
+.a2-dot { margin-right: 6px; }
+.a2-tier-date::before, .a2-link::before { content: '\00a0·\00a0'; white-space: pre; display: inline-block; text-decoration: none; }
+.a2-link::before { font-weight: 400; color: var(--a2-ink2); }
+.a2-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
+.a2-dot-live { background: var(--a2-live); }
+.a2-dot-timetable { background: var(--a2-timetable); }
+.a2-link {
+  border: 0; background: none; padding: 0 2px; margin: 0; min-height: 24px; cursor: pointer;
+  font-weight: 600; text-decoration: underline; text-underline-offset: 2px; color: var(--a2-ink) !important; border-radius: 4px;
+}
+
+/* ---- Time & weather: the card grows on desktop; a bottom sheet on phones ---- */
+.a2-subject.a2-open { width: min(372px, calc(100vw - var(--a2-left) - var(--a2-right))); padding: 14px 16px 16px 20px; z-index: 7;
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-app-bottom) - var(--a2-app-h) - 8px); overflow-y: auto;
+  --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long); }
+.a2-subject.a2-open .a2-caret { transform: rotate(180deg); }
+.a2-subject.a2-open .a2-link { display: none; }
+body:has(.a2-subject.a2-open) .a2-notice, body:has(.a2-timepanel:not([hidden])) .a2-hint { display: none; }
+.a2-timepanel { font-size: 13px; }
+.a2-subject > .a2-timepanel { margin-top: 14px; padding-top: 2px; border-top: 1px solid var(--a2-sep); }
+.a2-sheet-head { display: none; }
+.a2-h { margin: 14px 0 6px; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
+.a2-time-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.a2-date { position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 6px; margin-right: -6px;
+  border-radius: 8px; color: var(--a2-ink); font-weight: 600; cursor: pointer; }
+.a2-date:hover { background: var(--a2-sep); }
+.a2-date:focus-within { outline: 2px solid var(--a2-focus); outline-offset: 1px; }
+.a2-date svg { width: 14px; height: 14px; }
+.a2-date-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; padding: 0; cursor: pointer; }
+.a2-date-time, .a2-anchor-phone { display: none; }
+.a2-slider { position: relative; height: 28px; }
+.a2-now-tick { position: absolute; left: calc(50% - 1px); top: 6px; width: 2px; height: 16px; background: var(--a2-ink2); opacity: .6; pointer-events: none; }
+.a2-range { -webkit-appearance: none; appearance: none; position: absolute; inset: 0; width: 100%; height: 28px; margin: 0; background: transparent; cursor: pointer;
+  --a2-fill: #2a2722; --a2-from: 50%; --a2-to: 50%; }
+:root[data-theme='dark'] .a2-range { --a2-fill: #eef0f3; }
+.a2-range::-webkit-slider-runnable-track { height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--a2-sep) var(--a2-from), var(--a2-fill) var(--a2-from) var(--a2-to), var(--a2-sep) var(--a2-to)); }
+.a2-range::-moz-range-track { height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--a2-sep) var(--a2-from), var(--a2-fill) var(--a2-from) var(--a2-to), var(--a2-sep) var(--a2-to)); }
+.a2-range::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -9px; border-radius: 50%; background: #fff; border: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .35), 0 0 0 .5px rgba(60, 45, 30, .2); }
+.a2-range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, .35), 0 0 0 .5px rgba(60, 45, 30, .2); }
+.a2-range:focus-visible { outline: none; }
+.a2-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+.a2-range:focus-visible::-moz-range-thumb { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+.a2-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--a2-ink2); font-variant-numeric: tabular-nums; }
+.a2-seg2 { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--a2-track); }
+.a2-seg2 button { flex: 1; height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 0; border-radius: 8px;
+  background: transparent; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; padding: 0 4px; }
+.a2-seg2 button:hover { background: var(--a2-sep); }
+.a2-seg2 button[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); }
+.a2-seg2 svg { width: 13px; height: 13px; }
+.a2-caption { margin: 7px 0 0; font-size: 12px; line-height: 1.4; color: var(--a2-ink2); }
+.a2-back { width: 100%; height: 38px; margin-top: 14px; border: 0; border-radius: 10px; background: var(--a2-sep); font-size: 14px !important; font-weight: 600 !important;
+  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.a2-back svg { width: 16px; height: 16px; }
+.a2-back:disabled { opacity: .45; cursor: default; }
+
+/* ---- notice pill: 8 px under the subject card ---- */
+.a2-notice {
+  left: var(--a2-left); top: calc(var(--a2-subject-bottom, 110px) + 8px); z-index: 4;
+  max-width: min(420px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  padding: 6px 12px; border-radius: 14px; font-size: 12px; line-height: 1.4; color: var(--a2-ink);
+  /* Tier words read over any roof or road: denser glass than the other chrome. */
+  --a2-ga: var(--a2-ga-long); --a2-gb: var(--a2-gb-long);
+}
+
+/* ---- app bar (bottom-left) ---- */
+.a2-appbar {
+  left: var(--a2-left); bottom: var(--a2-app-bottom); height: var(--a2-app-h);
+  display: flex; align-items: center; gap: 2px; padding: 0 4px 0 2px;
+}
+.a2-seg { display: flex; gap: 2px; padding: 2px; border-radius: 11px; background: var(--a2-track); }
+.a2-vs {
+  height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; padding: 0 12px;
+  font-size: 14px !important; font-weight: 600 !important; background: transparent; cursor: pointer; text-decoration: none;
+}
+.a2-vs:hover { background: var(--a2-sep); }
+.a2-vs[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); }
+
+/* ---- menu: opens upward from the app bar ---- */
+.a2-menu {
+  left: var(--a2-left); bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); z-index: 7;
+  width: min(320px, calc(100vw - var(--a2-left) - var(--a2-right))); padding: 6px;
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-app-bottom) - var(--a2-app-h) - 8px); overflow-y: auto;
+}
+.a2-fine { margin: 6px 12px 8px; padding-top: 10px; border-top: 1px solid var(--a2-sep); font-size: 11px; line-height: 1.45; color: var(--a2-ink2); }
+.a2-fine a { color: inherit; }
+
+/* ---- camera column (bottom-right) ---- */
+.a2-camera {
+  right: var(--a2-right); bottom: var(--a2-bottom); width: 44px;
+  display: flex; flex-direction: column; padding: 2px 0;
+}
+.a2-needle { width: 30px; height: 30px; }
+.a2-north { fill: var(--a2-north); }
+.a2-camera.a2-no-compass .a2-compass-sep { display: none; }
+
+/* ---- credit line: no glass, a soft halo; stays on Map, fades in City after the first move ---- */
+.a2-credit {
+  position: fixed; z-index: 4; right: calc(var(--a2-right) + 44px + 8px); bottom: calc(var(--a2-bottom) + 1px);
+  margin: 0; font: 12px/16px ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #4a463e;
+  text-shadow: 0 0 2px #f4f1ea, 0 0 4px #f4f1ea, 0 0 8px #f4f1ea; pointer-events: none; transition: opacity 0.6s ease;
+}
+.a2-credit a { color: inherit; pointer-events: auto; border-radius: 3px; }
+/* Night: the secondary night ink with a dark halo. */
+:root[data-theme='dark'] .a2-credit { color: #b7bfcb; text-shadow: 0 0 2px #0b1020, 0 0 6px #0b1020; }
+.a2-credit.a2-gone { opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0s 0.6s; }
+
+/* ---- first-visit hint: just above the app bar ---- */
+.a2-hint {
+  left: var(--a2-left); bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); z-index: 4;
+  padding: 8px 14px; border-radius: 999px; font-size: 13px; color: var(--a2-ink2);
+  transition: opacity 0.5s ease; pointer-events: none;
+}
+.a2-hint.a2-gone { opacity: 0; }
+body:has(.a2-menu:not([hidden])) .a2-hint { display: none; }
+
+/* ---- detail panel (right): selection, Key or About; only as tall as its content ---- */
+:root[data-ui='next'] { --a2-cam-h: 186px; }
+.a2-panel {
+  right: var(--a2-right); top: var(--a2-top); z-index: 6; width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h));
+  display: flex; flex-direction: column; overflow: hidden; font-size: 14px;
+}
+.a2-panel.a2-full { width: min(384px, calc(100vw - var(--a2-left) - var(--a2-right))); height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h)); }
+.a2-panel-body { overflow-y: auto; min-height: 0; flex: 1; }
+.a2-panel .a2-entry:not(.a2-shown) { display: none !important; }
+.a2-panel > .a2-grab { display: none; }
+.a2-backrow {
+  display: flex; align-items: center; gap: 6px; margin: 8px 8px 0; padding: 8px 10px; min-height: 36px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--a2-ink2) !important; font-size: 13px !important; font-weight: 600 !important; cursor: pointer; text-align: left;
+}
+.a2-backrow:hover { background: var(--a2-sep); }
+.a2-backrow svg { width: 15px; height: 15px; flex: none; }
+.a2-backrow span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a2-back-swatch { width: 12px; height: 3px; border-radius: 2px; flex: none; }
+.a2-panel-head { display: flex; align-items: center; gap: 8px; }
+.a2-panel-head h2 { flex: 1; margin: 0; font-size: 20px; line-height: 1.2; }
+.a2-x {
+  position: relative; width: 32px; height: 32px; flex: none; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--a2-sep); color: var(--a2-ink); cursor: pointer;
+}
+.a2-x::after { content: ''; position: absolute; inset: -6px; }
+.a2-x svg { width: 15px; height: 15px; }
+.a2-panel :is(button, a, summary):focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+
+/* The selection is the page's #card, adopted into the panel. */
+.a2-panel #card { position: relative; inset: auto; width: auto; max-height: none; overflow: visible; z-index: auto; margin: 0; padding: 16px 18px 14px;
+  background: none; box-shadow: none; border: 0; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; color: var(--a2-ink); font-size: 14px; }
+.a2-panel #card::before, .a2-panel #card::after { display: none; }
+.a2-panel #card .close { position: absolute; top: 14px; right: 14px; }
+.a2-panel #card h2 { display: block; margin: 6px 44px 12px 0; padding: 0; font-size: 20px; line-height: 1.2; }
+.a2-panel #card :is(.sub, dt) { color: var(--a2-ink2); }
+.a2-panel #card .a2-kicker { display: flex; align-items: center; gap: 7px; margin: 0 44px 0 0; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
+.a2-svc { width: 16px; height: 4px; border-radius: 2px; flex: none; }
+.a2-panel #card .a2-kicker .dot { width: 7px; height: 7px; }
+.a2-panel #card .a2-facts { display: block; margin: 0; }
+.a2-row-fact { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--a2-sep); }
+.a2-row-fact dd { margin: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px 8px; text-align: right; }
+/* Truth-tier labels: 11 px / 600, a separator-colour hairline, secondary ink. */
+.a2-panel .chip { font-size: 11px; font-weight: 600; padding: 2px 8px; border: 1px solid var(--a2-sep) !important; color: var(--a2-ink2) !important; white-space: nowrap; }
+.a2-panel .chip.live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--a2-live); }
+.a2-panel .chip.scheduled::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--a2-timetable); }
+/* Follow is the one dark primary button. */
+.a2-panel #train-follow { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+.a2-panel #train-follow button { flex: 1; min-height: 40px; border: 0; border-radius: 10px; font-weight: 600; font-size: 14px; background: var(--a2-sep); color: var(--a2-ink); }
+.a2-panel #train-follow [data-follow] { background: #2a2722; color: #fbf9f4; }
+:root[data-theme='dark'] .a2-panel #train-follow [data-follow] { background: #eef0f3; color: #1c2129; }
+.a2-panel #train-follow .follow-status { flex: 0 0 100%; margin: 0; font-size: 13px; color: var(--a2-ink2); }
+
+/* Key */
+.a2-key-body { padding: 14px 18px 16px; }
+.a2-key-body .a2-h { margin: 16px 0 8px; }
+.a2-k { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 14px; }
+.a2-k small { display: block; font-size: 12px; color: var(--a2-ink2); }
+.a2-sw { width: 28px; height: 5px; border-radius: 3px; flex: none; }
+.a2-k-sep { margin: 8px 0 0; }
+.a2-tier-label { display: inline-flex; justify-content: center; box-sizing: border-box; min-width: 76px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--a2-sep); font-size: 11px; font-weight: 600; color: var(--a2-ink2); white-space: nowrap; }
+
+/* About: full height, scrolls inside, footer pinned */
+.a2-about { display: flex; flex-direction: column; height: 100%; }
+.a2-panel.a2-full .a2-panel-body { overflow: hidden; display: flex; flex-direction: column; }
+.a2-about .a2-panel-head { padding: 14px 18px 10px; border-bottom: 1px solid var(--a2-sep); }
+.a2-about-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 16px; font-size: 14px; line-height: 1.5; }
+.a2-about-body p { margin: 10px 0; }
+.a2-about-body .a2-h { margin: 18px 0 6px; }
+.a2-lede { font-size: 16px; line-height: 1.45; }
+.a2-quiet { color: var(--a2-ink2); }
+.a2-credits { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 0; font-size: 13px; }
+.a2-credits dt { font-weight: 600; }
+.a2-credits dd { margin: 0; color: var(--a2-ink2); }
+.a2-about a { color: inherit; }
+.a2-about-foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px 14px; border-top: 1px solid var(--a2-sep); }
+.a2-by { flex: 1; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-weight: 600; text-decoration: none; }
+.a2-by svg { width: 14px; height: 14px; }
+.a2-social { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; position: relative; }
+.a2-social::before { content: ''; position: absolute; inset: 6px; border-radius: 8px; background: var(--a2-sep); z-index: -1; }
+.a2-social svg { width: 15px; height: 15px; }
+
+/* ---- About this City view: shown in the detail-panel place ---- */
+:root[data-ui='next'] #city-info {
+  inset: var(--a2-top) var(--a2-right) auto auto; width: min(360px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h, 140px));
+  padding: 16px 18px; border: 0; border-radius: 16px; color: var(--a2-ink);
+  background: linear-gradient(160deg, var(--a2-ga-long), var(--a2-gb-long));
+  -webkit-backdrop-filter: blur(22px) saturate(1.35); backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: 0 0 0 0.5px var(--a2-hair), var(--a2-sh), inset 0 1px 0 var(--a2-rim);
+}
+
+
+/* ---- phones: top items under the status bar, the app bar above the home indicator ---- */
+@media (max-width: 600px) {
+  :root[data-ui='next'] {
+    /* Room for the credit line in the home-indicator strip, under the app bar. */
+    --a2-app-bottom: max(34px, calc(env(safe-area-inset-bottom) + 12px));
+    --a2-app-h: 52px;
+  }
+  .a2-subject { padding: 12px 16px; right: calc(var(--a2-right) + 44px + 8px); max-width: none; }
+  .a2-place { font-size: 22px; letter-spacing: -0.01em; }
+  .a2-subject.a2-open { width: auto; padding: 12px 16px; max-height: none; overflow: visible; }
+  .a2-subject-open { display: flex; flex-direction: column; width: 100%; }
+  .a2-line { margin-top: 5px; font-size: 14px; gap: 2px 8px; }
+  /* One line under the place, as on the board: time, sky, then the scene word (no date). */
+  .a2-subject:not(.a2-open) { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: end; }
+  .a2-subject:not(.a2-open) .a2-tier { margin: 0 0 1px; }
+  .a2-subject .a2-tier-date { display: none; }
+  .a2-appbar { right: var(--a2-right); gap: 1px; }
+  .a2-seg { flex: 1; }
+  .a2-vs { flex: 1; }
+  .a2-camera { top: var(--a2-top); bottom: auto; }
+  .a2-zoom { display: none; }
+  .a2-camera .a2-compass-sep { display: none; }
+  .a2-camera.a2-no-compass .a2-share-sep { display: none; }
+  .a2-credit { left: 0; right: 0; bottom: max(11px, calc(env(safe-area-inset-bottom) - 12px)); text-align: center; font-size: 11px; line-height: 14px; }
+  .a2-menu { right: var(--a2-right); width: auto; }
+  .a2-timepanel.a2-g { left: var(--a2-left); right: var(--a2-right); bottom: var(--a2-bottom); z-index: 8; border-radius: 24px;
+    padding: 8px 18px 20px; max-height: calc(100dvh - var(--a2-top) - 16px); overflow-y: auto; }
+  .a2-sheet-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .a2-grab { flex: 0 0 100%; height: 5px; margin: 0 0 4px; background: linear-gradient(90deg, transparent calc(50% - 20px), var(--a2-sep) calc(50% - 20px) calc(50% + 20px), transparent calc(50% + 20px)); }
+  .a2-sheet-head h2 { flex: 1; margin: 0; font-size: 20px; }
+  .a2-close { width: 44px; height: 44px; margin: -5px -5px -5px 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+  .a2-close svg { width: 34px; height: 34px; padding: 10px; border-radius: 50%; background: var(--a2-sep); box-sizing: border-box; }
+  .a2-timepanel .a2-h { margin: 16px 0 7px; font-size: 13px; }
+  .a2-h-label { display: none; }
+  .a2-date { margin: 0 0 0 -6px; }
+  .a2-date-time { display: inline; }
+  .a2-date-time::before { content: '· '; }
+  .a2-anchor-phone { display: inline; font-weight: 500; }
+  .a2-scale { display: none; }
+  .a2-slider { height: 36px; }
+  .a2-now-tick { top: 10px; }
+  .a2-range { height: 36px; }
+  .a2-range::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -12px; }
+  .a2-range::-moz-range-thumb { width: 28px; height: 28px; }
+  .a2-timepanel .a2-seg2 { border-radius: 11px; }
+  .a2-timepanel .a2-seg2 button { height: 38px; font-size: 14px !important; border-radius: 9px; }
+  .a2-timepanel .a2-back { height: 44px; border-radius: 12px; font-size: 15px !important; }
+  /* While the slider is dragged the sheet shrinks to the slider and the time, so the city shows. */
+  .a2-timepanel.a2-dragging > :not(.a2-time-head, .a2-slider) { display: none; }
+  .a2-timepanel.a2-dragging .a2-time-head { margin-top: 6px; }
+  /* Phones: the detail panel is a bottom sheet, and the app bar steps aside while it shows. */
+  .a2-panel, .a2-panel.a2-full { left: var(--a2-left); right: var(--a2-right); top: auto; bottom: var(--a2-bottom); width: auto; z-index: 8;
+    height: auto; max-height: min(70dvh, calc(100dvh - var(--a2-top) - 96px)); border-radius: 24px; }
+  .a2-panel.a2-full { height: calc(100dvh - var(--a2-top) - 96px); }
+  .a2-panel > .a2-grab { display: block; flex: none; width: 40px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: var(--a2-sep); }
+  .a2-panel .a2-x { width: 36px; height: 36px; }
+  .a2-panel #train-follow button { min-height: 44px; }
+  body:has(.a2-panel:not([hidden])) :is(.a2-appbar, .a2-hint, .a2-menu) { display: none; }
+  body:has(.a2-panel:not([hidden])) .a2-credit { visibility: hidden; }
+  :root[data-ui='next'] #city-info { inset: auto var(--a2-right) calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px) var(--a2-left); width: auto; max-height: 60dvh; border-radius: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a2-g, .a2-credit, .a2-credit.a2-gone, .a2-hint { transition: none; }
+}
+.a2-k-note { margin: 10px 0 0; font-size: 12px; line-height: 1.45; color: var(--a2-ink2); }
+/* Other selection cards (bus, crossing, map freight) keep their markup: draw their rows the same way. */
+.a2-panel #card dl:not(.a2-facts) { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; margin: 0; }
+.a2-panel #card dl:not(.a2-facts) :is(dt, dd) { padding: 10px 0; border-top: 1px solid var(--a2-sep); margin: 0; }
+.a2-panel #card dl:not(.a2-facts) dd { text-align: right; }
+.a2-panel #card h2 .dot { display: none; }
+.a2-panel #card .tip { margin: 10px 0 0; font-size: 12px; color: var(--a2-ink2); }
+
+/* ---- share: a small panel beside the camera column; a sheet on phones ---- */
+.a2-share svg { width: 20px; height: 20px; }
+.a2-share-panel { right: calc(var(--a2-right) + 44px + 8px); bottom: var(--a2-bottom); z-index: 7; width: min(340px, calc(100vw - var(--a2-left) - var(--a2-right) - 52px));
+  padding: 14px 16px 16px; font-size: 14px; }
+.a2-share-lede { margin: 4px 0 10px; font-size: 13px; color: var(--a2-ink2); }
+.a2-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.a2-share-modes { margin: 0; padding: 0; border: 0; display: grid; gap: 2px; }
+.a2-share-modes label { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; margin: 0 -10px; border-radius: 10px; cursor: pointer; }
+.a2-share-modes label:hover { background: var(--a2-sep); }
+.a2-share-modes input { margin: 3px 0 0; accent-color: #2a2722; width: 16px; height: 16px; flex: none; }
+:root[data-theme='dark'] .a2-share-modes input { accent-color: #eef0f3; }
+.a2-share-modes input:focus-visible { outline: 2px solid var(--a2-focus); outline-offset: 2px; }
+.a2-share-modes b { display: block; font-weight: 600; }
+.a2-share-modes small { display: block; margin-top: 1px; font-size: 12px; color: var(--a2-ink2); }
+.a2-share-url { display: block; margin: 10px 0 12px; padding: 8px 10px; border-radius: 8px; background: var(--a2-sep);
+  font: 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--a2-ink2); overflow-wrap: anywhere; user-select: all; }
+.a2-share-actions { display: flex; gap: 8px; }
+.a2-btn { flex: 1; height: 40px; border: 0; border-radius: 10px; background: var(--a2-sep); font-size: 14px !important; font-weight: 600 !important; cursor: pointer; }
+.a2-btn:hover { background: rgba(60, 45, 30, 0.18); }
+:root[data-theme='dark'] .a2-btn:hover { background: rgba(255, 255, 255, 0.18); }
+@media (max-width: 600px) {
+  .a2-share-panel { left: var(--a2-left); right: var(--a2-right); bottom: var(--a2-bottom); width: auto; z-index: 8; border-radius: 24px; padding: 16px 18px 22px; }
+  .a2-share-panel .a2-btn { height: 44px; }
+  body:has(.a2-share-panel:not([hidden])) :is(.a2-appbar, .a2-hint) { display: none; }
+}
+
+/* ---- menu (A2c-menu): rows, Graphics, byline, map-data credit ---- */
+.a2-menu { padding: 8px 8px 10px; }
+.a2-menu-rows { padding: 0 0 6px; }
+.a2-mi { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 10px;
+  background: transparent; font-size: 15px !important; font-weight: 500 !important; text-align: left; cursor: pointer; }
+.a2-mi:hover { background: var(--a2-sep); }
+.a2-mi > svg { width: 19px; height: 19px; flex: none; }
+.a2-mi > span:not(.a2-chev) { flex: 1; }
+.a2-mi small { display: block; margin-top: 1px; font-size: 12px; font-weight: 400; color: var(--a2-ink2); }
+.a2-chev { display: inline-grid; color: var(--a2-ink2); }
+.a2-chev svg { width: 16px; height: 16px; }
+.a2-menu > .a2-sep { margin: 0 8px; }
+.a2-menu-gfx { padding: 10px 12px 14px; }
+.a2-menu-gfx .a2-h { margin: 0 0 6px; }
+.a2-menu-foot { padding: 10px 12px 2px; display: flex; flex-direction: column; gap: 4px; }
+.a2-menu-by { display: flex; align-items: center; gap: 0; }
+.a2-menu .a2-fine { margin: 0; padding: 0; border: 0; font-size: 11px; color: var(--a2-ink2); }
+.a2-menu .a2-fine a, .a2-menu .a2-by { color: inherit; }
+.a2-menu .a2-by { color: var(--a2-ink); }
+.a2-menu-close { display: none; }
+
+@media (max-width: 600px) {
+  /* Phones: the menu is a bottom sheet over the app bar (A2c-phone-menu). */
+  .a2-menu { left: var(--a2-left); right: var(--a2-right); bottom: var(--a2-bottom); width: auto; z-index: 8; border-radius: 24px; padding: 14px 10px 18px; }
+  body:has(.a2-menu:not([hidden])) :is(.a2-appbar, .a2-hint) { display: none; }
+  .a2-menu .a2-seg2 button { height: 38px; }
+  .a2-menu-close { display: grid; position: absolute; top: 10px; right: 10px; z-index: 1; width: 36px; height: 36px; }
+  .a2-menu .a2-menu-rows { padding-right: 40px; }
+}
+.a2-ic-x svg { fill: none; }
+
+/* ---- Models view (A2c-models): the Model lab inside the app ---- */
+#lab-root { position: fixed; inset: 0; z-index: 2; }
+#lab-root.lab { display: block; height: auto; }
+#lab-root[hidden] { display: none !important; }
+.a2-lab .sidebar, .a2-lab .model-heading { display: none !important; }
+.a2-lab .preview { position: absolute; inset: 0; display: block; }
+.a2-lab #stage { position: absolute; inset: 0; }
+body.a2-in-models :is(.a2-subject, .a2-notice, .a2-credit, .a2-timepanel) { display: none !important; }
+/* Key and About still open over Models; a scene selection never shows there. */
+body.a2-in-models .a2-panel:has(#card.a2-shown) { display: none !important; }
+
+.a2-model-card { left: var(--a2-left); top: var(--a2-top); padding: 14px 16px 14px 20px; max-width: min(440px, calc(100vw - var(--a2-left) - var(--a2-right) - 52px)); }
+.a2-model-head { display: flex; align-items: center; gap: 8px; }
+.a2-model-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 0 4px; margin: 0 -4px; border: 0; border-radius: 8px; background: none; text-align: left; cursor: pointer; }
+.a2-model-name:hover { background: var(--a2-sep); }
+.a2-model-title { margin: 0; font-size: 26px !important; font-weight: 700; letter-spacing: -0.015em !important; line-height: 1.1 !important; }
+.a2-model-name[aria-expanded='true'] .a2-caret { transform: rotate(180deg); }
+.a2-model-steps { display: inline-flex; margin-left: auto; }
+.a2-step { width: 36px; height: 36px; }
+.a2-step::after { content: ''; position: absolute; inset: -4px; }
+.a2-step { position: relative; }
+.a2-step svg { width: 18px; height: 18px; }
+.a2-model-card #blurb { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--a2-ink2); }
+.a2-model-pos { margin: 6px 0 0 !important; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
+.a2-details-btn { display: none; margin-top: 10px; width: 100%; height: 40px; }
+
+.a2-model-details { right: var(--a2-right); top: var(--a2-top); width: min(312px, calc(100vw - var(--a2-left) - var(--a2-right)));
+  max-height: calc(100dvh - var(--a2-top) - var(--a2-bottom) - 8px - var(--a2-cam-h)); overflow-y: auto; padding: 14px 16px 16px; font-size: 13px; }
+.a2-model-details .a2-panel-head { margin-bottom: 8px; }
+.a2-model-details .a2-details-close { display: none; }
+.a2-lab .a2-model-details .settings { padding: 0; gap: 14px; }
+.a2-lab .a2-model-details legend { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--a2-ink2); }
+.a2-lab .a2-model-details .settings button, .a2-lab .a2-model-details .file-button {
+  min-height: 32px; margin: 0 4px 4px 0; padding: 5px 10px; border: 0; border-radius: 9px; background: var(--a2-sep);
+  color: var(--a2-ink); font-size: 13px; font-weight: 600; }
+.a2-lab .a2-model-details .settings button[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); color: var(--a2-ink); }
+.a2-lab .a2-model-details .platform-report { margin-top: 4px; font-size: 12px; color: var(--a2-ink2); }
+.a2-lab .a2-model-details input[type=range] { accent-color: #2a2722; }
+
+.a2-browser { left: var(--a2-left); top: var(--a2-top); bottom: calc(var(--a2-app-bottom) + var(--a2-app-h) + 8px); z-index: 7;
+  width: min(380px, calc(100vw - var(--a2-left) - var(--a2-right))); display: flex; flex-direction: column; padding: 14px 16px 0; }
+.a2-search { width: 100%; height: 38px; margin: 10px 0 8px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--a2-sep); color: var(--a2-ink); font: inherit; font-size: 14px; }
+.a2-search:focus-visible { outline: 2px solid var(--a2-focus); }
+.a2-chips { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px; }
+.a2-chip { height: 30px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--a2-sep); font-size: 12.5px !important; font-weight: 600 !important; cursor: pointer; }
+.a2-chip span { font-weight: 500; color: var(--a2-ink2); }
+.a2-chip[aria-pressed='true'] { background: var(--a2-chip); box-shadow: var(--a2-chip-sh); }
+.a2-model-list { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -8px; padding: 0 8px 12px; }
+.a2-model-list .a2-h { margin: 12px 0 4px; }
+.a2-model-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 6px 8px; border: 0; border-radius: 10px; background: transparent; font-size: 14px !important; text-align: left; cursor: pointer; }
+.a2-model-row:hover { background: var(--a2-sep); }
+.a2-model-row[aria-current='true'] { background: var(--a2-sep); font-weight: 600 !important; }
+.a2-thumb { width: 28px; height: 20px; border-radius: 5px; flex: none; opacity: .85; }
+.a2-empty { margin: 16px 0; color: var(--a2-ink2); }
+
+@media (max-width: 600px) {
+  .a2-model-card { right: calc(var(--a2-right) + 44px + 8px); max-width: none; padding: 12px 14px; }
+  .a2-model-title { font-size: 20px !important; }
+  .a2-model-card #blurb { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .a2-details-btn { display: block; height: 44px; }
+  .a2-model-details { display: none; }
+  .a2-model-details.a2-open { display: block; left: var(--a2-left); right: var(--a2-right); top: auto; bottom: var(--a2-bottom); width: auto; z-index: 8;
+    max-height: 70dvh; border-radius: 24px; }
+  .a2-model-details .a2-details-close { display: grid; }
+  body:has(.a2-model-details.a2-open) :is(.a2-appbar, .a2-camera), body:has(.a2-browser:not([hidden])) :is(.a2-appbar, .a2-camera) { display: none; }
+  .a2-browser { right: var(--a2-right); bottom: var(--a2-bottom); width: auto; border-radius: 24px; z-index: 8; }
+}
+.a2-reset svg { width: 20px; height: 20px; }
+/* Between phone and desktop, the open Time & weather card and the detail panel can't both fit:
+   the panel steps aside until the card closes. */
+@media (min-width: 601px) and (max-width: 780px) {
+  body:has(.a2-subject.a2-open) .a2-panel { display: none !important; }
+}
+
+/* ---- radio (app bar): note icon, pause + title while playing ---- */
+.a2-radio { width: 40px; height: 40px; }
+.a2-radio svg { width: 18px; height: 18px; }
+.a2-radio-title { padding: 0 10px 0 2px; font-size: 12px; color: var(--a2-ink2); white-space: nowrap; }
+/* Below desktop the title would crowd the camera column (and an ellipsis could cut 'no audio yet'):
+   the button's label carries it instead, as on phones. */
+@media (max-width: 780px) { .a2-radio-title { display: none !important; } }
+@media (max-width: 600px) {
+  .a2-radio { width: 44px; height: 44px; }
+  .a2-radio-title { display: none; }
+}
+
+/* ---- loading (A2c step 9): the frame over paper, the white model, then colour ---- */
+.a2-dot-loading { background: #a8a296; }
+.a2-tier-quiet .a2-tier-date::before { content: none; }
+:root[data-ui='next'] body:has(.a2-subject) #city-loading { background: transparent; }
+/* Once the shell is up it carries the loading state; until then (or if the app fails to start) the
+   plate's own text and the Open Map link stay. */
+:root[data-ui='next'] body:has(.a2-subject) #city-loading > * { display: none !important; }
+
+/* ---- card: All stops row and the Share action beside Follow ---- */
+/* The card's facts scroll; the Follow status and the Follow · Share row stay pinned at the
+   bottom, so a short viewport (600–700 px) never cuts them off. */
+.a2-panel-body:has(> #card.a2-shown) { overflow: hidden; display: flex; flex-direction: column; }
+.a2-panel #card { flex: 0 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) auto auto auto; column-gap: 8px; }
+.a2-panel #card > :not(#train-follow, .a2-card-actions, .close) { grid-column: 1 / -1; grid-row: 1; }
+.a2-panel #card #card-content { min-height: 0; overflow-y: auto; margin: 0 -18px; padding: 0 18px; overscroll-behavior: contain; }
+.a2-panel #card #train-follow { display: contents; }
+.a2-panel #card #train-follow[hidden] { display: none !important; }
+.a2-panel #card #train-follow .follow-status { grid-row: 2; grid-column: 1 / -1; margin-top: 10px; }
+.a2-panel #card #train-follow [data-follow] { grid-row: 3; grid-column: 1; margin-top: 12px; }
+.a2-panel #card #train-follow [data-recenter] { grid-row: 4; grid-column: 1 / -1; margin-top: 8px; }
+.a2-panel #card #train-follow [data-follow][hidden] ~ * { grid-column: 1 / -1; }
+.a2-panel #card .a2-card-actions { grid-row: 3; grid-column: 2; }
+.a2-panel #card:has(#train-follow[hidden]) .a2-card-actions, .a2-panel #card:has([data-follow][hidden]) .a2-card-actions { grid-column: 1 / -1; }
+.a2-card-actions { margin-top: 12px; display: flex; align-items: flex-start; }
+.a2-card-actions .a2-btn { width: 100%; }
+#card:not(:has(.a2-kicker)) .a2-card-actions { display: none; }
+.a2-allstops { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 11px 0 2px; border: 0; border-top: 1px solid var(--a2-sep);
+  background: none; font-size: 14px !important; font-weight: 600 !important; cursor: pointer; text-align: left; }
+.a2-allstops span { color: var(--a2-ink2); font-size: 18px; }
+.a2-stops-body { padding: 14px 18px 16px; }
+.a2-stops-note { margin: 10px 0; font-size: 12px; line-height: 1.45; color: var(--a2-ink2); }
+.a2-stops { list-style: none; margin: 0; padding: 0; }
+.a2-stops li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--a2-sep); font-size: 14px; font-variant-numeric: tabular-nums; }
+.a2-stops li span:last-child { color: var(--a2-ink2); }
+/* Map → City (and back): the 2D map shows through while City's buildings stand on it. */
+body.city-over-map #view3d { background: transparent !important; }
+body.city-over-map #city-loading { background: transparent !important; }

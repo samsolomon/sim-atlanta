@@ -34,3 +34,70 @@ The matched camera targets (565, −3965), bearing −101°, tilt 55°, at 0.33 
 | Sifly Piazza, cam=540,-3972,150,45,150 | [Day](log/ui/arts-campus/piazza-high-day.jpg) · [Night](log/ui/arts-campus/piazza-high-night.jpg) | [Day](log/ui/arts-campus/piazza-low-day.jpg) · [Night](log/ui/arts-campus/piazza-low-night.jpg) |
 
 Both cameras use clear weather at 13:00 and 23:00 Eastern on November 20, 2026. The wide campus captures above were reshot with these changes. Web rebuild only.
+
+## Woodruff rear: stage house and fly tower (November 23, 2026)
+
+Sam's review found the back of the Memorial Arts Building blank, with plain boxes for the stage house and fly tower. The piazza-side photograph shows the rear skin. The stage house is white precast with vertical fins at a regular bay, horizontal panel joints and recessed slot windows high in the wall. The fly tower above is a plain jointed box. City now draws that skin on the exposed stage-house faces, including the short east return beside the auditorium: fins 0.6 m wide, 0.5 m proud and 4.2 m apart, joints every 2.4 m, and slot windows 1.2 × 2.2 m in alternate bays, all estimated from the photograph. The fly tower gets 3 m × 6 m panel joints and a coping. The aerial shows mechanical units on the roof, so two louvred screens stand on the stage-house roof. Their positions are illustrative. [Piazza side with the stage house and fly tower](https://commons.wikimedia.org/wiki/File:Woodruff_Arts_Center3.jpg) · [Peachtree side](https://commons.wikimedia.org/wiki/File:Woodruff_Arts_Center2.jpg)
+
+**Service side (Street View, March 2025).** Sam approved Street View for this, and the panoramas settled the earlier gap:
+
+- **Loading dock.** The Arts Center's loading dock is not on the Memorial Arts Building. It is the pair of drive-in openings off Arts Center Way, at the base of the Piano west pavilion inside the High's mapped footprint (1 Arts Center Way). The sign on the pier between them reads "LOADING [DOCK] … use intercom to call dock". Behind the openings are roll-up doors and a raised dock platform. City draws a stone-clad base on the mapped footprint edge, rising from the street to the podium top. In it are two dark openings about 5 × 4.5 m with a pier and sign panel between, at local v ≈ 56 and 62, which is about 501, −3896 in Five Points metres. Widths, heights and positions are estimated from the panorama at about 13 m range. [Arts Center Way, heading 73°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7889073,-84.3863136&heading=73&pitch=-3&fov=15) · [Wider view, heading 60°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7889073,-84.3863136&heading=60&pitch=8&fov=90)
+- **15th Street face.** The Memorial's south face rises behind a surface parking lot off 15th Street. Its ribs are closer and slimmer than on the piazza side, at an estimated 1.4 m bay. A dark recessed ground loggia sits behind slender white piers about 2.7 m apart, and recessed balconied windows run high in the wall. An accessible ramp and stair with metal rails climb to a terrace at the west end. City now draws the ribs, loggia and balconies on that face. Bays and heights are estimated. [98 15th St, heading 0°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.788398,-84.385273&heading=0&pitch=10&fov=45) · [Along 15th St, heading 50°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.788398,-84.385273&heading=50&pitch=8&fov=70) · [87 15th St, heading 350°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.7883983,-84.3848007&heading=350&pitch=12&fov=90)
+- **Signage.** No signage band appears on either service face, so none is drawn. The only lettering is the dock sign.
+- **Lighting.** The panoramas are daytime and show ceiling lights inside the dock. I found no night imagery of either face. At night City lights one small lamp over each dock opening and one balconied window in two on 15th Street. Both are illustrative, and the night-imagery gap remains.
+
+The panoramas are cited, not copied. Web rebuild only.
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Loading dock, cam=500,-3897,70,62,150 (zoom 2.5) | [Day](log/ui/arts-campus/dock-high-day.jpg) · [Night](log/ui/arts-campus/dock-high-night.jpg) | [Day](log/ui/arts-campus/dock-low-day.jpg) · [Night](log/ui/arts-campus/dock-low-night.jpg) |
+| 15th Street face, cam=585,-3870,10,38,150 (zoom 1.6) | [Day](log/ui/arts-campus/south15-high-day.jpg) · [Night](log/ui/arts-campus/south15-high-night.jpg) | [Day](log/ui/arts-campus/south15-low-day.jpg) · [Night](log/ui/arts-campus/south15-low-night.jpg) |
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Rear from Arts Center Way, cam=570,-3914,70,55,150 | [Day](log/ui/arts-campus/back-west-high-day.jpg) · [Night](log/ui/arts-campus/back-west-high-night.jpg) | [Day](log/ui/arts-campus/back-west-low-day.jpg) · [Night](log/ui/arts-campus/back-west-low-night.jpg) |
+| Rear from the south, cam=570,-3914,0,55,170 | [Day](log/ui/arts-campus/back-south-high-day.jpg) · [Night](log/ui/arts-campus/back-south-high-night.jpg) | [Day](log/ui/arts-campus/back-south-low-day.jpg) · [Night](log/ui/arts-campus/back-south-low-night.jpg) |
+
+## High entry plaza at the ramp head (November 23, 2026)
+
+Sam saw a void from above where the ramp meets the museum. The notch between the atrium drum, the rounded projection and the smaller block lies outside the mapped footprint. City therefore showed the 3DEP lawn there, about 6 m below the 2.3 m entry level the ramp arrives at. A paved deck now fills the notch at entry level, bounded by the drum's glazing, both entry volumes and the ramp head, with white walls down to grade. Its outline follows the modelled volumes. The deck level matches the ramp landing, which is inferred from the mapped stair. Paving detail is plain, and the photographs do not resolve a joint pattern here. Web rebuild only.
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Entry, top-down, cam=577,-4017,0,5,150 | [Day](log/ui/arts-campus/entry-top-high-day.jpg) · [Night](log/ui/arts-campus/entry-top-high-night.jpg) | [Day](log/ui/arts-campus/entry-top-low-day.jpg) · [Night](log/ui/arts-campus/entry-top-low-night.jpg) |
+| Entry, oblique, cam=580,-4016,-60,50,150 | [Day](log/ui/arts-campus/entry-high-day.jpg) · [Night](log/ui/arts-campus/entry-high-night.jpg) | [Day](log/ui/arts-campus/entry-low-day.jpg) · [Night](log/ui/arts-campus/entry-low-night.jpg) |
+
+## The ginkgo lawn on Peachtree (Street View)
+
+These notes record the landscaping around the champion ginkgo, now at City (607.2, −3998.6) by the lawn path's dead end, for the lawn and landscape builders. They come from Google Street View, which is cited here and not copied:
+- [Peachtree, Dec 2025, heading 252°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=55)
+- [The same spot, Nov 2019](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78993,-84.38466&heading=252&pitch=12&fov=70), using "See more dates"
+- [South, from the café terrace, Sep 2024, heading 300°](https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=33.78972,-84.38478&heading=300&pitch=10&fov=45)
+
+| Element | What the photos show | Where (estimated) |
+|---|---|---|
+| Ginkgo bed | Raised mound of dark hardwood mulch, no grass, rising gently from the sidewalk to the trunk. The trunk forks low into several upright stems. | Centred on the trunk, about 12–14 m across |
+| Sidewalk edge | Low curb or edging between the sidewalk and the bed. A black lamp post on the sidewalk in front of the bed. | Along Peachtree, x ≈ 630 |
+| Shrubs | Low green shrub mass between the bed and the ramp, and along the ramp's south parapet toward the museum | North edge of the bed, z ≈ −4006 to −4010 |
+| Entry ramp | White parapet rising west to the Stent wing, with steel handrails | Its centreline runs (625.1, −4010.5) to (577.2, −4017.0) |
+| Peachtree steps | Wide granite steps with metal handrails, rising from the sidewalk to the piazza walk | (633.4, −3995.6) to (619.6, −3987.8), south of the bed |
+| Lawn | Open grass west of the bed, rising toward the museum | Between the bed and *The Shade* |
+| *The Shade* (Rodin) | Bronze on a dark stone pedestal on a round paved pad | (603.6, −4003.4) |
+| Lawn path | Short footway from the steps' top that dead-ends in the grass near the bed | Ends at (607.5, −3997.4) |
+| Other trees | An oak beside the steps, holding brown leaves in December, and glossy magnolias at the café to the south | Oak at about (619.5, −3990.5) |
+| Dec 2025 only | Temporary construction fencing along the Peachtree sidewalk | Do not model |
+
+The sizes and bed extents are estimates from the photographs. None of them is measured.
+
+## Peachtree lawn landscaping (November 23, 2026)
+
+This section builds on the Street View notes above and uses the parks agent's landscape primitives from #214, all in a single draw:
+- **Mound bed:** a raised hardwood-mulch mound 13 m across round the champion ginkgo trunk at (612.5, −4001.2), with no flowers, as the photographs show.
+- **Shrubs:** a loose row 1 m tall along the ramp's south parapet, 2.6 m off the ramp centreline, from near Peachtree toward the museum.
+- **Steps:** the mapped granite steps from the Peachtree sidewalk to the piazza walk, 4 m wide, on the 3DEP ends at 291.0 and 292.5 m NAVD88.
+
+Nothing within the ginkgo's 9 m crown stands more than 1.5 m above the lawn. The grass and the slope rising toward the museum come from the 3DEP terrain itself. The oak and the magnolias stay as generic canopy crowns, the lamp belongs to the street-light layer, and the ginkgo belongs to the tree agent. The Street View notes show no separate flower beds on this lawn, so none are added. The parks agent's 'manicured' GroundCover, a formal lawn with faint mow stripes, covers the whole OSM-mapped lawn, about 1,500 m². That outline already notches out the round Rodin pad, centred near (604.8, −3999.7). The turf is cut round the ginkgo mound and the Peachtree steps. Under the ramp the deck and its walls hide it, so the ramp needs no hole. Bed extents, shrub size and step width are photographic estimates. Planting colour is illustrative. Web rebuild only.
+
+| Matched camera in Five Points metres | High | Low |
+|---|---|---|
+| Lawn, cam=612,-4002,-70,50,150 | [Day](log/ui/arts-campus/lawn-high-day.jpg) · [Night](log/ui/arts-campus/lawn-high-night.jpg) | [Day](log/ui/arts-campus/lawn-low-day.jpg) · [Night](log/ui/arts-campus/lawn-low-night.jpg) |

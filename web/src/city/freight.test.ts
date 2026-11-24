@@ -9,6 +9,7 @@ it('follows both trucks across joined treads and clips a car at a mapped cover g
   const move = (head: number) => freight.update(start + head / 4.5 * 1000);
   move(42);
   const lead = freight.group.children[0] as THREE.Mesh<THREE.BufferGeometry, THREE.MeshLambertMaterial>;
+  expect(lead.userData.trainId).toBe('illustrative:freight:downtown');
   expect(lead.position.x).toBeCloseTo(42 - 22.3 / 2);
   expect(lead.position.y).toBeCloseTo(lead.position.x * .02);
   expect(new THREE.Vector3(0, 0, 1).applyQuaternion(lead.quaternion).x).toBeGreaterThan(.99);
@@ -23,4 +24,15 @@ it('follows both trucks across joined treads and clips a car at a mapped cover g
   expect(lead.position.x).toBeCloseTo(42 - 22.3 / 2); // clock rewind
   freight.dispose();
   expect(freight.group.children).toHaveLength(0);
+});
+
+it('does not expose an 11 m sliver just because the lab adds a shorter switcher', () => {
+  const point = (s: number) => ({ s, position: new THREE.Vector3(s, 0, 0) });
+  const start = Date.parse('2026-11-20T19:12:02Z');
+  for (const length of [11, 12]) {
+    const freight = new CityFreight([[point(0), point(length)]], []);
+    freight.update(start + 10 / 4.5 * 1000);
+    expect(freight.visibleCars).toBe(length === 11 ? 0 : 1);
+    freight.dispose();
+  }
 });

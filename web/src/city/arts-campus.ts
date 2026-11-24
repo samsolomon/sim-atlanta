@@ -1,6 +1,10 @@
+import { Group } from 'three';
 import { localLandmarkShell } from './landmark-shell';
+import { flowerBed, hedge, landscapeMesh, stairRun } from '../landscape/primitives';
+import { GroundCover } from '../landscape/ground-cover';
+import { loadingDock, mechanicalScreen, precastWall } from './midtown-culture-woodruff';
 import { enamelBox, enamelGrid, entryRamp, siflyPiazza, type RampSpec } from './midtown-culture-high';
-import { pointInRing, type P2 } from '../vignette/geom';
+import { Builder, pointInRing, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 import sites from './fixtures/arts-campus.json';
 
@@ -230,8 +234,49 @@ function museum(s: Shell, ramp: RampSpec, ground: (u: number, v: number) => numb
     roof,
   );
   enamelGrid(body, block, 2.3, 12, hidden);
+  // The Arts Center's loading dock opens off Arts Center Way at the base of the
+  // west pavilion (Street View, March 2025); its sign reads LOADING DOCK.
+  {
+    // On the mapped footprint edge, where the podium wall stands, about 3 m
+    // west of the gallery wall above.
+    const a: P2 = [-95.5, 73.4],
+      b: P2 = [-82.6, 33.3],
+      len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const street = (t: number) => ground(a[0] + ((b[0] - a[0]) * t) / len - 1, a[1] + ((b[1] - a[1]) * t) / len) ?? 0;
+    loadingDock(
+      body,
+      lights,
+      a,
+      b,
+      [-0.952, -0.306],
+      street,
+      [
+        [12.1, 5],
+        [18.4, 5],
+      ],
+      6.2,
+      2.4,
+    );
+  }
   // The diagonal Peachtree ramp climbs to the 2.3 m entry terrace.
   entryRamp(body, ramp, 2.3, ground);
+  // Entry plaza: the notch between the atrium drum, the rounded projection and
+  // the smaller block, decked at the 2.3 m entry level the ramp arrives at.
+  // Without it the 3DEP lawn, about 6 m lower, shows through as a void.
+  const entry: P2[] = [
+    [32, -21],
+    [35, -16],
+    [41, -16],
+    [38, -12.5],
+    [36.5, -9.5],
+    [35, -5],
+    [21, -12],
+  ];
+  for (let deg = 62; deg >= 28; deg -= 6) {
+    const r = (deg * Math.PI) / 180;
+    entry.push([10 + 23.2 * Math.cos(r), -33 + 23.2 * Math.sin(r)]);
+  }
+  prism(entry, -7, 2.36, '#e3e1da', '#d6d3cb');
 }
 
 function memorial(s: Shell) {
@@ -242,6 +287,30 @@ function memorial(s: Shell) {
   block(-19, 76, 65, 82, 20, '#cac5ba');
   block(-14, 74, 37, 65, 27, '#bbbab4');
   block(35, 80, 50, 75, 18.2, '#afaca4');
+  // The rear stage house and fly tower carry the precast skin seen from the
+  // piazza: fins, joints and high slot windows; the fly tower is plain above.
+  const { body, lights } = s;
+  precastWall(body, lights, [-51.5, 117], [-51.5, 35], [-1, 0], 1.5, 20);
+  precastWall(body, lights, [-51.5, 35], [13.5, 35], [0, -1], 1.5, 20);
+  // 15th Street face (Street View, March 2025): close slim ribs over a recessed
+  // ground loggia of slender piers, with balconied windows high in the wall.
+  precastWall(body, lights, [13.5, 117], [-51.5, 117], [0, 1], 1.5, 20, {
+    bay: 1.4,
+    finWidth: 0.35,
+    finDepth: 0.3,
+    slots: false,
+    loggia: 4.5,
+    balconies: 12.5,
+  });
+  precastWall(body, lights, [13.5, 35], [13.5, 42.5], [1, 0], 1.5, 20, { slots: false });
+  const tower = { fins: false, slots: false, joints: 3, bay: 6 };
+  precastWall(body, lights, [-32.5, 106.5], [-32.5, 41.5], [-1, 0], 20, 27, tower);
+  precastWall(body, lights, [-32.5, 41.5], [4.5, 41.5], [0, -1], 20, 27, tower);
+  precastWall(body, lights, [4.5, 41.5], [4.5, 106.5], [1, 0], 20, 27, tower);
+  precastWall(body, lights, [4.5, 106.5], [-32.5, 106.5], [0, 1], 20, 27, tower);
+  // Louvred mechanical screens on the stage-house roof; positions are illustrative.
+  mechanicalScreen(body, -42, 55, 12, 7, 20, 2.6);
+  mechanicalScreen(body, -42, 98, 9, 6, 20, 2.6);
   s.body.box(55, 1.25, 80, 35, 19, 80, coping);
   s.body.box(51, 0.28, 76, 35, 19.78, 80, roof);
   for (const v of [42, 118]) {
@@ -314,6 +383,53 @@ export function createArtsCampusLandmark(
         return y === null ? null : y - grade + 0.1;
       },
     );
+    const finished = shell.finish('#ffdab0', 0.68);
+    // The Peachtree lawn is world-framed, so it sits beside the rotated shell.
+    const lawn = peachtreeLawn(groundAt);
+    const group = new Group();
+    group.name = finished.group.name;
+    group.add(finished.group, lawn.mesh, lawn.turf);
+    // The board carves its drawn terrain under the granite steps.
+    return { ...finished, group, yields: lawn.yields };
   } else memorial(shell);
   return shell.finish('#ffdab0', 0.68);
+}
+
+/**
+ * The High's Peachtree lawn, from the tree agent's Street View notes: the
+ * champion ginkgo's mulch mound, a loose shrub row along the ramp's south
+ * parapet and the granite steps up to the piazza walk. Coordinates are world
+ * Five Points metres. Grass and grade come from the 3DEP terrain itself.
+ */
+function peachtreeLawn(groundAt: (x: number, z: number) => number | null) {
+  const b = new Builder();
+  const l = sites.museum.lawn;
+  const [tx, tz] = l.ginkgo;
+  const mound: P2[] = [];
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2;
+    mound.push([tx + l.moundRadius * Math.cos(a), tz + l.moundRadius * Math.sin(a)]);
+  }
+  // The mound bed carries no flowers, so its colours do not depend on the season.
+  flowerBed(b, mound, groundAt, { doy: 172, mound: 0.5, flowers: 0, seed: 'high-ginkgo' });
+  hedge(b, l.shrubs as P2[], groundAt, { clipped: false, height: 1.0, width: 1.3, seed: 'high-ramp-shrubs' });
+  const [from, to] = l.steps as [P2, P2];
+  const steps = stairRun(b, from, to, l.stepsWidth, groundAt);
+  // Manicured lawn (faint mow stripes, as a formal landmark lawn) over the OSM-mapped Peachtree lawn (its round notch is the Rodin pad),
+  // cut round the ginkgo mound and the Peachtree steps. Under the ramp the
+  // turf is hidden by the deck and its walls, so the ramp needs no hole.
+  const turf = new GroundCover();
+  // The carved stair footprint is stone, not lawn, at either tier.
+  turf.patch(l.turf as P2[], groundAt, 'manicured', { holes: l.turfHoles as P2[][], cut: steps ? [steps.ring] : [] });
+  const lawn = landscapeMesh(b),
+    cover = turf.mesh();
+  return {
+    ...lawn,
+    turf: cover.mesh,
+    yields: steps ? [steps] : [],
+    dispose() {
+      lawn.dispose();
+      cover.dispose();
+    },
+  };
 }

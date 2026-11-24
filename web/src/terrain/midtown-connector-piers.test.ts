@@ -1,0 +1,51 @@
+import { readFileSync } from 'node:fs';
+import { expect, it } from 'vitest';
+import { midtownConnectorDecks } from './midtown-connector-decks';
+import { midtownConnectorGround } from './midtown-connector-ground';
+import { midtownConnectorPiers } from './midtown-connector-piers';
+import { inConnectorLanes } from './connector-paint';
+import { seventeenthAccess, seventeenthPortals } from '../city/seventeenth-street';
+import { auburnTransport } from '../city/sweet-auburn-transport';
+import { brookwoodGrid } from '../city/brookwood';
+import { GroundGrid } from './grid';
+import { GroundSurface } from './surface';
+import { bridgeApproaches } from './bridge-approaches';
+import { createSurfaceTransport } from './transport';
+import { joins } from '../square-board/sections';
+import rail from '../city/fixtures/midtown-rail.json';
+import rows from '../../../pipeline/prototypes/square-board/midtown-rows.json';
+// Measured budget: 0.33 s alone; 2.1–3.1 s with three full suites running at once (2026-11-23,
+// Mac Studio). The cost is five rows of real terrain and deck geometry, built from the low-tier
+// surface and the bridge runs only; the obstacle index is built once per row.
+const BUDGET_MS = 15_000;
+it('sets bents in the medians of every Midtown deck that spans the Connector', () => {
+  const counts: Record<string, number> = {}, named = new Map<string, { x: number; z: number }[]>(); const all: unknown[] = [];
+  for (const row of Object.keys(rows)) {
+    const read = (f: string) => readFileSync(new URL(`../../../pipeline/prototypes/square-board/${row}/${f}`, import.meta.url));
+    const m = JSON.parse(read('ground.json').toString()), bytes = Uint8Array.from(read('ground.i16')).buffer;
+    const grid = row.startsWith('brookwood') ? brookwoodGrid(m, midtownConnectorGround(m, bytes)) : new GroundGrid(m, midtownConnectorGround(m, bytes));
+    const c = JSON.parse(read('context.json').toString()); c.terrainTransport = { version: 1, roads: [], rail: (rail as any)[row] };
+    const city = midtownConnectorDecks(row === 'brookwood-south' || row === 'midtown-upper' ? seventeenthAccess(auburnTransport(c)) : auburnTransport(c));
+    // Piers depend only on ground under the decks and the decks' own heights: the low-tier
+    // surface and a transport built from the bridge runs alone keep this test fast and steady.
+    const surface = new GroundSurface(grid, 'low', undefined, joins(row as any));
+    const banks = bridgeApproaches(seventeenthPortals(city), m.vertical.sceneZeroNavd88M, surface.sampleScene.bind(surface), city.bounds, city.roads);
+    const data = city.terrainTransport!;
+    const decks = createSurfaceTransport({ ...city, terrainTransport: { ...data, roads: data.roads.filter(r => r.kind === 'bridge'), rail: [] } }, grid, banks.groundAt);
+    const p = midtownConnectorPiers(city, banks.groundAt, decks.deckAt);
+    counts[row] = p?.columns ?? 0;
+    for (const b of p?.bents ?? []) { all.push([row, b.name, Math.round(b.x), Math.round(b.z), b.columns]); if (b.name) named.set(b.name, [...(named.get(b.name) ?? []), b]); }
+    p?.mesh.geometry.dispose();
+    decks.dispose(); surface.geometry.dispose();
+  }
+  for (const row of Object.keys(rows)) expect(counts[row], row).toBeGreaterThan(0);
+  // North Avenue and 10th Street cross the Connector on a single median pier.
+  for (const name of ['14th Street Northwest']) expect(named.get(name)?.length, name).toBeGreaterThan(0);
+  for (const name of ['North Avenue Northwest', '10th Street Northwest']) {
+    const bents = named.get(name) ?? [];
+    expect(bents, name).toHaveLength(1);
+    // The axial column stands in the median, off every rendered lane.
+    expect(inConnectorLanes(bents[0].x, bents[0].z, 1), name).toBe(false);
+  }
+  if (process.env.PRINT_BENTS) throw Error('BENTS ' + JSON.stringify(all));
+}, BUDGET_MS);

@@ -120,3 +120,20 @@ describe('renderer', () => {
     trees.dispose();
   });
 });
+
+describe('species level of detail', () => {
+  it('hides limbs under farTrees, keeps crowns, and tags the carpet as landscape', () => {
+    const trees = createTrees([{ species: ginkgo, size: 'mature', x: 0, z: 0, seed: 1 }], 'low', () => 0)!;
+    const limbs = trees.group.children.filter(o => o.name.endsWith(' limbs'));
+    const crowns = trees.group.children.filter(o => o.name.endsWith(' leaves'));
+    expect(limbs.length).toBeGreaterThan(0);
+    trees.setDetail({ farTrees: true });
+    expect(limbs.every(o => !o.visible)).toBe(true);
+    expect(crowns.every(o => o.visible)).toBe(true);
+    trees.setDetail({ farTrees: false });
+    expect(limbs.every(o => o.visible)).toBe(true);
+    const carpet = trees.group.getObjectByName('leaf carpet');
+    expect(carpet?.userData.perf).toBe('landscape');
+    trees.dispose();
+  });
+});

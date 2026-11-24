@@ -1,0 +1,800 @@
+[
+ {
+  "summary": {
+   "quality": "low",
+   "fps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "max": 16.8,
+   "updateP50": 1.2,
+   "renderP50": 2.2,
+   "calls": 530,
+   "triangles": 2317732,
+   "trianglesMax": 3596472,
+   "lastFrameTriangles": 2334195,
+   "programs": 77,
+   "pixelRatio": 1,
+   "drawingBuffer": [
+    411,
+    891
+   ],
+   "heapMB": 615,
+   "textureMB": 108.7,
+   "geometryMB": 171,
+   "cpuMB": 236.3,
+   "shadowUpdatesInSample": 38,
+   "dataMs": 296,
+   "rendererMs": 1290,
+   "firstFrameMs": 1418,
+   "readyMs": 2162,
+   "lastAreaMs": 4069,
+   "areas": 12,
+   "motion": "pan",
+   "heapAfterGcMB": 437
+  },
+  "url": "http://localhost:5472/?view=city&q=low&t=2026-11-20T14%3A00%3A00-05%3A00&perf=run&motion=pan",
+  "at": "2026-11-23T23:51:47.209Z",
+  "quality": "low",
+  "fps1s": {
+   "fps": 60,
+   "frames": 61,
+   "p50": 16.7,
+   "p95": 16.8,
+   "max": 16.8,
+   "updateP50": 1.3,
+   "renderP50": 2.3,
+   "renderP95": 2.6,
+   "trianglesP50": 2324715,
+   "trianglesMax": 3558054
+  },
+  "fps10s": {
+   "fps": 60,
+   "frames": 601,
+   "p50": 16.7,
+   "p95": 16.8,
+   "max": 16.8,
+   "updateP50": 1.2,
+   "renderP50": 2.2,
+   "renderP95": 2.6,
+   "trianglesP50": 2317732,
+   "trianglesMax": 3596472
+  },
+  "renderer": {
+   "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+   "pixelRatio": 1,
+   "drawingBuffer": [
+    411,
+    891
+   ],
+   "calls": 530,
+   "triangles": 2334195,
+   "points": 0,
+   "lines": 0,
+   "programs": 77,
+   "programKinds": {
+    "?": 73,
+    "Ink": 1,
+    "TiltShift": 1,
+    "OutputShader": 1,
+    "Grade": 1
+   },
+   "shadowMap": {
+    "enabled": true,
+    "autoUpdate": false
+   }
+  },
+  "heap": {
+   "usedMB": 615,
+   "totalMB": 704,
+   "limitMB": 4192
+  },
+  "shadowUpdates": 56,
+  "areas": [
+   "downtown",
+   "north-band",
+   "north-corner",
+   "south-band",
+   "south-corner",
+   "midtown-south",
+   "midtown-central",
+   "king",
+   "midtown-upper",
+   "brookwood-south",
+   "auburn",
+   "brookwood-station"
+  ],
+  "phases": [
+   {
+    "name": "boot",
+    "ms": 93,
+    "heapMB": 6
+   },
+   {
+    "name": "city:open",
+    "ms": 140,
+    "heapMB": 13
+   },
+   {
+    "name": "city:data",
+    "ms": 296,
+    "heapMB": 31
+   },
+   {
+    "name": "stage:alignments",
+    "ms": 392,
+    "heapMB": 43
+   },
+   {
+    "name": "stage:terrain",
+    "ms": 877,
+    "heapMB": 218
+   },
+   {
+    "name": "stage:sidewalks and trails",
+    "ms": 995,
+    "heapMB": 216
+   },
+   {
+    "name": "stage:streets and freight",
+    "ms": 1191,
+    "heapMB": 305
+   },
+   {
+    "name": "stage:streetcar",
+    "ms": 1242,
+    "heapMB": 322
+   },
+   {
+    "name": "stage:MARTA",
+    "ms": 1263,
+    "heapMB": 348
+   },
+   {
+    "name": "stage:lights",
+    "ms": 1282,
+    "heapMB": 329
+   },
+   {
+    "name": "city:renderer",
+    "ms": 1290,
+    "heapMB": 329
+   },
+   {
+    "name": "city:first-frame",
+    "ms": 1418,
+    "heapMB": 350
+   },
+   {
+    "name": "area:north-band+north-corner",
+    "ms": 1542,
+    "heapMB": 378
+   },
+   {
+    "name": "area:south-band+south-corner",
+    "ms": 1704,
+    "heapMB": 392
+   },
+   {
+    "name": "area:midtown-south",
+    "ms": 1903,
+    "heapMB": 307
+   },
+   {
+    "name": "city:revealed",
+    "ms": 2162,
+    "heapMB": 303
+   },
+   {
+    "name": "ready",
+    "ms": 2162,
+    "heapMB": 303
+   },
+   {
+    "name": "area:midtown-central",
+    "ms": 2434,
+    "heapMB": 359
+   },
+   {
+    "name": "area:midtown-upper",
+    "ms": 2855,
+    "heapMB": 402
+   },
+   {
+    "name": "area:brookwood-south",
+    "ms": 3432,
+    "heapMB": 503
+   },
+   {
+    "name": "area:brookwood-station",
+    "ms": 4069,
+    "heapMB": 604
+   }
+  ],
+  "previousRun": null,
+  "memory": {
+   "categories": {
+    "transport": {
+     "meshes": 61,
+     "instances": 5792,
+     "triangles": 523377,
+     "geometries": 61,
+     "geometryMB": 46.4,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 57.8
+    },
+    "buildings": {
+     "meshes": 332,
+     "instances": 5635,
+     "triangles": 967895,
+     "geometries": 330,
+     "geometryMB": 101,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 116.7
+    },
+    "terrain": {
+     "meshes": 76,
+     "instances": 76,
+     "triangles": 154244,
+     "geometries": 76,
+     "geometryMB": 6.9,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 45.1
+    },
+    "trees": {
+     "meshes": 58,
+     "instances": 42628,
+     "triangles": 896854,
+     "geometries": 58,
+     "geometryMB": 5.5,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 5.5
+    },
+    "landscape": {
+     "meshes": 13,
+     "instances": 13,
+     "triangles": 59909,
+     "geometries": 13,
+     "geometryMB": 6.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.2
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 37,
+     "instances": 840,
+     "triangles": 72516,
+     "geometries": 27,
+     "geometryMB": 2.5,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.5
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3426,
+     "triangles": 50928,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "total": {
+    "meshes": 596,
+    "instances": 58417,
+    "triangles": 2743815,
+    "geometries": 584,
+    "geometryMB": 171,
+    "textures": 80,
+    "textureMB": 108.7,
+    "cpuMB": 236.3
+   },
+   "visibleMeshes": 527,
+   "largestTextures": [
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 1448,
+     "h": 1448,
+     "MB": 10.7
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "transport",
+     "w": 1682,
+     "h": 436,
+     "MB": 3.7
+    },
+    {
+     "name": "canvas",
+     "cat": "transport",
+     "w": 1682,
+     "h": 436,
+     "MB": 3.7
+    }
+   ],
+   "renderTargets": 15,
+   "gl": {
+    "geometries": 534,
+    "textures": 80,
+    "programs": 77
+   }
+  },
+  "device": {
+   "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+   "deviceMemory": 32,
+   "cores": 30,
+   "dpr": 2.625,
+   "screen": [
+    411,
+    891
+   ],
+   "viewport": [
+    411,
+    891
+   ],
+   "coarse": true
+  },
+  "sampleMs": 10000,
+  "shadowUpdatesInSample": 38
+ },
+ {
+  "summary": {
+   "quality": "low",
+   "fps": 60,
+   "p50": 16.7,
+   "p95": 16.8,
+   "max": 16.8,
+   "updateP50": 1.1,
+   "renderP50": 2.2,
+   "calls": 539,
+   "triangles": 2364091,
+   "trianglesMax": 3605755,
+   "lastFrameTriangles": 2380939,
+   "programs": 82,
+   "pixelRatio": 1,
+   "drawingBuffer": [
+    411,
+    891
+   ],
+   "heapMB": 442,
+   "textureMB": 114,
+   "geometryMB": 170.7,
+   "cpuMB": 239.9,
+   "shadowUpdatesInSample": 38,
+   "dataMs": 252,
+   "rendererMs": 1175,
+   "firstFrameMs": 1292,
+   "readyMs": 1989,
+   "lastAreaMs": 3893,
+   "areas": 12,
+   "motion": "pan",
+   "heapAfterGcMB": 439
+  },
+  "url": "http://localhost:5471/?view=city&q=low&t=2026-11-20T14%3A00%3A00-05%3A00&perf=run&motion=pan",
+  "at": "2026-11-23T23:52:07.129Z",
+  "quality": "low",
+  "fps1s": {
+   "fps": 60,
+   "frames": 61,
+   "p50": 16.7,
+   "p95": 16.7,
+   "max": 16.8,
+   "updateP50": 1.3,
+   "renderP50": 2.3,
+   "renderP95": 2.6,
+   "trianglesP50": 2369655,
+   "trianglesMax": 3605755
+  },
+  "fps10s": {
+   "fps": 60,
+   "frames": 601,
+   "p50": 16.7,
+   "p95": 16.8,
+   "max": 16.8,
+   "updateP50": 1.1,
+   "renderP50": 2.2,
+   "renderP95": 2.5,
+   "trianglesP50": 2364091,
+   "trianglesMax": 3605755
+  },
+  "renderer": {
+   "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Ultra, Unspecified Version)",
+   "pixelRatio": 1,
+   "drawingBuffer": [
+    411,
+    891
+   ],
+   "calls": 539,
+   "triangles": 2380939,
+   "points": 0,
+   "lines": 0,
+   "programs": 82,
+   "programKinds": {
+    "?": 78,
+    "Ink": 1,
+    "TiltShift": 1,
+    "OutputShader": 1,
+    "Grade": 1
+   },
+   "shadowMap": {
+    "enabled": true,
+    "autoUpdate": false
+   }
+  },
+  "heap": {
+   "usedMB": 442,
+   "totalMB": 542,
+   "limitMB": 4192
+  },
+  "shadowUpdates": 55,
+  "areas": [
+   "downtown",
+   "north-band",
+   "north-corner",
+   "south-band",
+   "south-corner",
+   "midtown-south",
+   "midtown-central",
+   "king",
+   "midtown-upper",
+   "brookwood-south",
+   "auburn",
+   "brookwood-station"
+  ],
+  "phases": [
+   {
+    "name": "boot",
+    "ms": 92,
+    "heapMB": 6
+   },
+   {
+    "name": "city:open",
+    "ms": 134,
+    "heapMB": 13
+   },
+   {
+    "name": "city:data",
+    "ms": 252,
+    "heapMB": 31
+   },
+   {
+    "name": "stage:alignments",
+    "ms": 340,
+    "heapMB": 39
+   },
+   {
+    "name": "stage:terrain",
+    "ms": 774,
+    "heapMB": 209
+   },
+   {
+    "name": "stage:sidewalks and trails",
+    "ms": 890,
+    "heapMB": 207
+   },
+   {
+    "name": "stage:streets and freight",
+    "ms": 1084,
+    "heapMB": 298
+   },
+   {
+    "name": "stage:streetcar",
+    "ms": 1132,
+    "heapMB": 312
+   },
+   {
+    "name": "stage:MARTA",
+    "ms": 1151,
+    "heapMB": 336
+   },
+   {
+    "name": "stage:lights",
+    "ms": 1167,
+    "heapMB": 318
+   },
+   {
+    "name": "city:renderer",
+    "ms": 1175,
+    "heapMB": 319
+   },
+   {
+    "name": "city:first-frame",
+    "ms": 1292,
+    "heapMB": 341
+   },
+   {
+    "name": "area:north-band+north-corner",
+    "ms": 1417,
+    "heapMB": 371
+   },
+   {
+    "name": "area:south-band+south-corner",
+    "ms": 1572,
+    "heapMB": 390
+   },
+   {
+    "name": "area:midtown-south",
+    "ms": 1762,
+    "heapMB": 287
+   },
+   {
+    "name": "city:revealed",
+    "ms": 1989,
+    "heapMB": 289
+   },
+   {
+    "name": "ready",
+    "ms": 1989,
+    "heapMB": 289
+   },
+   {
+    "name": "area:midtown-central",
+    "ms": 2260,
+    "heapMB": 344
+   },
+   {
+    "name": "area:midtown-upper",
+    "ms": 2679,
+    "heapMB": 432
+   },
+   {
+    "name": "area:brookwood-south",
+    "ms": 3156,
+    "heapMB": 512
+   },
+   {
+    "name": "area:brookwood-station",
+    "ms": 3893,
+    "heapMB": 630
+   }
+  ],
+  "previousRun": null,
+  "memory": {
+   "categories": {
+    "transport": {
+     "meshes": 61,
+     "instances": 5792,
+     "triangles": 523377,
+     "geometries": 61,
+     "geometryMB": 46.4,
+     "textures": 15,
+     "textureMB": 15.3,
+     "cpuMB": 57.8
+    },
+    "buildings": {
+     "meshes": 332,
+     "instances": 5635,
+     "triangles": 967575,
+     "geometries": 330,
+     "geometryMB": 100.9,
+     "textures": 37,
+     "textureMB": 20.9,
+     "cpuMB": 116.6
+    },
+    "trees": {
+     "meshes": 66,
+     "instances": 39837,
+     "triangles": 885796,
+     "geometries": 66,
+     "geometryMB": 5.1,
+     "textures": 4,
+     "textureMB": 5.3,
+     "cpuMB": 9.1
+    },
+    "landscape": {
+     "meshes": 14,
+     "instances": 975,
+     "triangles": 66643,
+     "geometries": 14,
+     "geometryMB": 6.2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 6.2
+    },
+    "terrain": {
+     "meshes": 76,
+     "instances": 76,
+     "triangles": 154244,
+     "geometries": 76,
+     "geometryMB": 6.9,
+     "textures": 12,
+     "textureMB": 50.8,
+     "cpuMB": 45.1
+    },
+    "other": {
+     "meshes": 7,
+     "instances": 7,
+     "triangles": 18092,
+     "geometries": 7,
+     "geometryMB": 2,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 2
+    },
+    "vehicles": {
+     "meshes": 37,
+     "instances": 840,
+     "triangles": 72516,
+     "geometries": 27,
+     "geometryMB": 2.5,
+     "textures": 1,
+     "textureMB": 0,
+     "cpuMB": 2.5
+    },
+    "scenery": {
+     "meshes": 12,
+     "instances": 3426,
+     "triangles": 50928,
+     "geometries": 12,
+     "geometryMB": 0.6,
+     "textures": 0,
+     "textureMB": 0,
+     "cpuMB": 0.6
+    },
+    "post": {
+     "meshes": 0,
+     "instances": 0,
+     "triangles": 0,
+     "geometries": 0,
+     "geometryMB": 0,
+     "textures": 15,
+     "textureMB": 21.6,
+     "cpuMB": 0
+    }
+   },
+   "total": {
+    "meshes": 605,
+    "instances": 56588,
+    "triangles": 2739171,
+    "geometries": 593,
+    "geometryMB": 170.7,
+    "textures": 84,
+    "textureMB": 114,
+    "cpuMB": 239.9
+   },
+   "visibleMeshes": 532,
+   "largestTextures": [
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 1448,
+     "h": 1448,
+     "MB": 10.7
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "terrain",
+     "w": 2028,
+     "h": 580,
+     "MB": 6
+    },
+    {
+     "name": "canvas",
+     "cat": "transport",
+     "w": 1682,
+     "h": 436,
+     "MB": 3.7
+    },
+    {
+     "name": "canvas",
+     "cat": "transport",
+     "w": 1682,
+     "h": 436,
+     "MB": 3.7
+    }
+   ],
+   "renderTargets": 15,
+   "gl": {
+    "geometries": 539,
+    "textures": 85,
+    "programs": 82
+   }
+  },
+  "device": {
+   "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+   "deviceMemory": 32,
+   "cores": 30,
+   "dpr": 2.625,
+   "screen": [
+    411,
+    891
+   ],
+   "viewport": [
+    411,
+    891
+   ],
+   "coarse": true
+  },
+  "sampleMs": 10000,
+  "shadowUpdatesInSample": 38
+ }
+]

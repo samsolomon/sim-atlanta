@@ -10,10 +10,22 @@ import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
+import { SIDING_GLSL } from '../materials/siding';
 
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
 export const MARTA_TRACK_OFFSET = 2.1;
 
+/** One mapped OSM building:part, or the podium the parts leave of their parent. */
+export interface VBuildingPart {
+  /** `osm:way:<part>`, or `podium` for the uncovered remainder of the parent. */
+  id: string;
+  rings: P2[][];
+  /** Roof and underside in metres above the building's floor. */
+  h: number;
+  minH?: number;
+  /** Height source: a `height` tag is reported, levels are inferred, defaults are illustrative. */
+  tier: 'reported' | 'inferred' | 'illustrative';
+}
 export interface VBuilding {
   /** Inferred finished floor in scene metres on a sloped site. */
   floorY?: number;
@@ -22,14 +34,21 @@ export interface VBuilding {
   h: number | null;
   floors: number | null;
   rings: P2[][];
+  /** Mapped building parts drawn in place of the whole footprint. */
+  parts?: VBuildingPart[];
 }
 export interface BuildingFinish {
   wall: string;
   roof: string;
   plainWalls?: boolean;
   fallbackHeight?: number;
+  /** Overrides the 1.1 m parapet on buildings taller than 6 m (0 for pitched roofs). */
+  parapet?: number;
+  /** Shader wall pattern; 3–6 are house facades (clapboard, brick, stucco, shingle) with double-hung windows; 7–10 the same siding without windows. */
+  windowStyle?: number;
   /** Supplies roof fixtures in place of the generic rooftop equipment. */
-  dressRoof?: (builder: Builder, outer: P2[], roof: number) => void;
+  /** `litGlass` takes window glass that glows at night (it shares the building draw). */
+  dressRoof?: (builder: Builder, outer: P2[], roof: number, litGlass: Builder) => void;
   drawRing?: (builder: Builder, ring: P2[], hole: boolean, base: number, top: number, litGlass: Builder) => void;
 }
 export interface VRoad {
@@ -186,6 +205,11 @@ export class World {
    * after their colour seed is drawn, so every other tree keeps its kind and colour.
    */
   replacedTree: ((x: number, z: number, crownM: number) => boolean) | null = null;
+  /**
+   * Crowns drawn at a named height and crown radius (metres): deciduous broadleaves only, or any
+   * crown marked `broadleaf` (made deciduous). Used by the tree rollout (trees/rollout.ts).
+   */
+  crownSize: ((x: number, z: number) => { h: number; r: number; broadleaf?: boolean } | null | undefined) | null = null;
 
   readonly opts: WorldOptions;
   constructor(
@@ -798,25 +822,6 @@ export class World {
   }
 
   /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
-  buildTram() {
-    const b = new Builder();
-    for (const r of this.data.rail) {
-      if (r.cls !== 'tram' || r.flags.includes('is_tunnel') || r.pts.length < 2) continue;
-      const line = new Line(r.pts);
-      for (const off of [-0.7175, 0.7175]) {
-        const rail = line.offset(off, 1);
-        b.ribbon(rail, 0.24, (_s, x, z) => this.ground(x, z) + 0.27, '#393c40', 1);
-        b.ribbon(rail, 0.09, (_s, x, z) => this.ground(x, z) + 0.29, '#b6b5ae', 1);
-      }
-    }
-    const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({
-      vertexColors: true, side: THREE.DoubleSide,
-      polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16,
-    }));
-    mesh.receiveShadow = true;
-    this.group.add(mesh);
-  }
-
   // ---- buildings ----------------------------------------------------------------------
 
   buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
@@ -834,7 +839,12 @@ export class World {
       if (footing === null) continue;
       const originY = bd.floorY ?? footing;
       const finish = finishFor?.(bd);
-      const h = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
+      const whole = bd.h ?? (bd.floors ? bd.floors * 3.6 : finish?.fallbackHeight ?? 8);
+      // Mapped building:parts replace the whole footprint, each with its own roof and base.
+      const masses = bd.parts?.length
+        ? bd.parts.map((part) => ({ rings: part.rings, h: part.h, minH: part.minH ?? 0 }))
+        : [{ rings: bd.rings, h: whole, minH: 0 }];
+      const h = Math.max(...masses.map((mass) => mass.h));
       const r = rng(hashStr(bd.id));
       // Massing class decides the material: brick low-rise, stone/concrete mid-rise, glass towers.
       // Mid-rises mix brick, stone with punched windows, and ribbon-window offices.
@@ -844,20 +854,28 @@ export class World {
       let foot = footing;
       if (!foundationY) for (const p of outer) foot = Math.min(foot, this.ground(p[0], p[1]));
       const y0 = foot - 0.5;
-      const roofY = originY + h;
       const before = b.pos.length / 3;
-      if (appendParkingDeck(b, bd, y0, originY, roofY)) {
+      if (!bd.parts?.length && appendParkingDeck(b, bd, y0, originY, originY + h)) {
         for (let i = before; i < b.pos.length / 3; i++) {
           style.push(-1);
           base.push(0);
         }
         continue;
       }
+      const shop = bd.parts?.length ? null : woodruffLot(bd);
+      for (const mass of masses) {
+      const outer = mass.rings[0];
+      if (!outer || outer.length < 3) continue;
+      const before = b.pos.length / 3;
+      const h = mass.h;
+      const roofY = originY + h;
+      // A part with a mapped underside (an overhang or canopy) starts above the floor.
+      const wallBase = mass.minH > 0 ? originY + mass.minH : y0;
       // Walls (run to h + parapet), roof slightly below the parapet top.
-      const parapet = h > 6 ? 1.1 : 0;
-      const shop = woodruffLot(bd);
-      for (const [ringIndex, ring] of bd.rings.entries()) {
-        if (finish?.drawRing) {
+      const parapet = finish?.parapet ?? (h - mass.minH > 6 ? 1.1 : 0);
+      for (const [ringIndex, ring] of mass.rings.entries()) {
+        // Finishes describe a whole footprint; mapped parts use the plain walls.
+        if (finish?.drawRing && !bd.parts?.length) {
           const first = b.pos.length / 3;
           finish.drawRing(b, ring, ringIndex > 0, foot, roofY + parapet, shopLights);
           for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
@@ -871,29 +889,30 @@ export class World {
             for (let j = first; j < b.pos.length / 3; j++) style.push(-1);
             continue;
           }
-          const wallKind = finish?.plainWalls ? -1 : finish ? 0 : kind;
+          const wallKind = finish?.plainWalls ? -1 : finish?.windowStyle ?? (finish ? 0 : kind);
           style.push(wallKind, wallKind, wallKind, wallKind, wallKind, wallKind);
-          b.quad([a[0], y0, a[1]], [c[0], y0, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
+          b.quad([a[0], wallBase, a[1]], [c[0], wallBase, c[1]], [c[0], roofY + parapet, c[1]], [a[0], roofY + parapet, a[1]], wallCol);
         }
       }
       const wallVerts = b.pos.length / 3 - before;
       const contour = outer.map((p) => new THREE.Vector2(p[0], p[1]));
-      const holes = bd.rings.slice(1).map((ring) => ring.map((p) => new THREE.Vector2(p[0], p[1])));
+      const holes = mass.rings.slice(1).map((ring) => ring.map((p) => new THREE.Vector2(p[0], p[1])));
       const tris = THREE.ShapeUtils.triangulateShape(contour, holes);
       const all = [...contour, ...holes.flat()];
       // Roofs: white membrane, gravel, tar and the odd green roof.
       const roofCol = finish?.roof ?? pick(r, kind === 2 ? ['#9aa3a8', '#b7bcbf'] : ['#e9e7e1', '#d8d4cb', '#bdb8ad', '#9d9a94', '#c9c2b2', '#e9e7e1', '#8fa66b']);
       for (const t of tris) b.tri([all[t[0]].x, roofY, all[t[0]].y], [all[t[1]].x, roofY, all[t[1]].y], [all[t[2]].x, roofY, all[t[2]].y], roofCol);
-      finish?.dressRoof?.(b, outer, roofY);
+      if (mass.minH > 0) for (const t of tris) b.tri([all[t[0]].x, wallBase, all[t[0]].y], [all[t[2]].x, wallBase, all[t[2]].y], [all[t[1]].x, wallBase, all[t[1]].y], roofCol);
+      if (!bd.parts?.length) finish?.dressRoof?.(b, outer, roofY, shopLights);
       const roofVerts = b.pos.length / 3 - before - wallVerts;
       for (let i = 0; i < wallVerts; i++) {
-        base.push(foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
+        base.push(mass.minH > 0 ? wallBase : foundationY ? originY : (y0 < -1 ? y0 + 0.5 : 0));
       }
       for (let i = 0; i < roofVerts; i++) {
         style.push(-1);
         base.push(0);
       }
-      if (finish?.dressRoof) continue;
+      if ((finish?.dressRoof && !bd.parts?.length) || mass.minH > 0) continue;
       // Rooftop clutter: HVAC units, vents and a stair/elevator penthouse on bigger roofs.
       const area = ringArea(outer);
       const xs = outer.map((p) => p[0]);
@@ -913,6 +932,7 @@ export class World {
         clutterCol.push(new THREE.Color(big ? wallCol : r() < 0.7 ? PAL.hvac : '#8f9498'));
         placed++;
       }
+      }
     }
     // Painted shop glass shares the building draw. Only this glass receives the
     // subdued interior light when the City's existing night uniform comes up.
@@ -929,6 +949,7 @@ export class World {
     patchFacades(mat, this.night);
     const mesh = new THREE.Mesh(g, mat);
     mesh.castShadow = mesh.receiveShadow = true;
+    mesh.userData.building = true; // City's white-model-on-map stage draws only buildings
     this.group.add(mesh);
     const cm = instanced(new THREE.BoxGeometry(1, 1, 1), '#ffffff', clutter);
     clutterCol.forEach((c, i) => cm.setColorAt(i, c));
@@ -963,9 +984,18 @@ export class World {
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const c = r();
         if (this.replacedTree?.(x, z, cr)) continue;
-        const sz = Math.min(4.5, Math.max(0.7, cr / 2.3));
+        // A named size (the tree rollout's large Ansley crowns) applies to broadleaves only, after
+        // the seed is drawn, with room above the usual 4.5 scale cap.
+        const big = this.crownSize?.(x, z);
+        // Deciduous only: a named crown that drew a pine or magnolia seed keeps its canopy-map size,
+        // unless it is a planted broadleaf (the rollout's pairs and island trees), which is made
+        // deciduous here, deterministically from its own seed.
+        const kindC = big?.broadleaf && c < 0.26 ? 0.26 + c * 0.74 / 0.26 * 0.999 : c;
+        const named = big && kindC >= 0.26 ? big : null;
+        // The crown takes at most three quarters of the height, so a big tree keeps a real trunk.
+        const sz = named ? Math.min(6, named.h * 0.75 / 4.2, Math.max(0.7, named.r / 2.3)) : Math.min(4.5, Math.max(0.7, cr / 2.3));
         const y = this.ground(x, z);
-        this.trees.push({ x, y, z, s: sz, c, th: Math.max(1.2, h - 4.2 * sz) });
+        this.trees.push({ x, y, z, s: sz, c: kindC, th: Math.max(1.2, (named?.h ?? h) - 4.2 * sz) });
       }
     } else {
     // Street trees along the sidewalks of city streets.
@@ -1029,6 +1059,7 @@ export class World {
       q.setFromEuler(new THREE.Euler(0, t.c * 40, 0));
       m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
       this.branches!.setMatrixAt(i, m);
+      this.branchMatrices[i] = m.clone();
     });
   }
 
@@ -1036,6 +1067,25 @@ export class World {
   private pines?: THREE.InstancedMesh;
   private trunks?: THREE.InstancedMesh;
   private branches?: THREE.InstancedMesh;
+  /** True while some broadleaf crown is thin enough to show the limbs inside it. */
+  private branchesShow = true;
+  /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
+  private branchMatrices: THREE.Matrix4[] = [];
+  private detail = { farTrees: false, branchShadows: true };
+  /**
+   * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
+   * bare-branch skeletons, which are a few pixels at long orbit distances; `branchShadows`
+   * lets low quality stop them casting shadows. Call whenever a threshold changes.
+   */
+  setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) {
+    Object.assign(this.detail, d);
+    this.applyBranchVisibility();
+  }
+  private applyBranchVisibility() {
+    if (!this.branches) return;
+    this.branches.visible = this.branchesShow && !this.detail.farTrees;
+    this.branches.castShadow = this.detail.branchShadows;
+  }
   private seasonDoy = -1;
 
   /**
@@ -1063,7 +1113,11 @@ export class World {
     const tint = new THREE.Color();
     const v = new THREE.Vector3();
     const sc3 = new THREE.Vector3();
-    this.trees.forEach((t) => {
+    // Bare-branch crowns only show inside a thinning broadleaf crown. Under full leaf, and on
+    // pines and magnolias, they sit hidden: draw only the thinning trees' (compacted instances).
+    const branches = this.branches;
+    let kb = 0;
+    this.trees.forEach((t, ti) => {
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
       const r = rng(Math.floor(t.c * 1e9) + 7);
@@ -1094,6 +1148,7 @@ export class World {
         else if (st.stage === 'turning') c.set(green).lerp(new THREE.Color(species), Math.min(1, st.t * 1.3));
         else if (st.stage === 'dropping') c.set(species).lerp(brown, st.t * 0.6);
         canopyLeft = st.canopy;
+        if (canopyLeft < 0.97 && branches && this.branchMatrices[ti]) branches.setMatrixAt(kb++, this.branchMatrices[ti]);
       }
       // A rounded crown of clumps: top clumps catch the sun, lower ones sit in shade.
       const R = 2.3 * t.s;
@@ -1125,6 +1180,12 @@ export class World {
       }
     });
     pines.count = kp;
+    if (branches) {
+      branches.count = kb;
+      branches.instanceMatrix.needsUpdate = true;
+    }
+    this.branchesShow = kb > 0;
+    this.applyBranchVisibility();
     for (const im of [canopy, pines]) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
@@ -1424,7 +1485,32 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           vec3 frame = diffuseColor.rgb * 0.82;
           float st = floor(vStyle + 0.5);
           float win = 0.0;
-          if (y < 4.2 && y > 0.4) {
+          // Houses at 7–10 and 12 draw their own windows; keep the shader's off even after the distance fade.
+          float hasWin = 1.0;
+          if (st > 2.5) {
+            // Houses (styles 3 clapboard, 4 brick, 5 stucco, 6 shingle, 11 ashlar). Fine siding lines fade
+            // to their average once a course is under a couple of pixels, so walls never shimmer.
+${SIDING_GLSL}
+            // Masonry foundation band below the first floor.
+            if (y < 0.75) diffuseColor.rgb = vec3(0.47, 0.44, 0.41) * (0.92 + 0.08 * hh(floor(vec2(u / 0.4, y / 0.2))));
+            // Double-hung windows in 3.6 m bays on each 3.05 m storey: some paired, white trim,
+            // a meeting rail, and shutters on some bays.
+            float bay = floor(u / 3.6), storey = floor((y - 0.9) / 3.05);
+            vec2 f = vec2(fract(u / 3.6), fract((y - 0.9) / 3.05));
+            float pair = step(0.45, hh(vec2(bay, storey) + 3.0));
+            float halfW = mix(0.13, 0.23, pair);
+            float above = step(0.9, y);
+            float inY = step(0.12, f.y) * step(f.y, 0.62);
+            float trim = step(0.5 - halfW, f.x) * step(f.x, 0.5 + halfW) * inY * above;
+            float glassX = step(0.5 - halfW + 0.025, f.x) * step(f.x, 0.5 + halfW - 0.025) * (1.0 - pair * step(abs(f.x - 0.5), 0.012));
+            float glassY = step(0.145, f.y) * step(f.y, 0.595) * (1.0 - step(abs(f.y - 0.37), 0.009));
+            win = glassX * glassY * above * hasWin;
+            trim *= hasWin;
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.92, 0.88), trim * (1.0 - win));
+            float shutters = hasWin * step(0.62, hh(vec2(bay, 7.0))) * inY * above
+              * (step(0.5 - halfW - 0.085, f.x) * step(f.x, 0.5 - halfW - 0.012) + step(0.5 + halfW + 0.012, f.x) * step(f.x, 0.5 + halfW + 0.085));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.15, 0.2, 0.17), shutters);
+          } else if (y < 4.2 && y > 0.4) {
             // Storefront: tall panes with mullions, a band above.
             float f = fract(u / 3.2);
             win = step(0.08, f) * step(f, 0.92) * step(0.5, y) * step(y, 3.4);
@@ -1446,14 +1532,16 @@ function patchFacades(mat: THREE.Material, night: { value: number }) {
           // Where windows shrink below ~2 px, fade the pattern to its average so walls don't shimmer.
           vec2 fw = fwidth(vec2(u / 2.6, y / 3.4));
           float clarity = 1.0 - smoothstep(0.25, 0.6, max(fw.x, fw.y));
-          win = mix(0.4, win, clarity);
+          win = mix(0.4, win, clarity) * hasWin;
           float tint = 0.9 + 0.2 * hh(floor(vec2(u / 2.6, y / 3.4)));
           // Night: about a third of offices and homes still lit; shopfronts mostly lit.
-          float cellH = hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
-          litWin = win * (y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
+          float cellH = st > 2.5 ? hh(floor(vec2(u / 3.6, (y - 0.9) / 3.05)) + 29.0) : hh(floor(vec2(u / 2.6, y / 3.4)) + 17.0);
+          // Homes: about a third of rooms lit on every storey; offices as before, shopfronts mostly lit.
+          litWin = win * (st > 2.5 ? step(0.66, cellH) : y < 4.2 ? step(0.25, cellH) : step(0.66, cellH));
           litLevel = 0.45 + 0.6 * fract(cellH * 7.13);
           diffuseColor.rgb = mix(diffuseColor.rgb, glass * tint, win);
-          diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4));
+          // Houses keep their masonry foundation band instead of the generic plinth line.
+          diffuseColor.rgb = mix(diffuseColor.rgb, frame, (1.0 - win) * step(y, 0.4) * step(st, 2.5));
         }`,
       )
       .replace(

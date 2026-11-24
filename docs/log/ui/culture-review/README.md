@@ -14,3 +14,19 @@ Each image shows BEFORE on the left and AFTER on the right, taken from the same 
    ![Varsity night](varsity-night.jpg)
 6. **Margaret Mitchell House** (#177). Camera `/?view=city&cam=648,-3062,-113,49,150`, 13:00.
    ![Mitchell House](mitchell.jpg)
+7. **Woodruff Arts Center rear, day** (#206). Camera `/?view=city&cam=570,-3914,70,55,150`, 13:00.
+   ![Woodruff rear](back.jpg)
+8. **Woodruff Arts Center rear, night**. Same camera, 23:00.
+   ![Woodruff rear night](back-night.jpg)
+9. **High Museum entry plaza** (entry gap). Camera `/?view=city&cam=577,-4017,0,5,150`, top-down, 13:00.
+   ![High entry](entry.jpg)
+10. **High Museum Peachtree lawn**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 13:00.
+   ![High lawn](lawn.jpg)
+11. **High Museum Peachtree turf**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 14:00.
+   ![High turf](turf.jpg)
+12. **High Museum Peachtree lawn, manicured**. Camera `/?view=city&cam=612,-4002,-70,50,150`, 14:00.
+   ![High manicured lawn](manicured.jpg)
+13. **Arts Center loading dock** (Arts Center Way). Camera `/?view=city&cam=500,-3897,70,62,150`, zoomed 2.5× with `__setView`, 13:00.
+   ![Loading dock](dock.jpg)
+14. **Woodruff Arts Center, 15th Street face**. Camera `/?view=city&cam=585,-3870,10,38,150`, zoomed 1.6×, 13:00.
+   ![15th Street face](south15.jpg)

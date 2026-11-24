@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { drapeTriangle, type DrapeGround } from '../terrain/drape';
 import curated from './fixtures/curated-landscape.json';
 import { Builder, hashStr, pointInRing, rng, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
@@ -31,7 +32,11 @@ export function createCuratedLandscape(buildings: VBuilding[], site: VBuilding, 
         if (!pointInRing(x + .5, z + .5, ring)) continue;
         const c = [[x, z], [x + 1, z], [x + 1, z + 1], [x, z + 1]].map(([u, v]) => [u, (ground(u, v) ?? NaN) + .06, v]);
         if (c.some(p => !Number.isFinite(p[1]))) continue;
-        b.quad(c[0], c[3], c[2], c[1], BED);
+        // Split along the drawn terrain where the board offers it, so no crease shows through.
+        const drawn = (groundAt as DrapeGround).triangles;
+        if (!drawn) { b.quad(c[0], c[3], c[2], c[1], BED); continue; }
+        for (const [i, j, k] of [[0, 3, 2], [0, 2, 1]])
+          drapeTriangle(drawn, c[i], c[j], c[k], .06, (p, q, s) => b.tri(p.slice(0, 3), q.slice(0, 3), s.slice(0, 3), BED));
       }
     }
     // Low shrub clumps, scattered with a stable seed per footprint.

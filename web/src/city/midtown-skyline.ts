@@ -7,6 +7,11 @@ import sites from './fixtures/midtown-skyline.json';
 
 import { towerSquare } from './midtown-skyline-square';
 import { georgianTerrace } from './midtown-skyline-terrace';
+import { biltmore } from './midtown-skyline-biltmore';
+import { academyOfMedicine } from './midtown-skyline-academy';
+import { wimbishHouse } from './midtown-skyline-wimbish';
+import { ponceDeLeon } from './midtown-skyline-ponce';
+import { federalReserve } from './midtown-skyline-fed';
 import { symphonyTower } from './midtown-skyline-symphony';
 import { promenadeCentral, promenadeTower } from './midtown-promenade';
 
@@ -95,6 +100,11 @@ function oneAtlantic(shell: Shell) {
 const landmarks = [
   { site, axis: [1,0], probes: [[-24,0],[24,0],[0,-24],[0,24]], build: oneAtlantic },
   { site: sites.towerSquare, axis: [1,.083], probes: [[-25,0],[25,0],[0,-32],[0,32]], build: towerSquare },
+  { site: sites.fed, axis: [1,0], probes: [[45,0],[-40,40],[0,-70],[45,30]], build: federalReserve },
+  { site: sites.ponce, axis: [1,0], probes: [[0,5],[10,-15],[-19,9],[10,10]], build: ponceDeLeon },
+  { site: sites.wimbish, axis: [1,0], probes: [[15,-5],[-15,-5],[22,-14],[0,-10]], build: wimbishHouse },
+  { site: sites.academy, axis: [1,0], probes: [[0,0],[-10,-15],[-10,15],[18,0]], build: academyOfMedicine },
+  { site: sites.biltmore, axis: [1,0], probes: [[-10,0],[0,-50],[-10,50],[20,45]], build: biltmore },
   { site: sites.terrace, axis: [1,0], probes: [[-31,28],[-12,-25],[36,-20],[29,10]], build: georgianTerrace },
   { site: sites.symphony, axis: [1,0], probes: [[-85,0],[26,0],[0,-15],[0,15]], build: symphonyTower },
   { site: sites.promenadeTower, axis: [1,1], probes: [[-27,0],[25,0],[0,-18],[0,18]], build: promenadeTower },
@@ -117,5 +127,10 @@ export function createSkylineLandmark(buildings: VBuilding[], building: VBuildin
     const y = groundAt(site.x + u * c - v * s, site.z + u * s + v * c);
     return y === null || !Number.isFinite(y) ? null : y - grade;
   };
-  return shell && build(shell, ground);
+  const built = shell && build(shell, ground);
+  if (!built) return built;
+  // Trees a landmark plants (1180 Peachtree's terrace crape myrtles), in world coordinates.
+  const local = (built as { terraceTrees?: { u: number; v: number; y: number }[] }).terraceTrees ?? [];
+  const plantings = local.map(({ u, v, y }) => ({ x: site.x + u * c - v * s, z: site.z + u * s + v * c, y: grade + y }));
+  return { ...built, plantings };
 }

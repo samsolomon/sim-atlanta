@@ -1,3 +1,4 @@
+import { HouseTile } from './house-lod';
 import { existsSync, readFileSync } from 'node:fs';
 import { Mesh, Raycaster, Vector3 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -47,7 +48,14 @@ function roofClearances(area: Area, buildings: Building[]) {
   const owner = (x: number, z: number) => index.get(`${Math.floor(x/50)},${Math.floor(z/50)}`)
     ?.find(b => inside(x, z, b.rings[0]) && !b.rings.slice(1).some(hole => inside(x, z, hole)));
   const tops = new Map<string, { y: number; tris: number[][] }>();
-  for (const mesh of area.scenery.children.filter(o => o instanceof Mesh && o.geometry.hasAttribute('aBase')) as Mesh[]) {
+  // Houses draw in their own distance tiles (house-lod.ts). Build every near version too, so both
+  // the bare far roofs and the full near roofs (with their overhangs) are checked.
+  const tiles: HouseTile[] = [];
+  area.scenery.traverse(o => { if (o instanceof HouseTile) tiles.push(o); });
+  for (const t of tiles) t.ensureNear();
+  const shells: Mesh[] = [];
+  area.scenery.traverse(o => { if (o instanceof Mesh && o.geometry.hasAttribute('aBase')) shells.push(o); });
+  for (const mesh of shells) {
     const p = mesh.geometry.getAttribute('position'), style = mesh.geometry.getAttribute('aStyle');
     for (let i = 0; i < p.count; i += 3) {
       const y = p.getY(i);
@@ -127,6 +135,12 @@ it.each(['low', 'high'] as const)('keeps every rendered generic roof in the rect
       await addSection(row, mounted, quality, signal, { brookwood: async (m, b) => brookwoodGrid(m, b) });
     for (const id of ['north-band', 'north-corner', 'south-band', 'south-corner', ...midtownRows] as const)
       footprints.set(id, json(new URL(`square-board/${id}/context.json`, proto)).buildings);
+    // Each mapped building:part is its own roof, so a buried podium beside a
+    // tower is caught rather than masked by the tower's higher roof.
+    // Raised parts (canopies and bridges, with a mapped underside) are left out:
+    // like the real ones they meet a sloping street at one end.
+    for (const [board, list] of footprints) footprints.set(board, list.flatMap((b: Building) => b.parts?.length
+      ? b.parts.flatMap((part, i) => part.minH ? [] : [{ ...b, id: `${b.id}#${i}`, rings: part.rings }]) : [b]));
     expect(mounted.size).toBe(staged ? 12 : 10);
     const buried: string[] = [];
     let roofs = 0;

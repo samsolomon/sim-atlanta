@@ -1,0 +1,173 @@
+# Handoff: studio-amtrak-livery (rolling stock)
+
+Claude agent `orca_session_id:e5348118-da22-4978-9d69-ad882db9e7a9` → Codex, 2026-11-23. The full history is readable with `orca agent read`; this note covers only what is not obvious from it.
+
+## State
+
+- **Open PR [#291](https://github.com/samsolomon/sim-atlanta/pull/291)**, branch `samsolomon/freight-loco-detail`. Freight PR 1 of 4: a detailed GE AC4400CW/CM44AC locomotive in CSX-like and NS-like schemes, with lit lamps. Status:
+  - Rebased on `main` (2026-11-23 evening) and self-reviewed. Waiting for the coordinator's "merge when green".
+  - `contract.test.ts` failed locally only because the borrowed pipeline data lacks `ga/routes.json`.
+  - Run `pnpm data` (or borrow complete data) and re-run `pnpm test` before merging.
+- **Parked WIP branch `samsolomon/freight-lookalikes`** (pushed, WIP commit `1b3b574d`, not a PR). It has rough code for six car types (blue boxcar, tank, covered hopper, gondola, autorack, double-stack) and lab entries `es44acNs` and `freightCars`. It predates #291 and conflicts with it.
+  - Reuse `carBody()` from it for PR 3. Don't merge the branch.
+- **Merged today:**
+  - Charger #219, Crescent cars #230, AIRO lab #234.
+  - S70 streetcar: #260 (first model), #272 and #277 (repaints), and #285, which Sam approved as final.
+- **Dev servers:** none running; the vite server on :5641 is stopped. One Orca lab tab is open (page `8eb3d459-…`); close it if it's still there.
+
+## Sam's decisions (all 2026-11-23)
+
+- **Crescent:** Phase VII Charger by default, with Phase VI as a lab variant. Amfleet II is a mix of Phase VI and VII. Viewliner II wears Phase IIIB. The 0.41 m roof step is real and stays. AIRO is lab-only.
+- **Streetcar:**
+  - Done as of #285: deep indigo (input `#5a5694`), and three broad straight stripes per cab section (lime, cyan, violet), with the centre section plain.
+  - Don't reopen it without Sam.
+- **MARTA:** keep the CQ400 for every train. **Do not** model the CQ310/311/312 or date-gate City. The car row on the card stays `illustrative` (confirmed at `card.ts:60` and `:135`).
+- **Freight scope**, in small PRs, each with dated photos, lab day and night views, and triangle counts:
+  1. Detail the existing locomotive (#291).
+  2. New locomotives: an NS-like ES44AC/AC44C6M (partly covered by #291's NS scheme), an SD70ACe or SD70M-2, a CSX-like ES44AH or AC44CW, and a GP38-2 switcher.
+  3. Car types: double-stack well cars with varied containers, covered hoppers, open hoppers or gondolas (coal and scrap), black DOT-117 tank cars, autoracks, centerbeam/lumber cars, and boxcars in several colours. Each needs weathering and visible trucks, and should be instanced.
+  4. City consists (an intermodal, a manifest and a unit train), with the freight card updated and kept `illustrative`.
+  - Then road-vehicle variety: City uses only 3 of the 8 types in `vignette/vehicles.ts`. Pickups, vans and tractor-trailers already exist in code.
+- **General:** no logos, wordmarks or numbers. Use Commons photos for references. Sam's screenshots are reference only and must not be committed.
+
+## Next steps
+
+1. Merge #291 once the coordinator approves and tests pass.
+2. Freight PR 2: new locomotives.
+3. Freight PR 3: car types.
+4. Freight PR 4: City consists.
+   - Also fix #291's plausible finding: `cityFreightCard` picks the scheme by a regex on the line name. Carry `userData.livery` instead.
+5. Road-vehicle variety.
+
+## Promises to other agents
+
+- **`orca_session_id:84ff6fd9-a68e-4888-aa2a-4477f88e5ff0`** (studio-midtown-marta, places the streetcar in City): keep the `s70Sections()` / `S70_LAYOUT` / `s70Material` interface in `web/src/vignette/streetcar.ts` stable. Its kinematics are in `docs/atlanta-streetcar.md`. I told them the legacy-car work was cancelled and that `trains.ts` and `midtown-marta-rail.ts` won't change.
+- **`orca_session_id:d577649d-8640-473a-8c9b-461abf2b616a`** (studio-ui-a2c): new lab fieldsets go in `web/src/models/lab-markup.ts`, not `models.html`. `window.__lab.render()` and `resize()` must stay; the captures use them.
+
+## Repo rules and tooling that bit me
+
+- **Colour grade.** It crushes dark blues and greys: input `#403d78` renders as near-black navy. Calibrate by sampling a fixed lit patch in a rendered frame, not by guessing.
+  - CSX-like body: input `#76889a`.
+  - S70 body: input `#5a5694`, which renders as `#28217b`.
+- **Captures.** Full-size canvas captures come from `scratchpad/tools/cap.mjs`: `orca eval` with `__lab.camera`, then `__lab.render()`, then `toDataURL`. Composites come from `compose.py` (Pillow venv in the scratchpad). The scratchpad may be cleared; both are small to rewrite.
+- **Merge conflicts.** `origin/main` moves constantly, and nearly every PR conflicts in `docs/build-log.md` (both sides append). Resolve by keeping both entries.
+  - **Never** `git reset --soft origin/main` to squash after `main` has moved. It stages a revert of other agents' work. Squash onto `git merge-base`.
+- **Pipeline data.** This worktree has no pipeline data (`web/public/data` holds only `ga/.gitkeep`). I borrowed `studio-amtrak-stock`'s data with a temporary symlink and always restored it. Don't commit the symlink.
+- **Rust tests.** `cargo` isn't on PATH. Use `export PATH="$(dirname $(ls ~/.rustup/toolchains/*/bin/cargo | head -1)):$PATH"`.
+- **Cross-review.** `pnpm review` (Codex) wasn't available to me, so I self-reviewed with the `code-review` skill. As Codex you can run `pnpm review` and have Claude review your work.
+- **Merge notices.** Every one leads with GitHub blob links to the captioned photo/before/after composites, money shot first.
+
+## Codex continuation — 2026-11-23
+
+- #291 merged at `8fb88467`; Sam approved the updated freight train.
+- #342 merged at `a1bafa0e`: Brookwood regression now uses a recorded timetable
+  fixture. Fresh Amtrak data starts November 22, so pre-November-22 review cameras
+  no longer show the Crescent after the next `pnpm data`. Use covered dates for
+  future release checks; never extend feed validity to preserve old screenshots.
+- Freight PR 2 is on `samsolomon/freight-locomotive-variety`: ES44AC/ES44AH,
+  SD70ACe and GP38-2 lab studies. References/cameras: `docs/freight-variety.md`.
+  City still uses the approved CM44AC-family units pending PR 4.
+
+### Queue update from Sam — after #347
+
+Prioritize the purple articulated MARTA bus before the remaining freight-car work.
+Identify the actual service, make/model, 60 ft configuration, and routes entering
+or inside the board; do not assume Summerhill BRT or a particular Xcelsior variant.
+Gather dated day and, if available, night photos. Send the coordinator one summary
+with photo links before modelling. Then add a logo-free model beside the XN40 in
+the lab, including a joint that bends on curves, reference livery colours, and a
+phone performance cost note. Coordinate its vehicle-type ID with the connector
+agent before integration. Coordinator thread: `msg_8f9a7007f319`.
+#347 remains awaiting Sam's approval of the revised colour/silhouette sheets.
+
+### Connector agreement and merge reporting
+
+Connector: `orca_session_id:1f9238ff-2c34-4398-9612-0425e769c083`, thread
+`msg_98ec3c022c8c`. Traffic remains a plan pending Sam's GPS/signals decision.
+Use a sourced manufacturer/model slug for art/lab and `marta:vt:<slug>` for the
+future VehicleType. LiveBus has no type or trip ID; never assign articulation
+by route alone. Pin the GTFS edition when investigating route coverage.
+
+Proposed model boundary: separate front/rear/bellows geometry, shared material,
+low detail variants, dimensions, section-local axles and origins, matching hitch
+anchors, articulation limit. Coordinates: +z forward, y up, ground origin,
+curb side -x. Lab starts with explicit joint angle; motion owns section poses
+{x,y,z,yaw,pitch}, joint angle and collision footprints. Propose front axle s
+as progress reference. Preserve rigid axle/hitch distances and coincident joints;
+do not independently sample two body centres along the path. Seek history must
+be deterministic; sparse live fixes do not establish a driven curve.
+
+Proposed phone target (not measured): articulated total <=1,500 low-tier triangles
+and <=3 shared instanced batches for front/rear/bellows, not per-bus calls.
+Existing rigid XN40 is 6,140 triangles; connector proposes <=1,000 at low tier.
+Send sourced ID/dimensions and export proposal to connector before integration.
+
+Before any MERGED notice, run `gh pr view <n> --json state,mergeCommit` and quote
+both returned values. A failed merge is not a merge. Resolve build-log append
+conflicts by retaining both entries, then rerun tests.
+
+## READY FOR 6.2 — 2026-11-23 (Codex handoff)
+
+Current branch: `samsolomon/marta-articulated-bus`, based on merged #347.
+No bus PR yet. Push contains a compiling, unintegrated XE60 geometry WIP plus
+research and reviewed plan; it does not change any user-visible model yet.
+
+### Completed since the earlier notes
+
+- #347 **verified MERGED** using `gh pr view 347 --json state,mergeCommit`:
+  `8b78ddabeaf7dbbbc6b8445e1d38a0173826bf76`. GP38-2 and ES44AH both navy
+  YN3. GP reference replaced with Mark Levisay, 2513, November 10 2014.
+  Rebased full tests passed (959 web, one existing skip; Rust/pipeline/worker
+  passed), both performance tiers passed; final Claude review no findings.
+  Coordinator notified with screenshots/cameras and web-rebuild-only requirement.
+- Research summary sent to coordinator **before modelling**, then clarified Phase
+  One purple buses 7108–7112 are XN40 rigid CNG, not articulated XN60.
+- Coordinator explicitly requested **both** XE60 and a cheap purple Rapid XN40
+  livery in one lab PR (`msg_3443a83811b5`). XE60 copy: bought for A-Line,
+  return to revenue service unverified. No claim the bus is currently running.
+
+### Current WIP and next steps (in order)
+
+1. Read `docs/marta-rapid-buses.md` (all sources, dates, uncertainty, dimensions)
+   and `docs/plans/marta-rapid-buses.md` (architect/product reviews applied).
+2. Inspect `web/src/vignette/xe60.ts`: front/rear/bellows geometries, shared shader
+   with explicit angle and per-instance angle option, `XE60_LAYOUT`/`xe60Pose`.
+   Four focused tests pass; `pnpm --filter web exec tsc --noEmit` passed.
+   **No browser render, full suite, or cross-review yet for this branch.**
+3. Finish prototype integration: matching shadow/depth deformation for bellows,
+   a preview owner disposing shared geometry/material once, lab `xe60` entry,
+   angle slider/output/Straight reset in `lab-markup.ts`, existing Detail controls.
+   Check geometry proportions and joint closure at +/-35deg in browser, correct
+   any problems before claiming it finished. Current high/low model is preliminary.
+4. Add `xn40Rapid` art/livery option to existing `busGeometry` without changing
+   default XN40. Current BusLivery fields map old slashes: merely changing colours
+   will not draw Rapid's thin blue/gold/orange belt correctly. Use an optional
+   Rapid paint style, purple CNG pod, lavender diagonal lower accents, no logos.
+5. Confirm IDs/exports with connector, measure exact low/high triangles/bytes and
+   batches. Proposed low target <=1500 total / <=3 shared instanced batches.
+   Do not claim measured phone FPS from triangle counts. No City motion changes.
+6. Capture matched day/night straight/bent XE60 and XN40 Rapid with source links;
+   no reliable exact-fleet night photo found. Photo publication dates known,
+   actual capture dates not known. Do not call these Commons/CC assets.
+7. Full pnpm test/build, browser + perf as appropriate, cross-review, open one lab
+   PR; send coordinator shots/cameras and await visual merge approval for buses.
+8. Remaining freight car library and City consists come after this bus task.
+
+### What is owed / coordination
+
+- Coordinator thread `msg_3443a83811b5`: both variants and one lab PR.
+- Connector `orca_session_id:1f9238ff-2c34-4398-9612-0425e769c083`, thread
+  `msg_98ec3c022c8c`: exact dimension/export proposal after validation; proposed
+  `xe60` / `marta:vt:xe60`, and `xn40Rapid` livery on `marta:vt:xn40`. Already
+  told them Phase One uses XN40 and not to infer XE60 from the route alone.
+- Model move coordinator thread `msg_e265027a749f`; send READY FOR 6.2 when pushed.
+- Direct Air send fails pairing; use orchestration reply threads as documented.
+
+### Scratch/tools
+
+`/tmp/marta-articulated/`: `xe60-side.jpg` (MARTA/Urbanize published Jan5 2026),
+`xe60-front.png` (CBS Jan27 2026), `phase-one.jpg` (official 7108). Links in research.
+Previous freight captures/scripts in `/tmp/freight-pr2/`. `.venv` has Pillow and
+pipeline dependencies. Rust PATH still needs stable-aarch64-apple-darwin/bin.
+Complete generated data is present and ignored; don't regenerate to fix old dates.
+No dev server running. Research tabs are closed at handoff. Do not edit main.

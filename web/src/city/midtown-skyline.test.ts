@@ -125,3 +125,121 @@ it('mounts Tower Square at 206 m and feeds night lighting to its return walls', 
   const ray = new Raycaster(new Vector3(467.7, 12.5, -2200), new Vector3(0, 0, 1));
   expect(ray.intersectObject(model.group)[0].point.z).toBeLessThan(-2095.8 - 32);
 });
+
+it('draws 1180 Peachtree as one textured curtain wall with two curved, night-lit veils', () => {
+  const building: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:885660351');
+  const model = createSkylineLandmark([building], building, -8, () => -3)!;
+  const wall = model.group.getObjectByName('1180 curtain wall') as Mesh;
+  expect(wall.geometry.getAttribute('uv').count).toBe(wall.geometry.getAttribute('position').count);
+  const veils = [0, 1].map(i => model.group.getObjectByName(`1180 veil ${i}`) as Mesh);
+  // Each veil's top edge sits inward of its base: the tips lean towards each other.
+  for (const veil of veils) {
+    const p = veil.geometry.getAttribute('position');
+    let low = { y: Infinity, z: 0 }, high = { y: -Infinity, z: 0 };
+    for (let i = 0; i < p.count; i++) {
+      if (p.getY(i) < low.y) low = { y: p.getY(i), z: p.getZ(i) + veil.position.z };
+      if (p.getY(i) > high.y) high = { y: p.getY(i), z: p.getZ(i) + veil.position.z };
+    }
+    expect(Math.abs(high.z)).toBeLessThan(Math.abs(low.z) - 5);
+  }
+  model.setNight(1);
+  expect((wall.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  expect((veils[0].material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  // Without veil depth, the post pass outlines background lattice through the wash.
+  for (const veil of veils) {
+    expect((veil.material as MeshLambertMaterial).depthWrite).toBe(true);
+    expect((veil.material as MeshLambertMaterial).opacity).toBe(1);
+  }
+  // The crown lattice glows from inside and the leading-edge light line appears only at night.
+  // The crown is a soft wash at night (Kendall/Heaton night skyline): no crown
+  // material's emissive may saturate a channel, or it clips to a white slab.
+  for (const name of ['1180 veil 0', '1180 veil 1', '1180 crown lattice', '1180 veil frames']) {
+    const m = (model.group.getObjectByName(name) as Mesh).material as MeshLambertMaterial;
+    expect(Math.max(m.emissive.r, m.emissive.g, m.emissive.b) * m.emissiveIntensity, name).toBeLessThan(name.startsWith('1180 veil ') && !name.endsWith('frames') ? .61 : .7);
+  }
+  const lattice = model.group.getObjectByName('1180 crown lattice') as Mesh;
+  expect((lattice.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  const edge = model.group.getObjectByName('1180 edge light') as Mesh;
+  expect(edge.visible).toBe(true);
+  model.setNight(0);
+  expect(edge.visible).toBe(false);
+});
+
+it('replaces the Biltmore with its masts and night-lit BILTMORE letters', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const hotel: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:886034013');
+  const model = createSkylineLandmark([hotel], hotel, -5, () => 0)!;
+  expect(model.group.name).toBe('Atlanta Biltmore');
+  // Degenerate mast bars once produced NaN normals, which bloom turned into a black square at night.
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+  // The masts rise 46 m above the 56 m main roof.
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(102, 0);
+  const letters = model.group.getObjectByName('Biltmore letters') as Mesh;
+  expect(letters.visible).toBe(false);
+  model.setNight(1);
+  expect(letters.visible).toBe(true);
+});
+
+it('replaces the Academy of Medicine with its portico temple and lantern', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const academy: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:42725820');
+  const model = createSkylineLandmark([academy], academy, -2, () => 0)!;
+  expect(model.group.name).toBe('Academy of Medicine');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(15.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
+
+it('replaces the Wimbish House with its slate roof, turret and loggia', () => {
+  const house: VBuilding = row.buildings.find((b: VBuilding) => b.id === 'osm:way:885325356');
+  const model = createSkylineLandmark([house], house, -2, () => 0)!;
+  expect(model.group.name).toBe('Wimbish House');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(20.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
+
+it('replaces the Ponce de Leon Apartments with belvedere towers over a curved front', () => {
+  const south = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-south/context.json', import.meta.url), 'utf8'));
+  const ponce: VBuilding = south.buildings.find((b: VBuilding) => b.id === 'osm:way:208355680');
+  const model = createSkylineLandmark([ponce], ponce, -2, () => 0)!;
+  expect(model.group.name).toBe('Ponce de Leon Apartments');
+  expect(new Box3().setFromObject(model.group).max.y).toBeCloseTo(52.5, 0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});
+
+it('replaces the Federal Reserve Bank with its stepped marble tower and forecourt', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const fed: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:28979077');
+  const model = createSkylineLandmark([fed], fed, -2, () => 0)!;
+  expect(model.group.name).toBe('Federal Reserve Bank of Atlanta');
+  model.group.updateMatrixWorld(true);
+  const top = (x: number, z: number) => new Raycaster(new Vector3(x, 200, z), new Vector3(0, -1, 0)).intersectObject(model.group)[0].point.y;
+  // Lidar: the corner tower crown stands above the slab cornice and its recessed top floor.
+  expect(top(588 + 54, -3155 + 24)).toBeCloseTo(61.9, 0);
+  expect(top(588 + 24, -3155 - 50)).toBeCloseTo(47.5, 0);
+  expect(top(588 + 45, -3155 - 20)).toBeCloseTo(53.7, 0);
+  expect(top(588 - 60, -3155 + 30)).toBeCloseTo(14.2, 0);
+  const crown = model.group.getObjectByName('Fed crown') as Mesh;
+  model.setNight(1);
+  expect((crown.material as MeshLambertMaterial).emissiveIntensity).toBeGreaterThan(0);
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    o.geometry.computeVertexNormals();
+    expect(Array.from(o.geometry.getAttribute('normal').array).some(Number.isNaN), o.name).toBe(false);
+  });
+});

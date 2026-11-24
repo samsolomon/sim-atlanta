@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import features from '../../../pipeline/prototypes/piedmont-edge/features.json';
-import { GroundGrid } from '../terrain/grid';
+import { GroundGrid, type GroundManifest } from '../terrain/grid';
+import type { TerrainCity } from '../terrain/transport-data';
 import { createDowntownTerrain } from '../terrain/model';
 import { createSurfaceTransport } from '../terrain/transport';
-import { joins } from '../square-board/sections';
 import { auburnTransport } from './sweet-auburn-transport';
 import { seventeenthAccess } from './seventeenth-street';
 import { centre, gazeboId } from './clara-meer';
@@ -13,16 +13,42 @@ import { Line, type P2 } from '../vignette/geom';
 
 afterEach(() => vi.unstubAllGlobals());
 
+/**
+ * A slimmed fixture: the midtown-upper row cropped to the lake, bridge, dock and both
+ * Piedmont Avenue gates (600 × 400 m of a 2,800 × 800 m row). Only footprints and runs wholly
+ * inside the window are kept. Building the full row twice timed out under concurrent suites.
+ */
+const WINDOW = { minX: 1150, maxX: 1750, minZ: -3700, maxZ: -3300 };
+let cached: { grid: GroundGrid; context: TerrainCity & { buildings: { id: string; rings: P2[][] }[] } } | undefined;
+function lakeWindow() {
+  if (cached) return { grid: cached.grid, context: structuredClone(cached.context) };
+  const root = new URL('../../../pipeline/prototypes/square-board/midtown-upper/', import.meta.url);
+  const read = (name: string) => readFileSync(new URL(name, root));
+  const manifest: GroundManifest = JSON.parse(read('ground.json').toString());
+  const raw = Uint8Array.from(read('ground.i16'));
+  const { bounds: b, stepM, cols } = manifest;
+  const c0 = (WINDOW.minX - b.minX) / stepM, r0 = (WINDOW.minZ - b.minZ) / stepM;
+  const nc = (WINDOW.maxX - WINDOW.minX) / stepM + 1, nr = (WINDOW.maxZ - WINDOW.minZ) / stepM + 1;
+  const out = new Uint8Array(nr * nc * 2);
+  for (let r = 0; r < nr; r++) out.set(raw.subarray(((r0 + r) * cols + c0) * 2, ((r0 + r) * cols + c0 + nc) * 2), r * nc * 2);
+  const grid = new GroundGrid({ ...manifest, bounds: WINDOW, rows: nr, cols: nc }, out.buffer);
+  const full = JSON.parse(read('context.json').toString());
+  const within = (pts: P2[]) => pts.every(([x, z]) => x >= WINDOW.minX && x <= WINDOW.maxX && z >= WINDOW.minZ && z <= WINDOW.maxZ);
+  const context = { ...full, bounds: WINDOW,
+    buildings: full.buildings.filter((o: { rings: P2[][] }) => within(o.rings[0])),
+    roads: full.roads.filter((o: { pts: P2[] }) => within(o.pts)),
+    rail: [], ground: (full.ground ?? []).filter((o: { rings: P2[][] }) => within(o.rings[0])), trees: [] };
+  cached = { grid, context };
+  return { grid, context: structuredClone(context) };
+}
+
 it.each(['low', 'high'] as const)('lifts the Clara Meer bridge above the lake and replaces the gazebo box at %s', quality => {
   const ctx: object = new Proxy(function () {}, { get: () => ctx, apply: () => ctx });
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) });
-  const root = new URL('../../../pipeline/prototypes/square-board/midtown-upper/', import.meta.url);
-  const read = (name: string) => readFileSync(new URL(name, root));
-  const grid = new GroundGrid(JSON.parse(read('ground.json').toString()), Uint8Array.from(read('ground.i16')).buffer);
-  const context = JSON.parse(read('context.json').toString());
+  const { grid, context } = lakeWindow();
   expect(context.buildings.some((b: { id: string }) => b.id === gazeboId)).toBe(true);
   const city = seventeenthAccess(auburnTransport(context));
-  const area = createDowntownTerrain(grid, city, [], { quality, join: joins('midtown-upper') });
+  const area = createDowntownTerrain(grid, city, [], { quality });
   const decks = createSurfaceTransport(city, grid, area.groundAt);
   try {
     // The generic brick box is gone, replaced by the bridge, gazebo and dock.
@@ -62,4 +88,4 @@ it.each(['low', 'high'] as const)('lifts the Clara Meer bridge above the lake an
     // The 14th Street piers rise to an estimated 5.5 m with their finials.
     expect(tallest).toBeGreaterThan(5);
   } finally { decks.dispose(); area.dispose(); }
-});
+}, 3000); // Measured about 30 ms per tier on the cropped fixture; 3 s leaves room for concurrent suites.

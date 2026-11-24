@@ -16,17 +16,11 @@ import { fetchLive, type Weather } from '../core/weather';
 import { loadPlaces, placeAt } from '../core/places';
 import { sunPosition } from '../vignette/time';
 import { ICON, weatherIcon } from './icons';
+import { createKeyboard, typing } from './keyboard';
+import { createKeyDialog } from './key';
+import { liveDetails, type LiveState, type View } from './status';
 
-export type View = 'map' | 'city';
-
-export interface LiveState {
-  realTime: boolean; // the clock shows the real present (live data may apply)
-  rail: 'live' | 'connecting' | 'down';
-  trains: number;
-  cityFreight: boolean;
-  cityTraffic: boolean;
-  buses: number | null; // null: bus feed unavailable or not shown
-}
+export type { LiveState, View } from './status';
 
 export interface ShellOptions {
   view: View;
@@ -41,6 +35,47 @@ export interface ShellOptions {
   /** Called when fresh weather arrives (or is lost). */
   onWeather?(w: Weather | null): void;
   onSceneConditions(settings: AtmosphereOverride): void;
+  /** Camera bearing in degrees clockwise from north (A2c compass). */
+  bearing?(): number;
+  /** Turn the camera to face north (A2c compass and N). */
+  north?(): void;
+  /** Back to the real present at 1× (A2c "Now"). */
+  onNow?(): void;
+  /** The shell moved the shared clock (A2c Time & weather): refresh what depends on it. */
+  onClock?(): void;
+  /** Horizontal scale at the view centre, for "Metro Atlanta" past neighbourhood zoom. */
+  metresPerPixel?(): number | null;
+  /** Turn the Models camera back to its first view (A2c camera column in Models). */
+  resetModelView?(): void;
+  /** Escape for a view's own surfaces (the Models browser and Details): true when consumed. */
+  viewEscape?(): boolean;
+  /** Graphics quality for City (A2c menu): Auto picks by device, as `pickQuality` does. */
+  graphics?: {
+    get(): 'auto' | 'high' | 'low';
+    set(q: 'auto' | 'high' | 'low'): void;
+    /** What Auto settled on this session when it stepped down for a slow frame rate. */
+    autoResolved?(): 'low' | null;
+  };
+  /** What a share link should reopen: City's camera, or the Map's hash (A2c share). */
+  shareTarget?(): import('./share').ShareView | null;
+  /** The selected train's stops ahead, as HTML (A2c "All stops"). */
+  allStops?(): string | null;
+  /** While City builds (A2c step 9): the notice text; the scene word waits for the reveal. */
+  loading?(): string | null;
+  /** The sky on screen (observed, typical or previewed), to name an illustrative condition. */
+  sky?(): { cloud: number; rain: number; fog: number; snow: number } | null;
+}
+
+/** What the host page drives; both shells return it. */
+export interface ShellApi {
+  tick(now: Date): void;
+  advanceMovement(t: number): void;
+  weather(): Weather | null;
+  /** Light or dark glass, following the sky (dark from about dusk). */
+  setTheme(theme: 'light' | 'dark'): void;
+  setView(v: View): void;
+  /** One short status note (the area note); truth-tier words are never clipped. */
+  setNote(text: string | null): void;
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
@@ -54,10 +89,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
   return e;
 }
 
-const typing = (t: EventTarget | null) =>
-  t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || (t instanceof HTMLElement && t.isContentEditable);
-
-export function createShell(o: ShellOptions) {
+export function createShell(o: ShellOptions): ShellApi {
   let view = o.view;
 
   // ---- status widget (top right), menu button (top left), view switch (bottom centre) -----
@@ -191,28 +223,7 @@ export function createShell(o: ShellOptions) {
 
   let now = new Date();
   function renderMore() {
-    const s = o.live();
-    const rail = !s.realTime
-      ? '<b>MARTA rail</b> timetable (the clock isn’t set to now)'
-      : s.rail === 'live'
-        ? `<b>MARTA rail</b> ${s.trains} MARTA trains, live positions`
-        : s.rail === 'connecting'
-          ? '<b>MARTA rail</b> connecting to MARTA…'
-          : '<b>MARTA rail</b> MARTA live feed unavailable, showing the timetable';
-    const bus = !s.realTime ? '<b>Buses</b> shown only at the present time' : s.buses == null ? '<b>Buses</b> live feed unavailable' : `<b>Buses</b> ${s.buses} MARTA buses, live positions`;
-    const freight = view === 'city'
-      ? s.cityFreight ? 'Train positions, timing and consists are illustrative.' : 'No freight simulation available in this scene.'
-      : 'Track traffic comes from reported or inferred daily counts.';
-    const traffic = view === 'city' && s.cityTraffic
-      ? '<li><b>Road traffic</b> Illustrative vehicles follow a typical hourly pattern.</li>' : '';
-    const wx = !s.realTime
-      ? '<b>Atlanta weather</b> observations are available at the present time'
-      : weather
-      ? `<b>Atlanta weather</b> ${cap(weather.label)}${weather.tempF != null ? `, ${Math.round(weather.tempF)}°F` : ''} · Open-Meteo, ${Math.max(0, Math.round((Date.now() - weatherAt) / 60000))} min ago`
-      : '<b>Atlanta weather</b> unavailable right now';
-    details.innerHTML = `
-      <p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>
-      <ul><li>${rail}${view === 'city' ? '. MARTA visibility depends on track cover. Car counts and bodies are illustrative.' : ''}</li><li>${bus}</li><li><b>Freight</b> ${freight}</li>${traffic}<li>${wx}</li></ul>`;
+    details.innerHTML = `<p class="drop-title">${place.textContent} · ${longDate.format(now)}</p>${liveDetails(o.live(), view, weather, weatherAt)}`;
   }
 
   let lastTick = 0;
@@ -253,21 +264,7 @@ export function createShell(o: ShellOptions) {
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
   // ---- key (legend) ----------------------------------------------------------------------
-  const key = el('dialog', { class: 'key glass', 'aria-label': 'Key' });
-  key.innerHTML = `
-    <form method="dialog"><button class="key-close icon-btn" aria-label="Close"><span class="ic">${ICON.x}</span></button></form>
-    <h2>Key</h2>
-    <p class="key-lede">Colour shows the kind of service, not the operator.</p>
-    <ul class="legend">
-      <li><span class="sw sw-city"></span><b>City rail</b> subway, light rail, streetcar</li>
-      <li><span class="sw-bus"></span><b>Bus</b> live position</li>
-      <li><span class="sw sw-inter"></span><b>Intercity</b> Amtrak</li>
-      <li><span class="sw sw-rep"></span><b>Freight</b> thicker = more trains a day (reported)</li>
-      <li><span class="sw sw-inf"></span><b>Inferred</b> traffic from nearby track</li>
-      <li><span class="tr tr-live"></span><b>Live</b> train <span class="tr tr-sched"></span><b>Scheduled</b> (timetable)</li>
-    </ul>
-    <p class="key-foot">Live means MARTA reported it in the last few minutes. Scheduled is where the timetable says a train should be. Freight movements are illustrative.</p>`;
-  key.addEventListener('click', (e) => e.target === key && key.close());
+  const key = createKeyDialog();
 
   // ---- view switch state -----------------------------------------------------------------
   function setView(v: View, fromUser = false) {
@@ -309,66 +306,20 @@ export function createShell(o: ShellOptions) {
   document.body.append(...chrome, menu, more, note, key, ...(hint ? [hint] : []));
 
   // ---- keyboard ---------------------------------------------------------------------------
-  const held = new Set<string>();
-  const MOVE: Record<string, [number, number]> = {
-    w: [0, 1], arrowup: [0, 1], s: [0, -1], arrowdown: [0, -1],
-    a: [1, 0], arrowleft: [1, 0], d: [-1, 0], arrowright: [-1, 0],
-  };
-  let raf = 0;
-  let lastT = 0;
-  // City also calls this before drawing. Both RAF callbacks receive the same
-  // timestamp, so a held key moves the camera once whichever callback runs first.
-  const advanceMovement = (t: number) => {
-    if (!held.size || t <= lastT) return;
-    const dt = Math.min(50, t - lastT);
-    lastT = t;
-    let dx = 0;
-    let dy = 0;
-    const turn = Number(held.has('e')) - Number(held.has('q'));
-    for (const k of held) {
-      const m = MOVE[k];
-      if (m) {
-        dx += m[0];
-        dy += m[1];
+  const { advanceMovement } = createKeyboard({
+    pan: o.pan, zoom: o.zoom, rotate: o.rotate,
+    view: (v) => setView(v, true),
+    escape() {
+      if (!more.hidden) {
+        closeDrops();
+        statusBtn.focus();
+        return true;
       }
-    }
-    const v = 0.6 * dt; // ~600 px/s
-    if (dx || dy) o.pan(dx * v, dy * v);
-    if (turn) o.rotate?.(turn * 0.06 * dt); // 60°/s, independent of OS key repeat
-  };
-  const step = (t: number) => {
-    advanceMovement(t);
-    raf = held.size ? requestAnimationFrame(step) : 0;
-  };
-  addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !more.hidden) {
-      closeDrops();
-      statusBtn.focus();
-      return;
-    }
-    if (typing(e.target) || e.metaKey || e.ctrlKey || e.altKey || key.open) return;
-    const k = e.key.toLowerCase();
-    if (k === 'escape') return closeDrops();
-    if (MOVE[k] || ((k === 'q' || k === 'e') && o.rotate)) {
-      e.preventDefault();
-      const fresh = !held.has(k);
-      if (!held.size) lastT = performance.now();
-      held.add(k);
-      // A short tap can end before the next animation frame, especially on a busy scene.
-      if (fresh) {
-        if (MOVE[k]) o.pan(MOVE[k][0] * 9.6, MOVE[k][1] * 9.6);
-        else o.rotate?.(k === 'q' ? -1 : 1);
-      }
-      if (!raf) {
-        raf = requestAnimationFrame(step);
-      }
-    } else if (k === '+' || k === '=') o.zoom(1);
-    else if (k === '-' || k === '_') o.zoom(-1);
-    else if (k === 'm') setView('map', true);
-    else if (k === 'c') setView('city', true);
+      if (!typing(document.activeElement) && !key.open) closeDrops();
+      return false;
+    },
+    blocked: () => key.open,
   });
-  addEventListener('keyup', (e) => held.delete(e.key.toLowerCase()));
-  addEventListener('blur', () => held.clear());
 
   return {
     tick,

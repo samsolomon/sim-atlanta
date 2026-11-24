@@ -128,21 +128,14 @@ export function brookwoodTruckAt(s: number) {
   return { x: p.x + beyond * p.dx, z: p.z + beyond * p.dz };
 }
 
-/** The train note for a camera target: the station and its berth inside the survey,
- * the shorter running note along either continuation. */
-const continuations = [
-  { minX: -1000, maxX: -560, minZ: -4640, maxZ: -4150 },
-  { minX: 395, maxX: 760, minZ: -5700, maxZ: -5400 },
-];
-const inside = (r: typeof brookwoodBounds, x: number, z: number) => x >= r.minX && x <= r.maxX && z >= r.minZ && z <= r.maxZ;
-export function brookwoodRailNote(x: number, z: number) {
-  if (inside(brookwoodBounds, x, z)) return 'Scheduled Crescent · Inferred berth · Illustrative consist & freight';
-  if (continuations.some(r => inside(r, x, z))) return 'Scheduled Crescent · Illustrative consist & freight';
-  return null;
-}
 
 const atl = chainage(...project(-84.392477, 33.799445)).along;
 const platformEnd = chainage(...platform[1]).along;
+/** Where a dwelling consist's centre stands: its head at the northeast end of the island. */
+export const berthCentre = platformEnd - consistLength / 2;
+/** A consist is berthed while its centre is within a few metres of the berth. On either
+ * continuation, or still easing in, the card makes no berth claim. */
+export const isBerthed = (centre: number) => Math.abs(centre - berthCentre) < 3;
 export function crescentPlacement(t: TrainState) {
   if (t.routeId !== 'amtrak:route:Crescent' || t.s.tier !== 'scheduled') return;
   const [x, z] = project(t.lon, t.lat);
@@ -576,6 +569,7 @@ export function createBrookwood(sceneZero: number) {
         car.visible = true;
         car.userData.trainId = train.id;
         car.userData.lengthM = length;
+        car.userData.berthed = isBerthed(run.center);
         car.position.set((fore.x + aft.x) / 2, (bed(fore.x) + bed(aft.x)) / 2 + 0.32, (fore.z + aft.z) / 2);
         car.rotation.y = Math.atan2(fore.x - aft.x, fore.z - aft.z);
         car.rotation.x = -Math.atan2(bed(fore.x) - bed(aft.x), Math.hypot(fore.x - aft.x, fore.z - aft.z));
@@ -593,7 +587,6 @@ export function createBrookwood(sceneZero: number) {
     updateFreight: (clockMs: number) => freight.update(clockMs, crescentOnCorridor),
     freight: freight.group,
     get freightCars() { return freight.visibleCars; },
-    note: brookwoodRailNote,
     bounds: brookwoodBounds,
     setNorthEdge(z: number) {
       northEdge.constant = -z;

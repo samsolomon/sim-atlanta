@@ -64,6 +64,12 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       return Response.json({ ...JSON.parse(new TextDecoder().decode(data)),
         trees: crowns[id].trees.slice(0, 3), treeLowCount: 1 });
     }
+    // The seams are a property of the ground; the Midtown rows' thousands of
+    // buildings only slow this test down. Keep the two Brookwood fallbacks it checks.
+    if (name === 'context.json' && midtownRows.some(row => row === id)) {
+      const context = JSON.parse(new TextDecoder().decode(data));
+      return Response.json({ ...context, buildings: context.buildings.filter((b: { id: string }, i: number) => i === 0 || b.id === 'osm:way:265350477') });
+    }
     if (fault && id === 'south-corner') {
       if (name === 'ground.i16') return new Response(badCorner.buffer);
       if (fault === 'seam' && name === 'ground.json') return Response.json(manifest);
@@ -147,7 +153,10 @@ it.each(['high', 'low'] as const)('preserves all exterior and internal seam node
       expect(fallback.children.length).toBeGreaterThan(0);
     }
   } finally { for (const area of mounted.values()) area.dispose(); }
-});
+// A deliberate twelve-board integration test. It takes about 0.9 s alone; with three
+// full suites running at once it reached 5.3 s, so it gets a measured budget rather
+// than the 5 s default.
+}, 20_000);
 
 it('stops a direct Brookwood camera at a failed predecessor and resumes the pending target on retry', async () => {
   const ctx = new Proxy({}, { get: () => () => {} });
@@ -155,14 +164,19 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
   const requested: string[] = [];
   let available = false;
   vi.stubGlobal('fetch', async (url: string) => {
+    // Its own data root: a load left over from another test cannot touch this one's record.
+    if (!url.startsWith('/brookwood-camera/')) return new Response(null, { status: 404 });
     const [, id, name] = url.match(/square-board\/([^/]+)\/(.+)$/)!;
     if (name === 'context.json') {
       requested.push(id);
       if (!available && id === 'midtown-upper') return new Response(null, { status: 503 });
+      // Camera routing depends on the boards, not their thousands of buildings.
+      const context = JSON.parse(file(id as Board, name).toString());
+      return Response.json({ ...context, buildings: context.buildings.slice(0, 1) });
     }
     return new Response(Uint8Array.from(file(id as Board, name)).buffer);
   });
-  const mosaic = new SquareMosaic('/data', true);
+  const mosaic = new SquareMosaic('/brookwood-camera', true);
   const downtown = createDowntownTerrain(grid('downtown'), {
     bounds: bounds.downtown, roads: [], rail: [], buildings: [],
   }, [], { quality: 'low', join: joins('downtown') });
@@ -177,7 +191,9 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
     expect(requested).toEqual([]);
     mosaic.remember(target.x, target.z);
     advance();
-    await vi.waitFor(() => expect(errors).toEqual(['midtown-upper']));
+    // Await the loads themselves rather than polling against a wall-clock limit.
+    await mosaic.idle();
+    expect(errors).toEqual(['midtown-upper']);
     advance();
     expect(requested).toEqual(['north-band', 'north-corner', 'midtown-south', 'midtown-central', 'midtown-upper']);
     expect(mosaic.point(target.x, target.z).z).toBe(-3300);
@@ -185,7 +201,8 @@ it('stops a direct Brookwood camera at a failed predecessor and resumes the pend
     available = true;
     mosaic.requestFullBoard();
     advance();
-    await vi.waitFor(() => expect(reached).toEqual(target));
+    await mosaic.idle();
+    expect(reached).toEqual(target);
     expect(requested.filter(id => midtownRows.some(row => row === id))).toEqual([
       'midtown-south', 'midtown-central', 'midtown-upper', 'midtown-upper', 'brookwood-south', 'brookwood-station',
     ]);

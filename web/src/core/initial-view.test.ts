@@ -18,3 +18,11 @@ describe('landing view', () => {
     expect(initialView('?view=city', '#12/33/-84')).toBe('city');
   });
 });
+
+describe('Models view', () => {
+  it('opens in A2c; the classic shell keeps the Model lab at /models.html', () => {
+    expect(initialView('?view=models', '')).toBe('models');
+    expect(initialView('?ui=next&view=models', '')).toBe('models');
+    expect(initialView('?ui=classic&view=models', '')).toBe('city');
+  });
+});

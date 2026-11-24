@@ -1,3 +1,4 @@
+import { ansleyCrossing, ansleyStreet, clipCarriageways, paintPradoIslands, paverSurface } from './ansley-street-edge';
 import * as THREE from 'three';
 import { segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
@@ -8,6 +9,8 @@ import { paintMangumVerge, paintPathPanels, pathConcrete, pathWidth, westsidePat
 import { paintJunctionApproaches } from './junction-decks';
 import { paintStreetBridgeApproaches } from './street-bridges';
 import { isConnectorCity, paintConnector, surveyedRoad } from './connector-paint';
+import { paintActiveOval } from '../city/active-oval';
+import { paintWinnPark } from '../city/winn-park';
 
 const landColors: Record<string, string> = {
   grass: '#b7c298', park: '#adbe90', meadow: '#a5b46e', wood: '#94aa82', garden: '#94ad78',
@@ -57,23 +60,38 @@ function stripeLot(ctx: CanvasRenderingContext2D, ring: P2[], lineWidth: number)
   ctx.restore();
 }
 
+/**
+ * Ground-map texel density per tier. Low (phones) paints about 1.4 m texels: at the
+ * default full-board view a screen pixel covers ~4 m, so it reads the same as 1 m
+ * texels, and it halves the rectangle's ground maps on the GPU (ground-map.test.ts
+ * pins the budget). High keeps ~0.5 m texels for close views.
+ */
+export const GROUND_PX_PER_M: Record<TerrainQuality, number> = { low: 0.724, high: 4096 / 2000 };
+
+/** Canvas size of a board's ground map at a tier. */
+export function groundMapSize(bounds: TerrainCity['bounds'], quality: TerrainQuality) {
+  const px = GROUND_PX_PER_M[quality];
+  return { width: Math.max(1, Math.ceil((bounds.maxX - bounds.minX) * px)), height: Math.max(1, Math.ceil((bounds.maxZ - bounds.minZ) * px)) };
+}
+
 /** The board carries ground detail, so slopes, voids and rail openings share its geometry. */
 export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   const canvas = document.createElement('canvas');
-  const pixelsPerM = (quality === 'low' ? 2048 : 4096) / 2000;
-  canvas.width = Math.max(1, Math.ceil((data.bounds.maxX - data.bounds.minX) * pixelsPerM));
-  canvas.height = Math.max(1, Math.ceil((data.bounds.maxZ - data.bounds.minZ) * pixelsPerM));
+  Object.assign(canvas, groundMapSize(data.bounds, quality));
   const ctx = canvas.getContext('2d')!;
   const b = data.bounds;
   ctx.scale(canvas.width / (b.maxX - b.minX), canvas.height / (b.maxZ - b.minZ));
   ctx.translate(-b.minX, -b.minZ);
   ctx.fillStyle = '#b5bd97';
   ctx.fillRect(b.minX, b.minZ, b.maxX - b.minX, b.maxZ - b.minZ);
-  // At low detail a texel spans 0.98 m. Keep the illustrative stripes legible
-  // without allocating a second texture or changing the 2.6 m parking spacing.
+  // Keep the illustrative stripes legible on coarse maps without allocating a second
+  // texture or changing the 2.6 m parking spacing. Widths follow the texel up to the
+  // old low-tier 0.98 m; the 1.38 m low tier keeps those proportions and antialiases,
+  // rather than painting lots and crossings as blotches of white.
   const texelM = (b.maxX - b.minX) / canvas.width;
-  const stallLine = Math.max(.33, .8 * texelM);
-  const zebraPattern = [Math.max(.65, 1.45 * texelM), Math.max(.75, 1.25 * texelM)];
+  const markTexel = Math.min(texelM, .98);
+  const stallLine = Math.max(.33, .8 * markTexel);
+  const zebraPattern = [Math.max(.65, 1.45 * markTexel), Math.max(.75, 1.25 * markTexel)];
   const covers = (data.ground ?? []).filter(g => g.kind in landColors)
     .sort((a,b) => landOrder.indexOf(a.kind) - landOrder.indexOf(b.kind));
   for (const g of covers) {
@@ -85,36 +103,48 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
     if (g.kind === 'swimming_pool') { ctx.lineWidth = .45; ctx.strokeStyle = '#dbd9c9'; ctx.stroke(); }
     if (g.kind === 'pitch') { ctx.lineWidth = .45; ctx.strokeStyle = '#e9e7db'; ctx.stroke(); }
   }
+  paintActiveOval(ctx, data.bounds);
+  paintWinnPark(ctx, data);
 
   const roads: PaintRoad[] = [...data.roads.filter(r => !r.bridge && !r.tunnel),
     ...(data.terrainTransport?.roads.filter(r => r.kind === 'ground') ?? [])].filter(r => !isConnectorCity(data) || !surveyedRoad(r));
   const priority = (r: PaintRoad) => paths.has(r.cls) ? 0 : r.cls === 'service' ? 1 : 2;
   roads.sort((a, b) => priority(a) - priority(b));
-  function stroke(r: PaintRoad, width: number, color: string) {
+  function stroke(r: PaintRoad, width: number, color: string | CanvasPattern) {
     ctx.beginPath(); trace(ctx, r.pts);
     ctx.lineWidth = width; ctx.strokeStyle = color; ctx.stroke();
   }
   // Sidewalks go down first so a casing can't cut across the next intersection.
   for (const r of roads) if (streets.has(r.cls)) stroke(r, roadWidth(r) + 5, PAL.sidewalk);
+  const localStreets = roads.filter(r => r.cls === 'residential' && ansleyStreet(r));
+  const pavers = localStreets.length ? paverSurface(quality === 'high') : PAL.sidewalk;
+  for (const r of localStreets) {
+    const width = roadWidth(r);
+    stroke(r, width+5, pavers);
+    stroke(r, width+1.9, '#819272');
+    stroke(r, width+.6, '#aba99f');
+  }
   const sidepaths = westsidePaths(data);
   for (const r of roads) if (sidepaths.has(r)) paintMangumVerge(ctx, r.pts);
   const crosswalks = roads.filter(r => r.sub === 'crosswalk');
+  const crossings = roads.filter(ansleyCrossing);
   for (const r of roads) {
-    if (r.sub === 'crosswalk') continue;
+    if (r.sub === 'crosswalk' || ansleyCrossing(r)) continue;
     if (sidepaths.has(r)) {
       stroke(r, pathWidth, pathConcrete);
       paintPathPanels(ctx, r.pts, texelM);
       continue;
     }
     const w = roadWidth(r);
-    stroke(r, w, paths.has(r.cls) ? PAL.sidewalk : r.cls === 'motorway' ? PAL.asphaltHwy : PAL.asphalt);
+    stroke(r, w, r.sub === 'sidewalk' && ansleyStreet(r) ? pavers : paths.has(r.cls) ? PAL.sidewalk : r.cls === 'motorway' ? PAL.asphaltHwy : PAL.asphalt);
   }
   for (const r of roads) {
     if (r.cls === 'motorway' && r.sub !== 'link') {
       ctx.setLineDash([4, 8]); stroke(r, .55, PAL.lineWhite); ctx.setLineDash([]);
     } else if (dividedIvanAllen(r)) {
       ctx.setLineDash([3, 6]); stroke(r, .24, PAL.lineWhite); ctx.setLineDash([]);
-    } else if (streets.has(r.cls) && roadWidth(r) >= 9) {
+    } else if (streets.has(r.cls) && r.cls !== 'residential' && roadWidth(r) >= 9) {
+      // Wide residential streets (Ansley's circles) carry no centreline.
       stroke(r, .4, '#d8bd79');
     }
   }
@@ -125,12 +155,22 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
   for (const r of crosswalks) stroke(r, 2.8, PAL.lineWhite);
   ctx.setLineDash([]);
 
+  paintPradoIslands(ctx, data.bounds);
+  if (crossings.length) {
+    ctx.save();
+    clipCarriageways(ctx, roads.filter(r => streets.has(r.cls) || r.cls === 'living_street')
+      .map(r => ({pts:r.pts, width:roadWidth(r)})));
+    ctx.setLineDash([Math.max(.72,markTexel),Math.max(.78,markTexel)]);
+    for (const r of crossings) stroke(r, 3.1, '#e3dfcf');
+    ctx.restore();
+  }
+
   // Supplement mapped crossing ways with point-only zebras snapped to at-grade streets.
   if (data.points?.crossing?.length) {
     type Segment = { a: P2; b: P2; road: PaintRoad };
     const index = new PlacementIndex<Segment>(24);
     for (const r of roads) {
-      if (!streets.has(r.cls) && r.sub !== 'crosswalk') continue;
+      if (!streets.has(r.cls) && r.sub !== 'crosswalk' && !ansleyCrossing(r)) continue;
       for (let i = 1; i < r.pts.length; i++) {
         const a = r.pts[i - 1], b = r.pts[i];
         index.add({ a, b, road: r }, [a, b], 3);
@@ -141,7 +181,7 @@ export function groundMap(data: TerrainCity, quality: TerrainQuality) {
       let best: Segment | undefined, dist = 3;
       for (const seg of index.at(x, z)) {
         const d = segDist(x, z, seg.a, seg.b);
-        if (seg.road.sub === 'crosswalk' && d <= 3) { best = undefined; break; }
+        if ((seg.road.sub === 'crosswalk' || ansleyCrossing(seg.road)) && d <= 3) { best = undefined; break; }
         if (d < dist) { best = seg; dist = d; }
       }
       if (!best) continue;

@@ -22,7 +22,7 @@ function visibleSections(runs: FreightTreadPoint[][]) {
     }
   }
   // A sliver left by a terrain opening cannot establish even one vehicle’s two truck positions.
-  const minSupport = Math.min(...Object.values(FREIGHT_TRUCK_SPACING));
+  const minSupport = Math.min(...CONSIST.map(kind => FREIGHT_TRUCK_SPACING[kind]));
   return sections.filter(section => section[section.length - 1].s - section[0].s >= minSupport);
 }
 
@@ -96,6 +96,7 @@ export class CityFreight {
               this.shapes.set(kind, shape);
             }
             car = new THREE.Mesh(shape, section.materials[cut]);
+            car.userData.trainId = 'illustrative:freight:downtown';
             car.userData.lengthM = length;
             car.receiveShadow = true;
             section.cars.set(i, car);

@@ -1,22 +1,27 @@
 import * as THREE from 'three';
-import { Builder } from './geom';
+import { Builder, loft } from './geom';
+import { CHARGER_LENGTH, CHARGER_TRUCKS, chargerBody } from './charger';
+import { AIRO_LENGTH, AIRO_TRUCKS, airoCoach } from './airo';
 
 export const stockNames = {
   charger: 'Siemens ALC-42 Charger',
+  chargerPhase6: 'ALC-42 Charger, Phase VI',
   genesis: 'GE P42DC Genesis',
-  coach: 'Amfleet II coach',
+  coach: 'Amfleet II coach, Phase VI',
+  coachPhase7: 'Amfleet II coach, Phase VII',
   cafe: 'Amfleet II café',
   diner: 'Viewliner II diner',
   sleeper: 'Viewliner II sleeper',
   baggageDorm: 'Viewliner II baggage-dorm',
   baggage: 'Viewliner II baggage car',
+  airoCoach: 'Siemens Airo coach (corridor)',
 } as const;
 export type PassengerUnit = keyof typeof stockNames;
 export const formation: PassengerUnit[] = [
   'charger',
   'genesis',
-  'coach',
-  'coach',
+  'coachPhase7',
+  'coachPhase7',
   'coach',
   'cafe',
   'diner',
@@ -24,11 +29,18 @@ export const formation: PassengerUnit[] = [
   'baggageDorm',
 ];
 export function dimensions(unit: PassengerUnit) {
-  if (unit === 'charger') return { length: 21.79, trucks: 14.0 };
+  if (unit === 'charger' || unit === 'chargerPhase6') return { length: CHARGER_LENGTH, trucks: CHARGER_TRUCKS };
   if (unit === 'genesis') return { length: 21.03, trucks: 13.1 };
-  if (unit === 'coach' || unit === 'cafe') return { length: 26.01, trucks: 18.14 };
+  if (isAmfleet(unit)) return { length: 26.01, trucks: 18.14 };
+  if (unit === 'airoCoach') return { length: AIRO_LENGTH, trucks: AIRO_TRUCKS };
   return { length: 25.91, trucks: 18.14 };
 }
+function isAmfleet(unit: PassengerUnit) {
+  return unit === 'coach' || unit === 'coachPhase7' || unit === 'cafe';
+}
+/** Roof heights over rail: Amfleet II 12 ft 8 in, Viewliner 14 ft (docs/crescent-stock.md). */
+export const AMFLEET_ROOF = 3.86;
+export const VIEWLINER_ROOF = 4.27;
 export const consistLength = formation.reduce((sum, unit) => sum + dimensions(unit).length, 0);
 export function layout(units: PassengerUnit[]) {
   let cursor = units.reduce((sum, unit) => sum + dimensions(unit).length, 0) / 2;
@@ -43,34 +55,35 @@ const silver = '#bfC4c5',
   roof = '#939da1',
   navy = '#173958',
   red = '#b63238';
+/** Car stripe colours read from the dated photographs in docs/crescent-stock.md. */
+const livery = {
+  white: '#e9ecea',
+  phase6Blue: '#2f5878',
+  midnight: '#1b2140',
+  blue: '#1f5480',
+  green: '#14a67c',
+  iiibRed: '#d9402e',
+  iiibBlue: '#2a63ad',
+};
 const dark = '#343c41',
   glass = '#405963';
-
-/** Faceted transverse sections with individually coloured longitudinal panels. Local +z is forward. */
-function loft(b: Builder, rings: number[][][], colors: string[], capRear = true, capFront = true) {
-  const last = rings[rings.length - 1];
-  for (let i = 1; i < last.length - 1; i++) {
-    if (capFront) b.tri(last[0], last[i], last[i + 1], colors[1]);
-    if (capRear) b.tri(rings[0][0], rings[0][i + 1], rings[0][i], colors[1]);
-  }
-  for (let k = 1; k < rings.length; k++) {
-    const a = rings[k - 1],
-      c = rings[k];
-    for (let i = 0; i < a.length; i++) {
-      const j = (i + 1) % a.length;
-      b.quad(a[i], a[j], c[j], c[i], colors[i]);
-    }
-  }
-}
 
 export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailing: boolean) {
   const b = new Builder(),
     windows = new Builder(),
     lamps = new Builder();
+  if (unit === 'charger' || unit === 'chargerPhase6') {
+    chargerBody(b, lamps, leading, trailing, unit === 'charger' ? 'phase7' : 'phase6');
+    return finishStockGeometry(b, windows, lamps);
+  }
+  if (unit === 'airoCoach') {
+    airoCoach(b, windows, lamps, trailing);
+    return finishStockGeometry(b, windows, lamps);
+  }
   const { length, trucks } = dimensions(unit);
   const end = length / 2 - 0.32;
-  const power = unit === 'charger' || unit === 'genesis';
-  const amfleet = unit === 'coach' || unit === 'cafe';
+  const power = unit === 'genesis';
+  const amfleet = isAmfleet(unit);
   const wheel = new THREE.CylinderGeometry(0.46, 0.46, 0.18, 10).rotateZ(Math.PI / 2);
   for (const z of [-trucks / 2, trucks / 2]) {
     for (const x of [-0.72, 0.72])
@@ -87,7 +100,6 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
   for (const sign of [-1, 1]) b.box(0.41, 0.28, 0.55, 0, 0.89, sign * (length / 2 - 0.275), dark);
   b.box(2.34, 0.76, power ? 7.4 : 4.2, 0, 0.77, -1.8, '#525a5e');
   if (power) {
-    const charger = unit === 'charger';
     function section(z: number, w: number, h: number, bottom: number) {
       return [
         [-w + 0.18, bottom, z],
@@ -100,27 +112,27 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
         [-w, bottom + 0.38, z],
       ];
     }
-    const height = charger ? 4.37 : 4.45;
-    const brow = end - (charger ? 2.35 : 1.18),
+    const height = 4.45;
+    const brow = end - 1.18,
       chin = end - 0.22;
     const rear = section(-end, 1.52, height, 1.27);
     const cab = section(brow, 1.52, height, 1.27);
-    const windshield = section(chin, charger ? 1.25 : 1.46, 3.26, 1.27);
+    const windshield = section(chin, 1.46, 3.26, 1.27);
     const nose = section(end, 1.16, 2.65, 1.48);
-    const flank = charger ? '#305f99' : silver;
+    const flank = silver;
     loft(b, [rear, cab], [dark, flank, flank, navy, roof, navy, flank, flank], true, false);
     loft(
       b,
       [cab, windshield, nose],
       [
         dark,
-        charger ? navy : silver,
-        charger ? red : silver,
-        charger ? red : navy,
+        silver,
+        silver,
         navy,
-        charger ? red : navy,
-        charger ? red : silver,
-        charger ? navy : silver,
+        navy,
+        navy,
+        silver,
+        silver,
       ],
       false,
       true,
@@ -136,19 +148,8 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
       if (side < 0) pane.reverse();
       b.quad(pane[0], pane[1], pane[2], pane[3], '#486777');
       b.box(0.04, 0.73, 1.23, side * 1.544, 3.39, brow - 0.82, '#385260');
-      b.box(0.04, 1.92, 0.72, side * 1.53, 2.57, brow - 2.05, charger ? '#354d60' : '#a3aeb0');
-      if (charger) {
-        const x = side * 1.528;
-        const stripe = [
-          [x, 1.53, brow - 1.2],
-          [x, 1.53, brow - 2.6],
-          [x, 3.83, brow - 7.4],
-          [x, 3.83, brow - 5.9],
-        ];
-        if (side < 0) stripe.reverse();
-        b.quad(stripe[0], stripe[1], stripe[2], stripe[3], '#dde3e2');
-      }
-      b.box(0.04, 0.27, end + brow - 3, side * 1.53, 1.6, (brow - end - 3) / 2, charger ? navy : '#9fa7ac');
+      b.box(0.04, 1.92, 0.72, side * 1.53, 2.57, brow - 2.05, '#a3aeb0');
+      b.box(0.04, 0.27, end + brow - 3, side * 1.53, 1.6, (brow - end - 3) / 2, '#9fa7ac');
       b.box(0.045, 0.14, end + brow - 3, side * 1.54, 1.41, (brow - end - 3) / 2, red);
       b.box(0.05, 1.02, 5.32, side * 1.54, 3.21, -end + 3.35, '#27323b');
       for (let i = 0; i < 17; i++) b.box(0.06, 0.94, 0.07, side * 1.57, 3.21, -end + 0.9 + i * 0.3, '#59646a');
@@ -165,11 +166,14 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     b.box(2.58, 0.48, 0.15, 0, 0.9, end - 0.18, '#52585c');
   } else {
     const w = 1.6,
-      h = amfleet ? 3.89 : 4.27;
+      h = amfleet ? AMFLEET_ROOF : VIEWLINER_ROOF;
+    // The flat fluted side runs down to about 1.4 m (Elizabeth, June 2026); Amfleet's tube tucks in more.
+    const foot = amfleet ? 1.3 : 1.45,
+      sideFoot = amfleet ? 1.42 : 1.4;
     const section = (z: number) => [
-      [-1.22, 1.23, z],
-      [1.22, 1.23, z],
-      [w, 1.79, z],
+      [-foot, 1.23, z],
+      [foot, 1.23, z],
+      [w, sideFoot, z],
       [w, 3.13, z],
       [w - 0.14, h - 0.49, z],
       [w - 0.48, h - 0.14, z],
@@ -178,7 +182,7 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
       [-w + 0.48, h - 0.14, z],
       [-w + 0.14, h - 0.49, z],
       [-w, 3.13, z],
-      [-w, 1.79, z],
+      [-w, sideFoot, z],
     ];
     loft(
       b,
@@ -204,13 +208,67 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
           [x, y + height / 2, z - width / 2],
           [x, y + height / 2, z + width / 2],
         ];
-        if (y > 3.4) for (const point of pts) point[0] -= (side * 0.14 * (point[1] - 3.13)) / (h - 0.49 - 3.13);
+        // Above 3.13 m the side sheet steps inward toward the roof; follow it point by point.
+        for (const point of pts)
+          if (point[1] > 3.13) point[0] -= (side * 0.14 * (Math.min(point[1], h - 0.49) - 3.13)) / (h - 0.49 - 3.13);
         if (side < 0) pts.reverse();
         builder.quad(pts[0], pts[1], pts[2], pts[3], color);
       };
-      panel(b, 0, amfleet ? 2.75 : 2.6, 2 * end - 0.12, amfleet ? 0.84 : 0.22, amfleet ? navy : '#386a9c');
-      panel(b, 0, amfleet ? 2.26 : 3.0, 2 * end - 0.12, amfleet ? 0.105 : 0.19, red);
-      for (let i = 0; i < 5; i++) panel(b, 0, 1.82 + 0.075 * i, 2 * end - 0.1, 0.021, '#8c989f');
+      // Stripes, all sharing the lower window row (2.48–3.10 m) so they line up from car to car.
+      const run = 2 * end - 0.12;
+      const band = (y0: number, y1: number, color: string, depth = 0.012) => panel(b, 0, (y0 + y1) / 2, run, y1 - y0, color, depth);
+      band(1.45, 1.485, red); // sill line on every car, at the foot of the fluting
+      if (unit === 'coachPhase7') {
+        // Phase VII: midnight from the door end, a white diagonal, then Amtrak blue; class colour by the door.
+        band(1.485, 1.5, livery.white);
+        const y0 = 2.07,
+          y1 = 3.13;
+        // A band segment from z0 to z1 whose top edges shift by lean0 and lean1 (diagonals).
+        const strip = (z0: number, z1: number, color: string, depth: number, lean0 = 0, lean1 = lean0) => {
+          const x = side * (w + depth);
+          const pts = [
+            [x, y0, z1],
+            [x, y0, z0],
+            [x, y1, z0 + lean0],
+            [x, y1, z1 + lean1],
+          ];
+          if (side < 0) pts.reverse();
+          b.quad(pts[0], pts[1], pts[2], pts[3], color);
+        };
+        // Diagonals read off the 25003 broadside: near the door they lean back toward the car's far end,
+        // the last one near the far end leans forward.
+        const door = end - 1.05,
+          lean = 0.4,
+          d1 = door - 9.6,
+          d2 = door - 1.3,
+          d3 = -end + 1.2;
+        strip(-end + 0.06, d3, livery.blue, 0.012, 0, lean);
+        strip(d3 + 0.12, d1, livery.blue, 0.012, lean, -lean);
+        strip(d1 + 0.15, d2, livery.midnight, 0.012, -lean, -0.2);
+        strip(d2 + 0.15, door - 0.5, livery.green, 0.012, -0.2, 0);
+        strip(d3, d3 + 0.12, livery.white, 0.012, lean);
+        strip(d1, d1 + 0.15, livery.white, 0.012, -lean);
+        // A shallower lean keeps the class panel clear of the last window frame (edge at 10.1 m).
+        strip(d2, d2 + 0.15, livery.white, 0.012, -0.2);
+      } else if (amfleet) {
+        // Phase VI: one blue band holding the windows, red/white/red pinstripes above it.
+        band(2.07, 3.13, livery.phase6Blue);
+        band(3.13, 3.15, livery.white);
+        band(3.15, 3.18, red);
+        band(3.18, 3.2, livery.white);
+        band(3.2, 3.23, red);
+      } else if (unit === 'baggage') {
+        // No dated photo of a Crescent full baggage car was found; keep the earlier thin stripes (unverified).
+        band(2.49, 2.71, '#386a9c');
+        band(2.905, 3.095, red);
+      } else {
+        // Viewliner II, Phase IIIB: three equal bands spanning the lower windows, blue at the sill.
+        band(2.48, 2.68, livery.iiibBlue);
+        band(2.68, 2.88, livery.white);
+        band(2.88, 3.08, livery.iiibRed);
+      }
+      const flutes = amfleet ? 7 : 12;
+      for (let i = 0; i < flutes; i++) panel(b, 0, 1.56 + 0.075 * i, 2 * end - 0.1, 0.021, '#8c989f');
       const door = (z: number, cargo: boolean) => {
         panel(b, z, 2.41, cargo ? 2.54 : 0.91, 1.83, '#727f84', 0.025);
         panel(b, z, 2.42, cargo ? 2.43 : 0.79, 1.74, silver, 0.03);
@@ -258,6 +316,11 @@ export function passengerGeometry(unit: PassengerUnit, leading: boolean, trailin
     }
     if (trailing) for (const x of [-1.08, 1.08]) lamps.box(0.19, 0.19, 0.06, x, 3.22, -end - 0.045, '#fa2924');
   }
+  return finishStockGeometry(b, windows, lamps);
+}
+
+/** Merges glazing and lamps after the body and tags them for the night shader. */
+export function finishStockGeometry(b: Builder, windows: Builder, lamps: Builder) {
   const baseCount = b.col.length / 3,
     windowCount = windows.col.length / 3;
   b.pos.push(...windows.pos, ...lamps.pos);

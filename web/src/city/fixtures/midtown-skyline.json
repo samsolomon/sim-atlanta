@@ -40,5 +40,40 @@
     "x": 464.9,
     "z": -2095.8,
     "heightM": 206
+  },
+  "biltmore": {
+    "id": "osm:way:886034013",
+    "name": "Atlanta Biltmore",
+    "x": 430,
+    "z": -2560,
+    "heightM": 65
+  },
+  "academy": {
+    "id": "osm:way:42725820",
+    "name": "Academy of Medicine",
+    "x": 451,
+    "z": -2720,
+    "heightM": 15.5
+  },
+  "wimbish": {
+    "id": "osm:way:885325356",
+    "name": "Wimbish House",
+    "x": 745,
+    "z": -3560,
+    "heightM": 20
+  },
+  "ponce": {
+    "id": "osm:way:208355680",
+    "name": "Ponce de Leon Apartments",
+    "x": 648,
+    "z": -2008,
+    "heightM": 52.5
+  },
+  "fed": {
+    "id": "osm:way:28979077",
+    "name": "Federal Reserve Bank of Atlanta",
+    "x": 588,
+    "z": -3155,
+    "heightM": 62.4
   }
 }
