@@ -2894,3 +2894,17 @@ Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow no
 ### 2026-11-23 — One CSX family in the freight lab
 
 The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — A final vertex is not another road segment
+
+At 21:00, a streetcar nose could project onto the exact end of a traffic course.
+The path returned its final vertex index, but the road-owner array has one entry
+per segment: the lookup ran one past its end and stopped City's render loop.
+Clamp to the final carrying segment, and return no surface for an absent owner.
+The exact 60 m endpoint regression and an arterial update sweep every five minutes
+through 24 hours both reproduce the old `undefined.bridge` exception with the fix
+removed. Clock seeks are covered too. The repaired 21:00 low-tier view renders
+118 calls; this was a path-boundary bug, not missing terrain or nighttime lighting.
+
+![City rendering again at 21:00](log/ui/streetcar-endpoint/2100-fixed.jpg)
+Camera: `cam=588,-65,0,50,180&t=2026-11-20T21:00:00-05:00&speed=0&q=low`.
