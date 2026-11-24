@@ -43,15 +43,15 @@ export interface LodResult {
 
 const ROAD_HALF: Record<string, number> = { motorway: 8, trunk: 7, primary: 6.5, secondary: 5.5, tertiary: 4.5, residential: 3.5, unclassified: 3.5 };
 const C = {
-  ground: [0.62, 0.66, 0.50], road: [0.42, 0.43, 0.45], paved: [0.70, 0.68, 0.63], park: [0.50, 0.62, 0.38],
+  ground: [0.60, 0.62, 0.50], road: [0.42, 0.43, 0.45], paved: [0.70, 0.68, 0.63], park: [0.50, 0.62, 0.38],
   water: [0.45, 0.58, 0.66], skirt: [0.71, 0.59, 0.46],
 } as const;
 // City's palette as it reads from the mid ring: glass towers, cream, tan, brick and grey mid-rises,
 // pale roofs with the odd green one, and warm house roofs.
 const TOWER: RGB[] = [[0.68, 0.75, 0.84], [0.62, 0.70, 0.80], [0.74, 0.78, 0.84]];
-const MIDRISE: RGB[] = [[0.88, 0.84, 0.76], [0.78, 0.70, 0.60], [0.66, 0.40, 0.33], [0.74, 0.74, 0.74], [0.84, 0.80, 0.72]];
+const MIDRISE: RGB[] = [[0.80, 0.76, 0.68], [0.72, 0.64, 0.55], [0.62, 0.38, 0.32], [0.68, 0.68, 0.68], [0.76, 0.72, 0.65]];
 const HOUSE: RGB[] = [[0.90, 0.86, 0.78], [0.80, 0.70, 0.58], [0.72, 0.48, 0.38]];
-const ROOF: RGB[] = [[0.90, 0.88, 0.84], [0.86, 0.85, 0.82], [0.80, 0.80, 0.78], [0.55, 0.66, 0.40]];
+const ROOF: RGB[] = [[0.80, 0.78, 0.74], [0.76, 0.75, 0.72], [0.70, 0.70, 0.68], [0.50, 0.60, 0.38]];
 const HOUSE_ROOF: RGB[] = [[0.55, 0.36, 0.30], [0.48, 0.44, 0.42], [0.62, 0.52, 0.44]];
 const hash = (x: number, z: number) => { const h = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return h - Math.floor(h); };
 const pick = (list: RGB[], t: number) => list[Math.floor(t * list.length) % list.length];
@@ -242,7 +242,7 @@ export function buildLod(ctx: LodContext, m: LodGroundManifest, bytes: ArrayBuff
     cells.set(key, e);
   }
   const forest = new Soup();
-  const GREENS: RGB[] = [[0.42, 0.55, 0.30], [0.36, 0.50, 0.28], [0.47, 0.58, 0.33], [0.40, 0.52, 0.34]];
+  const GREENS: RGB[] = [[0.36, 0.46, 0.26], [0.31, 0.42, 0.24], [0.40, 0.48, 0.28], [0.34, 0.44, 0.29]];
   const SIDES = 6;
   for (const [key, e] of cells) {
     const cx = e.x / e.n, cz = e.z / e.n, h = Math.max(5, e.h / e.n);

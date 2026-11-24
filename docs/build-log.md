@@ -3328,3 +3328,29 @@ The Atlantic's mapped outline straddles two City rows. The row survey only saw t
 ### 2026-11-23 · 1075 Peachtree's "podium" was 140 m of tower
 
 The mapped outline for 1075 Peachtree breaks the site into seven parts. The tallest, 156.7 m, is the part with a curved north face. North of it, a part the pipeline calls `podium` (18.8 m, inferred) runs out to 12th Street. A 2.5 m raster of the April 2019 lidar disagreed: that "podium" has its roof at 433.1 m NAVD88, about 140 m up, the same as the curved part. The brochure's aerial cover and a Commons photo from 12th Street confirm it: a flat-topped glass block stands in front of the crowned one. The reported 18.8 m podium is really 35 m of precast parking deck. Inside the crowned block the median roof also sits at 433 m, while the 95th percentile reaches 445 m. That makes the thin cantilevered brim an open ring around a lower mechanical roof, not a lid. The louvred band under the brim is lit as one even glow, offices are about 5% lit at 23:30, and the entrance at Peachtree and 12th stays lit. The two tile fragments cost 1,745 low-tier triangles and three meshes, with no new shader program. [Research, lidar table and captures](log/ui/1075-peachtree/README.md)
+
+### 2026-11-24 · Streaming, take two: hide, don't rebuild
+
+The goal was a City that loads only what the camera needs, so the board can grow toward I-285 without
+costing phones. The first prototype did exactly that. It built each square-board area when the camera
+came near, swapped a cheap LOD in at middle distance, and freed both far away. GPU memory came back
+cleanly over five near-far cycles. Then the pan routes came in: the worst frame on the phone tier was
+533 ms against today's 50 ms. One area's build is a single synchronous main-thread job, so wherever it
+lands, it stalls. Waiting for the camera to rest only moved the stall.
+
+So tonight's version keeps today's boot and changes only what draws. Under `?stream=1`, each streamed
+area is near (the full area draws), mid (the full area is hidden and a LOD draws) or far (neither).
+The LOD is three batched meshes per area: coarse ground, every footprint as its minimum-area box, and
+forest masses. A Web Worker builds it from the files City already ships. It uses the board skirts'
+shader program, so it adds none. Each area draws once, unculled, as it mounts, so a later reveal never
+uploads on the spot.
+
+On a real Galaxy A16 at the default camera, City went from 23.3 to 30.7 fps, at 562 against 290 draw
+calls. The worst frame on the north pan fell from 367 to 222 ms. On an M5 Air at high, it went from 34.0
+to 47.5 fps, at 1,229 against 631 calls. The surprise was how much of the phone's cost was draws, not
+triangles. Hiding the buildings beyond 3 km does more than any triangle cut so far.
+
+Nothing is freed yet. Heap after GC is 23 MB higher on low and 51 MB higher on high, because the LOD
+sits on top of every full area. Freeing needs sliced builds, and `docs/expansion-plan.md` now makes
+that the gate for growing past today's 12 areas. [Default camera, day and night, low](log/streaming/default-low.png) ·
+[high](log/streaming/default-high.png)

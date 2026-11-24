@@ -114,8 +114,8 @@ export class StreamManager {
     }
   }
 
-  /** Night: the blocks glow faintly warm, standing in for the near ring's lit windows. */
-  setNight(factor: number) { this.materials.blocks.emissive.setRGB(0.20, 0.15, 0.08).multiplyScalar(factor); }
+  /** Night: the blocks keep a trace of warmth; the near ring's lit windows have no LOD form yet. */
+  setNight(factor: number) { this.materials.blocks.emissive.setRGB(0.030, 0.024, 0.014).multiplyScalar(factor); }
 
   groundAt(x: number, z: number) {
     for (const u of this.units) {

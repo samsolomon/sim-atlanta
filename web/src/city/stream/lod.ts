@@ -100,10 +100,10 @@ export function lodMeshes(id: string, r: LodResult, bounds: { minX: number; maxX
 /** Autumn and winter tint for the forest mass, so a mid-ring clump matches the near ring's season. */
 export function forestTint(doy: number, out: THREE.Color) {
   // Peak colour late October to mid November, bare-ish December to March, green May to September.
-  const autumn = Math.max(0, 1 - Math.abs(doy - 312) / 30);
+  const autumn = Math.max(0, 1 - Math.abs(doy - 318) / 28);
   const winter = doy > 335 || doy < 80 ? 1 : 0;
   out.setRGB(1, 1, 1);
   if (winter) out.setRGB(0.95, 0.82, 0.70);
-  else if (autumn > 0) out.setRGB(1 + 0.35 * autumn, 1 - 0.08 * autumn, 1 - 0.45 * autumn);
+  else if (autumn > 0) out.setRGB(1 + 0.7 * autumn, 1 - 0.05 * autumn, 1 - 0.55 * autumn);
   return out;
 }
