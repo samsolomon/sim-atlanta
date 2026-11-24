@@ -22,6 +22,8 @@ const only = opt('--only', null);
 const strip = Number(opt('--strip', 8));
 const extra = opt('--extra', '');
 const leak = !args.includes('--no-leak');
+// --cpu 6 --viewport 384x692@1 pass through to perf-run for an A16-like low run (phone tier only).
+const phoneArgs = [...(opt('--cpu', null) ? ['--cpu', opt('--cpu')] : []), ...(opt('--viewport', null) ? ['--viewport', opt('--viewport')] : [])];
 const modes = opt('--modes', 'today,stream').split(',');
 mkdirSync(out, { recursive: true });
 // --table a.json,b.json re-renders one table from earlier results.json files and exits.
@@ -55,7 +57,7 @@ try {
     const dir = join(out, `${q}-${motion.replace(':', '-')}-${mode}-${hm.replace(':', '')}-r${rep}`);
     const json = join(dir, 'r.json');
     mkdirSync(dir, { recursive: true });
-    const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), '--out', dir, ...(desktop ? ['--desktop'] : []), ...(motion !== 'static' && strip ? ['--strip', String(strip)] : []), url],
+    const r = spawnSync('node', [join(root, 'scripts/perf-run.mjs'), '--out', dir, ...(desktop ? ['--desktop'] : phoneArgs), ...(motion !== 'static' && strip ? ['--strip', String(strip)] : []), url],
       { env: { ...process.env, PERF_JSON: json }, encoding: 'utf8', timeout: 400000 });
     process.stdout.write(`r${rep} ${hm} ${q} ${motion} ${mode}: ${(r.stdout || r.stderr).trim().split('\n').pop()}\n`);
     const result = existsSync(json) ? JSON.parse(readFileSync(json, 'utf8'))[0] : { error: 'no result' };
