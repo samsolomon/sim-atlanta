@@ -5,12 +5,14 @@
  * detailed buildings and trees.
  */
 import * as THREE from 'three';
+import { runSync } from '../core/slice';
 import { appendWoodruffWall, woodruffLot } from './woodruff-shopfronts';
 import { appendParkingDeck } from './parking-deck';
 import { Builder, hashStr, Line, pointInRing, rng, segDist, type P2 } from './geom';
 import { groundLiftedParts } from './parts';
 import { leafState } from './time';
 import { PlacementIndex } from './spatial';
+import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 import { SIDING_GLSL } from '../materials/siding';
 
 /** Centre-to-track offset on the drawn double-track MARTA corridor, metres. */
@@ -789,8 +791,14 @@ export class World {
     }
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     mesh.castShadow = mesh.receiveShadow = true;
+    // Far form (terrain/far-form.ts): ballast and viaduct stay; rails and ties are sub-pixel.
+    registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [PAL.rail])).keep, { shadow: 'low' });
+    mesh.name = 'MARTA track and viaduct';
+    const tieMesh = instanced(new THREE.BoxGeometry(2.6, 0.18, 0.3), PAL.tieConcrete, ties);
+    tieMesh.name = 'MARTA ties';
+    registerFar(tieMesh, 0, { shadow: 'low' });
     this.group.add(mesh);
-    this.group.add(instanced(new THREE.BoxGeometry(2.6, 0.18, 0.3), PAL.tieConcrete, ties));
+    this.group.add(tieMesh);
   }
 
   buildFreight() {
@@ -822,13 +830,24 @@ export class World {
     }
     const mesh = new THREE.Mesh(b.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
     mesh.castShadow = mesh.receiveShadow = true;
-    this.group.add(mesh, instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties));
+    registerFar(mesh, orderForFar(mesh.geometry, colourDrop(mesh.geometry, [PAL.railRust])).keep, { shadow: 'low' });
+    mesh.name = 'Freight track and girders';
+    const tieMesh = instanced(new THREE.BoxGeometry(2.6, 0.16, 0.24), PAL.tie, ties);
+    tieMesh.name = 'Freight ties';
+    registerFar(tieMesh, 0, { shadow: 'low' });
+    this.group.add(mesh, tieMesh);
   }
 
   /** Streetcar rails are embedded in the street: no ballast, ties or third rail. */
   // ---- buildings ----------------------------------------------------------------------
 
   buildBuildings(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
+    runSync(this.buildingSteps(foundationY, maxRoofUnits, finishFor));
+  }
+
+  /** buildBuildings as a build that yields every few buildings (core/slice.ts). Each building
+   * draws from its own seeded stream, so where it yields never changes the result. */
+  *buildingSteps(foundationY?: (building: VBuilding) => number | null, maxRoofUnits = 8, finishFor?: (building: VBuilding) => BuildingFinish | undefined) {
     const b = new Builder();
     const shopLights = new Builder();
     const style: number[] = [];
@@ -836,7 +855,9 @@ export class World {
     const clutter: THREE.Matrix4[] = [];
     const clutterCol: THREE.Color[] = [];
     const m4 = new THREE.Matrix4();
+    let n = 0;
     for (const bd of this.data.buildings) {
+      if (++n % 6 === 0) yield 'buildings';
       const outer = bd.rings[0];
       if (!outer || outer.length < 3) continue;
       const footing = foundationY ? foundationY(bd) : 0;
@@ -963,6 +984,11 @@ export class World {
   // ---- trees --------------------------------------------------------------------------
 
   buildTrees(leafGeometry: THREE.BufferGeometry = new THREE.DodecahedronGeometry(1, 0)) {
+    runSync(this.treeSteps(leafGeometry));
+  }
+
+  /** buildTrees as a build that yields every 128 trees (core/slice.ts); one seeded stream, in order. */
+  *treeSteps(leafGeometry: THREE.BufferGeometry = new THREE.DodecahedronGeometry(1, 0)) {
     const r = rng(20261120);
     const drivable = this.data.roads.filter((x) => DRIVABLE.has(x.cls) || x.cls === 'pedestrian' || x.cls === 'footway');
     const rails = this.data.rail.map((x) => x.pts);
@@ -983,7 +1009,9 @@ export class World {
     };
     if (this.realTrees) {
       // Trees where Atlanta's trees really are, sized from the canopy height map.
+      let placed = 0;
       for (const [x, z, h, cr] of this.realTrees) {
+        if (++placed % 128 === 0) yield 'tree placement';
         if (!this.inBounds(x, z, 1)) continue;
         if (this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring))) continue;
         const c = r();
@@ -1056,7 +1084,8 @@ export class World {
     }
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
-    this.trees.forEach((t, i) => {
+    for (const [i, t] of this.trees.entries()) {
+      if (i % 128 === 127) yield 'tree trunks';
       const trunkH = t.th ?? 2 + t.s * 0.6;
       m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
       this.trunks!.setMatrixAt(i, m);
@@ -1064,7 +1093,7 @@ export class World {
       m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
       this.branches!.setMatrixAt(i, m);
       this.branchMatrices[i] = m.clone();
-    });
+    }
   }
 
   private canopy?: THREE.InstancedMesh;
@@ -1098,6 +1127,11 @@ export class World {
    * on their own few-week schedule.
    */
   setSeason(doy: number) {
+    runSync(this.seasonSteps(doy));
+  }
+
+  /** setSeason as a build that yields every 64 trees (core/slice.ts). Each tree seeds its own stream. */
+  *seasonSteps(doy: number) {
     if (doy === this.seasonDoy || !this.canopy || !this.pines) return;
     this.seasonDoy = doy;
     const canopy = this.canopy;
@@ -1121,7 +1155,8 @@ export class World {
     // pines and magnolias, they sit hidden: draw only the thinning trees' (compacted instances).
     const branches = this.branches;
     let kb = 0;
-    this.trees.forEach((t, ti) => {
+    for (const [ti, t] of this.trees.entries()) {
+      if (ti % 64 === 63) yield 'tree season';
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
       const r = rng(Math.floor(t.c * 1e9) + 7);
@@ -1138,7 +1173,7 @@ export class World {
           kp++;
         }
         for (let i = 0; i < clumps; i++) canopy.setMatrixAt(k++, zero);
-        return;
+        continue;
       }
       let canopyLeft = 1;
       if (kind === 'magnolia') c.set('#2f5c3a');
@@ -1182,7 +1217,7 @@ export class World {
         canopy.setColorAt(k, tint);
         k++;
       }
-    });
+    }
     pines.count = kp;
     if (branches) {
       branches.count = kb;
@@ -1202,7 +1237,15 @@ export class World {
   buildLights(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
     inTravelLane?: (x: number, z: number) => boolean,
     mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
+    runSync(this.lightSteps(board, groundAt, inTravelLane, mapped));
+  }
+
+  /** buildLights as a build that yields every 16 roads and through the light-map bake (core/slice.ts). */
+  *lightSteps(board?: THREE.Mesh, groundAt?: (x: number, z: number) => number | null,
+    inTravelLane?: (x: number, z: number) => boolean,
+    mapped?: { include: (rd: VRoad) => boolean; paths: [number, number][][]; lamps: [number, number][]; lowDetail?: boolean }) {
     const r = rng(311);
+    let roadsSeen = 0;
     const spots: { x: number; z: number; y: number; ang: number; h?: number; pool?: number }[] = [];
     const clear = (x: number, z: number) => this.inBounds(x, z, 3) && !inTravelLane?.(x, z) &&
       !this.blocks.at(x, z).some((ring) => pointInRing(x, z, ring));
@@ -1211,6 +1254,7 @@ export class World {
     const seamClear = (z: number, pool: number) => !mapped || (z - this.b.minZ >= pool && this.b.maxZ - z >= pool);
     const carriageways = new PlacementIndex<{ a: P2; b: P2; half: number }>();
     if (mapped) for (const rd of this.data.roads) {
+      if (++roadsSeen % 16 === 0) yield 'lamp roads';
       if (!DRIVABLE.has(rd.cls) || rd.bridge || rd.tunnel) continue;
       for (let i = 1; i < rd.pts.length; i++) {
         const seg = { a: rd.pts[i - 1], b: rd.pts[i], half: (WIDTH[rd.cls] ?? 7) / 2 + 0.3 };
@@ -1242,6 +1286,7 @@ export class World {
       mappedLamps.push([x, z]);
     }
     for (const rd of this.data.roads) {
+      if (++roadsSeen % 16 === 0) yield 'lamp roads';
       if (!DRIVABLE.has(rd.cls) || rd.cls === 'service' || (mapped && !mapped.include(rd))) continue;
       // The Connector has tall lights every ~50 m along both shoulders; streets every 28 m, alternating sides.
       const hwy = rd.cls === 'motorway' && rd.sub !== 'link';
@@ -1277,8 +1322,14 @@ export class World {
       this.lampHeads!.setMatrixAt(i, m);
     });
     post.castShadow = true;
+    // Far form: posts go; heads stay only while they glow (the same night factor as setNight).
+    post.name = 'Street lamp posts';
+    this.lampHeads.name = 'Street lamp heads';
+    registerFar(post, 0, { shadow: 'low' });
+    registerFar(this.lampHeads, 0, { glowAtNight: true });
     this.group.add(post, this.lampHeads);
-    this.bakeLightMap(spots, board);
+    yield 'lamps';
+    yield* this.bakeSteps(spots, board);
   }
 
   /**
@@ -1286,7 +1337,8 @@ export class World {
    * storefronts) painted into a texture over the board, added to the ground, street and
    * lot materials in proportion to the night factor.
    */
-  private bakeLightMap(spots: { x: number; z: number; pool?: number }[], board?: THREE.Mesh) {
+  /** Bakes the night light map; yields every 64 lamp pools and 64 buildings (core/slice.ts). */
+  private *bakeSteps(spots: { x: number; z: number; pool?: number }[], board?: THREE.Mesh) {
     const b = this.b;
     const PX = Math.max(1, Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / this.opts.lightMapMax); // metres per texel
     const c = document.createElement('canvas');
@@ -1307,9 +1359,14 @@ export class World {
       g.fillStyle = grad;
       g.fillRect(px - r / PX, pz - r / PX, (2 * r) / PX, (2 * r) / PX);
     };
-    for (const sp of spots) pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.pool ? 0.6 : 0.85); // ~3000 K LED/sodium mix
+    let pools = 0;
+    for (const sp of spots) {
+      pool(sp.x, sp.z, sp.pool ?? 17, '255,196,128', sp.pool ? 0.6 : 0.85); // ~3000 K LED/sodium mix
+      if (++pools % 64 === 0) yield 'light map';
+    }
     // Shopfront spill along building edges at street level.
     for (const bd of this.data.buildings) {
+      if (++pools % 64 === 0) yield 'light map';
       const ring = bd.rings[0];
       for (let i = 0; i < ring.length; i += 2) pool(ring[i][0], ring[i][1], 6, '255,214,160', 0.18);
     }

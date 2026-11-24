@@ -51,3 +51,53 @@ export function shadedQuad(builder: Builder, a: P2, b: P2, y0: number, y1: numbe
   builder.quad([a[0], y0, a[1]], [a[0], y1, a[1]], [b[0], y1, b[1]], [b[0], y0, b[1]], '#000000');
   for (let v = n; v < builder.pos.length; v += 3) builder.col.splice(v, 3, ...(builder.pos[v + 1] === y1 ? hi : lo));
 }
+
+/** A stable seed for a building id (FNV-1a), for litHash. */
+export function seedOf(id: string) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}
+
+/**
+ * The shared lit-pane hash: a uniform value in [0, 1) for one window (face, floor, bay) of a
+ * building, lit at night when it is below the building's occupancy. Every skin uses this rather
+ * than a linear modulus such as (floor * 29 + bay * 17) % 83, which lights diagonal staircases.
+ * Multiply-xorshift mixing with a murmur3-style finalizer (after skins-7's version).
+ */
+export function litHash(seed: number, face: number, floor: number, bay: number) {
+  let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(face + 1, 0xc2b2ae35);
+  h = Math.imul(h ^ Math.imul(floor + 1, 0x27d4eb2d), 0x165667b1) ^ Math.imul(bay + 7, 0x9e3779b1);
+  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
+  h = Math.imul(h, 0x297a2d39); h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+
+/** The parts of a landmarkShell that litFacade draws into. */
+interface FacadeShell { body: Builder; lights: Builder }
+
+/**
+ * landmarkShell.facade with the shared lit-pane hash: the same pane grid (rows between lo and hi,
+ * panes `bay` metres apart, `fill` and `verticalFill` of each cell), but each pane goes to the lamp
+ * mesh when litHash(seed, face, row, column) < occupancy, and its colour comes from the same hash
+ * (slot column + 4096). Faces run with the building on the left in the shell's (u, v) plan.
+ * It deliberately takes no library-surface glass parameter: panes are vertex colours only, so the
+ * landmark batcher can merge them.
+ */
+export function litFacade(
+  shell: FacadeShell, seed: number, face: number, a: P2, b: P2, lo: number, hi: number,
+  rows: number, bay: number, fill: number, verticalFill: number, colors: readonly string[], occupancy: number,
+) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+  if (len < 1e-6 || rows < 1) return;
+  const count = Math.max(1, Math.round(len / bay)), pitch = (hi - lo) / rows;
+  const point = (t: number, y: number) => [a[0] + t * dx + (0.07 * dz) / len, y, a[1] + t * dz - (0.07 * dx) / len];
+  for (let j = 0; j < rows; j++)
+    for (let i = 0; i < count; i++) {
+      const l = (i + (1 - fill) / 2) / count, r = (i + (1 + fill) / 2) / count;
+      const y = lo + (j + (1 - verticalFill) / 2) * pitch, top = y + verticalFill * pitch;
+      const target = litHash(seed, face, j, i) < occupancy ? shell.lights : shell.body;
+      const color = colors[Math.min(colors.length - 1, Math.floor(litHash(seed, face, j, i + 4096) * colors.length))];
+      target.quad(point(l, y), point(l, top), point(r, top), point(r, y), color);
+    }
+}

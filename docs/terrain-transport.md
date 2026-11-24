@@ -59,3 +59,16 @@ The extractor splits Overture's November 18, 2026 road and rail features by thei
 The extra JSON section takes 66,265 bytes, 17,658 bytes gzip-compressed on its own. With the group toggled on and off in Orca, the colour pass adds two draws and 37,388 triangles downtown. One directional shadow pass adds one draw and 24,820 triangles. Together they add three draws and 62,208 submitted triangles. These counts cover the static transport group across the board. City's postprocessing, trains and frame rate are separate measurements.
 
 Eleven road and pedestrian decks reach the board boundary. At the eastern motorway ramp, the interior endpoint samples 298.76 m while bare earth under the clipped end reads 291.18 m. The model carries the interior support height to the edge. [Orca edge check](log/ui/2026-11-21-transport-edge.jpg)
+
+## Freight centreline smoothing
+
+`bake()` smooths every run that carries `freightS` (see `smooth_freight` in `pipeline/scripts/terrain_transport.py`). The Overture source polyline turns at hard corners, so at a 12 m chord the drawn freight line bent as tightly as 65–100 m, and a 28.6 m car spanning a corner swung up to 1.3 m off the rails. The pass now does four things:
+
+- **Fillets.** Each free interior vertex gets a circular fillet of radius `MIN_RADIUS_M`, 150 m. Where the neighbouring segments are too short for that, it gets the largest radius that fits. On 2026-11-24 only two did: 128 m at the board edge at (−605, −1298), and 31–142 m within 6 m of the board edge at (1000, 556), where the turn is 1–2°.
+- **Pins.** These stay exact: run ends, every vertex another rail run shares (switches and junctions), bridge and tunnel ends, and board edges. So seams and junctions stay closed, and `freightS` end values and run ids and order are unchanged.
+- **Micro-segments.** Sub-centimetre segments, left by clipping at structure and board boundaries, are dropped.
+- **Shift caps.** Lateral shift from the source line is capped at 2 m on ground and 0.5 m on bridge decks. The largest actual shift was 0.16 m.
+
+Rails, ballast, cuts and bridges all draw from the smoothed `pts`. The radius check is `web/src/terrain/freight-curvature.test.ts`, which runs on generated data. The pipeline tests cover the minimum radius, junction closure and end pins.
+
+Changing this needs `pnpm data:city`, or just `.venv/bin/python pipeline/scripts/terrain_transport.py` against the downtown Overture extracts, followed by a web rebuild and redeploy. MARTA and streetcar lines are not smoothed. Their worst 12 m-chord radii are 18–42 m (MARTA) and 13–22 m (streetcar); some of those are real tight curves, and some are polyline corners.
