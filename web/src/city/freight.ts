@@ -86,6 +86,7 @@ export class CityFreight {
     const materials = [[], [startCut], [endCut], [startCut, endCut]].map(cuts =>
       new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: freightClipPlanes([...this.edges, ...cuts]), clipShadows: true }));
     this.materials.push(...materials);
+    for (const m of materials) this.batches.prewarm(m);
     const poses = Array.from({ length: MAX_UNITS }, () => {
       const pose = this.batches.createPose(materials[0]);
       pose.userData.trainId = 'illustrative:freight:downtown';
