@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { GroundGrid } from '../terrain/grid';
 import { createDowntownTerrain } from '../terrain/model';
 import type { VBuilding } from '../vignette/world';
+import { pointInRing } from '../vignette/geom';
 import { createSkylineLandmark } from './midtown-skyline';
 
 const row = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-upper/context.json', import.meta.url), 'utf8'));
@@ -392,4 +393,32 @@ it('replaces Alexan on 8th at its lidar roof', () => {
   expect(meshes[0].geometry.getAttribute('position').count / 3).toBeLessThanOrEqual(2400);
   const y = meshes[1].geometry.getAttribute('position');
   for (let i = 0; i < y.count; i++) expect(y.getY(i)).toBeLessThan(71);
+});
+
+it('keeps every part of Alexan on 8th on its footprint, within the 1.75 m balcony depth', () => {
+  const central = JSON.parse(readFileSync(new URL('../../../pipeline/prototypes/square-board/midtown-central/context.json', import.meta.url), 'utf8'));
+  const building: VBuilding = central.buildings.find((b: VBuilding) => b.id === 'osm:way:789975430');
+  const model = createSkylineLandmark([building], building, 0, () => 0)!;
+  model.group.updateMatrixWorld(true);
+  const ring = building.rings[0] as [number, number][];
+  const outside = (x: number, z: number) => pointInRing(x, z, ring) ? 0 : Math.min(...ring.map(([ax, az], k) => {
+    const [bx, bz] = ring[(k + 1) % ring.length], dx = bx - ax, dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  }));
+  let worst = 0, inNotch = 0;
+  const v = new Vector3();
+  model.group.traverse(o => {
+    if (!(o instanceof Mesh)) return;
+    const p = o.geometry.getAttribute('position');
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld);
+      const d = outside(v.x, v.z);
+      worst = Math.max(worst, d);
+      // The L's inside corner (west of the slab, north of the south-west leg) gets no balconies.
+      if (d > .2 && v.x > 345 && v.x < 360 && v.z > -2818 && v.z < -2812) inNotch++;
+    }
+  });
+  expect(worst).toBeLessThanOrEqual(1.75);
+  expect(inNotch).toBe(0);
 });
