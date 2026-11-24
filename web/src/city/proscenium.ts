@@ -31,7 +31,7 @@ export function createProscenium(buildings: VBuilding[], site: VBuilding, grid: 
   // The top five floors are wrapped in continuous blue glass ribbons.
   const datum = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const lobbyTop = datum + 6, ribbonBase = datum + 78, roof = datum + 98, bayTop = datum + 104;
-  const granite = '#d5cab7', trim = '#e1d8c7', roofColor = '#8e8c86';
+  const granite = '#dbd2c2', trim = '#e6dfd1', roofColor = '#8e8c86';
   const punched = ['#3d4c58', '#44535f'];
   const blue = ['#4a73a0', '#5480ab'];
   const lobby = ['#5b7480', '#627b87'];
