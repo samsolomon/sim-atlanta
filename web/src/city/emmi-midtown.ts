@@ -59,7 +59,7 @@ export function createEmmiMidtown(buildings: VBuilding[], site: VBuilding, grid:
 
   // Podium: pale fins over the louvres, a frame band at the deck edge.
   ring(podium, (a, b, len, i) => {
-    if (i === 3) return; // shared with the tower
+    if (i === 0 || i === 3) return; // shared with the tower
     const dx = b[0] - a[0], dz = b[1] - a[1], nx = dz / len, nz = -dx / len;
     const at = (t: number, y: number, out = 0.06) => [a[0] + t * dx + nx * out, y, a[1] + t * dz + nz * out];
     const quad = (l: number, r: number, lo: number, hi: number, c: string) =>
@@ -87,12 +87,12 @@ export function createEmmiMidtown(buildings: VBuilding[], site: VBuilding, grid:
     if (north) quad(0, 1, lobby, top, 0.04, glass);
     // South end of the Spring wing: a recessed balcony stack with pale slabs.
     const balconies = i === 8;
-    if (balconies) quad(0.3, 0.7, lobby, top, 0.05, letter);
+    if (balconies) quad(0.3, 0.7, lobby, top, 0.02, letter);
     for (let k = 0; k <= n; k++) {
       const w = (k === 0 || k === n ? 0.35 : 0.14) / len;
-      quad(Math.max(0, k / n - w), Math.min(1, k / n + w), low ? lobby : grade, top, 0.08, frame);
+      quad(Math.max(0, k / n - w), Math.min(1, k / n + w), low ? lobby + low * pitch : grade, top, 0.08, frame);
     }
-    for (let f = 0; f <= floors; f += 2) {
+    for (let f = low + (low % 2); f <= floors; f += 2) {
       const y = lobby + f * pitch;
       quad(0, 1, y - 0.18, y + 0.18, 0.07, frame);
     }
@@ -119,8 +119,8 @@ export function createEmmiMidtown(buildings: VBuilding[], site: VBuilding, grid:
         quad(k / n + 0.14 / len, (k + 2) / n - 0.14 / len, y + 0.2, y + pitch - 0.2, 0.05, glass, true);
       }
     }
-    // Lobby glazing glows along the streets.
-    if (len > 15 && !low) quad(0.08, 0.92, grade + 0.3, lobby - 0.6, 0.05, '#5d7385', true);
+    // Lobby glazing glows along 18th Street and Spring Street.
+    if (i === 0 || i === 9) quad(0.08, 0.92, grade + 0.3, lobby - 0.6, 0.05, '#5d7385', true);
   });
 
   // Spring Street entrance canopy (west face).
