@@ -3228,3 +3228,13 @@ to the existing shell batch, with no new draw or material.
 [furled or open umbrellas](log/ui/high-visitors/umbrella-options.jpg).
 
 **2026-11-23 — The Marriott Marquis stops smearing.** Sam asked whether a cream band down the hotel's curved face was texture or reality. It was neither. An ellipse of one-sided stone wedges filled up to 64% of each window mid-bulge, and at 0.3 m per pixel the slivers of glass left over aliased into vertical streaks. Photographs show the real piers splaying symmetrically into V fins that are widest at the terrace and gone about a dozen floors up. Rebuilding the flare that way keeps every bay a centred dark pane. A raycast test samples 168 bay centres on the lower bulge and fails on the old wedges (bay 6, floor 8 hit stone). No new material. [Before and after](log/ui/marriott-marquis/day-before-after.jpg)
+
+### 2026-11-23 — Where North Avenue meets its tunnel
+
+Sam kept seeing a dark band where North Avenue drops under the railway. The paint wasn't causing it. The open ramp at each mouth took its height from the board at only six points across 22.6 m, and the outer two sat on the bank. At the west mouth the lanes rose 1.3 m to meet a bank that had climbed onto the painted road. The east step was 0.3 m. The shadowed faces of those steps were the band. Vehicles followed the same function, so they ran up to 1.38 m away from the drawn pavement.
+
+The fix starts on the board. The site's existing DEM regrade now levels the road for 10 m beyond each mouth and eases back into the terrain by 30 m. The ramp follows the board at 1 m intervals across, then descends to the surveyed floor over 20 m. Its strips keep a fixed vertex count, so neighbouring rows share every vertex, and a 0.4 m apron tucks under the board to close the seam. A new test compares the board and the drawn pavement across both mouths on both tiers. At baseline it found a 1.40 m step, 1.38 m vehicle error and 4.6 m cross-fall. After the fix those are 0.04 m, 0.01 m and 0.05 m.
+
+Markings were the second seam. The board paints one yellow line down each mapped carriageway. At the mouths those lines are 1–1.7 m from the pale dashes the cut drew. The cut now carries the board's own line from mouth to mouth, and the median nose and kerbs grow from zero width over 12 m. The low tier adds 4,399 triangles for the whole underpass, within its 5,000 cap. Shader programs stay at 90 of 90.
+
+[West mouth, before and after](log/underpass-road-joins/join-compare-na-west-a-high-14.jpg) · [East mouth](log/underpass-road-joins/join-compare-na-east-a-high-14.jpg) · [West at night](log/underpass-road-joins/join-compare-na-west-a-high-23.jpg)
