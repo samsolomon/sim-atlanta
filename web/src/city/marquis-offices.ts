@@ -53,15 +53,19 @@ export function wallRuns(ring: P2[]): [P2, P2][] {
 
 /** Bay line skipped by the elongated V on a given course, or none. Apexes sit at the lobby. */
 export function vLines(bays: number, floor: number, count = 3): Set<number> {
-  const lines = new Set<number>();
+  const wanted: number[] = [];
   const half = bays / count / 2;
   for (let k = 0; k < count; k++) {
-    const centre = (k + 0.5) * bays / count,
-      spread = ((floor + 0.5) / FLOORS) * half;
-    for (const x of [centre - spread, centre + spread]) {
-      const line = Math.round(x);
-      if (line > 0 && line < bays) lines.add(line);
+    const centre = Math.round((k + 0.5) * bays / count),
+      spread = Math.round(((floor + 0.5) / FLOORS) * half);
+    for (const line of [centre - spread, centre + spread]) {
+      if (line > 0 && line < bays) wanted.push(line);
     }
+  }
+  // A double pane spans two bays, so neighbouring lines would overlap: keep the first.
+  const lines = new Set<number>();
+  for (const line of wanted.sort((a, b) => a - b)) {
+    if (!lines.has(line - 1)) lines.add(line);
   }
   return lines;
 }
