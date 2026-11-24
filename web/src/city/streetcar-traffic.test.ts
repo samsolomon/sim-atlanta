@@ -82,3 +82,35 @@ it('updates arterial queues throughout a full day including 21:00 and backward c
     expect(snapshot()).toEqual(fresh.group.children.map(o=>Array.from((o as InstancedMesh).instanceMatrix.array.slice(0,(o as InstancedMesh).count*16))));
   } finally {fleet.dispose();fresh.dispose();}
 });
+
+it('lights the stopped lead car behind a scheduled streetcar and clears its lamps as it moves',()=>{
+  const road=course([[0,0],[300,0]]).roads[0];
+  const city={bounds:{minX:-10,maxX:310,minZ:-10,maxZ:10},roads:[road],rail:[],buildings:[]};
+  const height=cityRoadHeight(city,()=>0);
+  const departure=Date.parse('2026-11-20T21:00:00-05:00');
+  const fleet=new ArterialTraffic({city,quality:'low',roadHeight:height,
+    hourly:{weekday:Array(24).fill(1/24),weekend:Array(24).fill(1/24)},
+    arterials:[{id:'tram',runs:[{road,from:'a',to:'b',allow:'forward',
+      lanes:{forward:1},aadt:{forward:80000,reverse:0},truckShare:0,speedMph:24}]}],
+    movingBlocks:streetcarTraffic(rf,origin,ms=>[state(60+Math.max(0,ms-departure)*.004)],()=>0,height)});
+  function leadCar(ms:number) {
+    fleet.update(ms,0);
+    const cars=fleet.group.children.flatMap(object=>{
+      const mesh=object as InstancedMesh;
+      return Array.from({length:mesh.count},(_,i)=>({
+        x:mesh.instanceMatrix.array[16*i+12], brake:mesh.geometry.getAttribute('braking').getX(i)
+      }));
+    });
+    return cars.sort((a,b)=>b.x-a.x)[0];
+  }
+  try {
+    const held=leadCar(departure-1000);
+    expect(held.x).toBeCloseTo(43.495,2);
+    expect(leadCar(departure-250)).toEqual(held);
+    expect(held.brake).toBe(1);
+    const moving=leadCar(departure+250);
+    expect(moving.x).toBeCloseTo(held.x+1,2);
+    expect(moving.brake).toBe(0);
+    expect(leadCar(departure-250)).toEqual(held);
+  } finally {fleet.dispose();}
+});

@@ -1,0 +1,1444 @@
+{
+  "r14": {
+    "wide": [
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 18.472457885742188,
+        "z": -2899.608154296875,
+        "y": -43.593223571777344,
+        "course": 3,
+        "road": null,
+        "way": 978061546,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000008236372342888154,
+        "screen": [
+          277.0845066921216,
+          -78.73856909901662
+        ],
+        "heading": [
+          0.12867696583271027,
+          0.9910863637924194
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "978061546/0",
+        "laneFromMedian": 1,
+        "laneCount": 1,
+        "laneCenterErrorM": 0.000008236372330635013
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 49.633113861083984,
+        "z": -2767.054931640625,
+        "y": -39.455326080322266,
+        "course": 30,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.0000015402095764157542,
+        "screen": [
+          364.6532917466705,
+          32.90627201016051
+        ],
+        "heading": [
+          0.002804183168336749,
+          0.9999960660934448
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 1,
+        "laneCount": 8,
+        "laneCenterErrorM": 0.0000015402095725240223
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 59.52947235107422,
+        "z": -2731.401611328125,
+        "y": -38.61689376831055,
+        "course": 33,
+        "road": "Downtown Connector",
+        "way": 316454375,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000004006701169381621,
+        "screen": [
+          396.0628969978521,
+          68.73391462546732
+        ],
+        "heading": [
+          -0.052435602992773056,
+          -0.9984796643257141
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "316454375/0",
+        "laneFromMedian": 1,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000004006701170081576
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 70.1461410522461,
+        "z": -2732.31591796875,
+        "y": -38.922245025634766,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 316454375,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000004346469091159344,
+        "screen": [
+          420.3907645259446,
+          66.40527026102824
+        ],
+        "heading": [
+          -0.0524350181221962,
+          -0.9984684586524963
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "316454375/0",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.0000043464690979726325
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 102.59943389892578,
+        "z": -2217.806884765625,
+        "y": -33.96968460083008,
+        "course": 45,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000009895135942954125,
+        "screen": [
+          944.558743073235,
+          1372.0538004894763
+        ],
+        "heading": [
+          0.0800696313381195,
+          0.9967778921127319
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 7,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000009895135925127007
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 117.72148132324219,
+        "z": -2206.89599609375,
+        "y": -33.078189849853516,
+        "course": 50,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000006864926652025221,
+        "screen": [
+          1046.7103395725376,
+          1421.6423021622113
+        ],
+        "heading": [
+          0.08000117540359497,
+          0.99673992395401
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 3,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000006864926674671866
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 38.87708282470703,
+        "z": -2804.851318359375,
+        "y": -40.00828170776367,
+        "course": 51,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 7.815152358977923e-7,
+        "screen": [
+          333.1815063811324,
+          -2.913182416086215
+        ],
+        "heading": [
+          0.002803252311423421,
+          0.9996641874313354
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 4,
+        "laneCount": 8,
+        "laneCenterErrorM": 7.81515235780514e-7
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "suv",
+        "x": 98.5113296508789,
+        "z": -2275.002197265625,
+        "y": -34.653743743896484,
+        "course": 19,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000015754408086460744,
+        "screen": [
+          825.3434710415527,
+          1081.3360085345664
+        ],
+        "heading": [
+          0.16146452724933624,
+          0.9867433309555054
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 6,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.00001575440807206024
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "box",
+        "x": 44.079524993896484,
+        "z": -2890.654052734375,
+        "y": -43.17774963378906,
+        "course": 15,
+        "road": "Downtown Connector",
+        "way": 337901433,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 9.157806818042639e-7,
+        "screen": [
+          329.022758558898,
+          -75.43513517859459
+        ],
+        "heading": [
+          0.0007153844344429672,
+          0.9992012977600098
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901433/0",
+        "laneFromMedian": 2,
+        "laneCount": 7,
+        "laneCenterErrorM": 9.157806839230272e-7
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 258.9011535644531,
+        "z": -2498.3935546875,
+        "y": -28.6946964263916,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 1103152009,
+        "grade": "ground",
+        "laneErrorM": 5.964838026408177e-7,
+        "screen": [
+          1079.1219405164413,
+          341.29488619299536
+        ],
+        "heading": [
+          -0.011703378520905972,
+          0.9996633529663086
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "laneCount": 4,
+        "axisOffsetM": 5.964837982147792e-7,
+        "direction": "source-forward"
+      }
+    ],
+    "brakes": [
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 18.472457885742188,
+        "z": -2899.608154296875,
+        "y": -43.593223571777344,
+        "course": 3,
+        "road": null,
+        "way": 978061546,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000008236372342888154,
+        "screen": [
+          239.0814794259743,
+          -119.56117655032372
+        ],
+        "heading": [
+          0.12867696583271027,
+          0.9910863637924194
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "978061546/0",
+        "laneFromMedian": 1,
+        "laneCount": 1,
+        "laneCenterErrorM": 0.000008236372330635013
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 49.633113861083984,
+        "z": -2767.054931640625,
+        "y": -39.455326080322266,
+        "course": 30,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.0000015402095764157542,
+        "screen": [
+          286.1797600855348,
+          -90.64919406138856
+        ],
+        "heading": [
+          0.002804183168336749,
+          0.9999960660934448
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 1,
+        "laneCount": 8,
+        "laneCenterErrorM": 0.0000015402095725240223
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 59.52947235107422,
+        "z": -2731.401611328125,
+        "y": -38.61689376831055,
+        "course": 33,
+        "road": "Downtown Connector",
+        "way": 316454375,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000004006701169381621,
+        "screen": [
+          309.8848008518291,
+          -78.72250177709248
+        ],
+        "heading": [
+          -0.052435602992773056,
+          -0.9984796643257141
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "316454375/0",
+        "laneFromMedian": 1,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000004006701170081576
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 70.1461410522461,
+        "z": -2732.31591796875,
+        "y": -38.922245025634766,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 316454375,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000004346469091159344,
+        "screen": [
+          352.7081822129368,
+          -77.89287063959257
+        ],
+        "heading": [
+          -0.0524350181221962,
+          -0.9984684586524963
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "316454375/0",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.0000043464690979726325
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 38.87708282470703,
+        "z": -2804.851318359375,
+        "y": -40.00828170776367,
+        "course": 51,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 7.815152358977923e-7,
+        "screen": [
+          263.73083573892484,
+          -102.64362517563505
+        ],
+        "heading": [
+          0.002803252311423421,
+          0.9996641874313354
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 4,
+        "laneCount": 8,
+        "laneCenterErrorM": 7.81515235780514e-7
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "suv",
+        "x": 98.5113296508789,
+        "z": -2275.002197265625,
+        "y": -34.653743743896484,
+        "course": 19,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000015754408086460744,
+        "screen": [
+          778.6572458239518,
+          -4202.624039318985
+        ],
+        "heading": [
+          0.16146452724933624,
+          0.9867433309555054
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 6,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.00001575440807206024
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "box",
+        "x": 44.079524993896484,
+        "z": -2890.654052734375,
+        "y": -43.17774963378906,
+        "course": 15,
+        "road": "Downtown Connector",
+        "way": 337901433,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 9.157806818042639e-7,
+        "screen": [
+          310.39748049895695,
+          -118.42648742065244
+        ],
+        "heading": [
+          0.0007153844344429672,
+          0.9992012977600098
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901433/0",
+        "laneFromMedian": 2,
+        "laneCount": 7,
+        "laneCenterErrorM": 9.157806839230272e-7
+      }
+    ],
+    "fifth": [],
+    "spring": [
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 258.9011535644531,
+        "z": -2498.3935546875,
+        "y": -28.6946964263916,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 1103152009,
+        "grade": "ground",
+        "laneErrorM": 5.964838026408177e-7,
+        "screen": [
+          478.3619266225838,
+          309.08025489016416
+        ],
+        "heading": [
+          -0.011703378520905972,
+          0.9996633529663086
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 4,
+        "axisOffsetM": 5.964837982147792e-7,
+        "direction": "source-forward"
+      }
+    ],
+    "spring10": [
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 198.73687744140625,
+        "z": -3071.846435546875,
+        "y": -30.914318084716797,
+        "course": 22,
+        "road": "10th Street Northwest",
+        "way": 311764287,
+        "grade": "ground",
+        "laneErrorM": 0.000031074756429113724,
+        "screen": [
+          139.83805698851293,
+          309.94147778251596
+        ],
+        "heading": [
+          -0.9989115595817566,
+          -0.002823866903781891
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 6,
+        "axisOffsetM": 1.999919721763829,
+        "direction": "source-forward"
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "suv",
+        "x": 221.55865478515625,
+        "z": -3086.799072265625,
+        "y": -28.799705505371094,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 48663359,
+        "grade": "ground",
+        "laneErrorM": 0.000009482296451653551,
+        "screen": [
+          473.7208885675658,
+          100.0187451649969
+        ],
+        "heading": [
+          0.055633291602134705,
+          0.9964277744293213
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 4,
+        "axisOffsetM": -0.000009482296463991567,
+        "direction": "source-forward"
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "suv",
+        "x": 222.43756103515625,
+        "z": -3079.9697265625,
+        "y": -29.264596939086914,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 48663359,
+        "grade": "ground",
+        "laneErrorM": 0.000002840510560750868,
+        "screen": [
+          486.3291390310101,
+          191.47462880882955
+        ],
+        "heading": [
+          0.1845993846654892,
+          0.9810338020324707
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 4,
+        "axisOffsetM": 0.0000028405105414894256,
+        "direction": "source-forward"
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "suv",
+        "x": 249.9317169189453,
+        "z": -3067.726806640625,
+        "y": -29.940645217895508,
+        "course": 23,
+        "road": "10th Street Northwest",
+        "way": 629238141,
+        "grade": "ground",
+        "laneErrorM": 0.00011305386654259262,
+        "screen": [
+          897.0362084715613,
+          362.55632711017057
+        ],
+        "heading": [
+          0.9999462366104126,
+          -0.0011647609062492847
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 6,
+        "axisOffsetM": -2.0001130472386675,
+        "direction": "source-reverse"
+      }
+    ]
+  },
+  "integrated": {
+    "wide": [
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 98.5113296508789,
+        "z": -2275.002197265625,
+        "y": -34.65275955200195,
+        "course": 19,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000015754408086460744,
+        "screen": [
+          825.3440647394717,
+          1081.333694938954
+        ],
+        "heading": [
+          0.16146452724933624,
+          0.9867433309555054
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 6,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.00001575440807206024
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 82.75205993652344,
+        "z": -2656.16845703125,
+        "y": -39.63671875,
+        "course": 44,
+        "road": "Downtown Connector",
+        "way": 316454375,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000006563964057074024,
+        "screen": [
+          476.8206593029008,
+          159.6499737246603
+        ],
+        "heading": [
+          -0.10842261463403702,
+          -0.9940792918205261
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "316454375/0",
+        "laneFromMedian": 6,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.00000656396408042758
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 38.87708282470703,
+        "z": -2804.851318359375,
+        "y": -40.00828170776367,
+        "course": 51,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 7.815152358977923e-7,
+        "screen": [
+          333.1815063811324,
+          -2.913182416086215
+        ],
+        "heading": [
+          0.002803252311423421,
+          0.9996641874313354
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 4,
+        "laneCount": 8,
+        "laneCenterErrorM": 7.81515235780514e-7
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "suv",
+        "x": 18.472457885742188,
+        "z": -2899.608154296875,
+        "y": -43.593223571777344,
+        "course": 3,
+        "road": null,
+        "way": 978061546,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000008236372342888154,
+        "screen": [
+          277.0845066921216,
+          -78.73856909901662
+        ],
+        "heading": [
+          0.12867696583271027,
+          0.9910863637924194
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "978061546/0",
+        "laneFromMedian": 1,
+        "laneCount": 1,
+        "laneCenterErrorM": 0.000008236372330635013
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "suv",
+        "x": 137.2593231201172,
+        "z": -2245.176513671875,
+        "y": -33.07958984375,
+        "course": 38,
+        "road": "Downtown Connector",
+        "way": 119686421,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000012061655396793018,
+        "screen": [
+          1057.6992430719158,
+          1190.7668845173412
+        ],
+        "heading": [
+          -0.0808638259768486,
+          -0.9967198371887207
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "119686421/1",
+        "laneFromMedian": 3,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000012061655415401251
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "box",
+        "x": 44.079524993896484,
+        "z": -2890.654052734375,
+        "y": -43.17774963378906,
+        "course": 15,
+        "road": "Downtown Connector",
+        "way": 337901433,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 9.157806818042639e-7,
+        "screen": [
+          329.022758558898,
+          -75.43513517859459
+        ],
+        "heading": [
+          0.0007153844344429672,
+          0.9992012977600098
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901433/0",
+        "laneFromMedian": 2,
+        "laneCount": 7,
+        "laneCenterErrorM": 9.157806839230272e-7
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 75.49243927001953,
+        "z": -2580.893310546875,
+        "y": -39.499244689941406,
+        "course": 33,
+        "road": "Downtown Connector",
+        "way": 560940891,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000003943045755434876,
+        "screen": [
+          489.3354524889792,
+          272.69891975827625
+        ],
+        "heading": [
+          -0.15419021248817444,
+          -0.9879390001296997
+        ],
+        "opacity": 1,
+        "visibility": "occluded",
+        "ribbon": "560940891/0",
+        "laneFromMedian": 1,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000003943045757448391
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 86.24153900146484,
+        "z": -2581.080322265625,
+        "y": -38.34700393676758,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 560940891,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000014009808268283291,
+        "screen": [
+          518.7933062219612,
+          267.0343681534239
+        ],
+        "heading": [
+          -0.153968945145607,
+          -0.9868527054786682
+        ],
+        "opacity": 1,
+        "visibility": "occluded",
+        "ribbon": "560940891/0",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000014009808246422894
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 102.59943389892578,
+        "z": -2217.806884765625,
+        "y": -33.967105865478516,
+        "course": 45,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000009895135942954125,
+        "screen": [
+          944.5611375158695,
+          1372.048362470424
+        ],
+        "heading": [
+          0.08006998151540756,
+          0.9967822432518005
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 7,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000009895135925127007
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "pickup",
+        "x": 110.90982055664062,
+        "z": -2416.915771484375,
+        "y": -36.508338928222656,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 119686421,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000013457916764835495,
+        "screen": [
+          706.2373443884593,
+          592.1666473943197
+        ],
+        "heading": [
+          -0.15854407846927643,
+          -0.987154483795166
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "119686421/1",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000013457916789838107
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "pickup",
+        "x": 117.72148132324219,
+        "z": -2206.89599609375,
+        "y": -33.08303451538086,
+        "course": 50,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000006864926652025221,
+        "screen": [
+          1046.7047211564127,
+          1421.6522704894442
+        ],
+        "heading": [
+          0.0800040066242218,
+          0.9967336058616638
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 3,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000006864926674671866
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "van",
+        "x": 49.633113861083984,
+        "z": -2767.054931640625,
+        "y": -39.453758239746094,
+        "course": 30,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.0000015402095764157542,
+        "screen": [
+          364.65313971787316,
+          32.90311640727534
+        ],
+        "heading": [
+          0.0028041815385222435,
+          0.9999954700469971
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 1,
+        "laneCount": 8,
+        "laneCenterErrorM": 0.0000015402095725240223
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "semi",
+        "x": 138.92828369140625,
+        "z": -2279.843994140625,
+        "y": -33.459747314453125,
+        "course": 11,
+        "road": "Downtown Connector",
+        "way": 119686421,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000008267756688611862,
+        "screen": [
+          996.5137317782567,
+          1028.8867344154717
+        ],
+        "heading": [
+          -0.18332761526107788,
+          -0.9828107953071594
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "119686421/1",
+        "laneFromMedian": 5,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000008267756735400014
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 260.4511413574219,
+        "z": -2498.38330078125,
+        "y": -28.70402717590332,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 1103152009,
+        "grade": "ground",
+        "laneErrorM": 8.370481149078811e-7,
+        "screen": [
+          1083.5629468434383,
+          340.87579597189546
+        ],
+        "heading": [
+          -0.01170320250093937,
+          0.9996697902679443
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "laneCount": 4,
+        "axisOffsetM": -1.5500008328455102,
+        "direction": "source-forward",
+        "slotFromSourceLeft": 2,
+        "laneCenterErrorM": 8.328455101125343e-7
+      }
+    ],
+    "brakes": [
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 98.5113296508789,
+        "z": -2275.002197265625,
+        "y": -34.65275955200195,
+        "course": 19,
+        "road": "Downtown Connector",
+        "way": 337901430,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000015754408086460744,
+        "screen": [
+          778.6520181037604,
+          -4202.4657030383905
+        ],
+        "heading": [
+          0.16146452724933624,
+          0.9867433309555054
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901430/0",
+        "laneFromMedian": 6,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.00001575440807206024
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 82.75205993652344,
+        "z": -2656.16845703125,
+        "y": -39.63671875,
+        "course": 44,
+        "road": "Downtown Connector",
+        "way": 316454375,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000006563964057074024,
+        "screen": [
+          386.98145548394336,
+          -32.08009910725181
+        ],
+        "heading": [
+          -0.10842261463403702,
+          -0.9940792918205261
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "316454375/0",
+        "laneFromMedian": 6,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.00000656396408042758
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "sedan",
+        "x": 38.87708282470703,
+        "z": -2804.851318359375,
+        "y": -40.00828170776367,
+        "course": 51,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 7.815152358977923e-7,
+        "screen": [
+          263.73083573892484,
+          -102.64362517563505
+        ],
+        "heading": [
+          0.002803252311423421,
+          0.9996641874313354
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 4,
+        "laneCount": 8,
+        "laneCenterErrorM": 7.81515235780514e-7
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "suv",
+        "x": 18.472457885742188,
+        "z": -2899.608154296875,
+        "y": -43.593223571777344,
+        "course": 3,
+        "road": null,
+        "way": 978061546,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.000008236372342888154,
+        "screen": [
+          239.0814794259743,
+          -119.56117655032372
+        ],
+        "heading": [
+          0.12867696583271027,
+          0.9910863637924194
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "978061546/0",
+        "laneFromMedian": 1,
+        "laneCount": 1,
+        "laneCenterErrorM": 0.000008236372330635013
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "box",
+        "x": 44.079524993896484,
+        "z": -2890.654052734375,
+        "y": -43.17774963378906,
+        "course": 15,
+        "road": "Downtown Connector",
+        "way": 337901433,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 9.157806818042639e-7,
+        "screen": [
+          310.39748049895695,
+          -118.42648742065244
+        ],
+        "heading": [
+          0.0007153844344429672,
+          0.9992012977600098
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901433/0",
+        "laneFromMedian": 2,
+        "laneCount": 7,
+        "laneCenterErrorM": 9.157806839230272e-7
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 75.49243927001953,
+        "z": -2580.893310546875,
+        "y": -39.499244689941406,
+        "course": 33,
+        "road": "Downtown Connector",
+        "way": 560940891,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000003943045755434876,
+        "screen": [
+          318.2993274345785,
+          31.839869937395413
+        ],
+        "heading": [
+          -0.15419021248817444,
+          -0.9879390001296997
+        ],
+        "opacity": 1,
+        "visibility": "occluded",
+        "ribbon": "560940891/0",
+        "laneFromMedian": 1,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000003943045757448391
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 86.24153900146484,
+        "z": -2581.080322265625,
+        "y": -38.34700393676758,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 560940891,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000014009808268283291,
+        "screen": [
+          383.7928392025881,
+          24.605710631955482
+        ],
+        "heading": [
+          -0.153968945145607,
+          -0.9868527054786682
+        ],
+        "opacity": 1,
+        "visibility": "occluded",
+        "ribbon": "560940891/0",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000014009808246422894
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "pickup",
+        "x": 110.90982055664062,
+        "z": -2416.915771484375,
+        "y": -36.508338928222656,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 119686421,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000013457916764835495,
+        "screen": [
+          607.8142004953041,
+          406.5747573155505
+        ],
+        "heading": [
+          -0.15854407846927643,
+          -0.987154483795166
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "ribbon": "119686421/1",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000013457916789838107
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "van",
+        "x": 49.633113861083984,
+        "z": -2767.054931640625,
+        "y": -39.453758239746094,
+        "course": 30,
+        "road": "Downtown Connector",
+        "way": 337901434,
+        "direction": "southbound",
+        "grade": "ground",
+        "laneErrorM": 0.0000015402095764157542,
+        "screen": [
+          286.17952641825576,
+          -90.65514207367663
+        ],
+        "heading": [
+          0.0028041815385222435,
+          0.9999954700469971
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "337901434/0",
+        "laneFromMedian": 1,
+        "laneCount": 8,
+        "laneCenterErrorM": 0.0000015402095725240223
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "semi",
+        "x": 138.92828369140625,
+        "z": -2279.843994140625,
+        "y": -33.459747314453125,
+        "course": 11,
+        "road": "Downtown Connector",
+        "way": 119686421,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000008267756688611862,
+        "screen": [
+          -3549.0438180068854,
+          -5140.85991804614
+        ],
+        "heading": [
+          -0.18332761526107788,
+          -0.9828107953071594
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "ribbon": "119686421/1",
+        "laneFromMedian": 5,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000008267756735400014
+      }
+    ],
+    "fifth": [
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 75.49243927001953,
+        "z": -2580.893310546875,
+        "y": -39.499244689941406,
+        "course": 33,
+        "road": "Downtown Connector",
+        "way": 560940891,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000003943045755434876,
+        "screen": [
+          512.6334174661512,
+          143.21501148050936
+        ],
+        "heading": [
+          -0.15419021248817444,
+          -0.9879390001296997
+        ],
+        "opacity": 1,
+        "visibility": "occluded",
+        "ribbon": "560940891/0",
+        "laneFromMedian": 1,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000003943045757448391
+      },
+      {
+        "group": "Illustrative Connector traffic",
+        "kind": "hatch",
+        "x": 86.24153900146484,
+        "z": -2581.080322265625,
+        "y": -38.34700393676758,
+        "course": 39,
+        "road": "Downtown Connector",
+        "way": 560940891,
+        "direction": "northbound",
+        "grade": "ground",
+        "laneErrorM": 0.000014009808268283291,
+        "screen": [
+          613.8471857537585,
+          136.83138893145554
+        ],
+        "heading": [
+          -0.153968945145607,
+          -0.9868527054786682
+        ],
+        "opacity": 1,
+        "visibility": "occluded",
+        "ribbon": "560940891/0",
+        "laneFromMedian": 4,
+        "laneCount": 7,
+        "laneCenterErrorM": 0.000014009808246422894
+      }
+    ],
+    "spring": [
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 260.4511413574219,
+        "z": -2498.38330078125,
+        "y": -28.70402717590332,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 1103152009,
+        "grade": "ground",
+        "laneErrorM": 8.370481149078811e-7,
+        "screen": [
+          504.04689789407416,
+          309.2933867723134
+        ],
+        "heading": [
+          -0.01170320250093937,
+          0.9996697902679443
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 4,
+        "axisOffsetM": -1.5500008328455102,
+        "direction": "source-forward",
+        "slotFromSourceLeft": 2,
+        "laneCenterErrorM": 8.328455101125343e-7
+      }
+    ],
+    "spring10": [
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 223.00323486328125,
+        "z": -3088.676025390625,
+        "y": -28.709497451782227,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 48663359,
+        "grade": "ground",
+        "laneErrorM": 0.000008355495117203076,
+        "screen": [
+          494.20483334035066,
+          75.66297939708096
+        ],
+        "heading": [
+          0.055586326867341995,
+          0.9965944290161133
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 4,
+        "axisOffsetM": -1.5469756963620438,
+        "direction": "source-forward",
+        "slotFromSourceLeft": 2,
+        "laneCenterErrorM": 0.0030243036379562493
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 233.58169555664062,
+        "z": -3011.111572265625,
+        "y": -33.212459564208984,
+        "course": 9,
+        "road": "Spring Street Northwest",
+        "way": 306157879,
+        "grade": "ground",
+        "laneErrorM": 0.000011557247212831462,
+        "screen": [
+          682.8953193315358,
+          1321.5434713987083
+        ],
+        "heading": [
+          0.1468018740415573,
+          0.9871506690979004
+        ],
+        "opacity": 1,
+        "visibility": "offscreen",
+        "laneCount": 3,
+        "axisOffsetM": 0.000011557247213298107,
+        "direction": "source-forward",
+        "slotFromSourceLeft": 2,
+        "laneCenterErrorM": 0.000011557247213298107
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "sedan",
+        "x": 245.3490447998047,
+        "z": -3068.171630859375,
+        "y": -29.99789047241211,
+        "course": 23,
+        "road": "10th Street Northwest",
+        "way": 629238141,
+        "grade": "ground",
+        "laneErrorM": 0.00004886384108273186,
+        "screen": [
+          827.9644567348389,
+          356.5394638452009
+        ],
+        "heading": [
+          0.9998130798339844,
+          -0.0011694255517795682
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 6,
+        "axisOffsetM": -1.5499511349069628,
+        "direction": "source-reverse",
+        "slotFromSourceLeft": 3,
+        "laneCenterErrorM": 0.000048865093037253615
+      },
+      {
+        "group": "Illustrative Midtown arterial traffic",
+        "kind": "suv",
+        "x": 204.4293670654297,
+        "z": -3071.38037109375,
+        "y": -30.590585708618164,
+        "course": 22,
+        "road": "10th Street Northwest",
+        "way": 311764287,
+        "grade": "ground",
+        "laneErrorM": 0.0000023042695250896326,
+        "screen": [
+          222.01337492418537,
+          314.70461285568524
+        ],
+        "heading": [
+          -0.9978470802307129,
+          -0.00445203110575676
+        ],
+        "opacity": 1,
+        "visibility": "visible",
+        "laneCount": 6,
+        "axisOffsetM": 1.5499945382694145,
+        "direction": "source-forward",
+        "slotFromSourceLeft": 4,
+        "laneCenterErrorM": 0.000005461730585576419
+      }
+    ]
+  }
+}

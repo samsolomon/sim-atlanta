@@ -20,6 +20,8 @@ export class MovingQueue {
   private cohort: readonly QueueTrip[] = [];
   private shown: (number | null)[] = [];
   private rebuilding = false;
+  /** Indexed like the poses returned by at(), including during a replay rebuild. */
+  brakes: boolean[] = [];
   steps = 0;
 
   constructor(private readonly signals: readonly CourseSignal[], private readonly length: number,
@@ -29,6 +31,7 @@ export class MovingQueue {
     if (!trips.length) {
       this.lastClock = -Infinity;
       this.shown = [];
+      this.brakes = [];
       return [];
     }
     const delta = now - this.lastClock;
@@ -44,12 +47,13 @@ export class MovingQueue {
         // Keep the last drawn pose of each surviving trip during catch-up.
         // A recycled slot must never inherit its predecessor's position.
         const previous = this.cohort.slice();
-        this.shown = trips.map(trip => {
+        const indices = trips.map(trip => {
           const i = previous.findIndex(p => p?.start === trip.start && p.length === trip.length);
-          if (i < 0) return null;
-          delete previous[i];
-          return this.shown[i];
+          if (i >= 0) delete previous[i];
+          return i;
         });
+        this.shown = indices.map(i => this.shown[i] ?? null);
+        this.brakes = indices.map(i => this.brakes[i] ?? false);
       }
       // A copy: callers may reuse and update their trip objects in place between frames.
       this.cohort = trips.map(trip => ({ ...trip }));
@@ -67,10 +71,11 @@ export class MovingQueue {
     this.rebuilding = false;
     const from = this.tick*STEP;
     let positions = this.positions;
+    // The forward grid pose distinguishes a real hold from two draws at a pinned clock.
+    const next = this.advance(trips, order, this.positions, from, from+STEP);
     if (now > from) {
       // Interpolate immutable grid states. Sampling a newly entering streetcar
       // at arbitrary frame times could otherwise pull a fractional frame back.
-      const next = this.advance(trips, order, this.positions, from, from+STEP);
       const signalLimit = this.advance(trips, order, this.positions, from, now, []);
       positions = trips.map((trip,i) => {
         if (trip.start>now || next[i]===null) return null;
@@ -80,6 +85,11 @@ export class MovingQueue {
       });
     }
     this.shown = positions.map(p => p !== null && p <= this.length ? p : null);
+    this.brakes.length = trips.length;
+    for (let i = 0; i < trips.length; i++) {
+      const shown = this.shown[i], end = next[i];
+      this.brakes[i] = shown !== null && end !== null && end <= shown + 1e-7;
+    }
     return this.shown;
   }
 

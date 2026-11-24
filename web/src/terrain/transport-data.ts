@@ -1,3 +1,4 @@
+import { streetProfile } from './street-profile';
 import type { P2 } from '../vignette/geom';
 import type { VData } from '../vignette/world';
 
@@ -53,6 +54,8 @@ export const ANSLEY_WIDTHS: Record<string, number> = {
 };
 
 export function roadWidth(road: RoadDimensions) {
+  const profile = streetProfile(road);
+  if (profile) return profile.width;
   if (dividedIvanAllen(road)) return 7.2;
   const ansley = road.cls === 'residential' && road.name ? ANSLEY_WIDTHS[road.name] : undefined;
   if (ansley && road.pts?.some(([x, z]) => inAnsleyStreets(x, z))) return ansley;
