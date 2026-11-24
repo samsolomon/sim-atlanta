@@ -36,6 +36,7 @@ import { GroundGrid, type GroundManifest } from '../terrain/grid';
 import { GroundSurface } from '../terrain/surface';
 import { inConnectorLanes } from '../terrain/connector-paint';
 import { createDowntownTerrain, takeGroundLodChange } from '../terrain/model';
+import { takeFarChange, updateFarForms } from '../terrain/far-form';
 import { underpassDrive } from './underpass-drive';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity } from '../terrain/transport-data';
@@ -1440,7 +1441,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     const t = controls.target;
     // A house tile that swapped its near and far versions changes what casts shadows.
     // Bitwise so both flags are consumed every frame (the house one also counts frames).
-    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange())) renderer.shadowMap.needsUpdate = true;
+    // Transport far form (terrain/far-form.ts): lamp heads follow the same glow as world.setNight.
+    updateFarForms(camera.position, low ? 'low' : 'high', world.night.value);
+    if (Number(takeHouseLodChange()) | Number(takeGroundLodChange()) | Number(takeFarChange())) renderer.shadowMap.needsUpdate = true;
     const snap = (v: number) => SHADOW_STEP_M ? Math.round(v / SHADOW_STEP_M) * SHADOW_STEP_M : v;
     const sx = snap(t.x), sz = snap(t.z);
     const now = performance.now();
