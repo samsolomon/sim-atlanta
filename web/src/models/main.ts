@@ -11,7 +11,7 @@ import { CAR_GAP, CAR_LENGTH, LINE_COLORS, cq400Geometry, cq400Material, type Ma
 import { gradeShader } from '../vignette/grade';
 import { xe60Geometry, xe60Material, xe60DepthMaterial, xe60Pose } from '../vignette/xe60';
 import { busGeometry, RAPID_LIVERY, busMaterial } from '../vignette/xcelsior';
-import { FREIGHT_LENGTH, freightGeometry } from '../vignette/freight-stock';
+import { freightGeometry, type FreightUnit } from '../vignette/freight-stock';
 import { s70Geometry } from '../vignette/streetcar';
 import { stockNames, formation, layout, passengerGeometry, passengerMaterial } from '../vignette/crescent-stock';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
@@ -80,6 +80,7 @@ const models = {
   xn40Rapid: 'New Flyer XN40 · Rapid A-Line',
   xn40: 'New Flyer Xcelsior XN40',
   s70: 'Siemens S70 streetcar',
+  freightBoxcar: '50-foot boxcar',
   cm44ac: 'GE/Wabtec CM44AC, CSX-like',
   cm44acNs: 'GE AC44-type, NS-like',
   es44acNs: 'GE ES44AC, NS-like',
@@ -120,6 +121,13 @@ const SPECIES_NOTES: Record<string, string> = {
   lineup: 'Every species at mature size in one season, so the board’s palette reads together. The rendering buttons pick the same option for every species that has it. ',
   ginkgo: 'A gangly single leader when young; the oldest fork low into near-upright stems under a broad crown. Leaf tufts on spur shoots, butter-yellow in November and a drop of a few days to a gold carpet. ',
 };
+const freightModels = {
+  cm44ac: 'locomotive', cm44acNs: 'locomotiveNs', es44acNs: 'es44acNs',
+  es44ah: 'es44ah', sd70ace: 'sd70ace', gp382: 'gp382', freightBoxcar: 'boxcar',
+} as const satisfies Record<string, FreightUnit>;
+function isFreightModel(id: string): id is keyof typeof freightModels {
+  return Object.hasOwn(freightModels, id);
+}
 type Model = keyof typeof models;
 const embedded = !!el.closest('#lab-root');
 const modelParams = new URLSearchParams(location.search);
@@ -505,7 +513,7 @@ function build() {
   sun.shadow.camera.updateProjectionMatrix();
   sun.shadow.normalBias = person ? .015 : .05;
   const passenger = model === 'crescent' || Object.hasOwn(stockNames, model);
-  track.visible = (model === 'cq400' || model === 'cm44ac' || model === 'cm44acNs' || ['es44acNs', 'es44ah', 'sd70ace', 'gp382'].includes(model) || model === 's70' || passenger);
+  track.visible = (model === 'cq400' || isFreightModel(model) || model === 's70' || passenger);
   longTrack.visible = model === 'crescent';
   if (longTrack.visible) track.visible = false;
   ground.scale.setScalar(model === 'crescent' ? 2.25 : 1);
@@ -563,40 +571,26 @@ function build() {
     blurb.append(link);
     return;
   }
-  if (model === 'es44acNs' || model === 'es44ah' || model === 'sd70ace' || model === 'gp382') {
-    const mesh = new THREE.Mesh(freightGeometry(model, { leadFront: true }), passengerMaterial(night));
+  if (isFreightModel(model)) {
+    const unit = freightModels[model];
+    const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: unit !== 'boxcar' }), passengerMaterial(night));
     mesh.position.y = .125;
     mesh.castShadow = mesh.receiveShadow = true;
     scene.add(mesh); cars = [mesh];
     const blurb = document.getElementById('blurb')!;
     blurb.textContent = ({
+      cm44ac: 'CSX 7257, seen at Georgia State, is a CM44AC: a GE AC4400CW rebuilt by Wabtec with a new cab. Modelled in CSX-like blue-grey and yellow. ',
+      cm44acNs: 'The same GE body in an NS-like scheme, with a black hood and white nose stripes. ',
+      freightBoxcar: 'Illustrative steel boxcar with a sliding door and two four-wheel trucks. ',
       es44acNs: 'GE Evolution-series road locomotive with the long flared radiator, in an NS-like black and white scheme. ',
       es44ah: 'GE Evolution-series road locomotive with the long flared radiator, in a CSX-like blue-grey and yellow scheme. ',
       sd70ace: 'EMD road locomotive with a broad safety cab, brow headlights and six-axle running gear, in an NS-like scheme. ',
       gp382: 'Compact EMD road-switcher with a narrow short hood and four-axle Blomberg trucks, in a CSX-like scheme. ',
     })[model] + 'Lab study; no logos or numbers. ';
     const link = document.createElement('a');
-    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/freight-variety.md';
+    const notes = unit === 'boxcar' ? 'freight-consists.md' : model.startsWith('cm44ac') ? 'freight-stock.md' : 'freight-variety.md';
+    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/' + notes;
     link.textContent = 'Dimensions and reference photos'; blurb.append(link);
-    return;
-  }
-  if (model === 'cm44ac' || model === 'cm44acNs') {
-    const ns = model === 'cm44acNs';
-    const blurb = document.getElementById('blurb')!;
-    blurb.textContent = ns
-      ? 'The same GE body in an NS-like scheme (black, white nose stripes, no marks), as NS AC44C6M rebuilds and ES44ACs appear around Atlanta. Leading an illustrative boxcar. '
-      : 'CSX 7257, seen at Georgia State, is a CM44AC: a GE AC4400CW rebuilt by Wabtec with a new cab. Modelled in a CSX-like blue-grey and yellow without marks, leading an illustrative boxcar. ';
-    const link = document.createElement('a');
-    link.href = 'https://github.com/samsolomon/sim-atlanta/blob/main/docs/freight-stock.md';
-    link.textContent = 'Locomotive notes and reference photos';
-    blurb.append(link);
-    cars = ([ns ? 'locomotiveNs' : 'locomotive', 'boxcar'] as const).map(unit => {
-      const mesh = new THREE.Mesh(freightGeometry(unit, { leadFront: unit !== 'boxcar' }), passengerMaterial(night));
-      mesh.position.set(0, .125, (unit !== 'boxcar' ? 1 : -1) * (FREIGHT_LENGTH[unit] / 2 + .15));
-      mesh.castShadow = mesh.receiveShadow = true;
-      scene.add(mesh);
-      return mesh;
-    });
     return;
   }
   document.getElementById('blurb')!.textContent =
@@ -913,7 +907,6 @@ const FIGURE_VIEWS: Record<string, ViewPreset> = {
   Rear: { pos: [0, 1.14, -4.5], target: [0, .87, 0], fov: 30 },
   Top: { pos: [0, 5.0, .01], target: [0, 0, 0], fov: 32 },
 };
-const FREIGHT_VIEWS = { ...TRAIN_VIEWS, '¾ front': { pos: [-32, 12, 36], target: [0, 2, 1], fov: 41 } } satisfies Record<string, ViewPreset>;
 let presets: Record<string, ViewPreset>;
 const HOUSE_VIEWS: Record<string, ViewPreset> = {
   Front: { pos: [0, 16, 62], target: [0, 3, 0], fov: 40 },
@@ -957,7 +950,7 @@ function setModel(id: Model) {
     }
   }
   camera.far = id === 'crescent' ? 1800 : 400;
-  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || ['es44acNs', 'es44ah', 'sd70ace', 'gp382'].includes(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, cm44ac: FREIGHT_VIEWS, cm44acNs: FREIGHT_VIEWS, es44acNs: FREIGHT_VIEWS, es44ah: FREIGHT_VIEWS, sd70ace: FREIGHT_VIEWS, gp382: FREIGHT_VIEWS, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
+  presets = isMaterial(id) ? MATERIAL_VIEWS : isHouse(id) ? HOUSE_VIEWS : isLandscape(id) ? LANDSCAPE_VIEWS : id === 'crescent' || id === 's70' || isFreightModel(id) || isPassengerUnit(id) ? passengerViews : ({ cq400: TRAIN_VIEWS, xn40: BUS_VIEWS, xn40Rapid: BUS_VIEWS, xe60: passengerViews, walker: FIGURE_VIEWS, cyclist: FIGURE_VIEWS, generic: TRAIN_VIEWS, ginkgo: TRAIN_VIEWS } as Record<string, Record<string, ViewPreset>>)[id];
   modelSelect.value = id;
   renderingButtons();
   document.querySelectorAll<HTMLButtonElement>('[data-model]').forEach(button =>
@@ -972,7 +965,7 @@ function selectModel(id: Model) {
   history.replaceState(history.state, '', url);
   setModel(id);
 }
-for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', 'cm44ac', 'cm44acNs', 'es44acNs', 'es44ah', 'sd70ace', 'gp382', ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
+for (const [group, ids] of [['vehicles', ['cq400', 's70', 'xn40', 'xn40Rapid', 'xe60', ...Object.keys(freightModels) as (keyof typeof freightModels)[], ...Object.keys(stockNames) as (keyof typeof stockNames)[], 'crescent']], ['people', ['walker', 'cyclist']], ['trees', ['generic', 'ginkgo', ...LOOKS.map(l => l.species.id as Model), 'lineup' as Model]], ['landscape', Object.keys(LANDSCAPE_KINDS) as LandscapeKind[]], ['houses', Object.keys(HOUSE_KINDS) as HouseKind[]], ['materials', Object.keys(MATERIAL_KINDS) as MaterialKind[]]] as const) {
   const list = document.getElementById(group)!;
   const options = document.createElement('optgroup');
   options.label = list.querySelector('h2')!.textContent!;
