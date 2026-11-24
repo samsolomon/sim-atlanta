@@ -75,7 +75,7 @@ export function createCirca730(buildings: VBuilding[], site: VBuilding, grid: Gr
     if (street) litFacade(shell, seed, face++, a, b, datum + 0.4, lobby - 0.3, 1, high ? 3.2 : 10, 0.9, 0.86, storefront, 0.4);
     const from = street ? lobby : lo + 0.3;
     const rows = Math.max(1, Math.round((roof - 1 - from) / pitch));
-    if (length > 20) {
+    if (length > 40) {
       // Long faces: one continuous ribbon per floor (office night: mostly dark).
       litFacade(shell, seed, face++, a, b, from, roof - 1, rows, high ? 3 : 8, 0.985, 0.55, ribbon, 0.1);
     } else if (high || length > 6) {
