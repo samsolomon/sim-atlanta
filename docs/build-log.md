@@ -3791,3 +3791,9 @@ From the same 1,200 m orbit, dry-overcast noon raised the central crop’s mean 
 ### 2026-11-24 — Choosing the cloud fill at noon
 
 The first overcast pass made the dark tower easier to read, but the arts-center roof, pavement and lawn began to blend together. Sam selected the right-hand frame in the [three-way comparison](https://share.onorca.dev/a/2xr828hqBC6T). Halving the extra dry-cloud hemisphere intensity from +0.8 to +0.4 kept the soft shadows and brought the matched High noon crop to 107.6 mean display luma, between clear noon at 100.6 and the first overcast pass at 119.7. The sunrise palette and eastern-sun blend carry forward as reviewed. [Selected frame with matched arts-center details](log/city-sky/high-noon-selection.jpg)
+
+### 2026-11-24 — Turn the City camera while riding along
+
+A right-drag used to drop a scheduled Atlanta Streetcar from Follow as soon as the mouse went down. With the camera orbiting its moving target, a two-finger turn and tilt held the same trip as it travelled 186 m between samples and changed heading from 139.8° to 204.4°. The released camera bearing changed by less than 0.01° and tilt by less than 0.1°. [Before](log/ui/follow-orbit/before.jpg) · [After](log/ui/follow-orbit/after.jpg) · [Gesture and turn clip](log/ui/follow-orbit/turn.gif).
+
+The surprising case was a straight two-finger tilt. With the contacts 90 px apart, moving the leading finger 10 px one frame before its partner briefly widened the gap to 100 px. Ending Follow on that temporary spread misread a tilt as a pinch. City now compares the span at first lift with the starting span. A net change over 6 px ends Follow; a staggered tilt stays attached. Chrome touch emulation verified the distinction with and without reduced motion. The touch zoom itself remains responsive during the gesture.
