@@ -949,8 +949,9 @@ everywhere for now. Nothing is deleted. `?trees=species` restores the rollout ab
   trunk and size (`genericPlan` in trees/rollout.ts). A species on a canopy crown returns that crown
   to the generic World, which draws it at its canopy-map size, the size the species used. The
   island maples, crapes and the Beverly island elm become planted generic broadleaves at
-  their own height and spread. That is 2,513 trees at high and 1,254 at low across the nine
-  rows, and all of them are drawn.
+  their own height and spread. That covers 2,513 trees at high and 1,254 at low across the
+  nine rows. The World draws all but two: their trunks fall inside a building footprint, which
+  generic trees always avoid.
 - **1180 Peachtree's terrace crapes** (eight) are now generic 4.5 m broadleaves standing on
   the roof. The species cards read as small fuzzy blobs at the 350 m view.
 - **The High Museum ginkgo** (the only named site) stays a species. It is drawn as a faceted
