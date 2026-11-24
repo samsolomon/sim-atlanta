@@ -2722,3 +2722,8 @@ Matched daylight camera: `445,-3930,250,50,150`, at `2026-11-20T14:00:00-05:00`.
 Web rebuild only; no pipeline change.
 
 ![Arts Center entrance before and after](log/2026-11-23-arts-center-slab.jpg)
+
+Edge verification at the same camera with lens zoom 2.5: [day](log/2026-11-23-arts-center-edge-day.png)
+and [night](log/2026-11-23-arts-center-edge-night.png). The targeted audit at 0.25 m
+spacing finds zero penetrations among 11,342 samples on the two slab-top triangles.
+Station-wide hits include other paving and must not be mistaken for this slab.
