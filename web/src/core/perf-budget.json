@@ -1,11 +1,32 @@
 {
-  "_doc": "City budgets per tier, checked by `pnpm test:perf` (scripts/perf-budget.mjs) on the default open view at 2026-11-20 14:00 with all 12 areas mounted; `high-night` repeats high at 22:00, where lit windows and lamps add draws and programs. `ceiling` fails the check (regression guard, set ~10% over the 2026-11-23 measurement on main). `target` is the goal and is reported, not enforced, until a cut reaches it; then move the ceiling down. Counts and memory come from a headless Studio run and match the device; fps and A16 ready time come only from the A16 runs in docs/perf.md. Studio readyMs swings 2-4x with shader-cache state and machine load, so it is a target only; the A16 ready time is the real check.",
+  "_doc": "City budgets per tier, checked by `pnpm test:perf` (scripts/perf-budget.mjs) on the default open view at 2026-11-20 14:00 with all 12 areas mounted; `high-night` repeats high at 22:00, where lit windows and lamps add draws and programs. `ceiling` fails the check (regression guard, set ~10% over the 2026-11-23 measurement on main). `target` is the goal and is reported, not enforced, until a cut reaches it; then move the ceiling down. Counts and memory come from a headless Studio run and match the device; fps and A16 ready time come only from the A16 runs in docs/perf.md. Studio readyMs swings 2-4x with shader-cache state and machine load, so it is a target only; the A16 ready time is the real check. Program ceilings (2026-11-24) are the post-prewarm total plus two: core/prewarm.ts compiles at boot what used to compile at dusk, at night or in weather, so the count at ready rose while late compiles fell; the binding check for those is the sweep under _lateCompiles.",
+  "_lateCompiles": {
+    "_doc": "test:perf also sweeps the clock (dusk, night, late night, dawn) and weather on low and high after City is ready, and fails if any shader program compiles then: each late compile is a frame that stalls (100+ ms on the Studio). core/prewarm.ts compiles everything City has built but not drawn. These are the known exceptions, each matched against the late program's owners and cache key, with who is fixing it. Remove an entry when its fix lands.",
+    "allow": [
+      {
+        "match": "Illustrative freight",
+        "why": "freight consists are built when they enter the board, after ready; vehicles agent (#424 pads freight to one clip-plane count)"
+      },
+      {
+        "match": "stockNight",
+        "why": "Crescent stock is built when the train enters the board, with its own clip planes; vehicles agent"
+      },
+      {
+        "match": "cq400",
+        "why": "CQ400 buses are built when they enter, with per-route clip planes; vehicles agent"
+      },
+      {
+        "match": "depth,",
+        "why": "shadow-depth variants compile on their first shadow pass; prewarm does not draw shadows yet"
+      }
+    ]
+  },
   "low": {
     "viewport": "phone",
     "ceiling": {
       "triangles": 2600000,
       "calls": 460,
-      "programs": 85,
+      "programs": 87,
       "textureMB": 125,
       "geometryMB": 190,
       "heapAfterGcMB": 460
@@ -27,7 +48,7 @@
     "ceiling": {
       "triangles": 7500000,
       "calls": 510,
-      "programs": 140,
+      "programs": 103,
       "textureMB": 890,
       "geometryMB": 300,
       "heapAfterGcMB": 570
@@ -49,7 +70,7 @@
     "ceiling": {
       "triangles": 7500000,
       "calls": 630,
-      "programs": 140
+      "programs": 103
     },
     "target": {
       "calls": 600
