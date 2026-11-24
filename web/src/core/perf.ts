@@ -602,6 +602,7 @@ async function run({ quietMs = 5000, maxWaitMs = 60000, sampleMs = 10000 } = {})
     // Longest main-thread task during the sample, and how many passed 100 ms.
     longestTaskMs: Math.max(0, ...longTasks.filter(l => l.start >= sampleStart).map(l => l.ms)),
     longTasksOver100: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).length,
+    longTasks: longTasks.filter(l => l.start >= sampleStart && l.ms > 100).map(l => [l.start, l.ms]),
   };
   const r = { summary, ...full, fps10s: f, sampleMs, shadowUpdatesInSample: summary.shadowUpdatesInSample };
   lastResult = r;

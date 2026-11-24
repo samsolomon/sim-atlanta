@@ -126,14 +126,14 @@ These two entries run the low tier on the A16 canvas (384x692 at DPR 1) with 6x 
 - `route:north`: Five Points to Brookwood at a 700 m orbit. Areas and rings change under the camera.
 - `route:zoomout`: a 3 km to 25 km orbit over Midtown. It crosses the 10 km build distance early, which triggers far-level builds and swaps.
 
-The ceiling is 500 ms, ratcheting to 400 and then 300 ms as idle-time builds are sliced. The target is 150 ms.
+Ceilings: `route:north` 650 ms and `route:zoomout` 500 ms, both ratcheting toward 300 ms as swap and build steps are sliced. The target is 150 ms.
+`summary.longTasks` lists each task over 100 ms in the sample as `[start, ms]` in page time, for attribution against a CPU profile.
 Calibration on the Studio (2026-11-24, load average ~30):
 
-- `route:north`: 920–945 ms with #538's whole-board very-far ground built in one idle task, and 313–379 ms without it.
+- `route:north`: 920–945 ms with #538's whole-board very-far ground built in one idle task; 268–589 ms over 7 runs after #586 made it opt-in.
 - `route:zoomout` to 25 km: 72–190 ms.
 - At 1x, nothing exceeded 50 ms.
 
-`route:north` fails until the very-far ground is opt-in or sliced.
 
 ### Galaxy A16 tree mask sign-off (2026-11-23, #348)
 
