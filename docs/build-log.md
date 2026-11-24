@@ -2900,6 +2900,11 @@ Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow no
 
 The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
 
+### 2026-11-23 — Where a front walk meets the Ansley steps
+
+A level tread can meet the middle of a walk and still miss its corners by 15.6 cm on a cross-slope. We seated both corners and cut the terrain beneath the approach. A neighbouring walk crossed the proposed stairs on one lot, so the shared-frontage check leaves that yard open. The high board now has 33 terraced yards, with 66 matching corners and 4.04 cm minimum sampled walk clearance. Low adds no terraces. [Day and night comparisons](log/ui/ansley-terraces/README.md).
+
+
 ### 2026-11-23 — A final vertex is not another road segment
 
 At 21:00, a streetcar nose could project onto the exact end of a traffic course.
