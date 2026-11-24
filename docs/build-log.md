@@ -3090,6 +3090,9 @@ On the Galaxy A16 the default view measured 23.2 fps for the baseline and 23.9 f
 
 The bare-earth DEM put eight freight tracks at road level. April 2019 lidar still sees the deck at 313.67 m NAVD88, about six metres above the Grant Street approaches. Restoring the yard formation let us keep the original ballast and sleepers continuous across a single skewed opening. A separate road slab left a visible lip. Painting the asphalt, centreline and sidewalks straight through on the graded terrain removed it. The low and high checks each found continuous ground at 12,561 points, with at least 4.21 m of headroom under the girders. [Matched daylight and night views, camera and survey](king-freight-crossings.md).
 
+### 2026-11-23 — Lacebark elm starts with the bark
+
+The first lacebark elm pairs small, fine leaf cards with long arched boughs and mottled olive, tan and cinnamon bark. The surprise came when pulling back from the trunk: the bark patches stop reading before the overall silhouette does. The shader now fades them out once they are too small on screen. The mature tree costs 194 / 102 triangles with no new texture allocation. July Front luminance is 0.248 / 0.259 against the generic canopy’s 0.248. The first crown is more open and the bark smoother than in the photos. [Seasonal sheet, 100–300 m, and bark comparison](log/ui/tree-species/options-lacebark-elm.jpg). Lab study. Web rebuild only.
 ### 2026-11-23 — Colour before the whole board
 
 On the Studio with 6× CPU throttling, City reached colour in 6.6 seconds, down from 9.07. The first frame was already on screen for much of the old wait. Building distant neighbourhoods occupied the main thread while the white model needed frames to settle. Starting those neighbourhoods after the reveal lets the player move sooner. On the phone-sized default view, a pan can expose the unfinished edge as the next strips arrive. A direct camera link requests its target immediately. [Daytime pan during the reveal](log/phone/load-reveal-day.jpg)
@@ -3118,3 +3121,18 @@ the appropriate street even where both streets share the same map coordinates.
 | Under Marietta, eye `-762.5,-25.5,-1881.5`, target `-797,-25,-1860`, zoom 0.75, near 0.05 | [14:00](log/north-ave/shared-bore-day.jpg) | [23:00](log/north-ave/shared-bore-night.jpg) |
 
 Both views use 20 November 2026, Eastern time, at low quality. [Same cameras at high quality](log/north-ave/shared-high.jpg).
+
+### 2026-11-23 — A frame spent twenty minutes in traffic
+
+At 14:00:44.6 in the downtown simulation, one car slot started its next trip.
+Its lane then replayed 2,352 half-second steps in one draw. With 64 synthetic
+timetable buses on the board, that frame took 56.6 ms in desktop Chrome. The
+streetcar queue on main reproduced the same behavior with no buses at all.
+
+A lane now processes up to 64 historical steps per draw during catch-up.
+Surviving cars hold position briefly. In three repeats with the 64 timetable
+buses, the worst queue frame fell to 6.2 ms and p95 was 0.9 ms. With the
+published timetable the worst was 0.5 ms. A regression checks the bound on
+every frame and compares the final positions with a fresh seek.
+
+[The Edgewood queue at 12:08](log/ui/streetcar-queues/edgewood-rollover.jpg)
