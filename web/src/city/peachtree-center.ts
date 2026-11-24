@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GroundGrid } from '../terrain/grid';
-import { Builder, rng, segDist, type P2 } from '../vignette/geom';
+import { Builder, loft, rng, segDist, type P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
 
 interface Tower {
@@ -43,6 +43,14 @@ const towers: Tower[] = [
     origin: [445.09, -674.9],
     slope: 0.0107,
     outward: 1,
+    threeSlabs: true,
+  },
+  {
+    id: 'ef617421-bb1d-405b-848c-712d0267ff56',
+    name: '230 Peachtree',
+    origin: [293.79, -691.67],
+    slope: 0.014,
+    outward: -1,
     threeSlabs: true,
   },
 ];
@@ -142,7 +150,7 @@ function fits(tower: Tower, building: VBuilding) {
 }
 
 // u follows the long east-west facades. v points out from the courtyard for each mirror.
-function model(tower: Tower, base: number, zero: number, finish: THREE.Material, glazing: THREE.Material) {
+function model(tower: Tower, base: number, zero: number, finish: THREE.Material, glazing: THREE.Material, lobbyLights?: THREE.Material) {
   const shell = new Builder(),
     glass = new Builder(),
     uv: number[] = [];
@@ -151,7 +159,8 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
     wingDeck = three ? 419.2 : 405.5;
   const parapet = three ? 431.5 : 417.7,
     wingRim = three ? 421.1 : 407.3;
-  const lobbyTop = three ? 326.8 : 325.6;
+  const hotel = tower.name === '230 Peachtree';
+  const lobbyTop = hotel ? 329.2 : three ? 326.8 : 325.6;
   const officeRows = three ? 27 : 24;
   const pitch = (highDeck - lobbyTop) / officeRows;
   const box = (l: number, r: number, v: number, w: number, b: number, h: number, color: string) =>
@@ -173,7 +182,7 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
       const [x, z] = corners[face],
         [ex, ez] = corners[(face + 1) % 4];
       const len = Math.hypot(ex - x, ez - z);
-      const bays = Math.max(1, Math.round(len / 1.46));
+      const bays = hotel && len < 12 ? 9 : Math.max(1, Math.round(len / 1.46));
       const ux = (ex - x) / len,
         uz = (ez - z) / len;
       const pt = (q: number, h: number, out: number) => [x + ux * q - uz * out, h, z + uz * q + ux * out];
@@ -218,7 +227,7 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
         lobbyHead,
       );
       // Folded fins give the panel groups a projecting edge in raking light.
-      for (let j = 0; j < bays; j += 4) {
+      for (let j = 0; j < bays; j += hotel ? 3 : 4) {
         const q = (j * len) / bays + 0.08;
         shell.quad(
           pt(q, lobbyTop, inset),
@@ -254,8 +263,17 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
     for (const side of [v, w - wall]) {
       if (spine) {
         box(l + wall, r - wall, side, side + wall, deck, rim, precast);
-        for (let q = l + 1; q < r - 0.45; q += 1.46)
-          box(q, q + 0.16, side - 0.06, side + wall + 0.06, deck + 0.25, rim - 0.25, edge);
+        for (let q = l + 1; q < r - 0.45; q += 1.46) {
+          if (hotel) {
+            // Only the outward face of each rib is visible against the solid screen.
+            const z = side === v ? v - 0.06 : w + 0.06;
+            const a = side === v ? q + 0.16 : q;
+            const b = side === v ? q : q + 0.16;
+            shell.quad([a, deck + 0.25, z], [b, deck + 0.25, z], [b, rim - 0.25, z], [a, rim - 0.25, z], edge);
+          } else {
+            box(q, q + 0.16, side - 0.06, side + wall + 0.06, deck + 0.25, rim - 0.25, edge);
+          }
+        }
       } else {
         box(l + wall, r - wall, side, side + wall, rim - 0.32, rim, precast);
         if (!three && side === w - wall) {
@@ -312,8 +330,26 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
     box(15, 54, -0.15, 0.05, base, wingDeck, shadow);
     slab(2.2, 55.4, 9.7, 20.5, wingDeck, wingRim, false);
     slab(14.2, 55.4, -10.8, -0.1, wingDeck, wingRim, false);
-    balcony(3, 5.6, 20.5, 1, wingDeck - 4 * pitch, 4);
-    balcony(15, 5.6, -10.8, -1, lobbyTop + 4 * pitch, 4);
+    if (hotel) {
+      // The east-facing canopy spans the office doors and the northern hotel bay.
+      box(55.4, 60.2, -9.6, 19.8, 327.35, 327.65, '#e4e1d9');
+      for (const v of [-8.9, 5.2, 19.1])
+        box(59.7, 59.88, v, v + 0.18, base, 327.35, '#afada4');
+
+      // Belle twists above a dark plinth on the Peachtree forecourt.
+      const plaza = 323.7;
+      box(62.2, 63.8, 6.2, 7.8, plaza - 0.25, plaza + 0.45, '#56575a');
+      const profile = [[0.45, 0.25, 0], [1.5, 0.68, 0.18], [2.9, 1.08, 0.4],
+        [3.7, 0.47, 0.15], [4.05, 0.98, -0.27], [4.6, 0.54, -0.05], [5.35, 0.15, 0.32]];
+      const facets = ['#c7c6c1', '#898d90', '#bec4c5', '#e4ded2', '#b7afa4', '#858988', '#e0ddcf', '#afb4b6'];
+      loft(shell, profile.map(([height, radius, shift]) => facets.map((_, i) => {
+        const a = -i * Math.PI / 4 + height * 0.12;
+        return [63 + shift + radius * Math.cos(a), plaza + height, 7 + radius * Math.sin(a)];
+      })), facets);
+    } else {
+      balcony(3, 5.6, 20.5, 1, wingDeck - 4 * pitch, 4);
+      balcony(15, 5.6, -10.8, -1, lobbyTop + 4 * pitch, 4);
+    }
   } else {
     slab(0, 67, 0, 9.5, highDeck, parapet, true);
     box(7.3, 66, 9.45, 11.55, base, wingDeck, shadow);
@@ -322,10 +358,22 @@ function model(tower: Tower, base: number, zero: number, finish: THREE.Material,
     box(2, 65, -1.4, 0, lobbyTop + pitch, lobbyTop + pitch + 0.65, edge);
   }
   const group = new THREE.Group();
-  group.name = 'Peachtree Center ' + tower.name + ' Tower';
+  group.name = hotel ? tower.name : 'Peachtree Center ' + tower.name + ' Tower';
   group.position.set(tower.origin[0], -zero, tower.origin[1]);
   group.rotation.y = -Math.atan(tower.slope);
   group.scale.z = tower.outward;
+  if (hotel && lobbyLights) {
+    const entry = new Builder();
+    for (const [x, z] of [[57, 4.6], [55.4, 15.1]]) {
+      // Warm light through the two glazed vestibules under the continuous awning.
+      for (const v of [-2.4, -1.15, 0.1, 1.35])
+        entry.quad([x, 323.65, z + v + 1.1], [x, 323.65, z + v],
+          [x, 326.7, z + v], [x, 326.7, z + v + 1.1], '#a99375');
+      entry.box(2.8, 0.06, 0.15, x + 1.55, 327.30, z, '#fff2d7');
+    }
+    entry.box(0.08, 0.5, 2.6, 55.47, 328.2, 15.1, '#b6ccdd');
+    group.add(new THREE.Mesh(entry.geometry(), lobbyLights));
+  }
   const facade = glass.geometry();
   facade.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   group.add(new THREE.Mesh(shell.geometry(), finish), new THREE.Mesh(facade, glazing));
@@ -338,6 +386,7 @@ export function createPeachtreeCenter(buildings: VBuilding[], grid: GroundGrid) 
     replaced = new Set<VBuilding>();
   let glazing: ReturnType<typeof windowMaterial> | undefined;
   let finish: THREE.MeshLambertMaterial | undefined;
+  let lobbyLights: THREE.MeshLambertMaterial | undefined;
   for (const tower of towers) {
     const source = buildings.find((b) => b.id === tower.id);
     if (!source || !fits(tower, source)) continue;
@@ -345,7 +394,9 @@ export function createPeachtreeCenter(buildings: VBuilding[], grid: GroundGrid) 
     if (!grades.every((g): g is number => g !== null && Number.isFinite(g))) continue;
     glazing ??= windowMaterial();
     finish ??= new THREE.MeshLambertMaterial({ vertexColors: true });
-    group.add(model(tower, Math.min(...grades) - 0.35, grid.manifest.vertical.sceneZeroNavd88M, finish, glazing));
+    if (tower.name === '230 Peachtree')
+      lobbyLights = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#ffe2ad', emissiveIntensity: 0, side: THREE.DoubleSide });
+    group.add(model(tower, Math.min(...grades) - 0.35, grid.manifest.vertical.sceneZeroNavd88M, finish, glazing, lobbyLights));
     replaced.add(source);
   }
   if (!glazing) return null;
@@ -355,6 +406,7 @@ export function createPeachtreeCenter(buildings: VBuilding[], grid: GroundGrid) 
     buildings: buildings.filter((b) => !replaced.has(b)),
     setNight(night: number) {
       occupied.emissiveIntensity = 1.15 * night;
+      if (lobbyLights) lobbyLights.emissiveIntensity = 0.68 * night;
     },
   };
 }
