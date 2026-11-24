@@ -227,8 +227,41 @@ export function* buildHouseLod(o: HouseLodOptions) {
   }
   return {
     group, tiles,
+    /**
+     * Phone detail (city.ts treeDetail): `farHouses` hides every house past the ground's far-far
+     * orbit, where each is about 2 px and the board's ground map carries its roof colour
+     * (paintHouseRoofs); `houseShadows: false` stops them casting where a shadow is under 2 px.
+     */
+    setDetail(d: { farHouses?: boolean; houseShadows?: boolean }) {
+      if (d.farHouses !== undefined) group.visible = !d.farHouses;
+      if (d.houseShadows !== undefined) group.traverse(m => { if ((m as THREE.Mesh).isMesh) m.castShadow = d.houseShadows!; });
+    },
     setNight(n: number) { state.night = n; for (const t of tiles) { t.farWorld.setNight(n); t.nearWorld?.setNight(n); } },
     setWet(w: number) { state.wet = w; for (const t of tiles) { t.farWorld.setWet(w); t.nearWorld?.setWet(w); } },
     dispose() { for (const t of tiles) { t.farWorld.dispose(); t.nearWorld?.dispose(); } for (const m of merged) m.geometry.dispose(); group.removeFromParent(); },
   };
+}
+
+/**
+ * Each house's roof colour on its footprint, painted into the board's ground map, so a house
+ * stays a dot of the right colour when its mesh drops out at the far-far orbit. Under a drawn
+ * house the paint is covered by the house itself.
+ */
+export function paintHouseRoofs(map: THREE.Texture | null, bounds: Bounds, houses: { rings: VBuilding['rings']; roof: string }[]) {
+  const canvas = map?.image as HTMLCanvasElement | undefined;
+  const ctx = canvas?.getContext?.('2d');
+  if (!canvas || !ctx || !houses.length) return 0;
+  ctx.save();
+  ctx.setTransform(canvas.width / (bounds.maxX - bounds.minX), 0, 0, canvas.height / (bounds.maxZ - bounds.minZ), 0, 0);
+  ctx.translate(-bounds.minX, -bounds.minZ);
+  for (const h of houses) {
+    ctx.beginPath();
+    h.rings[0].forEach(([x, z], i) => i ? ctx.lineTo(x, z) : ctx.moveTo(x, z));
+    ctx.closePath();
+    ctx.fillStyle = h.roof;
+    ctx.fill();
+  }
+  ctx.restore();
+  map!.needsUpdate = true;
+  return houses.length;
 }
