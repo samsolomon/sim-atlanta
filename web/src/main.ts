@@ -11,7 +11,7 @@ import type { ShellOptions, View } from './ui/shell-api';
 import { createShellNext } from './ui/next/shell';
 import { lonLatToScene, sceneToLonLat } from './core/places';
 import { formatCityCamera, mapMetresPerPixel, mapZoomForScale, parseCityCamera } from './core/camera';
-import { place as stationName, busCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
+import { place as stationName, busCard, timetableBusCard, chip, cityFreightCard, crossingCard, freightCard, trainCard } from './map/card';
 import { MODE_COLOR, addStaticLayers, trainsSource } from './map/layers';
 import { addTrainLayer, trainFeatures } from './map/trains';
 import type { LiveBus, CrossingProps, Meta, RoutesFile, TimetableFile, TrackArcProps, VehicleType } from './model/types';
@@ -116,6 +116,7 @@ followAction.addEventListener('click', () => {
   } else if (selectedBus) {
     const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
     if (bus) follow.start({ kind: 'bus', id: bus.id, tier: bus.position.tier });
+    else if (!clock.isRealTime() && diorama.timetableBus(selectedBus)) follow.start({ kind:'bus', id:selectedBus, tier:'inferred' });
   } else if (selectedFreight) {
     follow.start({ kind: 'freight', id: selectedFreight, tier: 'illustrative' });
   }
@@ -209,7 +210,10 @@ function renderTrainCard() {
 
 function renderBusCard() {
   const bus = clock.isRealTime() && buses.current().find(b => b.id === selectedBus);
-  if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
+  const trip = selectedBus && !clock.isRealTime() && !view3d.hidden && diorama?.timetableBus(selectedBus);
+  if (trip) {
+    showCard(timetableBusCard(trip), !!follow);
+  } else if (bus) showCard(busCard(bus, buses.observationNow(), view3d.hidden ? undefined : 'New Flyer Xcelsior XN40'), !!follow && !view3d.hidden);
   else if (follow?.ended && follow.ended.id === selectedBus) showCard('<h2>Bus no longer shown</h2><p class="sub">Tap another vehicle.</p>', true);
   else hideCard();
 }

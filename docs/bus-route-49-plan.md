@@ -63,3 +63,12 @@ schedule consumer; do not deduplicate live and timetable trips without trip IDs.
 Treat dwell and traffic-delayed positions as inferred rather than scheduled/live.
 Exact path mapping and stop positions remain implementation checks, not claims
 established by this inventory.
+
+## Building the pinned edition
+
+Run `pnpm data:bus49` to stage the checked-in compact edition, then `pnpm build`.
+The full `pnpm data` also stages it. To regenerate from the original archive,
+run `pnpm data:bus49 /path/to/google_transit.zip`. The exporter verifies the
+digest before reading the feed. Compare the resulting
+`web/public/data/ga/bus-49.json` with `pipeline/prototypes/bus-49/timetable.json`.
+A new edition needs updated provenance, a regenerated snapshot and contract checks.

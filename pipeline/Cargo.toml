@@ -5,6 +5,7 @@ edition = "2021"
 description = "Builds static rail data (GTFS timetables, FRA crossings, NARN freight lines) for the train map"
 
 [dependencies]
+ring = "0.17"
 anyhow = "1"
 earcutr = "0.4"
 csv = "1"

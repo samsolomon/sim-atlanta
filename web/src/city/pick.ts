@@ -10,7 +10,7 @@ export type VehicleSelection = { kind: 'train'; id: string } | { kind: 'bus'; id
 export function pickVehicle(x: number, y: number, width: number, height: number,
   camera: THREE.PerspectiveCamera, trains: THREE.Group, buses: CityBuses['positions'],
   edges: THREE.Plane[], scenery: THREE.Object3D[], freight?: THREE.Group, intercity?: THREE.Group, corridorFreight?: THREE.Group,
-  streetcars?: THREE.Group): VehicleSelection | null {
+  streetcars?: THREE.Group, busEdges = edges): VehicleSelection | null {
   const a = new THREE.Vector3(), b = new THREE.Vector3();
   const frustum = new THREE.Frustum().setFromProjectionMatrix(
     new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -50,7 +50,7 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
     for (const height of [1.7, 3]) {
       a.set(bus.x - dx, bus.y + height, bus.z - dz);
       b.set(bus.x + dx, bus.y + height, bus.z + dz);
-      consider({ kind: 'bus', id: bus.id }, edges);
+      consider({ kind: 'bus', id: bus.id }, busEdges);
     }
   }
   hits.sort((one,two) => one.distance - two.distance ||

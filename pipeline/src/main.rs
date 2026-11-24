@@ -110,10 +110,39 @@ fn write_json(dir: &Path, name: &str, v: &impl serde::Serialize) -> Result<()> {
     Ok(())
 }
 
+fn build_bus49(path: &Path) -> Result<()> {
+    const HASH: &str = "f4a36309f42858d3c55bf46298395471621ba6ec1888a141c543a1190a52e2e1";
+    let bytes = std::fs::read(path).with_context(|| format!("reading {}", path.display()))?;
+    let digest = ring::digest::digest(&ring::digest::SHA256, &bytes);
+    let hash: String = digest.as_ref().iter().map(|b| format!("{b:02x}")).collect();
+    anyhow::ensure!(hash == HASH, "Route 49 archive edition mismatch: {hash}");
+    let bus = gtfs::load(path, &gtfs::FeedSpec {
+        feed: "marta", source: "marta-gtfs", operator: "MARTA",
+        keep: |_, short, _, ty| (ty == "3" && short == "49")
+            .then(|| (short.to_owned(), "bus", "marta:vt:xn40")),
+    })?;
+    anyhow::ensure!(bus.timetable.trips.len() == 658 && bus.paths.len() == 2,
+        "incomplete Route 49 timetable");
+    let out = root().join("web/public/data/ga");
+    std::fs::create_dir_all(&out)?;
+    write_json(&out, "bus-49.json", &json!({
+        "source": {"url": MARTA_GTFS, "retrieved": "2026-11-23", "sha256": HASH},
+        "routes": bus.routes, "paths": bus.paths, "stops": bus.stops, "timetable": bus.timetable
+    }))
+}
+
+fn stage_bus49() -> Result<()> {
+    let out = root().join("web/public/data/ga");
+    std::fs::create_dir_all(&out)?;
+    std::fs::copy(root().join("pipeline/prototypes/bus-49/timetable.json"), out.join("bus-49.json"))?;
+    Ok(())
+}
+
 fn build() -> Result<()> {
     let raw = root().join("data/raw");
     let out = root().join("web/public/data/ga");
     std::fs::create_dir_all(&out)?;
+    stage_bus49()?;
     let today = today();
     println!("build:");
 
@@ -230,6 +259,7 @@ fn main() -> Result<()> {
     match args.get(1).map(String::as_str) {
         Some("fetch") => fetch(force),
         Some("build") => build(),
+        Some("bus49") => match args.get(2) { Some(path) => build_bus49(Path::new(path)), None => stage_bus49() },
         Some("scene") => scene::build(&root()),
         Some("all") | None => {
             fetch(force)?;

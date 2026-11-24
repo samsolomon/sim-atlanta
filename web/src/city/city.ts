@@ -46,6 +46,9 @@ import { cutFloor, cutOpenings, maskCut } from './east-cut-ground';
 import { ConnectorTraffic, type ConnectorBoard } from './connector-traffic';
 import { StreetFigures } from './street-figures';
 import { cityTravellers, type Traveller } from './walkways';
+import { arterialTrafficRoutes } from './arterial-traffic-routes';
+import { arterialTurns } from './arterial-turns';
+import type { TrafficCourse } from './road-traffic';
 import { ArterialTraffic } from './arterial-traffic';
 import midtownRowBounds from '../../../pipeline/prototypes/square-board/midtown-rows.json';
 import { loadArterials } from './arterials';
@@ -56,6 +59,8 @@ import { streetcarTraffic } from './streetcar-traffic';
 import { buildStreetcarStops, platformFootprints, platformSites, streetcarStops } from './streetcar-stops';
 import { orbitNear } from './depth-range';
 import { CityFreight } from './freight';
+import { cityBusGeometry } from '../vignette/xcelsior';
+import { createTimetableBuses } from './timetable-buses';
 import { CityBuses, busRuns } from './buses';
 import type { LiveBus } from '../model/types';
 import { CityTrains } from './trains';
@@ -156,6 +161,7 @@ export interface CityView {
   setAtmosphere(a: Atmosphere, now: Date): void;
   quality: Quality;
   /** Live buses drawn this frame; `occupies` lets illustrative traffic avoid them (call after the frame's bus update). */
+  timetableBus(id: string): { headsign:string; start:number } | undefined;
   buses: Pick<CityBuses, 'occupies' | 'summary'>;
   /** Where City draws this train right now, for its card: a car out on the North Line open
    * cut (inferred track) or a Crescent berthed on the Brookwood model (inferred berth).
@@ -718,12 +724,16 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const flatY = (x: number, z: number) => world.ground(x, z) + 0.2;
   const buses = new CityBuses({
     runs: busStreets,
+    geometry: low ? cityBusGeometry() : undefined,
     groundAt: terrain ? terrain.groundAt : flatY,
     deckAt: transport ? transport.deckAt : (x, z) => Math.max(0.2, flatY(x, z)),
     origin: manifest.origin,
     bounds: b,
   });
-  (buses.mesh.material as THREE.Material).clippingPlanes = edges;
+  const busData = await fetch(`${DATA}/ga/bus-49.json`, { signal: options.signal })
+    .then(r => r.ok ? r.json() : null).catch(() => { options.signal?.throwIfAborted(); return null; });
+  const busEdges = edges.map(p => p.clone());
+  (buses.mesh.material as THREE.Material).clippingPlanes = busEdges;
   scene.add(buses.mesh);
   const hourly = trafficData?.hourly;
   const trafficOptions = terrain && Array.isArray(hourly?.weekday) && Array.isArray(hourly?.weekend)
@@ -746,6 +756,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         clippingPlanes[3].constant = Math.max(clippingPlanes[3].constant, r.maxZ);
       }
     }
+    let extended = false;
+    for (const board of neighbors) {
+      if (!buses.mount(board)) continue;
+      extended = true;
+      const bounds = board.city.bounds;
+      busEdges[0].constant = Math.max(busEdges[0].constant, -bounds.minX);
+      busEdges[1].constant = Math.max(busEdges[1].constant, bounds.maxX);
+      busEdges[2].constant = Math.max(busEdges[2].constant, -bounds.minZ);
+      busEdges[3].constant = Math.max(busEdges[3].constant, bounds.maxZ);
+    }
+    if (extended) timetable?.refresh();
     const joined = new ConnectorTraffic({ ...trafficOptions, neighbors, clippingPlanes });
     traffic?.dispose();
     traffic = joined;
@@ -768,15 +789,27 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(next.group);
   }
   const corridors = trafficOptions && loadArterials(arterialData, vd).corridors;
-  const movingBlocks = trafficOptions && options.scheduledStreetcarsAt
+  for (const corridor of corridors ?? []) for (const run of corridor.runs) buses.setDirection(run.road.pts,run.allow);
+  const controllers = vd.points?.traffic_signals ?? [];
+  const courses = arterialTurns(arterialTrafficRoutes(corridors ?? [], b), corridors ?? [], controllers);
+  const timetable = busData ? createTimetableBuses(busData, manifest.origin, buses, controllers, courses) : undefined;
+  let scheduledPoses: ReturnType<ReturnType<typeof createTimetableBuses>['posesAt']> = [];
+  const streetcarBlocks = trafficOptions && options.scheduledStreetcarsAt
     ? streetcarTraffic(rf, manifest.origin, options.scheduledStreetcarsAt, (x,z) => {
       for (const { bounds:r, height } of streetcarSurface)
         if (x>=r.minX && x<=r.maxX && z>=r.minZ && z<=r.maxZ) return height(x,z);
       return null;
     }, trafficOptions.roadHeight) : undefined;
+  let timetableMode = false;
+  const movingBlocks = (course:TrafficCourse) => {
+    const tram = streetcarBlocks?.(course);
+    const bus = trafficOptions && timetable?.blocksFor(course,trafficOptions.roadHeight,() => timetableMode);
+    return tram && bus ? (seconds:number) => [...tram(seconds), ...bus(seconds)] : tram ?? bus;
+  };
   const arterials = trafficOptions && corridors?.length
-    ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, movingBlocks })
+    ? new ArterialTraffic({ ...trafficOptions, arterials: corridors, courses, movingBlocks })
     : undefined;
+  timetable?.setQueue(arterials?.signalQueue.bind(arterials));
   if (traffic) scene.add(traffic.group);
   if (arterials) scene.add(arterials.group);
   const figures = terrain && travellers.length ? new StreetFigures(travellers, terrain.groundAt, low) : undefined;
@@ -1274,7 +1307,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const stopPicking = listenForTap(renderer.domElement, (clientX, clientY) => {
     const r = renderer.domElement.getBoundingClientRect();
     options.selectVehicle?.(pickVehicle(clientX - r.left, clientY - r.top, r.width, r.height,
-      camera, trains.group, buses.positions, edges, scenery, freight?.poses, brookwood?.cars, brookwood?.freightPoses, streetcar.group));
+      camera, trains.group, buses.positions, edges, scenery, freight?.poses, brookwood?.cars, brookwood?.freightPoses, streetcar.group, busEdges));
   });
 
   // ---- sun, sky, weather --------------------------------------------------------------
@@ -1453,7 +1486,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const driveStart = performance.now();
   // A car counts as drawn only when it is visible and inside its own clipping planes, so
   // follow never frames a consist that a board edge or tunnel mouth has cut away.
-  const busDrawn = (x: number, z: number) => edges.every(plane => plane.distanceToPoint(new THREE.Vector3(x, 0, z)) >= 0);
+  const busDrawn = (x: number, z: number) => busEdges.every(plane => plane.distanceToPoint(new THREE.Vector3(x, 0, z)) >= 0);
   function locate(v: Followed, states: ReturnType<typeof options.trains>): Fix | null {
     if (v.kind === 'train') {
       const t = states.find(s => s.id === v.id);
@@ -1472,8 +1505,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     if (v.kind === 'bus') {
       const bus = options.buses?.()?.find(b => b.id === v.id);
-      if (!bus) return null;
       const shown = buses.positions.find(p => p.id === v.id);
+      if (!bus) return shown && scheduledPoses.some(p => p.id === v.id)
+        ? { id:v.id, tier:'inferred', x:shown.x, z:shown.z, cars:[shown], hidden:null } : null;
       const [x, z] = shown ? [shown.x, shown.z] : project(bus.position.value.lon, bus.position.value.lat);
       return { id: bus.id, tier: bus.position.tier, x, z, cars: shown && busDrawn(x, z) ? [{ x, z }] : [], hidden: null };
     }
@@ -1515,7 +1549,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (scene.fog instanceof THREE.Fog) { scene.fog.near=110; scene.fog.far=800; }
     } else controls.update();
     buses.night.value = atm.dark;
-    buses.update(options.buses?.() ?? null);
+    const liveFixes = options.buses?.() ?? null;
+    timetableMode = liveFixes === null && !!options.buses;
+    scheduledPoses = timetableMode && timetable ? timetable.posesAt(options.clockMs()) : [];
+    if (scheduledPoses.length) buses.timetable(scheduledPoses);
+    else {
+      buses.update(liveFixes);
+      if (liveFixes) timetable?.observe(options.clockMs(), buses.positions);
+    }
     const states = options.trains();
     trains.update(states, atm.dark);
     trains.surfaceCars += northLine?.(states, atm.dark) ?? 0;
@@ -1705,6 +1746,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     hasFreight: !!freight,
     hasPeople: !!figures,
     buses,
+    timetableBus: id => scheduledPoses.find(p => p.id === id),
     get hasTraffic() { return !!(traffic?.group.children.length || arterials?.group.children.length || midtownArterials?.group.children.length); },
     bounds: b,
     quality,

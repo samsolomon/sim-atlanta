@@ -3032,6 +3032,19 @@ to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
 region in plan, so the falloff follows the tower's own masonry vertices.
 [Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
 
+### 2026-11-23 — A timetable bus waits its turn
+
+Route 49’s 658 published trips contain 27,632 stop calls. Every call gives the
+same arrival and departure time. In City the bus pauses for an illustrative
+15 seconds at intermediate stops, then carries that delay to the next stop.
+An inferred position on the selected card distinguishes the resulting journey
+from its published departure time. At the present clock, GPS supplies the
+position instead. The rigid low-tier bus uses 616 triangles in the shared batch.
+
+The comparison hides the bus in the first panel and freezes both at noon.
+Camera `cam=573,-1411,78,48,150&t=2026-11-20T12:00:00-05:00&speed=0&q=low`.
+[Noon comparison](log/ui/route-49/noon.jpg) · [21:00 City](log/ui/route-49/night.jpg).
+
 ### 2026-11-23 — Rapid bus glazing at night
 
 At the same lab camera, the lit windshield had made the XN40 cab as bright as the passenger compartment. The revised Rapid studies keep the windshield dark and show the amber destination sign above it. Both buses now use the XN40 purple and cooler passenger lighting, with the emission multiplier reduced from 0.6 to 0.4. On the XE60, individual panes sit inside a dark frame. [Compare the matched day and night views](marta-rapid-buses.md#review-views).

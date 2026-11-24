@@ -398,6 +398,7 @@ dependencies = [
  "anyhow",
  "csv",
  "earcutr",
+ "ring",
  "serde",
  "serde_json",
  "ureq",

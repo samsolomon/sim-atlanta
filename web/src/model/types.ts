@@ -220,3 +220,9 @@ export interface BusFeed {
 }
 
 export type BusRoutes = Record<Id, string>; // raw GTFS route_id → stable public short name
+
+/** Separate Route 49 GTFS edition. Rail schedules never ingest these trips. */
+export interface BusTimetableFile extends RoutesFile {
+  source: { url: string; retrieved: string; sha256: string };
+  timetable: Timetable;
+}

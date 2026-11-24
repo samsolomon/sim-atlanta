@@ -147,3 +147,12 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
     ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}
     ${model ? seeModel(model) : ''}`;
 }
+
+export function timetableBusCard(trip: { headsign: string; start: number }) {
+    const hour = Math.floor(trip.start / 3600), minute = String(Math.floor(trip.start / 60) % 60).padStart(2, '0');
+  return `<h2>MARTA bus 49</h2><p class="sub">${esc(trip.headsign)}</p><dl>
+      <dt>Position</dt><dd>Simulated on route ${chip('inferred')}</dd>
+      <dt>Trip start</dt><dd>${hour}:${minute} Atlanta time ${chip('scheduled')}</dd>
+      <dt>Stop dwell</dt><dd>15 seconds ${chip('illustrative')}</dd>
+      <dt>City model</dt><dd>New Flyer Xcelsior XN40 ${chip('illustrative')}</dd></dl>`;
+}

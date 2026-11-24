@@ -200,6 +200,43 @@ export class RoadTraffic {
     return kept;
   }
 
+  /** Cars on the incoming lane when a scheduled bus reaches its signal. Evaluate the
+   * same slot cohort at that instant so clock seeks preserve the waiting order. */
+  signalQueue(key:string, axis:0|1, dx:number, dz:number, seconds:number) {
+    const share = hourShare(this.opts.hourly,Date.UTC(2026,0,1)+seconds*1000) / this.peak;
+    const lanes = new Map<TrafficCourse, Slot[]>();
+    for (const slot of this.slots) {
+      if (slot.threshold >= share || slot.lane.turnSignal) continue;
+      const signal = slot.lane.signals?.find(s => s.key === key && s.axis === axis);
+      if (!signal) continue;
+      const direction = slot.lane.line.at(signal.s);
+      if (direction.dx*dx+direction.dz*dz < .85) continue;
+      const slots = lanes.get(slot.lane) ?? [];
+      slots.push(slot);
+      lanes.set(slot.lane,slots);
+    }
+    let tail = 0, count = 0;
+    for (const [lane,slots] of lanes) {
+      const stop = lane.signals!.find(s => s.key === key)!.s;
+      const period = lane.line.length+offstage(lane), v = lane.speedMps;
+      const trips = slots.map(slot => ({
+        start: (Math.floor((seconds*v+slot.phase)/period)*period-slot.phase)/v, length:LENGTH[slot.kind]
+      }));
+      const positions = signalPositions(lane.signals!,lane.line.length,v,trips,seconds);
+      const ahead = positions.flatMap((s,i) => s === null ? [] : [{front:s+trips[i].length/2,rear:s-trips[i].length/2}])
+        .sort((a,b) => b.front-a.front);
+      let rear = stop, waiting = 0;
+      for (const car of ahead) {
+        if (car.front > stop+.1) continue;
+        if (rear-car.front > 2.1) break;
+        rear = car.rear;
+        waiting++;
+      }
+      if (waiting) { tail=Math.max(tail,stop-rear+2); count=Math.max(count,waiting); }
+    }
+    return {tail,count};
+  }
+
   update(clockMs: number, darkness: number) {
     this.night.value = darkness;
     for (const mesh of this.meshes.values()) mesh.count = 0;

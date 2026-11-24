@@ -150,6 +150,33 @@ export function xcelsiorRoofFairing(rear: number, front: number, deck: number, l
   return roofExtrusion(enclosure, W - .5, low);
 }
 
+/** Rigid City LOD. Shares the detailed XN40 footprint, wheelbase, arch profile and material. */
+export function cityBusGeometry(liv: BusLivery = DEFAULT_LIVERY) {
+  const k = new Kit();
+  const shell = new THREE.ExtrudeGeometry(bodyProfile(), { depth: W, bevelEnabled: false, curveSegments: 3 });
+  k.geo(shell.translate(0, 0, -W/2).rotateY(-Math.PI/2), liv.body);
+  k.box(W-.35, .36, 6.7, 0, H+.18, -.5, C.roofCap);
+  for (const side of [-1, 1]) {
+    for (let i=0; i<7; i++) {
+      const z = ZR+.35+i*1.62;
+      k.side([side], z, z+1.53, 1.58, 2.63, C.glass, 3);
+    }
+    k.side([side], ZR+.15, ZF-.25, 1.35, 1.49, liv.blue);
+    for (const axle of [AXLE_R, AXLE_F]) {
+      k.geo(new THREE.CylinderGeometry(TYRE_R, TYRE_R, .28, 10)
+        .rotateZ(Math.PI/2).translate(side*(W/2-.13), TYRE_R, axle), C.tyre);
+      k.geo(new THREE.CircleGeometry(.27, 10).rotateY(side*Math.PI/2)
+        .translate(side*(W/2+.02), TYRE_R, axle), C.rim);
+    }
+    k.box(.32, .12, .04, side*.94, .88, ZF, '#ffffff', 1);
+    k.box(.18, .5, .04, side*1.03, 1, ZR, '#d42c24', 2);
+  }
+  for (const z of [AXLE_F+1.25, AXLE_R+1.45]) k.side([-1], z-.44,z+.44,.45,2.68,C.glass,3,.025);
+  k.box(W-.21, 1.1, .05, 0, 2, ZF-.13, C.glass, 3);
+  k.box(W-.62, .18, .05, 0, 2.82, ZF-.22, '#ffb84a', 7);
+  return k.geometry();
+}
+
 export function busGeometry(liv: BusLivery = DEFAULT_LIVERY) {
   const k = new Kit();
   // ---- body shell: profile extruded across the width with rounded edges ------------------

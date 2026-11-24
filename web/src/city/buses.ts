@@ -9,6 +9,7 @@
  */
 import * as THREE from 'three';
 import { roadWidth, type TerrainCity, type TransportRun } from '../terrain/transport-data';
+import type { ConnectorBoard } from './connector-traffic';
 import type { VData } from '../vignette/world';
 import type { LiveBus } from '../model/types';
 import { makeProjector } from '../core/scene-data';
@@ -41,7 +42,7 @@ export function busRuns(vd: TerrainCity, measured: boolean): TransportRun[] {
     : vd.roads.filter((r) => !r.tunnel).map(asRun);
 }
 
-interface Snap {
+export interface BusLanePoint {
   x: number;
   z: number;
   a: number; // heading, atan2(dx, dz)
@@ -51,8 +52,8 @@ interface Snap {
 interface Shown {
   id: string;
   at: number;
-  from: Snap;
-  to: Snap;
+  from: BusLanePoint;
+  to: BusLanePoint;
   t0: number;
 }
 
@@ -68,6 +69,13 @@ export class CityBuses {
   private rejected = new Map<string, number>();
   private index = new PlacementIndex<[P2, P2, TransportRun]>();
   private project: (lon: number, lat: number) => [number, number];
+  private directions = new WeakMap<P2[], 'forward'|'reverse'>();
+  setDirection(points:P2[], allow:'both'|'forward'|'reverse') {
+    if (allow !== 'both') this.directions.set(points,allow);
+  }
+  private mounted = new Set<ConnectorBoard>();
+  private areas: Bounds[] = [];
+  private heights = new WeakMap<TransportRun, (x:number,z:number) => number|null>();
   private obj = new THREE.Object3D();
 
   constructor(private opts: {
@@ -80,30 +88,57 @@ export class CityBuses {
     material?: THREE.Material;
   }) {
     this.project = makeProjector(opts.origin);
-    for (const run of opts.runs) {
+    this.areas.push(opts.bounds);
+    this.indexRuns(opts.runs);
+    this.mesh = new THREE.InstancedMesh(opts.geometry ?? busGeometry(), opts.material ?? busMaterial(this.night), MAX);
+    this.mesh.count = 0;
+    this.mesh.castShadow = this.mesh.receiveShadow = true;
+    this.mesh.frustumCulled = false;
+    this.mesh.name = 'City buses';
+  }
+
+  private indexRuns(runs: TransportRun[]) {
+    for (const run of runs) {
       if (!BUS_STREETS.has(run.cls)) continue;
       for (let i = 1; i < run.pts.length; i++) {
         const seg: [P2, P2, TransportRun] = [run.pts[i - 1], run.pts[i], run];
         this.index.add(seg, [run.pts[i - 1], run.pts[i]], SNAP_M);
       }
     }
-    this.mesh = new THREE.InstancedMesh(opts.geometry ?? busGeometry(), opts.material ?? busMaterial(this.night), MAX);
-    this.mesh.count = 0;
-    this.mesh.castShadow = this.mesh.receiveShadow = true;
-    this.mesh.frustumCulled = false;
-    this.mesh.name = 'Live buses';
+  }
+
+  mount(board: ConnectorBoard) {
+    if (this.mounted.has(board)) return false;
+    this.mounted.add(board);
+    this.areas.push(board.city.bounds);
+    const runs = board.city.roads.filter(r => !r.tunnel && BUS_STREETS.has(r.cls)).map(road => {
+      const run: TransportRun = {kind:road.bridge ? 'bridge' : 'ground', cls:road.cls, name:road.name, pts:road.pts};
+      this.heights.set(run,(x,z) => board.roadHeight(x,z,road));
+      return run;
+    });
+    this.indexRuns(runs);
+    this.rejected.clear();
+    return true;
   }
 
   /** Snap a fix to the nearest indexed street within 25 m, keeping right of travel. */
-  snap(b: LiveBus): Snap | null {
+  snap(b: LiveBus): BusLanePoint | null {
     this.snaps++;
     const [x, z] = this.project(b.position.value.lon, b.position.value.lat);
-    const { bounds: bd } = this.opts;
-    if (x < bd.minX + 4 || x > bd.maxX - 4 || z < bd.minZ + 4 || z > bd.maxZ - 4) return null;
     // Reported heading in scene terms (atan2(dx, dz)); GTFS bearing is clockwise from north (−z).
     const want = b.bearing ? Math.atan2(Math.sin((b.bearing.value * Math.PI) / 180), -Math.cos((b.bearing.value * Math.PI) / 180)) : null;
+    return this.laneAt(x, z, want);
+  }
+
+  laneAt(x: number, z: number, want: number | null, timetable = false): BusLanePoint | null {
+    if (!this.areas.some(bd => x >= bd.minX && x <= bd.maxX && z >= bd.minZ && z <= bd.maxZ)) return null;
     let best: { d: number; score: number; a: P2; c: P2; run: TransportRun } | null = null;
     for (const [a, c, run] of this.index.at(x, z)) {
+      const direction = timetable && this.directions.get(run.pts);
+      if (direction && want !== null) {
+        const dot = (c[0]-a[0])*Math.sin(want) + (c[1]-a[1])*Math.cos(want);
+        if (direction === 'forward' ? dot < 0 : dot > 0) continue;
+      }
       const d = segDist(x, z, a, c);
       if (d > SNAP_M) continue;
       // Where streets cross (or one passes under a bridge) the nearest is ambiguous: prefer the
@@ -120,12 +155,14 @@ export class CityBuses {
     // GTFS bearing: degrees clockwise from north; scene north is −z.
     if (want !== null && Math.cos(want - a) < 0) a += Math.PI;
     // Right of travel: a quarter of the carriageway, at most one lane (2.5 m).
-    const lane = Math.min(2.5, roadWidth(best.run) / 4);
+    const lane = timetable && this.directions.has(best.run.pts) ? 0 : Math.min(2.5, roadWidth(best.run) / 4);
     return { x: ax + (cx - ax) * t - Math.cos(a) * lane, z: az + (cz - az) * t + Math.sin(a) * lane, a, run: best.run };
   }
 
   /** Surface height for a bus at (x, z) on `run`: bridge tread, or the painted terrain. */
-  private surface(x: number, z: number, run: TransportRun): number | null {
+  surface(x: number, z: number, run: TransportRun): number | null {
+    const mounted = this.heights.get(run);
+    if (mounted) return mounted(x,z);
     return run.kind === 'bridge' ? this.opts.deckAt(x, z, run) : this.opts.groundAt(x, z);
   }
 
@@ -191,6 +228,20 @@ export class CityBuses {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
+  timetable(poses: readonly { id: string; point: BusLanePoint }[]) {
+    this.update(null);
+    for (const { id, point } of poses) {
+      const y = this.surface(point.x, point.z, point.run);
+      if (y === null || this.mesh.count >= MAX) continue;
+      this.positions.push({ id, x: point.x, y, z: point.z, a: point.a });
+      this.obj.position.set(point.x, y, point.z);
+      this.obj.rotation.set(0, point.a, 0);
+      this.obj.updateMatrix();
+      this.mesh.setMatrixAt(this.mesh.count++, this.obj.matrix);
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+
   /**
    * Would an illustrative car (centre, length, heading = atan2(dx, dz)) overlap a drawn bus?
    * Oriented-rectangle test with a 1 m margin; levels more than 3 m apart don't interact.
@@ -211,7 +262,7 @@ export class CityBuses {
     (this.mesh.material as THREE.Material).dispose();
   }
 
-  private lerp(s: Shown, now: number): Snap {
+  private lerp(s: Shown, now: number): BusLanePoint {
     const e = smooth(Math.min(1, (now - s.t0) / GLIDE_MS));
     const da = Math.atan2(Math.sin(s.to.a - s.from.a), Math.cos(s.to.a - s.from.a));
     return { x: s.from.x + (s.to.x - s.from.x) * e, z: s.from.z + (s.to.z - s.from.z) * e, a: s.from.a + da * e, run: e < 1 ? s.from.run : s.to.run };
