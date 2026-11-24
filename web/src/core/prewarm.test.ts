@@ -81,4 +81,38 @@ describe('createPrewarmer', () => {
     expect(r.renders()).toBe(1);
     expect(objs.every(o => r.compiled(o.material))).toBe(true);
   });
+
+  it('uploads a hidden group before it shows, ahead of the compile backlog, and resolves when done', async () => {
+    const scene = new THREE.Scene();
+    const backlog = mesh();
+    scene.add(backlog);
+    const area = new THREE.Group();
+    area.visible = false;
+    const parts = [mesh(), mesh(), mesh()];
+    for (const m of parts) area.add(m);
+    scene.add(area);
+    const r = fakeRenderer();
+    // Already compiled: upload draws them anyway (the point is the buffers).
+    const props = (r.renderer as unknown as { properties: { get(m: THREE.Material): { currentProgram?: object } } }).properties;
+    for (const m of parts) props.get(m.material as THREE.Material).currentProgram = {};
+    const p = createPrewarmer(r.renderer, scene, new THREE.PerspectiveCamera(), THREE.HalfFloatType);
+    p.scan();
+    let done = false;
+    const up = p.upload(area).then(() => { done = true; });
+    expect(p.step(2)).toBe(2);
+    expect(r.compiled(backlog.material)).toBe(false);
+    await Promise.resolve();
+    expect(done).toBe(false);
+    expect(p.step(2)).toBe(2); // the last part, then the backlog
+    await up;
+    expect(done).toBe(true);
+    expect(r.compiled(backlog.material)).toBe(true);
+    expect(area.visible).toBe(false);
+  });
+
+  it('refuses a group that is not in the scene', async () => {
+    const scene = new THREE.Scene();
+    const p = createPrewarmer(fakeRenderer().renderer, scene, new THREE.PerspectiveCamera(), THREE.HalfFloatType);
+    await expect(p.upload(new THREE.Group())).rejects.toThrow(/add the group to the scene/);
+  });
 });
