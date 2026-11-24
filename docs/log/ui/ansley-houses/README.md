@@ -25,7 +25,7 @@ House detail (including lit glass), measured by running both renderers against t
 | High | 907,290 | 914,870 | +7,580 |
 | Low | 552,657 | 553,694 | +1,037 |
 
-These are generated house-detail counts, not whole-scene draw counts. The full-board performance run passed both tiers' ceilings: low 2,299,719 triangles / 167.7 MB geometry; high 13,211,335 triangles / 268.9 MB geometry. This is a desktop budget check, not an A16 frame-rate measurement.
+These are generated house-detail counts, not whole-scene draw counts. The full-board performance run passed both tiers' ceilings: low 2,356,763 triangles / 168.4 MB geometry; high 13,729,805 triangles / 273.8 MB geometry. This is a desktop budget check, not an A16 frame-rate measurement.
 
 Round one confirmed that shallow Foursquare dormers could cross the roof ridge. The fix retains the existing 2.7 m minimum rise and has a geometry regression test, verified to fail with the guard removed. The additional painted shingle palette is limited to Ansley so other neighbourhoods retain their colours.
 
@@ -47,3 +47,9 @@ Publishing requires rebuilding `web/dist` and a coordinator deployment; no data 
 - [pc, high, night](pc-high-night-compare.jpg)
 - [pc, low, day](pc-low-day-compare.jpg)
 - [pc, low, night](pc-low-night-compare.jpg)
+
+## Final validation
+
+After merging main, `pnpm test` passed (20 Rust tests, strict Python pipeline checks, 932 web tests with one pre-existing skip, five worker tests), as did `pnpm build` and both tiers of `pnpm test:perf --no-build`. [Lab high](lab-high.png), [lab low](lab-low.png), and [lab low at night](lab-low-night.png) show the Foursquare and the two newer finishes at `/?view=models&v=ansley`. The three models total 1,009 triangles on high and 548 on low.
+
+Review (Claude, two rounds): 1 confirmed correctness issue fixed, 2 plausible limitations documented, visual risk verified with the paired captures. Round two raised a possible override of reported wall material by the illustrative form pass. The only material-tagged footprint intersecting the Ansley box in these source boards is `osm:way:269747407`, a roughly 400 m² footprint handled as an apartment, outside both form swaps. Future qualifying material-tagged houses could trigger this limitation; no speculative fix was made.
