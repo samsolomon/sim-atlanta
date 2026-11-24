@@ -6,10 +6,10 @@ The second original Colony Square office tower, at Peachtree and 14th, replaces 
 
 The registration uses the April 2018 lidar (USGS EPT; ground median 296.1 m NAVD88), sampled on a 2 m grid in the 45° frame.
 
-- The roof is a 38 × 55.5 m rectangle at a uniform 83.3 m. Its centre (796.8, −3752.8) is about 1.5 m off the mapped shaft part `osm:way:1451518632`, on the southeast side.
-- The 88–90 m returns that looked like a podium question are two things. One is a parapet ring about 86–89 m along the north and west edges. The other is the core: 91.2 m over an 11 × 8 m block and 89.9 m over the 11 × 6 m block south of it, matching core part `osm:way:1414724134`.
+- The roof is a 38 × 55.5 m rectangle at a uniform 83.3 m. Centred at (796.8, −3752.8), it reaches up to about 1.2 m beyond the mapped shaft part `osm:way:1451518632` on the northeast and southeast faces.
+- The 88–90 m returns that looked like a podium question are two things. One is a parapet ring about 86–89 m, clearest along the southwest and southeast edges. The other is the core: 91.2 m over an 11 × 8 m block and 89.9 m over the 11 × 6 m block south of it, matching core part `osm:way:1414724134`.
 - The returns up to 88.8 m inside low part `osm:way:1414724136` are spill from the tower's edge, so that part and the other low parts stay at their mapped 7.8 m and 3.9 m. They are drawn as pale bases with street glazing, each on its own ground.
-- The generated residual `podium` part (86.2 m in the data) lies inside the drawn shaft and is not drawn separately.
+- The generated residual `podium` part carries 86.2 m in the data, but it sits outside the shaft on the southwest, where the lidar finds no returns above 60 m. It is drawn as a base at the adjoining part's 7.8 m (an estimate).
 
 ## References
 
@@ -21,7 +21,7 @@ The registration uses the April 2018 lidar (USGS EPT; ground median 296.1 m NAVD
 
 - 20 window floors at 3.6 m above a 7.8 m lobby, with the band up to the roof.
 - 2.5 m bays: 22 on the long faces and 15 on the short faces. Piers are 1.2 m and spandrels 2.3 m, the same as 100.
-- The parapet is 2.7 m tall and 0.6 m thick, drawn all round. Lidar sees it best on the north and west edges.
+- The parapet is 2.7 m tall and 0.6 m thick, drawn all round. Lidar sees it best on the southwest and southeast edges.
 
 ## Lighting
 

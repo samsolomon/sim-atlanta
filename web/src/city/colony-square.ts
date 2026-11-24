@@ -115,7 +115,10 @@ function createColonyTower(buildings: VBuilding[], grid: GroundGrid, tower: Towe
     const c = Math.SQRT1_2, dx = x - tower.origin[0], dz = z - tower.origin[1];
     return [dx * c - dz * c, dx * c + dz * c];
   };
-  const lows = (site.parts ?? []).filter(p => p.h && p.h <= 20 && p.rings.length === 1);
+  // The generated residual 'podium' part carries the tower's height in the data,
+  // but the lidar is low there: draw it as a base at the adjoining 7.8 m.
+  const lows = (site.parts ?? []).filter(p => p.rings.length === 1 && (p.id === 'podium' || (p.h && p.h <= 20)))
+    .map(p => p.id === 'podium' ? { ...p, h: 7.8 } : p);
   const others = lows.map(p => p.rings[0].map(toLocal));
   for (const [n, part] of lows.entries()) {
     const plan = others[n];
