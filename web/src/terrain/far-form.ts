@@ -99,7 +99,10 @@ export function colourDrop(geometry: THREE.BufferGeometry, colours: readonly THR
   };
 }
 
-/** Register a mesh with a far form. Unregisters itself when its geometry is disposed. */
+/** Register a mesh with a far form. Unregisters itself when its geometry is disposed.
+ * Caution: Mesh.raycast honours geometry.drawRange, so a pick or audit run while a mesh is in
+ * its far state misses the dropped triangles (ties, rails, markings). Height queries here read
+ * positions directly and are unaffected. */
 export function registerFar(mesh: THREE.Mesh, keep: number, options: { glowAtNight?: boolean } = {}) {
   const form: FarForm = { mesh, keep, glowAtNight: options.glowAtNight, box: null, far: false };
   forms.add(form);
