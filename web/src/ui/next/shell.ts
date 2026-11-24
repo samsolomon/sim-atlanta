@@ -40,6 +40,11 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
   return e;
 }
 
+/** Set text only when it differs, so a periodic refresh doesn't invalidate style for nothing. */
+function setText(el: HTMLElement, text: string) {
+  if (el.textContent !== text) el.textContent = text;
+}
+
 export function createShellNext(o: ShellOptions): ShellApi {
   let view = o.view;
   let mapMode: View = new URL(location.href).searchParams.get('view') === 'models' ? 'city' : view;
@@ -453,7 +458,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
   let shownBearing = NaN;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
-    if (!tilt.matches(':active, :focus-visible')) tilt.value = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    const tiltNow = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    if (tilt.value !== tiltNow && !tilt.matches(':active, :focus-visible')) tilt.value = tiltNow;
     const show = view !== 'models';
     if (compass.hidden === show) {
       compass.hidden = !show;
@@ -639,7 +645,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
     const t = performance.now();
     if (t - lastTick < 500) return;
     lastTick = t;
-    if (radio && !radioPanel.hidden) progress.value = radio.elapsedS;
+    if (radio && !radioPanel.hidden && progress.value !== radio.elapsedS) progress.value = radio.elapsedS;
     const c = o.center();
     const mpp = o.metresPerPixel?.() ?? null;
     threeD.classList.toggle('a2-outside', !!outside());
@@ -655,35 +661,38 @@ export function createShellNext(o: ShellOptions): ShellApi {
     let svg: string;
     if (wxNow) {
       svg = weatherIcon(wxNow, night);
-      wxText.textContent = `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`;
+      setText(wxText, `${wxNow.tempF != null ? `${Math.round(wxNow.tempF)}° ` : ''}${cap(wxNow.label)}`);
     } else if (s.realTime && !preview) {
       // At the present with no observation yet (or the fetch failed): show no condition at all,
       // never a guessed one in the observed-weather slot.
       svg = '';
-      wxText.textContent = '';
+      setText(wxText, '');
     } else {
       // A shifted clock or a chosen sky is a scene setting: its icon only, no words, so it never
       // reads as a reported condition (#231).
       const sk = skyLabel(o.sky?.() ?? { cloud: 0, rain: 0, fog: 0, snow: 0 });
       svg = weatherIcon({ kind: sk.kind, label: sk.snow ? 'snow' : sk.label, cloud: 0, rain: 0, fog: 0, live: false }, night);
       // At the present, a picked sky says so in words, so it can't pass for the observed one.
-      wxText.textContent = s.realTime && preview ? `Chosen: ${sk.label}` : '';
-      wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
+      setText(wxText, s.realTime && preview ? `Chosen: ${sk.label}` : '');
+      if (wx.title !== `Scene sky: ${sk.label.toLowerCase()}`) wx.title = `Scene sky: ${sk.label.toLowerCase()}`;
     }
-    wx.hidden = !svg;
-    if (wxText.textContent) wx.removeAttribute('title');
+    if (wx.hidden !== !svg) wx.hidden = !svg;
+    if (wxText.textContent && wx.hasAttribute('title')) wx.removeAttribute('title');
     if (wxIcon.dataset.svg !== svg) {
       wxIcon.innerHTML = svg;
       wxIcon.dataset.svg = svg;
     }
-    timeText.textContent = timeFmt.format(now);
-    tierDot.className = `a2-dot a2-dot-${conf.tier}`;
-    tierText.textContent = confidenceWords(conf).join(' · ');
+    // Write only what changed: this runs twice a second, and each DOM write re-styles the card.
+    setText(timeText, timeFmt.format(now));
+    const dotClass = `a2-dot a2-dot-${conf.tier}`;
+    if (tierDot.className !== dotClass) tierDot.className = dotClass;
+    setText(tierText, confidenceWords(conf).join(' · '));
     tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
-    tierDate.textContent = dateFmt.format(now);
-    tierDate.hidden = !conf.shifted;
-    nowBtn.hidden = !conf.shifted;
-    open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`);
+    setText(tierDate, dateFmt.format(now));
+    if (tierDate.hidden !== !conf.shifted) tierDate.hidden = !conf.shifted;
+    if (nowBtn.hidden !== !conf.shifted) nowBtn.hidden = !conf.shifted;
+    const label = `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`;
+    if (open.getAttribute('aria-label') !== label) open.setAttribute('aria-label', label);
     // Feed status is a notice too, but the host's area note wins the single slot.
     const feedNote = s.realTime && s.rail === 'down' ? 'Live feed unavailable · showing the timetable' : null;
     showNotice(loadingNote ?? areaNote ?? feedNote);
