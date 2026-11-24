@@ -16,8 +16,9 @@ export const hurtPlazaGarageId = '8de7071d-aa01-4995-9acb-9387696c58ec';
 
 // Lidar, 22 April 2019: ground ring 316.1 m NAVD88, top deck median 21.9 m, the core to about 28.
 const groundNavd = 316.1, deckH = 21.9, coreH = 28.3, levels = 7;
-// The core, in world metres, inside the footprint's east tip (the lidar's 28 m cluster).
-const core: P2[] = [[381, -14], [391, -14], [391, -4], [381, -4]];
+// The core, in world metres, inside the footprint's east tip (the lidar's 28 m cluster), turned to
+// the garage's own grid so every corner stays inside the walls.
+export const core: P2[] = [[379, -15], [389, -9], [386, -1], [376, -7]];
 
 // Flat vertex colours: a painted library surface is a hooked material the batcher never merges.
 const slot = '#2c3033', spandrel = '#cfcbc2', deck = '#8f8f8a', coreWall = '#bdb8ad';
@@ -56,28 +57,36 @@ export function createHurtPlazaGarage(buildings: VBuilding[], grid: GroundGrid) 
     if (l > 20 && -dx / l < most) { most = -dx / l; plaza = i; }
   });
 
+  // Decks are level across the whole garage on its sloping site: one ground-floor deck above the
+  // highest street corner, and one pitch from there to the lidar top.
+  const sample = ([x, z]: P2) => grid.sample(x + origin[0], z + origin[1]) ?? s.base;
+  const firstDeck = Math.max(s.base + 0.35, ...ring.map(sample)) + 4.2;
+  const pitch = (top - firstDeck) / (levels - 1);
+
   ring.forEach((a, edge) => {
     const b = ring[(edge + 1) % ring.length];
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length < 3) return;
-    const street = Math.max(s.base + 0.35, ...[a, b].map(([x, z]) => grid.sample(x + origin[0], z + origin[1]) ?? s.base));
-    const ground = street + 4.2, pitch = (top - ground) / (levels - 1);
-    // Ground floor: shopfront glass behind a concrete band, the awning on the plaza face.
-    if (length > 12) panel(s.body, a, b, 0.04, 0.96, street + 0.2, ground - 0.9, 0.05, shopfront);
-    panel(s.body, a, b, 0, 1, ground - 0.9, ground, 0.09, spandrel);
+    if (length < 0.5) return;
+    // The shopfront runs from the face's lower street corner, so it meets the pavement all along
+    // a sloping face (the uphill end runs into the ground).
+    const low = Math.min(sample(a), sample(b));
+    if (length > 12) panel(s.body, a, b, 0.04, 0.96, low + 0.2, firstDeck - 0.9, 0.05, shopfront);
+    panel(s.body, a, b, 0, 1, firstDeck - 0.9, firstDeck, 0.09, spandrel);
     if (edge === plaza) {
       // A sloped awning, hung from the wall above the shopfronts.
       const dx = b[0] - a[0], dz = b[1] - a[1];
       const p = (t: number, y: number, out: number) => [a[0] + t * dx + out * dz / length, y, a[1] + t * dz - out * dx / length];
-      s.body.quad(p(0.1, ground - 1.0, 0.1), p(0.1, ground - 1.7, 1.4), p(0.42, ground - 1.7, 1.4), p(0.42, ground - 1.0, 0.1), awning);
+      s.body.quad(p(0.1, firstDeck - 1.0, 0.1), p(0.1, firstDeck - 1.7, 1.4), p(0.42, firstDeck - 1.7, 1.4), p(0.42, firstDeck - 1.0, 0.1), awning);
     }
-    // Each deck: a continuous pale spandrel, about 1.1 m deep, with its edge on the deck line.
+    // Each deck: a continuous pale spandrel, about 1.1 m deep, with its edge on the deck line. Short
+    // jogs carry the spandrels too, so the bands run unbroken round the corners.
+    const bays = Math.max(1, Math.round(length / 8));
     for (let k = 1; k < levels - 1; k++) {
-      const yy = ground + k * pitch;
+      const yy = firstDeck + k * pitch;
       panel(s.body, a, b, 0, 1, yy - 1.1, yy, 0.09, spandrel);
       // Night: the ceiling fixtures read as a thin glowing line under each spandrel, broken up
       // by bay, so the deck is lit without turning into a lightbox.
-      const bays = Math.max(1, Math.round(length / 8));
+      if (length < 6) continue;
       for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, k, i) >= 0.7) continue;
         panel(s.lights, a, b, (i + 0.1) / bays, (i + 0.9) / bays, yy - 1.45, yy - 1.15, 0.05, fixture);

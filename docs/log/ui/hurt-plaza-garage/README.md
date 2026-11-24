@@ -4,7 +4,7 @@ Overture `8de7071d-aa01-4995-9acb-9387696c58ec`, 33 Hurt Plaza SE, on the downto
 
 ## Height (lidar)
 
-The 22 April 2019 3DEP returns give a ground ring at 316.1 m NAVD88 and a top deck at a median of 21.9 m (p95 22.1). The mapped 30.6 m is too tall. A cluster at about 28 m inside the east tip is the stair and elevator core, modelled as a 10 × 10 m block to 28.3 m. There is no phantom tower.
+The 22 April 2019 3DEP returns give a ground ring at 316.1 m NAVD88 and a top deck at a median of 21.9 m (p95 22.1). The mapped 30.6 m is too tall. A cluster at about 28 m inside the east tip is the stair and elevator core, modelled as a 10 × 10 m block to 28.3 m, turned to the garage's grid so it stays inside the walls. There is no phantom tower.
 
 ## Photo and features (confirmed by the skyline lead)
 
@@ -19,7 +19,7 @@ The awning goes on the long face that looks most nearly north, toward Hurt Plaza
 
 ## Estimated
 
-- A 4.2 m ground floor, with the remaining decks spaced evenly to the 21.9 m top.
+- A 4.2 m ground floor above the highest street corner, with the remaining decks spaced evenly to the 21.9 m top. The street falls about 4 m from south-west to north-east, so the decks are one level set for the whole garage, and each shopfront starts at its face's lower corner.
 - 1.1 m spandrels, the awning's slope and size, and the core's plan.
 
 ## Captures
