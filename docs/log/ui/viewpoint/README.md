@@ -4,7 +4,7 @@ ViewPoint (855 Peachtree Street, Preston Partnership for Novare, 2008) is a 36-f
 
 ## Heights from lidar
 
-The mapped heights are 150 m for the tower and 50 m for the garage. The USGS 2019 lidar (the April 2019 Georgia point cloud this repo already samples) disagrees. Peachtree grade is 304.4 m NAVD88. The shops top out at 316.8 m (12.4 m), the garage wings at 340.2 m (south) and 342.7 m (north), and the tower roof at 424.3 m (119.9 m). The crown screen's top runs from 427.2 m over the east end to 437.5 m over Peachtree, a 10.3 m sweep. In 8 m bins from west to east the lidar reads 437.5, 436.0, 434.2, 432.0, 429.4, 428.8, 427.2 and 427.2. City models it as a linear rise over the western 40 m, which matches every bin within 1 m.
+The mapped heights are 150 m for the tower and 50 m for the garage. The USGS GA Statewide B2 lidar (the `GA_Statewide_B2_2018` point cloud this repo already samples) disagrees. [Point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json) Peachtree grade is 304.4 m NAVD88. The shops top out at 316.8 m (12.4 m), the garage wings at 340.2 m (south) and 342.7 m (north), and the tower roof at 424.3 m (119.9 m). The crown screen's top runs from 427.2 m over the east end to 437.5 m over Peachtree, a 10.3 m sweep. In 8 m bins from west to east the lidar reads 437.5, 436.0, 434.2, 432.0, 429.4, 428.8, 427.2 and 427.2. City models it as a linear rise over the western 40 m, which matches every bin within 1 m.
 
 ## Estimates
 
