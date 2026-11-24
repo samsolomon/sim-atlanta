@@ -15,6 +15,9 @@
  *   blue-greys, but they are horizontal;
  * - has sunlight. The floor scales with the sun light's own colour, which City ramps from zero
  *   below the horizon, so dusk and night glass keep their dark.
+ *
+ * Only City installs it, and City's sun is its only DirectionalLight, so `directionalLights[0]` is
+ * the sun. A second directional light in City would need the sun's strength passed in instead.
  */
 import { ShaderLib } from 'three';
 
