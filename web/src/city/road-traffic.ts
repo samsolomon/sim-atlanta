@@ -63,11 +63,10 @@ function pointAt(line: Line, s: number, out: { x: number; z: number }) {
  * heights at its knots (eighths) and one knot beyond each end (NaN: no surface), the knot
  * heights after crack bridging, and per eighth whether it interpolates (1) or samples exactly (2).
  */
-interface Fine {
-  raw: Float64Array; rawKnown: Uint8Array;      // knots -1..9, stored at index + 1
-  knot: Float64Array; knotKnown: Uint8Array;    // knots 0..8
-  eighth: Uint8Array;                           // 0 unknown, 1 interpolate, 2 exact
-}
+type Fine = Float64Array; // [0..10] raw knots -1..9, [11..19] knots 0..8, [20..27] eighths
+/** Not yet sampled, in a Fine (NaN already means no surface). */
+const UNKNOWN = -Number.MAX_VALUE;
+const RAW = 1, KNOT = 11, EIGHTH = 20;
 
 /** A far car's last pose, replayed until its lane's next FAR_HZ tick. */
 interface HeldCar {
@@ -378,7 +377,7 @@ export class RoadTraffic {
     const fine = this.fineOf(lane, i);
     const u = (s - s0) / span * 8, k = Math.min(7, Math.floor(u));
     return this.eighth(lane, fine, s0, span, k) === 1
-      ? fine.knot[k] + (fine.knot[k + 1] - fine.knot[k]) * (u - k) : this.exactHeight(lane, s, x, z);
+      ? fine[KNOT + k] + (fine[KNOT + k + 1] - fine[KNOT + k]) * (u - k) : this.exactHeight(lane, s, x, z);
   }
 
   /** First use of a step: keep interpolating only if the drawn road agrees at its eighths,
@@ -448,8 +447,8 @@ export class RoadTraffic {
   private fineOf(lane: LaneState, i: number): Fine {
     let fine = lane.fine.get(i);
     if (!fine) {
-      fine = { raw: new Float64Array(11), rawKnown: new Uint8Array(11), knot: new Float64Array(9),
-        knotKnown: new Uint8Array(9), eighth: new Uint8Array(8) };
+      // One packed array (about 230 bytes) per flagged step: eighths start at 0 (unknown).
+      fine = new Float64Array(28).fill(UNKNOWN, 0, EIGHTH);
       lane.fine.set(i, fine);
     }
     return fine;
@@ -463,15 +462,15 @@ export class RoadTraffic {
 
   /** Raw exact height at knot j (-1..9) of a step. */
   private raw(lane: LaneState, fine: Fine, s0: number, span: number, j: number) {
-    if (!fine.rawKnown[j + 1]) { fine.raw[j + 1] = this.sampleAt(lane, s0 + span * j / 8); fine.rawKnown[j + 1] = 1; }
-    return fine.raw[j + 1];
+    if (fine[RAW + j] === UNKNOWN) fine[RAW + j] = this.sampleAt(lane, s0 + span * j / 8);
+    return fine[RAW + j];
   }
 
   /** Knot j's height after crack bridging: a knot inside a crack whose rims, an eighth either
    * side, are road and which bisection finds narrower than 25 cm takes the line between them.
    * Never within a tyre's width of a lane end, where a bridge could carry a car past a deck. */
   private knot(lane: LaneState, fine: Fine, s0: number, span: number, j: number) {
-    if (fine.knotKnown[j]) return fine.knot[j];
+    if (fine[KNOT + j] !== UNKNOWN) return fine[KNOT + j];
     const h = span / 8, sk = s0 + h * j, length = lane.course.line.length;
     let y = this.raw(lane, fine, s0, span, j);
     const ra = this.raw(lane, fine, s0, span, j - 1), rb = this.raw(lane, fine, s0, span, j + 1);
@@ -491,13 +490,12 @@ export class RoadTraffic {
         if (hi - left < CRACK_WIDTH_M) y = (ra + rb) / 2;
       }
     }
-    fine.knot[j] = y; fine.knotKnown[j] = 1;
-    return y;
+    return fine[KNOT + j] = y;
   }
 
   /** Whether eighth k of a flagged step interpolates (1) or samples exactly (2). */
   private eighth(lane: LaneState, fine: Fine, s0: number, span: number, k: number) {
-    if (fine.eighth[k]) return fine.eighth[k];
+    if (fine[EIGHTH + k]) return fine[EIGHTH + k];
     const a = this.knot(lane, fine, s0, span, k), b = this.knot(lane, fine, s0, span, k + 1);
     let ok = 2;
     if (a === a && b === b) {
@@ -508,7 +506,7 @@ export class RoadTraffic {
       if (mid === mid && Math.abs(mid - line) <= PROFILE_TOLERANCE) ok = 1;
       else if ((mid !== mid || mid < Math.min(a, b) - CRACK_M) && inside(s0 + h * k) && inside(s0 + h * (k + 1))) ok = 1;
     }
-    return fine.eighth[k] = ok;
+    return fine[EIGHTH + k] = ok;
   }
 
   /** The profile's height at `s` inside step `i`, or null where it cannot interpolate. */
