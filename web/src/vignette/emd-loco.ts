@@ -30,8 +30,8 @@ function cylinder(b: Builder, radius: number, height: number, x: number, y: numb
 
 export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, frontLit: boolean, rearLit: boolean) {
   const small = model === 'gp382', d = EMD_DIMENSIONS[model], end = d.length / 2 - .35;
-  const body = small ? '#969b9e' : '#4d4e50', shade = small ? '#7c858b' : '#3f4143';
-  const cabPaint = small ? '#344f70' : body;
+  const body = small ? '#343f50' : '#4d4e50', shade = small ? '#293442' : '#3f4143';
+  const cabPaint = body;
   const accent = small ? '#ddb15e' : '#e4e1d6';
   const cabFront = small ? 5.9 : 8.0, cabBack = small ? 3.5 : 5.0;
   const nose = end - .6, hoodEnd = -end + .55, roof = small ? 4.46 : 4.65;
@@ -77,7 +77,7 @@ export function emdLocomotive(b: Builder, lamps: Builder, model: EmdModel, front
   }
   // Full-width cab, with bevelled roof and brow. GP's front is flat, SD's roof has a strong visor.
   section(b, [[-1.52,1.52],[1.52,1.52],[1.52,roof-.38],[1.13,roof],[-1.13,roof],[-1.52,roof-.38]], cabBack, cabFront, cabPaint);
-  section(b, [[-1.61,roof-.38],[1.61,roof-.38],[1.17,roof+.08],[-1.17,roof+.08]], cabBack-.08,cabFront+.13,small ? '#aaa99c' : shade);
+  section(b, [[-1.61,roof-.38],[1.61,roof-.38],[1.17,roof+.08],[-1.17,roof+.08]], cabBack-.08,cabFront+.13,shade);
   if (!small) section(b, [[-1.55,roof-.3],[1.55,roof-.3],[1.17,roof+.04],[-1.17,roof+.04]], cabFront+.13,cabFront+.16,accent);
   for (const s of [-1,1]) {
     b.box(1.12,.67,.035,s*.69,3.75,cabFront+.025,GLASS);

@@ -2890,3 +2890,7 @@ Cross-review found an unexpected coupling: City's terrain-opening cutoff used th
 ### 2026-11-23 — Navy paint and distinct cooling silhouettes
 
 Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow nose and frame stripe, while the GP38-2 pairs a stronger blue cab with the grey YN2 hood. The GE radiator was still a box despite its underside detail: replacing its outer faces with angled wings makes the shape read from the matched lab camera. The SD instead has a flat-sided radiator and taller, squarer nose. The revised models use 2,684–3,828 triangles. [Day lineup](log/freight/variety/day.jpg) · [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
+
+### 2026-11-23 — One CSX family in the freight lab
+
+The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
