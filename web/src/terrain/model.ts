@@ -46,6 +46,7 @@ import { createTechLandmark, techIds } from '../city/midtown-culture-tech';
 import { createMidtownMarta } from '../city/midtown-marta';
 import { createSkylineLandmark, skylineIds } from '../city/midtown-skyline';
 import { artsCampusIds, createArtsCampusLandmark } from '../city/arts-campus';
+import { batchLandmarks, landmarkBatchOff } from '../materials/landmark-batch';
 import { createMidtownLandmark, midtownLandmarkIds } from '../city/midtown-landmarks';
 import { midtownVents } from '../city/midtown-marta-vents';
 import { activeOval } from '../city/active-oval';
@@ -76,6 +77,8 @@ export interface DowntownTerrainOptions {
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
   separateBuilding?: string;
+  /** False leaves landmark meshes in their own groups, for tests that inspect a mounted model. */
+  batchLandmarks?: boolean;
   contours?: Contours;
   openings?: readonly OpenSlot[];
   /** Street and path lamps for this area, in the downtown night style. */
@@ -351,6 +354,12 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   });
   scenery.group.add(houses.group);
   for (const landmark of landmarks) { landmark.group.userData.perf = 'buildings'; scenery.group.add(landmark.group); }
+  // Static landmark parts that draw alike share one draw per 500 m cell (materials/landmark-batch.ts).
+  const batches = !landmarkBatchOff && options.batchLandmarks !== false && landmarks.length ? batchLandmarks(landmarks, scenery.group, { name: 'Landmark batches' }) : null;
+  if (batches) {
+    scenery.group.add(batches.group);
+    if (import.meta.env.DEV) console.info('City landmark batches', JSON.stringify(batches.stats));
+  }
   // Yards by rule around every house (walks, drives, foundation planting).
   if (yardLayer) { yardLayer.group.userData.perf = 'landscape'; scenery.group.add(yardLayer.group); }
   // Piedmont Park's Active Oval: backstops, goals, nets and its west retaining walls (high tier).
@@ -423,7 +432,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
     /** Generic-tree level of detail (see World.setDetail). */
     setDetail(d: { farTrees?: boolean; branchShadows?: boolean }) { scenery.setDetail(d); species?.setDetail(d); rolled?.setDetail(d); },
     setSeason(dayOfYear: number) { scenery.setSeason(dayOfYear); species?.setSeason(dayOfYear); rolled?.setSeason(dayOfYear); },
-    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); park?.setNight(factor); houses.setNight(factor); },
+    setNight(factor: number) { trench?.setNight(factor); lighting?.setNight(factor); scenery.setNight(factor); fragment?.setNight(factor); landmarks.forEach(l => l.setNight(factor)); batches?.sync(); park?.setNight(factor); houses.setNight(factor); },
     setWet(factor: number) {
       trench?.setWet(factor);
       board.material.color.setScalar(1 - 0.3 * factor);
