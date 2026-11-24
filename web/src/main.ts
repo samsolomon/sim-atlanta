@@ -548,7 +548,10 @@ async function openCity() {
     city.dispose();
   }
   if (diorama) {
-    cancelMapExit();
+    if (mapExitActive) {
+      cancelMapExit();
+      await applyGraphics();
+    }
     return;
   }
   perf.phase('city:open');
@@ -739,9 +742,11 @@ async function setGraphics(g: Graphics) {
 /** Rebuild City if the tier on screen isn't the chosen one. Also runs after every City load, so a
  * choice made while City was loading still lands. */
 async function applyGraphics() {
-  if (!diorama) return;
+  // The saved choice applies on the next City entry, including a reversed exit.
+  if (!diorama || mapExitActive) return;
+  const city = diorama;
   const { pickQuality } = await import('./city/city');
-  if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
+  if (diorama !== city || mapExitActive || city.quality === (chosenQuality() ?? pickQuality())) return;
   // Rebuild City at the same camera with the new tier.
   const t = diorama.target(), c = diorama.camera();
   keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
