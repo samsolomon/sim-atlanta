@@ -36,8 +36,8 @@ export function createHanoverMidtown(buildings: VBuilding[], site: VBuilding, gr
     });
   const datum = site.floorY === undefined ? shell.base + 0.35 : site.floorY + grid.manifest.vertical.sceneZeroNavd88M;
   const deck = datum + podiumPart.h;
-  const glassWall = '#3d5d64', fin = '#e3e5e1', roofColor = '#7d8281';
-  const glass = ['#4f7f87', '#57888f'];
+  const glassWall = '#4b7178', fin = '#e3e5e1', roofColor = '#7d8281';
+  const glass = ['#5f949b', '#689ca2'];
   const solids = parts.map(p => ({ ring: local(p.rings[0]), top: datum + p.h }));
   const inside = (x: number, z: number, ring: P2[]) => {
     let hit = false;
@@ -56,7 +56,7 @@ export function createHanoverMidtown(buildings: VBuilding[], site: VBuilding, gr
 
   // Podium: parking behind dark screens under the amenity deck.
   const podium = local(podiumPart.rings[0]);
-  shell.prism(podium, shell.base, deck, '#6b6f6e', '#a7a395');
+  shell.prism(podium, shell.base, deck, '#7c807f', '#cbc3b0');
   faces(podium, (a, b, length) => {
     const lo = covered(a, b, length, datum);
     if (deck - lo < 1) return;
