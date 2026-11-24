@@ -449,7 +449,7 @@ const cityProgress = document.getElementById('city-progress')!;
 let cityAbort: AbortController | null = null;
 
 let cityLoad = 0; // bumped whenever City opens or closes, so a load that finishes late is dropped
-let cityTilt = 57; // retain the user's City tilt while Map remains flat
+let cityTilt = 55; // retain the user's City tilt while Map remains flat
 let opening = landing === 'city';
 async function openCity() {
   if (diorama) {
@@ -754,7 +754,7 @@ function closeCity(keepMapView = false) {
 // The lab's own module mounts its markup into #lab-root (models/lab-markup.ts) and pauses drawing
 // while this section is hidden. City is disposed on the way in, so two 3D scenes never run at once.
 let labRoot: HTMLElement | null = null;
-let labView: { escape(): boolean; model(): string | null; reset(): void } | null = null;
+let labView: { openBrowser(): void; escape(): boolean; model(): string | null; reset(): void } | null = null;
 let labReady: Promise<void> | null = null;
 let sceneTitle = document.title;
 const inModels = () => !!labRoot && !labRoot.hidden;
@@ -854,6 +854,22 @@ const shellOptions: ShellOptions = {
     buses: buses.unavailable ? null : buses.current().length,
   }),
   bearing: () => (diorama ? diorama.camera().bearing : map?.getBearing() ?? 0),
+  searchModels: () => labView?.openBrowser(),
+  goToPlace(lon, lat) { map?.flyTo({ center: [lon, lat], zoom: 15, duration: reducedMotion() ? 0 : 500 }); },
+  outsideCity() {
+    const c = map?.getCenter();
+    if (!c) return false;
+    const [x, z] = lonLatToScene(CITY_ORIGIN, c.lng, c.lat);
+    return x < -1000 || x > 1800 || z < -5700 || z > 1100;
+  },
+  centerCity() { map?.jumpTo({ center: [CITY_ORIGIN.lon, CITY_ORIGIN.lat], zoom: 17 }); },
+  getTilt: () => diorama?.camera().tilt ?? cityTilt,
+  setTilt(degrees) {
+    cityTilt = degrees;
+    if (!diorama) return;
+    const t = diorama.target();
+    diorama.lookAt(t.x, t.z, { bearing: diorama.camera().bearing, tilt: degrees, distanceM: diorama.distance() });
+  },
   north() {
     if (inModels()) return;
     if (diorama) return diorama.rotate(diorama.camera().bearing);

@@ -46,6 +46,25 @@ export function mapGestures(
   const on = <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void) =>
     el.addEventListener(type, fn as EventListener, { signal: events.signal, passive: true });
 
+  // Classify once for each wheel burst. Pinch (ctrl-wheel) and notched mouse wheels
+  // retain OrbitControls' zoom-to-cursor behaviour.
+  let lastWheel = -Infinity;
+  let trackpad = false;
+  el.addEventListener('wheel', e => {
+    if (e.timeStamp - lastWheel > 140) {
+      trackpad = e.deltaMode === 0 && (e.deltaX !== 0 || Math.abs(e.deltaY) < 40 || !Number.isInteger(e.deltaY));
+    }
+    lastWheel = e.timeStamp;
+    if (!trackpad || e.ctrlKey || !e.isTrusted) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    onGesture();
+    const orbit = controls as unknown as { _rotateUp(value: number): void };
+    orbit._rotateUp(e.deltaY * 0.004);
+    rotate(e.deltaX * 0.15);
+    controls.update();
+  }, { capture: true, passive: false, signal: events.signal });
+
   // Through OrbitControls' wheel path, so the zoom keeps the point under the cursor. Deferred:
   // OrbitControls ends its own touch state in a pointerup listener that runs after ours, and it
   // ignores the wheel until then.

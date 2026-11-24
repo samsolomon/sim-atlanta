@@ -3055,3 +3055,7 @@ whatever space the panels leave clear.
 [Models on a wide screen](log/ui/final-layout/F09-models.jpg) ·
 [A selected train on a phone](log/ui/final-layout/G02-card.jpg) ·
 [Model lab framing before and after](ui-a2c/final/framing-phone-before-after.jpg).
+
+### 2026-11-24 — The dock stays put when the map tilts
+
+Map and City now share one tab. The 3D button and tilt control use the existing white-model arrival. On a 390 × 760 phone, moving Share to the dock leaves just two camera controls over the scene. The desktop and phone captures show the same shifted clock and Midtown camera, `565,-3965,-101,55,421`. [Desktop](log/ui/final-dock/city.jpg) · [Phone](log/ui/final-dock/phone.jpg).

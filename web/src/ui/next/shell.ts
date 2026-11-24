@@ -10,7 +10,7 @@
 import './next.css';
 import type { AtmosphereOverride } from '../../core/atmosphere';
 import { fetchLive, type Weather } from '../../core/weather';
-import { loadPlaces, placeAt } from '../../core/places';
+import { findPlaces, loadPlaces, placeAt } from '../../core/places';
 import { sunPosition } from '../../vignette/time';
 import { ICON, weatherIcon } from '../icons';
 import { createKeyboard } from '../keyboard';
@@ -41,6 +41,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 
 export function createShellNext(o: ShellOptions): ShellApi {
   let view = o.view;
+  let mapMode: View = view === 'map' ? 'map' : 'city';
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const coarse = matchMedia('(pointer: coarse)');
 
@@ -57,7 +58,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const wxText = el('span');
   wx.append(wxIcon, wxText);
   line.append(time, wx);
-  open.append(place, line);
+  open.append(el('span', { class: 'a2-eyebrow' }, 'Atlanta'), place, line);
   const tier = el('span', { class: 'a2-tier' });
   const tierDot = el('span', { class: 'a2-dot', 'aria-hidden': 'true' });
   const tierText = el('span');
@@ -227,16 +228,20 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const menuBtn = el('button', { type: 'button', class: 'a2-ib', 'aria-label': 'Menu', 'aria-expanded': 'false', 'aria-controls': 'a2-menu' }, `<span class="a2-ic">${ICON.list}</span>`);
   const seg = el('div', { class: 'a2-seg', role: 'group', 'aria-label': 'View' });
   const LABEL: Record<View, string> = { map: 'Map', city: 'City', models: 'Models' };
-  const viewBtns = (['map', 'city', 'models'] as View[]).map((v) => {
+  const viewBtns = (['map', 'models'] as View[]).map((v) => {
     const b = el('button', { type: 'button', class: 'a2-vs', 'data-view': v, title: v === 'models' ? 'Models' : `${LABEL[v]} (${LABEL[v][0]})` }, LABEL[v]);
-    b.addEventListener('click', () => setView(v, true));
+    b.addEventListener('click', () => setView(v === 'map' ? mapMode : v, true));
     return b;
   });
   seg.append(...viewBtns);
   // ---- radio: off until tapped; while it plays, the track title shows beside it ----
   const NOTE = SVG('<path d="M9 18V6l11-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>');
-  const PAUSE = SVG('<path d="M8 5v14M16 5v14"/>');
+
   const radioBtn = el('button', { type: 'button', class: 'a2-ib a2-radio', 'aria-label': 'Play radio', 'aria-pressed': 'false' }, NOTE);
+  radioBtn.setAttribute('aria-label', 'Radio');
+  const radioPanel = el('section', { class: 'a2-dock-pop a2-g', hidden: '', 'aria-label': 'Radio' });
+  const play = el('button', { type: 'button', class: 'a2-btn' }, 'Play');
+  radioPanel.append(el('h2', {}, 'Radio'));
   const radioTitle = el('span', { class: 'a2-radio-title', hidden: '' });
   let radio: import('./radio').Radio | null = null;
   let radioLoading: Promise<import('./radio').Radio> | null = null;
@@ -244,14 +249,14 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (!radio) return;
     // Until the music exists the playlist is a stub: say so rather than pose as playing audio.
     const words = radio.track.src ? radio.track.title : `${radio.track.title} · no audio yet`;
-    radioBtn.innerHTML = radio.playing ? PAUSE : NOTE;
-    radioBtn.setAttribute('aria-pressed', String(radio.playing));
-    radioBtn.setAttribute('aria-label', radio.playing ? `Pause radio: ${words}` : 'Play radio');
+    play.textContent = radio.playing ? 'Pause' : 'Play';
+    play.setAttribute('aria-pressed', String(radio.playing));
+    play.setAttribute('aria-label', radio.playing ? `Pause radio: ${words}` : 'Play radio');
     radioTitle.textContent = words;
     radioTitle.title = words;
-    radioTitle.hidden = !radio.playing;
+    radioTitle.hidden = false;
   };
-  radioBtn.addEventListener('click', async () => {
+  play.addEventListener('click', async () => {
     try {
       // One load, however many taps land while it's in flight.
       radioLoading ??= import('./radio').then(({ createRadio }) => {
@@ -267,8 +272,41 @@ export function createShellNext(o: ShellOptions): ShellApi {
     }
     radio.toggle();
   });
-  bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn, radioTitle);
+  bar.append(menuBtn, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), seg, el('span', { class: 'a2-vsep', 'aria-hidden': 'true' }), radioBtn);
+  radioTitle.hidden = false;
+  radioTitle.textContent = 'Peachtree Drift · no audio yet';
+  radioPanel.append(radioTitle, play);
 
+  const searchBtn = el('button', { type: 'button', class: 'a2-ib a2-search-icon', 'aria-label': 'Search Atlanta' }, SVG('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>'));
+  const searchWrap = el('div', { class: 'a2-dock-field' });
+  const search = el('input', { type: 'search', placeholder: 'Search Atlanta', 'aria-label': 'Search Atlanta' });
+  searchWrap.append(search, el('kbd', {}, /Mac/i.test(navigator.platform) ? '⌘K' : 'Ctrl K'));
+  bar.insertBefore(searchWrap, radioBtn);
+  bar.insertBefore(searchBtn, radioBtn);
+  const resultsPanel = el('section', { class: 'a2-dock-pop a2-results a2-g', hidden: '', 'aria-label': 'Search results' });
+  const cancel = el('button', { type: 'button', class: 'a2-btn' }, 'Cancel');
+  const results = el('div');
+  resultsPanel.append(cancel, results);
+  function placeSearch() {
+    if (phone.matches) resultsPanel.prepend(search);
+    else searchWrap.prepend(search);
+  }
+  placeSearch();
+  phone.addEventListener('change', placeSearch);
+  function renderResults() {
+    results.replaceChildren();
+    for (const p of findPlaces(search.value)) {
+      const row = el('button', { type: 'button', class: 'a2-mi' });
+      row.textContent = p.name;
+      row.onclick = () => {
+        closePops();
+        setView('map', true);
+        o.goToPlace?.(p.lon, p.lat);
+      };
+      results.append(row);
+    }
+    if (!results.childElementCount) results.textContent = 'No matching places';
+  }
   const menu = el('section', { class: 'a2-menu a2-g a2-long', id: 'a2-menu', hidden: '', 'aria-label': 'Menu' });
   // No title block (A2c-menu): rows, Graphics, then the byline and the map-data credit.
   const chev = `<span class="a2-chev">${SVG('<path d="M9 6l6 6-6 6"/>')}</span>`;
@@ -322,7 +360,37 @@ export function createShellNext(o: ShellOptions): ShellApi {
   const resetBtn = el('button', { type: 'button', class: 'a2-ib a2-reset', 'aria-label': 'Reset view', title: 'Reset view', hidden: '' },
     SVG('<path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/>'));
   resetBtn.addEventListener('click', () => o.resetModelView?.());
-  cam.append(compass, resetBtn, camSep, zoomIn, zoomOut, shareSep, shareBtn);
+  const threeD = el('button', { type: 'button', class: 'a2-ib a2-three-d', 'aria-label': '3D city', 'aria-pressed': String(view === 'city') }, '3D');
+  const tilt = el('input', { type: 'range', class: 'a2-tilt', min: '0', max: '70', value: '0', 'aria-label': 'Camera tilt in degrees' });
+  const areaPop = el('section', { class: 'a2-area-pop a2-g', hidden: '' });
+  const take = el('button', { type: 'button', class: 'a2-btn' }, 'Take me there');
+  areaPop.append(el('p', {}, '3D covers downtown and Midtown.'), take);
+  const outside = () => view === 'map' && o.outsideCity?.();
+  const showArea = () => { closePops(areaPop); areaPop.hidden = false; };
+  take.onclick = () => { closePops(); o.centerCity?.(); setView('city', true); };
+  threeD.onfocus = () => { if (outside()) showArea(); };
+  threeD.onclick = () => { if (outside()) showArea(); else setView(view === 'city' ? 'map' : 'city', true); };
+  tilt.addEventListener('input', () => {
+    if (outside()) { tilt.value = '0'; showArea(); return; }
+    const degrees = tilt.valueAsNumber;
+    if (degrees >= 20) {
+      o.setTilt?.(degrees);
+      setView('city', true);
+    } else {
+      setView('map', true);
+    }
+  });
+  const zoomGroup = el('div', { class: 'a2-camera-piece a2-g' });
+  zoomGroup.append(zoomIn, zoomOut);
+  const tiltGroup = el('div', { class: 'a2-camera-piece a2-g a2-tilt-group' });
+  const angle = el('output', { class: 'a2-angle' });
+  tilt.oninput = () => { angle.textContent = tilt.value + '°'; };
+  tiltGroup.append(threeD, tilt, angle);
+  compass.classList.add('a2-g');
+  resetBtn.classList.add('a2-g');
+  cam.classList.remove('a2-g');
+  cam.append(compass, resetBtn, zoomGroup, tiltGroup);
+  bar.append(shareBtn);
 
   // ---- share: live (no time) or freeze this moment (t=…&speed=0), camera in the link ----------
   const share = el('section', { class: 'a2-share-panel a2-g a2-long', id: 'a2-share', hidden: '', 'aria-label': 'Share this view' });
@@ -396,15 +464,14 @@ export function createShellNext(o: ShellOptions): ShellApi {
   let shownBearing = NaN;
   const watchBearing = () => {
     const b = o.bearing?.() ?? 0;
-    const rotated = Math.abs(((b + 540) % 360) - 180) > 0.5;
-    // On Map the compass appears only once the map is rotated; City always shows it.
-    const show = view === 'city' || (view === 'map' && rotated);
+    if (!tilt.matches(':active, :focus-visible')) tilt.value = String(view === 'city' ? Math.round(o.getTilt?.() ?? 55) : 0);
+    const show = view !== 'models';
     if (compass.hidden === show) {
       compass.hidden = !show;
       camSep.hidden = !show;
       cam.classList.toggle('a2-no-compass', !show);
     }
-    if (Math.abs(b - shownBearing) > 0.1) {
+    if (!Number.isFinite(shownBearing) || Math.abs(b - shownBearing) > 0.1) {
       shownBearing = b;
       needle.setAttribute('transform', `rotate(${(-b).toFixed(1)} 16 16)`);
       compass.setAttribute('aria-label', `Face north (now facing ${Math.round(((b % 360) + 360) % 360)}°)`);
@@ -444,8 +511,12 @@ export function createShellNext(o: ShellOptions): ShellApi {
       return false;
     }
   })();
+  const hintWords = el('span');
   if (!seen) {
-    hint = el('p', { class: 'a2-hint a2-g', role: 'note' }, hintText(view, coarse.matches));
+    hint = el('p', { class: 'a2-hint a2-g', role: 'note' });
+    const gotIt = el('button', { type: 'button', class: 'a2-btn' }, 'Got it');
+    hintWords.textContent = hintText(view, coarse.matches);
+    hint.append(hintWords, gotIt);
     const dismiss = () => {
       if (!hint) return;
       hint.classList.add('a2-gone');
@@ -458,15 +529,16 @@ export function createShellNext(o: ShellOptions): ShellApi {
         /* private mode: the hint just shows again next time */
       }
     };
-    for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, dismiss, { once: true, passive: true });
+    gotIt.onclick = dismiss;
+    for (const target of scene()) for (const ev of ['pointerdown', 'wheel']) target?.addEventListener(ev, dismiss, { once: true, passive: true });
   }
 
   const panelHost = createDetailPanel({ allStops: () => o.allStops?.() ?? null, share: () => shareBtn.click() });
-  document.body.append(subject, notice, bar, menu, cam, share, credit, panelHost.host, ...(hint ? [hint] : []));
+  document.body.append(subject, notice, bar, menu, cam, share, radioPanel, resultsPanel, areaPop, credit, panelHost.host, ...(hint ? [hint] : []));
   subjectBottom();
 
   // ---- pop-overs ---------------------------------------------------------------------------
-  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open], [share, shareBtn]];
+  const pops: [HTMLElement, HTMLButtonElement][] = [[menu, menuBtn], [panel, open], [share, shareBtn], [radioPanel, radioBtn], [resultsPanel, searchBtn], [areaPop, threeD]];
   const closePops = (except?: HTMLElement) => {
     for (const [p, b] of pops)
       if (p !== except && !p.hidden) {
@@ -490,6 +562,21 @@ export function createShellNext(o: ShellOptions): ShellApi {
     if (p === menu) menuIcon(show);
     if (show) focus();
   };
+  const startSearch = () => {
+    closePops(resultsPanel);
+    if (view === 'models') { o.searchModels?.(); return; }
+    resultsPanel.hidden = false;
+    renderResults();
+    search.focus();
+  };
+  searchBtn.onclick = startSearch;
+  search.addEventListener('focus', startSearch);
+  search.addEventListener('input', renderResults);
+  cancel.onclick = () => { closePops(); searchBtn.focus(); };
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); startSearch(); }
+  });
+  radioBtn.onclick = () => toggle(radioPanel, radioBtn, () => play.focus());
   menuBtn.addEventListener('click', () => showGraphics());
   menuBtn.addEventListener('click', () => toggle(menu, menuBtn, () => menu.querySelector<HTMLElement>('.a2-mi')?.focus()));
   shareBtn.addEventListener('click', () => toggle(share, shareBtn, () => {
@@ -527,7 +614,7 @@ export function createShellNext(o: ShellOptions): ShellApi {
   });
   document.addEventListener('click', (e) => {
     const t = e.target as Node;
-    if (![subject, panel, bar, menu, share, shareBtn].some((c) => c.contains(t))) closePops();
+    if (![subject, bar, cam, ...pops.map(([p]) => p)].some((c) => c.contains(t))) closePops();
   });
   nowBtn.addEventListener('click', () => backToNow());
 
@@ -556,7 +643,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     lastTick = t;
     const c = o.center();
     const mpp = o.metresPerPixel?.() ?? null;
-    const name = placeLabel(c ? placeAt(c[0], c[1]) : null, mpp == null ? null : mpp * innerWidth);
+    threeD.classList.toggle('a2-outside', !!outside());
+    const name = outside() ? 'Metro Atlanta' : placeLabel(c ? placeAt(c[0], c[1]) : null, mpp == null ? null : mpp * innerWidth);
     if (name && place.textContent !== name) place.textContent = name;
     const s = o.live();
     const preview = weatherChoice !== 'Auto';
@@ -593,8 +681,8 @@ export function createShellNext(o: ShellOptions): ShellApi {
     tierDot.className = `a2-dot a2-dot-${conf.tier}`;
     tierText.textContent = confidenceWords(conf).join(' · ');
     tier.classList.toggle('a2-tier-quiet', !tierText.textContent);
-    tierDate.textContent = conf.shifted ? '' : dateFmt.format(now);
-    tierDate.hidden = conf.shifted;
+    tierDate.textContent = dateFmt.format(now);
+    tierDate.hidden = !conf.shifted;
     nowBtn.hidden = !conf.shifted;
     open.setAttribute('aria-label', `${place.textContent}, ${timeText.textContent}${wxText.textContent ? `, ${wxText.textContent}` : ''}, ${tierText.textContent || 'loading'}. Time and weather`);
     // Feed status is a notice too, but the host's area note wins the single slot.
@@ -645,8 +733,14 @@ export function createShellNext(o: ShellOptions): ShellApi {
 
   // ---- views --------------------------------------------------------------------------------
   function setView(v: View, fromUser = false) {
-    viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
-    if (hint) hint.textContent = hintText(v, coarse.matches);
+    closePops();
+    search.placeholder = v === 'models' ? 'Search models' : 'Search Atlanta';
+    search.setAttribute('aria-label', search.placeholder);
+    searchBtn.setAttribute('aria-label', search.placeholder);
+    if (v !== 'models') mapMode = v;
+    threeD.setAttribute('aria-pressed', String(v === 'city'));
+    viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === (v === 'city' ? 'map' : v))));
+    if (hint) hintWords.textContent = hintText(v, coarse.matches);
     // Models has its own card and panels; the scene chrome (place card, notes, credit) steps aside.
     document.body.classList.toggle('a2-in-models', v === 'models');
     resetBtn.hidden = v !== 'models';
