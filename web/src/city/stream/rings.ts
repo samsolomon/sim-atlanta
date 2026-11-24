@@ -24,10 +24,6 @@ export interface RingConfig {
   offscreenMs: number;
   /** Minimum time in a ring before a demotion. */
   dwellMs: number;
-  /** Full builds (one long main-thread job) wait until the camera has rested this long... */
-  restMs: number;
-  /** ...or until a near section has waited this long (follow mode never rests). */
-  maxWaitMs: number;
 }
 
 export function ringConfig(low: boolean, query?: URLSearchParams): RingConfig {
@@ -43,8 +39,6 @@ export function ringConfig(low: boolean, query?: URLSearchParams): RingConfig {
     midMax: num('mid', 40000),
     offscreenMs: num('offscreen', 6000),
     dwellMs: num('dwell', 4000),
-    restMs: query?.get('rest') === '0' ? 0 : num('rest', 400),
-    maxWaitMs: num('maxwait', 2500),
   };
 }
 
@@ -73,11 +67,13 @@ export function nextRing(current: Ring, input: RingInput, cfg: RingConfig): Ring
   // Fog also bounds the near ring: a close orbit sees only a few hundred metres.
   const nearIn = Math.min(cfg.nearIn, input.fogFar * 0.8);
   const nearOut = Math.min(cfg.nearOut, input.fogFar);
-  if (d < nearIn || (input.atTarget && d < input.fogFar)) return 'near';
+  // The area under the target is what a close view is about; a whole-board view gets no exception.
+  const targetNear = !!input.atTarget && d < nearOut * 2;
+  if (d < nearIn || targetNear) return 'near';
   const canDemote = inRingFor >= cfg.dwellMs && !needed;
   switch (current) {
     case 'near':
-      if (d <= nearOut || input.atTarget || !canDemote) return 'near';
+      if (d <= nearOut || !canDemote) return 'near';
       return d > midOut ? 'unloaded' : 'mid';
     case 'mid':
       if (!canDemote) return 'mid';

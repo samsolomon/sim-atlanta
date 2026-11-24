@@ -284,7 +284,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
-  // Streaming prototype: sections load, swap to a cheap LOD and unload by camera distance.
+  // Streaming prototype: by camera distance, streamed areas swap to a cheap LOD or stop drawing.
   const streamModule = mosaic && midtown && query.get('stream') === '1'
     ? await import('./stream/manager').catch(error => { console.warn('City streaming unavailable', error); return undefined; })
     : undefined;
@@ -872,8 +872,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(next);
   }
   function mosaicBase() {
-    // Streaming keeps the whole board's footprint: sections swap inside it.
-    const rects = stream && streamModule ? streamModule.allBoardRects() : Array.from(mosaic!.areas.values(), a => a.bounds);
+    const rects = Array.from(mosaic!.areas.values(), a => a.bounds);
     // Follow the mounted footprint, so a row that is missing or failed leaves no crowns over the table.
     if (perimeter) edgePlanes(square!.mountedBounds(rects)).forEach((plane, i) => perimeter[i].copy(plane));
     return square!.mosaicPlinth(rects, terrain!.bottomY);
@@ -884,7 +883,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     scene.add(area.group);
     scenery.push(area.group);
     area.setSeason(local(new Date(options.clockMs())).doy);
-    if (squareButton && mosaic && !stream) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
+    if (squareButton && mosaic) squareButton.textContent = mosaic.areas.size === mosaic.areaCount
       ? 'Frame the full board' : `Show full board (${mosaic.areas.size}/${mosaic.areaCount} areas loaded)`;
     renderer.shadowMap.needsUpdate = true;
   }
@@ -916,8 +915,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let areasHeld = !!options.whiteModel;
   let heldAt: { x: number; z: number } | undefined;
   function approachMosaic(x: number, z: number, needed = false) {
-    // Streaming decides from the camera each frame; a needed point loads ahead of it.
-    if (stream) { if (needed) stream.need(x, z); return; }
+    // Streaming: a needed point draws at least its LOD at once.
+    if (stream && needed) stream.need(x, z);
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
     mosaic?.approach(x, z, quality, eastController.signal, mosaicMounted,
       direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
@@ -935,11 +934,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
-      if (stream) {
-        if (brookwood) brookwood.group.visible = true;
-        rebuildStreamTraffic();
-        return;
-      }
+      stream?.mounted();
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       void extendMidtownArterials(added.keys());
@@ -953,44 +948,17 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
   }
-  // Streaming: traffic and Midtown arterials rebuild once per burst of mounts and unmounts, not per area.
-  let trafficRebuild: ReturnType<typeof setTimeout> | undefined;
-  function rebuildStreamTraffic() {
-    clearTimeout(trafficRebuild);
-    trafficRebuild = setTimeout(() => {
-      if (eastController.signal.aborted) return;
-      extendConnectorTraffic();
-      void extendMidtownArterials(Object.keys(midtownRowBounds));
-    }, 400);
-  }
-  if (streamModule && mosaic && square && terrain) {
-    const all = streamModule.allBoardRects();
-    stream = new streamModule.StreamManager(mosaic, quality, streamModule.ringConfig(low, query), low, terrain.bottomY, DATA, {
-      mounted: added => { mosaicMounted(added); perf.phase(`stream:mount:${[...added.keys()].join('+')}`); },
-      unmounted: removed => {
-        for (const a of removed.values()) {
-          const i = scenery.indexOf(a.group);
-          if (i >= 0) scenery.splice(i, 1);
-        }
-        // Brookwood's replaced roadway pieces belonged to the unmounted area.
-        for (let i = replaced.length - 1; i >= 0; i--) {
-          let o: THREE.Object3D | null = replaced[i].parent;
-          while (o && ![...removed.values()].some(a => a.group === o)) o = o.parent;
-          if (o) replaced.splice(i, 1);
-        }
-        if (brookwood && !mosaic.patches.has('brookwood-station') && !mosaic.patches.has('brookwood-south')) brookwood.group.visible = false;
+  if (streamModule && terrain) {
+    stream = new streamModule.StreamManager(streamModule.ringConfig(low, query), low, terrain.bottomY, DATA, {
+      full: id => mosaic?.patches.get(id),
+      changed: () => {
+        // Brookwood's station model draws with its rows.
+        if (brookwood) brookwood.group.visible = ['brookwood-station', 'brookwood-south'].some(id => mosaic?.patches.get(id as 'brookwood-south')?.group.visible);
         renderer.shadowMap.needsUpdate = true;
-        perf.phase(`stream:unmount:${[...removed.keys()].join('+')}`);
-        rebuildStreamTraffic();
       },
-      held: () => areasHeld,
-      failed: section => areaResult(String(section), null),
     });
     scene.add(stream.group);
     stream.setSeason(local(new Date(options.clockMs())).doy);
-    // The plinth and the canopy's clip box cover the whole board once; areas swap inside them.
-    if (perimeter) edgePlanes(square.mountedBounds(all)).forEach((plane, i) => perimeter[i].copy(plane));
-    updatePlinth(square.mosaicPlinth(all, terrain.bottomY));
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1150,8 +1118,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     }
     return null;
   }
-  const streamRects = streamModule?.allBoardRects();
-  const pointOnBoard = (x: number, z: number) => (streamRects && square ? square.nearestPoint(streamRects, x, z) : undefined) ?? mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
+  const pointOnBoard = (x: number, z: number) => mosaic?.point(x, z) ?? boardPoint(b, !!east, x, z, !!north);
   const targetY = (x: number, z: number) => patchY(x, z) ?? stream?.groundAt(x, z) ?? north?.groundAt(x, z) ?? east?.groundAt(x, z) ?? (previewNorth ? terrain?.groundAt(x, z) : null) ?? world.ground(x, z);
   const clampTarget = () => {
     if (drive) return;
@@ -1323,12 +1290,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   if (options.mapGestures) renderer.domElement.removeEventListener('dblclick', onDbl);
   if (squareButton && mosaic) {
     squareButton.type = 'button';
-    squareButton.textContent = stream ? 'Frame the full board' : 'Show full board';
+    squareButton.textContent = 'Show full board';
     document.getElementById('city-info')?.append(squareButton);
     const loadFullBoard = () => {
       wholeBoardRequested = true;
       eastFailed = northFailed = false;
-      if (!stream) mosaic.requestFullBoard();
+      mosaic.requestFullBoard();
       if (east && eastRailFailed) loadKingRail(east);
       // This explicit request also works as a retry when any geographic pack is missing.
       approachMosaic(400, -1500);
@@ -1492,6 +1459,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     stopsDowntown?.setNight(night);
     northStops?.setNight(night);
     if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
+    stream?.setNight(night);
     bloom.strength = 0.55 * night;
     bloom.enabled = !low && night > 0.02 && !perfOverrides.nopass.has('bloom');
 
@@ -1627,7 +1595,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     if (fix && mosaic) {
       approachMosaic(fix.x, fix.z);
       // Per mounted area, so a row that failed or is still loading counts as off the board.
-      const rects = streamRects ?? Array.from(mosaic.areas.values(), a => a.bounds);
+      const rects = Array.from(mosaic.areas.values(), a => a.bounds);
       followBounds = p => rects.some(r => p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ);
     } else if (fix && previewEast) {
       approachEast(fix.x, fix.z);

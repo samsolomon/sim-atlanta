@@ -60,6 +60,8 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
     ray.set(camera.position, a.copy(hit.point).sub(camera.position).normalize());
     ray.far = camera.position.distanceTo(hit.point) - 1; // allow the near face of the vehicle
     const occluded = ray.intersectObjects(scenery, true).some(({ object, point, face }) => {
+      // A hidden area (streaming's mid ring) does not occlude.
+      for (let o: THREE.Object3D | null = object; o; o = o.parent) if (!o.visible) return false;
       const materials = (object as THREE.Mesh).material;
       const material = Array.isArray(materials) ? materials[face?.materialIndex ?? 0] : materials;
       return material?.visible && !material.clippingPlanes?.some(plane => plane.distanceToPoint(point) < 0);

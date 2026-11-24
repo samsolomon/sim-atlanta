@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { addSection, bounds, midtownRows, connect, disconnect, joins, type Area, type Board, type BrookwoodGrid, type Direction, type Section, type TrafficArea } from '../square-board/sections';
+import { addSection, bounds, midtownRows, connect, joins, type Area, type Board, type BrookwoodGrid, type Direction, type Section, type TrafficArea } from '../square-board/sections';
 import type { TerrainQuality } from '../terrain/surface';
 import { PAL } from '../vignette/world';
 
@@ -135,32 +135,6 @@ export class SquareMosaic {
       }).finally(() => { this.loading.delete(direction); this.inflight.delete(load); });
       this.inflight.add(load);
     }
-  }
-  /** Streaming (?stream=1): the boards a section loads. */
-  static boards(section: Section): Board[] {
-    return section === 'north' || section === 'south' ? [`${section}-band`, `${section}-corner`] : [section];
-  }
-  /** Streaming: every section, nearest Five Points first. */
-  get sections(): Section[] { return ['south', 'north', ...(this.midtown ? midtownRows : [])]; }
-  /** Streaming: load one section without its predecessors; joins open with whatever is mounted. */
-  async load(section: Section, quality: TerrainQuality, signal: AbortSignal) {
-    const added = await addSection(section, this.areas, quality, signal,
-      { northBuilding: summitNorth, brookwood: this.brookwood, dataRoot: this.dataRoot, standalone: true });
-    if (signal.aborted) { this.unmount(section, added); return undefined; }
-    for (const [id, area] of added) this.patches.set(id, area);
-    return added;
-  }
-  /** Streaming: unmount a section and free it. Its neighbours' joins close. */
-  unmount(section: Section, areas = new Map(SquareMosaic.boards(section).flatMap(id => {
-    const a = this.patches.get(id);
-    return a ? [[id, a] as const] : [];
-  }))) {
-    disconnect(this.areas, areas.keys());
-    for (const [id, area] of areas) {
-      if (this.patches.get(id) === area) this.patches.delete(id);
-      area.dispose();
-    }
-    return areas;
   }
   /** Resolves once no section load (or follow-up load it started) is still running. */
   async idle() {
