@@ -4,6 +4,7 @@ import type { RoutesFile } from '../model/types';
 import { roadWidth } from '../terrain/transport-data';
 import { Builder, Line, pointInRing, segDist, type P2 } from '../vignette/geom';
 import { PlacementIndex } from '../vignette/spatial';
+import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 
 export const STREETCAR_ROUTE = 'marta:route:STREETCAR';
 type Origin = { lon: number; lat: number };
@@ -218,6 +219,11 @@ export function buildStreetcarTrack(lines: Line[], bounds: Bounds, height: Heigh
   track.castShadow = true;
   const wires = new THREE.Mesh(wire.geometry(), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
   wires.castShadow = false;
+  // Far form (terrain/far-form.ts): the slab stays; rails, grooves, poles and wire are sub-pixel.
+  registerFar(track, orderForFar(track.geometry, colourDrop(track.geometry, [RAIL, GROOVE, POLE])).keep);
+  registerFar(wires, 0);
+  track.name = 'Streetcar slab and rails';
+  wires.name = 'Streetcar wire';
   group.add(track, wires);
   return {
     group,

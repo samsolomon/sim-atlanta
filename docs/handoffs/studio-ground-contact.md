@@ -15,11 +15,16 @@ Done and verified:
 
 Matched views are in `docs/log/underpass-road-joins/join-{before,after,compare}-na-*`. The cam strings are in the PR body.
 
+- **PR #500** `samsolomon/transport-far`: transport far form (setDrawRange on reordered triangles, `terrain/far-form.ts`). Held for the coordinator's A16 run. A frozen build is served on :4697 (2 h) and Taildropped as transport-far-e0e71b80.zip. The North Line is excluded pending the MARTA owner.
+- Freight fillets (studio-amtrak-livery, pipeline-side): I OK'd them pending its rail-ballast audit diff, which comes to me for review.
+
 ## Next steps
 1. Wait for Sam's OK via the coordinator. Rebase before merging (the build log conflicts routinely), then quote `gh pr view 399 --json state,mergeCommit`.
 2. Open scope question for the coordinator: the Connector deck crossings and 17th go through `bridge-approaches.ts`, the Connector agent's module. I haven't inspected the Brookwood ramps; ask before editing either.
 
 ## Traps
+- Pixel-diff City frames only with `?perf&nopass=grade` (animated grain), and on high also `gtao`; otherwise identical runs differ.
+- Perf baselines with swapped files: use `git merge-base HEAD origin/main`, never `origin/main`.
 - **Camera targets inside a slot aim 26 m high.** City's `targetY` returns 0 where the board has no ground, so the view centres far beyond the point you asked for. Aim just outside the opening. The old `north-east`/`north-west` cams have this problem.
 - `__setView` zoom has no `cam=` equivalent; record both.
 - Capture helpers live in the session scratchpad (`shots.mjs`, `compose.mjs`); `/tmp/join-shots.mjs` is the original.
