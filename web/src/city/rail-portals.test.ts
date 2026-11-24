@@ -32,7 +32,7 @@ it.skipIf(!staged)('puts a portal and a terrain opening at each hillside mouth, 
   const mouths = railMouths(rail, v.bounds, grid);
   expect(mouths).toHaveLength(DOWNTOWN_RAIL_ENDS.filter((e) => e.kind === 'hillside').length);
   for (const m of mouths) {
-    // Real cover over the rail (8-9 m of plaza and street), and an opening at least a car high.
+    // Real cover over the rail (8-9 m of plaza and street).
     expect(m.coverY - m.railY).toBeGreaterThan(6);
     expect(m.half).toBeGreaterThanOrEqual(3.2);
     // The heading follows the track approaching the mouth, not a short jog in the mapped end.

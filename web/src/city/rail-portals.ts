@@ -18,12 +18,13 @@ import { colourDrop, orderForFar, registerFar } from '../terrain/far-form';
 type Ground = { sample(x: number, z: number): number | null; manifest: { vertical: { sceneZeroNavd88M: number } } };
 type Run = { kind: string; cls: string; pts: P2[] };
 
-export type MouthKind = 'hillside' | 'under' | 'terminus';
+export type MouthKind = 'hillside' | 'under' | 'cut-end' | 'terminus';
 
 /**
  * Every rail end on the downtown board that neither meets another run nor the board edge, by
  * position (scene metres, 3 m tolerance). `hillside` gets a portal; `under` already passes under a
- * drawn building or deck at grade; `terminus` is a real end of track.
+ * drawn building or deck at grade; `cut-end` is an end of the Five Points east cut, which still
+ * lacks its end face (known, a separate fix); `terminus` is a real end of track.
  */
 export const DOWNTOWN_RAIL_ENDS: { at: P2; kind: MouthKind; why: string }[] = [
   { at: [-368, -592], kind: 'hillside', why: 'freight main into the tunnel under Centennial Olympic Park Dr, The CTR (ex-CNN Center) and the plaza; 8 m of cover' },
@@ -31,9 +32,9 @@ export const DOWNTOWN_RAIL_ENDS: { at: P2; kind: MouthKind; why: string }[] = [
   { at: [-274, -345], kind: 'under', why: 'freight main under the Centennial Olympic Park Dr deck at grade' },
   { at: [-251, -288], kind: 'under', why: 'freight main into the Gulch deck structure at grade' },
   { at: [-199, -202], kind: 'under', why: 'freight main out of the Gulch deck structure at grade' },
-  { at: [171, 118], kind: 'under', why: 'freight main under the Pryor St deck at grade' },
-  { at: [248, 192], kind: 'under', why: 'freight main under the Shirley Clarke Franklin Blvd deck and the 90 Central Ave garage' },
-  { at: [392, 283], kind: 'under', why: 'freight main out from under the Courtland St deck' },
+  { at: [171, 118], kind: 'cut-end', why: 'west end of the Five Points east cut under the Pryor St deck: the cut has no end face yet (follow-up in east-cut-ground.ts)' },
+  { at: [248, 192], kind: 'cut-end', why: 'east end of the Five Points east cut under the Shirley Clarke Franklin Blvd deck: no end face yet (follow-up)' },
+  { at: [392, 283], kind: 'under', why: 'freight main out from under the 90 Central Ave garage and the Courtland St deck (1 m of cover)' },
   { at: [-567, -532], kind: 'under', why: 'GWCC spur into the GWCC rail crossing under the halls' },
   { at: [-563, -532], kind: 'under', why: 'GWCC spur into the GWCC rail crossing under the halls' },
   { at: [-571, -533], kind: 'under', why: 'GWCC spur into the GWCC rail crossing under the halls' },
@@ -109,7 +110,7 @@ export function railMouths(rail: readonly Run[], bounds: { minX: number; maxX: n
           az = p[1] - end.at[1];
         const along = ax * dx + az * dz,
           across = ax * -dz + az * dx;
-        if (Math.abs(along) < 30 && Math.abs(across) < 14) {
+        if (Math.abs(along) < 6 && Math.abs(across) < 14) {
           lo = Math.min(lo, across);
           hi = Math.max(hi, across);
         }
