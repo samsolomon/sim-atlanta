@@ -5,6 +5,8 @@ import { roadWidth, type TerrainCity } from './transport-data';
 import { triangleHeight } from './tread-height';
 
 type Ground = (x: number, z: number) => number | null;
+/** Widest column of an approach cross-section. */
+export const JOINT_COLUMN_M = 1.25;
 export interface Portal {
   /** Left and right outside corners, as x, z, absolute NAVD88 metres. */
   edge: number[][];
@@ -27,6 +29,9 @@ export function bridgeApproaches(
     walls = new Builder(),
     uv: number[] = [];
   const index = new PlacementIndex<number>(16);
+  /** Where each approach meets the board: point(u, d) is u ∈ [0, 1] across the toe,
+   * d metres back from the toe toward the structure. */
+  const joints: { name: string; length: number; point(u: number, d: number): P2 }[] = [];
   function tri(a: number[], b: number[], c: number[]) {
     const i = top.pos.length / 3;
     // The two banks of a bridge have opposite outward normals.
@@ -66,25 +71,34 @@ export function bridgeApproaches(
         break;
     }
     if (length === 0) continue;
-    const toe = bands.map((f) => bare(...xy(f, length))!);
+    joints.push({ name: 'deck ' + a.slice(0, 2).map(Math.round).join(','), length, point: (u, d) => xy(u, length - d) });
+    // The toe row follows the board at every column, so the approach meets it flush.
+    // Columns are at most JOINT_COLUMN_M apart; the board's own faces are 5 m.
+    const width = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const toeAt = (f: number) => bare(...xy(f, length));
     // Hermite vertical curves meet the deck tangent and the land-side street
     // tangent. Estimate the latter over several DEM cells to suppress quantization.
-    const toeSlope = bands.map((f, k) => {
+    const toeSlopeAt = (f: number, toe: number) => {
       const far = bare(...xy(f, length + 10));
-      return far === null ? (toe[k] - bare(...xy(f, length - 4))!) / 4 : (far - toe[k]) / 10;
-    });
+      return far === null ? (toe - (bare(...xy(f, length - 4)) ?? toe)) / 4 : (far - toe) / 10;
+    };
     const step = 4;
-    const profiles = bands.map((f, k) => {
+    const profiles = new Map<number, number[]>();
+    const profile = (f: number) => {
+      const cached = profiles.get(f);
+      if (cached) return cached;
+      const toe = toeAt(f) ?? deck(f),
+        toeSlope = toeSlopeAt(f, toe);
       const heights = Array.from({ length: length / step + 1 }, (_, j) => {
         const t = (j * step) / length;
         const blend = t * t * (3 - 2 * t);
         const tangent =
           (1 - t) * Math.max(-0.11, Math.min(0.11, slope ?? 0)) -
-          t * Math.max(-0.11, Math.min(0.11, toeSlope[k]));
+          t * Math.max(-0.11, Math.min(0.11, toeSlope));
         const curve =
           slope === undefined
-            ? deck(f) + (toe[k] - deck(f)) * t
-            : deck(f) + (toe[k] - deck(f)) * blend + length * t * (1 - t) * tangent;
+            ? deck(f) + (toe - deck(f)) * t
+            : deck(f) + (toe - deck(f)) * blend + length * t * (1 - t) * tangent;
         return slope === undefined || j === 0 ? curve : Math.max(curve, bare(...xy(f, j * step)) ?? curve);
       });
       // Fair the upper envelope of the road and existing terrain. Keep both
@@ -94,40 +108,46 @@ export function bridgeApproaches(
           for (let j = 1; j < heights.length - 1; j++)
             heights[j] = Math.max(heights[j], (heights[j - 1] + heights[j + 1]) / 2 - 0.004);
         }
+      profiles.set(f, heights);
       return heights;
-    });
-    function vertex(k: number, s: number, lift: number): [number, number, number] {
-      const [x, z] = xy(bands[k], s),
+    };
+    function vertex(f: number, s: number, lift: number): [number, number, number] {
+      const [x, z] = xy(f, s),
         t = s / length;
       const remaining = slope === undefined ? 1 - t : 1 - t * t * (3 - 2 * t);
       return [
         x,
-        Math.max(profiles[k][s / step] + lift * remaining, (bare(x, z) ?? -Infinity) + 0.003 * (1 - t)),
+        Math.max(profile(f)[s / step] + lift * remaining, (bare(x, z) ?? -Infinity) + 0.003 * (1 - t)),
         z,
       ];
     }
-    for (let s = 0; s < length; s += 4) {
-      for (let k = 0; k < bands.length - 1; k++) {
-        const lift = k === 0 || k === 3 ? 0.27 : 0.12;
-        const p = vertex(k, s, lift),
-          q = vertex(k + 1, s, lift);
-        const r = vertex(k + 1, s + 4, lift),
-          t = vertex(k, s + 4, lift);
-        tri(p, q, r);
-        tri(p, r, t);
-        if (k === 0 || k === 3) {
-          const [u, v] = k === 0 ? [p, t] : [q, r];
-          walls.quad(u, v, [v[0], bare(v[0], v[2])!, v[2]], [u[0], bare(u[0], u[2])!, u[2]], '#9c9384');
-          const [c, d] = k === 0 ? [q, r] : [p, t];
-          walls.quad(
-            c,
-            d,
-            [d[0], d[1] - 0.15 * (1 - (s + 4) / length), d[2]],
-            [c[0], c[1] - 0.15 * (1 - s / length), c[2]],
-            '#b3aa9a',
-          );
+    for (let k = 0; k < bands.length - 1; k++) {
+      const lift = k === 0 || k === 3 ? 0.27 : 0.12;
+      const pieces = Math.max(1, Math.ceil(((bands[k + 1] - bands[k]) * width) / JOINT_COLUMN_M));
+      const columns = Array.from({ length: pieces + 1 }, (_, i) => bands[k] + ((bands[k + 1] - bands[k]) * i) / pieces);
+      for (let s = 0; s < length; s += 4)
+        for (let i = 0; i < pieces; i++) {
+          const p = vertex(columns[i], s, lift),
+            q = vertex(columns[i + 1], s, lift);
+          const r = vertex(columns[i + 1], s + 4, lift),
+            t = vertex(columns[i], s + 4, lift);
+          tri(p, q, r);
+          tri(p, r, t);
+          if ((k === 0 && i === 0) || (k === 3 && i === pieces - 1)) {
+            const [u, v] = k === 0 ? [p, t] : [q, r];
+            walls.quad(u, v, [v[0], bare(v[0], v[2])!, v[2]], [u[0], bare(u[0], u[2])!, u[2]], '#9c9384');
+          }
+          if ((k === 0 && i === pieces - 1) || (k === 3 && i === 0)) {
+            const [c, d] = k === 0 ? [q, r] : [p, t];
+            walls.quad(
+              c,
+              d,
+              [d[0], d[1] - 0.15 * (1 - (s + 4) / length), d[2]],
+              [c[0], c[1] - 0.15 * (1 - s / length), c[2]],
+              '#b3aa9a',
+            );
+          }
         }
-      }
     }
   }
   // Ground links may join the upper street on the land side of the abutment.
@@ -165,6 +185,15 @@ export function bridgeApproaches(
       const end = line.at(length),
         toe = bare(end.x, end.z);
       if (toe === null || !length) continue;
+      joints.push({
+        name: 'link ' + [p[0], p[1]].map(Math.round).join(','),
+        length,
+        point: (u, d) => {
+          const v = line.at(Math.max(0, length - d)),
+            off = (2 * u - 1) * half;
+          return [v.x + off * v.nx, v.z + off * v.nz];
+        },
+      });
       const start = line.at(0);
       const bank = [-half, half].map(
         (off) => sample(bankPositions, start.x + off * start.nx, start.z + off * start.nz) ?? h,
@@ -212,6 +241,7 @@ export function bridgeApproaches(
   return {
     geometry,
     walls: walls.geometry(),
+    joints,
     groundAt(x: number, z: number, road?: { cls: string; pts: P2[] }) {
       if (road?.cls === 'motorway' && !connected.has(road.pts)) return bare(x, z);
       return sample(positions, x, z);
