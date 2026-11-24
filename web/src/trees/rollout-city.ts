@@ -285,16 +285,18 @@ export function rolloutSpecies(plan: ReturnType<typeof rolloutRow>['plan'], qual
   };
 }
 
+/** A tree a landmark plants at its own height: a 4.5 m multi-stem crape myrtle unless it says. */
+export interface Planting { x: number; z: number; y: number; species?: RolloutSpecies; heightM?: number; spreadM?: number }
+
 /**
- * Trees a landmark plants at its own height (1180 Peachtree's terrace crape myrtles, 4.5 m,
- * multi-stem), registered with the batch like a row's species trees.
+ * Trees a landmark plants at its own height (1180 Peachtree's terrace crape myrtles, the Fifth
+ * Street park deck's trees), registered with the batch like a row's species trees.
  */
-export function rolloutPlantings(spots: { x: number; z: number; y: number }[], quality: TreeQuality, batch = rolloutBatch) {
+export function rolloutPlantings(spots: Planting[], quality: TreeQuality, batch = rolloutBatch) {
   if (!spots.length) return null;
-  const look = ROLLOUT_LOOKS['crape-myrtle'];
-  const remove = batch.add({ quality, trees: spots.map(({ x, z, y }) => ({
-    species: 'crape-myrtle' as const, y,
-    p: { species: look.species, size: 'mature' as const, x, z, seed: positionSeed(x, z), heightM: 4.5, spreadM: 4 },
+  const remove = batch.add({ quality, trees: spots.map(({ x, z, y, species = 'crape-myrtle', heightM = 4.5, spreadM = 4 }) => ({
+    species, y,
+    p: { species: ROLLOUT_LOOKS[species].species, size: 'mature' as const, x, z, seed: positionSeed(x, z), heightM, spreadM },
   })) });
   return { dispose: remove };
 }
