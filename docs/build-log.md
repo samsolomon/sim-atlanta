@@ -3604,3 +3604,7 @@ Marquis One failed its audit: at 490 m it was a beige grid beside a generic beig
 ### 2026-11-24 · Crest on Peachtree's mural
 
 From Peachtree Street, Crest on Peachtree is a plain white 1950s-style slab. From its own roof deck it's covered in a big abstract mural. The lidar put the slab at 58 m with a 64 m centre and the wings at 46 m, 10 m lower than the map's guesses. City paints the deck-facing walls in broad slanted colour bands behind the windows, so the mural reads from the board camera but stays off the street side, where Street View shows none. [Day, night and mural views](log/ui/crest-on-peachtree/README.md)
+
+
+
+**2026-11-24 — The Coca-Cola USA Building's two heights.** The mapped height was 78 m and Enclos lists 216 ft (66 m), while the lidar said 85 m. All three were measuring from a different ground. The tower stands on a plaza about 19 m above the low west grade, and its roof deck is a flat 382.1 m NAVD88. The model takes absolute heights from the lidar, so the plaza, the parapet at 383.2 m and the penthouse at 388.8 m all land where the point cloud has them. The facade is slate glass in a red-brown granite grid under a plain frieze. In the City campus view it now sits behind One Coca-Cola Plaza's cream eggcrate as the Enclos aerial shows. [Captures and references](log/ui/coca-cola-usa/README.md)
