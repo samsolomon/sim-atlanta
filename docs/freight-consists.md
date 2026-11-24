@@ -91,6 +91,32 @@ The envelope follows Greenbrier's [52 ft 2,791 cu ft mill gondola](https://gbrx.
 
 **Use in trains.** Both loads join the manifest car list. `CONSIST_VERSION` is now 3.
 
+### Built: 73-foot centerbeam
+
+The envelope follows Greenbrier's [73 ft riserless-deck centerbeam](https://www.gbrx.com/?p=955):
+
+| Dimension | Value |
+| --- | --- |
+| Over couplers | 80 ft 7 in (24.56 m) |
+| Inside | 73 ft × 9 ft 10 in |
+| Inside height | 11 ft 7.4 in |
+| Extreme height | 15 ft 5.75 in (4.72 m) |
+
+Greenbrier doesn't list truck centres, so the model uses 60 ft (18.29 m) from CN's centerbeam sheet, which is a different builder's car. The truss spacing and lumber bundles are estimated.
+
+There are two baked loads:
+- `centerbeamEmpty` shows the open truss and the full-height end bulkheads.
+- `centerbeamLumber` carries wrapped bundles against both faces of the beam, stepping in toward the top, with exposed board ends. There is no wrap printing.
+
+Triangles:
+
+| Load | High | Low |
+| --- | ---: | ---: |
+| Lumber | 1,772 | 548 |
+| Empty | 812 | 524 |
+
+Low tier draws each side's load as one wrapped block. Both loads join the manifest list. `CONSIST_VERSION` is now 4.
+
 ### Built: City consists
 
 Each passage is a pure function of the line, the signed slot and `CONSIST_VERSION`, in `web/src/city/freight-consist.ts`.

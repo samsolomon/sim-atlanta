@@ -3340,3 +3340,7 @@ The freight kit's fourth car is a general-service tank in the DOT-117 family, si
 ### 2026-11-24 — A gondola full of scrap
 
 The fifth car is an open mill gondola from Greenbrier's 52-foot design: 17.61 m over couplers, with a 1.68 m-deep tub. It runs empty or with a scrap load. The first load was a few flat boxes lying on the floor, invisible from any City camera. The second was a seeded heap of tilted slabs, crested along the centreline. Rotated slabs poked through the side sheets by 20 cm until their size and spread were capped so every rotation stays inside. Empty costs 872 triangles on desktop and 656 on phones; scrap costs 1,232 and 776. [Lab and City](log/freight/gondola/comparison.jpg)
+
+### 2026-11-24 — A centerbeam full of lumber
+
+The sixth car is a 73-foot centerbeam, sized from Greenbrier's riserless-deck car: 24.56 m over couplers and 4.72 m to the top chord. It needed a borrowed number, because Greenbrier publishes no truck centres; CN's sheet for its own 73-foot cars gives 60 ft. Empty, it is all truss: twelve bays of posts and alternating diagonals between full-height bulkheads. Loaded, it carries wrapped bundles that step in toward the beam, as real loads do so the car clears the loading gauge. On phones each side's load becomes a single block, so the loaded car costs 548 triangles against 1,772 on desktop. From City distance, a lumber train reads as a pale stripe through the downtown cut. [Lab and City](log/freight/centerbeam/comparison.jpg)
