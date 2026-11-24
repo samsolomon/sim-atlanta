@@ -100,7 +100,7 @@ export function xe60Geometry(detail:BusDetail='high') {
   shell(f,-7.4,2.07,XE60_LAYOUT.front.axles,detail);shell(r,-8.21,-.6,XE60_LAYOUT.rear.axles,detail);
   door(f,1.27);door(f,-3.9);door(r,-3.2);
   roofFairing(f, -7.30, 1.88, detail);
-  roofFairing(r, -8.02, -.70, detail);
+  roofFairing(r, -8.02, -.78, detail);
   // Broad front glass, upper destination strip and swept silver headlight cheeks.
   f.box(2.36,1.43,.03,0,2.03,2.085,C.glass);f.mark(0);
   f.box(2.25,.25,.035,0,2.83,2.087,C.black);f.mark(0);
