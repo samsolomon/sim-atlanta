@@ -4,7 +4,7 @@ Marquis Two (285 Peachtree Center Avenue, 1988) uses the mapped Overture outline
 
 ## Heights from lidar
 
-The SKYDB narrow-end photographs show the centre bay rising above its neighbours to a slotted crown. The USGS GA Statewide B2 2018 point cloud confirms this on both towers. Side-bay roofs sit at 418.9–419.0 m NAVD88 and the centre bars at 426.1 m, with the crown edge at 427.8–428.0 m. Ground beside Marquis Two is 310.6–312.9 m. The mapped 115.2 m therefore belongs to the crown. City now stops both towers' side bays 8.4 m lower and continues the centre bar one more course before a precast crown with recessed slots. Sam approved lowering Marquis One's side bays to match (via the coordinator, 2026-11-23). [USGS point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json)
+The SKYDB narrow-end photographs show the centre bay rising above its neighbours to a slotted crown. The USGS GA Statewide B2 2018 point cloud confirms this on both towers. Side-bay roofs sit at 418.9–419.0 m NAVD88 and the centre bars at 426.1 m, with the crown edge at 427.8–428.0 m. Ground beside Marquis Two is 310.6–312.9 m. The mapped 115.2 m therefore belongs to the crown. City now stops both towers' side bays 8.4 m lower and continues the centre bar one more course before a precast crown with recessed slots. The City coordinator, to whom Sam delegated building skins, approved lowering Marquis One's side bays to match (2026-11-23). [USGS point cloud](https://s3-us-west-2.amazonaws.com/usgs-lidar-public/GA_Statewide_B2_2018/ept.json)
 
 ## Estimates
 
