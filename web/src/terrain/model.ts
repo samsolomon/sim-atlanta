@@ -52,6 +52,7 @@ import { create1010Midtown, midtown1010Id } from '../city/1010-midtown';
 import { create1075Peachtree, peachtree1075Id } from '../city/1075-peachtree';
 import { createColonyHouse, colonyHouseId } from '../city/colony-house';
 import { createRambler, ramblerId } from '../city/rambler-atlanta';
+import { createMira, miraId } from '../city/mira-midtown-union';
 import { createOneGeorgiaCenter, oneGeorgiaCenterId } from '../city/one-georgia-center';
 import { createCrownePlaza, crownePlazaId } from '../city/crowne-plaza-midtown';
 import { createMetropolis, metropolisId } from '../city/metropolis';
@@ -467,6 +468,7 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : site.id === peachtree1075Id ? create1075Peachtree(sceneryCity.buildings, site, grid)
       : site.id === colonyHouseId ? createColonyHouse(sceneryCity.buildings, site, grid)
       : site.id === ramblerId ? createRambler(sceneryCity.buildings, site, grid)
+      : site.id === miraId ? createMira(sceneryCity.buildings, site, grid)
       : site.id === oneGeorgiaCenterId ? createOneGeorgiaCenter(sceneryCity.buildings, site, grid)
       : site.id === crownePlazaId ? createCrownePlaza(sceneryCity.buildings, site, grid)
       : site.id === metropolisId ? createMetropolis(sceneryCity.buildings, site, grid)
