@@ -3689,3 +3689,13 @@ Light glass on a north face, or in a neighbour's shadow, used to drop to a near-
 On the M5 Air, City ran at 44 fps with its UI and 59 without, and the 3D scene wasn't the difference. Chrome traces showed why. With any CSS `backdrop-filter` over the WebGL canvas, the display compositor ran two full-screen render passes every frame and blurred the canvas behind each panel. Without one, it ran none and handed the canvas straight to macOS as a CALayer overlay. The dock, place card and camera buttons cover 7.5% of the desktop screen, but the cost scales with the whole screen. On a Galaxy A16 the blur put 26.9 ms per frame on Android's compositor GPU thread. Without it, 3.9 ms.
 
 On Low, the panels now drop the blur and use a denser tint, and long-text sheets go denser still so roofs don't show behind running text. The A16 went from 25.8 to about 31.5 fps (p95 89 to 56–67 ms), within 2 fps of no UI at all. The rest of the gap appears only while the camera turns. The compass needle rotated by rewriting an SVG attribute every frame, which repainted and re-rastered it. It now turns on its own compositor layer, with 0 paints per frame where there were 0.5. High keeps the frosted look, which City's final pass will draw itself ("in-canvas glass"). A second surprise was the Android trace: the canvas is never promoted to an overlay on that phone, even with no DOM at all, so no layout change could ever have bought that back. [390 px before and after](log/ui/low-flat-glass/phone-dock-card.jpg)
+
+### 2026-11-24 · The Grant Building gets its service court back
+
+From the 500 m downtown camera, the Grant Building looked like a blue office slab.
+The 3,377 lidar returns inside its outline put the main roof 39.5 m above the street,
+8 m below the generic height. The roof shape was the bigger clue. Most returns
+clustered on a single deck, with separate pockets as high as 367.6 m NAVD88.
+The mapped U already held the service court, so the new skin could keep that opening
+and place the high points on the roof. The limestone piers, low cornice and three
+arched entrances give the street faces their own rhythm. [Daylight before and after](log/ui/wd-grant-building/grant-day.jpg)
