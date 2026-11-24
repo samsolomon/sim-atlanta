@@ -3,22 +3,26 @@
 ## Active work and merge hold
 
 - **#399** (North Avenue underpass joints) is merged: `bfb20e9143c067c10e385362fb41c08e4f23b94a`.
-- **PR #418** `samsolomon/deck-approach-joins` is on its second pass after coordinator review, open and **held for Sam's OK**. Reply to the coordinator's `msg_2747c2b14e8e`.
-  - Adaptive approach columns and landing bands: `keepColumns`, `JOINT_TOLERANCE_M` 0.12, `LANDING_TOLERANCE_M` 0.06.
-  - Crossing clearance is measured at the crossing point.
-  - Unsurveyed deck-to-deck joints carry the other end's height.
-  - `landingPortals()` (transport.ts, wired in model.ts) gives a road deck that must clear a route in its last seam a board approach, for rises between 0.5 and 2.5 m (Ellis).
-  - `approach-joints.test.ts` fails at baseline.
-  - Low costs +4,922 triangles and +2 calls against main 2569d35c.
-  - Before merging: rebase, then run `pnpm build`, `test:release` and `test:perf`, then quote `gh pr view`.
+- **PR #418** `samsolomon/deck-approach-joins`: third pass, with the coordinator recommending it to Sam. Held for Sam's OK.
+  - Adaptive approach columns and landing bands.
+  - Crossing clearance measured where the route crosses.
+  - Unsurveyed deck joints carry their height.
+  - `landingPortals` (Ellis).
+  - The Ellis join closed: no link ramps on inferred landings; flush side walls.
+- **PR #476** `samsolomon/connector-seam-links`, stacked on #418: the north-band seam links. Held. Merge #418 first, then retarget #476 to main.
+  - Before each merge: rebase, then run `pnpm build`, `test:release` and `test:perf`, then quote `gh pr view`.
+- Reply to the coordinator on `msg_7e1cb58a2ae9`.
 
 ## Next steps
-1. Wait for Sam's OK on #418.
-2. Whitehall and RDA decks climb 30–40% from their landings: the 15% minimum propagation in `draw()`'s inference. Two attempts failed (see PR #418), so this needs a design pass.
-3. North-band Connector link stubs hover about 2 m at the downtown seam (z=−1300). That's a cross-board ramp continuation; I've asked the coordinator whether it's mine or Connector's.
-4. The 17th Street west approach has 0.49 m of terrain showing through partway along.
+1. Wait for Sam's OK on #418, then #476.
+2. Known gaps, all in `docs/art-backlog.md` under "Road joins still to smooth", each with a camera:
+   - Whitehall and RDA decks climb 30–40% from their landings.
+   - Peachtree at Brookwood would need a 5.8 m approach.
+3. The 17th Street west approach still has 0.49 m of terrain showing through.
 
 ## Traps
+- Perf on the shared Studio can be noisy, so re-run a baseline that looks wrong (one #418 baseline read 86 programs, then 79).
+- `bridgeApproaches().groundAt` returns bare ground for motorway runs unless they're in `connected`; landing portals pass `road` for that.
 - When swapping files to measure a baseline, use the merge base, not `origin/main` (main's newer files import things the base lacks). In zsh, write `${BASE}:web/...`, because `$BASE:w` is a modifier.
 - "Dark band" at a deck landing usually means a steep tread facing away from the sun, not slab sides. Check the deck grade with `deckAt` first.
 - Surveyed deck profiles (`deckNavd88M`) must keep their ends. Easing them onto the board broke the I-20 and Spring/Techwood tests by 4–16 m.
