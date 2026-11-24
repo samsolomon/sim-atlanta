@@ -25,9 +25,11 @@ export function freightPass(clockMs: number, lineLength: number): FreightPass | 
   return { slot, dir, head: dir === 1 ? travelled : lineLength - travelled };
 }
 
-export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], highDetail = true) {
+export function createNorcrossFreight(pts: P2[], railhead: (x: number) => number, planes: THREE.Plane[], highTier = true) {
   const line = new Line(pts);
-  const batches = new FreightBatches(CONSIST, true, !highDetail);
+  // Low tier draws separate meshes with the reduced car shapes: an instanced, clipped Lambert
+  // would compile one more shader program than the phone budget allows.
+  const batches = new FreightBatches(CONSIST, highTier, !highTier);
   const material = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: planes, clipShadows: true });
   const cars = CONSIST.map((kind, i) => {
     const car = batches.createCar(kind, material);

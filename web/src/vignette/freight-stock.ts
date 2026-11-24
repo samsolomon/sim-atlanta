@@ -31,7 +31,9 @@ export function freightGeometry(unit: FreightUnit, { leadFront = false, leadRear
     b.box(2.5, .55, 3, 0, .68, center, frame);
     for (const dz of [-.95, .95]) {
       for (const x of [-.72, .72]) {
-        const wheel = new THREE.CylinderGeometry(.49, .49, .16, low && unit === 'grainHopper' ? 6 : 10).rotateZ(Math.PI / 2);
+        // Start at a quarter turn so a vertex of the polygonal wheel, not a flat, rests on the rail.
+        const sides = low && unit === 'grainHopper' ? 6 : 10;
+        const wheel = new THREE.CylinderGeometry(.49, .49, .16, sides, 1, false, Math.PI / 2).rotateZ(Math.PI / 2);
         wheel.translate(x, .49, center + dz);
         b.addGeometry(wheel, steel);
         wheel.dispose();
