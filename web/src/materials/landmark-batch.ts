@@ -228,14 +228,26 @@ export class LandmarkCell extends LOD {
   }
 }
 
+/**
+ * While its cell is far, a group's full version still casts the shadows (so they keep their
+ * detail, and the far version needs no shadow-depth programs of its own) but draws nothing in the
+ * view: three calls onBeforeRender for view draws, not shadow draws, and skips a negative range.
+ */
+function hideFromView(this: Mesh) { (this.userData as { range?: number }).range = this.geometry.drawRange.count; this.geometry.drawRange.count = -1; }
+function restoreRange(this: Mesh) { this.geometry.drawRange.count = (this.userData as { range: number }).range; }
+
 /** Which of a group's draws show, from its night state (`alike`) and its cell's distance. */
 function show(d: DayGroup) {
   const far = !!d.far && d.alike && d.cell.isFar;
   if (d.far) d.far.visible = far;
   if (d.mesh) {
-    d.mesh.visible = d.alike && !far;
+    d.mesh.visible = d.alike;
     for (const r of d.runs) r.mesh.visible = !d.alike;
-  } else d.runs[0].mesh.visible = !far;
+  }
+  if (!d.far) return;
+  const full = d.mesh ?? d.runs[0].mesh;
+  full.onBeforeRender = far ? hideFromView : Mesh.prototype.onBeforeRender;
+  full.onAfterRender = far ? restoreRange : Mesh.prototype.onAfterRender;
 }
 
 interface FarJob { group: DayGroup; geometry: BufferGeometry; meshes: Mesh[]; start: number; count: number; material: Mat; rep: Mesh }
@@ -326,9 +338,8 @@ async function buildFar(jobs: FarJob[], minArea: number, stats: BatchStats, sync
       fg.boundingSphere = b.getBoundingSphere(new Sphere());
       const far = new Mesh(fg, job.material);
       far.name = 'landmark batch (far)';
-      // Casts for the hidden full version (three tests shadow casters against the view camera's
-      // layers, so a shadow-only layer cannot keep the full version casting).
-      far.castShadow = job.rep.castShadow;
+      // The full version keeps casting (see hideFromView).
+      far.castShadow = false;
       far.receiveShadow = job.rep.receiveShadow;
       far.renderOrder = job.rep.renderOrder;
       far.layers.mask = job.rep.layers.mask;

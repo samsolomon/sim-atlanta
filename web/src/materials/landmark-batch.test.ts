@@ -174,19 +174,26 @@ describe('batchLandmarks', () => {
     // Two walls (four triangles) stand in for ~500 pane triangles; the lamp cubes sit on no wall and stay.
     expect(farTris).toBeLessThan(30);
     expect(farTris).toBeGreaterThanOrEqual(4);
-    // The far version casts for the hidden full one.
-    expect(far.castShadow).toBe(true);
+    // The full version keeps casting; the far one does not.
+    expect(far.castShadow).toBe(false);
     // One buffer: the far index reads the class's (grown) buffer, as the full draws do.
     expect(far.geometry.attributes.position).toBe(near.geometry.attributes.position);
     const camera = new PerspectiveCamera();
     const at = (d: number) => { camera.position.set(30, 10, 20 + d); camera.updateMatrixWorld(); cell.update(camera); };
     at(2000);
-    expect([far.visible, near.visible]).toEqual([true, false]);
+    expect(far.visible).toBe(true);
+    // Hidden from the view only: still visible (so it casts), but its view draw is skipped.
+    expect(near.visible).toBe(true);
+    near.onBeforeRender.call(near, ...([] as unknown as Parameters<typeof near.onBeforeRender>));
+    expect(near.geometry.drawRange.count).toBe(-1);
+    near.onAfterRender.call(near, ...([] as unknown as Parameters<typeof near.onAfterRender>));
+    expect(near.geometry.drawRange.count).toBeGreaterThan(0);
     // Hysteresis: 650 m is still far, 550 m is near.
     at(650);
     expect(far.visible).toBe(true);
     at(550);
-    expect([far.visible, near.visible]).toEqual([false, true]);
+    expect(far.visible).toBe(false);
+    expect(near.onBeforeRender).toBe(Mesh.prototype.onBeforeRender);
     // A streaming ring can pin a level.
     b.setCellDetail(`${cell.cell}`, 'lod');
     at(550);
