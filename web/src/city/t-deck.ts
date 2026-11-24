@@ -60,19 +60,19 @@ export function createTDeck(buildings: VBuilding[], grid: GroundGrid) {
     const quad = (l: number, r: number, y0: number, y1: number, o: number, c: string, lit = false) =>
       (lit ? s.lights : s.body).quad(at(l, y0, o), at(l, y1, o), at(r, y1, o), at(r, y0, o), c);
     // Stone base with storefront glazing (lit).
-    quad(0, 1, s.base, shopTop, 0.03, stone);
-    if (len > 4) quad(0.06, 0.94, g0 + 0.4, shopTop - 1, 0.05, storefront, true);
+    quad(0, 1, s.base, shopTop, 0.04, stone);
+    if (len > 4) quad(0.06, 0.94, g0 + 0.4, shopTop - 1.1, 0.08, storefront, true);
     // Pale spandrel band at every deck edge; dark openings between.
     for (let k = 0; k <= levels; k++) {
       const y = shopTop + k * level;
-      quad(0, 1, y - 1.05, y, 0.05, spandrel);
+      quad(0, 1, y - 1.05, y, 0.09, spandrel);
     }
     // Pilasters about every 9 m.
     if (len > 6) {
       const n = Math.max(1, Math.round(len / 9));
-      for (let k = 0; k <= n; k++) quad(Math.max(0, k / n - 0.4 / len), Math.min(1, k / n + 0.4 / len), shopTop, parapet, 0.07, pier);
+      for (let k = 0; k <= n; k++) quad(Math.max(0, k / n - 0.4 / len), Math.min(1, k / n + 0.4 / len), shopTop, parapet, 0.13, pier);
     }
-    quad(0, 1, top, parapet, 0.05, spandrel);
+    quad(0, 1, top, parapet, 0.09, spandrel);
   });
 
   // Stair/elevator cores at the corners (lidar returns ~28 m).
