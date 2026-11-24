@@ -921,6 +921,22 @@ Realised preview mix, all nine rows at high (species trees, ordinary placements 
 | Park (2,109) | loblolly 560, sweetgum 471, dogwood 310, water oak 259, magnolia 243, white oak 169, willow oak 61, American elm 36 |
 | Planted (Ansley pairs and islands, 97) | willow oak 25, American elm 25, crape myrtle 24, magnolia 8, water oak 6, Japanese maple 5, dogwood 4 |
 
+Cost, `?view=city&t=2026-11-20T14:00:00-05:00&perf=run&q=<tier>` on `63d7e332` + this branch,
+Studio headless Chrome (low at the A16 viewport, high at desktop). Ansley appends
+`&cam=1194,-4352,20,20,150`. Calls / triangles / programs:
+
+| View | Low, off | Low, preview | High, off | High, preview |
+|---|---:|---:|---:|---:|
+| Default | 541 / 2,361,810 / 85 | 538 / 2,414,184 / 85 | 1,197 / 13,896,459 / 100 | 1,202 / 16,637,579 / 100 |
+| Ansley 150 m | 87 / 1,246,253 / 43 | 86 / 1,762,314 / 43 | 208 / 5,957,833 / 53 | 221 / 10,358,177 / 53 |
+
+The low default orbit sits beyond the 600 m foliage-mask gate, so its masks are off in both
+columns. Matched sheets (high tier, 1280×800; Nov, Jul and Jan noon, Nov 23:00):
+[Ansley](log/ui/tree-species/all-species/all-species-ansley.jpg),
+[Piedmont](log/ui/tree-species/all-species/all-species-piedmont.jpg),
+[10th Street](log/ui/tree-species/all-species/all-species-street.jpg),
+[skyline](log/ui/tree-species/all-species/all-species-skyline.jpg).
+
 ### White oak
 
 `web/src/trees/white-oak.ts`, *Quercus alba*. [Options and seasons](log/ui/tree-species/options-white-oak.jpg). Sam selected A (rounded-lobed leaf cards) on 2026-11-23; it is the lab default. City wiring belongs to the next rollout. The young forms are upright and narrow; the mature crown is broad and irregular, and the specimen spreads wider than its height on pale, heavy limbs. Leaf cards reuse the existing rounded-lobed painter.
