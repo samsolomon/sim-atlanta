@@ -130,9 +130,27 @@ Not yet: Street view, layers and tours (see Follow-ups).
   (Final 10). It has search, category chips with counts, a Recent row once the catalogue
   is large, and a list whose rows have a thumbnail coloured by service, a name and one
   line; the current model is marked "Showing". On phones it is a full-height sheet (P7).
-- **Framing:** the lab frames the model in the space the panels leave clear. With the
-  browser open it shifts right; with Details open it shifts left. On narrow screens it
-  frames the front three-quarters (the cab end for trains), not the middle.
+- **Framing is computed, not fixed** (Sam, 2026-11-24). Today each view is a fixed camera
+  position and vertical field of view (`TRAIN_VIEWS` etc. in `web/src/models/main.ts`), so
+  a portrait phone keeps the height and loses the width: the ¾ front view shows the middle
+  of the car and cuts off the cab (`docs/ui-a2c/final/framing-phone-before-after.jpg`,
+  left). Instead:
+  - **Clear area:** the canvas minus whatever covers it (card, left browser, right
+    Details, dock, phone sheet). Centre the projection in it with
+    `camera.setViewOffset`, so the model sits between the panels rather than behind one.
+  - **Each view is a direction plus a focus region.** The camera distance is solved so
+    the focus region's bounding box fits the clear area on both axes with about 12% margin
+    (the prototype stepped the distance out until all eight corners projected inside).
+  - **Focus region:** when the clear area is landscape, the whole model (both cars), as
+    now. When it is portrait, the **leading car's front 35%**, the cab end; the rest of
+    the train may run off the trailing edge (right of that image). Buildings and trees
+    use the whole model and fit height.
+  - **Default view on phones:** ¾ front.
+  - **When to refit:** on load, on a view button, on resize, and when a panel opens or
+    closes (ease about 300 ms). Not after the visitor moves the camera; Reset view refits.
+  - Prototyped against main's lab at 390×760 with the card and dock insets; the
+    wide-screen case (browser and Details open) still needs tuning in the build, because
+    the first pass framed the train too small.
 - **"Compare with a photo"** is a modelling tool, so it goes behind `?dev`.
 - **Phones:** Details is a button above the dock (P6).
 - **Returning to Map:** City is disposed on the way into Models today
