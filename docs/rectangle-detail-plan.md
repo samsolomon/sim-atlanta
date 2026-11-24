@@ -109,3 +109,7 @@ Rhodes Hall (OSM way 269637579) now has a custom granite tower, rounded bay,
 steep roof, open porch and carved entrance stairs at (301, −4675).
 [Evidence, estimated dimensions and matched day/night views](rhodes-hall.md).
 SCAD Atlanta and Tech Square with Coda remain next in this workstream.
+
+SCAD Atlanta (OSM way 265351173) now uses its 17 mapped stepped parts, charcoal piers,
+recessed windows and parking bands. [Evidence and captures](scad-atlanta.md).
+Tech Square with Coda remains next after Sam's Rhodes Hall lighting adjustment.

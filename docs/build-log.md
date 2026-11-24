@@ -2681,6 +2681,12 @@ The fix archives the board's OSM track into a fixture: 11 runs, made up of 2 CSX
 
 The Woodruff's "missing" service side was a research gap, not a modelling one. Street View along Arts Center Way found the dock with its sign, "LOADING [DOCK] … use intercom to call dock". It isn't on the Memorial Arts Building at all. It sits in the base of the Piano wing, inside the High's mapped footprint, and serves the whole campus. It also hid twice in City. The podium wall stands on the mapped footprint edge, 3 m in front of the modelled gallery face, so the first dock was drawn behind it. From 15th Street the Memorial shows a different skin from the piazza side: slim ribs about 1.4 m apart over a dark ground loggia. [Panoramas, estimates and gaps](arts-campus.md) · [Before and after](log/ui/culture-review/README.md)
 
+### 2026-11-23 — Dogwood round 2, review draft
+
+The dogwood's floating crown came from two different scales: bloom chips sat more than a cluster radius outside the foliage, and the near leaf tips stayed upright when the crown cards were flattened. The early draft removed those tips, pulled the chips inward, and spent saved geometry on horizontal twigs above a 1.25 m fork; the final pass below removes separate chips entirely. The mature illustrative tree is 6 m tall and 9 m wide. It costs 193 triangles at high detail and 149 at low, including the carpet. Summer eye-level luminance is 0.248. The surprising part was that flattening cluster centres alone never made flat tiers: the crossed cards also needed their vertical extent reduced. [Seasonal review sheet](log/ui/tree-species/options-flowering-dogwood-round-2.jpg). The warm daylight grade and winter twig density remain visual review items.
+
+Sam kept the layered habit and fall colour, but asked for a fuller dome and fewer main limbs. The next pass uses three jointed scaffold limbs above a 45 cm mature trunk, larger overlapping leaf masses, and paired twig forks. It still costs 193 / 149 triangles. White bracts needed daylight-only diffuse fill as well as white paint: their measured saturation fell to 0.018, while the fill switches off at night. The summer crown is 0.236 luminance / 0.842 saturation. The matching camera and Atlanta reference remain on the sheet.
+
 ## 2026-11-23 — Four tree species share a City-wide batch
 
 The first City rollout brings Sam's A choices for crape myrtle, loblolly pine,
@@ -2853,6 +2859,25 @@ Web rebuild only; no `pnpm data`, new requests or worker change.
 [Edgewood BEFORE | AFTER](log/ui/streetcar-queues/edgewood-compare.jpg) ·
 [Low-tier night](log/ui/streetcar-queues/edgewood-low-night.jpg).
 
+### 2026-11-23 — Dogwood A approved, wood tucked inside bloom
+
+Sam approved the fuller layered dome and white bloom, with two last changes: no dark sticks above the bracts and finer winter branches. Shorter upper scaffolds now stay inside the crown. Three tapered twigs replace each blunt fork; a pointed three-sided twig costs three triangles, fewer than a two-sided strip with a blunt end. That geometry saving, plus dropping separate bloom chips in favour of the existing white crown wash, keeps the finished model at 195 high / 146 low triangles. [Bloom and winter before/after](log/ui/tree-species/options-dogwood-final-tidy.jpg).
+
+### 2026-11-23 — A buried slab is not a blocked pavement
+
+The ground audit's 83 cm hit at 14th Street and 28 cm hit at the central Midtown footbridge were their buried undersides. Both tops already cleared the ground by 12 cm. Local winding can turn an underside upward, so winding alone cannot identify a walking surface. Transport now marks its slab-bottom triangle offsets for the development audit; production builds allocate no metadata and the geometry stays unchanged. Both-tier browser audits remove those two false alarms while retaining the real 8.8 cm intrusion at the south footbridge (370, −1870). A generated-deck regression reverses underside winding and also checks that 8 cm of ground above the exposed top still fails. The full suite passed 20 Rust, 950 web and 5 worker tests; Python checks skipped without `.venv`. [14th Street top](log/ground-audit/14th-street-top.jpg), daylight camera `125,-3641,30,55,45` with `dev&mindist=20`. The south footbridge remains a separate geometry issue; no surveyed deck height changed.
+
 ### 2026-11-23 — Winn Park under the canopy
 
 The western ravine now reads as leaf litter and low planting instead of uninterrupted lawn. A narrow earth walk meets a stone terrace, a bench, a channel edge and a small pond. Ground paint carries the idea on both tiers; high adds just 1,263 triangles, while low adds none. The pond and terrace cut the terrain instead of floating above it. Ground-contact checked 4,149 exposed-face samples and 4,036 water samples without a penetration. The surprise was above the ground: the tree rollout's flat leaf carpets crossed the water like orange lids. Winn already paints its litter, so we agreed with the tree owners to omit only the overlapping discs and leave every tree intact. Requires a web rebuild. [Day comparison](log/ui/winn-park/ravine-high-day-compare.jpg) · [Night comparison](log/ui/winn-park/ravine-high-night-compare.jpg) · [References and checks](winn-park.md)
+
+### 2026-11-23 — SCAD's stepped academic block
+
+SCAD Atlanta's 1600 Peachtree building now follows 17 mapped building parts, from the
+northern parking decks to the 23.1 m inferred academic roof. Deep charcoal piers and
+recessed windows follow the newer exterior photos; an older night photograph supplies
+only the warm lobby lighting, because the building was still pale then. The first render
+caught clockwise source rings hiding the facade details inside the walls. Normalizing
+the rings fixed that without moving their geometry. The low tier stays within budget at
+546 draws and 433 MB post-GC heap. [Day](log/ui/scad-atlanta/high-day.png) ·
+[Night](log/ui/scad-atlanta/high-night.png) · [Sources](scad-atlanta.md).
