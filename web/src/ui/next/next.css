@@ -694,3 +694,6 @@ body.city-over-map #city-loading { background: transparent !important; }
 .a2-model-details button[role=switch]::after { content: ''; width: 36px; height: 22px; border-radius: 12px; background: radial-gradient(circle at 11px 50%, white 0 7px,transparent 8px),var(--a2-track); box-shadow: inset 0 0 0 1px var(--a2-hair); }
 .a2-model-details button[role=switch][aria-checked=true]::after { background: radial-gradient(circle at 25px 50%, white 0 7px,transparent 8px),#486c52; }
 .a2-lab .a2-model-details .settings button[role=switch][aria-pressed] { background: transparent; box-shadow: none; }
+@media(max-width:600px) {
+  body:not(.in3d):has(.a2-panel:not([hidden])) .a2-credit { visibility: visible; top: calc(var(--a2-subject-bottom) + 4px); left: var(--a2-left); bottom: auto; right: auto; }
+}

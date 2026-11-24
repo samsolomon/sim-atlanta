@@ -88,17 +88,22 @@ export function freightCard(p: TrackArcProps) {
     <p class="tip">No free live feed exists for freight trains, so this shows how busy the line usually is.</p>`;
 }
 
+function seeModel(id: string) {
+  return `<a class="a2-allstops" data-see-model="${esc(id)}" href="?view=models&amp;model=${encodeURIComponent(id)}">See the model <span aria-hidden="true">›</span></a>`;
+}
+
 export function busCard(bus: LiveBus, now: number, model?: string) {
   const name = bus.routeId?.value.slice('marta:route:'.length);
   return `<h2><span class="dot" style="background:${MODE_COLOR.bus}"></span>MARTA bus ${esc(bus.id.slice('marta:bus:'.length))}</h2>
     <p class="sub">${name ? 'Route ' + esc(name) : 'Route unavailable'}</p>
     <dl><dt class="position-report">Position</dt><dd class="position-report">${bus.at === null ? 'report time unknown' : 'reported ' + ago(bus.at, now)} ${chip(bus.position.tier)}</dd>
-      ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>`;
+      ${model ? `<dt>City model</dt><dd>${esc(model)} ${chip('illustrative')}</dd>` : ''}</dl>${model ? seeModel('xn40') : ''}`;
 }
 
 export function cityFreightCard(line = 'Atlanta Terminal Subdivision') {
   // Look-alike schemes only: CSX-like on the CSX line downtown, NS-like on Norfolk Southern track.
-  const consist = /\bNS\b|Norfolk/.test(line)
+  const ns = /\bNS\b|Norfolk/.test(line);
+  const consist = ns
     ? 'GE AC44-type locomotives in an NS-like scheme, with boxcars'
     : 'GE/Wabtec CM44AC locomotives in a CSX-like scheme, with boxcars';
   const row = (k: string, v: string) => `<div class="a2-row-fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
@@ -108,7 +113,7 @@ export function cityFreightCard(line = 'Atlanta Terminal Subdivision') {
       ${row('Position', `Simulated on the mapped track ${chip('illustrative')}`)}
       ${row('Timing', `A typical pattern, not a timetable ${chip('illustrative')}`)}
       ${row('Consist', `${esc(consist)} ${chip('illustrative')}`)}
-    </dl>`;
+    </dl>${seeModel(ns ? 'cm44acNs' : 'cm44ac')}`;
 }
 
 /** The A2c detail panel's train card: service and line, destination, then one row per fact,
@@ -140,5 +145,5 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
         : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
     </dl>
     ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}
-    ${model ? `<a class="a2-allstops" data-see-model="${model}" href="?view=models&amp;model=${model}">See the model <span aria-hidden="true">›</span></a>` : ''}`;
+    ${model ? seeModel(model) : ''}`;
 }

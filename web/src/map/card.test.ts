@@ -13,6 +13,11 @@ describe('A2c train card', () => {
     expect(destination('RED NORTHBOUND TO NORTH SPRINGS STATION')).toBe('Northbound to North Springs');
     expect(destination('Lakewood-Ft Mcpherson Station')).toBe('To Lakewood-Ft Mcpherson');
   });
+  it('retains report age for raw positions and marks an undated fix Reported', () => {
+    const raw = { ...train('live'), pathId: '' };
+    expect(trainCard(raw, route, undefined, undefined)).toMatch(/Last reported location.*reported.*chip live">Live/);
+    expect(trainCard({ ...raw, observedAt: undefined }, route, undefined, undefined)).toMatch(/Last reported location.*report time unknown.*chip reported">Reported/);
+  });
   it('tiers each fact: next stop by source, cars always illustrative', () => {
     const vt = { id: 'v', name: 'car', lengthM: 23, typicalUnits: 6, art: 'x' };
     const live = trainCard(train('live'), route, undefined, vt, true);
