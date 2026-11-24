@@ -3416,3 +3416,6 @@ night photograph, so the lit share of rooms is an estimate.
 [South face, before and after](log/ui/square-on-5th/compare-south.jpg) ·
 [north face](log/ui/square-on-5th/compare-north.jpg) · [sources](square-on-5th.md)
 
+### 2026-11-24 · Twelve Midtown gets its spires
+
+Twelve Midtown at Atlantic Station had been a plain 85 m block that also covered its low service wing. The lidar finds the slab along 17th Street with its roof at 87 m. Its maximum, 96.5 m, comes from the two pointed spires over each end, which every SKYDB photograph shows. The skin draws the slab in pale precast and teal glass, adds balcony rows on the high tier and the spires on both tiers, and drops the wing to its measured 8.5 m. On the phone tier it costs 542 triangles and two draws. [Before/after, day and night](log/ui/twelve-midtown/README.md)
