@@ -1,0 +1,78 @@
+[
+  {
+    "style": "sedan",
+    "paint": "#aca99b"
+  },
+  {
+    "style": "compact",
+    "paint": "#415467"
+  },
+  {
+    "style": "electric",
+    "paint": "#c6c6be"
+  },
+  {
+    "style": "upright",
+    "paint": "#765452"
+  },
+  {
+    "style": "pickup",
+    "paint": "#aca99b"
+  },
+  {
+    "style": "taxi",
+    "paint": "#edece6"
+  },
+  {
+    "style": "hatch",
+    "paint": "#765452"
+  },
+  {
+    "style": "van",
+    "paint": "#edece6"
+  },
+  {
+    "style": "box",
+    "paint": "#765452"
+  },
+  {
+    "style": "semi",
+    "paint": "#edece6"
+  },
+  {
+    "style": "sedan",
+    "paint": "#c6c6be"
+  },
+  {
+    "style": "compact",
+    "paint": "#c6c6be"
+  },
+  {
+    "style": "electric",
+    "paint": "#edece6"
+  },
+  {
+    "style": "upright",
+    "paint": "#765452"
+  },
+  {
+    "style": "pickup",
+    "paint": "#765452"
+  },
+  {
+    "style": "hatch",
+    "paint": "#aca99b"
+  },
+  {
+    "style": "van",
+    "paint": "#edece6"
+  },
+  {
+    "style": "box",
+    "paint": "#765452"
+  },
+  {
+    "style": "semi",
+    "paint": "#c6c6be"
+  }
+]
