@@ -724,7 +724,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   }
   renderer.info.autoReset = false;
   renderer.localClippingEnabled = true;
-  renderer.setPixelRatio(perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2)));
+  // The tier's (or ?perf&pr's) ratio for the display City is on now; see watchPixelRatio below.
+  const wantedPixelRatio = () => perfOverrides.pixelRatio ?? (low ? 1 : Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(wantedPixelRatio());
   renderer.shadowMap.enabled = perfOverrides.shadow !== 'off';
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
@@ -1324,6 +1326,19 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const ro = new ResizeObserver(resize);
   ro.observe(container);
   resize();
+  // A window dragged to a display with another devicePixelRatio doesn't resize the container, so
+  // the frame loop checks the ratio itself (one global read; a resolution media query's change
+  // event isn't fired everywhere). The buffer, the composer and every pass's targets follow it.
+  let seenDpr = devicePixelRatio;
+  const followPixelRatio = () => {
+    if (devicePixelRatio === seenDpr) return;
+    seenDpr = devicePixelRatio;
+    const pr = wantedPixelRatio();
+    if (pr === renderer.getPixelRatio()) return;
+    renderer.setPixelRatio(pr);
+    composer.setPixelRatio(pr);
+    resize();
+  };
   const perfContext: Parameters<typeof perf.attach>[0] = {
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
@@ -1679,6 +1694,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   const frame = (ts: number) => {
     raf = requestAnimationFrame(frame);
     const frameStart = performance.now();
+    followPixelRatio();
     options.beforeFrame?.(ts);
     environment(Math.min(1, Math.max(0, (ts - lastFrame) / 1000)));
     lastFrame = ts;
