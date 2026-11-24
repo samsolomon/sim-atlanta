@@ -3333,6 +3333,10 @@ The Atlantic's mapped outline straddles two City rows. The row survey only saw t
 
 The mapped outline for 1075 Peachtree breaks the site into seven parts. The tallest, 156.7 m, is the part with a curved north face. North of it, a part the pipeline calls `podium` (18.8 m, inferred) runs out to 12th Street. A 2.5 m raster of the April 2019 lidar disagreed: that "podium" has its roof at 433.1 m NAVD88, about 140 m up, the same as the curved part. The brochure's aerial cover and a Commons photo from 12th Street confirm it: a flat-topped glass block stands in front of the crowned one. The reported 18.8 m podium is really 35 m of precast parking deck. Inside the crowned block the median roof also sits at 433 m, while the 95th percentile reaches 445 m. That makes the thin cantilevered brim an open ring around a lower mechanical roof, not a lid. The louvred band under the brim is lit as one even glow, offices are about 5% lit at 23:30, and the entrance at Peachtree and 12th stays lit. The two tile fragments cost 1,745 low-tier triangles and three meshes, with no new shader program. [Research, lidar table and captures](log/ui/1075-peachtree/README.md)
 
+### 2026-11-24 · 712 West Peachtree, 250 triangles
+
+The 2021 office tower postdates the lidar, so for once the mapped heights stand: an 88 m shaft, a 60 m core and a 25 m deck. The skin is nearly all material. Library curtain glass in deep blue gives it a 1.5 m mullion and a 3.83 m floor line. Two paler floors sit under the roof, a thin dark reveal runs 4 m in from each corner, and the deck has an open band per level. At 23:30 it is a dark office among lit apartment towers. The first skin was 250 triangles of flat navy; review sent it back as a recolour, and the second carries spandrels, fins, a cap and a penthouse in about 600. One trap: a scene z axis that points south put the deck's open bands against the tower wall on the first try. [Day](log/ui/712-west-peachtree/day.jpg) · [Night](log/ui/712-west-peachtree/night.jpg)
+
 ### 2026-11-23 · Nomia, a tower newer than the lidar
 
 Nomia opened in late 2023, so the 2019 point cloud shows a construction site and the mapped parts guess 111.6 m. The skin uses the reported 33 storeys: a 70 × 20 m slab, rotated 29° off the board axis, in a near-black green frame with full-height glass. It adds stacked end balconies, a lighter amenity floor and a pale penthouse. The first attempt returned nothing, because one of the shell's footprint probes sat 3 m outside the slab's rotated frame. The fixes were moving that probe and a north-facing review camera that put the whole face in shadow. Treated as residential, it keeps about 30% of its units lit at 23:30. [Day, night and close views](log/ui/nomia/README.md)
@@ -3444,3 +3448,35 @@ dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 ### 2026-11-24 · Atlantic House
 
 The map gave Atlantic House 125 m. The lidar puts its stone crown about 110 m above its low corner, with end bays 10 m lower. That matches CTBUH's 109 m to within the site's 7 m of slope. It is the first skin built entirely to the overnight rules. It uses vertex colour only, so it batches with zero added draws. Its teal-grey glass sits under the rendered saturation cap (S 29, V 54 sunlit), and lit units come from the shared `litHash` rather than a random stream. The look comes from geometry: cream pilasters, balcony stacks, a slab edge per floor and the crown's stone piers. [Day](log/ui/atlantic-house/day.jpg) · [Night](log/ui/atlantic-house/night.jpg)
+
+### 2026-11-24 · The Medical Arts Building, from its nomination
+
+No good public photographs of the 1927 Medical Arts Building turned up, but the 2016 National Register nomination describes every elevation in turn. That was enough to model it. The two-storey limestone base and orange terracotta band run on Peachtree and the north side. A pilastered capital and a cornice turn both corners and stop. On the north side, a tile panel sits between heightened bays. The south wall is plain red brick with a blank strip where the elevator core sits. The nomination's "60 feet of frontage, 140 feet deep" matched the Overture outline. The lidar put the elevator penthouse and stair head at 357 m and 362 m NAVD88, exactly where the nomination says the two-storey penthouse stands. The building has been boarded since at least 2016, so it is the first skin with no lamp mesh at all. It costs about 470 triangles and goes straight into the downtown landmark batch. [Before and after](log/ui/medical-arts/compare-ne.jpg)
+
+
+### 2026-11-24 · Modera Parkside, height by report
+
+Modera Parkside went up on a lot the 2019 lidar recorded as empty, so the only height available is a reported one: 32 storeys and a rooftop club. City builds that as a white parking podium filling the block, with a blue-grey glass slab over its south end, about 104 m to the roof. The marketing renderings add rainbow stripes up the park side, but no photograph confirmed them, so they're left out and noted in the review README. [Day, night and podium views](log/ui/modera-parkside/README.md)
+
+
+
+### 2026-11-24 · The Standard, measured from the point cloud
+
+The Standard's map entry had one inferred 68.4 m part covering everything, so the 2019 lidar was sampled on an 8 m grid instead of as one number. The grid shows a 63 m north bar, a 61 m east bar with a 64 m core, a 44 m step to the west, a 31 m mid-rise over the garage and a courtyard notch. Each became a mass. The precast skin has the amber "cutouts" from the architect's photos, the mid-rise's roof carries the pool and green roofs, and at 23:30 the student rooms are lit more than a typical apartment tower's. [Day, night and amenity deck](log/ui/the-standard/README.md)
+
+
+### 2026-11-24 · University House is sixteen metres shorter
+
+University House on Spring Street was mapped at 80 m and drawn as a block over the whole lot. The 2019 lidar puts its roof at 63.8 m, or 19 floors at 3.3 m, which matches the floor count reported when it opened. The returns also trace an L around an 8 m garage deck. From a single Midtown Alliance photograph, the skin carries over the grey, charcoal and yellow panel blocks that make the tower easy to pick out near Georgia Tech. This build also showed that on-and-off camera triangle counts carry ±400 of noise and count a mesh several times, so the skin reports its mesh size, 350 triangles on the phone tier, alongside them. [Before/after, day and night](log/ui/university-house/README.md)
+
+
+### 2026-11-24 · MAA Midtown is 84 m, not 98
+
+The table had MAA Midtown at a mapped 98 m. The 2019 lidar has the slab on 11th Street at 386.5 m NAVD88, about 84 m over the street. The block behind it toward Peachtree Walk stops about 5 m lower, and the rooftop pavilion tops out at 389.7 m. The skin follows the lidar, so the tower now stands 14 m shorter than the box it replaces. In City, z grows to the south, and I placed the glass corner and pavilion at the wrong end twice before checking which way 11th Street runs. A 2024 Commons photo gave the rest: a brick slab with seven white-framed balcony stacks, a blue glass corner with a white fin, and a banded garage. [Before and after](log/ui/maa-midtown/day-before-after.jpg) · [night](log/ui/maa-midtown/night-before-after.jpg)
+
+
+**2026-11-24 — Winship's floating roofs were a canopy.** OSM lifted two parts of the Winship Cancer Institute to 17.4 m with nothing under them, which looked like a data error. The architects' photographs explain it: they are the timber drop-off canopy, and the leftover "podium" part the pipeline generated between them is exactly its round oculus. The model keeps all three as mapped. The two parts become a 1.8 m slab, and the residual part stays a hole you can see the podium through. The 2019 lidar caught only the excavation, so the tower's 89 m comes from SOM's 292 ft. The podium part also arrived with two holes, the tower and hall footprints, and that is why the first build fell back to a box. [Captures and parts table](log/ui/winship/README.md)
+
+### 2026-11-24 · 271 Seventeenth's Streamline bands
+
+TVS describes Atlantic Station's tallest office tower as "Streamline Moderne" with an "offset geometry" under a 20 ft glass parapet. The aerial shows that phrase as two dark glass masses on one face: vertical mullions on the east, and silver horizontal bands on the west that stop just under the parapet. The 2019 lidar matched the text closely. The roof is at 107 m, and a ring of returns at 113.5 m runs around all four edges, 6.5 m higher, which is the 20 ft parapet, with a penthouse in the middle. The first build drew nothing at all. The heights had been converted to scene units twice, even though `landmarkShell` coordinates are already in NAVD88, so the tower sat about 300 m underground. A unit test then caught the next error: the code that handled OSM's lower 103 m part had removed the parapet from the whole north face, although lidar shows only a 20 m corner notch. The skin costs about 460 triangles in two meshes. [Before and after](log/ui/271-seventeenth/compare-north.jpg)

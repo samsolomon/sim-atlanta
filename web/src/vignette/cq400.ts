@@ -466,8 +466,15 @@ export function cq400Geometry(spec: CarSpec, line: string) {
  * Material for one car. `role`: 1 = the leading cab end (white lights and name bar),
  * −1 = the tail end (red), 0 = no lit end (middle cars, or cabs coupled inside a train).
  */
+/** City pads every CQ400 clip set (board edges, edges + a tunnel mouth, the North Line portal) to this
+ * many planes: three.js compiles one program per plane count, so they all share one program. */
+export const CQ400_CLIP_PLANES = 5;
+const NEVER_CLIP = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e6);
+
 export function cq400Material(line: string, role: { value: number }, night: { value: number }, clip?: THREE.Plane[]) {
-  const m = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: clip ?? null });
+  if (clip && clip.length > CQ400_CLIP_PLANES) throw new Error(`CQ400 takes at most ${CQ400_CLIP_PLANES} clip planes`);
+  const planes = clip ? [...clip, ...Array.from({ length: CQ400_CLIP_PLANES - clip.length }, () => NEVER_CLIP)] : null;
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true, clippingPlanes: planes });
   const lineCol = { value: new THREE.Color(line) };
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, { uRole: role, uNight: night, uLine: lineCol });
