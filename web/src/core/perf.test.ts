@@ -41,6 +41,20 @@ describe('perf', () => {
   });
 });
 
+describe('perf.ring', () => {
+  it('records ring transitions and counts quick back-and-forth as thrash', () => {
+    perf.ring('north-band', 'mid');
+    perf.ring('north-band', 'mid'); // repeat is not a transition
+    perf.ring('north-band', 'near');
+    perf.ring('north-band', 'mid'); // returns to the ring it just left within 3 s
+    perf.ring('south-band', 'far');
+    const s = perf.ringSummary();
+    expect(s.transitions).toBe(4);
+    expect(s.thrash).toBe(1);
+    expect(s.rings).toMatchObject({ 'north-band': 'mid', 'south-band': 'far' });
+  });
+});
+
 describe('perf.captureDraws', () => {
   it('rows sum to the frame total, and unnamed meshes in different categories stay apart', async () => {
     const scene = new THREE.Scene();

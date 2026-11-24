@@ -31,7 +31,8 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
     if (distance <= 24) hits.push({ vehicle, distance, point: a.clone().lerp(b,t).unproject(camera) });
   }
   function railCar(car: THREE.Object3D, length: number, vehicle: VehicleSelection) {
-    if (!car.visible) return;
+    // A car under a hidden root (streaming hides Brookwood with its rows) is not on screen.
+    for (let o: THREE.Object3D | null = car; o; o = o.parent) if (!o.visible) return;
     const material = (car as THREE.Mesh<THREE.BufferGeometry, THREE.Material>).material;
     // The roof can be visible above a wall while the body is hidden.
     for (const height of [2, vehicle.kind === 'freight' ? 4 : 3.4]) {
@@ -60,6 +61,8 @@ export function pickVehicle(x: number, y: number, width: number, height: number,
     ray.set(camera.position, a.copy(hit.point).sub(camera.position).normalize());
     ray.far = camera.position.distanceTo(hit.point) - 1; // allow the near face of the vehicle
     const occluded = ray.intersectObjects(scenery, true).some(({ object, point, face }) => {
+      // A hidden area (streaming's mid ring) does not occlude.
+      for (let o: THREE.Object3D | null = object; o; o = o.parent) if (!o.visible) return false;
       const materials = (object as THREE.Mesh).material;
       const material = Array.isArray(materials) ? materials[face?.materialIndex ?? 0] : materials;
       return material?.visible && !material.clippingPlanes?.some(plane => plane.distanceToPoint(point) < 0);

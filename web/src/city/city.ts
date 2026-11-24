@@ -294,6 +294,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   options.signal?.throwIfAborted();
   if (requestedSquare && !square) options.areaNote?.('Showing the available downtown board.');
   const mosaic = square && new square.SquareMosaic(DATA, midtown, midtown ? brookwoodGrid : undefined);
+  // Streaming prototype: draw only what the camera can see (fogged-out areas, sub-pixel meshes).
+  const streamModule = mosaic && midtown && query.get('stream') === '1'
+    ? await import('./stream/manager').catch(error => { console.warn('City streaming unavailable', error); return undefined; })
+    : undefined;
+  options.signal?.throwIfAborted();
+  let stream: import('./stream/manager').StreamManager | undefined;
   const previewEast = !!mosaic || (!!grid && joinedEast);
   const previewNorth = !!mosaic || (previewEast && query.get('north') === 'sweet-auburn');
   const cut = prepareEastCut(rf, manifest, grid, vd.terrainTransport?.rail);
@@ -358,6 +364,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     streetcarDowntown?.dispose();
     stopsDowntown?.dispose();
     for (const {parent, object} of replaced) parent.add(object);
+    stream?.dispose();
     mosaic?.dispose();
     eastRail?.dispose();
     north?.dispose();
@@ -981,7 +988,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   let heldAt: { x: number; z: number } | undefined;
   function approachMosaic(x: number, z: number, needed = false) {
     if (areasHeld && mosaic && !needed) { heldAt = { x, z }; return; }
-    mosaic?.approach(x, z, quality, eastController.signal, (added, target) => {
+    mosaic?.approach(x, z, quality, eastController.signal, mosaicMounted,
+      direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  function mosaicMounted(added: Map<string, NonNullable<typeof east>>, target?: { x: number; z: number }) {
       for (const area of added.values()) addArea(area);
       perf.phase(`area:${[...added.keys()].join('+')}`);
       const atl = added.get('brookwood-station');
@@ -994,6 +1004,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       }
       const railArea = atl ?? added.get('brookwood-south');
       if (railArea) attachBrookwood(railArea);
+      stream?.mounted();
       updatePlinth(mosaicBase());
       extendConnectorTraffic();
       void extendMidtownArterials(added.keys());
@@ -1006,7 +1017,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
         controls.update();
         if (atl && brookwoodStudy) setView(65, 66, 165, target.x, target.z);
       }
-    }, direction => areaResult(direction, `Could not load the ${direction} section. Use Show full board to retry.`));
+  }
+  if (streamModule && terrain) {
+    stream = new streamModule.StreamManager({
+      full: id => mosaic?.patches.get(id),
+      changed: () => {
+        // Brookwood's station model draws with its rows.
+        if (brookwood) brookwood.group.visible = ['brookwood-station', 'brookwood-south'].some(id => mosaic?.patches.get(id as 'brookwood-south')?.group.visible);
+        // Like a LOD swap (#534): on low, mark the shadow map dirty and redraw within the shared
+        // 250 ms gap, not on every swap. (Called only from the frame loop and mounts, after
+        // shadowLodDirty is declared below.)
+        if (low && !perfOverrides.shadowGapOld) shadowLodDirty = true; else renderer.shadowMap.needsUpdate = true;
+      },
+      // Scenery only: vehicles, people and weather are never detail-culled.
+      detailRoots: () => [world.group, terrain?.group, east?.group, north?.group, transport?.group,
+        ...(mosaic ? Array.from(mosaic.patches.values(), a => a.group) : [])],
+    });
   }
   function approachNorth(x: number, z: number) {
     if (!previewNorth || north || !east || !terrain || !grid) return;
@@ -1302,6 +1328,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     renderer, scene, quality,
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
+    view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
     post: () => [sceneTarget, composer, ...composer.passes],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
@@ -1571,6 +1598,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       stopsDowntown?.setNight(night);
       northStops?.setNight(night);
       if (mosaic) for (const a of mosaic.patches.values()) a.setNight(night);
+      stream?.setNight(night);
     }
     downtownBatches?.sync(); // after every downtown landmark's setNight
     bloom.strength = 0.55 * night;
@@ -1725,6 +1753,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       setView(-FOLLOW_CAMERA.bearing, FOLLOW_CAMERA.tilt, FOLLOW_CAMERA.distance, focus.x, focus.z);
     }
     treeDetail();
+    stream?.update(camera, controls.target, (scene.fog as THREE.Fog).far, renderer.domElement.height);
     figures?.update(sceneTime, camera, container.clientHeight);
     // Cars off screen (with a shadow-length margin) are not posed or height-sampled.
     if (trafficHeightsStale) {
@@ -1840,6 +1869,13 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     setTimeout(release, 8000);
   }
   if (import.meta.env.DEV) Object.assign(window, { __cityScene: scene });
+  // Streaming: a handle for the perf harness and dev checks.
+  if (stream && (import.meta.env.DEV || perfEnabled)) Object.assign(window, { __stream: {
+    rings: () => stream!.stats(),
+    settled: () => stream!.settled,
+    setCamera: (x: number, z: number, dist = 700, bearing = 0, tilt = 55) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
+    areas: () => mosaic ? [...mosaic.areas.keys()] : [],
+  } });
   // Compile what City may show later (weather, dusk and night lights, culled areas) a little at a
   // time once colour shows, so a clock or weather change never stalls on a first-use shader compile.
   // Waits for the reveal: the white model swaps materials while it holds. ?perf&prewarm=0 for an A/B.

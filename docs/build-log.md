@@ -3333,6 +3333,37 @@ The Atlantic's mapped outline straddles two City rows. The row survey only saw t
 
 The mapped outline for 1075 Peachtree breaks the site into seven parts. The tallest, 156.7 m, is the part with a curved north face. North of it, a part the pipeline calls `podium` (18.8 m, inferred) runs out to 12th Street. A 2.5 m raster of the April 2019 lidar disagreed: that "podium" has its roof at 433.1 m NAVD88, about 140 m up, the same as the curved part. The brochure's aerial cover and a Commons photo from 12th Street confirm it: a flat-topped glass block stands in front of the crowned one. The reported 18.8 m podium is really 35 m of precast parking deck. Inside the crowned block the median roof also sits at 433 m, while the 95th percentile reaches 445 m. That makes the thin cantilevered brim an open ring around a lower mechanical roof, not a lid. The louvred band under the brim is lit as one even glow, offices are about 5% lit at 23:30, and the entrance at Peachtree and 12th stays lit. The two tile fragments cost 1,745 low-tier triangles and three meshes, with no new shader program. [Research, lidar table and captures](log/ui/1075-peachtree/README.md)
 
+### 2026-11-24 · Streaming, three tries in one night
+
+The goal was a City that loads only what the camera needs, so the board can grow toward I-285
+without costing phones. It took three versions to find what passes.
+
+**1. Load on approach.** Areas were built as the camera came near, swapped for a cheap LOD at middle
+distance, and freed far away. GPU memory came back cleanly over five cycles out and back. Then the
+pan routes came in. The worst frame on the phone tier was 533 ms, against today's 50. One area's build
+is a single synchronous main-thread job, so wherever it lands, it stalls.
+
+**2. Load at boot, swap what draws.** Every area loads as today, and the mid ring hides each one behind a
+Worker-built LOD: coarse ground, footprint boxes and forest clumps. On a real Galaxy A16 the default
+view went from 23.3 to 30.7 fps, at 562 against 290 draw calls. The phone is bound by draws, not
+triangles. But the default camera looked different: green instead of November orange, dark where
+Midtown's windows sparkle at night, and flatter colours. Tonight's rule is that speed-ups must not
+change what Sam sees.
+
+**3. Draw only what can be seen.** No LOD. An area whose nearest point is past the fog's full-strength
+distance renders as pure fog colour, so it's hidden. A mesh whose bounding sphere projects under about
+a pixel moves off the render layer. Lights, glows, crowns, signs and emissive or instanced meshes are
+kept by rule. The blink test is today against stream at three cameras, 14:00 and 22:00, in November,
+July and January. At most 0.09% of pixels differ by more than 24/255, and those are moving vehicles.
+The saving is honest but small where the whole board is in view: 558 to 533 draws at the default camera.
+It's larger close in, where fog does the work. At Midtown street level, draws went from 78 to 53 and
+triangles from 1.29M to 0.67M.
+
+The lesson: on today's board, almost every draw at the default camera is visible. The default-view win
+has to come from fewer, bigger batches (the buildings agent's per-cell landmark batches), not from
+skipping things. Streaming earns its keep once the board outgrows the fog, and that needs sliced builds
+first. [Blink test, November](log/streaming/blink-nov20.jpg) ·
+[July, January and close views](log/streaming/blink-seasons-close.jpg)
 ### 2026-11-24 · 712 West Peachtree, 250 triangles
 
 The 2021 office tower postdates the lidar, so for once the mapped heights stand: an 88 m shaft, a 60 m core and a 25 m deck. The skin is nearly all material. Library curtain glass in deep blue gives it a 1.5 m mullion and a 3.83 m floor line. Two paler floors sit under the roof, a thin dark reveal runs 4 m in from each corner, and the deck has an open band per level. At 23:30 it is a dark office among lit apartment towers. The first skin was 250 triangles of flat navy; review sent it back as a recolour, and the second carries spandrels, fins, a cap and a penthouse in about 600. One trap: a scene z axis that points south put the deck's open bands against the tower wall on the first try. [Day](log/ui/712-west-peachtree/day.jpg) · [Night](log/ui/712-west-peachtree/night.jpg)
