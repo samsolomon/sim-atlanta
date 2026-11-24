@@ -65,8 +65,8 @@ export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding
   }
 
   // Block: cream precast grid of punched windows (glass wall, piers every 3 m, spandrels per floor).
-  const block = parts.find(p => p.id === BLOCK);
-  if (block) {
+  // The seam clip can leave the block in more than one fragment; draw each.
+  parts.filter(p => p.id === BLOCK).forEach((block, fragment) => {
     const plan = local(block.rings[0]);
     s.prism(plan, base, H.block, window, roof);
     faces(plan).forEach((f, face) => {
@@ -84,12 +84,12 @@ export function createTwoPeachtreePointe(buildings: VBuilding[], site: VBuilding
       panel(f, 0, 1, H.block - 1.4, H.block + 0.6, 0.12, precast);
       // Offices: about 6% of window bays lit at night.
       for (let j = 0; j < n; j++) for (let k = 0; k < piers; k++) {
-        if (litHash(seed, face, j, k) >= 0.06) continue;
+        if (litHash(seed, fragment * 16 + face, j, k) >= 0.06) continue;
         const y = lo + j * H.floor;
         panel(f, k / piers + 0.6 / f.length, (k + 1) / piers - 0.6 / f.length, y + 0.7, y + H.floor - 0.7, 0.04, window, true);
       }
     });
-  }
+  });
 
   // The curved bay: blue glass ribbons between silver spandrels, under the swept crown screen.
   const curve = parts.find(p => p.id === CURVE);
