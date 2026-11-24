@@ -113,3 +113,6 @@ SCAD Atlanta and Tech Square with Coda remain next in this workstream.
 SCAD Atlanta (OSM way 265351173) now uses its 17 mapped stepped parts, charcoal piers,
 recessed windows and parking bands. [Evidence and captures](scad-atlanta.md).
 Tech Square with Coda remains next after Sam's Rhodes Hall lighting adjustment.
+
+Coda at Tech Square now has its own L-shaped tower and arcade, retained Crum &
+Forster frontage, and computing center. [Sources and City views](coda.md).

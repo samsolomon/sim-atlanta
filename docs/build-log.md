@@ -2984,3 +2984,18 @@ At the same lab camera, the lit windshield had made the XN40 cab as bright as th
 ### 2026-11-23 — XE60 roof fairings
 
 The photograph of 9001 shows a rounded purple roofline above the windshield. The lab’s exposed grey blocks broke that silhouette. Each section now carries a shallow fairing in the XN40 Rapid purple. The front and rear covers stop 10 cm and 18 cm short of the bellows, respectively, leaving the joint clear at ±35°. The crown height and end tapers are estimates from the street-level photograph. At low detail the covers add 160 triangles, bringing the bus to 1,350 of its 1,500-triangle budget. [Matched straight and bent views with the reference](marta-rapid-buses.md#review-views).
+
+### 2026-11-23 — Three footprints at Tech Square
+
+Coda's 118.9 m tower shares its block with a five-floor computing center and
+the retained Crum & Forster building. The archive supplies three separate
+footprints. Putting a solid base under the tower would close the 19.2 m arcade,
+so the west podium stops short and the soffit spans the opening. A ray from
+pedestrian height crosses the passage and a second ray hits the soffit overhead.
+[High daylight comparison](log/ui/coda/high-day.jpg) · [High night comparison](log/ui/coda/high-night.jpg).
+
+At the 840 m review camera, the first glass treatment hid the floor grid. The
+revision gives the two wings separate upper setbacks and silver mullions around
+blue-grey panes. Down at the plaza, a 25.2 m glazed gallery reaches the retained
+building and eight suspended globes trace the approach to the lobby.
+[Day revision](log/ui/coda/revision-day.jpg) · [Night revision](log/ui/coda/revision-night.jpg).
