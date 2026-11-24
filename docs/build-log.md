@@ -2788,6 +2788,23 @@ Final captures checked north/south daylight (`713,-3672,0,50,1150` and `713,-367
 
 Final Claude review requested the oblique camera in daylight on both tiers. The [additional captures](log/ui/midtown-skyline/napkin-b-oblique-day.jpg) show both curved faces and end lattices without a missing section at that camera. The visual risk is dismissed for the requested view; no universal claim about arbitrary transparent overlaps is implied. Two review rounds completed; stale documentation and shared-origin/light ordering were addressed, and no blocking findings remain.
 
+### 2026-11-23 — The tree cost was a second drawing of the leaves
+
+The A16 probes recovered about5fps by disabling the species foliage mask, much more
+than switching off crown shadows. The mask drew the alpha-tested cards again and
+activated extra full-screen ink samples. Removing it everywhere made the nearby
+crape crowns visibly darker inside, so low quality now keeps the mask in close views
+and unregisters it beyond600m, restoring it below500m. High quality stays unchanged.
+
+The distance is to the orbit target, not each tree. The whole-board phone view was
+21,084m away, a surprise after discussion had assumed roughly400m. All962 registered
+species instances lose their extra mask draw in that view; the approved420m Prado
+and350m terrace views keep it. Tests cover far/near transitions, new areas mounting
+while far, and removing/reopening rows without stale mask state. The final frozen
+phone default/pan comparison still gates release.
+
+[Why the near mask stays](log/ui/tree-species/mask-clawback/1180-day-sheet.jpg) ·
+[Measurement and validation notes](tree-mask-clawback.md).
 ## 2026-11-23 — Freight joins Follow (initial checks)
 
 The downtown seven-car and Norcross ten-car illustrative consists now carry separate stable ids through picking and the existing Follow control. Their positions update before the camera lookup. Follow uses cars surviving their material clip planes and ends when none remain; it makes no tunnel claim. Both cards retain Illustrative labels.
@@ -2929,3 +2946,11 @@ The purple bus photographed at the Phase One launch has two axles and a CNG roof
 ### 2026-11-23 — The Midtown South footbridge
 
 A green patch on a 10.25 m footbridge came from the terrain between deck stations. At the original hit, the bank stood 8.8 cm above the pavement. Cutting the terrain inside each tread quad gives the bridge back its continuous walking surface. [Daylight view](log/ground-audit/south-footbridge.jpg), City camera `370,-1870,30,55,45`.
+
+### 2026-11-23 — Rhodes Hall at 21:00
+
+At a 160 m orbit, the earlier 25% reduction still made the tower read as one lit
+block. Two studies put the brightest stone at the 0.5 m base and fade the wash
+to zero at 20 m. The porch beam and rounded bay overlap the tower's old lighting
+region in plan, so the falloff follows the tower's own masonry vertices.
+[Compare both strengths at both quality tiers](log/ui/rhodes-uplight/choice.jpg).
