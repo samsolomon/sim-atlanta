@@ -123,7 +123,7 @@ import { mapGestures } from './map-gestures';
 import { createWhiteModel } from './white-model';
 /** Ink strength while City is a white model (as in colour; dev: ?whiteink= to tune). */
 const WHITE_INK = (import.meta.env.DEV && Number(new URLSearchParams(location.search).get('whiteink'))) || 0.9;
-import { listenForTap, pickVehicle, type VehicleSelection } from './pick';
+import { listenForTap, pickVehicle, type FreightPick, type VehicleSelection } from './pick';
 import { Snow } from './snow';
 import { batchLandmarkBodies } from '../materials/landmark-batch';
 import { surfaceDefaults } from '../materials';
@@ -164,6 +164,8 @@ export interface CityView {
    * cut (inferred track) or a Crescent berthed on the Brookwood model (inferred berth).
    * Recomputed on every call, so it follows the train into a tunnel or along a corridor. */
   drawnAt(trainId: string): { inferredTrack: boolean; inferredBerth: boolean };
+  /** The passage a freight id is drawing now (it changes each slot), or null when none is drawn. */
+  freightPassage(trainId: string): FreightPick | null;
   stats(): { roadVehicles: number; arterialCars: number; freightCars: number; surfaceCars: number; buses: number; fps: number; drawCalls: number; triangles: number; buildMs: number; stages: Record<string, number> };
   pause(): void;
   resume(): boolean;
@@ -1799,6 +1801,12 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       if (mosaic) for (const a of mosaic.patches.values()) a.setSeason(day);
     },
     drawnAt: (trainId: string) => drawnAt(trainId, trains.group.children, [...(brookwood?.cars.children ?? []), ...streetcar.cars()]),
+    freightPassage: (trainId: string) => {
+      const car = [...(freight?.poses.children ?? []), ...(brookwood?.freightPoses.children ?? [])]
+        .find(c => c.visible && c.userData.trainId === trainId);
+      return car ? { kind: 'freight', id: trainId, line: car.userData.line, railroad: car.userData.railroad,
+        consist: car.userData.consist, lead: car.userData.lead } : null;
+    },
     stats: () => ({ roadVehicles: (traffic?.visibleCars ?? 0) + (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), arterialCars: (arterials?.visibleCars ?? 0) + (midtownArterials?.visibleCars ?? 0), freightCars: (freight?.visibleCars ?? 0) + (brookwood?.freightCars ?? 0), surfaceCars: trains.surfaceCars, buses: buses.summary().count, fps, drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, buildMs, stages }),
     revealed: whiteModel?.revealed ?? Promise.resolve(),
     beginReveal(mode) {
