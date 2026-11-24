@@ -22,7 +22,7 @@ type GroundAt = (x: number, z: number, run?: TransportRun) => number | null;
 /** Road tread over its support, and the widest band of a deck that lands on the board. */
 const DECK_LIFT = .12, LANDING_BAND_M = 1.5, LANDING_BANK_M = 1, LANDING_TOLERANCE_M = .06;
 /** A deck that must arrive this far above the board gets a landing approach. */
-const LANDING_RISE_M = .5, LANDING_RISE_MAX_M = 2.5;
+const LANDING_RISE_M = .5, LANDING_RISE_MAX_M = 2.5, LANDING_GRADE = .08;
 
 export interface FreightTreadPoint {
   s: number;
@@ -656,7 +656,7 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
     const radius = roadWidth(road) / 2, clearance = ['path','footway','steps','pedestrian','cycleway'].includes(road.cls) ? 2.5 : 5;
     for (let i = 1; i < road.pts.length; i++) routes.push({ a: road.pts[i - 1], b: road.pts[i], radius, clearance });
   }
-  const portals: { edge: number[][]; direction: number[]; curbs: number[] }[] = [];
+  const portals: { edge: number[][]; direction: number[]; curbs: number[]; slope: number; landing: true }[] = [];
   for (const run of data.roads) {
     if (run.kind !== 'bridge' || run.deckNavd88M || run.deckWeight || run.pts.length < 2 || run.cls === 'motorway' ||
       ['footway', 'pedestrian', 'steps', 'path', 'cycleway'].includes(run.cls)) continue;
@@ -700,7 +700,8 @@ export function landingPortals(city: TerrainCity, bare: (x: number, z: number) =
       if (!direction) continue;
       const half = width / 2;
       const side = (k: number) => [at.x - k * out * half * at.nx, at.z - k * out * half * at.nz, need + zero];
-      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1] });
+      // Down to the street at a steady grade, so the approach ends where that grade meets it.
+      portals.push({ edge: [side(1), side(-1)], direction, curbs: [0, 1], slope: -LANDING_GRADE, landing: true });
     }
   }
   return portals;

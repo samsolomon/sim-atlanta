@@ -36,6 +36,8 @@ export interface Portal {
   direction: number[];
   curbs: number[];
   slope?: number;
+  /** An inferred landing (transport.ts landingPortals): no link ramp starts on it. */
+  landing?: boolean;
 }
 
 // The gridded bare earth may continue at freeway level several cells beyond
@@ -55,11 +57,27 @@ export function bridgeApproaches(
   /** Where each approach meets the board: point(u, d) is u ∈ [0, 1] across the toe,
    * d metres back from the toe toward the structure. */
   const joints: { name: string; length: number; point(u: number, d: number): P2 }[] = [];
+  /** A side wall from the approach edge down to the board. Where the board rises to
+   * the edge, the wall stops there rather than folding inside out (a dark notch). */
+  function skirt(u: number[], v: number[]) {
+    const foot = (p: number[]) => Math.min(p[1], bare(p[0], p[2]) ?? p[1]);
+    const [fu, fv] = [foot(u), foot(v)];
+    if (u[1] - fu < 0.03 && v[1] - fv < 0.03) return;
+    walls.quad(u, v, [v[0], fv, v[2]], [u[0], fu, u[2]], '#9c9384');
+  }
+  // Outer side walls wait until every approach top exists: where a neighbouring
+  // approach already covers the ground beside a wall, the wall would only show as a
+  // dark slot between the two surfaces from above.
+  const sideWalls: { u: number[]; v: number[]; out: number[]; owner: number }[] = [];
+  const owners: number[] = [];
+  let portalIndex = -1;
+  const landingOwners = new Set(portals.flatMap((portal, i) => (portal.landing ? [i] : [])));
   function tri(a: number[], b: number[], c: number[]) {
     const i = top.pos.length / 3;
     // The two banks of a bridge have opposite outward normals.
     if ((b[2] - a[2]) * (c[0] - a[0]) < (b[0] - a[0]) * (c[2] - a[2])) [b, c] = [c, b];
     top.tri(a, b, c, '#ffffff');
+    owners.push(portalIndex);
     index.add(
       i,
       [a, b, c].map((p) => [p[0], p[2]]),
@@ -75,7 +93,9 @@ export function bridgeApproaches(
     direction: [dx, dz],
     curbs,
     slope,
+    landing,
   } of portals) {
+    portalIndex++;
     const xy = (f: number, s: number): P2 => [
       a[0] + (b[0] - a[0]) * f + dx * s,
       a[1] + (b[1] - a[1]) * f + dz * s,
@@ -90,7 +110,7 @@ export function bridgeApproaches(
       length = s;
       if (slope === undefined) {
         if (s >= 12 && ys.every((y, i) => Math.abs(y! - deck(bands[i])) <= 0.55 + 0.035 * s)) break;
-      } else if (s >= 40 && ys.every((y, i) => Math.abs(y! - deck(bands[i]) - slope * s) <= 0.35 + 0.025 * s))
+      } else if (s >= (landing ? 12 : 40) && ys.every((y, i) => Math.abs(y! - deck(bands[i]) - slope * s) <= 0.35 + 0.025 * s))
         break;
     }
     if (length === 0) continue;
@@ -161,7 +181,8 @@ export function bridgeApproaches(
           tri(p, r, t);
           if ((k === 0 && i === 0) || (k === 3 && i === pieces - 1)) {
             const [u, v] = k === 0 ? [p, t] : [q, r];
-            walls.quad(u, v, [v[0], bare(v[0], v[2])!, v[2]], [u[0], bare(u[0], u[2])!, u[2]], '#9c9384');
+            const away = k === 0 ? -1 : 1;
+            sideWalls.push({ u, v, out: [(away * (b[0] - a[0])) / width, (away * (b[1] - a[1])) / width], owner: portalIndex });
           }
           if ((k === 0 && i === pieces - 1) || (k === 3 && i === 0)) {
             const [c, d] = k === 0 ? [q, r] : [p, t];
@@ -176,6 +197,25 @@ export function bridgeApproaches(
         }
     }
   }
+  {
+    const tops = new THREE.Float32BufferAttribute(top.pos, 3);
+    const other = (x: number, z: number, owner: number) => {
+      let y: number | null = null;
+      for (const i of index.at(x, z)) {
+        if (owners[i / 3] === owner) continue;
+        const h = triangleHeight(tops, i, x, z);
+        if (h !== null) y = y === null ? h : Math.max(y, h);
+      }
+      return y;
+    };
+    for (const { u, v, out, owner } of sideWalls) {
+      const mx = (u[0] + v[0]) / 2 + out[0] * 0.6, mz = (u[2] + v[2]) / 2 + out[1] * 0.6;
+      const beside = other(mx, mz, owner);
+      if (beside !== null && beside >= Math.min(u[1], v[1]) - 0.3) continue;
+      skirt(u, v);
+    }
+  }
+  portalIndex = -1;
   // Ground links may join the upper street on the land side of the abutment.
   // A shared source vertex distinguishes a real merge from a lower ramp that
   // merely passes through the footprint in plan.
@@ -201,8 +241,14 @@ export function bridgeApproaches(
       const pts = reverse ? [...road.pts].reverse() : road.pts;
       const p = pts[0];
       if (!streetNodes.has(p.join(',')) || !index.at(...p).length) continue;
-      const h = sample(bankPositions, ...p),
-        terrain = bare(...p);
+      // Only surveyed approaches raise a street node enough to need a link ramp.
+      let h = bare(...p);
+      for (const i of index.at(...p)) {
+        if (i >= bankPositions.count || landingOwners.has(owners[i / 3])) continue;
+        const y = triangleHeight(bankPositions, i, ...p);
+        if (y !== null) h = h === null ? y : Math.max(h, y);
+      }
+      const terrain = bare(...p);
       if (h === null || terrain === null || h - terrain < 0.15) continue;
       connected.add(road.pts);
       const line = new Line(pts),
@@ -262,13 +308,7 @@ export function bridgeApproaches(
         for (const edge of [0, pieces]) {
           const a = prior[edge],
             b = next[edge];
-          walls.quad(
-            a,
-            b,
-            [b[0], bare(b[0], b[2]) ?? b[1], b[2]],
-            [a[0], bare(a[0], a[2]) ?? a[1], a[2]],
-            '#9c9384',
-          );
+          skirt(a, b);
         }
         prior = next;
       }
