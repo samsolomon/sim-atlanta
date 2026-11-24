@@ -678,7 +678,6 @@ body.city-over-map #city-loading { background: transparent !important; }
   .a2-selection:not(.a2-expanded) #card h2 { font-size: 18px; }
   .a2-selection:not(.a2-expanded) :is(.a2-allstops,.a2-row-fact:not(:first-child),[data-card-share],.tip) { display: none; }
   .a2-selection .a2-more { display: block; width: 100%; min-height: 44px; }
-  .a2-selection.a2-expanded { top: var(--a2-top); bottom: var(--a2-bottom); height: auto; max-height: none; }
   .a2-selection .a2-card-actions { display: flex; gap: 6px; }
   .a2-selection .a2-x { width: 44px; height: 44px; }
   .a2-selection:not(.a2-expanded) #card .a2-facts { margin-bottom: 0; }
@@ -687,7 +686,7 @@ body.city-over-map #city-loading { background: transparent !important; }
 @media(max-width:600px) {
   .a2-panel.a2-selection.a2-expanded { top: auto; bottom: var(--a2-bottom); height: auto; max-height: calc(100dvh - var(--a2-top) - 56px); }
   .a2-selection.a2-expanded #card .a2-card-actions { grid-column: 2; }
-  .a2-selection.a2-expanded .a2-more { position: absolute; top: 0; left: calc(50% - 24px); width: 48px !important; height: 24px; min-height: 24px; font-size: 0 !important; background: transparent; }
+  .a2-selection.a2-expanded .a2-more { position: absolute; top: 0; left: calc(50% - 24px); width: 48px !important; height: 44px; min-height: 44px; font-size: 0 !important; background: transparent; }
 }
 .a2-model-card #blurb { text-wrap: pretty; }
 .a2-lab .a2-model-details legend { font-size: 13px; font-weight: 600; color: var(--a2-ink2); }

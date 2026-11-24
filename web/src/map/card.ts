@@ -118,6 +118,7 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
   const service = route ? SERVICE[route.mode] ?? 'Rail' : 'Rail';
   const swatch = route ? MODE_COLOR[route.mode] : '#495057';
   const live = t.s.tier === 'live';
+  const report = [route?.operator, t.observedAt == null ? 'report time unknown' : `reported ${ago(t.observedAt)}`].filter(Boolean).join(' · ');
   const name = t.nextStopName ?? next?.name;
   const eta = t.nextInSec != null ? ` · ${t.nextInSec < 60 ? 'arriving' : `${Math.round(t.nextInSec / 60)} min`}` : '';
   let units = '';
@@ -134,8 +135,8 @@ export function trainCard(t: TrainState, route: Route | undefined, next: Stop | 
       ${drawnRows(city, drawn, row)}
       ${live
         ? row('Position', t.pathId
-          ? `Placed on the track between reports ${chip('inferred', 'Inferred')}`
-          : `Last reported location ${chip('live', 'Live')}`)
+          ? `Placed between reports · ${esc(report)} ${chip('inferred', 'Inferred')}`
+          : `Last reported location · ${esc(report)} ${t.observedAt == null ? chip('reported', 'Reported') : chip('live', 'Live')}`)
         : row('Position', `Timetable; delays not shown ${chip(t.s.tier, TIER_WORD[t.s.tier])}`)}
     </dl>
     ${t.nextStop || t.nextStopName ? `<button type="button" class="a2-allstops" data-all-stops>All stops<span aria-hidden="true">›</span></button>` : ''}
