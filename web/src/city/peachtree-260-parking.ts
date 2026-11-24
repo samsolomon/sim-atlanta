@@ -1,6 +1,7 @@
 import type { GroundGrid } from '../terrain/grid';
 import type { P2 } from '../vignette/geom';
 import type { VBuilding } from '../vignette/world';
+import { appendParkedSedan } from '../vignette/parked-sedan';
 import { landmarkShell } from './landmark-shell';
 import { litHash, seedOf } from './skin-kit';
 
@@ -62,5 +63,21 @@ export function create260PeachtreeParking(buildings: VBuilding[], grid: GroundGr
   const vs = ring.map(p => p[1]), north = Math.min(...vs);
   const tower: P2[] = [[8, north], [16, north], [16, north + 6], [8, north + 6]];
   s.prism(tower, H.roof, H.stair, brick, roofGrey);
+  // The aerial shows a row pointing toward Baker Street, interrupted by the stair.
+  // Leave the central aisle and the southern ramp clear. Occupancy is illustrative.
+  const colors = ['#a26955', '#858b87', '#d6d5cc', '#565a60', '#babebc'];
+  const occupied = [0, 1, 3, 6, 8];
+  const stallWidth = 2.75, stallDepth = 5.2, stripeY = H.roof + 0.05;
+  for (const [start, count] of [[-22.3, 10], [17.4, 2]]) {
+    for (let i = 0; i <= count; i++) {
+      const x = start + i * stallWidth, z = north + 1.1;
+      s.body.quad([x, stripeY, z], [x, stripeY, z + stallDepth],
+        [x + 0.12, stripeY, z + stallDepth], [x + 0.12, stripeY, z], '#d8d6c5');
+      if (i === count) continue;
+      const paint = occupied.indexOf(i);
+      if (paint >= 0)
+        appendParkedSedan(s.body, [x + stallWidth / 2, z + stallDepth / 2], H.roof, 0, -1, colors[paint]);
+    }
+  }
   return s.finish('#f2e6c4', 0.55);
 }
