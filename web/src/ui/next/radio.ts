@@ -77,6 +77,7 @@ interface Deck {
   ready: Promise<boolean>;
   /** Has sounded since its file was assigned (a streamed src exists before any audio does). */
   heard: boolean;
+  waitForEnd: boolean;
   abort: AbortController | null;
   blob: string | null;
   /** Our own record of the gain automation, so an interrupted fade can turn round smoothly. */
@@ -242,6 +243,7 @@ export function createRadio(o: RadioOptions): Radio {
       d.fade = null;
       d.track = t;
       d.heard = false;
+      d.waitForEnd = false;
       let ac: AbortController;
       let src: Promise<string>;
       if (prefetch && prefetch.track === t) {
@@ -301,7 +303,7 @@ export function createRadio(o: RadioOptions): Radio {
         // The file didn't load: skip to the next track rather than sit silent, but count it, so
         // a dead network stops the radio instead of fetching its way through the station.
         if (d.role !== 'primary' && d.role !== 'incoming') return;
-        if (++strikes >= 2 || (fading?.inc === d && !fading.out.el.paused)) return failed(d);
+        if (fading?.inc === d || ++strikes >= 2) return failed(d);
         crossfade(0);
         return;
       }
@@ -323,7 +325,18 @@ export function createRadio(o: RadioOptions): Radio {
       // Mid-crossfade: stay on the outgoing track, back at full level.
       const out = fading.out;
       fading = null;
+      if (out.role !== 'outgoing' || out.el.paused || out.el.ended) {
+        retire(out);
+        retire(d);
+        shown = upcoming;
+        playing = false;
+        strikes = 0;
+        pause();
+        return;
+      }
       retire(d);
+      strikes = 0;
+      out.waitForEnd = out.el.currentTime >= trackTimeline(durationOf(out)).fadeAt;
       out.role = 'primary';
       ramp(out, 1, PAUSE_RAMP_S);
       shown = out.track;
@@ -358,7 +371,7 @@ export function createRadio(o: RadioOptions): Radio {
       if (t >= fading.dur) finishFade();
       return;
     }
-    if (d.role !== 'primary' || fading) return;
+    if (d.role !== 'primary' || fading || d.waitForEnd) return;
     const { preloadAt, fadeAt } = trackTimeline(durationOf(d));
     if (t >= preloadAt && upcoming) {
       const o2 = other(d);
@@ -467,7 +480,7 @@ export function createRadio(o: RadioOptions): Radio {
       gain.gain.value = 0;
       ctx!.createMediaElementSource(el).connect(gain);
       gain.connect(master!);
-      const d: Deck = { el, gain, track: null, role: 'idle', rest: 0, fade: null, ready: Promise.resolve(false), abort: null, blob: null, heard: false };
+      const d: Deck = { el, gain, track: null, role: 'idle', rest: 0, fade: null, ready: Promise.resolve(false), abort: null, blob: null, heard: false, waitForEnd: false };
       el.addEventListener('timeupdate', () => onTime(d));
       el.addEventListener('playing', () => onPlaying(d));
       el.addEventListener('ended', () => onEnded(d));

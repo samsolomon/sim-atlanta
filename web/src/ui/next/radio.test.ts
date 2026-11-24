@@ -422,4 +422,70 @@ describe('radio engine', () => {
     expect(r.playing).toBe(false);
   });
 
+  it('waits for ended after a failed automatic fade despite repeated timeupdates', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const out = mp3()[0];
+    out.emit('playing');
+    offline = true;
+    out.currentTime = 176;
+    for (let i = 0; i < 8; i++) {
+      out.emit('timeupdate');
+      await flush();
+    }
+    expect(fetched).toHaveLength(2);
+    expect(r.playing).toBe(true);
+    expect(out.paused).toBe(false);
+    offline = false;
+    out.emit('ended');
+    await flush();
+    const recovered = mp3()[0];
+    recovered.emit('playing');
+    expect(recovered).not.toBe(out);
+    expect(recovered.paused).toBe(false);
+    expect(r.buffering).toBe(false);
+  });
+
+  it('stops if the outgoing track ends before the incoming fetch rejects, then accepts Play', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const out = mp3()[0];
+    let reject!: (error: Error) => void;
+    hold = new Promise((_, fail) => { reject = fail; });
+    r.next();
+    out.emit('ended');
+    reject(Error('offline'));
+    await flush();
+    expect(r.playing).toBe(false);
+    expect(els.every(e => e.paused)).toBe(true);
+    hold = null;
+    r.toggle();
+    await flush();
+    mp3()[0].emit('playing');
+    expect(r.playing).toBe(true);
+    expect(r.buffering).toBe(false);
+  });
+
+  it('gives the restored audible deck a fresh failure budget', async () => {
+    const r = make();
+    await r.ready;
+    r.toggle();
+    await flush();
+    const out = mp3()[0];
+    out.emit('playing');
+    offline = true;
+    r.next();
+    await flush();
+    offline = false;
+    out.emit('error');
+    await flush();
+    expect(r.playing).toBe(true);
+    expect(mp3()[0]).not.toBe(out);
+    expect(mp3()[0].paused).toBe(false);
+  });
+
 });
