@@ -63,4 +63,4 @@ Changes:
 - **Balconies:** the stacks move from mid-face (10 m spacing) to the main tower's four corners, one stack at each end of every face, so each corner is wrapped from both sides. Each has a white slab, a soffit, a dark rail and a bright nosing. The noses now draw on the low tier too, so the corners read there.
 - **Unchanged:** lidar heights, brick base, podium, pool and night lighting.
 
-Low tier: 709 triangles (was about 560), well under the lead's 2,400 guide. [Before and after](strengthen-compare.jpg) · [four sides](strengthen-four-sides.jpg) · [close](strengthen-close.jpg) · [low](strengthen-low.jpg)
+Low tier: 709 triangles (was about 560), well under the lead's 2,400 guide. [Before and after](strengthen-compare.jpg) · [four sides, low tier, shared sheet script](azure-on-the-park-four-sides.jpg) · [close](strengthen-close.jpg) · [low](strengthen-low.jpg)
