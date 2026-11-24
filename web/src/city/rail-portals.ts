@@ -140,7 +140,9 @@ export function railPortalOpenings(mouths: readonly RailMouth[]): OpenSlot[] {
 
 const SLOT_MARGIN = 0.6,
   SLOT_END = 16;
-const PLAZA = '#d6cdbd';
+/** No landcover is mapped over either tube, so the lid takes the board's base ground paint
+ * (ground-map.ts) and reads as the same ground, not a stripe. */
+const LID = '#b5bd97';
 const CONCRETE = '#a39a8c',
   CONCRETE_SIDE = '#958b7d',
   COPING = '#b4ab9d',
@@ -174,16 +176,18 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground) {
     box(-h, h, m.railY + clear, top, -0.4, 0.6, CONCRETE);
     // A darker string course at the springing of the lintel.
     quad([-h, m.railY + clear + 0.05, -0.42], [h, m.railY + clear + 0.05, -0.42], [h, m.railY + clear + 0.35, -0.42], [-h, m.railY + clear + 0.35, -0.42], '#7f776b');
-    // Wing walls splay back toward the open track and step down to it.
+    // Short wing walls splay back toward the open track, stepping down to it like retaining walls.
     for (const s of [-1, 1]) {
       const u = s * (h + 1.4);
-      for (let k = 0; k < 4; k++) {
-        const w0 = -k * 2.2,
-          w1 = -(k + 1) * 2.2,
-          a = u + s * k * 0.9,
-          b = u + s * (k + 1) * 0.9,
-          y1 = top - ((top - m.railY) * (k + 1)) / 4.4;
-        quad([a, y0, w0], [b, y0, w1], [b, Math.max(m.railY + 0.3, y1), w1], [a, Math.max(m.railY + 0.3, top - ((top - m.railY) * k) / 4.4), w0], CONCRETE_SIDE);
+      for (let k = 0; k < 3; k++) {
+        const w0 = -k * 1.8,
+          w1 = -(k + 1) * 1.8,
+          a = u + s * k * 0.45,
+          b = u + s * (k + 1) * 0.45,
+          ya = Math.max(m.railY + 0.6, top - ((top - m.railY) * k) / 3.2),
+          yb = Math.max(m.railY + 0.6, top - ((top - m.railY) * (k + 1)) / 3.2);
+        quad([a, y0, w0], [b, y0, w1], [b, yb, w1], [a, ya, w0], CONCRETE);
+        quad([a, ya, w0], [b, yb, w1], [b + s * 0.4, yb, w1], [a + s * 0.4, ya, w0], COPING);
       }
     }
     // The tube: walls and roof fading to black, an end cap, and the ballast running in.
@@ -196,7 +200,7 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground) {
     }
     quad([-h, y0, TUBE], [h, y0, TUBE], [h, m.railY + clear, TUBE], [-h, m.railY + clear, TUBE], '#050505');
     // The terrain opening removes the ground over the first stretch of the tube. Close it with the
-    // surface that's there (paved plaza and walks), draped on the measured ground and never below
+    // ground the board paints there, draped on the measured ground and never below
     // the tube roof, plus outer walls down to the cut, so nothing dark shows from above.
     const outer = h + SLOT_MARGIN + 0.1,
       zero = ground.manifest.vertical.sceneZeroNavd88M;
@@ -208,7 +212,7 @@ export function buildRailPortals(mouths: readonly RailMouth[], ground: Ground) {
       const w1 = Math.min(SLOT_END + 1, w + 1),
         a = lid(w),
         b = lid(w1);
-      quad([-outer, a, w], [outer, a, w], [outer, b, w1], [-outer, b, w1], PLAZA);
+      quad([-outer, a, w], [outer, a, w], [outer, b, w1], [-outer, b, w1], LID);
       for (const u of [-outer, outer]) quad([u, y0, w], [u, a, w], [u, b, w1], [u, y0, w1], CONCRETE_SIDE);
     }
     quad([-outer, m.railY + clear, 0.6], [-outer, lid(0.6), 0.6], [outer, lid(0.6), 0.6], [outer, m.railY + clear, 0.6], CONCRETE);

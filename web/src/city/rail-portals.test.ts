@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { expect, it } from 'vitest';
 import { GroundGrid } from '../terrain/grid';
 import type { FreightTreadPoint } from '../terrain/transport';
-import type { P2 } from '../vignette/geom';
+import { pointInRing, segDist, type P2 } from '../vignette/geom';
 import { buildRailPortals, declaredEnd, DOWNTOWN_RAIL_ENDS, extendFreightIntoMouths, looseRailEnds, railMouths, railPortalOpenings } from './rail-portals';
 
 const d = (f: string) => new URL('../../public/data/scene/downtown/' + f, import.meta.url);
@@ -63,4 +63,22 @@ it('runs a freight section on into the tube so trains clip in the dark', () => {
   extendFreightIntoMouths([reverse], [mouth]);
   expect(reverse[0].position.z).toBeCloseTo(8);
   expect(reverse[0].s).toBeCloseTo(-8);
+});
+
+it.skipIf(!staged)('backs every "under" declaration with a drawn deck or building over the track', () => {
+  const { v, rail } = load();
+  const notDeck = new Set(['footway', 'path', 'steps', 'cycleway']);
+  for (const end of looseRailEnds(rail, v.bounds)) {
+    const decl = declaredEnd(end.at);
+    if (decl?.kind !== 'under') continue;
+    const len = Math.hypot(end.at[0] - end.toward[0], end.at[1] - end.toward[1]);
+    const dx = (end.at[0] - end.toward[0]) / len, dz = (end.at[1] - end.toward[1]) / len;
+    let covered = false;
+    for (let t = 0; t <= 8 && !covered; t += 1) {
+      const x = end.at[0] + dx * t, z = end.at[1] + dz * t;
+      covered = v.buildings.some((b: { rings: P2[][] }) => b.rings.length && pointInRing(x, z, b.rings[0]))
+        || v.roads.some((r: { bridge?: boolean; cls: string; pts: P2[] }) => r.bridge && !notDeck.has(r.cls) && r.pts.some((q, k) => k > 0 && segDist(x, z, r.pts[k - 1], q) < 5));
+    }
+    expect(covered, `${decl.why} at ${end.at.map((n) => n.toFixed(0)).join(',')}`).toBe(true);
+  }
 });
