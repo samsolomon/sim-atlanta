@@ -157,7 +157,7 @@ An earlier estimate of 1.33 m at a 41 m radius overstated the swing. The source 
   - 53 ft domestic boxes are mostly white (42 %), then silver-grey, mustard, red and orange.
   - 40 ft international boxes are maroon, blue, green, grey and teal.
   - The inputs are lighter than paint, because City's grade darkens deep colours.
-- 80 % of bottoms and 60 % of tops are 53 ft. A 40 ft box rides centred on a 53 ft box, so the step shows at both ends.
+- Version 9 deals 53 ft bottoms 80 % of the time. A 40 ft bottom can only carry a 40. A 53 ft bottom draws a 53 ft top three times out of four when double-stacked. A 40 ft box rides centred on a 53 ft box, so the step shows at both ends.
 - About one well in eight runs empty, and one in eight carries a single container.
 - Adjacent cars never repeat the same bottom and top colour pair.
 

@@ -7,7 +7,7 @@ import { DOMESTIC_WEIGHTS, INTERNATIONAL_WEIGHTS } from '../vignette/intermodal'
  * changing quality all select the same train. Nothing is reported or scheduled; the card says so.
  */
 /** Bump whenever recipes or car lists change, so a slot is never silently re-dealt. v2 adds tank cars, v3 mill gondolas, v4 centerbeams, v5 autoracks, v6 coal hoppers, v7 lifts the downtown autorack and intermodal exclusions, v8 deals each container its own colour and length. */
-export const CONSIST_VERSION = 8;
+export const CONSIST_VERSION = 9;
 export const COUPLER_GAP = 0.3;
 
 export type FreightRailroad = 'csx' | 'ns';
@@ -56,9 +56,9 @@ const WELL: FreightUnit = 'wellA';
 /** About one well in eight runs empty, and one in eight carries a single container. */
 export const EMPTY_WELL = 1 / 8;
 export const SINGLE_STACK = 1 / 8;
-/** Share of bottom and top containers that are 53 ft domestic boxes; the rest are 40 ft international. */
+/** Domestic bottoms usually carry another domestic box. Short bottoms only carry 40s. */
 const BOTTOM_53 = 0.8;
-const TOP_53 = 0.6;
+const TOP_53_ON_53 = 0.75;
 /** Distinct car geometries a train may draw, so each passage costs a small, fixed number of
  * instanced draws (one per kind present) on both tiers. */
 export const MAX_CAR_KINDS: Record<FreightRecipe, number> = { manifest: 3, intermodal: 1, unit: 1 };
@@ -107,8 +107,9 @@ export function wellLoads(r: () => number, n: number): WellLoad[] {
     let load: WellLoad = { bottom: null, top: null };
     for (let attempt = 0; attempt < 8; attempt++) {
       const roll = r();
-      load = roll < EMPTY_WELL ? { bottom: null, top: null }
-        : { bottom: container(r, BOTTOM_53), top: roll < EMPTY_WELL + SINGLE_STACK ? null : container(r, TOP_53) };
+      const bottom = roll < EMPTY_WELL ? null : container(r, BOTTOM_53);
+      const top = roll < EMPTY_WELL + SINGLE_STACK ? null : container(r, bottom?.long ? TOP_53_ON_53 : 0);
+      load = { bottom, top };
       if (!out.length || pairKey(load) !== pairKey(out[out.length - 1])) break;
     }
     out.push(load);

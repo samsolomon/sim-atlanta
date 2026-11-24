@@ -69,6 +69,7 @@ describe('seeded freight passages', () => {
         if (i && pair(u.load!) === pair(wells[i - 1].load!)) adjacentRepeats++;
         // A top never rides on an empty well.
         if (!u.load!.bottom) expect(u.load!.top).toBeNull();
+        if (u.load!.top?.long) expect(u.load!.bottom?.long).toBe(true);
         loads.push(u.load!);
       }
       // Same slot, same containers.
@@ -80,7 +81,8 @@ describe('seeded freight passages', () => {
     expect(share((l) => !l.bottom)).toBeCloseTo(EMPTY_WELL, 1);
     expect(share((l) => !!l.bottom && !l.top)).toBeCloseTo(SINGLE_STACK, 1);
     // 40 ft boxes on 53s (the step at the ends) are common, not rare.
-    expect(share((l) => !!l.bottom?.long && l.top?.long === false)).toBeGreaterThan(0.15);
+    expect(share((l) => !!l.bottom?.long && l.top?.long === false)).toBeGreaterThan(0.10);
+    expect(share((l) => !!l.top && l.bottom?.long === l.top.long)).toBeGreaterThan(0.5);
     // Domestic boxes are mostly white (palette index 0), and every palette colour appears.
     const domestic = loads.flatMap((l) => [l.bottom, l.top]).filter((c) => c?.long);
     const counts = [0, 1, 2, 3, 4].map((k) => domestic.filter((c) => c!.color === k).length);
