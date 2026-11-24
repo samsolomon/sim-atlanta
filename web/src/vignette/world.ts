@@ -96,9 +96,27 @@ export interface WorldOptions {
   clumps: number;
   /** Largest side of the night light map in texels. */
   lightMapMax: number;
+  /** Generic trees batched by square cells of this size (metres), so a close view draws only
+   *  the cells in sight; one batch per area without it. */
+  treeCellM?: number;
   /** Swap the generic trees for their one-draw far form (trees/far-canopy.ts) under
    *  setDetail({ farTrees }): City's low tier. */
   farForm?: boolean;
+}
+/** Low tier's generic tree cell (metres): measured on the A16 viewport at 420–680 m orbits. */
+export const TREE_CELL_M = 400;
+/** One cell's generic tree meshes (World.buildTrees). */
+interface TreeCell {
+  /** Indices into World.trees. */
+  trees: number[];
+  canopy: THREE.InstancedMesh;
+  pines: THREE.InstancedMesh;
+  trunks: THREE.InstancedMesh;
+  branches: THREE.InstancedMesh;
+  /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
+  branchMatrices: THREE.Matrix4[];
+  /** True while some broadleaf crown is thin enough to show the limbs inside it. */
+  branchesShow: boolean;
 }
 export const EAST_PORTAL: WorldOptions = { terrain: 'trench', clumps: 10, lightMapMax: 4096 };
 
@@ -1035,13 +1053,11 @@ export class World {
     }
     const n = this.trees.length;
     const leafMat = new THREE.MeshLambertMaterial({ flatShading: true });
-    // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
-    this.canopy = new THREE.InstancedMesh(leafGeometry, leafMat, n * this.opts.clumps);
-    // Pines: two stacked five-sided cones.
+    // Shared by every cell: one geometry and material each, so cells add draws, not programs.
     const pine = new THREE.ConeGeometry(1, 1.6, 7);
     pine.translate(0, 0.8, 0);
-    this.pines = new THREE.InstancedMesh(pine, leafMat, n * PINE_TIERS);
-    this.trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.24, 1, 5).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: '#6b4f3a' }), n);
+    const trunkGeometry = new THREE.CylinderGeometry(0.16, 0.24, 1, 5).translate(0, 0.5, 0);
+    const trunkMat = new THREE.MeshLambertMaterial({ color: '#6b4f3a' });
     // Bare-branch crowns, hidden inside the canopy until the leaves drop.
     const br = new Builder();
     const rb = rng(5);
@@ -1051,22 +1067,68 @@ export class World {
       br.addGeometry(g, '#6b5444');
     }
     br.addGeometry(new THREE.CylinderGeometry(0.06, 0.14, 1.8, 4).translate(0, 0.9, 0), '#6b5444');
-    this.branches = new THREE.InstancedMesh(br.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true }), n);
-    for (const im of [this.canopy, this.pines, this.trunks, this.branches]) {
-      im.castShadow = true;
-      im.receiveShadow = true;
-      this.group.add(im);
-    }
+    const branchGeometry = br.geometry();
+    const branchMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    // Trees by cell (WorldOptions.treeCellM): each cell's meshes cull on their own, so a close
+    // view draws only the cells in sight. Without cells the whole area is one batch.
+    const byCell = new Map<string, number[]>();
+    this.trees.forEach((t, i) => {
+      const cell = this.opts.treeCellM;
+      const key = cell ? `${Math.floor(t.x / cell)},${Math.floor(t.z / cell)}` : '';
+      (byCell.get(key) ?? byCell.set(key, []).get(key)!).push(i);
+    });
+    if (!n) byCell.set('', []);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     // Fixed bounds from the trees themselves, for every tree mesh. three would otherwise
     // compute them once from whatever instances the first season drew, and keep them.
-    const box = new THREE.Box3(), corner = new THREE.Vector3();
-    for (const t of this.trees) {
-      const R = 2.3 * t.s * 1.6, top = (t.th ?? 2 + t.s * 0.6) + PINE_TIERS * 1.05 * t.s + 2 * R;
-      box.expandByPoint(corner.set(t.x - R, t.y - 1, t.z - R)).expandByPoint(corner.set(t.x + R, t.y + top, t.z + R));
+    const boundsOf = (idx: number[]) => {
+      const box = new THREE.Box3(), corner = new THREE.Vector3();
+      for (const i of idx) {
+        const t = this.trees[i];
+        const R = 2.3 * t.s * 1.6, top = (t.th ?? 2 + t.s * 0.6) + PINE_TIERS * 1.05 * t.s + 2 * R;
+        box.expandByPoint(corner.set(t.x - R, t.y - 1, t.z - R)).expandByPoint(corner.set(t.x + R, t.y + top, t.z + R));
+      }
+      return box.isEmpty() ? null : { box, sphere: box.getBoundingSphere(new THREE.Sphere()) };
+    };
+    const fit = (im: THREE.InstancedMesh, b: ReturnType<typeof boundsOf>) => {
+      if (!b) return;
+      im.boundingSphere = b.sphere.clone();
+      im.boundingBox = b.box.clone();
+    };
+    this.cells = [];
+    for (const idx of byCell.values()) {
+      const k = idx.length;
+      const cell: TreeCell = {
+        trees: idx,
+        // Canopies are clusters of small faceted leaf clumps (after the reference style), not one blob.
+        canopy: new THREE.InstancedMesh(leafGeometry, leafMat, k * this.opts.clumps),
+        // Pines: stacked seven-sided cones.
+        pines: new THREE.InstancedMesh(pine, leafMat, k * PINE_TIERS),
+        trunks: new THREE.InstancedMesh(trunkGeometry, trunkMat, k),
+        branches: new THREE.InstancedMesh(branchGeometry, branchMat, k),
+        branchMatrices: [],
+        branchesShow: true,
+      };
+      const b = boundsOf(idx);
+      for (const im of [cell.canopy, cell.pines, cell.trunks, cell.branches]) {
+        im.castShadow = true;
+        im.receiveShadow = true;
+        fit(im, b);
+        this.group.add(im);
+      }
+      idx.forEach((ti, j) => {
+        const t = this.trees[ti];
+        const trunkH = t.th ?? 2 + t.s * 0.6;
+        m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
+        cell.trunks.setMatrixAt(j, m);
+        q.setFromEuler(new THREE.Euler(0, t.c * 40, 0));
+        m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
+        cell.branches.setMatrixAt(j, m);
+        cell.branchMatrices[j] = m.clone();
+      });
+      this.cells.push(cell);
     }
-    const bounds = box.isEmpty() ? null : box.getBoundingSphere(new THREE.Sphere());
     if (this.opts.farForm && n) {
       // One instanced draw per area past the far-tree orbit, on the same leaf material.
       this.far = new THREE.InstancedMesh(new THREE.OctahedronGeometry(1), leafMat, n * FAR_PER_TREE);
@@ -1075,34 +1137,15 @@ export class World {
       this.far.castShadow = this.far.receiveShadow = true;
       this.far.visible = false;
       this.farOut = { matrices: this.far.instanceMatrix.array as Float32Array, colors: this.far.instanceColor.array as Float32Array, count: 0 };
+      fit(this.far, boundsOf(this.trees.map((_, i) => i)));
       this.group.add(this.far);
     }
-    for (const im of [this.canopy, this.pines, this.trunks, this.branches, this.far]) {
-      if (!bounds || !im) continue;
-      im.boundingSphere = bounds.clone();
-      im.boundingBox = box.clone();
-    }
-    this.trees.forEach((t, i) => {
-      const trunkH = t.th ?? 2 + t.s * 0.6;
-      m.compose(new THREE.Vector3(t.x, t.y, t.z), q.identity(), new THREE.Vector3(t.s * 0.8, trunkH, t.s * 0.8));
-      this.trunks!.setMatrixAt(i, m);
-      q.setFromEuler(new THREE.Euler(0, t.c * 40, 0));
-      m.compose(new THREE.Vector3(t.x, t.y + trunkH * 0.85, t.z), q, new THREE.Vector3(t.s * 1.3, t.s * 1.3, t.s * 1.3));
-      this.branches!.setMatrixAt(i, m);
-      this.branchMatrices[i] = m.clone();
-    });
   }
 
-  private canopy?: THREE.InstancedMesh;
+  /** The generic trees' near meshes, one set per cell (one cell without WorldOptions.treeCellM). */
+  private cells: TreeCell[] = [];
   private far?: THREE.InstancedMesh;
   private farOut?: FarInstances;
-  private pines?: THREE.InstancedMesh;
-  private trunks?: THREE.InstancedMesh;
-  private branches?: THREE.InstancedMesh;
-  /** True while some broadleaf crown is thin enough to show the limbs inside it. */
-  private branchesShow = true;
-  /** Each tree's bare-branch crown; setSeason draws only those of thinning broadleaves. */
-  private branchMatrices: THREE.Matrix4[] = [];
   private detail = { farTrees: false, branchShadows: true };
   /**
    * Level-of-detail hook for the generic trees (phone performance). `farTrees` hides the
@@ -1114,13 +1157,15 @@ export class World {
     this.applyBranchVisibility();
   }
   private applyBranchVisibility() {
-    if (!this.branches) return;
-    this.branches.visible = this.branchesShow && !this.detail.farTrees;
-    this.branches.castShadow = this.detail.branchShadows;
-    if (!this.far) return;
     // Far form: the whole near tree (clumps, pine tiers, trunk) gives way to one draw.
-    this.far.visible = this.detail.farTrees;
-    for (const im of [this.canopy, this.pines, this.trunks]) if (im) im.visible = !this.detail.farTrees;
+    const farForm = !!this.far && this.detail.farTrees;
+    if (this.far) this.far.visible = farForm;
+    for (const cell of this.cells) {
+      cell.branches.visible = cell.branchesShow && !this.detail.farTrees;
+      cell.branches.castShadow = this.detail.branchShadows;
+      if (!this.far) continue;
+      for (const im of [cell.canopy, cell.pines, cell.trunks]) im.visible = !farForm;
+    }
   }
   private seasonDoy = -1;
 
@@ -1130,10 +1175,8 @@ export class World {
    * on their own few-week schedule.
    */
   setSeason(doy: number) {
-    if (doy === this.seasonDoy || !this.canopy || !this.pines) return;
+    if (doy === this.seasonDoy || !this.cells.length) return;
     this.seasonDoy = doy;
-    const canopy = this.canopy;
-    const pines = this.pines;
     const clumps = this.opts.clumps;
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -1143,16 +1186,18 @@ export class World {
     // Fall colour by species: maple red, sweetgum burgundy, oak russet, poplar gold.
     const fall = ['#c43a26', '#8e2f3a', '#a8662f', '#e0b04a', '#d0782f'];
     const brown = new THREE.Color('#8a6a48');
-    let k = 0;
-    let kp = 0;
     const tint = new THREE.Color();
     const v = new THREE.Vector3();
     const sc3 = new THREE.Vector3();
+    for (const cell of this.cells) {
+    const { canopy, pines, branches } = cell;
+    let k = 0;
+    let kp = 0;
     // Bare-branch crowns only show inside a thinning broadleaf crown. Under full leaf, and on
     // pines and magnolias, they sit hidden: draw only the thinning trees' (compacted instances).
-    const branches = this.branches;
     let kb = 0;
-    this.trees.forEach((t, ti) => {
+    cell.trees.forEach((ti, j) => {
+      const t = this.trees[ti];
       const trunkH = t.th ?? 2 + t.s * 0.6;
       const kind = t.c < 0.18 ? 'pine' : t.c < 0.26 ? 'magnolia' : 'deciduous';
       const r = rng(Math.floor(t.c * 1e9) + 7);
@@ -1182,7 +1227,7 @@ export class World {
         else if (st.stage === 'turning') c.set(green).lerp(new THREE.Color(species), Math.min(1, st.t * 1.3));
         else if (st.stage === 'dropping') c.set(species).lerp(brown, st.t * 0.6);
         canopyLeft = st.canopy;
-        if (canopyLeft < 0.97 && branches && this.branchMatrices[ti]) branches.setMatrixAt(kb++, this.branchMatrices[ti]);
+        if (canopyLeft < 0.97 && cell.branchMatrices[j]) branches.setMatrixAt(kb++, cell.branchMatrices[j]);
       }
       // A rounded crown of clumps: top clumps catch the sun, lower ones sit in shade.
       const R = 2.3 * t.s;
@@ -1214,16 +1259,15 @@ export class World {
     });
     canopy.count = k;
     pines.count = kp;
-    if (branches) {
-      branches.count = kb;
-      branches.instanceMatrix.needsUpdate = true;
-    }
-    this.branchesShow = kb > 0;
-    this.applyBranchVisibility();
+    branches.count = kb;
+    branches.instanceMatrix.needsUpdate = true;
+    cell.branchesShow = kb > 0;
     for (const im of [canopy, pines]) {
       im.instanceMatrix.needsUpdate = true;
       if (im.instanceColor) im.instanceColor.needsUpdate = true;
     }
+    }
+    this.applyBranchVisibility();
     if (this.far && this.farOut) {
       this.far.count = farCanopyInstances(this.trees, doy, this.farOut).count;
       this.far.instanceMatrix.needsUpdate = true;
