@@ -18,14 +18,18 @@ export const seventeenth271Id = 'osm:way:269542282';
 // corner reads 103 m; it is not modelled.
 const roofH = 107, parapetH = 113.5, penthouseH = 113;
 const groundNavd = 276.2;
-const parkingTop = 22, lobbyTop = 28.4, officePitch = (roofH - lobbyTop) / 20;
+const lobbyTop = 28.4, officePitch = (roofH - lobbyTop) / 20;
 // Where the vertical-mullion mass hands over to the banded mass, as a share of each long face
 // measured from its east end (the aerial from the north shows about 38%).
 const split = 0.38;
 
 // Flat vertex colours, not library surfaces: a painted mesh compiles its own program.
 const glass = '#7e8c94', glassLit = '#808e96', mullion = '#b3c0c6', band = '#dde2e2';
-const parapetGlass = '#8c9ba3', deckGlass = '#66727a', roofDeck = '#7d817f';
+// Strengthening (recognition audit, 2026-11-24), from Dec 2025 Street View: the parking levels are
+// clad in large mid-grey panels with a visible joint grid, over a glazed lobby with round columns,
+// and the 20 ft glass parapet reads as a lighter band. The glass value is unchanged.
+const parapetGlass = '#b4c1c7', roofDeck = '#7d817f';
+const panelWall = '#8e9294', joint = '#6f7375', lobbyGlass = '#3e4a51', column = '#e4e2dc';
 
 type Shell = NonNullable<ReturnType<typeof landmarkShell>>;
 
@@ -65,16 +69,31 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
     const westRange: [number, number] = dx >= 0 ? [0, tSplit] : [tSplit, 1];
     const top = y(roofH);
 
-    // Parking levels read as dark spandrel glass with thin floor lines; the lobby is tall glass.
-    panel(s, false, a, b, 0, 1, s.base + 0.3, y(parkingTop), 0.04, deckGlass);
-    for (let h = 3.1; h < parkingTop; h += 3.1) panel(s, false, a, b, 0, 1, y(h) - 0.12, y(h) + 0.12, 0.06, mullion);
-    panel(s, false, a, b, 0, 1, y(lobbyTop) - 0.4, y(lobbyTop), 0.06, mullion);
+    // Layers stand at least 4 cm apart so none z-fights at City range: lobby glass and panel wall
+    // 0.04, joints 0.09, lobby head band 0.14; above it lit panes 0.05, mullions 0.10, bands 0.15.
+    // Grade: a glazed lobby, lit at night, behind round columns about 9 m apart.
+    panel(s, true, a, b, 0, 1, s.base + 0.3, y(6), 0.04, lobbyGlass);
+    const cols = length < 20 ? 0 : Math.max(2, Math.round(length / 9));
+    for (let i = 0; cols > 0 && i <= cols; i++) {
+      const t = i / cols, w = 0.4 / length;
+      panel(s, false, a, b, Math.max(0, t - w), Math.min(1, t + w), s.base + 0.3, y(6.4), 0.12, column);
+    }
+    // Parking levels and the lobby floor above them: a grey panel wall with a joint grid
+    // (rows plus columns), up to the lobby head.
+    panel(s, false, a, b, 0, 1, y(6.4), y(lobbyTop), 0.04, panelWall);
+    for (let h = 6.4 + 3.1; h < lobbyTop; h += 3.1) panel(s, false, a, b, 0, 1, y(h) - 0.12, y(h) + 0.12, 0.09, joint);
+    // Vertical joints about 6 m apart (paired panels), enough to read as a panel grid at City range.
+    const pans = length < 20 ? 1 : Math.max(1, Math.round(length / 6));
+    for (let i = 1; i < pans; i++) panel(s, false, a, b, i / pans - 0.08 / length, i / pans + 0.08 / length, y(6.4), y(lobbyTop), 0.09, joint);
+    panel(s, false, a, b, 0, 1, y(lobbyTop) - 0.5, y(lobbyTop), 0.14, band);
 
     // West mass: Streamline bands at every office floor.
     for (let f = 1; f <= 20; f++) {
       const h = lobbyTop + f * officePitch;
       if (y(h) > top + 0.01) break;
-      panel(s, false, a, b, westRange[0], westRange[1], y(h) - 1.0, y(h) - 0.05, 0.12, band);
+      panel(s, false, a, b, westRange[0], westRange[1], y(h) - 1.0, y(h) - 0.05, 0.15, band);
+      // The Dec 2025 photos show the pale floor bands across the east mass too, slimmer.
+      if (length > 20) panel(s, false, a, b, eastRange[0], eastRange[1], y(h) - 0.55, y(h) - 0.05, 0.15, band);
     }
     // East mass: vertical mullions about 4.5 m apart, full height.
     const span = (eastRange[1] - eastRange[0]) * length;
@@ -91,7 +110,7 @@ export function create271Seventeenth(buildings: VBuilding[], site: VBuilding, gr
       if (lo + officePitch > top + 0.01) break;
       for (let i = 0; i < bays; i++) {
         if (litHash(seed, edge, f, i) >= (f > 16 ? 0.03 : 0.05)) continue;
-        panel(s, true, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, lo + 0.1, lo + officePitch - 0.6, 0.08, glassLit);
+        panel(s, true, a, b, i / bays + 0.04 / bays, (i + 1) / bays - 0.04 / bays, lo + 0.1, lo + officePitch - 0.6, 0.05, glassLit);
       }
     }
 
