@@ -43,8 +43,9 @@ const pitch = 4.1;
 // Flat vertex colours, not library surfaces: a painted mesh compiles its own program, and the low
 // tier has no program to spare (90 of 90 when this was built).
 // Rework (coordinator audit, 2026-11-24): the identifiers are the white brim line, the deep reveal
-// between the two masses and thin pale floor lines. The glass base stays until Sam's palette pick.
-const glass = '#46606e', glassLit = '#486271', mullion = '#93a5ad', band = '#c6d0d4', reveal = '#1f2b33';
+// between the two masses and thin pale floor lines. Glass: Sam's pick (2026-11-24), the deeper
+// blue #718a9d, which renders sunlit at S 32 / V 53 inside the glass rule.
+const glass = '#718a9d', glassLit = '#738ca0', mullion = '#93a5ad', band = '#c6d0d4', reveal = '#1f2b33';
 const louvre = '#e2e3de', soffit = '#f4f3ee', brimTopColor = '#ecebe5';
 const precast = '#cbbd9f', precastDark = '#b5a78c', screen = '#a8a497', deck = '#8f8d86';
 const storefront = '#33434a', lobby = '#3e4f63';

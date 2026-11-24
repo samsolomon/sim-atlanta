@@ -84,10 +84,16 @@ Glass, for Sam's palette pick (rendered sunlit, 11:30 high tier, `820,-3335,0,78
 
 | Version | Base | Hue | S | V |
 |---|---|---|---|---|
-| Current glass (kept in code) | `#46606e` | 201 | 74 | 35 |
-| Photo-matched glass (shown only) | `#8ca8bc` | 192 | 20 | 64 |
-| Deeper blue, middle option (shown only) | `#718a9d` | 200 | 33 | 53 |
+| Original glass (#416) | `#46606e` | 201 | 74 | 35 |
+| Photo-matched glass (option A) | `#8ca8bc` | 192 | 20 | 64 |
+| **Deeper blue (option B, Sam's pick, in code)** | `#718a9d` | 200 | 33 | 53 |
 
 The photo-matched value follows the photos' light, reflective sky-blue and is inside the rule (V ≥ 62 → S ≤ 30). At 800 m it sits close to the generic pale-blue towers, so the lead asked for a middle option. The deeper blue renders at S 33 and V 53, inside the cap and more distinct from its neighbours. The current glass, at S 74, is over the S ≤ 36 cap.
 
-[Before / current / photo-matched](rework-compare.jpg) · [Four sides at 400 m](rework-four-sides.jpg)
+[Before / current / photo-matched](rework-compare.jpg) · [Four sides at 400 m](1075-peachtree-four-sides.jpg)
+
+## Glass pick (Sam, 2026-11-24)
+
+Sam picked option B, the deeper blue `#718a9d` ("The glass pick looks good to me"), from a strip that showed both options with #631's glass shade floor merged in locally. B reads clearly apart from the pale-blue towers around it at the money-shot distance, and its sunlit render (S 32 / V 53) is inside the rule. The lit-pane colour follows it (`#738ca0`). [The A/B strip](https://github.com/samsolomon/sim-atlanta/blob/e2ab64c62aa4975a01e8dbe59ce58ed88f49f2a3/review/1075-glass-pick/glass-pick.jpg?raw=true)
+
+The final before and after ([rework-compare.jpg](rework-compare.jpg), `815,-3330,215,70,950`) is shot **pre-floor**: #631's glass shade floor was not yet on main. The four-side sheet comes from `scripts/four-side-sheet.mjs` (low tier, 500 m, target 815,-3330).
