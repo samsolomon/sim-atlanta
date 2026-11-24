@@ -41,7 +41,10 @@ shape's direction, station access and road ownership before drawing it.
    feeds without descriptors. Hide a nearby timetable twin of an unmatched bus.
    Draw uncovered trips from the timetable. Follow the same trip as its source
    changes. A matched bus follows stops, signals and queues while steering
-   toward the age-adjusted GPS target. Fade large corrections.
+   toward the age-adjusted GPS target (at most 150 m past the fix). Fade
+   corrections over 300 m ahead or 200 m behind. A bus over 40 m behind its
+   target skips modelled dwells. GPS takes over from the trip's drawn timetable
+   position without a jump, and a trip that loses GPS fades its fallback in.
 5. Extend selection/follow and card states: inferred scene position, scheduled
    timetable, illustrative dwell/model. Keep live position separate. Unknown
    routes and expired schedules must remain explicit, without invented service.

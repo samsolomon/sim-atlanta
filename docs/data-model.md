@@ -28,7 +28,9 @@ shows the tier only where someone might take a value as fact:
   each attribute: position, consist, berth, track and so on. A simulated freight still says
   `illustrative`.
 - **The scene clock.** One scene-wide word says whether the world is `Live`, only at the real
-  present with the feed up, or on `Timetable`. A shifted clock never reads as live.
+  present with the feed up, or on `Timetable`. A shifted clock never reads as live. City at the
+  present reads `Live` while either rail or bus GPS is up; Route 49 trips without fresh GPS fall
+  back to the timetable and say so on their cards.
 - **Not ambient scenery.** The Final subject card names weather confidence alongside train status (Sam, 2026-11-24). No on-screen tier labels for trees and species,
   building heights, landscaping, crowds or area notes. The Key and About explain these.
 - **Weather.** At the real present, show the observed condition. If the fetch fails, show no
@@ -215,7 +217,13 @@ route ID into `marta:route:<public short name>` (for example, `marta:route:1`).
 It omits the assignment when the static edition has no matching bus route. The 2D
 map draws teal GPS dots for fixes up to three minutes old, at the real clock only.
 The endpoint retains older and undated fixes so other consumers can apply their
-own freshness rules. At the present clock City steers a Route 49 bus along its direction of travel toward a fresh observation. Its card gives the age and distance from the observation. An active trip without a matched GPS fix uses its inferred timetable position, including when the feed is unavailable.
+own freshness rules. At the present clock City steers a Route 49 bus along its direction of
+travel toward a fresh (three minutes or newer) observation. Its card gives the age and distance
+from the observation. An active trip without a matched GPS fix uses its inferred timetable
+position, including when the feed is unavailable. Claims resolve in order: an exact trip
+descriptor and service date, then directed proximity for Route 49 reports without a descriptor
+this edition knows, then suppression of the nearest timetable twin of a still-unmatched Route 49
+report. Reports from routes the edition can't name never hide a Route 49 trip.
 
 ### Station platforms and boarding edges
 
