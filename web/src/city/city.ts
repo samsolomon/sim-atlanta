@@ -28,6 +28,8 @@ import { Line } from '../vignette/geom';
 import { gradeShader } from '../vignette/grade';
 import { checkFrozen, freezeSelf, freezeStatic } from './freeze';
 import { hideEmptyMeshes } from './empty-draws';
+import { CityGlass } from './glass';
+import { canvasGlassAllowed, glassSource, setCanvasGlass } from '../ui/glass';
 import { FoliageMaskPass, inkShader } from '../vignette/ink';
 import { local } from '../vignette/time';
 import type { TrafficData } from '../vignette/traffic';
@@ -1313,8 +1315,22 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // `?perf&output=pass` keeps the separate pass, for A/B runs.
   const outputPass = perfEnabled && query.get('output') === 'pass';
   if (outputPass) composer.addPass(new OutputPass());
-  const grade = new ShaderPass(gradeShader({ output: !outputPass }));
+  // High draws the glass panels' blurred backings itself (city/glass.ts), so the DOM can drop
+  // backdrop-filter and the canvas is presented directly. `?perf&glass=css` keeps the CSS blur.
+  // The blur reads grade's input, so it applies the same output step grade does.
+  const glass = !low && !(perfEnabled && query.get('glass') === 'css') ? new CityGlass({ output: !outputPass }) : null;
+  if (glass) composer.addPass(glass.pass);
+  const grade = new ShaderPass(gradeShader({ output: !outputPass, after: glass?.gradeHook }));
+  // ShaderPass clones its uniforms; the glass hook's must stay the live objects CityGlass updates.
+  if (glass) Object.assign(grade.uniforms, glass.gradeHook.uniforms);
   composer.addPass(grade);
+  let glassDrawn = false;
+  const showGlass = (drawn: boolean) => {
+    if (drawn !== glassDrawn) setCanvasGlass(glassDrawn = drawn);
+  };
+  const gl = renderer.getContext();
+  const onContextLost = () => showGlass(false);
+  renderer.domElement.addEventListener('webglcontextlost', onContextLost);
   const tilt = Number(new URLSearchParams(location.search).get('tilt') ?? 0.65);
 
   function resize() {
@@ -1338,6 +1354,8 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     ink.uniforms.uTexel.value.set(1 / (w * pr), 1 / (h * pr));
     ink.uniforms.uWidth.value = Math.max(1, pr);
     grade.uniforms.uRes.value.set(w * pr, h * pr);
+    const buffer = renderer.getDrawingBufferSize(new THREE.Vector2());
+    glass?.setSize(buffer.x, buffer.y, buffer.x / w);
     for (const p of [hts, vts]) {
       p.uniforms.uTexel.value.set(1 / w, 1 / h);
       p.uniforms.uStrength.value = tilt;
@@ -1373,7 +1391,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     rotate: degrees => { rotateBy(degrees); controls.update(); },
     pan: (dx, dy) => panPx(dx, dy),
     view: (x, z, dist, bearing, tilt) => { manualCamera(); setView(-bearing, tilt, THREE.MathUtils.clamp(dist, controls.minDistance, controls.maxDistance), x, z); },
-    post: () => [sceneTarget, composer, ...composer.passes],
+    post: () => [sceneTarget, composer, ...composer.passes, ...(glass?.targets() ?? [])],
     areas: () => mosaic ? [...mosaic.areas.keys()] : ['downtown', ...(east ? ['king'] : []), ...(north ? ['auburn'] : [])],
     roots: () => {
       const m = new Map<THREE.Object3D, PerfCategory>();
@@ -1984,8 +2002,14 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     // Count only redraws that render: with shadows off, needsUpdate is set but no pass runs.
     if (renderer.shadowMap.enabled && renderer.shadowMap.needsUpdate) perf.shadowUpdate();
     whiteModel?.before();
+    // The backings go with the composer's frame: no composer, or no grade, means CSS blurs.
+    const composed = !perfOverrides.postOff && !whiteModel?.holding;
+    // A lost context renders nothing, so the panels need CSS until it is restored.
+    const glassRects = glass && composed && canvasGlassAllowed() && grade.enabled && !gl.isContextLost() ? glassSource(renderer.domElement) : null;
+    glass?.prepare(glassRects);
     if (perfOverrides.postOff) renderer.render(scene, camera);
-    else if (!whiteModel?.holding) composer.render();
+    else if (composed) composer.render();
+    if (glass) showGlass(!!glassRects && glass.drew());
     whiteModel?.after();
     const renderEnd = performance.now();
     perf.frame(ts, renderStart - frameStart, renderEnd - renderStart, renderer.info.render.triangles);
@@ -2133,6 +2157,7 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
     pause() {
       cancelAnimationFrame(raf);
       raf = 0;
+      showGlass(false);
     },
     resume() {
       if (renderer.getContext().isContextLost()) return false;
@@ -2240,6 +2265,9 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
       stopGestures?.();
       squareButton?.remove();
       cancelAnimationFrame(raf);
+      showGlass(false);
+      renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
+      glass?.dispose();
       ro.disconnect();
       stopPicking();
       controls.removeEventListener('start', startGesture);

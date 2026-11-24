@@ -23,7 +23,7 @@ import { TrainSource } from './core/trains';
 import { railStatus } from './ui/status';
 import type { CityView } from './city/city';
 import { VehicleFollow } from './city/vehicle-follow';
-import { setGlassMode } from './ui/glass';
+import { mountGlassDebug, setGlassMode } from './ui/glass';
 
 const DATA = '/data/ga';
 const get = <T>(f: string): Promise<T> => fetch(`${DATA}/${f}`).then((r) => r.json());
@@ -512,10 +512,13 @@ let cityQuality: 'low' | 'high' | null = null;
 /** Low-tier City drops CSS backdrop-filter so the canvas is presented directly ("flat" glass). */
 function applyGlassMode() {
   const cityShown = !view3d.hidden && document.body.classList.contains('in3d');
-  setGlassMode(cityShown && (diorama?.quality ?? cityQuality) === 'low' ? 'flat' : 'css');
+  if (!cityShown) setGlassMode('css');
+  else if ((diorama?.quality ?? cityQuality) === 'low') setGlassMode('flat');
+  else setGlassMode(document.body.classList.contains('city-over-map') ? 'css' : 'canvas');
 }
 new MutationObserver(applyGlassMode).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 new MutationObserver(applyGlassMode).observe(view3d, { attributes: true, attributeFilter: ['hidden'] });
+if (params.has('glassdebug')) mountGlassDebug(document.getElementById('view3d-canvas')!);
 const CITY_ORIGIN = { lon: -84.3916, lat: 33.7539 }; // Five Points, the pipeline origin
 const cityLoading = document.getElementById('city-loading')!;
 const cityProgress = document.getElementById('city-progress')!;
@@ -545,7 +548,10 @@ async function openCity() {
     city.dispose();
   }
   if (diorama) {
-    leaving++; // cancels a City → Map fade in progress
+    if (mapExitActive) {
+      cancelMapExit();
+      await applyGraphics();
+    }
     return;
   }
   perf.phase('city:open');
@@ -652,8 +658,17 @@ async function openCity() {
   opening = false;
   cityLoading.hidden = true;
   cityBuiltOnce = true;
-  // The colour cross-fade (1.4 s) covers the map; then paper goes back behind City.
-  if (overMap) overMapTimer = window.setTimeout(() => { if (load === cityLoad) document.body.classList.remove('city-over-map'); }, reducedMotion() ? 0 : 1500);
+  // WhiteModel starts the colour transition in rAF. Wait for that actual transition,
+  // including an immediate or cancelled reveal, before handing the backing to City.
+  if (overMap && !offBoard) {
+    const arrival = leaving;
+    requestAnimationFrame(async () => {
+      const container = document.getElementById('view3d-canvas')!;
+      await Promise.allSettled(container.getAnimations().map(a => a.finished));
+      if (load === cityLoad && arrival === leaving && !mapExitActive)
+        document.body.classList.remove('city-over-map');
+    });
+  }
   void applyGraphics();
   if (import.meta.env.DEV) Object.assign(window, { __diorama: diorama });
   setViewParam('city');
@@ -727,9 +742,11 @@ async function setGraphics(g: Graphics) {
 /** Rebuild City if the tier on screen isn't the chosen one. Also runs after every City load, so a
  * choice made while City was loading still lands. */
 async function applyGraphics() {
-  if (!diorama) return;
+  // The saved choice applies on the next City entry, including a reversed exit.
+  if (!diorama || mapExitActive) return;
+  const city = diorama;
   const { pickQuality } = await import('./city/city');
-  if (!diorama || diorama.quality === (chosenQuality() ?? pickQuality())) return;
+  if (diorama !== city || mapExitActive || city.quality === (chosenQuality() ?? pickQuality())) return;
   // Rebuild City at the same camera with the new tier.
   const t = diorama.target(), c = diorama.camera();
   keepPose = { x: t.x, z: t.z, bearing: c.bearing, tilt: c.tilt, distanceM: diorama.distance() };
@@ -745,7 +762,15 @@ async function applyGraphics() {
 const CITY_FOV = 22; // City's vertical field of view; the map takes it while they overlap
 let mapFov: number | null = null; // MapLibre's own, restored when the map flattens
 let mapMaxPitch: number | null = null;
-let overMapTimer = 0;
+let mapExitActive = false;
+function cancelMapExit() {
+  if (!mapExitActive) return;
+  mapExitActive = false;
+  leaving++;
+  const container = document.getElementById('view3d-canvas')!;
+  container.style.transition = container.style.opacity = '';
+  document.body.classList.remove('city-over-map');
+}
 let leaving = 0; // bumped when City → Map starts, so a City click during the fade can cancel it
 let cityBuiltOnce = false;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -791,7 +816,7 @@ async function leaveCityToMap() {
   if (!diorama || !m || reducedMotion()) return closeCity();
   const load = cityLoad;
   const leave = ++leaving;
-  clearTimeout(overMapTimer);
+  mapExitActive = true;
   const t = diorama.target(), camera = diorama.camera();
   const [lon, lat] = sceneToLonLat(CITY_ORIGIN, t.x, t.z);
   cityTilt = camera.tilt;
@@ -803,19 +828,14 @@ async function leaveCityToMap() {
   canvas.style.transition = 'opacity 700ms cubic-bezier(.45,0,.55,1)';
   canvas.style.opacity = '0';
   await new Promise((r) => setTimeout(r, 720));
-  canvas.style.transition = canvas.style.opacity = '';
-  // City was chosen again during the fade: stay.
-  if (leave !== leaving || load !== cityLoad || !diorama) {
-    document.body.classList.remove('city-over-map');
-    return;
-  }
+  if (leave !== leaving || load !== cityLoad || !diorama) return;
   closeCity(true);
 }
 
 function closeCity(keepMapView = false, writeUrl = true) {
   stopWatchSlow?.();
   stopWatchSlow = null;
-  clearTimeout(overMapTimer);
+  cancelMapExit();
   document.body.classList.remove('city-over-map');
   keepPose = null;
   hideCard();
@@ -861,7 +881,7 @@ async function openModels() {
   hideCard();
   if (diorama && cityLoading.hidden) {
     leaving++;
-    clearTimeout(overMapTimer);
+    cancelMapExit();
     stopWatchSlow?.();
     stopWatchSlow = null;
     diorama.pause();
