@@ -108,7 +108,7 @@ export function xe60Geometry(detail:BusDetail='high') {
 function bellows(detail:BusDetail) {
   const b=new Builder(), weights:number[]=[]; const rings=detail==='low'?8:20;
   for(let i=0;i<rings;i++) {
-    const ring=(j:number)=>{const t=j/rings, w=1.29+(j%2===0?0:.045),top=3.02+(j%2===0?0:.035);return [[-w,.32,.6-1.2*t],[w,.32,.6-1.2*t],[w,top,.6-1.2*t],[-w,top,.6-1.2*t]];};
+    const ring=(j:number)=>{const t=j/rings, w=1.29+(j%2===0?0:.045),top=ROOF_DECK+(j%2===0?0:.035);return [[-w,.32,.6-1.2*t],[w,.32,.6-1.2*t],[w,top,.6-1.2*t],[-w,top,.6-1.2*t]];};
     const a=ring(i),c=ring(i+1);
     for(let j=0;j<4;j++){
       b.quad(a[j],a[(j+1)%4],c[(j+1)%4],c[j],i%2?'#8a8e98':'#b0b3bb');
