@@ -381,6 +381,9 @@ export function* buildDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
       : create ? create(sceneryCity.buildings, site, foundation(site.rings, groundAt, grid.manifest.stepM / 2), groundAt)
       : createMidtownMarta(sceneryCity.buildings, site, groundAt);
     if (landmark) {
+      // The footprints this landmark replaced, for the skin footprint audit (city/skin-footprint.test.ts).
+      const kept = new Set(landmark.buildings);
+      landmark.group.userData.replaced = sceneryCity.buildings.filter(b => !kept.has(b)).map(b => b.id);
       sceneryCity = { ...sceneryCity, buildings: landmark.buildings };
       landmarks.push(landmark);
       yield 'landmark ' + site.id;

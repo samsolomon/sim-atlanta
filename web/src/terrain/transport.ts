@@ -427,7 +427,10 @@ export function createSurfaceTransport(city: TerrainCity, grid: GroundGrid, terr
             if (rightSide) structures.quad(b, down(b), down(c), c, PAL.concreteDark);
             buriedFaces?.add(structures.pos.length / 3);
             buriedFaces?.add(structures.pos.length / 3 + 3);
-            dropNext(1);
+            // A road deck's top casts the deck's shadow, so its underside is redundant far away.
+            // A freight deck's top is in the freight mesh, which doesn't cast: its underside is
+            // the viaduct's only horizontal shadow caster and must stay in the far prefix.
+            if (use !== 'freight') dropNext(1);
             structures.quad(down(a), down(d), down(c), down(b), PAL.concreteDark);
           }
         }
