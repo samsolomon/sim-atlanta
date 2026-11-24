@@ -5,6 +5,7 @@ import { createDowntownTerrain } from '../terrain/model';
 import type { JoiningEdge, TerrainQuality } from '../terrain/surface';
 import { createSurfaceTransport } from '../terrain/transport';
 import type { TerrainCity, TransportRun } from '../terrain/transport-data';
+import { drawGrantStreet, grantCut, grantFormation, grantLighting, grantRoadY } from './grant-street';
 import kingRail from './fixtures/king-rail.json';
 import { segDist, type P2 } from '../vignette/geom';
 
@@ -80,7 +81,9 @@ export async function loadEast(
   // The low tier draws the first treeLowCount crowns; keep that set, less the removed ones.
   const treeLowCount = context.treeLowCount === undefined ? undefined
     : context.trees.slice(0, context.treeLowCount).filter(t => !onTrack(t)).length;
+  const grantNight = { value: 0 };
   const area = createDowntownTerrain(grid, context, neighborhoodTrees({ ...context, trees, treeLowCount }, quality), {
+    boardDetails(builder, ground, material) { drawGrantStreet(builder, ground); grantLighting(material, grantNight); },
     simpleLeafClumps: context.treeLowCount !== undefined,
     quality,
     bottomY,
@@ -90,10 +93,14 @@ export async function loadEast(
   let freight: ReturnType<typeof kingFreight>;
   try { freight = kingFreight(context, grid, area); }
   catch (error) { area.dispose(); throw error; }
+  const streetHeight = cityRoadHeight(context, area.groundAt);
+  const roadHeight: typeof streetHeight = (x,z,road) =>
+    road.tunnel && road.name === 'Grant Street Southeast' && z >= 488.14 && z <= 527.43
+      ? grantRoadY(z) + .065 : streetHeight(x,z,road);
   return {
     ...area,
-    connectorBoard: { city: context, roadHeight: cityRoadHeight(context, area.groundAt) },
-    setNight(factor: number) { area.setNight(factor); freight.setNight?.(factor); },
+    connectorBoard: { city: context, roadHeight },
+    setNight(factor: number) { grantNight.value = factor; area.setNight(factor); freight.setNight?.(factor); },
     dispose() { freight.dispose(); area.dispose(); },
   };
 }
@@ -106,8 +113,12 @@ export async function loadEast(
  * downtown edge. Ground ballast like the rest, with graded cuttings carved under it.
  */
 export function kingFreight(context: TerrainCity, grid: GroundGrid, area: ReturnType<typeof createDowntownTerrain>) {
-  const transport = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, area.groundAt);
-  area.carve(transport.cutting);
+  const freightGround = Object.assign((x:number,z:number,run?:TransportRun) => {
+    const y=area.groundAt(x,z);
+    return run && y!==null ? grantFormation(x,y) : y;
+  }, {triangles:area.groundAt.triangles});
+  const transport = createSurfaceTransport({ ...context, terrainTransport: { version: 1, roads: [], rail } }, grid, freightGround);
+  area.carve([...transport.cutting, grantCut]);
   area.group.add(transport.group);
   return transport;
 }

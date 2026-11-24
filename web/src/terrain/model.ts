@@ -42,6 +42,7 @@ type Contours = { value: number };
 export interface DowntownTerrainOptions {
   quality: TerrainQuality;
   simpleLeafClumps?: boolean;
+  boardDetails?: (builder: Builder, ground: (x:number,z:number)=>number|null, material: THREE.MeshLambertMaterial) => void;
   join?: TerrainJoins;
   bottomY?: number;
   finishFor?: (building: VBuilding) => BuildingFinish | undefined;
@@ -62,7 +63,7 @@ function checkBounds(grid: GroundGrid, city: VData) {
 }
 
 function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuality, contours: Contours,
-  join?: TerrainJoins, bottom = mesh.minY - mesh.grid.manifest.stepM) {
+  join?: TerrainJoins, bottom = mesh.minY - mesh.grid.manifest.stepM, details?: DowntownTerrainOptions['boardDetails']) {
   const { vertical, bounds: b } = mesh.grid.manifest;
   const geometry = mesh.geometry;
   const material = new THREE.MeshLambertMaterial({ map: groundMap(city, quality) });
@@ -82,6 +83,8 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
   const surface = new THREE.Mesh(geometry, material);
   surface.receiveShadow = true;
   const sides = new Builder();
+  const sideMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  details?.(sides, (x,z) => mesh.sampleScene(x,z), sideMaterial);
   const joins = joinList(join);
   const shared = joins.map(() => new Builder());
   const pos = geometry.getAttribute('position'), idx = geometry.index!;
@@ -105,7 +108,7 @@ function makeBoard(mesh: GroundSurface, city: TerrainCity, quality: TerrainQuali
     const a = idx.getX(i), b = idx.getX(i + 1), c = idx.getX(i + 2);
     if (flags[a] || flags[b] || flags[c]) { edge(a, b); edge(b, c); edge(c, a); }
   }
-  surface.add(new THREE.Mesh(sides.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+  surface.add(new THREE.Mesh(sides.geometry(), sideMaterial));
   shared.forEach((part, index) => {
     if (!part.pos.length) return;
     const wall = new THREE.Mesh(part.geometry(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
@@ -182,7 +185,7 @@ export function createDowntownTerrain(grid: GroundGrid, city: TerrainCity, trees
   city = midtownFoundations(city, grid.manifest.vertical.sceneZeroNavd88M);
   const mesh = new GroundSurface(grid, options.quality, options.openings, options.join);
   const bare = (x: number, z: number) => mesh.sampleScene(x, z);
-  const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY);
+  const board = makeBoard(mesh, city, options.quality, options.contours ?? { value: 0 }, options.join, options.bottomY, options.boardDetails);
   const lighting = underpassLights(city,mesh,board.material.map);
   if (lighting) board.add(lighting.group);
   const portals = [...streetPortals(city), ...junctionPortals(city), ...seventeenthPortals(city)];
