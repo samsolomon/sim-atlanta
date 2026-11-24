@@ -2900,6 +2900,10 @@ Sam found the CSX studies too pale. The ES44AH now wears navy with its yellow no
 
 The GP38-2 now shares the ES44AH navy instead of its earlier grey YN2 hood. Mark Levisay’s November 10, 2014 photo of GP38-2 2513 supplies the YN3 colour reference: navy cab and hood, yellow nose and frame stripe. Same geometry, 3,036 triangles; matched day/night sheets were reshot. [Reference comparison](log/freight/variety/references.jpg). Web rebuild only.
 
+### 2026-11-23 — Ansley yards step up from the sidewalk
+
+Thirty rising front yards now have filled garden shelves, clipped hedges and two to five open steps, with occasional pale stone entry piers. The new structures use 1,744 triangles across both Ansley boards (52–76 per yard); low adds none. Ground-contact sampled 34,850 points on the exposed shelves and stairs without a terrain penetration. The surprise was an old flower bed reaching into the new shelf: the cross-model review caught it, and terraced yards now suppress that bed. [Day/night comparisons and cameras](log/ui/ansley-terraces/README.md).
+
 ### 2026-11-23 — A final vertex is not another road segment
 
 At 21:00, a streetcar nose could project onto the exact end of a traffic course.
