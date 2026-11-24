@@ -60,10 +60,12 @@ try {
   for (let i = 0; i < 160; i++) { await sleep(250); try { if (await evaluate('document.title') === 'PERF_DONE') break; } catch { /* busy */ } }
   await send('Tracing.end');
   await traceComplete;
-  const summary = await evaluate('JSON.stringify(JSON.parse(localStorage.getItem("perf-result") || "null")?.summary ?? null)');
+  const summary = await evaluate('JSON.stringify(window.__perf?.result?.summary ?? null)');
+  // Marks also stay in the page's timeline, in case the trace dropped the user-timing category.
+  const pageMarks = await evaluate('JSON.stringify(performance.getEntriesByType("mark").filter(m => m.name.startsWith("ring:")).map(m => [m.name, Math.round(m.startTime)]))');
   ws.close();
   writeFileSync(join(out, 'trace.json'), JSON.stringify({ traceEvents: events }));
-  const md = explain(events, longMs, summary);
+  const md = explain(events, longMs, summary) + `\n\nRing swaps in the page timeline (ms since navigation): ${pageMarks}`;
   writeFileSync(join(out, 'long-frames.md'), md);
   console.log(md + `\n\nTrace: ${join(out, 'trace.json')}`);
 } finally {
@@ -81,7 +83,8 @@ function explain(evts, longMs, summary) {
   if (!main) return 'No main-thread FunctionCall events in the trace.';
   const onMain = e => `${e.pid}:${e.tid}` === main;
   const tasks = evts.filter(e => onMain(e) && e.ph === 'X' && (e.name === 'RunTask' || e.name === 'ThreadControllerImpl::RunTask') && e.dur > longMs * 1000)
-    .sort((a, b) => a.ts - b.ts);
+    .sort((a, b) => a.ts - b.ts || b.dur - a.dur)
+    .filter((e, i, all) => !all.some((o, j) => j < i && o.ts <= e.ts && o.ts + o.dur >= e.ts + e.dur));
   const marks = evts.filter(e => e.cat?.includes('blink.user_timing') && e.name.startsWith('ring:'));
   const gpu = evts.filter(e => !onMain(e) && e.ph === 'X' && e.dur > 2000 && /gpu|GL|Decoder|Program|Shader|Texture|Buffer|ANGLE|Metal/i.test(`${e.cat} ${e.name}`));
   const t0 = Math.min(...evts.filter(e => e.ts).map(e => e.ts));
