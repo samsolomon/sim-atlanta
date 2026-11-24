@@ -3440,3 +3440,7 @@ model follows them. At night the lobby drum glows and the offices stay mostly
 dark. [Before and after](log/ui/two-midtown-plaza/compare-day.jpg) ·
 [night](log/ui/two-midtown-plaza/compare-night.jpg) · [sources](two-midtown-plaza.md)
 
+
+### 2026-11-24 · Norfolk Southern from roof slabs to towers
+
+OSM maps Norfolk Southern's 2021 headquarters as roof slabs at levels 20 and 13, floating over thin end masses, and the 2019 lidar predates the site. The sources didn't agree on storey counts: HOK says 17- and 10-storey towers over a five-storey podium, the structural engineer says 12 and 5 over 11, and CoStar says 22. City takes HOK's 22 and 15 floors and keeps OSM's massing by shifting its levels up two, which gives 86 m and 58 m, both inferred. Each tower is two knife-edged glass halves either side of a slot 2 m lower, as in the photos. [Before and after](log/ui/norfolk-southern/day-before-after.jpg) · [night](log/ui/norfolk-southern/night-before-after.jpg)
