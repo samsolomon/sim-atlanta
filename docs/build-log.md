@@ -3629,3 +3629,9 @@ Vireo, the white apartment tower by Piedmont Park, is mapped at 105 m. The 2019 
 
 
 **2026-11-24 — The Coca-Cola USA Building's two heights.** The mapped height was 78 m and Enclos lists 216 ft (66 m), while the lidar said 85 m. All three were measuring from a different ground. The tower stands on a plaza about 19 m above the low west grade, and its roof deck is a flat 382.1 m NAVD88. The model takes absolute heights from the lidar, so the plaza, the parapet at 383.2 m and the penthouse at 388.8 m all land where the point cloud has them. The facade is slate glass in a red-brown granite grid under a plain frieze. In the City campus view it now sits behind One Coca-Cola Plaza's cream eggcrate as the Enclos aerial shows. [Captures and references](log/ui/coca-cola-usa/README.md)
+
+## 2026-11-24: Luxe, lean
+
+Luxe's white tower and its rounded blue glass corner now stand on 12th Street, at 67 m from a 6 m lidar grid. With the high tier's geometry down to about 2 MB of headroom, this skin was built to a budget: 1,278 triangles, with one glass strip per window run and a ten-facet drum. It reads the same at the orbit as a punched-window version would. A tooling lesson came with it. My screenshot script picked a random DevTools port, attached to another agent's headless perf page, and drove it for a few frames. Scripts now launch with port 0 and read their own DevToolsActivePort.
+[Before and after](log/ui/luxe/compare.jpg) · [day and night](log/ui/luxe/daynight.jpg) · [close](log/ui/luxe/close.jpg)
+
