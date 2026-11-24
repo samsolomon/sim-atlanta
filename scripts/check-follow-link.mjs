@@ -61,14 +61,52 @@ try {
     };
   })()` });
 
+  async function openLink(kind, view) {
+    const linked = kind === 'route' ? 'marta:route:RED' : 'marta:bus:delayed';
+    const url = new URL(base);
+    url.search = new URLSearchParams({ view, q: 'low', dev: '', follow: linked });
+    if (kind === 'route') url.searchParams.set('t', '2026-11-20T13:49:00-05:00');
+    await call('Page.navigate', { url: url.href });
+    await until("!!window.__shell && window.__trains().some(t => t.routeId === 'marta:route:STREETCAR')");
+    return linked;
+  }
+
+  const searchFailures = [];
+  for (const kind of ['route', 'bus']) {
+    const route = kind === 'route';
+    await openLink(kind, route ? 'map' : 'city');
+    if (!route) await until('!!window.__diorama');
+    const query = route ? 'State Capitol dome' : 'Peachtree Center';
+    await evaluate(`(() => {
+      const field = document.querySelector('input[placeholder="Search Atlanta"]');
+      field.focus();
+      field.value = ${JSON.stringify(query)};
+      field.dispatchEvent(new Event('input'));
+    })()`);
+    await until("!!document.querySelector('.a2-hit')");
+    const row = await evaluate("document.querySelector('.a2-hit').textContent");
+    assert.ok(row.toLowerCase().includes(query.toLowerCase()), row);
+    await evaluate("document.querySelector('.a2-hit').click()");
+    await until('!!window.__diorama');
+    if (!route) {
+      await evaluate('window.releaseLinkedBus()');
+      await until("window.__buses().some(b => b.id === 'marta:bus:delayed')");
+    }
+    await sleep(route ? 22_200 : 2200);
+    const camera = await evaluate('window.__diorama.target()');
+    const following = await evaluate('window.__follow.active');
+    // The station has several platform fixes within 20 m of (375, -465).
+    const distance = route ? Math.hypot(camera.x - 333, camera.z - 545)
+      : Math.hypot(camera.x - 375, camera.z + 465);
+    if (following || distance > (route ? 2 : 25)) {
+      searchFailures.push({ query, camera, following });
+    } else console.log('Passed search over deferred', kind, camera);
+  }
+  assert.deepEqual(searchFailures, [], 'Search must retain the chosen camera');
+
   for (const kind of ['route', 'bus']) {
     for (const explicit of [true, false]) {
-      const linked = kind === 'route' ? 'marta:route:RED' : 'marta:bus:delayed';
-      const url = new URL(base);
-      url.search = new URLSearchParams({ view: 'map', q: 'low', dev: '', follow: linked });
-      if (kind === 'route') url.searchParams.set('t', '2026-11-20T13:49:00-05:00');
-      await call('Page.navigate', { url: url.href });
-      await until("!!window.__shell && window.__trains().some(t => t.routeId === 'marta:route:STREETCAR')");
+      const linked = await openLink(kind, 'map');
       let chosen;
       if (explicit) {
         if (kind === 'route') {
