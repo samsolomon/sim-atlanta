@@ -82,6 +82,9 @@ export function createTraceMidtown(buildings: VBuilding[], site: VBuilding, grid
       const l = 0.25, r = 0.75;
       for (let f = 1; f < floors; f++) {
         const y = from + f * pitch;
+        // Balcony slab from the wall to the rail (both windings), so the rail sits on something.
+        shell.body.quad(out(r, y, 0.02), out(r, y, 0.5), out(l, y, 0.5), out(l, y, 0.02), trim);
+        shell.body.quad(out(l, y, 0.02), out(l, y, 0.5), out(r, y, 0.5), out(r, y, 0.02), trim);
         shell.body.quad(out(l, y, 0.5), out(l, y + 0.9, 0.5), out(r, y + 0.9, 0.5), out(r, y, 0.5), rail);
       }
     }
