@@ -835,8 +835,10 @@ export async function createCity(container: HTMLElement, rf: RoutesFile, quality
   // while the camera is being dragged or the tab is hidden (the default board builds
   // synchronously, so no area build shares this time).
   let trafficDragging = false, trafficIdleStopped = false;
+  // A busy main thread (a phone at 30 fps) may never go idle, so a slice is also forced every
+  // 250 ms: 1 ms per 250 ms, a fraction of what the frame loop would spend sampling instead.
   const idle = (fn: (budget: number) => void) => typeof requestIdleCallback === 'function'
-    ? requestIdleCallback(deadline => fn(Math.min(1, deadline.timeRemaining() - 3)))
+    ? requestIdleCallback(deadline => fn(deadline.didTimeout ? 1 : Math.min(1, deadline.timeRemaining() - 3)), { timeout: 250 })
     : setTimeout(() => fn(1), 50);
   const fillTrafficHeights = (budget: number) => {
     if (trafficIdleStopped) return;
